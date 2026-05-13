@@ -3,6 +3,7 @@ import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { AgentRegistry } from '@wasm4pm/agents';
 import { withSpanRaw } from '../_otel.js';
+import { exitWithFlush } from '../../otel/exit.js';
 
 export const status = defineCommand({
   meta: {
@@ -45,7 +46,7 @@ export const status = defineCommand({
             'AGENT_NOT_FOUND'
           );
           emitResult(errResult, { format, verbose, quiet });
-          process.exit(errResult.exit_code);
+          return await exitWithFlush(errResult.exit_code);
         }
 
         const result = makeResult(
@@ -70,7 +71,7 @@ export const status = defineCommand({
             projection.log(`  Last error: ${agent.last_error}`);
           }
         });
-        process.exit(result.exit_code);
+        return await exitWithFlush(result.exit_code);
       } else {
         const summary = registry.getSummary();
         const agents = registry.listAgents();
@@ -100,7 +101,7 @@ export const status = defineCommand({
             projection.log(`  ${icon} ${agent.config.name}  (${agent.status})  last: ${lastRun}`);
           }
         });
-        process.exit(result.exit_code);
+        return await exitWithFlush(result.exit_code);
       }
     } catch (error) {
       const result = makeErrorResult(
@@ -110,7 +111,7 @@ export const status = defineCommand({
         'AGENT_STATUS_ERROR'
       );
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      return await exitWithFlush(result.exit_code);
     }
     });
   },

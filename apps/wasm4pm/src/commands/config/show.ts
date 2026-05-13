@@ -3,6 +3,7 @@ import { resolveConfig } from '@wasm4pm/config';
 import { checkConfigWarnings } from '@wasm4pm/config';
 import { emitResult, makeResult, makeErrorResult, ConsoleProjection } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
+import { exitWithFlush } from '../../otel/exit.js';
 
 /**
  * Mapping of environment variable names to config path (dot notation)
@@ -157,11 +158,11 @@ export const configShow = defineCommand({
         renderConfigShow(res.payload, projection, detailed);
       });
 
-      process.exit(EXIT_CODES.success);
+      return await exitWithFlush(EXIT_CODES.success);
     } catch (error) {
       const result = makeErrorResult('config show', error, EXIT_CODES.config_error, 'CONFIG_ERROR');
       emitResult(result, { format, quiet });
-      process.exit(EXIT_CODES.config_error);
+      return await exitWithFlush(EXIT_CODES.config_error);
     }
   },
 });

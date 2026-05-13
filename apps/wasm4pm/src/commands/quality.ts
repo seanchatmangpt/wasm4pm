@@ -6,6 +6,7 @@ import { withLogSession } from '../with-log-session.js';
 import { discriminate, toUniformStats } from '../discriminator.js';
 import { withSpan } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 interface QualityPayload {
   status: string;
@@ -98,7 +99,7 @@ export const quality = defineCommand({
           'SOURCE_ERROR'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        return await exitWithFlush(result.exit_code);
         return;
       }
 
@@ -119,7 +120,7 @@ export const quality = defineCommand({
           'SOURCE_ERROR'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        return await exitWithFlush(result.exit_code);
         return;
       }
 
@@ -325,7 +326,7 @@ export const quality = defineCommand({
           }
         }
 
-        process.exit(result.exit_code);
+        return await exitWithFlush(result.exit_code);
       });  // end withLogSession
     } catch (error) {
       const result = makeErrorResult(
@@ -335,7 +336,7 @@ export const quality = defineCommand({
         'EXECUTION_ERROR'
       );
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      return await exitWithFlush(result.exit_code);
     }
       },
     );

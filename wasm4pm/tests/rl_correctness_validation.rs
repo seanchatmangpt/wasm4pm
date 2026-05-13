@@ -28,7 +28,7 @@ fn make_test_state(health_level: u8) -> RlState {
 /// that should be fixed in a future iteration by scaling rewards proportionally to
 /// improvement magnitude.
 #[test]
-#[ignore]
+#[ignore] // Known limitation: reward is +1.0 regardless of improvement magnitude; fix tracked separately
 fn correctness_reward_function_monotonicity() {
     // JTBD: I want reward to reflect the true quality of my actions.
     // Contract: reward is monotone in health improvements.

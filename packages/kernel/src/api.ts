@@ -474,7 +474,11 @@ export class Kernel {
         );
 
       case 'alpha_plus_plus':
-        return this.wasm.discover_alpha_plus_plus(eventLogHandle, activityKey);
+        return this.wasm.discover_alpha_plus_plus(
+          eventLogHandle,
+          activityKey,
+          (params.min_support as number) ?? 0.0
+        );
 
       case 'heuristic_miner':
         return this.wasm.discover_heuristic_miner(
@@ -521,11 +525,7 @@ export class Kernel {
         );
 
       case 'ilp':
-        return this.wasm.discover_ilp_petri_net(
-          eventLogHandle,
-          activityKey,
-          (params.timeout_seconds as number) ?? 30
-        );
+        return this.wasm.discover_ilp_petri_net(eventLogHandle, activityKey);
 
       case 'aco':
         return this.wasm.discover_ant_colony(

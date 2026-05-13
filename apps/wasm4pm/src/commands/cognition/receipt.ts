@@ -4,6 +4,7 @@ import { defineCommand } from 'citty';
 import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { loadReceipt, mapWasmError } from './_shared.js';
+import { exitWithFlush } from '../../otel/exit.js';
 
 export const receipt = defineCommand({
   meta: { name: 'receipt', description: 'Inspect a receipt chain by id' },
@@ -38,12 +39,12 @@ export const receipt = defineCommand({
         const pl = res.payload as { receipt_id: string; link_count: number };
         p.success(`Receipt '${pl.receipt_id}' — ${pl.link_count} link(s)`);
       });
-      process.exit(EXIT_CODES.success);
+      return await exitWithFlush(EXIT_CODES.success);
     } catch (err) {
       const { code, exitCode } = mapWasmError(err);
       const result = makeErrorResult('cognition receipt', err, exitCode, code);
       emitResult(result, { format, verbose, quiet });
-      process.exit(exitCode);
+      return await exitWithFlush(exitCode);
     }
   },
 });

@@ -179,13 +179,20 @@ pub fn get_trace_length_statistics(eventlog_handle: &str) -> Result<JsValue, JsV
 
 /// Evaluate fitness of an edge set against columnar log (zero string allocation)
 /// Used by genetic algorithm, PSO, ACO, and simulated annealing discovery algorithms.
-/// Fitness = 80% trace fit + 20% simplicity penalty (based on edge count).
+/// Fitness = 80% trace fit + 20% simplicity penalty (relative to edge vocabulary size).
+///
+/// `edge_vocab_len` is the total number of observed unique edges — used for the
+/// vocabulary-relative density penalty instead of the previous hardcoded /20.
 ///
 /// Fast path: when vocab fits within BITMASK_VOCAB_LIMIT, uses a u64[64] bitmask for
 /// O(1) edge lookup with no heap allocation. Fallback: SortedEdgeSlice for O(log n)
 /// binary search on larger vocabularies.
 #[inline]
-pub(crate) fn evaluate_edges_fitness(edge_set: &HashSet<(u32, u32)>, col: &ColumnarLog) -> f64 {
+pub(crate) fn evaluate_edges_fitness(
+    edge_set: &HashSet<(u32, u32)>,
+    col: &ColumnarLog,
+    edge_vocab_len: usize,
+) -> f64 {
     let vocab_len = col.vocab.len();
     let use_bitmask = vocab_len <= BITMASK_VOCAB_LIMIT;
 
@@ -230,9 +237,10 @@ pub(crate) fn evaluate_edges_fitness(edge_set: &HashSet<(u32, u32)>, col: &Colum
         fitting_traces += trace_fits as usize;
     }
 
-    // Fitness = balance of fit and simplicity
+    // Fitness = balance of fit and simplicity (vocabulary-relative density)
     let fit_ratio = fitting_traces as f64 / total_traces.max(1) as f64;
-    let complexity_penalty = 1.0 / (1.0 + (edge_set.len() as f64 / 20.0));
+    let relative_density = edge_set.len() as f64 / edge_vocab_len.max(1) as f64;
+    let complexity_penalty = 1.0 / (1.0 + relative_density);
 
     // FMA: complexity_penalty * 0.2 + fit_ratio * 0.8 (fewer rounding steps)
     complexity_penalty.mul_add(0.2, fit_ratio * 0.8)

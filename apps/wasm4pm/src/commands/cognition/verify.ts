@@ -5,6 +5,7 @@ import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { ReceiptChain } from '@wasm4pm/cognition';
 import { loadReceipt, mapWasmError } from './_shared.js';
+import { exitWithFlush } from '../../otel/exit.js';
 
 export const verify = defineCommand({
   meta: { name: 'verify', description: 'Verify adversarial gates on receipt(s)' },
@@ -61,12 +62,12 @@ export const verify = defineCommand({
         if (pl.failing_count === 0) p.success(`Verified ${pl.count} receipt(s) — all chains valid`);
         else p.warn(`${pl.failing_count}/${pl.count} receipt(s) failed verification`);
       });
-      process.exit(exitCode);
+      return await exitWithFlush(exitCode);
     } catch (err) {
       const { code, exitCode } = mapWasmError(err);
       const result = makeErrorResult('cognition verify', err, exitCode, code);
       emitResult(result, { format, verbose, quiet });
-      process.exit(exitCode);
+      return await exitWithFlush(exitCode);
     }
   },
 });

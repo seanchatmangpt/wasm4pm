@@ -19,6 +19,10 @@ export class OtelExporter {
   private flushPromise: Promise<void> = Promise.resolve();
   private isShuttingDown = false;
   private flushErrors: Array<{ timestamp: Date; error: any }> = [];
+  private droppedCount = 0;
+
+  public getDropCount(): number { return this.droppedCount; }
+  public resetDropCount(): void { this.droppedCount = 0; }
 
   constructor(config: OtelConfig) {
     this.config = config;
@@ -71,6 +75,7 @@ export class OtelExporter {
     // Drop oldest if queue is full (PRD §18.5: never block)
     if (this.queue.length >= maxSize) {
       this.queue.shift();
+      this.droppedCount++;
       console.warn(`[observability] OTEL queue full (${maxSize}), dropping oldest event`);
     }
 

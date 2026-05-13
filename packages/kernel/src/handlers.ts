@@ -22,7 +22,8 @@ export interface WasmModule {
   // Alpha++ (improved Alpha algorithm)
   discover_alpha_plus_plus(
     eventlog_handle: string,
-    activity_key: string
+    activity_key: string,
+    min_support: number
   ): Promise<{ handle: string }>;
 
   // Heuristic Miner
@@ -72,8 +73,7 @@ export interface WasmModule {
   // ILP (Integer Linear Programming)
   discover_ilp_petri_net(
     eventlog_handle: string,
-    activity_key: string,
-    timeout_seconds: number
+    activity_key: string
   ): Promise<{ handle: string }>;
 
   // Ant Colony Optimization
@@ -399,7 +399,8 @@ export async function implementAlgorithmStep(
       }
 
       case 'alpha_plus_plus': {
-        const result = await wasmModule.discover_alpha_plus_plus(eventLogHandle, activityKey);
+        const minSupport = (params.min_support as number) ?? 0.0;
+        const result = await wasmModule.discover_alpha_plus_plus(eventLogHandle, activityKey, minSupport);
         modelHandle = result.handle;
         break;
       }
@@ -471,12 +472,7 @@ export async function implementAlgorithmStep(
       }
 
       case 'ilp': {
-        const timeout = (params.timeout_seconds as number) ?? 30;
-        const result = await wasmModule.discover_ilp_petri_net(
-          eventLogHandle,
-          activityKey,
-          timeout
-        );
+        const result = await wasmModule.discover_ilp_petri_net(eventLogHandle, activityKey);
         modelHandle = result.handle;
         break;
       }

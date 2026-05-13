@@ -4,6 +4,7 @@ import type { ChildProcess } from 'node:child_process';
 import * as path from 'node:path';
 import * as url from 'node:url';
 import { EXIT_CODES } from '../../exit-codes.js';
+import { exitWithFlush } from '../../otel/exit.js';
 
 // Exported so tests can inject a controlled spawn without module-level mocking.
 export type SpawnFn = (cmd: string, args: string[], opts: object) => ChildProcess;
@@ -167,7 +168,7 @@ export async function runDoctor(opts: RunDoctorOptions): Promise<void> {
     if (!quiet) {
       process.stdout.write(JSON.stringify(envelope, null, 2) + '\n');
     }
-    process.exit(EXIT_CODES.system_error);
+    return await exitWithFlush(EXIT_CODES.system_error);
   }
 
   // ── 2. Handle spawn-level ENOENT (bash not found or script path wrong) ────
@@ -188,7 +189,7 @@ export async function runDoctor(opts: RunDoctorOptions): Promise<void> {
         );
       }
     }
-    process.exit(EXIT_CODES.system_error);
+    return await exitWithFlush(EXIT_CODES.system_error);
   }
 
   // ── 3. Parse JSON output ───────────────────────────────────────────────────
@@ -213,7 +214,7 @@ export async function runDoctor(opts: RunDoctorOptions): Promise<void> {
         );
       }
     }
-    process.exit(EXIT_CODES.execution_error);
+    return await exitWithFlush(EXIT_CODES.execution_error);
   }
 
   // ── 4. Determine outcome ───────────────────────────────────────────────────
@@ -242,7 +243,7 @@ export async function runDoctor(opts: RunDoctorOptions): Promise<void> {
   }
 
   // ── 6. Exit ────────────────────────────────────────────────────────────────
-  process.exit(allPassed ? EXIT_CODES.success : EXIT_CODES.execution_error);
+  return await exitWithFlush(allPassed ? EXIT_CODES.success : EXIT_CODES.execution_error);
 }
 
 // ── Command definition ────────────────────────────────────────────────────────

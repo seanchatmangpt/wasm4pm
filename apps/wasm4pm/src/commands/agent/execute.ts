@@ -3,6 +3,7 @@ import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { AgentOrchestrator } from '@wasm4pm/agents';
 import { withSpanRaw } from '../_otel.js';
+import { exitWithFlush } from '../../otel/exit.js';
 
 export interface AgentExecuteOptions {
   format?: 'human' | 'json';
@@ -103,7 +104,7 @@ export const execute = defineCommand({
         projection.log(`  Execution time: ${r.execution_time_ms}ms`);
       });
 
-      process.exit(result.exit_code);
+      return await exitWithFlush(result.exit_code);
     } catch (error) {
       const result = makeErrorResult(
         'agent execute',
@@ -112,7 +113,7 @@ export const execute = defineCommand({
         'AGENT_EXECUTE_ERROR'
       );
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      return await exitWithFlush(result.exit_code);
     }
     });
   },

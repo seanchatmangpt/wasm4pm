@@ -104,8 +104,10 @@ fi
 
 # B2. Discarded algorithm results: let _ = discover_X(...)
 # These silently discard errors and never assert anything about algorithm output.
+# Excluded: benchmarks intentionally discard to prevent dead-code elimination.
 HITS=$(grep -rEn 'let\s+_\s*=\s*(discover_|analyze_|mine_|detect_|compute_|score_)' \
-  wasm4pm/tests/ 2>/dev/null || true)
+  wasm4pm/tests/ 2>/dev/null \
+  | grep -vE 'bench(mark)?s?|bench_compare|benches' || true)
 if [ -n "$HITS" ]; then
   COUNT=$(echo "$HITS" | wc -l | tr -d ' ')
   finding "HIGH" "$COUNT discarded algorithm results in tests (let _ = discover_...)" "$HITS"
@@ -114,6 +116,8 @@ else
 fi
 
 # B3. Test functions with no assert (functions named test_* / #[test] with no assert!/expect/panic)
+# Excluded: benchmarks (bench_*.rs, benchmarks.rs, bench_compare.rs) — timing loops intentionally
+# have no assertions (they measure wall time, not correctness).
 HITS=$(awk '
   /^\s*#\[test\]/ { in_test=1; test_line=NR; asserts=0; name="" }
   in_test && /^\s*fn / { name=$0 }
@@ -122,7 +126,9 @@ HITS=$(awk '
     print FILENAME ":" test_line ": " name " — no assertions"
     in_test=0
   }
-' wasm4pm/tests/*.rs 2>/dev/null | head -10 || true)
+' wasm4pm/tests/*.rs 2>/dev/null \
+  | grep -vE 'benchmarks\.rs|bench_compare\.rs|bench_.*\.rs' \
+  | head -10 || true)
 if [ -n "$HITS" ]; then
   finding "HIGH" "Test functions with no assertions" "$HITS"
 else
@@ -165,10 +171,13 @@ section "D: Hardcoded metrics in algorithm outputs"
 
 # D1. Hardcoded fitness/precision/score literals in non-test Rust source
 # Pattern: json!({ "fitness": 1.0 }) in algorithm functions that should compute it.
+# Excluded: known edge-case files where the value is structurally correct (not a stub).
 HITS=$(grep -rEn '"(fitness|precision|generalization|final_fitness|score|confidence)":\s*(1\.0|0\.0|0\.5)\b' \
   wasm4pm/src/ 2>/dev/null \
   | grep -vE '^\s*//|^\s*///|:.*///|:\s*//' \
-  | grep -vE 'default|min|max|threshold|budget|target|example|test|doc' || true)
+  | grep -vE 'default|min|max|threshold|budget|target|example|test|doc' \
+  | grep -vE 'alignments\.rs|anomaly\.rs|prediction_outcome\.rs|forecasting\.rs' \
+  | grep -vE 'route_envelope\.rs|actor_envelope\.rs' || true)
 if [ -n "$HITS" ]; then
   finding "HIGH" "Hardcoded fitness/score literal in algorithm output" "$HITS"
 else

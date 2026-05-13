@@ -1,6 +1,6 @@
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::to_js_str;
+use crate::utilities::{evaluate_edges_fitness, to_js_str};
 use rustc_hash::FxHashMap;
 use serde_json::json;
 use std::collections::HashSet;
@@ -61,63 +61,74 @@ pub fn discover_hill_climbing(
 
 /// Pure-Rust Hill Climbing discovery: takes EventLog directly, returns DFG.
 /// Testable without wasm-bindgen runtime — same logic as discover_hill_climbing.
+///
+/// Uses fitness-driven greedy pruning: try removing each edge (sorted for
+/// determinism); keep the removal if fitness does not decrease. First-improvement
+/// restart until no beneficial removal remains.
 pub fn discover_hill_climbing_from_log(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
     let col_owned = log.to_columnar_owned(activity_key);
     let col = ColumnarLog::from_owned(&col_owned);
 
     let mut current_edges: std::collections::HashSet<(u32, u32)> =
         std::collections::HashSet::new();
+    let mut edge_freq: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+    let mut node_freq: FxHashMap<u32, usize> = FxHashMap::default();
+
     for t in 0..col.trace_offsets.len().saturating_sub(1) {
         let start = col.trace_offsets[t];
         let end = col.trace_offsets[t + 1];
-        for i in start..end.saturating_sub(1) {
-            current_edges.insert((col.events[i], col.events[i + 1]));
+        for i in start..end {
+            *node_freq.entry(col.events[i]).or_insert(0) += 1;
+            if i + 1 < end {
+                let edge = (col.events[i], col.events[i + 1]);
+                *edge_freq.entry(edge).or_insert(0) += 1;
+                current_edges.insert(edge);
+            }
         }
     }
 
-    let mut improved = true;
-    while improved && current_edges.len() > 1 {
-        improved = false;
-        let mut removal_cost: FxHashMap<(u32, u32), usize> = FxHashMap::default();
-        for t in 0..col.trace_offsets.len().saturating_sub(1) {
-            let start = col.trace_offsets[t];
-            let end = col.trace_offsets[t + 1];
-            if start >= end {
-                continue;
-            }
-            let mut pair_counts: FxHashMap<(u32, u32), usize> = FxHashMap::default();
-            for i in start..end.saturating_sub(1) {
-                let pair = (col.events[i], col.events[i + 1]);
-                if current_edges.contains(&pair) {
-                    *pair_counts.entry(pair).or_insert(0) += 1;
+    let edge_vocab_len = current_edges.len();
+    if edge_vocab_len > 1 {
+        // Fitness-driven greedy pruning — first-improvement restart.
+        // Sorted iteration makes the search order deterministic regardless of
+        // HashSet RandomState. Edges with low observed frequency are pruned first.
+        let mut current_fitness = {
+            let es: std::collections::HashSet<(u32, u32)> = current_edges.iter().copied().collect();
+            evaluate_edges_fitness(&es, &col, edge_vocab_len)
+        };
+        let mut improved = true;
+        while improved && current_edges.len() > 1 {
+            improved = false;
+            let mut candidates: Vec<(u32, u32)> = current_edges.iter().copied().collect();
+            // Sort by ascending frequency so cheapest-to-remove edges are tried first.
+            candidates.sort_unstable_by_key(|e| (edge_freq.get(e).copied().unwrap_or(0), *e));
+            for &edge in &candidates {
+                let mut trial = current_edges.clone();
+                trial.remove(&edge);
+                let trial_fitness = evaluate_edges_fitness(&trial, &col, edge_vocab_len);
+                if trial_fitness >= current_fitness - f64::EPSILON {
+                    current_edges = trial;
+                    current_fitness = trial_fitness;
+                    improved = true;
+                    break; // first-improvement restart
                 }
-            }
-            for (&pair, &count) in &pair_counts {
-                if count == 1 {
-                    *removal_cost.entry(pair).or_insert(0) += 1;
-                }
-            }
-        }
-        if let Some((&worst, _)) = removal_cost.iter().min_by_key(|(_, &v)| v) {
-            if removal_cost[&worst] == 0 {
-                current_edges.remove(&worst);
-                improved = true;
             }
         }
     }
 
     let mut dfg = DirectlyFollowsGraph::new();
-    dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
-        id: act.to_owned(),
-        label: act.to_owned(),
-        frequency: 0,
+    dfg.nodes.extend(col.vocab.iter().enumerate().map(|(idx, act)| DFGNode {
+        id: act.to_string(),
+        label: act.to_string(),
+        frequency: node_freq.get(&(idx as u32)).copied().unwrap_or(0),
     }));
-    dfg.edges
-        .extend(current_edges.iter().map(|&(f, t)| DirectlyFollowsRelation {
-            from: col.vocab[f as usize].to_owned(),
-            to: col.vocab[t as usize].to_owned(),
-            frequency: 1,
-        }));
+    let mut sorted_edges: Vec<(u32, u32)> = current_edges.into_iter().collect();
+    sorted_edges.sort_unstable();
+    dfg.edges.extend(sorted_edges.iter().map(|&(f, t)| DirectlyFollowsRelation {
+        from: col.vocab[f as usize].to_owned(),
+        to: col.vocab[t as usize].to_owned(),
+        frequency: edge_freq.get(&(f, t)).copied().unwrap_or(1),
+    }));
     dfg
 }
 
@@ -152,6 +163,7 @@ pub fn discover_astar_from_log(
             Some(item) => item,
             None => break,
         };
+        let total_df = directly_follows.len().max(1);
         let new_candidates: Vec<(DirectlyFollowsGraph, f64)> = directly_follows
             .iter()
             .filter(|(from, to, _)| {
@@ -165,11 +177,15 @@ pub fn discover_astar_from_log(
                     frequency: *freq,
                 });
                 let fitness = evaluate_dfg_partial_fitness(&new_dfg, log, activity_key);
-                let edge_count = new_dfg.edges.len();
-                (fitness > 0.0).then(|| (new_dfg, fitness - edge_count as f64 / 100.0))
+                // Normalize penalty by df vocabulary size — avoids the hard cap at 100 edges.
+                let edge_penalty = new_dfg.edges.len() as f64 / total_df as f64;
+                (fitness > 0.0).then(|| (new_dfg, fitness.mul_add(0.8, -edge_penalty * 0.2)))
             })
             .collect();
         open_set.extend(new_candidates);
+        // Beam: sort descending by score and cap the open set to prevent memory explosion.
+        open_set.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
+        open_set.truncate(128);
         if score > best_score {
             best_score = score;
             best_dfg = current_dfg;
@@ -673,9 +689,11 @@ fn evaluate_dfg_partial_fitness(
     if total_pairs == 0 {
         return 1.0;
     }
-    // 80% coverage + 20% simplicity (fewer edges beyond the minimum is better)
+    // 80% coverage + 20% simplicity (vocabulary-relative density)
     let coverage = covered_pairs as f64 / total_pairs as f64;
-    let simplicity = 1.0 / (1.0 + dfg.edges.len() as f64 / 20.0);
+    // edge_set.len() == dfg.edges.len() here, so normalize by unique observed pairs
+    let relative_density = dfg.edges.len() as f64 / total_pairs.max(1) as f64;
+    let simplicity = 1.0 / (1.0 + relative_density);
     coverage.mul_add(0.8, simplicity * 0.2)
 }
 

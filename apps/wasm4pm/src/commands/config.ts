@@ -3,6 +3,7 @@ import { configShow } from './config/show.js';
 import { configCheck } from './config/check.js';
 import { configVerify } from './config/verify.js';
 import { configExport } from './config/export.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 export const config = defineCommand({
   meta: {
@@ -21,7 +22,7 @@ export const config = defineCommand({
 
   Run "wpm config <subcommand> --help" for detailed usage.
 `);
-    process.exit(0);
+    return await exitWithFlush(0);
   },
   subCommands: {
     show:   configShow,

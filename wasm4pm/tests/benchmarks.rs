@@ -1282,7 +1282,7 @@ fn bench_streaming_incremental_dfg_merge() {
 /// Run all benchmarks on Tier 1 (Essential) datasets
 /// Usage: cargo test --release -- bench_tier_1 --nocapture
 #[test]
-#[ignore]
+#[ignore] // Requires BPI tier-1 datasets; run with: cargo test --release -- --include-ignored bench_tier_1
 fn bench_tier_1_essential() {
     set_benchmark_tier(1);
     let config = get_tier_config(1).unwrap();
@@ -1341,7 +1341,7 @@ fn bench_tier_1_essential() {
 /// Run all benchmarks on Tier 2 (Comprehensive) datasets
 /// Usage: cargo test --release -- bench_tier_2 --nocapture
 #[test]
-#[ignore]
+#[ignore] // Requires BPI tier-2 datasets; run with: cargo test --release -- --include-ignored bench_tier_2
 fn bench_tier_2_comprehensive() {
     set_benchmark_tier(2);
     let config = get_tier_config(2).unwrap();
@@ -1397,7 +1397,7 @@ fn bench_tier_2_comprehensive() {
 /// Run all benchmarks on Tier 3 (Stress) datasets
 /// Usage: cargo test --release -- bench_tier_3 --nocapture
 #[test]
-#[ignore]
+#[ignore] // Requires BPI tier-3 datasets; run with: cargo test --release -- --include-ignored bench_tier_3
 fn bench_tier_3_stress() {
     set_benchmark_tier(3);
     let config = get_tier_config(3).unwrap();

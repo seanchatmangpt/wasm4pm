@@ -4,6 +4,7 @@ import { EXIT_CODES } from '../../exit-codes.js';
 import { AgentRegistry } from '@wasm4pm/agents';
 import { withSpanRaw } from '../_otel.js';
 import type { AgentMode } from '@wasm4pm/agents';
+import { exitWithFlush } from '../../otel/exit.js';
 
 export const list = defineCommand({
   meta: {
@@ -83,7 +84,7 @@ export const list = defineCommand({
         }
       });
 
-      process.exit(result.exit_code);
+      return await exitWithFlush(result.exit_code);
     } catch (error) {
       const result = makeErrorResult(
         'agent list',
@@ -92,7 +93,7 @@ export const list = defineCommand({
         'AGENT_LIST_ERROR'
       );
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      return await exitWithFlush(result.exit_code);
     }
     });
   },

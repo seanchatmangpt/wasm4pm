@@ -42,7 +42,7 @@
 
 | Function | Returns | Algorithm |
 |----------|---------|-----------|
-| `discover_alpha_plus_plus(handle, activity_key)` | `Result<JsValue, JsValue>` | Alpha++ Petri net |
+| `discover_alpha_plus_plus(handle, activity_key, min_support)` | `Result<JsValue, JsValue>` | Alpha++ Petri net (min_support: f64 threshold [0,1], 0.0 = no filtering) |
 | `discover_dfg_filtered(handle, activity_key, threshold)` | `Result<JsValue, JsValue>` | Filtered DFG |
 | `export_dfg_to_json(handle)` | `Result<String, JsValue>` | Export DFG |
 | `export_petri_net_to_json(handle)` | `Result<String, JsValue>` | Export Petri net |

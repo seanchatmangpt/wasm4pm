@@ -43,6 +43,6 @@ export const ADVERSARIAL_DETECTORS = [
   }
 ];
 
-export async function getAdversarialCatalogue() {
+export function getAdversarialCatalogue() {
   return ADVERSARIAL_DETECTORS;
 }

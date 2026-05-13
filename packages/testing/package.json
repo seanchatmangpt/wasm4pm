@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/testing",
-  "version": "26.4.17",
+  "version": "26.5.13",
   "description": "Testing utilities and fixtures",
   "type": "module",
   "main": "./dist/index.js",

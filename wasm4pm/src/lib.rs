@@ -737,7 +737,8 @@ pub fn reset_drift_thresholds() -> String {
 /// SIMD-accelerated token replay for conformance checking.
 ///
 /// Discovers a DFG from the log, builds a SimdPetriNet, then replays
-/// every trace and returns fitness / precision / per-case diagnostics.
+/// every trace and returns a JSON string with `overall_fitness`, `precision`,
+/// and per-case diagnostics (each trace has a `fitness` field).
 #[cfg(feature = "conformance_basic")]
 #[wasm_bindgen]
 pub fn simd_token_replay(log_handle: &str, activity_key: &str) -> String {

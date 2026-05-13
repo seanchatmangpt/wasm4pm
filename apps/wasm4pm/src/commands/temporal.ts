@@ -5,6 +5,7 @@ import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
 import { withSpan } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 export const temporal = defineCommand({
   meta: {
@@ -86,7 +87,7 @@ export const temporal = defineCommand({
           'MISSING_INPUT'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        return await exitWithFlush(result.exit_code);
       }
 
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
@@ -191,12 +192,12 @@ export const temporal = defineCommand({
           }
         }
 
-        process.exit(result.exit_code);
+        return await exitWithFlush(result.exit_code);
       });  // end withLogSession
     } catch (error) {
       const result = makeErrorResult('temporal', error, EXIT_CODES.execution_error);
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      return await exitWithFlush(result.exit_code);
     }
       },
     );

@@ -4,6 +4,7 @@ import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withSpan } from './_otel.js';
 import pkg from '../../package.json' with { type: 'json' };
+import { exitWithFlush } from '../otel/exit.js';
 
 export const verify = defineCommand({
   meta: {
@@ -61,11 +62,11 @@ export const verify = defineCommand({
         }
       });
 
-      process.exit(exitCode);
+      return await exitWithFlush(exitCode);
     } catch (error) {
       const result = makeErrorResult('verify', error, EXIT_CODES.system_error, 'VERIFY_ERROR');
       emitResult(result, { format, verbose, quiet });
-      process.exit(EXIT_CODES.system_error);
+      return await exitWithFlush(EXIT_CODES.system_error);
     }
     });
   },

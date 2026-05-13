@@ -8,6 +8,7 @@ import { VALID_ML_TASKS, executeMlTask } from '../ml-runner.js';
 import type { MlTask } from '../ml-runner.js';
 import { withSpan } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 export const ml = defineCommand({
   meta: {
@@ -89,7 +90,7 @@ export const ml = defineCommand({
           'INVALID_TASK'
         );
         emitResult(result, { format, verbose, quiet });
-        process.exit(result.exit_code);
+        return await exitWithFlush(result.exit_code);
       }
 
       const inputPath = ctx.args.input as string;
@@ -162,12 +163,12 @@ export const ml = defineCommand({
           }
         }
 
-        process.exit(result.exit_code);
+        return await exitWithFlush(result.exit_code);
       });  // end withLogSession
     } catch (error) {
       const result = makeErrorResult('ml', error, EXIT_CODES.execution_error);
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      return await exitWithFlush(result.exit_code);
     }
       },
     );

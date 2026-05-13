@@ -186,7 +186,7 @@ pub fn global_feature_importance(
 
     if prefixes.is_empty() {
         return to_js_str(&serde_json::json!({
-            "activities": [],
+            "activities": [], // empty: no prefixes in log
             "total_prefixes": 0,
             "ngram_order": ngram_order,
             "method": "global_permutation_importance",

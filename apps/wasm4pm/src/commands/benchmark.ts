@@ -5,6 +5,7 @@ import { WasmLoader } from '@wasm4pm/engine';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { buildSarifOutput, verdictToLevel } from '../sarif.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 const parse = (r: unknown): unknown =>
   typeof r === 'string' ? JSON.parse(r) : r;
@@ -66,7 +67,7 @@ const benchmarkBuild = defineCommand({
       const result = makeErrorResult('benchmark build', `Corpus file not found: ${corpusPath}`,
         EXIT_CODES.source_error, 'SOURCE_NOT_FOUND');
       emitResult(result, { format, quiet });
-      process.exit(EXIT_CODES.source_error);
+      return await exitWithFlush(EXIT_CODES.source_error);
       return;
     }
 
@@ -106,7 +107,7 @@ const benchmarkBuild = defineCommand({
       if (res.payload.invalid === 0) projection.success('Corpus validated — all traces valid.');
     });
 
-    process.exit(exitCode);
+    return await exitWithFlush(exitCode);
     });
   },
 });
@@ -237,11 +238,11 @@ const benchmarkReplay = defineCommand({
         else projection.warn(summary);
       });
 
-      process.exit(EXIT_CODES.success);
+      return await exitWithFlush(EXIT_CODES.success);
     } catch (e) {
       const result = makeErrorResult('benchmark replay', e, EXIT_CODES.execution_error);
       emitResult(result, { format, verbose, quiet });
-      process.exit(EXIT_CODES.execution_error);
+      return await exitWithFlush(EXIT_CODES.execution_error);
     }
     });
   },
@@ -281,7 +282,7 @@ const benchmarkVerify = defineCommand({
           verdict: r.final_verdict, traceName: r.trace_id, explanation: r.failure_reason,
         }));
         process.stdout.write(JSON.stringify(buildSarifOutput('26.4.28', sarifResults), null, 2) + '\n');
-        process.exit(exitCode);
+        return await exitWithFlush(exitCode);
         return;
       }
 
@@ -302,11 +303,11 @@ const benchmarkVerify = defineCommand({
         }
       });
 
-      process.exit(exitCode);
+      return await exitWithFlush(exitCode);
     } catch (e) {
       const result = makeErrorResult('benchmark verify', e, EXIT_CODES.execution_error);
       emitResult(result, { format, verbose, quiet });
-      process.exit(EXIT_CODES.execution_error);
+      return await exitWithFlush(EXIT_CODES.execution_error);
     }
     });
   },
@@ -361,15 +362,15 @@ const benchmarkExport = defineCommand({
         const result = makeErrorResult('benchmark export', `Unknown format: ${fmt}. Use sarif, json, or csv.`,
           EXIT_CODES.config_error, 'CONFIG_ERROR');
         emitResult(result, { format: 'human', quiet });
-        process.exit(EXIT_CODES.config_error);
+        return await exitWithFlush(EXIT_CODES.config_error);
         return;
       }
 
-      process.exit(EXIT_CODES.success);
+      return await exitWithFlush(EXIT_CODES.success);
     } catch (e) {
       const result = makeErrorResult('benchmark export', e, EXIT_CODES.execution_error);
       emitResult(result, { format: 'human', quiet });
-      process.exit(EXIT_CODES.execution_error);
+      return await exitWithFlush(EXIT_CODES.execution_error);
     }
     });
   },
@@ -398,7 +399,7 @@ export const benchmark = defineCommand({
 
   Run "wpm benchmark <subcommand> --help" for detailed usage.
 `);
-    process.exit(EXIT_CODES.success);
+    return await exitWithFlush(EXIT_CODES.success);
   },
   subCommands: {
     build: benchmarkBuild,

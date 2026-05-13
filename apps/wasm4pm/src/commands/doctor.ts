@@ -6,6 +6,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { emitResult, makeResult, makeErrorResult, ConsoleProjection } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 export interface DoctorOptions {
   fix?: boolean;
@@ -607,7 +608,7 @@ async function checkGitHooks(): Promise<Diagnosis> {
 // ────────────────────────────────────────────────────────────────────────────
 
 async function checkTypeScriptCompilation(): Promise<Diagnosis> {
-  const rootDir = await resolveWorkspaceRoot();
+  const rootDir = resolveWorkspaceRoot();
   if (!rootDir) {
     return {
       name: 'TypeScript compilation',
@@ -722,7 +723,7 @@ async function checkRustToolchain(): Promise<Diagnosis> {
 // ────────────────────────────────────────────────────────────────────────────
 
 async function checkResultsDir(): Promise<Diagnosis> {
-  const rootDir = await resolveWorkspaceRoot();
+  const rootDir = resolveWorkspaceRoot();
   if (!rootDir) {
     return {
       name: 'Results directory',
@@ -844,7 +845,7 @@ async function checkAlgorithmRegistry(): Promise<Diagnosis> {
 // ────────────────────────────────────────────────────────────────────────────
 
 async function checkWorkspaceIntegrity(): Promise<Diagnosis> {
-  const rootDir = await resolveWorkspaceRoot();
+  const rootDir = resolveWorkspaceRoot();
   if (!rootDir) {
     return {
       name: 'Workspace integrity',
@@ -1523,7 +1524,7 @@ export const ALL_CHECKS = [...ENV_CHECKS, ...TPS_CHECKS];
 // Helpers
 // ────────────────────────────────────────────────────────────────────────────
 
-async function resolveWorkspaceRoot(): Promise<string | null> {
+function resolveWorkspaceRoot(): string | null {
   let dir = process.cwd();
   for (let i = 0; i < 10; i++) {
     if (existsSync(path.join(dir, 'pnpm-workspace.yaml'))) return dir;
@@ -1678,7 +1679,7 @@ async function runChecks(
   });
 
   // Exit immediately to prevent parent main.run() from emitting trailing help text.
-  process.exit(exitCode);
+  return await exitWithFlush(exitCode);
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -1925,7 +1926,7 @@ export const doctorFix = defineCommand({
           : 'No auto-fixable issues found.');
         const noFixablePayload = { dry_run: Boolean(dryRun), fixable: [], unfixable: [], no_fixable: true };
         emitResult(makeResult('doctor fix', noFixablePayload, Date.now() - start, EXIT_CODES.success), { format, verbose, quiet });
-        process.exit(0);
+        return await exitWithFlush(0);
       }
 
       if (dryRun) {
@@ -1942,7 +1943,7 @@ export const doctorFix = defineCommand({
             .map((d) => d.fix),
         };
         emitResult(makeResult('doctor fix', dryRunPayload, Date.now() - start, EXIT_CODES.success), { format, verbose, quiet });
-        process.exit(0);
+        return await exitWithFlush(0);
       }
 
       if (!yes) {
@@ -1953,7 +1954,7 @@ export const doctorFix = defineCommand({
           p.log('Skipping — stdin is not a TTY. Use --yes to force.');
           const skipPayload = { dry_run: false, skipped: true, reason: 'non-tty', fixable_count: fixable.length };
           emitResult(makeResult('doctor fix', skipPayload, Date.now() - start, EXIT_CODES.success), { format, verbose, quiet });
-          process.exit(0);
+          return await exitWithFlush(0);
         }
         // Read one line
         const answer = await new Promise<string>((resolve) => {
@@ -1964,7 +1965,7 @@ export const doctorFix = defineCommand({
           p.log('Aborted.');
           const abortPayload = { dry_run: false, skipped: true, reason: 'user-aborted', fixable_count: fixable.length };
           emitResult(makeResult('doctor fix', abortPayload, Date.now() - start, EXIT_CODES.success), { format, verbose, quiet });
-          process.exit(0);
+          return await exitWithFlush(0);
         }
       }
 
@@ -1996,7 +1997,7 @@ export const doctorFix = defineCommand({
       };
       const result = makeResult('doctor fix', payload, Date.now() - start);
       emitResult(result, { format, verbose, quiet });
-      process.exit(0);
+      return await exitWithFlush(0);
     }
   },
 });
@@ -2068,7 +2069,7 @@ export const doctorPerf = defineCommand({
       path.join(process.cwd(), 'packages/kernel/performance_baseline.json'),
     ];
 
-    const rootDir = await resolveWorkspaceRoot();
+    const rootDir = resolveWorkspaceRoot();
     if (rootDir) {
       baselinePaths.unshift(path.join(rootDir, 'packages/kernel/performance_baseline.json'));
     }
@@ -2102,7 +2103,7 @@ export const doctorPerf = defineCommand({
         );
         p.log('Run from within the wasm4pm workspace.');
       });
-      process.exit(EXIT_CODES.success);
+      return await exitWithFlush(EXIT_CODES.success);
     }
 
     // Synthetic WASM stub — measures TypeScript dispatch overhead only (no real WASM needed)
@@ -2220,7 +2221,7 @@ export const doctorPerf = defineCommand({
         }
       }
     }
-    process.exit(allOk ? EXIT_CODES.success : EXIT_CODES.config_error);
+    return await exitWithFlush(allOk ? EXIT_CODES.success : EXIT_CODES.config_error);
   },
 });
 
@@ -2507,7 +2508,7 @@ export const doctorReport = defineCommand({
       EXIT_CODES.success
     );
     emitResult(result, { format: 'human', verbose, quiet });
-    process.exit(0);
+    return await exitWithFlush(0);
   },
 });
 
@@ -2599,7 +2600,7 @@ interface PublishCheck {
   message: string;
 }
 
-async function runPublishChecks(rootDir: string): Promise<PublishCheck[]> {
+function runPublishChecks(rootDir: string): PublishCheck[] {
   const checks: PublishCheck[] = [];
 
   // 1. Versions — all package.json must match CalVer /^\d+\.\d+\.\d+[a-z]?$/
@@ -2810,10 +2811,10 @@ export const doctorPublish = defineCommand({
     };
 
     // Run publish-specific checks
-    const rootDir = await resolveWorkspaceRoot();
+    const rootDir = resolveWorkspaceRoot();
     let publishChecks: PublishCheck[] = [];
     if (rootDir) {
-      publishChecks = await runPublishChecks(rootDir);
+      publishChecks = runPublishChecks(rootDir);
     }
 
     const publishReady =
@@ -2849,7 +2850,7 @@ export const doctorPublish = defineCommand({
     });
 
     if (!publishReady) {
-      process.exit(EXIT_CODES.config_error);
+      return await exitWithFlush(EXIT_CODES.config_error);
     }
 
     if (doPublish && publishReady) {
@@ -2868,7 +2869,7 @@ export const doctorPublish = defineCommand({
         execSync(`pnpm -r publish --access public${registryFlag}`, { stdio: 'inherit' });
       }
     }
-    process.exit(EXIT_CODES.success);
+    return await exitWithFlush(EXIT_CODES.success);
   },
 });
 

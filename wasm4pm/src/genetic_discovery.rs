@@ -56,28 +56,34 @@ pub fn discover_genetic_algorithm_from_log(
     let col = ColumnarLog::from_owned(&col_owned);
 
     let mut edge_vocab: Vec<(u32, u32)> = Vec::new();
-    let mut edge_map: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+    let mut edge_freq: FxHashMap<(u32, u32), f64> = FxHashMap::default();
+    let mut node_freq: FxHashMap<u32, usize> = FxHashMap::default();
     for t in 0..col.trace_offsets.len().saturating_sub(1) {
         let start = col.trace_offsets[t];
         let end = col.trace_offsets[t + 1];
-        for i in start..end.saturating_sub(1) {
-            let edge = (col.events[i], col.events[i + 1]);
-            edge_map.entry(edge).and_modify(|_| {}).or_insert_with(|| {
-                edge_vocab.push(edge);
-                edge_vocab.len() - 1
-            });
+        for i in start..end {
+            *node_freq.entry(col.events[i]).or_insert(0) += 1;
+            if i + 1 < end {
+                let edge = (col.events[i], col.events[i + 1]);
+                let cnt = edge_freq.entry(edge).or_insert(0.0);
+                if *cnt == 0.0 {
+                    edge_vocab.push(edge);
+                }
+                *cnt += 1.0;
+            }
         }
     }
     if edge_vocab.is_empty() {
         return None;
     }
     let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
+    let vocab_len = edge_vocab.len();
     let mut rng = StdRng::seed_from_u64(42);
 
     let mut population: Vec<(EdgeSet, f64)> = (0..population_size)
         .map(|_| {
             let es = create_random_edge_set_seeded(&edge_vocab, 0.7, &mut rng);
-            let f = evaluate_edges_fitness(&es, &col);
+            let f = evaluate_edges_fitness(&es, &col, vocab_len);
             (es, f)
         })
         .collect();
@@ -91,7 +97,7 @@ pub fn discover_genetic_algorithm_from_log(
             let p2 = population[rand_select_seeded(&population, &mut rng)].0.clone();
             let mut child = crossover_edges_seeded(&p1, &p2, &mut rng);
             mutate_edges_seeded(&mut child, 0.1, &edge_vocab, &mut rng);
-            let f = evaluate_edges_fitness(&child, &col);
+            let f = evaluate_edges_fitness(&child, &col, vocab_len);
             next.push((child, f));
         }
         next.truncate(population_size);
@@ -101,7 +107,7 @@ pub fn discover_genetic_algorithm_from_log(
     population.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
     let best_fitness = population[0].1;
     let best_edges = population.remove(0).0;
-    Some((edge_set_to_dfg(&best_edges, &vocab), best_fitness))
+    Some((edge_set_to_dfg(&best_edges, &vocab, &edge_freq, &node_freq), best_fitness))
 }
 
 /// Particle Swarm Optimization for process discovery
@@ -150,22 +156,28 @@ pub fn discover_pso_algorithm_from_log(
     let col = ColumnarLog::from_owned(&col_owned);
 
     let mut edge_vocab: Vec<(u32, u32)> = Vec::new();
-    let mut edge_map: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+    let mut edge_freq: FxHashMap<(u32, u32), f64> = FxHashMap::default();
+    let mut node_freq: FxHashMap<u32, usize> = FxHashMap::default();
     for t in 0..col.trace_offsets.len().saturating_sub(1) {
         let start = col.trace_offsets[t];
         let end = col.trace_offsets[t + 1];
-        for i in start..end.saturating_sub(1) {
-            let edge = (col.events[i], col.events[i + 1]);
-            edge_map.entry(edge).and_modify(|_| {}).or_insert_with(|| {
-                edge_vocab.push(edge);
-                edge_vocab.len() - 1
-            });
+        for i in start..end {
+            *node_freq.entry(col.events[i]).or_insert(0) += 1;
+            if i + 1 < end {
+                let edge = (col.events[i], col.events[i + 1]);
+                let cnt = edge_freq.entry(edge).or_insert(0.0);
+                if *cnt == 0.0 {
+                    edge_vocab.push(edge);
+                }
+                *cnt += 1.0;
+            }
         }
     }
     if edge_vocab.is_empty() {
         return None;
     }
     let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
+    let vocab_len = edge_vocab.len();
     let mut rng = StdRng::seed_from_u64(42);
 
     let mut particles: Vec<(EdgeSet, f64, EdgeSet, f64)> = Vec::new();
@@ -173,7 +185,7 @@ pub fn discover_pso_algorithm_from_log(
 
     for _ in 0..swarm_size {
         let edge_set = create_random_edge_set_seeded(&edge_vocab, 0.6, &mut rng);
-        let fitness = evaluate_edges_fitness(&edge_set, &col);
+        let fitness = evaluate_edges_fitness(&edge_set, &col, vocab_len);
         if best_global.is_none() || fitness > best_global.as_ref().unwrap().1 {
             best_global = Some((edge_set.clone(), fitness));
         }
@@ -190,7 +202,7 @@ pub fn discover_pso_algorithm_from_log(
             let toward_global = blend_edges_seeded(&toward_pbest, &best_global.as_ref().unwrap().0, 0.3, &mut rng);
             *edge_set = toward_global;
             mutate_edges_seeded(edge_set, 0.05, &edge_vocab, &mut rng);
-            let new_fitness = evaluate_edges_fitness(edge_set, &col);
+            let new_fitness = evaluate_edges_fitness(edge_set, &col, vocab_len);
             *current_fitness = new_fitness;
             if new_fitness > *pbest_fitness {
                 *pbest_fitness = new_fitness;
@@ -209,33 +221,40 @@ pub fn discover_pso_algorithm_from_log(
         particles[best_particle_idx].2 = winner_set;
     }
     let (edges, fitness) = best_global?;
-    Some((edge_set_to_dfg(&edges, &vocab), fitness))
+    Some((edge_set_to_dfg(&edges, &vocab, &edge_freq, &node_freq), fitness))
 }
 
-// Helper: Materialize a DirectlyFollowsGraph from edge set and vocabulary
-fn edge_set_to_dfg(edge_set: &EdgeSet, vocab: &[String]) -> DirectlyFollowsGraph {
+// Helper: Materialize a DirectlyFollowsGraph from edge set, vocabulary, and frequency maps.
+// Uses actual observed frequencies rather than the previous constant-1 placeholder.
+fn edge_set_to_dfg(
+    edge_set: &EdgeSet,
+    vocab: &[String],
+    edge_freq: &FxHashMap<(u32, u32), f64>,
+    node_freq: &FxHashMap<u32, usize>,
+) -> DirectlyFollowsGraph {
     let mut dfg = DirectlyFollowsGraph::new();
 
-    // Add all activities as nodes
-    for activity in vocab.iter() {
+    for (idx, activity) in vocab.iter().enumerate() {
         dfg.nodes.push(DFGNode {
             id: activity.clone(),
             label: activity.clone(),
-            frequency: 1,
+            frequency: node_freq.get(&(idx as u32)).copied().unwrap_or(0),
         });
     }
 
-    // Add edges from edge set
-    for &(from_id, to_id) in edge_set {
+    // Sort for deterministic edge order independent of HashSet RandomState.
+    let mut sorted_edges: Vec<(u32, u32)> = edge_set.iter().copied().collect();
+    sorted_edges.sort_unstable();
+
+    for (from_id, to_id) in sorted_edges {
         let from_idx = from_id as usize;
         let to_idx = to_id as usize;
-
-        // Only add edge if indices are valid
         if from_idx < vocab.len() && to_idx < vocab.len() {
+            let freq = edge_freq.get(&(from_id, to_id)).copied().unwrap_or(1.0) as usize;
             dfg.edges.push(DirectlyFollowsRelation {
                 from: vocab[from_idx].clone(),
                 to: vocab[to_idx].clone(),
-                frequency: 1,
+                frequency: freq,
             });
         }
     }
@@ -353,6 +372,103 @@ fn rand_select_seeded<T>(items: &[(T, f64)], rng: &mut StdRng) -> usize {
 // Ant Colony Optimization (ACO)
 // ---------------------------------------------------------------------------
 
+/// Pure-Rust ACO discovery: takes EventLog directly, returns (DFG, final_fitness).
+/// Seed=42 for determinism. Testable without wasm-bindgen runtime.
+pub fn discover_aco_algorithm_from_log(
+    log: &EventLog,
+    activity_key: &str,
+    ant_count: usize,
+    iterations: usize,
+) -> Option<(DirectlyFollowsGraph, f64)> {
+    let col_owned = log.to_columnar_owned(activity_key);
+    let col = ColumnarLog::from_owned(&col_owned);
+
+    let mut edge_vocab: Vec<(u32, u32)> = Vec::new();
+    let mut edge_freq: FxHashMap<(u32, u32), f64> = FxHashMap::default();
+    let mut node_freq: FxHashMap<u32, usize> = FxHashMap::default();
+
+    for t in 0..col.trace_offsets.len().saturating_sub(1) {
+        let start = col.trace_offsets[t];
+        let end = col.trace_offsets[t + 1];
+        for i in start..end {
+            *node_freq.entry(col.events[i]).or_insert(0) += 1;
+            if i + 1 < end {
+                let edge = (col.events[i], col.events[i + 1]);
+                let cnt = edge_freq.entry(edge).or_insert(0.0);
+                if *cnt == 0.0 {
+                    edge_vocab.push(edge);
+                }
+                *cnt += 1.0;
+            }
+        }
+    }
+
+    if edge_vocab.is_empty() {
+        return None;
+    }
+
+    let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
+    let vocab_len = edge_vocab.len();
+    let total_edges = edge_freq.values().sum::<f64>().max(1.0);
+    let heuristic: FxHashMap<(u32, u32), f64> =
+        edge_freq.iter().map(|(e, &f)| (*e, f / total_edges)).collect();
+
+    let mut pheromone: FxHashMap<(u32, u32), f64> = FxHashMap::default();
+    let tau_0 = 1.0 / edge_vocab.len().max(1) as f64;
+    for &edge in &edge_vocab {
+        pheromone.insert(edge, tau_0);
+    }
+
+    let alpha = 1.0;
+    let beta = 2.0;
+    let evaporation_rate = 0.1;
+    let q = 100.0;
+    let mut rng = StdRng::seed_from_u64(42);
+    let mut best_solution: Option<(EdgeSet, f64)> = None;
+
+    for _iter in 0..iterations {
+        let mut iteration_solutions: Vec<(EdgeSet, f64)> = Vec::new();
+
+        for _ant in 0..ant_count {
+            let mut ant_edges: EdgeSet = HashSet::new();
+            for &edge in &edge_vocab {
+                let tau = pheromone.get(&edge).copied().unwrap_or(tau_0);
+                let eta = heuristic.get(&edge).copied().unwrap_or(0.01);
+                let prob = tau.powf(alpha) * eta.powf(beta);
+                if rng.gen::<f64>() < prob.min(0.99) {
+                    ant_edges.insert(edge);
+                }
+            }
+            let fitness = evaluate_edges_fitness(&ant_edges, &col, vocab_len);
+            if best_solution.is_none() || fitness > best_solution.as_ref().unwrap().1 {
+                best_solution = Some((ant_edges.clone(), fitness));
+            }
+            iteration_solutions.push((ant_edges, fitness));
+        }
+
+        for val in pheromone.values_mut() {
+            *val *= 1.0 - evaporation_rate;
+        }
+        for (edges, fitness) in &iteration_solutions {
+            let deposit = q * fitness;
+            for &edge in edges {
+                *pheromone.entry(edge).or_insert(tau_0) += deposit;
+            }
+        }
+        if let Some((best_edges, best_fit)) = iteration_solutions
+            .iter()
+            .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
+        {
+            let deposit = q * best_fit * 2.0;
+            for &edge in best_edges {
+                *pheromone.entry(edge).or_insert(tau_0) += deposit;
+            }
+        }
+    }
+
+    best_solution.map(|(edges, fitness)| (edge_set_to_dfg(&edges, &vocab, &edge_freq, &node_freq), fitness))
+}
+
 /// Ant Colony Optimization for process model discovery
 /// Uses pheromone trails and heuristic information to construct process models
 #[wasm_bindgen]
@@ -362,132 +478,15 @@ pub fn discover_aco_algorithm(
     ant_count: usize,
     iterations: usize,
 ) -> Result<JsValue, JsValue> {
-    let (best_edges, best_fitness, vocab) =
+    let (best_dfg, best_fitness) =
         get_or_init_state().with_object(eventlog_handle, |obj| match obj {
             Some(StoredObject::EventLog(log)) => {
-                let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
-                    .unwrap_or_else(|| {
-                        let owned = log.to_columnar_owned(activity_key);
-                        crate::cache::columnar_cache_insert(
-                            eventlog_handle.to_string(),
-                            activity_key.to_string(),
-                            owned.clone(),
-                        );
-                        owned
-                    });
-                let col = ColumnarLog::from_owned(&col_owned);
-
-                // Build edge vocabulary from columnar log
-                let mut edge_vocab: Vec<(u32, u32)> = Vec::new();
-                let mut edge_freq: FxHashMap<(u32, u32), f64> = FxHashMap::default();
-
-                for t in 0..col.trace_offsets.len().saturating_sub(1) {
-                    let start = col.trace_offsets[t];
-                    let end = col.trace_offsets[t + 1];
-                    for i in start..end.saturating_sub(1) {
-                        let edge = (col.events[i], col.events[i + 1]);
-                        *edge_freq.entry(edge).or_insert(0.0) += 1.0;
-                        if edge_freq[&edge] == 1.0 {
-                            edge_vocab.push(edge);
-                        }
-                    }
-                }
-
-                // Guard: empty vocabulary (only 1 activity in log)
-                if edge_vocab.is_empty() {
-                    return Err(crate::error::js_val("no_edges"));
-                }
-
-                let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
-                let total_edges = edge_freq.values().sum::<f64>().max(1.0);
-
-                // Heuristic information: normalized edge frequency
-                let heuristic: FxHashMap<(u32, u32), f64> = edge_freq
-                    .iter()
-                    .map(|(e, &f)| (*e, f / total_edges))
-                    .collect();
-
-                // Initialize pheromone trails uniformly
-                let mut pheromone: FxHashMap<(u32, u32), f64> = FxHashMap::default();
-                let tau_0 = 1.0 / edge_vocab.len().max(1) as f64;
-                for &edge in &edge_vocab {
-                    pheromone.insert(edge, tau_0);
-                }
-
-                // ACO constants
-                let alpha = 1.0; // pheromone influence
-                let beta = 2.0; // heuristic influence
-                let evaporation_rate = 0.1;
-                let q = 100.0; // pheromone deposit factor
-
-                // Deterministic RNG: seeded for reproducibility
-                let mut rng = StdRng::seed_from_u64(42);
-
-                let mut best_solution: Option<(EdgeSet, f64)> = None;
-
-                for _iter in 0..iterations {
-                    let mut iteration_solutions: Vec<(EdgeSet, f64)> = Vec::new();
-
-                    for _ant in 0..ant_count {
-                        // Construct solution using pheromone + heuristic
-                        let mut ant_edges: EdgeSet = HashSet::new();
-
-                        for &edge in &edge_vocab {
-                            let tau = pheromone.get(&edge).copied().unwrap_or(tau_0);
-                            let eta = heuristic.get(&edge).copied().unwrap_or(0.01);
-
-                            // Probability: (tau^alpha * eta^beta)
-                            let prob = tau.powf(alpha) * eta.powf(beta);
-                            if rng.gen::<f64>() < prob.min(0.99) {
-                                ant_edges.insert(edge);
-                            }
-                        }
-
-                        let fitness = evaluate_edges_fitness(&ant_edges, &col);
-
-                        // Track global best before moving ant_edges
-                        if best_solution.is_none() || fitness > best_solution.as_ref().unwrap().1 {
-                            best_solution = Some((ant_edges.clone(), fitness));
-                        }
-
-                        iteration_solutions.push((ant_edges, fitness));
-                    }
-
-                    // Evaporate pheromones
-                    for val in pheromone.values_mut() {
-                        *val *= 1.0 - evaporation_rate;
-                    }
-
-                    // Deposit pheromones from all ants
-                    for (edges, fitness) in &iteration_solutions {
-                        let deposit = q * fitness;
-                        for &edge in edges {
-                            *pheromone.entry(edge).or_insert(tau_0) += deposit;
-                        }
-                    }
-
-                    // Extra deposit for iteration-best ant
-                    if let Some((best_edges, best_fit)) = iteration_solutions
-                        .iter()
-                        .max_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal))
-                    {
-                        let deposit = q * best_fit * 2.0; // elitist bonus
-                        for &edge in best_edges {
-                            *pheromone.entry(edge).or_insert(tau_0) += deposit;
-                        }
-                    }
-                }
-
-                match best_solution {
-                    Some((edges, fitness)) => Ok((edges, fitness, vocab)),
-                    None => Err(crate::error::js_val("ACO failed to find solution")),
-                }
+                discover_aco_algorithm_from_log(log, activity_key, ant_count, iterations)
+                    .ok_or_else(|| crate::error::js_val("no_edges"))
             }
             Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
             None => Err(crate::error::js_val("EventLog not found")),
         })?;
-
-    let best_dfg = edge_set_to_dfg(&best_edges, &vocab);
 
     let handle = get_or_init_state()
         .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))

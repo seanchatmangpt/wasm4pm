@@ -1453,3 +1453,104 @@ fn receipt_generation_and_hashing() {
         );
     }
 }
+
+// =============================================================================
+// SOAR — deterministic tiebreak regression (fix: `.then_with(|| b.id.cmp(&a.id))`)
+// =============================================================================
+
+/// When multiple candidates tie on score (default 0.0), SOAR must always
+/// select the same candidate regardless of iteration order.
+/// Rank 1 — mathematical: max_by with deterministic tiebreak must be stable.
+#[test]
+fn soar_deterministic_tiebreak() {
+    use wasm4pm_cognition::breeds::soar::Soar;
+
+    let make_input = |ids: &[&str]| BreedInput {
+        intent: "test".to_string(),
+        candidates: ids
+            .iter()
+            .map(|&id| Candidate {
+                id: id.to_string(),
+                score: 0.0, // all equal — force tiebreak
+                eliminated: false,
+                elimination_reason: None,
+            })
+            .collect(),
+        facts: vec![],
+        cases: vec![],
+        rules: vec![],
+        goals: vec![],
+        state: vec![],
+    };
+
+    let soar = Soar;
+    // Two calls with the same candidates in different declaration orders.
+    let input_abc = make_input(&["alpha", "beta", "gamma"]);
+    let input_cba = make_input(&["gamma", "beta", "alpha"]);
+
+    let out_abc = soar.run(&input_abc).expect("SOAR must succeed");
+    let out_cba = soar.run(&input_cba).expect("SOAR must succeed");
+
+    assert_eq!(
+        out_abc.selected, out_cba.selected,
+        "SOAR tiebreak must be deterministic regardless of candidate order; \
+         got {:?} vs {:?}",
+        out_abc.selected, out_cba.selected
+    );
+}
+
+// =============================================================================
+// log_to_breed_input — adapter smoke test
+// =============================================================================
+
+/// `log_to_breed_input` must produce a structurally valid `BreedInput`:
+/// - candidates match the provided algorithm list
+/// - facts include required derived keys
+/// - cases are non-empty (anchor library)
+/// Rank 2 — domain contract: adapter output is usable by all breeds.
+#[test]
+fn log_adapter_produces_valid_breed_input() {
+    use wasm4pm_cognition::log_adapter::log_to_breed_input;
+
+    let top = vec!["Register".to_string(), "Approve".to_string(), "Close".to_string()];
+    let input = log_to_breed_input(
+        "select discovery algorithm",
+        &["dfg", "heuristic_miner", "ilp"],
+        5_000,    // traces
+        12,       // activities
+        80,       // variants
+        0.08,     // rework_ratio
+        6.5,      // mean_trace_len
+        &top,
+    );
+
+    // Candidates must match the provided list.
+    let candidate_ids: Vec<&str> = input.candidates.iter().map(|c| c.id.as_str()).collect();
+    assert_eq!(candidate_ids, vec!["dfg", "heuristic_miner", "ilp"]);
+    assert!(input.candidates.iter().all(|c| !c.eliminated));
+
+    // Required fact keys must be present.
+    let fact_keys: std::collections::HashSet<&str> =
+        input.facts.iter().map(|f| f.key.as_str()).collect();
+    for required in &["scale", "variant_diversity", "rework", "trace_complexity"] {
+        assert!(
+            fact_keys.contains(required),
+            "Missing required fact key '{}'",
+            required
+        );
+    }
+
+    // scale must be "medium" for 5_000 traces.
+    let scale = input.facts.iter().find(|f| f.key == "scale").map(|f| f.value.as_str());
+    assert_eq!(scale, Some("medium"), "5000 traces must map to scale=medium");
+
+    // Anchor cases must be present.
+    assert!(
+        !input.cases.is_empty(),
+        "log_to_breed_input must populate anchor cases"
+    );
+
+    // All breeds should be able to run with this input (smoke — just preconditions).
+    let result = wasm4pm_cognition::breeds::soar::Soar.preconditions(&input);
+    assert!(result.is_ok(), "SOAR preconditions must pass on adapter output");
+}

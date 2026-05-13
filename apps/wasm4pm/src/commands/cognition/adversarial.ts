@@ -5,6 +5,7 @@ import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { getAdversarialCatalogue } from '@wasm4pm/cognition';
 import { mapWasmError } from './_shared.js';
+import { exitWithFlush } from '../../otel/exit.js';
 
 const VALID_SEVERITIES = ['fatal', 'error', 'warning', 'all'] as const;
 type Severity = (typeof VALID_SEVERITIES)[number];
@@ -48,12 +49,12 @@ export const adversarial = defineCommand({
         const pl = res.payload as { count: number; total: number; severity: string };
         p.success(`${pl.count}/${pl.total} adversarial detectors (severity=${pl.severity})`);
       });
-      process.exit(EXIT_CODES.success);
+      return await exitWithFlush(EXIT_CODES.success);
     } catch (err) {
       const { code, exitCode } = mapWasmError(err);
       const result = makeErrorResult('cognition adversarial', err, exitCode, code);
       emitResult(result, { format, verbose, quiet });
-      process.exit(exitCode);
+      return await exitWithFlush(exitCode);
     }
   },
 });

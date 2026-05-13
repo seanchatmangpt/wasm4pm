@@ -53,7 +53,7 @@ export const main = defineCommand({
     const RESET = '\x1b[0m';
 
     process.stdout.write(`
-${BOLD}wpm${RESET} (wasm4pm) v26.4.17  —  Process Mining CLI  ${DIM}(wasm4pm)${RESET}
+${BOLD}wpm${RESET} (wasm4pm) v26.5.13  —  Process Mining CLI  ${DIM}(wasm4pm)${RESET}
 
 ${BOLD}DISCOVERY${RESET}
   ${GREEN}wpm run${RESET} <log.xes>                   Discover a process model (default: heuristic miner)

@@ -5,6 +5,7 @@ import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import type { BreedInput } from '@wasm4pm/cognition';
 import { parseInputJson, mapWasmError } from './_shared.js';
+import { exitWithFlush } from '../../otel/exit.js';
 
 export const plan = defineCommand({
   meta: { name: 'plan', description: 'Plan a cognition run (dry-run preview)' },
@@ -44,12 +45,12 @@ export const plan = defineCommand({
         const pl = res.payload as { contract: string; candidate_count: number };
         p.success(`Plan for '${pl.contract}' — ${pl.candidate_count} candidate(s)`);
       });
-      process.exit(EXIT_CODES.success);
+      return await exitWithFlush(EXIT_CODES.success);
     } catch (err) {
       const { code, exitCode } = mapWasmError(err);
       const result = makeErrorResult('cognition plan', err, exitCode, code);
       emitResult(result, { format, verbose, quiet });
-      process.exit(exitCode);
+      return await exitWithFlush(exitCode);
     }
   },
 });

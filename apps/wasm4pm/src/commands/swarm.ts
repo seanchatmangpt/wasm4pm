@@ -4,6 +4,7 @@ import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { runSwarm } from '@wasm4pm/swarm';
 import { withSpan } from './_otel.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 export const swarm = defineCommand({
   meta: {
@@ -93,11 +94,11 @@ export const swarm = defineCommand({
           projection.log(JSON.stringify(data.artifact, null, 2));
         }
       });
-      process.exit(result.exit_code);
+      return await exitWithFlush(result.exit_code);
     } catch (error) {
       const result = makeErrorResult('swarm', error, EXIT_CODES.execution_error);
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      return await exitWithFlush(result.exit_code);
     }
     });
   },

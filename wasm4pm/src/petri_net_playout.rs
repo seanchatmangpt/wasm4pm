@@ -220,7 +220,8 @@ fn simulate_trace(
 
 #[wasm_bindgen]
 pub fn petri_net_playout(petri_net_handle: &str, config_json: &str) -> Result<JsValue, JsValue> {
-    let config: PlayoutConfig = serde_json::from_str(config_json).unwrap_or_default();
+    let config: PlayoutConfig = serde_json::from_str(config_json)
+        .map_err(|e| crate::error::js_val(&format!("Invalid config_json: {e}")))?;
 
     let result: PlayoutResult =
         get_or_init_state().with_object(petri_net_handle, |obj| match obj {

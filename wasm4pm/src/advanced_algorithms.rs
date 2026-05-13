@@ -12,6 +12,63 @@ const FNV_OFFSET_BASIS: u64 = 0xcbf29ce484222325;
 #[cfg(not(feature = "bcinr"))]
 const FNV_PRIME: u64 = 0x100000001b3;
 
+/// Pure-Rust Heuristic Miner without wasm-bindgen. Used by integration tests.
+pub fn discover_heuristic_miner_from_log(
+    log: &EventLog,
+    activity_key: &str,
+    dependency_threshold: f64,
+) -> DirectlyFollowsGraph {
+    let mut dfg = DirectlyFollowsGraph::new();
+    let col_owned = log.to_columnar_owned(activity_key);
+    let col = ColumnarLog::from_owned(&col_owned);
+
+    dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
+        id: act.to_owned(),
+        label: act.to_owned(),
+        frequency: 0,
+    }));
+
+    let mut follows: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+    let mut precedes: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+
+    for t in 0..col.trace_offsets.len().saturating_sub(1) {
+        let start = col.trace_offsets[t];
+        let end = col.trace_offsets[t + 1];
+        if start >= end {
+            continue;
+        }
+        for &id in &col.events[start..end] {
+            dfg.nodes[id as usize].frequency += 1;
+        }
+        for i in start..end - 1 {
+            let (a, b) = (col.events[i], col.events[i + 1]);
+            *follows.entry((a, b)).or_insert(0) += 1;
+            *precedes.entry((b, a)).or_insert(0) += 1;
+        }
+        *dfg.start_activities
+            .entry(col.vocab[col.events[start] as usize].to_owned())
+            .or_insert(0) += 1;
+        *dfg.end_activities
+            .entry(col.vocab[col.events[end - 1] as usize].to_owned())
+            .or_insert(0) += 1;
+    }
+
+    for ((a, b), count) in follows {
+        let reverse_count = precedes.get(&(b, a)).copied().unwrap_or(0);
+        let ab = f64::from(count as u32);
+        let ba = f64::from(reverse_count as u32);
+        if (ab - ba) / (ab + ba + 1.0) >= dependency_threshold {
+            dfg.edges.push(DirectlyFollowsRelation {
+                from: col.vocab[a as usize].to_owned(),
+                to: col.vocab[b as usize].to_owned(),
+                frequency: count,
+            });
+        }
+    }
+
+    dfg
+}
+
 /// Heuristic Miner - discovers process models from real-world logs
 /// More lenient than Alpha++ for handling noise and incomplete data
 #[wasm_bindgen]
@@ -20,81 +77,12 @@ pub fn discover_heuristic_miner(
     activity_key: &str,
     dependency_threshold: f64,
 ) -> Result<JsValue, JsValue> {
-    // Compute inside closure, store outside (avoids mutex re-entry).
-    let dfg = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
-            let mut dfg = DirectlyFollowsGraph::new();
-
-            // Single-pass columnar approach: integer-keyed follows/precedes maps
-            // are ~6× smaller than (String,String) maps and hash in O(1).
-            let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
-                .unwrap_or_else(|| {
-                    let owned = log.to_columnar_owned(activity_key);
-                    crate::cache::columnar_cache_insert(
-                        eventlog_handle.to_string(),
-                        activity_key.to_string(),
-                        owned.clone(),
-                    );
-                    owned
-                });
-            let col = ColumnarLog::from_owned(&col_owned);
-
-            // Nodes pre-allocated from vocabulary
-            dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
-                id: act.to_owned(),
-                label: act.to_owned(),
-                frequency: 0,
-            }));
-
-            let mut follows: FxHashMap<(u32, u32), usize> = FxHashMap::default();
-            let mut precedes: FxHashMap<(u32, u32), usize> = FxHashMap::default();
-
-            for t in 0..col.trace_offsets.len().saturating_sub(1) {
-                let start = col.trace_offsets[t];
-                let end = col.trace_offsets[t + 1];
-                if start >= end {
-                    continue;
-                }
-
-                // Node frequencies + pair counts — single sequential pass
-                for &id in &col.events[start..end] {
-                    dfg.nodes[id as usize].frequency += 1;
-                }
-                for i in start..end - 1 {
-                    let (a, b) = (col.events[i], col.events[i + 1]);
-                    *follows.entry((a, b)).or_insert(0) += 1;
-                    *precedes.entry((b, a)).or_insert(0) += 1;
-                }
-                // Start / end
-                *dfg.start_activities
-                    .entry(col.vocab[col.events[start] as usize].to_owned())
-                    .or_insert(0) += 1;
-                *dfg.end_activities
-                    .entry(col.vocab[col.events[end - 1] as usize].to_owned())
-                    .or_insert(0) += 1;
-            }
-
-            // Apply dependency threshold with branchless formula
-            for ((a, b), count) in follows {
-                let reverse_count = precedes.get(&(b, a)).copied().unwrap_or(0);
-                let ab = f64::from(count as u32);
-                let ba = f64::from(reverse_count as u32);
-                // +1 denominator makes division always safe — no branch needed
-                if (ab - ba) / (ab + ba + 1.0) >= dependency_threshold {
-                    dfg.edges.push(DirectlyFollowsRelation {
-                        from: col.vocab[a as usize].to_owned(),
-                        to: col.vocab[b as usize].to_owned(),
-                        frequency: count,
-                    });
-                }
-            }
-
-            Ok(dfg)
-        }
+    let log = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
         Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
         None => Err(crate::error::js_val("EventLog not found")),
     })?;
-
+    let dfg = discover_heuristic_miner_from_log(&log, activity_key, dependency_threshold);
     let n_nodes = dfg.nodes.len();
     let n_edges = dfg.edges.len();
     let handle = get_or_init_state()

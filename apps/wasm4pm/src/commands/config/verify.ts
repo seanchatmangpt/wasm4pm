@@ -2,6 +2,7 @@ import { defineCommand } from 'citty';
 import { resolveConfig, checkConfigWarnings } from '@wasm4pm/config';
 import { emitResult, makeResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
+import { exitWithFlush } from '../../otel/exit.js';
 
 export const configVerify = defineCommand({
   meta: {
@@ -66,6 +67,6 @@ export const configVerify = defineCommand({
       else projection.error('Config verify FAILED — see above.');
     });
 
-    process.exit(result.exit_code);
+    return await exitWithFlush(result.exit_code);
   },
 });

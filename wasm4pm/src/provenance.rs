@@ -213,7 +213,7 @@ mod tests {
 
     #[test]
     fn test_wrap_discovery_result_all_fields_populated() {
-        let model = serde_json::json!({"nodes": [], "edges": []});
+        let model = serde_json::json!({"nodes": [], "edges": []}); // empty model for test fixture
         let output = wrap_discovery_result(model.clone(), "26.4.8.dfg_v1", 45);
 
         assert!(!output.model_hash.is_empty());

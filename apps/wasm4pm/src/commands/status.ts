@@ -2,6 +2,7 @@ import { defineCommand } from 'citty';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
+import { exitWithFlush } from '../otel/exit.js';
 
 export const status = defineCommand({
   meta: {
@@ -105,11 +106,11 @@ export const status = defineCommand({
 
         p.log('');
       });
-      process.exit(result.exit_code);
+      return await exitWithFlush(result.exit_code);
     } catch (error) {
       const result = makeErrorResult('status', error, EXIT_CODES.system_error, 'STATUS_ERROR');
       emitResult(result, { format, verbose, quiet });
-      process.exit(result.exit_code);
+      return await exitWithFlush(result.exit_code);
     }
   },
 });

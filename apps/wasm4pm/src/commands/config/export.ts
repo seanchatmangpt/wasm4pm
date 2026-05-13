@@ -2,6 +2,7 @@ import { defineCommand } from 'citty';
 import { resolveConfig, getExampleTomlConfig, getExampleEnvFile } from '@wasm4pm/config';
 import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
+import { exitWithFlush } from '../../otel/exit.js';
 
 export const configExport = defineCommand({
   meta: {
@@ -32,17 +33,17 @@ export const configExport = defineCommand({
         const result = makeErrorResult('config export', `Unknown format: ${fmt}. Use toml, json, or env.`,
           EXIT_CODES.config_error, 'CONFIG_ERROR');
         emitResult(result, { format: 'human', quiet });
-        process.exit(EXIT_CODES.config_error);
+        return await exitWithFlush(EXIT_CODES.config_error);
         return;
       }
 
       // Export commands write artifact content directly to stdout — the content IS the machine output
       process.stdout.write(content + '\n');
-      process.exit(EXIT_CODES.success);
+      return await exitWithFlush(EXIT_CODES.success);
     } catch (e) {
       const result = makeErrorResult('config export', e, EXIT_CODES.execution_error, 'EXPORT_ERROR');
       emitResult(result, { format: 'human', quiet });
-      process.exit(EXIT_CODES.execution_error);
+      return await exitWithFlush(EXIT_CODES.execution_error);
     }
   },
 });

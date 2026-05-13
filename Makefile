@@ -215,7 +215,7 @@ clean-bench:
 # ── Environment & Development ─────────────────────────────────────────────────
 doctor:
 	@cd apps/wasm4pm && pnpm run build > /dev/null 2>&1
-	@node apps/wasm4pm/dist/bin/wpm.js doctor --format json 2>&1 | awk '/^{/,/^}/ {print}'
+	@node apps/wasm4pm/dist/bin/wpm.js doctor check --format json 2>&1
 
 # ── Cognition Layer Targets ──────────────────────────────────────────────────
 # Build, verify, diagnose, and cycle the wasm4pm-cognition layer.

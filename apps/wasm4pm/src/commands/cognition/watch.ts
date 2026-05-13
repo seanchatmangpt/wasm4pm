@@ -4,6 +4,7 @@ import * as path from 'path';
 import chokidar from 'chokidar';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
+import { exitWithFlush } from '../../otel/exit.js';
 
 /** Minimal receipt summary emitted on every re-run. */
 export interface WatchReceipt {
@@ -39,9 +40,15 @@ type CognitionModule = {
   ) => Promise<CognitionRunResult>;
 };
 
-/** Load @wasm4pm/cognition dynamically; returns null if not installed. */
+/** Load @wasm4pm/cognition dynamically; returns null if package is not installed. */
 async function loadCognitionModule(): Promise<CognitionModule | null> {
-  return (import(COGNITION_PKG) as Promise<CognitionModule>).catch(() => null);
+  try {
+    return await (import(COGNITION_PKG) as Promise<CognitionModule>);
+  } catch (err: unknown) {
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === 'ERR_MODULE_NOT_FOUND' || code === 'MODULE_NOT_FOUND') return null;
+    throw err; // re-throw unexpected errors (import failure, syntax error, etc.)
+  }
 }
 
 /**
@@ -157,7 +164,7 @@ export const watch = defineCommand({
       } else {
         formatter.error(`Input file not found: ${inputPath}`);
       }
-      process.exit(EXIT_CODES.source_error);
+      return await exitWithFlush(EXIT_CODES.source_error);
     }
 
     // ── Debounce state ────────────────────────────────────────────────────────
@@ -275,13 +282,13 @@ export const watch = defineCommand({
       }
       watcher
         .close()
-        .then(() => {
+        .then(async () => {
           process.stderr.write('stopped\n');
-          process.exit(EXIT_CODES.success);
+          return await exitWithFlush(EXIT_CODES.success);
         })
-        .catch(() => {
+        .catch(async () => {
           process.stderr.write('stopped\n');
-          process.exit(EXIT_CODES.success);
+          return await exitWithFlush(EXIT_CODES.success);
         });
     });
 

@@ -4,6 +4,7 @@ import * as path from 'path';
 import { existsSync } from 'fs';
 import { emitResult, makeResult, makeErrorResult, ConsoleProjection } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
+import { exitWithFlush } from '../otel/exit.js';
 
 /**
  * Default directory where prediction results are persisted.
@@ -161,7 +162,7 @@ export const results = defineCommand({
           'INVALID_LIMIT'
         );
         emitResult(errResult, { format, verbose, quiet });
-        process.exit(errResult.exit_code);
+        return await exitWithFlush(errResult.exit_code);
       }
       const limit = parsedLimit ?? 20;
 
@@ -176,7 +177,7 @@ export const results = defineCommand({
             'RESULT_PATH_NOT_FOUND'
           );
           emitResult(errResult, { format, verbose, quiet });
-          process.exit(errResult.exit_code);
+          return await exitWithFlush(errResult.exit_code);
         }
         let parsed: unknown;
         try {
@@ -189,7 +190,7 @@ export const results = defineCommand({
             'RESULT_PATH_INVALID'
           );
           emitResult(errResult, { format, verbose, quiet });
-          process.exit(errResult.exit_code);
+          return await exitWithFlush(errResult.exit_code);
         }
         const result = makeResult('results', { cat: parsed, filepath }, performance.now() - t0);
         emitResult(result, { format, verbose, quiet }, (_res, projection) => {
@@ -199,7 +200,7 @@ export const results = defineCommand({
             projection.log(JSON.stringify(parsed, null, 2));
           }
         });
-        process.exit(EXIT_CODES.success);
+        return await exitWithFlush(EXIT_CODES.success);
       }
 
       // --last: cat the newest result
@@ -209,7 +210,7 @@ export const results = defineCommand({
           emitResult(result, { format, verbose, quiet }, (_res, projection) => {
             projection.warn('No saved results found.');
           });
-          process.exit(EXIT_CODES.success);
+          return await exitWithFlush(EXIT_CODES.success);
         }
         const file = files[0];
         const parsed = await catResult(file.filepath);
@@ -217,7 +218,7 @@ export const results = defineCommand({
         emitResult(result, { format, verbose, quiet }, (_res, projection) => {
           printCatResult(file.filepath, parsed, projection);
         });
-        process.exit(EXIT_CODES.success);
+        return await exitWithFlush(EXIT_CODES.success);
       }
 
       // --cat <name|index>: print a specific result
@@ -242,7 +243,7 @@ export const results = defineCommand({
             'RESULT_NOT_FOUND'
           );
           emitResult(errResult, { format, verbose, quiet });
-          process.exit(errResult.exit_code);
+          return await exitWithFlush(errResult.exit_code);
         }
 
         const parsed = await catResult(filepath);
@@ -250,7 +251,7 @@ export const results = defineCommand({
         emitResult(result, { format, verbose, quiet }, (_res, projection) => {
           printCatResult(filepath!, parsed, projection);
         });
-        process.exit(EXIT_CODES.success);
+        return await exitWithFlush(EXIT_CODES.success);
       }
 
       // Default: list results
@@ -321,11 +322,11 @@ export const results = defineCommand({
         projection.log('');
       });
 
-      process.exit(result.exit_code);
+      return await exitWithFlush(result.exit_code);
     } catch (error) {
       const errResult = makeErrorResult('results', error, EXIT_CODES.system_error, 'RESULTS_ERROR');
       emitResult(errResult, { format, verbose, quiet });
-      process.exit(errResult.exit_code);
+      return await exitWithFlush(errResult.exit_code);
     }
   },
 });
