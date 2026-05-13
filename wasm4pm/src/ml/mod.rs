@@ -7,5 +7,6 @@ pub mod forecasting;
 pub mod classification;
 pub mod pca;
 pub mod automl;
+pub mod clustering;
 
 pub use linucb::LinUCBAgent;

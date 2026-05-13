@@ -1,0 +1,60 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Event Log",
+  "description": "Process mining event log in XES or JSON format",
+  "type": "object",
+  "required": ["traces"],
+  "properties": {
+    "traces": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["caseId", "events"],
+        "properties": {
+          "caseId": {
+            "type": "string",
+            "description": "Unique trace identifier"
+          },
+          "events": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": ["activity", "timestamp"],
+              "properties": {
+                "activity": {
+                  "type": "string",
+                  "description": "Activity/event name"
+                },
+                "timestamp": {
+                  "type": "string",
+                  "format": "date-time",
+                  "description": "Event occurrence time"
+                },
+                "resource": {
+                  "type": "string",
+                  "description": "Resource/user performing activity"
+                },
+                "cost": {
+                  "type": "number",
+                  "description": "Cost of this event"
+                },
+                "attributes": {
+                  "type": "object",
+                  "description": "Additional event attributes"
+                }
+              }
+            }
+          },
+          "attributes": {
+            "type": "object",
+            "description": "Trace-level attributes"
+          }
+        }
+      }
+    },
+    "attributes": {
+      "type": "object",
+      "description": "Log-level attributes"
+    }
+  }
+}

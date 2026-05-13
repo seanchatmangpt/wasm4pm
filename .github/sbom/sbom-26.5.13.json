@@ -1,0 +1,178 @@
+{
+  "bomFormat": "CycloneDX",
+  "specVersion": "1.4",
+  "serialNumber": "urn:uuid:9F8E4F32-EBA8-43D2-B01B-B04E8EDD7AF1",
+  "version": 1,
+  "metadata": {
+    "timestamp": "2026-05-13T20:33:19Z",
+    "tools": [
+      {
+        "vendor": "wasm4pm",
+        "name": "SBOM Generator",
+        "version": "1.0.0"
+      }
+    ],
+    "component": {
+      "bom-ref": "wasm4pm-26.5.13",
+      "type": "library",
+      "name": "wasm4pm",
+      "version": "26.5.13",
+      "description": "High-performance process mining algorithms in WebAssembly",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT OR Apache-2.0"
+          }
+        }
+      ],
+      "homepage": "https://github.com/seanchatmangpt/wasm4pm",
+      "repository": {
+        "url": "https://github.com/seanchatmangpt/wasm4pm"
+      },
+      "supplier": {
+        "name": "wasm4pm Contributors"
+      }
+    }
+  },
+  "components": [
+    {
+      "bom-ref": "wasm-bindgen",
+      "type": "library",
+      "name": "wasm-bindgen",
+      "version": "0.2.92",
+      "description": "Rust ↔ JavaScript interop bindings",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT OR Apache-2.0"
+          }
+        }
+      ],
+      "supplier": {
+        "name": "Rust WASM Working Group"
+      }
+    },
+    {
+      "bom-ref": "serde",
+      "type": "library",
+      "name": "serde",
+      "version": "1.0.188",
+      "description": "Serialization framework",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT OR Apache-2.0"
+          }
+        }
+      ],
+      "supplier": {
+        "name": "David Tolnay"
+      }
+    },
+    {
+      "bom-ref": "serde_json",
+      "type": "library",
+      "name": "serde_json",
+      "version": "1.0.105",
+      "description": "JSON serialization",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT OR Apache-2.0"
+          }
+        }
+      ],
+      "supplier": {
+        "name": "David Tolnay"
+      }
+    },
+    {
+      "bom-ref": "chrono",
+      "type": "library",
+      "name": "chrono",
+      "version": "0.4.40",
+      "description": "Date and time library",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT OR Apache-2.0"
+          }
+        }
+      ],
+      "supplier": {
+        "name": "Kang Seonghoon"
+      }
+    },
+    {
+      "bom-ref": "indexmap",
+      "type": "library",
+      "name": "indexmap",
+      "version": "2.0",
+      "description": "Ordered HashMap",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT OR Apache-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "uuid",
+      "type": "library",
+      "name": "uuid",
+      "version": "1.16.0",
+      "description": "UUID generation",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT OR Apache-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "typescript",
+      "type": "library",
+      "name": "typescript",
+      "version": "5.3.3",
+      "description": "TypeScript compiler",
+      "licenses": [
+        {
+          "license": {
+            "name": "Apache-2.0"
+          }
+        }
+      ]
+    },
+    {
+      "bom-ref": "vitest",
+      "type": "library",
+      "name": "vitest",
+      "version": "1.1.0",
+      "description": "Unit test framework",
+      "licenses": [
+        {
+          "license": {
+            "name": "MIT"
+          }
+        }
+      ]
+    }
+  ],
+  "services": [],
+  "externalReferences": [
+    {
+      "type": "vcs",
+      "url": "https://github.com/seanchatmangpt/wasm4pm"
+    },
+    {
+      "type": "distribution",
+      "url": "https://www.npmjs.com/package/wasm4pm"
+    },
+    {
+      "type": "documentation",
+      "url": "https://github.com/seanchatmangpt/wasm4pm#readme"
+    }
+  ]
+}

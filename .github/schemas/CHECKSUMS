@@ -1,0 +1,7 @@
+# Schema Checksums
+# Generated: 2026-05-13T20:33:18Z
+# Version: 26.4.5
+
+f253bd8200490f3a19d370e031c73440c39d71798c70ae92e5602af5965e25e4  .github/schemas/event-log.schema.json
+1d4f619f0517052de73560dac049fd77dfb3f54b25da0bb5f686da5b8c931fa3  .github/schemas/openapi.json
+9845bf1ac4dcf609a00f2025f948b5a05042432f4eed828d17d8fe58f00369d9  .github/schemas/types.ts

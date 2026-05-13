@@ -132,9 +132,27 @@ fn add_arc(net: &mut PetriNet, from: &str, to: &str) {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Public API
-// ---------------------------------------------------------------------------
+use crate::state::{get_or_init_state, StoredObject};
+use crate::utilities::to_js_str;
+use wasm_bindgen::prelude::*;
+
+#[wasm_bindgen(js_name = reduce_petri_net)]
+pub fn reduce_petri_net_wasm(net_handle: &str) -> Result<JsValue, JsValue> {
+    let state = get_or_init_state();
+    
+    // We need to mutate the PetriNet stored at the handle.
+    let reduction_result = state.with_object_mut(net_handle, |obj| {
+        match obj {
+            Some(StoredObject::PetriNet(ref mut net)) => {
+                Ok(reduce_petri_net(net))
+            }
+            Some(_) => Err(crate::error::js_val("Handle does not point to a PetriNet")),
+            None => Err(crate::error::js_val("PetriNet not found")),
+        }
+    })?;
+    
+    crate::utilities::to_js(&reduction_result)
+}
 
 /// Result of a Petri net reduction pass.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
