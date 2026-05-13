@@ -272,97 +272,19 @@ pub fn discover_simulated_annealing(
     temperature: f64,
     cooling_rate: f64,
 ) -> Result<JsValue, JsValue> {
-    let (best_edges, best_fitness, vocab) =
+    let (best_dfg, best_fitness) =
         get_or_init_state().with_object(eventlog_handle, |obj| match obj {
             Some(StoredObject::EventLog(log)) => {
-                let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
-                    .unwrap_or_else(|| {
-                        let owned = log.to_columnar_owned(activity_key);
-                        crate::cache::columnar_cache_insert(
-                            eventlog_handle.to_string(),
-                            activity_key.to_string(),
-                            owned.clone(),
-                        );
-                        owned
-                    });
-                let col = ColumnarLog::from_owned(&col_owned);
-
-                // Build edge vocabulary from columnar log
-                let mut edge_vocab: Vec<(u32, u32)> = Vec::new();
-                let mut edge_map: FxHashMap<(u32, u32), usize> = FxHashMap::default();
-
-                for t in 0..col.trace_offsets.len().saturating_sub(1) {
-                    let start = col.trace_offsets[t];
-                    let end = col.trace_offsets[t + 1];
-                    for i in start..end.saturating_sub(1) {
-                        let edge = (col.events[i], col.events[i + 1]);
-                        edge_map.entry(edge).and_modify(|_| {}).or_insert_with(|| {
-                            edge_vocab.push(edge);
-                            edge_vocab.len() - 1
-                        });
-                    }
-                }
-
-                // Collect vocab before closure ends
-                let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
-
-                let cooling_rate = cooling_rate.clamp(0.001_f64, 0.9999_f64);
-
-                // Deterministic RNG: seeded for reproducibility
-                let mut rng = StdRng::seed_from_u64(42);
-
-                // Start with empty edge set
-                let mut current_edges: HashSet<(u32, u32)> = HashSet::new();
-                let mut current_fitness = evaluate_edges_fitness(&current_edges, &col);
-                let mut best_edges = current_edges.clone();
-                let mut best_fitness = current_fitness;
-                let mut temp = temperature;
-
-                while temp > 0.01 {
-                    // Random neighbor move: add or remove one edge
-                    let mut neighbor = current_edges.clone();
-
-                    if rng.gen::<f64>() < 0.5 && !current_edges.is_empty() {
-                        // Remove random edge
-                        if let Some(&edge) = neighbor.iter().next() {
-                            neighbor.remove(&edge);
-                        }
-                    } else {
-                        // Add random edge from vocabulary
-                        if !edge_vocab.is_empty() {
-                            let idx = (rng.gen::<f64>() * edge_vocab.len() as f64) as usize;
-                            neighbor.insert(edge_vocab[idx]);
-                        }
-                    }
-
-                    let neighbor_fitness = evaluate_edges_fitness(&neighbor, &col);
-                    let delta = neighbor_fitness - current_fitness;
-
-                    // Standard SA acceptance: improvements always accepted; worse
-                    // solutions accepted with Boltzmann probability exp(delta/T).
-                    // delta < 0 here, so exp(delta/T) ∈ (0,1) — correctly decays with T.
-                    let accept = delta >= 0.0 || rng.gen::<f64>() < (delta / temp).exp();
-                    if accept {
-                        current_edges = neighbor;
-                        current_fitness = neighbor_fitness;
-
-                        if current_fitness > best_fitness {
-                            best_fitness = current_fitness;
-                            best_edges = current_edges.clone();
-                        }
-                    }
-
-                    temp *= cooling_rate;
-                }
-
-                Ok((best_edges, best_fitness, vocab))
+                Ok(discover_simulated_annealing_from_log(
+                    log,
+                    activity_key,
+                    temperature,
+                    cooling_rate,
+                ))
             }
             Some(_) => Err(crate::error::js_val("Not an EventLog")),
             None => Err(crate::error::js_val("EventLog not found")),
         })?;
-
-    // Materialize DFG from best edges
-    let best_dfg = edge_set_to_dfg(&best_edges, &vocab);
 
     let handle = get_or_init_state()
         .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
@@ -375,6 +297,69 @@ pub fn discover_simulated_annealing(
         "edges": best_dfg.edges.len(),
         "fitness": best_fitness,
     }))
+}
+
+/// Pure-Rust SA discovery: takes EventLog directly, returns (DFG, fitness).
+/// Testable without wasm-bindgen runtime — same logic as discover_simulated_annealing.
+pub fn discover_simulated_annealing_from_log(
+    log: &EventLog,
+    activity_key: &str,
+    temperature: f64,
+    cooling_rate: f64,
+) -> (DirectlyFollowsGraph, f64) {
+    use std::collections::HashSet as HS;
+    let col_owned = log.to_columnar_owned(activity_key);
+    let col = ColumnarLog::from_owned(&col_owned);
+
+    let mut edge_vocab: Vec<(u32, u32)> = Vec::new();
+    let mut edge_map: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+    for t in 0..col.trace_offsets.len().saturating_sub(1) {
+        let start = col.trace_offsets[t];
+        let end = col.trace_offsets[t + 1];
+        for i in start..end.saturating_sub(1) {
+            let edge = (col.events[i], col.events[i + 1]);
+            edge_map.entry(edge).and_modify(|_| {}).or_insert_with(|| {
+                edge_vocab.push(edge);
+                edge_vocab.len() - 1
+            });
+        }
+    }
+    let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
+    let cooling_rate = cooling_rate.clamp(0.001_f64, 0.9999_f64);
+    let mut rng = StdRng::seed_from_u64(42);
+
+    let mut current_edges: HS<(u32, u32)> = HS::new();
+    let mut current_fitness = evaluate_edges_fitness(&current_edges, &col);
+    let mut best_edges = current_edges.clone();
+    let mut best_fitness = current_fitness;
+    let mut temp = temperature;
+
+    while temp > 0.01 {
+        let mut neighbor = current_edges.clone();
+        if rng.gen::<f64>() < 0.5 && !current_edges.is_empty() {
+            // Sort for deterministic selection independent of HashSet RandomState.
+            let mut edges_sorted: Vec<(u32, u32)> = neighbor.iter().copied().collect();
+            edges_sorted.sort_unstable();
+            let pick = (rng.gen::<f64>() * edges_sorted.len() as f64) as usize;
+            neighbor.remove(&edges_sorted[pick]);
+        } else if !edge_vocab.is_empty() {
+            let idx = (rng.gen::<f64>() * edge_vocab.len() as f64) as usize;
+            neighbor.insert(edge_vocab[idx]);
+        }
+        let neighbor_fitness = evaluate_edges_fitness(&neighbor, &col);
+        let delta = neighbor_fitness - current_fitness;
+        let accept = delta >= 0.0 || rng.gen::<f64>() < (delta / temp).exp();
+        if accept {
+            current_edges = neighbor;
+            current_fitness = neighbor_fitness;
+            if current_fitness > best_fitness {
+                best_fitness = current_fitness;
+                best_edges = current_edges.clone();
+            }
+        }
+        temp *= cooling_rate;
+    }
+    (edge_set_to_dfg(&best_edges, &vocab), best_fitness)
 }
 
 /// Process Skeleton - extract minimal model structure

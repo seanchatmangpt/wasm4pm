@@ -16,64 +16,7 @@ pub fn discover_astar(
     let (best_dfg, iterations) =
         get_or_init_state().with_object(eventlog_handle, |obj| match obj {
             Some(StoredObject::EventLog(log)) => {
-                let activities = log.get_activities(activity_key);
-                let directly_follows = log.get_directly_follows(activity_key);
-
-                // Initialize DFG with all edges from log
-                let mut best_dfg = DirectlyFollowsGraph::new();
-                for activity in &activities {
-                    best_dfg.nodes.push(DFGNode {
-                        id: activity.clone(),
-                        label: activity.clone(),
-                        frequency: 0,
-                    });
-                }
-
-                let mut open_set = vec![(best_dfg.clone(), 0f64)];
-                let mut best_score = 0f64;
-                let mut iterations = 0;
-
-                while !open_set.is_empty() && iterations < max_iterations {
-                    // Ascending sort so pop() extracts the highest-scored candidate
-                    open_set
-                        .sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
-                    let (current_dfg, score) = match open_set.pop() {
-                        Some(item) => item,
-                        None => break,
-                    };
-
-                    // Build candidate DFGs via iterator chain; heuristic is inlined,
-                    // no separate complexity_penalty binding needed
-                    let new_candidates: Vec<(DirectlyFollowsGraph, f64)> = directly_follows
-                        .iter()
-                        .filter(|(from, to, _)| {
-                            !current_dfg
-                                .edges
-                                .iter()
-                                .any(|e| &e.from == from && &e.to == to)
-                        })
-                        .filter_map(|(from, to, freq)| {
-                            let mut new_dfg = current_dfg.clone();
-                            new_dfg.edges.push(DirectlyFollowsRelation {
-                                from: from.clone(),
-                                to: to.clone(),
-                                frequency: *freq,
-                            });
-                            let fitness = evaluate_dfg_fitness(&new_dfg, log, activity_key);
-                            let edge_count = new_dfg.edges.len();
-                            (fitness > 0.5).then(|| (new_dfg, fitness - edge_count as f64 / 100.0))
-                        })
-                        .collect();
-                    open_set.extend(new_candidates);
-
-                    if score > best_score {
-                        best_score = score;
-                        best_dfg = current_dfg;
-                    }
-                    iterations += 1;
-                }
-
-                Ok((best_dfg, iterations))
+                Ok(discover_astar_from_log(log, activity_key, max_iterations))
             }
             Some(_) => Err(crate::error::js_val("Not an EventLog")),
             None => Err(crate::error::js_val("EventLog not found")),
@@ -99,88 +42,7 @@ pub fn discover_hill_climbing(
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
     let current_dfg = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => {
-            // Build columnar view once — integer-keyed ops throughout
-            let col_owned = crate::cache::columnar_cache_get(eventlog_handle, activity_key)
-                .unwrap_or_else(|| {
-                    let owned = log.to_columnar_owned(activity_key);
-                    crate::cache::columnar_cache_insert(
-                        eventlog_handle.to_string(),
-                        activity_key.to_string(),
-                        owned.clone(),
-                    );
-                    owned
-                });
-            let col = ColumnarLog::from_owned(&col_owned);
-
-            // Start with ALL observed edges, then greedily prune
-            let mut current_edges: HashSet<(u32, u32)> = HashSet::new();
-            for t in 0..col.trace_offsets.len().saturating_sub(1) {
-                let start = col.trace_offsets[t];
-                let end = col.trace_offsets[t + 1];
-                for i in start..end.saturating_sub(1) {
-                    current_edges.insert((col.events[i], col.events[i + 1]));
-                }
-            }
-
-            // Greedy pruning: iteratively remove the edge with lowest removal cost
-            // Removal cost = number of traces where this edge appears exactly once
-            // (i.e., traces that would "break" if this edge were removed)
-            let mut improved = true;
-            while improved && current_edges.len() > 1 {
-                improved = false;
-
-                let mut removal_cost: FxHashMap<(u32, u32), usize> = FxHashMap::default();
-
-                for t in 0..col.trace_offsets.len().saturating_sub(1) {
-                    let start = col.trace_offsets[t];
-                    let end = col.trace_offsets[t + 1];
-                    if start >= end {
-                        continue;
-                    }
-
-                    // Count occurrences of each edge in this trace
-                    let mut pair_counts: FxHashMap<(u32, u32), usize> = FxHashMap::default();
-                    for i in start..end.saturating_sub(1) {
-                        let pair = (col.events[i], col.events[i + 1]);
-                        if current_edges.contains(&pair) {
-                            *pair_counts.entry(pair).or_insert(0) += 1;
-                        }
-                    }
-
-                    // Edges appearing exactly once in this trace are essential for it
-                    for (&pair, &count) in &pair_counts {
-                        if count == 1 {
-                            *removal_cost.entry(pair).or_insert(0) += 1;
-                        }
-                    }
-                }
-
-                // Remove the edge with lowest (zero) removal cost
-                if let Some((&worst, _)) = removal_cost.iter().min_by_key(|(_, &v)| v) {
-                    if removal_cost[&worst] == 0 {
-                        current_edges.remove(&worst);
-                        improved = true;
-                    }
-                }
-            }
-
-            // Materialise back to DFG
-            let mut dfg = DirectlyFollowsGraph::new();
-            dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
-                id: act.to_owned(),
-                label: act.to_owned(),
-                frequency: 0,
-            }));
-            dfg.edges
-                .extend(current_edges.iter().map(|&(f, t)| DirectlyFollowsRelation {
-                    from: col.vocab[f as usize].to_owned(),
-                    to: col.vocab[t as usize].to_owned(),
-                    frequency: 1,
-                }));
-
-            Ok(dfg)
-        }
+        Some(StoredObject::EventLog(log)) => Ok(discover_hill_climbing_from_log(log, activity_key)),
         Some(_) => Err(crate::error::js_val("Not an EventLog")),
         None => Err(crate::error::js_val("EventLog not found")),
     })?;
@@ -195,6 +57,126 @@ pub fn discover_hill_climbing(
         "nodes": current_dfg.nodes.len(),
         "edges": current_dfg.edges.len(),
     }))
+}
+
+/// Pure-Rust Hill Climbing discovery: takes EventLog directly, returns DFG.
+/// Testable without wasm-bindgen runtime — same logic as discover_hill_climbing.
+pub fn discover_hill_climbing_from_log(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
+    let col_owned = log.to_columnar_owned(activity_key);
+    let col = ColumnarLog::from_owned(&col_owned);
+
+    let mut current_edges: std::collections::HashSet<(u32, u32)> =
+        std::collections::HashSet::new();
+    for t in 0..col.trace_offsets.len().saturating_sub(1) {
+        let start = col.trace_offsets[t];
+        let end = col.trace_offsets[t + 1];
+        for i in start..end.saturating_sub(1) {
+            current_edges.insert((col.events[i], col.events[i + 1]));
+        }
+    }
+
+    let mut improved = true;
+    while improved && current_edges.len() > 1 {
+        improved = false;
+        let mut removal_cost: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+        for t in 0..col.trace_offsets.len().saturating_sub(1) {
+            let start = col.trace_offsets[t];
+            let end = col.trace_offsets[t + 1];
+            if start >= end {
+                continue;
+            }
+            let mut pair_counts: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+            for i in start..end.saturating_sub(1) {
+                let pair = (col.events[i], col.events[i + 1]);
+                if current_edges.contains(&pair) {
+                    *pair_counts.entry(pair).or_insert(0) += 1;
+                }
+            }
+            for (&pair, &count) in &pair_counts {
+                if count == 1 {
+                    *removal_cost.entry(pair).or_insert(0) += 1;
+                }
+            }
+        }
+        if let Some((&worst, _)) = removal_cost.iter().min_by_key(|(_, &v)| v) {
+            if removal_cost[&worst] == 0 {
+                current_edges.remove(&worst);
+                improved = true;
+            }
+        }
+    }
+
+    let mut dfg = DirectlyFollowsGraph::new();
+    dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
+        id: act.to_owned(),
+        label: act.to_owned(),
+        frequency: 0,
+    }));
+    dfg.edges
+        .extend(current_edges.iter().map(|&(f, t)| DirectlyFollowsRelation {
+            from: col.vocab[f as usize].to_owned(),
+            to: col.vocab[t as usize].to_owned(),
+            frequency: 1,
+        }));
+    dfg
+}
+
+/// Pure-Rust A* discovery: takes EventLog directly, returns (DFG, iterations_used).
+/// Testable without wasm-bindgen runtime — same logic as discover_astar.
+pub fn discover_astar_from_log(
+    log: &EventLog,
+    activity_key: &str,
+    max_iterations: usize,
+) -> (DirectlyFollowsGraph, usize) {
+
+    let activities = log.get_activities(activity_key);
+    let directly_follows = log.get_directly_follows(activity_key);
+
+    let mut best_dfg = DirectlyFollowsGraph::new();
+    for activity in &activities {
+        best_dfg.nodes.push(DFGNode {
+            id: activity.clone(),
+            label: activity.clone(),
+            frequency: 0,
+        });
+    }
+
+    let mut open_set = vec![(best_dfg.clone(), 0f64)];
+    let mut best_score = 0f64;
+    let mut iterations = 0;
+
+    while !open_set.is_empty() && iterations < max_iterations {
+        open_set
+            .sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
+        let (current_dfg, score) = match open_set.pop() {
+            Some(item) => item,
+            None => break,
+        };
+        let new_candidates: Vec<(DirectlyFollowsGraph, f64)> = directly_follows
+            .iter()
+            .filter(|(from, to, _)| {
+                !current_dfg.edges.iter().any(|e| &e.from == from && &e.to == to)
+            })
+            .filter_map(|(from, to, freq)| {
+                let mut new_dfg = current_dfg.clone();
+                new_dfg.edges.push(DirectlyFollowsRelation {
+                    from: from.clone(),
+                    to: to.clone(),
+                    frequency: *freq,
+                });
+                let fitness = evaluate_dfg_partial_fitness(&new_dfg, log, activity_key);
+                let edge_count = new_dfg.edges.len();
+                (fitness > 0.0).then(|| (new_dfg, fitness - edge_count as f64 / 100.0))
+            })
+            .collect();
+        open_set.extend(new_candidates);
+        if score > best_score {
+            best_score = score;
+            best_dfg = current_dfg;
+        }
+        iterations += 1;
+    }
+    (best_dfg, iterations)
 }
 
 /// Trace Variants - extract unique process paths and their frequencies
@@ -658,42 +640,45 @@ pub fn analyze_activity_cooccurrence(
     })
 }
 
-// Helper: Evaluate DFG fitness
-#[inline(always)]
-fn evaluate_dfg_fitness(dfg: &DirectlyFollowsGraph, log: &EventLog, activity_key: &str) -> f64 {
-    // Build a borrowed edge set — no String allocations for keys or lookups.
+/// Partial edge-coverage fitness: fraction of consecutive event pairs in the log
+/// that are present in the DFG, minus a complexity penalty per extra edge.
+///
+/// Unlike all-or-nothing trace fitness, partial coverage provides a non-zero
+/// gradient from an empty DFG — essential for incremental construction in A*.
+/// Fitness ∈ [0, 1]: 0 = no edges match any pair, 1 = all pairs covered exactly.
+fn evaluate_dfg_partial_fitness(
+    dfg: &DirectlyFollowsGraph,
+    log: &EventLog,
+    activity_key: &str,
+) -> f64 {
     let edge_set: HashSet<(&str, &str)> = dfg
         .edges
         .iter()
         .map(|e| (e.from.as_str(), e.to.as_str()))
         .collect();
-
-    let fitting = log
-        .traces
-        .iter()
-        .filter(|trace| {
-            trace.events.windows(2).all(|pair| {
-                // as_string() returns Option<&str> without any allocation.
-                match (
-                    pair[0]
-                        .attributes
-                        .get(activity_key)
-                        .and_then(|v| v.as_string()),
-                    pair[1]
-                        .attributes
-                        .get(activity_key)
-                        .and_then(|v| v.as_string()),
-                ) {
-                    (Some(a1), Some(a2)) => edge_set.contains(&(a1, a2)),
-                    // Missing activity key — treat as non-fitting pair.
-                    _ => false,
+    let mut total_pairs = 0usize;
+    let mut covered_pairs = 0usize;
+    for trace in &log.traces {
+        for pair in trace.events.windows(2) {
+            let a1 = pair[0].attributes.get(activity_key).and_then(|v| v.as_string());
+            let a2 = pair[1].attributes.get(activity_key).and_then(|v| v.as_string());
+            if let (Some(from), Some(to)) = (a1, a2) {
+                total_pairs += 1;
+                if edge_set.contains(&(from, to)) {
+                    covered_pairs += 1;
                 }
-            })
-        })
-        .count() as f64;
-
-    fitting / log.traces.len().max(1) as f64
+            }
+        }
+    }
+    if total_pairs == 0 {
+        return 1.0;
+    }
+    // 80% coverage + 20% simplicity (fewer edges beyond the minimum is better)
+    let coverage = covered_pairs as f64 / total_pairs as f64;
+    let simplicity = 1.0 / (1.0 + dfg.edges.len() as f64 / 20.0);
+    coverage.mul_add(0.8, simplicity * 0.2)
 }
+
 
 #[wasm_bindgen]
 pub fn fast_discovery_info() -> String {
