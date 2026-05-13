@@ -31,7 +31,7 @@ describe('score_anomaly', () => {
   it('sample — normal trace scores low', async () => {
     const wasm = await loadWasm();
     const log = wasm.load_eventlog_from_xes(SAMPLE);
-    const dfg = wasm.discover_dfg_handle(log, 'concept:name');
+    const dfg = wasm.discover_dfg_simd_handle(log, 'concept:name');
     const t = performance.now();
     const result = JSON.parse(
       wasm.score_anomaly(dfg, JSON.stringify(['Request', 'Review', 'Approve', 'Complete']))
@@ -51,7 +51,7 @@ describe('score_anomaly', () => {
   it('sample — all-missing-edges trace is anomalous', async () => {
     const wasm = await loadWasm();
     const log = wasm.load_eventlog_from_xes(SAMPLE);
-    const dfg = wasm.discover_dfg_handle(log, 'concept:name');
+    const dfg = wasm.discover_dfg_simd_handle(log, 'concept:name');
     const result = JSON.parse(wasm.score_anomaly(dfg, JSON.stringify(['ZZZ_X', 'ZZZ_Y', 'ZZZ_Z'])));
     expect(result.is_anomalous).toBe(true);
     expect(result.score).toBeGreaterThan(0.7);
@@ -59,7 +59,7 @@ describe('score_anomaly', () => {
   it('sample — 1 000 calls latency', async () => {
     const wasm = await loadWasm();
     const log = wasm.load_eventlog_from_xes(SAMPLE);
-    const dfg = wasm.discover_dfg_handle(log, 'concept:name');
+    const dfg = wasm.discover_dfg_simd_handle(log, 'concept:name');
     const trace = JSON.stringify(['Request', 'Review', 'Approve', 'Complete']);
     const t = performance.now();
     for (let i = 0; i < 1000; i++) wasm.score_anomaly(dfg, trace);
@@ -77,7 +77,7 @@ describe('score_anomaly', () => {
     if (!BPI) return;
     const wasm = await loadWasm();
     const log = wasm.load_eventlog_from_xes(BPI);
-    const dfg = wasm.discover_dfg_handle(log, 'concept:name');
+    const dfg = wasm.discover_dfg_simd_handle(log, 'concept:name');
     const prefix = JSON.stringify([
       'Declaration SUBMITTED by EMPLOYEE',
       'Declaration APPROVED by ADMINISTRATION',

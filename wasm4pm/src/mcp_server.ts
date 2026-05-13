@@ -994,7 +994,7 @@ export class Wasm4pmMCPServer {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
           try {
             const actKey = (input.activity_key as string) ?? 'concept:name';
-            const dfgHandle = wasm.discover_dfg_handle(logHandle, actKey);
+            const dfgHandle = wasm.discover_dfg_simd_handle(logHandle, actKey);
             try {
               const trace = input.trace as string[];
               const traceJson = JSON.stringify(trace);

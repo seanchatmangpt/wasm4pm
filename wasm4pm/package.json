@@ -70,6 +70,9 @@
   "engines": {
     "node": ">=14.0.0"
   },
+  "dependencies": {
+    "@wasm4pm/ml": "workspace:*"
+  },
   "devDependencies": {
     "@testing-library/dom": "^9.3.3",
     "@testing-library/jest-dom": "^6.1.5",

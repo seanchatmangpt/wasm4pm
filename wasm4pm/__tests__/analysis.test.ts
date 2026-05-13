@@ -197,13 +197,13 @@ describe('Analysis - Process Speedup', () => {
     const logHandle = wasm.load_eventlog_from_xes(xes);
     expect(logHandle).toBeTruthy();
 
-    const speedup = wasm.analyze_process_speedup(logHandle, 'time:timestamp');
+    const speedup = wasm.analyze_process_speedup(logHandle, 'time:timestamp', 100);
     expect(speedup).toBeTruthy();
   });
 
   it('should fail with invalid EventLog handle', () => {
     expect(() => {
-      wasm.analyze_process_speedup('obj_999999', 'time:timestamp');
+      wasm.analyze_process_speedup('obj_999999', 'time:timestamp', 100);
     }).toThrow();
   });
 });

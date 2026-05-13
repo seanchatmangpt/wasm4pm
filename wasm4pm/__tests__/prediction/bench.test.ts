@@ -423,7 +423,7 @@ describe('predict_hazard_rate', () => {
 describe('score_anomaly', () => {
   it('sample — normal trace [0,1], all-missing-edges trace is anomalous, and 1k latency', () => {
     const log = wasm.load_eventlog_from_xes(SAMPLE);
-    const dfg = wasm.discover_dfg_handle(log, 'concept:name');
+    const dfg = wasm.discover_dfg_simd_handle(log, 'concept:name');
 
     // normal trace
     const t1 = performance.now();
@@ -467,7 +467,7 @@ describe('score_anomaly', () => {
   it('BPI 2020 — known good sequence scores in [0,1]', () => {
     if (!BPI) return;
     const log = wasm.load_eventlog_from_xes(BPI);
-    const dfg = wasm.discover_dfg_handle(log, 'concept:name');
+    const dfg = wasm.discover_dfg_simd_handle(log, 'concept:name');
     const prefix = JSON.stringify([
       'Declaration SUBMITTED by EMPLOYEE',
       'Declaration APPROVED by ADMINISTRATION',

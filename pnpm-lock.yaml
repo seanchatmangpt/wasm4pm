@@ -400,6 +400,10 @@ importers:
         version: 1.6.1(@types/node@20.19.39)(@vitest/browser@1.6.1)
 
   wasm4pm:
+    dependencies:
+      '@wasm4pm/ml':
+        specifier: workspace:*
+        version: link:../packages/ml
     devDependencies:
       '@testing-library/dom':
         specifier: ^9.3.3

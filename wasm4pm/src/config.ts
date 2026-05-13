@@ -630,8 +630,3 @@ export function resolveProfile(profile: ExecutionProfile): PipelineStep[] {
   }
 }
 
-/**
- * Type alias for backward compatibility
- * @deprecated Use Wasm4pmConfig instead
- */
-export type Wasm4pmConfig = Wasm4pmConfig;
