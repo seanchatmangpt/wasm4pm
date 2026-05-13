@@ -1,0 +1,157 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "wasm4pm API",
+    "version": "26.4.5",
+    "description": "High-performance process mining algorithms in WebAssembly",
+    "contact": {
+      "name": "wasm4pm Contributors",
+      "url": "https://github.com/seanchatmangpt/wasm4pm"
+    },
+    "license": {
+      "name": "MIT OR Apache-2.0"
+    }
+  },
+  "servers": [
+    {
+      "url": "https://npm.js.org",
+      "description": "npm Registry"
+    }
+  ],
+  "paths": {
+    "/wasm4pm": {
+      "get": {
+        "summary": "Get wasm4pm package",
+        "operationId": "getWasm4pm",
+        "responses": {
+          "200": {
+            "description": "wasm4pm package metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string",
+                      "example": "wasm4pm"
+                    },
+                    "version": {
+                      "type": "string",
+                      "example": "26.4.5"
+                    },
+                    "description": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "EventLog": {
+        "type": "object",
+        "description": "Process mining event log",
+        "properties": {
+          "traces": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Trace"
+            }
+          },
+          "attributes": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "Trace": {
+        "type": "object",
+        "description": "Single trace (sequence of events)",
+        "properties": {
+          "events": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Event"
+            }
+          },
+          "caseId": {
+            "type": "string"
+          }
+        }
+      },
+      "Event": {
+        "type": "object",
+        "description": "Single event",
+        "properties": {
+          "activity": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "attributes": {
+            "type": "object",
+            "additionalProperties": true
+          }
+        }
+      },
+      "PetriNet": {
+        "type": "object",
+        "description": "Petri net model",
+        "properties": {
+          "places": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "transitions": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "arcs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "source": { "type": "string" },
+                "target": { "type": "string" }
+              }
+            }
+          }
+        }
+      },
+      "DFG": {
+        "type": "object",
+        "description": "Directly-Follows Graph",
+        "properties": {
+          "nodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "edges": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "source": { "type": "string" },
+                "target": { "type": "string" },
+                "frequency": { "type": "integer" }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

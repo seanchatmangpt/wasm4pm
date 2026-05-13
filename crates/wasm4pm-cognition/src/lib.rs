@@ -31,6 +31,7 @@
 #![deny(missing_docs)]
 
 pub mod authority;
+pub mod autoinstinct;
 pub mod autosystems;
 pub mod breeds;
 pub mod evidence;

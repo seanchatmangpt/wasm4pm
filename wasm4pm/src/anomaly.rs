@@ -63,6 +63,30 @@ pub fn score_trace_anomaly(dfg_handle: &str, activities_json: &str) -> Result<Js
     })
 }
 
+#[wasm_bindgen]
+pub fn discover_ml_anomaly(log_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
+    // Generate DFG implicitly if we just have log handle
+    let state = get_or_init_state();
+    
+    // 1. Generate DFG using existing fast discovery
+    let dfg_json = crate::discovery::discover_dfg(log_handle, activity_key)?;
+    
+    // 2. Store it
+    let dfg: crate::models::DirectlyFollowsGraph = serde_json::from_str(&dfg_json.as_string().unwrap_or_default())
+        .map_err(|e| crate::error::js_val(&format!("Failed to parse dfg: {}", e)))?;
+        
+    let dfg_handle = state.store_object(StoredObject::DirectlyFollowsGraph(dfg))
+        .map_err(|_| crate::error::js_val("Failed to store DFG"))?;
+        
+    // 3. Score anomalies
+    let result = score_log_anomalies(log_handle, &dfg_handle, activity_key)?;
+    
+    // 4. Cleanup
+    let _ = state.delete_object(&dfg_handle);
+    
+    Ok(result)
+}
+
 /// Score every trace in an event log against a reference DFG.
 ///
 /// Returns a JSON string:

@@ -4,6 +4,7 @@
 //! the YAWL workflow engine.
 
 use crate::powl_arena::{Operator, PowlArena, PowlNode};
+use wasm_bindgen::prelude::*;
 
 struct Ids {
     counter: u32,
@@ -317,10 +318,11 @@ pub fn to_yawl_xml(arena: &PowlArena, root: u32) -> String {
     lines.join("\n")
 }
 
-pub fn powl_to_yawl_string(powl_string: &str) -> Result<String, String> {
+#[wasm_bindgen]
+pub fn powl_to_yawl_string(powl_string: &str) -> Result<String, JsValue> {
     let mut arena = PowlArena::new();
     let root = crate::powl_parser::parse_powl_model_string(powl_string, &mut arena)
-        .map_err(|e| format!("Parse error: {}", e))?;
+        .map_err(|e| crate::error::js_val(&format!("Parse error: {}", e)))?;
     Ok(to_yawl_xml(&arena, root))
 }
 

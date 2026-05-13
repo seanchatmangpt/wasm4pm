@@ -34,15 +34,15 @@ export const WASM_FUNCTION_NAMES: Record<string, string | undefined> = {
   pnml_import: 'from_pnml_wasm',
   bpmn_import: 'read_bpmn',
   powl_to_process_tree: 'powl_to_process_tree',
-  yawl_export: undefined, // powl_to_yawl_string has no #[wasm_bindgen] export
+  yawl_export: 'powl_to_yawl_string',
   playout: 'play_out_process_tree',
   monte_carlo_simulation: 'monte_carlo_simulation',
-  ml_classify: undefined, // TypeScript-only
-  ml_cluster: undefined, // TypeScript-only
-  ml_forecast: undefined, // TypeScript-only
-  ml_anomaly: undefined, // TypeScript-only
-  ml_regress: undefined, // TypeScript-only
-  ml_pca: undefined, // TypeScript-only
+  ml_classify: 'discover_ml_classify',
+  ml_cluster: 'discover_ml_cluster',
+  ml_forecast: 'discover_ml_forecast',
+  ml_anomaly: 'discover_ml_anomaly',
+  ml_regress: 'discover_ml_regress',
+  ml_pca: 'discover_ml_pca',
   streaming_log: 'discover_dfg', // fallback
 };
 
