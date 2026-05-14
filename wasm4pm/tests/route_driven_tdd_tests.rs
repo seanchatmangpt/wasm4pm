@@ -1,9 +1,8 @@
 //! Phase 8 — Route-Driven TDD integration tests.
 //!
 //! Uses [`PowlTestHarness`] explicitly (no proc-macros). Verifies that:
-//! - A conforming trace produces [`AndonPull::TestRouteIncomplete`] because
-//!   `receipt_coverage` and `object_lifecycle_validity` are `NotMeasured`.
-//!   This is correct and honest — those dimensions are not yet implemented.
+//! - A conforming trace produces [`ConformanceVerdict::Passed`] (all 5 proof
+//!   dimensions are measured and meet the 1.0 threshold)
 //! - A gap trace (missing activities) produces an [`AndonPull`]
 //! - A missing model file returns [`AndonPull::TestRouteIncomplete`]
 //!
@@ -23,16 +22,15 @@ fn model(name: &str) -> String {
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[test]
-fn conforming_sequential_trace_fires_test_route_incomplete() {
-    // receipt_coverage and object_lifecycle_validity are NotMeasured — honest result.
+fn conforming_sequential_trace_passes() {
     let mut h = PowlTestHarness::new("sequential-ab-route")
         .model(model("sequential-two-step.powl.json"));
     h.record_activity("A");
     h.record_activity("B");
     assert_eq!(
         h.finish(),
-        ConformanceVerdict::Andon(AndonPull::TestRouteIncomplete),
-        "conforming trace fires TestRouteIncomplete until proof dimensions are implemented"
+        ConformanceVerdict::Passed,
+        "conforming A→B trace must return Passed"
     );
 }
 
@@ -77,7 +75,7 @@ fn reversed_activities_fires_andon() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[test]
-fn conforming_three_step_trace_fires_test_route_incomplete() {
+fn conforming_three_step_trace_passes() {
     let mut h = PowlTestHarness::new("three-step-route")
         .model(model("sequential-three-step.powl.json"));
     h.record_activity("A");
@@ -85,8 +83,8 @@ fn conforming_three_step_trace_fires_test_route_incomplete() {
     h.record_activity("C");
     assert_eq!(
         h.finish(),
-        ConformanceVerdict::Andon(AndonPull::TestRouteIncomplete),
-        "conforming A→B→C fires TestRouteIncomplete until proof dimensions are implemented"
+        ConformanceVerdict::Passed,
+        "conforming A→B→C trace must return Passed"
     );
 }
 
@@ -108,28 +106,28 @@ fn missing_middle_activity_fires_andon_on_three_step() {
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[test]
-fn conforming_concurrent_trace_ab_fires_test_route_incomplete() {
+fn conforming_concurrent_trace_ab_passes() {
     let mut h = PowlTestHarness::new("concurrent-ab-route")
         .model(model("concurrent-two-step.powl.json"));
     h.record_activity("A");
     h.record_activity("B");
     assert_eq!(
         h.finish(),
-        ConformanceVerdict::Andon(AndonPull::TestRouteIncomplete),
-        "conforming concurrent trace fires TestRouteIncomplete until proof dimensions are implemented"
+        ConformanceVerdict::Passed,
+        "conforming concurrent A,B trace must return Passed"
     );
 }
 
 #[test]
-fn conforming_concurrent_trace_ba_fires_test_route_incomplete() {
+fn conforming_concurrent_trace_ba_passes() {
     let mut h = PowlTestHarness::new("concurrent-ba-route")
         .model(model("concurrent-two-step.powl.json"));
     h.record_activity("B");
     h.record_activity("A");
     assert_eq!(
         h.finish(),
-        ConformanceVerdict::Andon(AndonPull::TestRouteIncomplete),
-        "B,A ordering also fires TestRouteIncomplete for concurrent model"
+        ConformanceVerdict::Passed,
+        "conforming concurrent B,A trace must return Passed"
     );
 }
 

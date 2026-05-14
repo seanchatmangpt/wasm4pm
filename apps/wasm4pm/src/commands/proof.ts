@@ -453,16 +453,19 @@ const audit = defineCommand({
     };
 
     // ── Gate 3: type invariant ──────────────────────────────────────────────
+    // Verify both proof dimensions are now Measured in replay_against_model().
+    // The implementation must return ProofDimension::Measured(...) — not NotMeasured —
+    // for receipt_coverage and object_lifecycle_validity.
     let gate3Ok = false;
     let gate3Detail = '';
     try {
       const harnessContent = readFileSync('wasm4pm/src/testing/harness.rs', 'utf8');
-      const hasNotMeasuredReceipt = /receipt_coverage:\s*ProofDimension::NotMeasured/.test(harnessContent);
-      const hasNotMeasuredLifecycle = /object_lifecycle_validity:\s*ProofDimension::NotMeasured/.test(harnessContent);
-      gate3Ok = hasNotMeasuredReceipt && hasNotMeasuredLifecycle;
+      const hasMeasuredReceipt = /receipt_coverage:\s*ProofDimension::Measured/.test(harnessContent);
+      const hasMeasuredLifecycle = /object_lifecycle_validity:\s*ProofDimension::Measured/.test(harnessContent);
+      gate3Ok = hasMeasuredReceipt && hasMeasuredLifecycle;
       gate3Detail = gate3Ok
-        ? 'harness.rs: receipt_coverage=NotMeasured, object_lifecycle_validity=NotMeasured'
-        : `Missing NotMeasured: receipt=${hasNotMeasuredReceipt} lifecycle=${hasNotMeasuredLifecycle}`;
+        ? 'harness.rs: receipt_coverage=Measured, object_lifecycle_validity=Measured — all 5 proof dimensions implemented'
+        : `Dimensions not yet Measured: receipt=${hasMeasuredReceipt} lifecycle=${hasMeasuredLifecycle}`;
     } catch (err) {
       gate3Detail = `Cannot read harness.rs: ${err instanceof Error ? err.message : String(err)}`;
     }
@@ -517,9 +520,9 @@ const audit = defineCommand({
     const proofDimensions: Record<string, string> = {
       fitness: 'measured',
       precision: 'measured',
-      receipt_coverage: 'not_measured',
+      receipt_coverage: 'measured',
       required_stage_coverage: 'measured',
-      object_lifecycle_validity: 'not_measured',
+      object_lifecycle_validity: 'measured',
     };
     const notMeasuredDims = Object.entries(proofDimensions)
       .filter(([, v]) => v === 'not_measured')

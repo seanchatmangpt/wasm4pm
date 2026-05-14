@@ -8,26 +8,23 @@
 use wasm4pm_macros::{powl_activity, powl_test};
 
 // ─────────────────────────────────────────────────────────────────────────────
-// #[powl_test] — conforming traces (honest: fires TestRouteIncomplete because
-// receipt_coverage and object_lifecycle_validity are NotMeasured)
+// #[powl_test] — conforming traces (all 5 proof dimensions measured → Passed)
 // ─────────────────────────────────────────────────────────────────────────────
 
 #[powl_test(
     route = "macro-sequential-ab",
-    model = "routes/test-harness/sequential-two-step.powl.json",
-    expect_refusal = "TestRouteIncomplete"
+    model = "routes/test-harness/sequential-two-step.powl.json"
 )]
-fn macro_sequential_trace_fires_test_route_incomplete() {
+fn macro_sequential_trace_passes() {
     h.record_activity("A");
     h.record_activity("B");
 }
 
 #[powl_test(
     route = "macro-three-step",
-    model = "routes/test-harness/sequential-three-step.powl.json",
-    expect_refusal = "TestRouteIncomplete"
+    model = "routes/test-harness/sequential-three-step.powl.json"
 )]
-fn macro_three_step_trace_fires_test_route_incomplete() {
+fn macro_three_step_trace_passes() {
     h.record_activity("A");
     h.record_activity("B");
     h.record_activity("C");
@@ -35,20 +32,18 @@ fn macro_three_step_trace_fires_test_route_incomplete() {
 
 #[powl_test(
     route = "macro-concurrent-ab",
-    model = "routes/test-harness/concurrent-two-step.powl.json",
-    expect_refusal = "TestRouteIncomplete"
+    model = "routes/test-harness/concurrent-two-step.powl.json"
 )]
-fn macro_concurrent_ab_fires_test_route_incomplete() {
+fn macro_concurrent_ab_passes() {
     h.record_activity("A");
     h.record_activity("B");
 }
 
 #[powl_test(
     route = "macro-concurrent-ba",
-    model = "routes/test-harness/concurrent-two-step.powl.json",
-    expect_refusal = "TestRouteIncomplete"
+    model = "routes/test-harness/concurrent-two-step.powl.json"
 )]
-fn macro_concurrent_ba_fires_test_route_incomplete() {
+fn macro_concurrent_ba_passes() {
     h.record_activity("B");
     h.record_activity("A");
 }

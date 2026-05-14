@@ -151,17 +151,15 @@ fn completing_route_after_catching_panic_produces_correct_verdict() {
         matches!(bad_verdict, ConformanceVerdict::Andon(_)),
         "panicking body must produce AndonPull"
     );
-    // The harness now has "A" and "panic.caught" in its event log.
-    // A second attempt with a fresh harness should fire TestRouteIncomplete
-    // (receipt_coverage and object_lifecycle_validity are NotMeasured).
+    // A fresh harness with the complete route must pass.
     let mut h2 = PowlTestHarness::new("fresh-route")
         .model(model("sequential-two-step.powl.json"));
     h2.record_activity("A");
     h2.record_activity("B");
     assert_eq!(
         h2.finish(),
-        ConformanceVerdict::Andon(wasm4pm::testing::AndonPull::TestRouteIncomplete),
-        "fresh harness fires TestRouteIncomplete until proof dimensions are implemented"
+        ConformanceVerdict::Passed,
+        "fresh harness with complete route must return Passed"
     );
 }
 

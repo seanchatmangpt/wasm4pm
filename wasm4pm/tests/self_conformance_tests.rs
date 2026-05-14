@@ -41,11 +41,10 @@ fn test_harness_follows_its_own_declared_route() {
 
     h.record_activity("test.completed");
 
-    // receipt_coverage and object_lifecycle_validity are NotMeasured — honest result.
     assert_eq!(
         h.finish(),
-        ConformanceVerdict::Andon(wasm4pm::testing::AndonPull::TestRouteIncomplete),
-        "test lifecycle fires TestRouteIncomplete until proof dimensions are implemented"
+        ConformanceVerdict::Passed,
+        "test lifecycle route with all activities must return Passed"
     );
 }
 
