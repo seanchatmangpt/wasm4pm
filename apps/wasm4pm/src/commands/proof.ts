@@ -434,8 +434,13 @@ const audit = defineCommand({
     const auditTodos = tryExec(
       'grep -rn "todo!()\\|unimplemented!()" wasm4pm/src/testing/ --include="*.rs"',
     );
-    const fabricationHits = auditHarness.output.trim().split('\n').filter(Boolean);
-    const todoHits = auditTodos.output.trim().split('\n').filter(Boolean);
+    // grep exits 1 when no matches found — that is the PASS case for a fabrication audit
+    const fabricationHits = auditHarness.ok
+      ? auditHarness.output.trim().split('\n').filter(Boolean)
+      : [];
+    const todoHits = auditTodos.ok
+      ? auditTodos.output.trim().split('\n').filter(Boolean)
+      : [];
     const gate2Ok = fabricationHits.length === 0;
     gates['2_source_audit'] = {
       ok: gate2Ok,
