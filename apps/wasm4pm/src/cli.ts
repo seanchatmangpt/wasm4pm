@@ -24,6 +24,7 @@ import { agent } from './commands/agent.js';
 import { membrane } from './commands/membrane.js';
 import { config } from './commands/config.js';
 import { verify } from './commands/verify.js';
+import { proof } from './commands/proof.js';
 import { benchmark } from './commands/benchmark.js';
 import { cognition } from './commands/cognition.js';
 import { completions } from './commands/completions.js';
@@ -165,6 +166,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     config,
     benchmark,
     verify,
+    proof,
     cognition,
     completions,
   },
