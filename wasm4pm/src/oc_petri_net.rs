@@ -44,7 +44,7 @@ pub fn discover_oc_petri_net(ocel_handle: &str, algorithm: &str) -> Result<JsVal
     // For each object type, flatten and discover Petri Net
     for obj_type in &ocel.object_types {
         // Flatten OCEL to EventLog for this object type
-        let flattened_log = flatten_ocel_to_eventlog_for_type(&ocel, obj_type)?;
+        let flattened_log = flatten_ocel_to_eventlog_for_type(&ocel, &obj_type.name)?;
 
         // Store flattened log temporarily
         let temp_handle = get_or_init_state()
@@ -80,7 +80,7 @@ pub fn discover_oc_petri_net(ocel_handle: &str, algorithm: &str) -> Result<JsVal
                 if let Some(places_arr) = places.as_array_mut() {
                     for place in places_arr {
                         if let Some(place_obj) = place.as_object_mut() {
-                            place_obj.insert("object_type".to_string(), json!(obj_type));
+                            place_obj.insert("object_type".to_string(), json!(obj_type.name));
                         }
                     }
                 }
@@ -88,7 +88,7 @@ pub fn discover_oc_petri_net(ocel_handle: &str, algorithm: &str) -> Result<JsVal
         }
 
         // Store in result under object type
-        result.insert(obj_type.clone(), annotated_net);
+        result.insert(obj_type.name.clone(), annotated_net);
     }
 
     // Return as JSON

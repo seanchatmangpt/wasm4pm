@@ -526,13 +526,72 @@ pub struct OCELObject {
     pub embedded_relations: Vec<OCELObjectRelRef>,
 }
 
+/// OCEL Type definition (Event or Object type)
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct OCELType {
+    pub name: String,
+    #[serde(default)]
+    pub attributes: Vec<OCELTypeAttribute>,
+}
+
+impl OCELType {
+    pub fn new(name: &str) -> Self {
+        OCELType {
+            name: name.to_string(),
+            attributes: Vec::new(),
+        }
+    }
+
+    pub fn as_str(&self) -> &str {
+        &self.name
+    }
+}
+
+impl std::fmt::Display for OCELType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.name)
+    }
+}
+
+impl AsRef<str> for OCELType {
+    fn as_ref(&self) -> &str {
+        &self.name
+    }
+}
+
+impl PartialEq<String> for OCELType {
+    fn eq(&self, other: &String) -> bool {
+        &self.name == other
+    }
+}
+
+impl PartialEq<OCELType> for String {
+    fn eq(&self, other: &OCELType) -> bool {
+        self == &other.name
+    }
+}
+
+impl PartialEq<&str> for OCELType {
+    fn eq(&self, other: &&str) -> bool {
+        &self.name == *other
+    }
+}
+
+/// OCEL Attribute definition within a Type
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct OCELTypeAttribute {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub value_type: String,
+}
+
 /// Object-Centric Event Log
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OCEL {
     #[serde(rename = "eventTypes", alias = "event_types", default)]
-    pub event_types: Vec<String>,
+    pub event_types: Vec<OCELType>,
     #[serde(rename = "objectTypes", alias = "object_types", default)]
-    pub object_types: Vec<String>,
+    pub object_types: Vec<OCELType>,
     #[serde(default)]
     pub events: Vec<OCELEvent>,
     #[serde(default)]

@@ -56,7 +56,7 @@ pub fn get_ocel_type_statistics(ocel_handle: &str) -> Result<JsValue, JsValue> {
                 let objects_of_type: Vec<&OCELObject> = ocel
                     .objects
                     .iter()
-                    .filter(|o| &o.object_type == obj_type)
+                    .filter(|o| o.object_type == obj_type.name)
                     .collect();
 
                 let count = objects_of_type.len();
@@ -79,7 +79,7 @@ pub fn get_ocel_type_statistics(ocel_handle: &str) -> Result<JsValue, JsValue> {
                 };
 
                 object_type_stats.insert(
-                    obj_type.clone(),
+                    obj_type.name.clone(),
                     json!({
                         "count": count,
                         "avg_events": avg_events

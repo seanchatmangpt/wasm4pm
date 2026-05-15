@@ -113,7 +113,7 @@ pub fn validate_ocel(handle: &str) -> Result<JsValue, JsValue> {
 
             // Check event type consistency
             let declared_event_types: HashSet<String> =
-                ocel.event_types.clone().into_iter().collect();
+                ocel.event_types.iter().map(|t| t.name.clone()).collect();
             for event in &ocel.events {
                 if !declared_event_types.is_empty()
                     && !declared_event_types.contains(&event.event_type)
@@ -127,7 +127,7 @@ pub fn validate_ocel(handle: &str) -> Result<JsValue, JsValue> {
 
             // Check object type consistency
             let declared_object_types: HashSet<String> =
-                ocel.object_types.clone().into_iter().collect();
+                ocel.object_types.iter().map(|t| t.name.clone()).collect();
             for object in &ocel.objects {
                 if !declared_object_types.is_empty()
                     && !declared_object_types.contains(&object.object_type)
