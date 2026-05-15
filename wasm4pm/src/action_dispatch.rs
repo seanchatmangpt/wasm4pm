@@ -339,9 +339,8 @@ fn action_retry(context: &ExecutionContext) -> DispatchResult {
     // Exponential backoff: base * 2^attempt
     let exponential_delay = context.base_backoff_ms * (1 << context.retry_count);
 
-    // Add jitter: +/- 50% of base backoff (simplified for WASM)
-    // In a real implementation, we'd use a proper RNG
-    let jitter = context.base_backoff_ms / 2;
+    // Add jitter: up to 100% of base backoff using fastrand for robust retry distribution
+    let jitter = fastrand::u32(0..=context.base_backoff_ms);
 
     let total_delay_ms = exponential_delay + jitter;
 
@@ -375,11 +374,12 @@ fn action_fallback(context: &ExecutionContext) -> DispatchResult {
 /// accumulated SPC history and resets the circuit breaker so the system
 /// can begin a fresh autonomic cycle.
 fn action_restart(_context: &ExecutionContext) -> DispatchResult {
-    // Reset SPC history ring buffer
-    crate::SPC_HISTORY.with(|h| h.borrow_mut().clear());
-
-    // Reset circuit breaker to closed state
-    crate::CIRCUIT_BREAKER.with(|cb| *cb.borrow_mut() = crate::self_healing::CircuitBreaker::new());
+    // Reset SPC history ring buffer + circuit breaker (cloud-gated thread-locals)
+    #[cfg(feature = "cloud")]
+    {
+        crate::SPC_HISTORY.with(|h| h.borrow_mut().clear());
+        crate::CIRCUIT_BREAKER.with(|cb| *cb.borrow_mut() = crate::self_healing::CircuitBreaker::new());
+    }
 
     Ok(DispatchOutcome::RestartInitiated {
         state_cleared: true,
