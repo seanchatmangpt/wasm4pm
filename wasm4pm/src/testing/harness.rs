@@ -108,7 +108,7 @@ impl std::fmt::Display for EvidenceError {
 
 // ── Private registry record ───────────────────────────────────────────────────
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct ObjectRecord {
     hash: String,
     created_at: usize,
@@ -146,6 +146,7 @@ impl CapturedOutput {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct TestEvent {
     pub activity: String,
+    pub object_ids: Vec<String>,
 }
 
 /// Explicit stateful route-driven test harness.
@@ -153,7 +154,7 @@ pub struct TestEvent {
 /// Records test activities as OCEL evidence, then verifies the observed
 /// route against a declared POWL v2 model. Conformance must be exact
 /// (1.0) for the test to pass in admitted mode.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct PowlTestHarness {
     route_id: String,
     pub(crate) expected: ExpectedConformance,
@@ -266,7 +267,7 @@ impl PowlTestHarness {
         // Name-only receipt — NOT counted as bound evidence.
         let receipt_input = format!("name-only:{}:{}:{}", self.route_id, activity, self.events.len());
         let receipt = blake3::hash(receipt_input.as_bytes()).to_hex().to_string();
-        self.events.push(TestEvent { activity });
+        self.events.push(TestEvent { activity, object_ids: vec![] });
         self.receipts.push(receipt);
         // bound_evidence_count is NOT incremented — record_activity is not evidence.
     }
@@ -345,7 +346,15 @@ impl PowlTestHarness {
         );
         let receipt = blake3::hash(receipt_data.as_bytes()).to_hex().to_string();
 
-        self.events.push(TestEvent { activity: evidence.activity });
+        let mut object_ids = Vec::new();
+        for input in &evidence.inputs {
+            object_ids.push(input.id.clone());
+        }
+        for output in &evidence.outputs {
+            object_ids.push(output.id.clone());
+        }
+
+        self.events.push(TestEvent { activity: evidence.activity, object_ids });
         self.receipts.push(receipt);
         self.bound_evidence_count += 1;
 
@@ -367,8 +376,8 @@ impl PowlTestHarness {
     /// let mut h = PowlTestHarness::new("route");
     /// h.record_activity("a");
     /// h.record_activity("b");
-    /// assert_eq!(h.events()[0], TestEvent { activity: "a".into() });
-    /// assert_eq!(h.events()[1], TestEvent { activity: "b".into() });
+    /// assert_eq!(h.events()[0], TestEvent { activity: "a".into(), object_ids: vec![] });
+    /// assert_eq!(h.events()[1], TestEvent { activity: "b".into(), object_ids: vec![] });
     /// ```
     pub fn events(&self) -> &[TestEvent] {
         &self.events
@@ -407,7 +416,7 @@ impl PowlTestHarness {
         match result {
             Ok(()) => self.finish(),
             Err(_) => {
-                self.events.push(TestEvent { activity: "panic.caught".into() });
+                self.events.push(TestEvent { activity: "panic.caught".into(), object_ids: vec![] });
                 ConformanceVerdict::andon(AndonPull::UnhandledPanic)
             }
         }
