@@ -2454,6 +2454,7 @@ dependencies = [
  "uuid",
  "wasm-bindgen",
  "wasm-bindgen-futures",
+ "wasm4pm-cognition",
  "wasm4pm-types",
 ]
 

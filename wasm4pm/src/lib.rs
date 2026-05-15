@@ -595,6 +595,9 @@ pub mod gpu;
 #[cfg(feature = "cloud")]
 pub mod autoprocess;
 
+#[cfg(feature = "cognition")]
+pub use wasm4pm_cognition as cognition;
+
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]
 use state::*;
