@@ -7,13 +7,15 @@ import { exitWithFlush } from '../otel/exit.js';
 
 // ── shared types ──────────────────────────────────────────────────────────────
 
+type TraceLanguage = 'rust' | 'typescript' | 'python' | 'java' | 'js' | 'unknown';
+
 interface TraceFrame {
   index: number;
   function: string;
   file?: string;
   line?: number;
   col?: number;
-  language: 'rust' | 'typescript' | 'unknown';
+  language: TraceLanguage;
 }
 
 interface TraceGraphEvent {
@@ -57,6 +59,9 @@ interface OcelLog {
 interface ObjectTypeDeclaration {
   created_by: string[];       // activities that create objects of this type
   terminated_by?: string[];   // activities that terminate objects of this type
+  schema?: string;            // path to JSON Schema file (relative to projectDir)
+  min_count?: number;         // minimum distinct instances required
+  max_count?: number;         // maximum distinct instances allowed
 }
 
 interface Powl2Model {
@@ -88,10 +93,23 @@ interface ConformanceResult {
 
 // ── parsers ───────────────────────────────────────────────────────────────────
 
-function frameToActivity(fn: string, lang: 'rust' | 'typescript' | 'unknown'): string {
+function frameToActivity(fn: string, lang: TraceLanguage): string {
   if (lang === 'rust') {
     // myapp::module::fn_name → myapp.module.fn_name
     return fn.replace(/::/g, '.').replace(/[^a-zA-Z0-9._<>]/g, '_');
+  }
+  if (lang === 'java') {
+    // pkg.Class.method → keep dot form
+    return fn.replace(/[^a-zA-Z0-9._<>$]/g, '_');
+  }
+  if (lang === 'python') {
+    // module.submodule.fn already canonical; <module> sentinel preserved
+    return fn.replace(/[^a-zA-Z0-9._<>]/g, '_');
+  }
+  if (lang === 'js') {
+    // anonymous lambdas → anonymous; keep dot form for member access
+    if (!fn || fn === '<anonymous>') return 'anonymous';
+    return fn.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._<>]/g, '_');
   }
   // TypeScript: ClassName.method or standalone fn
   return fn.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._<>]/g, '_');
@@ -154,6 +172,101 @@ function parseTypeScriptTrace(text: string): TraceFrame[] {
         line: parseInt(m2[2] ?? '0', 10),
         col: parseInt(m2[3] ?? '0', 10),
         language: 'typescript',
+      });
+    }
+  }
+  return frames;
+}
+
+function parsePythonTrace(text: string): TraceFrame[] {
+  // CPython format:
+  //   File "/path/to/file.py", line 42, in function_name
+  //     some_source_line
+  // Exception summary line: TypeError: ...
+  const frames: TraceFrame[] = [];
+  const lines = text.split('\n');
+  let index = 0;
+  for (const line of lines) {
+    const m = line.match(/^\s*File "([^"]+)", line (\d+), in (\S+)/);
+    if (m) {
+      frames.push({
+        index: index++,
+        function: m[3] ?? 'unknown',
+        file: m[1],
+        line: parseInt(m[2] ?? '0', 10),
+        language: 'python',
+      });
+    }
+  }
+  return frames;
+}
+
+function parseJavaTrace(text: string): TraceFrame[] {
+  // JVM format:
+  //   at package.Class.method(File.java:42)
+  //   at package.Class.method(Native Method)
+  // Causes follow "Caused by:" lines — we preserve those frames with rising index.
+  const frames: TraceFrame[] = [];
+  const lines = text.split('\n');
+  let index = 0;
+  for (const line of lines) {
+    const m = line.match(/^\s*at\s+([\w$.<>]+)\(([^):]+)(?::(\d+))?\)/);
+    if (m) {
+      const lineNum = m[3] ? parseInt(m[3], 10) : undefined;
+      frames.push({
+        index: index++,
+        function: m[1] ?? 'unknown',
+        file: m[2],
+        ...(lineNum !== undefined && { line: lineNum }),
+        language: 'java',
+      });
+    }
+  }
+  return frames;
+}
+
+function parseJsTrace(text: string): TraceFrame[] {
+  // Three flavors:
+  //   V8:           "    at func (file.js:1:2)"  or  "    at file.js:1:2"
+  //   SpiderMonkey: "func@file.js:1:2"
+  //   JSC:          "func@file.js:1:2"  or  "global code@file.js:1:2"
+  const frames: TraceFrame[] = [];
+  const lines = text.split('\n');
+  let index = 0;
+  for (const line of lines) {
+    // V8 with function name
+    const v8WithFn = line.match(/^\s*at\s+(.+?)\s+\((.+):(\d+):(\d+)\)$/);
+    // V8 without function name
+    const v8Bare = line.match(/^\s*at\s+(.+):(\d+):(\d+)$/);
+    // SpiderMonkey / JSC: func@file:line:col
+    const smJsc = line.match(/^(.*?)@(.+):(\d+)(?::(\d+))?$/);
+    if (v8WithFn) {
+      frames.push({
+        index: index++,
+        function: v8WithFn[1]?.trim() ?? 'anonymous',
+        file: v8WithFn[2],
+        line: parseInt(v8WithFn[3] ?? '0', 10),
+        col: parseInt(v8WithFn[4] ?? '0', 10),
+        language: 'js',
+      });
+    } else if (v8Bare) {
+      frames.push({
+        index: index++,
+        function: 'anonymous',
+        file: v8Bare[1],
+        line: parseInt(v8Bare[2] ?? '0', 10),
+        col: parseInt(v8Bare[3] ?? '0', 10),
+        language: 'js',
+      });
+    } else if (smJsc && !line.trim().startsWith('at ')) {
+      // Only match SpiderMonkey/JSC if not a V8 line we already missed
+      frames.push({
+        index: index++,
+        function: smJsc[1]?.trim() || 'anonymous',
+        file: smJsc[2],
+        line: parseInt(smJsc[3] ?? '0', 10),
+        ...(smJsc[4] && { col: parseInt(smJsc[4], 10) }),
+        language: 'js',
       });
     }
   }
@@ -559,7 +672,7 @@ export function checkPowl2Conformance(ocel: OcelLog, model: Powl2Model): Conform
 const ingest = defineCommand({
   meta: { name: 'ingest', description: 'Parse a stack trace into TraceGraph JSON-LD' },
   args: {
-    from: { type: 'string', default: 'typescript', description: 'Language: rust | typescript' },
+    from: { type: 'string', default: 'typescript', description: 'Language: rust | typescript | python | java | js' },
     input: { type: 'string', alias: 'i', description: 'Input file (default: stdin)' },
     out: { type: 'string', alias: 'o', description: 'Output file (default: stdout)' },
     runId: { type: 'string', description: 'Run ID for trace graph identity' },
@@ -591,7 +704,24 @@ const ingest = defineCommand({
       text = Buffer.concat(chunks).toString('utf8');
     }
 
-    const frames = lang === 'rust' ? parseRustTrace(text) : parseTypeScriptTrace(text);
+    let frames: TraceFrame[];
+    switch (lang) {
+      case 'rust':       frames = parseRustTrace(text); break;
+      case 'typescript': frames = parseTypeScriptTrace(text); break;
+      case 'python':     frames = parsePythonTrace(text); break;
+      case 'java':       frames = parseJavaTrace(text); break;
+      case 'js':         frames = parseJsTrace(text); break;
+      default: {
+        const r = makeErrorResult(
+          'trace ingest',
+          `Unknown language '${lang}'. Accepted: rust, typescript, python, java, js`,
+          EXIT_CODES.config_error,
+          'INVALID_LANGUAGE',
+        );
+        emitResult(r, { format, verbose, quiet });
+        return exitWithFlush(EXIT_CODES.config_error);
+      }
+    }
     const graph = framesToTraceGraph(frames, runId, lang, inputPath ?? 'stdin');
     const graphJson = JSON.stringify(graph, null, 2);
 
