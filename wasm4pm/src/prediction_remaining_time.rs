@@ -391,9 +391,13 @@ pub fn predict_case_duration(model_handle: &str, prefix_json: &str) -> Result<Js
         }
 
         // Strategy 4: global fallback
+        // Confidence is derived from the coefficient of variation (cv = std / mean).
+        // High spread → low confidence; low spread → higher confidence. Capped in [0, 1].
+        let cv = model.global.std_ms / (model.global.mean_ms + 1.0);
+        let fallback_confidence = (1.0 - cv.min(1.0)).max(0.0);
         let result = serde_json::json!({
             "remaining_ms": model.global.mean_ms,
-            "confidence": 0.3,
+            "confidence": fallback_confidence,
             "method": "global_fallback"
         });
         Ok(crate::error::js_val(&result.to_string()))

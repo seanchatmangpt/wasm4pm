@@ -22,33 +22,41 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 // ---------------------------------------------------------------------------
-// Monotonic clock stub
+// Monotonic clock
 // ---------------------------------------------------------------------------
 
-/// Global monotonic step counter. In a real WASM runtime this would be
-/// `performance.now()` or a JS `Date.now()` bridge. For pure-Rust / test
-/// usage we expose a simple atomic counter that the caller increments.
-static STEP_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+/// Offset for manual clock advancement (testing).
+static TIME_OFFSET_MS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
-/// Return the current monotonic "instant" (step count).
+/// Return the current monotonic "instant" in milliseconds.
 #[allow(dead_code)]
 pub fn now_ms() -> u64 {
-    // In browser WASM this could be `js_sys::Date::now()` — keeping it
-    // pure-Rust so `cargo test --lib` still works without wasm-bindgen.
-    STEP_COUNTER.load(std::sync::atomic::Ordering::SeqCst)
+    let base = {
+        #[cfg(target_arch = "wasm32")]
+        {
+            js_sys::Date::now() as u64
+        }
+        #[cfg(not(target_arch = "wasm32"))]
+        {
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap_or_default()
+                .as_millis() as u64
+        }
+    };
+    base + TIME_OFFSET_MS.load(std::sync::atomic::Ordering::SeqCst)
 }
 
-/// Advance the monotonic clock by `delta_ms` milliseconds.
-/// This is the WASM-safe replacement for `tokio::time::sleep`.
+/// Advance the monotonic clock by `delta_ms` milliseconds (for deterministic testing).
 #[allow(dead_code)]
 pub fn advance_clock(delta_ms: u64) {
-    STEP_COUNTER.fetch_add(delta_ms, std::sync::atomic::Ordering::SeqCst);
+    TIME_OFFSET_MS.fetch_add(delta_ms, std::sync::atomic::Ordering::SeqCst);
 }
 
 /// Reset the monotonic clock to zero (useful in tests).
 #[allow(dead_code)]
 pub fn reset_clock() {
-    STEP_COUNTER.store(0, std::sync::atomic::Ordering::SeqCst);
+    TIME_OFFSET_MS.store(0, std::sync::atomic::Ordering::SeqCst);
 }
 
 // ---------------------------------------------------------------------------
@@ -91,15 +99,20 @@ impl std::error::Error for SelfHealingError {}
 // ---------------------------------------------------------------------------
 
 /// Circuit breaker state.
+///
+/// Variants are ordered to match the numeric mapping used by `as_rl_circuit_state`:
+/// Closed=0, HalfOpen=1, Open=2.  Adding `#[repr(u8)]` lets callers cast directly
+/// (`self.state as u8`) instead of dispatching a match.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
 #[allow(dead_code)]
 pub enum CircuitState {
     /// Normal operation — requests flow through.
-    Closed,
-    /// Failing — reject requests.
-    Open,
+    Closed   = 0,
     /// Testing if recovery is possible.
-    HalfOpen,
+    HalfOpen = 1,
+    /// Failing — reject requests.
+    Open     = 2,
 }
 
 /// Circuit breaker configuration.
@@ -262,33 +275,20 @@ impl CircuitBreaker {
     /// Check if a call should be allowed.
     #[allow(dead_code)]
     pub fn allow_request(&mut self) -> bool {
-        let current_ms = now_ms();
+        let elapsed = now_ms().saturating_sub(self.last_state_change_ms);
+        // Per-state timeout thresholds; Closed never times out.
+        let timeouts: [u64; 3] = [u64::MAX, self.config.half_open_timeout_ms, self.config.open_timeout_ms];
+        let timed_out = elapsed >= timeouts[self.state as usize];
 
-        match self.state {
-            CircuitState::Closed => true,
-            CircuitState::Open => {
-                // Check if timeout has elapsed.
-                if current_ms.saturating_sub(self.last_state_change_ms)
-                    >= self.config.open_timeout_ms
-                {
-                    self.transition_to(CircuitState::HalfOpen);
-                    true
-                } else {
-                    false
-                }
-            }
-            CircuitState::HalfOpen => {
-                // Check if half-open timeout has elapsed.
-                if current_ms.saturating_sub(self.last_state_change_ms)
-                    >= self.config.half_open_timeout_ms
-                {
-                    self.transition_to(CircuitState::Open);
-                    false
-                } else {
-                    true
-                }
-            }
+        let (next_state, allow) = match (self.state, timed_out) {
+            (CircuitState::Open, true)     => (CircuitState::HalfOpen, true),
+            (CircuitState::HalfOpen, true) => (CircuitState::Open, false),
+            (s, _)                         => (s, s != CircuitState::Open),
+        };
+        if next_state != self.state {
+            self.transition_to(next_state);
         }
+        allow
     }
 
     /// Get current circuit state.
@@ -355,22 +355,16 @@ impl CircuitBreaker {
 
     /// Convert circuit state to u8 (0=Closed, 1=HalfOpen, 2=Open)
     #[allow(dead_code)]
+    #[inline(always)]
     pub fn as_rl_circuit_state(&self) -> u8 {
-        match self.state {
-            CircuitState::Closed => 0,
-            CircuitState::HalfOpen => 1,
-            CircuitState::Open => 2,
-        }
+        self.state as u8
     }
 
     /// Check if circuit is allowing requests (read-only)
     #[allow(dead_code)]
+    #[inline(always)]
     pub fn is_allowing(&self) -> bool {
-        match self.state {
-            CircuitState::Closed => true,
-            CircuitState::HalfOpen => true,
-            CircuitState::Open => false,
-        }
+        self.state as u8 != CircuitState::Open as u8
     }
 }
 
@@ -784,16 +778,17 @@ impl SelfHealingManager {
         }
     }
 
-    /// Run health checks for all registered services.
+    /// Returns simulated health state by reading cached status.
     ///
-    /// Returns a map of service name to current health status.
+    /// SIMULATED: Does NOT perform live service probes. No HTTP GET, no TCP connect,
+    /// no gRPC health check. For use in test scaffolding and autonomic loop simulation only.
     #[allow(dead_code)]
-    pub fn run_health_checks(&mut self) -> HashMap<String, HealthStatus> {
+    pub fn simulated_health_state_check(&mut self) -> HashMap<String, HealthStatus> {
         let mut results = HashMap::new();
 
         for (name, check) in &mut self.health_checks {
             if check.is_due() {
-                // Simulate health check (in real implementation, would ping service).
+                // SIMULATED: reads cached HealthCheck.status() — no live probe.
                 let is_healthy = check.status() != HealthStatus::Unhealthy;
                 check.record_result(is_healthy);
             }

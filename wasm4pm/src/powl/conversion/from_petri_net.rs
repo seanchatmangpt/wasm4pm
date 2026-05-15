@@ -1025,7 +1025,7 @@ fn translate_partial_order(
         if let (Some(&c1), Some(&c2)) = (group_to_child.get(&g1), group_to_child.get(&g2)) {
             let pos1 = children_clone.iter().position(|&c| c == c1).unwrap();
             let pos2 = children_clone.iter().position(|&c| c == c2).unwrap();
-            arena.add_order_edge(spo_idx, pos1, pos2);
+            arena.add_order_edge(spo_idx, pos1, pos2).ok();
         }
     }
 

@@ -10,11 +10,14 @@
  * All operations are non-blocking and async
  */
 export class OtelExporter {
+    getDropCount() { return this.droppedCount; }
+    resetDropCount() { this.droppedCount = 0; }
     constructor(config) {
         this.queue = [];
         this.flushPromise = Promise.resolve();
         this.isShuttingDown = false;
         this.flushErrors = [];
+        this.droppedCount = 0;
         this.config = config;
         if (config.enabled) {
             this.startAutoFlush();
@@ -60,6 +63,7 @@ export class OtelExporter {
         // Drop oldest if queue is full (PRD §18.5: never block)
         if (this.queue.length >= maxSize) {
             this.queue.shift();
+            this.droppedCount++;
             console.warn(`[observability] OTEL queue full (${maxSize}), dropping oldest event`);
         }
         this.queue.push(event);

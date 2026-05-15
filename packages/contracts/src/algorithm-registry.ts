@@ -43,6 +43,10 @@ export const WASM_FUNCTION_NAMES: Record<string, string | undefined> = {
   ml_anomaly: 'discover_ml_anomaly',
   ml_regress: 'discover_ml_regress',
   ml_pca: 'discover_ml_pca',
+  autoinstinct_neurosis: 'autoinstinct_neurosis',
+  autoinstinct_semantics: 'autoinstinct_semantics',
+  autoinstinct_vision: 'autoinstinct_vision',
+  autoinstinct_learning: 'autoinstinct_learning',
   streaming_log: 'discover_dfg', // fallback
 };
 

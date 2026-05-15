@@ -6,6 +6,7 @@ use serde_json::json;
 use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
 
+#[allow(dead_code)]
 type DirectlyFollowsSet = HashSet<(String, String)>;
 
 /// A candidate Petri net place with pre-set (inputs) and post-set (outputs) of activity indices.
@@ -474,6 +475,7 @@ pub fn discover_optimized_dfg(
 
 // Helper function to check if a trace conforms to directly-follows relations
 #[inline]
+#[allow(dead_code)]
 fn is_trace_fitting(
     trace: &Trace,
     activity_key: &str,

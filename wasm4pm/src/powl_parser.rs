@@ -134,7 +134,7 @@ fn parse_partial_order(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
                     .position(|(t, _)| node_label_matches(t, tgt_str))
                     .ok_or_else(|| format!("edge target '{}' not found in nodes", tgt_str))?;
 
-                arena.add_order_edge(spo_idx, src_local, tgt_local);
+                arena.add_order_edge(spo_idx, src_local, tgt_local).ok();
             }
         }
     }

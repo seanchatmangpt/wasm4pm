@@ -79,8 +79,32 @@ impl AttributeValue {
 pub type Attributes = HashMap<String, AttributeValue>;
 
 /// Custom deserializer for OCEL attributes that handles both:
-/// 1. HashMap format: {"key1": value1, "key2": value2}
-/// 2. Array format: [{"name": "key1", "value": value1}, {"name": "key2", "value": value2}]
+///
+/// - HashMap format: `{"key1": value1, "key2": value2}`
+/// - Array format: `[{"name": "key1", "value": value1}, ...]`
+///
+/// Deserialize OCEL type lists that can be either `["Invoice", "Payment"]` (legacy)
+/// or `[{"name": "Invoice", "attributes": [...]}, ...]` (OCEL 2.0 standard).
+fn deserialize_ocel_type_names<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    #[derive(Deserialize)]
+    #[serde(untagged)]
+    enum TypeEntry {
+        Name(String),
+        Object { name: String },
+    }
+    Vec::<TypeEntry>::deserialize(deserializer).map(|v| {
+        v.into_iter()
+            .map(|e| match e {
+                TypeEntry::Name(s) => s,
+                TypeEntry::Object { name } => name,
+            })
+            .collect()
+    })
+}
+
 fn deserialize_ocel_attributes<'de, D>(deserializer: D) -> Result<Attributes, D::Error>
 where
     D: Deserializer<'de>,
@@ -108,11 +132,28 @@ where
         where
             A: de::SeqAccess<'de>,
         {
+            // Use serde_json::Value for raw value to handle any JSON type (string, number, bool)
+            // rather than requiring the internally-tagged AttributeValue format.
             #[derive(Deserialize)]
             struct NamedAttribute {
                 name: String,
                 #[serde(default)]
-                value: Option<AttributeValue>,
+                value: Option<serde_json::Value>,
+            }
+
+            fn json_to_attr(v: serde_json::Value) -> AttributeValue {
+                match v {
+                    serde_json::Value::String(s) => AttributeValue::String(s),
+                    serde_json::Value::Number(n) => {
+                        if let Some(i) = n.as_i64() {
+                            AttributeValue::Int(i)
+                        } else {
+                            AttributeValue::Float(n.as_f64().unwrap_or(0.0))
+                        }
+                    }
+                    serde_json::Value::Bool(b) => AttributeValue::Boolean(b),
+                    other => AttributeValue::String(other.to_string()),
+                }
             }
 
             let visitor = de::value::SeqAccessDeserializer::new(seq);
@@ -120,7 +161,7 @@ where
             let mut result = Attributes::new();
             for attr in attrs {
                 if let Some(v) = attr.value {
-                    result.insert(attr.name, v);
+                    result.insert(attr.name, json_to_attr(v));
                 }
             }
             Ok(result)
@@ -529,9 +570,9 @@ pub struct OCELObject {
 /// Object-Centric Event Log
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OCEL {
-    #[serde(rename = "eventTypes", alias = "event_types", default)]
+    #[serde(rename = "eventTypes", alias = "event_types", default, deserialize_with = "deserialize_ocel_type_names")]
     pub event_types: Vec<String>,
-    #[serde(rename = "objectTypes", alias = "object_types", default)]
+    #[serde(rename = "objectTypes", alias = "object_types", default, deserialize_with = "deserialize_ocel_type_names")]
     pub object_types: Vec<String>,
     #[serde(default)]
     pub events: Vec<OCELEvent>,

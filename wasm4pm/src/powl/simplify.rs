@@ -282,7 +282,7 @@ pub fn simplify(arena: &mut PowlArena, idx: u32) -> u32 {
 
                     for &sn in &src_new_indices {
                         for &tn in &tgt_new_indices {
-                            arena.add_order_edge(new_spo_idx, sn as usize, tn as usize);
+                            arena.add_order_edge(new_spo_idx, sn as usize, tn as usize).ok();
                         }
                     }
                 }
@@ -301,7 +301,7 @@ pub fn simplify(arena: &mut PowlArena, idx: u32) -> u32 {
                             if inner.order.is_edge(i, j) {
                                 let ni = child_map[local][i] as usize;
                                 let nj = child_map[local][j] as usize;
-                                arena.add_order_edge(new_spo_idx, ni, nj);
+                                arena.add_order_edge(new_spo_idx, ni, nj).ok();
                             }
                         }
                     }
@@ -415,7 +415,7 @@ pub fn simplify_using_frequent_transitions(arena: &mut PowlArena, idx: u32) -> u
             for i in 0..n {
                 for j in 0..n {
                     if old_order.is_edge(i, j) {
-                        arena.add_order_edge(new_spo, i, j);
+                        arena.add_order_edge(new_spo, i, j).ok();
                     }
                 }
             }

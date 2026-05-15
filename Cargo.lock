@@ -2437,6 +2437,7 @@ dependencies = [
  "itertools 0.14.0",
  "js-sys",
  "lazy_static",
+ "miniml",
  "once_cell",
  "proptest",
  "rand 0.8.5",
@@ -2454,6 +2455,7 @@ dependencies = [
  "uuid",
  "wasm-bindgen",
  "wasm-bindgen-futures",
+ "wasm4pm-cognition",
  "wasm4pm-types",
 ]
 

@@ -95,6 +95,9 @@ pub struct DiscoveryConfig {
     pub min_trace_count: usize,
     pub noise_threshold: f64,
     pub from_dfg: bool,
+    /// Set to true when a fall-through placeholder fires (approximate output).
+    /// Callers MUST check this before treating results as production-grade POWL.
+    pub fall_through_fired: bool,
 }
 
 impl Default for DiscoveryConfig {
@@ -105,6 +108,7 @@ impl Default for DiscoveryConfig {
             min_trace_count: 1,
             noise_threshold: 0.0,
             from_dfg: false,
+            fall_through_fired: false,
         }
     }
 }

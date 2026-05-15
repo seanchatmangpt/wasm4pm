@@ -7,7 +7,7 @@
  */
 
 // Kernel API facade
-export { Kernel } from './api.js';
+export { Kernel, parseWasmOutput } from './api.js';
 export type { KernelResult, PartialResult, KernelStats, KernelWasmModule } from './api.js';
 
 // Registry exports

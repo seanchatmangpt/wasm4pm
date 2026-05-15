@@ -72,7 +72,7 @@ fn convert_node(arena: &mut PowlArena, tree: &ProcessTree) -> u32 {
                     // Add edges between every consecutive pair: A→B, A→C, B→C, etc.
                     for i in 0..children.len() {
                         for j in (i + 1)..children.len() {
-                            arena.add_order_edge(spo_idx, i, j);
+                            arena.add_order_edge(spo_idx, i, j).ok();
                         }
                     }
                     spo_idx

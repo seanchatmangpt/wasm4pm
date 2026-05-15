@@ -275,7 +275,7 @@ pub fn discover_batches(
     for (activity, executions) in &activity_execs {
         all_batches.extend(detect_single(activity, executions.clone()));
     }
-    all_batches.sort_by(|a, b| b.size.cmp(&a.size));
+    all_batches.sort_by_key(|b| std::cmp::Reverse(b.size));
 
     BatchDetectionResult {
         total_batches: all_batches.len(),

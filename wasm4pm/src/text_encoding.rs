@@ -136,7 +136,7 @@ pub fn encode_variants_as_text(
 
             let total_cases = log.traces.len() as f64;
             let mut sorted_variants: Vec<_> = variants.into_iter().collect();
-            sorted_variants.sort_by(|a, b| b.1.cmp(&a.1)); // Sort by frequency descending
+            sorted_variants.sort_by_key(|b| std::cmp::Reverse(b.1)); // Sort by frequency descending
 
             let mut text = format!(
                 "Top {} process variants:\n",
@@ -195,7 +195,7 @@ pub fn encode_statistics_as_text(log_handle: &str) -> Result<String, JsValue> {
             }
 
             let mut freq_pairs: Vec<_> = activity_freqs.into_iter().collect();
-            freq_pairs.sort_by(|a, b| b.1.cmp(&a.1)); // Sort by frequency descending
+            freq_pairs.sort_by_key(|b| std::cmp::Reverse(b.1)); // Sort by frequency descending
 
             let mut text = String::from("Process log summary:\n");
             text.push_str(&format!("- Total cases: {}\n", case_count));

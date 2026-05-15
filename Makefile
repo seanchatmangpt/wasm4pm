@@ -16,7 +16,8 @@ export RAYON_NUM_THREADS := $(JOBS)
         build-profile build-browser build-edge build-fog build-iot build-cloud \
         verify-profiles help doctor lint test verify check-debt \
         cognition-build cognition-verify cognition-doctor cognition-dod cognition-cycle \
-        cognition-no-stub-gate cognition-examples cognition-smoke
+        cognition-no-stub-gate cognition-examples cognition-smoke \
+        real-data real-data-full fake-audit substrate-cert
 
 # ── Definition of Done (DoD) Verification ─────────────────────────────────────
 # Consolidated target: test, lint, and quick benchmark smoke-test
@@ -290,3 +291,16 @@ cognition-examples:
 
 cognition-smoke:
 	@bash scripts/cognition-smoke.sh
+
+# ── Real-Data + Substrate Certificate Proxies ─────────────────────────────
+real-data:
+	@cd wasm4pm && $(MAKE) real-data
+
+real-data-full:
+	@cd wasm4pm && $(MAKE) real-data-full
+
+fake-audit:
+	@cd wasm4pm && $(MAKE) fake-audit
+
+substrate-cert:
+	@cd wasm4pm && $(MAKE) substrate-cert

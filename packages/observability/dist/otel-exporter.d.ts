@@ -17,6 +17,9 @@ export declare class OtelExporter {
     private flushPromise;
     private isShuttingDown;
     private flushErrors;
+    private droppedCount;
+    getDropCount(): number;
+    resetDropCount(): void;
     constructor(config: OtelConfig);
     private recordFlushError;
     getFlushErrors(): Array<{

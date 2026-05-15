@@ -65,13 +65,13 @@ fn choice_graph_fall_through(
 
     let start_activities: HashSet<String> = activities
         .iter()
-        .filter(|a| incoming_count.get(*a).map_or(true, |&c| c == 0))
+        .filter(|a| incoming_count.get(*a).is_none_or(|&c| c == 0))
         .cloned()
         .collect();
 
     let end_activities: HashSet<String> = activities
         .iter()
-        .filter(|a| outgoing_count.get(*a).map_or(true, |&c| c == 0))
+        .filter(|a| outgoing_count.get(*a).is_none_or(|&c| c == 0))
         .cloned()
         .collect();
 

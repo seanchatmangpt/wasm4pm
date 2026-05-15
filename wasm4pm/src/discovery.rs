@@ -350,6 +350,7 @@ impl TraceProfile {
     }
 
     /// Check if activity a appeared after activity b in this trace.
+    #[allow(dead_code)]
     #[inline(always)]
     fn appears_after(&self, a: usize, b: usize) -> bool {
         let la = self.last_positions[a];
@@ -408,9 +409,9 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
             // Phase 2: Iterate over activity pairs and count template matches
             let mut activity_counts = vec![0u32; n];
             for profile in &traces_profiles {
-                for a in 0..n {
+                for (a, count) in activity_counts.iter_mut().enumerate() {
                     if profile.first_positions[a] != u8::MAX {
-                        activity_counts[a] += 1;
+                        *count += 1;
                     }
                 }
             }
@@ -445,9 +446,6 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                     let mut both_count = 0;
                     let mut a_before_b_count = 0;
                     let mut a_immediately_before_b_count = 0;
-                    let mut b_immediately_before_a_count = 0;
-                    let mut only_one_count = 0;
-
                     for profile in &traces_profiles {
                         let has_a = profile.first_positions[a] != u8::MAX;
                         let has_b = profile.first_positions[b] != u8::MAX;
@@ -460,11 +458,6 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                             if profile.immediate_follows.contains(&(a as u32, b as u32)) {
                                 a_immediately_before_b_count += 1;
                             }
-                            if profile.immediate_follows.contains(&(b as u32, a as u32)) {
-                                b_immediately_before_a_count += 1;
-                            }
-                        } else if has_a || has_b {
-                            only_one_count += 1;
                         }
                     }
 

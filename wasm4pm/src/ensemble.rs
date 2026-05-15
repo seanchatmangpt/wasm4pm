@@ -16,11 +16,11 @@ use wasm_bindgen::prelude::*;
 /// running N separate expensive algorithms.
 ///
 /// ```javascript
-/// const result = JSON.parse(pm.ensemble_discover(handle, 'concept:name'));
+/// const result = JSON.parse(pm.dfg_threshold_sweep(handle, 'concept:name'));
 /// // { models: [{algorithm: "dfg", fitness: 0.95, ...}], consensus: {...} }
 /// ```
 #[wasm_bindgen]
-pub fn ensemble_discover(log_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
+pub fn dfg_threshold_sweep(log_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
     let (traces, _attributes, activity_set) =
         get_or_init_state().with_object(log_handle, |obj| match obj {
             Some(StoredObject::EventLog(log)) => {
@@ -112,9 +112,8 @@ pub fn ensemble_discover(log_handle: &str, activity_key: &str) -> Result<JsValue
         0.0
     };
 
-    // Simulated algorithm results (different complexity/quality trade-offs)
-    // In a real ensemble, each algorithm would produce its own model.
-    // Here we show how DFG quality varies with different pruning thresholds.
+    // DFG threshold sweep: evaluates full and pruned (freq>1) DFG variants.
+    // This is a lightweight quality assessment, not a multi-algorithm ensemble.
     let mut models = Vec::new();
 
     // Full DFG
@@ -236,7 +235,7 @@ pub fn ensemble_discover(log_handle: &str, activity_key: &str) -> Result<JsValue
             "total_activities": node_count,
             "total_edges": edge_count,
         },
-        "method": "ensemble_dfg_variants",
+        "method": "dfg_threshold_sweep",
     }))
 }
 
@@ -350,18 +349,18 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "ensemble_discover uses JsValue which panics in test environment"]
-    fn test_ensemble_empty_log_returns_error() {
+    #[ignore = "dfg_threshold_sweep uses JsValue which panics in test environment"]
+    fn test_dfg_threshold_sweep_empty_log_returns_error() {
         let _log = EventLog::new();
-        let result = ensemble_discover("test_handle", "concept:name");
+        let result = dfg_threshold_sweep("test_handle", "concept:name");
         assert!(result.is_err(), "Empty log should return error");
     }
 
     #[test]
-    #[ignore = "ensemble_discover uses JsValue which panics in test environment"]
-    fn test_ensemble_single_activity_trace() {
+    #[ignore = "dfg_threshold_sweep uses JsValue which panics in test environment"]
+    fn test_dfg_threshold_sweep_single_activity_trace() {
         let _log = make_test_log(vec![vec!["A"], vec!["A"]]);
-        let result = ensemble_discover("test_handle", "concept:name");
+        let result = dfg_threshold_sweep("test_handle", "concept:name");
         assert!(result.is_ok(), "Single activity trace should succeed");
     }
 

@@ -30,6 +30,9 @@ export declare class OtelTracer implements Tracer {
     private flushTimer?;
     private flushChain;
     private shuttingDown;
+    private droppedCount;
+    getDropCount(): number;
+    resetDropCount(): void;
     constructor(config: OtelConfig, requiredFields: RequiredFields);
     startSpan(name: string, options?: {
         kind?: SpanKind;

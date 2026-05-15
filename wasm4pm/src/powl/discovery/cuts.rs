@@ -104,7 +104,7 @@ pub fn detect_concurrency_cut(
             if let (Some(&src_idx), Some(&tgt_idx)) =
                 (activity_to_idx.get(src), activity_to_idx.get(tgt))
             {
-                arena.add_order_edge(spo_idx, src_idx, tgt_idx);
+                arena.add_order_edge(spo_idx, src_idx, tgt_idx).ok();
             }
         }
     }
@@ -120,6 +120,7 @@ pub fn detect_concurrency_cut(
 /// 3. Topologically sort SCCs using EFG reachability
 /// 4. If ≥2 SCCs in strict total order → sequence cut fires
 /// 5. Project log onto each SCC's activities
+#[allow(clippy::needless_range_loop)] // symmetric matrix traversal: [i][j] and [j][i] both needed
 pub fn detect_sequence_cut(
     traces: &[Vec<String>],
     arena: &mut PowlArena,
@@ -274,7 +275,7 @@ pub fn detect_sequence_cut(
                     .collect();
                 for (a, b) in &scc_dfg {
                     if let (Some(&ai), Some(&bi)) = (scc_act_to_idx.get(a), scc_act_to_idx.get(b)) {
-                        arena.add_order_edge(scc_spo_idx, ai, bi);
+                        arena.add_order_edge(scc_spo_idx, ai, bi).ok();
                     }
                 }
                 child_indices.push(scc_spo_idx);
@@ -288,7 +289,7 @@ pub fn detect_sequence_cut(
     } else {
         let spo_idx = arena.add_strict_partial_order(child_indices.clone());
         for i in 0..child_indices.len().saturating_sub(1) {
-            arena.add_order_edge(spo_idx, i, i + 1);
+            arena.add_order_edge(spo_idx, i, i + 1).ok();
         }
         Ok(spo_idx)
     }
@@ -304,6 +305,7 @@ fn tarjan_sccs(graph: &[Vec<usize>]) -> Vec<Vec<usize>> {
     let mut sccs: Vec<Vec<usize>> = Vec::new();
     let mut index_counter = 0;
 
+    #[allow(clippy::too_many_arguments)]
     fn strongconnect(
         v: usize,
         graph: &[Vec<usize>],
@@ -389,7 +391,7 @@ pub fn detect_loop_cut(
     }
 
     let dfg = build_dfg(traces);
-    let efg = build_efg(traces);
+    let _efg = build_efg(traces);
 
     // Find start activities (activities that appear as first in any trace)
     let mut start_activities: HashSet<String> = HashSet::new();
@@ -481,8 +483,8 @@ pub fn detect_loop_cut(
             let second_start_idx = start_indices[1];
 
             // Activities from end of do-part (after first start) to second start
-            for i in (first_start_idx + 1)..second_start_idx {
-                redo_part.insert(trace[i].clone());
+            for activity in &trace[(first_start_idx + 1)..second_start_idx] {
+                redo_part.insert(activity.clone());
             }
         }
     }
@@ -574,7 +576,7 @@ pub fn detect_loop_cut(
         // Add ordering edges based on DFG
         for (a, b) in &dfg {
             if let (Some(&ai), Some(&bi)) = (do_act_to_idx.get(a), do_act_to_idx.get(b)) {
-                arena.add_order_edge(do_spo_idx, ai, bi);
+                arena.add_order_edge(do_spo_idx, ai, bi).ok();
             }
         }
 
@@ -610,7 +612,7 @@ pub fn detect_loop_cut(
         // Add ordering edges based on DFG
         for (a, b) in &dfg {
             if let (Some(&ai), Some(&bi)) = (redo_act_to_idx.get(a), redo_act_to_idx.get(b)) {
-                arena.add_order_edge(redo_spo_idx, ai, bi);
+                arena.add_order_edge(redo_spo_idx, ai, bi).ok();
             }
         }
 
@@ -785,7 +787,7 @@ pub fn detect_xor_cut(
             // Add edges based on component DFG
             for (a, b) in &component_dfg {
                 if let (Some(&ai), Some(&bi)) = (comp_act_to_idx.get(a), comp_act_to_idx.get(b)) {
-                    arena.add_order_edge(comp_spo_idx, ai, bi);
+                    arena.add_order_edge(comp_spo_idx, ai, bi).ok();
                 }
             }
 
@@ -974,7 +976,7 @@ pub fn detect_maximal_partial_order_cut(
             }
             let spo_idx = arena.add_strict_partial_order(seq_children.clone());
             for k in 0..seq_children.len().saturating_sub(1) {
-                arena.add_order_edge(spo_idx, k, k + 1);
+                arena.add_order_edge(spo_idx, k, k + 1).ok();
             }
             child_indices.push(spo_idx);
             cluster_to_child.push(child_indices.len() - 1);
@@ -986,7 +988,7 @@ pub fn detect_maximal_partial_order_cut(
     for ci in 0..nc {
         for cj in 0..nc {
             if ci != cj && cluster_post[ci].contains(&cj) {
-                arena.add_order_edge(spo_idx, ci, cj);
+                arena.add_order_edge(spo_idx, ci, cj).ok();
             }
         }
     }
@@ -1132,7 +1134,7 @@ pub fn detect_dynamic_clustering_cut(
             }
             let spo_idx = arena.add_strict_partial_order(seq_children.clone());
             for k in 0..seq_children.len().saturating_sub(1) {
-                arena.add_order_edge(spo_idx, k, k + 1);
+                arena.add_order_edge(spo_idx, k, k + 1).ok();
             }
             child_indices.push(spo_idx);
         }
@@ -1142,7 +1144,7 @@ pub fn detect_dynamic_clustering_cut(
     for ci in 0..nc {
         for cj in 0..nc {
             if cluster_has_edge[ci][cj] {
-                arena.add_order_edge(spo_idx, ci, cj);
+                arena.add_order_edge(spo_idx, ci, cj).ok();
             }
         }
     }
@@ -1375,7 +1377,7 @@ fn try_partition_as_po(
             }
             let spo_idx = arena.add_strict_partial_order(seq_children.clone());
             for k in 0..seq_children.len().saturating_sub(1) {
-                arena.add_order_edge(spo_idx, k, k + 1);
+                arena.add_order_edge(spo_idx, k, k + 1).ok();
             }
             child_indices.push(spo_idx);
         }
@@ -1385,7 +1387,7 @@ fn try_partition_as_po(
     for ci in 0..np {
         for cj in 0..np {
             if has_edge[ci][cj] {
-                arena.add_order_edge(spo_idx, ci, cj);
+                arena.add_order_edge(spo_idx, ci, cj).ok();
             }
         }
     }

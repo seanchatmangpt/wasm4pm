@@ -8,6 +8,7 @@
 ///
 /// Run: cargo bench --bench scalability_benchmark
 use criterion::{criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
+mod helpers;
 use std::collections::HashMap;
 use std::time::Duration;
 use wasm4pm::discovery::discover_dfg;

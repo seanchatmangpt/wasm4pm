@@ -258,8 +258,8 @@ pub fn check_choice_graph_soundness(
         indeg[b] += 1;
     }
     let mut queue: std::collections::VecDeque<usize> = std::collections::VecDeque::new();
-    for i in 0..n {
-        if indeg[i] == 0 {
+    for (i, &deg) in indeg.iter().enumerate() {
+        if deg == 0 {
             queue.push_back(i);
         }
     }

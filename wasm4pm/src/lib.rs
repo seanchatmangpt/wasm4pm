@@ -104,7 +104,8 @@ pub fn main() {
 const DRIFT_THRESHOLD_LOW_DEFAULT: f32 = 0.3;
 const DRIFT_THRESHOLD_HIGH_DEFAULT: f32 = 0.7;
 
-// Latency budget for autonomic cycle (in microseconds)
+// Latency budget for autonomic cycle (in microseconds) — only used by cloud feature
+#[cfg(feature = "cloud")]
 const CYCLE_LATENCY_BUDGET_US: u64 = 5_000;
 
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -123,6 +124,7 @@ fn get_drift_threshold_low() -> f32 {
 /// On native, uses `std::time::Instant` (nanosecond precision).
 ///
 /// Returns microseconds as u64 for portability.
+#[cfg(feature = "cloud")]
 pub(crate) fn wall_clock_us() -> u64 {
     #[cfg(target_arch = "wasm32")]
     {
@@ -149,6 +151,7 @@ fn get_drift_threshold_high() -> f32 {
 ///
 /// Returns true if any activity appears more than once in the trace.
 /// This indicates a rework loop or repetition pattern.
+#[cfg(feature = "cloud")]
 fn has_activity_repetition(trace: &models::Trace, activity_key: &str) -> bool {
     use std::collections::HashSet;
 
@@ -279,6 +282,12 @@ pub mod proof_gate_registry;
 pub mod tps_metrics_registry;
 #[allow(dead_code)]
 pub mod wasm_export_registry;
+
+// Proof-of-concept gate validator — in-memory HashSet, NOT connected to SPARQL receipt store.
+// DO NOT add poc_gate_validator to browser/cloud/fog/edge/iot profiles.
+// For production gate checks, use proof_gate_registry.
+#[cfg(feature = "poc_gate_validator")]
+pub mod gate_validator;
 
 // Hand-rolled statistics (when hand_rolled_stats feature is enabled)
 pub mod algorithms;
@@ -577,12 +586,26 @@ thread_local! {
     /// Gated on ml feature (prediction_resource is ml-gated).
     #[cfg(feature = "ml")]
     pub static FALLBACK_BANDIT: RefCell<Option<crate::prediction_resource::BanditState>> =
-        RefCell::new(None);
+        const { RefCell::new(None) };
 }
 
 // ML contextual bandits — LinUCB CPU baseline (ground truth for GPU parity)
 #[cfg(feature = "ml")]
 pub mod ml;
+
+// Cognition substrate re-export — surfaces `wasm4pm_cognition` as `wasm4pm::cognition`
+// so downstream crates (e.g. mcpp) can depend on wasm4pm alone (with the `cognition`
+// feature) without taking a direct dependency on wasm4pm-cognition.
+#[cfg(feature = "cognition")]
+pub use wasm4pm_cognition as cognition;
+
+// Types substrate re-export — surfaces `wasm4pm_types` (hash, BLAKE3 helpers,
+// canonical JSON) as `wasm4pm::data_types`. Downstream crates that need
+// canonical receipt serialization can reach
+// `wasm4pm::data_types::hash::canonical_json` via the single wasm4pm
+// dependency. (The name `types` is already taken by an internal WASM bindings
+// module at this crate root.)
+pub use wasm4pm_types as data_types;
 
 // GPU-accelerated LinUCB contextual bandit for algorithm selection
 // (van der Aalst: resource/intervention prediction perspective)

@@ -9,10 +9,13 @@ import { LiveSpan } from './spans.js';
 import { generateSpanId } from './context.js';
 // ---- OtelTracer (real implementation) ----
 export class OtelTracer {
+    getDropCount() { return this.droppedCount; }
+    resetDropCount() { this.droppedCount = 0; }
     constructor(config, requiredFields) {
         this.queue = [];
         this.flushChain = Promise.resolve();
         this.shuttingDown = false;
+        this.droppedCount = 0;
         this.config = config;
         this.requiredFields = requiredFields;
         this.startAutoFlush();
@@ -36,6 +39,7 @@ export class OtelTracer {
         const max = this.config.max_queue_size ?? 1000;
         if (this.queue.length >= max) {
             this.queue.shift();
+            this.droppedCount++;
             console.warn(`[observability] OTEL queue full (${max}), dropping oldest span`);
         }
         this.queue.push(span);

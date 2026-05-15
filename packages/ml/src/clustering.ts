@@ -145,10 +145,10 @@ function kmeansCore(
           const diff = cols[j][i] - centCols[j][c];
           ss += diff * diff;
         }
-        if (ss < bestDist) {
-          bestDist = ss;
-          bestC = c;
-        }
+        // Branchless argmin: +(ss < bestDist) is 1 when better, 0 otherwise.
+        const isBetter = +(ss < bestDist);
+        bestDist = bestDist - isBetter * (bestDist - ss);
+        bestC    = bestC    - isBetter * (bestC - c);
       }
       if (assignments[i] !== bestC) {
         assignments[i] = bestC;

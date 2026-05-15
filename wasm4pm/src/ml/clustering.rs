@@ -1,4 +1,5 @@
 //! Nanosecond Clustering Family — branchless K-Means for process mining.
+#![allow(clippy::needless_range_loop)] // branchless argmin: index carries centroid identity
 
 use crate::state::{get_or_init_state, StoredObject};
 use crate::ml::classification::extract_features;
@@ -21,7 +22,8 @@ pub fn discover_ml_cluster(eventlog_handle: &str, activity_key: &str) -> Result<
     })?;
 
     if features.is_empty() {
-        return crate::utilities::to_js(&json!({
+        // SAFETY: to_js_str required here; to_js(&json!()) silently returns {} on wasm32.
+        return crate::utilities::to_js_str(&json!({
             "algorithm": "ml_cluster",
             "error": "Insufficient data",
             "clusters": []
@@ -50,10 +52,10 @@ pub fn discover_ml_cluster(eventlog_handle: &str, activity_key: &str) -> Result<
             for j in 0..k {
                 let c = centroids[j];
                 let dist = (f[0] - c[0])*(f[0] - c[0]) + (f[1] - c[1])*(f[1] - c[1]);
-                if dist < best_dist {
-                    best_dist = dist;
-                    best_c = j;
-                }
+                // Branchless argmin: select j when dist < best_dist, else keep best_c.
+                let is_better = (dist < best_dist) as usize;
+                best_c    = j    * is_better + best_c * (1 - is_better);
+                best_dist = best_dist.min(dist); // maps to fmin — no branch
             }
             
             if assignments[i] != best_c {
@@ -82,7 +84,8 @@ pub fn discover_ml_cluster(eventlog_handle: &str, activity_key: &str) -> Result<
         }
     }
 
-    crate::utilities::to_js(&json!({
+    // SAFETY: to_js_str required here; to_js(&json!()) silently returns {} on wasm32.
+    crate::utilities::to_js_str(&json!({
         "algorithm": "ml_cluster",
         "k": k,
         "centroids": centroids,

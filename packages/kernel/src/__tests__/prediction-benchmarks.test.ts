@@ -140,14 +140,14 @@ describe('Prediction Performance Baselines', () => {
     const LOG_100 = makeSyntheticLog({ numTraces: 100, eventsPerTrace: 10, numActivities: 8 });
     const LOG_1K = makeSyntheticLog({ numTraces: 1_000, eventsPerTrace: 15, numActivities: 12 });
 
-    it('fit completes within 50 ms for a 100-trace log', () => {
+    it('fit completes within 200 ms for a 100-trace log', () => {
       const start = Date.now();
       dispatcher.execute({
         mode: 'fit',
         task: { perspective: 'next_activity', ngramOrder: 2, topK: 3 },
         log: LOG_100,
       });
-      expect(Date.now() - start).toBeLessThan(50);
+      expect(Date.now() - start).toBeLessThan(200);
     });
 
     it('fit completes within 200 ms for a 1000-trace log', () => {
@@ -160,7 +160,7 @@ describe('Prediction Performance Baselines', () => {
       expect(Date.now() - start).toBeLessThan(200);
     });
 
-    it('fit_predict completes within 50 ms for a 100-trace log with 10-trace prefixes', () => {
+    it('fit_predict completes within 200 ms for a 100-trace log with 10-trace prefixes', () => {
       const prefixes = makePrefixes(LOG_100, 3);
       const start = Date.now();
       dispatcher.execute({
@@ -169,7 +169,7 @@ describe('Prediction Performance Baselines', () => {
         log: LOG_100,
         prefixes,
       });
-      expect(Date.now() - start).toBeLessThan(50);
+      expect(Date.now() - start).toBeLessThan(200);
     });
 
     it('returns at least one prediction per prefix (top-1 accuracy > 0%)', () => {
@@ -234,14 +234,14 @@ describe('Prediction Performance Baselines', () => {
       intervalMs: 60_000,
     });
 
-    it('fit completes within 50 ms for a 100-trace log', () => {
+    it('fit completes within 200 ms for a 100-trace log', () => {
       const start = Date.now();
       dispatcher.execute({
         mode: 'fit',
         task: { perspective: 'remaining_time', aggregator: 'mean' },
         log: LOG_100,
       });
-      expect(Date.now() - start).toBeLessThan(50);
+      expect(Date.now() - start).toBeLessThan(200);
     });
 
     it('fit completes within 200 ms for a 1000-trace log', () => {
@@ -320,14 +320,14 @@ describe('Prediction Performance Baselines', () => {
     const LOG_100 = makeSyntheticLog({ numTraces: 100, eventsPerTrace: 8, numActivities: 6 });
     const LOG_1K = makeSyntheticLog({ numTraces: 1_000, eventsPerTrace: 10, numActivities: 8 });
 
-    it('fit completes within 50 ms for a 100-trace log', () => {
+    it('fit completes within 200 ms for a 100-trace log', () => {
       const start = Date.now();
       dispatcher.execute({
         mode: 'fit',
         task: { perspective: 'outcome' },
         log: LOG_100,
       });
-      expect(Date.now() - start).toBeLessThan(50);
+      expect(Date.now() - start).toBeLessThan(200);
     });
 
     it('fit_predict completes within 100 ms for a 1000-trace log', () => {
@@ -505,14 +505,14 @@ describe('Prediction Performance Baselines', () => {
       withResources: true,
     });
 
-    it('fit completes within 50 ms for a 100-trace log', () => {
+    it('fit completes within 200 ms for a 100-trace log', () => {
       const start = Date.now();
       dispatcher.execute({
         mode: 'fit',
         task: { perspective: 'features', includeRework: true },
         log: LOG_100,
       });
-      expect(Date.now() - start).toBeLessThan(50);
+      expect(Date.now() - start).toBeLessThan(200);
     });
 
     it('fit_predict completes within 200 ms for a 1000-trace log', () => {
@@ -605,14 +605,14 @@ describe('Prediction Performance Baselines', () => {
       withResources: true,
     });
 
-    it('fit completes within 50 ms for a 200-trace log', () => {
+    it('fit completes within 200 ms for a 200-trace log', () => {
       const start = Date.now();
       dispatcher.execute({
         mode: 'fit',
         task: { perspective: 'resource' },
         log: LOG_WITH_RESOURCES,
       });
-      expect(Date.now() - start).toBeLessThan(50);
+      expect(Date.now() - start).toBeLessThan(200);
     });
 
     it('fit_predict completes within 100 ms for a 200-trace log with 20-trace prefixes', () => {

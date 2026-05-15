@@ -1,8 +1,10 @@
-/// Gate Validation — Ensures algorithms only export after proof gates pass
-/// Pattern: Before serializing results, verify gate_test_suite_passes exists
+/// PROOF-OF-CONCEPT ONLY — gated by `poc_gate_validator` feature.
 ///
-/// NOTE: This is a proof-of-concept implementation. In production, gates would be
-/// persisted to the receipt store and verified via SPARQL queries.
+/// Uses an in-memory `Mutex<HashSet<ProofGate>>` as a fake gate store.
+/// NOT connected to the SPARQL receipt store and MUST NOT be used on any
+/// production proof-admission path.
+///
+/// For production gate checks, use `proof_gate_registry`.
 use crate::proof_gate_registry::ProofGate;
 use std::sync::Mutex;
 use std::collections::HashSet;

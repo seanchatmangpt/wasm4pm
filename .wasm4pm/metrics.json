@@ -114,5 +114,20 @@
         "metrics_snapshots": []
       }
     ]
+  },
+  "latest_snapshot": {
+    "timestamp": "2026-05-15T23:02:25Z",
+    "git_head": "9dbd2959",
+    "git_branch": "main",
+    "healthy": true,
+    "doctor": {
+      "pass": 28,
+      "warn": 0,
+      "fail": 0
+    },
+    "compiler_warnings": {
+      "rust": 2,
+      "typescript": 0
+    }
   }
 }

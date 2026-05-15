@@ -436,6 +436,7 @@ pub fn discover_powl_from_log(log_json: &str, variant: &str) -> Result<JsValue, 
         min_trace_count: 1,
         noise_threshold: 0.0,
         from_dfg: false,
+        fall_through_fired: false,
     };
 
     let (arena, root) =
@@ -481,6 +482,7 @@ pub fn discover_powl_from_log_config(
         min_trace_count,
         noise_threshold,
         from_dfg: false,
+        fall_through_fired: false,
     };
 
     let (arena, root) =
@@ -525,6 +527,7 @@ pub fn discover_powl_from_partial_orders(
         min_trace_count: 1,
         noise_threshold: 0.0,
         from_dfg: false,
+        fall_through_fired: false,
     };
 
     let mut arena = PowlArena::new();
@@ -565,6 +568,7 @@ pub fn discover_ocel_powl(ocel_json: &str, variant: &str) -> Result<JsValue, JsV
         min_trace_count: 1,
         noise_threshold: 0.0,
         from_dfg: false,
+        fall_through_fired: false,
     };
 
     let mut arena = PowlArena::new();

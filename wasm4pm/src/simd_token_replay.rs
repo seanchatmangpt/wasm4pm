@@ -189,10 +189,7 @@ impl SimdPetriNet {
             }
         }
 
-        let mut remaining: u32 = 0;
-        for i in 0..self.num_places {
-            remaining += marking[i];
-        }
+        let remaining: u32 = marking[..self.num_places].iter().sum();
 
         let fitness = compute_fitness(consumed, produced, missing, remaining);
 
