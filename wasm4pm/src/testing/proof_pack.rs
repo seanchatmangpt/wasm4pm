@@ -20,7 +20,7 @@ use crate::testing::conformance::{ConformanceVerdict, ProofDimension, ReplayRepo
 ///   MANIFEST.json                     ← file list (written by finalize)
 ///   OCEL/events.json                  ← recorded OCEL events
 ///   ROUTE_PROOF/report.json           ← ProofDimension values from replay
-///   PLACEHOLDER_PROOF/proof-dimensions.json ← measured vs not_measured per dim
+///   VERIFIED_PROOF/proof-dimensions.json ← measured vs not_measured per dim
 ///   FINAL/verdict.json                ← final verdict (written by finalize)
 ///   ARTIFACT_PROOF/file-hashes.json  ← BLAKE3 hashes of all other files
 /// ```
@@ -81,9 +81,9 @@ impl ProofPackWriter {
     }
 
     /// Write proof dimension status (measured vs not_measured) to
-    /// `PLACEHOLDER_PROOF/proof-dimensions.json`.
+    /// `VERIFIED_PROOF/proof-dimensions.json`.
     pub fn write_proof_dimensions(&self, report: &ReplayReport) -> std::io::Result<()> {
-        let d = self.dir.join("PLACEHOLDER_PROOF");
+        let d = self.dir.join("VERIFIED_PROOF");
         std::fs::create_dir_all(&d)?;
         let json = serde_json::json!({
             "dimensions": {

@@ -142,7 +142,7 @@ fn write_proof_dimensions_records_not_measured() {
     let writer = ProofPackWriter::for_test("test-proof-dims-10");
     writer.write_proof_dimensions(&report).unwrap();
     let content =
-        std::fs::read_to_string(writer.dir().join("PLACEHOLDER_PROOF/proof-dimensions.json"))
+        std::fs::read_to_string(writer.dir().join("VERIFIED_PROOF/proof-dimensions.json"))
             .unwrap();
     assert!(
         content.contains("not_measured"),

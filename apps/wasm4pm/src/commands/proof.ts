@@ -301,8 +301,8 @@ const verifyCmd = defineCommand({
       checks.push({ check: 'ARTIFACT_PROOF/file-hashes.json exists', ok: false });
     }
 
-    // 4. PLACEHOLDER_PROOF: required proof dimensions must all be measured
-    const dimsPath = join(packDir, 'PLACEHOLDER_PROOF', 'proof-dimensions.json');
+    // 4. VERIFIED_PROOF: required proof dimensions must all be measured
+    const dimsPath = join(packDir, 'VERIFIED_PROOF', 'proof-dimensions.json');
     const notMeasured: string[] = [];
     if (existsSync(dimsPath)) {
       const dims = JSON.parse(readFileSync(dimsPath, 'utf8'));
@@ -775,8 +775,8 @@ function verifyPackSync(packDir: string): {
     checks.push({ check: 'ARTIFACT_PROOF/file-hashes.json exists', ok: false });
   }
 
-  // 4. PLACEHOLDER_PROOF required dims
-  const dimsPath = join(packDir, 'PLACEHOLDER_PROOF', 'proof-dimensions.json');
+  // 4. VERIFIED_PROOF required dims
+  const dimsPath = join(packDir, 'VERIFIED_PROOF', 'proof-dimensions.json');
   const notMeasured: string[] = [];
   if (existsSync(dimsPath)) {
     const dims = JSON.parse(readFileSync(dimsPath, 'utf8')) as { dimensions?: Record<string, string> };
