@@ -635,6 +635,145 @@ export async function probeAdversary(projectDir: string): Promise<Probe[]> {
     });
   }
 
+  // ── P22: Receipt schema violation → AndonPull(ReceiptSchemaViolation) ────────
+  {
+    // Receipt object carries attributes that violate the declared JSON Schema.
+    // proof-receipt.schema.json requires config_hash to match ^[0-9a-f]{64}$;
+    // we inject 'not-hex'. Ajv must catch it and the verdict must be AndonPull
+    // with andon_reason === 'ReceiptSchemaViolation'.
+    const badReceiptOcel: OcelLog = {
+      ocel_version: '2.0',
+      ocel_global_log: { ocel_attribute_names: [] },
+      ocel_events: [
+        { event_id: 'e0', activity: 'collect_evidence', timestamp: '2026-05-14T00:00:00Z', objects: [{ id: 'ev-1', type: 'Evidence' }], attributes: {} },
+        { event_id: 'e1', activity: 'verify_evidence',  timestamp: '2026-05-14T00:00:01Z', objects: [{ id: 'ev-1', type: 'Evidence' }], attributes: {} },
+        { event_id: 'e2', activity: 'emit_receipt',     timestamp: '2026-05-14T00:00:02Z', objects: [{ id: 'r-1',  type: 'Receipt'  }], attributes: {} },
+      ],
+      ocel_objects: [
+        { id: 'ev-1', type: 'Evidence', attributes: {} },
+        { id: 'r-1',  type: 'Receipt',  attributes: { run_id: 'r1', config_hash: 'not-hex', input_hash: 'f'.repeat(64), plan_hash: 'f'.repeat(64), output_hash: 'f'.repeat(64), status: 'success' } },
+      ],
+    };
+    const badReceiptModel: Powl2Model = {
+      route_id: 'p22-receipt-schema',
+      type: 'powl2',
+      receipt_required: true,
+      required_stages: ['collect_evidence', 'verify_evidence', 'emit_receipt'],
+      object_types: {
+        // Evidence intentionally has no terminated_by — isolates the schema check
+        'Evidence': { created_by: ['collect_evidence'] },
+        'Receipt': { created_by: ['emit_receipt'], schema: 'schemas/receipts/proof-receipt.schema.json' },
+      },
+      model: { type: 'sequence', sequence: ['collect_evidence', 'verify_evidence', 'emit_receipt'] },
+    };
+    const result = checkPowl2Conformance(badReceiptOcel, badReceiptModel, projectDir);
+    const isAndonSchema = result.verdict === 'AndonPull' && result.andon_reason === 'ReceiptSchemaViolation';
+    probes.push({
+      job: 'Receipt with malformed BLAKE3 hash rejected with AndonPull(ReceiptSchemaViolation)',
+      scenario: 'Receipt.attributes.config_hash = "not-hex" — fails proof-receipt.schema.json pattern check',
+      observed: isAndonSchema
+        ? `AndonPull(ReceiptSchemaViolation) — Ajv caught malformed config_hash`
+        : result.verdict === 'Accepted'
+          ? 'Accepted — malformed receipt was NOT rejected (schema gate broken)'
+          : `AndonPull(${result.andon_reason ?? 'unknown'}) — wrong andon reason, expected ReceiptSchemaViolation`,
+      verdict: isAndonSchema ? 'verified' : 'refuted',
+      evidence: `verdict=${result.verdict}; andon_reason=${result.andon_reason ?? 'none'}; receipt_coverage=${result.receipt_coverage.toFixed(3)}`,
+    });
+  }
+
+  // ── P23: Cardinality violation → AndonPull(CardinalityViolation) ────────────
+  {
+    // Model declares ProofPack.max_count = 1, but 3 distinct ProofPack instances exist.
+    // measureCardinality must catch this — verdict must be AndonPull with
+    // andon_reason === 'CardinalityViolation'.
+    const tooManyOcel: OcelLog = {
+      ocel_version: '2.0',
+      ocel_global_log: { ocel_attribute_names: [] },
+      ocel_events: [
+        { event_id: 'e0', activity: 'collect_evidence', timestamp: '2026-05-14T00:00:00Z', objects: [{ id: 'pp-1', type: 'ProofPack' }], attributes: {} },
+        { event_id: 'e1', activity: 'collect_evidence', timestamp: '2026-05-14T00:00:01Z', objects: [{ id: 'pp-2', type: 'ProofPack' }], attributes: {} },
+        { event_id: 'e2', activity: 'collect_evidence', timestamp: '2026-05-14T00:00:02Z', objects: [{ id: 'pp-3', type: 'ProofPack' }], attributes: {} },
+        { event_id: 'e3', activity: 'verify_evidence',  timestamp: '2026-05-14T00:00:03Z', objects: [{ id: 'pp-1', type: 'ProofPack' }], attributes: {} },
+        { event_id: 'e4', activity: 'emit_receipt',     timestamp: '2026-05-14T00:00:04Z', objects: [{ id: 'r-1',  type: 'Receipt'   }], attributes: {} },
+      ],
+      ocel_objects: [
+        { id: 'pp-1', type: 'ProofPack', attributes: {} },
+        { id: 'pp-2', type: 'ProofPack', attributes: {} },
+        { id: 'pp-3', type: 'ProofPack', attributes: {} },
+        { id: 'r-1',  type: 'Receipt',   attributes: {} },
+      ],
+    };
+    const tooManyModel: Powl2Model = {
+      route_id: 'p23-cardinality',
+      type: 'powl2',
+      receipt_required: true,
+      required_stages: ['collect_evidence', 'verify_evidence', 'emit_receipt'],
+      object_types: {
+        'ProofPack': { created_by: ['collect_evidence'], max_count: 1 },
+        'Receipt': { created_by: ['emit_receipt'] },
+      },
+      model: { type: 'sequence', sequence: ['collect_evidence', 'verify_evidence', 'emit_receipt'] },
+    };
+    const result = checkPowl2Conformance(tooManyOcel, tooManyModel);
+    const isAndonCard = result.verdict === 'AndonPull' && result.andon_reason === 'CardinalityViolation';
+    probes.push({
+      job: '3 ProofPacks (max_count=1) rejected with AndonPull(CardinalityViolation)',
+      scenario: 'OCEL emits 3 distinct ProofPack objects; model declares ProofPack.max_count = 1',
+      observed: isAndonCard
+        ? `AndonPull(CardinalityViolation) — max_count breach correctly detected`
+        : result.verdict === 'Accepted'
+          ? 'Accepted — cardinality breach was NOT rejected (count gate broken)'
+          : `AndonPull(${result.andon_reason ?? 'unknown'}) — wrong andon reason, expected CardinalityViolation`,
+      verdict: isAndonCard ? 'verified' : 'refuted',
+      evidence: `verdict=${result.verdict}; andon_reason=${result.andon_reason ?? 'none'}; obj_lifecycle=${result.object_lifecycle_validity.toFixed(3)}`,
+    });
+  }
+
+  // ── P24: Lifecycle not terminated → AndonPull(LifecycleNotTerminated) ───────
+  {
+    // Model declares ProofPack.terminated_by = ['emit_receipt'], but the OCEL
+    // shows ProofPack last referenced in 'verify_evidence' — never re-touched
+    // by emit_receipt. measureObjectLifecycle must catch this.
+    const notTerminatedOcel: OcelLog = {
+      ocel_version: '2.0',
+      ocel_global_log: { ocel_attribute_names: [] },
+      ocel_events: [
+        { event_id: 'e0', activity: 'collect_evidence', timestamp: '2026-05-14T00:00:00Z', objects: [{ id: 'pp-1', type: 'ProofPack' }], attributes: {} },
+        { event_id: 'e1', activity: 'verify_evidence',  timestamp: '2026-05-14T00:00:01Z', objects: [{ id: 'pp-1', type: 'ProofPack' }], attributes: {} },
+        // ProofPack NOT re-referenced by emit_receipt — terminate violation
+        { event_id: 'e2', activity: 'emit_receipt',     timestamp: '2026-05-14T00:00:02Z', objects: [{ id: 'r-1',  type: 'Receipt'   }], attributes: {} },
+      ],
+      ocel_objects: [
+        { id: 'pp-1', type: 'ProofPack', attributes: {} },
+        { id: 'r-1',  type: 'Receipt',   attributes: {} },
+      ],
+    };
+    const notTerminatedModel: Powl2Model = {
+      route_id: 'p24-not-terminated',
+      type: 'powl2',
+      receipt_required: true,
+      required_stages: ['collect_evidence', 'verify_evidence', 'emit_receipt'],
+      object_types: {
+        'ProofPack': { created_by: ['collect_evidence'], terminated_by: ['emit_receipt'] },
+        'Receipt': { created_by: ['emit_receipt'] },
+      },
+      model: { type: 'sequence', sequence: ['collect_evidence', 'verify_evidence', 'emit_receipt'] },
+    };
+    const result = checkPowl2Conformance(notTerminatedOcel, notTerminatedModel);
+    const isAndonNotTerm = result.verdict === 'AndonPull' && result.andon_reason === 'LifecycleNotTerminated';
+    probes.push({
+      job: 'ProofPack created but never re-referenced by terminate activity → AndonPull(LifecycleNotTerminated)',
+      scenario: 'OCEL: ProofPack last seen in verify_evidence; model declares ProofPack.terminated_by=[emit_receipt]',
+      observed: isAndonNotTerm
+        ? `AndonPull(LifecycleNotTerminated) — orphan lifecycle correctly detected`
+        : result.verdict === 'Accepted'
+          ? 'Accepted — unterminated object was NOT rejected (terminate gate broken)'
+          : `AndonPull(${result.andon_reason ?? 'unknown'}) — wrong andon reason, expected LifecycleNotTerminated`,
+      verdict: isAndonNotTerm ? 'verified' : 'refuted',
+      evidence: `verdict=${result.verdict}; andon_reason=${result.andon_reason ?? 'none'}; obj_lifecycle=${result.object_lifecycle_validity.toFixed(3)}`,
+    });
+  }
+
   return probes;
 }
 
