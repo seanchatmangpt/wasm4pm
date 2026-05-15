@@ -28,8 +28,7 @@ pub fn forecast_internal(data: &[f64], alpha: f64) -> ForecastResult {
     let mut s = data[0];
     let mut sum_sq_err = 0.0;
 
-    for i in 1..n {
-        let val = data[i];
+    for &val in data.iter().skip(1) {
         let prev_s = s;
         // Simple Exponential Smoothing: s_t = alpha * x_t + (1 - alpha) * s_{t-1}
         s = alpha * val + (1.0 - alpha) * prev_s;
@@ -108,7 +107,7 @@ pub fn discover_ml_forecast(eventlog_handle: &str, _activity_key: &str) -> Resul
     
     let mean_density = count as f64 / NUM_WINDOWS as f64;
     let confidence = if mean_density > 0.0 {
-        (1.0 - (res.rmse / mean_density)).max(0.0).min(1.0)
+        (1.0 - (res.rmse / mean_density)).clamp(0.0, 1.0)
     } else {
         0.0
     };

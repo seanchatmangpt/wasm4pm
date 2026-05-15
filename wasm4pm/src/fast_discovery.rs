@@ -218,7 +218,7 @@ pub fn analyze_trace_variants(
             }
 
             let mut variant_list: Vec<(Vec<String>, usize)> = variants.into_iter().collect();
-            variant_list.sort_by(|a, b| b.1.cmp(&a.1));
+            variant_list.sort_by_key(|b| std::cmp::Reverse(b.1));
 
             let top_variants: Vec<_> = variant_list
                 .iter()
@@ -278,7 +278,7 @@ pub fn mine_sequential_patterns(
                 .into_iter()
                 .filter(|(_, count)| *count >= min_count)
                 .collect();
-            frequent_patterns.sort_by(|a, b| b.1.cmp(&a.1));
+            frequent_patterns.sort_by_key(|b| std::cmp::Reverse(b.1));
 
             let result_patterns: Vec<_> = frequent_patterns
                 .iter()
@@ -582,9 +582,9 @@ pub fn analyze_start_end_activities(
             let mut ends: Vec<_> = end_acts.into_iter().collect();
             let mut pairs: Vec<_> = start_end_pairs.into_iter().collect();
 
-            starts.sort_by(|a, b| b.1.cmp(&a.1));
-            ends.sort_by(|a, b| b.1.cmp(&a.1));
-            pairs.sort_by(|a, b| b.1.cmp(&a.1));
+            starts.sort_by_key(|b| std::cmp::Reverse(b.1));
+            ends.sort_by_key(|b| std::cmp::Reverse(b.1));
+            pairs.sort_by_key(|b| std::cmp::Reverse(b.1));
 
             to_js_str(&json!({
                 "start_activities": starts.iter().take(10).map(|(a, c)| json!({"activity": a, "count": c})).collect::<Vec<_>>(),
@@ -633,7 +633,7 @@ pub fn analyze_activity_cooccurrence(
             }
 
             let mut pairs: Vec<_> = cooccurrence.into_iter().collect();
-            pairs.sort_by(|a, b| b.1.cmp(&a.1));
+            pairs.sort_by_key(|b| std::cmp::Reverse(b.1));
 
             let result: Vec<_> = pairs
                 .iter()

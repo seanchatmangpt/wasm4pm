@@ -339,14 +339,21 @@ fn evaluate_route_layer(motion: &RequestMotion) -> LayerVerdict {
 }
 
 /// Evaluate the automl layer.
-/// Reserved for ML-scored risk assessment by the MiniML engine. At membrane
-/// initialisation time this layer always passes at low confidence.
+/// Reserved for ML-scored risk assessment by the MiniML engine.
+///
+/// # CAUTION — layer was NOT actually evaluated
+/// This function returns `Verdict::Allow` only because `Verdict::Deferred` does not
+/// yet exist in the enum (adding it would require updating ~72 match arms). The
+/// confidence is set to `0.1` (not `0.3`) to clearly signal that no real assessment
+/// was performed. Callers MUST NOT treat this as a genuine Allow — the layer was
+/// bypassed entirely.
 fn evaluate_automl_layer(_motion: &RequestMotion) -> LayerVerdict {
     LayerVerdict {
         layer: "automl".to_string(),
         verdict: Verdict::Allow,
-        confidence: 0.3,
-        reason: "AutoML risk score deferred — model not yet loaded for this membrane instance"
+        confidence: 0.1,
+        reason: "BYPASSED: AutoML model not yet loaded — this layer was not evaluated; \
+                 do not interpret as a genuine allow decision"
             .to_string(),
         evidence_used: vec![],
         missing_evidence: vec![],

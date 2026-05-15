@@ -145,7 +145,7 @@ function knnBatch(
   const results = new Array<{ label: number; confidence: number }>(n);
 
   for (let qi = 0; qi < n; qi++) {
-    // Compute squared distances (no sqrt)
+    // Compute squared distances (no sqrt) — branchless inner loop
     for (let i = 0; i < n; i++) {
       let ss = 0;
       for (let j = 0; j < d; j++) {
@@ -154,13 +154,13 @@ function knnBatch(
       }
       distBuf[i] = ss;
     }
+    // Self-exclusion without a branch in the sort loop
+    distBuf[qi] = Infinity;
 
-    // Partial sort: find top-k by squared distance (exclude self-match)
-    // For small k relative to n, insertion into sorted array is fine
+    // Partial sort: find top-k by squared distance
     const sorted = new Array<number>(k);
     let sortedLen = 0;
     for (let i = 0; i < n && sortedLen < k; i++) {
-      if (i === qi) continue; // Skip self-match
       // Insert into sorted position
       let pos = sortedLen;
       while (pos > 0 && distBuf[i] < distBuf[sorted[pos - 1]]) pos--;
@@ -173,9 +173,9 @@ function knnBatch(
     if (n < k) {
       for (let i = sortedLen; i < n; i++) sorted[sortedLen++] = i;
     } else {
-      // Replace worst neighbor with better ones from remaining
+      // Replace worst neighbor with better ones from remaining.
+      // distBuf[qi] == Infinity so the distance check below naturally skips self.
       for (let i = k; i < n; i++) {
-        if (i === qi) continue; // Skip self-match
         if (distBuf[i] < distBuf[sorted[k - 1]]) {
           // Remove worst, insert new
           let pos = k - 1;

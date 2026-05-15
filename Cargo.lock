@@ -2437,6 +2437,7 @@ dependencies = [
  "itertools 0.14.0",
  "js-sys",
  "lazy_static",
+ "miniml",
  "once_cell",
  "proptest",
  "rand 0.8.5",
@@ -2449,11 +2450,13 @@ dependencies = [
  "simd-json",
  "smallvec",
  "statrs",
+ "thiserror 1.0.69",
  "tracing",
  "tracing-subscriber",
  "uuid",
  "wasm-bindgen",
  "wasm-bindgen-futures",
+ "wasm4pm-cognition",
  "wasm4pm-types",
 ]
 

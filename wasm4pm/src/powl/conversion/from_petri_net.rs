@@ -1025,7 +1025,7 @@ fn translate_partial_order(
         if let (Some(&c1), Some(&c2)) = (group_to_child.get(&g1), group_to_child.get(&g2)) {
             let pos1 = children_clone.iter().position(|&c| c == c1).unwrap();
             let pos2 = children_clone.iter().position(|&c| c == c2).unwrap();
-            arena.add_order_edge(spo_idx, pos1, pos2);
+            arena.add_order_edge(spo_idx, pos1, pos2).ok();
         }
     }
 
@@ -1135,7 +1135,7 @@ mod tests {
     /// Helper: POWL → Petri Net → POWL roundtrip
     fn roundtrip(powl_str: &str) -> Result<String, String> {
         let mut arena1 = PowlArena::new();
-        let root1 = parse_powl_model_string(powl_str, &mut arena1)?;
+        let root1 = parse_powl_model_string(powl_str, &mut arena1).map_err(|e| e.to_string())?;
         let pn_result = to_petri_net::apply(&arena1, root1);
         let pn_json = serde_json::to_string(&pn_result).unwrap();
         let (arena2, root2) = petri_net_to_powl(&pn_json)?;

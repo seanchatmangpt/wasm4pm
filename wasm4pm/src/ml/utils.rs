@@ -123,8 +123,8 @@ pub fn standardize(data: &mut [Vec<f64>]) {
         let std_dev = variance.sqrt().max(1e-10);
         let inv_std_dev = 1.0 / std_dev;
 
-        for i in 0..data.len() {
-            data[i][j] = (data[i][j] - mean) * inv_std_dev;
+        for row in data.iter_mut() {
+            row[j] = (row[j] - mean) * inv_std_dev;
         }
     }
 }

@@ -146,6 +146,7 @@ pub enum DispatchOutcome {
     },
 
     /// Action not implemented yet
+    #[doc = "Reserved — not yet dispatched. Callers must not treat this as success."]
     NotImplemented,
 }
 
@@ -182,6 +183,7 @@ pub enum DispatchError {
     ScalingFailed(String),
 
     /// Action not implemented
+    #[doc = "Reserved — not yet dispatched. Callers must not treat this as success."]
     NotImplemented,
 }
 

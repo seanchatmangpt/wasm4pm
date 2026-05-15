@@ -13,6 +13,8 @@
 //! Instead of a recursive `Box<dyn POWL>` tree (problematic for wasm-bindgen),
 //! nodes are stored in a flat `PowlArena` and referenced by u32 indices.
 
+use crate::error::Wasm4pmError;
+
 // ─── BinaryRelation ─────────────────────────────────────────────────────────
 
 /// Bit-packed adjacency matrix for partial order relations.
@@ -30,6 +32,7 @@ pub struct BinaryRelation {
 
 impl BinaryRelation {
     /// Create an n×n zero matrix.
+    #[must_use]
     pub fn new(n: usize) -> Self {
         let row_words = if n == 0 { 0 } else { n.div_ceil(64) };
         BinaryRelation {
@@ -349,11 +352,7 @@ pub enum PowlNode {
     FrequentTransition(FrequentTransitionNode),
     StrictPartialOrder(StrictPartialOrderNode),
     OperatorPowl(OperatorPowlNode),
-    /// Legacy non-block-structured choice. Kept for backward compatibility.
-    /// New code should prefer `ChoiceGraph`.
-    #[deprecated(
-        note = "Use PowlNode::ChoiceGraph for spec-compliant Definition 1 invariants"
-    )]
+    /// Legacy non-block-structured choice. Internal use only; prefer `ChoiceGraph` for new code.
     DecisionGraph(DecisionGraphNode),
     /// Spec-compliant choice graph (paper arXiv:2505.07052, Definition 1).
     ChoiceGraph(ChoiceGraphPowlNode),
@@ -386,6 +385,7 @@ pub struct PowlArena {
 }
 
 impl PowlArena {
+    #[must_use]
     pub fn new() -> Self {
         PowlArena {
             nodes: Vec::new(),
@@ -542,11 +542,17 @@ impl PowlArena {
     }
 
     /// Add an edge inside a StrictPartialOrder.
-    pub fn add_order_edge(&mut self, spo_idx: u32, child_src: usize, child_tgt: usize) {
+    pub fn add_order_edge(
+        &mut self,
+        spo_idx: u32,
+        child_src: usize,
+        child_tgt: usize,
+    ) -> Result<(), String> {
         if let Some(PowlNode::StrictPartialOrder(spo)) = self.nodes.get_mut(spo_idx as usize) {
             spo.order.add_edge(child_src, child_tgt);
+            Ok(())
         } else {
-            panic!("node {} is not a StrictPartialOrder", spo_idx);
+            Err(format!("node {} is not a StrictPartialOrder", spo_idx))
         }
     }
 
@@ -577,16 +583,22 @@ impl PowlArena {
     /// Validate that all SPO nodes have irreflexive ordering relations.
     /// Checks transitivity on the transitive closure (user-specified edges
     /// may not be transitively closed, which is fine — the closure is).
-    pub fn validate_partial_orders(&self, root: u32) -> Result<(), String> {
+    pub fn validate_partial_orders(&self, root: u32) -> Result<(), Wasm4pmError> {
         match self.nodes.get(root as usize) {
             Some(PowlNode::StrictPartialOrder(spo)) => {
                 if !spo.order.is_irreflexive() {
-                    return Err(format!("node {}: partial order is not irreflexive", root));
+                    return Err(Wasm4pmError::Validation(format!(
+                        "node {}: partial order is not irreflexive",
+                        root
+                    )));
                 }
                 // Check transitivity on the closure, not raw edges
                 let closure = crate::powl::transitive::transitive_closure(&spo.order);
                 if !closure.is_transitive() {
-                    return Err(format!("node {}: partial order is not transitive", root));
+                    return Err(Wasm4pmError::Validation(format!(
+                        "node {}: partial order is not transitive",
+                        root
+                    )));
                 }
                 for &child in &spo.children {
                     self.validate_partial_orders(child)?;
@@ -724,27 +736,27 @@ impl PowlArena {
     }
 
     /// Deep-copy the subtree rooted at `idx` into a new arena.
-    pub fn copy_subtree(&self, idx: u32) -> (PowlArena, u32) {
+    pub fn copy_subtree(&self, idx: u32) -> Result<(PowlArena, u32), Wasm4pmError> {
         let mut new_arena = PowlArena::new();
-        let new_root = self.copy_node_into(&mut new_arena, idx);
-        (new_arena, new_root)
+        let new_root = self.copy_node_into(&mut new_arena, idx).map_err(Wasm4pmError::Validation)?;
+        Ok((new_arena, new_root))
     }
 
-    fn copy_node_into(&self, dest: &mut PowlArena, idx: u32) -> u32 {
+    fn copy_node_into(&self, dest: &mut PowlArena, idx: u32) -> Result<u32, String> {
         match self.nodes.get(idx as usize) {
-            None => panic!("invalid arena index {}", idx),
-            Some(PowlNode::Transition(t)) => dest.add_transition(t.label.clone()),
+            None => Err(format!("invalid arena index {}", idx)),
+            Some(PowlNode::Transition(t)) => Ok(dest.add_transition(t.label.clone())),
             Some(PowlNode::FrequentTransition(t)) => {
                 let min_freq: i64 = if t.skippable { 0 } else { 1 };
                 let max_freq: Option<i64> = if t.selfloop { None } else { Some(1) };
-                dest.add_frequent_transition(t.activity.clone(), min_freq, max_freq)
+                Ok(dest.add_frequent_transition(t.activity.clone(), min_freq, max_freq))
             }
             Some(PowlNode::StrictPartialOrder(spo)) => {
                 let new_children: Vec<u32> = spo
                     .children
                     .iter()
                     .map(|&c| self.copy_node_into(dest, c))
-                    .collect();
+                    .collect::<Result<Vec<_>, _>>()?;
                 let spo_idx = dest.add_strict_partial_order(new_children);
                 let n = spo.children.len();
                 if let Some(PowlNode::StrictPartialOrder(new_spo)) =
@@ -758,7 +770,7 @@ impl PowlArena {
                         }
                     }
                 }
-                spo_idx
+                Ok(spo_idx)
             }
             Some(PowlNode::OperatorPowl(op)) => {
                 let operator = op.operator;
@@ -766,23 +778,23 @@ impl PowlArena {
                     .children
                     .iter()
                     .map(|&c| self.copy_node_into(dest, c))
-                    .collect();
-                dest.add_operator(operator, new_children)
+                    .collect::<Result<Vec<_>, _>>()?;
+                Ok(dest.add_operator(operator, new_children))
             }
             Some(PowlNode::DecisionGraph(dg)) => {
                 let new_children: Vec<u32> = dg
                     .children
                     .iter()
                     .map(|&c| self.copy_node_into(dest, c))
-                    .collect();
+                    .collect::<Result<Vec<_>, _>>()?;
 
-                dest.add_decision_graph(
+                Ok(dest.add_decision_graph(
                     new_children,
                     dg.order.clone(),
                     dg.start_nodes.clone(),
                     dg.end_nodes.clone(),
                     dg.empty_path,
-                )
+                ))
             }
             Some(PowlNode::ChoiceGraph(cg)) => {
                 // Recursively copy any SubModel sub-trees, preserving Start/End markers.
@@ -798,7 +810,7 @@ impl PowlArena {
                         wasm4pm_types::ChoiceGraphNode::Activity(l) => new_nodes
                             .push(wasm4pm_types::ChoiceGraphNode::Activity(l.clone())),
                         wasm4pm_types::ChoiceGraphNode::SubModel(child) => {
-                            let new_child = self.copy_node_into(dest, *child);
+                            let new_child = self.copy_node_into(dest, *child)?;
                             new_nodes.push(wasm4pm_types::ChoiceGraphNode::SubModel(new_child));
                         }
                     }
@@ -814,7 +826,7 @@ impl PowlArena {
                 dest.nodes.push(PowlNode::ChoiceGraph(ChoiceGraphPowlNode {
                     graph: new_graph,
                 }));
-                idx
+                Ok(idx)
             }
         }
     }
@@ -959,9 +971,9 @@ mod tests {
         let b = arena.add_transition(Some("B".into()));
         let c = arena.add_transition(Some("C".into()));
         let po = arena.add_strict_partial_order(vec![a, b, c]);
-        arena.add_order_edge(po, 0, 1);
-        arena.add_order_edge(po, 1, 2);
-        arena.add_order_edge(po, 0, 2);
+        arena.add_order_edge(po, 0, 1).ok();
+        arena.add_order_edge(po, 1, 2).ok();
+        arena.add_order_edge(po, 0, 2).ok();
         assert!(arena.validate_partial_orders(po).is_ok());
     }
 
@@ -973,8 +985,8 @@ mod tests {
         let b = arena.add_transition(Some("B".into()));
         let c = arena.add_transition(Some("C".into()));
         let po = arena.add_strict_partial_order(vec![a, b, c]);
-        arena.add_order_edge(po, 0, 1);
-        arena.add_order_edge(po, 1, 2);
+        arena.add_order_edge(po, 0, 1).ok();
+        arena.add_order_edge(po, 1, 2).ok();
         assert!(arena.validate_partial_orders(po).is_ok());
     }
 
@@ -984,7 +996,7 @@ mod tests {
         let a = arena.add_transition(Some("A".into()));
         let b = arena.add_transition(Some("B".into()));
         let seq = arena.add_sequence(vec![a, b]);
-        let (new_arena, new_root) = arena.copy_subtree(seq);
+        let (new_arena, new_root) = arena.copy_subtree(seq).expect("copy_subtree failed");
         assert_eq!(new_arena.to_repr(new_root), arena.to_repr(seq));
     }
 
@@ -1068,7 +1080,7 @@ mod tests {
         order.add_edge(2, 1);
         order.add_edge(1, 3);
         let dg = arena.add_decision_graph(vec![a, b], order, vec![0], vec![1], false);
-        let (new_arena, new_root) = arena.copy_subtree(dg);
+        let (new_arena, new_root) = arena.copy_subtree(dg).expect("copy_subtree failed");
         assert_eq!(new_arena.to_repr(new_root), arena.to_repr(dg));
     }
 

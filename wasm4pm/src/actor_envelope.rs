@@ -313,9 +313,9 @@ pub fn score_actor_motion(
             None => {
                 let result = serde_json::json!({
                     "verdict": "require_evidence",
-                    "confidence": 1.0,
-                    "reason": format!("Actor '{}' has no history in envelope", actor),
-                    "anomaly_score": 1.0,
+                    "confidence": 0.0,
+                    "reason": format!("Actor '{}' has no history in envelope — insufficient evidence to classify", actor),
+                    "anomaly_score": 0.5,
                     "actor": actor,
                     "requested_action": requested_action,
                     "common_action_rank": null,

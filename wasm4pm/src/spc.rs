@@ -96,42 +96,39 @@ pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
 
     let recent = &data[data.len().saturating_sub(9)..];
 
-    // Rule 2: 9 consecutive points on same side of center line
+    // Rule 2: 9 consecutive points on same side of center line.
+    // Branchless direction selection via bitmask key.
     if recent.len() >= 9 {
-        let above_cl = recent.iter().all(|d| d.value > d.cl);
-        let below_cl = recent.iter().all(|d| d.value < d.cl);
-
-        if above_cl {
-            alerts.push(SpecialCause::Shift {
-                direction: ShiftDirection::Above,
-                count: 9,
-            });
-        } else if below_cl {
-            alerts.push(SpecialCause::Shift {
-                direction: ShiftDirection::Below,
-                count: 9,
-            });
+        let above = recent.iter().filter(|d| d.value > d.cl).count() == 9;
+        let below = recent.iter().filter(|d| d.value < d.cl).count() == 9;
+        const SHIFT_DIR: [Option<ShiftDirection>; 4] = [
+            None,
+            Some(ShiftDirection::Above),
+            Some(ShiftDirection::Below),
+            None, // conflict — both true is impossible
+        ];
+        let key = (above as usize) | ((below as usize) << 1);
+        if let Some(dir) = SHIFT_DIR[key] {
+            alerts.push(SpecialCause::Shift { direction: dir, count: 9 });
         }
     }
 
-    // Rule 3: 6 consecutive points increasing or decreasing
+    // Rule 3: 6 consecutive points increasing or decreasing.
+    // Branchless direction selection via bitmask key.
     if recent.len() >= 6 {
         let last_6 = &recent[recent.len() - 6..];
         let values: Vec<f64> = last_6.iter().map(|d| d.value).collect();
-
-        let increasing = values.windows(2).all(|w| w[1] > w[0]);
-        let decreasing = values.windows(2).all(|w| w[1] < w[0]);
-
-        if increasing {
-            alerts.push(SpecialCause::Trend {
-                direction: TrendDirection::Increasing,
-                count: 6,
-            });
-        } else if decreasing {
-            alerts.push(SpecialCause::Trend {
-                direction: TrendDirection::Decreasing,
-                count: 6,
-            });
+        let incr = values.windows(2).all(|w| w[1] > w[0]);
+        let decr = values.windows(2).all(|w| w[1] < w[0]);
+        const TREND_DIR: [Option<TrendDirection>; 4] = [
+            None,
+            Some(TrendDirection::Increasing),
+            Some(TrendDirection::Decreasing),
+            None, // conflict — impossible
+        ];
+        let key = (incr as usize) | ((decr as usize) << 1);
+        if let Some(dir) = TREND_DIR[key] {
+            alerts.push(SpecialCause::Trend { direction: dir, count: 6 });
         }
     }
 

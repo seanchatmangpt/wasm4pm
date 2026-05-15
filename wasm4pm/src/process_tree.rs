@@ -47,24 +47,28 @@ pub struct ProcessTreeNode {
 }
 
 impl ProcessTreeNode {
+    #[must_use]
     pub fn operator(op: impl Into<String>) -> Self {
         ProcessTreeNode {
             kind: NodeKind::Operator(op.into()),
             children: vec![],
         }
     }
+    #[must_use]
     pub fn activity(label: impl Into<String>) -> Self {
         ProcessTreeNode {
             kind: NodeKind::Activity(label.into()),
             children: vec![],
         }
     }
+    #[must_use]
     pub fn silent() -> Self {
         ProcessTreeNode {
             kind: NodeKind::Silent,
             children: vec![],
         }
     }
+    #[must_use]
     pub fn add_child(mut self, child: ProcessTreeNode) -> Self {
         self.children.push(child);
         self
@@ -143,6 +147,7 @@ pub fn validate_process_tree(tree_json: &str) -> Result<JsValue, JsValue> {
 }
 
 /// Pure-Rust process tree discovery without wasm-bindgen. Used by integration tests.
+#[must_use]
 pub fn discover_simple_process_tree_from_log(log: &EventLog, activity_key: &str) -> String {
     let mut freq: std::collections::HashMap<String, usize> = std::collections::HashMap::new();
 
@@ -163,7 +168,7 @@ pub fn discover_simple_process_tree_from_log(log: &EventLog, activity_key: &str)
     }
 
     let mut sorted_acts: Vec<(String, usize)> = freq.into_iter().collect();
-    sorted_acts.sort_by(|a, b| b.1.cmp(&a.1));
+    sorted_acts.sort_by_key(|b| std::cmp::Reverse(b.1));
 
     let children: Vec<serde_json::Value> = sorted_acts
         .iter()

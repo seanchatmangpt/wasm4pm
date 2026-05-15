@@ -37,6 +37,7 @@ wasm-bindgen-futures = "0.4.42"
 serde_json = { workspace = true }
 serde = { workspace = true }
 serde-wasm-bindgen = "0.6"
+thiserror = "1"
 once_cell = "1.19"
 uuid = { version = "1.16.0", features = ["v4"] }
 chrono = { workspace = true }
@@ -53,6 +54,8 @@ tracing = "0.1"
 statrs = { version = "0.17", default-features = false, optional = true }
 bcinr = { workspace = true, optional = true }
 blake3 = "1"
+wasm4pm-cognition = { path = "../crates/wasm4pm-cognition", default-features = false, optional = true }
+miniml = { workspace = true, optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 uuid = { version = "1.16.0", features = ["v4", "js"] }
@@ -217,6 +220,14 @@ harness = false
 name = "drift_detection_detailed"
 harness = false
 
+[[bench]]
+name = "real_data_bench"
+harness = false
+
+[[bench]]
+name = "autonomic_real_data_bench"
+harness = false
+
 [[example]]
 name = "scalability_report"
 
@@ -257,6 +268,9 @@ feature-statrs = ["statrs", "dep:statrs"]
 
 # Branchless algorithms (bcinr integration)
 bcinr = ["dep:bcinr"]
+
+# Cognition kernel re-export (wasm4pm-cognition substrate)
+cognition = ["dep:wasm4pm-cognition"]
 
 # Default: no canonical features (backward compatibility with browser profile below)
 default = ["browser"]
@@ -382,6 +396,8 @@ montecarlo = []
 
 # Dependencies
 statrs = ["dep:statrs"]
+miniml = ["dep:miniml"]
+gpu = []
 powl = []
 ocel = []
 
@@ -389,3 +405,14 @@ ocel = []
 hand_rolled_stats = []
 simd = []
 console_error_panic_hook = ["dep:console_error_panic_hook"]
+
+# Proof-of-concept gate validator (in-memory HashSet, NOT SPARQL-backed)
+# NEVER include in browser/cloud/fog/edge/iot/mobile deployment profiles
+poc_gate_validator = []
+
+# AutoML membrane layer (forward guard — src/automembrane.rs not yet created)
+# NEVER include in any deployment profile until real model is implemented
+automl_experimental = []
+
+# Optional wasm4pm-types XES import module (requires wasm4pm-types/import feature)
+import = []

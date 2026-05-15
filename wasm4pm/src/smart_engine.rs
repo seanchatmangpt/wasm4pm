@@ -620,6 +620,7 @@ pub struct SmartEngine {
 
 impl SmartEngine {
     /// Create a new smart engine with default parameters.
+    #[must_use]
     pub fn new() -> Self {
         SmartEngine {
             cache: LruCache::new(64),

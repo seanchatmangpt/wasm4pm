@@ -34,7 +34,7 @@ export interface TierSummary {
  * Tier 0: Production
  *   - Output type matches registry claim (no "lies")
  *   - WASM export exists (no NOT_EXPORTED)
- *   - Fitness ≥ 0.85 (valid process model)
+ *   - Fitness === 1.0 (valid process model)
  *   - Latency < 5s at 500K events
  *   - No crashes
  *
@@ -108,14 +108,14 @@ export function classifyAlgorithm(
   }
 
   // Check fitness requirement (Tier 2 if failed)
-  if (registryMetadata.fitnessCapable && result.quality.fitness < 0.85) {
+  if (registryMetadata.fitnessCapable && result.quality.fitness < 1.0) {
     reasons.push(
-      `Fitness too low for fitness-capable algorithm: ${result.quality.fitness.toFixed(3)} < 0.85`
+      `Fitness too low for admission: ${result.quality.fitness.toFixed(3)} < 1.0 (Andon Pull)`
     );
   }
 
-  // If output type mismatched or fitness failed, it's Tier 2
-  if (result.outputType !== registryMetadata.outputType || (registryMetadata.fitnessCapable && result.quality.fitness < 0.85)) {
+  // Tier 2: Wrong (Wrong type, low fitness, slow)
+  if (result.outputType !== registryMetadata.outputType || (registryMetadata.fitnessCapable && result.quality.fitness < 1.0)) {
     return {
       algorithm: result.algorithm,
       tier: 2,

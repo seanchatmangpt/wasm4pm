@@ -222,7 +222,7 @@ fn find_parallel_cut(
     // Union-Find: group activities connected by bidirectional df-edges.
     let mut parent: Vec<usize> = (0..n).collect();
 
-    fn uf_find(parent: &mut Vec<usize>, mut x: usize) -> usize {
+    fn uf_find(parent: &mut [usize], mut x: usize) -> usize {
         while parent[x] != x {
             parent[x] = parent[parent[x]]; // path compression (halving)
             x = parent[x];
@@ -230,7 +230,7 @@ fn find_parallel_cut(
         x
     }
 
-    fn uf_union(parent: &mut Vec<usize>, a: usize, b: usize) {
+    fn uf_union(parent: &mut [usize], a: usize, b: usize) {
         let ra = uf_find(parent, a);
         let rb = uf_find(parent, b);
         if ra != rb {
@@ -250,9 +250,9 @@ fn find_parallel_cut(
 
     // Collect groups, sorting by root for deterministic output.
     let mut groups: FxHashMap<usize, Vec<String>> = FxHashMap::default();
-    for i in 0..n {
+    for (i, activity) in activities.iter().enumerate() {
         let root = uf_find(&mut parent, i);
-        groups.entry(root).or_default().push(activities[i].clone());
+        groups.entry(root).or_default().push(activity.clone());
     }
 
     if groups.len() < 2 {

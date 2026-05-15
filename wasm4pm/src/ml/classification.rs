@@ -99,6 +99,7 @@ pub fn extract_features(log: &EventLog, activity_key: &str) -> (Vec<[f64; 2]>, V
 }
 
 /// Nanosecond Sweep: Multi-K Cross-Validation in a single pass over distances.
+#[allow(clippy::needless_range_loop)] // branchless top-k insertion: index is the slot position
 pub fn knn_sweep_cv(
     features: &[[f64; 2]],
     labels: &[u8],
@@ -174,6 +175,7 @@ pub fn knn_sweep_cv(
 /// - Fixed-size stack array for neighbor list to avoid heap allocation.
 /// - Branchless insertion logic for pipeline efficiency.
 /// - Zero-copy sweep support for AutoML.
+#[allow(clippy::needless_range_loop)] // branchless top-k insertion: index is the slot position
 pub fn knn_internal(
     train_x: &[[f64; 2]],
     train_y: &[u8],

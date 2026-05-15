@@ -77,12 +77,21 @@
 //! - [npm Package](https://www.npmjs.com/package/@wasm4pm/cli)
 //! - [Documentation](https://docs.rs/wasm4pm)
 
+#![warn(missing_docs)]
+
+/// Cache residency helpers for warm-starting the WASM module.
 pub mod cache_resident;
+/// Structured error types and JS interop helpers.
 pub mod error;
+/// Event log I/O utilities (XES import/export, binary format).
 pub mod io;
+/// High-level ML algorithm dispatchers (remaining-time, outcome, anomaly).
 pub mod ml_algorithms;
+/// Core data models: `EventLog`, `OCEL`, `DFG`, `PetriNet`, etc.
 pub mod models;
+/// Global stored-object state (handles, object pool, arena management).
 pub mod state;
+/// Shared type aliases and newtype wrappers.
 pub mod types;
 
 use std::cell::RefCell;
@@ -104,7 +113,8 @@ pub fn main() {
 const DRIFT_THRESHOLD_LOW_DEFAULT: f32 = 0.3;
 const DRIFT_THRESHOLD_HIGH_DEFAULT: f32 = 0.7;
 
-// Latency budget for autonomic cycle (in microseconds)
+// Latency budget for autonomic cycle (in microseconds) — only used by cloud feature
+#[cfg(feature = "cloud")]
 const CYCLE_LATENCY_BUDGET_US: u64 = 5_000;
 
 use std::sync::atomic::{AtomicU32, Ordering};
@@ -123,6 +133,7 @@ fn get_drift_threshold_low() -> f32 {
 /// On native, uses `std::time::Instant` (nanosecond precision).
 ///
 /// Returns microseconds as u64 for portability.
+#[cfg(feature = "cloud")]
 pub(crate) fn wall_clock_us() -> u64 {
     #[cfg(target_arch = "wasm32")]
     {
@@ -149,6 +160,7 @@ fn get_drift_threshold_high() -> f32 {
 ///
 /// Returns true if any activity appears more than once in the trace.
 /// This indicates a rework loop or repetition pattern.
+#[cfg(feature = "cloud")]
 fn has_activity_repetition(trace: &models::Trace, activity_key: &str) -> bool {
     use std::collections::HashSet;
 
@@ -279,6 +291,12 @@ pub mod proof_gate_registry;
 pub mod tps_metrics_registry;
 #[allow(dead_code)]
 pub mod wasm_export_registry;
+
+// Proof-of-concept gate validator — in-memory HashSet, NOT connected to SPARQL receipt store.
+// DO NOT add poc_gate_validator to browser/cloud/fog/edge/iot profiles.
+// For production gate checks, use proof_gate_registry.
+#[cfg(feature = "poc_gate_validator")]
+pub mod gate_validator;
 
 // Hand-rolled statistics (when hand_rolled_stats feature is enabled)
 pub mod algorithms;
@@ -577,12 +595,26 @@ thread_local! {
     /// Gated on ml feature (prediction_resource is ml-gated).
     #[cfg(feature = "ml")]
     pub static FALLBACK_BANDIT: RefCell<Option<crate::prediction_resource::BanditState>> =
-        RefCell::new(None);
+        const { RefCell::new(None) };
 }
 
 // ML contextual bandits — LinUCB CPU baseline (ground truth for GPU parity)
 #[cfg(feature = "ml")]
 pub mod ml;
+
+// Cognition substrate re-export — surfaces `wasm4pm_cognition` as `wasm4pm::cognition`
+// so downstream crates (e.g. mcpp) can depend on wasm4pm alone (with the `cognition`
+// feature) without taking a direct dependency on wasm4pm-cognition.
+#[cfg(feature = "cognition")]
+pub use wasm4pm_cognition as cognition;
+
+// Types substrate re-export — surfaces `wasm4pm_types` (hash, BLAKE3 helpers,
+// canonical JSON) as `wasm4pm::data_types`. Downstream crates that need
+// canonical receipt serialization can reach
+// `wasm4pm::data_types::hash::canonical_json` via the single wasm4pm
+// dependency. (The name `types` is already taken by an internal WASM bindings
+// module at this crate root.)
+pub use wasm4pm_types as data_types;
 
 // GPU-accelerated LinUCB contextual bandit for algorithm selection
 // (van der Aalst: resource/intervention prediction perspective)
@@ -615,31 +647,55 @@ fn init_state() {
     let _ = state::get_or_init_state();
 }
 
+/// Get the wasm4pm crate version string.
 #[wasm_bindgen]
 pub fn get_version() -> String {
     env!("CARGO_PKG_VERSION").to_string()
 }
 
-/// Get WASM module capabilities as JSON string.
+/// Get WASM module capabilities as a JavaScript object.
 ///
 /// Returns version and feature flags indicating which algorithms
 /// and capabilities are available in this build.
+/// Shape: `{version: string, features: {discovery: bool, conformance: bool, ...}}`
 #[wasm_bindgen]
-pub fn get_capabilities() -> String {
-    format!(
-        r#"{{"version":"{}","features":{{"discovery":true,"conformance":{},"ml":{},"streaming":{},"powl":{},"ocel":{},"alignment_fitness":{},"petri_net_playout":{},"extensive_playout":{},"align_etconformance":{},"montecarlo":{}}}}}"#,
-        env!("CARGO_PKG_VERSION"),
-        cfg!(feature = "conformance_full"),
-        cfg!(feature = "ml"),
-        cfg!(feature = "streaming_full"),
-        cfg!(feature = "powl"),
-        cfg!(feature = "ocel"),
-        cfg!(feature = "alignment_fitness"),
-        cfg!(feature = "petri_net_playout"),
-        cfg!(feature = "extensive_playout"),
-        cfg!(feature = "align_etconformance"),
-        cfg!(feature = "montecarlo")
-    )
+pub fn get_capabilities() -> Result<JsValue, JsValue> {
+    #[derive(serde::Serialize)]
+    struct Features {
+        discovery: bool,
+        conformance: bool,
+        ml: bool,
+        streaming: bool,
+        powl: bool,
+        ocel: bool,
+        alignment_fitness: bool,
+        petri_net_playout: bool,
+        extensive_playout: bool,
+        align_etconformance: bool,
+        montecarlo: bool,
+    }
+    #[derive(serde::Serialize)]
+    struct Capabilities {
+        version: &'static str,
+        features: Features,
+    }
+    let caps = Capabilities {
+        version: env!("CARGO_PKG_VERSION"),
+        features: Features {
+            discovery: true,
+            conformance: cfg!(feature = "conformance_full"),
+            ml: cfg!(feature = "ml"),
+            streaming: cfg!(feature = "streaming_full"),
+            powl: cfg!(feature = "powl"),
+            ocel: cfg!(feature = "ocel"),
+            alignment_fitness: cfg!(feature = "alignment_fitness"),
+            petri_net_playout: cfg!(feature = "petri_net_playout"),
+            extensive_playout: cfg!(feature = "extensive_playout"),
+            align_etconformance: cfg!(feature = "align_etconformance"),
+            montecarlo: cfg!(feature = "montecarlo"),
+        },
+    };
+    serde_wasm_bindgen::to_value(&caps).map_err(|e| crate::error::js_val(&e.to_string()))
 }
 
 /// Clear all caches (parse, columnar, interner).
@@ -648,14 +704,26 @@ pub fn clear_all_caches() {
     crate::cache::cache_clear();
 }
 
-/// Get cache statistics as JSON string.
+/// Get cache statistics as a JavaScript object.
+///
+/// Returns `{parse_hits, parse_misses, columnar_entries, interner_entries}`.
 #[wasm_bindgen]
-pub fn get_cache_stats() -> String {
-    let stats = crate::cache::cache_stats();
-    format!(
-        r#"{{"parse_hits":{},"parse_misses":{},"columnar_entries":{},"interner_entries":{}}}"#,
-        stats.parse_hits, stats.parse_misses, stats.columnar_entries, stats.interner_entries
-    )
+pub fn get_cache_stats() -> Result<JsValue, JsValue> {
+    #[derive(serde::Serialize)]
+    struct CacheStats {
+        parse_hits: u64,
+        parse_misses: u64,
+        columnar_entries: usize,
+        interner_entries: usize,
+    }
+    let raw = crate::cache::cache_stats();
+    let stats = CacheStats {
+        parse_hits: raw.parse_hits,
+        parse_misses: raw.parse_misses,
+        columnar_entries: raw.columnar_entries,
+        interner_entries: raw.interner_entries,
+    };
+    serde_wasm_bindgen::to_value(&stats).map_err(|e| crate::error::js_val(&e.to_string()))
 }
 
 /// Set drift detection thresholds for RL state feature quantization.
@@ -2276,6 +2344,7 @@ pub fn circuit_breaker_set_state(json: &str) -> Result<String, JsValue> {
 
     Ok("Circuit breaker state restored".to_string())
 }
+/// Configure the circuit breaker from a JSON config string.
 #[cfg(feature = "cloud")]
 #[wasm_bindgen]
 pub fn circuit_breaker_configure(config_json: &str) -> Result<String, JsValue> {

@@ -5,6 +5,37 @@
  */
 use wasm_bindgen::prelude::*;
 
+/// Typed error enum for wasm4pm public APIs.
+///
+/// All `Result<T, String>` public functions should convert to this type at
+/// the public boundary using `.map_err(Wasm4pmError::Parse)` etc.
+/// Internal helper functions may continue to use `String` and convert at
+/// the last mile.
+#[derive(Debug, thiserror::Error)]
+pub enum Wasm4pmError {
+    /// Input could not be parsed (XES, OCEL, POWL text format, etc.).
+    #[error("parse error: {0}")]
+    Parse(String),
+    /// Structural validation failed (partial order, Petri net soundness, etc.).
+    #[error("validation error: {0}")]
+    Validation(String),
+    /// Binary `.pm4bin` format error (magic mismatch, truncated data, etc.).
+    #[error("binary format error: {0}")]
+    BinaryFormat(String),
+    /// An algorithm failed for a named reason.
+    #[error("algorithm error in '{algorithm}': {reason}")]
+    Algorithm { algorithm: String, reason: String },
+    /// A stored-object handle was not found or has the wrong type.
+    #[error("handle not found: {0}")]
+    HandleNotFound(String),
+}
+
+impl From<Wasm4pmError> for JsValue {
+    fn from(e: Wasm4pmError) -> JsValue {
+        js_val(&e.to_string())
+    }
+}
+
 /// Native-safe JsValue from string.
 /// On wasm32, this is a wrapper around JsValue::from_str.
 /// On other targets, it returns a zeroed JsValue to avoid panics.

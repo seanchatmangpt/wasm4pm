@@ -55,7 +55,7 @@ pub fn apply(
             for i in 0..n {
                 for j in 0..n {
                     if old_order.is_edge(i, j) {
-                        dest_arena.add_order_edge(spo_idx, i, j);
+                        dest_arena.add_order_edge(spo_idx, i, j).ok();
                     }
                 }
             }
@@ -79,7 +79,7 @@ pub fn apply(
             for i in 0..n {
                 for j in 0..n {
                     if old_order.is_edge(i, j) {
-                        dest_arena.add_order_edge(spo_idx, i, j);
+                        dest_arena.add_order_edge(spo_idx, i, j).ok();
                     }
                 }
             }

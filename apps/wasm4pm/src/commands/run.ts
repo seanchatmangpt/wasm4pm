@@ -206,6 +206,26 @@ export const run = defineCommand({
       description:
         'Compute and display quality metrics (fitness, precision, simplicity) after discovery',
     },
+    'assert-fitness': {
+      type: 'string',
+      description:
+        'Fail with exit 4 if fitness drops below this threshold (0-1). Implies --with-quality.',
+    },
+    'assert-precision': {
+      type: 'string',
+      description:
+        'Fail with exit 4 if precision drops below this threshold (0-1). Implies --with-quality.',
+    },
+    'set-baseline': {
+      type: 'boolean',
+      description:
+        'Save quality metrics as baseline to .wasm4pm/baseline.json. Use with --with-quality.',
+    },
+    'assert-improvement': {
+      type: 'boolean',
+      description:
+        'Fail with exit 4 if quality metrics regress versus the stored .wasm4pm/baseline.json.',
+    },
     preflight: {
       type: 'boolean',
       description:
@@ -465,8 +485,20 @@ export const run = defineCommand({
       }
 
       // Step 7: Quality metrics (before freeing handle)
+      const assertFitness = ctx.args['assert-fitness'] !== undefined
+        ? parseFloat(String(ctx.args['assert-fitness']))
+        : undefined;
+      const assertPrecision = ctx.args['assert-precision'] !== undefined
+        ? parseFloat(String(ctx.args['assert-precision']))
+        : undefined;
+      const needsQuality = ctx.args['with-quality'] ||
+        assertFitness !== undefined ||
+        assertPrecision !== undefined ||
+        Boolean(ctx.args['assert-improvement']) ||
+        Boolean(ctx.args['set-baseline']);
+
       let qualityMetrics: { fitness: number; precision: number; simplicity: number } | null = null;
-      if (ctx.args['with-quality']) {
+      if (needsQuality) {
         // Normalise result first to check model type
         const resultDataEarly = typeof raw === 'string' ? JSON.parse(raw) : raw;
         // Petri net algorithms return places/transitions/arcs as counts (numbers)
@@ -539,6 +571,53 @@ export const run = defineCommand({
           } catch {
             // quality metrics failure is non-fatal; will be reported in consoleRenderer
           }
+        }
+      }
+
+      // Step 7b: Conformance regression gate — assert-fitness / assert-precision / assert-improvement
+      if (qualityMetrics) {
+        const baselinePath = path.join(process.cwd(), '.wasm4pm', 'baseline.json');
+
+        if (ctx.args['set-baseline']) {
+          try {
+            await fs.mkdir(path.dirname(baselinePath), { recursive: true });
+            await fs.writeFile(baselinePath, JSON.stringify({ ...qualityMetrics, algorithm: resolvedAlgo, savedAt: new Date().toISOString() }, null, 2));
+          } catch { /* non-fatal */ }
+        }
+
+        const violations: string[] = [];
+
+        if (assertFitness !== undefined && qualityMetrics.fitness < assertFitness) {
+          violations.push(`fitness ${(qualityMetrics.fitness * 100).toFixed(1)}% < required ${(assertFitness * 100).toFixed(1)}%`);
+        }
+        if (assertPrecision !== undefined && qualityMetrics.precision < assertPrecision) {
+          violations.push(`precision ${(qualityMetrics.precision * 100).toFixed(1)}% < required ${(assertPrecision * 100).toFixed(1)}%`);
+        }
+
+        if (ctx.args['assert-improvement']) {
+          try {
+            const baselineRaw = await fs.readFile(baselinePath, 'utf8');
+            const baseline = JSON.parse(baselineRaw) as { fitness: number; precision: number };
+            if (qualityMetrics.fitness < baseline.fitness) {
+              violations.push(`fitness regressed: ${(qualityMetrics.fitness * 100).toFixed(1)}% < baseline ${(baseline.fitness * 100).toFixed(1)}%`);
+            }
+            if (qualityMetrics.precision < baseline.precision) {
+              violations.push(`precision regressed: ${(qualityMetrics.precision * 100).toFixed(1)}% < baseline ${(baseline.precision * 100).toFixed(1)}%`);
+            }
+          } catch {
+            violations.push('--assert-improvement: no baseline found — run with --set-baseline first');
+          }
+        }
+
+        if (violations.length > 0) {
+          const gateResult = makeErrorResult(
+            'run',
+            new Error(`Quality gate failed:\n${violations.map((v) => `  ✗ ${v}`).join('\n')}`),
+            EXIT_CODES.partial_failure,
+            'QUALITY_GATE_FAILED'
+          );
+          emitResult(gateResult, emitOptions);
+          return await exitWithFlush(EXIT_CODES.partial_failure);
         }
       }
 
