@@ -28,7 +28,7 @@
     "measure-sizes": "bash measure-size.sh",
     "build:mcp": "tsc src/mcp_server.ts --outDir dist --module commonjs --target es2020",
     "start:mcp": "npm run build:mcp && node dist/mcp_server.js",
-    "test": "npm run build:nodejs && npm run test:unit",
+    "test": "npm run test:unit",
     "test:unit": "vitest run",
     "test:unit:watch": "vitest",
     "test:integration": "vitest run __tests__/integration/",
