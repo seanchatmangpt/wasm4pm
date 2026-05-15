@@ -1148,6 +1148,7 @@ pub trait AgentMeta {
     fn name(&self) -> &'static str;
     fn exploration_rate(&self) -> f32;
     fn decay_exploration(&mut self);
+    fn set_exploration_rate(&mut self, rate: f32);
 }
 
 // ---------------------------------------------------------------------------
@@ -1172,6 +1173,9 @@ impl<S: WorkflowState, A: WorkflowAction> AgentMeta for QLearning<S, A> {
     }
     fn decay_exploration(&mut self) {
         self.exploration_rate *= self.exploration_decay;
+    }
+    fn set_exploration_rate(&mut self, rate: f32) {
+        self.exploration_rate = rate;
     }
 }
 
@@ -1216,6 +1220,9 @@ impl<S: WorkflowState, A: WorkflowAction> AgentMeta for SARSAAgent<S, A> {
     fn decay_exploration(&mut self) {
         self.exploration_rate *= self.exploration_decay;
     }
+    fn set_exploration_rate(&mut self, rate: f32) {
+        self.exploration_rate = rate;
+    }
 }
 
 impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for DoubleQLearning<S, A> {
@@ -1237,6 +1244,9 @@ impl<S: WorkflowState, A: WorkflowAction> AgentMeta for DoubleQLearning<S, A> {
     fn decay_exploration(&mut self) {
         self.exploration_rate *= self.exploration_decay;
     }
+    fn set_exploration_rate(&mut self, rate: f32) {
+        self.exploration_rate = rate;
+    }
 }
 
 impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for ExpectedSARSAAgent<S, A> {
@@ -1257,6 +1267,9 @@ impl<S: WorkflowState, A: WorkflowAction> AgentMeta for ExpectedSARSAAgent<S, A>
     }
     fn decay_exploration(&mut self) {
         self.exploration_rate *= self.exploration_decay;
+    }
+    fn set_exploration_rate(&mut self, rate: f32) {
+        self.exploration_rate = rate;
     }
 }
 
@@ -1280,6 +1293,9 @@ impl<S: WorkflowState, A: WorkflowAction> AgentMeta for ReinforceAgent<S, A> {
     }
     fn decay_exploration(&mut self) {
         // No-op for policy gradient
+    }
+    fn set_exploration_rate(&mut self, _rate: f32) {
+        // No-op: REINFORCE uses softmax temperature, not ε-greedy
     }
 }
 

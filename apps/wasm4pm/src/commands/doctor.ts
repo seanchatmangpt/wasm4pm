@@ -152,8 +152,8 @@ async function checkWasmBinary(): Promise<Diagnosis> {
     };
   }
 
-  const wasmFile = path.join(wasmPkgDir, 'wpm_bg.wasm');
-  const jsFile = path.join(wasmPkgDir, 'wpm.js');
+  const wasmFile = path.join(wasmPkgDir, 'wasm4pm_bg.wasm');
+  const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
 
   try {
     const [wasmStat, jsStat] = await Promise.all([fs.stat(wasmFile), fs.stat(jsFile)]);
@@ -203,13 +203,13 @@ async function checkWasmLoads(): Promise<Diagnosis> {
     };
   }
 
-  const jsFile = path.join(wasmPkgDir, 'wpm.js');
+  const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
   if (!existsSync(jsFile)) {
     return {
       name: 'WASM loads',
       pathology: 'ENVIRONMENT_FAULT',
       severity: 'STOP_THE_LINE',
-      message: 'wpm.js not found — module not built',
+      message: 'wasm4pm.js not found — module not built',
       fix: 'cd wasm4pm && pnpm run build',
     };
   }
@@ -252,12 +252,18 @@ async function checkWasmLoads(): Promise<Diagnosis> {
 
 async function checkSimdSupport(): Promise<Diagnosis> {
   try {
-    // WebAssembly SIMD is detected by compiling a small SIMD module
+    // WebAssembly SIMD is detected by compiling a module that uses v128.const (fd 0c).
+    // The module: () -> v128 { v128.const (16 zero bytes) }
+    // v128.const requires exactly 16 immediate bytes — runtimes without SIMD reject it at compile.
     const simdModule = new Uint8Array([
-      0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x07, 0x01, 0x60, 0x02, 0x7b, 0x7b,
-      0x01, 0x7b, 0x03, 0x02, 0x01, 0x00, 0x07, 0x0b, 0x01, 0x07, 0x73, 0x69, 0x6d, 0x64, 0x5f,
-      0x74, 0x65, 0x73, 0x74, 0x00, 0x00, 0x0a, 0x09, 0x01, 0x07, 0x00, 0x20, 0x00, 0x20, 0x00,
-      0xfd, 0x0c, 0x00, 0x0b,
+      0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // magic + version
+      0x01, 0x05, 0x01, 0x60, 0x00, 0x01, 0x7b,       // type: () -> v128
+      0x03, 0x02, 0x01, 0x00,                           // function section
+      0x0a, 0x16, 0x01, 0x14, 0x00,                    // code section (body=20 bytes, 0 locals)
+      0xfd, 0x0c,                                        // v128.const
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 16 immediate bytes (zero vector)
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x0b,                                              // end
     ]);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const compile = (globalThis as any).WebAssembly?.compile as
@@ -457,19 +463,40 @@ async function checkXesFiles(): Promise<Diagnosis> {
     return {
       name: 'XES event logs',
       pathology: 'REPRODUCIBILITY_TRUTH_FAULT',
-      severity: 'WARNING',
-      message: 'No .xes files found in current directory (depth ≤ 2)',
-      fix: 'Place an XES event log here, or pass --input <path> to wpm run/predict',
+      severity: 'STOP_THE_LINE',
+      message: 'No .xes files found — AAT requires real event log data, not synthetic fixtures',
+      fix: 'Add a real XES event log to bench_data/ (e.g. sepsis.xes, bpi2012.xes)',
+    };
+  }
+
+  // Validate files are real XES (not placeholders like "404: Not Found")
+  const realXes: string[] = [];
+  for (const f of found) {
+    try {
+      const content = await fs.readFile(path.join(cwd, f), { encoding: 'utf-8' });
+      if (content.includes('<log') || content.includes('<?xml')) realXes.push(f);
+    } catch {
+      // unreadable — skip
+    }
+  }
+
+  if (realXes.length === 0) {
+    return {
+      name: 'XES event logs',
+      pathology: 'REPRODUCIBILITY_TRUTH_FAULT',
+      severity: 'STOP_THE_LINE',
+      message: `${found.length} .xes file(s) found but none contain valid XES XML — AAT requires real data`,
+      fix: 'Replace placeholder files with real XES event logs',
     };
   }
 
   const preview =
-    found.slice(0, 3).join(', ') + (found.length > 3 ? ` (+${found.length - 3} more)` : '');
+    realXes.slice(0, 3).join(', ') + (realXes.length > 3 ? ` (+${realXes.length - 3} more)` : '');
   return {
     name: 'XES event logs',
     pathology: 'REPRODUCIBILITY_TRUTH_FAULT',
     severity: 'INFO',
-    message: `${found.length} file(s): ${preview}`,
+    message: `${realXes.length} real XES file(s): ${preview}`,
   };
 }
 
@@ -619,25 +646,25 @@ async function checkTypeScriptCompilation(): Promise<Diagnosis> {
   }
 
   try {
-    execSync('npx tsc --noEmit', { cwd: rootDir, encoding: 'utf8', stdio: 'pipe', timeout: 60000 });
+    execSync('pnpm lint', { cwd: rootDir, encoding: 'utf8', stdio: 'pipe', timeout: 120000 });
     return {
       name: 'TypeScript compilation',
       pathology: 'EPISTEMIC_FAULT',
       severity: 'INFO',
-      message: 'tsc --noEmit passes',
+      message: 'pnpm lint passes (per-package tsc --noEmit clean)',
     };
   } catch (err) {
-    const stderr = (err as { stderr?: string }).stderr ?? '';
-    const lineCount = stderr
-      .trim()
+    const combined =
+      ((err as { stdout?: string }).stdout ?? '') + ((err as { stderr?: string }).stderr ?? '');
+    const errorLines = combined
       .split('\n')
-      .filter((l) => l.trim()).length;
+      .filter((l) => /error TS\d+|ELIFECYCLE|RECURSIVE_RUN_FIRST_FAIL/.test(l));
     return {
       name: 'TypeScript compilation',
       pathology: 'EPISTEMIC_FAULT',
       severity: 'WARNING',
-      message: `${lineCount} TypeScript error(s) — run: pnpm lint for details`,
-      fix: 'Fix TypeScript errors: pnpm lint',
+      message: `pnpm lint failed (${errorLines.length} error line(s)) — run: pnpm lint for details`,
+      fix: 'Fix per-package TypeScript errors: pnpm lint',
     };
   }
 }
@@ -780,7 +807,7 @@ async function checkAlgorithmRegistry(): Promise<Diagnosis> {
     };
   }
 
-  const jsFile = path.join(wasmPkgDir, 'wpm.js');
+  const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
   if (!existsSync(jsFile)) {
     return {
       name: 'Algorithm registry',
@@ -794,7 +821,7 @@ async function checkAlgorithmRegistry(): Promise<Diagnosis> {
     const url = new URL(`file://${jsFile}`);
     const mod = await import(url.href);
 
-    // Known algorithm functions
+    // Known algorithm functions (actual wasm_bindgen export names)
     const expected: string[] = [
       'discover_dfg',
       'extract_process_skeleton',
@@ -804,12 +831,12 @@ async function checkAlgorithmRegistry(): Promise<Diagnosis> {
       'discover_hill_climbing',
       'discover_declare',
       'discover_simulated_annealing',
-      'discover_a_star',
-      'discover_aco',
-      'discover_pso',
+      'discover_astar',
+      'discover_aco_algorithm',
+      'discover_pso_algorithm',
       'discover_genetic_algorithm',
-      'discover_ilp',
-      'discover_powl',
+      'discover_ilp_petri_net',
+      'discover_powl_from_log',
     ];
 
     const missing = expected.filter((name) => typeof mod[name] !== 'function');
@@ -856,22 +883,17 @@ async function checkWorkspaceIntegrity(): Promise<Diagnosis> {
   }
 
   const expectedPackages = [
-    'packages/engine',
-    'packages/kernel',
+    'packages/agents',
+    'packages/cognition',
     'packages/config',
     'packages/contracts',
-    'packages/types',
-    'packages/planner',
-    'packages/observability',
-    'packages/testing',
-    'packages/connectors',
-    'packages/sinks',
-    'packages/ocel',
-    'packages/service',
-    'packages/templates',
-    'packages/wasm4pm',
+    'packages/engine',
+    'packages/kernel',
     'packages/ml',
+    'packages/observability',
+    'packages/planner',
     'packages/swarm',
+    'packages/testing',
     'apps/wasm4pm',
   ];
 
@@ -898,6 +920,210 @@ async function checkWorkspaceIntegrity(): Promise<Diagnosis> {
     severity: 'WARNING',
     message: `${missing.length} package(s) missing: ${missing.join(', ')}`,
     fix: 'Run: pnpm install to restore missing packages',
+  };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────
+// Claude Code Integration Checks (bleeding-edge best practices)
+//
+// These validate the Claude Code configuration itself: hook wiring, CLAUDE.md
+// project context, and the memory index health. A broken hook is silent — it
+// fires, does nothing, and Claude operates without its TPS enforcement layer.
+// ────────────────────────────────────────────────────────────────────────────
+
+// Check 18: .claude/settings.json present and valid JSON
+async function checkClaudeCodeSettings(): Promise<Diagnosis> {
+  const rootDir = resolveWorkspaceRoot();
+  if (!rootDir) {
+    return { name: 'Claude Code settings', pathology: 'DEPLOYABILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — workspace root not found' };
+  }
+
+  const settingsPath = path.join(rootDir, '.claude', 'settings.json');
+  if (!existsSync(settingsPath)) {
+    return {
+      name: 'Claude Code settings',
+      pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+      severity: 'STOP_THE_LINE',
+      message: '.claude/settings.json missing — Claude Code hooks will not fire',
+      fix: 'Create .claude/settings.json with hooks configuration',
+    };
+  }
+
+  try {
+    const raw = readFileSync(settingsPath, 'utf8');
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const hookEvents = Object.keys((parsed.hooks as Record<string, unknown>) ?? {});
+    return {
+      name: 'Claude Code settings',
+      pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+      severity: 'INFO',
+      message: `.claude/settings.json valid — ${hookEvents.length} hook event(s): ${hookEvents.join(', ')}`,
+    };
+  } catch {
+    return {
+      name: 'Claude Code settings',
+      pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+      severity: 'STOP_THE_LINE',
+      message: '.claude/settings.json is invalid JSON — Claude Code cannot parse hook configuration',
+      fix: 'Fix JSON syntax in .claude/settings.json',
+    };
+  }
+}
+
+// Check 19: Wired hook files present on disk and executable
+async function checkHookFiles(): Promise<Diagnosis> {
+  const rootDir = resolveWorkspaceRoot();
+  if (!rootDir) {
+    return { name: 'Hook files', pathology: 'DEPLOYABILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — workspace root not found' };
+  }
+
+  const settingsPath = path.join(rootDir, '.claude', 'settings.json');
+  if (!existsSync(settingsPath)) {
+    return { name: 'Hook files', pathology: 'DEPLOYABILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — no .claude/settings.json' };
+  }
+
+  let hooks: Record<string, Array<{ matcher: string; hooks: Array<{ type: string; command: string }> }>>;
+  try {
+    const parsed = JSON.parse(readFileSync(settingsPath, 'utf8')) as { hooks?: typeof hooks };
+    hooks = parsed.hooks ?? {};
+  } catch {
+    return { name: 'Hook files', pathology: 'DEPLOYABILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — settings.json parse error' };
+  }
+
+  if (Object.keys(hooks).length === 0) {
+    return {
+      name: 'Hook files',
+      pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+      severity: 'WARNING',
+      message: 'No hooks wired in .claude/settings.json — TPS enforcement gates inactive',
+      fix: 'Add hook configuration to .claude/settings.json',
+    };
+  }
+
+  const missing: string[] = [];
+  const notExecutable: string[] = [];
+
+  for (const eventHooks of Object.values(hooks)) {
+    for (const entry of eventHooks) {
+      for (const hook of entry.hooks ?? []) {
+        // Resolve "$CLAUDE_PROJECT_DIR" placeholder (may be quoted in the string)
+        const resolved = hook.command.replace(/"?\$CLAUDE_PROJECT_DIR"?/g, rootDir);
+        const scriptMatch = resolved.match(/(\S+\.sh)/);
+        if (!scriptMatch) continue;
+        const scriptPath = scriptMatch[1];
+        if (!existsSync(scriptPath)) {
+          missing.push(path.relative(rootDir, scriptPath));
+        } else if (!(statSync(scriptPath).mode & 0o111)) {
+          notExecutable.push(path.relative(rootDir, scriptPath));
+        }
+      }
+    }
+  }
+
+  if (missing.length > 0) {
+    return {
+      name: 'Hook files',
+      pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+      severity: 'STOP_THE_LINE',
+      message: `${missing.length} wired hook(s) missing from disk: ${missing.slice(0, 3).join(', ')}`,
+      fix: 'Restore missing hook files or remove from .claude/settings.json',
+    };
+  }
+  if (notExecutable.length > 0) {
+    return {
+      name: 'Hook files',
+      pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+      severity: 'WARNING',
+      message: `${notExecutable.length} hook(s) not executable: ${notExecutable.join(', ')}`,
+      fix: `chmod +x ${notExecutable.join(' ')}`,
+    };
+  }
+
+  const total = Object.values(hooks).flatMap((ev) => ev.flatMap((e) => e.hooks ?? [])).length;
+  return {
+    name: 'Hook files',
+    pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+    severity: 'INFO',
+    message: `${total} wired hook(s) present and executable`,
+  };
+}
+
+// Check 20: CLAUDE.md present (project context for Claude Code)
+async function checkClaudeMd(): Promise<Diagnosis> {
+  const rootDir = resolveWorkspaceRoot();
+  if (!rootDir) {
+    return { name: 'CLAUDE.md', pathology: 'EPISTEMIC_FAULT', severity: 'INFO', message: 'Skipped — workspace root not found' };
+  }
+
+  const claudeMdPath = path.join(rootDir, 'CLAUDE.md');
+  if (!existsSync(claudeMdPath)) {
+    return {
+      name: 'CLAUDE.md',
+      pathology: 'EPISTEMIC_FAULT',
+      severity: 'STOP_THE_LINE',
+      message: 'CLAUDE.md missing — Claude Code operates without project context',
+      fix: 'Create CLAUDE.md or run: wpm init',
+    };
+  }
+
+  const content = readFileSync(claudeMdPath, 'utf8');
+  if (content.trim().length < 100) {
+    return {
+      name: 'CLAUDE.md',
+      pathology: 'EPISTEMIC_FAULT',
+      severity: 'WARNING',
+      message: 'CLAUDE.md appears to be a stub (< 100 chars)',
+      fix: 'Populate CLAUDE.md with project architecture and Claude Code configuration',
+    };
+  }
+
+  return {
+    name: 'CLAUDE.md',
+    pathology: 'EPISTEMIC_FAULT',
+    severity: 'INFO',
+    message: `CLAUDE.md present (${(content.length / 1024).toFixed(1)} KB)`,
+  };
+}
+
+// Check 21: Memory index within 200-line limit
+async function checkMemoryIndex(): Promise<Diagnosis> {
+  const rootDir = resolveWorkspaceRoot();
+  if (!rootDir) {
+    return { name: 'Memory index', pathology: 'EPISTEMIC_FAULT', severity: 'INFO', message: 'Skipped — workspace root not found' };
+  }
+
+  // Project-scoped memory: ~/.claude/projects/<encoded-path>/memory/MEMORY.md
+  const encoded = rootDir.replace(/\//g, '-').replace(/^-/, '');
+  const memoryPath = path.join(os.homedir(), '.claude', 'projects', encoded, 'memory', 'MEMORY.md');
+
+  if (!existsSync(memoryPath)) {
+    return {
+      name: 'Memory index',
+      pathology: 'EPISTEMIC_FAULT',
+      severity: 'INFO',
+      message: 'No project memory index — Claude Code starts each session without persistent context',
+    };
+  }
+
+  const content = readFileSync(memoryPath, 'utf8');
+  const lines = content.split('\n').length;
+  if (lines > 200) {
+    return {
+      name: 'Memory index',
+      pathology: 'EPISTEMIC_FAULT',
+      severity: 'WARNING',
+      message: `MEMORY.md is ${lines} lines — content past line 200 is truncated by Claude Code`,
+      fix: `Prune stale entries in ${memoryPath}`,
+    };
+  }
+
+  const entryCount = (content.match(/^- \[/gm) ?? []).length;
+  return {
+    name: 'Memory index',
+    pathology: 'EPISTEMIC_FAULT',
+    severity: 'INFO',
+    message: `Memory index healthy (${lines}/200 lines, ${entryCount} entries)`,
   };
 }
 
@@ -1518,7 +1744,14 @@ export const TPS_CHECKS: Array<() => Promise<Diagnosis>> = [
   checkStateMachineCompleteness,
 ];
 
-export const ALL_CHECKS = [...ENV_CHECKS, ...TPS_CHECKS];
+export const CLAUDE_CODE_CHECKS: Array<() => Promise<Diagnosis>> = [
+  checkClaudeCodeSettings,
+  checkHookFiles,
+  checkClaudeMd,
+  checkMemoryIndex,
+];
+
+export const ALL_CHECKS = [...ENV_CHECKS, ...TPS_CHECKS, ...CLAUDE_CODE_CHECKS];
 
 // ────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -1653,7 +1886,7 @@ async function runChecks(
     info: diagnoses.filter((c) => c.severity === 'INFO').length,
     warnings: diagnoses.filter((c) => c.severity === 'WARNING').length,
     stopTheLine: diagnoses.filter((c) => c.severity === 'STOP_THE_LINE').length,
-    epistemicHealth: diagnoses.every((c) => c.severity !== 'STOP_THE_LINE'),
+    epistemicHealth: diagnoses.every((c) => c.severity === 'INFO'),
   };
 
   const checksPayload = report.diagnoses.map((c) => ({ ...c }));
