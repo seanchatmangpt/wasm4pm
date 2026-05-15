@@ -80,8 +80,8 @@ pub fn discover_ocel_dfg_pure(ocel: &OCEL) -> DirectlyFollowsGraph {
     // Get event types
     for event_type in &ocel.event_types {
         dfg.nodes.push(DFGNode {
-            id: event_type.clone(),
-            label: event_type.clone(),
+            id: event_type.name.clone(),
+            label: event_type.name.clone(),
             frequency: 0,
         });
     }

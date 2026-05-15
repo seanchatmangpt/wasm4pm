@@ -69,15 +69,15 @@ pub fn load_ocel_from_xml(content: &str) -> Result<String, JsValue> {
         match node.tag_name().name() {
             "eventType" | "event-type" => {
                 if let Some(type_name) = node.attribute("name") {
-                    if !ocel.event_types.contains(&type_name.to_string()) {
-                        ocel.event_types.push(type_name.to_string());
+                    if !ocel.event_types.iter().any(|t| t.name == type_name) {
+                        ocel.event_types.push(models::OCELType::new(type_name));
                     }
                 }
             }
             "objectType" | "object-type" => {
                 if let Some(type_name) = node.attribute("name") {
-                    if !ocel.object_types.contains(&type_name.to_string()) {
-                        ocel.object_types.push(type_name.to_string());
+                    if !ocel.object_types.iter().any(|t| t.name == type_name) {
+                        ocel.object_types.push(models::OCELType::new(type_name));
                     }
                 }
             }

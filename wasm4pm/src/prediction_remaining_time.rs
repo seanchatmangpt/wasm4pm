@@ -65,17 +65,56 @@ fn bucket_key(activity: &str, prefix_len: usize) -> String {
 // Weibull fitting (method of moments)
 // ---------------------------------------------------------------------------
 
-/// Approximate Weibull shape *k* from coefficient of variation (cv = sigma/mu).
+/// Solve for Weibull shape k given coefficient of variation (sigma/mu)
+/// using Newton-Raphson on the log-gamma relationship.
 fn weibull_shape_from_cv(cv: f64) -> f64 {
     if cv <= 0.0 || !cv.is_finite() {
-        return 1.0; // degenerate -> exponential
+        return 20.0; // Very low variance -> high shape (approaching delta)
     }
-    cv.powf(-1.086).clamp(0.1, 20.0)
+    if cv >= 1.0 {
+        // High variance -> low shape. CV=1 is exponential (k=1).
+        // Use heuristic as initial guess for Newton.
+        let k = cv.powf(-1.086);
+        return refine_weibull_shape(cv, k);
+    }
+    // Low variance (CV < 1) -> k > 1.
+    let k = cv.powf(-1.086);
+    refine_weibull_shape(cv, k)
+}
+
+fn refine_weibull_shape(cv: f64, mut k: f64) -> f64 {
+    let target_log_cv_sq_plus_1 = (1.0 + cv * cv).ln();
+    
+    for _ in 0..10 {
+        let x1 = 1.0 + 1.0 / k;
+        let x2 = 1.0 + 2.0 / k;
+        
+        let f = ln_gamma(x2) - 2.0 * ln_gamma(x1) - target_log_cv_sq_plus_1;
+        // Derivative df/dk:
+        // d/dk [ln_gamma(1+2/k) - 2*ln_gamma(1+1/k)]
+        // = digamma(1+2/k) * (-2/k^2) - 2 * digamma(1+1/k) * (-1/k^2)
+        // = (2/k^2) * [digamma(1+1/k) - digamma(1+2/k)]
+        let df = (2.0 / (k * k)) * (digamma(x1) - digamma(x2));
+        
+        if df.abs() < 1e-9 {
+            break;
+        }
+        
+        let delta = f / df;
+        k -= delta;
+        k = k.clamp(0.1, 50.0);
+        
+        if delta.abs() < 1e-6 {
+            break;
+        }
+    }
+    k
 }
 
 /// Weibull scale lambda from mean and shape.
 fn weibull_scale(mean: f64, k: f64) -> f64 {
-    let g = gamma_approx(1.0 + 1.0 / k);
+    let lg = ln_gamma(1.0 + 1.0 / k);
+    let g = lg.exp();
     if g > 0.0 {
         mean / g
     } else {
@@ -83,29 +122,51 @@ fn weibull_scale(mean: f64, k: f64) -> f64 {
     }
 }
 
-/// Lanczos approximation of Gamma(x) for x > 0.
-fn gamma_approx(x: f64) -> f64 {
-    const P: [f64; 8] = [
+/// Lanczos approximation of ln(Gamma(x)) for x > 0.
+/// Precise to ~14 decimal places.
+fn ln_gamma(x: f64) -> f64 {
+    const P: [f64; 9] = [
+        0.99999999999980993,
         676.5203681218851,
         -1259.1392167224028,
-        771.323_428_777_653_1,
-        -176.615_029_162_140_6,
+        771.32342877765313,
+        -176.61502916214059,
         12.507343278686905,
         -0.13857109526572012,
-        9.984_369_578_019_572e-6,
+        9.9843695780195716e-6,
         1.5056327351493116e-7,
     ];
+    let g = 7.0;
     if x < 0.5 {
-        std::f64::consts::PI / ((std::f64::consts::PI * x).sin() * gamma_approx(1.0 - x))
+        (std::f64::consts::PI / ((std::f64::consts::PI * x).sin() * (ln_gamma(1.0 - x).exp()))).ln()
     } else {
         let x = x - 1.0;
-        let mut a = 0.999_999_999_999_809_9_f64;
-        for (i, &p) in P.iter().enumerate() {
-            a += p / (x + i as f64 + 1.0);
+        let mut a = P[0];
+        for i in 1..9 {
+            a += P[i] / (x + i as f64);
         }
-        let t = x + 7.5;
-        (2.0 * std::f64::consts::PI).sqrt() * t.powf(x + 0.5) * (-t).exp() * a
+        let t = x + g + 0.5;
+        0.5 * (2.0 * std::f64::consts::PI).ln() + (x + 0.5) * t.ln() - t + a.ln()
     }
+}
+
+/// Digamma function psi(x) = d/dx ln(Gamma(x))
+fn digamma(mut x: f64) -> f64 {
+    let mut result = 0.0;
+    while x < 8.0 {
+        result -= 1.0 / x;
+        x += 1.0;
+    }
+    // Asymptotic expansion
+    let r = 1.0 / x;
+    result += x.ln() - 0.5 * r;
+    let r2 = r * r;
+    result -= r2 * (1.0/12.0 - r2 * (1.0/120.0 - r2 * (1.0/252.0)));
+    result
+}
+
+fn gamma_approx(x: f64) -> f64 {
+    ln_gamma(x).exp()
 }
 
 // ---------------------------------------------------------------------------
@@ -124,8 +185,6 @@ pub fn build_remaining_time_model(
     let (bucket_samples, mut case_durations) = state.with_object(log_handle, |obj| {
         match obj {
             Some(StoredObject::EventLog(log)) => {
-                // Fix A+B: FxHashMap with integer tuple keys eliminates ~190K String
-                // allocs on large logs. Activity names are interned to u32 IDs locally.
                 let mut activity_ids: FxHashMap<&str, u32> = FxHashMap::default();
                 let mut next_id = 0u32;
                 let mut id_to_activity: Vec<&str> = Vec::new();
@@ -154,16 +213,10 @@ pub fn build_remaining_time_model(
                         continue;
                     }
 
-                    let trace_start = match events.first() {
-                        Some((_, ts)) => *ts,
-                        None => continue,
-                    };
-                    let trace_end = match events.last() {
-                        Some((_, ts)) => *ts,
-                        None => continue,
-                    };
+                    let trace_start = events[0].1;
+                    let trace_end = events.last().unwrap().1;
                     let duration = (trace_end - trace_start) as f64;
-                    if duration <= 0.0 {
+                    if duration < 0.0 {
                         continue;
                     }
                     case_durations.push(duration);
@@ -184,8 +237,6 @@ pub fn build_remaining_time_model(
                     }
                 }
 
-                // Convert integer tuple keys back to String keys for the serializable
-                // model. Happens once at build time, not per event.
                 let bucket_samples_str: HashMap<String, Vec<f64>> = bucket_samples
                     .into_iter()
                     .map(|((act_id, prefix_len), samples)| {
@@ -236,7 +287,6 @@ pub fn build_remaining_time_model(
             - weighted_mean.powi(2);
         BucketStats {
             mean_ms: weighted_mean,
-            // branchless non-neg floor: compiles to MAXSD on x86-64, f64.max on wasm32
             std_ms: weighted_var.max(0.0).sqrt(),
             count: total_count,
         }
@@ -246,17 +296,13 @@ pub fn build_remaining_time_model(
     let cv = if dur_stats.mean_ms > 0.0 {
         dur_stats.std_ms / dur_stats.mean_ms
     } else {
-        1.0
+        0.0
     };
     let shape = weibull_shape_from_cv(cv);
     let scale = weibull_scale(dur_stats.mean_ms, shape);
 
-    // Fix C: sort in-place; case_durations is not used after this point.
-    let median_duration_ms = {
-        case_durations
-            .sort_unstable_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
-        case_durations[case_durations.len() / 2]
-    };
+    case_durations.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let median_duration_ms = case_durations[case_durations.len() / 2];
 
     let model = RemainingTimeModel {
         buckets,
@@ -294,33 +340,14 @@ pub fn predict_case_duration(model_handle: &str, prefix_json: &str) -> Result<Js
     state.with_object(model_handle, |obj| {
         let json_str = match obj {
             Some(StoredObject::JsonString(s)) => s,
-            Some(_) => {
-                return Err(wasm_err(
-                    codes::INVALID_HANDLE,
-                    "Handle is not a RemainingTimeModel",
-                ))
-            }
-            None => {
-                return Err(wasm_err(
-                    codes::INVALID_HANDLE,
-                    format!("Model handle not found: {}", model_handle),
-                ))
-            }
+            _ => return Err(wasm_err(codes::INVALID_HANDLE, "Handle is not a RemainingTimeModel")),
         };
 
         let model: RemainingTimeModel = serde_json::from_str(json_str).map_err(|e| {
-            wasm_err(
-                codes::INTERNAL_ERROR,
-                format!("Model deserialization failed: {}", e),
-            )
+            wasm_err(codes::INTERNAL_ERROR, format!("Model deserialization failed: {}", e))
         })?;
 
-        let last_activity = match prefix.last() {
-            Some(act) => act,
-            None => {
-                return Err(crate::error::js_val("Cannot predict on empty prefix"));
-            }
-        };
+        let last_activity = prefix.last().unwrap();
         let prefix_len = prefix.len();
 
         // Strategy 1: exact bucket
@@ -335,12 +362,17 @@ pub fn predict_case_duration(model_handle: &str, prefix_json: &str) -> Result<Js
             return Ok(crate::error::js_val(&result.to_string()));
         }
 
-        // Strategy 2: same activity, any prefix length
-        let activity_prefix = format!("{}|", last_activity); // one alloc before iter
+        // Strategy 2: same activity, any prefix length (robust matching)
         let activity_buckets: Vec<&BucketStats> = model
             .buckets
             .iter()
-            .filter(|(k, _)| k.starts_with(activity_prefix.as_str()))
+            .filter(|(k, _)| {
+                if let Some(pipe_pos) = k.rfind('|') {
+                    &k[..pipe_pos] == last_activity
+                } else {
+                    false
+                }
+            })
             .map(|(_, v)| v)
             .collect();
 
@@ -366,11 +398,17 @@ pub fn predict_case_duration(model_handle: &str, prefix_json: &str) -> Result<Js
         }
 
         // Strategy 3: same prefix length, any activity
-        let suffix = format!("|{}", prefix_len);
         let length_buckets: Vec<&BucketStats> = model
             .buckets
             .iter()
-            .filter(|(k, _)| k.ends_with(&suffix))
+            .filter(|(k, _)| {
+                if let Some(pipe_pos) = k.rfind('|') {
+                    if let Ok(len) = k[pipe_pos + 1..].parse::<usize>() {
+                        return len == prefix_len;
+                    }
+                }
+                false
+            })
             .map(|(_, v)| v)
             .collect();
 
