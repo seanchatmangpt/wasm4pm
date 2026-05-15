@@ -14,7 +14,7 @@ export RAYON_NUM_THREADS := $(JOBS)
 .PHONY: bench bench-rust bench-wasm bench-data bench-ci bench-quick \
         bench-save-baseline bench-compare bench-regression bench-trends clean-bench \
         build-profile build-browser build-edge build-fog build-iot build-cloud \
-        verify-profiles help doctor lint test verify check-debt
+        verify-profiles help doctor lint test verify check-debt cognition-smoke
 
 # ── Definition of Done (DoD) Verification ─────────────────────────────────────
 # Consolidated target: test, lint, and quick benchmark smoke-test
@@ -205,6 +205,10 @@ clean-bench:
 	rm -rf $(PKG_DIR)/target/criterion
 
 # ── Environment & Development ─────────────────────────────────────────────────
+# ── Cognition Stack Health ────────────────────────────────────────────────────
+cognition-smoke:
+	@bash scripts/cognition-smoke.sh
+
 doctor:
 	@cd apps/wasm4pm && pnpm run build > /dev/null 2>&1
 	@node apps/wasm4pm/dist/bin/wpm.js doctor --format json 2>&1 | awk '/^{/,/^}/ {print}'
@@ -213,6 +217,9 @@ help:
 	@echo "╔═══════════════════════════════════════════════════════════════════════════╗"
 	@echo "║  wasm4pm Build wasm4pm Build & Benchmark Targets Benchmark Targets"
 	@echo "╚═══════════════════════════════════════════════════════════════════════════╝"
+	@echo ""
+	@echo "Cognition Stack Health:"
+	@echo "  make cognition-smoke    — 6-invariant cognition smoke test (<10s on warm cache)"
 	@echo ""
 	@echo "WASM Profile Building (5 deployment profiles, pm4wasm tiers):"
 	@echo "  make build-profile      — Build all profiles (browser, edge, fog, iot, cloud)"
