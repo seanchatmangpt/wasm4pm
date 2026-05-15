@@ -14,7 +14,8 @@ export RAYON_NUM_THREADS := $(JOBS)
 .PHONY: bench bench-rust bench-wasm bench-data bench-ci bench-quick \
         bench-save-baseline bench-compare bench-regression bench-trends clean-bench \
         build-profile build-browser build-edge build-fog build-iot build-cloud \
-        verify-profiles help doctor lint test verify check-debt
+        verify-profiles help doctor lint test verify check-debt \
+        cognition-no-stub-gate cognition-verify cognition-doctor cognition-clean-build
 
 # ── Definition of Done (DoD) Verification ─────────────────────────────────────
 # Consolidated target: test, lint, and quick benchmark smoke-test
@@ -34,6 +35,35 @@ check-debt:
 	else \
 		echo "✅ No critical technical debt markers found."; \
 	fi
+
+# ── Cognition No-Stub Gate ────────────────────────────────────────────────────
+# Fraud-prevention infrastructure: rejects stubs/placeholders/mocks before
+# cargo build, cargo test, and wasm-bindgen build run on PR branches.
+# See docs/cognition-no-stub-law.md for the full specification.
+
+# Layer 1 + Layer 2 scan only (fast — no cargo required)
+cognition-no-stub-gate:
+	@bash scripts/cognition-no-stub-scan.sh
+
+# Full verify: gate + cargo check + cargo test + TS tests
+cognition-verify: cognition-no-stub-gate
+	cargo check -p wasm4pm-cognition
+	cargo check -p wasm4pm-cognition --features wasm --target wasm32-unknown-unknown
+	cargo test -p wasm4pm-cognition
+	cd packages/cognition && pnpm test
+	cd apps/wasm4pm && pnpm test cognition
+
+# Environment diagnostic
+cognition-doctor:
+	@echo "=== Cognition Doctor ==="
+	@bash scripts/cognition-doctor.sh
+
+# Clean rebuild of the full cognition stack (crate → TS package → CLI)
+cognition-clean-build:
+	cargo clean -p wasm4pm-cognition
+	cd crates/wasm4pm-cognition && wasm-pack build --target nodejs --features wasm --out-dir pkg
+	cd packages/cognition && pnpm build
+	cd apps/wasm4pm && pnpm build
 
 # ── Proxy targets to root package.json ────────────────────────────────────────
 lint:
