@@ -1121,6 +1121,20 @@ const conform = defineCommand({
     const projectDir = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
     const conformance = checkPowl2Conformance(ocelLog, powlModel, projectDir);
 
+    // ── WASM4PM_CAPTURE_FIXTURE: one-shot capture for real-fixtures.test.ts ───
+    if (process.env.WASM4PM_CAPTURE_FIXTURE === '1') {
+      const label = process.env.WASM4PM_CAPTURE_LABEL ?? `trace-conform-${Date.now()}`;
+      const fixDir = join(projectDir, 'fixtures', 'real', label);
+      try {
+        mkdirSync(fixDir, { recursive: true });
+        const stack = (new Error('capture-stack')).stack ?? '';
+        writeFileSync(join(fixDir, 'stack.ts.txt'), stack, 'utf8');
+        writeFileSync(join(fixDir, 'expected-ocel.json'), JSON.stringify(ocelLog, null, 2), 'utf8');
+        writeFileSync(join(fixDir, 'expected-conform.json'), JSON.stringify(conformance, null, 2), 'utf8');
+        writeFileSync(join(fixDir, 'model.powl.json'), JSON.stringify(powlModel, null, 2), 'utf8');
+      } catch { /* capture is best-effort */ }
+    }
+
     const outPath = ctx.args.out as string | undefined;
     if (outPath) {
       const auditDir = resolve(outPath, '..');

@@ -10,6 +10,10 @@ export default defineConfig({
     globals: true,
     // No globalSetup — these tests do not require the WASM nodejs binary.
     setupFiles: ['./src/__tests__/setup.ts'],
-    include: ['src/__tests__/**/*.unit.test.ts', 'src/__tests__/trace-conformance.test.ts'],
+    include: [
+      'src/__tests__/**/*.unit.test.ts',
+      'src/__tests__/trace-conformance.test.ts',
+      'src/__tests__/real-fixtures.test.ts',
+    ],
   },
 });

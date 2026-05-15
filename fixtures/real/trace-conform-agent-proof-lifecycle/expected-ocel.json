@@ -1,0 +1,90 @@
+{
+  "ocel_version": "2.0",
+  "ocel_global_log": {
+    "ocel_attribute_names": [
+      "frame_index",
+      "file"
+    ]
+  },
+  "ocel_events": [
+    {
+      "event_id": "e0",
+      "activity": "collect_evidence",
+      "timestamp": "2026-05-15T04:10:06.879Z",
+      "objects": [
+        {
+          "id": "SourceFile:_Users_sac_wasm4pm_apps_wasm4pm_src_commands_proof_ts",
+          "type": "SourceFile"
+        },
+        {
+          "id": "Frame:trace-1778818206635:0",
+          "type": "StackFrame"
+        }
+      ],
+      "attributes": {
+        "frame_index": 0,
+        "file": "/Users/sac/wasm4pm/apps/wasm4pm/src/commands/proof.ts"
+      }
+    },
+    {
+      "event_id": "e1",
+      "activity": "verify_evidence",
+      "timestamp": "2026-05-15T04:10:06.879Z",
+      "objects": [
+        {
+          "id": "SourceFile:_Users_sac_wasm4pm_apps_wasm4pm_src_commands_proof_ts",
+          "type": "SourceFile"
+        },
+        {
+          "id": "Frame:trace-1778818206635:1",
+          "type": "StackFrame"
+        }
+      ],
+      "attributes": {
+        "frame_index": 1,
+        "file": "/Users/sac/wasm4pm/apps/wasm4pm/src/commands/proof.ts"
+      }
+    },
+    {
+      "event_id": "e2",
+      "activity": "emit_receipt",
+      "timestamp": "2026-05-15T04:10:06.879Z",
+      "objects": [
+        {
+          "id": "SourceFile:_Users_sac_wasm4pm_apps_wasm4pm_src_commands_proof_ts",
+          "type": "SourceFile"
+        },
+        {
+          "id": "Frame:trace-1778818206635:2",
+          "type": "StackFrame"
+        }
+      ],
+      "attributes": {
+        "frame_index": 2,
+        "file": "/Users/sac/wasm4pm/apps/wasm4pm/src/commands/proof.ts"
+      }
+    }
+  ],
+  "ocel_objects": [
+    {
+      "id": "SourceFile:_Users_sac_wasm4pm_apps_wasm4pm_src_commands_proof_ts",
+      "type": "SourceFile",
+      "attributes": {}
+    },
+    {
+      "id": "Frame:trace-1778818206635:0",
+      "type": "StackFrame",
+      "attributes": {}
+    },
+    {
+      "id": "Frame:trace-1778818206635:1",
+      "type": "StackFrame",
+      "attributes": {}
+    },
+    {
+      "id": "Frame:trace-1778818206635:2",
+      "type": "StackFrame",
+      "attributes": {}
+    }
+  ]
+}
