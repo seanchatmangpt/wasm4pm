@@ -1,244 +1,174 @@
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
-use std::collections::HashMap;
+use crate::error::Result;
 use wasm_bindgen::prelude::*;
+use quick_xml::Reader;
+use quick_xml::events::Event as QEvent;
+use std::collections::HashMap;
 
 // ---------------------------------------------------------------------------
-// Fast attribute extraction helpers
+// Constants for XES Export
 // ---------------------------------------------------------------------------
 
-/// Extract the value of a `name="..."` attribute from an XES tag byte slice.
-///
-/// Returns `Some(&str)` pointing into `src` without any allocation.
-/// Scans from the position of `name` forward using byte-level ops.
-#[inline(always)]
-fn extract_attr<'a>(src: &'a str, name: &[u8]) -> Option<&'a str> {
-    let bytes = src.as_bytes();
-    let name_len = name.len();
-    // We need room for  name + `="` + at least `"`
-    if bytes.len() < name_len + 3 {
-        return None;
-    }
-    // Linear scan for the attribute name followed by `="`
-    let limit = bytes.len() - name_len - 2;
-    let mut i = 0;
-    while i <= limit {
-        if bytes[i..i + name_len] == *name
-            && bytes[i + name_len] == b'='
-            && bytes[i + name_len + 1] == b'"'
-        {
-            let value_start = i + name_len + 2;
-            // Scan forward for closing quote
-            let rest = &bytes[value_start..];
+const INDENT_2: &str = "    ";
+const INDENT_3: &str = "      ";
 
-            #[cfg(feature = "bcinr")]
-            {
-                // Use branchless byte scanning via bcinr
-                if let Some(pos) = bcinr::scan::find_byte(rest, b'"') {
-                    return Some(&src[value_start..value_start + pos]);
-                }
-            }
+// ---------------------------------------------------------------------------
+// XES Importer (Inlined from process_mining patterns)
+// ---------------------------------------------------------------------------
 
-            #[cfg(not(feature = "bcinr"))]
-            {
-                // Scalar fallback
-                for (j, &byte) in rest.iter().enumerate() {
-                    if byte == b'"' {
-                        return Some(&src[value_start..value_start + j]);
+#[derive(Debug, Clone, Copy)]
+enum XesMode {
+    Log,
+    Trace,
+    Event,
+    Attribute,
+    GlobalTrace,
+    GlobalEvent,
+    None,
+}
+
+/// Parse XES format using a state-machine approach with quick-xml (Internal Core).
+pub fn parse_xes(content: &str) -> crate::error::Result<EventLog> {
+    let mut reader = Reader::from_str(content);
+    reader.config_mut().trim_text(true);
+
+    let mut log = EventLog::new();
+    let mut current_mode = XesMode::None;
+    let mut current_trace: Option<Trace> = None;
+    let mut current_event: Option<Event> = None;
+    let mut buf = Vec::new();
+
+    let mut attr_stack: Vec<(String, AttributeValue)> = Vec::new();
+
+    loop {
+        match reader.read_event_into(&mut buf) {
+            Ok(QEvent::Start(e)) => {
+                let name = e.name();
+                match name.as_ref() {
+                    b"log" => current_mode = XesMode::Log,
+                    b"trace" => {
+                        current_mode = XesMode::Trace;
+                        current_trace = Some(Trace::new());
+                    }
+                    b"event" => {
+                        current_mode = XesMode::Event;
+                        current_event = Some(Event::new());
+                    }
+                    b"global" => {
+                        if let Ok(Some(scope)) = e.try_get_attribute("scope") {
+                            match scope.value.as_ref() {
+                                b"trace" => current_mode = XesMode::GlobalTrace,
+                                b"event" => current_mode = XesMode::GlobalEvent,
+                                _ => {}
+                            }
+                        }
+                    }
+                    _ => {
+                        if let Some((key, val)) = parse_xes_attribute(&e) {
+                            attr_stack.push((key, val));
+                            current_mode = XesMode::Attribute;
+                        }
                     }
                 }
             }
-
-            return None;
+            Ok(QEvent::Empty(e)) => {
+                if let Some((key, val)) = parse_xes_attribute(&e) {
+                    match current_mode {
+                        XesMode::Event => {
+                            if let Some(ref mut ev) = current_event {
+                                ev.attributes.insert(key, val);
+                            }
+                        }
+                        XesMode::Trace => {
+                            if let Some(ref mut tr) = current_trace {
+                                tr.attributes.insert(key, val);
+                            }
+                        }
+                        XesMode::Log => {
+                            log.attributes.insert(key, val);
+                        }
+                        _ => {}
+                    }
+                }
+            }
+            Ok(QEvent::End(e)) => {
+                let name = e.name();
+                match name.as_ref() {
+                    b"event" => {
+                        if let Some(ev) = current_event.take() {
+                            if let Some(ref mut tr) = current_trace {
+                                tr.events.push(ev);
+                            }
+                        }
+                        current_mode = XesMode::Trace;
+                    }
+                    b"trace" => {
+                        if let Some(tr) = current_trace.take() {
+                            log.traces.push(tr);
+                        }
+                        current_mode = XesMode::Log;
+                    }
+                    b"log" => current_mode = XesMode::None,
+                    b"global" => current_mode = XesMode::Log,
+                    _ => {
+                        if let Some((_key, _val)) = attr_stack.pop() {
+                        }
+                        if attr_stack.is_empty() {
+                           if current_event.is_some() { current_mode = XesMode::Event; }
+                           else if current_trace.is_some() { current_mode = XesMode::Trace; }
+                           else { current_mode = XesMode::Log; }
+                        }
+                    }
+                }
+            }
+            Ok(QEvent::Eof) => break,
+            Err(e) => return Err(crate::error::err(crate::error::codes::PARSE_ERROR, format!("XES Parse Error at position {}: {:?}", reader.buffer_position(), e))),
+            _ => {}
         }
-        i += 1;
+        buf.clear();
     }
-    None
+
+    Ok(log)
 }
 
-// Pre-computed indent strings to avoid per-call allocation in write_attribute.
-const INDENT_2: &str = "    "; // 4 spaces  (indent level 2 → 2*2)
-const INDENT_3: &str = "      "; // 6 spaces  (indent level 3 → 3*2)
-
-// ---------------------------------------------------------------------------
-// Attribute insertion helper — avoids code duplication across tag types
-// ---------------------------------------------------------------------------
-
-#[inline(always)]
-fn insert_attr(
-    current_event: &mut Option<Event>,
-    current_trace: &mut Option<Trace>,
-    key: String,
-    value: AttributeValue,
-) {
-    if let Some(ref mut event) = current_event {
-        event.attributes.insert(key, value);
-    } else if let Some(ref mut trace) = current_trace {
-        trace.attributes.insert(key, value);
-    }
-}
-
-// ---------------------------------------------------------------------------
-// Public parse entry point
-// ---------------------------------------------------------------------------
-
-/// Parse basic XES format - simplified XML parser
-/// XES is the standard eXtensible Event Stream format for process logs
+/// Parse XES format using a state-machine approach with quick-xml (WASM API).
 #[wasm_bindgen]
-pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
-    #[cfg(feature = "import")]
-    {
-        use wasm4pm_types::import::xes::{import_xes, XESImportOptions};
-        let reader = std::io::BufReader::new(std::io::Cursor::new(content.as_bytes().to_vec()));
-        match import_xes(reader, XESImportOptions::default()) {
-            Ok(types_log) => {
-                let log: EventLog = types_log.into();
-                let handle = get_or_init_state()
-                    .store_object(StoredObject::EventLog(log))
-                    .map_err(|_e| crate::error::js_val("Failed to store EventLog"))?;
-                return Ok(handle);
-            }
-            Err(e) => {
-                return Err(crate::error::js_val(&format!("XES Parse Error: {:?}", e)));
-            }
+pub fn load_eventlog_from_xes(content: &str) -> std::result::Result<String, JsValue> {
+    match parse_xes(content) {
+        Ok(log) => {
+            let handle = get_or_init_state()
+                .store_object(StoredObject::EventLog(log))
+                .map_err(|e| JsValue::from(e))?;
+            Ok(handle)
         }
+        Err(err) => Err(JsValue::from(err))
     }
+}
 
-    #[cfg(not(feature = "import"))]
-    {
-        // Estimate trace count from file size to pre-allocate (heuristic: ~500 bytes per trace)
-        let estimated_traces = (content.len() / 500).max(16);
-        let mut log = EventLog::new();
-        log.traces.reserve(estimated_traces);
-
-        let mut current_trace: Option<Trace> = None;
-        let mut current_event: Option<Event> = None;
-
-        // Walk every `<...>` tag in the document, in order.
-        //
-        // Earlier versions iterated by line and treated each line as a single
-        // tag, which broke on inline event/attribute syntax such as
-        //   `<event><string key="..." value="..."/><date .../></event>`
-        // (one trace event collapsed onto a single line). The line-based
-        // walker would create the event but never see its closing tag or
-        // its inline attributes, so events were silently dropped during
-        // import. The tag-based walker below handles both line-per-tag
-        // and many-tags-per-line correctly.
-        let bytes = content.as_bytes();
-        let mut i = 0;
-        while i < bytes.len() {
-            if bytes[i] != b'<' {
-                i += 1;
-                continue;
-            }
-            let mut j = i + 1;
-            while j < bytes.len() && bytes[j] != b'>' {
-                j += 1;
-            }
-            if j >= bytes.len() {
-                break;
-            }
-            let tag = &content[i..=j];
-            let tag_bytes = tag.as_bytes();
-            i = j + 1;
-
-            if tag_bytes.len() < 2 {
-                continue;
-            }
-            let second = tag_bytes[1];
-
-            match second {
-                b't' if (tag.starts_with("<trace>") || tag.starts_with("<trace ")) => {
-                    current_trace = Some(Trace {
-                        attributes: HashMap::new(),
-                        events: Vec::with_capacity(20),
-                    });
-                }
-                b'e' if (tag.starts_with("<event>") || tag.starts_with("<event ")) => {
-                    current_event = Some(Event {
-                        attributes: HashMap::new(),
-                    });
-                }
-                b's' if tag_bytes.len() > 8 && &tag_bytes[..8] == b"<string " => {
-                    if let (Some(key), Some(value)) = (
-                        extract_attr(tag, b"key"),
-                        extract_attr(tag, b"value"),
-                    ) {
-                        insert_attr(
-                            &mut current_event,
-                            &mut current_trace,
-                            key.to_string(),
-                            AttributeValue::String(value.to_string()),
-                        );
-                    }
-                }
-                b'd' if tag_bytes.len() > 6 && &tag_bytes[..6] == b"<date " => {
-                    if let (Some(key), Some(value)) = (
-                        extract_attr(tag, b"key"),
-                        extract_attr(tag, b"value"),
-                    ) {
-                        insert_attr(
-                            &mut current_event,
-                            &mut current_trace,
-                            key.to_string(),
-                            AttributeValue::Date(value.to_string()),
-                        );
-                    }
-                }
-                b'i' if tag_bytes.len() > 5 && &tag_bytes[..5] == b"<int " => {
-                    if let (Some(key), Some(value_str)) = (
-                        extract_attr(tag, b"key"),
-                        extract_attr(tag, b"value"),
-                    ) {
-                        if let Ok(value) = value_str.parse::<i64>() {
-                            insert_attr(
-                                &mut current_event,
-                                &mut current_trace,
-                                key.to_string(),
-                                AttributeValue::Int(value),
-                            );
-                        }
-                    }
-                }
-                b'/' => {
-                    if tag_bytes.len() > 2 {
-                        let third = tag_bytes[2];
-                        match third {
-                            b't' => {
-                                if let Some(trace) = current_trace.take() {
-                                    log.traces.push(trace);
-                                }
-                            }
-                            b'e' => {
-                                if let Some(event) = current_event.take() {
-                                    if let Some(ref mut trace) = current_trace {
-                                        trace.events.push(event);
-                                    }
-                                }
-                            }
-                            _ => {}
-                        }
-                    }
-                }
-                _ => {}
-            }
-        }
-
-        let handle = get_or_init_state()
-            .store_object(StoredObject::EventLog(log))
-            .map_err(|_e| crate::error::js_val("Failed to store EventLog"))?;
-
-        Ok(handle)
-    }
+fn parse_xes_attribute(e: &quick_xml::events::BytesStart) -> Option<(String, AttributeValue)> {
+    let key = e.try_get_attribute("key").ok()??.unescape_value().ok()?.to_string();
+    let val_str = e.try_get_attribute("value").ok()??.unescape_value().ok()?.to_string();
+    
+    let tag = e.name();
+    let val = match tag.as_ref() {
+        b"string" => AttributeValue::String(val_str),
+        b"int" => AttributeValue::Int(val_str.parse().unwrap_or(0)),
+        b"float" => AttributeValue::Float(val_str.parse().unwrap_or(0.0)),
+        b"date" => AttributeValue::Date(val_str),
+        b"boolean" => AttributeValue::Boolean(val_str == "true" || val_str == "1"),
+        _ => return None,
+    };
+    Some((key, val))
 }
 
 /// Parse XES format with parse cache — skips re-parsing if content hash matches.
 #[wasm_bindgen]
-pub fn load_eventlog_from_xes_cached(content: &str) -> Result<String, JsValue> {
+pub fn load_eventlog_from_xes_cached(content: &str) -> std::result::Result<String, JsValue> {
     let hash = crate::cache::hash_xes_content(content);
 
     if let Some(cached_handle) = crate::cache::parse_cache_get(&hash) {
-        let exists = get_or_init_state().with_object(&cached_handle, |obj| Ok(obj.is_some()))?;
+        let exists = get_or_init_state().with_object(&cached_handle, |obj| Ok(obj.is_some())).unwrap_or(false);
         if exists {
             return Ok(cached_handle);
         }
@@ -251,7 +181,7 @@ pub fn load_eventlog_from_xes_cached(content: &str) -> Result<String, JsValue> {
 
 /// Export EventLog to XES format (generates valid XES XML)
 #[wasm_bindgen]
-pub fn export_eventlog_to_xes(eventlog_handle: &str) -> Result<String, JsValue> {
+pub fn export_eventlog_to_xes(eventlog_handle: &str) -> std::result::Result<String, JsValue> {
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let total_events: usize = log.traces.iter().map(|t| t.events.len()).sum();
@@ -277,9 +207,9 @@ pub fn export_eventlog_to_xes(eventlog_handle: &str) -> Result<String, JsValue> 
             xes.push_str("</log>");
             Ok(xes)
         }
-        Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
-        None => Err(crate::error::js_val("EventLog not found")),
-    })
+        Some(_) => Err(crate::error::err(crate::error::codes::INVALID_INPUT, "Object is not an EventLog")),
+        None => Err(crate::error::err(crate::error::codes::INVALID_HANDLE, "EventLog not found")),
+    }).map_err(|e| JsValue::from(e))
 }
 
 fn write_attribute(xes: &mut String, indent: usize, key: &str, value: &AttributeValue) {
