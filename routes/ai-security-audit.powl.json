@@ -1,0 +1,34 @@
+{
+  "route_id": "ai-security-audit",
+  "type": "powl2",
+  "required_stages": ["scan", "triage", "sign_off", "emit_receipt"],
+  "receipt_required": true,
+  "object_types": {
+    "Finding": {
+      "created_by": ["scan"],
+      "terminated_by": ["fix", "document_exception"]
+    },
+    "Receipt": {
+      "created_by": ["emit_receipt"],
+      "schema": "schemas/receipts/audit-receipt.schema.json",
+      "min_count": 1,
+      "max_count": 1
+    }
+  },
+  "model": {
+    "type": "choice_graph",
+    "choice_graph": {
+      "nodes": ["▷", "scan", "triage", "fix", "document_exception", "sign_off", "emit_receipt", "□"],
+      "edges": [
+        ["▷", "scan"],
+        ["scan", "triage"],
+        ["triage", "fix"],
+        ["triage", "document_exception"],
+        ["fix", "sign_off"],
+        ["document_exception", "sign_off"],
+        ["sign_off", "emit_receipt"],
+        ["emit_receipt", "□"]
+      ]
+    }
+  }
+}

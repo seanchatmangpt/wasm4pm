@@ -1,0 +1,27 @@
+{
+  "route_id": "ai-bug-fix-with-receipt",
+  "type": "powl2",
+  "required_stages": ["reproduce", "diagnose", "patch", "verify", "commit", "emit_receipt"],
+  "receipt_required": true,
+  "object_types": {
+    "Bug": {
+      "created_by": ["reproduce"],
+      "terminated_by": ["verify"]
+    },
+    "Patch": {
+      "created_by": ["patch"],
+      "terminated_by": ["commit"],
+      "min_count": 1
+    },
+    "Receipt": {
+      "created_by": ["emit_receipt"],
+      "schema": "schemas/receipts/proof-receipt.schema.json",
+      "min_count": 1,
+      "max_count": 1
+    }
+  },
+  "model": {
+    "type": "sequence",
+    "sequence": ["reproduce", "diagnose", "patch", "verify", "commit", "emit_receipt"]
+  }
+}

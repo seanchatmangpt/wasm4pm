@@ -1,0 +1,35 @@
+{
+  "route_id": "ai-doc-update",
+  "type": "powl2",
+  "required_stages": ["read", "edit", "link_check", "commit", "emit_receipt"],
+  "receipt_required": true,
+  "object_types": {
+    "Doc": {
+      "created_by": ["read"],
+      "terminated_by": ["commit"]
+    },
+    "LinkReport": {
+      "created_by": ["link_check"],
+      "terminated_by": ["commit"]
+    },
+    "Receipt": {
+      "created_by": ["emit_receipt"],
+      "schema": "schemas/receipts/proof-receipt.schema.json"
+    }
+  },
+  "model": {
+    "type": "choice_graph",
+    "choice_graph": {
+      "nodes": ["▷", "read", "edit", "link_check", "commit", "emit_receipt", "□"],
+      "edges": [
+        ["▷", "read"],
+        ["read", "edit"],
+        ["edit", "link_check"],
+        ["link_check", "edit"],
+        ["link_check", "commit"],
+        ["commit", "emit_receipt"],
+        ["emit_receipt", "□"]
+      ]
+    }
+  }
+}

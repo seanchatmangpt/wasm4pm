@@ -1,0 +1,35 @@
+{
+  "route_id": "ai-migration",
+  "type": "powl2",
+  "required_stages": ["plan", "apply", "verify", "emit_receipt"],
+  "receipt_required": true,
+  "object_types": {
+    "Migration": {
+      "created_by": ["plan"],
+      "terminated_by": ["verify", "rollback"]
+    },
+    "RollbackPlan": {
+      "created_by": ["plan"]
+    },
+    "Receipt": {
+      "created_by": ["emit_receipt"],
+      "schema": "schemas/receipts/audit-receipt.schema.json"
+    }
+  },
+  "model": {
+    "type": "choice_graph",
+    "choice_graph": {
+      "nodes": ["▷", "plan", "apply", "verify", "rollback", "record_failure", "emit_receipt", "□"],
+      "edges": [
+        ["▷", "plan"],
+        ["plan", "apply"],
+        ["apply", "verify"],
+        ["verify", "emit_receipt"],
+        ["apply", "rollback"],
+        ["rollback", "record_failure"],
+        ["record_failure", "emit_receipt"],
+        ["emit_receipt", "□"]
+      ]
+    }
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "route_id": "ai-refactor-with-tests",
+  "type": "powl2",
+  "required_stages": ["refactor", "run_tests", "commit", "emit_receipt"],
+  "receipt_required": true,
+  "object_types": {
+    "ProofPack": {
+      "created_by": ["refactor"],
+      "terminated_by": ["commit"],
+      "min_count": 1
+    },
+    "TestRun": {
+      "created_by": ["run_tests"],
+      "terminated_by": ["commit"]
+    },
+    "Receipt": {
+      "created_by": ["emit_receipt"],
+      "schema": "schemas/receipts/proof-receipt.schema.json"
+    }
+  },
+  "model": {
+    "type": "choice_graph",
+    "choice_graph": {
+      "nodes": ["▷", "refactor", "run_tests", "fix_failures", "commit", "emit_receipt", "□"],
+      "edges": [
+        ["▷", "refactor"],
+        ["refactor", "run_tests"],
+        ["run_tests", "fix_failures"],
+        ["fix_failures", "run_tests"],
+        ["run_tests", "commit"],
+        ["commit", "emit_receipt"],
+        ["emit_receipt", "□"]
+      ]
+    }
+  }
+}

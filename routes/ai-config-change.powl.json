@@ -1,0 +1,23 @@
+{
+  "route_id": "ai-config-change",
+  "type": "powl2",
+  "required_stages": ["validate", "apply", "verify", "emit_receipt"],
+  "receipt_required": true,
+  "object_types": {
+    "Config": {
+      "created_by": ["validate"],
+      "terminated_by": ["verify"],
+      "max_count": 1
+    },
+    "Receipt": {
+      "created_by": ["emit_receipt"],
+      "schema": "schemas/receipts/proof-receipt.schema.json",
+      "min_count": 1,
+      "max_count": 1
+    }
+  },
+  "model": {
+    "type": "sequence",
+    "sequence": ["validate", "apply", "verify", "emit_receipt"]
+  }
+}

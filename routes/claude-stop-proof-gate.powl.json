@@ -4,8 +4,15 @@
   "required_stages": ["wpm_proof_collect", "wpm_proof_verify", "proof_audit"],
   "receipt_required": true,
   "object_types": {
-    "ProofPack": { "created_by": ["wpm_proof_collect"] },
-    "Receipt": { "created_by": ["emit_receipt", "proof_collect"] }
+    "ProofPack": {
+      "created_by": ["wpm_proof_collect"],
+      "terminated_by": ["emit_receipt"],
+      "min_count": 1
+    },
+    "Receipt": {
+      "created_by": ["emit_receipt", "proof_collect"],
+      "schema": "schemas/receipts/proof-receipt.schema.json"
+    }
   },
   "model": {
     "type": "choice_graph",

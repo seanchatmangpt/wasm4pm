@@ -9,7 +9,10 @@
   "receipt_required": true,
   "object_types": {
     "ProofPack": { "created_by": ["wpm_proof_collect"] },
-    "Receipt": { "created_by": ["emit_receipt", "proof_collect"] }
+    "Receipt": {
+      "created_by": ["emit_receipt", "proof_collect"],
+      "schema": "schemas/receipts/audit-receipt.schema.json"
+    }
   },
   "model": {
     "type": "choice_graph",

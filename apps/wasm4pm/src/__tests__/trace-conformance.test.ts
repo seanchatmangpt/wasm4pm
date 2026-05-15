@@ -516,3 +516,47 @@ describe('§7.3 Receipt Policy + Lifecycle — V2 Tests', () => {
   });
 
 });
+
+// ─── §7.4 — Route Catalog Parametric Loader ───────────────────────────────────
+
+import { readdirSync, readFileSync as fsReadFileSync } from 'node:fs';
+
+describe('§7.4 Route Catalog — every routes/*.powl.json is structurally valid', () => {
+  const routesDir = resolve(REPO_DIR, 'routes');
+  const files = readdirSync(routesDir).filter((f) => f.endsWith('.powl.json'));
+
+  it('catalog has at least 14 routes (4 existing + 10 AI-task)', () => {
+    expect(files.length).toBeGreaterThanOrEqual(14);
+  });
+
+  it.each(files)('%s loads and exposes required Powl2Model fields', (filename) => {
+    const raw = fsReadFileSync(resolve(routesDir, filename), 'utf8');
+    const model = JSON.parse(raw) as Powl2Model;
+
+    // Required field structure
+    expect(model.route_id, `${filename}: route_id`).toBeTruthy();
+    expect(model.type, `${filename}: type`).toBe('powl2');
+    expect(model.model, `${filename}: model`).toBeDefined();
+
+    // V2 maximalism: every catalog route must declare receipts and object types
+    expect(model.receipt_required, `${filename}: receipt_required`).toBe(true);
+    expect(model.object_types, `${filename}: object_types`).toBeDefined();
+    expect(Object.keys(model.object_types ?? {}).length, `${filename}: ≥1 object type`).toBeGreaterThan(0);
+
+    // At least one declared type must have a Receipt schema (the receipt schema
+    // dimension exists to mean something — a route without any schema receipts
+    // is fine for V1 but explicitly excluded from the V2 catalog).
+    const hasReceiptSchema = Object.values(model.object_types ?? {}).some((d) => typeof d.schema === 'string');
+    expect(hasReceiptSchema, `${filename}: at least one object_type with schema`).toBe(true);
+
+    // Run conformance against a synthetic, satisfying OCEL — must not throw and must
+    // emit at least 4 dimension details (fitness, precision, stage_coverage, lifecycle).
+    const stages = model.required_stages ?? [];
+    const ocel = makeOcel(stages.length > 0
+      ? stages.map((s) => ({ activity: s, objects: [{ id: `${filename}-obj-1`, type: 'Probe' }] }))
+      : [{ activity: 'noop', objects: [{ id: 'noop-1', type: 'Probe' }] }]);
+    const result = checkPowl2Conformance(ocel, model, REPO_DIR);
+    expect(result.details.length, `${filename}: ≥4 dimension details`).toBeGreaterThanOrEqual(4);
+    expect(result.verdict, `${filename}: verdict emitted`).toMatch(/^(Accepted|AndonPull)$/);
+  });
+});
