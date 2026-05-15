@@ -1,5 +1,7 @@
 use crate::error::{codes, wasm_err};
+#[cfg(feature = "streaming_basic")]
 use crate::incremental_dfg::IncrementalDFG;
+#[cfg(feature = "streaming_basic")]
 use crate::incremental_dfg::StreamingDFG;
 use crate::models::{
     DeclareModel, DirectlyFollowsGraph, EventLog, NGramPredictor, PetriNet,
@@ -39,7 +41,9 @@ pub enum StoredObject {
     StreamingConformanceChecker(StreamingConformanceChecker),
     TemporalProfile(TemporalProfile),
     NGramPredictor(NGramPredictor),
+    #[cfg(feature = "streaming_basic")]
     IncrementalDFG(IncrementalDFG),
+    #[cfg(feature = "streaming_basic")]
     StreamingDFG(StreamingDFG),
     #[cfg(feature = "streaming_full")]
     StreamingPipeline(StreamingPipeline),
@@ -182,7 +186,9 @@ impl Clone for StoredObject {
             }
             StoredObject::TemporalProfile(p) => StoredObject::TemporalProfile(p.clone()),
             StoredObject::NGramPredictor(p) => StoredObject::NGramPredictor(p.clone()),
+            #[cfg(feature = "streaming_basic")]
             StoredObject::IncrementalDFG(d) => StoredObject::IncrementalDFG(d.clone()),
+            #[cfg(feature = "streaming_basic")]
             StoredObject::StreamingDFG(d) => StoredObject::StreamingDFG(d.clone()),
             #[cfg(feature = "streaming_full")]
             StoredObject::StreamingPipeline(p) => StoredObject::StreamingPipeline(p.clone()),

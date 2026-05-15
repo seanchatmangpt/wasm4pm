@@ -313,7 +313,7 @@ pub mod incremental_dfg;
 #[cfg(feature = "discovery_advanced")]
 pub mod more_discovery;
 pub mod parallel_executor;
-#[cfg(feature = "conformance_basic")]
+#[cfg(all(feature = "conformance_basic", feature = "discovery_advanced"))]
 pub mod pattern_analysis;
 #[cfg(feature = "petri_net_playout")]
 pub mod playout;
