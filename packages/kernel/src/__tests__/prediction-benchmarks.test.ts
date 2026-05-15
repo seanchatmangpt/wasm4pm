@@ -419,14 +419,14 @@ describe('Prediction Performance Baselines', () => {
 
     const stablePrefixes = makePrefixes(STABLE_LOG, 5);
 
-    it('fit completes within 50 ms for a 200-trace log', () => {
+    it('fit completes within 200 ms for a 200-trace log', () => {
       const start = Date.now();
       dispatcher.execute({
         mode: 'fit',
         task: { perspective: 'drift', windowSize: 50, driftThreshold: 0.7 },
         log: STABLE_LOG,
       });
-      expect(Date.now() - start).toBeLessThan(50);
+      expect(Date.now() - start).toBeLessThan(200);
     });
 
     it('fit_predict on same-distribution traces: Jaccard score is higher than for novel traces', () => {

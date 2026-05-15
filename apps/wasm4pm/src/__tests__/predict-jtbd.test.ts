@@ -294,7 +294,7 @@ describe('JTBD-2: I want to estimate remaining time so I can set accurate SLA ex
 
 describe('JTBD-3: I want to predict deal outcome to prioritize sales effort', () => {
   it('score_anomaly returns score in [0, 1] + score_anomaly result has an is_anomalous boolean field + score_log_anomalies returns an array (may be empty if no anomalies detected)', () => {
-    const dfgHandle = wasm.discover_dfg_handle(logHandle, ACTIVITY_KEY) as string;
+    const dfgHandle = wasm.discover_dfg_simd_handle(logHandle, ACTIVITY_KEY) as string;
     const result = parse(
       wasm.score_anomaly(dfgHandle, JSON.stringify([V.leadCreated, V.leadQualified]))
     );
