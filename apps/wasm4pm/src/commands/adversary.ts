@@ -8,6 +8,8 @@ import { emitResult, makeResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
 import { runHook, type JtbdProbe } from './doctor.js';
+import { checkPowl2Conformance } from './trace.js';
+import type { OcelLog, Powl2Model } from './trace.js';
 
 // ── chain helpers ──────────────────────────────────────────────────────────
 
@@ -510,6 +512,126 @@ export async function probeAdversary(projectDir: string): Promise<Probe[]> {
           : `Audit exists but verdict=${verdict} (not Accepted)`,
       verdict: exists && valid ? 'verified' : exists ? 'refuted' : 'refuted',
       evidence: `exists=${exists}; verdict=${verdict}`,
+    });
+  }
+
+  // ── P11: Activity-only fake route → AndonPull(ActivityOnlyFakeRoute) ─────────
+  {
+    // Build an OCEL log with events that have zero object references — no object evidence at all.
+    // checkPowl2Conformance fires the object_evidence_present check first and must reject it.
+    const fakeOcel: OcelLog = {
+      ocel_version: '2.0',
+      ocel_global_log: { ocel_attribute_names: [] },
+      ocel_events: [
+        { event_id: 'e0', activity: 'plan', timestamp: '2026-05-14T00:00:00Z', objects: [], attributes: {} },
+        { event_id: 'e1', activity: 'execute', timestamp: '2026-05-14T00:00:01Z', objects: [], attributes: {} },
+        { event_id: 'e2', activity: 'complete', timestamp: '2026-05-14T00:00:02Z', objects: [], attributes: {} },
+      ],
+      ocel_objects: [], // no objects at all
+    };
+    const fakeModel: Powl2Model = {
+      route_id: 'p11-fake-route',
+      type: 'powl2',
+      required_stages: ['plan', 'execute', 'complete'],
+      object_types: { 'Task': { created_by: ['plan'] } },
+      model: { type: 'sequence', sequence: ['plan', 'execute', 'complete'] },
+    };
+    const result = checkPowl2Conformance(fakeOcel, fakeModel);
+    const isAndonActivityOnly = result.verdict === 'AndonPull' && result.andon_reason === 'ActivityOnlyFakeRoute';
+    probes.push({
+      job: 'Activity-only fake route rejected with AndonPull(ActivityOnlyFakeRoute)',
+      scenario: 'OCEL log with 3 events but zero objects — no object evidence; model has required_stages and object_types',
+      observed: isAndonActivityOnly
+        ? `AndonPull(ActivityOnlyFakeRoute) — activity-only fake route correctly blocked`
+        : result.verdict === 'Accepted'
+          ? 'Accepted — activity-only route was NOT rejected (critical gap)'
+          : `AndonPull(${result.andon_reason ?? 'unknown'}) — wrong andon reason, expected ActivityOnlyFakeRoute`,
+      verdict: isAndonActivityOnly ? 'verified' : 'refuted',
+      evidence: `verdict=${result.verdict}; andon_reason=${result.andon_reason ?? 'none'}; fitness=${result.fitness.toFixed(3)}`,
+    });
+  }
+
+  // ── P12: Object lifecycle violation → AndonPull(ObjectLifecycleViolation) ────
+  {
+    // Build an OCEL log where a Receipt object appears in a "use_receipt" event
+    // BEFORE the "emit_receipt" creation event — violating the lifecycle declaration.
+    const badOcel: OcelLog = {
+      ocel_version: '2.0',
+      ocel_global_log: { ocel_attribute_names: [] },
+      ocel_events: [
+        {
+          event_id: 'e0',
+          activity: 'use_receipt',
+          timestamp: '2026-05-14T00:00:00Z',
+          objects: [{ id: 'r1', type: 'Receipt' }], // Receipt used BEFORE it is created
+          attributes: {},
+        },
+        {
+          event_id: 'e1',
+          activity: 'emit_receipt',
+          timestamp: '2026-05-14T00:00:01Z',
+          objects: [{ id: 'r1', type: 'Receipt' }], // Receipt created here — but AFTER use
+          attributes: {},
+        },
+      ],
+      ocel_objects: [
+        { id: 'r1', type: 'Receipt', attributes: {} },
+      ],
+    };
+    const lifecycleModel: Powl2Model = {
+      route_id: 'p12-lifecycle-route',
+      type: 'powl2',
+      object_types: {
+        'Receipt': { created_by: ['emit_receipt'] }, // Receipt must first appear via emit_receipt
+      },
+      model: { type: 'sequence', sequence: ['use_receipt', 'emit_receipt'] },
+    };
+    const result = checkPowl2Conformance(badOcel, lifecycleModel);
+    const isAndonLifecycle = result.verdict === 'AndonPull' && result.andon_reason === 'ObjectLifecycleViolation';
+    probes.push({
+      job: 'Object lifecycle violation rejected with AndonPull(ObjectLifecycleViolation)',
+      scenario: 'Receipt object appears in "use_receipt" (pos 0) before "emit_receipt" (pos 1) creation event',
+      observed: isAndonLifecycle
+        ? `AndonPull(ObjectLifecycleViolation) — lifecycle violation correctly detected`
+        : result.verdict === 'Accepted'
+          ? 'Accepted — object lifecycle violation was NOT rejected (critical gap)'
+          : `AndonPull(${result.andon_reason ?? 'unknown'}) — wrong andon reason, expected ObjectLifecycleViolation`,
+      verdict: isAndonLifecycle ? 'verified' : 'refuted',
+      evidence: `verdict=${result.verdict}; andon_reason=${result.andon_reason ?? 'none'}; obj_lifecycle=${result.object_lifecycle_validity.toFixed(3)}`,
+    });
+  }
+
+  // ── P13: Conformance 0.999 (missing stage) pulls Andon ───────────────────────
+  {
+    // Build a model with 3 required stages; supply a trace that covers only 2.
+    // Any fitness < 1.0 or missing required stage must produce AndonPull — never Accepted.
+    const partialOcel: OcelLog = {
+      ocel_version: '2.0',
+      ocel_global_log: { ocel_attribute_names: [] },
+      ocel_events: [
+        { event_id: 'e0', activity: 'stage_a', timestamp: '2026-05-14T00:00:00Z', objects: [{ id: 'o1', type: 'Artifact' }], attributes: {} },
+        { event_id: 'e1', activity: 'stage_b', timestamp: '2026-05-14T00:00:01Z', objects: [{ id: 'o1', type: 'Artifact' }], attributes: {} },
+        // stage_c is intentionally absent — makes required_stage_coverage = 2/3 ≈ 0.667
+      ],
+      ocel_objects: [{ id: 'o1', type: 'Artifact', attributes: {} }],
+    };
+    const partialModel: Powl2Model = {
+      route_id: 'p13-conformance-gap',
+      type: 'powl2',
+      required_stages: ['stage_a', 'stage_b', 'stage_c'], // stage_c will be missing
+      object_types: { 'Artifact': { created_by: ['stage_a'] } },
+      model: { type: 'sequence', sequence: ['stage_a', 'stage_b', 'stage_c'] },
+    };
+    const result = checkPowl2Conformance(partialOcel, partialModel);
+    const isAndonPull = result.verdict === 'AndonPull';
+    probes.push({
+      job: 'Conformance below 1.0 (missing required stage) pulls Andon — never Accepted',
+      scenario: 'Route declares 3 required stages; trace covers only stage_a + stage_b; stage_c absent',
+      observed: isAndonPull
+        ? `AndonPull(${result.andon_reason ?? 'unknown'}) — incomplete conformance correctly blocked (stage_coverage=${(result.required_stage_coverage * 100).toFixed(1)}%)`
+        : `Accepted — missing required stage was NOT rejected (critical gap; stage_coverage=${(result.required_stage_coverage * 100).toFixed(1)}%)`,
+      verdict: isAndonPull ? 'verified' : 'refuted',
+      evidence: `verdict=${result.verdict}; andon_reason=${result.andon_reason ?? 'none'}; stage_coverage=${result.required_stage_coverage.toFixed(3)}; fitness=${result.fitness.toFixed(3)}`,
     });
   }
 

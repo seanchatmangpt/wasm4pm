@@ -2,23 +2,25 @@
   "route_id": "proof-pack-promotion",
   "type": "powl2",
   "required_stages": [
-    "wpm.proof.collect",
-    "wpm.proof.verify",
-    "PRODUCER_RECEIPT.written",
-    "BLAKE3.hashes.recorded"
+    "wpm_proof_collect",
+    "wpm_proof_verify",
+    "wpm_proof_promote"
   ],
+  "receipt_required": true,
+  "object_types": {
+    "ProofPack": { "created_by": ["wpm_proof_collect"] },
+    "Receipt": { "created_by": ["emit_receipt", "proof_collect"] }
+  },
   "model": {
     "type": "choice_graph",
     "choice_graph": {
-      "nodes": ["▷", "wpm.proof.collect", "PRODUCER_RECEIPT.written", "BLAKE3.hashes.recorded", "wpm.proof.verify", "wpm.proof.promote", "□"],
+      "nodes": ["▷", "wpm_proof_collect", "wpm_proof_verify", "wpm_proof_promote", "emit_receipt", "□"],
       "edges": [
-        ["▷", "wpm.proof.collect"],
-        ["wpm.proof.collect", "PRODUCER_RECEIPT.written"],
-        ["wpm.proof.collect", "BLAKE3.hashes.recorded"],
-        ["PRODUCER_RECEIPT.written", "wpm.proof.verify"],
-        ["BLAKE3.hashes.recorded", "wpm.proof.verify"],
-        ["wpm.proof.verify", "wpm.proof.promote"],
-        ["wpm.proof.promote", "□"]
+        ["▷", "wpm_proof_collect"],
+        ["wpm_proof_collect", "wpm_proof_verify"],
+        ["wpm_proof_verify", "wpm_proof_promote"],
+        ["wpm_proof_promote", "emit_receipt"],
+        ["emit_receipt", "□"]
       ]
     }
   }

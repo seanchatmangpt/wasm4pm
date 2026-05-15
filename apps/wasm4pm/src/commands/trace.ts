@@ -54,10 +54,17 @@ interface OcelLog {
   ocel_objects: Array<{ id: string; type: string; attributes: Record<string, unknown> }>;
 }
 
+interface ObjectTypeDeclaration {
+  created_by: string[];       // activities that create objects of this type
+  terminated_by?: string[];   // activities that terminate objects of this type
+}
+
 interface Powl2Model {
   route_id: string;
   type: 'powl2';
   required_stages?: string[];
+  object_types?: Record<string, ObjectTypeDeclaration>;
+  receipt_required?: boolean;
   model: {
     type?: 'choice_graph' | 'sequence' | 'loop' | 'partial_order';
     choice_graph?: { nodes: string[]; edges: [string, string][] };
@@ -245,34 +252,119 @@ function ocelToObservedRoute(ocel: OcelLog): string[] {
   return ocel.ocel_events.map((e) => e.activity);
 }
 
+// ── POWL v2 conformance helpers ───────────────────────────────────────────────
+
+function measureObjectLifecycle(
+  ocel: OcelLog,
+  objectTypes: Record<string, ObjectTypeDeclaration>,
+): { valid: boolean; coverage: number; violations: string[] } {
+  const violations: string[] = [];
+  const eventsByActivity = ocel.ocel_events;
+
+  for (const [typeName, typeDecl] of Object.entries(objectTypes)) {
+    const objectsOfType = ocel.ocel_objects.filter((o) => o.type === typeName).map((o) => o.id);
+    for (const objId of objectsOfType) {
+      // Find events involving this object, in order
+      const objEvents = eventsByActivity.filter((e) => e.objects.some((o) => o.id === objId));
+      if (objEvents.length === 0) continue;
+      const firstActivity = objEvents[0]!.activity;
+      if (!typeDecl.created_by.includes(firstActivity)) {
+        violations.push(`${typeName}:${objId} first seen in "${firstActivity}" (not a create activity: [${typeDecl.created_by.join(', ')}])`);
+      }
+    }
+  }
+
+  const valid = violations.length === 0;
+  return { valid, coverage: valid ? 1.0 : 0.0, violations };
+}
+
+function measureReceiptCoverage(ocel: OcelLog): { coverage: number; activities_with_receipts: number; total_activities: number } {
+  const activitiesWithReceipts = new Set<string>();
+  for (const ev of ocel.ocel_events) {
+    if (ev.objects.some((o) => o.type === 'Receipt' || o.type.toLowerCase().includes('receipt'))) {
+      activitiesWithReceipts.add(ev.activity);
+    }
+  }
+  const uniqueActivities = new Set(ocel.ocel_events.map((e) => e.activity));
+  const coverage = uniqueActivities.size > 0 ? activitiesWithReceipts.size / uniqueActivities.size : 0;
+  return { coverage, activities_with_receipts: activitiesWithReceipts.size, total_activities: uniqueActivities.size };
+}
+
+function checkPartialOrderConstraints(
+  observed: string[],
+  constraints: [string, string][],
+): { valid: boolean; violations: string[] } {
+  const violations: string[] = [];
+  const positions = new Map<string, number[]>();
+  observed.forEach((a, i) => { if (!positions.has(a)) positions.set(a, []); positions.get(a)!.push(i); });
+
+  for (const [before, after] of constraints) {
+    const bPos = positions.get(before);
+    const aPos = positions.get(after);
+    if (bPos && aPos) {
+      const minBefore = Math.min(...bPos);
+      const minAfter = Math.min(...aPos);
+      if (minBefore >= minAfter) {
+        violations.push(`"${after}" (pos ${minAfter}) precedes "${before}" (pos ${minBefore}) — order constraint violated`);
+      }
+    }
+  }
+  return { valid: violations.length === 0, violations };
+}
+
+function checkChoiceGraphEdges(
+  observed: string[],
+  edges: [string, string][],
+): { valid: boolean; invalid_transitions: string[] } {
+  const edgeSet = new Set(edges.map(([a, b]) => `${a}→${b}`));
+  const invalid: string[] = [];
+  // Build adjacency for checking — start node is implicitly '▷' → first activity
+  if (observed.length > 0) {
+    const firstEdge = `▷→${observed[0]}`;
+    if (!edgeSet.has(firstEdge)) invalid.push(`▷→${observed[0]} (no edge from start)`);
+  }
+  for (let i = 0; i < observed.length - 1; i++) {
+    const transition = `${observed[i]}→${observed[i + 1]}`;
+    if (!edgeSet.has(transition)) {
+      invalid.push(`${transition} (not a declared edge)`);
+    }
+  }
+  return { valid: invalid.length === 0, invalid_transitions: invalid };
+}
+
 // ── POWL v2 conformance ───────────────────────────────────────────────────────
 
-function checkPowl2Conformance(observed: string[], model: Powl2Model): ConformanceResult {
+export function checkPowl2Conformance(ocel: OcelLog, model: Powl2Model): ConformanceResult {
   const details: ConformanceResult['details'] = [];
   const m = model.model;
+  const observed = ocelToObservedRoute(ocel);
 
-  // Build adjacency from choice_graph, sequence, or partial_order
+  // ── Object evidence check: activity-only fake route ─────────────────────────
+  const eventsWithObjects = ocel.ocel_events.filter((e) => e.objects.length > 0);
+  const objectEvidencePresent = eventsWithObjects.length > 0;
+  details.push({
+    dimension: 'object_evidence_present',
+    ok: objectEvidencePresent,
+    detail: objectEvidencePresent
+      ? `${eventsWithObjects.length}/${ocel.ocel_events.length} events have object evidence`
+      : 'all events have zero objects — activity-only fake route detected',
+  });
+
+  // ── Build admissible activities + valid paths ────────────────────────────────
   let admissibleActivities: Set<string>;
   let validPaths: string[][] = [];
+  let choiceEdges: [string, string][] = [];
 
   if (m.choice_graph) {
     const { nodes, edges } = m.choice_graph;
+    choiceEdges = edges;
     admissibleActivities = new Set(nodes.filter((n) => n !== '▷' && n !== '□'));
-
-    // Build adjacency list
     const adj = new Map<string, string[]>();
-    for (const [from, to] of edges) {
-      if (!adj.has(from)) adj.set(from, []);
-      adj.get(from)!.push(to);
-    }
-
-    // Find all paths from ▷ to □ via DFS (bounded depth)
+    for (const [from, to] of edges) { if (!adj.has(from)) adj.set(from, []); adj.get(from)!.push(to); }
     const findPaths = (current: string, path: string[], depth: number): void => {
-      if (depth > nodes.length + 2) return; // cycle guard
+      if (depth > nodes.length + 2) return;
       if (current === '□') { validPaths.push([...path]); return; }
-      for (const next of (adj.get(current) ?? [])) {
-        findPaths(next, next !== '□' ? [...path, next] : path, depth + 1);
-      }
+      for (const next of (adj.get(current) ?? [])) findPaths(next, next !== '□' ? [...path, next] : path, depth + 1);
     };
     findPaths('▷', [], 0);
   } else if (m.sequence) {
@@ -288,28 +380,26 @@ function checkPowl2Conformance(observed: string[], model: Powl2Model): Conforman
     admissibleActivities = new Set();
   }
 
-  // Fitness: fraction of observed activities that appear in admissible set
+  // ── Fitness ──────────────────────────────────────────────────────────────────
   const observedSet = new Set(observed);
   const inModel = observed.filter((a) => admissibleActivities.has(a)).length;
   const fitness = observed.length > 0 ? inModel / observed.length : 0;
   details.push({
     dimension: 'fitness',
     ok: fitness >= 1.0,
-    detail: `${inModel}/${observed.length} observed activities are in model (${(fitness * 100).toFixed(1)}%)`,
+    detail: `${inModel}/${observed.length} observed activities in model (${(fitness * 100).toFixed(1)}%)`,
   });
 
-  // Precision: fraction of model activities that appear in observed
+  // ── Precision ────────────────────────────────────────────────────────────────
   const modelActivitiesInObserved = [...admissibleActivities].filter((a) => observedSet.has(a)).length;
-  const precision = admissibleActivities.size > 0
-    ? modelActivitiesInObserved / admissibleActivities.size
-    : 1.0;
+  const precision = admissibleActivities.size > 0 ? modelActivitiesInObserved / admissibleActivities.size : 1.0;
   details.push({
     dimension: 'precision',
-    ok: precision <= 1.0, // precision is always ok unless > 1 (impossible)
+    ok: precision <= 1.0,
     detail: `${modelActivitiesInObserved}/${admissibleActivities.size} model activities observed (${(precision * 100).toFixed(1)}%)`,
   });
 
-  // Required stage coverage: check required_stages all appear
+  // ── Required stage coverage ──────────────────────────────────────────────────
   const requiredStages = model.required_stages ?? [];
   const missingStages = requiredStages.filter((s) => !observedSet.has(s));
   const stageCoverage = requiredStages.length > 0
@@ -323,24 +413,15 @@ function checkPowl2Conformance(observed: string[], model: Powl2Model): Conforman
       : `missing: ${missingStages.join(', ')}`,
   });
 
-  // Check if any valid path covers the observed sequence (order check)
+  // ── Route sequence + choice graph edge validity ───────────────────────────
   let routeValid = false;
   if (validPaths.length === 0) {
-    // No complete paths found in model — check just for admissibility
     routeValid = fitness === 1.0;
   } else {
-    // Try to match observed sequence against any valid path (subsequence check)
     for (const path of validPaths) {
       let pi = 0;
-      for (const act of observed) {
-        if (pi < path.length && path[pi] === act) pi++;
-      }
+      for (const act of observed) { if (pi < path.length && path[pi] === act) pi++; }
       if (pi === path.length) { routeValid = true; break; }
-    }
-    if (!routeValid && fitness === 1.0) {
-      // All activities in model but sequence doesn't match any path exactly
-      // Consider it a partial match — report but don't fail fitness
-      routeValid = false;
     }
   }
   details.push({
@@ -349,31 +430,115 @@ function checkPowl2Conformance(observed: string[], model: Powl2Model): Conforman
     detail: routeValid
       ? 'observed sequence matches a valid route path'
       : validPaths.length === 0
-        ? 'no complete route paths in model (use required_stages for coverage check)'
-        : `observed sequence does not match any of ${validPaths.length} valid path(s)`,
+        ? 'no complete route paths in model (use required_stages)'
+        : `sequence does not match any of ${validPaths.length} valid path(s)`,
   });
 
-  // Receipt coverage and object lifecycle: NotMeasured in current phase
-  details.push({ dimension: 'receipt_coverage', ok: false, detail: 'NotMeasured — Phase 5 implementation' });
-  details.push({ dimension: 'object_lifecycle_validity', ok: false, detail: 'NotMeasured — Phase 5 implementation' });
+  // Edge-level choice graph validation
+  if (choiceEdges.length > 0) {
+    const edgeCheck = checkChoiceGraphEdges(observed, choiceEdges);
+    details.push({
+      dimension: 'choice_graph_edges_valid',
+      ok: edgeCheck.valid,
+      detail: edgeCheck.valid
+        ? 'all observed transitions follow declared edges'
+        : `invalid transitions: ${edgeCheck.invalid_transitions.slice(0, 3).join('; ')}`,
+    });
+  }
 
-  // Verdict: Accepted only if fitness=1.0, required stages covered, sequence valid
-  // NotMeasured dimensions cause AndonPull(TestRouteIncomplete) per MCPP doctrine
+  // Partial-order constraint check
+  if (m.partial_order?.order) {
+    const poCheck = checkPartialOrderConstraints(observed, m.partial_order.order);
+    details.push({
+      dimension: 'partial_order_constraints',
+      ok: poCheck.valid,
+      detail: poCheck.valid
+        ? 'all ordering constraints satisfied'
+        : `violations: ${poCheck.violations.slice(0, 3).join('; ')}`,
+    });
+  }
+
+  // ── Object lifecycle validity ────────────────────────────────────────────────
+  let objectLifecycleValidity: number;
+  let objectLifecycleOk: boolean;
+  if (model.object_types && Object.keys(model.object_types).length > 0) {
+    const lcResult = measureObjectLifecycle(ocel, model.object_types);
+    objectLifecycleValidity = lcResult.coverage;
+    objectLifecycleOk = lcResult.valid;
+    details.push({
+      dimension: 'object_lifecycle_validity',
+      ok: lcResult.valid,
+      detail: lcResult.valid
+        ? `all declared object types follow lifecycle constraints`
+        : `violations: ${lcResult.violations.slice(0, 3).join('; ')}`,
+    });
+  } else {
+    objectLifecycleValidity = -1; // sentinel: NotMeasured
+    objectLifecycleOk = false;
+    details.push({
+      dimension: 'object_lifecycle_validity',
+      ok: false,
+      detail: 'NotMeasured — add object_types to POWL model to enable',
+    });
+  }
+
+  // ── Receipt coverage ─────────────────────────────────────────────────────────
+  let receiptCoverage: number;
+  let receiptOk: boolean;
+  if (model.receipt_required === true) {
+    const rcResult = measureReceiptCoverage(ocel);
+    receiptCoverage = rcResult.coverage;
+    receiptOk = rcResult.coverage >= 1.0;
+    details.push({
+      dimension: 'receipt_coverage',
+      ok: receiptOk,
+      detail: receiptOk
+        ? `all ${rcResult.total_activities} activities have receipts`
+        : `${rcResult.activities_with_receipts}/${rcResult.total_activities} activities have receipts`,
+    });
+  } else {
+    receiptCoverage = -1; // sentinel: NotMeasured
+    receiptOk = false;
+    details.push({
+      dimension: 'receipt_coverage',
+      ok: false,
+      detail: 'NotMeasured — add receipt_required: true to POWL model to enable',
+    });
+  }
+
+  // ── Verdict ───────────────────────────────────────────────────────────────────
   const fitnessOk = fitness >= 1.0;
   const stagesOk = missingStages.length === 0;
   const seqOk = routeValid || validPaths.length === 0;
+  const edgesOk = choiceEdges.length === 0 ||
+    details.find((d) => d.dimension === 'choice_graph_edges_valid')?.ok !== false;
+  const poOk = !m.partial_order?.order ||
+    details.find((d) => d.dimension === 'partial_order_constraints')?.ok !== false;
+  const objEvOk = objectEvidencePresent;
+
+  const notMeasured = objectLifecycleValidity === -1 || receiptCoverage === -1;
 
   let verdict: 'Accepted' | 'AndonPull' = 'AndonPull';
   let andonReason: string | undefined;
-  if (!fitnessOk) {
+
+  if (!objEvOk) {
+    andonReason = 'ActivityOnlyFakeRoute';
+  } else if (!fitnessOk) {
     andonReason = 'RouteConformanceGap';
   } else if (!stagesOk) {
     andonReason = 'MissingRequiredStages';
-  } else if (!seqOk) {
+  } else if (!seqOk || !edgesOk) {
     andonReason = 'RouteSequenceMismatch';
-  } else {
-    // receipt_coverage and object_lifecycle_validity are NotMeasured
+  } else if (!poOk) {
+    andonReason = 'PartialOrderViolation';
+  } else if (objectLifecycleValidity !== -1 && !objectLifecycleOk) {
+    andonReason = 'ObjectLifecycleViolation';
+  } else if (receiptCoverage !== -1 && !receiptOk) {
+    andonReason = 'InsufficientReceiptCoverage';
+  } else if (notMeasured) {
     andonReason = 'TestRouteIncomplete';
+  } else {
+    verdict = 'Accepted';
   }
 
   return {
@@ -381,8 +546,8 @@ function checkPowl2Conformance(observed: string[], model: Powl2Model): Conforman
     fitness,
     precision,
     required_stage_coverage: stageCoverage,
-    receipt_coverage: 0,
-    object_lifecycle_validity: 0,
+    receipt_coverage: receiptCoverage === -1 ? 0 : receiptCoverage,
+    object_lifecycle_validity: objectLifecycleValidity === -1 ? 0 : objectLifecycleValidity,
     verdict,
     andon_reason: andonReason,
     details,
@@ -682,8 +847,7 @@ const conform = defineCommand({
       emitResult(r, { format, verbose, quiet }); return exitWithFlush(EXIT_CODES.source_error);
     }
 
-    const observed = ocelToObservedRoute(ocelLog);
-    const conformance = checkPowl2Conformance(observed, powlModel);
+    const conformance = checkPowl2Conformance(ocelLog, powlModel);
 
     const outPath = ctx.args.out as string | undefined;
     if (outPath) {
@@ -695,7 +859,7 @@ const conform = defineCommand({
     const exitCode = conformance.verdict === 'Accepted' ? EXIT_CODES.success : EXIT_CODES.execution_error;
     const result = makeResult('trace conform', {
       ...conformance,
-      observed_count: observed.length,
+      observed_count: ocelLog.ocel_events.length,
       out: outPath ?? 'none',
     }, performance.now() - t0, exitCode);
 

@@ -1,4 +1,4 @@
-import { defineCommand, runMain } from 'citty';
+import { defineCommand } from 'citty';
 import { run } from './commands/run.js';
 import { watch } from './commands/watch.js';
 import { status } from './commands/status.js';
@@ -113,6 +113,7 @@ ${BOLD}BENCHMARK${RESET}  ${DIM}(verb8: build · replay · verify · export)${RE
   ${GREEN}wpm benchmark replay${RESET} [--corpus <path>]   Run traces, show per-trace results
   ${GREEN}wpm benchmark verify${RESET} [--corpus <path>]   CI gate — exit non-zero on failure
   ${GREEN}wpm benchmark export${RESET} [--format sarif]    Export SARIF / JSON / CSV
+  ${GREEN}wpm proof promote${RESET} [--pack <path>]        Seal a proof-work pack into proof-packs/
 
 ${BOLD}AUTOPROCESS${RESET}  ${DIM}(Perception → Decision → Protection → Optimization)${RESET}
   ${GREEN}wpm autoprocess${RESET} <log.xes>              Run full autonomic control loop

@@ -1,7 +1,8 @@
 import { defineCommand } from 'citty';
 import { execSync, spawnSync } from 'child_process';
 import { existsSync, mkdirSync, readFileSync, readdirSync, writeFileSync } from 'fs';
-import { join } from 'path';
+import { cp, mkdir, rm, writeFile } from 'node:fs/promises';
+import { basename, join } from 'path';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
@@ -661,12 +662,288 @@ const audit = defineCommand({
   },
 });
 
+// ── promote ───────────────────────────────────────────────────────────────────
+
+/**
+ * Find the latest directory in target/proof-work/ (by mtime).
+ * Returns undefined if none exist.
+ */
+function findLatestProofWork(projectDir: string): string | undefined {
+  const proofWorkDir = join(projectDir, 'target', 'proof-work');
+  if (!existsSync(proofWorkDir)) return undefined;
+  const entries = readdirSync(proofWorkDir, { withFileTypes: true })
+    .filter((d) => d.isDirectory())
+    .map((d) => {
+      const p = join(proofWorkDir, d.name);
+      try {
+        const stat = require('fs').statSync(p) as { mtimeMs: number };
+        return { name: d.name, mtime: stat.mtimeMs };
+      } catch {
+        return { name: d.name, mtime: 0 };
+      }
+    })
+    .sort((a, b) => b.mtime - a.mtime);
+  if (entries.length === 0) return undefined;
+  return join(proofWorkDir, entries[0]!.name);
+}
+
+/**
+ * Programmatic verify: mirrors the checks in verifyCmd.
+ * Returns { ok, verdict, checks, meta } without exiting the process.
+ */
+function verifyPackSync(packDir: string): {
+  ok: boolean;
+  verdict: string;
+  checks: Array<{ check: string; ok: boolean; detail?: string }>;
+  meta: Record<string, unknown>;
+} {
+  const checks: Array<{ check: string; ok: boolean; detail?: string }> = [];
+
+  // 1. MANIFEST.json
+  const manifestPath = join(packDir, 'MANIFEST.json');
+  if (!existsSync(manifestPath)) {
+    return {
+      ok: false,
+      verdict: 'AndonPull',
+      checks: [{ check: 'MANIFEST.json exists', ok: false, detail: 'file missing' }],
+      meta: {},
+    };
+  }
+  checks.push({ check: 'MANIFEST.json exists', ok: true });
+
+  // 2. FINAL/verdict.json
+  const verdictPath = join(packDir, 'FINAL', 'verdict.json');
+  let verdictContent: Record<string, unknown> = {};
+  if (!existsSync(verdictPath)) {
+    checks.push({ check: 'FINAL/verdict.json exists', ok: false, detail: 'file missing' });
+  } else {
+    verdictContent = JSON.parse(readFileSync(verdictPath, 'utf8')) as Record<string, unknown>;
+    const verdictValue = verdictContent['verdict'] as string | undefined;
+    checks.push({
+      check: 'FINAL/verdict.json has verdict field',
+      ok: typeof verdictValue === 'string',
+      detail: verdictValue,
+    });
+  }
+
+  // 2b. FINAL/PRODUCER_RECEIPT.json
+  const receiptPath = join(packDir, 'FINAL', 'PRODUCER_RECEIPT.json');
+  if (!existsSync(receiptPath)) {
+    checks.push({ check: 'FINAL/PRODUCER_RECEIPT.json exists', ok: false, detail: 'missing' });
+  } else {
+    try {
+      const receipt = JSON.parse(readFileSync(receiptPath, 'utf8')) as Record<string, unknown>;
+      const approved = ['wpm proof collect', 'wpm proof audit', 'wpm proof promote'];
+      const producer = receipt['producer'] as string | undefined;
+      const ok = approved.includes(producer ?? '');
+      checks.push({
+        check: 'FINAL/PRODUCER_RECEIPT.json: approved producer',
+        ok,
+        detail: ok ? producer : `unapproved: ${producer ?? 'missing'}`,
+      });
+    } catch {
+      checks.push({ check: 'FINAL/PRODUCER_RECEIPT.json parseable', ok: false, detail: 'parse error' });
+    }
+  }
+
+  // 3. ARTIFACT_PROOF/file-hashes.json — BLAKE3 recompute
+  const hashesPath = join(packDir, 'ARTIFACT_PROOF', 'file-hashes.json');
+  if (existsSync(hashesPath)) {
+    const recorded: Record<string, string> = JSON.parse(readFileSync(hashesPath, 'utf8')) as Record<string, string>;
+    for (const [relPath, expectedHash] of Object.entries(recorded)) {
+      const absPath = join(packDir, relPath);
+      if (!existsSync(absPath)) {
+        checks.push({ check: `hash check: ${relPath}`, ok: false, detail: 'file missing' });
+        continue;
+      }
+      try {
+        const actualHash = blake3File(absPath);
+        const hashMatch = actualHash === expectedHash;
+        checks.push({
+          check: `BLAKE3 match: ${relPath}`,
+          ok: hashMatch,
+          detail: hashMatch
+            ? `${actualHash.slice(0, 12)}...`
+            : `recorded=${expectedHash.slice(0, 12)}... actual=${actualHash.slice(0, 12)}... MISMATCH`,
+        });
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        checks.push({ check: `hash check: ${relPath}`, ok: false, detail: `b3sum error: ${msg}` });
+      }
+    }
+  } else {
+    checks.push({ check: 'ARTIFACT_PROOF/file-hashes.json exists', ok: false });
+  }
+
+  // 4. PLACEHOLDER_PROOF required dims
+  const dimsPath = join(packDir, 'PLACEHOLDER_PROOF', 'proof-dimensions.json');
+  const notMeasured: string[] = [];
+  if (existsSync(dimsPath)) {
+    const dims = JSON.parse(readFileSync(dimsPath, 'utf8')) as { dimensions?: Record<string, string> };
+    const dimensions = dims.dimensions ?? {};
+    for (const [name, status] of Object.entries(dimensions)) {
+      if (status === 'not_measured') notMeasured.push(name);
+    }
+    for (const required of REQUIRED_DIMS) {
+      if (notMeasured.includes(required)) {
+        checks.push({
+          check: `required dim measured: ${required}`,
+          ok: false,
+          detail: 'NotMeasured — AndonPull(TestRouteIncomplete)',
+        });
+      }
+    }
+  }
+
+  const allOk = checks.every((c) => c.ok);
+  const hasNotMeasuredRequired = notMeasured.some((d) => REQUIRED_DIMS.includes(d));
+  const verdict = allOk && !hasNotMeasuredRequired ? 'Accepted' : 'AndonPull';
+
+  return {
+    ok: verdict === 'Accepted',
+    verdict,
+    checks,
+    meta: {
+      run_id: verdictContent['run_id'],
+      git_head: tryExec('git rev-parse --short HEAD').output.trim() || 'unknown',
+    },
+  };
+}
+
+const promote = defineCommand({
+  meta: {
+    name: 'promote',
+    description: 'Seal a proof-work pack into proof-packs/ (requires passing verify)',
+  },
+  args: {
+    pack: {
+      type: 'string',
+      description: 'Path to pack dir (default: latest in target/proof-work/)',
+    },
+    deleteSource: {
+      type: 'boolean',
+      description: 'Remove the source pack from proof-work/ after promotion',
+    },
+    format: { type: 'string', default: 'human' },
+    quiet: { type: 'boolean', alias: 'q' },
+  },
+  async run(ctx) {
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const quiet = ctx.args.quiet ?? false;
+    const verbose = false;
+    const projectDir = process.cwd();
+
+    // 1. Resolve pack path
+    const packPath = (ctx.args.pack as string | undefined) ?? findLatestProofWork(projectDir);
+    if (!packPath || !existsSync(packPath)) {
+      const result = makeErrorResult(
+        'proof promote',
+        packPath
+          ? `Pack directory not found: ${packPath}`
+          : 'No pack path specified and no packs found in target/proof-work/',
+        EXIT_CODES.config_error,
+        'PACK_NOT_FOUND',
+      );
+      emitResult(result, { format, verbose, quiet });
+      return exitWithFlush(EXIT_CODES.config_error);
+    }
+
+    // 2. Verify the pack — refuse if not passing
+    const verifyResult = verifyPackSync(packPath);
+    if (!verifyResult.ok) {
+      const result = makeErrorResult(
+        'proof promote',
+        `Promotion refused: pack verification failed (verdict=${verifyResult.verdict})`,
+        EXIT_CODES.execution_error,
+        'VERIFY_FAILED',
+      );
+      emitResult(result, { format, verbose, quiet }, (_res, projection) => {
+        projection.info('');
+        projection.info(`Promotion refused: ${packPath}`);
+        projection.info(`Verdict: ${verifyResult.verdict}`);
+        projection.info('');
+        for (const check of verifyResult.checks) {
+          const icon = check.ok ? '[PASS]' : '[FAIL]';
+          const detail = check.detail ? `  → ${check.detail}` : '';
+          projection.log(`  ${icon} ${check.check}${detail}`);
+        }
+      });
+      return exitWithFlush(EXIT_CODES.execution_error);
+    }
+
+    // 3. Stamp FINAL/PRODUCER_RECEIPT.json with promote provenance
+    const now = new Date().toISOString();
+    const producerReceipt = {
+      producer: 'wpm proof promote',
+      produced_at: now,
+      run_id: verifyResult.meta['run_id'] ?? basename(packPath),
+      verdict: verifyResult.verdict,
+      git_head: verifyResult.meta['git_head'] ?? 'unknown',
+      promoted_from: packPath,
+    };
+    mkdirSync(join(packPath, 'FINAL'), { recursive: true });
+    writeFileSync(
+      join(packPath, 'FINAL', 'PRODUCER_RECEIPT.json'),
+      JSON.stringify(producerReceipt, null, 2),
+    );
+
+    // 4. Copy the entire pack to target/proof-packs/<pack-id>/
+    const packId = basename(packPath);
+    const destPath = join(projectDir, 'target', 'proof-packs', packId);
+    await mkdir(destPath, { recursive: true });
+    await cp(packPath, destPath, { recursive: true });
+
+    // 5. Write PROMOTED_AT.json into the destination
+    const promotedAt = {
+      promoted_at: now,
+      promoted_by: 'wpm proof promote',
+      source_path: packPath,
+      dest_path: destPath,
+      verdict: verifyResult.verdict,
+    };
+    await writeFile(join(destPath, 'PROMOTED_AT.json'), JSON.stringify(promotedAt, null, 2));
+
+    // 6. Optionally delete source
+    if (ctx.args.deleteSource) {
+      await rm(packPath, { recursive: true });
+    }
+
+    const result = makeResult(
+      'proof promote',
+      {
+        pack_id: packId,
+        source_path: packPath,
+        dest_path: destPath,
+        verdict: verifyResult.verdict,
+        promoted_at: now,
+        source_deleted: ctx.args.deleteSource ?? false,
+      },
+      performance.now() - t0,
+      EXIT_CODES.success,
+    );
+
+    emitResult(result, { format, verbose, quiet }, (res, projection) => {
+      projection.info('');
+      projection.info(`Promoted:  ${res.payload.source_path}`);
+      projection.info(`Dest:      ${res.payload.dest_path}`);
+      projection.info(`Verdict:   ${res.payload.verdict}`);
+      projection.info(`Timestamp: ${res.payload.promoted_at}`);
+      if (res.payload.source_deleted) {
+        projection.info('Source pack deleted from proof-work/');
+      }
+    });
+
+    await exitWithFlush(EXIT_CODES.success);
+  },
+});
+
 // ── root ──────────────────────────────────────────────────────────────────────
 
 export const proof = defineCommand({
   meta: {
     name: 'proof',
-    description: 'Proof pack gate: collect, verify, audit, or show evidence',
+    description: 'Proof pack gate: collect, verify, audit, show, or promote evidence',
   },
-  subCommands: { collect, verify: verifyCmd, show, audit },
+  subCommands: { collect, verify: verifyCmd, show, audit, promote },
 });
