@@ -1094,7 +1094,8 @@ async function checkMemoryIndex(): Promise<Diagnosis> {
   }
 
   // Project-scoped memory: ~/.claude/projects/<encoded-path>/memory/MEMORY.md
-  const encoded = rootDir.replace(/\//g, '-').replace(/^-/, '');
+  // Claude Code encodes paths by replacing '/' with '-' (leading '-' is preserved)
+  const encoded = rootDir.replace(/\//g, '-');
   const memoryPath = path.join(os.homedir(), '.claude', 'projects', encoded, 'memory', 'MEMORY.md');
 
   if (!existsSync(memoryPath)) {
