@@ -82,10 +82,8 @@ fn insert_attr(
 // Public parse entry point
 // ---------------------------------------------------------------------------
 
-/// Parse basic XES format - simplified XML parser
-/// XES is the standard eXtensible Event Stream format for process logs
-#[wasm_bindgen]
-pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
+/// Parse basic XES format into an EventLog object.
+pub fn parse_xes(content: &str) -> Result<EventLog, String> {
     #[cfg(feature = "import")]
     {
         use wasm4pm_types::import::xes::{import_xes, XESImportOptions};
@@ -93,13 +91,10 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
         match import_xes(reader, XESImportOptions::default()) {
             Ok(types_log) => {
                 let log: EventLog = types_log.into();
-                let handle = get_or_init_state()
-                    .store_object(StoredObject::EventLog(log))
-                    .map_err(|_e| crate::error::js_val("Failed to store EventLog"))?;
-                return Ok(handle);
+                return Ok(log);
             }
             Err(e) => {
-                return Err(crate::error::js_val(&format!("XES Parse Error: {:?}", e)));
+                return Err(format!("XES Parse Error: {:?}", e));
             }
         }
     }
@@ -114,16 +109,6 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
         let mut current_trace: Option<Trace> = None;
         let mut current_event: Option<Event> = None;
 
-        // Walk every `<...>` tag in the document, in order.
-        //
-        // Earlier versions iterated by line and treated each line as a single
-        // tag, which broke on inline event/attribute syntax such as
-        //   `<event><string key="..." value="..."/><date .../></event>`
-        // (one trace event collapsed onto a single line). The line-based
-        // walker would create the event but never see its closing tag or
-        // its inline attributes, so events were silently dropped during
-        // import. The tag-based walker below handles both line-per-tag
-        // and many-tags-per-line correctly.
         let bytes = content.as_bytes();
         let mut i = 0;
         while i < bytes.len() {
@@ -223,13 +208,19 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
                 _ => {}
             }
         }
-
-        let handle = get_or_init_state()
-            .store_object(StoredObject::EventLog(log))
-            .map_err(|_e| crate::error::js_val("Failed to store EventLog"))?;
-
-        Ok(handle)
+        Ok(log)
     }
+}
+
+/// Parse basic XES format - simplified XML parser
+/// XES is the standard eXtensible Event Stream format for process logs
+#[wasm_bindgen]
+pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
+    let log = parse_xes(content).map_err(|e| crate::error::js_val(&e))?;
+    let handle = get_or_init_state()
+        .store_object(StoredObject::EventLog(log))
+        .map_err(|_e| crate::error::js_val("Failed to store EventLog"))?;
+    Ok(handle)
 }
 
 /// Parse XES format with parse cache — skips re-parsing if content hash matches.

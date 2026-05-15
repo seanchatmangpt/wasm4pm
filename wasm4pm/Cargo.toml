@@ -53,6 +53,8 @@ tracing = "0.1"
 statrs = { version = "0.17", default-features = false, optional = true }
 bcinr = { workspace = true, optional = true }
 blake3 = "1"
+quick-xml = "0.37"
+flate2 = "1.1"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 uuid = { version = "1.16.0", features = ["v4", "js"] }
@@ -67,6 +69,11 @@ simd-json = "0.13"
 lazy_static = "1.4"
 fake = { workspace = true }
 proptest = { workspace = true }
+wasm4pm-macros = { path = "../crates/wasm4pm-macros" }
+
+[[bench]]
+name = "anti_fake"
+harness = false
 
 [[bench]]
 name = "fast_algorithms"
@@ -129,9 +136,22 @@ name = "hot_kernels"
 harness = false
 
 [[bench]]
+name = "self_conformance"
+harness = false
+
+[[bench]]
 name = "closed_claw"
 path = "benches/closed_claw/mod.rs"
 harness = false
+
+[[bench]]
+name = "parser_bench"
+harness = false
+
+[[bench]]
+name = "powl_macro"
+harness = false
+required-features = ["powl-test"]
 
 [[bench]]
 name = "jtbd_benchmark"
@@ -144,6 +164,10 @@ required-features = ["cloud"]
 
 [[bench]]
 name = "simd_inner_loops"
+harness = false
+
+[[bench]]
+name = "route_driven_tdd"
 harness = false
 
 [[bench]]
@@ -210,6 +234,10 @@ name = "ocel_flattening"
 harness = false
 
 [[bench]]
+name = "ocel_export"
+harness = false
+
+[[bench]]
 name = "cache_efficiency_bench"
 harness = false
 
@@ -226,6 +254,11 @@ name = "scalability_report"
 # These are the authoritative semantic features for API stability.
 # Internal features (below) map to these canonical names.
 # ─────────────────────────────────────────────────────────────────────────────
+
+# Route-Driven TDD instrumentation (enables wasm4pm::testing::recorder in
+# non-test builds, e.g. integration test binaries that spawn subprocesses).
+# In `cfg(test)` builds the recorder is always active regardless of this flag.
+powl-test = []
 
 # Conformance checking (fitness, precision, generalization)
 feature-conformance-basic = ["conformance_basic"]
