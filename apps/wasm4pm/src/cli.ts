@@ -21,6 +21,7 @@ import { validate } from './commands/validate.js';
 import { autoprocess } from './commands/autoprocess.js';
 import { swarm } from './commands/swarm.js';
 import { agent } from './commands/agent.js';
+import { completions } from './commands/completions.js';
 
 export const main = defineCommand({
   meta: {
@@ -138,6 +139,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     autoprocess,
     swarm,
     agent,
+    completions,
   },
 });
 
@@ -167,4 +169,5 @@ export {
   autoprocess,
   swarm,
   agent,
+  completions,
 };
