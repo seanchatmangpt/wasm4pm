@@ -31,6 +31,7 @@ import { completions } from './commands/completions.js';
 import { claude } from './commands/claude.js';
 import { adversary } from './commands/adversary.js';
 import { trace } from './commands/trace.js';
+import { algorithms } from './commands/algorithms.js';
 import pkg from '../package.json' with { type: 'json' };
 
 export const main = defineCommand({
@@ -190,6 +191,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     claude,
     adversary,
     trace,
+    algorithms,
   },
 });
 
