@@ -1,9 +1,13 @@
 import { defineCommand } from 'citty';
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs';
 import { join, resolve } from 'path';
+import { createRequire } from 'node:module';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
+
+// Lazy-loaded require for CJS deps (ajv) — avoids module load cost on unrelated commands
+const _require = createRequire(import.meta.url);
 
 // ── shared types ──────────────────────────────────────────────────────────────
 
@@ -370,25 +374,119 @@ function ocelToObservedRoute(ocel: OcelLog): string[] {
 function measureObjectLifecycle(
   ocel: OcelLog,
   objectTypes: Record<string, ObjectTypeDeclaration>,
-): { valid: boolean; coverage: number; violations: string[] } {
-  const violations: string[] = [];
-  const eventsByActivity = ocel.ocel_events;
+): {
+  valid: boolean;
+  coverage: number;
+  create_violations: string[];
+  terminate_violations: string[];
+} {
+  const create_violations: string[] = [];
+  const terminate_violations: string[] = [];
+  const events = ocel.ocel_events;
 
   for (const [typeName, typeDecl] of Object.entries(objectTypes)) {
     const objectsOfType = ocel.ocel_objects.filter((o) => o.type === typeName).map((o) => o.id);
     for (const objId of objectsOfType) {
-      // Find events involving this object, in order
-      const objEvents = eventsByActivity.filter((e) => e.objects.some((o) => o.id === objId));
+      const objEvents = events.filter((e) => e.objects.some((o) => o.id === objId));
       if (objEvents.length === 0) continue;
       const firstActivity = objEvents[0]!.activity;
+      const lastActivity = objEvents[objEvents.length - 1]!.activity;
       if (!typeDecl.created_by.includes(firstActivity)) {
-        violations.push(`${typeName}:${objId} first seen in "${firstActivity}" (not a create activity: [${typeDecl.created_by.join(', ')}])`);
+        create_violations.push(`${typeName}:${objId} first seen in "${firstActivity}" (not a create activity: [${typeDecl.created_by.join(', ')}])`);
+      }
+      if (typeDecl.terminated_by && typeDecl.terminated_by.length > 0) {
+        if (!typeDecl.terminated_by.includes(lastActivity)) {
+          terminate_violations.push(`${typeName}:${objId} last seen in "${lastActivity}" (not a terminate activity: [${typeDecl.terminated_by.join(', ')}])`);
+        }
       }
     }
   }
 
-  const valid = violations.length === 0;
-  return { valid, coverage: valid ? 1.0 : 0.0, violations };
+  const valid = create_violations.length === 0 && terminate_violations.length === 0;
+  return { valid, coverage: valid ? 1.0 : 0.0, create_violations, terminate_violations };
+}
+
+function measureCardinality(
+  ocel: OcelLog,
+  objectTypes: Record<string, ObjectTypeDeclaration>,
+): { valid: boolean; violations: string[] } {
+  const violations: string[] = [];
+  for (const [typeName, typeDecl] of Object.entries(objectTypes)) {
+    if (typeDecl.min_count === undefined && typeDecl.max_count === undefined) continue;
+    const count = ocel.ocel_objects.filter((o) => o.type === typeName).length;
+    if (typeDecl.min_count !== undefined && count < typeDecl.min_count) {
+      violations.push(`${typeName}: count=${count} < min_count=${typeDecl.min_count}`);
+    }
+    if (typeDecl.max_count !== undefined && count > typeDecl.max_count) {
+      violations.push(`${typeName}: count=${count} > max_count=${typeDecl.max_count}`);
+    }
+  }
+  return { valid: violations.length === 0, violations };
+}
+
+function measureReceiptSchema(
+  ocel: OcelLog,
+  objectTypes: Record<string, ObjectTypeDeclaration>,
+  projectDir: string,
+): { valid: boolean; violations: string[]; checked: number } {
+  const violations: string[] = [];
+  let checked = 0;
+
+  const typesWithSchema = Object.entries(objectTypes).filter(([, d]) => typeof d.schema === 'string');
+  if (typesWithSchema.length === 0) {
+    return { valid: true, violations: [], checked: 0 };
+  }
+
+  let AjvCtor: new (opts?: Record<string, unknown>) => {
+    compile: (schema: unknown) => ((data: unknown) => boolean) & { errors?: Array<{ instancePath?: string; message?: string }> };
+  };
+  try {
+    const mod = _require('ajv');
+    AjvCtor = (mod.default ?? mod) as typeof AjvCtor;
+  } catch {
+    return {
+      valid: false,
+      violations: ['ajv module not installed; cannot validate Receipt schemas'],
+      checked: 0,
+    };
+  }
+  const ajv = new AjvCtor({ allErrors: true, strict: false });
+  const compiled = new Map<string, (data: unknown) => boolean>();
+
+  for (const [typeName, decl] of typesWithSchema) {
+    const schemaPath = resolve(projectDir, decl.schema!);
+    if (!compiled.has(schemaPath)) {
+      if (!existsSync(schemaPath)) {
+        violations.push(`${typeName}: schema file not found at ${decl.schema}`);
+        continue;
+      }
+      let schemaJson: unknown;
+      try {
+        schemaJson = JSON.parse(readFileSync(schemaPath, 'utf8'));
+      } catch (e) {
+        violations.push(`${typeName}: schema parse error: ${(e as Error).message}`);
+        continue;
+      }
+      try {
+        compiled.set(schemaPath, ajv.compile(schemaJson));
+      } catch (e) {
+        violations.push(`${typeName}: schema compile error: ${(e as Error).message}`);
+        continue;
+      }
+    }
+    const validate = compiled.get(schemaPath)!;
+    const objectsOfType = ocel.ocel_objects.filter((o) => o.type === typeName);
+    for (const obj of objectsOfType) {
+      checked++;
+      if (!validate(obj.attributes)) {
+        const errs = (validate as unknown as { errors?: Array<{ instancePath?: string; message?: string }> }).errors ?? [];
+        const reasons = errs.slice(0, 3).map((e) => `${e.instancePath ?? '/'} ${e.message ?? ''}`.trim()).join('; ');
+        violations.push(`${typeName}:${obj.id} schema violation: ${reasons}`);
+      }
+    }
+  }
+
+  return { valid: violations.length === 0, violations, checked };
 }
 
 function measureReceiptCoverage(ocel: OcelLog): { coverage: number; activities_with_receipts: number; total_activities: number } {
@@ -447,7 +545,11 @@ function checkChoiceGraphEdges(
 
 // ── POWL v2 conformance ───────────────────────────────────────────────────────
 
-export function checkPowl2Conformance(ocel: OcelLog, model: Powl2Model): ConformanceResult {
+export function checkPowl2Conformance(
+  ocel: OcelLog,
+  model: Powl2Model,
+  projectDir: string = process.cwd(),
+): ConformanceResult {
   const details: ConformanceResult['details'] = [];
   const m = model.model;
   const observed = ocelToObservedRoute(ocel);
@@ -571,23 +673,38 @@ export function checkPowl2Conformance(ocel: OcelLog, model: Powl2Model): Conform
     });
   }
 
-  // ── Object lifecycle validity ────────────────────────────────────────────────
+  // ── Object lifecycle validity (create + terminate + cardinality) ────────────
   let objectLifecycleValidity: number;
-  let objectLifecycleOk: boolean;
+  let lifecycleCreateOk = true;
+  let lifecycleTerminateOk = true;
+  let cardinalityOk = true;
+  let lifecycleCreateDetail = '';
+  let lifecycleTerminateDetail = '';
+  let cardinalityDetail = '';
   if (model.object_types && Object.keys(model.object_types).length > 0) {
     const lcResult = measureObjectLifecycle(ocel, model.object_types);
-    objectLifecycleValidity = lcResult.coverage;
-    objectLifecycleOk = lcResult.valid;
+    const cardResult = measureCardinality(ocel, model.object_types);
+    lifecycleCreateOk = lcResult.create_violations.length === 0;
+    lifecycleTerminateOk = lcResult.terminate_violations.length === 0;
+    cardinalityOk = cardResult.valid;
+    lifecycleCreateDetail = lcResult.create_violations.slice(0, 3).join('; ');
+    lifecycleTerminateDetail = lcResult.terminate_violations.slice(0, 3).join('; ');
+    cardinalityDetail = cardResult.violations.slice(0, 3).join('; ');
+    const allOk = lifecycleCreateOk && lifecycleTerminateOk && cardinalityOk;
+    objectLifecycleValidity = allOk ? 1.0 : 0.0;
     details.push({
       dimension: 'object_lifecycle_validity',
-      ok: lcResult.valid,
-      detail: lcResult.valid
-        ? `all declared object types follow lifecycle constraints`
-        : `violations: ${lcResult.violations.slice(0, 3).join('; ')}`,
+      ok: allOk,
+      detail: allOk
+        ? `all declared object types follow lifecycle + cardinality constraints`
+        : [
+            !lifecycleCreateOk && `create violation: ${lifecycleCreateDetail}`,
+            !lifecycleTerminateOk && `terminate violation: ${lifecycleTerminateDetail}`,
+            !cardinalityOk && `cardinality violation: ${cardinalityDetail}`,
+          ].filter(Boolean).join(' | '),
     });
   } else {
     objectLifecycleValidity = -1; // sentinel: NotMeasured
-    objectLifecycleOk = false;
     details.push({
       dimension: 'object_lifecycle_validity',
       ok: false,
@@ -595,23 +712,41 @@ export function checkPowl2Conformance(ocel: OcelLog, model: Powl2Model): Conform
     });
   }
 
-  // ── Receipt coverage ─────────────────────────────────────────────────────────
+  // ── Receipt coverage (count + schema) ────────────────────────────────────────
   let receiptCoverage: number;
-  let receiptOk: boolean;
+  let receiptCountOk = true;
+  let receiptSchemaOk = true;
+  let receiptCountDetail = '';
+  let receiptSchemaDetail = '';
   if (model.receipt_required === true) {
     const rcResult = measureReceiptCoverage(ocel);
+    receiptCountOk = rcResult.coverage >= 1.0;
+    receiptCountDetail = `${rcResult.activities_with_receipts}/${rcResult.total_activities} activities have receipts`;
+    // Schema validation only if model.object_types declares Receipt types with schema
+    if (model.object_types) {
+      const schemaResult = measureReceiptSchema(ocel, model.object_types, projectDir);
+      receiptSchemaOk = schemaResult.valid;
+      receiptSchemaDetail = schemaResult.valid
+        ? schemaResult.checked > 0
+          ? `${schemaResult.checked} receipt object(s) validated against schema`
+          : 'no schema declared'
+        : schemaResult.violations.slice(0, 3).join('; ');
+    }
+    const allOk = receiptCountOk && receiptSchemaOk;
+    // Preserve the measured count coverage; schema failures don't zero out the count metric.
     receiptCoverage = rcResult.coverage;
-    receiptOk = rcResult.coverage >= 1.0;
     details.push({
       dimension: 'receipt_coverage',
-      ok: receiptOk,
-      detail: receiptOk
-        ? `all ${rcResult.total_activities} activities have receipts`
-        : `${rcResult.activities_with_receipts}/${rcResult.total_activities} activities have receipts`,
+      ok: allOk,
+      detail: allOk
+        ? `${receiptCountDetail}; ${receiptSchemaDetail || 'no schema declared'}`
+        : [
+            !receiptCountOk && `count violation: ${receiptCountDetail}`,
+            !receiptSchemaOk && `schema violation: ${receiptSchemaDetail}`,
+          ].filter(Boolean).join(' | '),
     });
   } else {
     receiptCoverage = -1; // sentinel: NotMeasured
-    receiptOk = false;
     details.push({
       dimension: 'receipt_coverage',
       ok: false,
@@ -644,9 +779,15 @@ export function checkPowl2Conformance(ocel: OcelLog, model: Powl2Model): Conform
     andonReason = 'RouteSequenceMismatch';
   } else if (!poOk) {
     andonReason = 'PartialOrderViolation';
-  } else if (objectLifecycleValidity !== -1 && !objectLifecycleOk) {
+  } else if (objectLifecycleValidity !== -1 && !lifecycleTerminateOk) {
+    andonReason = 'LifecycleNotTerminated';
+  } else if (objectLifecycleValidity !== -1 && !cardinalityOk) {
+    andonReason = 'CardinalityViolation';
+  } else if (objectLifecycleValidity !== -1 && !lifecycleCreateOk) {
     andonReason = 'ObjectLifecycleViolation';
-  } else if (receiptCoverage !== -1 && !receiptOk) {
+  } else if (receiptCoverage !== -1 && !receiptSchemaOk) {
+    andonReason = 'ReceiptSchemaViolation';
+  } else if (receiptCoverage !== -1 && !receiptCountOk) {
     andonReason = 'InsufficientReceiptCoverage';
   } else if (notMeasured) {
     andonReason = 'TestRouteIncomplete';
@@ -977,7 +1118,8 @@ const conform = defineCommand({
       emitResult(r, { format, verbose, quiet }); return exitWithFlush(EXIT_CODES.source_error);
     }
 
-    const conformance = checkPowl2Conformance(ocelLog, powlModel);
+    const projectDir = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
+    const conformance = checkPowl2Conformance(ocelLog, powlModel, projectDir);
 
     const outPath = ctx.args.out as string | undefined;
     if (outPath) {

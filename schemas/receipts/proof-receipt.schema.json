@@ -1,0 +1,18 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://wasm4pm.dev/schemas/receipts/proof-receipt.schema.json",
+  "title": "ProofReceipt",
+  "description": "BLAKE3-anchored receipt emitted by a proof-producing activity",
+  "type": "object",
+  "required": ["run_id", "config_hash", "input_hash", "plan_hash", "output_hash", "status"],
+  "properties": {
+    "run_id":      { "type": "string", "minLength": 1 },
+    "config_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "input_hash":  { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "plan_hash":   { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "output_hash": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+    "status":      { "type": "string", "enum": ["success", "partial", "failed"] },
+    "produced_at": { "type": "string", "format": "date-time" }
+  },
+  "additionalProperties": true
+}

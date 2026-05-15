@@ -351,3 +351,168 @@ describe('§7.2 Object Evidence Tests', () => {
   });
 
 });
+
+// ─── §7.3 — Receipt Policy + Lifecycle Tests (V2) ─────────────────────────────
+
+import { resolve } from 'node:path';
+
+// projectDir for schema resolution — tests run from apps/wasm4pm; schemas live at <repo>/schemas/
+const REPO_DIR = resolve(__dirname, '..', '..', '..', '..');
+
+/**
+ * Build an OcelLog where individual objects can carry attributes (needed for schema tests).
+ */
+function makeOcelWithAttrs(
+  events: Array<{ activity: string; objects?: Array<{ id: string; type: string }> }>,
+  objectAttrs: Record<string, Record<string, unknown>> = {},
+): OcelLog {
+  const ts = '2026-05-14T10:00:00.000Z';
+  const objectSet = new Map<string, { id: string; type: string; attributes: Record<string, unknown> }>();
+
+  const ocelEvents: OcelEvent[] = events.map((ev, i) => {
+    const objs = ev.objects ?? [];
+    for (const o of objs) {
+      if (!objectSet.has(o.id)) {
+        objectSet.set(o.id, { id: o.id, type: o.type, attributes: objectAttrs[o.id] ?? {} });
+      }
+    }
+    return {
+      event_id: `e${i}`,
+      activity: ev.activity,
+      timestamp: ts,
+      objects: objs,
+      attributes: {},
+    };
+  });
+
+  return {
+    ocel_version: '2.0',
+    ocel_global_log: { ocel_attribute_names: [] },
+    ocel_events: ocelEvents,
+    ocel_objects: Array.from(objectSet.values()),
+  };
+}
+
+describe('§7.3 Receipt Policy + Lifecycle — V2 Tests', () => {
+
+  // ── Test 8: Receipt schema violation → AndonPull(ReceiptSchemaViolation) ────
+  it('T8: Receipt with malformed config_hash → AndonPull(ReceiptSchemaViolation)', () => {
+    // proof-receipt schema requires config_hash to match ^[0-9a-f]{64}$
+    // We inject an obviously bad value to provoke a schema violation.
+    const ocel = makeOcelWithAttrs(
+      [
+        { activity: 'collect_evidence', objects: [{ id: 'evidence-1', type: 'Evidence' }] },
+        { activity: 'verify_evidence',  objects: [{ id: 'evidence-1', type: 'Evidence' }] },
+        { activity: 'emit_receipt',     objects: [{ id: 'r-1',        type: 'Receipt'  }] },
+      ],
+      {
+        'r-1': {
+          run_id: 'r1',
+          config_hash: 'not-hex',    // ← schema violation
+          input_hash: 'f'.repeat(64),
+          plan_hash:  'f'.repeat(64),
+          output_hash:'f'.repeat(64),
+          status: 'success',
+        },
+      },
+    );
+
+    const model = makeModel({
+      route_id: 't8-receipt-schema',
+      receipt_required: true,
+      required_stages: ['collect_evidence', 'verify_evidence', 'emit_receipt'],
+      object_types: {
+        Evidence: { created_by: ['collect_evidence'] },
+        Receipt:  { created_by: ['emit_receipt'], schema: 'schemas/receipts/proof-receipt.schema.json' },
+      },
+      model: {
+        type: 'sequence',
+        sequence: ['collect_evidence', 'verify_evidence', 'emit_receipt'],
+      },
+    });
+
+    const result = checkPowl2Conformance(ocel, model, REPO_DIR);
+
+    expect(result.verdict).toBe('AndonPull');
+    expect(result.andon_reason).toBe('ReceiptSchemaViolation');
+
+    const rcDim = result.details.find((d) => d.dimension === 'receipt_coverage');
+    expect(rcDim).toBeDefined();
+    expect(rcDim!.ok).toBe(false);
+    // Detail must specifically name the violating field path
+    expect(rcDim!.detail).toMatch(/config_hash|schema/i);
+  });
+
+  // ── Test 9: Cardinality violation → AndonPull(CardinalityViolation) ─────────
+  it('T9: 3 ProofPack objects exceed max_count=1 → AndonPull(CardinalityViolation)', () => {
+    // Model declares ProofPack.max_count = 1, but 3 distinct ProofPack instances exist.
+    const ocel = makeOcel([
+      { activity: 'collect_evidence', objects: [{ id: 'pp-1', type: 'ProofPack' }] },
+      { activity: 'collect_evidence', objects: [{ id: 'pp-2', type: 'ProofPack' }] },
+      { activity: 'collect_evidence', objects: [{ id: 'pp-3', type: 'ProofPack' }] },
+      { activity: 'verify_evidence',  objects: [{ id: 'pp-1', type: 'ProofPack' }] },
+      { activity: 'emit_receipt',     objects: [{ id: 'r-1',  type: 'Receipt'   }] },
+    ]);
+
+    const model = makeModel({
+      route_id: 't9-cardinality',
+      receipt_required: true,
+      required_stages: ['collect_evidence', 'verify_evidence', 'emit_receipt'],
+      object_types: {
+        ProofPack: { created_by: ['collect_evidence'], max_count: 1 },
+        Receipt:   { created_by: ['emit_receipt'] },
+      },
+      model: {
+        type: 'sequence',
+        sequence: ['collect_evidence', 'verify_evidence', 'emit_receipt'],
+      },
+    });
+
+    const result = checkPowl2Conformance(ocel, model);
+
+    expect(result.verdict).toBe('AndonPull');
+    expect(result.andon_reason).toBe('CardinalityViolation');
+
+    const lcDim = result.details.find((d) => d.dimension === 'object_lifecycle_validity');
+    expect(lcDim).toBeDefined();
+    expect(lcDim!.ok).toBe(false);
+    // Detail must specifically name the cardinality breach
+    expect(lcDim!.detail).toMatch(/max_count|cardinality/i);
+  });
+
+  // ── Test 10: Lifecycle not terminated → AndonPull(LifecycleNotTerminated) ───
+  it('T10: ProofPack created but never terminated → AndonPull(LifecycleNotTerminated)', () => {
+    // Model declares ProofPack.terminated_by = ['emit_receipt'], but ProofPack
+    // is last referenced in 'verify_evidence', not the declared terminate activity.
+    const ocel = makeOcel([
+      { activity: 'collect_evidence', objects: [{ id: 'pp-1', type: 'ProofPack' }] },
+      { activity: 'verify_evidence',  objects: [{ id: 'pp-1', type: 'ProofPack' }] },
+      { activity: 'emit_receipt',     objects: [{ id: 'r-1',  type: 'Receipt'   }] },  // pp-1 NOT re-referenced
+    ]);
+
+    const model = makeModel({
+      route_id: 't10-not-terminated',
+      receipt_required: true,
+      required_stages: ['collect_evidence', 'verify_evidence', 'emit_receipt'],
+      object_types: {
+        ProofPack: { created_by: ['collect_evidence'], terminated_by: ['emit_receipt'] },
+        Receipt:   { created_by: ['emit_receipt'] },
+      },
+      model: {
+        type: 'sequence',
+        sequence: ['collect_evidence', 'verify_evidence', 'emit_receipt'],
+      },
+    });
+
+    const result = checkPowl2Conformance(ocel, model);
+
+    expect(result.verdict).toBe('AndonPull');
+    expect(result.andon_reason).toBe('LifecycleNotTerminated');
+
+    const lcDim = result.details.find((d) => d.dimension === 'object_lifecycle_validity');
+    expect(lcDim).toBeDefined();
+    expect(lcDim!.ok).toBe(false);
+    expect(lcDim!.detail).toMatch(/terminate|verify_evidence/i);
+  });
+
+});

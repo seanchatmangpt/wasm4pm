@@ -1,0 +1,28 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://wasm4pm.dev/schemas/receipts/audit-receipt.schema.json",
+  "title": "AuditReceipt",
+  "description": "Receipt emitted by an audit/verifier activity",
+  "type": "object",
+  "required": ["verdict", "gates", "audit_timestamp"],
+  "properties": {
+    "verdict":         { "type": "string", "enum": ["Accepted", "AndonPull"] },
+    "audit_timestamp": { "type": "string", "format": "date-time" },
+    "gates": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["gate", "status"],
+        "properties": {
+          "gate":   { "type": "string", "minLength": 1 },
+          "status": { "type": "string", "enum": ["pass", "fail", "skip"] },
+          "detail": { "type": "string" }
+        },
+        "additionalProperties": true
+      },
+      "minItems": 1
+    },
+    "andon_reason": { "type": "string" }
+  },
+  "additionalProperties": true
+}
