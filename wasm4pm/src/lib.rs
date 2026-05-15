@@ -344,6 +344,8 @@ pub mod ocel_tests;
 
 // Advanced discovery algorithms (gated by discovery_advanced feature)
 #[cfg(feature = "discovery_advanced")]
+pub mod advanced;
+#[cfg(feature = "discovery_advanced")]
 pub mod advanced_algorithms;
 #[cfg(feature = "discovery_advanced")]
 pub mod batches;
