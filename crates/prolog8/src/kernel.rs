@@ -33,7 +33,7 @@ pub enum QueryResult {
     /// Query produced one or more answers.
     Answered(Vec<Decision>),
     /// Query produced no answers (false / deny).
-    Denied(Decision),
+    Denied(Box<Decision>),
     /// Inputs failed admission.
     Invalid(RejectionCode),
 }
@@ -105,7 +105,7 @@ impl Kernel {
         }
 
         // Phase 3: deny with negative proof.
-        QueryResult::Denied(self.assemble_negative(q))
+        QueryResult::Denied(Box::new(self.assemble_negative(q)))
     }
 
     /// Scan all admitted fact blocks for rows that unify with `query`.
@@ -134,10 +134,8 @@ impl Kernel {
             return false;
         }
         for i in 0..row.arity as usize {
-            if query.is_bound(i as u8) {
-                if row.args[i] != query.args[i] {
-                    return false;
-                }
+            if query.is_bound(i as u8) && row.args[i] != query.args[i] {
+                return false;
             }
         }
         true
@@ -158,14 +156,14 @@ impl Kernel {
             // For MVP: only support rules whose head is fully ground from facts.
             let mut bindings = [TermId::sentinel(); ARITY_CAP as usize];
             let mut ok = true;
-            for i in 0..rule.head.arity as usize {
+            for (i, binding) in bindings.iter_mut().enumerate().take(rule.head.arity as usize) {
                 let q_arg = q.atom.args[i];
                 let h_arg = rule.head.args[i];
                 if q.atom.is_bound(i as u8) && !h_arg.is_sentinel() && q_arg != h_arg {
                     ok = false;
                     break;
                 }
-                bindings[i] = if q.atom.is_bound(i as u8) { q_arg } else { h_arg };
+                *binding = if q.atom.is_bound(i as u8) { q_arg } else { h_arg };
             }
             if !ok {
                 continue;
