@@ -228,7 +228,7 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
                 let mut events_by_object: FxHashMap<String, Vec<(usize, &str)>> =
                     FxHashMap::default();
                 for obj in &ocel.objects {
-                    if &obj.object_type == obj_type {
+                    if obj.object_type == obj_type.name {
                         events_by_object.insert(obj.id.clone(), Vec::new());
                     }
                 }
@@ -291,7 +291,7 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
                 }
                 let _ = (trace_seen_bitmask, bitmask_check);
 
-                result.insert(obj_type.clone(), dfg);
+                result.insert(obj_type.name.clone(), dfg);
             }
 
             // Return as JSON: { "Order": { ... DFG ... }, "Item": { ... } }
