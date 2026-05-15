@@ -4,6 +4,7 @@ import * as path from 'path';
 import { resolveConfig as loadConfig, checkConfigWarnings } from '@wasm4pm/config';
 import { plan as makePlan } from '@wasm4pm/planner';
 import { ALGORITHM_CLI_ALIASES, findClosestMatch } from '@wasm4pm/contracts';
+import { getRegistry } from '@wasm4pm/kernel';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { withLogSession } from '../with-log-session.js';
 import { EXIT_CODES } from '../exit-codes.js';
@@ -226,6 +227,11 @@ export const run = defineCommand({
       description:
         'Fail with exit 4 if quality metrics regress versus the stored .wasm4pm/baseline.json.',
     },
+    'no-retry': {
+      type: 'boolean',
+      description:
+        'Disable automatic algorithm fallback on execution failure (exit 3 immediately).',
+    },
     preflight: {
       type: 'boolean',
       description:
@@ -434,25 +440,60 @@ export const run = defineCommand({
         // ETA estimation is optional
       }
 
-      // Step 6: Execute discovery
-      const t0 = performance.now();
+      // Step 6: Execute discovery with intelligent retry
+      const MAX_RETRIES = 3;
+      const noRetry = Boolean(ctx.args['no-retry']);
 
-      let raw: unknown;
-      let elapsedMs: number;
+      let raw: unknown = undefined;
+      let elapsedMs = 0;
+      let resolvedAlgoFinal = resolvedAlgo;
 
-      if (ctx.args.stream) {
-        const result = runDiscovery(wasm, resolvedAlgo, logHandle, activityKey);
-        raw = result.raw;
-        elapsedMs = result.elapsedMs;
-      } else {
-        const result = runDiscovery(wasm, resolvedAlgo, logHandle, activityKey);
-        raw = result.raw;
-        elapsedMs = result.elapsedMs;
+      {
+        // Build fallback chain: start with requested algorithm, then try simpler ones
+        // in the same quality bracket (sorted by ascending speed = simpler/faster).
+        const registry = getRegistry();
+        const allAlgos = registry.list();
+        const requested = allAlgos.find((a) => a.id === resolvedAlgo);
+        const qualityBracket = requested
+          ? allAlgos
+              .filter((a) => a.qualityTier >= requested.qualityTier - 20 && a.id !== resolvedAlgo)
+              .sort((a, b) => a.speedTier - b.speedTier) // simpler first
+              .slice(0, MAX_RETRIES - 1)
+              .map((a) => a.id as typeof resolvedAlgo)
+          : [];
+        const chain = [resolvedAlgo, ...qualityBracket];
+
+        let lastError: unknown;
+        let succeeded = false;
+
+        for (const algo of chain) {
+          try {
+            const result = runDiscovery(wasm, algo, logHandle, activityKey);
+            raw = result.raw;
+            elapsedMs = result.elapsedMs;
+            resolvedAlgoFinal = algo;
+            succeeded = true;
+            if (algo !== resolvedAlgo) {
+              process.stderr.write(`⚠ ${resolvedAlgo} failed, succeeded with fallback: ${algo}\n`);
+            }
+            break;
+          } catch (err) {
+            lastError = err;
+            if (noRetry || chain.length === 1) break;
+            process.stderr.write(`⚠ ${algo} failed (${err instanceof Error ? err.message : String(err)}), trying fallback...\n`);
+          }
+        }
+
+        if (!succeeded) {
+          throw lastError ?? new Error(`All algorithms failed for ${resolvedAlgo}`);
+        }
       }
+
+      // resolvedAlgoFinal holds the algorithm that actually succeeded (may differ from resolvedAlgo)
 
       // Validate discovery output shape — fail loudly on unknown shapes.
       try {
-        discriminate(raw, resolvedAlgo);
+        discriminate(raw, resolvedAlgoFinal);
       } catch (shapeErr) {
         if (shapeErr instanceof DiscoveryShapeError) {
           const errResult = makeErrorResult(
@@ -581,7 +622,7 @@ export const run = defineCommand({
         if (ctx.args['set-baseline']) {
           try {
             await fs.mkdir(path.dirname(baselinePath), { recursive: true });
-            await fs.writeFile(baselinePath, JSON.stringify({ ...qualityMetrics, algorithm: resolvedAlgo, savedAt: new Date().toISOString() }, null, 2));
+            await fs.writeFile(baselinePath, JSON.stringify({ ...qualityMetrics, algorithm: resolvedAlgoFinal, savedAt: new Date().toISOString() }, null, 2));
           } catch { /* non-fatal */ }
         }
 
@@ -641,7 +682,7 @@ export const run = defineCommand({
       // Step 9: Build output payload
       const payload = {
         status: 'success',
-        algorithm: resolvedAlgo,
+        algorithm: resolvedAlgoFinal,
         activityKey,
         input: inputPath,
         elapsedMs: Math.round(elapsedMs * 100) / 100,
@@ -656,7 +697,7 @@ export const run = defineCommand({
       let savedPath: string | null = null;
       if (!ctx.args['no-save']) {
         savedPath = await savePredictionResult(
-          `discover-${resolvedAlgo}`,
+          `discover-${resolvedAlgoFinal}`,
           inputPath,
           activityKey,
           payload as unknown as Record<string, unknown>
@@ -671,7 +712,7 @@ export const run = defineCommand({
             output_hash: blake3Hex(JSON.stringify(payload)),
             status: 'success',
             summary: {
-              algorithm: resolvedAlgo,
+              algorithm: resolvedAlgoFinal,
               activityKey,
               elapsedMs: Math.round(elapsedMs * 100) / 100,
             },
