@@ -1,0 +1,21 @@
+{
+  "route_id": "adversarial-admissibility",
+  "type": "powl2",
+  "required_stages": [
+    "probeAdversary",
+    "wpm.adversary.write_audit",
+    "wpm.doctor.hooks"
+  ],
+  "model": {
+    "type": "choice_graph",
+    "choice_graph": {
+      "nodes": ["▷", "probeAdversary", "wpm.adversary.write_audit", "wpm.doctor.hooks", "□"],
+      "edges": [
+        ["▷", "probeAdversary"],
+        ["probeAdversary", "wpm.adversary.write_audit"],
+        ["wpm.adversary.write_audit", "wpm.doctor.hooks"],
+        ["wpm.doctor.hooks", "□"]
+      ]
+    }
+  }
+}

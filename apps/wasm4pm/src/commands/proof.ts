@@ -124,11 +124,37 @@ const collect = defineCommand({
     };
     writeFileSync(join(packDir, 'FINAL', 'verdict.json'), JSON.stringify(verdictPayload, null, 2));
 
+    // 6b. Write FINAL/PRODUCER_RECEIPT.json — proves this pack was produced by an approved command
+    const producerReceipt = {
+      producer: 'wpm proof collect',
+      produced_at: new Date().toISOString(),
+      run_id: runId,
+      verdict,
+      git_head: tryExec('git rev-parse --short HEAD').output.trim() || 'unknown',
+    };
+    writeFileSync(join(packDir, 'FINAL', 'PRODUCER_RECEIPT.json'), JSON.stringify(producerReceipt, null, 2));
+
+    // 6c. Write ARTIFACT_PROOF/file-hashes.json — BLAKE3 of all pack files
+    mkdirSync(join(packDir, 'ARTIFACT_PROOF'), { recursive: true });
+    const filesToHash = ['FINAL/verdict.json', 'FINAL/PRODUCER_RECEIPT.json', 'SOURCE_AUDIT/patterns.json'];
+    const fileHashes: Record<string, string> = {};
+    for (const relPath of filesToHash) {
+      const absPath = join(packDir, relPath);
+      if (existsSync(absPath)) {
+        try { fileHashes[relPath] = blake3File(absPath); } catch { /* b3sum unavailable */ }
+      }
+    }
+    if (Object.keys(fileHashes).length > 0) {
+      writeFileSync(join(packDir, 'ARTIFACT_PROOF', 'file-hashes.json'), JSON.stringify(fileHashes, null, 2));
+    }
+
     // 7. Write MANIFEST.json
     const manifest = {
       run_id: runId,
       files: [
         'FINAL/verdict.json',
+        'FINAL/PRODUCER_RECEIPT.json',
+        'ARTIFACT_PROOF/file-hashes.json',
         'SOURCE_AUDIT/patterns.json',
       ],
     };
@@ -221,6 +247,26 @@ const verifyCmd = defineCommand({
         ok: typeof verdictValue === 'string',
         detail: verdictValue,
       });
+    }
+
+    // 2b. FINAL/PRODUCER_RECEIPT.json must exist with an approved producer
+    const receiptPath = join(packDir, 'FINAL', 'PRODUCER_RECEIPT.json');
+    if (!existsSync(receiptPath)) {
+      checks.push({ check: 'FINAL/PRODUCER_RECEIPT.json exists', ok: false, detail: 'missing — pack not produced by approved verifier command' });
+    } else {
+      try {
+        const receipt = JSON.parse(readFileSync(receiptPath, 'utf8')) as Record<string, unknown>;
+        const approved = ['wpm proof collect', 'wpm proof audit', 'wpm proof promote'];
+        const producer = receipt['producer'] as string | undefined;
+        const ok = approved.includes(producer ?? '');
+        checks.push({
+          check: 'FINAL/PRODUCER_RECEIPT.json: approved producer',
+          ok,
+          detail: ok ? producer : `unapproved: ${producer ?? 'missing'}`,
+        });
+      } catch {
+        checks.push({ check: 'FINAL/PRODUCER_RECEIPT.json parseable', ok: false, detail: 'parse error' });
+      }
     }
 
     // 3. ARTIFACT_PROOF/file-hashes.json: recompute BLAKE3 of every listed file

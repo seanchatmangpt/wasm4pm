@@ -1,0 +1,25 @@
+{
+  "route_id": "proof-pack-promotion",
+  "type": "powl2",
+  "required_stages": [
+    "wpm.proof.collect",
+    "wpm.proof.verify",
+    "PRODUCER_RECEIPT.written",
+    "BLAKE3.hashes.recorded"
+  ],
+  "model": {
+    "type": "choice_graph",
+    "choice_graph": {
+      "nodes": ["▷", "wpm.proof.collect", "PRODUCER_RECEIPT.written", "BLAKE3.hashes.recorded", "wpm.proof.verify", "wpm.proof.promote", "□"],
+      "edges": [
+        ["▷", "wpm.proof.collect"],
+        ["wpm.proof.collect", "PRODUCER_RECEIPT.written"],
+        ["wpm.proof.collect", "BLAKE3.hashes.recorded"],
+        ["PRODUCER_RECEIPT.written", "wpm.proof.verify"],
+        ["BLAKE3.hashes.recorded", "wpm.proof.verify"],
+        ["wpm.proof.verify", "wpm.proof.promote"],
+        ["wpm.proof.promote", "□"]
+      ]
+    }
+  }
+}

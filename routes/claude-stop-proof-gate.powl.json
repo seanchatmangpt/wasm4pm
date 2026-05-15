@@ -1,0 +1,18 @@
+{
+  "route_id": "claude-stop-proof-gate",
+  "type": "powl2",
+  "required_stages": ["runProofAudit", "validateProofPack", "checkProducerReceipt"],
+  "model": {
+    "type": "choice_graph",
+    "choice_graph": {
+      "nodes": ["▷", "runProofAudit", "Object.run", "validateProofPack", "checkProducerReceipt", "□"],
+      "edges": [
+        ["▷", "runProofAudit"],
+        ["runProofAudit", "Object.run"],
+        ["Object.run", "validateProofPack"],
+        ["validateProofPack", "checkProducerReceipt"],
+        ["checkProducerReceipt", "□"]
+      ]
+    }
+  }
+}

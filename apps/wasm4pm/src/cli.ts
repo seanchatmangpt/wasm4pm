@@ -28,6 +28,9 @@ import { proof } from './commands/proof.js';
 import { benchmark } from './commands/benchmark.js';
 import { cognition } from './commands/cognition.js';
 import { completions } from './commands/completions.js';
+import { claude } from './commands/claude.js';
+import { adversary } from './commands/adversary.js';
+import { trace } from './commands/trace.js';
 import pkg from '../package.json' with { type: 'json' };
 
 export const main = defineCommand({
@@ -127,7 +130,21 @@ ${BOLD}RESULTS & HEALTH${RESET}
   ${GREEN}wpm results${RESET}                         View all saved discovery & prediction results
   ${GREEN}wpm results${RESET} --last                  Print the most recent result
   ${GREEN}wpm doctor${RESET}                          Check environment health + pipeline integrity (24 checks)
+  ${GREEN}wpm doctor hooks${RESET}                    JTBD verification: test whether each Claude Code hook does its job
   ${GREEN}wpm status${RESET}                          WASM module status and memory usage
+
+${BOLD}TRACE-TO-POWL v2 PIPELINE${RESET}  ${DIM}(stack traces → object evidence → conformance)${RESET}
+  ${GREEN}wpm trace ingest${RESET} --from rust|ts [-i f]  Parse stack trace → TraceGraph JSON-LD
+  ${GREEN}wpm trace ocel${RESET}   [-i graph.json]        TraceGraph → OCEL object-centric events
+  ${GREEN}wpm trace powl${RESET}   [-i ocel.json]         OCEL → observed POWL route
+  ${GREEN}wpm trace conform${RESET} -m model.powl.json    Observed route vs. declared POWL v2 model
+
+${BOLD}CLAUDE CODE INTEGRATION${RESET}  ${DIM}(session evidence, hook verification)${RESET}
+  ${GREEN}wpm claude${RESET}                          Claude Code integration status (hooks, session, proof audit)
+  ${GREEN}wpm claude session${RESET}                  Show today's tool evidence and work orders
+  ${GREEN}wpm claude session verify${RESET}           Verify BLAKE3 hash chain + CHAIN_HEAD anchor integrity
+  ${GREEN}wpm claude hooks${RESET}                    JTBD verification of all hook jobs
+  ${GREEN}wpm adversary${RESET}                       Adversarial proof lifecycle convergence test (18 probes)
 
 ${BOLD}SETUP${RESET}
   ${GREEN}wpm init${RESET}                            Scaffold wasm4pm.toml + .env.example in current dir
@@ -169,6 +186,9 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     proof,
     cognition,
     completions,
+    claude,
+    adversary,
+    trace,
   },
 });
 
@@ -201,4 +221,5 @@ export {
   membrane,
   config,
   verify,
+  claude,
 };
