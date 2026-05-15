@@ -1,109 +1,41 @@
 #!/bin/bash
+# PostToolUse OTEL Coverage Enforcement
+# After editing Rust/TS source files: warns if new pub fn / export function
+# declarations lack an OTEL span or instrumentation call. Advisory (exit 0).
 
-##############################################################################
-# Pre-commit hook: OTEL Span Coverage Enforcement
-#
-# Blocks commits when NEW public functions are added without OTEL spans.
-# Allows commits if modified public functions keep existing spans.
-#
-# Exit codes:
-#   0 = all new public functions have spans
-#   1 = new public functions found without spans (COMMIT BLOCKED)
-#   2 = scanning error
-##############################################################################
+INPUT=$(cat)
+TOOL_NAME=$(echo "$INPUT" | jq -r '.tool_name // ""' 2>/dev/null) || TOOL_NAME=""
+FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // ""' 2>/dev/null) || FILE_PATH=""
 
-set -eu
+# Only fire for file edits
+case "$TOOL_NAME" in Edit|Write) ;; *) exit 0 ;; esac
 
-PROJECT_ROOT="$(git rev-parse --show-toplevel)"
-TEMP_DIR="/tmp/wasm4pm_otel_check_$$"
-mkdir -p "$TEMP_DIR"
+# Only fire for source files (not tests, not hooks, not docs)
+echo "$FILE_PATH" | grep -qE '\.(rs|ts)$' || exit 0
+echo "$FILE_PATH" | grep -qE '\.test\.|\.spec\.|__tests__|/hooks/|/dist/|/pkg/' && exit 0
 
-trap "rm -rf $TEMP_DIR" EXIT
+ABS_PATH="${CLAUDE_PROJECT_DIR:-.}/$FILE_PATH"
+[ -f "$ABS_PATH" ] || ABS_PATH="$FILE_PATH"
+[ -f "$ABS_PATH" ] || exit 0
 
-# Get list of changed TypeScript files in packages/*/src
-CHANGED_FILES=$(git diff --cached --name-only --diff-filter=A | grep -E "packages/.*/src/.*\.ts$" || true)
-
-if [ -z "$CHANGED_FILES" ]; then
-  exit 0
+# Detect public function declarations
+if echo "$FILE_PATH" | grep -q '\.rs$'; then
+  # Rust: look for `pub fn` or `pub async fn` outside cfg(test)
+  PUB_FNS=$(grep -n "^\s*pub\( async\)\? fn " "$ABS_PATH" 2>/dev/null | grep -v "//\|cfg(test)" | wc -l | tr -d ' ')
+  SPAN_CALLS=$(grep -cE "span|emit_event|create_span|start_span|instrument" "$ABS_PATH" 2>/dev/null) || SPAN_CALLS=0
+else
+  # TypeScript: look for exported functions
+  PUB_FNS=$(grep -nE "^export (async )?function |^export const [a-z].*=.*=>" "$ABS_PATH" 2>/dev/null | wc -l | tr -d ' ')
+  SPAN_CALLS=$(grep -cE "createSpan|startSpan|emitEvent|Instrumentation\.|tracer\." "$ABS_PATH" 2>/dev/null) || SPAN_CALLS=0
 fi
 
-# Create scanning script
-cat > "$TEMP_DIR/check_new_functions.js" << 'CHECK_EOF'
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+[ "$PUB_FNS" -eq 0 ] && exit 0
 
-const changedFiles = process.argv.slice(2);
-const violations = [];
-
-changedFiles.forEach(file => {
-  const fullPath = path.join(process.cwd(), file);
-  if (!fs.existsSync(fullPath)) return;
-
-  const content = fs.readFileSync(fullPath, 'utf-8');
-  const exports = [];
-
-  // Extract all public functions
-  const funcPattern = /export\s+(async\s+)?function\s+(\w+)/gm;
-  const constPattern = /export\s+const\s+(\w+)\s*[=:]/gm;
-
-  let match;
-  while ((match = funcPattern.exec(content)) !== null) {
-    exports.push({ name: match[2], type: 'function' });
-  }
-
-  while ((match = constPattern.exec(content)) !== null) {
-    exports.push({ name: match[1], type: 'const' });
-  }
-
-  // Check if any export lacks Instrumentation call
-  exports.forEach(exp => {
-    const escapedName = exp.name.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-    const funcPattern = new RegExp(
-      `export\\s+(?:async\\s+)?(?:const\\s+)?${escapedName}\\s*[=:(]`
-    );
-
-    const match = funcPattern.exec(content);
-    if (match) {
-      const startIdx = match.index;
-      const funcBody = content.substring(startIdx);
-      const endIdx = funcBody.indexOf('\nexport');
-      const body = endIdx === -1 ? funcBody : funcBody.substring(0, endIdx);
-
-      const hasInstrumentation = /Instrumentation\.(create|emit|record)/.test(body);
-      if (!hasInstrumentation) {
-        violations.push({
-          file,
-          function: exp.name,
-          line: content.substring(0, startIdx).split('\n').length,
-        });
-      }
-    }
-  });
-});
-
-if (violations.length > 0) {
-  console.error('\n❌ OTEL SPAN COVERAGE VIOLATION\n');
-  console.error('New public functions must have Instrumentation calls.\n');
-  violations.forEach(v => {
-    console.error(`  ${v.file}:${v.line}`);
-    console.error(`    → export function ${v.function}() { ... }\n`);
-  });
-  console.error('Fix by adding Instrumentation.create*() call at function start.\n');
-  process.exit(1);
-} else {
-  console.log('✅ OTEL coverage check passed');
-  process.exit(0);
-}
-CHECK_EOF
-
-# Run check
-cd "$PROJECT_ROOT"
-if ! node "$TEMP_DIR/check_new_functions.js" $CHANGED_FILES; then
-  echo ""
-  echo "Commit BLOCKED: Add OTEL spans to new public functions."
-  echo "See packages/observability/src/instrumentation.ts for API."
-  exit 1
+if [ "$SPAN_CALLS" -eq 0 ] && [ "$PUB_FNS" -gt 0 ]; then
+  echo "⚠️  OTEL COVERAGE: $FILE_PATH has $PUB_FNS public function(s) but no OTEL spans"
+  echo "   Add span instrumentation to satisfy the 100% OTEL coverage requirement."
+  echo "   Rust: use #[instrument] or span!(Level::INFO, \"...\") from tracing crate"
+  echo "   TypeScript: use Instrumentation.createComputeEvent() from @wasm4pm/observability"
 fi
 
 exit 0

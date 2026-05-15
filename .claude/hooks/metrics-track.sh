@@ -1,192 +1,75 @@
 #!/bin/bash
-# wasm4pm Kaizen Metrics Tracking — Post-commit Hook
-# Collects metrics: test pass rate, compiler warnings, build time, OTEL coverage, TPS violations, MTTR
-#
-# Called by: post-commit hook (via .git/hooks/post-commit)
-# Exit code: 0 (always succeeds, failures logged but non-blocking)
+# Stop Hook: Kaizen Metrics Snapshot
+# At session end, records health metrics from wpm doctor into .wasm4pm/metrics.json
+# Provides continuous improvement tracking across sessions. Non-blocking.
 
-WASM4PM_DIR="${CLAUDE_PROJECT_DIR:-.}"
-METRICS_FILE="$WASM4PM_DIR/.wasm4pm/metrics.json"
-BUILD_LOG="$WASM4PM_DIR/.wasm4pm/build-times.log"
+cd "${CLAUDE_PROJECT_DIR:-.}" 2>/dev/null || exit 0
 
-# Ensure metrics file exists
-if [[ ! -f "$METRICS_FILE" ]]; then
-  exit 0  # Non-blocking
+TIMESTAMP=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+METRICS_FILE=".wasm4pm/metrics.json"
+METRICS_LOG=".wasm4pm/metrics-history.jsonl"
+mkdir -p "$(dirname "$METRICS_FILE")"
+
+GIT_HEAD=$(git rev-parse --short HEAD 2>/dev/null) || GIT_HEAD="unknown"
+GIT_BRANCH=$(git rev-parse --abbrev-ref HEAD 2>/dev/null) || GIT_BRANCH="unknown"
+
+# Collect health from doctor
+DOCTOR_OUTPUT=""
+if [ -f "apps/wasm4pm/dist/bin/wpm.js" ]; then
+  DOCTOR_OUTPUT=$(node apps/wasm4pm/dist/bin/wpm.js doctor check --format json 2>/dev/null \
+    | awk '/^\{/,0') || true
 fi
 
-# Helper: Current timestamp in ISO8601
-iso8601() {
-  date -u +'%Y-%m-%dT%H:%M:%SZ'
-}
+HEALTHY="unknown"
+PASS=0
+WARN=0
+FAIL=0
+if [ -n "$DOCTOR_OUTPUT" ]; then
+  HEALTHY=$(echo "$DOCTOR_OUTPUT" | jq -r '.payload.healthy // "unknown"' 2>/dev/null) || true
+  PASS=$(echo "$DOCTOR_OUTPUT" | jq -r '.payload.summary.pass // 0' 2>/dev/null) || PASS=0
+  WARN=$(echo "$DOCTOR_OUTPUT" | jq -r '.payload.summary.warn // 0' 2>/dev/null) || WARN=0
+  FAIL=$(echo "$DOCTOR_OUTPUT" | jq -r '.payload.summary.fail // 0' 2>/dev/null) || FAIL=0
+fi
 
-# Helper: Git commit hash (short)
-git_commit() {
-  cd "$WASM4PM_DIR" 2>/dev/null && git rev-parse --short HEAD 2>/dev/null || echo "unknown"
-}
+# Collect Rust compiler warnings from last build (non-blocking)
+RUST_WARNINGS=$(cargo check --manifest-path wasm4pm/Cargo.toml 2>&1 | grep -c "^warning" 2>/dev/null) || RUST_WARNINGS=0
 
-# Metric 1: Test pass rate
-collect_test_pass_rate() {
-  local test_output_file="/tmp/wasm4pm_test_output_$$.log"
-  local vitest_pass=0 vitest_fail=0
-  local cargo_pass=0 cargo_fail=0
+# Count TS errors from pnpm lint output (non-blocking)
+LINT_ERRORS=$(pnpm lint 2>&1 | grep -c "error TS" 2>/dev/null) || LINT_ERRORS=0
 
-  # Run TypeScript tests (vitest) if available
-  if [[ -d "$WASM4PM_DIR/packages" ]] && command -v pnpm &>/dev/null; then
-    (cd "$WASM4PM_DIR" && timeout 30 pnpm test 2>&1 > "$test_output_file" || true)
-    # Parse vitest output for passed/failed counts (macOS grep compatible)
-    vitest_pass=$(grep "passed" "$test_output_file" 2>/dev/null | grep -o "[0-9]* passed" | grep -o "[0-9]*" | head -1 || echo "0")
-    vitest_fail=$(grep "failed" "$test_output_file" 2>/dev/null | grep -o "[0-9]* failed" | grep -o "[0-9]*" | head -1 || echo "0")
-  fi
+SNAPSHOT=$(jq -n \
+  --arg ts "$TIMESTAMP" \
+  --arg git_head "$GIT_HEAD" \
+  --arg git_branch "$GIT_BRANCH" \
+  --arg healthy "$HEALTHY" \
+  --argjson pass "$PASS" \
+  --argjson warn "$WARN" \
+  --argjson fail "$FAIL" \
+  --argjson rust_warnings "$RUST_WARNINGS" \
+  --argjson lint_errors "$LINT_ERRORS" \
+  '{
+    timestamp: $ts,
+    git_head: $git_head,
+    git_branch: $git_branch,
+    healthy: ($healthy == "true"),
+    doctor: {pass: $pass, warn: $warn, fail: $fail},
+    compiler_warnings: {rust: $rust_warnings, typescript: $lint_errors}
+  }')
 
-  local total_pass=$((vitest_pass + cargo_pass))
-  local total_fail=$((vitest_fail + cargo_fail))
-  local total_tests=$((total_pass + total_fail))
+# Append to history log
+echo "$SNAPSHOT" >> "$METRICS_LOG" 2>/dev/null || true
 
-  if [[ $total_tests -eq 0 ]]; then
-    echo "100"  # No tests run, report as passing
-  else
-    echo $(( (total_pass * 100) / total_tests ))
-  fi
+# Update latest snapshot in metrics.json (merge into existing structure)
+if [ -f "$METRICS_FILE" ]; then
+  TMP=$(mktemp)
+  jq --argjson snap "$SNAPSHOT" '.latest_snapshot = $snap' "$METRICS_FILE" > "$TMP" 2>/dev/null && mv "$TMP" "$METRICS_FILE" || rm -f "$TMP"
+fi
 
-  rm -f "$test_output_file"
-}
-
-# Metric 2: Compiler warnings
-collect_compiler_warnings() {
-  local total=0
-
-  # TypeScript: tsc (quick check, no emit)
-  if command -v tsc &>/dev/null; then
-    local tsc_warnings=$(cd "$WASM4PM_DIR" && tsc --noEmit 2>&1 | grep -c "TS[0-9]" || echo "0")
-    total=$((total + tsc_warnings))
-  fi
-
-  echo "$total"
-}
-
-# Metric 3: Build time (in milliseconds)
-collect_build_time() {
-  # Approximate: assume build takes 30-50 seconds
-  # In production, measure with: time { pnpm build }
-  echo "45000"  # 45 seconds as baseline
-}
-
-# Metric 4: OTEL span coverage
-collect_otel_coverage() {
-  local total_public_functions=0
-  local instrumented_functions=0
-
-  if [[ -d "$WASM4PM_DIR/packages" ]]; then
-    # Count exported functions (simplified)
-    total_public_functions=$(find "$WASM4PM_DIR/packages" -name "*.ts" -not -path "*/node_modules/*" -not -path "*/__tests__/*" 2>/dev/null | wc -l)
-
-    # Count files with instrumentation
-    instrumented_functions=$(find "$WASM4PM_DIR/packages" -name "*.ts" -not -path "*/node_modules/*" -not -path "*/__tests__/*" \
-      -exec grep -l "Instrumentation.create\|observability.create" {} + 2>/dev/null | wc -l)
-  fi
-
-  if [[ $total_public_functions -eq 0 ]]; then
-    echo "0"
-  else
-    echo $(( (instrumented_functions * 100) / total_public_functions ))
-  fi
-}
-
-# Metric 5: TPS violation density
-collect_tps_violations() {
-  local silent_fallbacks=0
-
-  # Silent fallbacks: catch with silent error handling
-  silent_fallbacks=$(find "$WASM4PM_DIR/packages" -name "*.ts" -not -path "*/node_modules/*" 2>/dev/null \
-    -exec grep -l "catch.*{" {} + 2>/dev/null | wc -l || echo "0")
-
-  # TPS violations per KLOC (simplified)
-  local total_loc=$(find "$WASM4PM_DIR/packages" -name "*.ts" -not -path "*/node_modules/*" -not -path "*/__tests__/*" 2>/dev/null | wc -l)
-
-  if [[ $total_loc -lt 100 ]]; then
-    echo "0"
-  else
-    echo "0"  # Baseline: no violations detected
-  fi
-}
-
-# Metric 6: MTTR (Mean Time To Recovery)
-collect_mttr() {
-  # Read actual MTTR from metrics file if available
-  if [[ -f "$METRICS_FILE" ]] && command -v jq &>/dev/null; then
-    local mttr_actual=$(jq -r '.mttr_actual // .mttr // 0' "$METRICS_FILE" 2>/dev/null || echo "0")
-    if [[ "$mttr_actual" != "0" && "$mttr_actual" != "null" ]]; then
-      echo "$mttr_actual"
-      return
-    fi
-  fi
-
-  # Fallback: approximate from recent fixes (only if no actual measurement)
-  if [[ -d "$WASM4PM_DIR/.git" ]]; then
-    local recovery_count=$(cd "$WASM4PM_DIR" && git log --oneline -20 2>/dev/null | grep -c "fix(" || echo "0")
-    if [[ $recovery_count -eq 0 ]]; then
-      echo "0"  # No recent fixes
-    else
-      echo "0"  # No actual measurement available; report as 0 (not hardcoded baseline)
-    fi
-  else
-    echo "0"
-  fi
-}
-
-# Metric 7: Test determinism
-collect_test_determinism() {
-  # Simplified: assume deterministic if test_pass_rate passes
-  local rate=$(collect_test_pass_rate)
-  echo "$rate"
-}
-
-# Metric 8: Lines of code
-collect_locs() {
-  local ts_loc=$(find "$WASM4PM_DIR/packages" -name "*.ts" -not -path "*/node_modules/*" -not -path "*/__tests__/*" 2>/dev/null | wc -l)
-  echo "$((ts_loc * 50))"  # Rough estimate: 50 LOC per file
-}
-
-# === MAIN COLLECTION ===
-
-declare -A metrics
-metrics[test_pass_rate]=$(collect_test_pass_rate)
-metrics[compiler_warnings]=$(collect_compiler_warnings)
-metrics[build_time_ms]=$(collect_build_time)
-metrics[otel_span_coverage]=$(collect_otel_coverage)
-metrics[tps_violation_density]=$(collect_tps_violations)
-metrics[mttr]=$(collect_mttr)
-metrics[test_determinism]=$(collect_test_determinism)
-metrics[locs]=$(collect_locs)
-
-# Write to metrics.json (append to historical_data)
-if command -v jq &>/dev/null; then
-  snapshot=$(jq -n \
-    --arg ts "$(iso8601)" \
-    --arg commit "$(git_commit)" \
-    --argjson test_pass_rate "${metrics[test_pass_rate]}" \
-    --argjson warnings "${metrics[compiler_warnings]}" \
-    --argjson build_ms "${metrics[build_time_ms]}" \
-    --argjson otel_coverage "${metrics[otel_span_coverage]}" \
-    --argjson tps_density "${metrics[tps_violation_density]}" \
-    --argjson mttr "${metrics[mttr]}" \
-    --argjson determinism "${metrics[test_determinism]}" \
-    --argjson locs "${metrics[locs]}" \
-    '{
-      timestamp: $ts,
-      git_commit_hash: $commit,
-      test_pass_rate: $test_pass_rate,
-      compiler_warnings: $warnings,
-      build_time_ms: $build_ms,
-      otel_span_coverage: $otel_coverage,
-      tps_violation_density: $tps_density,
-      mttr: $mttr,
-      test_determinism: $determinism,
-      locs: $locs
-    }')
-
-  jq ".historical_data += [$snapshot]" "$METRICS_FILE" > "$METRICS_FILE.tmp" 2>/dev/null && \
-    mv "$METRICS_FILE.tmp" "$METRICS_FILE"
+DEFECTS=$((WARN + FAIL))
+if [ "$HEALTHY" = "true" ]; then
+  echo "✓ Metrics snapshot: HEALTHY ($PASS ok, 0 defects) @ $GIT_BRANCH:$GIT_HEAD"
+else
+  echo "✗ Metrics snapshot: DEGRADED ($PASS ok, $DEFECTS defects) @ $GIT_BRANCH:$GIT_HEAD"
 fi
 
 exit 0
