@@ -36,6 +36,6 @@ pub use conformance::{
     classify_conformance, AndonPolicy, AndonPull, ConformanceVerdict, ExpectedConformance,
     ProofDimension, ReplayReport,
 };
-pub use harness::{PowlTestHarness, TestEvent};
+pub use harness::{ActivityEvidence, EvidenceError, ObjectEvidence, PowlTestHarness, TestEvent};
 pub use proof_pack::ProofPackWriter;
 pub use recorder::record_activity;

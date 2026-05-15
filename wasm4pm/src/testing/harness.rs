@@ -20,9 +20,99 @@
 //! assert_eq!(h.event_count(), 2);
 //! ```
 
+use std::collections::HashMap;
 use std::path::PathBuf;
 
 use crate::testing::conformance::{AndonPull, ConformanceVerdict, ExpectedConformance, ProofDimension};
+
+// ── Evidence types ────────────────────────────────────────────────────────────
+
+/// A single object in an activity's evidence: id + BLAKE3 hex of its content.
+///
+/// The hash binds the activity receipt to the actual object state. An input
+/// hash that differs from the registered output hash is caught at
+/// [`PowlTestHarness::complete_activity`] time and the activity is rejected.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ObjectEvidence {
+    pub id: String,
+    pub hash: String,
+}
+
+impl ObjectEvidence {
+    pub fn new(id: impl Into<String>, hash: impl Into<String>) -> Self {
+        Self { id: id.into(), hash: hash.into() }
+    }
+
+    /// Compute BLAKE3 of `data` and use it as the object hash.
+    pub fn from_data(id: impl Into<String>, data: &[u8]) -> Self {
+        let hash = blake3::hash(data).to_hex().to_string();
+        Self { id: id.into(), hash }
+    }
+}
+
+/// Evidence package for one activity: its input and output objects.
+///
+/// An activity without at least one input or one output is rejected with
+/// [`EvidenceError::NoObjectEvidence`].
+#[derive(Debug, Clone)]
+pub struct ActivityEvidence {
+    pub activity: String,
+    pub inputs: Vec<ObjectEvidence>,
+    pub outputs: Vec<ObjectEvidence>,
+}
+
+impl ActivityEvidence {
+    pub fn new(activity: impl Into<String>) -> Self {
+        Self { activity: activity.into(), inputs: vec![], outputs: vec![] }
+    }
+
+    pub fn with_inputs(mut self, inputs: Vec<ObjectEvidence>) -> Self {
+        self.inputs = inputs;
+        self
+    }
+
+    pub fn with_outputs(mut self, outputs: Vec<ObjectEvidence>) -> Self {
+        self.outputs = outputs;
+        self
+    }
+}
+
+/// Error from [`PowlTestHarness::complete_activity`] when evidence is invalid.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum EvidenceError {
+    /// An input object was referenced but never registered as any prior output.
+    InputObjectNotRegistered(String),
+    /// An input object was found but the provided hash does not match the
+    /// hash recorded when the object was created (tamper detection).
+    InputHashMismatch { id: String, expected: String, actual: String },
+    /// An output object ID was already registered by a previous activity.
+    OutputObjectAlreadyRegistered(String),
+    /// No inputs and no outputs: the receipt cannot bind to nothing.
+    NoObjectEvidence,
+}
+
+impl std::fmt::Display for EvidenceError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::InputObjectNotRegistered(id) =>
+                write!(f, "input object '{id}' not registered — used before creation"),
+            Self::InputHashMismatch { id, expected, actual } =>
+                write!(f, "input object '{id}' hash mismatch: expected {expected:.12}… got {actual:.12}…"),
+            Self::OutputObjectAlreadyRegistered(id) =>
+                write!(f, "output object '{id}' already registered — double-creation"),
+            Self::NoObjectEvidence =>
+                write!(f, "no object evidence — at least one input or output is required"),
+        }
+    }
+}
+
+// ── Private registry record ───────────────────────────────────────────────────
+
+#[derive(Debug)]
+struct ObjectRecord {
+    hash: String,
+    created_at: usize,
+}
 
 /// Captured stdout/stderr digest from a subprocess or command boundary.
 ///
@@ -68,7 +158,13 @@ pub struct PowlTestHarness {
     route_id: String,
     pub(crate) expected: ExpectedConformance,
     events: Vec<TestEvent>,
+    /// BLAKE3 receipts, one per event (bound evidence or name-only).
     receipts: Vec<String>,
+    /// Object registry: id → (hash, created_at event index).
+    object_registry: HashMap<String, ObjectRecord>,
+    /// Number of activities recorded via `complete_activity()` (i.e., with bound evidence).
+    /// `receipt_coverage = bound_evidence_count / events.len()`.
+    bound_evidence_count: usize,
     model_path: Option<PathBuf>,
     test_run_id: String,
     captured_output: Vec<CapturedOutput>,
@@ -93,6 +189,8 @@ impl PowlTestHarness {
             expected: ExpectedConformance::exact(),
             events: Vec::new(),
             receipts: Vec::new(),
+            object_registry: HashMap::new(),
+            bound_evidence_count: 0,
             model_path: None,
             test_run_id: uuid::Uuid::new_v4().to_string(),
             captured_output: Vec::new(),
@@ -152,12 +250,106 @@ impl PowlTestHarness {
     /// h.record_activity("fixture.created");
     /// assert_eq!(h.event_count(), 1);
     /// ```
+    /// Record an activity by name only — **no object evidence**.
+    ///
+    /// The activity appears in the POWL replay trace and contributes to
+    /// `fitness` and `precision`, but it does **not** increment
+    /// `bound_evidence_count`. A route using only `record_activity` will have
+    /// `receipt_coverage = 0.0` and fail admission.
+    ///
+    /// Use [`complete_activity`] to provide material evidence and count toward
+    /// `receipt_coverage` and `object_lifecycle_validity`.
+    ///
+    /// [`complete_activity`]: Self::complete_activity
     pub fn record_activity(&mut self, activity: impl Into<String>) {
         let activity = activity.into();
-        let receipt_input = format!("{}:{}:{}", self.route_id, activity, self.events.len());
+        // Name-only receipt — NOT counted as bound evidence.
+        let receipt_input = format!("name-only:{}:{}:{}", self.route_id, activity, self.events.len());
         let receipt = blake3::hash(receipt_input.as_bytes()).to_hex().to_string();
         self.events.push(TestEvent { activity });
         self.receipts.push(receipt);
+        // bound_evidence_count is NOT incremented — record_activity is not evidence.
+    }
+
+    /// Record an activity with bound object evidence.
+    ///
+    /// Validates:
+    /// - Every input object must be registered (created by a prior activity).
+    /// - Every input object hash must match the hash recorded at creation time
+    ///   (catches post-creation tampering).
+    /// - Every output object ID must be new (prevents double-creation).
+    /// - At least one input or output must be provided (receipts cannot bind to nothing).
+    ///
+    /// On success, chains a BLAKE3 receipt binding the previous receipt hash,
+    /// route id, activity name, and all input/output hashes. Increments
+    /// `bound_evidence_count` — this is what makes `receipt_coverage` real.
+    ///
+    /// On failure, the activity is NOT recorded and the event log is unchanged.
+    pub fn complete_activity(
+        &mut self,
+        evidence: ActivityEvidence,
+    ) -> Result<(), EvidenceError> {
+        if evidence.inputs.is_empty() && evidence.outputs.is_empty() {
+            return Err(EvidenceError::NoObjectEvidence);
+        }
+
+        let event_idx = self.events.len();
+
+        // Validate inputs: must exist in registry with matching hash.
+        for input in &evidence.inputs {
+            match self.object_registry.get(&input.id) {
+                None => return Err(EvidenceError::InputObjectNotRegistered(input.id.clone())),
+                Some(record) => {
+                    if record.created_at >= event_idx {
+                        return Err(EvidenceError::InputObjectNotRegistered(input.id.clone()));
+                    }
+                    if record.hash != input.hash {
+                        return Err(EvidenceError::InputHashMismatch {
+                            id: input.id.clone(),
+                            expected: record.hash.clone(),
+                            actual: input.hash.clone(),
+                        });
+                    }
+                }
+            }
+        }
+
+        // Validate outputs: must not already exist.
+        for output in &evidence.outputs {
+            if self.object_registry.contains_key(&output.id) {
+                return Err(EvidenceError::OutputObjectAlreadyRegistered(output.id.clone()));
+            }
+        }
+
+        // Register output objects.
+        for output in &evidence.outputs {
+            self.object_registry.insert(
+                output.id.clone(),
+                ObjectRecord { hash: output.hash.clone(), created_at: event_idx },
+            );
+        }
+
+        // Chain receipt: prev_hash + route_id + activity + inputs + outputs.
+        let prev_hash = self.receipts.last().cloned().unwrap_or_default();
+        let input_part = evidence.inputs.iter()
+            .map(|i| format!("{}:{}", i.id, i.hash))
+            .collect::<Vec<_>>()
+            .join(",");
+        let output_part = evidence.outputs.iter()
+            .map(|o| format!("{}:{}", o.id, o.hash))
+            .collect::<Vec<_>>()
+            .join(",");
+        let receipt_data = format!(
+            "evidence:{}:{}:{}:in=[{}]:out=[{}]",
+            prev_hash, self.route_id, evidence.activity, input_part, output_part
+        );
+        let receipt = blake3::hash(receipt_data.as_bytes()).to_hex().to_string();
+
+        self.events.push(TestEvent { activity: evidence.activity });
+        self.receipts.push(receipt);
+        self.bound_evidence_count += 1;
+
+        Ok(())
     }
 
     /// Return the number of recorded events.
@@ -271,8 +463,12 @@ impl PowlTestHarness {
     /// - `fitness` ← `avg_trace_fitness`
     /// - `precision` ← `avg_trace_precision`
     /// - `required_stage_coverage` ← fraction of `required_activities` present in events
-    /// - `receipt_coverage` ← fraction of activities that have a BLAKE3 receipt (always 1.0 for harness-recorded events)
-    /// - `object_lifecycle_validity` ← 1.0 (OCEL uses synthetic monotonic T+{i} timestamps — always valid)
+    /// - `receipt_coverage` ← `bound_evidence_count / events.len()` — fraction of
+    ///   activities recorded via `complete_activity()` (with bound object evidence).
+    ///   Routes using only `record_activity()` produce 0.0.
+    /// - `object_lifecycle_validity` ← 1.0 if any bound evidence exists (violations
+    ///   are rejected at `complete_activity()` time and never enter the event log);
+    ///   0.0 if no bound evidence exists (cannot validate what was never recorded).
     ///
     /// [`ReplayReport`]: crate::testing::conformance::ReplayReport
     #[cfg(feature = "powl")]
@@ -334,10 +530,22 @@ impl PowlTestHarness {
             covered as f64 / spec.required_activities.len() as f64
         };
 
+        // receipt_coverage: fraction of activities backed by bound evidence.
+        // record_activity() contributes 0; complete_activity() contributes 1.
         let receipt_coverage = if self.events.is_empty() {
             1.0
         } else {
-            self.receipts.len() as f64 / self.events.len() as f64
+            self.bound_evidence_count as f64 / self.events.len() as f64
+        };
+
+        // object_lifecycle_validity: lifecycle violations cause complete_activity() to
+        // return Err and the activity is never recorded. If any bound evidence exists,
+        // all admitted activities passed lifecycle validation. If no bound evidence
+        // exists, lifecycle cannot be validated — return 0.0 to fail admission.
+        let object_lifecycle_validity = if self.bound_evidence_count == 0 {
+            0.0
+        } else {
+            1.0
         };
 
         Ok(ReplayReport {
@@ -345,8 +553,7 @@ impl PowlTestHarness {
             precision: ProofDimension::Measured(fr.avg_trace_precision),
             receipt_coverage: ProofDimension::Measured(receipt_coverage),
             required_stage_coverage: ProofDimension::Measured(required_stage_coverage),
-            // OCEL uses synthetic T+{i} timestamps — always monotonically non-decreasing by construction.
-            object_lifecycle_validity: ProofDimension::Measured(1.0),
+            object_lifecycle_validity: ProofDimension::Measured(object_lifecycle_validity),
         })
     }
 }

@@ -8,7 +8,11 @@
 //!
 //! Run: `cargo test --test route_driven_tdd_tests --features browser`
 
-use wasm4pm::testing::{AndonPull, ConformanceVerdict, PowlTestHarness};
+use wasm4pm::testing::{ActivityEvidence, AndonPull, ConformanceVerdict, ObjectEvidence, PowlTestHarness};
+
+fn bh(data: &str) -> String {
+    blake3::hash(data.as_bytes()).to_hex().to_string()
+}
 
 fn model(name: &str) -> String {
     format!(
@@ -23,15 +27,17 @@ fn model(name: &str) -> String {
 
 #[test]
 fn conforming_sequential_trace_passes() {
-    let mut h = PowlTestHarness::new("sequential-ab-route")
+    let mut harness = PowlTestHarness::new("sequential-ab-route")
         .model(model("sequential-two-step.powl.json"));
-    h.record_activity("A");
-    h.record_activity("B");
-    assert_eq!(
-        h.finish(),
-        ConformanceVerdict::Passed,
-        "conforming A→B trace must return Passed"
-    );
+    harness.complete_activity(
+        ActivityEvidence::new("A").with_outputs(vec![ObjectEvidence::new("a-out", bh("A:output"))]),
+    ).unwrap();
+    harness.complete_activity(
+        ActivityEvidence::new("B")
+            .with_inputs(vec![ObjectEvidence::new("a-out", bh("A:output"))])
+            .with_outputs(vec![ObjectEvidence::new("b-out", bh("B:output"))]),
+    ).unwrap();
+    assert_eq!(harness.finish(), ConformanceVerdict::Passed, "conforming A→B with evidence must return Passed");
 }
 
 #[test]
@@ -76,16 +82,22 @@ fn reversed_activities_fires_andon() {
 
 #[test]
 fn conforming_three_step_trace_passes() {
-    let mut h = PowlTestHarness::new("three-step-route")
+    let mut harness = PowlTestHarness::new("three-step-route")
         .model(model("sequential-three-step.powl.json"));
-    h.record_activity("A");
-    h.record_activity("B");
-    h.record_activity("C");
-    assert_eq!(
-        h.finish(),
-        ConformanceVerdict::Passed,
-        "conforming A→B→C trace must return Passed"
-    );
+    harness.complete_activity(
+        ActivityEvidence::new("A").with_outputs(vec![ObjectEvidence::new("a-out", bh("A:output"))]),
+    ).unwrap();
+    harness.complete_activity(
+        ActivityEvidence::new("B")
+            .with_inputs(vec![ObjectEvidence::new("a-out", bh("A:output"))])
+            .with_outputs(vec![ObjectEvidence::new("b-out", bh("B:output"))]),
+    ).unwrap();
+    harness.complete_activity(
+        ActivityEvidence::new("C")
+            .with_inputs(vec![ObjectEvidence::new("b-out", bh("B:output"))])
+            .with_outputs(vec![ObjectEvidence::new("c-out", bh("C:output"))]),
+    ).unwrap();
+    assert_eq!(harness.finish(), ConformanceVerdict::Passed, "conforming A→B→C with evidence must return Passed");
 }
 
 #[test]
@@ -107,28 +119,29 @@ fn missing_middle_activity_fires_andon_on_three_step() {
 
 #[test]
 fn conforming_concurrent_trace_ab_passes() {
-    let mut h = PowlTestHarness::new("concurrent-ab-route")
+    let mut harness = PowlTestHarness::new("concurrent-ab-route")
         .model(model("concurrent-two-step.powl.json"));
-    h.record_activity("A");
-    h.record_activity("B");
-    assert_eq!(
-        h.finish(),
-        ConformanceVerdict::Passed,
-        "conforming concurrent A,B trace must return Passed"
-    );
+    // A and B are concurrent — neither is input to the other.
+    harness.complete_activity(
+        ActivityEvidence::new("A").with_outputs(vec![ObjectEvidence::new("a-out", bh("A:output"))]),
+    ).unwrap();
+    harness.complete_activity(
+        ActivityEvidence::new("B").with_outputs(vec![ObjectEvidence::new("b-out", bh("B:output"))]),
+    ).unwrap();
+    assert_eq!(harness.finish(), ConformanceVerdict::Passed, "concurrent A,B with evidence must return Passed");
 }
 
 #[test]
 fn conforming_concurrent_trace_ba_passes() {
-    let mut h = PowlTestHarness::new("concurrent-ba-route")
+    let mut harness = PowlTestHarness::new("concurrent-ba-route")
         .model(model("concurrent-two-step.powl.json"));
-    h.record_activity("B");
-    h.record_activity("A");
-    assert_eq!(
-        h.finish(),
-        ConformanceVerdict::Passed,
-        "conforming concurrent B,A trace must return Passed"
-    );
+    harness.complete_activity(
+        ActivityEvidence::new("B").with_outputs(vec![ObjectEvidence::new("b-out", bh("B:output"))]),
+    ).unwrap();
+    harness.complete_activity(
+        ActivityEvidence::new("A").with_outputs(vec![ObjectEvidence::new("a-out", bh("A:output"))]),
+    ).unwrap();
+    assert_eq!(harness.finish(), ConformanceVerdict::Passed, "concurrent B,A with evidence must return Passed");
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

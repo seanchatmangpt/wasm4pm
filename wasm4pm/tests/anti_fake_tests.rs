@@ -9,7 +9,11 @@
 //!
 //! Run: `cargo test --test anti_fake_tests --features browser`
 
-use wasm4pm::testing::{ConformanceVerdict, PowlTestHarness};
+use wasm4pm::testing::{ActivityEvidence, ConformanceVerdict, EvidenceError, ObjectEvidence, PowlTestHarness};
+
+fn bh(data: &str) -> String {
+    blake3::hash(data.as_bytes()).to_hex().to_string()
+}
 
 fn model(name: &str) -> String {
     format!("{}/routes/test-harness/{name}", env!("CARGO_MANIFEST_DIR"))
@@ -151,15 +155,21 @@ fn completing_route_after_catching_panic_produces_correct_verdict() {
         matches!(bad_verdict, ConformanceVerdict::Andon(_)),
         "panicking body must produce AndonPull"
     );
-    // A fresh harness with the complete route must pass.
+    // A fresh harness with complete route + bound evidence must pass.
     let mut h2 = PowlTestHarness::new("fresh-route")
         .model(model("sequential-two-step.powl.json"));
-    h2.record_activity("A");
-    h2.record_activity("B");
+    h2.complete_activity(
+        ActivityEvidence::new("A").with_outputs(vec![ObjectEvidence::new("a-out", bh("A:output"))]),
+    ).unwrap();
+    h2.complete_activity(
+        ActivityEvidence::new("B")
+            .with_inputs(vec![ObjectEvidence::new("a-out", bh("A:output"))])
+            .with_outputs(vec![ObjectEvidence::new("b-out", bh("B:output"))]),
+    ).unwrap();
     assert_eq!(
         h2.finish(),
         ConformanceVerdict::Passed,
-        "fresh harness with complete route must return Passed"
+        "fresh harness with complete evidence chain must return Passed"
     );
 }
 
@@ -187,5 +197,112 @@ fn ocel_captures_fake_activities_for_audit() {
     assert!(
         matches!(verdict, ConformanceVerdict::Andon(_)),
         "fake activities must produce AndonPull"
+    );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Decisive evidence-binding adversarial tests
+//
+// These five tests define the proof boundary. The system is not done until
+// every one of these fails closed.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Test 1: Activity-name-only route cannot pass.
+///
+/// `record_activity()` produces `receipt_coverage = 0.0`.
+/// A route that only records names — even in perfect POWL order — must not pass.
+#[test]
+fn activity_only_route_cannot_pass() {
+    let mut harness = PowlTestHarness::new("names-only")
+        .model(model("sequential-two-step.powl.json"));
+    harness.record_activity("A");
+    harness.record_activity("B");
+    // Fitness = 1.0 (correct order) but receipt_coverage = 0.0 — not Passed.
+    assert_ne!(
+        harness.finish(),
+        ConformanceVerdict::Passed,
+        "activity-name recording without object evidence must never pass"
+    );
+}
+
+/// Test 2: `complete_activity` with no inputs and no outputs is rejected.
+///
+/// A receipt cannot bind to nothing. This is the minimal evidence requirement.
+#[test]
+fn complete_activity_without_object_evidence_is_rejected() {
+    let mut harness = PowlTestHarness::new("no-evidence");
+    let result = harness.complete_activity(ActivityEvidence::new("part.built"));
+    assert_eq!(
+        result,
+        Err(EvidenceError::NoObjectEvidence),
+        "complete_activity with no inputs or outputs must be rejected"
+    );
+}
+
+/// Test 3: Tampered input hash is detected and rejected at recording time.
+///
+/// Activity A creates "a-out" with hash H1. Activity B claims to consume
+/// "a-out" but provides hash H2 (a different content). The harness catches this
+/// mismatch and rejects B.
+#[test]
+fn tampered_input_hash_is_rejected() {
+    let mut harness = PowlTestHarness::new("tamper-route")
+        .model(model("sequential-two-step.powl.json"));
+    // A creates "a-out" with the real hash.
+    harness.complete_activity(
+        ActivityEvidence::new("A")
+            .with_outputs(vec![ObjectEvidence::new("a-out", bh("original-content"))]),
+    ).unwrap();
+    // B claims to consume "a-out" but provides a different hash (tampered content).
+    let result = harness.complete_activity(
+        ActivityEvidence::new("B")
+            .with_inputs(vec![ObjectEvidence::new("a-out", bh("tampered-content"))])
+            .with_outputs(vec![ObjectEvidence::new("b-out", bh("B:output"))]),
+    );
+    assert!(
+        matches!(result, Err(EvidenceError::InputHashMismatch { .. })),
+        "tampered input hash must be rejected; got: {result:?}"
+    );
+}
+
+/// Test 4: Object used before creation is rejected.
+///
+/// Activity B claims to consume "a-out" as an input, but "a-out" was never
+/// registered as any prior activity's output. The harness catches this.
+#[test]
+fn object_used_before_created_is_rejected() {
+    let mut harness = PowlTestHarness::new("oob-route")
+        .model(model("sequential-two-step.powl.json"));
+    // Skip creating "a-out" — B tries to use it immediately.
+    let result = harness.complete_activity(
+        ActivityEvidence::new("B")
+            .with_inputs(vec![ObjectEvidence::new("a-out", bh("A:output"))])
+            .with_outputs(vec![ObjectEvidence::new("b-out", bh("B:output"))]),
+    );
+    assert_eq!(
+        result,
+        Err(EvidenceError::InputObjectNotRegistered("a-out".to_string())),
+        "consuming an unregistered object must be rejected"
+    );
+}
+
+/// Test 5: A conformant activity sequence without an evidence chain cannot pass.
+///
+/// Even with fitness = 1.0 (correct POWL order), `receipt_coverage = 0.0`
+/// when `record_activity` is used. This closes the "names in right order" loophole.
+#[test]
+fn conformant_sequence_without_evidence_chain_cannot_pass() {
+    let mut harness = PowlTestHarness::new("names-in-order")
+        .model(model("sequential-three-step.powl.json"));
+    // Perfect activity order — but no evidence.
+    harness.record_activity("A");
+    harness.record_activity("B");
+    harness.record_activity("C");
+    // Fitness should be 1.0, but receipt_coverage = 0.0 → not Passed.
+    let verdict = harness.finish();
+    assert_ne!(
+        verdict,
+        ConformanceVerdict::Passed,
+        "correct order without evidence chain must not pass; got: {verdict:?}"
     );
 }

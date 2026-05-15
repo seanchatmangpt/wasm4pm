@@ -5,7 +5,12 @@
 //!
 //! Run: `cargo test --test powl_macro_tests --features browser`
 
+use wasm4pm::testing::{ActivityEvidence, ObjectEvidence};
 use wasm4pm_macros::{powl_activity, powl_test};
+
+fn bh(data: &str) -> String {
+    blake3::hash(data.as_bytes()).to_hex().to_string()
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // #[powl_test] — conforming traces (all 5 proof dimensions measured → Passed)
@@ -16,8 +21,8 @@ use wasm4pm_macros::{powl_activity, powl_test};
     model = "routes/test-harness/sequential-two-step.powl.json"
 )]
 fn macro_sequential_trace_passes() {
-    h.record_activity("A");
-    h.record_activity("B");
+    h.complete_activity(ActivityEvidence::new("A").with_outputs(vec![ObjectEvidence::new("a-out", bh("A:output"))])).unwrap();
+    h.complete_activity(ActivityEvidence::new("B").with_inputs(vec![ObjectEvidence::new("a-out", bh("A:output"))]).with_outputs(vec![ObjectEvidence::new("b-out", bh("B:output"))])).unwrap();
 }
 
 #[powl_test(
@@ -25,9 +30,9 @@ fn macro_sequential_trace_passes() {
     model = "routes/test-harness/sequential-three-step.powl.json"
 )]
 fn macro_three_step_trace_passes() {
-    h.record_activity("A");
-    h.record_activity("B");
-    h.record_activity("C");
+    h.complete_activity(ActivityEvidence::new("A").with_outputs(vec![ObjectEvidence::new("a-out", bh("A:output"))])).unwrap();
+    h.complete_activity(ActivityEvidence::new("B").with_inputs(vec![ObjectEvidence::new("a-out", bh("A:output"))]).with_outputs(vec![ObjectEvidence::new("b-out", bh("B:output"))])).unwrap();
+    h.complete_activity(ActivityEvidence::new("C").with_inputs(vec![ObjectEvidence::new("b-out", bh("B:output"))]).with_outputs(vec![ObjectEvidence::new("c-out", bh("C:output"))])).unwrap();
 }
 
 #[powl_test(
@@ -35,8 +40,8 @@ fn macro_three_step_trace_passes() {
     model = "routes/test-harness/concurrent-two-step.powl.json"
 )]
 fn macro_concurrent_ab_passes() {
-    h.record_activity("A");
-    h.record_activity("B");
+    h.complete_activity(ActivityEvidence::new("A").with_outputs(vec![ObjectEvidence::new("a-out", bh("A:output"))])).unwrap();
+    h.complete_activity(ActivityEvidence::new("B").with_outputs(vec![ObjectEvidence::new("b-out", bh("B:output"))])).unwrap();
 }
 
 #[powl_test(
@@ -44,8 +49,8 @@ fn macro_concurrent_ab_passes() {
     model = "routes/test-harness/concurrent-two-step.powl.json"
 )]
 fn macro_concurrent_ba_passes() {
-    h.record_activity("B");
-    h.record_activity("A");
+    h.complete_activity(ActivityEvidence::new("B").with_outputs(vec![ObjectEvidence::new("b-out", bh("B:output"))])).unwrap();
+    h.complete_activity(ActivityEvidence::new("A").with_outputs(vec![ObjectEvidence::new("a-out", bh("A:output"))])).unwrap();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

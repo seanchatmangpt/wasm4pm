@@ -7,7 +7,11 @@
 //!
 //! Run: `cargo test --test self_conformance_tests --features browser`
 
-use wasm4pm::testing::{ConformanceVerdict, PowlTestHarness};
+use wasm4pm::testing::{ActivityEvidence, ConformanceVerdict, ObjectEvidence, PowlTestHarness};
+
+fn bh(data: &str) -> String {
+    blake3::hash(data.as_bytes()).to_hex().to_string()
+}
 
 fn model(name: &str) -> String {
     format!("{}/routes/test-harness/{name}", env!("CARGO_MANIFEST_DIR"))
@@ -22,29 +26,47 @@ fn model(name: &str) -> String {
 /// harness itself must prove conformance.
 #[test]
 fn test_harness_follows_its_own_declared_route() {
-    let mut h = PowlTestHarness::new("test-lifecycle-route")
+    let mut harness = PowlTestHarness::new("test-lifecycle-route")
         .model(model("test-lifecycle.powl.json"));
 
-    h.record_activity("test.started");
+    // Each activity produces evidence that the next activity consumes.
+    // This creates a causal chain — not just a sequence of names.
+    harness.complete_activity(
+        ActivityEvidence::new("test.started")
+            .with_outputs(vec![ObjectEvidence::new("test-context", bh("test:context:init"))]),
+    ).unwrap();
 
-    // Simulate the command phase
     let command_result = simulate_command("discover_dfg", &["concept:name"]);
-    h.record_activity("command.executed");
+    harness.complete_activity(
+        ActivityEvidence::new("command.executed")
+            .with_inputs(vec![ObjectEvidence::new("test-context", bh("test:context:init"))])
+            .with_outputs(vec![ObjectEvidence::new("command-output", bh(&command_result))]),
+    ).unwrap();
 
-    // Simulate capturing output
-    let captured = capture_output(command_result);
-    h.record_activity("output.captured");
+    let captured = capture_output(command_result.clone());
+    harness.complete_activity(
+        ActivityEvidence::new("output.captured")
+            .with_inputs(vec![ObjectEvidence::new("command-output", bh(&command_result))])
+            .with_outputs(vec![ObjectEvidence::new("captured-output", bh(&captured))]),
+    ).unwrap();
 
-    // Run assertion against captured output
     assert!(!captured.is_empty(), "command should produce non-empty output");
-    h.record_activity("assertion.checked");
+    harness.complete_activity(
+        ActivityEvidence::new("assertion.checked")
+            .with_inputs(vec![ObjectEvidence::new("captured-output", bh(&captured))])
+            .with_outputs(vec![ObjectEvidence::new("assertion-result", bh("assertion:passed"))]),
+    ).unwrap();
 
-    h.record_activity("test.completed");
+    harness.complete_activity(
+        ActivityEvidence::new("test.completed")
+            .with_inputs(vec![ObjectEvidence::new("assertion-result", bh("assertion:passed"))])
+            .with_outputs(vec![ObjectEvidence::new("completion-record", bh("test:done"))]),
+    ).unwrap();
 
     assert_eq!(
-        h.finish(),
+        harness.finish(),
         ConformanceVerdict::Passed,
-        "test lifecycle route with all activities must return Passed"
+        "test lifecycle route with full evidence chain must return Passed"
     );
 }
 
