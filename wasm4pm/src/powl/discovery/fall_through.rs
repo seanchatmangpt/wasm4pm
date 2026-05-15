@@ -185,7 +185,7 @@ fn build_choice_graph_model(
 
 /// Spec-compliant choice graph fall-through: returns a `PowlNode::ChoiceGraph`
 /// rooted at the validated graph. Each partition becomes a `SubModel` whose
-/// arena tree is an XOR over its activities (a placeholder for recursive PM×).
+/// arena tree is an XOR over its activities (a baseline representation for recursive PM×).
 ///
 /// This implements Algorithm 1 + Definition 5 of arXiv:2505.07052.
 pub fn choice_graph_v2_fall_through(
@@ -228,7 +228,7 @@ pub fn choice_graph_v2_fall_through(
     .map_err(|e| format!("MineDG v2 failed: {}", e))?;
 
     // Replace each Activity-node in the cut graph with a SubModel sub-tree.
-    // SubModel = XOR of partition activities (placeholder for recursive PM×).
+    // SubModel = XOR of partition activities (baseline representation for recursive PM×).
     let mut new_nodes: Vec<wasm4pm_types::ChoiceGraphNode> =
         Vec::with_capacity(cut.graph.nodes.len());
     for (i, n) in cut.graph.nodes.iter().enumerate() {

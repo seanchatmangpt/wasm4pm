@@ -78,6 +78,48 @@ pub fn discover_footprints(eventlog_handle: &str, activity_key: &str) -> Result<
     to_js_str(&discover_footprints_from_log(&log, activity_key))
 }
 
+/// Discover a Causal Graph from an EventLog
+#[wasm_bindgen]
+pub fn discover_causal_graph(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
+    let log = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
+        None => Err(wasm_err(
+            codes::INVALID_HANDLE,
+            format!("EventLog '{}' not found", eventlog_handle),
+        )),
+    })?;
+
+    let footprints = discover_footprints_from_log(&log, activity_key);
+    let mut dfg = DirectlyFollowsGraph::new();
+
+    for activity in &footprints.activities {
+        dfg.nodes.push(DFGNode {
+            id: activity.clone(),
+            label: activity.clone(),
+            frequency: 0,
+        });
+    }
+
+    for (i, row) in footprints.matrix.iter().enumerate() {
+        for (j, relation) in row.iter().enumerate() {
+            if *relation == FootprintRelation::Causal {
+                dfg.edges.push(DirectlyFollowsRelation {
+                    from: footprints.activities[i].clone(),
+                    to: footprints.activities[j].clone(),
+                    frequency: 1, // Basic causal graph doesn't preserve exact frequency
+                });
+            }
+        }
+    }
+
+    let handle = get_or_init_state()
+        .store_object(StoredObject::DirectlyFollowsGraph(dfg))
+        .map_err(|_e| wasm_err(codes::INTERNAL_ERROR, "Failed to store Causal Graph"))?;
+
+    Ok(crate::error::js_val(&handle))
+}
+
 /// Internal Alpha++ implementation operating on a plain `EventLog`.
 ///
 /// Steps:

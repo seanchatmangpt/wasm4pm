@@ -57,6 +57,21 @@ pub fn discover_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFoll
 
 /// Discover a Directly-Follows Graph (DFG) from an EventLog
 #[wasm_bindgen]
+pub fn discover_dfg_handle(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
+    let dfg = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+        Some(StoredObject::EventLog(log)) => Ok(discover_dfg_from_log(log, activity_key)),
+        Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
+        None => Err(wasm_err(
+            codes::INVALID_HANDLE,
+            format!("EventLog '{}' not found", eventlog_handle),
+        )),
+    })?;
+
+    let handle = get_or_init_state().store_object(StoredObject::DirectlyFollowsGraph(dfg))?;
+    Ok(crate::error::js_val(&handle))
+}
+
+#[wasm_bindgen]
 pub fn discover_dfg(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
     let log = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => Ok(log.clone()),

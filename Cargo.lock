@@ -2432,6 +2432,7 @@ dependencies = [
  "criterion",
  "fake",
  "fastrand",
+ "flate2",
  "getrandom 0.2.17",
  "hashbrown 0.17.0",
  "itertools 0.14.0",
@@ -2439,6 +2440,7 @@ dependencies = [
  "lazy_static",
  "once_cell",
  "proptest",
+ "quick-xml",
  "rand 0.8.5",
  "rand_distr",
  "roxmltree",
@@ -2454,6 +2456,7 @@ dependencies = [
  "uuid",
  "wasm-bindgen",
  "wasm-bindgen-futures",
+ "wasm4pm-macros",
  "wasm4pm-types",
 ]
 
@@ -2512,6 +2515,15 @@ dependencies = [
  "smallvec",
  "trybuild",
  "wasm-bindgen",
+]
+
+[[package]]
+name = "wasm4pm-macros"
+version = "26.5.13"
+dependencies = [
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

@@ -352,7 +352,7 @@ pub fn infer_ocel_schema(ocel_handle: &str) -> Result<JsValue, JsValue> {
             // Analyze event-object qualifiers (co-occurrence patterns)
             let mut qualifiers: HashMap<String, usize> = HashMap::new();
             for event in &ocel.events {
-                for obj_ref in &event.object_refs {
+                for obj_ref in &event.relationships {
                     *qualifiers.entry(obj_ref.qualifier.clone()).or_insert(0) += 1;
                 }
             }

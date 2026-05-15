@@ -22,6 +22,10 @@ use crate::breeds::{
 };
 use crate::evidence::{Artifact, EvidenceSource};
 use crate::registry::{CognitionReceipt, REGISTRY};
+use crate::autoinstinct::neurosis::NeuroticState;
+use crate::autoinstinct::semantics::SemanticParser;
+use crate::autoinstinct::vision::{SymbolicVisionSystem, Polyhedron};
+use crate::autoinstinct::learning::{HeuristicPlanner, ProblemState};
 
 /// Maximum accepted input size (10 MiB).
 pub const MAX_INPUT_LEN: usize = 10 * 1024 * 1024;
@@ -334,4 +338,61 @@ pub fn system_verify(target: &str, artifacts_json: &str) -> Result<JsValue, JsVa
         "status": if finding_jsons.is_empty() { "verified" } else { "has_findings" }
     });
     to_js_str(&result)
+}
+
+#[wasm_bindgen]
+pub fn autoinstinct_neurosis(concept: &str, strength: f64) -> Result<JsValue, JsValue> {
+    let mut sys = NeuroticState::new();
+    let reaction = sys.process_input(concept, strength);
+    to_js_str(&serde_json::json!({
+        "algorithm": "autoinstinct_neurosis",
+        "concept": concept,
+        "reaction": reaction,
+        "mistrust": sys.mistrust,
+        "anger": sys.anger,
+        "fear": sys.fear
+    }))
+}
+
+#[wasm_bindgen]
+pub fn autoinstinct_semantics(sentence: &str) -> Result<JsValue, JsValue> {
+    let parser = SemanticParser::new();
+    let frame = parser.parse(sentence);
+    if let Some(f) = frame {
+        to_js_str(&serde_json::json!({
+            "algorithm": "autoinstinct_semantics",
+            "act": format!("{:?}", f.act),
+            "actor": f.actor,
+            "object": f.object
+        }))
+    } else {
+        to_js_str(&serde_json::json!({
+            "algorithm": "autoinstinct_semantics",
+            "error": "Failed to parse frame"
+        }))
+    }
+}
+
+#[wasm_bindgen]
+pub fn autoinstinct_vision(block_id: &str, shape: &str, supported_by: Option<String>) -> Result<JsValue, JsValue> {
+    let mut sys = SymbolicVisionSystem::new();
+    sys.observe(Polyhedron { id: block_id.to_string(), shape: shape.to_string(), supported_by });
+    let clear = sys.find_clear_object().map(|p| p.id.clone());
+    to_js_str(&serde_json::json!({
+        "algorithm": "autoinstinct_vision",
+        "clear_object": clear
+    }))
+}
+
+#[wasm_bindgen]
+pub fn autoinstinct_learning(goal: u32, initial_features: u32) -> Result<JsValue, JsValue> {
+    let planner = HeuristicPlanner::new(goal);
+    let plan = planner.solve(ProblemState { features: initial_features });
+    let plan_features: Vec<u32> = plan.into_iter().map(|s| s.features).collect();
+    to_js_str(&serde_json::json!({
+        "algorithm": "autoinstinct_learning",
+        "plan_steps": plan_features.len(),
+        "final_state": plan_features.last().unwrap_or(&initial_features),
+        "path": plan_features
+    }))
 }

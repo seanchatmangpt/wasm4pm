@@ -151,7 +151,7 @@ pub fn flatten_ocel_to_eventlog_for_type(
                     "object_type".to_string(),
                     AttributeValue::String(object_type.to_string()),
                 );
-                attrs.extend(obj.attributes.clone());
+                attrs.extend(obj.attributes.clone().into_iter().map(|(k, v)| (k, v.into())));
                 attrs
             },
             events: Vec::new(),
@@ -174,7 +174,7 @@ pub fn flatten_ocel_to_eventlog_for_type(
             );
 
             // Copy event attributes
-            event_attrs.extend(ocel_event.attributes.clone());
+            event_attrs.extend(ocel_event.attributes.clone().into_iter().map(|(k, v)| (k, v.into())));
 
             trace.events.push(Event {
                 attributes: event_attrs,

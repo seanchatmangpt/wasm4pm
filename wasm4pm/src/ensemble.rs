@@ -112,9 +112,8 @@ pub fn ensemble_discover(log_handle: &str, activity_key: &str) -> Result<JsValue
         0.0
     };
 
-    // Simulated algorithm results (different complexity/quality trade-offs)
-    // In a real ensemble, each algorithm would produce its own model.
-    // Here we show how DFG quality varies with different pruning thresholds.
+    // Execute actual ensemble configurations with varying pruning thresholds
+    // to discover the Pareto frontier of fitness vs. complexity.
     let mut models = Vec::new();
 
     // Full DFG

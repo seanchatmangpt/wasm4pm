@@ -29,7 +29,67 @@ pub fn parse_timestamp_ms(s: &str) -> Option<i64> {
     None
 }
 
-/// Attribute value types for event data
+/// Robust timestamp parsing for various ISO 8601 variations seen in OCEL logs.
+pub fn parse_robust_timestamp(s: &str) -> Option<chrono::DateTime<chrono::FixedOffset>> {
+    use chrono::{DateTime, NaiveDateTime};
+    if let Ok(dt) = DateTime::parse_from_rfc3339(s) {
+        return Some(dt);
+    }
+    if let Ok(dt) = DateTime::parse_from_rfc2822(s) {
+        return Some(dt);
+    }
+    // Naive formats assuming UTC
+    if let Ok(dt) = NaiveDateTime::parse_from_str(s, "%F %T%.f") {
+        return Some(dt.and_utc().into());
+    }
+    if let Ok(dt) = NaiveDateTime::parse_from_str(s, "%FT%T%.f") {
+        return Some(dt.and_utc().into());
+    }
+    if let Ok(dt) = NaiveDateTime::parse_from_str(s, "%F %T UTC") {
+        return Some(dt.and_utc().into());
+    }
+    None
+}
+
+/// OCEL-specific attribute value types (untagged for JSON compatibility)
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
+#[serde(untagged)]
+pub enum OCELAttributeValue {
+    Integer(i64),
+    Float(f64),
+    Boolean(bool),
+    Time(String), 
+    String(String),
+    #[default]
+    Null,
+}
+
+impl From<OCELAttributeValue> for AttributeValue {
+    fn from(v: OCELAttributeValue) -> Self {
+        match v {
+            OCELAttributeValue::String(s) => AttributeValue::String(s),
+            OCELAttributeValue::Integer(i) => AttributeValue::Int(i),
+            OCELAttributeValue::Float(f) => AttributeValue::Float(f),
+            OCELAttributeValue::Time(d) => AttributeValue::Date(d),
+            OCELAttributeValue::Boolean(b) => AttributeValue::Boolean(b),
+            OCELAttributeValue::Null => AttributeValue::String("null".to_string()),
+        }
+    }
+}
+
+impl From<AttributeValue> for OCELAttributeValue {
+    fn from(v: AttributeValue) -> Self {
+        match v {
+            AttributeValue::String(s) => OCELAttributeValue::String(s),
+            AttributeValue::Int(i) => OCELAttributeValue::Integer(i),
+            AttributeValue::Float(f) => OCELAttributeValue::Float(f),
+            AttributeValue::Date(d) => OCELAttributeValue::Time(d),
+            AttributeValue::Boolean(b) => OCELAttributeValue::Boolean(b),
+            _ => OCELAttributeValue::Null,
+        }
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "tag", content = "value")]
 pub enum AttributeValue {
@@ -38,8 +98,10 @@ pub enum AttributeValue {
     Float(f64),
     Date(String), // ISO 8601
     Boolean(bool),
+    ID(String),
     List(Vec<AttributeValue>),
     Container(HashMap<String, AttributeValue>),
+    Nested(Box<AttributeValue>, HashMap<String, AttributeValue>),
 }
 
 impl AttributeValue {
@@ -47,6 +109,8 @@ impl AttributeValue {
     pub fn as_string(&self) -> Option<&str> {
         match self {
             AttributeValue::String(s) => Some(s.as_str()),
+            AttributeValue::ID(s) => Some(s.as_str()),
+            AttributeValue::Nested(v, _) => v.as_string(),
             _ => None,
         }
     }
@@ -55,6 +119,7 @@ impl AttributeValue {
     pub fn as_i64(&self) -> Option<i64> {
         match self {
             AttributeValue::Int(i) => Some(*i),
+            AttributeValue::Nested(v, _) => v.as_i64(),
             _ => None,
         }
     }
@@ -63,6 +128,7 @@ impl AttributeValue {
     pub fn as_f64(&self) -> Option<f64> {
         match self {
             AttributeValue::Float(f) => Some(*f),
+            AttributeValue::Nested(v, _) => v.as_f64(),
             _ => None,
         }
     }
@@ -71,12 +137,61 @@ impl AttributeValue {
     pub fn as_bool(&self) -> Option<bool> {
         match self {
             AttributeValue::Boolean(b) => Some(*b),
+            AttributeValue::Nested(v, _) => v.as_bool(),
             _ => None,
         }
     }
 }
 
 pub type Attributes = HashMap<String, AttributeValue>;
+
+/// Custom deserializer for OCEL attributes that handles both map and sequence formats.
+fn robust_deserialize_ocel_attributes<'de, D>(deserializer: D) -> Result<HashMap<String, OCELAttributeValue>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    use serde::de::{self, Visitor};
+    use std::fmt;
+
+    struct AttributesVisitor;
+
+    impl<'de> Visitor<'de> for AttributesVisitor {
+        type Value = HashMap<String, OCELAttributeValue>;
+
+        fn expecting(&self, formatter: &mut fmt::Formatter) -> fmt::Result {
+            formatter.write_str("a map or array of {name, value} objects")
+        }
+
+        fn visit_map<A>(self, map: A) -> Result<Self::Value, A::Error>
+        where
+            A: de::MapAccess<'de>,
+        {
+            Deserialize::deserialize(de::value::MapAccessDeserializer::new(map))
+        }
+
+        fn visit_seq<A>(self, seq: A) -> Result<Self::Value, A::Error>
+        where
+            A: de::SeqAccess<'de>,
+        {
+            #[derive(Deserialize)]
+            struct NamedAttribute {
+                name: String,
+                #[serde(default)]
+                value: OCELAttributeValue,
+            }
+
+            let visitor = de::value::SeqAccessDeserializer::new(seq);
+            let attrs: Vec<NamedAttribute> = Deserialize::deserialize(visitor)?;
+            let mut result = HashMap::new();
+            for attr in attrs {
+                result.insert(attr.name, attr.value);
+            }
+            Ok(result)
+        }
+    }
+
+    deserializer.deserialize_any(AttributesVisitor)
+}
 
 /// Custom deserializer for OCEL attributes that handles both:
 /// 1. HashMap format: {"key1": value1, "key2": value2}
@@ -177,6 +292,12 @@ impl Trace {
 pub struct EventLog {
     pub attributes: Attributes,
     pub traces: Vec<Trace>,
+    #[serde(default)]
+    pub extensions: Vec<HashMap<String, String>>,
+    #[serde(default)]
+    pub globals: HashMap<String, Attributes>,
+    #[serde(default)]
+    pub classifiers: HashMap<String, Vec<String>>,
 }
 
 /// Columnar, integer-encoded view of an event log.
@@ -298,6 +419,9 @@ impl EventLog {
         EventLog {
             attributes: HashMap::new(),
             traces: Vec::new(),
+            extensions: Vec::new(),
+            globals: HashMap::new(),
+            classifiers: HashMap::new(),
         }
     }
 
@@ -431,108 +555,93 @@ impl EventLog {
     }
 }
 
-/// OCEL Object Attribute definition
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OCELObjectAttribute {
-    pub name: String,
-    pub attribute_type: String,
-}
-
-/// OCEL Event Attribute definition
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OCELEventAttribute {
-    pub name: String,
-    pub attribute_type: String,
-}
-
 /// OCEL Event-Object Reference (OCEL 2.0)
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OCELEventObjectRef {
-    #[serde(rename = "objectId", alias = "object_id")]
-    pub object_id: String,
-    pub qualifier: String, // e.g., "item", "customer", "resource"
-}
-
-/// OCEL Object Attribute Change (OCEL 2.0)
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OCELObjectAttributeChange {
-    pub timestamp: String,
-    pub attribute_name: String,
-    pub value: AttributeValue,
-}
-
-/// OCEL Object Relation (OCEL 2.0)
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OCELObjectRelation {
-    pub source_id: String,
-    pub target_id: String,
-    pub qualifier: String, // e.g., "belongs-to", "created-by"
-}
-
-/// OCEL Event
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OCELEvent {
-    pub id: String,
-    #[serde(rename = "type", alias = "event_type")]
-    pub event_type: String,
-    #[serde(rename = "time", alias = "timestamp")]
-    pub timestamp: String, // ISO 8601
-    #[serde(default, deserialize_with = "deserialize_ocel_attributes")]
-    pub attributes: HashMap<String, AttributeValue>,
-    #[serde(default)]
-    pub object_ids: Vec<String>,
-    #[serde(rename = "relationships", alias = "object_refs", default)]
-    pub object_refs: Vec<OCELEventObjectRef>,
-}
-
-impl OCELEvent {
-    /// Extract object IDs from both object_ids and object_refs
-    pub fn all_object_ids(&self) -> impl Iterator<Item = &str> {
-        self.object_ids
-            .iter()
-            .map(|s| s.as_str())
-            .chain(self.object_refs.iter().map(|r| r.object_id.as_str()))
-    }
-
-    /// Extract object IDs from object_refs only (deprecated, use all_object_ids)
-    #[deprecated(since = "0.6.0", note = "use all_object_ids() instead")]
-    pub fn get_object_ids(&self) -> Vec<String> {
-        self.object_refs
-            .iter()
-            .map(|r| r.object_id.clone())
-            .collect()
-    }
-}
-
-/// OCEL Object Relation Reference (for embedded relations in objects)
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct OCELObjectRelRef {
-    #[serde(rename = "objectId", alias = "object_id")]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct OCELRelationship {
+    #[serde(rename = "objectId")]
     pub object_id: String,
     pub qualifier: String,
 }
 
+/// OCEL Object Attribute Change (OCEL 2.0)
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct OCELObjectAttributeChange {
+    pub timestamp: String,
+    pub attribute_name: String,
+    pub value: OCELAttributeValue,
+}
+
+/// OCEL Object Relation (OCEL 2.0)
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct OCELObjectRelation {
+    pub source_id: String,
+    pub target_id: String,
+    pub qualifier: String,
+}
+
+/// OCEL Type definition (Event or Object type)
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct OCELType {
+    pub name: String,
+    #[serde(default)]
+    pub attributes: Vec<OCELTypeAttribute>,
+}
+
+/// OCEL Attribute definition within a Type
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Eq, Hash)]
+pub struct OCELTypeAttribute {
+    pub name: String,
+    #[serde(rename = "type")]
+    pub value_type: String,
+}
+
+/// OCEL Event
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub struct OCELEvent {
+    pub id: String,
+    #[serde(rename = "type")]
+    pub event_type: String,
+    #[serde(rename = "time", alias = "timestamp")]
+    pub timestamp: String, // ISO 8601
+    #[serde(default, deserialize_with = "robust_deserialize_ocel_attributes")]
+    pub attributes: HashMap<String, OCELAttributeValue>,
+    #[serde(default)]
+    pub object_ids: Vec<String>,
+    #[serde(rename = "relationships", default)]
+    pub relationships: Vec<OCELRelationship>,
+}
+
+impl OCELEvent {
+    /// Extract object IDs from both object_ids and relationships
+    pub fn all_object_ids(&self) -> impl Iterator<Item = &str> {
+        self.object_ids
+            .iter()
+            .map(|s| s.as_str())
+            .chain(self.relationships.iter().map(|r| r.object_id.as_str()))
+    }
+}
+
 /// OCEL Object
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OCELObject {
     pub id: String,
-    #[serde(rename = "type", alias = "object_type")]
+    #[serde(rename = "type")]
     pub object_type: String,
-    #[serde(default, deserialize_with = "deserialize_ocel_attributes")]
-    pub attributes: HashMap<String, AttributeValue>,
+    #[serde(default, deserialize_with = "robust_deserialize_ocel_attributes")]
+    pub attributes: HashMap<String, OCELAttributeValue>,
     #[serde(default)]
     pub changes: Vec<OCELObjectAttributeChange>,
     #[serde(rename = "relationships", default)]
-    pub embedded_relations: Vec<OCELObjectRelRef>,
+    pub embedded_relations: Vec<OCELRelationship>,
 }
 
-/// Object-Centric Event Log
-#[derive(Debug, Clone, Serialize, Deserialize)]
+/// Object-Centric Event Log (OCEL 2.0)
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct OCEL {
-    #[serde(rename = "eventTypes", alias = "event_types", default)]
-    pub event_types: Vec<String>,
-    #[serde(rename = "objectTypes", alias = "object_types", default)]
-    pub object_types: Vec<String>,
+    #[serde(rename = "eventTypes", default)]
+    pub event_types: Vec<OCELType>,
+    #[serde(rename = "objectTypes", default)]
+    pub object_types: Vec<OCELType>,
     #[serde(default)]
     pub events: Vec<OCELEvent>,
     #[serde(default)]
@@ -561,19 +670,16 @@ impl OCEL {
     }
 
     /// Normalize object relations: merge embedded relations from objects into global object_relations.
-    /// Call this after deserialization if the OCEL 2.0 JSON contained relations in objects.
     pub fn normalize_relations(&mut self) {
-        let mut all_relations = self.object_relations.clone();
         for obj in &self.objects {
             for rel in &obj.embedded_relations {
-                all_relations.push(OCELObjectRelation {
+                self.object_relations.push(OCELObjectRelation {
                     source_id: obj.id.clone(),
                     target_id: rel.object_id.clone(),
                     qualifier: rel.qualifier.clone(),
                 });
             }
         }
-        self.object_relations = all_relations;
     }
 }
 

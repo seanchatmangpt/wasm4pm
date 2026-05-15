@@ -209,9 +209,13 @@ pub fn cell_build(artifact_content: &str, config: &str) -> Result<String, JsValu
 
     let issued_at = chrono::Utc::now().to_rfc3339();
 
-    // Create manifest with placeholder cell_id (for storing)
-    let manifest = CellManifest {
-        cell_id: "cell#placeholder".to_string(),
+    use uuid::Uuid;
+    let generated_id = format!("cell#{}", Uuid::new_v4().to_string());
+
+    // Create manifest
+    let mut manifest = Manifest {
+        cell_id: generated_id.clone(),
+
         content_hash: content_hash.clone(),
         ready,
         gates_passed,

@@ -1,4 +1,4 @@
-use crate::error::{codes, wasm_err};
+use crate::error::{codes, err, Result};
 use crate::incremental_dfg::IncrementalDFG;
 use crate::incremental_dfg::StreamingDFG;
 use crate::models::{
@@ -60,9 +60,9 @@ impl AppState {
     }
 
     /// Store an object and return a handle (string ID)
-    pub fn store_object(&self, obj: StoredObject) -> Result<String, JsValue> {
+    pub fn store_object(&self, obj: StoredObject) -> Result<String> {
         let mut counter = self.counter.lock().map_err(|e| {
-            wasm_err(
+            err(
                 codes::INTERNAL_ERROR,
                 format!("Failed to lock counter: {}", e),
             )
@@ -71,7 +71,7 @@ impl AppState {
         *counter += 1;
 
         let mut objects = self.objects.lock().map_err(|e| {
-            wasm_err(
+            err(
                 codes::INTERNAL_ERROR,
                 format!("Failed to lock objects: {}", e),
             )
@@ -81,9 +81,9 @@ impl AppState {
     }
 
     /// Retrieve an object by handle (clones — prefer with_object for performance)
-    pub fn get_object(&self, id: &str) -> Result<Option<StoredObject>, JsValue> {
+    pub fn get_object(&self, id: &str) -> Result<Option<StoredObject>> {
         let objects = self.objects.lock().map_err(|e| {
-            wasm_err(
+            err(
                 codes::INTERNAL_ERROR,
                 format!("Failed to lock objects: {}", e),
             )
@@ -93,12 +93,12 @@ impl AppState {
 
     /// Execute a closure with a borrowed reference to the named object — zero clone.
     /// Use this instead of get_object() for all algorithm calls.
-    pub fn with_object<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    pub fn with_object<F, R>(&self, id: &str, f: F) -> Result<R>
     where
-        F: FnOnce(Option<&StoredObject>) -> Result<R, JsValue>,
+        F: FnOnce(Option<&StoredObject>) -> Result<R>,
     {
         let objects = self.objects.lock().map_err(|e| {
-            wasm_err(
+            err(
                 codes::INTERNAL_ERROR,
                 format!("Failed to lock objects: {}", e),
             )
@@ -108,12 +108,12 @@ impl AppState {
 
     /// Execute a closure with a mutable reference to the named object — zero clone.
     /// Use this for in-place mutation (e.g., streaming builder ingestion).
-    pub fn with_object_mut<F, R>(&self, id: &str, f: F) -> Result<R, JsValue>
+    pub fn with_object_mut<F, R>(&self, id: &str, f: F) -> Result<R>
     where
-        F: FnOnce(Option<&mut StoredObject>) -> Result<R, JsValue>,
+        F: FnOnce(Option<&mut StoredObject>) -> Result<R>,
     {
         let mut objects = self.objects.lock().map_err(|e| {
-            wasm_err(
+            err(
                 codes::INTERNAL_ERROR,
                 format!("Failed to lock objects: {}", e),
             )
@@ -122,9 +122,9 @@ impl AppState {
     }
 
     /// Delete an object by handle
-    pub fn delete_object(&self, id: &str) -> Result<bool, JsValue> {
+    pub fn delete_object(&self, id: &str) -> Result<bool> {
         let mut objects = self.objects.lock().map_err(|e| {
-            wasm_err(
+            err(
                 codes::INTERNAL_ERROR,
                 format!("Failed to lock objects: {}", e),
             )
@@ -133,9 +133,9 @@ impl AppState {
     }
 
     /// Get the number of stored objects
-    pub fn object_count(&self) -> Result<usize, JsValue> {
+    pub fn object_count(&self) -> Result<usize> {
         let objects = self.objects.lock().map_err(|e| {
-            wasm_err(
+            err(
                 codes::INTERNAL_ERROR,
                 format!("Failed to lock objects: {}", e),
             )
@@ -144,9 +144,9 @@ impl AppState {
     }
 
     /// Clear all stored objects
-    pub fn clear_all(&self) -> Result<(), JsValue> {
+    pub fn clear_all(&self) -> Result<()> {
         let mut objects = self.objects.lock().map_err(|e| {
-            wasm_err(
+            err(
                 codes::INTERNAL_ERROR,
                 format!("Failed to lock objects: {}", e),
             )
@@ -204,16 +204,16 @@ pub fn get_or_init_state() -> &'static AppState {
 
 /// JS-accessible functions for state management
 #[wasm_bindgen]
-pub fn delete_object(id: &str) -> Result<bool, JsValue> {
-    get_or_init_state().delete_object(id)
+pub fn delete_object(id: &str) -> std::result::Result<bool, JsValue> {
+    get_or_init_state().delete_object(id).map_err(|e| e.into())
 }
 
 #[wasm_bindgen]
-pub fn object_count() -> Result<usize, JsValue> {
-    get_or_init_state().object_count()
+pub fn object_count() -> std::result::Result<usize, JsValue> {
+    get_or_init_state().object_count().map_err(|e| e.into())
 }
 
 #[wasm_bindgen]
-pub fn clear_all_objects() -> Result<(), JsValue> {
-    get_or_init_state().clear_all()
+pub fn clear_all_objects() -> std::result::Result<(), JsValue> {
+    get_or_init_state().clear_all().map_err(|e| e.into())
 }

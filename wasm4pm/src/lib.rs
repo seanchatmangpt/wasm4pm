@@ -83,6 +83,7 @@ pub mod io;
 pub mod ml_algorithms;
 pub mod models;
 pub mod state;
+pub mod testing;
 pub mod types;
 
 use std::cell::RefCell;
@@ -535,6 +536,7 @@ pub mod rl_orchestrator;
 
 // Action Dispatch Layer — converts RL action labels to executable operations
 #[cfg(feature = "cloud")]
+pub mod advanced;
 pub mod action_dispatch;
 
 // Agentic control primitives — role selection, task decomposition, handoffs, escalation

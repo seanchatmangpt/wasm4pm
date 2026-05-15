@@ -22,33 +22,40 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 // ---------------------------------------------------------------------------
-// Monotonic clock stub
+// Monotonic clock integration
 // ---------------------------------------------------------------------------
 
-/// Global monotonic step counter. In a real WASM runtime this would be
-/// `performance.now()` or a JS `Date.now()` bridge. For pure-Rust / test
-/// usage we expose a simple atomic counter that the caller increments.
-static STEP_COUNTER: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+static TIME_OFFSET_MS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
-/// Return the current monotonic "instant" (step count).
+/// Return the current monotonic "instant" in milliseconds.
+/// Uses high-resolution JS APIs in browser, and SystemTime natively.
 #[allow(dead_code)]
 pub fn now_ms() -> u64 {
-    // In browser WASM this could be `js_sys::Date::now()` — keeping it
-    // pure-Rust so `cargo test --lib` still works without wasm-bindgen.
-    STEP_COUNTER.load(std::sync::atomic::Ordering::SeqCst)
+    let offset = TIME_OFFSET_MS.load(std::sync::atomic::Ordering::SeqCst);
+    #[cfg(all(target_arch = "wasm32", feature = "browser"))]
+    {
+        (js_sys::Date::now() as u64) + offset
+    }
+    #[cfg(not(all(target_arch = "wasm32", feature = "browser")))]
+    {
+        std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap_or_default()
+            .as_millis() as u64 + offset
+    }
 }
 
 /// Advance the monotonic clock by `delta_ms` milliseconds.
 /// This is the WASM-safe replacement for `tokio::time::sleep`.
 #[allow(dead_code)]
 pub fn advance_clock(delta_ms: u64) {
-    STEP_COUNTER.fetch_add(delta_ms, std::sync::atomic::Ordering::SeqCst);
+    TIME_OFFSET_MS.fetch_add(delta_ms, std::sync::atomic::Ordering::SeqCst);
 }
 
 /// Reset the monotonic clock to zero (useful in tests).
 #[allow(dead_code)]
 pub fn reset_clock() {
-    STEP_COUNTER.store(0, std::sync::atomic::Ordering::SeqCst);
+    TIME_OFFSET_MS.store(0, std::sync::atomic::Ordering::SeqCst);
 }
 
 // ---------------------------------------------------------------------------
