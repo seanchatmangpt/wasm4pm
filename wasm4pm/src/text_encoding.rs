@@ -451,7 +451,7 @@ pub fn encode_ocel_as_text(ocel_handle: &str) -> Result<String, JsValue> {
                 text.push_str(&format!(
                     ", {} event types ({})",
                     ocel.event_types.len(),
-                    ocel.event_types.join(", ")
+                    ocel.event_types.iter().map(|t| t.name.as_str()).collect::<Vec<_>>().join(", ")
                 ));
             }
 
@@ -724,7 +724,7 @@ pub fn encode_ocel_summary_as_text(ocel_handle: &str) -> Result<String, JsValue>
             text.push_str(&format!(
                 "- Object types: {} ({})\n",
                 object_type_count,
-                ocel.object_types.join(", ")
+                ocel.object_types.iter().map(|t| t.name.as_str()).collect::<Vec<_>>().join(", ")
             ));
 
             // Count objects by type
@@ -743,7 +743,7 @@ pub fn encode_ocel_summary_as_text(ocel_handle: &str) -> Result<String, JsValue>
             text.push_str(&format!(
                 "- Event types: {} ({})\n",
                 event_type_count,
-                ocel.event_types.join(", ")
+                ocel.event_types.iter().map(|t| t.name.as_str()).collect::<Vec<_>>().join(", ")
             ));
 
             let total_events = ocel.event_count();

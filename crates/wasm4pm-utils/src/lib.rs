@@ -1,4 +1,5 @@
 pub mod bitset;
+#[cfg(target_arch = "wasm32")]
 use serde::Serialize;
 
 #[cfg(target_arch = "wasm32")]

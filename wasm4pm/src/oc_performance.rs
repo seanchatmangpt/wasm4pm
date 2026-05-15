@@ -112,7 +112,7 @@ fn build_performance_dfgs(ocel: &OCEL) -> FxHashMap<String, PerformanceDFG> {
     // Process each object type using the pre-built index
     for obj_type in &ocel.object_types {
         // Get the events for this type, removing from the index to allow mutation
-        let mut events_by_object = type_events.remove(obj_type.as_str()).unwrap_or_default();
+        let mut events_by_object = type_events.remove(obj_type.name.as_str()).unwrap_or_default();
 
         // Sort by timestamp (ISO 8601 lexicographic sort)
         for events in events_by_object.values_mut() {
@@ -181,7 +181,7 @@ fn build_performance_dfgs(ocel: &OCEL) -> FxHashMap<String, PerformanceDFG> {
             .collect();
 
         result.insert(
-            obj_type.clone(),
+            obj_type.name.clone(),
             PerformanceDFG {
                 nodes,
                 edges,

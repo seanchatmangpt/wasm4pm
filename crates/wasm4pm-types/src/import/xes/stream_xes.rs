@@ -4,14 +4,11 @@ use crate::event_log::{
     XESEditableAttribute,
 };
 use crate::import::timestamp_utils::parse_timestamp;
-use chrono::{DateTime, FixedOffset, NaiveDateTime};
-use flate2::read::GzDecoder;
 use quick_xml::{escape::unescape, events::BytesStart, Reader};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::Debug,
-    io::{BufRead, BufReader, Read},
-    iter::FusedIterator,
+    io::BufRead,
     str::FromStr,
 };
 use uuid::Uuid;
@@ -292,7 +289,7 @@ impl StreamingXESParser<'_> {
         current_mode: &Mode,
         current_trace: &mut Option<Trace>,
         log_data: &mut XESOuterLogData,
-        current_nested_attributes: &mut Vec<Attribute>,
+        current_nested_attributes: &mut [Attribute],
         options: &XESImportOptions,
         knowledge_base: &IngestionKnowledgeBase,
         t: &BytesStart<'_>,

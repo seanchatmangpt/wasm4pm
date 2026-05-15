@@ -32,7 +32,7 @@ pub fn oc_conformance_check(ocel_handle: &str) -> Result<JsValue, JsValue> {
     let mut total_fitting = 0usize;
 
     for obj_type in &ocel.object_types {
-        let log = flatten_ocel_to_eventlog_for_type(&ocel, obj_type)?;
+        let log = flatten_ocel_to_eventlog_for_type(&ocel, &obj_type.name)?;
         let trace_count = log.traces.len();
 
         // Store log temporarily for discovery
@@ -102,7 +102,7 @@ pub fn oc_conformance_check(ocel_handle: &str) -> Result<JsValue, JsValue> {
         total_fitting += fitting;
 
         per_type.insert(
-            obj_type.clone(),
+            obj_type.name.clone(),
             json!({
                 "fitness": fitness,
                 "traces": trace_count,
