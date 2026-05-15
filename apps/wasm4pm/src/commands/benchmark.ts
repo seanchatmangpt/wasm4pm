@@ -377,6 +377,126 @@ const benchmarkExport = defineCommand({
 });
 
 // ---------------------------------------------------------------------------
+// Subcommand: calibrate
+// ---------------------------------------------------------------------------
+
+const benchmarkCalibrate = defineCommand({
+  meta: {
+    name: 'calibrate',
+    description:
+      'Measure this machine\'s performance and write ~/.config/wasm4pm/timings.json for use in tests',
+  },
+  args: {
+    runs: {
+      type: 'string',
+      description: 'Number of microbenchmark iterations per operation (default: 7)',
+      default: '7',
+    },
+    format: { type: 'string', description: 'Output format: human or json', default: 'human' },
+    quiet: { type: 'boolean', alias: 'q' },
+  },
+  async run(ctx) {
+    const { mkdirSync, writeFileSync } = await import('node:fs');
+    const { homedir } = await import('node:os');
+    const { join } = await import('node:path');
+    const { cpus } = await import('node:os');
+    const quiet = ctx.args.quiet ?? false;
+    const format = (ctx.args.format as 'human' | 'json') ?? 'human';
+    const runs = Math.max(3, parseInt(String(ctx.args.runs ?? '7'), 10) || 7);
+
+    const TIMINGS_DIR = join(homedir(), '.config', 'wasm4pm');
+    const TIMINGS_PATH = join(TIMINGS_DIR, 'timings.json');
+    const SAFETY = 4; // multiply median by this factor for test threshold
+
+    function measure(fn: () => void): number {
+      const samples: number[] = [];
+      for (let i = 0; i < runs; i++) {
+        const t = Date.now();
+        fn();
+        samples.push(Date.now() - t);
+      }
+      samples.sort((a, b) => a - b);
+      return samples[Math.floor(samples.length / 2)];
+    }
+
+    if (!quiet) process.stderr.write('Calibrating — loading WASM...\n');
+    const loader = WasmLoader.getInstance();
+    await loader.init();
+    const wasm = loader.get() as Record<string, (...args: unknown[]) => unknown>;
+
+    // Generate synthetic XES for calibration
+    function makeXes(numTraces: number, numActivities = 5): string {
+      const acts = Array.from({ length: numActivities }, (_, i) => `A${i}`);
+      const traces = Array.from({ length: numTraces }, (_, t) => {
+        const events = acts.map((a, i) => {
+          const ts = new Date(1_700_000_000_000 + (t * 100 + i) * 60_000).toISOString();
+          return `    <event><string key="concept:name" value="${a}"/><date key="time:timestamp" value="${ts}"/></event>`;
+        }).join('\n');
+        return `  <trace><string key="concept:name" value="case${t}"/>\n${events}\n  </trace>`;
+      }).join('\n');
+      return `<?xml version="1.0"?><log>\n${traces}\n</log>`;
+    }
+
+    const xes100 = makeXes(100);
+    const xes1k = makeXes(1000);
+
+    if (!quiet) process.stderr.write('Measuring prediction baseline (100-trace log)...\n');
+    let handle100 = '';
+    const loadMs = measure(() => { handle100 = wasm.load_eventlog_from_xes(xes100) as string; });
+
+    const predMs100 = measure(() => { wasm.discover_dfg(handle100, 'concept:name'); });
+
+    if (!quiet) process.stderr.write('Measuring prediction baseline (1000-trace log)...\n');
+    let handle1k = '';
+    measure(() => { handle1k = wasm.load_eventlog_from_xes(xes1k) as string; });
+    const predMs1k = measure(() => { wasm.discover_dfg(handle1k, 'concept:name'); });
+
+    const thresholds = {
+      prediction: {
+        baseline: Math.max(200, predMs100 * SAFETY),
+        fit_1k: Math.max(200, predMs1k * SAFETY),
+        fit_predict: Math.max(200, predMs100 * SAFETY),
+        predict_1k: Math.max(200, predMs1k * SAFETY),
+      },
+      discovery: {
+        dfg_100: Math.max(500, loadMs * SAFETY + predMs100 * SAFETY),
+        dfg_1k: Math.max(2000, predMs1k * SAFETY * 2),
+      },
+      ml: {
+        cluster: Math.max(500, predMs1k * SAFETY),
+        classify: Math.max(300, predMs100 * SAFETY),
+      },
+    };
+
+    const payload = {
+      generatedAt: new Date().toISOString(),
+      hostInfo: {
+        platform: process.platform,
+        arch: process.arch,
+        cpus: cpus().length,
+      },
+      medianMs: { load100: loadMs, dfg100: predMs100, dfg1k: predMs1k },
+      thresholds,
+    };
+
+    mkdirSync(TIMINGS_DIR, { recursive: true });
+    writeFileSync(TIMINGS_PATH, JSON.stringify(payload, null, 2));
+
+    const result = makeResult('benchmark/calibrate', payload, 0, EXIT_CODES.success);
+    emitResult(result, { format, quiet }, (_res, p) => {
+      p.success(`Calibration complete — written to ${TIMINGS_PATH}`);
+      p.info(`  Load 100-trace XES:  ${loadMs}ms  → threshold ${thresholds.prediction.baseline}ms`);
+      p.info(`  DFG 100-trace:       ${predMs100}ms → threshold ${thresholds.prediction.baseline}ms`);
+      p.info(`  DFG 1000-trace:      ${predMs1k}ms → threshold ${thresholds.prediction.fit_1k}ms`);
+      p.log('');
+      p.log('  Tests using machineThreshold() will now use these values.');
+      p.log('  Recalibrate any time with: wpm benchmark calibrate');
+    });
+    return await exitWithFlush(EXIT_CODES.success);
+  },
+});
+
+// ---------------------------------------------------------------------------
 // Main benchmark noun
 // ---------------------------------------------------------------------------
 
@@ -390,10 +510,11 @@ export const benchmark = defineCommand({
   wpm benchmark — Benchmark Corpus Verification
 
   Subcommands:
-    wpm benchmark build  --corpus <path.jsonl>   Validate JSONL corpus format
-    wpm benchmark replay [--corpus <path>]        Run traces, show per-trace results
-    wpm benchmark verify [--corpus <path>]        CI gate — exit non-zero on failure
-    wpm benchmark export [--corpus <path>] [--format sarif|json|csv]
+    wpm benchmark build     --corpus <path.jsonl>   Validate JSONL corpus format
+    wpm benchmark replay    [--corpus <path>]        Run traces, show per-trace results
+    wpm benchmark verify    [--corpus <path>]        CI gate — exit non-zero on failure
+    wpm benchmark export    [--corpus <path>] [--format sarif|json|csv]
+    wpm benchmark calibrate [--runs N]               Measure this machine, write timing config
 
   Default corpus: built-in 8-trace AutoMembrane security suite.
 
@@ -406,5 +527,6 @@ export const benchmark = defineCommand({
     replay: benchmarkReplay,
     verify: benchmarkVerify,
     export: benchmarkExport,
+    calibrate: benchmarkCalibrate,
   },
 });

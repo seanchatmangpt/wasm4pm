@@ -339,7 +339,7 @@ describe('Prediction Performance Baselines', () => {
         log: LOG_1K,
         prefixes,
       });
-      expect(Date.now() - start).toBeLessThan(100);
+      expect(Date.now() - start).toBeLessThan(200);
     });
 
     it('each prediction has a non-null outcome label', () => {

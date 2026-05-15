@@ -805,13 +805,13 @@ mod self_healing_tests {
     }
 
     #[test]
-    fn test_manager_run_health_checks() {
+    fn test_manager_simulated_health_state_check() {
         setup();
 
         let mut manager = SelfHealingManager::new();
         manager.add_health_check("svc_a".to_string(), HealthCheck::new());
 
-        let results = manager.run_health_checks();
+        let results = manager.simulated_health_state_check();
         assert_eq!(results.get("svc_a"), Some(&HealthStatus::Healthy));
     }
 
