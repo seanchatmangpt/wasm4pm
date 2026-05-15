@@ -1,0 +1,28 @@
+{
+  "intent": "I feel sad about my deadlines",
+  "candidates": [],
+  "facts": [],
+  "cases": [],
+  "rules": [
+    {
+      "id": "feel-X",
+      "premise": ["pattern:I feel (\\w+)"],
+      "conclusion": "Why do you feel $1?",
+      "certainty": 1.0
+    },
+    {
+      "id": "sad-about",
+      "premise": ["pattern:I feel (\\w+) about (.+)"],
+      "conclusion": "Tell me more about your $2.",
+      "certainty": 1.0
+    },
+    {
+      "id": "deadline-stress",
+      "premise": ["pattern:.*deadline.*"],
+      "conclusion": "How long have deadlines been a concern for you?",
+      "certainty": 0.9
+    }
+  ],
+  "goals": [],
+  "state": []
+}
