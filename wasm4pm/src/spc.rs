@@ -1,9 +1,23 @@
-//! Ported from knhk/rust/knhk-dflss/src/internal/
+//! Western Electric SPC Rules and Process Capability (Cp, Cpk, DPMO, Six-Sigma).
 //!
-//! Western Electric SPC Rules for special cause detection
-//! and Process Capability calculations (Cp, Cpk, Sigma level, DPMO).
+//! Ported from knhk/rust/knhk-dflss. Pure Rust stdlib math — trivially WASM-compatible.
 //!
-//! Pure Rust stdlib math -- trivially WASM-compatible.
+//! ## Control Chart Monitoring
+//!
+//! [`check_western_electric_rules`] detects three classes of special causes against a
+//! trailing window of [`ChartData`] observations:
+//!
+//! | Rule | Signal |
+//! |------|--------|
+//! | Rule 1 | Single point beyond UCL or LCL |
+//! | Rule 2 | 9 consecutive points on the same side of the center line |
+//! | Rule 3 | 6 consecutive strictly monotone points |
+//!
+//! ## Process Capability
+//!
+//! [`ProcessCapability::calculate`] computes Cp, Cpk, DPMO, and sigma level from
+//! a sample and specification limits. [`dpmo_to_sigma`] applies the standard 1.5σ
+//! long-term shift: 3.4 DPMO → 6.0σ.
 
 // ---------------------------------------------------------------------------
 // Types (ported from knhk internal/chart.rs)
@@ -74,6 +88,36 @@ pub enum SpecialCause {
 /// 3. 6 consecutive points increasing or decreasing.
 ///
 /// Returns all signals found (may be empty).
+///
+/// # Example
+///
+/// ```
+/// use wasm4pm::spc::{ChartData, check_western_electric_rules, SpecialCause};
+///
+/// // Rule 1: a point beyond UCL fires OutOfControl
+/// let data = vec![ChartData {
+///     timestamp: "t1".to_string(),
+///     value: 100.0,
+///     ucl: 13.0,
+///     cl: 10.0,
+///     lcl: 7.0,
+///     subgroup_data: None,
+/// }];
+/// let alerts = check_western_electric_rules(&data);
+/// assert_eq!(alerts.len(), 1);
+/// assert!(matches!(alerts[0], SpecialCause::OutOfControl { .. }));
+///
+/// // In-control point → no alerts
+/// let ok = vec![ChartData {
+///     timestamp: "t2".to_string(),
+///     value: 10.5,
+///     ucl: 13.0,
+///     cl: 10.0,
+///     lcl: 7.0,
+///     subgroup_data: None,
+/// }];
+/// assert!(check_western_electric_rules(&ok).is_empty());
+/// ```
 #[allow(dead_code)]
 pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
     let mut alerts = Vec::new();
@@ -244,6 +288,16 @@ impl ProcessCapability {
 // Statistics helpers (ported from knhk statistics.rs)
 // ---------------------------------------------------------------------------
 
+/// Returns the arithmetic mean of `data`, or `0.0` for an empty slice.
+///
+/// # Examples
+///
+/// ```
+/// use wasm4pm::spc::spc_mean;
+///
+/// assert_eq!(spc_mean(&[1.0, 2.0, 3.0]), 2.0);
+/// assert_eq!(spc_mean(&[]), 0.0);
+/// ```
 #[allow(dead_code)]
 pub fn spc_mean(data: &[f64]) -> f64 {
     if data.is_empty() {
@@ -252,6 +306,19 @@ pub fn spc_mean(data: &[f64]) -> f64 {
     data.iter().sum::<f64>() / data.len() as f64
 }
 
+/// Returns the sample standard deviation (Bessel's correction, N−1 denominator).
+/// Returns `0.0` for slices shorter than 2 elements.
+///
+/// # Examples
+///
+/// ```
+/// use wasm4pm::spc::spc_std_dev;
+///
+/// // [1, 2, 3]: mean=2, sum-sq-dev=2, N-1=2 → variance=1.0 → σ=1.0
+/// assert_eq!(spc_std_dev(&[1.0, 2.0, 3.0]), 1.0);
+/// assert_eq!(spc_std_dev(&[]), 0.0);
+/// assert_eq!(spc_std_dev(&[42.0]), 0.0);
+/// ```
 #[allow(dead_code)]
 pub fn spc_std_dev(data: &[f64]) -> f64 {
     if data.len() < 2 {
@@ -266,7 +333,18 @@ pub fn spc_std_dev(data: &[f64]) -> f64 {
 // Normal CDF / inverse CDF (hand-written, no statrs dependency)
 // ---------------------------------------------------------------------------
 
-/// Abramowitz & Stegun approximation of the standard normal CDF.
+/// Abramowitz & Stegun approximation of the standard normal CDF Φ(z).
+///
+/// # Examples
+///
+/// ```
+/// use wasm4pm::spc::normal_cdf;
+///
+/// // Φ(0) = 0.5 by symmetry of the standard normal
+/// assert!((normal_cdf(0.0) - 0.5).abs() < 1e-6);
+/// assert!(normal_cdf(1.0) > 0.5);
+/// assert!(normal_cdf(-1.0) < 0.5);
+/// ```
 #[allow(dead_code)]
 pub fn normal_cdf(z: f64) -> f64 {
     let t = 1.0 / (1.0 + 0.2316419 * z.abs());
@@ -359,7 +437,20 @@ pub fn inverse_normal_cdf_public(p: f64) -> f64 {
     inverse_normal_cdf(p)
 }
 
-/// Convert DPMO to Six-Sigma level (includes 1.5-sigma long-term shift).
+/// Converts DPMO to a Six-Sigma level (includes the standard 1.5σ long-term shift).
+///
+/// # Examples
+///
+/// ```
+/// use wasm4pm::spc::dpmo_to_sigma;
+///
+/// // Six-Sigma quality: 3.4 DPMO → ~6.0σ
+/// assert!((dpmo_to_sigma(3.4) - 6.0).abs() < 0.1);
+/// // Perfect quality → capped at 6.0σ
+/// assert_eq!(dpmo_to_sigma(0.0), 6.0);
+/// // Worst case → 0σ
+/// assert_eq!(dpmo_to_sigma(1_000_000.0), 0.0);
+/// ```
 #[allow(dead_code)]
 pub fn dpmo_to_sigma(dpmo: f64) -> f64 {
     if dpmo <= 0.0 {

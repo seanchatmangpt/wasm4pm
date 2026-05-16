@@ -1,3 +1,19 @@
+//! Process discovery algorithms: DFG, OCEL, Declare, and related utilities.
+//!
+//! All WASM exports follow the **handle pattern**: call `load_eventlog_from_xes()`
+//! to obtain an opaque handle string, then pass it to any `discover_*` function.
+//!
+//! [`discover_dfg_from_log`] is the pure-Rust variant (no WASM boundary) used
+//! directly by integration tests in `wasm4pm/tests/`.
+//!
+//! ## Output shapes (JSON string — JS caller must `JSON.parse()`)
+//!
+//! | Function | Top-level keys |
+//! |---|---|
+//! | `discover_dfg` | `nodes[]`, `edges[]`, `start_activities[]`, `end_activities[]` |
+//! | `discover_declare` | `constraints[]` |
+//! | `discover_ocel_dfg` | per-type DFG maps |
+
 use crate::error::{codes, wasm_err};
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};

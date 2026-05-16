@@ -28,9 +28,9 @@
 ///
 /// ```
 /// # use wasm4pm::branchless::select_u64;
-/// let x = 5u64;
-/// let y = 10u64;
-/// let cond = x < y; // false (0)
+/// let x = 10u64;
+/// let y = 5u64;
+/// let cond = x < y; // false (0): 10 < 5 is false
 /// let result = select_u64(cond as u64, y, x);
 /// assert_eq!(result, x); // condition is 0, so returns false_val
 /// ```

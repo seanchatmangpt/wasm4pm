@@ -18,7 +18,8 @@ use std::collections::VecDeque;
 /// * `N` - Capacity (max number of items stored)
 ///
 /// # Example
-/// ```rust
+/// ```
+/// # use wasm4pm::spc_history::RingBuffer;
 /// let mut buffer: RingBuffer<i32, 5> = RingBuffer::new();
 /// buffer.push(1);
 /// buffer.push(2);
@@ -38,7 +39,8 @@ impl<T: Clone, const N: usize> RingBuffer<T, N> {
     /// Create a new empty ring buffer with capacity N.
     ///
     /// # Example
-    /// ```rust
+    /// ```
+    /// # use wasm4pm::spc_history::RingBuffer;
     /// let buffer: RingBuffer<i32, 10> = RingBuffer::new();
     /// assert_eq!(buffer.len(), 0);
     /// ```
@@ -56,7 +58,8 @@ impl<T: Clone, const N: usize> RingBuffer<T, N> {
     /// * `item` - Item to store
     ///
     /// # Example
-    /// ```rust
+    /// ```
+    /// # use wasm4pm::spc_history::RingBuffer;
     /// let mut buffer: RingBuffer<i32, 3> = RingBuffer::new();
     /// buffer.push(1);
     /// buffer.push(2);
@@ -74,7 +77,8 @@ impl<T: Clone, const N: usize> RingBuffer<T, N> {
     /// Return current number of items in the buffer.
     ///
     /// # Example
-    /// ```rust
+    /// ```
+    /// # use wasm4pm::spc_history::RingBuffer;
     /// let mut buffer: RingBuffer<i32, 5> = RingBuffer::new();
     /// assert_eq!(buffer.len(), 0);
     /// buffer.push(42);
@@ -87,7 +91,8 @@ impl<T: Clone, const N: usize> RingBuffer<T, N> {
     /// Return true if buffer is empty.
     ///
     /// # Example
-    /// ```rust
+    /// ```
+    /// # use wasm4pm::spc_history::RingBuffer;
     /// let buffer: RingBuffer<i32, 5> = RingBuffer::new();
     /// assert!(buffer.is_empty());
     /// ```
@@ -98,7 +103,8 @@ impl<T: Clone, const N: usize> RingBuffer<T, N> {
     /// Return iterator over items in insertion order (oldest to newest).
     ///
     /// # Example
-    /// ```rust
+    /// ```
+    /// # use wasm4pm::spc_history::RingBuffer;
     /// let mut buffer: RingBuffer<i32, 3> = RingBuffer::new();
     /// buffer.push(1);
     /// buffer.push(2);
@@ -112,7 +118,8 @@ impl<T: Clone, const N: usize> RingBuffer<T, N> {
     /// Clear all items from the buffer.
     ///
     /// # Example
-    /// ```rust
+    /// ```
+    /// # use wasm4pm::spc_history::RingBuffer;
     /// let mut buffer: RingBuffer<i32, 5> = RingBuffer::new();
     /// buffer.push(1);
     /// buffer.push(2);
@@ -160,7 +167,8 @@ impl SpcSnapshot {
     /// * `health_state` - Health state code (0-4)
     ///
     /// # Example
-    /// ```rust
+    /// ```
+    /// # use wasm4pm::spc_history::SpcSnapshot;
     /// let snapshot = SpcSnapshot {
     ///     timestamp: "2026-04-13T12:00:00Z".to_string(),
     ///     event_rate: 5.2,
@@ -168,6 +176,7 @@ impl SpcSnapshot {
     ///     activity_frequency: 0.85,
     ///     health_state: 0,
     /// };
+    /// assert_eq!(snapshot.health_state, 0);
     /// ```
     pub fn new(
         timestamp: String,
@@ -201,7 +210,8 @@ impl SpcHistory {
     /// Create a new empty SPC history.
     ///
     /// # Example
-    /// ```rust
+    /// ```
+    /// # use wasm4pm::spc_history::SpcHistory;
     /// let history = SpcHistory::new();
     /// assert_eq!(history.cycle_count, 0);
     /// assert!(!history.has_sufficient_data());
@@ -221,7 +231,8 @@ impl SpcHistory {
     /// * `snapshot` - SPC metrics for this cycle
     ///
     /// # Example
-    /// ```rust
+    /// ```
+    /// # use wasm4pm::spc_history::{SpcHistory, SpcSnapshot};
     /// let mut history = SpcHistory::new();
     /// let snapshot = SpcSnapshot::new(
     ///     "2026-04-13T12:00:00Z".to_string(),
@@ -232,7 +243,7 @@ impl SpcHistory {
     /// );
     /// history.record_snapshot(snapshot);
     /// assert_eq!(history.cycle_count, 1);
-    /// assert!(history.has_sufficient_data()); // false, needs 9
+    /// assert!(!history.has_sufficient_data()); // needs 9 total
     /// ```
     pub fn record_snapshot(&mut self, snapshot: SpcSnapshot) {
         self.history.push(snapshot);
@@ -244,7 +255,8 @@ impl SpcHistory {
     /// Returns true if at least 9 snapshots are recorded (minimum for Rule 2).
     ///
     /// # Example
-    /// ```rust
+    /// ```
+    /// # use wasm4pm::spc_history::{SpcHistory, SpcSnapshot};
     /// let mut history = SpcHistory::new();
     /// assert!(!history.has_sufficient_data());
     ///
@@ -268,7 +280,8 @@ impl SpcHistory {
     /// Vector of event_rate values in chronological order
     ///
     /// # Example
-    /// ```rust
+    /// ```
+    /// # use wasm4pm::spc_history::{SpcHistory, SpcSnapshot};
     /// let mut history = SpcHistory::new();
     /// history.record_snapshot(SpcSnapshot::new("t1".into(), 5.0, 150.0, 0.8, 0));
     /// history.record_snapshot(SpcSnapshot::new("t2".into(), 5.5, 155.0, 0.82, 0));

@@ -67,7 +67,10 @@ pub struct StructureCharacteristics {
 ///
 /// # Examples
 ///
-/// ```rust
+/// ```
+/// # use std::collections::HashMap;
+/// # use wasm4pm::pattern_analysis::analyze_trace_structure;
+/// # use wasm4pm::pattern_dispatch::PatternType;
 /// let traces = vec![
 ///     vec!["A".to_string(), "B".to_string(), "C".to_string()],
 ///     vec!["A".to_string(), "B".to_string(), "C".to_string()],

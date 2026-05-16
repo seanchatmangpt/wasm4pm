@@ -1,3 +1,23 @@
+//! Token-replay conformance checking: fitness and precision measurement.
+//!
+//! ## Fitness formula
+//!
+//! ```text
+//! fitness = 1.0 - (missing + consumed) / (produced + remaining)
+//! ```
+//!
+//! A value ≥ 0.85 is considered acceptable for real-world logs (van der Aalst 2016).
+//! A value of 1.0 means every trace replayed without missing tokens.
+//!
+//! ## Via WASM handle
+//!
+//! ```no_run
+//! // JavaScript (Node.js / browser):
+//! // const result = JSON.parse(check_conformance(handle, "concept:name"));
+//! // result.fitness    → 0.0–1.0
+//! // result.precision  → 0.0–1.0
+//! ```
+
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js_str;

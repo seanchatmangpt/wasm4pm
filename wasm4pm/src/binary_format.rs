@@ -1078,7 +1078,7 @@ mod tests {
         assert!(result.is_err(), "should reject invalid magic bytes");
         let err = result.unwrap_err();
         assert!(
-            err.contains("Invalid magic bytes"),
+            err.to_string().contains("Invalid magic bytes"),
             "error should mention magic: {}",
             err
         );
@@ -1209,7 +1209,7 @@ mod tests {
         assert!(result.is_err(), "should detect checksum mismatch");
         let err = result.unwrap_err();
         assert!(
-            err.contains("Checksum mismatch"),
+            err.to_string().contains("Checksum mismatch"),
             "error should mention checksum: {}",
             err
         );
@@ -1225,7 +1225,7 @@ mod tests {
         assert!(result.is_err(), "should reject unsupported version");
         let err = result.unwrap_err();
         assert!(
-            err.contains("Unsupported version"),
+            err.to_string().contains("Unsupported version"),
             "error should mention version: {}",
             err
         );

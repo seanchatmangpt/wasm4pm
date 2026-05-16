@@ -1,3 +1,18 @@
+//! Core event log data model for process mining.
+//!
+//! Defines the three-level hierarchy that mirrors the XES standard:
+//!
+//! ```text
+//! EventLog
+//! └── Trace (one per case/process instance)
+//!     └── Event (one per activity occurrence)
+//!         └── Attribute: AttributeValue
+//! ```
+//!
+//! [`AttributeValue`] represents XES attribute types: String, Int, Float, Date,
+//! Boolean, List, and Container. The [`parse_timestamp_ms`] function converts
+//! ISO 8601 / RFC 3339 timestamps to millisecond Unix epoch for uniform time arithmetic.
+
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::collections::HashMap;

@@ -1,3 +1,21 @@
+//! WASM boundary utilities: serialization helpers, handle validators, and event log filters.
+//!
+//! ## Serialization split
+//!
+//! Two serialization helpers exist because `serde_wasm_bindgen` has a known bug on wasm32
+//! where it silently returns `{}` when given a `serde_json::Value` (e.g. from `json!({})`):
+//!
+//! - [`to_js`] — fastest path; produces a native JS object via `serde_wasm_bindgen`.
+//!   **Do not use with `serde_json::Value`.** Safe for strongly-typed Rust structs.
+//! - [`to_js_str`] — always serializes via `serde_json::to_string`; the JS caller must
+//!   call `JSON.parse()` on the result. Required for any `json!({...})` value.
+//!
+//! ## Handle pattern
+//!
+//! All WASM exports identify stored objects by opaque `&str` handles.
+//! Use [`wasm_invalid_handle`], [`wasm_not_eventlog`], and [`wasm_wrong_type`]
+//! to produce consistent `{ code, message }` JS error objects at the boundary.
+
 use crate::error::js_val;
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
