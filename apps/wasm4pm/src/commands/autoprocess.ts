@@ -108,6 +108,10 @@ export const autoprocess = defineCommand({
       description: 'Suppress non-error output',
       alias: 'q',
     },
+    'no-save': {
+      type: 'boolean',
+      description: 'Skip auto-save of BLAKE3 receipt',
+    },
   },
   async run(ctx) {
     const t0 = performance.now();
