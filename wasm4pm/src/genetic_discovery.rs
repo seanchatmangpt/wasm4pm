@@ -426,6 +426,15 @@ pub fn discover_aco_algorithm_from_log(
     let mut rng = StdRng::seed_from_u64(42);
     let mut best_solution: Option<(EdgeSet, f64)> = None;
 
+    // Fix (PR #54 SPC NaN class + classical MMAS bounds): pheromone is bounded into
+    // [tau_min, tau_max] each iteration. Without bounds, repeated deposits q*fitness
+    // grow tau unboundedly while evaporation only multiplies by (1 - rho); after a
+    // few hundred iterations tau can exceed `prob.min(0.99)` for every edge, and
+    // every ant deterministically picks every edge regardless of heuristic eta.
+    // The .min(0.99) probability cap is preserved as a separate safety net.
+    let tau_max: f64 = 10.0;
+    let tau_min: f64 = tau_0 * 0.01_f64.max(1e-6);
+
     for _iter in 0..iterations {
         let mut iteration_solutions: Vec<(EdgeSet, f64)> = Vec::new();
 
@@ -435,11 +444,20 @@ pub fn discover_aco_algorithm_from_log(
                 let tau = pheromone.get(&edge).copied().unwrap_or(tau_0);
                 let eta = heuristic.get(&edge).copied().unwrap_or(0.01);
                 let prob = tau.powf(alpha) * eta.powf(beta);
+                // Fix (PR #54 SPC NaN class): `tau.powf(alpha)` or `eta.powf(beta)` can
+                // yield NaN if a deposit ever introduced NaN via NaN fitness; sanitize
+                // before sampling.
+                let prob = if prob.is_finite() { prob } else { 0.0 };
                 if rng.gen::<f64>() < prob.min(0.99) {
                     ant_edges.insert(edge);
                 }
             }
-            let fitness = evaluate_edges_fitness(&ant_edges, &col, vocab_len);
+            let fitness_raw = evaluate_edges_fitness(&ant_edges, &col, vocab_len);
+            // Fix (PR #54 SPC NaN class): if fitness is NaN/Inf, treat as 0.0 so that
+            // (a) it cannot become the new best by virtue of `NaN > x` returning false
+            //     and `partial_cmp` reordering, and (b) it cannot poison the pheromone
+            //     map below.
+            let fitness = if fitness_raw.is_finite() { fitness_raw } else { 0.0 };
             if best_solution.is_none() || fitness > best_solution.as_ref().unwrap().1 {
                 best_solution = Some((ant_edges.clone(), fitness));
             }
@@ -463,6 +481,11 @@ pub fn discover_aco_algorithm_from_log(
             for &edge in best_edges {
                 *pheromone.entry(edge).or_insert(tau_0) += deposit;
             }
+        }
+        // Clamp pheromone into MMAS bounds after deposit+evaporation. Without this,
+        // tau grows monotonically with each successful iteration.
+        for val in pheromone.values_mut() {
+            *val = val.clamp(tau_min, tau_max);
         }
     }
 
