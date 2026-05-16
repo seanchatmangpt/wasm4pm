@@ -195,6 +195,20 @@ impl CognitionBreed for Strips {
         let frame_axioms = parse_frame_axioms(&input.facts);
         let mut trace: Vec<TraceStep> = Vec::new();
 
+        // Pre-satisfaction check: if every goal atom is already in the initial
+        // state, the empty plan IS the plan. Track this so `selected` can
+        // distinguish `Some("")` (pre-satisfied) from `None` (unreachable).
+        // Mirrors the GPS contract in `breeds/gps.rs`.
+        let all_presatisfied = !goals.is_empty() && goals_satisfied(&goals, &initial);
+        if all_presatisfied {
+            trace.push(TraceStep {
+                step: trace.len(),
+                kind: "check-presatisfied".to_string(),
+                detail: format!("{} goals already satisfied in initial state", goals.len()),
+                depth: 0,
+            });
+        }
+
         if !frame_axioms.is_empty() {
             trace.push(TraceStep {
                 step: trace.len(),
@@ -260,10 +274,21 @@ impl CognitionBreed for Strips {
             plan.len(),
             plan.join(" → ")
         );
-        let selected = if plan.is_empty() {
-            None
-        } else {
+        // Semantic contract for `selected` (mirrors GPS contract in
+        // `breeds/gps.rs`):
+        //   Some("op1,op2")  — non-empty plan that achieves the goals
+        //   Some("")         — pre-satisfied goals: the empty plan IS the plan
+        //   None             — only emitted when planning is unreachable.
+        //                      Note: the `plan.ok_or_else` above already
+        //                      converts unreachable into `BreedError`, so a
+        //                      successful run reaching this point with an
+        //                      empty plan necessarily means pre-satisfied.
+        let selected = if !plan.is_empty() {
             Some(plan.join(","))
+        } else if all_presatisfied {
+            Some(String::new())
+        } else {
+            None
         };
 
         Ok(BreedOutput {
@@ -287,7 +312,7 @@ impl CognitionBreed for Strips {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::breeds::Rule;
+    use crate::breeds::{Goal, Rule, StateAtom};
 
     /// Rank-1 invariant for iter-4 deferred finding (dead `apply()` removed):
     /// `apply_with_frames` with an EMPTY frame-axiom set MUST produce the
@@ -318,5 +343,123 @@ mod tests {
         assert!(next.contains("inHand=block"), "add must fire");
         assert!(next.contains("clear=block"), "untouched atom must persist");
         assert_eq!(next.len(), 2);
+    }
+
+    /// Rank-2 (domain contract): the empty plan is a valid plan for goals
+    /// that are already satisfied. The caller must be able to distinguish
+    /// "empty plan because pre-satisfied" from "no plan exists".
+    /// Returning `None` for both collapses the two cases and forces the
+    /// caller to re-check state — a Rank-2 contract violation.
+    /// Mirrors the GPS contract pinned in `breeds/gps.rs`.
+    #[test]
+    fn presatisfied_goal_returns_empty_plan_not_none() {
+        let input = BreedInput {
+            intent: "x".into(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![],
+            rules: vec![Rule {
+                id: "dummy".into(),
+                premise: vec![],
+                conclusion: "anything".into(),
+                certainty: 1.0,
+            }],
+            goals: vec![Goal {
+                id: "g".into(),
+                predicate: "done".into(),
+                value: "yes".into(),
+            }],
+            state: vec![StateAtom {
+                predicate: "done".into(),
+                value: "yes".into(),
+            }],
+        };
+        let out = Strips.run(&input).expect("run ok");
+        assert_eq!(
+            out.selected.as_deref(),
+            Some(""),
+            "pre-satisfied goal MUST return Some(\"\") (empty plan), not None"
+        );
+        // Trace must record the pre-satisfaction check.
+        assert!(out
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "check-presatisfied"));
+    }
+
+    /// Rank-2: with multiple goals, all pre-satisfied -> Some(""); planning
+    /// remains short-circuited (no try-action or execute steps).
+    #[test]
+    fn all_goals_presatisfied_yields_empty_plan_no_actions() {
+        let input = BreedInput {
+            intent: "x".into(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![],
+            rules: vec![Rule {
+                id: "noop".into(),
+                premise: vec![],
+                conclusion: "noop_effect".into(),
+                certainty: 1.0,
+            }],
+            goals: vec![
+                Goal { id: "g1".into(), predicate: "a".into(), value: "1".into() },
+                Goal { id: "g2".into(), predicate: "b".into(), value: "2".into() },
+            ],
+            state: vec![
+                StateAtom { predicate: "a".into(), value: "1".into() },
+                StateAtom { predicate: "b".into(), value: "2".into() },
+            ],
+        };
+        let out = Strips.run(&input).expect("run ok");
+        assert_eq!(out.selected.as_deref(), Some(""));
+        // No action should have been executed since goals were already met.
+        assert!(!out
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "execute"));
+        assert!(!out
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "try-action"));
+    }
+
+    /// Rank-2: a non-pre-satisfied, achievable goal must return a non-empty
+    /// plan as `Some("act1,act2,...")` — verifies the positive (planned)
+    /// branch still produces a comma-joined plan string.
+    #[test]
+    fn achievable_goal_returns_nonempty_plan_string() {
+        let input = BreedInput {
+            intent: "x".into(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![],
+            rules: vec![Rule {
+                id: "act1".into(),
+                premise: vec!["x=0".into()],
+                conclusion: "y=1;!x=0".into(),
+                certainty: 1.0,
+            }],
+            goals: vec![Goal {
+                id: "g".into(),
+                predicate: "y".into(),
+                value: "1".into(),
+            }],
+            state: vec![StateAtom {
+                predicate: "x".into(),
+                value: "0".into(),
+            }],
+        };
+        let out = Strips.run(&input).expect("run ok");
+        assert_eq!(
+            out.selected.as_deref(),
+            Some("act1"),
+            "achievable goal must return Some(\"act1\")"
+        );
+        // No pre-satisfied trace step since the goal wasn't initially met.
+        assert!(!out
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "check-presatisfied"));
     }
 }
