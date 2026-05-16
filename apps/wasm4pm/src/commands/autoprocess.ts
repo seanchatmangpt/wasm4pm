@@ -240,15 +240,36 @@ export const autoprocess = defineCommand({
 
         // Optimization
         const optimization = cycle.optimization as Record<string, unknown>;
+        const rlAction = optimization.rl_action as string | undefined ?? 'unknown';
+        const totalReward = optimization.reward as number | undefined;
+        const rlActionLabel: Record<string, string> = {
+          monitor:     'Monitor — process is healthy, no intervention needed',
+          scale_up:    'Scale Up — increase processing capacity',
+          scale_down:  'Scale Down — reduce resource consumption',
+          alert:       'Alert — anomaly detected, review recommended',
+          heal:        'Heal — autonomous recovery attempted',
+          checkpoint:  'Checkpoint — state saved for rollback',
+        };
         projection.log('  Optimization:');
-        projection.log(`    Action: ${optimization.rl_action}`);
+        projection.log(`    Action: ${rlAction}${rlActionLabel[rlAction] ? ' — ' + rlActionLabel[rlAction].split(' — ')[1] : ''}`);
+        if (totalReward !== undefined) {
+          const rewardBar = totalReward >= 0
+            ? '▓'.repeat(Math.min(10, Math.round(totalReward * 10))) + '░'.repeat(Math.max(0, 10 - Math.round(totalReward * 10)))
+            : '░'.repeat(10);
+          projection.log(`    Reward: ${totalReward >= 0 ? '+' : ''}${totalReward.toFixed(2)} [${rewardBar}]`);
+        }
         projection.log('');
 
         // Timing
+        const totalNs = timing.total_ns as number | undefined ?? 0;
+        const totalMs = totalNs / 1_000_000;
+        const timingHuman = totalMs >= 1
+          ? `${totalMs.toFixed(1)} ms`
+          : totalNs >= 1_000
+            ? `${(totalNs / 1_000).toFixed(1)} µs`
+            : `${totalNs.toFixed(0)} ns`;
         projection.log('  Timing:');
-        projection.log(
-          `    Total: ${timing.total_ns} ns (see benchmarks for nanosecond measurements)`
-        );
+        projection.log(`    Total: ${timingHuman}`);
         projection.log('');
 
         // Result
