@@ -32,21 +32,9 @@ async function loadState(wasm: any): Promise<void> {
   try {
     const content = await fs.readFile(AUTOPROCESS_STATE_FILE, 'utf-8');
     const state = JSON.parse(content);
-
-    // Restore RL state
-    if (state.rl_state) {
-      wasm.restore_rl_state(JSON.stringify(state.rl_state));
-    }
-
-    // Restore SPC history
-    if (state.spc_history) {
-      wasm.set_spc_history(JSON.stringify(state.spc_history));
-    }
-
-    // Restore circuit breaker state
-    if (state.circuit_breaker_state) {
-      wasm.circuit_breaker_set_state(JSON.stringify(state.circuit_breaker_state));
-    }
+    if (state.rl_state) { wasm.restore_rl_state(JSON.stringify(state.rl_state)); }
+    if (state.spc_history) { wasm.set_spc_history(JSON.stringify(state.spc_history)); }
+    if (state.circuit_breaker_state) { wasm.circuit_breaker_set_state(JSON.stringify(state.circuit_breaker_state)); }
   } catch {
     // File doesn't exist or is invalid - start fresh
   }
@@ -57,14 +45,7 @@ async function saveState(wasm: any): Promise<void> {
     const rl_state = JSON.parse(wasm.serialize_rl_state());
     const spc_history = JSON.parse(wasm.get_spc_history());
     const circuit_breaker_state = JSON.parse(wasm.circuit_breaker_get_state());
-
-    const fullState = {
-      rl_state,
-      spc_history,
-      circuit_breaker_state,
-      saved_at: new Date().toISOString(),
-    };
-
+    const fullState = { rl_state, spc_history, circuit_breaker_state, saved_at: new Date().toISOString() };
     await ensureStateDir();
     await fs.writeFile(AUTOPROCESS_STATE_FILE, JSON.stringify(fullState, null, 2));
   } catch {
@@ -93,6 +74,12 @@ export const autoprocess = defineCommand({
       type: 'string',
       description: 'AutoProcess configuration (JSON)',
     },
+    cycles: {
+      type: 'string',
+      description: 'Number of AutoProcess cycles to run (default: 1). Use 0 for unlimited.',
+      default: '1',
+      alias: 'n',
+    },
     format: {
       type: 'string',
       description: 'Output format (human or json)',
@@ -114,6 +101,8 @@ export const autoprocess = defineCommand({
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
+    const maxCycles = parseInt(String(ctx.args.cycles ?? '1'), 10);
+    const unlimited = maxCycles === 0;
 
     try {
       const inputPath = ctx.args.input as string;
@@ -122,10 +111,7 @@ export const autoprocess = defineCommand({
 
       await withSpan(
         'autoprocess',
-        {
-          input: inputPath,
-          activity_key: String(ctx.args['activity-key'] ?? 'concept:name'),
-        },
+        { input: inputPath, activity_key: String(ctx.args['activity-key'] ?? 'concept:name') },
         async () =>
           withLogSession(
         { inputPath, commandName: 'autoprocess', emitOptions: { format, verbose, quiet } },
@@ -134,28 +120,23 @@ export const autoprocess = defineCommand({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const wasm = wasmBase as Record<string, any>;
 
-        // Capture state-file hash BEFORE load (cold-start sentinel if absent).
         const initial_state_hash = await hashStateFile(stateFilePath);
-
-        // 1. Load persisted state (RL, SPC, circuit breaker)
         await loadState(wasm);
 
-        // 2. Run AutoProcess cycle
+        // Run AutoProcess cycle(s) — bounded by --cycles (0 = unlimited)
         const cycleConfig = (ctx.args.config as string) || '{}';
-        const rawResult = wasm.autonomic_execute_cycle(
-          logHandle,
-          ctx.args['activity-key'],
-          cycleConfig
-        );
-        const cycleResult = typeof rawResult === 'string' ? JSON.parse(rawResult) : rawResult;
+        let cyclesRun = 0;
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        let cycleResult: Record<string, any> = {};
+        do {
+          const rawResult = wasm.autonomic_execute_cycle(logHandle, ctx.args['activity-key'], cycleConfig);
+          cycleResult = typeof rawResult === 'string' ? JSON.parse(rawResult) : rawResult;
+          cyclesRun++;
+        } while (unlimited || cyclesRun < maxCycles);
 
-        // 3. Save persisted state (RL, SPC, circuit breaker)
         await saveState(wasm);
-
-        // Capture state-file hash AFTER save — chains across invocations.
         const final_state_hash = await hashStateFile(stateFilePath);
 
-        // Emit single session receipt for this cycle, with state-hash chain.
         if (!ctx.args['no-save']) {
           try {
             const inputBytes = await fsp.readFile(inputPath).catch(() => Buffer.from(inputPath));
@@ -166,94 +147,73 @@ export const autoprocess = defineCommand({
               output_hash: blake3Hex(JSON.stringify(cycleResult)),
               status: cycleResult.success ? 'success' : 'partial',
               summary: {
-                cycles_run: 1,
-                final_health_level:
-                  (cycleResult.perception?.health_state as string | undefined) ?? 'unknown',
-                total_reward:
-                  (cycleResult.optimization?.reward as number | undefined) ?? 0,
-                spc_alerts_fired:
-                  (cycleResult.protection?.special_causes as unknown[] | undefined)?.length ?? 0,
+                cycles_run: cyclesRun,
+                final_health_level: (cycleResult.perception?.health_state as string | undefined) ?? 'unknown',
+                total_reward: (cycleResult.optimization?.reward as number | undefined) ?? 0,
+                spc_alerts_fired: (cycleResult.protection?.special_causes as unknown[] | undefined)?.length ?? 0,
                 initial_state_hash,
                 final_state_hash,
               },
             });
-          } catch {
-            /* receipt write must never break the command */
-          }
+          } catch { /* receipt write must never break the command */ }
         }
 
         lateAttrs = {
-          health_state:
-            (cycleResult.perception?.health_state as string | undefined) ?? 'unknown',
-          rl_action:
-            (cycleResult.optimization?.rl_action as string | undefined) ?? 'none',
-          circuit_state:
-            (cycleResult.protection?.circuit_state as string | undefined) ?? 'unknown',
-          special_causes:
-            (cycleResult.protection?.special_causes as unknown[] | undefined)?.length ?? 0,
+          cycles_run: cyclesRun,
+          health_state: (cycleResult.perception?.health_state as string | undefined) ?? 'unknown',
+          rl_action: (cycleResult.optimization?.rl_action as string | undefined) ?? 'none',
+          circuit_state: (cycleResult.protection?.circuit_state as string | undefined) ?? 'unknown',
+          special_causes: (cycleResult.protection?.special_causes as unknown[] | undefined)?.length ?? 0,
           initial_state_hash,
           final_state_hash,
         };
 
-        const result = makeResult('autoprocess', cycleResult, performance.now() - t0, EXIT_CODES.success);
-        emitResult(result, { format, verbose, quiet }, (res, projection) => {
-        const data = res.payload as Record<string, unknown>;
-        const cycle = data.cycle_result as Record<string, unknown>;
-        const timing = data.timing as Record<string, unknown>;
-
-        projection.info('AutoProcess Results');
-        projection.log('');
-
-        // Perception
-        const perception = cycle.perception as Record<string, unknown>;
-        projection.log('  Perception:');
-        projection.log(`    Events: ${perception.event_count}`);
-        projection.log(`    Activities: ${perception.unique_activities}`);
-        projection.log(`    Traces: ${perception.trace_count}`);
-        projection.log(`    Health: ${perception.health_state} (score ${perception.health_score})`);
-        projection.log('');
-
-        // Decision
-        const decision = cycle.decision as Record<string, unknown>;
-        projection.log('  Decision:');
-        projection.log(`    Guard: ${decision.guard_result ? 'PASS' : 'FAIL'}`);
-        projection.log(`    Pattern: ${decision.pattern_result} (${decision.pattern_ticks} ticks)`);
-        projection.log('');
-
-        // Protection
-        const protection = cycle.protection as Record<string, unknown>;
-        projection.log('  Protection:');
-        projection.log(`    Circuit: ${protection.circuit_state}`);
-        const spc = protection.spc_results as Record<string, unknown> | undefined;
-        if (spc) {
-          for (const [metric, status] of Object.entries(spc)) {
-            const icon = status === 'OK' ? '+' : status === 'ALERT' ? '!' : '-';
-            projection.log(`    SPC ${metric}: ${icon} ${status}`);
-          }
-        }
-        projection.log(`    Special Causes: ${(protection.special_causes as unknown[]).length}`);
-        projection.log('');
-
-        // Optimization
-        const optimization = cycle.optimization as Record<string, unknown>;
-        projection.log('  Optimization:');
-        projection.log(`    Action: ${optimization.rl_action}`);
-        projection.log('');
-
-        // Timing
-        projection.log('  Timing:');
-        projection.log(
-          `    Total: ${timing.total_ns} ns (see benchmarks for nanosecond measurements)`
+        const result = makeResult(
+          'autoprocess',
+          { ...cycleResult, cycles_run: cyclesRun },
+          performance.now() - t0,
+          EXIT_CODES.success
         );
-        projection.log('');
-
-        // Result
-        if (cycle.success) {
-          projection.log('  Result: Cycle completed successfully');
-        } else {
-          projection.log('  Result: Cycle completed with warnings');
-        }
-      });
+        emitResult(result, { format, verbose, quiet }, (res, projection) => {
+          const data = res.payload as Record<string, unknown>;
+          const cycle = data.cycle_result as Record<string, unknown>;
+          const timing = data.timing as Record<string, unknown>;
+          projection.info('AutoProcess Results');
+          projection.log('');
+          const perception = cycle.perception as Record<string, unknown>;
+          projection.log('  Perception:');
+          projection.log(`    Events: ${perception.event_count}`);
+          projection.log(`    Activities: ${perception.unique_activities}`);
+          projection.log(`    Traces: ${perception.trace_count}`);
+          projection.log(`    Health: ${perception.health_state} (score ${perception.health_score})`);
+          projection.log('');
+          const decision = cycle.decision as Record<string, unknown>;
+          projection.log('  Decision:');
+          projection.log(`    Guard: ${decision.guard_result ? 'PASS' : 'FAIL'}`);
+          projection.log(`    Pattern: ${decision.pattern_result} (${decision.pattern_ticks} ticks)`);
+          projection.log('');
+          const protection = cycle.protection as Record<string, unknown>;
+          projection.log('  Protection:');
+          projection.log(`    Circuit: ${protection.circuit_state}`);
+          const spc = protection.spc_results as Record<string, unknown> | undefined;
+          if (spc) {
+            for (const [metric, status] of Object.entries(spc)) {
+              const icon = status === 'OK' ? '+' : status === 'ALERT' ? '!' : '-';
+              projection.log(`    SPC ${metric}: ${icon} ${status}`);
+            }
+          }
+          projection.log(`    Special Causes: ${(protection.special_causes as unknown[]).length}`);
+          projection.log('');
+          const optimization = cycle.optimization as Record<string, unknown>;
+          projection.log('  Optimization:');
+          projection.log(`    Action: ${optimization.rl_action}`);
+          projection.log('');
+          projection.log('  Timing:');
+          projection.log(`    Total: ${timing.total_ns} ns (see benchmarks for nanosecond measurements)`);
+          projection.log('');
+          if (cycle.success) { projection.log('  Result: Cycle completed successfully'); }
+          else { projection.log('  Result: Cycle completed with warnings'); }
+        });
         return await exitWithFlush(result.exit_code);
       }),  // end withLogSession
         () => lateAttrs,

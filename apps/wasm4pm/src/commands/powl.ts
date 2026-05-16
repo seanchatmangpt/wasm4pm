@@ -20,6 +20,22 @@ import { withSpanRaw } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
 
+/** User argument is invalid — maps to config_error (exit 1). */
+class PowlConfigError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'PowlConfigError';
+  }
+}
+
+/** Source file is missing or unreadable — maps to source_error (exit 2). */
+class PowlSourceError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'PowlSourceError';
+  }
+}
+
 const POWL_SUBCOMMANDS = [
   'parse',
   'simplify',
@@ -237,7 +253,12 @@ export const powl = defineCommand({
           });
           return await exitWithFlush(result.exit_code);
         } catch (error) {
-          const result = makeErrorResult('powl', error, EXIT_CODES.execution_error);
+          const exitCode = error instanceof PowlConfigError
+            ? EXIT_CODES.config_error
+            : error instanceof PowlSourceError
+              ? EXIT_CODES.source_error
+              : EXIT_CODES.execution_error;
+          const result = makeErrorResult('powl', error, exitCode);
           emitResult(result, { format, verbose, quiet });
           return await exitWithFlush(result.exit_code);
         }
@@ -355,7 +376,7 @@ async function executePowlCommand(
           return { target, output: raw };
         }
       }
-      throw new Error(`Unhandled convert target: ${target}`);
+      throw new PowlConfigError(`Unhandled convert target: ${target}`);
     }
 
     case 'diff': {
@@ -405,14 +426,14 @@ async function executePowlCommand(
     case 'import': {
       const source = args.from as string;
       if (!source || !IMPORT_SOURCES.includes(source as ImportSource)) {
-        throw new Error(`Unknown source format: "${source}". Valid: ${IMPORT_SOURCES.join(', ')}`);
+        throw new PowlConfigError(`Unknown source format: "${source}". Valid: ${IMPORT_SOURCES.join(', ')}`);
       }
       let fileContent: string;
       try {
         await fs.access(rawInput);
         fileContent = await fs.readFile(rawInput, 'utf-8');
       } catch {
-        throw new Error(`Cannot read file: ${rawInput}`);
+        throw new PowlSourceError(`Cannot read file: ${rawInput}`);
       }
       switch (source as ImportSource) {
         case 'process-tree': {
@@ -424,17 +445,17 @@ async function executePowlCommand(
           return normalizeResult(raw);
         }
       }
-      throw new Error(`Unhandled import source: ${source}`);
+      throw new PowlConfigError(`Unhandled import source: ${source}`);
     }
 
     case 'get-children': {
-      const index = args.index as string;
+      const index = Number(args.index ?? 0);
       const raw = wasm.get_children(modelStr, index);
       return normalizeResult(raw);
     }
 
     case 'node-info': {
-      const index = args.index as string;
+      const index = Number(args.index ?? 0);
       const raw = wasm.node_info_json(modelStr, index);
       return JSON.parse(raw);
     }
@@ -442,7 +463,7 @@ async function executePowlCommand(
     case 'discover': {
       const input = args.input as string;
       if (!input) {
-        throw new Error('Input log required: use --input or -i');
+        throw new PowlSourceError('Input log required: use --input or -i');
       }
       const variant = (args.variant as string) || 'decision_graph_cyclic';
       const activityKey = (args['activity-key'] as string) || 'concept:name';

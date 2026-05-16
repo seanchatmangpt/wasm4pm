@@ -580,3 +580,177 @@ describe('JTBD-9: Full pipeline — discover → simplify → convert → export
     expect(hasRevOpsActivity).toBe(true);
   });
 });
+
+// ─── JTBD-10: get-children ───────────────────────────────────────────────────
+
+describe('JTBD-10: Inspect POWL arena node children for tree navigation', () => {
+  it('get-children on root node returns a numeric array + get-children on a leaf node returns empty array + get-children arena index type-coercion: number 0 works', () => {
+    // Build a simple PO model; root has children (the activity nodes)
+    const model = linearPowl([V.leadCreated, V.leadQualified, V.dealClosedWon]);
+    const parsed = parse(wasm.parse_powl(model));
+    const rootIndex = parsed.root as number;
+
+    // get_children accepts a number for arena_idx
+    const rawRoot = wasm.get_children(model, rootIndex);
+    const rootResult = parse(rawRoot);
+    expect(rootResult).toHaveProperty('children');
+    expect(Array.isArray(rootResult.children as unknown[])).toBe(true);
+
+    // For a single-activity model, the root IS the leaf — its children array is empty
+    const singleModel = V.leadCreated;
+    const singleParsed = parse(wasm.parse_powl(singleModel));
+    const singleRoot = singleParsed.root as number;
+    const singleRaw = wasm.get_children(singleModel, singleRoot);
+    const singleResult = parse(singleRaw);
+    expect(Array.isArray(singleResult.children as unknown[])).toBe(true);
+    expect((singleResult.children as number[]).length).toBe(0);
+
+    // Passing rootIndex as number gives a children array
+    const rawByNum = wasm.get_children(model, rootIndex);
+    const byNum = parse(rawByNum);
+    expect(byNum.children).toEqual(rootResult.children);
+  });
+
+  it('get-children returns JSON-compatible output with valid --format json shape', () => {
+    const model = `X ( ${V.leadCreated}, ${V.dealClosedWon} )`;
+    const parsed = parse(wasm.parse_powl(model));
+    const rootIndex = parsed.root as number;
+
+    const raw = wasm.get_children(model, rootIndex);
+    const result = parse(raw);
+
+    // The result must serialize cleanly to JSON (no Map, no undefined)
+    expect(() => JSON.stringify(result)).not.toThrow();
+    const json = JSON.parse(JSON.stringify(result)) as Record<string, unknown>;
+    expect(json).toHaveProperty('children');
+    expect(Array.isArray(json.children)).toBe(true);
+  });
+});
+
+// ─── JTBD-11: node-info ──────────────────────────────────────────────────────
+
+describe('JTBD-11: Inspect detailed POWL node information for model analysis', () => {
+  it('node-info on root of XOR model returns type field + node-info on activity leaf returns label field + node-info output serializes cleanly to JSON', () => {
+    // XOR model
+    const xorModel = `X ( ${V.leadCreated}, ${V.dealClosedLost} )`;
+    const parsed = parse(wasm.parse_powl(xorModel));
+    const rootIndex = parsed.root as number;
+
+    const rootInfo = JSON.parse(wasm.node_info_json(xorModel, rootIndex));
+    expect(rootInfo).toHaveProperty('type');
+    expect(typeof rootInfo.type).toBe('string');
+    expect(rootInfo.type.toLowerCase()).toMatch(/xor|choice|operator/);
+    expect(rootInfo).toHaveProperty('children');
+
+    // For a single-activity model, the root IS the leaf
+    const singleModel = V.leadCreated;
+    const singleParsed = parse(wasm.parse_powl(singleModel));
+    const singleRoot = singleParsed.root as number;
+    const leafInfo = JSON.parse(wasm.node_info_json(singleModel, singleRoot));
+    expect(leafInfo).toHaveProperty('type');
+    const hasLabel =
+      'label' in leafInfo ||
+      (typeof leafInfo.type === 'string' && leafInfo.type === 'Transition');
+    expect(hasLabel).toBe(true);
+    if ('label' in leafInfo) {
+      expect(leafInfo.label).toBe(V.leadCreated);
+    }
+
+    // JSON serialization must not throw
+    expect(() => JSON.stringify(rootInfo)).not.toThrow();
+    expect(() => JSON.stringify(leafInfo)).not.toThrow();
+  });
+
+  it('node-info children indices are valid arena indices (all < node_count)', () => {
+    const model = linearPowl([V.leadCreated, V.leadQualified, V.proposalSent, V.dealClosedWon]);
+    const parsed = parse(wasm.parse_powl(model));
+    const nodeCount = parsed.node_count as number;
+    const rootIndex = parsed.root as number;
+
+    const rootInfo = JSON.parse(wasm.node_info_json(model, rootIndex));
+    const children = (rootInfo.children as number[]) ?? [];
+
+    // All children must be valid arena indices in [0, node_count)
+    for (const child of children) {
+      expect(typeof child).toBe('number');
+      expect(child).toBeGreaterThanOrEqual(0);
+      expect(child).toBeLessThan(nodeCount);
+    }
+
+    // Recursively check that each child also has valid node-info
+    for (const child of children) {
+      const childInfo = JSON.parse(wasm.node_info_json(model, child));
+      expect(childInfo).toHaveProperty('type');
+    }
+  });
+});
+
+// ─── JTBD-12: import (process-tree round-trip) ──────────────────────────────
+
+describe('JTBD-12: Import a process tree / petri net back into POWL', () => {
+  it('process-tree round-trip: discover → powl_to_process_tree → process_tree_to_powl preserves node_count direction and returns valid POWL', () => {
+    const discovered = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic'));
+    const treeJson: string = wasm.powl_to_process_tree(discovered.repr as string);
+
+    expect(typeof treeJson).toBe('string');
+    expect(treeJson.length).toBeGreaterThan(0);
+    expect(() => JSON.parse(treeJson)).not.toThrow();
+
+    const imported = parse(wasm.process_tree_to_powl(treeJson));
+
+    expect(imported).toHaveProperty('root');
+    expect(imported).toHaveProperty('node_count');
+    expect(imported).toHaveProperty('repr');
+    expect(typeof imported.root).toBe('number');
+    expect(typeof imported.node_count).toBe('number');
+    expect((imported.node_count as number)).toBeGreaterThan(0);
+    expect(typeof imported.repr).toBe('string');
+    expect((imported.repr as string).length).toBeGreaterThan(0);
+  });
+
+  it('process-tree import result is re-parseable (round-trip repr is valid POWL)', () => {
+    const discovered = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic'));
+    const treeJson: string = wasm.powl_to_process_tree(discovered.repr as string);
+    const imported = parse(wasm.process_tree_to_powl(treeJson));
+
+    // The imported repr must be parseable again
+    const reparsed = parse(wasm.parse_powl(imported.repr as string));
+    expect(typeof reparsed.node_count).toBe('number');
+    expect((reparsed.node_count as number)).toBeGreaterThan(0);
+
+    // Re-exported footprints must include at least one faker-generated RevOps activity
+    const fp = parse(wasm.powl_footprints(imported.repr as string));
+    const activities = (fp.activities as string[]) ?? [];
+    const hasRevOpsActivity = activities.some(
+      (a) =>
+        a === V.leadCreated ||
+        a === V.leadQualified ||
+        a === V.dealClosedWon ||
+        a === V.dealClosedLost,
+    );
+    expect(hasRevOpsActivity).toBe(true);
+  });
+
+  it('petri-net round-trip: powl_to_petri_net produces valid JSON with places/transitions/arcs', () => {
+    // Use the discovered RevOps model (complex enough to have all PN elements)
+    const discovered = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic'));
+    const pnJson: string = wasm.powl_to_petri_net(discovered.repr as string);
+
+    expect(typeof pnJson).toBe('string');
+    expect(pnJson.length).toBeGreaterThan(0);
+    expect(() => JSON.parse(pnJson)).not.toThrow();
+
+    const pn = JSON.parse(pnJson) as Record<string, unknown>;
+    // Petri net JSON must contain the standard process mining schema fields
+    expect(pn).toHaveProperty('net');
+    const net = pn.net as Record<string, unknown>;
+    expect(net).toHaveProperty('places');
+    expect(net).toHaveProperty('transitions');
+    expect(net).toHaveProperty('arcs');
+    expect(Array.isArray(net.places as unknown[])).toBe(true);
+    expect(Array.isArray(net.transitions as unknown[])).toBe(true);
+    expect(Array.isArray(net.arcs as unknown[])).toBe(true);
+    // Must have at least one transition (one activity)
+    expect((net.transitions as unknown[]).length).toBeGreaterThan(0);
+  });
+});

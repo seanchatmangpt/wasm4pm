@@ -39,7 +39,7 @@ export interface OtelEvent {
   kind?: 'INTERNAL' | 'SERVER' | 'CLIENT' | 'PRODUCER' | 'CONSUMER';
   start_time: number; // Unix timestamp in nanoseconds
   end_time?: number; // Unix timestamp in nanoseconds
-  status?: {
+  status: {
     code: 'UNSET' | 'OK' | 'ERROR';
     message?: string;
   };

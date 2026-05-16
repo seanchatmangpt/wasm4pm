@@ -59,6 +59,10 @@ export interface SwarmConfig {
   algorithmIds?: string[];
   logPaths?: string[];
   apiKey?: string;
+  /** Hard cap on total (episodes × workers) iterations. Throws ConvergenceMaxIterationsError when exceeded. */
+  maxIterations?: number;
+  /** When true, throws ConvergenceTimeoutError if all episodes exhaust without convergence. */
+  throwOnTimeout?: boolean;
 }
 
 export interface SwarmEpisode {
@@ -74,6 +78,43 @@ export interface SwarmArtifact {
   finalWorkerResults: WorkerResult[];
   converged: boolean;
   artifact?: unknown;
+  /** True when all episodes were exhausted without convergence (no throwOnTimeout). */
+  convergenceTimeout?: boolean;
+}
+
+/**
+ * Thrown when config.maxIterations is set and the running iteration count exceeds it.
+ * Prevents runaway swarms from consuming unbounded resources.
+ */
+export class ConvergenceMaxIterationsError extends Error {
+  constructor(
+    public readonly iterationsRun: number,
+    public readonly maxIterations: number,
+    public readonly finalAgreementRate: number
+  ) {
+    super(
+      `Swarm maxIterations exceeded: ran ${iterationsRun} iterations (limit: ${maxIterations}), ` +
+        `final agreement rate: ${(finalAgreementRate * 100).toFixed(1)}%`
+    );
+    this.name = 'ConvergenceMaxIterationsError';
+  }
+}
+
+/**
+ * Thrown when config.throwOnTimeout is true and all episodes are exhausted without convergence.
+ */
+export class ConvergenceTimeoutError extends Error {
+  constructor(
+    public readonly episodesRun: number,
+    public readonly maxEpisodes: number,
+    public readonly finalAgreementRate: number
+  ) {
+    super(
+      `Swarm convergence timeout: exhausted ${maxEpisodes} episodes without converging ` +
+        `(final agreement rate: ${(finalAgreementRate * 100).toFixed(1)}%)`
+    );
+    this.name = 'ConvergenceTimeoutError';
+  }
 }
 
 export interface WorkerSpec {

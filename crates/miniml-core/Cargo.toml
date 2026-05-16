@@ -34,9 +34,9 @@ serde-wasm-bindgen = "0.6"
 wasm-bindgen-test = "0.3"
 criterion = "0.5"
 
-[[bin]]
-name = "bench_all"
-path = "benches/simple_bench.rs"
+[[bench]]
+name = "simple_bench"
+harness = false
 
 [[bench]]
 name = "wasm_bench"

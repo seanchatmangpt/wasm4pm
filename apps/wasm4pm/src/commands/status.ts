@@ -2,6 +2,7 @@ import { defineCommand } from 'citty';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
+import { getRegistry } from '@wasm4pm/kernel';
 import { exitWithFlush } from '../otel/exit.js';
 
 export const status = defineCommand({
@@ -50,13 +51,18 @@ export const status = defineCommand({
         wasmVersion = String(wasm.get_version());
       }
 
-      // Step 3: Build status report
+      // Step 3: Query algorithm registry count
+      const registry = getRegistry();
+      const algorithmCount = registry.list().length;
+
+      // Step 4: Build status report
       const statusReport = {
         engine: {
           state: 'ready',
           wasmLoaded,
           kernelReady,
           version: wasmVersion,
+          algorithmCount,
         },
         system: {
           platform: process.platform,
@@ -86,6 +92,7 @@ export const status = defineCommand({
           p.log(`  WASM Version: ${r.engine.version}`);
         }
         p.log(`  Kernel Ready: Yes`);
+        p.log(`  Algorithm Count: ${r.engine.algorithmCount}`);
 
         // System section
         p.log('');

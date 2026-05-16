@@ -6,6 +6,7 @@ import {
   SCHEMA_VERSION,
   configSchema,
 } from '../schema.js';
+import { resolveConfig } from '../resolver.js';
 
 describe('Schema', () => {
   const minimal = {
@@ -199,4 +200,15 @@ describe('Schema', () => {
       expect(() => validate({ ...minimal, ml: { enabled: true, tasks: 42 } })).toThrow();
     });
   });
+  describe("resolveConfig profile enum enforcement", () => {
+    it("throws a ZodError when an invalid profile is supplied via cliOverrides", async () => {
+      await expect(
+        resolveConfig({
+          cliOverrides: { profile: "cloud" as any },
+          configSearchPaths: [],
+        })
+      ).rejects.toThrow();
+    });
+  });
+
 });

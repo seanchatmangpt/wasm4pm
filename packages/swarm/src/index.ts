@@ -8,7 +8,7 @@
  */
 
 export { runSwarm } from './loop.js';
-export type { SwarmConfig, SwarmArtifact, SwarmEpisode } from './loop.js';
+export type { SwarmConfig, SwarmArtifact, SwarmEpisode, WorkerSpec } from './loop.js';
 
 export {
   spawnWorker,
@@ -37,3 +37,5 @@ export type {
   SwarmConvergenceReport,
   Directive,
 } from './types.js';
+
+export { ConvergenceMaxIterationsError, ConvergenceTimeoutError } from './types.js';

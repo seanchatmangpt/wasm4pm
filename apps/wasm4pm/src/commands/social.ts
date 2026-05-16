@@ -125,8 +125,19 @@ export const social = defineCommand({
             rawNetwork = { nodes: [], edges: [] };
             similarTaskWarning = true;
             break;
-          default:
-            throw new Error(`Unknown metric: ${metric}`);
+          default: {
+            // metric was validated above; this branch is unreachable but kept for
+            // exhaustiveness. If somehow reached, it is a config/argument error (exit 1).
+            const _unreachable = metric as string;
+            const badMetricResult = makeErrorResult(
+              'social',
+              `Unknown metric: ${_unreachable}. Must be one of: handover, working-together, similar-task`,
+              EXIT_CODES.config_error,
+              'INVALID_METRIC'
+            );
+            emitResult(badMetricResult, { format, verbose, quiet });
+            return await exitWithFlush(badMetricResult.exit_code);
+          }
         }
 
         const network = typeof rawNetwork === 'string' ? JSON.parse(rawNetwork) : rawNetwork;

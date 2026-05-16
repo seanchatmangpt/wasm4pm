@@ -432,4 +432,43 @@ describe('Instrumentation', () => {
       }
     });
   });
+  describe("span status completeness", () => {
+    it("all create*Event otelEvent objects include a non-undefined status field", () => {
+      const events = [
+        Instrumentation.createStateChangeEvent(traceId, "ready", "planning", requiredAttrs).otelEvent,
+        Instrumentation.createPlanGeneratedEvent(traceId, "p1", "h1", 3, requiredAttrs).otelEvent,
+        Instrumentation.createAlgorithmStartedEvent(traceId, "dfg", requiredAttrs).otelEvent,
+        Instrumentation.createAlgorithmCompletedEvent(traceId, Instrumentation.generateSpanId(), "dfg", requiredAttrs, { status: "OK", durationMs: 10 }),
+        Instrumentation.createSourceStartedEvent(traceId, "xes", requiredAttrs).otelEvent,
+        Instrumentation.createSourceCompletedEvent(traceId, Instrumentation.generateSpanId(), "xes", requiredAttrs, { status: "OK", durationMs: 10 }),
+        Instrumentation.createSinkStartedEvent(traceId, "stdout", requiredAttrs).otelEvent,
+        Instrumentation.createSinkCompletedEvent(traceId, Instrumentation.generateSpanId(), "stdout", requiredAttrs, { status: "OK", durationMs: 5 }),
+        Instrumentation.createErrorEvent(traceId, "ERR_001", "test error", requiredAttrs).otelEvent,
+        Instrumentation.createMlAnalysisStartedEvent(traceId, "classify", "knn", requiredAttrs).otelEvent,
+        Instrumentation.createMlAnalysisCompletedEvent(traceId, Instrumentation.generateSpanId(), "classify", "knn", requiredAttrs, { status: "OK", durationMs: 20 }),
+        Instrumentation.createRlAgentDecisionEvent(traceId, { agentType: "QLearning", agentId: "a0", actionSelected: 0, stateHealthLevel: 0, stateCircuitState: "Closed" }, requiredAttrs).otelEvent,
+        Instrumentation.createRlPolicyUpdateEvent(traceId, { agentType: "QLearning", agentId: "a0", reward: 0.5, tdError: 0.1, qBefore: 0.0, qAfter: 0.1 }, requiredAttrs).otelEvent,
+        Instrumentation.createRlAgentSwitchEvent(traceId, "QLearning", "SARSA", requiredAttrs).otelEvent,
+        Instrumentation.createPredictionTaskStartedEvent(traceId, "next-activity", requiredAttrs).otelEvent,
+        Instrumentation.createPredictionTaskCompletedEvent(traceId, Instrumentation.generateSpanId(), "next-activity", requiredAttrs, { status: "OK", durationMs: 8 }),
+        Instrumentation.createDriftCheckStartedEvent(traceId, "ewma", requiredAttrs).otelEvent,
+        Instrumentation.createDriftCheckCompletedEvent(traceId, Instrumentation.generateSpanId(), "ewma", requiredAttrs, { status: "OK", durationMs: 3 }),
+        Instrumentation.createConformanceCheckStartedEvent(traceId, "token_replay", requiredAttrs).otelEvent,
+        Instrumentation.createConformanceCheckCompletedEvent(traceId, Instrumentation.generateSpanId(), "token_replay", requiredAttrs, { status: "OK", durationMs: 15 }),
+      ];
+      for (const e of events) {
+        expect(e.status, `span "${e.name}" must have status`).toBeDefined();
+        expect(["UNSET", "OK", "ERROR"]).toContain(e.status.code);
+      }
+    });
+    it("emit callback in instrumentMlExecution returns synchronously (non-Promise)", async () => {
+      let emitReturnValue: unknown = "sentinel";
+      await Instrumentation.instrumentMlExecution(
+        traceId, "classify", "knn", requiredAttrs,
+        async () => "result",
+        () => { emitReturnValue = undefined; }
+      );
+      expect(emitReturnValue).toBeUndefined();
+    });
+  });
 });

@@ -515,15 +515,15 @@ schema_version = ${SCHEMA_VERSION}
 version = "26.4.5"
 
 [source]
-kind = "file"
+kind = "file"          # file | stream | http
 # path = "./events.xes"
 
 [sink]
-kind = "stdout"
+kind = "stdout"        # stdout | file | http
 # path = "./output.pnml"
 
 [algorithm]
-name = "dfg"
+name = "dfg"           # dfg | heuristic | inductive | alpha | ilp | genetic | pso | astar | hill-climbing | simulated-annealing | ant-colony | declare | skeleton | simd-dfg | hierarchical-dfg | smart-engine
 
 [algorithm.parameters]
 
@@ -534,7 +534,7 @@ timeout = 300000       # ms (5 min)
 
 [observability]
 logLevel = "info"      # debug | info | warn | error
-metricsEnabled = false
+metricsEnabled = false # true | false
 
 [observability.otel]
 enabled = false
@@ -549,15 +549,15 @@ poll_interval = 1000   # ms
 
 [output]
 format = "human"       # human | json
-destination = "stdout"
-pretty = true
-colorize = true
+destination = "stdout" # stdout | stderr | <file path>
+pretty = true          # true | false
+colorize = true        # true | false (disable for CI/pipes)
 
 [prediction]
 enabled = false
-activityKey = "concept:name"
-ngramOrder = 2           # 2–5
-driftWindowSize = 10
+activityKey = "concept:name"  # XES attribute name used to identify activities
+ngramOrder = 2           # 2–5 (n-gram order for next-activity prediction)
+driftWindowSize = 10     # positive integer (sliding window size for drift detection)
 # tasks = ["next_activity", "remaining_time", "drift", "outcome", "features", "resource"]
 tasks = []
 

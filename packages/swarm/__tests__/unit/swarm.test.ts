@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
+import { ConvergenceMaxIterationsError } from '../../src/types.js';
 
 // Import after resetting module state
 let spawnWorker: typeof import('../../src/worker-registry.ts').spawnWorker;
@@ -411,5 +412,63 @@ describe('sendDirective', () => {
     const result = sendDirective('ghost', { type: 'run' });
     // sendDirective enqueues without checking existence
     expect(result.deliveredTo).toEqual(['ghost']);
+  });
+});
+
+// ─── ConvergenceMaxIterationsError ───────────────────────────────────────────
+
+describe('ConvergenceMaxIterationsError', () => {
+  it('should be an instance of Error', () => {
+    const err = new ConvergenceMaxIterationsError(10, 5, 0.4);
+    expect(err).toBeInstanceOf(Error);
+    expect(err).toBeInstanceOf(ConvergenceMaxIterationsError);
+    expect(err.name).toBe('ConvergenceMaxIterationsError');
+  });
+
+  it('should carry structured fields', () => {
+    const err = new ConvergenceMaxIterationsError(12, 8, 0.75);
+    expect(err.iterationsRun).toBe(12);
+    expect(err.maxIterations).toBe(8);
+    expect(err.finalAgreementRate).toBe(0.75);
+  });
+
+  it('should format a readable message', () => {
+    const err = new ConvergenceMaxIterationsError(10, 5, 0.5);
+    expect(err.message).toContain('maxIterations exceeded');
+    expect(err.message).toContain('10');
+    expect(err.message).toContain('5');
+    expect(err.message).toContain('50.0%');
+  });
+});
+
+// ─── checkSwarmConvergence edge cases ────────────────────────────────────────
+
+describe('checkSwarmConvergence — single worker convergence', () => {
+  it('should converge when one worker produces identical hashes for convergenceRuns', () => {
+    const results = [
+      { workerId: 'w0', algorithmId: 'dfg', resultHash: 'stable-hash', result: {}, runAt: '', durationMs: 0 },
+    ];
+    const history = new Map<string, string[]>();
+
+    // First call — fills ring buffer slot 1 of 2
+    const r1 = checkSwarmConvergence(results, history, 2);
+    expect(r1.converged).toBe(false);
+
+    // Second call — ring buffer now has 2 identical hashes → stable
+    const r2 = checkSwarmConvergence(results, history, 2);
+    expect(r2.converged).toBe(true);
+    expect(r2.stableWorkers).toContain('w0/dfg');
+  });
+});
+
+describe('checkSwarmConvergence — empty workers array', () => {
+  it('should return converged=false and agreementRate=0 with no division by zero', () => {
+    const history = new Map<string, string[]>();
+    const report = checkSwarmConvergence([], history, 2);
+
+    expect(report.converged).toBe(false);
+    expect(report.agreementRate).toBe(0);
+    expect(report.stableWorkers).toHaveLength(0);
+    expect(report.unstableWorkers).toHaveLength(0);
   });
 });

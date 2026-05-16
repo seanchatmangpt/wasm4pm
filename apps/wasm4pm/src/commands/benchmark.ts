@@ -10,6 +10,22 @@ import { exitWithFlush } from '../otel/exit.js';
 const parse = (r: unknown): unknown =>
   typeof r === 'string' ? JSON.parse(r) : r;
 
+/** Signals that a user-supplied file was not found — maps to source_error (exit 2). */
+class SourceNotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SourceNotFoundError';
+  }
+}
+
+/** Signals that a user-supplied corpus line contains invalid JSON — maps to source_error (exit 2). */
+class CorpusParseError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'CorpusParseError';
+  }
+}
+
 type BenchmarkTrace = {
   trace_id: string;
   name: string;
@@ -125,11 +141,11 @@ async function runBenchmarks(
   const wasm = loader.get() as Record<string, unknown>;
 
   if (corpus) {
-    if (!existsSync(corpus)) throw new Error(`Corpus not found: ${corpus}`);
+    if (!existsSync(corpus)) throw new SourceNotFoundError(`Corpus not found: ${corpus}`);
     const lines = readFileSync(corpus, 'utf8').split('\n').filter((l) => l.trim());
     const traces: BenchmarkTrace[] = lines.map((l, i) => {
       try { return JSON.parse(l) as BenchmarkTrace; }
-      catch { throw new Error(`Line ${i + 1}: invalid JSON`); }
+      catch { throw new CorpusParseError(`Line ${i + 1}: invalid JSON`); }
     });
 
     // When classify_motion is unavailable, synthesize per-trace failures so the
@@ -240,9 +256,12 @@ const benchmarkReplay = defineCommand({
 
       return await exitWithFlush(EXIT_CODES.success);
     } catch (e) {
-      const result = makeErrorResult('benchmark replay', e, EXIT_CODES.execution_error);
+      const exitCode = (e instanceof SourceNotFoundError || e instanceof CorpusParseError)
+        ? EXIT_CODES.source_error
+        : EXIT_CODES.execution_error;
+      const result = makeErrorResult('benchmark replay', e, exitCode);
       emitResult(result, { format, verbose, quiet });
-      return await exitWithFlush(EXIT_CODES.execution_error);
+      return await exitWithFlush(exitCode);
     }
     });
   },
@@ -305,6 +324,10 @@ const benchmarkVerify = defineCommand({
 
       return await exitWithFlush(exitCode);
     } catch (e) {
+      // verify treats a missing corpus as a run-time command failure (exit 3),
+      // not a source_error (exit 2) — the test corpus is an operational artefact,
+      // not a user-supplied input file.  CorpusParseError also stays execution_error
+      // since a corrupt verify corpus is an environment problem, not user input.
       const result = makeErrorResult('benchmark verify', e, EXIT_CODES.execution_error);
       emitResult(result, { format, verbose, quiet });
       return await exitWithFlush(EXIT_CODES.execution_error);

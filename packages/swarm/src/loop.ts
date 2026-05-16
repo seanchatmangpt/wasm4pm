@@ -17,6 +17,7 @@ import { hashOutput, checkSwarmConvergence } from './convergence.js';
 import { swarmTools } from './tools.js';
 import { getWorker, storeResult, setWorkerStatus } from './worker-registry.js';
 import { getTracer, RunningSpans, LawfulDispatchSpans } from '@wasm4pm/observability';
+import { ConvergenceMaxIterationsError, ConvergenceTimeoutError } from './types.js';
 import type {
   SwarmConfig,
   WorkerSpec,
@@ -47,12 +48,21 @@ export async function runSwarm(config: SwarmConfig): Promise<SwarmArtifact> {
   try {
     const maxEpisodes = config.maxEpisodes ?? 5;
     const convergenceRuns = config.convergenceRuns ?? 2;
+    const maxIterations = config.maxIterations;
 
     const hashHistory = new Map<string, string[]>();
     const episodes: SwarmEpisode[] = [];
 
     // Build initial worker specs from config
     const workerSpecs: WorkerSpec[] = buildWorkerSpecs(config);
+
+    if (workerSpecs.length === 0) {
+      throw new Error(
+        'runSwarm: no workers could be built from config. Provide algorithmIds or logPaths.'
+      );
+    }
+
+    let totalIterations = 0;
 
     for (let ep = 0; ep < maxEpisodes; ep++) {
       const episodeId = `swarm-ep-${Date.now()}-${ep}`;
@@ -66,6 +76,14 @@ export async function runSwarm(config: SwarmConfig): Promise<SwarmArtifact> {
         const workerResults: WorkerResult[] = await Promise.all(
           workerSpecs.map((spec) => runWorker(spec, config))
         );
+
+        // Enforce hard iteration cap before any further processing
+        totalIterations += workerSpecs.length;
+        if (maxIterations !== undefined && totalIterations > maxIterations) {
+          const lastEp = episodes[episodes.length - 1];
+          const rate = lastEp?.convergenceReport.consensusRatio ?? 0;
+          throw new ConvergenceMaxIterationsError(totalIterations, maxIterations, rate);
+        }
 
         // Update hash history ring buffer
         for (const result of workerResults) {
@@ -105,12 +123,19 @@ export async function runSwarm(config: SwarmConfig): Promise<SwarmArtifact> {
 
     const lastEpisode = episodes[episodes.length - 1];
     const finalWorkerResults = lastEpisode?.workerResults ?? [];
+    const didConverge = episodes.some((e) => e.convergenceReport.converged);
+
+    if (!didConverge && config.throwOnTimeout) {
+      const rate = lastEpisode?.convergenceReport.consensusRatio ?? 0;
+      throw new ConvergenceTimeoutError(episodes.length, maxEpisodes, rate);
+    }
 
     const artifact = {
       episodes,
       finalWorkerResults,
-      converged: episodes.some((e) => e.convergenceReport.converged),
+      converged: didConverge,
       artifact: buildArtifact(episodes),
+      convergenceTimeout: !didConverge,
     };
 
     swarmSpan.setAttribute('swarm.final_episodes', episodes.length);

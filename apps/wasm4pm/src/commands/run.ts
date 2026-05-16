@@ -302,12 +302,20 @@ export const run = defineCommand({
         })();
 
       if (!resolvedAlgo) {
-        const available = Object.keys(ALGORITHM_CLI_ALIASES);
-        const suggestion = findClosestMatch(rawAlgo.toLowerCase(), available.map((a) => a.toLowerCase()), 3);
-        const didYouMean = suggestion ? `\nDid you mean '${suggestion}'?` : '';
+        // Search against CLI alias values (e.g. 'heuristic', 'dfg') not registry IDs
+        // so that typos like 'heurisic' correctly suggest 'heuristic'.
+        const cliAliases = Object.values(ALGORITHM_CLI_ALIASES);
+        const suggestion = findClosestMatch(rawAlgo.toLowerCase(), cliAliases, 3);
+        const didYouMean = suggestion ? `\nDid you mean: '${suggestion}'?` : '';
+        // Show a compact grouped list: discovery algorithms first, then others
+        const discoveryAliases = cliAliases.slice(0, 8).join(', ');
         const result = makeErrorResult(
           'run',
-          new Error(`Algorithm '${rawAlgo}' not found.${didYouMean}\nAvailable algorithms: ${available.slice(0, 5).join(', ')}... (${available.length} total)`),
+          new Error(
+            `Algorithm '${rawAlgo}' not found.${didYouMean}\n` +
+            `Common algorithms: ${discoveryAliases}\n` +
+            `Run 'wpm algorithms' to list all ${cliAliases.length} available algorithms.`
+          ),
           EXIT_CODES.source_error,
           'ALGORITHM_NOT_FOUND'
         );

@@ -231,4 +231,78 @@ describe('AlgorithmRegistry', () => {
       expect(registry.list().filter((a) => a.outputType === 'declare').length).toBeGreaterThan(0);
     });
   });
+
+  describe('Registry Completeness', () => {
+    it('has exactly 36 registered algorithms', () => {
+      expect(registry.list().length).toBe(36);
+    });
+
+    it('has no duplicate algorithm IDs', () => {
+      const ids = registry.list().map((a) => a.id);
+      const uniqueIds = new Set(ids);
+      const duplicates = ids.filter((id, idx) => ids.indexOf(id) !== idx);
+      expect(duplicates, `Duplicate IDs found: ${duplicates.join(', ')}`).toEqual([]);
+      expect(uniqueIds.size).toBe(36);
+    });
+
+    it('every algorithm has a non-empty description', () => {
+      const missing = registry
+        .list()
+        .filter((a) => !a.description || a.description.trim() === '');
+      expect(
+        missing.map((a) => a.id),
+        `Algorithms missing descriptions: ${missing.map((a) => a.id).join(', ')}`,
+      ).toEqual([]);
+    });
+
+    it('every algorithm has at least one deploymentProfile', () => {
+      const missing = registry
+        .list()
+        .filter((a) => !a.deploymentProfiles || a.deploymentProfiles.length === 0);
+      expect(
+        missing.map((a) => a.id),
+        `Algorithms missing deploymentProfiles: ${missing.map((a) => a.id).join(', ')}`,
+      ).toEqual([]);
+    });
+
+    it('every algorithm has speedTier and qualityTier in range [0, 100]', () => {
+      for (const algo of registry.list()) {
+        expect(algo.speedTier, `${algo.id}.speedTier must be a number`).toBeTypeOf('number');
+        expect(algo.qualityTier, `${algo.id}.qualityTier must be a number`).toBeTypeOf('number');
+        expect(algo.speedTier).toBeGreaterThanOrEqual(0);
+        expect(algo.speedTier).toBeLessThanOrEqual(100);
+        expect(algo.qualityTier).toBeGreaterThanOrEqual(0);
+        expect(algo.qualityTier).toBeLessThanOrEqual(100);
+      }
+    });
+
+    it('all 36 expected algorithm IDs are present', () => {
+      const EXPECTED_IDS = [
+        // Discovery
+        'dfg', 'process_skeleton', 'alpha_plus_plus', 'heuristic_miner',
+        'inductive_miner', 'genetic_algorithm', 'pso', 'a_star',
+        'hill_climbing', 'aco', 'simulated_annealing', 'declare',
+        'optimized_dfg', 'ilp', 'simd_streaming_dfg', 'hierarchical_dfg',
+        'streaming_log', 'smart_engine',
+        // ML Analysis
+        'ml_cluster', 'ml_anomaly',
+        // Analysis & Utilities
+        'transition_system', 'log_to_trie', 'causal_graph',
+        'performance_spectrum', 'batches', 'correlation_miner',
+        'generalization', 'etconformance_precision', 'alignments',
+        'complexity_metrics', 'pnml_import', 'bpmn_import',
+        'powl_to_process_tree', 'yawl_export', 'playout',
+        'monte_carlo_simulation',
+      ] as const;
+
+      expect(EXPECTED_IDS.length).toBe(36);
+
+      const registered = new Set(registry.list().map((a) => a.id));
+      const missing = EXPECTED_IDS.filter((id) => !registered.has(id));
+      expect(
+        missing,
+        `Expected algorithm IDs not found in registry: ${missing.join(', ')}`,
+      ).toEqual([]);
+    });
+  });
 });

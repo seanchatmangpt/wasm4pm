@@ -336,9 +336,11 @@ export const init = defineCommand({
         files_created: filesCreated,
         valid: isValid,
         instructions: [
-          `1. Review and edit ${configFilename} to customize your configuration`,
-          '2. Copy .env.example to .env and add any secret values',
-          '3. Use "wpm run --help" to see available options',
+          `1. Edit ${configFilename}: set source.path to your .xes log file and pick an algorithm`,
+          '2. Run: wpm algorithms          — list all 36+ available algorithms with speed/quality scores',
+          '3. Run: wpm run <log.xes>       — discover a process model (uses config defaults)',
+          '4. Run: wpm doctor              — verify your environment is correctly configured',
+          '5. Copy .env.example to .env and add any secret values (OTEL endpoints, etc.)',
         ],
       };
 

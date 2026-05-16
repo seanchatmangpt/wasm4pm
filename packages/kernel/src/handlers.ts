@@ -274,6 +274,7 @@ function stepTypeToAlgorithmId(stepType: PlanStepType): string {
     [PlanStepType.DISCOVER_ACO]: 'aco',
     [PlanStepType.DISCOVER_SIMULATED_ANNEALING]: 'simulated_annealing',
     [PlanStepType.DISCOVER_OPTIMIZED_DFG]: 'optimized_dfg',
+    [PlanStepType.DISCOVER_SIMD_STREAMING_DFG]: 'simd_streaming_dfg',
     // Wave 1 Discovery
     [PlanStepType.DISCOVER_TRANSITION_SYSTEM]: 'transition_system',
     [PlanStepType.DISCOVER_LOG_TO_TRIE]: 'log_to_trie',

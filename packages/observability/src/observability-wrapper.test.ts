@@ -56,6 +56,7 @@ describe('ObservabilityWrapper', () => {
         name: 'test.span',
         kind: 'INTERNAL',
         start_time: Date.now() * 1000000,
+        status: { code: 'OK' },
         attributes: { 'test.key': 'test.value' },
       });
 
@@ -79,6 +80,7 @@ describe('ObservabilityWrapper', () => {
           span_id: 'test',
           name: 'test',
           start_time: Date.now() * 1000000,
+          status: { code: 'OK' },
           attributes: {},
         },
       });
@@ -247,6 +249,7 @@ describe('ObservabilityWrapper', () => {
         span_id: 'test',
         name: 'test',
         start_time: Date.now() * 1000000,
+        status: { code: 'OK' },
         attributes: {
           'config.password': 'secret',
           'config.endpoint': 'http://example.com',
@@ -340,6 +343,7 @@ describe('ObservabilityWrapper', () => {
           span_id: '',
           name: '',
           start_time: 0,
+          status: { code: 'ERROR' },
           attributes: {},
         });
       }).not.toThrow();
