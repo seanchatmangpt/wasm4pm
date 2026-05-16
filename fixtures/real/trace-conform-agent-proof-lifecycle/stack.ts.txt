@@ -1,0 +1,8 @@
+Error: capture-stack
+    at Object.run (file:///Users/sac/wasm4pm/apps/wasm4pm/dist/commands/trace.js:1012:32)
+    at runCommand (file:///Users/sac/wasm4pm/node_modules/citty/dist/index.mjs:316:26)
+    at process.processTicksAndRejections (node:internal/process/task_queues:104:5)
+    at async runCommand (file:///Users/sac/wasm4pm/node_modules/citty/dist/index.mjs:307:11)
+    at async runCommand (file:///Users/sac/wasm4pm/node_modules/citty/dist/index.mjs:307:11)
+    at async runMain (file:///Users/sac/wasm4pm/node_modules/citty/dist/index.mjs:445:7)
+    at async bootstrap (file:///Users/sac/wasm4pm/apps/wasm4pm/dist/bin/wpm.js:18:9)

@@ -73,7 +73,7 @@ pub fn validate_partial_orders(s: &str) -> Result<JsValue, JsValue> {
     let (arena, root) = parse_model(s)?;
     arena
         .validate_partial_orders(root)
-        .map_err(|e| wasm_err(&e))?;
+        .map_err(|e| wasm_err(&e.to_string()))?;
     to_js(&serde_json::json!({ "valid": true }))
 }
 
@@ -436,6 +436,7 @@ pub fn discover_powl_from_log(log_json: &str, variant: &str) -> Result<JsValue, 
         min_trace_count: 1,
         noise_threshold: 0.0,
         from_dfg: false,
+        fall_through_fired: false,
     };
 
     let (arena, root) =
@@ -481,6 +482,7 @@ pub fn discover_powl_from_log_config(
         min_trace_count,
         noise_threshold,
         from_dfg: false,
+        fall_through_fired: false,
     };
 
     let (arena, root) =
@@ -525,6 +527,7 @@ pub fn discover_powl_from_partial_orders(
         min_trace_count: 1,
         noise_threshold: 0.0,
         from_dfg: false,
+        fall_through_fired: false,
     };
 
     let mut arena = PowlArena::new();
@@ -565,6 +568,7 @@ pub fn discover_ocel_powl(ocel_json: &str, variant: &str) -> Result<JsValue, JsV
         min_trace_count: 1,
         noise_threshold: 0.0,
         from_dfg: false,
+        fall_through_fired: false,
     };
 
     let mut arena = PowlArena::new();
@@ -605,7 +609,7 @@ mod tests {
     /// Test-only parse helper that avoids crate::error::js_val (panics outside WASM).
     fn parse_test(s: &str) -> Result<(PowlArena, u32), String> {
         let mut arena = PowlArena::new();
-        let root = parse_powl_model_string(s.trim(), &mut arena)?;
+        let root = parse_powl_model_string(s.trim(), &mut arena).map_err(|e| e.to_string())?;
         Ok((arena, root))
     }
 

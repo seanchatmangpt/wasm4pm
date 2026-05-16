@@ -95,6 +95,7 @@ impl SimdPetriNet {
         })
     }
 
+    #[must_use]
     pub fn replay_trace(
         &self,
         activities: impl Iterator<Item = u32>,
@@ -189,10 +190,7 @@ impl SimdPetriNet {
             }
         }
 
-        let mut remaining: u32 = 0;
-        for i in 0..self.num_places {
-            remaining += marking[i];
-        }
+        let remaining: u32 = marking[..self.num_places].iter().sum();
 
         let fitness = compute_fitness(consumed, produced, missing, remaining);
 
@@ -205,6 +203,7 @@ impl SimdPetriNet {
         }
     }
 
+    #[must_use]
     pub fn replay_log(&self, col: &ColumnarLog) -> LogReplayResult {
         let mut trace_results = Vec::with_capacity(col.trace_offsets.len().saturating_sub(1));
 

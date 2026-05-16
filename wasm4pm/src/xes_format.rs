@@ -200,8 +200,8 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
                         }
                     }
                 }
-                b'/' => {
-                    if tag_bytes.len() > 2 {
+                b'/'
+                    if tag_bytes.len() > 2 => {
                         let third = tag_bytes[2];
                         match third {
                             b't' => {
@@ -219,7 +219,6 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
                             _ => {}
                         }
                     }
-                }
                 _ => {}
             }
         }

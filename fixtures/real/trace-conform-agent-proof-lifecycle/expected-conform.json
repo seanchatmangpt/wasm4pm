@@ -1,0 +1,52 @@
+{
+  "route_id": "agent-proof-lifecycle",
+  "fitness": 1,
+  "precision": 1,
+  "required_stage_coverage": 1,
+  "receipt_coverage": 0,
+  "object_lifecycle_validity": 1,
+  "verdict": "AndonPull",
+  "andon_reason": "InsufficientReceiptCoverage",
+  "details": [
+    {
+      "dimension": "object_evidence_present",
+      "ok": true,
+      "detail": "3/3 events have object evidence"
+    },
+    {
+      "dimension": "fitness",
+      "ok": true,
+      "detail": "3/3 observed activities in model (100.0%)"
+    },
+    {
+      "dimension": "precision",
+      "ok": true,
+      "detail": "3/3 model activities observed (100.0%)"
+    },
+    {
+      "dimension": "required_stage_coverage",
+      "ok": true,
+      "detail": "all 3 required stages present"
+    },
+    {
+      "dimension": "route_sequence_valid",
+      "ok": true,
+      "detail": "observed sequence matches a valid route path"
+    },
+    {
+      "dimension": "choice_graph_edges_valid",
+      "ok": true,
+      "detail": "all observed transitions follow declared edges"
+    },
+    {
+      "dimension": "object_lifecycle_validity",
+      "ok": true,
+      "detail": "all declared object types follow lifecycle + cardinality constraints"
+    },
+    {
+      "dimension": "receipt_coverage",
+      "ok": false,
+      "detail": "count violation: 0/3 activities have receipts"
+    }
+  ]
+}

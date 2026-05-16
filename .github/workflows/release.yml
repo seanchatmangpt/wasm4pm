@@ -81,13 +81,20 @@ jobs:
         run: cargo audit --deny warnings
         continue-on-error: false
 
+      # SemVer compatibility check — verifies no accidental breaking changes
+      - name: Check SemVer compatibility
+        working-directory: ./wasm4pm
+        run: |
+          cargo install cargo-semver-checks --locked --quiet || true
+          cargo semver-checks check-release --verbose || echo "⚠️ SemVer check failed — review breaking changes before releasing"
+
       # Generate SBOMs
       - name: Generate SBOM
         run: bash .github/scripts/generate-sbom.sh
 
       # Upload gate verification artifacts
       - name: Upload verification artifacts
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: release-verification
           path: |
@@ -332,7 +339,7 @@ jobs:
 
       # Generate and upload documentation site
       - name: Upload documentation
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: rust-docs
           path: ./wasm4pm/target/doc/
@@ -390,7 +397,7 @@ jobs:
           cat /tmp/release-summary.md
 
       - name: Upload release summary
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: release-summary
           path: /tmp/release-summary.md

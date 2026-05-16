@@ -5,6 +5,7 @@
 
 use wasm4pm::reinforcement::Agent;
 use wasm4pm::rl_orchestrator::{compute_reward, AgentType};
+use wasm4pm::spc::{check_western_electric_rules, ChartData};
 use wasm4pm::{RlAction, RlState};
 
 /// Helper to create test RlState with reasonable defaults
@@ -311,4 +312,207 @@ fn test_reward_penalizes_latency_budget_exceeded() {
          penalty={:.4}",
         stacked_penalty
     );
+}
+
+// ---------------------------------------------------------------------------
+// P2: End-to-End MAPE-K Chain Tests
+// These tests prove the loop *closes*: SPC alerts → reward → RL action change.
+// ---------------------------------------------------------------------------
+
+/// Build ChartData for a series of values with computed UCL/LCL.
+fn make_chart_data(values: &[f64]) -> Vec<ChartData> {
+    if values.is_empty() {
+        return vec![];
+    }
+    let mean = values.iter().sum::<f64>() / values.len() as f64;
+    let variance =
+        values.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / values.len() as f64;
+    let std_dev = variance.sqrt();
+    values
+        .iter()
+        .map(|&v| ChartData {
+            timestamp: String::new(),
+            value: v,
+            ucl: mean + 3.0 * std_dev,
+            cl: mean,
+            lcl: (mean - 3.0 * std_dev).max(0.0),
+            subgroup_data: None,
+        })
+        .collect()
+}
+
+#[test]
+fn test_mape_k_chain_spc_violations_reduce_reward() {
+    // Rank 1: Mathematical theorem — SPC alert count monotonically reduces reward.
+    // This verifies the full MAPE-K chain: Protection (SPC) → Optimization (RL reward).
+
+    let r_zero_alerts = compute_reward(2, 2, 0, true, true, false);
+    let r_few_alerts = compute_reward(2, 2, 3, true, true, false);
+    let r_many_alerts = compute_reward(2, 2, 8, true, true, false);
+
+    assert!(
+        r_zero_alerts > r_few_alerts,
+        "0 SPC alerts should yield higher reward than 3: {:.4} > {:.4}",
+        r_zero_alerts,
+        r_few_alerts
+    );
+    assert!(
+        r_few_alerts >= r_many_alerts,
+        "3 SPC alerts should yield reward ≥ 8 alerts: {:.4} >= {:.4}",
+        r_few_alerts,
+        r_many_alerts
+    );
+}
+
+#[test]
+fn test_mape_k_chain_spc_shift_detected_and_propagates() {
+    // Rank 1: Western Electric Rule 2 — 9 consecutive points on same side of CL.
+    // Dataset: first point is a low anchor (0.0), then 9 points all above resulting mean.
+    // Mean of [0.0, 5.0×9] = 4.5. The last 9 points (5.0 each) are all > 4.5 → Shift rule fires.
+    // Then verify: causes propagate to reward reduction (chain closes).
+
+    // Baseline: uniform data at mean — no shift, no trend
+    let baseline_values: Vec<f64> = vec![5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0];
+    let baseline_chart = make_chart_data(&baseline_values);
+    let baseline_causes = check_western_electric_rules(&baseline_chart);
+    // Uniform data at mean → no values strictly above or below CL → no shift
+    assert!(
+        baseline_causes.is_empty(),
+        "Uniform data at mean should produce no SPC alerts, got: {:?}",
+        baseline_causes
+    );
+
+    // Shift pattern: 10 points where last 9 are all strictly above resulting mean (4.5)
+    // Mean = (0.0 + 9*5.0) / 10 = 4.5; last 9 values = 5.0 > 4.5 → Rule 2 fires
+    let shifted_values: Vec<f64> = vec![0.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0];
+    let shifted_chart = make_chart_data(&shifted_values);
+    let shifted_causes = check_western_electric_rules(&shifted_chart);
+    assert!(
+        !shifted_causes.is_empty(),
+        "10-point series with 9 trailing above-mean values must trigger Rule 2 (shift), got: {:?}",
+        shifted_causes
+    );
+
+    // Verify the chain: SPC causes propagate to reward reduction
+    let r_baseline = compute_reward(2, 2, 0, true, true, false);
+    let r_shifted = compute_reward(2, 2, shifted_causes.len(), true, true, false);
+    assert!(
+        r_shifted < r_baseline,
+        "SPC shift alerts must reduce reward: r_baseline={:.4}, r_shifted={:.4}, causes={}",
+        r_baseline,
+        r_shifted,
+        shifted_causes.len()
+    );
+}
+
+#[test]
+fn test_mape_k_chain_degraded_health_drives_non_continue_actions() {
+    // Rank 2: Domain contract — repeated degraded cycles with SPC alerts must
+    // produce at least one non-Continue action over 30 cycles.
+    // This proves the full loop: Protection alerts → RL reward → Action dispatch.
+
+    let mut orch = wasm4pm::rl_orchestrator::RlOrchestrator::new_with_seed(42);
+    // High spc_alert_level (feature[5] = 1.0), degraded health, circuit open (feature[4] = 0.0)
+    let features = [0.8, 0.5, 0.3, 0.75, 0.0, 1.0, 0.5, 0.0];
+    let critical = make_test_state(3); // Critical health
+    let still_critical = make_test_state(3);
+
+    let mut seen_actions: std::collections::HashSet<String> = std::collections::HashSet::new();
+    for _ in 0..30 {
+        let (action, _reward) =
+            orch.run_cycle(&features, &critical, &still_critical, 8, false, false, false);
+        seen_actions.insert(action);
+    }
+
+    // Over 30 degraded cycles with high SPC alerts and circuit open,
+    // the RL agent must produce at least one action beyond Continue.
+    let non_continue: Vec<&String> = seen_actions
+        .iter()
+        .filter(|a| a.as_str() != "Continue")
+        .collect();
+
+    assert!(
+        !non_continue.is_empty(),
+        "30 degraded cycles with 8 SPC alerts should produce at least one non-Continue action. \
+         Seen actions: {:?}",
+        seen_actions
+    );
+}
+
+#[test]
+fn test_mape_k_chain_circuit_breaker_reduces_reward() {
+    // Rank 1: circuit_allowed=false must reduce reward below circuit_allowed=true.
+    // This verifies Protection (circuit breaker) → Optimization (reward) chain.
+
+    let r_circuit_open = compute_reward(2, 2, 0, false, true, false);
+    let r_circuit_closed = compute_reward(2, 2, 0, true, true, false);
+
+    assert!(
+        r_circuit_closed > r_circuit_open,
+        "Closed circuit (allowed) must yield higher reward than open (blocked): \
+         closed={:.4}, open={:.4}",
+        r_circuit_closed,
+        r_circuit_open
+    );
+}
+
+// ---------------------------------------------------------------------------
+// P3: Snapshot Tests (structural regression detection via insta)
+// Run `cargo insta review` after first run to accept snapshots.
+// ---------------------------------------------------------------------------
+
+#[test]
+fn snapshot_reward_function_shape() {
+    // Snapshot the reward computation for canonical health transitions.
+    // Any change to the reward formula will fail this test.
+    let cases = vec![
+        ("normal_healthy", compute_reward(0, 0, 0, true, true, false)),
+        ("degraded_recovering", compute_reward(3, 2, 0, true, true, false)),
+        ("critical_worsening", compute_reward(2, 3, 5, false, false, false)),
+        ("terminal_transition", compute_reward(3, 4, 0, true, true, false)),
+        ("latency_penalty", compute_reward(2, 2, 0, true, true, true)),
+    ];
+    // Round to 4 decimal places for float stability
+    let rounded: Vec<(&str, f64)> = cases
+        .iter()
+        .map(|(name, r)| (*name, ((*r as f64) * 10_000.0).round() / 10_000.0))
+        .collect();
+    insta::assert_debug_snapshot!("reward_function_shape", rounded);
+}
+
+#[test]
+fn snapshot_spc_shift_causes_debug_format() {
+    // Snapshot the Debug output of SPC Rule 2 (shift) detection for a known pattern.
+    // Any change to SpecialCause enum variants or shift detection logic will fail this.
+    // Mean = 4.5; last 9 values (5.0) all strictly above CL → Shift{Above, 9} detected.
+    let values: Vec<f64> = vec![0.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0, 5.0];
+    let chart = make_chart_data(&values);
+    let causes = check_western_electric_rules(&chart);
+    let summary = format!("alert_count={}, causes={:?}", causes.len(), causes);
+    insta::assert_debug_snapshot!("spc_shift_causes", summary);
+}
+
+#[test]
+fn snapshot_orchestrator_telemetry_after_10_cycles() {
+    // Snapshot RL orchestrator telemetry structure after 10 deterministic cycles.
+    // Catches any change to telemetry fields, reward formula, or cycle_count tracking.
+    let mut orch = wasm4pm::rl_orchestrator::RlOrchestrator::new_with_seed(42);
+    let features = [0.2, 0.3, 0.2, 0.25, 1.0, 0.0, 0.5, 0.01];
+    let healthy = make_test_state(0);
+    let still_healthy = make_test_state(0);
+
+    for _ in 0..10 {
+        orch.run_cycle(&features, &healthy, &still_healthy, 0, true, true, false);
+    }
+
+    let t = orch.telemetry();
+    // Snapshot stable fields; exclude last_reward (float) by rounding
+    let summary = format!(
+        "cycle_count={} agent={:?} last_spc={} consec_success={}",
+        t.cycle_count,
+        t.active_agent_name,
+        t.last_spc_alert_count,
+        t.consecutive_successes
+    );
+    insta::assert_debug_snapshot!("orchestrator_telemetry_10_cycles", summary);
 }

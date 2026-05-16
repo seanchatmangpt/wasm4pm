@@ -452,6 +452,43 @@ wasm4pm/src/agentic/           # Agentic framework (9 traits, 14 modules)
 
 ---
 
+## AAT V2 — Route catalog + cross-language ingest
+
+**Route catalog** (`routes/*.powl.json`, 14 total). Authoring + hardening is committed; `wpm trace conform -m <model> -i <ocel.json>` evaluates a captured route against the model.
+
+| Route | Type | Purpose |
+|---|---|---|
+| `adversarial-admissibility` | choice_graph | adversary suite write/audit/doctor route |
+| `agent-proof-lifecycle` | choice_graph | reference admissible route (collect → verify → emit) |
+| `claude-stop-proof-gate` | choice_graph | Claude Code stop-hook proof gate |
+| `proof-pack-promotion` | choice_graph | proof-work → proof-packs sealed promotion |
+| `ai-code-review` | choice_graph | lint → type_check → run_tests → summarize |
+| `ai-refactor-with-tests` | choice_graph (rework loop) | refactor → tests → fix → commit |
+| `ai-bug-fix-with-receipt` | sequence | reproduce → diagnose → patch → verify → commit |
+| `ai-doc-update` | choice_graph (link_check loop) | read → edit → link_check → commit |
+| `ai-test-writing` | partial_order | RGR (red → green → refactor) |
+| `ai-config-change` | sequence | validate → apply → verify (Config max_count=1) |
+| `ai-dependency-bump` | partial_order | audit → bump → test → lock |
+| `ai-migration` | choice_graph (rollback alt-path) | plan → apply → verify \| rollback |
+| `ai-perf-investigation` | sequence | baseline → profile → analyze → report |
+| `ai-security-audit` | choice_graph | scan → triage → (fix \| document_exception) → sign_off |
+
+**`Powl2Model.object_types`** enforces (V2): `created_by[]`, `terminated_by[]`, `schema` (JSON Schema path), `min_count`, `max_count`. All four are optional except `created_by`. Receipt schemas live under `schemas/receipts/`.
+
+**Cross-language trace ingest** (`wpm trace ingest --from <lang>`):
+- `rust` — backtrace format (`N: function::name` + `at file:line:col`)
+- `typescript` — Node V8 (`at func (file:line:col)`)
+- `python` — CPython (`File "path", line N, in func`)
+- `java` — JVM (`at pkg.Class.method(File.java:N)`, follows `Caused by:`)
+- `js` — V8 + SpiderMonkey/JSC variants
+- Unknown `--from` value exits 1 (config_error), no silent fallback
+
+**Adversary count: 24/24 blocked.** P22 schema, P23 cardinality, P24 lifecycle-not-terminated added in V2. Priority chain (longest-first wins): `ActivityOnlyFakeRoute → RouteConformanceGap → MissingRequiredStages → RouteSequenceMismatch → PartialOrderViolation → LifecycleNotTerminated → CardinalityViolation → ObjectLifecycleViolation → ReceiptSchemaViolation → InsufficientReceiptCoverage → TestRouteIncomplete`.
+
+**Real fixtures** under `fixtures/real/`. Capture via `WASM4PM_CAPTURE_FIXTURE=1 WASM4PM_CAPTURE_LABEL=<name> wpm trace conform -m <model> -i <ocel>`. Replay test at `apps/wasm4pm/src/__tests__/real-fixtures.test.ts`.
+
+---
+
 ## Common gotchas
 
 - `WasmLoader` is a **singleton** — call `WasmLoader.reset()` between tests that need a clean state

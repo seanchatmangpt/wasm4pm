@@ -23,7 +23,6 @@ use wasm_bindgen::prelude::*; // Conditional import: statrs or hand_rolled_stats
 /// }
 /// ```
 /// `timestamp_key` defaults to `"time:timestamp"` in most XES logs.
-
 /// Pure-Rust performance DFG discovery without wasm-bindgen. Used by integration tests.
 pub fn discover_performance_dfg_from_log(log: &EventLog, activity_key: &str, timestamp_key: &str) -> String {
     let mut edge_times: HashMap<(String, String), Vec<f64>> = HashMap::new();

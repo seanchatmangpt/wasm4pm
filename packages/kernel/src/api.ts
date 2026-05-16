@@ -722,3 +722,18 @@ export class Kernel {
     }
   }
 }
+
+/**
+ * Parse a WASM function return value that may be a JSON string or already an object.
+ *
+ * Many wasm4pm WASM exports return `string` on wasm32 targets (serialized JSON)
+ * but may return a plain object when called via test stubs or future refactors.
+ * This helper normalizes both cases, eliminating the repeated
+ * `typeof r === 'string' ? JSON.parse(r) : r` pattern across the codebase.
+ *
+ * @example
+ * const dfg = parseWasmOutput<{ nodes: string[] }>(wasm.discover_dfg(handle, key));
+ */
+export function parseWasmOutput<T = unknown>(raw: unknown): T {
+  return (typeof raw === 'string' ? JSON.parse(raw) : raw) as T;
+}

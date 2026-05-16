@@ -7,7 +7,7 @@
  */
 
 // Kernel API facade
-export { Kernel } from './api.js';
+export { Kernel, parseWasmOutput } from './api.js';
 export type { KernelResult, PartialResult, KernelStats, KernelWasmModule } from './api.js';
 
 // Registry exports
@@ -103,6 +103,10 @@ export {
   powlModelToModelIr,
 } from './converters/model-ir-converter.js';
 export type { DirectlyFollowsGraph, PetriNet, PowlModel } from './converters/model-ir-converter.js';
+
+// Machine-specific timing thresholds (use instead of hardcoded ms values in tests)
+export { machineThreshold, medianMs } from './machine-thresholds.js';
+export type { CalibrationResult } from './machine-thresholds.js';
 
 // Prediction subsystem — orchestrates the 6 Van der Aalst perspectives.
 export * as prediction from './prediction/index.js';

@@ -15,6 +15,35 @@ import { EXIT_CODES } from '../exit-codes.js';
 import { withSpanRaw } from './_otel.js';
 import { getGlobalSpanSink } from '../otel/sink.js';
 import { exitWithFlush } from '../otel/exit.js';
+import { runDiscovery, type Algorithm } from './run.js';
+
+// ---------------------------------------------------------------------------
+// Autopilot: select algorithm from log characteristics
+// ---------------------------------------------------------------------------
+
+type LogStats = {
+  total_cases?: number;
+  total_events?: number;
+  avg_events_per_case?: number;
+  unique_activities?: number;
+};
+
+function selectAutopilotAlgorithm(stats: LogStats): { algo: Algorithm; rationale: string } {
+  const traces = stats.total_cases ?? 0;
+  const variants = 0; // analyze_event_statistics does not return variant count
+  const activities = stats.unique_activities ?? 0;
+
+  if (traces > 50_000)
+    return { algo: 'dfg', rationale: `log too large for conformance-checking (${traces.toLocaleString()} traces)` };
+  if (variants < 20 && traces < 5_000)
+    return { algo: 'inductive', rationale: `low-variant log (${variants} variants) — inductive produces clean process tree` };
+  if (activities > 100)
+    return { algo: 'heuristic', rationale: `high activity count (${activities}) — heuristic handles noise well` };
+  if (traces > 10_000)
+    return { algo: 'heuristic', rationale: `medium-large log (${traces.toLocaleString()} traces) — heuristic balances speed and quality` };
+
+  return { algo: 'dfg', rationale: 'default — fast, always produces a result' };
+}
 
 export interface WatchOptions {
   config?: string;
@@ -49,6 +78,14 @@ export const watch = defineCommand({
     quiet: {
       type: 'boolean',
       description: 'Suppress non-error output',
+    },
+    autopilot: {
+      type: 'boolean',
+      description: 'Auto-select algorithm based on log size and complexity each cycle',
+    },
+    'activity-key': {
+      type: 'string',
+      description: 'XES activity attribute key (default: concept:name)',
     },
   },
   async run(ctx) {
@@ -164,7 +201,60 @@ export const watch = defineCommand({
                   steps: executionPlan.steps.length,
                 });
 
-                // Use engine to execute
+                // Autopilot: run real WASM discovery when --autopilot is set
+                // and the changed file is an XES log (not a config file).
+                if (ctx.args.autopilot && filePath.endsWith('.xes')) {
+                  try {
+                    const wasm = wasmLoader.get() as Record<string, (...args: unknown[]) => unknown>;
+                    const activityKey = (ctx.args['activity-key'] as string | undefined) ?? 'concept:name';
+                    const xesContent = await fs.readFile(filePath, 'utf8');
+                    const t0 = Date.now();
+                    const handle = wasm.load_eventlog_from_xes(xesContent) as string;
+
+                    // Get log characteristics to select algorithm
+                    const statsRaw = wasm.analyze_event_statistics(handle, activityKey);
+                    const stats = (typeof statsRaw === 'string'
+                      ? JSON.parse(statsRaw)
+                      : statsRaw) as LogStats;
+                    const { algo, rationale } = selectAutopilotAlgorithm(stats);
+
+                    streaming.emitEvent('autopilot_selected', {
+                      algorithm: algo,
+                      rationale,
+                      stats,
+                    });
+
+                    const { raw, elapsedMs } = runDiscovery(wasm, algo, handle, activityKey);
+                    const model = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                    const elapsed = Date.now() - t0;
+
+                    // Write autopilot.json for tooling and dashboards
+                    const autopilotRecord = {
+                      cycle: cyclesObserved,
+                      timestamp: new Date().toISOString(),
+                      log: filePath,
+                      stats,
+                      selected: algo,
+                      rationale,
+                      elapsedMs: elapsed,
+                    };
+                    const autopilotPath = path.join(process.cwd(), '.wasm4pm', 'autopilot.json');
+                    await fs.mkdir(path.dirname(autopilotPath), { recursive: true });
+                    await fs.writeFile(autopilotPath, JSON.stringify(autopilotRecord, null, 2));
+
+                    streaming.emitEvent('autopilot_completed', {
+                      algorithm: algo,
+                      elapsedMs,
+                      modelKeys: typeof model === 'object' && model ? Object.keys(model as object) : [],
+                    });
+                  } catch (autopilotErr) {
+                    streaming.emitEvent('autopilot_error', {
+                      message: autopilotErr instanceof Error ? autopilotErr.message : String(autopilotErr),
+                    });
+                  }
+                }
+
+                // Use engine to execute (existing planner-based path)
                 streaming.emitEvent('processing_completed', {
                   status: 'success',
                   timestamp: new Date().toISOString(),

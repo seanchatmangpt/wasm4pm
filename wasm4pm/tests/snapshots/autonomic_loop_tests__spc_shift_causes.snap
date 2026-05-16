@@ -1,0 +1,5 @@
+---
+source: wasm4pm/tests/autonomic_loop_tests.rs
+expression: summary
+---
+"alert_count=1, causes=[Shift { direction: Above, count: 9 }]"

@@ -6,12 +6,53 @@
 
 use crate::ml::LinUCBAgent;
 use crate::reinforcement::{
-    Agent, DoubleQLearning, ExpectedSARSAAgent, QLearning, ReinforceAgent, SARSAAgent,
+    Agent, AgentMeta, DoubleQLearning, ExpectedSARSAAgent, QLearning, ReinforceAgent, SARSAAgent,
 };
 
 // Re-export the RlState/RlAction types from lib.rs (they are pub(crate)).
 // We use the concrete types directly since this module is in the same crate.
 use crate::{RlAction, RlState};
+
+/// Serialization capability for RlState/RlAction agents.
+/// Separate trait so that the generic `impl<S,A> AgentMeta for ...` doesn't need
+/// to compile `encode_rl_state_key` for arbitrary S (only RlState is concrete here).
+trait RlSerialization {
+    fn export_q_table(
+        &self,
+        agent_type: u8,
+    ) -> crate::rl_state_serialization::SerializedAgentQTable;
+    fn restore_q_table(&self, table: crate::rl_state_serialization::SerializedAgentQTable);
+}
+
+macro_rules! impl_rl_serialization {
+    ($t:ty) => {
+        impl RlSerialization for $t {
+            fn export_q_table(
+                &self,
+                agent_type: u8,
+            ) -> crate::rl_state_serialization::SerializedAgentQTable {
+                self.export_as_serialized(agent_type)
+            }
+            fn restore_q_table(
+                &self,
+                table: crate::rl_state_serialization::SerializedAgentQTable,
+            ) {
+                self.restore_from_serialized(table);
+            }
+        }
+    };
+}
+
+impl_rl_serialization!(QLearning<RlState, RlAction>);
+impl_rl_serialization!(SARSAAgent<RlState, RlAction>);
+impl_rl_serialization!(DoubleQLearning<RlState, RlAction>);
+impl_rl_serialization!(ExpectedSARSAAgent<RlState, RlAction>);
+impl_rl_serialization!(ReinforceAgent<RlState, RlAction>);
+
+// Combined dispatch trait — object-safe because RlState/RlAction are concrete.
+// Blanket impl covers all 5 agent types automatically.
+trait AgentBehavior: Agent<RlState, RlAction> + AgentMeta + RlSerialization {}
+impl<T: Agent<RlState, RlAction> + AgentMeta + RlSerialization> AgentBehavior for T {}
 
 /// Stable, allocation-free label for an `RlAction`. Used in telemetry to
 /// avoid `format!("{:?}", action)` per cycle.
@@ -141,45 +182,33 @@ pub fn compute_reward(
 ) -> f32 {
     let mut reward = 0.0_f32;
 
-    // Health improvement/stability component
-    if curr_health < prev_health {
-        reward += 1.0; // health improved
-    } else if curr_health == prev_health {
-        reward += 0.2; // stable
-    } else {
-        reward -= 1.0; // health degraded
-    }
+    // Health delta — branchless 3-entry LUT.
+    // Encoding: improved=1 (0b01), stable=2 (0b10), degraded=0 (0b00)
+    const HEALTH_DELTA: [f32; 3] = [-1.0, 1.0, 0.2]; // [degraded, improved, stable]
+    let improved = (curr_health < prev_health) as usize;
+    let stable   = ((curr_health == prev_health) as usize) << 1;
+    reward += HEALTH_DELTA[improved | stable];
 
     // SPC penalty: each special cause signal is a -0.3 penalty (bounded by -1.5)
     reward -= (spc_alert_count as f32 * 0.3).min(1.5);
 
-    // Guard/circuit bonus/penalty
-    if guard_pass && circuit_allowed {
-        reward += 0.1;
-    } else {
-        reward -= 0.5;
-    }
+    // Guard/circuit bonus/penalty — branchless 2D LUT
+    const GUARD_CIRCUIT: [[f32; 2]; 2] = [[-0.5, -0.5], [-0.5, 0.1]];
+    reward += GUARD_CIRCUIT[guard_pass as usize][circuit_allowed as usize];
 
-    // Latency budget penalty
-    if latency_budget_exceeded {
-        reward -= 0.3;
-    }
+    // Latency budget penalty — branchless
+    reward -= latency_budget_exceeded as i32 as f32 * 0.3;
 
-    // Terminal penalty
-    if curr_health == 4 {
-        reward -= 2.0;
-    }
+    // Terminal penalty — branchless
+    reward -= (curr_health == 4) as i32 as f32 * 2.0;
 
     reward
 }
 
 /// The RL Orchestrator — holds all agents, dispatches to active one.
 pub struct RlOrchestrator {
-    q_learning: QLearning<RlState, RlAction>,
-    sarsa: SARSAAgent<RlState, RlAction>,
-    double_q: DoubleQLearning<RlState, RlAction>,
-    expected_sarsa: ExpectedSARSAAgent<RlState, RlAction>,
-    reinforce: ReinforceAgent<RlState, RlAction>,
+    // Indexed by AgentType discriminant (0–4); vtable dispatch replaces match blocks.
+    agents: Vec<Box<dyn AgentBehavior>>,
     active_agent: AgentType,
     linucb: LinUCBAgent,
     telemetry: CycleTelemetry,
@@ -195,11 +224,13 @@ impl Default for RlOrchestrator {
 impl RlOrchestrator {
     pub fn new() -> Self {
         Self {
-            q_learning: QLearning::new(),
-            sarsa: SARSAAgent::new(),
-            double_q: DoubleQLearning::new(),
-            expected_sarsa: ExpectedSARSAAgent::new(),
-            reinforce: ReinforceAgent::new(),
+            agents: vec![
+                Box::new(QLearning::new()),          // 0 = QLearning
+                Box::new(SARSAAgent::new()),          // 1 = SARSA
+                Box::new(DoubleQLearning::new()),     // 2 = DoubleQLearning
+                Box::new(ExpectedSARSAAgent::new()),  // 3 = ExpectedSARSA
+                Box::new(ReinforceAgent::new()),      // 4 = REINFORCE
+            ],
             active_agent: AgentType::QLearning,
             linucb: LinUCBAgent::new(),
             telemetry: CycleTelemetry::default(),
@@ -212,11 +243,13 @@ impl RlOrchestrator {
     #[allow(dead_code)]
     pub fn new_with_seed(seed: u64) -> Self {
         Self {
-            q_learning: QLearning::new_with_seed(0.1, 0.99, seed),
-            sarsa: SARSAAgent::new_with_seed(0.1, 0.99, seed.wrapping_add(1)),
-            double_q: DoubleQLearning::new_with_seed(0.1, 0.99, seed.wrapping_add(2)),
-            expected_sarsa: ExpectedSARSAAgent::new_with_seed(0.1, 0.99, seed.wrapping_add(3)),
-            reinforce: ReinforceAgent::new_with_seed(0.01, 0.99, seed.wrapping_add(4)),
+            agents: vec![
+                Box::new(QLearning::new_with_seed(0.1, 0.99, seed)),
+                Box::new(SARSAAgent::new_with_seed(0.1, 0.99, seed.wrapping_add(1))),
+                Box::new(DoubleQLearning::new_with_seed(0.1, 0.99, seed.wrapping_add(2))),
+                Box::new(ExpectedSARSAAgent::new_with_seed(0.1, 0.99, seed.wrapping_add(3))),
+                Box::new(ReinforceAgent::new_with_seed(0.01, 0.99, seed.wrapping_add(4))),
+            ],
             active_agent: AgentType::QLearning,
             linucb: LinUCBAgent::new(),
             telemetry: CycleTelemetry::default(),
@@ -242,13 +275,7 @@ impl RlOrchestrator {
 
     /// Select action using the active RL agent.
     pub fn select_action(&self, state: &RlState) -> RlAction {
-        match self.active_agent {
-            AgentType::QLearning => Agent::select_action(&self.q_learning, state),
-            AgentType::SARSA => Agent::select_action(&self.sarsa, state),
-            AgentType::DoubleQLearning => Agent::select_action(&self.double_q, state),
-            AgentType::ExpectedSARSA => Agent::select_action(&self.expected_sarsa, state),
-            AgentType::REINFORCE => Agent::select_action(&self.reinforce, state),
-        }
+        self.agents[self.active_agent as usize].select_action(state)
     }
 
     /// Update the active RL agent with reward signal.
@@ -260,46 +287,19 @@ impl RlOrchestrator {
         next_state: &RlState,
         done: bool,
     ) {
-        match self.active_agent {
-            AgentType::QLearning => {
-                Agent::update(&self.q_learning, state, action, reward, next_state, done)
-            }
-            AgentType::SARSA => Agent::update(&self.sarsa, state, action, reward, next_state, done),
-            AgentType::DoubleQLearning => {
-                Agent::update(&self.double_q, state, action, reward, next_state, done)
-            }
-            AgentType::ExpectedSARSA => Agent::update(
-                &self.expected_sarsa,
-                state,
-                action,
-                reward,
-                next_state,
-                done,
-            ),
-            AgentType::REINFORCE => {
-                Agent::update(&self.reinforce, state, action, reward, next_state, done)
-            }
-        }
+        self.agents[self.active_agent as usize].update(state, action, reward, next_state, done)
     }
 
     /// Decay exploration on the active agent.
     pub fn decay_exploration(&mut self) {
-        match self.active_agent {
-            AgentType::QLearning => self.q_learning.decay_exploration(),
-            AgentType::SARSA => self.sarsa.decay_exploration(),
-            AgentType::DoubleQLearning => self.double_q.decay_exploration(),
-            AgentType::ExpectedSARSA => self.expected_sarsa.decay_exploration(),
-            AgentType::REINFORCE => {} // no-op for policy gradient
-        }
+        self.agents[self.active_agent as usize].decay_exploration()
     }
 
     /// Set exploration rate on all agents (for MAPE-K action dispatch).
     pub fn set_exploration_rate(&mut self, rate: f32) {
-        self.q_learning.set_exploration_rate(rate);
-        self.sarsa.set_exploration_rate(rate);
-        self.double_q.set_exploration_rate(rate);
-        self.expected_sarsa.set_exploration_rate(rate);
-        self.reinforce.set_exploration_rate(rate);
+        for a in &mut self.agents {
+            a.set_exploration_rate(rate);
+        }
     }
 
     /// Reset all exploration rates to default (1.0) — used by Restart action.
@@ -446,13 +446,11 @@ impl RlOrchestrator {
 
     /// Export all Q-tables from all 5 agents as serialized format.
     pub fn export_all_q_tables(&self) -> Vec<crate::rl_state_serialization::SerializedAgentQTable> {
-        vec![
-            self.q_learning.export_as_serialized(0),
-            self.sarsa.export_as_serialized(1),
-            self.double_q.export_as_serialized(2),
-            self.expected_sarsa.export_as_serialized(3),
-            self.reinforce.export_as_serialized(4),
-        ]
+        self.agents
+            .iter()
+            .enumerate()
+            .map(|(i, a)| a.export_q_table(i as u8))
+            .collect()
     }
 
     /// Restore all Q-tables to all 5 agents from serialized format.
@@ -461,13 +459,8 @@ impl RlOrchestrator {
         tables: Vec<crate::rl_state_serialization::SerializedAgentQTable>,
     ) {
         for table in tables {
-            match table.agent_type {
-                0 => self.q_learning.restore_from_serialized(table),
-                1 => self.sarsa.restore_from_serialized(table),
-                2 => self.double_q.restore_from_serialized(table),
-                3 => self.expected_sarsa.restore_from_serialized(table),
-                4 => self.reinforce.restore_from_serialized(table),
-                _ => {} // Unknown agent type, skip
+            if let Some(agent) = self.agents.get(table.agent_type as usize) {
+                agent.restore_q_table(table);
             }
         }
     }

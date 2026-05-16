@@ -137,6 +137,7 @@ fn build_partition_edges(
 /// for backward compatibility with downstream callers that have not yet
 /// migrated.
 #[deprecated(note = "Use discover_choice_graph_v2 returning a validated ChoiceGraphCut")]
+#[allow(clippy::type_complexity)]
 pub fn discover_choice_graph(
     dfg: &HashSet<(String, String)>,
     activities: &HashSet<String>,

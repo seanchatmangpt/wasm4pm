@@ -14,5 +14,13 @@
     "declarationMap": true,
     "sourceMap": true,
     "allowSyntheticDefaultImports": true
-  }
+  },
+  "exclude": [
+    "**/node_modules",
+    "**/dist",
+    "**/pkg",
+    "**/target",
+    "**/examples/**/*.tsx",
+    ".claude/worktrees"
+  ]
 }

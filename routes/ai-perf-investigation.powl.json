@@ -1,0 +1,26 @@
+{
+  "route_id": "ai-perf-investigation",
+  "type": "powl2",
+  "required_stages": ["baseline", "profile", "analyze", "report", "emit_receipt"],
+  "receipt_required": true,
+  "object_types": {
+    "Baseline": {
+      "created_by": ["baseline"],
+      "terminated_by": ["analyze"],
+      "min_count": 1
+    },
+    "Profile": {
+      "created_by": ["profile"],
+      "terminated_by": ["analyze"],
+      "min_count": 1
+    },
+    "Receipt": {
+      "created_by": ["emit_receipt"],
+      "schema": "schemas/receipts/proof-receipt.schema.json"
+    }
+  },
+  "model": {
+    "type": "sequence",
+    "sequence": ["baseline", "profile", "analyze", "report", "emit_receipt"]
+  }
+}

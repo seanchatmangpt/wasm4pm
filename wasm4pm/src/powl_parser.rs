@@ -11,6 +11,7 @@
 //!   tau   ::= "tau"
 //!   transition ::= label     (any string not matching above)
 
+use crate::error::Wasm4pmError;
 use crate::powl_arena::{BinaryRelation, Operator, PowlArena};
 
 // ─── Tokeniser ────────────────────────────────────────────────────────────────
@@ -51,36 +52,36 @@ fn tokenize(s: &str) -> Vec<String> {
 // ─── Parser ───────────────────────────────────────────────────────────────────
 
 /// Parse a POWL model string and return the root index in the arena.
-pub fn parse_powl_model_string(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
+pub fn parse_powl_model_string(s: &str, arena: &mut PowlArena) -> Result<u32, Wasm4pmError> {
     let s = s.replace(['\n', '\r', '\t'], "").trim().to_string();
 
     if s.is_empty() {
-        return Err("empty POWL string".to_string());
+        return Err(Wasm4pmError::Parse("empty POWL string".to_string()));
     }
 
     // Choice graph (POWL 2.0, Definition 1, arXiv:2505.07052)
     if s.starts_with("CG=") || s.starts_with("CG(") {
-        return parse_choice_graph(&s, arena);
+        return parse_choice_graph(&s, arena).map_err(Wasm4pmError::Parse);
     }
 
     // Decision graph
     if s.starts_with("DG=") || s.starts_with("DG(") {
-        return parse_decision_graph(&s, arena);
+        return parse_decision_graph(&s, arena).map_err(Wasm4pmError::Parse);
     }
 
     // Partial order
     if s.starts_with("PO=") || s.starts_with("PO(") {
-        return parse_partial_order(&s, arena);
+        return parse_partial_order(&s, arena).map_err(Wasm4pmError::Parse);
     }
 
     // XOR
     if s.starts_with("X (") || s.starts_with("X(") {
-        return parse_operator(&s, "X", Operator::Xor, arena);
+        return parse_operator(&s, "X", Operator::Xor, arena).map_err(Wasm4pmError::Parse);
     }
 
     // Loop
     if s.starts_with("* (") || s.starts_with("*(") {
-        return parse_operator(&s, "*", Operator::Loop, arena);
+        return parse_operator(&s, "*", Operator::Loop, arena).map_err(Wasm4pmError::Parse);
     }
 
     // Silent transition
@@ -110,7 +111,7 @@ fn parse_partial_order(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
     let mut token_to_local: Vec<(String, u32)> = Vec::new();
 
     for tok in &node_tokens {
-        let child_idx = parse_powl_model_string(tok, arena)?;
+        let child_idx = parse_powl_model_string(tok, arena).map_err(|e| e.to_string())?;
         let local = child_indices.len() as u32;
         child_indices.push(child_idx);
         token_to_local.push((tok.clone(), local));
@@ -134,7 +135,7 @@ fn parse_partial_order(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
                     .position(|(t, _)| node_label_matches(t, tgt_str))
                     .ok_or_else(|| format!("edge target '{}' not found in nodes", tgt_str))?;
 
-                arena.add_order_edge(spo_idx, src_local, tgt_local);
+                arena.add_order_edge(spo_idx, src_local, tgt_local).ok();
             }
         }
     }
@@ -161,7 +162,7 @@ fn parse_decision_graph(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
     let mut token_to_local: Vec<(String, u32)> = Vec::new();
 
     for tok in &node_tokens {
-        let child_idx = parse_powl_model_string(tok, arena)?;
+        let child_idx = parse_powl_model_string(tok, arena).map_err(|e| e.to_string())?;
         let local = child_indices.len() as u32;
         child_indices.push(child_idx);
         token_to_local.push((tok.clone(), local));
@@ -311,7 +312,7 @@ fn parse_choice_graph_node_spec(
         return Ok(wasm4pm_types::ChoiceGraphNode::Activity(inner.trim().to_string()));
     }
     // Fallback: parse as nested POWL sub-model.
-    let sub_idx = parse_powl_model_string(s, arena)?;
+    let sub_idx = parse_powl_model_string(s, arena).map_err(|e| e.to_string())?;
     Ok(wasm4pm_types::ChoiceGraphNode::SubModel(sub_idx))
 }
 
@@ -410,7 +411,7 @@ fn parse_operator(
 
     let mut children: Vec<u32> = Vec::new();
     for tok in &child_tokens {
-        let child_idx = parse_powl_model_string(tok, arena)?;
+        let child_idx = parse_powl_model_string(tok, arena).map_err(|e| e.to_string())?;
         children.push(child_idx);
     }
 

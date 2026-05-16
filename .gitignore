@@ -52,3 +52,6 @@ data/Road_Traffic_Fine_Management_Process.xes
 .wasm4pm/otel-coverage.md
 .wasm4pm/production-readiness-phase4-final.json
 .wasm4pm/test-wip-system.sh
+
+# Agent hook evidence logs
+.claude/evidence/

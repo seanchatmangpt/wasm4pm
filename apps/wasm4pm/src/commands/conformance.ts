@@ -284,7 +284,7 @@ function printHumanConformance(payload: ConformancePayload, projection: ConsoleP
   const fitness = (payload.fitness as number) ?? 0.0;
   const precisionRaw = payload.precision;
   const precisionAvailable = payload.precision_available;
-  const threshold = payload.threshold ?? 0.8;
+  const threshold = payload.threshold ?? 1.0;
   const isFit = payload.isFit;
   const diagnostics = payload.diagnostics;
 

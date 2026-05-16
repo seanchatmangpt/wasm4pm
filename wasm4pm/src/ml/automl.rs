@@ -119,9 +119,10 @@ pub fn discover_automl_classify_internal(features: &[[f64; 2]], labels: &[u8]) -
     let mut best_k = 1;
     let mut max_avg_accuracy = -1.0;
 
-    for k in 1..=MAX_K {
-        if accuracies[k] > max_avg_accuracy {
-            max_avg_accuracy = accuracies[k];
+    for (k, &acc) in accuracies[1..=MAX_K].iter().enumerate() {
+        let k = k + 1; // accuracies[1..] maps to k=1..=MAX_K
+        if acc > max_avg_accuracy {
+            max_avg_accuracy = acc;
             best_k = k;
         }
     }

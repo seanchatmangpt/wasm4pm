@@ -4,6 +4,7 @@ import * as path from 'path';
 import { resolveConfig as loadConfig, checkConfigWarnings } from '@wasm4pm/config';
 import { plan as makePlan } from '@wasm4pm/planner';
 import { ALGORITHM_CLI_ALIASES, findClosestMatch } from '@wasm4pm/contracts';
+import { getRegistry } from '@wasm4pm/kernel';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { withLogSession } from '../with-log-session.js';
 import { EXIT_CODES } from '../exit-codes.js';
@@ -27,7 +28,7 @@ export interface RunOptions {
 }
 
 /** All algorithms supported by wpm run, mapped to their WASM discovery functions. */
-const ALGORITHMS = [
+export const ALGORITHMS = [
   'dfg',
   'alpha',
   'heuristic',
@@ -47,13 +48,13 @@ const ALGORITHMS = [
   'smart-engine',
 ] as const;
 
-type Algorithm = (typeof ALGORITHMS)[number];
+export type Algorithm = (typeof ALGORITHMS)[number];
 
 /**
  * Invoke the appropriate WASM discovery function for the given algorithm.
  * Reuses the dispatch table pattern from compare.ts.
  */
-function runDiscovery(
+export function runDiscovery(
   wasm: Record<string, any>,
   algo: Algorithm,
   logHandle: string,
@@ -205,6 +206,31 @@ export const run = defineCommand({
       type: 'boolean',
       description:
         'Compute and display quality metrics (fitness, precision, simplicity) after discovery',
+    },
+    'assert-fitness': {
+      type: 'string',
+      description:
+        'Fail with exit 4 if fitness drops below this threshold (0-1). Implies --with-quality.',
+    },
+    'assert-precision': {
+      type: 'string',
+      description:
+        'Fail with exit 4 if precision drops below this threshold (0-1). Implies --with-quality.',
+    },
+    'set-baseline': {
+      type: 'boolean',
+      description:
+        'Save quality metrics as baseline to .wasm4pm/baseline.json. Use with --with-quality.',
+    },
+    'assert-improvement': {
+      type: 'boolean',
+      description:
+        'Fail with exit 4 if quality metrics regress versus the stored .wasm4pm/baseline.json.',
+    },
+    'no-retry': {
+      type: 'boolean',
+      description:
+        'Disable automatic algorithm fallback on execution failure (exit 3 immediately).',
     },
     preflight: {
       type: 'boolean',
@@ -414,25 +440,60 @@ export const run = defineCommand({
         // ETA estimation is optional
       }
 
-      // Step 6: Execute discovery
-      const t0 = performance.now();
+      // Step 6: Execute discovery with intelligent retry
+      const MAX_RETRIES = 3;
+      const noRetry = Boolean(ctx.args['no-retry']);
 
-      let raw: unknown;
-      let elapsedMs: number;
+      let raw: unknown = undefined;
+      let elapsedMs = 0;
+      let resolvedAlgoFinal = resolvedAlgo;
 
-      if (ctx.args.stream) {
-        const result = runDiscovery(wasm, resolvedAlgo, logHandle, activityKey);
-        raw = result.raw;
-        elapsedMs = result.elapsedMs;
-      } else {
-        const result = runDiscovery(wasm, resolvedAlgo, logHandle, activityKey);
-        raw = result.raw;
-        elapsedMs = result.elapsedMs;
+      {
+        // Build fallback chain: start with requested algorithm, then try simpler ones
+        // in the same quality bracket (sorted by ascending speed = simpler/faster).
+        const registry = getRegistry();
+        const allAlgos = registry.list();
+        const requested = allAlgos.find((a) => a.id === resolvedAlgo);
+        const qualityBracket = requested
+          ? allAlgos
+              .filter((a) => a.qualityTier >= requested.qualityTier - 20 && a.id !== resolvedAlgo)
+              .sort((a, b) => a.speedTier - b.speedTier) // simpler first
+              .slice(0, MAX_RETRIES - 1)
+              .map((a) => a.id as typeof resolvedAlgo)
+          : [];
+        const chain = [resolvedAlgo, ...qualityBracket];
+
+        let lastError: unknown;
+        let succeeded = false;
+
+        for (const algo of chain) {
+          try {
+            const result = runDiscovery(wasm, algo, logHandle, activityKey);
+            raw = result.raw;
+            elapsedMs = result.elapsedMs;
+            resolvedAlgoFinal = algo;
+            succeeded = true;
+            if (algo !== resolvedAlgo) {
+              process.stderr.write(`⚠ ${resolvedAlgo} failed, succeeded with fallback: ${algo}\n`);
+            }
+            break;
+          } catch (err) {
+            lastError = err;
+            if (noRetry || chain.length === 1) break;
+            process.stderr.write(`⚠ ${algo} failed (${err instanceof Error ? err.message : String(err)}), trying fallback...\n`);
+          }
+        }
+
+        if (!succeeded) {
+          throw lastError ?? new Error(`All algorithms failed for ${resolvedAlgo}`);
+        }
       }
+
+      // resolvedAlgoFinal holds the algorithm that actually succeeded (may differ from resolvedAlgo)
 
       // Validate discovery output shape — fail loudly on unknown shapes.
       try {
-        discriminate(raw, resolvedAlgo);
+        discriminate(raw, resolvedAlgoFinal);
       } catch (shapeErr) {
         if (shapeErr instanceof DiscoveryShapeError) {
           const errResult = makeErrorResult(
@@ -465,8 +526,20 @@ export const run = defineCommand({
       }
 
       // Step 7: Quality metrics (before freeing handle)
+      const assertFitness = ctx.args['assert-fitness'] !== undefined
+        ? parseFloat(String(ctx.args['assert-fitness']))
+        : undefined;
+      const assertPrecision = ctx.args['assert-precision'] !== undefined
+        ? parseFloat(String(ctx.args['assert-precision']))
+        : undefined;
+      const needsQuality = ctx.args['with-quality'] ||
+        assertFitness !== undefined ||
+        assertPrecision !== undefined ||
+        Boolean(ctx.args['assert-improvement']) ||
+        Boolean(ctx.args['set-baseline']);
+
       let qualityMetrics: { fitness: number; precision: number; simplicity: number } | null = null;
-      if (ctx.args['with-quality']) {
+      if (needsQuality) {
         // Normalise result first to check model type
         const resultDataEarly = typeof raw === 'string' ? JSON.parse(raw) : raw;
         // Petri net algorithms return places/transitions/arcs as counts (numbers)
@@ -542,6 +615,53 @@ export const run = defineCommand({
         }
       }
 
+      // Step 7b: Conformance regression gate — assert-fitness / assert-precision / assert-improvement
+      if (qualityMetrics) {
+        const baselinePath = path.join(process.cwd(), '.wasm4pm', 'baseline.json');
+
+        if (ctx.args['set-baseline']) {
+          try {
+            await fs.mkdir(path.dirname(baselinePath), { recursive: true });
+            await fs.writeFile(baselinePath, JSON.stringify({ ...qualityMetrics, algorithm: resolvedAlgoFinal, savedAt: new Date().toISOString() }, null, 2));
+          } catch { /* non-fatal */ }
+        }
+
+        const violations: string[] = [];
+
+        if (assertFitness !== undefined && qualityMetrics.fitness < assertFitness) {
+          violations.push(`fitness ${(qualityMetrics.fitness * 100).toFixed(1)}% < required ${(assertFitness * 100).toFixed(1)}%`);
+        }
+        if (assertPrecision !== undefined && qualityMetrics.precision < assertPrecision) {
+          violations.push(`precision ${(qualityMetrics.precision * 100).toFixed(1)}% < required ${(assertPrecision * 100).toFixed(1)}%`);
+        }
+
+        if (ctx.args['assert-improvement']) {
+          try {
+            const baselineRaw = await fs.readFile(baselinePath, 'utf8');
+            const baseline = JSON.parse(baselineRaw) as { fitness: number; precision: number };
+            if (qualityMetrics.fitness < baseline.fitness) {
+              violations.push(`fitness regressed: ${(qualityMetrics.fitness * 100).toFixed(1)}% < baseline ${(baseline.fitness * 100).toFixed(1)}%`);
+            }
+            if (qualityMetrics.precision < baseline.precision) {
+              violations.push(`precision regressed: ${(qualityMetrics.precision * 100).toFixed(1)}% < baseline ${(baseline.precision * 100).toFixed(1)}%`);
+            }
+          } catch {
+            violations.push('--assert-improvement: no baseline found — run with --set-baseline first');
+          }
+        }
+
+        if (violations.length > 0) {
+          const gateResult = makeErrorResult(
+            'run',
+            new Error(`Quality gate failed:\n${violations.map((v) => `  ✗ ${v}`).join('\n')}`),
+            EXIT_CODES.partial_failure,
+            'QUALITY_GATE_FAILED'
+          );
+          emitResult(gateResult, emitOptions);
+          return await exitWithFlush(EXIT_CODES.partial_failure);
+        }
+      }
+
       // Normalise result (WASM may return string or object)
       const resultData = typeof raw === 'string' ? JSON.parse(raw) : raw;
 
@@ -562,7 +682,7 @@ export const run = defineCommand({
       // Step 9: Build output payload
       const payload = {
         status: 'success',
-        algorithm: resolvedAlgo,
+        algorithm: resolvedAlgoFinal,
         activityKey,
         input: inputPath,
         elapsedMs: Math.round(elapsedMs * 100) / 100,
@@ -577,7 +697,7 @@ export const run = defineCommand({
       let savedPath: string | null = null;
       if (!ctx.args['no-save']) {
         savedPath = await savePredictionResult(
-          `discover-${resolvedAlgo}`,
+          `discover-${resolvedAlgoFinal}`,
           inputPath,
           activityKey,
           payload as unknown as Record<string, unknown>
@@ -592,7 +712,7 @@ export const run = defineCommand({
             output_hash: blake3Hex(JSON.stringify(payload)),
             status: 'success',
             summary: {
-              algorithm: resolvedAlgo,
+              algorithm: resolvedAlgoFinal,
               activityKey,
               elapsedMs: Math.round(elapsedMs * 100) / 100,
             },

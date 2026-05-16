@@ -50,6 +50,9 @@ importers:
       '@wasm4pm/swarm':
         specifier: workspace:*
         version: link:../../packages/swarm
+      ajv:
+        specifier: ^8.12.0
+        version: 8.18.0
       chokidar:
         specifier: ^4.0.1
         version: 4.0.3

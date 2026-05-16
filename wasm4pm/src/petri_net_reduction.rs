@@ -133,8 +133,6 @@ fn add_arc(net: &mut PetriNet, from: &str, to: &str) {
 }
 
 use crate::state::{get_or_init_state, StoredObject};
-use crate::utilities::to_js_str;
-use wasm_bindgen::prelude::*;
 
 #[wasm_bindgen(js_name = reduce_petri_net)]
 pub fn reduce_petri_net_wasm(net_handle: &str) -> Result<JsValue, JsValue> {

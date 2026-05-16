@@ -1,4 +1,4 @@
-import { defineCommand, runMain } from 'citty';
+import { defineCommand } from 'citty';
 import { run } from './commands/run.js';
 import { watch } from './commands/watch.js';
 import { status } from './commands/status.js';
@@ -24,9 +24,15 @@ import { agent } from './commands/agent.js';
 import { membrane } from './commands/membrane.js';
 import { config } from './commands/config.js';
 import { verify } from './commands/verify.js';
+import { proof } from './commands/proof.js';
 import { benchmark } from './commands/benchmark.js';
 import { cognition } from './commands/cognition.js';
 import { completions } from './commands/completions.js';
+import { claude } from './commands/claude.js';
+import { adversary } from './commands/adversary.js';
+import { trace } from './commands/trace.js';
+import { algorithms } from './commands/algorithms.js';
+import { repl } from './commands/repl.js';
 import pkg from '../package.json' with { type: 'json' };
 
 export const main = defineCommand({
@@ -109,6 +115,7 @@ ${BOLD}BENCHMARK${RESET}  ${DIM}(verb8: build · replay · verify · export)${RE
   ${GREEN}wpm benchmark replay${RESET} [--corpus <path>]   Run traces, show per-trace results
   ${GREEN}wpm benchmark verify${RESET} [--corpus <path>]   CI gate — exit non-zero on failure
   ${GREEN}wpm benchmark export${RESET} [--format sarif]    Export SARIF / JSON / CSV
+  ${GREEN}wpm proof promote${RESET} [--pack <path>]        Seal a proof-work pack into proof-packs/
 
 ${BOLD}AUTOPROCESS${RESET}  ${DIM}(Perception → Decision → Protection → Optimization)${RESET}
   ${GREEN}wpm autoprocess${RESET} <log.xes>              Run full autonomic control loop
@@ -126,7 +133,21 @@ ${BOLD}RESULTS & HEALTH${RESET}
   ${GREEN}wpm results${RESET}                         View all saved discovery & prediction results
   ${GREEN}wpm results${RESET} --last                  Print the most recent result
   ${GREEN}wpm doctor${RESET}                          Check environment health + pipeline integrity (24 checks)
+  ${GREEN}wpm doctor hooks${RESET}                    JTBD verification: test whether each Claude Code hook does its job
   ${GREEN}wpm status${RESET}                          WASM module status and memory usage
+
+${BOLD}TRACE-TO-POWL v2 PIPELINE${RESET}  ${DIM}(stack traces → object evidence → conformance)${RESET}
+  ${GREEN}wpm trace ingest${RESET} --from rust|ts [-i f]  Parse stack trace → TraceGraph JSON-LD
+  ${GREEN}wpm trace ocel${RESET}   [-i graph.json]        TraceGraph → OCEL object-centric events
+  ${GREEN}wpm trace powl${RESET}   [-i ocel.json]         OCEL → observed POWL route
+  ${GREEN}wpm trace conform${RESET} -m model.powl.json    Observed route vs. declared POWL v2 model
+
+${BOLD}CLAUDE CODE INTEGRATION${RESET}  ${DIM}(session evidence, hook verification)${RESET}
+  ${GREEN}wpm claude${RESET}                          Claude Code integration status (hooks, session, proof audit)
+  ${GREEN}wpm claude session${RESET}                  Show today's tool evidence and work orders
+  ${GREEN}wpm claude session verify${RESET}           Verify BLAKE3 hash chain + CHAIN_HEAD anchor integrity
+  ${GREEN}wpm claude hooks${RESET}                    JTBD verification of all hook jobs
+  ${GREEN}wpm adversary${RESET}                       Adversarial proof lifecycle convergence test (18 probes)
 
 ${BOLD}SETUP${RESET}
   ${GREEN}wpm init${RESET}                            Scaffold wasm4pm.toml + .env.example in current dir
@@ -165,8 +186,14 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     config,
     benchmark,
     verify,
+    proof,
     cognition,
     completions,
+    claude,
+    adversary,
+    trace,
+    algorithms,
+    repl,
   },
 });
 
@@ -199,4 +226,5 @@ export {
   membrane,
   config,
   verify,
+  claude,
 };

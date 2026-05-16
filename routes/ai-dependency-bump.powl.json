@@ -1,0 +1,33 @@
+{
+  "route_id": "ai-dependency-bump",
+  "type": "powl2",
+  "required_stages": ["audit", "bump", "run_tests", "lock", "emit_receipt"],
+  "receipt_required": true,
+  "object_types": {
+    "AuditReport": {
+      "created_by": ["audit"],
+      "terminated_by": ["lock"]
+    },
+    "Lockfile": {
+      "created_by": ["lock"],
+      "terminated_by": ["emit_receipt"],
+      "min_count": 1
+    },
+    "Receipt": {
+      "created_by": ["emit_receipt"],
+      "schema": "schemas/receipts/proof-receipt.schema.json"
+    }
+  },
+  "model": {
+    "type": "partial_order",
+    "partial_order": {
+      "nodes": ["audit", "bump", "run_tests", "lock", "emit_receipt"],
+      "order": [
+        ["audit", "bump"],
+        ["bump", "run_tests"],
+        ["run_tests", "lock"],
+        ["lock", "emit_receipt"]
+      ]
+    }
+  }
+}

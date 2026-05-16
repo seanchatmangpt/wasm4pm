@@ -1,0 +1,30 @@
+{
+  "route_id": "adversarial-admissibility",
+  "type": "powl2",
+  "required_stages": [
+    "wpm_probe_adversary",
+    "wpm_adversary_write_audit",
+    "wpm_doctor_hooks"
+  ],
+  "receipt_required": true,
+  "object_types": {
+    "ProofPack": { "created_by": ["wpm_proof_collect"] },
+    "Receipt": {
+      "created_by": ["emit_receipt", "proof_collect"],
+      "schema": "schemas/receipts/audit-receipt.schema.json"
+    }
+  },
+  "model": {
+    "type": "choice_graph",
+    "choice_graph": {
+      "nodes": ["▷", "wpm_probe_adversary", "wpm_adversary_write_audit", "wpm_doctor_hooks", "emit_receipt", "□"],
+      "edges": [
+        ["▷", "wpm_probe_adversary"],
+        ["wpm_probe_adversary", "wpm_adversary_write_audit"],
+        ["wpm_adversary_write_audit", "wpm_doctor_hooks"],
+        ["wpm_doctor_hooks", "emit_receipt"],
+        ["emit_receipt", "□"]
+      ]
+    }
+  }
+}

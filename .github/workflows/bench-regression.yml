@@ -4,6 +4,8 @@ on:
   pull_request:
     branches: [main, develop]
     types: [opened, synchronize, reopened]
+  push:
+    branches: [main]
   workflow_dispatch:
 
 env:
@@ -187,7 +189,7 @@ jobs:
     name: Baseline Not Established
     runs-on: ubuntu-latest
     needs: check-baseline-exists
-    if: needs.check-baseline-exists.outputs.baseline-exists == 'false'
+    if: needs.check-baseline-exists.outputs.baseline-exists == 'false' && github.event_name == 'pull_request'
     steps:
       - name: Inform user about baseline
         run: |
@@ -206,3 +208,47 @@ jobs:
           echo "   git push origin main"
           echo ""
           echo "3. Regression checks will activate on next PR"
+
+  # Automatically update the benchmark baseline after merges to main.
+  # This prevents stale baselines from causing false regression alerts on future PRs.
+  update-baseline:
+    name: Auto-update benchmark baseline
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          fetch-depth: 0
+
+      - name: Install Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.cargo/registry
+            ~/.cargo/git
+            target
+          key: ${{ runner.os }}-cargo-bench-${{ hashFiles('**/Cargo.lock') }}
+
+      - name: Run benchmarks and capture output
+        working-directory: ./wasm4pm
+        run: |
+          cargo bench --bench fast_algorithms -- --output-format bencher 2>/dev/null | tee /tmp/bench-results.txt || true
+          echo "Benchmark run complete"
+
+      - name: Update baseline file
+        working-directory: ./wasm4pm
+        run: |
+          bash ../.wasm4pm/benchmarks/update-baseline.sh /tmp/bench-results.txt || \
+            echo "update-baseline.sh failed or produced no output — skipping commit"
+
+      - name: Commit updated baseline
+        uses: stefanzweifel/git-auto-commit-action@v5
+        with:
+          commit_message: "chore(bench): auto-update baseline from main [skip ci]"
+          file_pattern: ".wasm4pm/benchmarks/baselines/main-latest.json"
+          commit_user_name: "github-actions[bot]"
+          commit_user_email: "github-actions[bot]@users.noreply.github.com"

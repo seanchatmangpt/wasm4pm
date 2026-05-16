@@ -99,7 +99,7 @@ pub fn regression_internal(x: &[f64], y: &[f64]) -> RegressionResult {
     let r2_den = den_x * den_y;
 
     let r_squared = if r2_den.abs() > EPSILON {
-        (r2_num / r2_den).max(0.0).min(1.0)
+        (r2_num / r2_den).clamp(0.0, 1.0)
     } else {
         0.0
     };
@@ -175,7 +175,7 @@ pub fn discover_ml_regress_automl(eventlog_handle: &str, k_folds: u32) -> Result
     }
 
     let k = k_folds.max(1) as usize;
-    let chunk_size = (n + k - 1) / k;
+    let chunk_size = n.div_ceil(k);
     let mut results = Vec::with_capacity(k);
 
     for i in 0..k {

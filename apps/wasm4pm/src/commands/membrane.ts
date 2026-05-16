@@ -613,7 +613,7 @@ const membraneBuild = defineCommand({
     const actorKey = (ctx.args['actor-key'] as string) || 'org:resource';
     const timestampKey = (ctx.args['timestamp-key'] as string) || 'time:timestamp';
     const coverageThreshold = parseFloat(
-      (ctx.args['coverage-threshold'] as string) || '0.8'
+      (ctx.args['coverage-threshold'] as string) || '1.0'
     );
 
     const loader = WasmLoader.getInstance();

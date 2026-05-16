@@ -29,7 +29,6 @@ pub fn discover_heuristic_miner_from_log(
     }));
 
     let mut follows: FxHashMap<(u32, u32), usize> = FxHashMap::default();
-    let mut precedes: FxHashMap<(u32, u32), usize> = FxHashMap::default();
 
     for t in 0..col.trace_offsets.len().saturating_sub(1) {
         let start = col.trace_offsets[t];
@@ -43,7 +42,6 @@ pub fn discover_heuristic_miner_from_log(
         for i in start..end - 1 {
             let (a, b) = (col.events[i], col.events[i + 1]);
             *follows.entry((a, b)).or_insert(0) += 1;
-            *precedes.entry((b, a)).or_insert(0) += 1;
         }
         *dfg.start_activities
             .entry(col.vocab[col.events[start] as usize].to_owned())
@@ -53,8 +51,9 @@ pub fn discover_heuristic_miner_from_log(
             .or_insert(0) += 1;
     }
 
-    for ((a, b), count) in follows {
-        let reverse_count = precedes.get(&(b, a)).copied().unwrap_or(0);
+    for (&(a, b), &count) in &follows {
+        // dep(a,b) = (|a>b| - |b>a|) / (|a>b| + |b>a| + 1) per Weijters et al.
+        let reverse_count = follows.get(&(b, a)).copied().unwrap_or(0);
         let ab = f64::from(count as u32);
         let ba = f64::from(reverse_count as u32);
         if (ab - ba) / (ab + ba + 1.0) >= dependency_threshold {
@@ -251,7 +250,7 @@ pub fn detect_rework(eventlog_handle: &str, activity_key: &str) -> Result<JsValu
             }
 
             let mut rework_vec: Vec<(String, usize)> = rework_stats.into_iter().collect();
-            rework_vec.sort_by(|a, b| b.1.cmp(&a.1));
+            rework_vec.sort_by_key(|b| std::cmp::Reverse(b.1));
 
             to_js_str(&json!({
                 "traces_with_rework": traces_with_rework,

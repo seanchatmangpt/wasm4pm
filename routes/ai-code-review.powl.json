@@ -1,0 +1,34 @@
+{
+  "route_id": "ai-code-review",
+  "type": "powl2",
+  "required_stages": ["lint", "type_check", "run_tests", "summarize", "emit_receipt"],
+  "receipt_required": true,
+  "object_types": {
+    "Diagnostic": {
+      "created_by": ["lint", "type_check"],
+      "terminated_by": ["summarize"]
+    },
+    "TestRun": {
+      "created_by": ["run_tests"],
+      "terminated_by": ["summarize"]
+    },
+    "Receipt": {
+      "created_by": ["emit_receipt"],
+      "schema": "schemas/receipts/proof-receipt.schema.json"
+    }
+  },
+  "model": {
+    "type": "choice_graph",
+    "choice_graph": {
+      "nodes": ["▷", "lint", "type_check", "run_tests", "summarize", "emit_receipt", "□"],
+      "edges": [
+        ["▷", "lint"],
+        ["lint", "type_check"],
+        ["type_check", "run_tests"],
+        ["run_tests", "summarize"],
+        ["summarize", "emit_receipt"],
+        ["emit_receipt", "□"]
+      ]
+    }
+  }
+}

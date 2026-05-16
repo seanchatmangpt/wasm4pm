@@ -77,23 +77,20 @@ jobs:
       - name: TPS Pipeline Quality Gate
         run: node scripts/tps-pipeline-check.mjs
 
-      # Lint checks
+      # Lint checks — hard gates: failures block merge
       - name: Check formatting (Prettier)
         working-directory: ./wasm4pm
         run: npm run format:check
-        continue-on-error: true
 
       # Rust formatting check
       - name: Check Rust formatting
         working-directory: ./wasm4pm
         run: cargo fmt --all --check
-        continue-on-error: true
 
       # Rust clippy linting
       - name: Run Rust clippy
         working-directory: ./wasm4pm
         run: cargo clippy --all-targets --target wasm32-unknown-unknown -- -D warnings
-        continue-on-error: true
 
       # TypeScript type checking
       - name: TypeScript type check
@@ -180,12 +177,17 @@ jobs:
           fi
         continue-on-error: true
 
-      # Security audit
+      # Security audit — hard gate
       - name: Run security audit
         if: runner.os == 'Linux'
         working-directory: ./wasm4pm
         run: cargo audit --deny warnings
-        continue-on-error: true
+
+      # Dependency license and ban check — hard gate
+      - name: Run cargo deny
+        if: runner.os == 'Linux'
+        working-directory: ./wasm4pm
+        run: cargo deny check
 
       # Generate docs
       - name: Generate TypeScript docs
@@ -196,7 +198,7 @@ jobs:
       # Upload docs as artifact
       - name: Upload documentation
         if: runner.os == 'Linux' && matrix.node-version == '20'
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: documentation
           path: ./wasm4pm/docs/

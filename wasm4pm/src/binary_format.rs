@@ -21,6 +21,7 @@
 //! same 64-bit FNV-1a parameters as `crate::cache::hash_xes_content`.
 
 use crate::cache::OwnedColumnarLog;
+use crate::error::Wasm4pmError;
 use crate::models::{AttributeValue, Event, EventLog, Trace};
 use crate::state::{get_or_init_state, StoredObject};
 use rustc_hash::FxHashMap;
@@ -80,6 +81,7 @@ pub struct BinaryHeader {
 
 impl BinaryHeader {
     /// Create a new header with default values.
+    #[must_use]
     pub fn new() -> Self {
         BinaryHeader {
             magic: MAGIC,
@@ -111,13 +113,13 @@ impl BinaryHeader {
     }
 
     /// Parse a header from the first 128 bytes of a buffer.
-    pub fn from_bytes(bytes: &[u8]) -> Result<Self, String> {
+    pub fn from_bytes(bytes: &[u8]) -> Result<Self, Wasm4pmError> {
         if bytes.len() < size_of::<BinaryHeader>() {
-            return Err(format!(
+            return Err(Wasm4pmError::BinaryFormat(format!(
                 "Buffer too small for header: {} < {}",
                 bytes.len(),
                 size_of::<BinaryHeader>()
-            ));
+            )));
         }
 
         let mut header = BinaryHeader::new();
@@ -141,18 +143,18 @@ impl BinaryHeader {
     }
 
     /// Validate magic bytes and version.
-    pub fn validate(&self) -> Result<(), String> {
+    pub fn validate(&self) -> Result<(), Wasm4pmError> {
         if self.magic != MAGIC {
-            return Err(format!(
+            return Err(Wasm4pmError::BinaryFormat(format!(
                 "Invalid magic bytes: expected {:?}, got {:?}",
                 MAGIC, self.magic
-            ));
+            )));
         }
         if self.version != VERSION {
-            return Err(format!(
+            return Err(Wasm4pmError::BinaryFormat(format!(
                 "Unsupported version: expected {}, got {}",
                 VERSION, self.version
-            ));
+            )));
         }
         Ok(())
     }
@@ -186,6 +188,7 @@ pub struct BinaryLogBuilder {
 
 impl BinaryLogBuilder {
     /// Create a new empty builder.
+    #[must_use]
     pub fn new() -> Self {
         BinaryLogBuilder {
             vocab: Vec::new(),
@@ -255,6 +258,7 @@ impl BinaryLogBuilder {
     }
 
     /// Build a trace from an EventLog, collecting all traces.
+    #[must_use]
     pub fn from_event_log(log: &EventLog, activity_key: &str, timestamp_key: &str) -> Self {
         let mut builder = BinaryLogBuilder::new();
         for trace in &log.traces {
@@ -379,18 +383,18 @@ pub struct BinaryLogView<'a> {
 
 impl<'a> BinaryLogView<'a> {
     /// Create a view from raw bytes. Validates magic and version.
-    pub fn from_bytes(bytes: &'a [u8]) -> Result<Self, String> {
+    pub fn from_bytes(bytes: &'a [u8]) -> Result<Self, Wasm4pmError> {
         let header = BinaryHeader::from_bytes(bytes)?;
         header.validate()?;
 
         // Verify we have enough data for the declared sections
         let end = header.section_offsets[5] as usize;
         if bytes.len() < end {
-            return Err(format!(
+            return Err(Wasm4pmError::BinaryFormat(format!(
                 "Buffer truncated: expected {} bytes, got {}",
                 end,
                 bytes.len()
-            ));
+            )));
         }
 
         // Verify checksum
@@ -398,10 +402,10 @@ impl<'a> BinaryLogView<'a> {
         let data = &bytes[header_size..end];
         let computed_checksum = fnv1a_hash(data);
         if computed_checksum != header.checksum {
-            return Err(format!(
+            return Err(Wasm4pmError::BinaryFormat(format!(
                 "Checksum mismatch: expected {:016x}, computed {:016x}",
                 header.checksum, computed_checksum
-            ));
+            )));
         }
 
         Ok(BinaryLogView {
@@ -661,7 +665,7 @@ pub fn write_pm4bin(xes_content: &str) -> Result<Vec<u8>, JsValue> {
 /// default timestamp key.
 #[wasm_bindgen]
 pub fn read_pm4bin(bytes: &[u8]) -> Result<String, JsValue> {
-    let view = BinaryLogView::from_bytes(bytes).map_err(|e| crate::error::js_val(&e))?;
+    let view = BinaryLogView::from_bytes(bytes).map_err(|e| crate::error::js_val(&e.to_string()))?;
 
     let log = view
         .to_event_log("concept:name", "time:timestamp")
@@ -698,7 +702,7 @@ pub fn pm4bin_info(bytes: &[u8]) -> Result<String, JsValue> {
         )));
     }
 
-    let header = BinaryHeader::from_bytes(bytes).map_err(|e| crate::error::js_val(&e))?;
+    let header = BinaryHeader::from_bytes(bytes).map_err(|e| crate::error::js_val(&e.to_string()))?;
 
     let info = json!({
         "version": header.version,

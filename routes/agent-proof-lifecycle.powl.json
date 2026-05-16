@@ -1,0 +1,28 @@
+{
+  "route_id": "agent-proof-lifecycle",
+  "type": "powl2",
+  "required_stages": ["collect_evidence", "verify_evidence", "emit_receipt"],
+  "receipt_required": true,
+  "object_types": {
+    "Evidence": {
+      "created_by": ["collect_evidence"],
+      "terminated_by": ["emit_receipt"]
+    },
+    "Receipt": {
+      "created_by": ["emit_receipt"],
+      "schema": "schemas/receipts/proof-receipt.schema.json"
+    }
+  },
+  "model": {
+    "type": "choice_graph",
+    "choice_graph": {
+      "nodes": ["▷", "collect_evidence", "verify_evidence", "emit_receipt", "□"],
+      "edges": [
+        ["▷", "collect_evidence"],
+        ["collect_evidence", "verify_evidence"],
+        ["verify_evidence", "emit_receipt"],
+        ["emit_receipt", "□"]
+      ]
+    }
+  }
+}

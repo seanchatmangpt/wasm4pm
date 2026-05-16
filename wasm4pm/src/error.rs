@@ -5,6 +5,83 @@
  */
 use wasm_bindgen::prelude::*;
 
+/// Typed error enum for wasm4pm public APIs.
+///
+/// All `Result<T, String>` public functions should convert to this type at
+/// the public boundary using `.map_err(Wasm4pmError::Parse)` etc.
+/// Internal helper functions may continue to use `String` and convert at
+/// the last mile.
+#[derive(Debug, thiserror::Error)]
+pub enum Wasm4pmError {
+    /// Input could not be parsed (XES, OCEL, POWL text format, etc.).
+    #[error("parse error: {0}")]
+    Parse(String),
+    /// Structural validation failed (partial order, Petri net soundness, etc.).
+    #[error("validation error: {0}")]
+    Validation(String),
+    /// Binary `.pm4bin` format error (magic mismatch, truncated data, etc.).
+    #[error("binary format error: {0}")]
+    BinaryFormat(String),
+    /// An algorithm failed for a named reason.
+    #[error("algorithm error in '{algorithm}': {reason}")]
+    Algorithm { algorithm: String, reason: String },
+    /// A stored-object handle was not found or has the wrong type.
+    #[error("handle not found: {0}")]
+    HandleNotFound(String),
+}
+
+impl Wasm4pmError {
+    /// Machine-readable error code for JS switch/dispatch.
+    pub fn code(&self) -> &'static str {
+        match self {
+            Self::Parse(_) => "PARSE_ERROR",
+            Self::Validation(_) => "VALIDATION_ERROR",
+            Self::BinaryFormat(_) => "BINARY_FORMAT_ERROR",
+            Self::Algorithm { .. } => "ALGORITHM_ERROR",
+            Self::HandleNotFound(_) => "HANDLE_NOT_FOUND",
+        }
+    }
+
+    /// Human-readable remediation hint for JS callers — how to fix the error.
+    /// Returns `None` for variants where the message is already self-explanatory.
+    pub fn remediation(&self) -> Option<&'static str> {
+        match self {
+            Self::HandleNotFound(_) => Some(
+                "Create a fresh handle via load_eventlog_from_xes() or \
+                 load_eventlog_from_binary() and pass it here.",
+            ),
+            Self::Parse(_) => Some(
+                "Verify the input is valid syntax. \
+                 For POWL: see parse_powl_model_string docs. \
+                 For XES: validate against the XES schema.",
+            ),
+            Self::BinaryFormat(_) => Some(
+                "Re-export the event log to binary format via export_eventlog_to_binary() \
+                 and retry.",
+            ),
+            Self::Validation(_) | Self::Algorithm { .. } => None,
+        }
+    }
+}
+
+impl From<Wasm4pmError> for JsValue {
+    /// Converts to a structured JSON object `{code, message, remediation?}`.
+    /// Callers can switch on `code` for typed error handling in JS/TS.
+    fn from(e: Wasm4pmError) -> JsValue {
+        let msg = e.to_string().replace('"', "\\\"");
+        let json = match e.remediation() {
+            Some(r) => format!(
+                r#"{{"code":"{}","message":"{}","remediation":"{}"}}"#,
+                e.code(),
+                msg,
+                r
+            ),
+            None => format!(r#"{{"code":"{}","message":"{}"}}"#, e.code(), msg),
+        };
+        js_val(&json)
+    }
+}
+
 /// Native-safe JsValue from string.
 /// On wasm32, this is a wrapper around JsValue::from_str.
 /// On other targets, it returns a zeroed JsValue to avoid panics.

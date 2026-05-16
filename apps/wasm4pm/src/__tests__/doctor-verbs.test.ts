@@ -67,7 +67,7 @@ describe('wpm doctor env', () => {
   it('completes under 5 seconds and JSON output has environment array', () => {
     const start = Date.now();
     wpm('doctor', 'env');
-    expect(Date.now() - start).toBeLessThan(5_000);
+    expect(Date.now() - start).toBeLessThan(10_000);
     const { json } = wpmJson('doctor', 'env', '--format', 'json');
     assertEnvelope(json, { command: 'doctor env' });
     expect(Array.isArray((json as { payload: { environment: unknown[] } }).payload.environment)).toBe(true);

@@ -1,0 +1,32 @@
+{
+  "route_id": "ai-test-writing",
+  "type": "powl2",
+  "required_stages": ["red", "green", "refactor", "emit_receipt"],
+  "receipt_required": true,
+  "object_types": {
+    "TestCase": {
+      "created_by": ["red"],
+      "terminated_by": ["refactor"],
+      "min_count": 1
+    },
+    "TestRun": {
+      "created_by": ["red", "green", "refactor"],
+      "terminated_by": ["emit_receipt"]
+    },
+    "Receipt": {
+      "created_by": ["emit_receipt"],
+      "schema": "schemas/receipts/proof-receipt.schema.json"
+    }
+  },
+  "model": {
+    "type": "partial_order",
+    "partial_order": {
+      "nodes": ["red", "green", "refactor", "emit_receipt"],
+      "order": [
+        ["red", "green"],
+        ["green", "refactor"],
+        ["refactor", "emit_receipt"]
+      ]
+    }
+  }
+}

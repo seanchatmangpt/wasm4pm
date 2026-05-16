@@ -1,0 +1,10 @@
+{
+  "powl_expression": "PO=(nodes={test.started, command.executed, output.captured, assertion.checked, test.completed}, order={test.started-->command.executed, command.executed-->output.captured, output.captured-->assertion.checked, assertion.checked-->test.completed})",
+  "required_activities": [
+    "test.started",
+    "command.executed",
+    "output.captured",
+    "assertion.checked",
+    "test.completed"
+  ]
+}

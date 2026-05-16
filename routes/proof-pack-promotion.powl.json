@@ -1,0 +1,33 @@
+{
+  "route_id": "proof-pack-promotion",
+  "type": "powl2",
+  "required_stages": [
+    "wpm_proof_collect",
+    "wpm_proof_verify",
+    "wpm_proof_promote"
+  ],
+  "receipt_required": true,
+  "object_types": {
+    "ProofPack": {
+      "created_by": ["wpm_proof_collect"],
+      "terminated_by": ["wpm_proof_promote"]
+    },
+    "Receipt": {
+      "created_by": ["emit_receipt", "proof_collect"],
+      "schema": "schemas/receipts/proof-receipt.schema.json"
+    }
+  },
+  "model": {
+    "type": "choice_graph",
+    "choice_graph": {
+      "nodes": ["▷", "wpm_proof_collect", "wpm_proof_verify", "wpm_proof_promote", "emit_receipt", "□"],
+      "edges": [
+        ["▷", "wpm_proof_collect"],
+        ["wpm_proof_collect", "wpm_proof_verify"],
+        ["wpm_proof_verify", "wpm_proof_promote"],
+        ["wpm_proof_promote", "emit_receipt"],
+        ["emit_receipt", "□"]
+      ]
+    }
+  }
+}

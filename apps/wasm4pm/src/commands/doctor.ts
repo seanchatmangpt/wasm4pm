@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
-import { existsSync, readFileSync, statSync } from 'fs';
-import { execSync } from 'child_process';
+import { existsSync, readFileSync, statSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'fs';
+import { execSync, spawnSync } from 'child_process';
 import * as path from 'path';
 import * as os from 'os';
 import { emitResult, makeResult, makeErrorResult, ConsoleProjection } from '../output.js';
@@ -152,8 +152,8 @@ async function checkWasmBinary(): Promise<Diagnosis> {
     };
   }
 
-  const wasmFile = path.join(wasmPkgDir, 'wpm_bg.wasm');
-  const jsFile = path.join(wasmPkgDir, 'wpm.js');
+  const wasmFile = path.join(wasmPkgDir, 'wasm4pm_bg.wasm');
+  const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
 
   try {
     const [wasmStat, jsStat] = await Promise.all([fs.stat(wasmFile), fs.stat(jsFile)]);
@@ -203,13 +203,13 @@ async function checkWasmLoads(): Promise<Diagnosis> {
     };
   }
 
-  const jsFile = path.join(wasmPkgDir, 'wpm.js');
+  const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
   if (!existsSync(jsFile)) {
     return {
       name: 'WASM loads',
       pathology: 'ENVIRONMENT_FAULT',
       severity: 'STOP_THE_LINE',
-      message: 'wpm.js not found — module not built',
+      message: 'wasm4pm.js not found — module not built',
       fix: 'cd wasm4pm && pnpm run build',
     };
   }
@@ -252,12 +252,18 @@ async function checkWasmLoads(): Promise<Diagnosis> {
 
 async function checkSimdSupport(): Promise<Diagnosis> {
   try {
-    // WebAssembly SIMD is detected by compiling a small SIMD module
+    // WebAssembly SIMD is detected by compiling a module that uses v128.const (fd 0c).
+    // The module: () -> v128 { v128.const (16 zero bytes) }
+    // v128.const requires exactly 16 immediate bytes — runtimes without SIMD reject it at compile.
     const simdModule = new Uint8Array([
-      0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, 0x01, 0x07, 0x01, 0x60, 0x02, 0x7b, 0x7b,
-      0x01, 0x7b, 0x03, 0x02, 0x01, 0x00, 0x07, 0x0b, 0x01, 0x07, 0x73, 0x69, 0x6d, 0x64, 0x5f,
-      0x74, 0x65, 0x73, 0x74, 0x00, 0x00, 0x0a, 0x09, 0x01, 0x07, 0x00, 0x20, 0x00, 0x20, 0x00,
-      0xfd, 0x0c, 0x00, 0x0b,
+      0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // magic + version
+      0x01, 0x05, 0x01, 0x60, 0x00, 0x01, 0x7b,       // type: () -> v128
+      0x03, 0x02, 0x01, 0x00,                           // function section
+      0x0a, 0x16, 0x01, 0x14, 0x00,                    // code section (body=20 bytes, 0 locals)
+      0xfd, 0x0c,                                        // v128.const
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 16 immediate bytes (zero vector)
+      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+      0x0b,                                              // end
     ]);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const compile = (globalThis as any).WebAssembly?.compile as
@@ -457,19 +463,40 @@ async function checkXesFiles(): Promise<Diagnosis> {
     return {
       name: 'XES event logs',
       pathology: 'REPRODUCIBILITY_TRUTH_FAULT',
-      severity: 'WARNING',
-      message: 'No .xes files found in current directory (depth ≤ 2)',
-      fix: 'Place an XES event log here, or pass --input <path> to wpm run/predict',
+      severity: 'STOP_THE_LINE',
+      message: 'No .xes files found — AAT requires real event log data, not synthetic fixtures',
+      fix: 'Add a real XES event log to bench_data/ (e.g. sepsis.xes, bpi2012.xes)',
+    };
+  }
+
+  // Validate files are real XES (not placeholders like "404: Not Found")
+  const realXes: string[] = [];
+  for (const f of found) {
+    try {
+      const content = await fs.readFile(path.join(cwd, f), { encoding: 'utf-8' });
+      if (content.includes('<log') || content.includes('<?xml')) realXes.push(f);
+    } catch {
+      // unreadable — skip
+    }
+  }
+
+  if (realXes.length === 0) {
+    return {
+      name: 'XES event logs',
+      pathology: 'REPRODUCIBILITY_TRUTH_FAULT',
+      severity: 'STOP_THE_LINE',
+      message: `${found.length} .xes file(s) found but none contain valid XES XML — AAT requires real data`,
+      fix: 'Replace placeholder files with real XES event logs',
     };
   }
 
   const preview =
-    found.slice(0, 3).join(', ') + (found.length > 3 ? ` (+${found.length - 3} more)` : '');
+    realXes.slice(0, 3).join(', ') + (realXes.length > 3 ? ` (+${realXes.length - 3} more)` : '');
   return {
     name: 'XES event logs',
     pathology: 'REPRODUCIBILITY_TRUTH_FAULT',
     severity: 'INFO',
-    message: `${found.length} file(s): ${preview}`,
+    message: `${realXes.length} real XES file(s): ${preview}`,
   };
 }
 
@@ -619,25 +646,25 @@ async function checkTypeScriptCompilation(): Promise<Diagnosis> {
   }
 
   try {
-    execSync('npx tsc --noEmit', { cwd: rootDir, encoding: 'utf8', stdio: 'pipe', timeout: 60000 });
+    execSync('pnpm lint', { cwd: rootDir, encoding: 'utf8', stdio: 'pipe', timeout: 120000 });
     return {
       name: 'TypeScript compilation',
       pathology: 'EPISTEMIC_FAULT',
       severity: 'INFO',
-      message: 'tsc --noEmit passes',
+      message: 'pnpm lint passes (per-package tsc --noEmit clean)',
     };
   } catch (err) {
-    const stderr = (err as { stderr?: string }).stderr ?? '';
-    const lineCount = stderr
-      .trim()
+    const combined =
+      ((err as { stdout?: string }).stdout ?? '') + ((err as { stderr?: string }).stderr ?? '');
+    const errorLines = combined
       .split('\n')
-      .filter((l) => l.trim()).length;
+      .filter((l) => /error TS\d+|ELIFECYCLE|RECURSIVE_RUN_FIRST_FAIL/.test(l));
     return {
       name: 'TypeScript compilation',
       pathology: 'EPISTEMIC_FAULT',
       severity: 'WARNING',
-      message: `${lineCount} TypeScript error(s) — run: pnpm lint for details`,
-      fix: 'Fix TypeScript errors: pnpm lint',
+      message: `pnpm lint failed (${errorLines.length} error line(s)) — run: pnpm lint for details`,
+      fix: 'Fix per-package TypeScript errors: pnpm lint',
     };
   }
 }
@@ -780,7 +807,7 @@ async function checkAlgorithmRegistry(): Promise<Diagnosis> {
     };
   }
 
-  const jsFile = path.join(wasmPkgDir, 'wpm.js');
+  const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
   if (!existsSync(jsFile)) {
     return {
       name: 'Algorithm registry',
@@ -794,7 +821,7 @@ async function checkAlgorithmRegistry(): Promise<Diagnosis> {
     const url = new URL(`file://${jsFile}`);
     const mod = await import(url.href);
 
-    // Known algorithm functions
+    // Known algorithm functions (actual wasm_bindgen export names)
     const expected: string[] = [
       'discover_dfg',
       'extract_process_skeleton',
@@ -804,12 +831,12 @@ async function checkAlgorithmRegistry(): Promise<Diagnosis> {
       'discover_hill_climbing',
       'discover_declare',
       'discover_simulated_annealing',
-      'discover_a_star',
-      'discover_aco',
-      'discover_pso',
+      'discover_astar',
+      'discover_aco_algorithm',
+      'discover_pso_algorithm',
       'discover_genetic_algorithm',
-      'discover_ilp',
-      'discover_powl',
+      'discover_ilp_petri_net',
+      'discover_powl_from_log',
     ];
 
     const missing = expected.filter((name) => typeof mod[name] !== 'function');
@@ -856,22 +883,17 @@ async function checkWorkspaceIntegrity(): Promise<Diagnosis> {
   }
 
   const expectedPackages = [
-    'packages/engine',
-    'packages/kernel',
+    'packages/agents',
+    'packages/cognition',
     'packages/config',
     'packages/contracts',
-    'packages/types',
-    'packages/planner',
-    'packages/observability',
-    'packages/testing',
-    'packages/connectors',
-    'packages/sinks',
-    'packages/ocel',
-    'packages/service',
-    'packages/templates',
-    'packages/wasm4pm',
+    'packages/engine',
+    'packages/kernel',
     'packages/ml',
+    'packages/observability',
+    'packages/planner',
     'packages/swarm',
+    'packages/testing',
     'apps/wasm4pm',
   ];
 
@@ -898,6 +920,211 @@ async function checkWorkspaceIntegrity(): Promise<Diagnosis> {
     severity: 'WARNING',
     message: `${missing.length} package(s) missing: ${missing.join(', ')}`,
     fix: 'Run: pnpm install to restore missing packages',
+  };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// ────────────────────────────────────────────────────────────────────────────
+// Claude Code Integration Checks (bleeding-edge best practices)
+//
+// These validate the Claude Code configuration itself: hook wiring, CLAUDE.md
+// project context, and the memory index health. A broken hook is silent — it
+// fires, does nothing, and Claude operates without its TPS enforcement layer.
+// ────────────────────────────────────────────────────────────────────────────
+
+// Check 18: .claude/settings.json present and valid JSON
+async function checkClaudeCodeSettings(): Promise<Diagnosis> {
+  const rootDir = resolveWorkspaceRoot();
+  if (!rootDir) {
+    return { name: 'Claude Code settings', pathology: 'DEPLOYABILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — workspace root not found' };
+  }
+
+  const settingsPath = path.join(rootDir, '.claude', 'settings.json');
+  if (!existsSync(settingsPath)) {
+    return {
+      name: 'Claude Code settings',
+      pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+      severity: 'STOP_THE_LINE',
+      message: '.claude/settings.json missing — Claude Code hooks will not fire',
+      fix: 'Create .claude/settings.json with hooks configuration',
+    };
+  }
+
+  try {
+    const raw = readFileSync(settingsPath, 'utf8');
+    const parsed = JSON.parse(raw) as Record<string, unknown>;
+    const hookEvents = Object.keys((parsed.hooks as Record<string, unknown>) ?? {});
+    return {
+      name: 'Claude Code settings',
+      pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+      severity: 'INFO',
+      message: `.claude/settings.json valid — ${hookEvents.length} hook event(s): ${hookEvents.join(', ')}`,
+    };
+  } catch {
+    return {
+      name: 'Claude Code settings',
+      pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+      severity: 'STOP_THE_LINE',
+      message: '.claude/settings.json is invalid JSON — Claude Code cannot parse hook configuration',
+      fix: 'Fix JSON syntax in .claude/settings.json',
+    };
+  }
+}
+
+// Check 19: Wired hook files present on disk and executable
+async function checkHookFiles(): Promise<Diagnosis> {
+  const rootDir = resolveWorkspaceRoot();
+  if (!rootDir) {
+    return { name: 'Hook files', pathology: 'DEPLOYABILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — workspace root not found' };
+  }
+
+  const settingsPath = path.join(rootDir, '.claude', 'settings.json');
+  if (!existsSync(settingsPath)) {
+    return { name: 'Hook files', pathology: 'DEPLOYABILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — no .claude/settings.json' };
+  }
+
+  let hooks: Record<string, Array<{ matcher: string; hooks: Array<{ type: string; command: string }> }>>;
+  try {
+    const parsed = JSON.parse(readFileSync(settingsPath, 'utf8')) as { hooks?: typeof hooks };
+    hooks = parsed.hooks ?? {};
+  } catch {
+    return { name: 'Hook files', pathology: 'DEPLOYABILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — settings.json parse error' };
+  }
+
+  if (Object.keys(hooks).length === 0) {
+    return {
+      name: 'Hook files',
+      pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+      severity: 'WARNING',
+      message: 'No hooks wired in .claude/settings.json — TPS enforcement gates inactive',
+      fix: 'Add hook configuration to .claude/settings.json',
+    };
+  }
+
+  const missing: string[] = [];
+  const notExecutable: string[] = [];
+
+  for (const eventHooks of Object.values(hooks)) {
+    for (const entry of eventHooks) {
+      for (const hook of entry.hooks ?? []) {
+        // Resolve "$CLAUDE_PROJECT_DIR" placeholder (may be quoted in the string)
+        const resolved = hook.command.replace(/"?\$CLAUDE_PROJECT_DIR"?/g, rootDir);
+        const scriptMatch = resolved.match(/(\S+\.sh)/);
+        if (!scriptMatch) continue;
+        const scriptPath = scriptMatch[1];
+        if (!existsSync(scriptPath)) {
+          missing.push(path.relative(rootDir, scriptPath));
+        } else if (!(statSync(scriptPath).mode & 0o111)) {
+          notExecutable.push(path.relative(rootDir, scriptPath));
+        }
+      }
+    }
+  }
+
+  if (missing.length > 0) {
+    return {
+      name: 'Hook files',
+      pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+      severity: 'STOP_THE_LINE',
+      message: `${missing.length} wired hook(s) missing from disk: ${missing.slice(0, 3).join(', ')}`,
+      fix: 'Restore missing hook files or remove from .claude/settings.json',
+    };
+  }
+  if (notExecutable.length > 0) {
+    return {
+      name: 'Hook files',
+      pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+      severity: 'WARNING',
+      message: `${notExecutable.length} hook(s) not executable: ${notExecutable.join(', ')}`,
+      fix: `chmod +x ${notExecutable.join(' ')}`,
+    };
+  }
+
+  const total = Object.values(hooks).flatMap((ev) => ev.flatMap((e) => e.hooks ?? [])).length;
+  return {
+    name: 'Hook files',
+    pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+    severity: 'INFO',
+    message: `${total} wired hook(s) present and executable`,
+  };
+}
+
+// Check 20: CLAUDE.md present (project context for Claude Code)
+async function checkClaudeMd(): Promise<Diagnosis> {
+  const rootDir = resolveWorkspaceRoot();
+  if (!rootDir) {
+    return { name: 'CLAUDE.md', pathology: 'EPISTEMIC_FAULT', severity: 'INFO', message: 'Skipped — workspace root not found' };
+  }
+
+  const claudeMdPath = path.join(rootDir, 'CLAUDE.md');
+  if (!existsSync(claudeMdPath)) {
+    return {
+      name: 'CLAUDE.md',
+      pathology: 'EPISTEMIC_FAULT',
+      severity: 'STOP_THE_LINE',
+      message: 'CLAUDE.md missing — Claude Code operates without project context',
+      fix: 'Create CLAUDE.md or run: wpm init',
+    };
+  }
+
+  const content = readFileSync(claudeMdPath, 'utf8');
+  if (content.trim().length < 100) {
+    return {
+      name: 'CLAUDE.md',
+      pathology: 'EPISTEMIC_FAULT',
+      severity: 'WARNING',
+      message: 'CLAUDE.md appears to be a stub (< 100 chars)',
+      fix: 'Populate CLAUDE.md with project architecture and Claude Code configuration',
+    };
+  }
+
+  return {
+    name: 'CLAUDE.md',
+    pathology: 'EPISTEMIC_FAULT',
+    severity: 'INFO',
+    message: `CLAUDE.md present (${(content.length / 1024).toFixed(1)} KB)`,
+  };
+}
+
+// Check 21: Memory index within 200-line limit
+async function checkMemoryIndex(): Promise<Diagnosis> {
+  const rootDir = resolveWorkspaceRoot();
+  if (!rootDir) {
+    return { name: 'Memory index', pathology: 'EPISTEMIC_FAULT', severity: 'INFO', message: 'Skipped — workspace root not found' };
+  }
+
+  // Project-scoped memory: ~/.claude/projects/<encoded-path>/memory/MEMORY.md
+  // Claude Code encodes paths by replacing '/' with '-' (leading '-' is preserved)
+  const encoded = rootDir.replace(/\//g, '-');
+  const memoryPath = path.join(os.homedir(), '.claude', 'projects', encoded, 'memory', 'MEMORY.md');
+
+  if (!existsSync(memoryPath)) {
+    return {
+      name: 'Memory index',
+      pathology: 'EPISTEMIC_FAULT',
+      severity: 'INFO',
+      message: 'No project memory index — Claude Code starts each session without persistent context',
+    };
+  }
+
+  const content = readFileSync(memoryPath, 'utf8');
+  const lines = content.split('\n').length;
+  if (lines > 200) {
+    return {
+      name: 'Memory index',
+      pathology: 'EPISTEMIC_FAULT',
+      severity: 'WARNING',
+      message: `MEMORY.md is ${lines} lines — content past line 200 is truncated by Claude Code`,
+      fix: `Prune stale entries in ${memoryPath}`,
+    };
+  }
+
+  const entryCount = (content.match(/^- \[/gm) ?? []).length;
+  return {
+    name: 'Memory index',
+    pathology: 'EPISTEMIC_FAULT',
+    severity: 'INFO',
+    message: `Memory index healthy (${lines}/200 lines, ${entryCount} entries)`,
   };
 }
 
@@ -1518,7 +1745,14 @@ export const TPS_CHECKS: Array<() => Promise<Diagnosis>> = [
   checkStateMachineCompleteness,
 ];
 
-export const ALL_CHECKS = [...ENV_CHECKS, ...TPS_CHECKS];
+export const CLAUDE_CODE_CHECKS: Array<() => Promise<Diagnosis>> = [
+  checkClaudeCodeSettings,
+  checkHookFiles,
+  checkClaudeMd,
+  checkMemoryIndex,
+];
+
+export const ALL_CHECKS = [...ENV_CHECKS, ...TPS_CHECKS, ...CLAUDE_CODE_CHECKS];
 
 // ────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -1653,7 +1887,7 @@ async function runChecks(
     info: diagnoses.filter((c) => c.severity === 'INFO').length,
     warnings: diagnoses.filter((c) => c.severity === 'WARNING').length,
     stopTheLine: diagnoses.filter((c) => c.severity === 'STOP_THE_LINE').length,
-    epistemicHealth: diagnoses.every((c) => c.severity !== 'STOP_THE_LINE'),
+    epistemicHealth: diagnoses.every((c) => c.severity === 'INFO'),
   };
 
   const checksPayload = report.diagnoses.map((c) => ({ ...c }));
@@ -2874,6 +3108,475 @@ export const doctorPublish = defineCommand({
 });
 
 // ────────────────────────────────────────────────────────────────────────────
+// Subcommand: hooks  (JTBD — Jobs To Be Done verification)
+//
+// Tests whether each hook does its declared job, not whether files exist.
+// Every probe: sets up a scenario → runs the hook → observes outcome → reports
+// what was tried, what was seen, and what was verified.
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface JtbdProbe {
+  job: string;       // What job is this hook supposed to do?
+  scenario: string;  // The specific scenario being exercised
+  observed: string;  // What was actually observed
+  verdict: 'verified' | 'refuted' | 'inconclusive';
+  evidence: string;  // The specific data points that support the verdict
+}
+
+export function runHook(hookPath: string, inputObj: unknown, projectDir: string): { status: number; stdout: string; stderr: string } {
+  const result = spawnSync('bash', [hookPath], {
+    input: JSON.stringify(inputObj),
+    encoding: 'utf8',
+    cwd: projectDir,
+    env: { ...process.env, CLAUDE_PROJECT_DIR: projectDir },
+  });
+  return {
+    status: result.status ?? -1,
+    stdout: result.stdout ?? '',
+    stderr: result.stderr ?? '',
+  };
+}
+
+function todayDir(): string {
+  return new Date().toISOString().slice(0, 10).replace(/-/g, '');
+}
+
+export async function probeHooks(projectDir: string): Promise<JtbdProbe[]> {
+  const hookDir = path.join(projectDir, '.claude', 'hooks');
+  const preToolUse = path.join(hookDir, 'pre-tool-use.sh');
+  const postToolUse = path.join(hookDir, 'post-tool-use.sh');
+  const stopGate = path.join(hookDir, 'stop-proof-gate.sh');
+  const userPrompt = path.join(hookDir, 'user-prompt.sh');
+  const agentRunsBase = path.join(projectDir, 'wasm4pm', 'target', 'agent-runs');
+
+  const probes: JtbdProbe[] = [];
+
+  // ── Probe 1: PreToolUse blocks handwritten verdict writes ─────────────────
+  {
+    const r = runHook(preToolUse, {
+      tool_name: 'Write',
+      tool_input: {
+        file_path: 'wasm4pm/target/proof-packs/jtbd-test/FINAL/verdict.json',
+        content: '{"verdict":"Accepted"}',
+      },
+    }, projectDir);
+    const blocked = r.status === 2;
+    const hasGuardMsg = r.stderr.includes('PROOF PACK INTEGRITY GUARD');
+    probes.push({
+      job: 'Prevent handwritten verdict writes',
+      scenario: 'Write tool targeting wasm4pm/target/proof-packs/*/FINAL/verdict.json with {"verdict":"Accepted"}',
+      observed: blocked
+        ? 'Hook exited 2 — write was blocked before reaching disk; guard message present in stderr'
+        : `Hook exited ${r.status} — write was NOT blocked (expected exit 2)`,
+      verdict: blocked && hasGuardMsg ? 'verified' : 'refuted',
+      evidence: `exit_code=${r.status}; guard_msg_in_stderr=${hasGuardMsg}`,
+    });
+  }
+
+  // ── Probe 2: PreToolUse allows safe writes ────────────────────────────────
+  {
+    const r = runHook(preToolUse, {
+      tool_name: 'Write',
+      tool_input: { file_path: 'wasm4pm/src/testing/harness.rs', content: 'pub struct Test {}' },
+    }, projectDir);
+    const allowed = r.status === 0;
+    probes.push({
+      job: 'Allow writes to non-protected paths',
+      scenario: 'Write tool targeting wasm4pm/src/testing/harness.rs (not a proof artifact)',
+      observed: allowed
+        ? 'Hook exited 0 — write passed through without blocking'
+        : `Hook exited ${r.status} — write was unexpectedly blocked`,
+      verdict: allowed ? 'verified' : 'refuted',
+      evidence: `exit_code=${r.status}`,
+    });
+  }
+
+  // ── Probe 3: PreToolUse blocks audit JSON tampering ───────────────────────
+  {
+    const r = runHook(preToolUse, {
+      tool_name: 'Edit',
+      tool_input: {
+        file_path: 'wasm4pm/target/audits/route-driven-tdd-independent-verification.json',
+        old_string: 'AndonPull',
+        new_string: 'Accepted',
+      },
+    }, projectDir);
+    const blocked = r.status === 2;
+    probes.push({
+      job: 'Prevent tampering with audit verdict JSON',
+      scenario: 'Edit tool changing AndonPull→Accepted in route-driven-tdd-independent-verification.json',
+      observed: blocked
+        ? 'Hook exited 2 — edit was blocked; audit JSON is write-protected'
+        : `Hook exited ${r.status} — edit was NOT blocked (expected exit 2)`,
+      verdict: blocked ? 'verified' : 'refuted',
+      evidence: `exit_code=${r.status}`,
+    });
+  }
+
+  // ── Probe 4: PreToolUse blocks Bash shell redirects into protected files ──
+  {
+    const r = runHook(preToolUse, {
+      tool_name: 'Bash',
+      tool_input: { command: 'echo \'{"verdict":"Accepted"}\' >> /tmp/jtbd-wasm4pm/target/proof-packs/x/FINAL/verdict.json' },
+    }, projectDir);
+    // Note: the path in the command contains "target/proof-packs" and "verdict.json"
+    // The hook checks for those patterns in the Bash command string
+    const blocked = r.status === 2;
+    probes.push({
+      job: 'Block Bash shell redirects into proof artifact paths',
+      scenario: 'Bash tool with echo >> target/proof-packs/*/FINAL/verdict.json',
+      observed: blocked
+        ? 'Hook exited 2 — bash redirect was blocked'
+        : `Hook exited ${r.status} — redirect was NOT blocked (expected exit 2)`,
+      verdict: blocked ? 'verified' : 'refuted',
+      evidence: `exit_code=${r.status}`,
+    });
+  }
+
+  // ── Probe 5: PostToolUse records tool evidence ────────────────────────────
+  {
+    const eventsPath = path.join(agentRunsBase, todayDir(), 'tool-events.jsonl');
+    const beforeLines = existsSync(eventsPath)
+      ? readFileSync(eventsPath, 'utf8').split('\n').filter(Boolean).length
+      : 0;
+    runHook(postToolUse, {
+      tool_name: 'Edit',
+      tool_input: { file_path: 'wasm4pm/src/testing/harness.rs' },
+    }, projectDir);
+    const afterLines = existsSync(eventsPath)
+      ? readFileSync(eventsPath, 'utf8').split('\n').filter(Boolean).length
+      : 0;
+    const recorded = afterLines > beforeLines;
+    probes.push({
+      job: 'Append tool evidence to session audit log after each tool use',
+      scenario: 'PostToolUse fires after Edit tool on wasm4pm/src/testing/harness.rs',
+      observed: recorded
+        ? `tool-events.jsonl grew from ${beforeLines} to ${afterLines} lines — evidence appended`
+        : `tool-events.jsonl unchanged at ${afterLines} lines — nothing was recorded`,
+      verdict: recorded ? 'verified' : 'refuted',
+      evidence: `events_file=${eventsPath}; before=${beforeLines}; after=${afterLines}`,
+    });
+  }
+
+  // ── Probe 6: UserPromptSubmit records work orders ─────────────────────────
+  {
+    const promptsPath = path.join(agentRunsBase, todayDir(), 'prompts.jsonl');
+    const beforeLines = existsSync(promptsPath)
+      ? readFileSync(promptsPath, 'utf8').split('\n').filter(Boolean).length
+      : 0;
+    runHook(userPrompt, {
+      prompt: 'jtbd-test-probe: verify work order recording',
+      session_id: 'jtbd-test',
+    }, projectDir);
+    const afterLines = existsSync(promptsPath)
+      ? readFileSync(promptsPath, 'utf8').split('\n').filter(Boolean).length
+      : 0;
+    const recorded = afterLines > beforeLines;
+    probes.push({
+      job: 'Record user prompts as timestamped work orders',
+      scenario: 'UserPromptSubmit fires with prompt text and session_id',
+      observed: recorded
+        ? `prompts.jsonl grew from ${beforeLines} to ${afterLines} lines — work order appended`
+        : `prompts.jsonl unchanged at ${afterLines} lines — work order was not recorded`,
+      verdict: recorded ? 'verified' : 'refuted',
+      evidence: `prompts_file=${promptsPath}; before=${beforeLines}; after=${afterLines}`,
+    });
+  }
+
+  // ── Probe 7: Stop gate allows stop when no critical files modified ─────────
+  {
+    const gitStatus = spawnSync('git', [
+      'status', '--short', '--',
+      'wasm4pm/src/testing/conformance.rs',
+      'wasm4pm/src/testing/harness.rs',
+      'wasm4pm/src/testing/proof_pack.rs',
+    ], { cwd: projectDir, encoding: 'utf8' });
+    const hasMods = (gitStatus.stdout ?? '').trim().length > 0;
+
+    if (!hasMods) {
+      const r = runHook(stopGate, { stop_hook_active: false }, projectDir);
+      const allowed = r.status === 0;
+      const noBlock = !r.stdout.includes('"decision":"block"');
+      probes.push({
+        job: 'Allow stop when no critical testing files have uncommitted changes',
+        scenario: 'Stop signal with stop_hook_active=false and clean git status on testing files',
+        observed: allowed && noBlock
+          ? 'Hook exited 0 with no block decision — stop allowed through'
+          : `Hook exited ${r.status}; block_in_stdout=${!noBlock} — stop was incorrectly prevented`,
+        verdict: allowed && noBlock ? 'verified' : 'refuted',
+        evidence: `exit_code=${r.status}; block_in_stdout=${!noBlock}`,
+      });
+    } else {
+      probes.push({
+        job: 'Allow stop when no critical testing files have uncommitted changes',
+        scenario: 'Stop signal with stop_hook_active=false and clean git status on testing files',
+        observed: 'Skipped — critical files currently have uncommitted changes; stop gate correctly engaged',
+        verdict: 'inconclusive',
+        evidence: `git_modified=${(gitStatus.stdout ?? '').trim().slice(0, 120)}`,
+      });
+    }
+  }
+
+  // ── Probe 8: Stop gate prevents hook re-entry loops ───────────────────────
+  {
+    const r = runHook(stopGate, { stop_hook_active: true }, projectDir);
+    const allowed = r.status === 0;
+    probes.push({
+      job: 'Prevent infinite hook re-entry via stop_hook_active guard',
+      scenario: 'Stop signal with stop_hook_active=true (Claude Code re-entry sentinel)',
+      observed: allowed
+        ? 'Hook exited 0 immediately — re-entry guard fired, no recursive audit'
+        : `Hook exited ${r.status} — re-entry guard may not be working`,
+      verdict: allowed ? 'verified' : 'refuted',
+      evidence: `exit_code=${r.status}`,
+    });
+  }
+
+  // ── Probe 9: Settings.json wires all required hook types ──────────────────
+  {
+    const settingsPath = path.join(projectDir, '.claude', 'settings.json');
+    const required = ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'TaskCompleted', 'Stop'];
+    if (existsSync(settingsPath)) {
+      let settings: { hooks?: Record<string, unknown> };
+      try {
+        settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
+      } catch {
+        settings = {};
+      }
+      const wired = Object.keys(settings.hooks ?? {});
+      const missing = required.filter((k) => !wired.includes(k));
+      probes.push({
+        job: 'Wire all required lifecycle hook types in .claude/settings.json',
+        scenario: 'Read .claude/settings.json and verify hook registrations for 6 lifecycle points',
+        observed: missing.length === 0
+          ? `All ${required.length} required hook types registered: ${wired.filter((k) => required.includes(k)).join(', ')}`
+          : `Missing ${missing.length} hook type(s): ${missing.join(', ')}`,
+        verdict: missing.length === 0 ? 'verified' : 'refuted',
+        evidence: `wired=[${wired.join(',')}]; missing=[${missing.join(',')||'none'}]`,
+      });
+    } else {
+      probes.push({
+        job: 'Wire all required lifecycle hook types in .claude/settings.json',
+        scenario: 'Read .claude/settings.json',
+        observed: '.claude/settings.json not found — hooks are not configured',
+        verdict: 'refuted',
+        evidence: `settings_path=${settingsPath}`,
+      });
+    }
+  }
+
+  // ── Probe A1: Stop gate blocks dirty critical file + failing audit ────────────
+  // This is the load-bearing path: modify a real file, fake a failing audit,
+  // verify the hook emits a block decision.
+  {
+    let probe: JtbdProbe;
+    const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'jtbd-stop-'));
+    try {
+      // Minimal git repo so git status works
+      spawnSync('git', ['init', '-q'], { cwd: tmpDir });
+      spawnSync('git', ['config', 'user.email', 'jtbd@wasm4pm.test'], { cwd: tmpDir });
+      spawnSync('git', ['config', 'user.name', 'JTBD Probe'], { cwd: tmpDir });
+
+      // Create the critical file (committed = clean state)
+      const criticalDir = path.join(tmpDir, 'wasm4pm', 'src', 'testing');
+      mkdirSync(criticalDir, { recursive: true });
+      const criticalFile = path.join(criticalDir, 'harness.rs');
+      writeFileSync(criticalFile, '// initial\n');
+      spawnSync('git', ['add', '-A'], { cwd: tmpDir });
+      spawnSync('git', ['commit', '-m', 'init', '--allow-empty'], { cwd: tmpDir });
+
+      // Dirty the file → git status will report it modified
+      writeFileSync(criticalFile, '// modified — jtbd probe dirty state\n');
+
+      // Fake wpm CLI that immediately returns AndonPull for `proof audit`
+      const fakeWpmDir = path.join(tmpDir, 'apps', 'wasm4pm', 'dist', 'bin');
+      mkdirSync(fakeWpmDir, { recursive: true });
+      writeFileSync(path.join(fakeWpmDir, 'wpm.js'), [
+        '#!/usr/bin/env node',
+        'const args = process.argv.slice(2);',
+        'if (args.includes("audit")) {',
+        '  process.stdout.write(JSON.stringify({',
+        '    status:"error",message:"proof audit",',
+        '    payload:{final_verdict:"AndonPull(4_cargo_tests)",',
+        '    verdict_reason:"JTBD probe: simulated test failure",',
+        '    gates_passed:3,gates_failed:2}}) + "\\n");',
+        '  process.exit(3);',
+        '}',
+        'process.exit(0);',
+      ].join('\n'));
+
+      // Copy the real stop gate to the temp project
+      const hooksDir = path.join(tmpDir, '.claude', 'hooks');
+      mkdirSync(hooksDir, { recursive: true });
+      execSync(`cp "${path.join(hookDir, 'stop-proof-gate.sh')}" "${path.join(hooksDir, 'stop-proof-gate.sh')}"`);
+
+      const r = runHook(path.join(hooksDir, 'stop-proof-gate.sh'), { stop_hook_active: false }, tmpDir);
+      const blocked = r.stdout.includes('"decision":"block"');
+      const hasAndon = r.stdout.includes('AndonPull') || r.stderr.includes('AndonPull');
+
+      probe = {
+        job: 'Block stop when critical testing files are dirty and proof audit returns AndonPull',
+        scenario: 'harness.rs modified (git dirty), fake wpm returns AndonPull(4_cargo_tests)',
+        observed: blocked
+          ? 'Stop hook emitted {"decision":"block"} — agent cannot claim done with dirty files + failing audit'
+          : `Stop hook did not block (exit=${r.status}; andon_in_output=${hasAndon})`,
+        verdict: blocked ? 'verified' : 'refuted',
+        evidence: `exit_code=${r.status}; block_decision_in_stdout=${blocked}; andon_msg=${hasAndon}`,
+      };
+    } catch (err) {
+      probe = {
+        job: 'Block stop when critical testing files are dirty and proof audit returns AndonPull',
+        scenario: 'harness.rs modified (git dirty), fake wpm returns AndonPull(4_cargo_tests)',
+        observed: `Probe setup failed: ${err instanceof Error ? err.message : String(err)}`,
+        verdict: 'inconclusive',
+        evidence: 'probe-error',
+      };
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+    probes.push(probe);
+  }
+
+  // ── Probe B1: Python write bypass is blocked ──────────────────────────────
+  {
+    const r = runHook(preToolUse, {
+      tool_name: 'Bash',
+      tool_input: { command: "python3 -c \"open('wasm4pm/target/proof-packs/bypass/FINAL/verdict.json','w').write('{}')" },
+    }, projectDir);
+    const blocked = r.status === 2;
+    probes.push({
+      job: 'Block Python scripted writes to proof artifact paths',
+      scenario: "Bash: python3 -c \"open('...verdict.json','w').write(...)\"",
+      observed: blocked
+        ? 'Hook exited 2 — Python write bypass was blocked'
+        : `Hook exited ${r.status} — Python write bypass was NOT blocked`,
+      verdict: blocked ? 'verified' : 'refuted',
+      evidence: `exit_code=${r.status}`,
+    });
+  }
+
+  // ── Probe B2: Absolute path write is blocked ──────────────────────────────
+  {
+    const absPath = path.join(projectDir, 'wasm4pm', 'target', 'proof-packs', 'bypass', 'FINAL', 'verdict.json');
+    const r = runHook(preToolUse, {
+      tool_name: 'Write',
+      tool_input: { file_path: absPath, content: '{"verdict":"Accepted"}' },
+    }, projectDir);
+    const blocked = r.status === 2;
+    probes.push({
+      job: 'Block absolute-path writes to proof artifact paths',
+      scenario: `Write tool with absolute path: ...wasm4pm/target/proof-packs/bypass/FINAL/verdict.json`,
+      observed: blocked
+        ? 'Hook exited 2 — absolute path bypass was blocked (pattern match is path-substring, not prefix)'
+        : `Hook exited ${r.status} — absolute path bypass was NOT blocked`,
+      verdict: blocked ? 'verified' : 'refuted',
+      evidence: `exit_code=${r.status}; path=${absPath.slice(-60)}`,
+    });
+  }
+
+  // ── Probe B3: Heredoc (cat >) bypass is blocked ───────────────────────────
+  {
+    const r = runHook(preToolUse, {
+      tool_name: 'Bash',
+      tool_input: {
+        command: 'cat > wasm4pm/target/proof-packs/bypass/FINAL/verdict.json << EOF\n{"verdict":"Accepted"}\nEOF',
+      },
+    }, projectDir);
+    const blocked = r.status === 2;
+    probes.push({
+      job: 'Block heredoc (cat >) writes to proof artifact paths',
+      scenario: 'Bash: cat > ...verdict.json << EOF ... EOF',
+      observed: blocked
+        ? 'Hook exited 2 — heredoc redirect bypass was blocked'
+        : `Hook exited ${r.status} — heredoc redirect bypass was NOT blocked`,
+      verdict: blocked ? 'verified' : 'refuted',
+      evidence: `exit_code=${r.status}`,
+    });
+  }
+
+  return probes;
+}
+
+export const doctorHooks = defineCommand({
+  meta: {
+    name: 'hooks',
+    description: 'JTBD verification: test whether each Claude Code hook does its declared job',
+  },
+  args: {
+    format: { type: 'string', default: 'human' },
+    verbose: { type: 'boolean', alias: 'v' },
+    quiet: { type: 'boolean', alias: 'q' },
+  },
+  async run(ctx) {
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+
+    const projectDir = process.env['CLAUDE_PROJECT_DIR'] ?? process.cwd();
+    const probes = await probeHooks(projectDir);
+
+    const verified = probes.filter((p) => p.verdict === 'verified').length;
+    const refuted = probes.filter((p) => p.verdict === 'refuted').length;
+    const inconclusive = probes.filter((p) => p.verdict === 'inconclusive').length;
+    const healthy = refuted === 0 && inconclusive === 0;
+
+    const exitCode = healthy ? EXIT_CODES.success : EXIT_CODES.config_error;
+
+    // Write disk audit — the hooks probe must itself leave proof of execution
+    const auditDir = path.join(projectDir, 'wasm4pm', 'target', 'audits');
+    const auditPath = path.join(auditDir, 'claude-hooks-jtbd-verification.json');
+    try {
+      mkdirSync(auditDir, { recursive: true });
+      writeFileSync(auditPath, JSON.stringify({
+        audit_timestamp: new Date().toISOString(),
+        auditor: 'wpm-doctor-hooks-jtbd',
+        probes: probes.map((p) => ({ ...p })),
+        summary: { verified, refuted, inconclusive, total: probes.length },
+        verdict: healthy ? 'Accepted' : 'AndonPull(RefutedJobs)',
+        refuted_jobs: probes.filter((p) => p.verdict === 'refuted').map((p) => p.job),
+      }, null, 2), 'utf8');
+    } catch { /* non-blocking: disk write failure does not suppress CLI output */ }
+
+    const result = makeResult('doctor hooks', {
+      probes,
+      summary: { verified, refuted, inconclusive, total: probes.length },
+      healthy,
+      audit_path: auditPath,
+    }, performance.now() - t0, exitCode);
+
+    emitResult(result, { format, verbose, quiet }, (res, p) => {
+      p.log('');
+      p.log('wpm doctor hooks — Jobs-To-Be-Done (JTBD) verification');
+      p.log('Tests whether hooks do their jobs, not whether files exist.');
+      p.log('─'.repeat(72));
+
+      for (const probe of res.payload.probes as JtbdProbe[]) {
+        const icon = probe.verdict === 'verified' ? '✓' : probe.verdict === 'refuted' ? '✗' : '~';
+        p.log('');
+        p.log(`JOB: ${probe.job}`);
+        p.log(`  Scenario: ${probe.scenario}`);
+        p.log(`  Observed: ${probe.observed}`);
+        if (verbose) p.log(`  Evidence: ${probe.evidence}`);
+        p.log(`  ${icon} ${probe.verdict.toUpperCase()}`);
+      }
+
+      p.log('');
+      p.log('─'.repeat(72));
+      p.log(`Summary: ${verified} verified, ${refuted} refuted, ${inconclusive} inconclusive`);
+      p.log(`Audit:   ${(res.payload as { audit_path?: string }).audit_path ?? 'not written'}`);
+      if (healthy) {
+        p.success('All hooks are doing their declared jobs.');
+      } else {
+        p.error(`${refuted} hook job(s) refuted — hooks are not enforcing the proof contract.`);
+      }
+    });
+
+    await exitWithFlush(exitCode);
+  },
+});
+
+// ────────────────────────────────────────────────────────────────────────────
 // Main doctor command (with subcommands + backwards-compat fallback)
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -2892,6 +3595,7 @@ export const doctor = defineCommand({
     perf: doctorPerf,
     watch: doctorWatch,
     report: doctorReport,
+    hooks: doctorHooks,
   },
   args: {
     format: {

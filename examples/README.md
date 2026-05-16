@@ -1,5 +1,65 @@
 # wasm4pm Examples
 
+## Runner (single entry point)
+
+```bash
+# Run all 5 JTBDs — exits 1 if any violations found
+node examples/index.js
+
+# Single JTBD against your own data
+node examples/index.js --jtbd safety --log your-process.xes
+
+# Machine-readable output for CI/dashboards
+node examples/index.js --format json | jq '.payload.summary'
+
+# Watch mode — re-evaluate every 30s, auto-diff each tick
+node examples/index.js --watch 30 --jtbd compliance
+
+# Diff against previous run
+node examples/index.js --compare
+```
+
+**Options:** `--jtbd <name>` · `--log <path>` · `--format human|json` · `--watch <seconds>` · `--compare` · `--no-save` · `--help`
+
+**Exit codes:** `0` = all clear · `1` = violations found · `2` = bad input · `3` = WASM error
+
+Results auto-saved to `.wasm4pm/results/examples/` — `--no-save` skips persistence.
+
+---
+
+## Fortune 5 JTBD Examples (start here)
+
+Five self-contained Node.js scripts — no configuration, no external data.
+Each runs in under 5 ms and produces output a domain expert can read.
+**Prerequisite:** `cd wasm4pm && npm run build:nodejs` (once).
+
+| File | Industry | Job to be Done | Algorithm |
+|---|---|---|---|
+| `01-supply-chain-drift.js` | Electronics manufacturing | Which suppliers drifted from the qualification process? | Jaccard drift + DFG |
+| `02-incident-triage.js` | Cloud / SRE | What is the incident health severity and which runbook fires? | Rework detection + variant analysis |
+| `03-fulfillment-bottleneck.js` | E-commerce fulfillment | Which station is the throughput constraint? | DFG self-loops + rework |
+| `04-compliance-rulebook.js` | Financial audit | What are the de-facto SOX control sequences in historical data? | Declare mining |
+| `05-safety-process-guard.js` | Energy / refinery | Did every shift complete the required safety steps in order? | Per-trace variant conformance |
+
+```bash
+node examples/01-supply-chain-drift.js
+node examples/02-incident-triage.js
+node examples/03-fulfillment-bottleneck.js
+node examples/04-compliance-rulebook.js
+node examples/05-safety-process-guard.js
+```
+
+To use your own event log instead of the embedded sample:
+```js
+const xes = require('fs').readFileSync('your-log.xes', 'utf8');
+const handle = wasm.load_eventlog_from_xes(xes);
+// rest of each example runs unchanged
+```
+
+---
+
+## TypeScript Examples (ML, RL, prediction, end-to-end workflows)
+
 Runnable examples for ML, RL, prediction, and process mining workflows.
 
 ## ML Analysis
