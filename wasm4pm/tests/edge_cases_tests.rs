@@ -9,10 +9,21 @@
 
 use wasm4pm::rl_orchestrator::{compute_health_state, compute_reward, RlOrchestrator};
 use wasm4pm::self_healing::{
-    advance_clock, reset_clock, CircuitBreaker, CircuitBreakerConfig, CircuitState,
+    advance_clock, reset_clock, CircuitBreaker, CircuitBreakerConfig, CircuitState, CLOCK_LOCK,
 };
 use wasm4pm::spc_history::{RingBuffer, SpcHistory, SpcSnapshot};
 use wasm4pm::RlState;
+
+/// RAII guard returned from `clock_setup()`. Acquires `CLOCK_LOCK` then
+/// resets `TIME_OFFSET_MS` so this test sees a clean clock without racing
+/// sibling tests in the same binary.
+fn clock_setup() -> std::sync::MutexGuard<'static, ()> {
+    let guard = CLOCK_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    reset_clock();
+    guard
+}
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -140,7 +151,7 @@ fn test_missing_circuit_breaker_state_fresh_start() {
 
 #[test]
 fn test_circuit_breaker_exhaustion_and_reset() {
-    reset_clock();
+    let _clock_guard = clock_setup();
 
     let config = CircuitBreakerConfig {
         failure_threshold: 3,
@@ -199,7 +210,7 @@ fn test_circuit_breaker_exhaustion_and_reset() {
 #[test]
 fn test_circuit_breaker_half_open_timeout() {
     // Test that HalfOpen state times out and returns to Open
-    reset_clock();
+    let _clock_guard = clock_setup();
 
     let config = CircuitBreakerConfig {
         failure_threshold: 1,

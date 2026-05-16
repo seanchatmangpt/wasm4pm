@@ -28,6 +28,43 @@ use std::collections::HashMap;
 /// Offset for manual clock advancement (testing).
 static TIME_OFFSET_MS: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
+/// Global serialization mutex for tests that mutate the shared `TIME_OFFSET_MS`.
+///
+/// libtest runs `#[test]` functions within the same binary on a thread-pool,
+/// so two tests that both call `reset_clock()` + `advance_clock()` can
+/// interleave and observe each other's mutations. This lock lets any test
+/// (across any integration test file) opt into serialization with
+/// `let _g = CLOCK_LOCK.lock().unwrap();` or `with_clock_lock(|| { ... })`.
+///
+/// Production code never acquires this lock — it's a test-only guard. The
+/// underlying atomic remains the source of truth so non-test reads stay
+/// lock-free.
+pub static CLOCK_LOCK: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+/// Acquire `CLOCK_LOCK` for the duration of `f`. Returns the closure's value.
+///
+/// Use in tests that mutate the monotonic clock to prevent races with
+/// sibling tests:
+///
+/// ```ignore
+/// with_clock_lock(|| {
+///     reset_clock();
+///     advance_clock(1_000);
+///     // ...assertions...
+/// });
+/// ```
+///
+/// If the mutex is poisoned by a panicking sibling test, the guard is
+/// recovered so subsequent tests still serialize correctly.
+#[allow(dead_code)]
+pub fn with_clock_lock<F, R>(f: F) -> R
+where
+    F: FnOnce() -> R,
+{
+    let _guard = CLOCK_LOCK.lock().unwrap_or_else(|poisoned| poisoned.into_inner());
+    f()
+}
+
 /// Return the current monotonic "instant" in milliseconds.
 #[allow(dead_code)]
 pub fn now_ms() -> u64 {

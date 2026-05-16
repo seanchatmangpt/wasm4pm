@@ -14,7 +14,7 @@ use wasm4pm::pattern_dispatch::{
 };
 use wasm4pm::self_healing::{
     advance_clock, reset_clock, CircuitBreaker, CircuitState, HealthCheck, HealthCheckConfig,
-    HealthStatus, RetryPolicy, RetryState, SelfHealingError, SelfHealingManager,
+    HealthStatus, RetryPolicy, RetryState, SelfHealingError, SelfHealingManager, CLOCK_LOCK,
 };
 use wasm4pm::spc::{
     check_western_electric_rules, dpmo_to_sigma, inverse_normal_cdf, normal_cdf, spc_mean,
@@ -469,13 +469,23 @@ mod spc_tests {
 mod self_healing_tests {
     use super::*;
 
-    fn setup() {
+    /// RAII guard: holds `CLOCK_LOCK` for the body of the test that called
+    /// `setup()`, serializing access to the shared `TIME_OFFSET_MS` atomic
+    /// against the other integration test files that use the same lock.
+    ///
+    /// Keep the binding alive (`let _g = setup();`) until all
+    /// `advance_clock` / `now_ms` calls are done.
+    fn setup() -> std::sync::MutexGuard<'static, ()> {
+        let guard = CLOCK_LOCK
+            .lock()
+            .unwrap_or_else(|poisoned| poisoned.into_inner());
         reset_clock();
+        guard
     }
 
     #[test]
     fn test_circuit_breaker_closed_to_open() {
-        setup();
+        let _clock_guard = setup();
 
         let mut breaker = CircuitBreaker::new();
 
@@ -489,7 +499,7 @@ mod self_healing_tests {
 
     #[test]
     fn test_circuit_breaker_open_blocks_requests() {
-        setup();
+        let _clock_guard = setup();
 
         let mut breaker = CircuitBreaker::new();
 
@@ -503,7 +513,7 @@ mod self_healing_tests {
 
     #[test]
     fn test_circuit_breaker_half_open_to_closed() {
-        setup();
+        let _clock_guard = setup();
 
         let mut breaker = CircuitBreaker::new();
 
@@ -526,7 +536,7 @@ mod self_healing_tests {
 
     #[test]
     fn test_circuit_breaker_half_open_failure_returns_to_open() {
-        setup();
+        let _clock_guard = setup();
 
         let mut breaker = CircuitBreaker::new();
 
@@ -618,7 +628,7 @@ mod self_healing_tests {
 
     #[test]
     fn test_health_check_healthy_threshold() {
-        setup();
+        let _clock_guard = setup();
 
         let config = HealthCheckConfig {
             healthy_threshold: 2,
@@ -636,7 +646,7 @@ mod self_healing_tests {
 
     #[test]
     fn test_health_check_unhealthy_threshold() {
-        setup();
+        let _clock_guard = setup();
 
         let config = HealthCheckConfig {
             unhealthy_threshold: 3,
@@ -657,7 +667,7 @@ mod self_healing_tests {
 
     #[test]
     fn test_health_check_recovery() {
-        setup();
+        let _clock_guard = setup();
 
         let config = HealthCheckConfig {
             healthy_threshold: 2,
@@ -680,7 +690,7 @@ mod self_healing_tests {
 
     #[test]
     fn test_health_check_is_due() {
-        setup();
+        let _clock_guard = setup();
 
         let config = HealthCheckConfig {
             interval_ms: 100,
@@ -700,7 +710,7 @@ mod self_healing_tests {
 
     #[test]
     fn test_health_check_time_until_next() {
-        setup();
+        let _clock_guard = setup();
 
         let config = HealthCheckConfig {
             interval_ms: 1000,
@@ -724,7 +734,7 @@ mod self_healing_tests {
 
     #[test]
     fn test_manager_execute_with_circuit_breaker_success() {
-        setup();
+        let _clock_guard = setup();
 
         let mut manager = SelfHealingManager::new();
         manager.add_circuit_breaker("test_dep".to_string(), CircuitBreaker::new());
@@ -736,7 +746,7 @@ mod self_healing_tests {
 
     #[test]
     fn test_manager_execute_with_circuit_breaker_failure() {
-        setup();
+        let _clock_guard = setup();
 
         let mut manager = SelfHealingManager::new();
         manager.add_circuit_breaker("test_dep".to_string(), CircuitBreaker::new());
@@ -750,7 +760,7 @@ mod self_healing_tests {
 
     #[test]
     fn test_manager_execute_with_circuit_breaker_open_rejects() {
-        setup();
+        let _clock_guard = setup();
 
         let mut manager = SelfHealingManager::new();
         manager.add_circuit_breaker("test_dep".to_string(), CircuitBreaker::new());
@@ -772,7 +782,7 @@ mod self_healing_tests {
 
     #[test]
     fn test_manager_execute_with_retry_succeeds_eventually() {
-        setup();
+        let _clock_guard = setup();
 
         let mut manager = SelfHealingManager::new();
         let call_count = std::cell::Cell::new(0);
@@ -801,7 +811,7 @@ mod self_healing_tests {
 
     #[test]
     fn test_manager_execute_with_retry_exhausted() {
-        setup();
+        let _clock_guard = setup();
 
         let mut manager = SelfHealingManager::new();
 
@@ -827,7 +837,7 @@ mod self_healing_tests {
 
     #[test]
     fn test_manager_simulated_health_state_check() {
-        setup();
+        let _clock_guard = setup();
 
         let mut manager = SelfHealingManager::new();
         manager.add_health_check("svc_a".to_string(), HealthCheck::new());
@@ -838,7 +848,7 @@ mod self_healing_tests {
 
     #[test]
     fn test_manager_circuit_breaker_not_found() {
-        setup();
+        let _clock_guard = setup();
 
         let mut manager = SelfHealingManager::new();
 
