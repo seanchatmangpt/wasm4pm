@@ -18,14 +18,14 @@
 use std::hint::black_box;
 use std::time::Instant;
 
-use wminml::*;
-use wminml::optimization::genetic::GeneticAlgorithm;
-use wminml::optimization::genetic::rand_f64;
-use wminml::optimization::pso::PSO;
-use wminml::optimization::annealing::SimulatedAnnealing;
-use wminml::optimization::drift::*;
-use wminml::optimization::anomaly::*;
-use wminml::optimization::{FitnessFunction, Individual};
+use miniml::*;
+use miniml::optimization::genetic::GeneticAlgorithm;
+use miniml::optimization::genetic::rand_f64;
+use miniml::optimization::pso::PSO;
+use miniml::optimization::annealing::SimulatedAnnealing;
+use miniml::optimization::drift::*;
+use miniml::optimization::anomaly::*;
+use miniml::optimization::{FitnessFunction, Individual};
 
 // ── helpers ──────────────────────────────────────────────────────────
 
