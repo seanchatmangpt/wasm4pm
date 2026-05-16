@@ -146,6 +146,17 @@ impl Default for CycleTelemetry {
 ///
 /// This function extracts the health computation logic from perception
 /// so it can be reused to compute the "next state" after cycle completion.
+///
+/// # Examples
+///
+/// ```
+/// use wasm4pm::rl_orchestrator::compute_health_state;
+///
+/// assert_eq!(compute_health_state(0, 0, 0), 4);   // Failed: empty log
+/// assert_eq!(compute_health_state(10, 0, 2), 3);  // Critical: no traces
+/// assert_eq!(compute_health_state(3, 1, 1), 2);   // Degraded: trivial log
+/// assert_eq!(compute_health_state(100, 5, 5), 0); // Normal
+/// ```
 pub fn compute_health_state(event_count: u64, trace_count: u64, unique_activities: u64) -> u8 {
     if event_count == 0 || unique_activities == 0 {
         4 // Failed: empty log or no activities
@@ -172,6 +183,20 @@ pub fn compute_health_state(event_count: u64, trace_count: u64, unique_activitie
 ///   -0.3  : Cycle latency exceeded budget (added to total)
 ///
 /// Bounded range: approximately [-5.3, +1.1]
+///
+/// # Examples
+///
+/// ```
+/// use wasm4pm::rl_orchestrator::compute_reward;
+///
+/// // Health improved, no SPC alerts → positive reward
+/// let r = compute_reward(2, 0, 0, true, true, false);
+/// assert!(r > 0.0, "health improvement must yield positive reward, got {r}");
+///
+/// // Terminal failure state → large negative penalty
+/// let r2 = compute_reward(3, 4, 5, true, true, false);
+/// assert!(r2 < -1.0, "failed state must yield large negative reward, got {r2}");
+/// ```
 pub fn compute_reward(
     prev_health: u8,
     curr_health: u8,
