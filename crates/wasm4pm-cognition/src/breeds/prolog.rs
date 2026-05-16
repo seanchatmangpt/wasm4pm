@@ -409,6 +409,81 @@ mod tests {
         assert!(breed.preconditions(&input).is_err());
     }
 
+    /// Rank-2 (domain contract): when a fact matches the queried predicate
+    /// but the goal value differs from every fact value for that key, the
+    /// kernel must deny and selected MUST be `None`. This pins the
+    /// "fact key match, value mismatch" boundary.
+    #[test]
+    fn fact_key_match_with_value_mismatch_denies() {
+        let breed = Prolog;
+        let input = BreedInput {
+            intent: "color".into(),
+            candidates: vec![],
+            facts: vec![
+                Fact { key: "color".into(), value: "red".into() },
+                Fact { key: "color".into(), value: "green".into() },
+            ],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![Goal {
+                id: "g".into(),
+                predicate: "color".into(),
+                value: "blue".into(),
+            }],
+            state: vec![],
+        };
+        let out = breed.run(&input).expect("run ok");
+        assert!(
+            out.selected.is_none(),
+            "fact value mismatch must deny: got selected={:?}",
+            out.selected
+        );
+        assert!(out.explanation.contains("denied"));
+        // The kernel-query step must record the right predicate.
+        assert!(out
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "kernel-query"));
+    }
+
+    /// Rank-2: the breed must intern every distinct fact key as a distinct
+    /// predicate id (1-arity) — multiple keys cannot alias to the same id.
+    /// Pinning this ensures the predicate registry stays separated and a
+    /// query for `parent=X` cannot accidentally match `sibling=X`.
+    #[test]
+    fn distinct_fact_keys_get_distinct_predicates() {
+        let breed = Prolog;
+        let input = BreedInput {
+            intent: "parent".into(),
+            candidates: vec![],
+            facts: vec![
+                Fact { key: "parent".into(), value: "alice".into() },
+                Fact { key: "sibling".into(), value: "alice".into() },
+            ],
+            cases: vec![],
+            rules: vec![],
+            // Query for `sibling=bob` should deny — even though `alice` is in
+            // the catalog, the goal predicate is `sibling` and value `bob`,
+            // not `parent` or any `sibling` value.
+            goals: vec![Goal {
+                id: "g".into(),
+                predicate: "sibling".into(),
+                value: "bob".into(),
+            }],
+            state: vec![],
+        };
+        let out = breed.run(&input).expect("run ok");
+        assert!(out.selected.is_none(),
+            "sibling=bob is not in catalog; must deny, got {:?}", out.selected);
+        // intern-fact trace must record BOTH facts (predicate separation).
+        let interned: usize = out
+            .inference_trace
+            .iter()
+            .filter(|t| t.kind == "intern-fact")
+            .count();
+        assert_eq!(interned, 2, "both facts must be interned");
+    }
+
     #[test]
     fn run_with_horn_rule_loads_and_applies() {
         use crate::breeds::Rule;
