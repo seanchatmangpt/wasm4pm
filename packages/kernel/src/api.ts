@@ -52,9 +52,15 @@ export type SpanSink = (span: KernelSpan) => void;
 /** Default no-op sink — suppresses all spans unless overridden. */
 const DEFAULT_SINK: SpanSink = () => {};
 
-/** Hex generator for W3C trace/span IDs. */
+/** Hex generator for W3C trace/span IDs. Non-receipt IDs — not BLAKE3. */ // @lint-allow-random
 function hexId(length: number): string {
-  return Array.from({ length }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+  const bytes = new Uint8Array(length);
+  if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.getRandomValues) {
+    globalThis.crypto.getRandomValues(bytes);
+  } else {
+    for (let i = 0; i < length; i++) bytes[i] = Math.floor(Math.random() * 256); // @lint-allow-fakery — crypto fallback
+  }
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).slice(0, length).join('');
 }
 
 /** Result returned from Kernel.run() */

@@ -14,7 +14,19 @@
  *   - Invalid numeric values → coerced to 0
  */
 
-import type { FeatureMatrix, LabelEncoding } from './types.js';
+import type { EmptyInputWarning, FeatureMatrix, LabelEncoding } from './types.js';
+
+/** Helper: empty FeatureMatrix with a typed sentinel warning. */
+function emptyMatrix(warning: EmptyInputWarning): FeatureMatrix {
+  return {
+    data: [],
+    featureNames: [],
+    caseIds: [],
+    targets: [],
+    labels: [],
+    metadata: { warning },
+  };
+}
 
 /**
  * Convert extract_case_features JSON output to a numeric feature matrix.
@@ -41,7 +53,12 @@ export function buildFeatureMatrix(
 ): FeatureMatrix {
   // Validate non-null array
   if (!featuresJson || !Array.isArray(featuresJson) || featuresJson.length === 0) {
-    return { data: [], featureNames: [], caseIds: [], targets: [], labels: [] };
+    return emptyMatrix({
+      code: 'empty_input',
+      message: 'buildFeatureMatrix received an empty or non-array input — no rows to extract.',
+      inputLength: Array.isArray(featuresJson) ? featuresJson.length : 0,
+      minRequired: 1,
+    });
   }
 
   // Filter out null/undefined elements
@@ -49,7 +66,12 @@ export function buildFeatureMatrix(
     (row): row is Record<string, unknown> => row != null && typeof row === 'object'
   );
   if (validRows.length === 0) {
-    return { data: [], featureNames: [], caseIds: [], targets: [], labels: [] };
+    return emptyMatrix({
+      code: 'no_valid_features',
+      message: `buildFeatureMatrix received ${featuresJson.length} rows but none were non-null objects.`,
+      inputLength: featuresJson.length,
+      minRequired: 1,
+    });
   }
 
   const excludeKeys = new Set<string>([

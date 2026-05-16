@@ -96,7 +96,53 @@ impl GuardEval {
     }
 }
 
-/// AutoProcess decision output
+/// Typed reason explaining *why* the AutoProcessAgent chose a given action.
+///
+/// This makes the **Decision** stage of the autonomic loop observable: callers
+/// (telemetry, OTEL spans, audit receipts) can distinguish between exploration,
+/// exploitation, and protection-driven overrides without re-deriving the
+/// decision from internal state.
+///
+/// The variants are mutually exclusive and ordered by precedence: protection
+/// overrides (`GuardViolation`, `CircuitBlocked`) are reported when set, even
+/// if the action itself came from exploration or exploitation. `GuardViolation`
+/// outranks `CircuitBlocked` because a guard violation signals an *invalid*
+/// action while a blocked circuit signals a *deferred* action.
+///
+/// All variants are stable, allocation-free labels suitable for OTEL span
+/// attributes (use [`DecisionReason::label`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[repr(u8)]
+pub enum DecisionReason {
+    /// Action picked by ε-greedy exploration (random draw within ε).
+    Explored = 0,
+    /// Action picked by argmax Q(s, a) — the policy chose the best known action.
+    Exploited = 1,
+    /// Action was selected but the circuit breaker is Open; the caller should
+    /// treat the selection as advisory only.
+    CircuitBlocked = 2,
+    /// Action violated a guard rule (e.g. death-spiral check). The caller
+    /// should not dispatch this action.
+    GuardViolation = 3,
+}
+
+impl DecisionReason {
+    /// Stable, allocation-free label suitable for OTEL span attributes.
+    #[inline]
+    pub fn label(self) -> &'static str {
+        match self {
+            DecisionReason::Explored => "explored",
+            DecisionReason::Exploited => "exploited",
+            DecisionReason::CircuitBlocked => "circuit_blocked",
+            DecisionReason::GuardViolation => "guard_violation",
+        }
+    }
+}
+
+/// AutoProcess decision output.
+///
+/// `reason` exposes the *why* of the action selection — see [`DecisionReason`].
+/// The `agent_confidence` field (LinUCB UCB score) remains informational.
 #[derive(Debug, Clone)]
 pub struct Decision {
     pub action: RlAction,
@@ -104,7 +150,10 @@ pub struct Decision {
     pub q_value: f32,
     pub guard_allowed: bool,
     pub circuit_allowed: bool,
-    pub agent_confidence: f32, // LinUCB UCB score (for informational purposes)
+    /// LinUCB UCB score (for informational purposes).
+    pub agent_confidence: f32,
+    /// Typed reason explaining why this action was chosen. See [`DecisionReason`].
+    pub reason: DecisionReason,
 }
 
 /// AutoProcessAgent — branchless autonomic loop
@@ -297,22 +346,43 @@ impl AutoProcessAgent {
         }
     }
 
-    /// Look up Q-value and return corresponding action with ε-greedy exploration
+    /// Look up Q-value and return corresponding action with ε-greedy exploration.
     ///
     /// ε-greedy: with probability ε, pick random action; otherwise pick argmax Q(s,a).
     /// Uses internal RNG and epsilon field for true exploration.
+    ///
+    /// Equivalent to [`Self::select_action_epsilon_greedy_with_reason`] with
+    /// the reason discarded. Kept for backward compatibility; new code should
+    /// prefer the `_with_reason` variant so the **Decision** stage of the
+    /// autonomic loop is observable.
     #[inline(always)]
     pub fn select_action_epsilon_greedy(
         &mut self,
         state_id: u32,
         epsilon_override: Option<f32>,
     ) -> (RlAction, f32, u32) {
+        let (action, q, idx, _reason) =
+            self.select_action_epsilon_greedy_with_reason(state_id, epsilon_override);
+        (action, q, idx)
+    }
+
+    /// Like [`Self::select_action_epsilon_greedy`] but also returns the
+    /// [`DecisionReason`] explaining whether ε-greedy explored or exploited.
+    ///
+    /// Use this when constructing telemetry / OTEL spans so callers can
+    /// distinguish a random exploration draw (`DecisionReason::Explored`)
+    /// from a Q-table argmax pick (`DecisionReason::Exploited`).
+    #[inline(always)]
+    pub fn select_action_epsilon_greedy_with_reason(
+        &mut self,
+        state_id: u32,
+        epsilon_override: Option<f32>,
+    ) -> (RlAction, f32, u32, DecisionReason) {
         let eps = epsilon_override.unwrap_or(self.epsilon);
 
-        // ε-greedy: explore with probability ε
-        let selected_idx = if self.rng.f32() < eps {
+        let (selected_idx, reason) = if self.rng.f32() < eps {
             // Explore: pick random action
-            self.rng.usize(0..ACTION_SPACE_SIZE)
+            (self.rng.usize(0..ACTION_SPACE_SIZE), DecisionReason::Explored)
         } else {
             // Exploit: find argmax_a Q(s, a)
             let mut max_q = f32::NEG_INFINITY;
@@ -320,18 +390,17 @@ impl AutoProcessAgent {
 
             for a in 0..ACTION_SPACE_SIZE {
                 let q = self.q_lookup(state_id, a);
-                // Branchless max: use float comparison
                 let is_better = q > max_q;
                 max_q = if is_better { q } else { max_q };
                 best_action_idx = if is_better { a } else { best_action_idx };
             }
-            best_action_idx
+            (best_action_idx, DecisionReason::Exploited)
         };
 
         let q_val = self.q_lookup(state_id, selected_idx);
         let action = RlAction::from_index(selected_idx).unwrap_or(RlAction::Continue);
 
-        (action, q_val, selected_idx as u32)
+        (action, q_val, selected_idx as u32, reason)
     }
 
     /// Estimate agent confidence using LinUCB upper confidence bound
@@ -394,21 +463,29 @@ impl AutoProcessAgent {
         }
     }
 
-    /// Advance circuit breaker state machine (step-driven)
+    /// Advance circuit breaker state machine one step (drives time-based
+    /// transitions only).
     ///
-    /// States:
-    /// - **Closed**: Normal operation
-    /// - **Open**: Blocking all requests after threshold failures
-    /// - **HalfOpen**: Testing recovery after timeout elapsed
+    /// Responsibilities (post CB-1 fix):
+    /// - **Open → HalfOpen** when `circuit_timeout_steps` have elapsed since
+    ///   the breaker opened. This is the *only* transition that requires a
+    ///   caller to advance the clock.
+    /// - **Closed → Open** is handled in [`Self::record_action_result`]
+    ///   immediately upon hitting the failure threshold, so it does **not**
+    ///   depend on `advance_circuit_breaker` being called. The Closed branch
+    ///   here remains as a defensive idempotent guard.
+    /// - **HalfOpen** transitions are signal-driven via `record_action_result`.
     ///
-    /// All state transitions branchless via bit manipulation.
+    /// All state transitions are branchless via bit manipulation.
     #[inline(always)]
     pub fn advance_circuit_breaker(&mut self) {
         self.step_counter += 1;
 
         match self.circuit_state {
             CircuitState::Closed => {
-                // Closed → Open if failures exceed threshold
+                // Defensive: record_action_result already trips on threshold;
+                // keep this idempotent guard for callers that mutate the
+                // failure count via a back door (tests, restored state).
                 let should_open = (self.circuit_failure_count >= self.circuit_threshold) as u32;
                 if should_open != 0 {
                     self.circuit_state = CircuitState::Open;
@@ -416,7 +493,6 @@ impl AutoProcessAgent {
                 }
             }
             CircuitState::Open => {
-                // Open → HalfOpen if timeout elapsed
                 let time_since_open = self.step_counter - self.circuit_open_at_step;
                 let should_test = (time_since_open >= self.circuit_timeout_steps) as u32;
                 if should_test != 0 {
@@ -424,17 +500,25 @@ impl AutoProcessAgent {
                 }
             }
             CircuitState::HalfOpen => {
-                // HalfOpen → Closed if probe succeeds (external signal)
-                // HalfOpen → Open if probe fails (external signal)
-                // This is handled by record_action_result()
+                // HalfOpen transitions are handled by record_action_result()
             }
         }
     }
 
-    /// Record action success/failure to update circuit breaker state
+    /// Record action success/failure to update circuit breaker state.
     ///
-    /// - Success: HalfOpen → Closed, reset failure count
-    /// - Failure: Increment count, trigger Open if threshold exceeded
+    /// - Success: HalfOpen → Closed, reset failure count.
+    /// - Failure: Increment count, **and immediately trip Closed → Open** if
+    ///   the threshold is reached. HalfOpen failures trip back to Open on the
+    ///   first failure (single probe failure ends recovery attempt).
+    ///
+    /// CB-1 fix (see `.claude/rules/ml-rl-testing.md`): previously the
+    /// Closed → Open transition was deferred until the next
+    /// [`Self::advance_circuit_breaker`] tick. If a caller recorded results
+    /// without driving the step machine, the breaker stayed Closed
+    /// indefinitely — exactly the caller-driven-step-counter bug pattern.
+    /// Tripping immediately here means fail-fast behaviour regardless of
+    /// whether the caller advances the clock.
     #[inline(always)]
     pub fn record_action_result(&mut self, success: bool) {
         if success {
@@ -444,7 +528,22 @@ impl AutoProcessAgent {
             }
         } else {
             self.circuit_failure_count = self.circuit_failure_count.saturating_add(1);
-            // Will transition to Open on next advance_circuit_breaker() call
+            // CB-1 fix: trip immediately, do not wait for a caller-driven
+            // advance_circuit_breaker() tick.
+            match self.circuit_state {
+                CircuitState::Closed
+                    if self.circuit_failure_count >= self.circuit_threshold =>
+                {
+                    self.circuit_state = CircuitState::Open;
+                    self.circuit_open_at_step = self.step_counter;
+                }
+                CircuitState::HalfOpen => {
+                    // Any failure during recovery probe → back to Open.
+                    self.circuit_state = CircuitState::Open;
+                    self.circuit_open_at_step = self.step_counter;
+                }
+                _ => {}
+            }
         }
     }
 
@@ -620,8 +719,10 @@ impl AutoProcessAgent {
         let state_id = self.encode_state(state);
         let next_state_id = self.encode_state(next_state);
 
-        // Step 2: DECISION — Select action via epsilon-greedy
-        let (action, q_value, _action_idx) = self.select_action_epsilon_greedy(state_id, None);
+        // Step 2: DECISION — Select action via epsilon-greedy, capturing
+        // explore-vs-exploit so callers can observe the decision rationale.
+        let (action, q_value, _action_idx, base_reason) =
+            self.select_action_epsilon_greedy_with_reason(state_id, None);
 
         // Step 3: PROTECTION
         // - Evaluate guard rules
@@ -635,13 +736,10 @@ impl AutoProcessAgent {
 
         // Step 4: OPTIMIZATION — Bellman update (immediate or deferred)
         if self.drain_every == 0 {
-            // Immediate update path
             self.bellman_update_direct(state_id, action.to_index(), reward, next_state_id, done);
         } else {
-            // Deferred queue path
             self.enqueue_bellman(state_id, action.to_index(), reward, next_state_id, done);
 
-            // Periodic drain check
             self.cycle_mod = self.cycle_mod.wrapping_add(1);
             if self.cycle_mod >= self.drain_every {
                 self.drain_bellman_queue();
@@ -658,13 +756,28 @@ impl AutoProcessAgent {
         // Decay epsilon for exploration-exploitation tradeoff
         self.decay_epsilon();
 
+        // Protection overrides win over explore/exploit for telemetry purposes:
+        // a guard violation or open breaker is the load-bearing reason callers
+        // need to see in audit receipts. GuardViolation outranks CircuitBlocked
+        // because a guard violation signals an *invalid* action while a blocked
+        // circuit signals a *deferred* action.
+        let circuit_allowed = self.circuit_allows_request();
+        let reason = if !guard_eval.pass {
+            DecisionReason::GuardViolation
+        } else if !circuit_allowed {
+            DecisionReason::CircuitBlocked
+        } else {
+            base_reason
+        };
+
         Decision {
             action,
             state_id,
             q_value,
             guard_allowed: guard_eval.pass,
-            circuit_allowed: self.circuit_allows_request(),
+            circuit_allowed,
             agent_confidence,
+            reason,
         }
     }
 
@@ -882,6 +995,34 @@ mod tests {
         assert!(agent.circuit_allows_request()); // HalfOpen allows testing
     }
 
+    /// Regression for CB-1 pattern (see `.claude/rules/ml-rl-testing.md`).
+    ///
+    /// Before the fix, Closed → Open required a caller-driven
+    /// `advance_circuit_breaker()` tick after the failure threshold was met.
+    /// A caller that only ran `record_action_result(false)` (e.g. because it
+    /// had its own clock loop) would see the breaker stay Closed forever,
+    /// contradicting the fail-fast doctrine.
+    #[test]
+    #[ignore] // Stack-intensive
+    fn test_circuit_breaker_trips_without_advance_call() {
+        let mut agent = AutoProcessAgent::with_config(0.1, 0.99, 3, 100);
+        assert_eq!(agent.circuit_state(), CircuitState::Closed);
+
+        // Record exactly `threshold` failures WITHOUT calling
+        // advance_circuit_breaker.
+        for _ in 0..3 {
+            agent.record_action_result(false);
+        }
+
+        // Must be Open immediately, with no clock advancement needed.
+        assert_eq!(
+            agent.circuit_state(),
+            CircuitState::Open,
+            "Breaker must trip on threshold-reached failure even without an advance_circuit_breaker tick (CB-1 regression)"
+        );
+        assert!(!agent.circuit_allows_request());
+    }
+
     #[test]
     #[ignore] // Skip in normal test runs; run separately with `cargo test -- --ignored`
     fn test_linucb_ucb_estimate() {
@@ -943,5 +1084,28 @@ mod tests {
 
         // Circuit should allow request (started in Closed state)
         assert!(decision.circuit_allowed);
+
+        // Decision must carry a typed reason. With guard pass + circuit
+        // allowed, the reason should be one of the base explore/exploit
+        // values, never a protection override.
+        assert!(
+            matches!(
+                decision.reason,
+                DecisionReason::Explored | DecisionReason::Exploited
+            ),
+            "nominal cycle must report Explored or Exploited, got {:?}",
+            decision.reason
+        );
+    }
+
+    /// `DecisionReason::label()` returns stable, allocation-free identifiers
+    /// suitable for OTEL span attributes — pin them down so a future enum
+    /// reshuffle does not silently change span semantics.
+    #[test]
+    fn test_decision_reason_labels_are_stable() {
+        assert_eq!(DecisionReason::Explored.label(), "explored");
+        assert_eq!(DecisionReason::Exploited.label(), "exploited");
+        assert_eq!(DecisionReason::CircuitBlocked.label(), "circuit_blocked");
+        assert_eq!(DecisionReason::GuardViolation.label(), "guard_violation");
     }
 }

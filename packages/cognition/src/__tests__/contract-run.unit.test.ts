@@ -1,9 +1,14 @@
 /**
- * contract-run.test.ts — SpanSink injection tests for runContract
+ * contract-run.unit.test.ts — SpanSink injection tests for runContract
  *
  * Oracle rank: Rank 2 (Domain contract — span name, status code, required attributes).
  *
- * WasmLoader is mocked so no WASM binary is needed.
+ * UNIT test: WasmLoader is mocked so no WASM binary is needed. Named `*.unit.test.ts`
+ * per FM-5 convention (.claude/rules/cognition-contracts.md) — mocks of `../init.js`
+ * are only permissible in unit-tagged files. Integration coverage that exercises
+ * real WASM lives in `cognition-wasm.integration.test.ts` and
+ * `cognition-breeds.integration.test.ts`.
+ *
  * Tests verify the span emission contract: fires on both success and error,
  * carries correct name/attributes, never throws from the sink.
  */

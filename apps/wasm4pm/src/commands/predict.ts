@@ -296,7 +296,15 @@ async function executePredictionTask(
         return { prediction };
       } else {
         wasm.delete_object(modelHandle);
+        // No prefix given: emit a clear hint to stderr so pipelines can detect
+        // that no actual prediction was produced (model was built but not queried).
+        process.stderr.write(
+          'wpm predict remaining-time: no --prefix given — model built but no prediction made.\n' +
+          'To get a duration estimate, provide a prefix:\n' +
+          '  wpm predict remaining-time -i <log.xes> --prefix "Register,Approve"\n'
+        );
         return {
+          predicted: false,
           message:
             'Remaining-time model built. Use --prefix "Activity1,Activity2" to predict case duration.',
         };
@@ -407,7 +415,11 @@ function formatHumanOutput(
         p.log(`  Method:                    ${pred.method ?? 'unknown'}`);
         p.log('');
       } else {
-        p.info((result.message as string) ?? 'Use --prefix to predict case duration.');
+        p.warn((result.message as string) ?? 'Use --prefix to predict case duration.');
+        p.log('');
+        p.log('  Example:');
+        p.log('    wpm predict remaining-time -i <log.xes> --prefix "Register,Approve"');
+        p.log('');
       }
       break;
     }

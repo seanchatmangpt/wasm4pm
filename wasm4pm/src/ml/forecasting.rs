@@ -12,6 +12,9 @@ const TIME_KEY: &str = "time:timestamp";
 #[derive(serde::Serialize)]
 pub struct ForecastResult {
     pub rmse: f64,
+    pub mae: f64,
+    /// Mean Absolute Percentage Error, in [0, +inf). 0.0 when no non-zero actuals.
+    pub mape: f64,
     pub next_window: f64,
 }
 
@@ -21,36 +24,53 @@ pub fn forecast_internal(data: &[f64], alpha: f64) -> ForecastResult {
     if n == 0 {
         return ForecastResult {
             rmse: 0.0,
+            mae: 0.0,
+            mape: 0.0,
             next_window: 0.0,
         };
     }
 
     let mut s = data[0];
     let mut sum_sq_err = 0.0;
+    let mut sum_abs_err = 0.0;
+    let mut sum_abs_pct_err = 0.0;
+    let mut mape_count = 0usize;
 
     for &val in data.iter().skip(1) {
         let prev_s = s;
         // Simple Exponential Smoothing: s_t = alpha * x_t + (1 - alpha) * s_{t-1}
         s = alpha * val + (1.0 - alpha) * prev_s;
+        // one-step-ahead forecast error: actual - prior smoothed
         let err = val - prev_s;
         sum_sq_err += err * err;
+        sum_abs_err += err.abs();
+        // MAPE skips zero actuals to avoid division explosion
+        if val.abs() > f64::EPSILON {
+            sum_abs_pct_err += (err / val).abs();
+            mape_count += 1;
+        }
     }
 
-    let rmse = if n > 1 {
-        (sum_sq_err / (n - 1) as f64).sqrt()
+    let denom = (n - 1).max(1) as f64;
+    let rmse = if n > 1 { (sum_sq_err / denom).sqrt() } else { 0.0 };
+    let mae = if n > 1 { sum_abs_err / denom } else { 0.0 };
+    let mape = if mape_count > 0 {
+        sum_abs_pct_err / mape_count as f64
     } else {
         0.0
     };
 
     ForecastResult {
         rmse,
+        mae,
+        mape,
         next_window: s,
     }
 }
 
 pub(crate) fn get_windows(eventlog_handle: &str) -> Result<([f64; NUM_WINDOWS], usize), JsValue> {
     let state = get_or_init_state();
-    
+
     let timestamps = state.with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let mut ts = Vec::new();
@@ -82,7 +102,7 @@ pub(crate) fn get_windows(eventlog_handle: &str) -> Result<([f64; NUM_WINDOWS], 
     let max_t = timestamps[timestamps.len() - 1];
     let duration = (max_t - min_t) as f64;
     let window_ms = (duration / NUM_WINDOWS as f64).max(1.0);
-    
+
     let mut windows = [0.0; NUM_WINDOWS];
     for &t in &timestamps {
         let idx = (((t - min_t) as f64 / window_ms) as usize).min(NUM_WINDOWS - 1);
@@ -104,7 +124,7 @@ pub fn discover_ml_forecast(eventlog_handle: &str, _activity_key: &str) -> Resul
     }
 
     let res = forecast_internal(&windows, DEFAULT_ALPHA);
-    
+
     let mean_density = count as f64 / NUM_WINDOWS as f64;
     let confidence = if mean_density > 0.0 {
         (1.0 - (res.rmse / mean_density)).clamp(0.0, 1.0)
@@ -117,7 +137,9 @@ pub fn discover_ml_forecast(eventlog_handle: &str, _activity_key: &str) -> Resul
         "forecast": {
             "next_window": res.next_window,
             "confidence": confidence,
-            "rmse": res.rmse
+            "rmse": res.rmse,
+            "mae": res.mae,
+            "mape": res.mape
         }
     }))
 }

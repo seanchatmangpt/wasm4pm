@@ -245,9 +245,38 @@ impl SpcHistory {
     /// assert_eq!(history.cycle_count, 1);
     /// assert!(!history.has_sufficient_data()); // needs 9 total
     /// ```
+    ///
+    /// Non-finite values (NaN, +/-Inf) in f64 fields are sanitized to 0.0
+    /// to prevent silent WE-rule alert masking downstream.
     pub fn record_snapshot(&mut self, snapshot: SpcSnapshot) {
-        self.history.push(snapshot);
-        self.cycle_count += 1;
+        self.history.push(Self::sanitize(snapshot));
+        self.cycle_count = self.cycle_count.saturating_add(1);
+    }
+
+    /// Replace contents wholesale and set `cycle_count` to `cycle_count`
+    /// exactly once. Counterpart of `get_all_snapshots` + `cycle_count`
+    /// for round-tripping through `get_spc_history`/`set_spc_history`.
+    /// Per-call `record_snapshot` would inflate cycle_count by N.
+    pub fn restore(&mut self, snapshots: Vec<SpcSnapshot>, cycle_count: u64) {
+        self.history.clear();
+        for snap in snapshots {
+            self.history.push(Self::sanitize(snap));
+        }
+        self.cycle_count = cycle_count;
+    }
+
+    /// Replace non-finite floats with 0.0 to keep downstream stats finite.
+    fn sanitize(mut s: SpcSnapshot) -> SpcSnapshot {
+        if !s.event_rate.is_finite() {
+            s.event_rate = 0.0;
+        }
+        if !s.trace_duration_avg.is_finite() {
+            s.trace_duration_avg = 0.0;
+        }
+        if !s.activity_frequency.is_finite() {
+            s.activity_frequency = 0.0;
+        }
+        s
     }
 
     /// Check if sufficient historical data exists for Western Electric rules.
@@ -526,6 +555,108 @@ mod tests {
         let history = SpcHistory::default();
         assert_eq!(history.cycle_count, 0);
         assert_eq!(history.history.len(), 0);
+    }
+
+    /// Rank-1 oracle: `restore` followed by reading `cycle_count` must
+    /// return the exact cycle_count passed in — no drift from
+    /// `record_snapshot` increments. This protects the `get_spc_history`
+    /// / `set_spc_history` JSON round-trip.
+    #[test]
+    fn test_spc_history_restore_preserves_cycle_count() {
+        let mut history = SpcHistory::new();
+        let snapshots = vec![
+            SpcSnapshot::new("t1".into(), 5.0, 150.0, 0.8, 0),
+            SpcSnapshot::new("t2".into(), 5.5, 155.0, 0.82, 0),
+            SpcSnapshot::new("t3".into(), 6.0, 160.0, 0.84, 1),
+        ];
+        history.restore(snapshots, 1000);
+        assert_eq!(
+            history.cycle_count, 1000,
+            "cycle_count must equal restore input, not input + len()"
+        );
+        assert_eq!(history.history.len(), 3);
+    }
+
+    /// Rank-2 oracle (domain contract): `restore` followed by
+    /// `record_snapshot` must continue monotonically — proving the
+    /// restored counter participates in normal recording semantics.
+    #[test]
+    fn test_spc_history_restore_then_record_is_monotonic() {
+        let mut history = SpcHistory::new();
+        history.restore(
+            vec![SpcSnapshot::new("t1".into(), 5.0, 150.0, 0.8, 0)],
+            500,
+        );
+        assert_eq!(history.cycle_count, 500);
+        history.record_snapshot(SpcSnapshot::new("t2".into(), 5.5, 155.0, 0.82, 0));
+        assert_eq!(history.cycle_count, 501);
+    }
+
+    /// Rank-2 oracle: round-trip should preserve cycle_count.
+    /// Mirrors the WASM `get_spc_history` / `set_spc_history` contract.
+    #[test]
+    fn test_spc_history_roundtrip_does_not_inflate_cycle_count() {
+        let mut original = SpcHistory::new();
+        for i in 0..5 {
+            original.record_snapshot(SpcSnapshot::new(
+                format!("t{}", i),
+                i as f64,
+                150.0,
+                0.8,
+                0,
+            ));
+        }
+        let snapshots = original.get_all_snapshots();
+        let cycle_count = original.cycle_count;
+        assert_eq!(cycle_count, 5);
+
+        // Simulate the WASM round-trip (deserialize into a fresh history).
+        let mut restored = SpcHistory::new();
+        restored.restore(snapshots, cycle_count);
+        assert_eq!(restored.cycle_count, 5);
+        assert_eq!(restored.history.len(), 5);
+    }
+
+    /// Rank-1 oracle: NaN/Inf in any f64 field must be sanitized to 0.0,
+    /// because downstream WE Rule 1 uses strict `>`/`<` comparisons which
+    /// return `false` against NaN — a single NaN snapshot would silently
+    /// suppress an out-of-control alert and is therefore a correctness
+    /// hazard, not merely a numerical curiosity.
+    #[test]
+    fn test_spc_history_sanitizes_nan_and_infinity() {
+        let mut history = SpcHistory::new();
+        history.record_snapshot(SpcSnapshot::new(
+            "nan-row".into(),
+            f64::NAN,
+            f64::INFINITY,
+            f64::NEG_INFINITY,
+            0,
+        ));
+        let snaps = history.get_all_snapshots();
+        assert_eq!(snaps.len(), 1);
+        let s = &snaps[0];
+        assert!(s.event_rate.is_finite(), "event_rate must be finite");
+        assert!(
+            s.trace_duration_avg.is_finite(),
+            "trace_duration_avg must be finite"
+        );
+        assert!(
+            s.activity_frequency.is_finite(),
+            "activity_frequency must be finite"
+        );
+        assert_eq!(s.event_rate, 0.0);
+        assert_eq!(s.trace_duration_avg, 0.0);
+        assert_eq!(s.activity_frequency, 0.0);
+    }
+
+    /// Rank-2 oracle: cycle_count must never panic on overflow at
+    /// u64::MAX. `saturating_add` guarantees clamping rather than wrap.
+    #[test]
+    fn test_spc_history_cycle_count_saturates_at_u64_max() {
+        let mut history = SpcHistory::new();
+        history.cycle_count = u64::MAX;
+        history.record_snapshot(SpcSnapshot::new("end".into(), 1.0, 1.0, 1.0, 0));
+        assert_eq!(history.cycle_count, u64::MAX, "must saturate, not wrap");
     }
 
     #[test]

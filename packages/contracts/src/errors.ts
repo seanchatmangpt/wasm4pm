@@ -196,11 +196,11 @@ const REMEDIATIONS: Record<ErrorCode, string> = {
 
   // Algorithm errors
   ALGORITHM_FAILED:
-    'The algorithm encountered an error during execution. Check the detailed error message and try with different parameters or a smaller dataset.',
+    'The algorithm encountered an error during execution. Check the detailed error message and try with different parameters or a smaller dataset. Run: wpm explain <algorithm> for parameter guidance. Use wpm compare to identify a more suitable algorithm for your log.',
   ALGORITHM_NOT_FOUND:
-    'The requested algorithm is not available. Run: wpm list-algorithms to see available options.',
+    'The requested algorithm is not available. Run: wpm algorithms to list all 36 registered algorithms. Use --tier fast|balanced|quality|stream to filter by speed.',
   CONFORMANCE_FAILED:
-    'Conformance checking failed. Verify the process model matches the event log structure. Check activity names and case IDs match.',
+    'Conformance checking failed. Verify the process model matches the event log structure — activity names and case IDs must match. Run: wpm validate -i <log> to inspect the log schema, then wpm quality to diagnose which fitness/precision dimension is failing.',
   SIMULATION_FAILED:
     'Process simulation failed. Verify the model is valid and simulation parameters are within acceptable ranges.',
   PREDICTION_FAILED:
@@ -212,7 +212,7 @@ const REMEDIATIONS: Record<ErrorCode, string> = {
 
   // WASM runtime errors
   WASM_INIT_FAILED:
-    'Failed to initialize the WASM module. Ensure Node.js/browser is compatible (Node 16+, modern browser). Try reinstalling the package: npm install @wasm4pm/engine',
+    'Failed to initialize the WASM module. Ensure Node.js/browser is compatible (Node 16+, modern browser). Try reinstalling: pnpm add @wasm4pm/engine. Run: wpm status to confirm WASM engine health.',
   WASM_MEMORY_EXCEEDED:
     'Insufficient memory in WASM sandbox. Try processing your data in smaller batches or check available memory limits.',
 

@@ -5,6 +5,7 @@ import { CognitionError } from '../errors.js';
 import type { SpanSink } from '../observability-types.js';
 import { defaultSpanSink, hexId } from '../span-utils.js';
 import type { BreedInput, ContractResult } from '../types.js';
+import { assertContractResult } from './guard.js';
 
 export interface RunOptions {
   spanSink?: SpanSink;
@@ -61,7 +62,9 @@ export async function runContract(
         { cause: e },
       );
     }
-    return parsed as ContractResult;
+    // Field-contract guard — refuses Rust output drift at the WASM boundary
+    // per `.claude/rules/cognition-contracts.md`.
+    return assertContractResult(parsed);
   } catch (err) {
     status = 'ERROR';
     errMsg = err instanceof Error ? err.message : String(err);

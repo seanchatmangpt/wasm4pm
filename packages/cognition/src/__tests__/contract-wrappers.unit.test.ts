@@ -1,10 +1,15 @@
 /**
- * contract-wrappers.test.ts — SpanSink injection tests for all remaining WASM wrappers
+ * contract-wrappers.unit.test.ts — SpanSink injection tests for all remaining WASM wrappers
  *
  * Oracle rank: Rank 2 (Domain contract — span names, status codes, error codes,
  * required attributes).
  *
- * WasmLoader is mocked so no WASM binary is needed. Each wrapper is tested for:
+ * UNIT test: WasmLoader is mocked so no WASM binary is needed. Named `*.unit.test.ts`
+ * per FM-5 convention (.claude/rules/cognition-contracts.md) — mocks of `../init.js`
+ * are only permissible in unit-tagged files. Real-WASM coverage of these wrappers
+ * lives in `cognition-wasm.integration.test.ts`.
+ *
+ * Each wrapper is tested for:
  *   - span emitted on success (correct name, status OK, required attributes)
  *   - span emitted on error (status ERROR, message forwarded)
  *   - span sink errors are swallowed (never throw from wrapper)

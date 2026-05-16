@@ -123,9 +123,19 @@ export const simulate = defineCommand({
         return await exitWithFlush(result.exit_code);
       }
       const maxTime = parsedTime ?? 60000;
-      const seed = ctx.args.seed
-        ? parseInt(ctx.args.seed as string, 10)
-        : Math.floor(Math.random() * 2_147_483_647);
+      const rawSeed = ctx.args.seed as string | undefined;
+      const parsedSeed = rawSeed != null ? parseInt(rawSeed, 10) : undefined;
+      if (parsedSeed !== undefined && Number.isNaN(parsedSeed)) {
+        const result = makeErrorResult(
+          'simulate',
+          'Invalid --seed value: must be a number',
+          EXIT_CODES.config_error,
+          'INVALID_ARG'
+        );
+        emitResult(result, { format, verbose, quiet });
+        return await exitWithFlush(result.exit_code);
+      }
+      const seed = parsedSeed ?? Math.floor(Math.random() * 2_147_483_647);
 
       await withLogSession(
         { inputPath, activityKey, commandName: 'simulate', emitOptions: { format, verbose, quiet } },

@@ -288,22 +288,28 @@ export const driftWatch = defineCommand({
         };
         process.stdout.write(JSON.stringify(line) + '\n');
       } else {
-        // One-line status
+        // One-line status with proportion bar: shows EWMA magnitude relative to threshold
         const driftColor = ewma > driftThreshold ? RED : ewma > driftThreshold / 2 ? YELLOW : GREEN;
+        const ewmaRatio = Math.min(1, ewma / Math.max(driftThreshold, 0.0001));
+        const filled = Math.round(ewmaRatio * 8);
+        const ewmaBar = '▓'.repeat(filled) + '░'.repeat(8 - filled);
         const statusLine =
           `${CYAN}[${ts}]${RESET} ` +
-          `drift=${driftColor}${ewma.toFixed(4)}${RESET} (${trendArrow(trend)}) | ` +
+          `drift=${driftColor}${ewma.toFixed(4)}${RESET} ${driftColor}${ewmaBar}${RESET} (${trendArrow(trend)}) | ` +
           `${detected} drift point${detected !== 1 ? 's' : ''} detected | ` +
-          `window=${windowSize}`;
+          `threshold=${driftThreshold}`;
         console.log(statusLine);
 
-        // Alert on new drift points
+        // Alert on new drift points — show magnitude above threshold so severity is visible
         if (newDriftCount > 0) {
           alertsFired += 1;
           const latest = drifts[drifts.length - 1];
+          const latestDist = latest?.distance ?? 0;
+          const overage = latestDist - driftThreshold;
+          const overageStr = overage > 0 ? ` (+${overage.toFixed(4)} above threshold)` : '';
           const alertLine =
             `${BOLD}${RED}  ⚠  ALERT${RESET} — ${newDriftCount} new drift point${newDriftCount !== 1 ? 's' : ''} ` +
-            `at position ${latest?.position ?? '?'}, distance=${(latest?.distance ?? 0).toFixed(4)}`;
+            `at position ${latest?.position ?? '?'}, distance=${latestDist.toFixed(4)}${overageStr}`;
           console.log(alertLine);
         }
       }

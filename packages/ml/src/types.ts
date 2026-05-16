@@ -5,6 +5,33 @@
  * Native process intelligence ML — no external ML library dependencies.
  */
 
+/**
+ * Sentinel metadata attached to ML results when the input was too small or
+ * empty to produce a meaningful answer. Callers should treat any result with
+ * a populated `warning` as a no-op: numeric fields will be defaults (0, []),
+ * predictions/assignments will be empty, and no model was actually fit.
+ *
+ * This is a domain-contract refusal in metadata form — existing tests that
+ * assert empty arrays still pass, but downstream code can now branch on
+ * `metadata?.warning` to surface the situation instead of silently using
+ * sentinel results as if they were valid.
+ */
+export interface EmptyInputWarning {
+  /** Stable warning code. Use this for programmatic checks. */
+  code:
+    | 'empty_input'
+    | 'insufficient_samples'
+    | 'short_series'
+    | 'no_valid_features'
+    | 'no_labels';
+  /** Human-readable explanation. */
+  message: string;
+  /** Number of items the function received. */
+  inputLength: number;
+  /** Minimum number of items required to produce a meaningful result. */
+  minRequired: number;
+}
+
 /** Numeric feature matrix ready for ML consumption */
 export interface FeatureMatrix {
   /** Rows = traces/observations, cols = features */
@@ -17,6 +44,8 @@ export interface FeatureMatrix {
   targets: number[];
   /** Categorical target labels (e.g., outcome activity name) */
   labels: string[];
+  /** Set when the input was empty / null / had no valid rows. */
+  metadata?: { warning: EmptyInputWarning };
 }
 
 /** Label encoding result for classifiers */
@@ -47,6 +76,8 @@ export interface ClassificationResult {
   method: ClassificationMethod;
   predictions: Array<{ caseId: string; predicted: string; confidence: number }>;
   modelInfo: Record<string, unknown>;
+  /** Set when no model was actually fit (empty input, no labels, etc.). */
+  metadata?: { warning: EmptyInputWarning };
 }
 
 export interface RegressionResult {
@@ -73,6 +104,8 @@ export interface ClusteringResult {
   assignments: Array<{ caseId: string; cluster: number }>;
   centroids?: number[][];
   modelInfo: Record<string, unknown>;
+  /** Set when no clustering was performed (empty input). */
+  metadata?: { warning: EmptyInputWarning };
 }
 
 export interface ThroughputForecastResult {
@@ -84,6 +117,8 @@ export interface ThroughputForecastResult {
   decomposition?: { trend: number[]; seasonal: number[]; residual: number[] };
   windowSizeMs: number;
   exponentialForecast?: number[];
+  /** Set when no forecast was produced (no events or fewer than 3 bins). */
+  metadata?: { warning: EmptyInputWarning };
 }
 
 /** Generic series forecast result (for drift distances, any numeric series) */
@@ -94,6 +129,8 @@ export interface SeriesForecastResult {
   seasonality?: { period: number; strength: number };
   decomposition?: { trend: number[]; seasonal: number[]; residual: number[] };
   exponentialForecast?: number[];
+  /** Set when the input series was shorter than 3 observations. */
+  metadata?: { warning: EmptyInputWarning };
 }
 
 export interface EnhancedAnomalyResult {
@@ -103,6 +140,8 @@ export interface EnhancedAnomalyResult {
   residualPeaks?: number[];
   smoothedSeries: number[];
   originalLength: number;
+  /** Set when the input series was shorter than 3 observations. */
+  metadata?: { warning: EmptyInputWarning };
 }
 
 export interface PCAResult {

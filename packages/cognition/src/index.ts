@@ -8,6 +8,7 @@ export * from './observability-types.js';
 export * from './contract/run.js';
 export * from './contract/show.js';
 export * from './contract/verify.js';
+export * from './contract/guard.js';
 export * from './receipt/chain.js';
 export * from './receipt/replay.js';
 export * from './adversarial/catalogue.js';

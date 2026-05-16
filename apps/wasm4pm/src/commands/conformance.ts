@@ -80,6 +80,10 @@ export const conformance = defineCommand({
       description: 'Suppress non-error output',
       alias: 'q',
     },
+    'no-save': {
+      type: 'boolean',
+      description: 'Do not auto-save the receipt to .wasm4pm/receipts/',
+    },
   },
   async run(ctx) {
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
@@ -112,7 +116,6 @@ export const conformance = defineCommand({
         );
         emitResult(result, { format, verbose, quiet });
         return await exitWithFlush(result.exit_code);
-        return;
       }
 
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
@@ -128,7 +131,6 @@ export const conformance = defineCommand({
         );
         emitResult(result, { format, verbose, quiet });
         return await exitWithFlush(result.exit_code);
-        return;
       }
       const threshold = parsedThreshold ?? 0.8;
 
@@ -161,7 +163,6 @@ export const conformance = defineCommand({
           );
           emitResult(result, { format, verbose, quiet });
           return await exitWithFlush(result.exit_code);
-          return;
         }
       } else {
         // Auto-discover a Petri Net using Alpha++
@@ -179,7 +180,6 @@ export const conformance = defineCommand({
           );
           emitResult(result, { format, verbose, quiet });
           return await exitWithFlush(result.exit_code);
-          return;
         }
       }
 
@@ -309,9 +309,20 @@ function printHumanConformance(payload: ConformancePayload, projection: ConsoleP
   projection.log('');
 
   if (isFit) {
-    projection.success('Log conforms to model (fitness ≥ threshold)');
+    projection.success('Log conforms to model (fitness >= threshold)');
+    projection.log('');
+    projection.log('  Next steps:');
+    projection.log('    wpm quality -i <log.xes>   # assess all 4 quality dimensions');
+    projection.log('    wpm temporal -i <log.xes>  # analyse bottlenecks and SLA gaps');
   } else {
     projection.warn('Log does NOT conform to model (fitness < threshold)');
+    projection.log('');
+    projection.log('  Next steps:');
+    projection.log('    wpm run -i <log.xes>              # discover a better-fitting model');
+    projection.log(
+      `    wpm conformance -i <log.xes> --threshold ${Math.max(0, threshold - 0.1).toFixed(2)}  # relax the threshold`
+    );
+    projection.log('    wpm validate -i <log.xes>         # check log quality first');
   }
   projection.log('');
 }
