@@ -39,9 +39,11 @@ jobs:
       - name: Install wasm-pack
         run: npm install -g wasm-pack@0.13.1
 
-      - name: Install dependencies
-        working-directory: ./wasm4pm
-        run: npm install
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Install dependencies (workspace install covers wasm4pm)
+        run: pnpm install
 
       - name: Build nodejs target
         working-directory: ./wasm4pm
