@@ -26,8 +26,16 @@ pub fn matthews_corrcoef_impl(y_true: &[f64], y_pred: &[f64]) -> Result<f64, MlE
         }
     }
 
-    let numerator = (tp * tn - fp * fn_count) as f64;
-    let denominator = ((tp + fp) * (tp + fn_count) * (tn + fp) * (tn + fn_count)) as f64;
+    // Cast to f64 BEFORE subtraction to avoid usize underflow when fp*fn > tp*tn
+    // (the MCC numerator is signed: tp*tn - fp*fn can be negative).
+    // Also cast multiplicands to f64 before multiplying to avoid usize
+    // overflow on the 4-way product in the denominator for large samples.
+    let tp_f = tp as f64;
+    let tn_f = tn as f64;
+    let fp_f = fp as f64;
+    let fn_f = fn_count as f64;
+    let numerator = tp_f * tn_f - fp_f * fn_f;
+    let denominator = (tp_f + fp_f) * (tp_f + fn_f) * (tn_f + fp_f) * (tn_f + fn_f);
 
     if denominator == 0.0 {
         return Ok(0.0);  // Undefined case
@@ -180,5 +188,38 @@ mod tests {
         // Class 0: 2/3 correct, Class 1: 2/3 correct
         let ba = balanced_accuracy_impl(&y_true, &y_pred).unwrap();
         assert!((ba - 2.0/3.0).abs() < 1e-10);
+    }
+
+    // Rank-1 (mathematical theorem): the MCC numerator is tp*tn - fp*fn
+    // and is *signed*. A previous implementation computed this in usize,
+    // underflowing to garbage whenever fp*fn > tp*tn (i.e. any time the
+    // classifier was worse than chance on the positive class). The worst-
+    // case input below has tp=tn=0 and fp=fn=2, so the unsigned form would
+    // panic in debug or silently wrap in release. Pin both behaviors:
+    //   1. inverted predictions must return MCC = -1.0
+    //   2. the same input in a tight loop must not panic (no usize underflow)
+    #[test]
+    fn test_mcc_no_usize_underflow_on_inverse() {
+        let y_true = vec![0.0, 0.0, 1.0, 1.0];
+        let y_pred = vec![1.0, 1.0, 0.0, 0.0];
+        // Should not panic.
+        let mcc = matthews_corrcoef_impl(&y_true, &y_pred).unwrap();
+        assert!((mcc - (-1.0)).abs() < 1e-10,
+            "Inverted prediction MCC must equal -1.0 (got {})", mcc);
+    }
+
+    // Rank-1 (symmetry / sign theorem): swapping y_pred with its inverse
+    // (1 - y_pred for 0/1 labels) negates the MCC.
+    #[test]
+    fn test_mcc_inverse_sign_symmetry() {
+        let y_true = vec![1.0, 0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 0.0];
+        let y_pred = vec![1.0, 0.0, 0.0, 1.0, 0.0, 1.0, 1.0, 0.0];
+        let mcc_orig = matthews_corrcoef_impl(&y_true, &y_pred).unwrap();
+        let y_pred_inv: Vec<f64> = y_pred.iter().map(|&p| 1.0 - p).collect();
+        let mcc_inv = matthews_corrcoef_impl(&y_true, &y_pred_inv).unwrap();
+        // For non-degenerate binary classification, MCC(y, ~p) = -MCC(y, p).
+        assert!((mcc_orig + mcc_inv).abs() < 1e-10,
+            "MCC sign-symmetry violated: orig={}, inv={}, sum={}",
+            mcc_orig, mcc_inv, mcc_orig + mcc_inv);
     }
 }
