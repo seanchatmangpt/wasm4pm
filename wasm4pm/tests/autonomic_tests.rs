@@ -248,6 +248,27 @@ mod spc_tests {
         assert!(matches!(alerts[0], SpecialCause::OutOfControl { .. }));
     }
 
+    /// Rank-1 regression: a non-finite (`NaN` / `+inf` / `-inf`) data point
+    /// is corrupt evidence. Van der Aalst process-mining doctrine treats
+    /// corrupt evidence as a first-class defect: it must surface as an
+    /// out-of-control alert, never be silently ignored. Without the
+    /// `is_finite()` guard, `NaN > ucl` and `NaN < lcl` are both `false`,
+    /// so a fully out-of-control NaN slipped past Rule 1.
+    #[test]
+    fn test_rule_1_non_finite_value_triggers_out_of_control() {
+        for invalid in [f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+            // Single invalid point with otherwise valid limits.
+            let data = vec![chart(invalid, 10.0, 5.0, 0.0)];
+            let alerts = check_western_electric_rules(&data);
+            assert!(
+                alerts.iter().any(|a| matches!(a, SpecialCause::OutOfControl { .. })),
+                "non-finite value {} must trigger Rule 1 OutOfControl alert; got {:?}",
+                invalid,
+                alerts
+            );
+        }
+    }
+
     #[test]
     fn test_rule_2_shift_above() {
         let data: Vec<ChartData> = (0..9).map(|_| chart(6.0, 10.0, 5.0, 0.0)).collect();
