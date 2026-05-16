@@ -48,6 +48,19 @@ export async function buildSystem(
         { cause: e },
       );
     }
+    // Shape validation per cognition-contracts.md (Rust wasm.rs lines 287-290).
+    // Reject any output missing the documented pareto_front + dominated arrays.
+    if (
+      parsed === null ||
+      typeof parsed !== 'object' ||
+      !Array.isArray((parsed as { pareto_front?: unknown }).pareto_front) ||
+      !Array.isArray((parsed as { dominated?: unknown }).dominated)
+    ) {
+      throw new CognitionError(
+        'system_build output missing required pareto_front or dominated array',
+        'OUTPUT_SHAPE_INVALID',
+      );
+    }
     return parsed as SystemBuildResult;
   } catch (err) {
     status = 'ERROR';

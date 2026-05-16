@@ -49,6 +49,19 @@ export async function verifySystem(
         { cause: e },
       );
     }
+    // Shape validation: target (string), status, findings array.
+    // Per cognition-contracts.md, the wrapper must not pass malformed WASM output.
+    if (
+      parsed === null ||
+      typeof parsed !== 'object' ||
+      typeof (parsed as { target?: unknown }).target !== 'string' ||
+      !Array.isArray((parsed as { findings?: unknown }).findings)
+    ) {
+      throw new CognitionError(
+        'system_verify output missing required target or findings field',
+        'OUTPUT_SHAPE_INVALID',
+      );
+    }
     return parsed as SystemVerifyResult;
   } catch (err) {
     status = 'ERROR';
