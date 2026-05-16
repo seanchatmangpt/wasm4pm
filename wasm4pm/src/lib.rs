@@ -2335,12 +2335,10 @@ pub fn set_spc_history(json: &str) -> Result<String, JsValue> {
     let snapshot_count = data.snapshots.len();
     let cycle_count = data.cycle_count;
     SPC_HISTORY.with(|history| {
-        let mut history_ref = history.borrow_mut();
-        history_ref.clear();
-        history_ref.cycle_count = cycle_count;
-        for snapshot in data.snapshots {
-            history_ref.record_snapshot(snapshot);
-        }
+        // `restore` sets cycle_count exactly once; prior implementation
+        // re-incremented it per snapshot, producing cycle_count + N drift
+        // and breaking get_spc_history / set_spc_history round-trips.
+        history.borrow_mut().restore(data.snapshots, cycle_count);
     });
 
     Ok(format!("Restored {} SPC snapshots", snapshot_count))

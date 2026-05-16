@@ -275,9 +275,10 @@ fn action_scale(context: &ExecutionContext) -> DispatchResult {
         }
         1 => {
             // Warning: increase timeout for safety margin
+            // Use saturating_mul to avoid u32 overflow on pathological inputs.
             (
                 context.current_memory_mb,
-                context.current_timeout_ms * 2,
+                context.current_timeout_ms.saturating_mul(2),
                 context.current_batch_size,
             )
         }
@@ -285,7 +286,7 @@ fn action_scale(context: &ExecutionContext) -> DispatchResult {
             // Degraded: reduce batch size, increase timeout
             (
                 context.current_memory_mb / 2,
-                context.current_timeout_ms * 2,
+                context.current_timeout_ms.saturating_mul(2),
                 context.current_batch_size / 2,
             )
         }
@@ -293,7 +294,7 @@ fn action_scale(context: &ExecutionContext) -> DispatchResult {
             // Critical: aggressive reduction
             (
                 context.current_memory_mb / 4,
-                context.current_timeout_ms * 3,
+                context.current_timeout_ms.saturating_mul(3),
                 context.current_batch_size / 4,
             )
         }
@@ -502,6 +503,40 @@ mod tests {
         let result = dispatch_action(&RlAction::Retry, &context);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), DispatchError::CircuitBreakerOpen);
+    }
+
+    /// Rank-1 oracle (no-panic property): for any u32 timeout in any
+    /// health level that multiplies it (1, 2, 3), `action_scale` must
+    /// return Ok without panicking. The prior `* 2` / `* 3` panicked in
+    /// debug builds and wrapped in release builds — both are silent
+    /// correctness bugs that produced absurdly small timeouts on the
+    /// degraded code path. Verified by passing u32::MAX.
+    #[test]
+    fn test_action_scale_saturates_on_timeout_overflow() {
+        for health_level in [1u8, 2, 3] {
+            let context = ExecutionContext {
+                health_level,
+                current_timeout_ms: u32::MAX,
+                ..Default::default()
+            };
+            let result = dispatch_action(&RlAction::Scale, &context);
+            assert!(
+                result.is_ok(),
+                "action_scale must not panic on overflow at health_level={}",
+                health_level
+            );
+            if let Ok(DispatchOutcome::Scaled { timeout_ms, .. }) = result {
+                // Saturating arithmetic must produce u32::MAX, not wrap to 0.
+                assert_eq!(
+                    timeout_ms,
+                    u32::MAX,
+                    "timeout must saturate at u32::MAX, not wrap, at health_level={}",
+                    health_level
+                );
+            } else {
+                panic!("Expected Scaled outcome at health_level={}", health_level);
+            }
+        }
     }
 
     #[test]
