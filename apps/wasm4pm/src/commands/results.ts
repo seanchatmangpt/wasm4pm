@@ -12,14 +12,127 @@ import { exitWithFlush } from '../otel/exit.js';
  */
 export const RESULTS_DIR = path.join('.wasm4pm', 'results');
 
+/**
+ * Van der Aalst four quality dimensions stored with every result.
+ * Values are 0-1 when measured; null when the algorithm does not
+ * produce a conformance-checked model (e.g. DFG-only runs).
+ *
+ * fitness        - fraction of log traces the model can replay
+ * precision      - fraction of model behaviour seen in the log (1 = no flower model)
+ * generalization - how well the model covers unseen traces from the same process
+ * simplicity     - Occam score: 1 = minimum nodes/edges, 0 = overly complex
+ * qualityTier    - registry score 0-100 (higher = better expected model quality)
+ * interpretation - one-line practitioner hint derived from the scores
+ */
+export interface QualityDimensions {
+  fitness: number | null;
+  precision: number | null;
+  generalization: number | null;
+  simplicity: number | null;
+  qualityTier: number | null;
+  interpretation: string;
+}
+
 export interface SavedResult {
   version: 1;
   savedAt: string;
   task: string;
   input: string;
   activityKey: string;
+  qualityDimensions: QualityDimensions;
   result: Record<string, unknown>;
 }
+
+// --- Quality dimension helpers -----------------------------------------------
+
+function extractNumber(
+  obj: Record<string, unknown> | undefined | null,
+  keys: string[]
+): number | null {
+  if (obj == null || typeof obj !== 'object') return null;
+  for (const key of keys) {
+    const v = (obj as Record<string, unknown>)[key];
+    if (typeof v === 'number' && isFinite(v)) return Math.round(v * 1000) / 1000;
+  }
+  return null;
+}
+
+function deriveSimplicity(result: Record<string, unknown>): number | null {
+  const model = result?.['model'] as Record<string, unknown> | undefined;
+  const nodesRaw = model?.['nodes'];
+  const nodeCount = Array.isArray(nodesRaw)
+    ? nodesRaw.length
+    : typeof nodesRaw === 'number'
+      ? nodesRaw
+      : null;
+  if (nodeCount == null) return null;
+  // Simplicity decays linearly from 1.0 at 1 node to 0.0 at 50+ nodes
+  return Math.max(0, Math.round((1 - Math.min(nodeCount, 50) / 50) * 1000) / 1000);
+}
+
+function buildInterpretation(dims: Omit<QualityDimensions, 'interpretation'>): string {
+  const { fitness, precision, simplicity, qualityTier } = dims;
+  if (fitness == null && precision == null && qualityTier == null) {
+    return 'No conformance data - run wpm conformance to measure fitness and precision.';
+  }
+  if (fitness != null && fitness < 0.85) {
+    return (
+      `Fitness ${fitness.toFixed(2)} is below the 0.85 threshold - the model cannot replay ` +
+      `${((1 - fitness) * 100).toFixed(0)}% of observed traces. ` +
+      `Consider a higher-quality algorithm (heuristic_miner -> inductive_miner -> ilp).`
+    );
+  }
+  if (precision != null && precision < 0.5) {
+    return (
+      `Precision ${precision.toFixed(2)} is low - the model allows much behaviour never seen ` +
+      `in the log (flower model risk). Add constraints or switch to inductive_miner.`
+    );
+  }
+  if (simplicity != null && simplicity < 0.3) {
+    return (
+      `Model is complex (simplicity ${simplicity.toFixed(2)}). Many nodes increase replay cost ` +
+      `and reduce interpretability. Try process_skeleton or dfg for a first view.`
+    );
+  }
+  if (qualityTier != null && qualityTier >= 70) {
+    return `Quality tier ${qualityTier}/100 - high-quality model. Validate with wpm conformance before using in production.`;
+  }
+  if (qualityTier != null && qualityTier < 40) {
+    return (
+      `Quality tier ${qualityTier}/100 - exploratory model. Good for quick inspection; ` +
+      `upgrade to heuristic_miner or inductive_miner for actionable results.`
+    );
+  }
+  return 'Model looks reasonable. Run wpm conformance for fitness/precision scores before drawing conclusions.';
+}
+
+/**
+ * Build quality dimension metadata from available result fields.
+ * Exported so callers (e.g. run.ts, predict.ts) can embed quality in saved results.
+ */
+export function buildQualityDimensions(
+  result: Record<string, unknown>,
+  qualityTierOverride?: number
+): QualityDimensions {
+  const fitness = extractNumber(result, ['fitness', 'replay_fitness', 'token_fitness']);
+  const precision = extractNumber(result, ['precision', 'et_precision', 'model_precision']);
+  const generalization = extractNumber(result, ['generalization', 'generalisation']);
+  const simplicity = deriveSimplicity(result);
+  const qualityTier =
+    qualityTierOverride ??
+    extractNumber(result, ['qualityTier', 'quality_tier']) ??
+    extractNumber(result?.['model'] as Record<string, unknown> | undefined, ['quality_tier']);
+  const interpretation = buildInterpretation({
+    fitness,
+    precision,
+    generalization,
+    simplicity,
+    qualityTier: qualityTier ?? null,
+  });
+  return { fitness, precision, generalization, simplicity, qualityTier: qualityTier ?? null, interpretation };
+}
+
+// --- Persistence --------------------------------------------------------------
 
 /**
  * Derive a safe filename slug from a task name and timestamp.
@@ -32,16 +145,18 @@ function buildResultFilename(task: string, now: Date): string {
 
 /**
  * Persist a prediction result to .wasm4pm/results/<timestamp>-<task>.json.
- * Creates the directory on first use.  Never throws — failures are silently
+ * Creates the directory on first use.  Never throws - failures are silently
  * reported so they don't break the main predict command.
  *
+ * @param qualityTierOverride Optional registry qualityTier (0-100) for the algorithm used.
  * @returns The absolute path of the written file, or null on failure.
  */
 export async function savePredictionResult(
   task: string,
   input: string,
   activityKey: string,
-  result: Record<string, unknown>
+  result: Record<string, unknown>,
+  qualityTierOverride?: number
 ): Promise<string | null> {
   try {
     const dir = path.resolve(process.cwd(), RESULTS_DIR);
@@ -57,6 +172,7 @@ export async function savePredictionResult(
       task,
       input,
       activityKey,
+      qualityDimensions: buildQualityDimensions(result, qualityTierOverride),
       result,
     };
 
@@ -206,7 +322,11 @@ export const results = defineCommand({
       // --last: cat the newest result
       if (ctx.args.last) {
         if (files.length === 0) {
-          const result = makeResult('results', { files: [], count: 0, directory: dir }, performance.now() - t0);
+          const result = makeResult(
+            'results',
+            { files: [], count: 0, directory: dir },
+            performance.now() - t0
+          );
           emitResult(result, { format, verbose, quiet }, (_res, projection) => {
             projection.warn('No saved results found.');
           });
@@ -214,7 +334,11 @@ export const results = defineCommand({
         }
         const file = files[0];
         const parsed = await catResult(file.filepath);
-        const result = makeResult('results', { cat: parsed, filepath: file.filepath }, performance.now() - t0);
+        const result = makeResult(
+          'results',
+          { cat: parsed, filepath: file.filepath },
+          performance.now() - t0
+        );
         emitResult(result, { format, verbose, quiet }, (_res, projection) => {
           printCatResult(file.filepath, parsed, projection);
         });
@@ -283,12 +407,13 @@ export const results = defineCommand({
           return;
         }
 
-        projection.info(`Saved results (${p.count} total — discovery + prediction)`);
+        projection.info(`Saved results (${p.count} total - discovery + prediction)`);
         projection.log(`  Directory: ${p.directory}`);
         projection.log('');
-        projection.log(`  #   Saved at              Task              File`);
+        projection.log(`  #   Saved at              Task              QTier  Interpretation`);
         projection.log(
-          `  ──  ────────────────────  ────────────────  ────────────────────────────────────`
+          `  --  --------------------  ----------------  -----  ` +
+            `--------------------------------------------------`
         );
 
         for (const entry of p.results) {
@@ -297,8 +422,21 @@ export const results = defineCommand({
           const idxStr = String(entry.index).padStart(3);
           const task = taskSlug.padEnd(16);
           const at = savedAt.padEnd(20);
-          projection.log(`  ${idxStr}  ${at}  ${task}  ${entry.name}`);
 
+          let qtierStr = '  - ';
+          let interpHint = '';
+          try {
+            const raw = await fs.readFile(entry.filepath, 'utf-8');
+            const parsed: SavedResult = JSON.parse(raw);
+            const qt = parsed.qualityDimensions?.qualityTier;
+            qtierStr = qt != null ? String(qt).padStart(5) : '  - ';
+            const interp = parsed.qualityDimensions?.interpretation ?? '';
+            interpHint = interp.length > 50 ? interp.slice(0, 47) + '...' : interp;
+          } catch {
+            // skip unreadable files
+          }
+
+          projection.log(`  ${idxStr}  ${at}  ${task}  ${qtierStr}  ${interpHint}`);
           if (verbose) {
             try {
               const raw = await fs.readFile(entry.filepath, 'utf-8');
@@ -319,6 +457,7 @@ export const results = defineCommand({
         projection.log('');
         projection.log('  Tip: wpm results --last          Print the most recent result');
         projection.log('  Tip: wpm results --cat 1         Print result #1 in full');
+        projection.log('  Tip: wpm conformance -i <log>    Measure fitness and precision');
         projection.log('');
       });
 
@@ -331,18 +470,74 @@ export const results = defineCommand({
   },
 });
 
+// --- Print helpers ------------------------------------------------------------
+
+/** Render a proportion glyph bar (8 chars) for a 0-1 value */
+function qualityBar(value: number | null): string {
+  if (value == null) return '░░░░░░░░';
+  const filled = Math.round(Math.max(0, Math.min(1, value)) * 8);
+  return '▓'.repeat(filled) + '░'.repeat(8 - filled);
+}
+
 /**
  * Emit a single saved result to the console projection.
+ * Shows the four quality dimensions prominently before the raw model data.
  */
-function printCatResult(filepath: string, parsed: SavedResult, projection: ConsoleProjection): void {
+function printCatResult(
+  filepath: string,
+  parsed: SavedResult,
+  projection: ConsoleProjection
+): void {
   projection.log('');
   projection.log(`  File:         ${path.basename(filepath)}`);
   projection.log(`  Task:         ${parsed.task}`);
   projection.log(`  Saved at:     ${parsed.savedAt}`);
   projection.log(`  Input:        ${parsed.input}`);
   projection.log(`  Activity key: ${parsed.activityKey}`);
+
+  // Quality dimensions block
+  const qd = parsed.qualityDimensions;
+  if (qd) {
+    projection.log('');
+    projection.log('  -- Quality Dimensions (van der Aalst) --');
+    const qtierLabel = qd.qualityTier != null ? `${qd.qualityTier}/100` : 'not set';
+    projection.log(`  Quality Tier:    ${qtierLabel}  (registry expected score)`);
+    projection.log('');
+    projection.log(
+      `  Fitness        ${qualityBar(qd.fitness)}  ` +
+        `${qd.fitness != null ? qd.fitness.toFixed(3) : 'not measured'}` +
+        `  - fraction of traces replayable by model`
+    );
+    projection.log(
+      `  Precision      ${qualityBar(qd.precision)}  ` +
+        `${qd.precision != null ? qd.precision.toFixed(3) : 'not measured'}` +
+        `  - fraction of model behaviour seen in log`
+    );
+    projection.log(
+      `  Generalization ${qualityBar(qd.generalization)}  ` +
+        `${qd.generalization != null ? qd.generalization.toFixed(3) : 'not measured'}` +
+        `  - expected coverage on unseen traces`
+    );
+    projection.log(
+      `  Simplicity     ${qualityBar(qd.simplicity)}  ` +
+        `${qd.simplicity != null ? qd.simplicity.toFixed(3) : 'not measured'}` +
+        `  - Occam score (1=minimal, 0=complex)`
+    );
+    projection.log('');
+    projection.log('  Interpretation:');
+    projection.log(`    ${qd.interpretation}`);
+    if (qd.fitness == null || qd.precision == null) {
+      projection.log('');
+      projection.log('  Next steps:');
+      projection.log('    wpm conformance -i <log.xes>                       Measure fitness + precision');
+      projection.log(
+        '    wpm compare dfg heuristic ilp -i <log.xes>    Compare algorithms side-by-side'
+      );
+    }
+  }
+
   projection.log('');
-  projection.log('  Result:');
+  projection.log('  -- Raw result --');
   const lines = JSON.stringify(parsed.result, null, 2).split('\n');
   for (const line of lines) {
     projection.log(`    ${line}`);

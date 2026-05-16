@@ -289,13 +289,21 @@ pub fn measure(arena: &PowlArena, root: u32) -> ComplexityReport {
 /// # Returns
 /// Simplicity score in [0.0, 1.0] where 1.0 is simplest.
 pub fn simplicity_arc_degree(num_places: usize, num_transitions: usize, num_arcs: usize) -> f64 {
-    // Maximum possible arcs in a bipartite graph: places * transitions
-    let max_arcs = num_places * num_transitions;
+    // Maximum possible arcs in a bipartite graph: places * transitions.
+    // Use saturating multiplication to guard against usize overflow on
+    // pathological inputs (catches missing-NaN-class bug where overflow
+    // produced a tiny max_arcs and made simplicity look near 0).
+    let max_arcs = num_places.saturating_mul(num_transitions);
     if max_arcs == 0 {
         return 1.0;
     }
-    // Normalized simplicity: 1 - (actual_arcs / max_possible_arcs)
-    1.0 - (num_arcs as f64 / max_arcs as f64)
+    // Iter-10 hardening: clamp to [0, 1] to enforce the documented
+    // postcondition "Simplicity score in [0.0, 1.0] where 1.0 is simplest".
+    // The old expression `1.0 - actual/max` can go negative when num_arcs
+    // exceeds max_arcs (multi-arcs between the same place/transition pair,
+    // or weighted arcs counted by weight). Documented domain is [0, 1].
+    let raw = 1.0 - (num_arcs as f64 / max_arcs as f64);
+    raw.clamp(0.0, 1.0)
 }
 
 // ─── Tests ────────────────────────────────────────────────────────────────────
@@ -389,5 +397,33 @@ mod tests {
     fn simplicity_empty_net() {
         let s = simplicity_arc_degree(0, 0, 0);
         assert!((s - 1.0).abs() < f64::EPSILON);
+    }
+
+    /// Iter-10 Rank-1: Range invariant. The documented postcondition of
+    /// `simplicity_arc_degree` is "Simplicity score in [0.0, 1.0]". The
+    /// pre-fix expression `1.0 - num_arcs/max_arcs` returns a NEGATIVE
+    /// value whenever `num_arcs > max_arcs` — easy to trigger with
+    /// multi-arcs between the same place/transition pair, or weighted
+    /// arcs that the caller summed by weight before passing in.
+    #[test]
+    fn iter10_simplicity_clamped_when_arcs_exceed_max() {
+        // 2 places * 2 transitions = max_arcs = 4. Pass num_arcs = 100
+        // (would be possible if caller counted parallel arcs).
+        let s = simplicity_arc_degree(2, 2, 100);
+        assert!(s >= 0.0, "simplicity {} must not be negative", s);
+        assert!(s <= 1.0, "simplicity {} must not exceed 1.0", s);
+    }
+
+    /// Iter-10 Rank-2: Domain contract. Even on overflow-class inputs
+    /// (saturating_mul keeps max_arcs finite) the score stays in [0, 1].
+    #[test]
+    fn iter10_simplicity_saturates_on_overflow() {
+        // num_places * num_transitions would overflow usize without the
+        // saturating_mul guard — assert the function does not panic and
+        // returns a value in the documented range.
+        let huge = usize::MAX / 2 + 1;
+        let s = simplicity_arc_degree(huge, huge, 7);
+        assert!((0.0..=1.0).contains(&s), "score out of range: {}", s);
+        assert!(s.is_finite(), "score must be finite");
     }
 }

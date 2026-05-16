@@ -1,6 +1,6 @@
 use wasm4pm::ml::regression::{regression_internal};
 use wasm4pm::ml::forecasting::{forecast_internal};
-use wasm4pm::ml::classification::{knn_internal};
+use wasm4pm::ml::classification::{knn_internal, knn_internal_metrics};
 use wasm4pm::ml::pca::{pca_internal};
 use wasm4pm::ml::automl::{discover_automl_forecast_internal, discover_automl_classify_internal};
 
@@ -194,4 +194,109 @@ fn test_automl_classify_convergence() {
     // For clearly separable data, accuracy should be 1.0
     assert_eq!(result.max_avg_accuracy, 1.0);
     assert!(result.best_k >= 1);
+}
+
+// --- 7. Quality Metric Tests (Rank-2 Domain Contracts) ---
+// These would FAIL on the previous API: ForecastResult had no `mae`/`mape`
+// fields and the classification surface exposed only `accuracy`.
+
+// Domain contract: on a constant series, every one-step-ahead forecast error
+// is zero, so all three error metrics must be exactly zero.
+#[test]
+fn test_forecast_constant_series_has_zero_mae_rmse_mape() {
+    let data = [7.0_f64; 12];
+    let res = forecast_internal(&data, 0.5);
+    assert!(res.rmse.abs() < 1e-12, "rmse on constant series must be 0");
+    assert!(res.mae.abs() < 1e-12, "mae on constant series must be 0");
+    assert!(res.mape.abs() < 1e-12, "mape on constant series must be 0");
+}
+
+// Mathematical theorem (Jensen's inequality) used as a Rank-2 contract:
+// the root-mean-squared error is always >= the mean absolute error for
+// the same error vector. A buggy implementation that returned RMSE for both
+// fields would still pass; one that swapped sums of squares and absolutes
+// would break this.
+#[test]
+fn test_forecast_mae_le_rmse_invariant() {
+    let data = [10.0, 22.0, 11.0, 25.0, 9.0, 27.0, 8.0, 30.0];
+    let res = forecast_internal(&data, 0.3);
+    assert!(res.mae > 0.0, "non-constant series should produce mae > 0");
+    assert!(res.rmse > 0.0, "non-constant series should produce rmse > 0");
+    assert!(
+        res.mae <= res.rmse + 1e-10,
+        "Jensen's inequality: mae ({}) must be <= rmse ({})",
+        res.mae, res.rmse
+    );
+}
+
+// Domain contract: MAPE on a strictly-positive series is finite and
+// non-negative. Without the field, this was unassertable.
+#[test]
+fn test_forecast_mape_finite_on_positive_series() {
+    let data = [100.0, 110.0, 90.0, 120.0, 80.0, 130.0];
+    let res = forecast_internal(&data, 0.5);
+    assert!(res.mape.is_finite(), "mape must be finite for positive series");
+    assert!(res.mape >= 0.0, "mape must be non-negative");
+}
+
+// Domain contract: when every test point is classified correctly, the macro
+// scores all equal 1.0. Accuracy alone could not certify this — a 100%
+// accurate classifier on a single class would also report accuracy=1.0.
+#[test]
+fn test_knn_metrics_perfect_three_class_classification() {
+    let train_x = vec![
+        [1.0, 1.0], [1.1, 1.2], [1.2, 1.1],
+        [5.0, 5.0], [5.1, 5.2], [5.2, 5.1],
+        [9.0, 9.0], [9.1, 9.2], [9.2, 9.1],
+    ];
+    let train_y = vec![0u8, 0, 0, 1, 1, 1, 2, 2, 2];
+    let test_x = vec![[1.05, 1.05], [5.05, 5.05], [9.05, 9.05]];
+    let test_y = vec![0u8, 1, 2];
+
+    let m = knn_internal_metrics(&train_x, &train_y, &test_x, &test_y, 3);
+    assert!((m.accuracy - 1.0).abs() < 1e-10);
+    assert!((m.macro_precision - 1.0).abs() < 1e-10);
+    assert!((m.macro_recall - 1.0).abs() < 1e-10);
+    assert!((m.macro_f1 - 1.0).abs() < 1e-10);
+
+    // Cross-check: legacy `knn_internal` accuracy must equal the metric.
+    let acc = knn_internal(&train_x, &train_y, &test_x, &test_y, 3);
+    assert!(
+        (acc - m.accuracy).abs() < 1e-10,
+        "knn_internal_metrics.accuracy must match knn_internal()"
+    );
+}
+
+// Domain contract: on imbalanced predictions where one class is missed
+// entirely, macro_recall drops below accuracy. This is the failure mode an
+// accuracy-only API hides — the central reason for adding the metrics.
+#[test]
+fn test_knn_metrics_macro_scores_reveal_class_imbalance() {
+    // Training: 9 class-0 + 1 class-1 far away.
+    let mut train_x: Vec<[f64; 2]> = (0..9).map(|i| [i as f64, 0.0]).collect();
+    train_x.push([100.0, 100.0]);
+    let train_y = vec![0u8, 0, 0, 0, 0, 0, 0, 0, 0, 1];
+
+    // Test: 4 class-0 points near origin + 1 class-1 point at moderate distance.
+    // For k=3, the class-1 test point's 3 nearest neighbours are the class-0
+    // training points (since the single class-1 training point is far away),
+    // so it is misclassified.
+    let test_x = vec![[0.5, 0.0], [1.5, 0.0], [2.5, 0.0], [3.5, 0.0], [10.0, 0.0]];
+    let test_y = vec![0u8, 0, 0, 0, 1];
+
+    let m = knn_internal_metrics(&train_x, &train_y, &test_x, &test_y, 3);
+    assert!((m.accuracy - 0.8).abs() < 1e-10, "4/5 correct => accuracy=0.8");
+    // Class 1 has 0 recall (the only class-1 test point is missed).
+    // Macro recall = (1.0 + 0.0) / 2 = 0.5, which is strictly less than
+    // accuracy=0.8. The pre-existing accuracy-only API could not see this.
+    assert!(
+        m.macro_recall < m.accuracy,
+        "macro_recall ({}) must reveal the missed class-1 point; accuracy={}",
+        m.macro_recall, m.accuracy
+    );
+    assert!(
+        m.macro_f1 < m.accuracy,
+        "macro_f1 ({}) must reveal the missed class-1 point; accuracy={}",
+        m.macro_f1, m.accuracy
+    );
 }

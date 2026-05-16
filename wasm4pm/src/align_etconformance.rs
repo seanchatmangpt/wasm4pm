@@ -112,8 +112,16 @@ pub fn compute_align_etconformance_precision(
     };
 
     let processed_count = log.traces.len().min(config.max_iterations);
+    // Iter-10 hardening: full [0, 1] clamp + NaN guard. Previously only
+    // `.max(0.0)` was applied — a NaN from a corrupt total_edges (e.g.
+    // a future signed-arithmetic path that overflows) would propagate.
+    let precision = if precision.is_finite() {
+        precision.clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
     Ok(ETConformanceReport {
-        precision: precision.max(0.0),
+        precision,
         total_escaping_edges: escaping_edges,
         total_edges,
         processed_prefixes: processed_count,
@@ -196,5 +204,23 @@ mod tests {
         let report = result.unwrap();
         assert_eq!(report.total_edges, 0);
         assert_eq!(report.precision, 1.0); // No edges = perfect precision
+    }
+
+    /// Iter-10 Rank-1: Range invariant. Old code clamped only at the
+    /// lower bound (`precision.max(0.0)`), permitting > 1.0 if any
+    /// future code path produced a negative `escaping_edges` count.
+    /// Verify the full [0, 1] clamp + finite-value guard now hold.
+    #[test]
+    fn iter10_precision_always_in_unit_interval() {
+        let log = EventLog::new();
+        let petri_net = PetriNet::new();
+        let cfg = AlignETConformanceConfig::default();
+        let report = compute_align_etconformance_precision(&log, &petri_net, &cfg).unwrap();
+        assert!(
+            (0.0..=1.0).contains(&report.precision),
+            "precision {} not in [0,1]",
+            report.precision
+        );
+        assert!(report.precision.is_finite(), "precision must be finite");
     }
 }

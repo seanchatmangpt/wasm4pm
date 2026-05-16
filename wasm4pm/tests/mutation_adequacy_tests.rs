@@ -20,7 +20,7 @@
 
 use wasm4pm::reinforcement::QLearning;
 use wasm4pm::self_healing::{
-    advance_clock, reset_clock, CircuitBreaker, CircuitBreakerConfig, CircuitState,
+    advance_clock, reset_clock, CircuitBreaker, CircuitBreakerConfig, CircuitState, CLOCK_LOCK,
 };
 use wasm4pm::spc::{check_western_electric_rules, ChartData, SpecialCause, TrendDirection};
 use wasm4pm::RlAction;
@@ -378,7 +378,11 @@ fn test_mutation_4_circuit_breaker_step_counter_detected() {
     // If mutation existed: state would still be Open, assertion would FAIL.
     // Therefore: our test suite WOULD catch this mutation.
 
-    // Step 1: Reset clock
+    // Step 1: Reset clock — guard against parallel sibling tests racing
+    // for the global `TIME_OFFSET_MS` atomic.
+    let _clock_guard = CLOCK_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     reset_clock();
 
     // Step 2: Create breaker with very short timeout (1ms) for deterministic test

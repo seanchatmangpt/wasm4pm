@@ -565,59 +565,34 @@ pub(crate) fn score_motion_automl_from_envelope(
         };
     }
 
-    // Build proxy feature vector (same 5 names as training).
-    // We synthesize plausible values from the motion fields available at the
-    // membrane layer without re-running full feature extraction.
-    let prefix_length_ratio: f64 = motion.object_ids.len().min(10) as f64 / 10.0;
-    let unique_activity_ratio: f64 = if motion.requested_action.is_empty() {
-        0.0
-    } else {
-        1.0
-    };
-    let has_rework: f64 = 0.0; // no trace history available at motion time
-    let event_density: f64 = motion.claimed_evidence.len().min(5) as f64 / 5.0;
-    let variant_frequency: f64 = 0.5; // neutral default — unknown at motion time
-
-    let feature_values = vec![
-        prefix_length_ratio,
-        unique_activity_ratio,
-        has_rework,
-        event_density,
-        variant_frequency,
+    // The trained model requires 5 trace-level features (prefix_length_ratio,
+    // unique_activity_ratio, has_rework, event_density, variant_frequency).
+    // None are computable from a bare RequestMotion. Earlier revisions
+    // synthesised stand-ins (e.g. object_ids.len()/10, variant_frequency=0.5);
+    // those values have no statistical relationship to training and yield a
+    // score that LOOKS like a confidence but is mathematically meaningless —
+    // the PR #66 "fake constant" anti-pattern. Per mcpp-conformance.md a
+    // synthetic-feature score is an Andon pull, not a verdict. Refuse with
+    // RequireEvidence; restore real scoring when motion carries pre-computed
+    // features.
+    let _ = motion;
+    let missing = vec![
+        "automl.prefix_length_ratio".to_string(),
+        "automl.unique_activity_ratio".to_string(),
+        "automl.has_rework".to_string(),
+        "automl.event_density".to_string(),
+        "automl.variant_frequency".to_string(),
     ];
-
-    let score = score_with_miniml(
-        &model.training_features,
-        &model.training_labels,
-        model.n_samples,
-        model.n_features,
-        &feature_values,
-    );
-
-    let (verdict, reason) = if score > 0.9 {
-        (
-            crate::automembrane::Verdict::Escalate,
-            format!("AutoML anomaly score {score:.2} exceeds escalation threshold (0.9)"),
-        )
-    } else if score > 0.7 {
-        (
-            crate::automembrane::Verdict::Warn,
-            format!("AutoML anomaly score {score:.2} exceeds warning threshold (0.7)"),
-        )
-    } else {
-        (
-            crate::automembrane::Verdict::Allow,
-            format!("AutoML anomaly score {score:.2} within normal range"),
-        )
-    };
-
     crate::automembrane::LayerVerdict {
         layer: "automl".to_string(),
-        verdict,
-        confidence: score,
-        reason,
+        verdict: crate::automembrane::Verdict::RequireEvidence,
+        confidence: 0.0,
+        reason: "AutoML layer requires pre-computed trace features; \
+                 raw RequestMotion lacks trace context. Provide \
+                 motion.precomputed_features['automl.*'] to score."
+            .to_string(),
         evidence_used: vec!["automl_envelope".to_string()],
-        missing_evidence: vec![],
+        missing_evidence: missing,
     }
 }
 
@@ -845,6 +820,56 @@ mod tests {
     }
 
     // ── Serialisation round-trip — Rank 1 ────────────────────────────────────
+
+    fn mk_model(status: &str) -> AutomlEnvelopeModel {
+        AutomlEnvelopeModel {
+            envelope_type: AUTOML_ENVELOPE_TYPE.to_string(),
+            best_algorithm: "knn".to_string(),
+            best_score: 0.9, n_samples: 10, n_features: N_FEATURES,
+            feature_names: vec!["prefix_length_ratio".into(),
+                "unique_activity_ratio".into(), "has_rework".into(),
+                "event_density".into(), "variant_frequency".into()],
+            training_features: vec![0.0; 10 * N_FEATURES],
+            training_labels: vec![1.0; 10],
+            rationale: "test".to_string(), trained_at_ms: 0.0,
+            data_window_size: 10,
+            validity_status: status.to_string(), drift_score: 0.0,
+        }
+    }
+    fn mk_motion() -> crate::automembrane::RequestMotion {
+        crate::automembrane::RequestMotion {
+            request_id: "r".to_string(), actor: "a".to_string(),
+            role: None, origin_system: None, target_system: None,
+            object_ids: vec![], object_types: vec![],
+            requested_action: "x".to_string(), claimed_evidence: vec![],
+            timestamp_ms: None, route_context: None, deployment_profile: None,
+        }
+    }
+
+    /// Rank-2: `score_motion_automl_from_envelope` must NOT synthesise feature
+    /// values from RequestMotion fields unrelated to the trained distribution.
+    /// Missing trace features → `RequireEvidence`, never a plausible score.
+    #[test]
+    fn score_without_trace_features_refuses_with_require_evidence() {
+        use crate::automembrane::Verdict;
+        let verdict = score_motion_automl_from_envelope(&mk_model("valid"), &mk_motion());
+        assert!(matches!(verdict.verdict, Verdict::RequireEvidence),
+            "got {:?}", verdict.verdict);
+        assert_eq!(verdict.confidence, 0.0);
+        assert_eq!(verdict.missing_evidence.len(), 5);
+        assert!(verdict.missing_evidence.iter()
+            .any(|m| m == "automl.prefix_length_ratio"));
+        assert!(verdict.missing_evidence.iter()
+            .any(|m| m == "automl.variant_frequency"));
+    }
+
+    /// Quarantined model must short-circuit BEFORE the missing-evidence path.
+    #[test]
+    fn score_quarantined_model_short_circuits_before_missing_evidence() {
+        use crate::automembrane::Verdict;
+        let v = score_motion_automl_from_envelope(&mk_model("quarantined"), &mk_motion());
+        assert!(matches!(v.verdict, Verdict::Quarantine), "got {:?}", v.verdict);
+    }
 
     #[test]
     fn automl_envelope_model_round_trips() {

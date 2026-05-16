@@ -128,44 +128,43 @@ fn try_match(pattern: &str, text: &str) -> Option<Vec<String>> {
 /// Properties (Rank-1):
 /// - Consistency: Reflexive operation (reflect(reflect(x)) may differ due to word boundaries,
 ///   but reflect is idempotent when applied to alternating pronouns).
-/// - No false negatives: All standard first/second person pronouns are handled.
+/// - No false negatives: All standard first/second person pronouns are handled
+///   at start-of-string, mid-string (with surrounding whitespace), AND end-of-string.
 fn reflect_pronouns(text: &str) -> String {
-    let mut result = text.to_string();
+    // Pad input so that pronouns at start-of-string and end-of-string have
+    // synthetic " " boundaries on both sides. After the substitution sweep
+    // we trim those padding spaces off. This eliminates the
+    // "end-of-string `me`/`my` not matched" defect (iter-4 deferred finding).
+    let mut result = format!(" {} ", text);
 
-    // Order matters: process longer forms first to avoid partial matches.
-    // Also handle word boundaries: contractions first, then full words with spaces, then start/end.
-    let reflections = vec![
-        // Contractions (high priority - longest matches first)
+    // Order matters: longer forms first to avoid partial matches.
+    let reflections: &[(&str, &str)] = &[
+        // Contractions (longest matches first)
         (" i'm ", " you're "),
         (" i've ", " you've "),
         (" i'll ", " you'll "),
-        // Pronouns with surrounding spaces
+        // Pronouns
         (" i ", " you "),
         (" me ", " you "),
         (" my ", " your "),
         (" mine ", " yours "),
-        // Verb agreement (must come after pronoun replacement to work correctly)
+        // Verb agreement
         (" am ", " are "),
-        // Handle word boundaries: start of string
-        ("^i ", "you "),
-        ("^i'm ", "you're "),
-        ("^i've ", "you've "),
-        ("^i'll ", "you'll "),
     ];
 
     for (from, to) in reflections {
-        if from.starts_with("^") {
-            // Regex-style start anchor
-            let from_unanchored = &from[1..];
-            if result.starts_with(from_unanchored) {
-                result = to.to_string() + &result[from_unanchored.len()..];
-            }
-        } else {
-            result = result.replace(from, to);
-        }
+        result = result.replace(from, to);
     }
 
-    result
+    // Strip the one-character padding we added on each end. We added exactly
+    // one ' ' on each side, so trim only that — preserve any user whitespace.
+    let trimmed = if let Some(stripped) = result.strip_prefix(' ') {
+        stripped
+    } else {
+        result.as_str()
+    };
+    let trimmed = trimmed.strip_suffix(' ').unwrap_or(trimmed);
+    trimmed.to_string()
 }
 
 fn render(template: &str, slots: &[String]) -> String {
@@ -266,24 +265,46 @@ mod tests {
 
     #[test]
     fn pronoun_reflection_swaps_me() {
-        assert_eq!(reflect_pronouns(" me "), " you ");
+        // Padded-and-trimmed implementation reflects ` me ` even with no
+        // user-supplied whitespace boundaries.
+        assert_eq!(reflect_pronouns("me"), "you");
     }
 
     #[test]
     fn pronoun_reflection_swaps_my() {
-        assert_eq!(reflect_pronouns(" my "), " your ");
+        assert_eq!(reflect_pronouns("my"), "your");
     }
 
     #[test]
     fn pronoun_reflection_swaps_mine() {
-        assert_eq!(reflect_pronouns(" mine "), " yours ");
+        assert_eq!(reflect_pronouns("mine"), "yours");
     }
 
     #[test]
     fn pronoun_reflection_swaps_contractions() {
-        assert_eq!(reflect_pronouns(" i'm "), " you're ");
-        assert_eq!(reflect_pronouns(" i've "), " you've ");
-        assert_eq!(reflect_pronouns(" i'll "), " you'll ");
+        assert_eq!(reflect_pronouns("i'm"), "you're");
+        assert_eq!(reflect_pronouns("i've"), "you've");
+        assert_eq!(reflect_pronouns("i'll"), "you'll");
+    }
+
+    /// Rank-1 regression test for iter-4 deferred finding:
+    /// end-of-string `me`/`my` MUST reflect even though it has no trailing space.
+    /// Domain: ELIZA pronoun reflection (Weizenbaum 1966) is reflexive at any
+    /// position; missing the end position is a fitness defect.
+    #[test]
+    fn pronoun_reflection_end_of_string_me_my() {
+        assert_eq!(reflect_pronouns("i love me"), "you love you");
+        assert_eq!(reflect_pronouns("this is my"), "this is your");
+        assert_eq!(reflect_pronouns("the choice is mine"), "the choice is yours");
+    }
+
+    /// Rank-1 regression test: start-of-string pronouns still reflect after
+    /// switching from anchor-based to padded substitution.
+    #[test]
+    fn pronoun_reflection_start_of_string_contractions() {
+        assert_eq!(reflect_pronouns("i'm here"), "you're here");
+        assert_eq!(reflect_pronouns("i've been"), "you've been");
+        assert_eq!(reflect_pronouns("i'll go"), "you'll go");
     }
 
     #[test]

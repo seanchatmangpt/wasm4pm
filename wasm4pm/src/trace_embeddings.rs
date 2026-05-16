@@ -11,6 +11,21 @@ use wasm_bindgen::prelude::*;
 
 use crate::state::{get_or_init_state, StoredObject};
 
+/// Cap `requested` to the PCA-valid range `[1, min(vocab_size, n_traces - 1)]`.
+///
+/// PCA has at most `min(n_samples, n_features)` non-trivial components. For
+/// the bag-of-activities case `n_samples = n_traces`, `n_features = vocab_size`,
+/// and the strict bound is `min(vocab_size, n_traces - 1)` because one degree
+/// of freedom is consumed by centring. The minimum return value is 1 so the
+/// output array is never empty.
+///
+/// # Panics
+/// Asserts that `n_traces >= 2` (caller guarantees this).
+fn cap_n_components(requested: usize, vocab_size: usize, n_traces: usize) -> usize {
+    debug_assert!(n_traces >= 2, "cap_n_components requires n_traces >= 2");
+    requested.min(vocab_size).min(n_traces - 1).max(1)
+}
+
 /// Project trace variants into a reduced-dimension PCA space.
 ///
 /// Each trace becomes a bag-of-activities vector over the vocabulary, then
@@ -83,8 +98,9 @@ pub fn project_trace_variants(
             ));
         }
 
-        // Cap n_components
-        let n_comp = n_components.min(vocab_size).min(n_traces - 1).max(1);
+        // Cap n_components per documented invariant:
+        //   1 ≤ n_comp ≤ min(vocab_size, n_traces - 1)
+        let n_comp = cap_n_components(n_components, vocab_size, n_traces);
 
         // Build flat bag-of-activities matrix: [n_traces × vocab_size]
         let mut flat_data = vec![0.0f64; n_traces * vocab_size];
@@ -129,4 +145,25 @@ pub fn project_trace_variants(
 
         Ok(JsValue::from_str(&result.to_string()))
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Rank-1 invariants for the PCA component cap: upper-bounded by
+    /// `min(vocab_size, n_traces - 1)`, never returns 0, identity-in-range,
+    /// and idempotent (cap(cap(x)) == cap(x)).
+    #[test]
+    fn cap_n_components_invariants() {
+        assert_eq!(cap_n_components(99, 5, 100), 5);   // capped by vocab
+        assert_eq!(cap_n_components(99, 100, 5), 4);   // capped by n-1
+        assert_eq!(cap_n_components(99, 3, 7), 3);     // tighter wins (vocab)
+        assert_eq!(cap_n_components(99, 50, 4), 3);    // tighter wins (n-1)
+        assert_eq!(cap_n_components(0, 5, 100), 1);    // never zero
+        assert_eq!(cap_n_components(5, 1, 10), 1);     // vocab=1 → 1
+        assert_eq!(cap_n_components(3, 10, 20), 3);    // identity in range
+        let once = cap_n_components(99, 7, 30);
+        assert_eq!(once, cap_n_components(once, 7, 30)); // idempotent
+    }
 }

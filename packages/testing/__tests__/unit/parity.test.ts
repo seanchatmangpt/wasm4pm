@@ -21,7 +21,7 @@ function createMockPlanner(opts?: {
       }
       return {
         id: 'plan-1',
-        hash: 'hash-1',
+        hash: 'hash-1', // @lint-allow-fakery — test fixture, intentionally short
         steps: steps.map((type, i) => ({
           id: `step-${i}`,
           type,

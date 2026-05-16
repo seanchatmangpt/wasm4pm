@@ -180,6 +180,9 @@ pub fn discover_pso_algorithm_from_log(
     let vocab_len = edge_vocab.len();
     let mut rng = StdRng::seed_from_u64(42);
 
+    // Particle layout: (current_position, current_fitness, pbest_position, pbest_fitness).
+    // Initial pBest is the spawn position (NOT empty) so that the first pBest blend
+    // produces a meaningful pull instead of a no-op self-blend.
     let mut particles: Vec<(EdgeSet, f64, EdgeSet, f64)> = Vec::new();
     let mut best_global: Option<(EdgeSet, f64)> = None;
 
@@ -189,36 +192,30 @@ pub fn discover_pso_algorithm_from_log(
         if best_global.is_none() || fitness > best_global.as_ref().unwrap().1 {
             best_global = Some((edge_set.clone(), fitness));
         }
-        particles.push((edge_set, fitness, HashSet::new(), fitness));
+        particles.push((edge_set.clone(), fitness, edge_set, fitness));
     }
 
-    let mut best_particle_idx: usize = 0;
-    let mut best_particle_fitness: f64 = f64::NEG_INFINITY;
-
     for _ in 0..iterations {
-        for (idx, (edge_set, current_fitness, pbest, pbest_fitness)) in particles.iter_mut().enumerate() {
-            let pbest_ref = if pbest.is_empty() { &*edge_set } else { &*pbest };
-            let toward_pbest = blend_edges_seeded(edge_set, pbest_ref, 0.2, &mut rng);
-            let toward_global = blend_edges_seeded(&toward_pbest, &best_global.as_ref().unwrap().0, 0.3, &mut rng);
+        for (edge_set, current_fitness, pbest, pbest_fitness) in particles.iter_mut() {
+            let toward_pbest = blend_edges_seeded(edge_set, pbest, 0.2, &mut rng);
+            let toward_global =
+                blend_edges_seeded(&toward_pbest, &best_global.as_ref().unwrap().0, 0.3, &mut rng);
             *edge_set = toward_global;
             mutate_edges_seeded(edge_set, 0.05, &edge_vocab, &mut rng);
             let new_fitness = evaluate_edges_fitness(edge_set, &col, vocab_len);
             *current_fitness = new_fitness;
+            // CRITICAL: update pbest position when fitness improves. Prior bug
+            // only assigned pbest_fitness, leaving pbest at its initial value
+            // (or empty), so the pBest pull either pulled toward an empty set
+            // or never reflected discovered improvements.
             if new_fitness > *pbest_fitness {
                 *pbest_fitness = new_fitness;
-                if new_fitness > best_particle_fitness {
-                    best_particle_fitness = new_fitness;
-                    best_particle_idx = idx;
-                }
+                *pbest = edge_set.clone();
             }
             if new_fitness > best_global.as_ref().unwrap().1 {
                 best_global = Some((edge_set.clone(), new_fitness));
             }
         }
-    }
-    if best_particle_fitness > f64::NEG_INFINITY {
-        let winner_set = particles[best_particle_idx].0.clone();
-        particles[best_particle_idx].2 = winner_set;
     }
     let (edges, fitness) = best_global?;
     Some((edge_set_to_dfg(&edges, &vocab, &edge_freq, &node_freq), fitness))
@@ -426,6 +423,15 @@ pub fn discover_aco_algorithm_from_log(
     let mut rng = StdRng::seed_from_u64(42);
     let mut best_solution: Option<(EdgeSet, f64)> = None;
 
+    // Fix (PR #54 SPC NaN class + classical MMAS bounds): pheromone is bounded into
+    // [tau_min, tau_max] each iteration. Without bounds, repeated deposits q*fitness
+    // grow tau unboundedly while evaporation only multiplies by (1 - rho); after a
+    // few hundred iterations tau can exceed `prob.min(0.99)` for every edge, and
+    // every ant deterministically picks every edge regardless of heuristic eta.
+    // The .min(0.99) probability cap is preserved as a separate safety net.
+    let tau_max: f64 = 10.0;
+    let tau_min: f64 = tau_0 * 0.01_f64.max(1e-6);
+
     for _iter in 0..iterations {
         let mut iteration_solutions: Vec<(EdgeSet, f64)> = Vec::new();
 
@@ -435,11 +441,20 @@ pub fn discover_aco_algorithm_from_log(
                 let tau = pheromone.get(&edge).copied().unwrap_or(tau_0);
                 let eta = heuristic.get(&edge).copied().unwrap_or(0.01);
                 let prob = tau.powf(alpha) * eta.powf(beta);
+                // Fix (PR #54 SPC NaN class): `tau.powf(alpha)` or `eta.powf(beta)` can
+                // yield NaN if a deposit ever introduced NaN via NaN fitness; sanitize
+                // before sampling.
+                let prob = if prob.is_finite() { prob } else { 0.0 };
                 if rng.gen::<f64>() < prob.min(0.99) {
                     ant_edges.insert(edge);
                 }
             }
-            let fitness = evaluate_edges_fitness(&ant_edges, &col, vocab_len);
+            let fitness_raw = evaluate_edges_fitness(&ant_edges, &col, vocab_len);
+            // Fix (PR #54 SPC NaN class): if fitness is NaN/Inf, treat as 0.0 so that
+            // (a) it cannot become the new best by virtue of `NaN > x` returning false
+            //     and `partial_cmp` reordering, and (b) it cannot poison the pheromone
+            //     map below.
+            let fitness = if fitness_raw.is_finite() { fitness_raw } else { 0.0 };
             if best_solution.is_none() || fitness > best_solution.as_ref().unwrap().1 {
                 best_solution = Some((ant_edges.clone(), fitness));
             }
@@ -463,6 +478,11 @@ pub fn discover_aco_algorithm_from_log(
             for &edge in best_edges {
                 *pheromone.entry(edge).or_insert(tau_0) += deposit;
             }
+        }
+        // Clamp pheromone into MMAS bounds after deposit+evaporation. Without this,
+        // tau grows monotonically with each successful iteration.
+        for val in pheromone.values_mut() {
+            *val = val.clamp(tau_min, tau_max);
         }
     }
 

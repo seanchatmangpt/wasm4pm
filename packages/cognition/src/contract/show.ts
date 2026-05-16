@@ -4,10 +4,35 @@ import { WasmLoader } from '../init.js';
 import { CognitionError } from '../errors.js';
 import type { SpanSink } from '../observability-types.js';
 import { defaultSpanSink, hexId } from '../span-utils.js';
-import type { ShowReport } from '../types.js';
+import type { BreedDescriptor, ShowReport } from '../types.js';
 
 export interface ShowOptions {
   spanSink?: SpanSink;
+}
+
+function assertShowReport(raw: unknown): ShowReport {
+  const isObj = (v: unknown): v is Record<string, unknown> =>
+    typeof v === 'object' && v !== null && !Array.isArray(v);
+  const reject = (reason: string): never => {
+    throw new CognitionError(
+      `cognition_show: WASM output rejected by field-contract guard: ${reason}`,
+      'OUTPUT_PARSE_FAILED',
+    );
+  };
+  if (!isObj(raw)) reject(`expected object, got ${typeof raw}`);
+  if (!Array.isArray(raw.breeds)) reject('breeds must be an array');
+  const breeds = raw.breeds as unknown[];
+  for (let i = 0; i < breeds.length; i++) {
+    const b = breeds[i];
+    if (!isObj(b)) reject(`breeds[${i}] must be an object`);
+    if (typeof b.id !== 'string' || b.id.length === 0)
+      reject(`breeds[${i}].id must be non-empty string`);
+    if (typeof b.name !== 'string' || b.name.length === 0)
+      reject(`breeds[${i}].name must be non-empty string`);
+    if (typeof b.year !== 'number' || !Number.isFinite(b.year))
+      reject(`breeds[${i}].year must be finite number`);
+  }
+  return { breeds: breeds as BreedDescriptor[] };
 }
 
 export async function showCognition(
@@ -35,7 +60,7 @@ export async function showCognition(
         { cause: e },
       );
     }
-    return parsed as ShowReport;
+    return assertShowReport(parsed);
   } catch (err) {
     status = 'ERROR';
     errMsg = err instanceof Error ? err.message : String(err);
@@ -60,8 +85,6 @@ export async function showCognition(
           'cognition.duration_ms': endMs - startMs,
         },
       });
-    } catch {
-      /* never block on OTEL */
-    }
+    } catch {}
   }
 }

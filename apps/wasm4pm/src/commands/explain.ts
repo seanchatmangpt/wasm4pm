@@ -76,7 +76,15 @@ export const explain = defineCommand({
       if (!ctx.args.model && !ctx.args.algorithm && !ctx.args.config) {
         const result = makeErrorResult(
           'explain',
-          new Error('No model, algorithm, or config specified. Use --model, --algorithm, or --config'),
+          new Error(
+            'No algorithm, model, or config specified.\n\n' +
+            'Usage:  wpm explain <algorithm>\n' +
+            '        wpm explain dfg\n' +
+            '        wpm explain --algorithm heuristic --level academic\n' +
+            '        wpm explain --model result.json\n\n' +
+            'Available algorithms: dfg, alpha, heuristic, inductive, genetic, ilp, aco, astar, pso, annealing, hill, skeleton, declare\n\n' +
+            'Run "wpm explain --help" for all options.'
+          ),
           EXIT_CODES.config_error,
           'MISSING_INPUT'
         );

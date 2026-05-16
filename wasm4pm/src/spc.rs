@@ -122,9 +122,17 @@ pub enum SpecialCause {
 pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
     let mut alerts = Vec::new();
 
-    // Rule 1: Point beyond UCL or LCL (applies to any buffer size, any single point)
+    // Rule 1: Point beyond UCL or LCL (applies to any buffer size, any single point).
+    //
+    // Defect-class SPC-NaN (this iteration): `NaN > x` and `NaN < x` are both
+    // `false`, so a corrupt `NaN` data point used to slip past Rule 1 silently
+    // — the chart appeared "in control" even though the input was invalid.
+    // Van der Aalst process-mining doctrine treats corrupt evidence as a
+    // first-class defect, not a discrepancy. Treat any non-finite value as an
+    // out-of-control signal so the autonomic loop notices and degrades safely.
     if let Some(latest) = data.last() {
-        if latest.value > latest.ucl || latest.value < latest.lcl {
+        let invalid = !latest.value.is_finite();
+        if invalid || latest.value > latest.ucl || latest.value < latest.lcl {
             alerts.push(SpecialCause::OutOfControl {
                 value: latest.value,
                 ucl: latest.ucl,

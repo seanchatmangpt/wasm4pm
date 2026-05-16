@@ -525,13 +525,29 @@ export class AgentOrchestrator {
       case 'authority-escalation-watcher':
         return this._validateAuthorityEscalation(context, config);
       default:
+        // Silent-pass for unknown agents is a Van der Aalst doctrine
+        // violation (any registered agent must produce real evidence, not a
+        // fabricated success). Flag a `warning` violation so the
+        // orchestrator surfaces "agent not implemented" instead of treating
+        // it as proof of cleanliness (PR #69 silent fall-through class).
         return {
-          passed: true,
-          violations: [],
+          passed: false,
+          violations: [
+            {
+              agent_name: agentName,
+              violation_type: 'agent_logic_not_implemented',
+              severity: 'warning',
+              evidence: { agent: agentName },
+              process_mining_proof: null,
+              timestamp: new Date().toISOString(),
+              blocked_manufacturing: false,
+              target: context.artifact_id,
+            },
+          ],
           process_mining_proof: null,
           execution_time_ms: 0,
           agent_name: agentName,
-          raw_output: 'No validation logic for custom agent',
+          raw_output: `No validation logic implemented for agent "${agentName}"`,
         };
     }
   }
@@ -640,20 +656,48 @@ export class AgentOrchestrator {
         target: context.artifact_id,
       });
     } else {
-      // Validate chain linkage
-      for (let i = 1; i < receipts.length; i++) {
-        const prev = receipts[i - 1];
+      // Validate chain linkage. NOTE: missing/undefined hash fields are a
+      // critical violation — `undefined !== undefined` would silently pass and
+      // accept a fabricated chain (PR #44 field-contract guard class).
+      for (let i = 0; i < receipts.length; i++) {
         const curr = receipts[i];
-
-        if (curr.previous_hash !== prev.hash) {
+        const currHash = typeof curr.hash === 'string' ? curr.hash : null;
+        if (!currHash) {
+          violations.push({
+            agent_name: 'receipt-chain-attacker',
+            violation_type: 'missing_hash_field',
+            severity: 'critical',
+            evidence: { index: i, field: 'hash' },
+            process_mining_proof: null,
+            timestamp: new Date().toISOString(),
+            blocked_manufacturing: true,
+            target: context.artifact_id,
+          });
+        }
+        if (i === 0) continue;
+        const prev = receipts[i - 1];
+        const prevHash = typeof prev.hash === 'string' ? prev.hash : null;
+        const prevLink = typeof curr.previous_hash === 'string' ? curr.previous_hash : null;
+        if (!prevLink) {
+          violations.push({
+            agent_name: 'receipt-chain-attacker',
+            violation_type: 'missing_previous_hash',
+            severity: 'critical',
+            evidence: { index: i, field: 'previous_hash' },
+            process_mining_proof: null,
+            timestamp: new Date().toISOString(),
+            blocked_manufacturing: true,
+            target: context.artifact_id,
+          });
+        } else if (prevLink !== prevHash) {
           violations.push({
             agent_name: 'receipt-chain-attacker',
             violation_type: 'broken_hash_chain',
             severity: 'critical',
             evidence: {
               index: i,
-              expected: prev.hash,
-              actual: curr.previous_hash,
+              expected: prevHash,
+              actual: prevLink,
             },
             process_mining_proof: null,
             timestamp: new Date().toISOString(),
@@ -824,11 +868,15 @@ export class AgentOrchestrator {
     const fitness = missing.length === 0 ? 1.0 : Math.max(0, 1.0 - missing.length * 0.15);
     const precision = extra.length === 0 ? 1.0 : Math.max(0, 1.0 - extra.length * 0.1);
 
+    // `ProcessMiningProof` documents simplicity in [0.0, 1.0]; without
+    // clamping, ≥20 stage deltas produce negative simplicity and break the
+    // contract (PR #53 [0,1] clamp class).
+    const simplicity = Math.max(0, 1.0 - (missing.length + extra.length) * 0.05);
     const proof: ProcessMiningProof = {
       fitness,
       precision,
       generalization: Math.min(fitness, precision),
-      simplicity: 1.0 - (missing.length + extra.length) * 0.05,
+      simplicity,
       deviations: missing.length + extra.length,
       algorithm: 'inductive_miner',
     };

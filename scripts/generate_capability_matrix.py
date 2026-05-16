@@ -213,8 +213,16 @@ def main():
     stable = sum(1 for c in capabilities if c["production_status"] == "stable")
     wasm_boundary = sum(1 for c in capabilities if c["production_status"] == "wasm_boundary")
     experimental = sum(1 for c in capabilities if c["production_status"] == "experimental")
+    with_gaps = sum(1 for c in capabilities if c["known_gaps"])
+    no_real_data = sum(1 for c in capabilities if not c["real_data_tested"])
     print(f"capability-matrix: {len(capabilities)} capabilities")
     print(f"  stable={stable}, wasm_boundary={wasm_boundary}, experimental={experimental}")
+    print(f"  capabilities_with_gaps={with_gaps}, no_real_data_coverage={no_real_data}")
+    if no_real_data > 0:
+        print(
+            f"  Next step: add real-data tests for {no_real_data} experimental capability(ies).\n"
+            "  See wasm4pm/tests/real_data_algo_validation.rs for the test harness pattern."
+        )
     print(f"  output: {args.output}")
 
 
