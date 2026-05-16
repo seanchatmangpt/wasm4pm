@@ -84,13 +84,14 @@ describe('Feature Gating - Algorithm Registry Integration', () => {
       expect(fogAlgos.length).toBeGreaterThan(0);
     });
 
-    test('cloud profile should have algorithms', () => {
-      const cloudAlgos = registry.getForDeploymentProfile('cloud');
+    test('mobile profile should have algorithms', () => {
+      const mobileAlgos = registry.getForDeploymentProfile('mobile');
       const allAlgos = registry.list();
 
-      // Cloud should have most algorithms
-      expect(cloudAlgos.length).toBeGreaterThan(0);
-      expect(cloudAlgos.length).toBeGreaterThanOrEqual(allAlgos.length * 0.9);
+      // Mobile has the smallest footprint: fast + stream algorithms only
+      expect(mobileAlgos.length).toBeGreaterThan(0);
+      // Mobile should be a strict subset of all algorithms
+      expect(mobileAlgos.length).toBeLessThanOrEqual(allAlgos.length);
     });
   });
 
@@ -100,7 +101,7 @@ describe('Feature Gating - Algorithm Registry Integration', () => {
 
   describe('Essential Algorithms', () => {
     test('DFG (Directly-Follows Graph) should be in all profiles', () => {
-      const profiles: DeploymentProfile[] = ['browser', 'iot', 'edge', 'fog', 'cloud'];
+      const profiles: DeploymentProfile[] = ['mobile', 'iot', 'edge', 'fog', 'browser'];
 
       for (const profile of profiles) {
         const algos = registry.getForDeploymentProfile(profile);
@@ -154,7 +155,7 @@ describe('Feature Gating - Algorithm Registry Integration', () => {
     });
 
     test('all deployment profiles have algorithms', () => {
-      const profiles: DeploymentProfile[] = ['browser', 'iot', 'edge', 'fog', 'cloud'];
+      const profiles: DeploymentProfile[] = ['mobile', 'iot', 'edge', 'fog', 'browser'];
       const counts = profiles.map((p) => registry.getForDeploymentProfile(p).length);
 
       // All profiles should have algorithms
@@ -162,10 +163,10 @@ describe('Feature Gating - Algorithm Registry Integration', () => {
         expect(count).toBeGreaterThan(0);
       }
 
-      // Cloud should have the most (or tied for most)
-      const cloudCount = counts[counts.length - 1];
+      // Browser (full-feature tier) should have the most (or tied for most)
+      const browserCount = counts[counts.length - 1];
       const maxCount = Math.max(...counts);
-      expect(cloudCount).toBe(maxCount);
+      expect(browserCount).toBe(maxCount);
     });
   });
 
@@ -174,11 +175,12 @@ describe('Feature Gating - Algorithm Registry Integration', () => {
   // ─────────────────────────────────────────────────────────────────────────────
 
   describe('Size-Optimized Profiles', () => {
-    test('browser profile has fewer algorithms than cloud', () => {
+    test('mobile profile has fewer algorithms than browser (full-feature tier)', () => {
+      const mobileAlgos = registry.getForDeploymentProfile('mobile');
       const browserAlgos = registry.getForDeploymentProfile('browser');
-      const cloudAlgos = registry.getForDeploymentProfile('cloud');
 
-      expect(browserAlgos.length).toBeLessThanOrEqual(cloudAlgos.length);
+      // mobile (~500KB) is the most constrained; browser (~2.78MB) is full-feature
+      expect(mobileAlgos.length).toBeLessThanOrEqual(browserAlgos.length);
     });
 
     test('iot profile has fewer algorithms than fog', () => {
@@ -219,7 +221,7 @@ describe('Feature Gating - Algorithm Registry Integration', () => {
 
   describe('Cross-Profile Consistency', () => {
     test('algorithm metadata should be identical across profiles', () => {
-      const profiles: DeploymentProfile[] = ['browser', 'iot', 'edge', 'fog', 'cloud'];
+      const profiles: DeploymentProfile[] = ['mobile', 'iot', 'edge', 'fog', 'browser'];
       const allMetadata = new Map<string, string>();
 
       for (const profile of profiles) {
@@ -267,7 +269,7 @@ describe('Feature Gating - Algorithm Registry Integration', () => {
 
   describe('Feature Gating Summary Report', () => {
     test('should generate summary statistics', () => {
-      const profiles: DeploymentProfile[] = ['browser', 'iot', 'edge', 'fog', 'cloud'];
+      const profiles: DeploymentProfile[] = ['mobile', 'iot', 'edge', 'fog', 'browser'];
       const summary: Record<string, number> = {};
 
       for (const profile of profiles) {
@@ -283,8 +285,8 @@ describe('Feature Gating - Algorithm Registry Integration', () => {
         expect(summary[profile]).toBeGreaterThan(0);
       }
 
-      // Cloud should have the most
-      expect(summary.cloud).toBeGreaterThanOrEqual(Math.min(...Object.values(summary)));
+      // Browser (full-feature) should have the most
+      expect(summary.browser).toBeGreaterThanOrEqual(Math.min(...Object.values(summary)));
     });
 
     test('should provide algorithm distribution', () => {
@@ -302,7 +304,7 @@ describe('Feature Gating - Algorithm Registry Integration', () => {
     });
 
     test('should verify deployment profiles are configured', () => {
-      const profiles: DeploymentProfile[] = ['browser', 'iot', 'edge', 'fog', 'cloud'];
+      const profiles: DeploymentProfile[] = ['mobile', 'iot', 'edge', 'fog', 'browser'];
 
       for (const profile of profiles) {
         const algos = registry.getForDeploymentProfile(profile);

@@ -963,8 +963,10 @@ export function validateAlgorithmParameters(
       continue;
     }
 
-    // Check type
-    if (paramValue !== undefined && typeof paramValue !== paramDef.type) {
+    // Check type — 'select' params hold a string value at runtime; treat them as 'string'.
+    // Comparing typeof against 'select' would always fail (typeof returns 'string', not 'select').
+    const expectedJsType = paramDef.type === 'select' ? 'string' : paramDef.type;
+    if (paramValue !== undefined && typeof paramValue !== expectedJsType) {
       errors.push(
         `Parameter "${paramDef.name}" has wrong type. ` +
           `Expected ${paramDef.type}, got ${typeof paramValue}`
