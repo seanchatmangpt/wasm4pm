@@ -6,6 +6,7 @@ import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
 import { buildSarifOutput } from '../sarif.js';
 import { exitWithFlush } from '../otel/exit.js';
+import { withSpanRaw } from './_otel.js';
 
 // ---------------------------------------------------------------------------
 // Shared parse helper — WASM functions return either a JS string or an object
@@ -74,6 +75,7 @@ const membraneVerify = defineCommand({
     const quiet = Boolean(ctx.args.quiet);
     const t0 = Date.now();
 
+    return withSpanRaw('wasm4pm.command.membrane.verify', { command: 'membrane', subcommand: 'verify' }, async () => {
     try {
       const loader = WasmLoader.getInstance();
       await loader.init();
@@ -158,6 +160,7 @@ const membraneVerify = defineCommand({
       emitResult(result, { format, verbose, quiet });
       return await exitWithFlush(result.exit_code);
     }
+    }); // end withSpanRaw
   },
 });
 
@@ -300,10 +303,16 @@ const membraneReplayLog = defineCommand({
         return await exitWithFlush(EXIT_CODES.success);
       }
 
+      // Non-allow verdicts are partial_failure (exit 4) so CI can detect denials.
+      const finalVerdict = String(verdictReceipt.final_verdict ?? '');
+      const classifyExitCode = finalVerdict === 'allow' || finalVerdict === 'allow_with_receipt'
+        ? EXIT_CODES.success
+        : EXIT_CODES.partial_failure;
       const result = makeResult(
         'membrane classify',
         verdictReceipt,
-        Date.now() - t0
+        Date.now() - t0,
+        classifyExitCode
       );
 
       const showTrace = Boolean(ctx.args.trace);
@@ -596,6 +605,9 @@ const membraneBuild = defineCommand({
     const t0 = Date.now();
     const logPath = ctx.args.log as string;
 
+    return withSpanRaw('wasm4pm.command.membrane.build', {
+      command: 'membrane', subcommand: 'build', input: logPath,
+    }, async () => {
     try {
       await fs.access(logPath);
     } catch {
@@ -728,6 +740,7 @@ const membraneBuild = defineCommand({
     });
 
     return await exitWithFlush(result.exit_code);
+    }); // end withSpanRaw
   },
 });
 
@@ -875,6 +888,9 @@ const membraneReplay = defineCommand({
     const t0 = Date.now();
     const motionPath = ctx.args.motion as string;
 
+    return withSpanRaw('wasm4pm.command.membrane.replay', {
+      command: 'membrane', subcommand: 'replay', motion: motionPath,
+    }, async () => {
     let motionText: string;
     try {
       motionText = await fs.readFile(motionPath, 'utf-8');
@@ -959,7 +975,11 @@ const membraneReplay = defineCommand({
       : receipt.layer_verdicts;
 
     const payload = { ...receipt, layer_verdicts: layersToShow } as Record<string, unknown>;
-    const result = makeResult('membrane replay', payload, Date.now() - t0);
+    // Non-allow verdicts exit partial_failure (4) so CI pipelines can detect denials.
+    const replayExitCode = receipt.final_verdict === 'allow' || receipt.final_verdict === 'allow_with_receipt'
+      ? EXIT_CODES.success
+      : EXIT_CODES.partial_failure;
+    const result = makeResult('membrane replay', payload, Date.now() - t0, replayExitCode);
 
     emitResult(result, { format, verbose, quiet }, (_res, p) => {
       p.log('\n  AutoMembrane Replay');
@@ -1000,6 +1020,7 @@ const membraneReplay = defineCommand({
     });
 
     return await exitWithFlush(result.exit_code);
+    }); // end withSpanRaw
   },
 });
 
