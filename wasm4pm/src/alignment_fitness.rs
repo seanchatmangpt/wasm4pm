@@ -192,18 +192,41 @@ pub fn compute_alignment_fitness(
         }
     }
 
-    // Compute fitness: 1 - (total_cost / max_possible_cost)
-    let max_possible_cost =
-        (total_sync_moves + total_log_moves + total_model_moves) as f64 * config.model_move_cost;
-
-    let fitness = if max_possible_cost > 0.0 {
-        1.0 - (total_cost / max_possible_cost)
-    } else {
+    // Compute fitness: 1 - (total_cost / worst_case_cost).
+    //
+    // The worst-case cost is the cost of an alignment that takes a log move
+    // for every event in the log (Adriansyah et al. 2014). Using
+    // `model_move_cost` here is wrong: it produces an unrelated denominator
+    // when log_move_cost != model_move_cost.
+    //
+    // Worst case = (total trace events) * log_move_cost. The total number of
+    // trace events equals sync_moves + log_moves (every event was either
+    // matched or skipped; model moves don't consume events).
+    let total_log_events = total_sync_moves + total_log_moves;
+    let worst_case_cost = total_log_events as f64 * config.log_move_cost;
+    // Iter-10 hardening (alignment fitness):
+    //   1. Use log_move_cost (worst-case = full log skip), not model_move_cost.
+    //   2. Guard against NaN/Inf in either operand (e.g. negative costs in
+    //      a malformed config that overflowed prior arithmetic).
+    //   3. Clamp to [0.0, 1.0] — the old code only forced .max(0.0).
+    let fitness = if !worst_case_cost.is_finite()
+        || !total_cost.is_finite()
+        || worst_case_cost <= 0.0
+    {
         1.0
+    } else {
+        1.0 - (total_cost / worst_case_cost)
+    };
+    let fitness = if fitness.is_finite() {
+        fitness.clamp(0.0, 1.0)
+    } else {
+        // NaN propagated from f64 division (e.g. -0.0 / -0.0): treat as 0
+        // — total_cost was finite, divisor was finite, but ratio NaN'd.
+        0.0
     };
 
     Ok(AlignmentFitnessReport {
-        fitness: fitness.max(0.0), // Ensure non-negative
+        fitness,
         total_cost,
         total_sync_moves,
         total_log_moves,
@@ -538,5 +561,61 @@ mod tests {
         };
 
         assert!(report.fitness >= 0.0 && report.fitness <= 1.0);
+    }
+
+    /// Iter-10 Rank-2: Domain contract — empty log yields fitness = 1.0
+    /// (vacuously perfect). Old code returned 1.0 via the empty-cost branch;
+    /// the new code must preserve this when no events appear.
+    #[test]
+    fn iter10_empty_log_yields_fitness_one() {
+        let log = EventLog::new();
+        let net = PetriNet::new();
+        let cfg = AlignmentFitnessConfig::default();
+        let report = compute_alignment_fitness(&log, &net, &cfg).unwrap();
+        assert_eq!(report.fitness, 1.0, "empty log must yield fitness = 1.0");
+        assert_eq!(report.total_traces, 0);
+    }
+
+    /// Iter-10 Rank-1: Range invariant — for any non-negative input combo
+    /// the reported fitness must lie in [0, 1]. Old code clamped only at
+    /// the lower bound; with a divergent denominator the upper bound could
+    /// be exceeded.
+    #[test]
+    fn iter10_fitness_always_in_unit_interval() {
+        let cfg = AlignmentFitnessConfig {
+            max_iterations: 1_000,
+            sync_cost: 0.0,
+            // Hostile config: log moves are cheap, but the old denominator
+            // used model_move_cost — a tiny log_move_cost combined with
+            // many log moves used to push the ratio > 1, producing a
+            // negative-then-clamped-to-0 score. New denominator is correct.
+            log_move_cost: 1.0,
+            model_move_cost: 100.0,
+        };
+        // Manually construct what would have been a divergent state:
+        // even if `total_cost` were spuriously inflated, the report must
+        // clamp to [0, 1]. Drive `compute_alignment_fitness` on an empty
+        // PetriNet so every trace event becomes a log move.
+        let mut log = EventLog::new();
+        for _ in 0..3 {
+            let mut trace = crate::models::Trace::new();
+            for _ in 0..5 {
+                let mut event = crate::models::Event::new();
+                event.attributes.insert(
+                    "concept:name".into(),
+                    crate::models::AttributeValue::String("a".into()),
+                );
+                trace.events.push(event);
+            }
+            log.traces.push(trace);
+        }
+        let net = PetriNet::new();
+        let report = compute_alignment_fitness(&log, &net, &cfg).unwrap();
+        assert!(
+            (0.0..=1.0).contains(&report.fitness),
+            "fitness {} not in [0,1]",
+            report.fitness
+        );
+        assert!(report.fitness.is_finite(), "fitness must not be NaN/Inf");
     }
 }
