@@ -41,6 +41,10 @@ export function checkConvergence(
   threshold: number = 1.0,
   workerIds?: string[]
 ): SwarmConvergenceReport {
+  // Guard: NaN/Inf threshold would make `consensusRatio >= threshold` permanently false,
+  // causing the swarm to never terminate (Rank-1: mathematical invariant).
+  const safeThreshold = Number.isFinite(threshold) ? Math.max(0, Math.min(1, threshold)) : 1.0;
+
   const relevant = results.filter(
     (r) => r.algorithmId === algorithm && (!workerIds || workerIds.includes(r.workerId))
   );
@@ -73,7 +77,7 @@ export function checkConvergence(
   }
 
   const consensusRatio = maxCount / relevant.length;
-  const converged = consensusRatio >= threshold;
+  const converged = consensusRatio >= safeThreshold;
 
   const dissentingWorkers = converged
     ? relevant.filter((r) => r.resultHash !== dominantHash).map((r) => r.workerId)
@@ -146,6 +150,10 @@ export function checkMlConvergence(
   epsilon: number = 0.01,
   threshold: number = 1.0
 ): SwarmConvergenceReport {
+  // Guard: NaN/Inf threshold or epsilon would corrupt convergence decisions (Rank-1).
+  const safeThreshold = Number.isFinite(threshold) ? Math.max(0, Math.min(1, threshold)) : 1.0;
+  const safeEpsilon = Number.isFinite(epsilon) && epsilon >= 0 ? epsilon : 0.01;
+
   const relevant = results.filter((r) => r.algorithmId === algorithm);
 
   if (relevant.length === 0) {
@@ -165,7 +173,7 @@ export function checkMlConvergence(
     let placed = false;
     for (const group of groups) {
       const representative = relevant[group[0]];
-      if (mlResultsEquivalent(representative.result, relevant[i].result, epsilon)) {
+      if (mlResultsEquivalent(representative.result, relevant[i].result, safeEpsilon)) {
         group.push(i);
         placed = true;
         break;
@@ -185,7 +193,7 @@ export function checkMlConvergence(
   }
 
   const consensusRatio = maxGroupSize / relevant.length;
-  const converged = consensusRatio >= threshold;
+  const converged = consensusRatio >= safeThreshold;
   const dominantHash = relevant[groups[dominantGroupIdx][0]]?.resultHash ?? null;
   const dissentingWorkers = converged
     ? groups
