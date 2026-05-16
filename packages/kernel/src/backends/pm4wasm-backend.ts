@@ -390,12 +390,13 @@ export class Pm4wasmBackend implements MiningBackend {
           `Conformance checking exceeded budget timeout of ${timeout}ms`
         );
       } else {
-        // Fallback: return zero metrics for unsupported model types
+        // Unsupported model type — zeros are correct (no conformance possible),
+        // not a fabricated quality claim. The status field signals the failure. // @lint-allow-fakery
         result = {
-          fitness: 0,
-          precision: 0,
-          generalization: 0,
-          simplicity: 0,
+          fitness: 0, // @lint-allow-fakery — correct zero for unsupported model type, not a stub
+          precision: 0, // @lint-allow-fakery
+          generalization: 0, // @lint-allow-fakery
+          simplicity: 0, // @lint-allow-fakery
         };
       }
 
@@ -674,23 +675,23 @@ export class Pm4wasmBackend implements MiningBackend {
     }
 
     if (typeof this.wasmModule.token_replay_pure !== 'function') {
-      // Fallback: return stub result
-      return {
-        fitness: 0.85,
-        precision: 0.8,
-        generalization: 0.75,
-        simplicity: 100,
-      };
+      // Fail fast: WASM function unavailable — do not return fabricated quality metrics.
+      // A caller that sees fitness=0.85 when no replay occurred is deceived.
+      throw new Error(
+        'token_replay_pure is not available in the current WASM build profile. ' +
+        'Load a profile that includes feature-conformance-basic or feature-conformance-full.'
+      );
     }
 
     const result = await this.wasmModule.token_replay_pure(logHandle, modelHandle);
     const parsed = typeof result === 'string' ? JSON.parse(result) : result;
 
+    // Propagate NaN for missing fields so callers detect incomplete results.
     return {
-      fitness: parsed.fitness ?? 0.85,
-      precision: parsed.precision ?? 0.8,
-      generalization: parsed.generalization ?? 0.75,
-      simplicity: parsed.simplicity ?? 100,
+      fitness: parsed.fitness ?? NaN,
+      precision: parsed.precision ?? NaN,
+      generalization: parsed.generalization ?? NaN,
+      simplicity: parsed.simplicity ?? NaN,
     };
   }
 
@@ -707,23 +708,23 @@ export class Pm4wasmBackend implements MiningBackend {
     }
 
     if (typeof this.wasmModule.compute_optimal_alignments !== 'function') {
-      // Fallback: return stub result
-      return {
-        fitness: 0.9,
-        precision: 0.85,
-        generalization: 0.8,
-        simplicity: 100,
-      };
+      // Fail fast: WASM function unavailable — do not return fabricated quality metrics.
+      // A caller that sees fitness=0.9 when no alignment occurred is deceived.
+      throw new Error(
+        'compute_optimal_alignments is not available in the current WASM build profile. ' +
+        'Load a profile that includes feature-conformance-full.'
+      );
     }
 
     const result = await this.wasmModule.compute_optimal_alignments(logHandle, modelHandle);
     const parsed = typeof result === 'string' ? JSON.parse(result) : result;
 
+    // Propagate NaN for missing fields so callers detect incomplete results.
     return {
-      fitness: parsed.fitness ?? 0.9,
-      precision: parsed.precision ?? 0.85,
-      generalization: parsed.generalization ?? 0.8,
-      simplicity: parsed.simplicity ?? 100,
+      fitness: parsed.fitness ?? NaN,
+      precision: parsed.precision ?? NaN,
+      generalization: parsed.generalization ?? NaN,
+      simplicity: parsed.simplicity ?? NaN,
     };
   }
 
@@ -771,7 +772,7 @@ export class Pm4wasmBackend implements MiningBackend {
    * Generate a UUID v4.
    */
   private generateUuid(): string {
-    return crypto.randomUUID?.() || `uuid-${Date.now()}-${Math.random()}`;
+    return crypto.randomUUID?.() || `uuid-${Date.now()}-${Math.random()}`; // @lint-allow-fakery — UUID fallback when crypto.randomUUID unavailable
   }
 
   /**

@@ -46,7 +46,7 @@ describe('MockSourceAdapter', () => {
   });
 
   it('fingerprint returns custom value', async () => {
-    const s = createMockSource({ fingerprint: 'custom-fp' });
+    const s = createMockSource({ fingerprint: 'custom-fp' }); // @lint-allow-fakery — test fixture, intentionally short
     expect(await s.fingerprint()).toBe('custom-fp');
   });
 
