@@ -2571,6 +2571,7 @@ version = "26.5.15"
 dependencies = [
  "hashbrown 0.17.0",
  "itertools 0.14.0",
+ "proptest",
  "serde",
  "smallvec",
 ]
