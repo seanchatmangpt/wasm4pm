@@ -19,7 +19,7 @@ use crate::RlState;
 /// Index range: [0, 460_799]
 ///
 /// Encoding formula:
-/// ```
+/// ```text
 /// index = health_level
 ///       + event_rate_q * 5
 ///       + activity_count_q * 40

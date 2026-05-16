@@ -88,6 +88,36 @@ pub enum SpecialCause {
 /// 3. 6 consecutive points increasing or decreasing.
 ///
 /// Returns all signals found (may be empty).
+///
+/// # Example
+///
+/// ```
+/// use wasm4pm::spc::{ChartData, check_western_electric_rules, SpecialCause};
+///
+/// // Rule 1: a point beyond UCL fires OutOfControl
+/// let data = vec![ChartData {
+///     timestamp: "t1".to_string(),
+///     value: 100.0,
+///     ucl: 13.0,
+///     cl: 10.0,
+///     lcl: 7.0,
+///     subgroup_data: None,
+/// }];
+/// let alerts = check_western_electric_rules(&data);
+/// assert_eq!(alerts.len(), 1);
+/// assert!(matches!(alerts[0], SpecialCause::OutOfControl { .. }));
+///
+/// // In-control point → no alerts
+/// let ok = vec![ChartData {
+///     timestamp: "t2".to_string(),
+///     value: 10.5,
+///     ucl: 13.0,
+///     cl: 10.0,
+///     lcl: 7.0,
+///     subgroup_data: None,
+/// }];
+/// assert!(check_western_electric_rules(&ok).is_empty());
+/// ```
 #[allow(dead_code)]
 pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
     let mut alerts = Vec::new();

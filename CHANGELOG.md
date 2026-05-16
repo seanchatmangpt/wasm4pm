@@ -5,6 +5,91 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [26.5.15] - 2026-05-15 — Proof-Gate v2, Adversarial Admissibility v2, 21-Hook Coverage, Advanced Algorithms
+
+### Added
+
+**Proof-Gate v2 — Multi-dimensional Conformance**
+- `ProofDimension` + `ProofPackWriter` types with `wpm proof audit` verb (5-dimension conformance: fitness, precision, lifecycle, cardinality, receipt_coverage)
+- `receipt_coverage` and `object_lifecycle_validity` dimensions implemented
+- Evidence-binding layer via `complete_activity()` — closes the activity-as-proof loophole
+- `TestEvent` carries `object_ids` for richer evidence checks
+- Real captured traces + replay test fixtures (V2-D)
+- `VERIFIED_PROOF` (renamed from `PLACEHOLDER_PROOF`)
+
+**Adversarial Admissibility v2 — POWL v2 Trace Pipeline**
+- POWL v2 full-dimension conformance + 21-probe adversary gate + proof-promote
+- 24-probe adversary suite (incl. P22-P24 — schema/cardinality/lifecycle gates)
+- 10 AI-agent task routes catalog + 4 hardened existing routes (V2)
+- `ObjectTypeDeclaration` extension + 3 cross-language stacktrace parsers (rust/typescript/python/java/js)
+
+**Object-Centric Process Mining (new `wasm4pm/src/advanced/`)**
+- `alphappp.rs` — Alpha+++ algorithm
+- `oc_declare.rs` — Object-Centric DECLARE
+- `ocdfg.rs` — Object-Centric Directly-Follows Graph
+- `ocla.rs` — Object-Centric Local Alignment
+- New `crates/wasm4pm-macros/` proc-macro crate (skeleton for derive macros)
+
+**Real-Data Algorithm Validation Suite**
+- 14 new `wasm4pm/tests/*_real_data_tests.rs` covering analytics, autonomic, conformance, coverage gaps, filters, ML, OCEL, POWL, prediction, real-world parity, substrate certificate
+- 8 new criterion benches: `anti_fake`, `autonomic_real_data_bench`, `ocel_export`, `parser_bench`, `powl_macro`, `real_data_bench`, `route_driven_tdd`, `self_conformance`
+- 12 new validation scripts: `audit_implementations.sh`, `fake-stub-audit.sh`, `scan-ghost-impls.sh` (16.9 KB), `scan-lies.sh` (44.5 KB), capability-matrix + substrate-cert generators, Python report generators
+- New `wasm4pm/routes/test-harness/` (route-driven TDD harness)
+- OCEL 2.0 fixture: `bench_data/ocel20_example.jsonocel`
+
+**REPL + CLI Surface**
+- `wpm repl` interactive command with `load`/`stats`/`run` smoke (verified on `bpi2020_travel.xes` — 10,500 traces, 17 nodes / 39 edges)
+- `wpm run --no-retry` flag — disable automatic algorithm fallback (exit 3 on first failure instead of trying next candidate)
+- Registry-driven fallback wiring for algorithm execution
+- 5 industry-domain examples in `examples/`: supply-chain-drift, incident-triage, fulfillment-bottleneck, compliance-rulebook, safety-process-guard
+- Shared `examples/index.js` module eliminates per-example wasm-init boilerplate
+
+**Claude Code Hook Ecosystem Expansion**
+- 21 event types now covered (complete documented set), 31 hooks total
+- New hooks: SessionStart/SessionEnd lifecycle, PreCompact/PostCompact, hook ecosystem audit fixed 4 pre-existing test failures
+
+**TypeScript Monorepo + ML Surface**
+- ML algorithm classifier/clustering surface extensions in `packages/ml/`
+- `packages/kernel/src/machine-thresholds.ts` (new) — algorithm threshold table
+- Algorithm registry extended for new advanced algorithms in `packages/contracts/`
+- `packages/kernel/src/index.ts` surfaces new kernel entries
+
+**Documentation**
+- 3 PhD thesis chapters under `docs/thesis/`: `PhD_THESIS_ADVERSARIAL_ADMISSIBILITY.md` (722 lines), `PhD_THESIS_OBSERVABILITY_ROBUSTNESS.md`, `PhD_THESIS_VERIFIABLE_COGNITION.tex`, plus `PHD_DEFENSE_PLAN.md`
+- 3 benchmark reports under `docs/benchmarks/`: `BENCHMARK_REPORT_2026-05-15.md`, `BENCHMARK_SUMMARY.md`, `PERFORMANCE_REPORT_2026.md`
+- `docs/validation/VALIDATION_PLAN_ADVANCED_ALGORITHMS.md`
+- New rule: `.claude/rules/mcpp-conformance.md` (MCPP doctrine: 0.8 = Andon, 1.0 = required)
+- Expanded rustdoc on `wasm4pm/src/{spc,rl_orchestrator,error,models,binary_format}.rs`
+
+### Fixed
+
+- `fix(miniml-core)`: bench typo `wminml::` → `miniml::` (latent E0432/E0433 hidden by upload-artifact deprecation)
+- `fix(doctor)`: correct project memory path encoding — preserve leading dash in encoded path
+- `fix(action_dispatch)`: gate cloud-only thread-locals in `action_restart`
+- `fix(proof-audit)`: correct Gate 2 grep exit code and fix Rust target paths
+- `fix(repl,watch)`: correct WASM function names — `analyze_event_statistics` + `get_trace_count` (analyze_statistics never existed)
+
+### Changed (Breaking — release infrastructure)
+
+- **`actions/upload-artifact@v3` → `@v4`** across 3 workflow files (deprecated by GitHub 2024-04-16; had fail-fasted every CI run since v26.5.13).
+- `LogStats` field names corrected: `trace_count` / `event_count` → `total_cases` / `total_events`.
+
+### Removed / Cleanup
+
+- Stub bench data placeholders: `bpi2012_loans.xes`, `bpi2013_incidents.xes`, `sepsis_test.xes.gz` (0-27 byte stubs).
+- Tracked symlinks in `.claude/rules/` pointing to author's home (CI-incompatible).
+- Tracked file with Windows-incompatible path containing colons.
+- 207 per-package `vitest.config.js` + `.test.js` + `.js.map` (consolidated to root vitest config).
+- `apps/wasm4pm/wasm4pm/target/` stray Cargo output.
+- 48 tracked `packages/observability/dist/*` artifacts (gitignored ancestor).
+- 11 closed agent worktrees pruned (content preserved as `wip/worktree-*` branches).
+
+### CI/CD Hardening
+
+- Lint failures no longer silenced by `continue-on-error: true` in test/release/bench-regression workflows.
+- `.markdownlint.json` relaxed for 4 legacy-noise rules (MD034/040/059/060) to preserve strictness on new content.
+- DoD pre-push verification confirmed for every commit on this release.
+
 ## [26.5.13] - 2026-05-13 — POWL 2.0, Cell8 Proof Gates, OTEL Phases A–C
 
 ### Added

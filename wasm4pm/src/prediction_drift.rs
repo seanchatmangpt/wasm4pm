@@ -79,6 +79,25 @@ pub const TREND_STABILITY_FRACTION: f64 = 0.05;
 /// The convention `jaccard_distance(∅, ∅) = 0.0` is chosen so that an
 /// observation of "no activities, then still no activities" is reported as
 /// "no change" rather than as undefined.
+///
+/// # Example
+///
+/// ```
+/// # use std::collections::HashSet;
+/// use wasm4pm::prediction_drift::jaccard_distance;
+///
+/// // Identical sets → distance 0 (Rank 1: J(A,A) = 1 → distance = 0)
+/// let a: HashSet<String> = ["A", "B"].iter().map(|s| s.to_string()).collect();
+/// assert_eq!(jaccard_distance(&a, &a.clone()), 0.0);
+///
+/// // Disjoint sets → distance 1 (Rank 1: J(A,B) = 0 → distance = 1)
+/// let b: HashSet<String> = ["C", "D"].iter().map(|s| s.to_string()).collect();
+/// assert_eq!(jaccard_distance(&a, &b), 1.0);
+///
+/// // Both empty → 0.0 by convention (no change)
+/// let empty: HashSet<String> = HashSet::new();
+/// assert_eq!(jaccard_distance(&empty, &empty), 0.0);
+/// ```
 pub fn jaccard_distance(a: &HashSet<String>, b: &HashSet<String>) -> f64 {
     let union = a.union(b).count();
     if union == 0 {
@@ -94,6 +113,20 @@ pub fn jaccard_distance(a: &HashSet<String>, b: &HashSet<String>) -> f64 {
 /// outside that range is replaced by the nearer bound (with `0.0` mapped to
 /// the smallest representable positive `f64`). An empty input returns an
 /// empty vector.
+///
+/// # Example
+///
+/// ```
+/// use wasm4pm::prediction_drift::ewma_series;
+///
+/// // Constant series → EWMA equals that constant (for any valid alpha)
+/// let result = ewma_series(&[3.0, 3.0, 3.0, 3.0], 0.5);
+/// assert_eq!(result.len(), 4);
+/// assert!(result.iter().all(|&v| (v - 3.0).abs() < 1e-10));
+///
+/// // Empty input → empty output
+/// assert!(ewma_series(&[], 0.5).is_empty());
+/// ```
 pub fn ewma_series(values: &[f64], alpha: f64) -> Vec<f64> {
     if values.is_empty() {
         return Vec::new();
@@ -113,6 +146,22 @@ pub fn ewma_series(values: &[f64], alpha: f64) -> Vec<f64> {
 ///
 /// Returns one of `"rising"`, `"falling"`, `"stable"`. A series shorter than
 /// two samples is always `"stable"`.
+///
+/// # Example
+///
+/// ```
+/// use wasm4pm::prediction_drift::{ewma_series, classify_trend};
+///
+/// // Rising trend (Rank 1: monotone input → classify must return "rising")
+/// let rising = ewma_series(&[1.0, 2.0, 3.0, 4.0, 5.0], 0.9);
+/// assert_eq!(classify_trend(&rising), "rising");
+///
+/// // Constant series → stable
+/// assert_eq!(classify_trend(&[2.0, 2.0, 2.0]), "stable");
+///
+/// // Single sample → stable by definition
+/// assert_eq!(classify_trend(&[42.0]), "stable");
+/// ```
 pub fn classify_trend(smoothed: &[f64]) -> &'static str {
     if smoothed.len() < 2 {
         return "stable";

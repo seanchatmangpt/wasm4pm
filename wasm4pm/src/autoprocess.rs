@@ -247,7 +247,7 @@ impl AutoProcessAgent {
     /// Encode RlState to state_id using precomputed multipliers
     ///
     /// Computation (all bitwise/arithmetic, no branches):
-    /// ```
+    /// ```text
     /// state_id = h*122400 + er*15300 + ac*1912 + sa*456 + d*152 + rr*19 + cs*8 + cp
     /// ```
     ///
