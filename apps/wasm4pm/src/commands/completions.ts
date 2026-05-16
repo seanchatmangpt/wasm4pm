@@ -3,6 +3,7 @@ import { readFile } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { exitWithFlush } from '../otel/exit.js';
+import { EXIT_CODES } from '../exit-codes.js';
 
 const SUPPORTED_SHELLS = ['bash', 'zsh', 'fish'] as const;
 type SupportedShell = (typeof SUPPORTED_SHELLS)[number];
@@ -32,7 +33,7 @@ export const completions = defineCommand({
       process.stderr.write(
         `Unsupported shell: ${shell}. Try one of: ${SUPPORTED_SHELLS.join(' | ')}\n`
       );
-      return await exitWithFlush(2);
+      return await exitWithFlush(EXIT_CODES.config_error);
     }
 
     const scriptName = SCRIPT_NAMES[shell as SupportedShell];
@@ -51,7 +52,7 @@ export const completions = defineCommand({
       process.stderr.write(
         `Failed to read completion script for ${shell}:\n  ${completionsPath}\n  ${message}\n`
       );
-      return await exitWithFlush(5);
+      return await exitWithFlush(EXIT_CODES.system_error);
     }
 
     process.stdout.write(text);

@@ -77,7 +77,7 @@ export const explain = defineCommand({
         const result = makeErrorResult(
           'explain',
           new Error('No model, algorithm, or config specified. Use --model, --algorithm, or --config'),
-          EXIT_CODES.source_error,
+          EXIT_CODES.config_error,
           'MISSING_INPUT'
         );
         emitResult(result, { format, verbose, quiet });
