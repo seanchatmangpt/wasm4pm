@@ -67,7 +67,7 @@
 | `ml_classify` | Decision tree, naive Bayes |
 | `ml_cluster` | K-means clustering |
 | `ml_forecast` | Linear/polynomial/exponential regression |
-| `ml_anomaly` | EMA smoothing, information-theoretic scoring |
+| `ml_anomaly` | Information-theoretic scoring (log2 edge-frequency; missing-edge cost=10) |
 | `ml_regress` | Linear regression |
 | `ml_pca` | Principal component analysis |
 
