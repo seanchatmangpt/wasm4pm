@@ -412,11 +412,14 @@ export function computeAlignment(
     }
   }
 
+  // This is a greedy left-to-right alignment, NOT optimal A* alignment.
+  // It may over-count move-on-log costs when an earlier skip would reduce total cost.
+  // Set optimal=false so callers cannot silently treat this as an exact result.
   return {
     trace,
     aligned,
     cost,
-    optimal: true, // Simplified - doesn't guarantee optimality
+    optimal: false,
   };
 }
 

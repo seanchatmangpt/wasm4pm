@@ -47,64 +47,65 @@ export interface DiscoveryResults {
   highestQuality: AlgorithmResult | null;
 }
 
-const ALGORITHM_NAMES = [
-  'dfg',
-  'process_skeleton',
-  'alpha_plus_plus',
-  'heuristic_miner',
-  'inductive_miner',
-  'hill_climbing',
-  'declare',
-  'simulated_annealing',
-  'a_star',
-  'aco',
-  'pso',
-  'genetic_algorithm',
-  'optimized_dfg',
-  'ilp',
-  'powl',
-];
+/**
+ * Deterministic stub quality profiles derived from the kernel registry speed/quality
+ * scores (packages/kernel/src/registry.ts).  These are NOT measured values — they
+ * are the registry's declared quality integers normalised to [0,1] so that ordering
+ * comparisons (highestQuality, fastest) are stable across test runs.
+ *
+ * IMPORTANT: do not replace these with Math.random() — the harness is used to test
+ * that ranking logic works correctly. Non-deterministic quality values make ranking
+ * tests trivially untrustworthy: a test that passes today may fail tomorrow on the
+ * same code simply because the random draw changed.
+ */
+export const ALGORITHM_PROFILES: Record<
+  string,
+  { qualityNorm: number; precisionNorm: number; simplicityNorm: number; speedMs: number }
+> = {
+  dfg: { qualityNorm: 0.30, precisionNorm: 0.55, simplicityNorm: 0.90, speedMs: 1 },
+  process_skeleton: { qualityNorm: 0.25, precisionNorm: 0.50, simplicityNorm: 0.95, speedMs: 1 },
+  alpha_plus_plus: { qualityNorm: 0.45, precisionNorm: 0.60, simplicityNorm: 0.75, speedMs: 5 },
+  heuristic_miner: { qualityNorm: 0.50, precisionNorm: 0.65, simplicityNorm: 0.70, speedMs: 8 },
+  inductive_miner: { qualityNorm: 0.55, precisionNorm: 0.70, simplicityNorm: 0.65, speedMs: 12 },
+  hill_climbing: { qualityNorm: 0.55, precisionNorm: 0.68, simplicityNorm: 0.60, speedMs: 18 },
+  declare: { qualityNorm: 0.50, precisionNorm: 0.62, simplicityNorm: 0.55, speedMs: 15 },
+  simulated_annealing: { qualityNorm: 0.65, precisionNorm: 0.72, simplicityNorm: 0.50, speedMs: 30 },
+  a_star: { qualityNorm: 0.70, precisionNorm: 0.75, simplicityNorm: 0.48, speedMs: 40 },
+  aco: { qualityNorm: 0.75, precisionNorm: 0.78, simplicityNorm: 0.45, speedMs: 55 },
+  pso: { qualityNorm: 0.75, precisionNorm: 0.78, simplicityNorm: 0.44, speedMs: 60 },
+  genetic_algorithm: { qualityNorm: 0.80, precisionNorm: 0.82, simplicityNorm: 0.40, speedMs: 80 },
+  optimized_dfg: { qualityNorm: 0.85, precisionNorm: 0.80, simplicityNorm: 0.42, speedMs: 65 },
+  ilp: { qualityNorm: 0.90, precisionNorm: 0.88, simplicityNorm: 0.38, speedMs: 95 },
+  powl: { qualityNorm: 0.78, precisionNorm: 0.80, simplicityNorm: 0.50, speedMs: 45 },
+};
+
+const ALGORITHM_NAMES = Object.keys(ALGORITHM_PROFILES);
 
 export class AlgorithmDiscovery {
   async discoverWithAllAlgorithms(ocel: OcelEventLog): Promise<DiscoveryResults> {
     const results: AlgorithmResult[] = [];
 
-    // Extract activities from event log to estimate log complexity
+    // Extract structural log properties used for deterministic edge/transition counts.
+    // These counts are derived from the log, not from Math.random(), so they are
+    // stable across runs on the same input.
     const activities = new Set(ocel.events.map((e) => e.activity));
-    const traces = new Set(ocel.events.map((e) => e.objects[0]));
-    const logSize = ocel.events.length;
+    const traces = new Set(ocel.events.filter((e) => e.objects.length > 0).map((e) => e.objects[0]));
 
-    // Run each algorithm
     for (const algoName of ALGORITHM_NAMES) {
       const startTime = performance.now();
 
-      // Simple simulation: quality improves with log size, execution time varies by algorithm
-      const baseQuality = Math.min(0.95, logSize / 100);
-      const fitnessVariance = Math.random() * 0.1;
-      const fitness = Math.max(0.5, Math.min(1.0, baseQuality + fitnessVariance));
-
-      // Simulated quality metrics
-      const precision = Math.max(0.6, fitness - Math.random() * 0.1);
-      const simplicity = Math.max(0.4, 1.0 - (activities.size + traces.size) / 100);
-      const generalization = Math.max(0.5, (fitness + precision) / 2 - Math.random() * 0.05);
-
-      // Simulated execution time (ms) varies by algorithm class
-      let executionTime = 0;
-      if (['dfg', 'process_skeleton'].includes(algoName)) {
-        executionTime = Math.random() * 5; // Fast
-      } else if (['heuristic_miner', 'alpha_plus_plus'].includes(algoName)) {
-        executionTime = Math.random() * 20; // Medium
-      } else {
-        executionTime = Math.random() * 100; // Slow (genetic, ilp, etc)
-      }
+      const profile = ALGORITHM_PROFILES[algoName];
+      // generalization is the mean of fitness and precision, a defensible approximation
+      // consistent with van der Aalst's observation that precision and fitness trade off.
+      const generalization = (profile.qualityNorm + profile.precisionNorm) / 2;
 
       const endTime = performance.now();
 
       const result: AlgorithmResult = {
         name: algoName,
-        fitness,
-        precision,
-        simplicity,
+        fitness: profile.qualityNorm,
+        precision: profile.precisionNorm,
+        simplicity: profile.simplicityNorm,
         generalization,
         executionTimeMs: Math.max(1, endTime - startTime + executionTime),
         edgeCount: Math.floor(activities.size * (fitness + 0.5)),
