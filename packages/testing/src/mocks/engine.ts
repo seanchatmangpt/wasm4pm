@@ -100,9 +100,15 @@ export class MockEngine {
       throw new Error('Mock plan failure');
     }
 
+    // BLAKE3 hex is 64 chars.  We embed the counter at a fixed position so
+    // tests that compare two plans from different counters still see distinct
+    // hashes, while any validator that checks `hash.length === 64` passes.
+    const counter = ++this._runCounter;
+    const counterHex = counter.toString(16).padStart(4, '0');
+    const mockHash = `mock${counterHex}${'0'.repeat(56)}`;
     const plan: ExecutionPlan = {
-      id: `plan-${++this._runCounter}`,
-      hash: `mock-hash-${this._runCounter}`,
+      id: `plan-${counter}`,
+      hash: mockHash,
       steps: [
         { id: 'step-1', type: 'load_source', description: 'Load source data' },
         { id: 'step-2', type: 'discover_dfg', description: 'Discover DFG' },

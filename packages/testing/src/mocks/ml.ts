@@ -51,10 +51,14 @@ export function createMockMlAdapter(): MockMlAdapter {
     async forecastSeries(series: number[], options?: any) {
       const forecastPeriods = options?.forecastPeriods || 5;
       const lastValue = series.length > 0 ? series[series.length - 1] : 0;
+      // Deterministic forecast: linear extrapolation of the last-seen value.
+      // Math.random() is forbidden here — the mock must return bit-identical
+      // results across runs so that determinism harness checks can pass.
+      const forecast = Array.from({ length: forecastPeriods }, (_, i) => lastValue + i * 0.01);
       return {
         seriesLength: series.length,
         trend: { direction: 'stable', slope: 0.01, strength: 0.2 },
-        forecast: Array.from({ length: forecastPeriods }, () => lastValue + Math.random() * 0.1),
+        forecast,
         seasonality: series.length >= 10 ? { period: 5, strength: 0.3 } : undefined,
       };
     },

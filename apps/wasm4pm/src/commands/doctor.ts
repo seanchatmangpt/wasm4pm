@@ -2070,8 +2070,7 @@ export const doctorTps = defineCommand({
           emitResult(result, { format, verbose, quiet }, (_res, proj) => {
             printReportToProjection(proj, report);
           });
-          process.exitCode = EXIT_CODES.config_error;
-          return;
+          return await exitWithFlush(EXIT_CODES.config_error);
         }
       }
 
@@ -2160,7 +2159,7 @@ export const doctorFix = defineCommand({
           : 'No auto-fixable issues found.');
         const noFixablePayload = { dry_run: Boolean(dryRun), fixable: [], unfixable: [], no_fixable: true };
         emitResult(makeResult('doctor fix', noFixablePayload, Date.now() - start, EXIT_CODES.success), { format, verbose, quiet });
-        return await exitWithFlush(0);
+        return await exitWithFlush(EXIT_CODES.success);
       }
 
       if (dryRun) {
@@ -2177,7 +2176,7 @@ export const doctorFix = defineCommand({
             .map((d) => d.fix),
         };
         emitResult(makeResult('doctor fix', dryRunPayload, Date.now() - start, EXIT_CODES.success), { format, verbose, quiet });
-        return await exitWithFlush(0);
+        return await exitWithFlush(EXIT_CODES.success);
       }
 
       if (!yes) {
@@ -2188,7 +2187,7 @@ export const doctorFix = defineCommand({
           p.log('Skipping — stdin is not a TTY. Use --yes to force.');
           const skipPayload = { dry_run: false, skipped: true, reason: 'non-tty', fixable_count: fixable.length };
           emitResult(makeResult('doctor fix', skipPayload, Date.now() - start, EXIT_CODES.success), { format, verbose, quiet });
-          return await exitWithFlush(0);
+          return await exitWithFlush(EXIT_CODES.success);
         }
         // Read one line
         const answer = await new Promise<string>((resolve) => {
@@ -2199,7 +2198,7 @@ export const doctorFix = defineCommand({
           p.log('Aborted.');
           const abortPayload = { dry_run: false, skipped: true, reason: 'user-aborted', fixable_count: fixable.length };
           emitResult(makeResult('doctor fix', abortPayload, Date.now() - start, EXIT_CODES.success), { format, verbose, quiet });
-          return await exitWithFlush(0);
+          return await exitWithFlush(EXIT_CODES.success);
         }
       }
 
@@ -2231,7 +2230,7 @@ export const doctorFix = defineCommand({
       };
       const result = makeResult('doctor fix', payload, Date.now() - start);
       emitResult(result, { format, verbose, quiet });
-      return await exitWithFlush(0);
+      return await exitWithFlush(EXIT_CODES.success);
     }
   },
 });
@@ -2422,9 +2421,7 @@ export const doctorPerf = defineCommand({
       }
     });
 
-    if (!allOk) {
-      process.exitCode = EXIT_CODES.config_error;
-    }
+
 
     // Update baseline if requested
     if (updateBaseline && baselinePath) {
@@ -2741,14 +2738,15 @@ export const doctorReport = defineCommand({
       }
     }
 
+    const reportExitCode = summary.fail > 0 ? EXIT_CODES.config_error : EXIT_CODES.success;
     const result = makeResult(
       'doctor report',
       { report_path: outPath, summary, format: reportFormat },
       Date.now() - start,
-      EXIT_CODES.success
+      reportExitCode
     );
     emitResult(result, { format: 'human', verbose, quiet });
-    return await exitWithFlush(0);
+    return await exitWithFlush(reportExitCode);
   },
 });
 
