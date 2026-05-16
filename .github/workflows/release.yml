@@ -53,13 +53,13 @@ jobs:
       - name: Install wasm-pack
         run: npm install -g wasm-pack@0.13.1
 
-      # Install dependencies
-      - name: Install root dependencies
-        run: npm install
+      # Setup pnpm (workspace-aware install — version pinned via package.json packageManager)
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
-      - name: Install wasm4pm dependencies
-        working-directory: ./wasm4pm
-        run: npm install
+      # Install all workspace dependencies (incl. wasm4pm via pnpm-workspace.yaml)
+      - name: Install dependencies
+        run: pnpm install
 
       # Run verification scripts
       - name: Verify release gates
@@ -127,9 +127,11 @@ jobs:
       - name: Install wasm-pack
         run: npm install -g wasm-pack@0.13.1
 
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+
       - name: Install dependencies
-        working-directory: ./wasm4pm
-        run: npm install
+        run: pnpm install
 
       - name: Build nodejs target
         working-directory: ./wasm4pm
@@ -232,19 +234,13 @@ jobs:
       - name: Install wasm-opt
         run: npm install -g wasm-opt
 
-      # Setup pnpm (required for monorepo workspace builds)
+      # Setup pnpm (workspace-aware — version pinned via package.json packageManager)
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
-        with:
-          version: 9
 
-      # Install dependencies
+      # Install dependencies (workspace install covers wasm4pm via pnpm-workspace.yaml)
       - name: Install dependencies
         run: pnpm install
-
-      - name: Install wasm4pm dependencies
-        working-directory: ./wasm4pm
-        run: npm install
 
       # Build everything
       - name: Build all targets
@@ -347,7 +343,7 @@ jobs:
 
       # Create GitHub release
       - name: Create GitHub release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
           body_path: release-notes.md

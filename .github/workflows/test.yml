@@ -64,14 +64,13 @@ jobs:
       - name: Install wasm-opt
         run: npm install -g wasm-opt
 
-      # Install root dependencies
-      - name: Install root dependencies
-        run: npm install
+      # Setup pnpm (workspace-aware install)
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
 
-      # Install package dependencies
-      - name: Install wasm4pm dependencies
-        working-directory: ./wasm4pm
-        run: npm install
+      # Install all workspace dependencies (incl. wasm4pm via pnpm-workspace.yaml)
+      - name: Install dependencies
+        run: pnpm install
 
       # TPS Pipeline Quality Gate (Equipment + Quality + Operation + Logistics Kaizen)
       - name: TPS Pipeline Quality Gate
