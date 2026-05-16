@@ -5,6 +5,7 @@ import { existsSync } from 'fs';
 import { emitResult, makeResult, makeErrorResult, ConsoleProjection } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { getExampleTomlConfig, getExampleJsonConfig, getPublicPresetConfig, getExamplePresetConfig, type PublicPreset } from '@wasm4pm/config';
+import { withSpan } from './_otel.js';
 import { exitWithFlush } from '../otel/exit.js';
 
 // Template content generators
@@ -258,6 +259,15 @@ export const init = defineCommand({
     // Use a temporary projection for early validation warnings before the result is built
     const earlyProjection = new ConsoleProjection({ verbose, quiet });
 
+    return withSpan(
+      'init',
+      {
+        format,
+        config_format: (ctx.args['config-format'] as string) ?? 'toml',
+        preset: (ctx.args.preset as string) ?? '',
+        force: Boolean(ctx.args.force),
+      },
+      async () => {
     try {
       const cwd = process.cwd();
       // Accept both camelCase (--configFormat) and kebab-case (--config-format).
@@ -386,5 +396,7 @@ export const init = defineCommand({
       emitResult(result, { format, verbose, quiet });
       return await exitWithFlush(result.exit_code);
     }
+      },
+    );
   },
 });
