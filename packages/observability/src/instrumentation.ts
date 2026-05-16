@@ -1481,17 +1481,33 @@ export class Instrumentation {
   }
 
   /**
-   * Generate a W3C-compliant span ID (16 hex chars)
+   * Generate a W3C-compliant span ID (16 hex chars).
+   * Prefers crypto.getRandomValues for entropy quality; falls back to Math.random
+   * only in environments where globalThis.crypto is unavailable (e.g. some test runners).
    */
   static generateSpanId(): string {
-    return Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    const bytes = new Uint8Array(8);
+    if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.getRandomValues) {
+      globalThis.crypto.getRandomValues(bytes);
+    } else {
+      for (let i = 0; i < 8; i++) bytes[i] = Math.floor(Math.random() * 256); // @lint-allow-fakery — crypto fallback
+    }
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
   }
 
   /**
-   * Generate a W3C-compliant trace ID (32 hex chars)
+   * Generate a W3C-compliant trace ID (32 hex chars).
+   * Prefers crypto.getRandomValues for entropy quality; falls back to Math.random
+   * only in environments where globalThis.crypto is unavailable (e.g. some test runners).
    */
   static generateTraceId(): string {
-    return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    const bytes = new Uint8Array(16);
+    if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.getRandomValues) {
+      globalThis.crypto.getRandomValues(bytes);
+    } else {
+      for (let i = 0; i < 16; i++) bytes[i] = Math.floor(Math.random() * 256); // @lint-allow-fakery — crypto fallback
+    }
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
   }
 
   /**

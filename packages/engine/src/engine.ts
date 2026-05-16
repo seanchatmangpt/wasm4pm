@@ -875,7 +875,8 @@ export class Engine {
 
   private generateRunId(): string {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const random = Math.random().toString(36).substring(2, 6);
+    // Run ID is a human-readable label, not a cryptographic hash — Math.random suffix is intentional. // @lint-allow-fakery
+    const random = Math.random().toString(36).substring(2, 6); // @lint-allow-fakery — run-ID label suffix, not a receipt hash
     return `run_${timestamp}_${random}`;
   }
 

@@ -335,7 +335,7 @@ export class WasmBackend implements MiningBackend {
   }
 
   private generateUuid(): string {
-    return crypto.randomUUID?.() || `uuid-${Date.now()}-${Math.random()}`;
+    return crypto.randomUUID?.() || `uuid-${Date.now()}-${Math.random()}`; // @lint-allow-fakery — UUID fallback when crypto.randomUUID unavailable
   }
 
   private createProvenance(algorithmId: string, operationType: string): ProvenanceChain {
