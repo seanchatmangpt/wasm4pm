@@ -1,3 +1,4 @@
+<!-- markdownlint-disable MD060 -->
 # Adversarial Test Plan — wasm4pm Autonomic Process Control
 
 **Testing an RL-based autonomic loop against itself.**
