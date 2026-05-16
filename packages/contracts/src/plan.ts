@@ -134,7 +134,13 @@ export function validatePlanDAG(plan: Plan): string[] {
 
   // Check for duplicate node ids
   if (nodeIds.size !== plan.nodes.length) {
-    errors.push('Duplicate node IDs detected');
+    const seen = new Set<string>();
+    const dupes: string[] = [];
+    for (const n of plan.nodes) {
+      if (seen.has(n.id)) dupes.push(n.id);
+      seen.add(n.id);
+    }
+    errors.push(`Duplicate node IDs detected: ${dupes.join(', ')}. Each node must have a unique id.`);
   }
 
   // Check all edge references are valid
@@ -180,7 +186,11 @@ export function validatePlanDAG(plan: Plan): string[] {
     }
 
     if (visited !== nodeIds.size) {
+      const cycleNodes = [...nodeIds].filter((id) => (inDegree.get(id) ?? 0) > 0);
       errors.push('Plan contains a cycle');
+      errors.push(
+        `Cycle involves node(s): ${cycleNodes.join(', ')}. A valid plan must be a directed acyclic graph (source → algorithm → sink).`
+      );
     }
   }
 

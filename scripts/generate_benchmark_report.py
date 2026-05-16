@@ -539,7 +539,18 @@ def main() -> None:
     print(f"Benchmark report JSON: {json_out} ({json_out.stat().st_size:,} bytes)")
     print(f"Benchmark report MD:   {md_out} ({md_out.stat().st_size:,} bytes)")
     print(f"  Total algorithms:    {report['total_algorithms']}")
-    print(f"  Evidence classes:    {report['evidence_class_summary']}")
+
+    ec = report.get("evidence_class_summary", {})
+    print(f"  Evidence classes:    {ec}")
+
+    not_measured = ec.get("source_inspected", 0) + ec.get("feature_gated_not_run", 0)
+    if not_measured > 0:
+        print(
+            f"  WARNING: {not_measured} algorithm(s) have no direct performance measurement.\n"
+            "  Next step: run 'cd wasm4pm && cargo bench' then re-run parse_criterion_output.py\n"
+            "  to promote them from 'source_inspected' to 'criterion_measured'."
+        )
+
     top = report.get("top_throughput", [])
     if top:
         best = top[0]
