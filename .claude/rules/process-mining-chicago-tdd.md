@@ -1,1 +1,0 @@
-/Users/sac/.claude/rules/process-mining-chicago-tdd.md
