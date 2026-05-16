@@ -26,6 +26,7 @@ export { reduceFeaturesPCA } from './reduction.js';
 
 // Types
 export type {
+  EmptyInputWarning,
   FeatureMatrix,
   LabelEncoding,
   ClassificationMethod,
