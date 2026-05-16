@@ -3,7 +3,12 @@
 //! Level 10 fixes (Robinson 1965):
 //! 1. **Completeness barriers**: Future enhancement: raise arity/body/var limits from 8 to 16
 //!    (Robinson's spec is unbounded; 8-cap was ARD-mandated)
-//! 2. **Occurs-check for soundness**: Prevents cyclic unifications like X=f(X)
+//! 2. **Occurs-check for soundness**: The Prolog8 kernel supports occurs-check for cyclic
+//!    unifications like `X=f(X)`. However, the current breed encoding interns each
+//!    `BreedInput` fact/rule as a **ground** atom (`var_count: 0`) — there are no logic
+//!    variables in the encoded clauses, so occurs-check is **trivially satisfied** at the
+//!    breed boundary. Soundness against `X=f(X)` is enforced by Prolog8 if/when the
+//!    breed grows to encode non-ground rules (deferred from PR #69).
 //! 3. **Loop detection**: Tracks visited (predicate, args) pairs to terminate infinite recursion
 //! 4. **Explicit recursion depth limit**: 128 levels max for bounded execution
 //!
