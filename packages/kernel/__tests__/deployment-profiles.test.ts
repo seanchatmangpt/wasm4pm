@@ -6,7 +6,9 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { getRegistry } from '@wasm4pm/kernel';
+// Import from src directly so tests exercise the corrected registry source,
+// not the stale compiled dist (which may lag behind source changes).
+import { getRegistry } from '../src/registry.js';
 
 describe('Deployment Profiles', () => {
   describe('Algorithm Filtering', () => {
@@ -19,16 +21,16 @@ describe('Deployment Profiles', () => {
       expect(algorithmIds).toContain('process_skeleton');
     });
 
-    it('should include advanced algorithms in edge profile but not browser', () => {
+    it('should include advanced algorithms in edge profile but not mobile', () => {
       const registry = getRegistry();
-      const browserAlgorithms = registry.getForDeploymentProfile('browser');
+      const mobileAlgorithms = registry.getForDeploymentProfile('mobile');
       const edgeAlgorithms = registry.getForDeploymentProfile('edge');
 
-      const browserIds = browserAlgorithms.map((a) => a.id);
+      const mobileIds = mobileAlgorithms.map((a) => a.id);
       const edgeIds = edgeAlgorithms.map((a) => a.id);
 
-      // Edge should have more algorithms than browser
-      expect(edgeIds.length).toBeGreaterThan(browserIds.length);
+      // Edge should have more algorithms than mobile
+      expect(edgeIds.length).toBeGreaterThan(mobileIds.length);
 
       // Edge should include advanced algorithms
       expect(edgeIds).toContain('inductive_miner');
@@ -59,15 +61,15 @@ describe('Deployment Profiles', () => {
       expect(fogIds).toContain('simulated_annealing');
     });
 
-    it('should include all algorithms in cloud profile', () => {
+    it('should include all algorithms in browser profile (full-feature tier)', () => {
       const registry = getRegistry();
-      const cloudAlgorithms = registry.getForDeploymentProfile('cloud');
+      const browserAlgorithms = registry.getForDeploymentProfile('browser');
 
-      // Cloud should have the most algorithms
-      expect(cloudAlgorithms.length).toBeGreaterThan(0);
+      // Browser is the full-feature tier (~2.78MB) and should have the most algorithms
+      expect(browserAlgorithms.length).toBeGreaterThan(0);
 
       // Should include at least the core algorithms
-      const algorithmIds = cloudAlgorithms.map((a) => a.id);
+      const algorithmIds = browserAlgorithms.map((a) => a.id);
       expect(algorithmIds).toContain('dfg');
       expect(algorithmIds).toContain('genetic_algorithm');
       expect(algorithmIds).toContain('ml_cluster');
@@ -78,7 +80,7 @@ describe('Deployment Profiles', () => {
       const browserAlgorithms = registry.getForDeploymentProfile('browser');
       const iotAlgorithms = registry.getForDeploymentProfile('iot');
 
-      // IoT should have fewer algorithms than browser
+      // IoT should have fewer algorithms than browser (full-feature tier)
       expect(iotAlgorithms.length).toBeLessThanOrEqual(browserAlgorithms.length);
 
       // Should at least have the basics
@@ -88,38 +90,39 @@ describe('Deployment Profiles', () => {
   });
 
   describe('Profile Size Estimates', () => {
-    it('should estimate browser profile has fewest algorithms', () => {
+    it('should estimate mobile profile has fewest algorithms', () => {
       const registry = getRegistry();
+      const mobileAlgorithms = registry.getForDeploymentProfile('mobile');
       const browserAlgorithms = registry.getForDeploymentProfile('browser');
-      const cloudAlgorithms = registry.getForDeploymentProfile('cloud');
 
-      expect(browserAlgorithms.length).toBeLessThan(cloudAlgorithms.length);
+      // mobile (~500KB) must have fewer algorithms than browser (~2.78MB)
+      expect(mobileAlgorithms.length).toBeLessThan(browserAlgorithms.length);
     });
 
-    it('should estimate cloud profile has most algorithms', () => {
+    it('should estimate browser profile has most algorithms', () => {
       const registry = getRegistry();
-      const profiles = ['browser', 'edge', 'fog', 'iot', 'cloud'] as const;
+      const profiles = ['mobile', 'iot', 'edge', 'fog', 'browser'] as const;
       const sizes = profiles.map((p) => registry.getForDeploymentProfile(p).length);
 
       const maxSize = Math.max(...sizes);
-      const cloudSize = registry.getForDeploymentProfile('cloud').length;
+      const browserSize = registry.getForDeploymentProfile('browser').length;
 
-      expect(cloudSize).toBe(maxSize);
+      expect(browserSize).toBe(maxSize);
     });
   });
 
   describe('Deployment Profile Inference', () => {
-    it('should infer browser deployment from fast execution profile', () => {
+    it('should infer mobile deployment from fast execution profile', () => {
       const registry = getRegistry();
       const fastAlgorithms = registry.getForProfile('fast');
-      const browserAlgorithms = registry.getForDeploymentProfile('browser');
+      const mobileAlgorithms = registry.getForDeploymentProfile('mobile');
 
-      // All fast algorithms should be available in browser
+      // All fast algorithms should be available in mobile (smallest footprint tier)
       const fastIds = new Set(fastAlgorithms.map((a) => a.id));
-      const browserIds = new Set(browserAlgorithms.map((a) => a.id));
+      const mobileIds = new Set(mobileAlgorithms.map((a) => a.id));
 
       for (const id of fastIds) {
-        expect(browserIds.has(id)).toBe(true);
+        expect(mobileIds.has(id)).toBe(true);
       }
     });
 

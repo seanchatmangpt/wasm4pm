@@ -38,14 +38,14 @@ export type QualityTier = number; // 0-100
 export type ExecutionProfile = 'fast' | 'balanced' | 'quality' | 'stream';
 
 /**
- * Deployment profile: WASM build configuration
- * - browser: Minimal features for web browsers (~500KB)
- * - edge: Advanced algorithms for edge servers (~1.5MB)
- * - fog: Full features except POWL for fog computing (~2.0MB)
- * - iot: Minimal features for IoT devices (~1.0MB)
- * - cloud: Full feature set for cloud servers (~2.78MB)
+ * Deployment profile: WASM build configuration (matches wasm-pack build profiles)
+ * - mobile: Minimal features for mobile devices (~500KB, ~82% reduction)
+ * - iot:    Basic discovery + conformance for IoT devices (~1.0MB, ~64% reduction)
+ * - edge:   Advanced algorithms for CDN/edge servers (~1.5MB, ~46% reduction)
+ * - fog:    Full features except POWL for fog gateways (~2.0MB, ~28% reduction)
+ * - browser: ALL features, default profile for web browsers and servers (~2.78MB)
  */
-export type DeploymentProfile = 'browser' | 'edge' | 'fog' | 'iot' | 'cloud';
+export type DeploymentProfile = 'mobile' | 'iot' | 'edge' | 'fog' | 'browser';
 
 /**
  * Algorithm metadata
@@ -1386,11 +1386,12 @@ export class AlgorithmRegistry {
   }
 
   /**
-   * Infer deployment profiles from supported execution profiles
-   * - fast profile → browser, iot
-   * - balanced profile → browser, edge, fog, cloud
-   * - quality profile → edge, fog, cloud
-   * - stream profile → browser, edge, fog, iot, cloud
+   * Infer deployment profiles from supported execution profiles.
+   * Maps each execution profile to the WASM build tiers that ship it.
+   * - fast:     mobile, iot (smallest footprint tiers)
+   * - balanced: iot, edge, fog, browser
+   * - quality:  edge, fog, browser (full-feature tiers)
+   * - stream:   mobile, iot, edge, fog, browser (all tiers support streaming DFG)
    */
   private inferDeploymentProfiles(profiles: ExecutionProfile[]): DeploymentProfile[] {
     const result = new Set<DeploymentProfile>();
@@ -1398,26 +1399,26 @@ export class AlgorithmRegistry {
     for (const profile of profiles) {
       switch (profile) {
         case 'fast':
-          result.add('browser');
+          result.add('mobile');
           result.add('iot');
           break;
         case 'balanced':
-          result.add('browser');
+          result.add('iot');
           result.add('edge');
           result.add('fog');
-          result.add('cloud');
+          result.add('browser');
           break;
         case 'quality':
           result.add('edge');
           result.add('fog');
-          result.add('cloud');
+          result.add('browser');
           break;
         case 'stream':
-          result.add('browser');
+          result.add('mobile');
+          result.add('iot');
           result.add('edge');
           result.add('fog');
-          result.add('iot');
-          result.add('cloud');
+          result.add('browser');
           break;
       }
     }
@@ -1486,7 +1487,7 @@ export class AlgorithmRegistry {
    */
   private buildDeploymentProfileMap(): void {
     const profileMap = new Map<DeploymentProfile, Set<string>>();
-    const profiles: DeploymentProfile[] = ['browser', 'edge', 'fog', 'iot', 'cloud'];
+    const profiles: DeploymentProfile[] = ['mobile', 'iot', 'edge', 'fog', 'browser'];
 
     for (const profile of profiles) {
       profileMap.set(profile, new Set());

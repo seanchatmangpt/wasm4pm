@@ -43,8 +43,13 @@ export function summarizeKpis(kpis: CaseKpi[]): LogKpiSummary {
     return { caseCount: 0, median_cycle_time_ms: 0, p95_cycle_time_ms: 0, mean_rework_ratio: 0, sla_breach_count: 0, sla_breach_pct: 0 };
   }
   const sorted = [...kpis].sort((a, b) => a.cycleTimeMs - b.cycleTimeMs);
-  const median_cycle_time_ms = sorted[Math.floor(sorted.length / 2)].cycleTimeMs;
-  const p95_cycle_time_ms = sorted[Math.floor(sorted.length * 0.95)].cycleTimeMs;
+  // Median: for even-length arrays average the two middle values; for odd take the middle.
+  const midLo = Math.floor((sorted.length - 1) / 2);
+  const midHi = Math.ceil((sorted.length - 1) / 2);
+  const median_cycle_time_ms = (sorted[midLo].cycleTimeMs + sorted[midHi].cycleTimeMs) / 2;
+  // p95: clamp index to valid range [0, length-1].
+  const p95Index = Math.min(Math.floor(sorted.length * 0.95), sorted.length - 1);
+  const p95_cycle_time_ms = sorted[p95Index].cycleTimeMs;
   const mean_rework_ratio = kpis.reduce((s, k) => s + k.reworkRatio, 0) / kpis.length;
   const sla_breach_count = kpis.filter(k => k.slaBreached).length;
   const sla_breach_pct = (sla_breach_count / kpis.length) * 100;
