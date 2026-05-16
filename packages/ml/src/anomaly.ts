@@ -235,6 +235,17 @@ export async function detectEnhancedAnomalies(
       peakValues: [],
       smoothedSeries: driftDistances,
       originalLength: driftDistances.length,
+      metadata: {
+        warning: {
+          code: driftDistances.length === 0 ? 'empty_input' : 'short_series',
+          message:
+            `detectEnhancedAnomalies needs at least 3 points to detect peaks; ` +
+            `received ${driftDistances.length}. ` +
+            `Returned empty peak lists with original data passed through.`,
+          inputLength: driftDistances.length,
+          minRequired: 3,
+        },
+      },
     };
   }
 

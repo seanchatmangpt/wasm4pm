@@ -398,6 +398,17 @@ export async function forecastThroughput(
       windowCount: series.length,
       trend: { direction: 'unknown', slope: 0, strength: 0 },
       windowSizeMs: validatedWindowSizeMs,
+      metadata: {
+        warning: {
+          code: eventTimestamps.length === 0 ? 'empty_input' : 'short_series',
+          message:
+            `forecastThroughput needs at least 3 time windows to fit a trend; ` +
+            `received ${eventTimestamps.length} timestamp(s) which produced ${series.length} window(s). ` +
+            `No forecast was produced.`,
+          inputLength: eventTimestamps.length,
+          minRequired: 3,
+        },
+      },
     };
   }
 
@@ -445,7 +456,20 @@ export async function forecastSeries(
   } = {}
 ): Promise<SeriesForecastResult> {
   if (series.length < 3) {
-    return { seriesLength: series.length, trend: { direction: 'unknown', slope: 0, strength: 0 } };
+    return {
+      seriesLength: series.length,
+      trend: { direction: 'unknown', slope: 0, strength: 0 },
+      metadata: {
+        warning: {
+          code: series.length === 0 ? 'empty_input' : 'short_series',
+          message:
+            `forecastSeries needs at least 3 observations to fit a trend; ` +
+            `received ${series.length}. No forecast was produced.`,
+          inputLength: series.length,
+          minRequired: 3,
+        },
+      },
+    };
   }
 
   const validatedForecastPeriods = validateForecastPeriods(options.forecastPeriods);

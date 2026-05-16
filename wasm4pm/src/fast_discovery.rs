@@ -159,7 +159,7 @@ pub fn discover_astar_from_log(
     while !open_set.is_empty() && iterations < max_iterations {
         open_set
             .sort_by(|a, b| a.1.partial_cmp(&b.1).unwrap_or(std::cmp::Ordering::Equal));
-        let (current_dfg, score) = match open_set.pop() {
+        let (current_dfg, _score) = match open_set.pop() {
             Some(item) => item,
             None => break,
         };
@@ -182,14 +182,21 @@ pub fn discover_astar_from_log(
                 (fitness > 0.0).then(|| (new_dfg, fitness.mul_add(0.8, -edge_penalty * 0.2)))
             })
             .collect();
+        // Track best across NEW candidates (where the actual scores live), not the
+        // parent we just popped. Prior bug: `if score > best_score` only ever read
+        // the popped score — for iteration 0 that score is always 0 (the seed
+        // empty DFG), so `best_dfg` perpetually lagged the frontier by one step
+        // and an A* run with `max_iterations=1` always returned an empty DFG.
+        for (cand_dfg, cand_score) in &new_candidates {
+            if *cand_score > best_score {
+                best_score = *cand_score;
+                best_dfg = cand_dfg.clone();
+            }
+        }
         open_set.extend(new_candidates);
         // Beam: sort descending by score and cap the open set to prevent memory explosion.
         open_set.sort_by(|a, b| b.1.partial_cmp(&a.1).unwrap_or(std::cmp::Ordering::Equal));
         open_set.truncate(128);
-        if score > best_score {
-            best_score = score;
-            best_dfg = current_dfg;
-        }
         iterations += 1;
     }
     (best_dfg, iterations)

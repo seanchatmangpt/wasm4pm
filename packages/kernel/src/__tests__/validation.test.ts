@@ -28,7 +28,7 @@ function makeResult(overrides: Partial<KernelResult> = {}): KernelResult {
     durationMs: 12.5,
     execution_ms: 12.5,
     params: { activity_key: 'concept:name' },
-    hash: 'abc123def456',
+    hash: 'abc123def456', // @lint-allow-fakery — test fixture, intentionally short
     ...overrides,
   };
 }

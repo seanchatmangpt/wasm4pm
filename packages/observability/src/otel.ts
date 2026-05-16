@@ -3,12 +3,29 @@
  * When disabled the no-op tracer is returned so callers pay zero overhead.
  * When enabled but the exporter is unavailable, warnings are logged and
  * execution continues unless `required` is true.
+ *
+ * Export failure behaviour:
+ *   required=false (default): warnings are logged, spans are dropped, execution continues.
+ *   required=true: export failure throws and propagates to the caller.
+ *
+ * Queue full behaviour: the oldest span is dropped and `droppedCount` is incremented.
+ * Check `tracer.getDropCount()` to detect back-pressure. A non-zero drop count means
+ * the collector is unreachable or slow — reduce batch_size or increase max_queue_size.
  */
 
 import { NoopTracer } from './noop.js';
 import { LiveSpan, type Span, type Tracer, type SpanKind } from './spans.js';
 import { RequiredFields } from './fields.js';
 import { SpanContext, generateSpanId } from './context.js';
+
+/**
+ * Instrumentation scope name and version stamped on every exported batch.
+ * The version here must stay in sync with the npm package version in
+ * packages/observability/package.json.  Mismatches cause Jaeger to show
+ * spans under a stale scope version, making reproducing past runs impossible.
+ */
+export const OBSERVABILITY_SCOPE_NAME = '@wasm4pm/observability';
+export const OBSERVABILITY_SCOPE_VERSION = '26.5.15';
 
 // ---- Configuration ----
 
@@ -120,7 +137,7 @@ export class OtelTracer implements Tracer {
           resource: { attributes: [] },
           scopeSpans: [
             {
-              scope: { name: '@wasm4pm/observability', version: '26.4.5' },
+              scope: { name: OBSERVABILITY_SCOPE_NAME, version: OBSERVABILITY_SCOPE_VERSION },
               spans: batch.map((s) => ({
                 traceId: s.traceId,
                 spanId: s.spanId,

@@ -5,6 +5,7 @@ import { CognitionError } from '../errors.js';
 import type { SpanSink } from '../observability-types.js';
 import { defaultSpanSink, hexId } from '../span-utils.js';
 import type { SystemArtifact, SystemVerifyResult } from '../types.js';
+import { assertSystemVerifyResult } from '../contract/guard.js';
 
 export interface SystemVerifyOptions {
   spanSink?: SpanSink;
@@ -49,20 +50,8 @@ export async function verifySystem(
         { cause: e },
       );
     }
-    // Shape validation: target (string), status, findings array.
-    // Per cognition-contracts.md, the wrapper must not pass malformed WASM output.
-    if (
-      parsed === null ||
-      typeof parsed !== 'object' ||
-      typeof (parsed as { target?: unknown }).target !== 'string' ||
-      !Array.isArray((parsed as { findings?: unknown }).findings)
-    ) {
-      throw new CognitionError(
-        'system_verify output missing required target or findings field',
-        'OUTPUT_SHAPE_INVALID',
-      );
-    }
-    return parsed as SystemVerifyResult;
+    // Refuses unknown status; tolerates legacy 'ok' (see guard.ts).
+    return assertSystemVerifyResult(parsed);
   } catch (err) {
     status = 'ERROR';
     errMsg = err instanceof Error ? err.message : String(err);

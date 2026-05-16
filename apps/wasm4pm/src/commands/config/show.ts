@@ -124,6 +124,11 @@ export const configShow = defineCommand({
       default: 'human',
       description: 'Output format: human | json',
     },
+    quiet: {
+      type: 'boolean',
+      alias: 'q',
+      description: 'Suppress non-error output',
+    },
   },
   async run(ctx) {
     const t0 = performance.now();

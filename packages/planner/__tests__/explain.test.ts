@@ -262,6 +262,106 @@ describe('Explain', () => {
     });
   });
 
+  describe('explain() - Parity with plan()', () => {
+    // PRD §11: explain() output must reflect plan() output. These tests
+    // guard against narrative drift — a regression where plan() emits a
+    // field but explain() forgets to mention it.
+
+    it('should narrate the BudgetEnvelope attached by plan()', () => {
+      const explanation = explain(testConfig);
+      const executionPlan = plan(testConfig);
+
+      // BudgetEnvelope is Section 4.1 — every plan has one.
+      expect(explanation).toMatch(/## Budget Envelope/);
+      expect(explanation).toContain(executionPlan.budget.latencyBudget);
+      expect(explanation).toContain(executionPlan.budget.qualityFloor);
+      expect(explanation).toContain(executionPlan.budget.mode);
+    });
+
+    it('should narrate latency budget tier (fast → sub_ms)', () => {
+      const explanation = explain({ ...testConfig, execution: { profile: 'fast' } });
+
+      // fast profile must produce sub_ms latency budget.
+      expect(explanation).toMatch(/Latency Budget.*sub_ms/);
+    });
+
+    it('should narrate latency budget tier (quality → high_ms)', () => {
+      const explanation = explain({ ...testConfig, execution: { profile: 'quality' } });
+
+      // quality profile must produce high_ms latency budget.
+      expect(explanation).toMatch(/Latency Budget.*high_ms/);
+    });
+
+    it('should narrate memory budget when set', () => {
+      const config: Config = {
+        ...testConfig,
+        execution: { profile: 'fast', maxMemoryMB: 256 },
+      };
+      const explanation = explain(config);
+
+      // 256 MB → 256 * 1024 * 1024 bytes in budget.
+      expect(explanation).toMatch(/Memory Budget.*256 MB/);
+    });
+
+    it('should narrate "unlimited" memory budget when maxMemoryMB=0', () => {
+      const explanation = explain(testConfig);
+
+      // Default config has no maxMemoryMB → budget.memoryBudget = 0 = unlimited.
+      expect(explanation).toMatch(/Memory Budget.*unlimited/);
+    });
+
+    it('should narrate algorithm override when config.algorithm.name is set', () => {
+      const config: Config = {
+        ...testConfig,
+        algorithm: { name: 'heuristic_miner', parameters: { dependency_threshold: 0.7 } },
+      };
+      const explanation = explain(config);
+
+      // Without this surface, a user cannot tell from explain() that
+      // their algorithm override was applied — plan() silently consumes it.
+      expect(explanation).toMatch(/Algorithm Override.*heuristic_miner/);
+      expect(explanation).toMatch(/dependency_threshold/);
+    });
+
+    it('should NOT mention algorithm override when not set', () => {
+      const explanation = explain(testConfig);
+
+      // No algorithm override → no override section.
+      expect(explanation).not.toMatch(/Algorithm Override/);
+    });
+
+    it('should narrate ML tasks when config.ml is enabled', () => {
+      const config: Config = {
+        ...testConfig,
+        ml: { enabled: true, tasks: ['classify', 'cluster'], method: 'kmeans' },
+      };
+      const explanation = explain(config);
+
+      // plan() emits ML_CLASSIFY + ML_CLUSTER steps — explain() must mention them.
+      expect(explanation).toMatch(/ML Tasks.*classify.*cluster/);
+      expect(explanation).toMatch(/ML Method.*kmeans/);
+    });
+
+    it('should NOT mention ML tasks when ml is disabled', () => {
+      const explanation = explain(testConfig);
+
+      // No ml block → no ML section in narrative.
+      expect(explanation).not.toMatch(/ML Tasks/);
+    });
+
+    it('budget mode should reflect quality+ilp → batch dispatch', () => {
+      const config: Config = {
+        ...testConfig,
+        execution: { profile: 'quality' },
+        algorithm: { name: 'ilp' },
+      };
+      const explanation = explain(config);
+
+      // quality profile + ilp/genetic algorithm → batch mode per planner spec.
+      expect(explanation).toMatch(/Execution Mode.*batch/);
+    });
+  });
+
   describe('explain() - All profiles', () => {
     const profiles = ['fast', 'balanced', 'quality', 'stream', 'research'];
 

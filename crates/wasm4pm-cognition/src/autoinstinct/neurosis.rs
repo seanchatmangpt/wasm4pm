@@ -27,11 +27,21 @@ impl NeuroticState {
 
     /// Process a new semantic input. If it conflicts with strongly held beliefs,
     /// mistrust and anger increase. If it aligns, they decrease.
+    ///
+    /// Invariant: `fear`, `anger`, `mistrust`, and stored belief strengths are
+    /// always finite and in `[0.0, 1.0]` after this call returns, per the
+    /// field docs. Non-finite (NaN/±Inf) and out-of-range inputs are coerced
+    /// to `0.0` and `[0.0, 1.0]` respectively so the invariant holds.
     pub fn process_input(&mut self, concept: &str, incoming_strength: f64) -> String {
+        let incoming_clamped = if incoming_strength.is_finite() {
+            incoming_strength.clamp(0.0, 1.0)
+        } else {
+            0.0
+        };
         let mut response = String::from("neutral");
 
         if let Some(&current_strength) = self.beliefs.get(concept) {
-            let conflict = (current_strength - incoming_strength).abs();
+            let conflict = (current_strength - incoming_clamped).abs();
             if conflict > 0.5 {
                 self.mistrust += 0.1 * conflict;
                 self.anger += 0.2 * conflict;
@@ -39,15 +49,21 @@ impl NeuroticState {
                 response = "defensive".to_string();
             } else {
                 self.mistrust = (self.mistrust - 0.1).max(0.0);
-                self.beliefs.insert(concept.to_string(), (current_strength + incoming_strength) / 2.0);
+                let blended = ((current_strength + incoming_clamped) / 2.0).clamp(0.0, 1.0);
+                self.beliefs.insert(concept.to_string(), blended);
                 response = "accepting".to_string();
             }
         } else {
             // Novel concept, slight mistrust increase for paranoia simulation
             self.mistrust += 0.05;
-            self.beliefs.insert(concept.to_string(), incoming_strength);
+            self.beliefs.insert(concept.to_string(), incoming_clamped);
             response = "curious".to_string();
         }
+
+        // Enforce documented [0.0, 1.0] invariant.
+        self.fear = self.fear.clamp(0.0, 1.0);
+        self.anger = self.anger.clamp(0.0, 1.0);
+        self.mistrust = self.mistrust.clamp(0.0, 1.0);
 
         response
     }
@@ -69,5 +85,38 @@ mod tests {
         let elapsed = start.elapsed();
         // The tests should take 5 seconds maximum
         assert!(elapsed.as_millis() < 5000);
+    }
+
+    /// Rank-1 invariant from the field docs: `fear`, `anger`, `mistrust` MUST
+    /// stay in `[0.0, 1.0]` no matter how many conflicting inputs arrive. The
+    /// pre-clamp code grew these unboundedly, contradicting the public docs.
+    #[test]
+    fn test_neurotic_levels_clamped_under_repeated_conflict() {
+        let mut sys = NeuroticState::new();
+        sys.beliefs.insert("authority".to_string(), 1.0);
+        for _ in 0..1000 {
+            sys.process_input("authority", 0.0); // Maximum conflict each iter.
+        }
+        assert!(sys.fear <= 1.0, "fear={} exceeded 1.0 (docs claim [0,1])", sys.fear);
+        assert!(sys.anger <= 1.0, "anger={} exceeded 1.0 (docs claim [0,1])", sys.anger);
+        assert!(sys.mistrust <= 1.0, "mistrust={} exceeded 1.0 (docs claim [0,1])", sys.mistrust);
+        assert!(sys.fear >= 0.0);
+        assert!(sys.anger >= 0.0);
+        assert!(sys.mistrust >= 0.0);
+    }
+
+    /// Inputs outside [0,1] must not break the invariant either.
+    #[test]
+    fn test_out_of_range_input_does_not_break_invariant() {
+        let mut sys = NeuroticState::new();
+        sys.process_input("novel", f64::INFINITY);
+        sys.process_input("novel", f64::NEG_INFINITY);
+        sys.process_input("novel", f64::NAN);
+        assert!((0.0..=1.0).contains(&sys.fear));
+        assert!((0.0..=1.0).contains(&sys.anger));
+        assert!((0.0..=1.0).contains(&sys.mistrust));
+        for v in sys.beliefs.values() {
+            assert!((0.0..=1.0).contains(v), "belief={} out of [0,1]", v);
+        }
     }
 }

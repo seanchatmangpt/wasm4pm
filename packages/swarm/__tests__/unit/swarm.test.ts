@@ -313,6 +313,144 @@ describe('checkMlConvergence', () => {
   });
 });
 
+// ─── iter-12 regression: NaN/Inf threshold guard (Rank-1 — mathematical invariant) ──────────
+
+describe('checkConvergence — NaN/Inf threshold guard', () => {
+  const makeResult = (hash: string, worker: string) => ({
+    workerId: worker,
+    algorithmId: 'dfg',
+    resultHash: hash,
+    result: {},
+    runAt: '',
+    durationMs: 0,
+  });
+
+  it('NaN threshold must not make swarm permanently non-convergent', () => {
+    // Rank-1: consensusRatio >= NaN is always false in JS, meaning a NaN threshold
+    // causes every convergence check to return converged=false regardless of agreement.
+    // After the fix, NaN is clamped to 1.0, so three workers with identical hashes converge.
+    const results = [makeResult('h1', 'w0'), makeResult('h1', 'w1'), makeResult('h1', 'w2')];
+    const report = checkConvergence(results, 'dfg', NaN);
+    // With three unanimous results and NaN clamped to 1.0, unanimity must still converge.
+    expect(report.converged).toBe(true);
+    expect(report.consensusRatio).toBe(1);
+  });
+
+  it('Infinity threshold must clamp to 1.0 and not prevent convergence of unanimous results', () => {
+    const results = [makeResult('h1', 'w0'), makeResult('h1', 'w1')];
+    const report = checkConvergence(results, 'dfg', Infinity);
+    expect(report.converged).toBe(true);
+    expect(report.consensusRatio).toBe(1);
+  });
+
+  it('negative threshold must clamp to 0 (every single result is convergent)', () => {
+    const results = [makeResult('h1', 'w0'), makeResult('h2', 'w1')];
+    const report = checkConvergence(results, 'dfg', -5);
+    // consensusRatio = 0.5 >= 0 (clamped from -5) → converged
+    expect(report.converged).toBe(true);
+  });
+
+  it('threshold > 1 must clamp to 1.0', () => {
+    // Two workers agree — consensusRatio=1.0. threshold=2.0 clamped to 1.0 → still converges.
+    const results = [makeResult('h1', 'w0'), makeResult('h1', 'w1')];
+    const report = checkConvergence(results, 'dfg', 2.0);
+    expect(report.converged).toBe(true);
+  });
+});
+
+describe('checkMlConvergence — NaN/Inf epsilon and threshold guard', () => {
+  const makeResult = (coeff: number, worker: string) => ({
+    workerId: worker,
+    algorithmId: 'ml_regress',
+    resultHash: `h_${worker}`,
+    result: { coefficient: coeff },
+    runAt: '',
+    durationMs: 0,
+  });
+
+  it('NaN epsilon must not make all comparisons trivially equal', () => {
+    // Rank-1: with NaN epsilon, Math.abs(a-b) <= NaN is always false.
+    // Every pair would be placed in its own group, so no convergence is ever detected.
+    // After the fix, NaN epsilon falls back to 0.01.
+    // Two results within 0.005 of each other must still converge.
+    const results = [makeResult(0.950, 'w0'), makeResult(0.955, 'w1')];
+    const report = checkMlConvergence(results, 'ml_regress', NaN);
+    // 0.955 - 0.950 = 0.005 < fallback epsilon 0.01 → converged
+    expect(report.converged).toBe(true);
+  });
+
+  it('NaN threshold with identical results must still converge', () => {
+    const results = [makeResult(0.9, 'w0'), makeResult(0.9, 'w1')];
+    const report = checkMlConvergence(results, 'ml_regress', 0.01, NaN);
+    expect(report.converged).toBe(true);
+  });
+});
+
+// ─── iter-12 regression: double-push race in checkSwarmConvergence (Rank-1) ─────────────────
+
+describe('checkSwarmConvergence — single-push ring buffer invariant', () => {
+  it('must not converge on the first episode when convergenceRuns=2 (double-push race)', () => {
+    // Rank-1 invariant: with convergenceRuns=2 the ring buffer must hold at least 2
+    // *distinct* episodes before a key is considered stable.
+    // The double-push bug caused the same hash to appear twice in the buffer after a
+    // single call, making hist = ['h1', 'h1'] → Set.size===1 → false stable read.
+    const results = [
+      { workerId: 'w0', algorithmId: 'dfg', resultHash: 'h1', result: {}, runAt: '', durationMs: 0 },
+    ];
+    const history = new Map<string, string[]>();
+
+    const report = checkSwarmConvergence(results, history, 2);
+    // One call = one episode. The ring buffer for 'w0/dfg' should be ['h1'] (length 1).
+    // length 1 < convergenceRuns 2 → not stable yet.
+    expect(report.converged).toBe(false);
+    expect(report.stableWorkers).toHaveLength(0);
+
+    // Verify the ring buffer has exactly ONE entry, not two.
+    const buf = history.get('w0/dfg');
+    expect(buf).toHaveLength(1);
+    expect(buf![0]).toBe('h1');
+  });
+
+  it('ring buffer must hold at most convergenceRuns entries after many calls', () => {
+    // Rank-1: ring buffer bounded by convergenceRuns (shift removes oldest).
+    const results = [
+      { workerId: 'w0', algorithmId: 'dfg', resultHash: 'h1', result: {}, runAt: '', durationMs: 0 },
+    ];
+    const history = new Map<string, string[]>();
+    const runs = 10;
+    for (let i = 0; i < runs; i++) {
+      checkSwarmConvergence(results, history, 3);
+    }
+    const buf = history.get('w0/dfg');
+    // Buffer must never grow beyond convergenceRuns=3
+    expect(buf!.length).toBeLessThanOrEqual(3);
+  });
+});
+
+// ─── iter-12 regression: dominantHash must reflect actual majority (Rank-2) ──────────────────
+
+describe('checkConvergence — dominantHash integrity', () => {
+  it('dominantHash must be the hash held by the plurality, not a positional artifact', () => {
+    // Rank-2 domain contract: dominantHash is defined as "the hash with the highest
+    // worker count". Taking workerResults[0].resultHash is a PR #66 doctrine defect —
+    // it returns a plausible-looking value carrying no majority-agreement signal.
+    const results = [
+      { workerId: 'w0', algorithmId: 'dfg', resultHash: 'minority_hash', result: {}, runAt: '', durationMs: 0 },
+      { workerId: 'w1', algorithmId: 'dfg', resultHash: 'majority_hash', result: {}, runAt: '', durationMs: 0 },
+      { workerId: 'w2', algorithmId: 'dfg', resultHash: 'majority_hash', result: {}, runAt: '', durationMs: 0 },
+    ];
+    // w0 appears first but holds minority_hash. Majority is majority_hash (2/3).
+    const report = checkConvergence(results, 'dfg', 0.5);
+    expect(report.dominantHash).toBe('majority_hash');
+    expect(report.dominantHash).not.toBe('minority_hash');
+  });
+
+  it('dominantHash must be null for empty result set', () => {
+    const report = checkConvergence([], 'dfg');
+    expect(report.dominantHash).toBeNull();
+  });
+});
+
 // ─── Aggregation ────────────────────────────────────────────────────────────────
 
 describe('aggregate', () => {

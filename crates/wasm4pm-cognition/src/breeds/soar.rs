@@ -53,8 +53,12 @@ fn parse_prefs(input: &BreedInput) -> Prefs {
         } else if let Some(rest) = v.strip_prefix("prohibit:") {
             p.prohibit.insert(rest.to_string());
         } else if let Some(rest) = v.strip_prefix("better:") {
-            let parts: Vec<&str> = rest.splitn(2, ':').collect();
-            if parts.len() == 2 {
+            // Use split (not splitn) so malformed "better:a:b:c" yields 3 parts
+            // and is rejected rather than silently parsed as ("a", "b:c").
+            // Candidate IDs are encoded without colons, so any extra colon is
+            // a malformed preference declaration. (Deferred from PR #69.)
+            let parts: Vec<&str> = rest.split(':').collect();
+            if parts.len() == 2 && !parts[0].is_empty() && !parts[1].is_empty() {
                 p.better.push((parts[0].to_string(), parts[1].to_string()));
             }
         }
@@ -229,5 +233,119 @@ impl CognitionBreed for Soar {
             return Err("SOAR must record at least one evaluation step".to_string());
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::breeds::{Candidate, Fact};
+
+    fn make_fact(value: &str) -> Fact {
+        Fact {
+            key: "pref".to_string(),
+            value: value.to_string(),
+        }
+    }
+
+    fn make_cand(id: &str, score: f32) -> Candidate {
+        Candidate {
+            id: id.to_string(),
+            score,
+            eliminated: false,
+            elimination_reason: None,
+        }
+    }
+
+    /// Rank-2 (domain contract): `better:a:b` with exactly two colon-separated
+    /// IDs is well-formed. The 'better' clause MUST be recorded and apply
+    /// dominance during selection.
+    #[test]
+    fn parse_prefs_accepts_well_formed_better_pair() {
+        let input = BreedInput {
+            intent: "soar".into(),
+            candidates: vec![make_cand("a", 0.5), make_cand("b", 0.6)],
+            facts: vec![make_fact("better:a:b")],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let prefs = parse_prefs(&input);
+        assert_eq!(prefs.better.len(), 1, "well-formed pair must be parsed");
+        assert_eq!(prefs.better[0].0, "a");
+        assert_eq!(prefs.better[0].1, "b");
+    }
+
+    /// Rank-2 (domain contract): `better:a:b:c` is MALFORMED — candidate IDs
+    /// are colon-free, so a third colon means the spec is ambiguous. Per the
+    /// fix for deferred-finding #3, malformed prefs MUST be rejected (dropped)
+    /// rather than silently parsed as ("a", "b:c"). This prevents a malformed
+    /// pref from quietly creating a nonexistent "b:c" dominator that has no
+    /// effect, masking the operator's misconfiguration.
+    #[test]
+    fn parse_prefs_rejects_better_with_three_colons() {
+        let input = BreedInput {
+            intent: "soar".into(),
+            candidates: vec![make_cand("a", 0.5), make_cand("b", 0.6)],
+            facts: vec![make_fact("better:a:b:c")],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let prefs = parse_prefs(&input);
+        assert!(
+            prefs.better.is_empty(),
+            "malformed `better:a:b:c` MUST be dropped, not parsed as (\"a\", \"b:c\")"
+        );
+    }
+
+    /// Rank-2 (domain contract): empty operand on either side of `better:` is
+    /// also malformed and MUST be dropped (no half-valid dominance edges).
+    #[test]
+    fn parse_prefs_rejects_better_with_empty_operand() {
+        let input = BreedInput {
+            intent: "soar".into(),
+            candidates: vec![make_cand("a", 0.5)],
+            facts: vec![make_fact("better::b"), make_fact("better:a:")],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let prefs = parse_prefs(&input);
+        assert!(
+            prefs.better.is_empty(),
+            "empty operand MUST be dropped — half-valid dominance edges are invalid"
+        );
+    }
+
+    /// Rank-2 (domain contract): the malformed `better:a:b:c` MUST NOT cause
+    /// candidate `a` to dominate anyone. End-to-end behavioral assertion:
+    /// candidate `b` (highest score) wins because `better:a:b:c` is silently
+    /// dropped — `a` never dominates `b`.
+    #[test]
+    fn run_with_malformed_better_does_not_dominate() {
+        let breed = Soar;
+        let input = BreedInput {
+            intent: "soar".into(),
+            candidates: vec![make_cand("a", 0.3), make_cand("b", 0.9)],
+            facts: vec![make_fact("better:a:b:c")],
+            cases: vec![],
+            rules: vec![],
+            goals: vec![],
+            state: vec![],
+        };
+        let out = breed.run(&input).expect("run ok");
+        // No domination should have occurred — both candidates survive.
+        // With a tie-resolution, the highest-score (b) is the impasse pick.
+        assert_eq!(out.selected.as_deref(), Some("b"));
+        assert!(
+            out.inference_trace
+                .iter()
+                .all(|t| t.kind != "dominate"),
+            "malformed better MUST NOT produce a 'dominate' trace step"
+        );
     }
 }

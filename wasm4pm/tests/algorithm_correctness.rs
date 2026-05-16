@@ -918,3 +918,98 @@ fn inductive_parallel_cut_fires() {
         operators
     );
 }
+
+// ---------------------------------------------------------------------------
+// A* best-tracking regression — iter-12 fix
+// ---------------------------------------------------------------------------
+
+/// Rank-1 mathematical: best-so-far is monotone non-decreasing in max_iterations.
+/// Specifically, max_iterations=1 must NOT return an empty DFG when the log has
+/// fitness-positive edges. Pre-fix bug: `best_dfg` was only updated using the
+/// score of the popped node, so iteration 0 (which pops the empty-seed DFG with
+/// score=0) would set best to empty; on max_iterations=1 the run returned an
+/// empty DFG even though the expansion produced fitness>0 children.
+#[test]
+fn astar_max_iter_1_returns_non_empty_when_fitness_positive() {
+    let log = controlled_log();
+    let (dfg, iters) = discover_astar_from_log(&log, "concept:name", 1);
+    assert_eq!(
+        iters, 1,
+        "A* must consume exactly 1 iteration when budget is 1; got {}",
+        iters
+    );
+    assert!(
+        !dfg.edges.is_empty(),
+        "A* with max_iterations=1 returned 0 edges — regression to score-of-popped-node bug"
+    );
+}
+
+/// Rank-1 monotone: more iterations cannot reduce the produced edge count below
+/// what 1 iteration finds (best-so-far never regresses on a deterministic seed).
+/// This catches lag-by-one-iteration regressions in best-tracking.
+#[test]
+fn astar_more_iter_never_fewer_edges() {
+    let log = controlled_log();
+    let (dfg1, _) = discover_astar_from_log(&log, "concept:name", 1);
+    let (dfg_more, _) = discover_astar_from_log(&log, "concept:name", 20);
+    assert!(
+        dfg_more.edges.len() >= dfg1.edges.len(),
+        "A* @ 20 iter has {} edges < 1 iter has {} edges — best-tracking regressed",
+        dfg_more.edges.len(),
+        dfg1.edges.len()
+    );
+}
+
+// ---------------------------------------------------------------------------
+// PSO pBest position correctness — iter-12 fix
+// ---------------------------------------------------------------------------
+
+/// Rank-2 domain contract: PSO global best is monotone non-decreasing in
+/// iterations on a deterministic seed. Combined with iteration count, this
+/// catches regressions where pBest position is destructively reset.
+///
+/// Pre-fix bug: pBest position was never copied when fitness improved (only
+/// pBest fitness was assigned), and the initial pBest was `HashSet::new()`
+/// (empty). The first iteration's blend-toward-pbest pulled toward an empty
+/// set, dropping 20% of each particle's edges. This is masked from the global
+/// best (which has its own monotone safety net) but degrades quality.
+#[test]
+fn pso_global_best_at_least_as_good_as_initial_spawn() {
+    let log = controlled_log();
+    let (_, f1) = discover_pso_algorithm_from_log(&log, "concept:name", 30, 1)
+        .expect("PSO must succeed");
+    let (_, f50) = discover_pso_algorithm_from_log(&log, "concept:name", 30, 50)
+        .expect("PSO must succeed");
+    assert!(
+        f50 >= f1 - 1e-9,
+        "PSO global-best regressed: 1-iter={:.4} 50-iter={:.4}",
+        f1,
+        f50
+    );
+    assert!(
+        f50 > 0.0,
+        "PSO produced fitness=0 on a non-trivial log — destructive pBest pull?",
+    );
+}
+
+/// Rank-2 domain contract: doubling iterations on a deterministic seed cannot
+/// make the global best worse, AND PSO must achieve > 0 fitness on a
+/// non-trivial multi-variant log.
+#[test]
+fn pso_iterations_improve_global_best() {
+    let log = build_log(&[
+        (10, &["A", "B", "C", "D", "E"]),
+        (10, &["A", "B", "D", "C", "E"]),
+        (5, &["A", "C", "B", "D", "E"]),
+    ]);
+    let (_, f_low) = discover_pso_algorithm_from_log(&log, "concept:name", 30, 2)
+        .expect("PSO must succeed");
+    let (_, f_high) = discover_pso_algorithm_from_log(&log, "concept:name", 30, 50)
+        .expect("PSO must succeed");
+    assert!(
+        f_high >= f_low - 1e-9,
+        "PSO with more iterations regressed: low={:.4} high={:.4}",
+        f_low,
+        f_high
+    );
+}
