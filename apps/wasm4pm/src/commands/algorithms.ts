@@ -1,6 +1,6 @@
 import { defineCommand } from 'citty';
 import { getRegistry } from '@wasm4pm/kernel';
-import { emitResult, makeResult } from '../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
 
@@ -53,10 +53,14 @@ export const algorithms = defineCommand({
     if (tierFilter) {
       const validTiers: Tier[] = ['fast', 'balanced', 'quality', 'stream'];
       if (!validTiers.includes(tierFilter)) {
-        process.stderr.write(
-          `Unknown tier "${tierFilter}". Valid: ${validTiers.join(', ')}\n`
+        const errResult = makeErrorResult(
+          'algorithms',
+          `Unknown tier "${tierFilter}". Valid: ${validTiers.join(', ')}`,
+          EXIT_CODES.config_error,
+          'INVALID_TIER'
         );
-        return await exitWithFlush(EXIT_CODES.config_error);
+        emitResult(errResult, { format, verbose: false, quiet });
+        return await exitWithFlush(errResult.exit_code);
       }
       const [lo, hi] = TIER_SPEED_RANGES[tierFilter];
       all = all.filter((a) => a.speedTier >= lo && a.speedTier <= hi);

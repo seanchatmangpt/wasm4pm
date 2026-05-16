@@ -77,6 +77,53 @@ function deriveLatencyClass(estimatedDurationMs: number): LatencyClass {
 }
 
 /**
+ * Validate WASM-returned quality metrics. Throws if any field is missing or non-finite.
+ *
+ * Sibling fix to PR #82: no silent fallbacks to 0.85/0.8/0.75/100. Per
+ * `.claude/rules/critical-constraints.md`:
+ *
+ *     "FAIL FAST — No silent fallbacks. Errors must propagate visibly."
+ *
+ * If a downstream WASM build (e.g., a stripped `mobile` profile) does not
+ * export the quality fields, callers must see the absence as a defect, not as
+ * a plausible-looking constant. Without this guard, conformance/quality
+ * dashboards would report "fitness=0.85" even when no replay actually ran —
+ * exactly the PR #82 class of bug for the `wasm` backend.
+ */
+function validateQualityMetrics(
+  parsed: Record<string, unknown> | null | undefined,
+  algorithmId: string,
+  context: 'discovery' | 'conformance'
+): { fitness: number; precision: number; generalization: number; simplicity: number } {
+  if (parsed === null || parsed === undefined || typeof parsed !== 'object') {
+    throw new Error(
+      `WasmBackend.${context}(${algorithmId}): WASM returned non-object result; expected quality {fitness, precision, generalization, simplicity}`
+    );
+  }
+  for (const field of ['fitness', 'precision', 'generalization', 'simplicity'] as const) {
+    const v = (parsed as Record<string, unknown>)[field];
+    if (v === undefined || v === null) {
+      throw new Error(
+        `WasmBackend.${context}(${algorithmId}): WASM result missing '${field}'. Rebuild with a profile that exports quality metrics (fog/browser) or use a backend with quality support.`
+      );
+    }
+    const n = Number(v);
+    if (!Number.isFinite(n)) {
+      throw new Error(
+        `WasmBackend.${context}(${algorithmId}): WASM result '${field}' is non-finite (${String(v)}); refusing to silently coerce`
+      );
+    }
+  }
+  const p = parsed as Record<string, unknown>;
+  return {
+    fitness: Number(p.fitness),
+    precision: Number(p.precision),
+    generalization: Number(p.generalization),
+    simplicity: Number(p.simplicity),
+  };
+}
+
+/**
  * WasmBackend: WASM process mining algorithms.
  */
 export class WasmBackend implements MiningBackend {
@@ -173,6 +220,23 @@ export class WasmBackend implements MiningBackend {
 
       const parsed = typeof resultRaw === 'string' ? JSON.parse(resultRaw) : resultRaw;
 
+      // Sibling fix to PR #82: do NOT fabricate quality. Discovery functions
+      // (e.g. discover_dfg) return graph topology only; quality must come from
+      // a real conformance run. If WASM happens to include quality, validate
+      // it strictly (no || 0.85 fallbacks). Otherwise omit the quality field —
+      // it is optional on ModelIR.
+      const hasAnyQuality =
+        parsed &&
+        typeof parsed === 'object' &&
+        (parsed.fitness !== undefined ||
+          parsed.precision !== undefined ||
+          parsed.generalization !== undefined ||
+          parsed.simplicity !== undefined);
+
+      const quality = hasAnyQuality
+        ? validateQualityMetrics(parsed, algorithmId, 'discovery')
+        : undefined;
+
       const modelIr: ModelIR = {
         format_version: '1.0',
         model_type: algorithmId.includes('dfg') ? 'dfg' : 'petri_net',
@@ -188,12 +252,7 @@ export class WasmBackend implements MiningBackend {
         },
         nodes: parsed.nodes || [],
         edges: parsed.edges || [],
-        quality: {
-          fitness: parsed.fitness || 0.85,
-          precision: parsed.precision || 0.8,
-          generalization: parsed.generalization || 0.75,
-          simplicity: parsed.simplicity || 100,
-        },
+        ...(quality !== undefined ? { quality } : {}),
       };
 
       const latency_ms = Date.now() - startMs;
@@ -228,16 +287,22 @@ export class WasmBackend implements MiningBackend {
       const logJson = JSON.stringify(log);
       const logHandle = wasm.load_eventlog_from_json(logJson);
 
+      // Sibling fix to PR #82: require WASM to actually return quality metrics.
+      if (typeof (wasm as Record<string, unknown>).check_token_based_replay !== 'function') {
+        throw new Error(
+          "WasmBackend.conformance: WASM module missing 'check_token_based_replay'. Required for token-replay conformance. Rebuild WASM with the `feature-conformance-basic` flag (profiles: mobile/iot/edge/fog/browser)."
+        );
+      }
       const modelJson = JSON.stringify(model);
       const resultRaw = wasm.check_token_based_replay(logHandle, modelJson, 'concept:name');
       const parsed = typeof resultRaw === 'string' ? JSON.parse(resultRaw) : resultRaw;
 
-      const result: ConformanceResult = {
-        fitness: parsed.fitness ?? 0.85,
-        precision: parsed.precision ?? 0.8,
-        generalization: parsed.generalization ?? 0.75,
-        simplicity: parsed.simplicity ?? 100,
-      };
+      // ConformanceResult fields are all required — no silent fallbacks.
+      const result: ConformanceResult = validateQualityMetrics(
+        parsed,
+        'check_token_based_replay',
+        'conformance'
+      );
 
       const latency_ms = Date.now() - startMs;
 
@@ -335,7 +400,7 @@ export class WasmBackend implements MiningBackend {
   }
 
   private generateUuid(): string {
-    return crypto.randomUUID?.() || `uuid-${Date.now()}-${Math.random()}`;
+    return crypto.randomUUID?.() || `uuid-${Date.now()}-${Math.random()}`; // @lint-allow-fakery — UUID fallback when crypto.randomUUID unavailable
   }
 
   private createProvenance(algorithmId: string, operationType: string): ProvenanceChain {

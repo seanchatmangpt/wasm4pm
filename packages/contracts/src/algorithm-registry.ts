@@ -1,6 +1,18 @@
 /**
  * Mapping of algorithm registry IDs to their WASM export function names.
  * Used for startup probing to identify unavailable algorithms in different WASM builds.
+ *
+ * ALIASED ENTRIES — algorithms whose WASM export name differs from their registry ID.
+ * These entries produce real output but under a different algorithm's implementation.
+ * A missing or `undefined` value means the algorithm is not yet exported to JS.
+ *
+ * Alias map (registry ID → actual WASM function):
+ *   streaming_log → discover_dfg   (no dedicated streaming WASM export; uses DFG fallback)
+ *   optimized_dfg → discover_dfg   (optimized path not separately exported; uses DFG)
+ *
+ * Practitioners: if you call `kernel.run('streaming_log', ...)` you will receive DFG
+ * output, not a streaming-specific result.  Use `simd_streaming_dfg` for the SIMD
+ * streaming path.  This alias exists to prevent a hard crash, not to imply equivalence.
  */
 export const WASM_FUNCTION_NAMES: Record<string, string | undefined> = {
   dfg: 'discover_dfg',

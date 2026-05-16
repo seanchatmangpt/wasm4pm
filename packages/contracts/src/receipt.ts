@@ -94,6 +94,39 @@ export interface Receipt {
 }
 
 /**
+ * Format a Receipt as a human-readable one-liner for practitioner QoL.
+ *
+ * A practitioner glancing at a saved result file should immediately see:
+ *   what ran | what data | how many traces/variants | how long | outcome
+ *
+ * Without this, they must parse 64-char BLAKE3 hex strings to reconstruct context.
+ *
+ * Example output:
+ *   "dfg on xes [342 traces, 8 variants, 47 edges] — 47ms — success [run: a3f8b2c1]"
+ *
+ * The short run_id prefix (8 chars) is enough for log correlation without
+ * overwhelming the terminal line. Full hashes are already in the receipt JSON.
+ */
+export function formatReceipt(receipt: Receipt): string {
+  const runPrefix = receipt.run_id.replace(/-/g, '').slice(0, 8);
+  const { traces_processed, variants_discovered } = receipt.summary;
+  const { nodes, edges } = receipt.model;
+  const alg = receipt.algorithm.name;
+  const durationMs = receipt.duration_ms;
+
+  const tracePart =
+    traces_processed > 0
+      ? `${traces_processed} trace${traces_processed !== 1 ? 's' : ''}, ` +
+        `${variants_discovered} variant${variants_discovered !== 1 ? 's' : ''}`
+      : 'no traces';
+  const modelPart = nodes > 0 ? `, ${nodes} nodes, ${edges} edges` : '';
+  const timePart = durationMs < 1000 ? `${durationMs}ms` : `${(durationMs / 1000).toFixed(1)}s`;
+  const statusGlyph = receipt.status === 'success' ? 'ok' : receipt.status;
+
+  return `${alg} [${tracePart}${modelPart}] — ${timePart} — ${statusGlyph} [run: ${runPrefix}]`;
+}
+
+/**
  * Type guard to check if a value is a valid Receipt
  */
 export function isReceipt(value: unknown): value is Receipt {

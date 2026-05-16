@@ -11,6 +11,13 @@ const FALLBACK_VARIANCE: f64 = 0.5;
 pub struct PcaResult {
     pub eigenvalues: [f64; 2],
     pub explained_variance: [f64; 2],
+    /// Cumulative explained variance ratio: [explained_variance[0], explained_variance[0] + explained_variance[1]].
+    /// Standard PCA report field — answers "how much variance do the first k components explain?".
+    /// cumulative_variance[1] is always 1.0 (within FP precision) when total variance > 0.
+    pub cumulative_variance: [f64; 2],
+    /// Total covariance trace = sum of eigenvalues = sum of feature variances.
+    /// Surfaces the absolute scale; explained_variance is normalized, total is not.
+    pub total_variance: f64,
 }
 
 #[wasm_bindgen]
@@ -46,6 +53,8 @@ pub fn discover_ml_pca(eventlog_handle: &str, activity_key: &str) -> Result<JsVa
         "algorithm": "ml_pca",
         "components": 2,
         "explained_variance": result.explained_variance,
+        "cumulative_variance": result.cumulative_variance,
+        "total_variance": result.total_variance,
         "eigenvalues": result.eigenvalues
     }))
 }
@@ -57,6 +66,8 @@ pub fn pca_internal(features: &[[f64; 2]]) -> PcaResult {
         return PcaResult {
             eigenvalues: [0.0, 0.0],
             explained_variance: [0.0, 0.0],
+            cumulative_variance: [0.0, 0.0],
+            total_variance: 0.0,
         };
     }
 
@@ -118,16 +129,26 @@ pub fn pca_internal(features: &[[f64; 2]]) -> PcaResult {
 
     let eigenvalues = eigen_decomposition_2x2(cov_00, cov_01, cov_11);
     let total_var = eigenvalues[0] + eigenvalues[1];
-    
+
     let explained_variance = if total_var > 0.0 {
         [eigenvalues[0] / total_var, eigenvalues[1] / total_var]
     } else {
         [FALLBACK_VARIANCE, FALLBACK_VARIANCE]
     };
 
+    // Cumulative variance ratio: components are sorted descending by
+    // eigen_decomposition_2x2 (lambda1 >= lambda2). cumulative_variance[1]
+    // saturates at 1.0 in both the normal and degenerate-fallback paths.
+    let cumulative_variance = [
+        explained_variance[0],
+        explained_variance[0] + explained_variance[1],
+    ];
+
     PcaResult {
         eigenvalues,
         explained_variance,
+        cumulative_variance,
+        total_variance: total_var,
     }
 }
 
@@ -197,5 +218,32 @@ mod tests {
         let features = vec![[1.0, 1.0]];
         let result = pca_internal(&features);
         assert_eq!(result.eigenvalues, [0.0, 0.0]);
+        assert_eq!(result.cumulative_variance, [0.0, 0.0]);
+        assert_eq!(result.total_variance, 0.0);
+    }
+
+    // Rank-2 domain-contract tests for cumulative_variance + total_variance.
+
+    /// Domain contract: components are sorted descending, so cumulative_variance
+    /// is monotonically non-decreasing and reaches 1.0 over all components.
+    #[test]
+    fn cumulative_variance_is_monotonic_and_reaches_one() {
+        let features = vec![[1.0, 0.5], [2.0, 1.2], [3.0, 1.8], [4.0, 2.7], [5.0, 3.1]];
+        let r = pca_internal(&features);
+        assert!(r.cumulative_variance[1] >= r.cumulative_variance[0],
+            "cumulative variance must be non-decreasing");
+        assert!((r.cumulative_variance[1] - 1.0).abs() < 1e-9,
+            "cumulative variance over all components must equal 1.0, got {}",
+            r.cumulative_variance[1]);
+        assert!((r.cumulative_variance[0] - r.explained_variance[0]).abs() < 1e-12);
+    }
+
+    /// Domain contract: total_variance equals trace(cov). For y=x on (1..5),
+    /// each variable has sample variance 2.5 (n-1 divisor), so trace = 5.0.
+    #[test]
+    fn total_variance_equals_covariance_trace() {
+        let r = pca_internal(&[[1.0, 1.0], [2.0, 2.0], [3.0, 3.0], [4.0, 4.0], [5.0, 5.0]]);
+        assert!((r.total_variance - 5.0).abs() < 1e-9, "got {}", r.total_variance);
+        assert!((r.cumulative_variance[0] - 1.0).abs() < 1e-9);
     }
 }

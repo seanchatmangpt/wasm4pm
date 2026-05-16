@@ -5,6 +5,7 @@ import { CognitionError } from '../errors.js';
 import type { SpanSink } from '../observability-types.js';
 import { defaultSpanSink, hexId } from '../span-utils.js';
 import type { ReplayRecord } from '../types.js';
+import { assertReplayRecord } from '../contract/guard.js';
 
 export interface ReplayOptions {
   spanSink?: SpanSink;
@@ -36,7 +37,8 @@ export async function replayReceipt(
         { cause: e },
       );
     }
-    return parsed as ReplayRecord;
+    // Refuses missing run_id/output_hash per wasm.rs:235-243.
+    return assertReplayRecord(parsed);
   } catch (err) {
     status = 'ERROR';
     errMsg = err instanceof Error ? err.message : String(err);

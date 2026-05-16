@@ -237,12 +237,21 @@ function printHumanSocial(
     const centralityScores = centrality.scores as Record<string, number>;
     if (centralityScores) {
       const sorted = Object.entries(centralityScores).sort((a, b) => b[1] - a[1]);
-      projection.log('  Centrality scores (top 10):');
+      const maxScore = sorted[0]?.[1] ?? 1;
+      projection.log('  Centrality scores — bar shows score relative to top hub:');
       for (const [resource, score] of sorted.slice(0, 10)) {
-        projection.log(`    ${resource}: ${score.toFixed(3)}`);
+        const ratio = Math.min(1, score / Math.max(maxScore, 0.0001));
+        const filled = Math.round(ratio * 8);
+        const bar = '▓'.repeat(filled) + '░'.repeat(8 - filled);
+        const label = resource === sorted[0]?.[0] ? '  <- central hub' : '';
+        projection.log(`    ${bar} ${resource}: ${score.toFixed(3)}${label}`);
       }
       if (sorted.length > 10) {
         projection.log(`    ... and ${sorted.length - 10} more resources`);
+      }
+      if (sorted[0]) {
+        projection.log('');
+        projection.log(`  Next step: "${sorted[0][0]}" has the highest centrality (${sorted[0][1].toFixed(3)}). This resource is a coordination hub — a bottleneck or single point of failure. Consider load-balancing or cross-training.`);
       }
       projection.log('');
     }

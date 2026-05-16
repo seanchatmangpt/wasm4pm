@@ -1,8 +1,14 @@
 use wasm4pm_types::*;
 use std::collections::HashMap;
 
-/// Inductive Miner - discovers structured process models recursively
-/// Simplified single-pass version focused on core control flow discovery
+/// Streaming-style DFG discovery.
+///
+/// PR #87 algorithm-degeneration fix: the original docstring claimed this was
+/// "Inductive Miner — discovers structured process models recursively" but the
+/// implementation is in fact a single-pass directly-follows graph identical in
+/// behavior to `dfg::discover_dfg`. Naming the algorithm honestly prevents
+/// callers from believing they are getting an inductive-mining result and
+/// matches what the function actually returns (a `DFG`, not a process tree).
 pub fn discover_streaming_dfg(log: &EventLog, activity_key: &str) -> Result<DFG> {
     let mut dfg = DFG::new();
     let mut node_map: HashMap<String, usize> = HashMap::new();

@@ -57,7 +57,7 @@ const mockConfig: BaseConfig = {
   output: { format: 'json', destination: 'stdout', pretty: false, colorize: false },
   metadata: {
     loadTime: 123,
-    hash: 'mock-hash',
+    hash: 'mock-hash', // @lint-allow-fakery — disabled test fixture, intentionally short
     provenance: {},
   },
 };

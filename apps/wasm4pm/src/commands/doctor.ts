@@ -2501,6 +2501,10 @@ export const doctorWatch = defineCommand({
     const quiet = Boolean(ctx.args.quiet);
     const onFail = ctx.args['on-fail'] as string | undefined;
     let intervalSec = parseInt((ctx.args.interval as string) ?? '30', 10);
+    // Guard against NaN (non-numeric --interval value): parseInt returns NaN for
+    // strings like "bad". NaN < 5 is false, so the minimum guard would be bypassed
+    // and setTimeout(NaN) fires at ~1ms — a busy loop. Default to 30 instead.
+    if (!Number.isFinite(intervalSec)) intervalSec = 30;
 
     const p = new ConsoleProjection({ verbose, quiet });
 
@@ -2624,6 +2628,8 @@ export const doctorWatch = defineCommand({
       ),
       { format, verbose, quiet }
     );
+
+    return await exitWithFlush(EXIT_CODES.success);
   },
 });
 

@@ -245,16 +245,26 @@ function printHumanTemporal(
   projection.log('');
 
   if (activityDurations) {
-    projection.log('  Activity durations (ms):');
     const durations = activityDurations.durations as Record<
       string,
       { mean: number; min: number; max: number; median: number }
     >;
     if (durations) {
-      for (const [activity, stats] of Object.entries(durations).slice(0, 10)) {
+      const entries = Object.entries(durations).sort((a, b) => b[1].mean - a[1].mean);
+      const maxMean = entries[0]?.[1]?.mean ?? 1;
+      projection.log('  Activity durations (ms) — bar shows mean relative to slowest:');
+      for (const [activity, stats] of entries.slice(0, 10)) {
+        const ratio = Math.min(1, stats.mean / Math.max(maxMean, 0.001));
+        const filled = Math.round(ratio * 8);
+        const bar = '▓'.repeat(filled) + '░'.repeat(8 - filled);
+        const isBottleneck = activity === entries[0]?.[0] ? '  <- bottleneck' : '';
         projection.log(
-          `    ${activity}: mean=${stats.mean.toFixed(1)}, min=${stats.min.toFixed(1)}, max=${stats.max.toFixed(1)}, median=${stats.median.toFixed(1)}`
+          `    ${bar} ${activity}: mean=${stats.mean.toFixed(1)}, min=${stats.min.toFixed(1)}, max=${stats.max.toFixed(1)}, median=${stats.median.toFixed(1)}${isBottleneck}`
         );
+      }
+      if (entries[0]) {
+        projection.log('');
+        projection.log(`  Next step: investigate "${entries[0][0]}" — highest mean duration (${entries[0][1].mean.toFixed(1)}ms). Check for waiting time, retries, or resource contention.`);
       }
     }
     projection.log('');

@@ -5,6 +5,7 @@ import { WasmLoader } from '@wasm4pm/engine';
 import { getRegistry } from '@wasm4pm/kernel';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
+import { withSpan } from './_otel.js';
 import { runDiscovery, ALGORITHMS, type Algorithm } from './run.js';
 
 const BANNER = `
@@ -263,6 +264,7 @@ export const repl = defineCommand({
     },
   },
   async run(ctx) {
+    return withSpan('repl', { algorithm: String(ctx.args.algorithm ?? ''), input: String(ctx.args.load ?? '') }, async () => {
     // Init WASM once — all subsequent commands reuse the loaded module
     const loader = WasmLoader.getInstance();
     await loader.init();
@@ -308,5 +310,6 @@ export const repl = defineCommand({
     rl.close();
     out('\n  goodbye');
     return await exitWithFlush(EXIT_CODES.success);
+    }); // end withSpan
   },
 });

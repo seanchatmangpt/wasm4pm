@@ -99,6 +99,8 @@ describe('Instrumentation', () => {
       expect(event.algorithmName).toBe('dijkstra');
       expect(otelEvent.name).toBe('algorithm.dijkstra');
       expect(otelEvent.attributes['algorithm.name']).toBe('dijkstra');
+      // algorithm.profile must always be present so spans are comparable across profiles
+      expect(otelEvent.attributes['algorithm.profile']).toBe(requiredAttrs['execution.profile']);
 
       const spanId = Instrumentation.generateSpanId();
       const completedEvent = Instrumentation.createAlgorithmCompletedEvent(
@@ -369,6 +371,16 @@ describe('Instrumentation', () => {
       expect(confComplete.attributes['conformance.generalization']).toBe(0.81);
       expect(confComplete.attributes['conformance.simplicity']).toBe(0.78);
       expect(confComplete.status?.code).toBe('OK');
+
+      // All four Van der Aalst quality dimensions must always be present even when
+      // not computed — default sentinel -1 distinguishes "not measured" from 0.0.
+      const confPartial = Instrumentation.createConformanceCheckCompletedEvent(
+        traceId, confStart.event.spanId, 'token_replay', requiredAttrs, {}
+      );
+      expect(confPartial.attributes['conformance.fitness']).toBe(-1);
+      expect(confPartial.attributes['conformance.precision']).toBe(-1);
+      expect(confPartial.attributes['conformance.generalization']).toBe(-1);
+      expect(confPartial.attributes['conformance.simplicity']).toBe(-1);
     });
   });
 

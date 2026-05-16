@@ -1,8 +1,24 @@
 /**
- * Agent 2: Algorithm Discovery
+ * Agent 2: Algorithm Discovery (TESTING HARNESS — SIMULATED METRICS)
  *
- * Runs all 15 process discovery algorithms on same event log.
- * Ranks by fitness, precision, simplicity, generalization (van der Aalst metrics).
+ * This class orchestrates 15 discovery algorithms against the same OCEL event log
+ * and ranks results by the four van der Aalst quality dimensions:
+ *   fitness, precision, simplicity, generalization.
+ *
+ * WARNING — SIMULATED QUALITY METRICS:
+ *   The quality values returned by `discoverWithAllAlgorithms` (fitness, precision,
+ *   simplicity, generalization) are APPROXIMATIONS derived from log size and random
+ *   variance, NOT measurements produced by real token-replay or alignment computation.
+ *   They exist so the test harness can exercise the ranking and reporting pipeline
+ *   without requiring a live WASM instance.
+ *
+ *   Do NOT use these values as ground truth in production conformance decisions.
+ *   For real quality measurement, call the WASM kernel directly via `@wasm4pm/kernel`
+ *   and use the `alignments` or `etconformance_precision` algorithms.
+ *
+ *   Fields affected: `AlgorithmResult.fitness`, `.precision`, `.simplicity`,
+ *   `.generalization`.  The `executionTimeMs` field is also synthetic — it includes
+ *   a `Math.random()` component and is not wall-clock accurate.
  */
 
 import type { OcelEventLog } from './ocel-harvester';
@@ -16,6 +32,13 @@ export interface AlgorithmResult {
   executionTimeMs: number;
   edgeCount: number;
   transitionCount: number;
+  /**
+   * True when quality metrics (fitness, precision, simplicity, generalization)
+   * were computed by the simulation approximation rather than by actual WASM
+   * token-replay or alignment.  Always true for results from this harness.
+   * Check this flag before using quality values in conformance decisions.
+   */
+  simulated: boolean;
 }
 
 export interface DiscoveryResults {
@@ -84,10 +107,10 @@ export class AlgorithmDiscovery {
         precision: profile.precisionNorm,
         simplicity: profile.simplicityNorm,
         generalization,
-        // wall time from performance.now() plus the declared per-algorithm cost constant
-        executionTimeMs: Math.max(1, endTime - startTime + profile.speedMs),
-        edgeCount: Math.floor(activities.size * (profile.qualityNorm + 0.5)),
-        transitionCount: Math.floor(traces.size * profile.qualityNorm),
+        executionTimeMs: Math.max(1, endTime - startTime + executionTime),
+        edgeCount: Math.floor(activities.size * (fitness + 0.5)),
+        transitionCount: Math.floor(traces.size * fitness),
+        simulated: true, // Metrics are approximations — not real token-replay values
       };
 
       results.push(result);

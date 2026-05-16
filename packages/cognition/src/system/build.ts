@@ -5,6 +5,7 @@ import { CognitionError } from '../errors.js';
 import type { SpanSink } from '../observability-types.js';
 import { defaultSpanSink, hexId } from '../span-utils.js';
 import type { SystemBuildResult, SystemIntent } from '../types.js';
+import { assertSystemBuildResult } from '../contract/guard.js';
 
 export interface SystemBuildOptions {
   spanSink?: SpanSink;
@@ -48,7 +49,8 @@ export async function buildSystem(
         { cause: e },
       );
     }
-    return parsed as SystemBuildResult;
+    // Refuses legacy `candidates` shape per wasm.rs:287-290.
+    return assertSystemBuildResult(parsed);
   } catch (err) {
     status = 'ERROR';
     errMsg = err instanceof Error ? err.message : String(err);
