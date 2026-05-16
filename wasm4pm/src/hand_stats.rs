@@ -16,6 +16,15 @@ pub struct DataContainer {
 
 impl DataContainer {
     /// Create a new DataContainer from a Vec<f64>
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use wasm4pm::hand_stats::DataContainer;
+    /// let d = DataContainer::new(vec![1.0, 3.0, 5.0]);
+    /// assert_eq!(d.mean(), 3.0);
+    /// assert_eq!(d.median(), 3.0);
+    /// ```
     pub fn new(data: Vec<f64>) -> Self {
         Self { data }
     }
@@ -89,6 +98,14 @@ pub fn median(data: &mut [f64]) -> Option<f64> {
 }
 
 /// Calculate mean of a slice of f64 values
+///
+/// # Examples
+///
+/// ```
+/// use wasm4pm::hand_stats::mean;
+/// assert_eq!(mean(&[1.0, 2.0, 3.0, 4.0, 5.0]), Some(3.0));
+/// assert_eq!(mean(&[]), None);
+/// ```
 pub fn mean(data: &[f64]) -> Option<f64> {
     if data.is_empty() {
         return None;
@@ -122,6 +139,16 @@ pub fn percentile(data: &mut [f64], p: f64) -> Option<f64> {
 }
 
 /// Calculate standard deviation of a slice
+///
+/// # Examples
+///
+/// ```
+/// use wasm4pm::hand_stats::std_deviation;
+/// // Classic dataset: mean=5, population std dev=2
+/// let s = std_deviation(&[2.0, 4.0, 4.0, 4.0, 5.0, 5.0, 7.0, 9.0]).unwrap();
+/// assert!((s - 2.0).abs() < 1e-10, "expected 2.0, got {s}");
+/// assert_eq!(std_deviation(&[]), None);
+/// ```
 pub fn std_deviation(data: &[f64]) -> Option<f64> {
     if data.is_empty() {
         return None;

@@ -1,3 +1,16 @@
+//! Statistical analysis functions for event logs stored in the handle cache.
+//!
+//! Functions in this module operate on handles returned by `load_eventlog_from_xes()`
+//! and return JSON strings that must be `JSON.parse()`d on the JS side.
+//!
+//! ## Available analyses
+//!
+//! | Function | Output |
+//! |---|---|
+//! | `analyze_event_statistics` | `{ total_cases, total_events, avg_events_per_case }` |
+//! | `analyze_case_duration` | `{ min_ms, max_ms, mean_ms, median_ms, p95_ms }` |
+//! | `analyze_dotted_chart` | `{ events[] }` for timeline visualization |
+
 use crate::error::{codes, wasm_err};
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js_str;
