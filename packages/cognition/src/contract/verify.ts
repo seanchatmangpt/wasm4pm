@@ -5,6 +5,7 @@ import { CognitionError } from '../errors.js';
 import type { SpanSink } from '../observability-types.js';
 import { defaultSpanSink, hexId } from '../span-utils.js';
 import type { ContractResult, VerifyResult } from '../types.js';
+import { assertVerifyResult } from './guard.js';
 
 export interface VerifyOptions {
   spanSink?: SpanSink;
@@ -48,7 +49,8 @@ export async function verifyContract(
         { cause: e },
       );
     }
-    return parsed as VerifyResult;
+    // Field-contract guard — refuses phantom 'rejected' status.
+    return assertVerifyResult(parsed);
   } catch (err) {
     status = 'ERROR';
     errMsg = err instanceof Error ? err.message : String(err);

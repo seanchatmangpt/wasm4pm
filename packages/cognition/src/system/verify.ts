@@ -5,6 +5,7 @@ import { CognitionError } from '../errors.js';
 import type { SpanSink } from '../observability-types.js';
 import { defaultSpanSink, hexId } from '../span-utils.js';
 import type { SystemArtifact, SystemVerifyResult } from '../types.js';
+import { assertSystemVerifyResult } from '../contract/guard.js';
 
 export interface SystemVerifyOptions {
   spanSink?: SpanSink;
@@ -49,7 +50,8 @@ export async function verifySystem(
         { cause: e },
       );
     }
-    return parsed as SystemVerifyResult;
+    // Refuses unknown status; tolerates legacy 'ok' (see guard.ts).
+    return assertSystemVerifyResult(parsed);
   } catch (err) {
     status = 'ERROR';
     errMsg = err instanceof Error ? err.message : String(err);
