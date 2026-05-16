@@ -24,7 +24,14 @@ export interface BootstrapResult {
 }
 
 /**
- * Bootstraps the engine by loading WASM and initializing the kernel
+ * Bootstraps the engine by loading WASM and initializing the kernel.
+ *
+ * Failure semantics: if kernel.init() fails or the kernel does not become
+ * ready, the WASM loader is rolled back via softReset() so a subsequent
+ * recovery does not observe a "half-initialized" engine where WASM looks
+ * ready but kernel state is broken. This guarantees bootstrap is atomic
+ * from the engine's perspective.
+ *
  * @throws Error if WASM loading or kernel initialization fails
  */
 export async function bootstrapEngine(
@@ -33,16 +40,29 @@ export async function bootstrapEngine(
 ): Promise<BootstrapResult> {
   const startTime = Date.now();
 
-  // Initialize WASM module
+  // Stage 1: WASM module — failure here is a clean abort (loader not flipped to initialized)
   await wasmLoader.init();
   const wasmModule = wasmLoader.get();
 
-  // Initialize kernel
-  await kernel.init();
-
-  // Verify kernel is ready
-  if (!kernel.isReady()) {
-    throw new Error('Kernel initialization failed: kernel not ready');
+  // Stage 2: Kernel — if this fails after WASM came up, we must roll back so
+  // wasmLoader.isInitialized() does not return true for a broken engine.
+  try {
+    await kernel.init();
+    if (!kernel.isReady()) {
+      throw new Error('Kernel initialization failed: kernel not ready');
+    }
+  } catch (err) {
+    // Roll back the WASM loader so the engine can re-bootstrap cleanly.
+    // softReset() preserves the compiled module (cheap re-init) but clears
+    // the initialized flag, matching the semantic that bootstrap did not
+    // succeed end-to-end.
+    try {
+      wasmLoader.softReset();
+    } catch {
+      // Swallow softReset failures: the original kernel error is the
+      // load-bearing diagnostic. We do not want to mask it.
+    }
+    throw err;
   }
 
   return {
