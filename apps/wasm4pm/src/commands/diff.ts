@@ -99,6 +99,10 @@ export const diff = defineCommand({
       description: 'Suppress non-error output',
       alias: 'q',
     },
+    'no-save': {
+      type: 'boolean',
+      description: 'Skip auto-save and BLAKE3 receipt',
+    },
   },
   async run(ctx) {
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
