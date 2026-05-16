@@ -1481,16 +1481,30 @@ export class Instrumentation {
   }
 
   /**
-   * Generate a W3C-compliant span ID (16 hex chars)
+   * Generate a W3C-compliant span ID (16 hex chars = 8 random bytes).
+   * Uses crypto.getRandomValues when available (Node >= 19, all browsers).
+   * Falls back to Math.random only in environments with no Web Crypto API.
    */
   static generateSpanId(): string {
+    if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.getRandomValues) {
+      const bytes = new Uint8Array(8);
+      globalThis.crypto.getRandomValues(bytes);
+      return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+    }
     return Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
   }
 
   /**
-   * Generate a W3C-compliant trace ID (32 hex chars)
+   * Generate a W3C-compliant trace ID (32 hex chars = 16 random bytes).
+   * Uses crypto.getRandomValues when available (Node >= 19, all browsers).
+   * Falls back to Math.random only in environments with no Web Crypto API.
    */
   static generateTraceId(): string {
+    if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.getRandomValues) {
+      const bytes = new Uint8Array(16);
+      globalThis.crypto.getRandomValues(bytes);
+      return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+    }
     return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
   }
 
