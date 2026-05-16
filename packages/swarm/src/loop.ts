@@ -67,27 +67,34 @@ export async function runSwarm(config: SwarmConfig): Promise<SwarmArtifact> {
           workerSpecs.map((spec) => runWorker(spec, config))
         );
 
-        // Update hash history ring buffer
-        for (const result of workerResults) {
-          const key = `${result.workerId}/${result.algorithmId}`;
-          const hist = hashHistory.get(key) ?? [];
-          hist.push(result.resultHash);
-          if (hist.length > convergenceRuns) hist.shift();
-          hashHistory.set(key, hist);
-        }
-
-        // Check swarm-level convergence
+        // Check swarm-level convergence.
+        // checkSwarmConvergence owns the hashHistory ring-buffer — do NOT pre-push here.
+        // Pre-pushing caused each hash to appear twice per episode, making the ring buffer
+        // report false stability after a single episode (double-push race, PR #64 class).
         const { converged, stableWorkers, unstableWorkers, agreementRate } = checkSwarmConvergence(
           workerResults,
           hashHistory,
           convergenceRuns
         );
 
+        // Derive dominantHash by actual majority frequency, not by positional first worker.
+        // Taking workerResults[0].resultHash is the PR #66 doctrine defect: a plausible-looking
+        // value that carries no majority-agreement signal when workers disagree.
+        const hashFreq = new Map<string, number>();
+        for (const r of workerResults) {
+          hashFreq.set(r.resultHash, (hashFreq.get(r.resultHash) ?? 0) + 1);
+        }
+        let dominantHash: string | null = null;
+        let maxFreq = 0;
+        for (const [h, freq] of hashFreq) {
+          if (freq > maxFreq) { maxFreq = freq; dominantHash = h; }
+        }
+
         const convergenceReport = {
           algorithm: workerSpecs[0]?.algorithmId ?? 'unknown',
           converged,
           consensusRatio: agreementRate,
-          dominantHash: workerResults[0]?.resultHash ?? null,
+          dominantHash,
           dissentingWorkers: unstableWorkers,
           totalChecked: workerResults.length,
         };
