@@ -78,7 +78,13 @@ export const validate = defineCommand({
       activity_key: String(ctx.args['activity-key'] ?? 'concept:name'),
     }, async () => {
     const t0 = performance.now();
-    const outFmt = (ctx.args['output-format'] as string | undefined) ?? 'human';
+    // --output-format is authoritative. If absent and --format is 'json' or 'human',
+    // treat it as the output format (consistent with all other wpm commands that use
+    // --format for output). When --format is 'xes' or 'csv' it is the log format and
+    // the output format defaults to human.
+    const outFmtExplicit = (ctx.args['output-format'] as string | undefined);
+    const logFmtRaw = (ctx.args['format'] as string | undefined) ?? 'xes';
+    const outFmt = outFmtExplicit ?? (logFmtRaw === 'json' || logFmtRaw === 'human' ? logFmtRaw : 'human');
     const format = (outFmt === 'json' ? 'json' : 'human') as 'json' | 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
