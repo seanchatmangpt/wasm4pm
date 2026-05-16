@@ -460,6 +460,19 @@ mod tests {
 
     #[test]
     fn test_action_retry_computes_exponential_backoff() {
+        // Deterministic jitter: seed fastrand so the per-thread RNG yields a
+        // reproducible value for `fastrand::u32(0..=base_backoff_ms)` inside
+        // action_retry. Previously this test compared `delay_ms` against a
+        // hardcoded value, which was flaky because the jitter range is
+        // [0, base_backoff_ms] inclusive. Fixed forward per PRs #54 / #70.
+        //
+        // Oracle (Rank-1): for retry_count=2, base_backoff_ms=1000,
+        //   exponential = 1000 * 2^2 = 4000
+        //   jitter      ∈ [0, 1000]
+        //   total       ∈ [4000, 5000]
+        // Cap at 60_000ms applies but does not bind here.
+        fastrand::seed(0x_F1ACE_AA55_u64);
+
         let context = ExecutionContext {
             retry_count: 2,
             base_backoff_ms: 1000,
@@ -472,8 +485,16 @@ mod tests {
 
         if let DispatchOutcome::RetryInitiated { attempt, delay_ms } = result.unwrap() {
             assert_eq!(attempt, 3); // next attempt
-                                    // Exponential: 1000 * 2^2 = 4000 + jitter(500) = 4500
-            assert_eq!(delay_ms, 4500);
+            // Bounded Rank-1 oracle: delay must lie inside the closed
+            // [exponential, exponential + base_backoff_ms] window. This is
+            // strictly stronger than the old hardcoded 4500 check (which
+            // only sampled one point of the distribution) AND survives
+            // re-seeding refactors.
+            assert!(
+                (4000..=5000).contains(&delay_ms),
+                "delay_ms={} outside Bellman-style backoff envelope [4000, 5000]",
+                delay_ms
+            );
         } else {
             panic!("Expected RetryInitiated outcome");
         }
