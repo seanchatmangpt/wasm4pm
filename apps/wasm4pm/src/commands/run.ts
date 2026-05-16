@@ -28,7 +28,7 @@ export interface RunOptions {
 }
 
 /** All algorithms supported by wpm run, mapped to their WASM discovery functions. */
-const ALGORITHMS = [
+export const ALGORITHMS = [
   'dfg',
   'alpha',
   'heuristic',
@@ -48,13 +48,13 @@ const ALGORITHMS = [
   'smart-engine',
 ] as const;
 
-type Algorithm = (typeof ALGORITHMS)[number];
+export type Algorithm = (typeof ALGORITHMS)[number];
 
 /**
  * Invoke the appropriate WASM discovery function for the given algorithm.
  * Reuses the dispatch table pattern from compare.ts.
  */
-function runDiscovery(
+export function runDiscovery(
   wasm: Record<string, any>,
   algo: Algorithm,
   logHandle: string,

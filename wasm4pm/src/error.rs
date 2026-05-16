@@ -30,9 +30,55 @@ pub enum Wasm4pmError {
     HandleNotFound(String),
 }
 
+impl Wasm4pmError {
+    /// Machine-readable error code for JS switch/dispatch.
+    pub fn code(&self) -> &'static str {
+        match self {
+            Self::Parse(_) => "PARSE_ERROR",
+            Self::Validation(_) => "VALIDATION_ERROR",
+            Self::BinaryFormat(_) => "BINARY_FORMAT_ERROR",
+            Self::Algorithm { .. } => "ALGORITHM_ERROR",
+            Self::HandleNotFound(_) => "HANDLE_NOT_FOUND",
+        }
+    }
+
+    /// Human-readable remediation hint for JS callers — how to fix the error.
+    /// Returns `None` for variants where the message is already self-explanatory.
+    pub fn remediation(&self) -> Option<&'static str> {
+        match self {
+            Self::HandleNotFound(_) => Some(
+                "Create a fresh handle via load_eventlog_from_xes() or \
+                 load_eventlog_from_binary() and pass it here.",
+            ),
+            Self::Parse(_) => Some(
+                "Verify the input is valid syntax. \
+                 For POWL: see parse_powl_model_string docs. \
+                 For XES: validate against the XES schema.",
+            ),
+            Self::BinaryFormat(_) => Some(
+                "Re-export the event log to binary format via export_eventlog_to_binary() \
+                 and retry.",
+            ),
+            Self::Validation(_) | Self::Algorithm { .. } => None,
+        }
+    }
+}
+
 impl From<Wasm4pmError> for JsValue {
+    /// Converts to a structured JSON object `{code, message, remediation?}`.
+    /// Callers can switch on `code` for typed error handling in JS/TS.
     fn from(e: Wasm4pmError) -> JsValue {
-        js_val(&e.to_string())
+        let msg = e.to_string().replace('"', "\\\"");
+        let json = match e.remediation() {
+            Some(r) => format!(
+                r#"{{"code":"{}","message":"{}","remediation":"{}"}}"#,
+                e.code(),
+                msg,
+                r
+            ),
+            None => format!(r#"{{"code":"{}","message":"{}"}}"#, e.code(), msg),
+        };
+        js_val(&json)
     }
 }
 

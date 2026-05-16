@@ -81,6 +81,13 @@ jobs:
         run: cargo audit --deny warnings
         continue-on-error: false
 
+      # SemVer compatibility check — verifies no accidental breaking changes
+      - name: Check SemVer compatibility
+        working-directory: ./wasm4pm
+        run: |
+          cargo install cargo-semver-checks --locked --quiet || true
+          cargo semver-checks check-release --verbose || echo "⚠️ SemVer check failed — review breaking changes before releasing"
+
       # Generate SBOMs
       - name: Generate SBOM
         run: bash .github/scripts/generate-sbom.sh

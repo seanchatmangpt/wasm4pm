@@ -70,6 +70,8 @@ simd-json = "0.13"
 lazy_static = "1.4"
 fake = { workspace = true }
 proptest = { workspace = true }
+insta = { version = "1", features = ["json"] }
+wasm-bindgen-test = "0.3"
 
 [[bench]]
 name = "fast_algorithms"

@@ -1,0 +1,26 @@
+---
+source: wasm4pm/tests/autonomic_loop_tests.rs
+expression: rounded
+---
+[
+    (
+        "normal_healthy",
+        0.3,
+    ),
+    (
+        "degraded_recovering",
+        1.1,
+    ),
+    (
+        "critical_worsening",
+        -3.0,
+    ),
+    (
+        "terminal_transition",
+        -2.9,
+    ),
+    (
+        "latency_penalty",
+        0.0,
+    ),
+]

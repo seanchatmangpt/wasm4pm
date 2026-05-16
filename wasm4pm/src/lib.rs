@@ -835,6 +835,15 @@ pub fn autonomic_execute_cycle(
 ) -> Result<String, JsValue> {
     let state = get_or_init_state();
 
+    // Distributed tracing: top-level span for the full MAPE-K cycle.
+    // Zero-cost when no subscriber is attached (native tests, WASM with no tracing-web).
+    let _cycle_span = tracing::info_span!(
+        "autonomic.cycle",
+        log_handle = log_handle,
+        activity_key = activity_key,
+    )
+    .entered();
+
     // -----------------------------------------------------------------------
     // Timing instrumentation
     // -----------------------------------------------------------------------
@@ -1224,6 +1233,7 @@ pub fn autonomic_execute_cycle(
             serde_json::json!(if causes.is_empty() { "OK" } else { "ALERT" }),
         );
         for c in &causes {
+            tracing::warn!(target: "autonomic.spc", kind = "event_rate", cause = ?c, "Western Electric rule violation");
             all_special_causes.push(format!("event_rate: {:?}", c));
         }
     } else {
@@ -1264,6 +1274,7 @@ pub fn autonomic_execute_cycle(
             serde_json::json!(if causes.is_empty() { "OK" } else { "ALERT" }),
         );
         for c in &causes {
+            tracing::warn!(target: "autonomic.spc", kind = "trace_duration", cause = ?c, "Western Electric rule violation");
             all_special_causes.push(format!("trace_duration: {:?}", c));
         }
     } else {
@@ -1304,6 +1315,7 @@ pub fn autonomic_execute_cycle(
             serde_json::json!(if causes.is_empty() { "OK" } else { "ALERT" }),
         );
         for c in &causes {
+            tracing::warn!(target: "autonomic.spc", kind = "activity_frequency", cause = ?c, "Western Electric rule violation");
             all_special_causes.push(format!("activity_frequency: {:?}", c));
         }
     } else {
@@ -1392,6 +1404,7 @@ pub fn autonomic_execute_cycle(
                     serde_json::json!("ALERT"),
                 );
                 for c in &causes_hist {
+                    tracing::warn!(target: "autonomic.spc", kind = "event_rate_historical", cause = ?c, "Western Electric rule violation");
                     all_special_causes.push(format!("event_rate_historical: {:?}", c));
                 }
             } else {
@@ -1422,6 +1435,7 @@ pub fn autonomic_execute_cycle(
                     serde_json::json!("ALERT"),
                 );
                 for c in &causes_hist {
+                    tracing::warn!(target: "autonomic.spc", kind = "trace_duration_historical", cause = ?c, "Western Electric rule violation");
                     all_special_causes.push(format!("trace_duration_historical: {:?}", c));
                 }
             } else {
@@ -1455,6 +1469,7 @@ pub fn autonomic_execute_cycle(
                     serde_json::json!("ALERT"),
                 );
                 for c in &causes_hist {
+                    tracing::warn!(target: "autonomic.spc", kind = "activity_frequency_historical", cause = ?c, "Western Electric rule violation");
                     all_special_causes.push(format!("activity_frequency_historical: {:?}", c));
                 }
             } else {
@@ -1629,6 +1644,19 @@ pub fn autonomic_execute_cycle(
     });
 
     let t_optimization_end = wall_clock_us();
+
+    tracing::info!(
+        target: "autonomic",
+        action = %action_label,
+        agent = %agent_name,
+        reward = %reward_val,
+        cycle = %cycle_count,
+        health = %health_state_val,
+        spc_alerts = %all_special_causes.len(),
+        circuit_state = %circuit_state,
+        guard_pass = %guard_pass,
+        "cycle complete"
+    );
 
     // Compute timing deltas using saturating_sub to handle any timing anomalies
     let perception_us = t_perception_end.saturating_sub(t_perception_start);

@@ -1,0 +1,5 @@
+---
+source: wasm4pm/tests/autonomic_loop_tests.rs
+expression: summary
+---
+"cycle_count=10 agent=\"QLearning\" last_spc=0 consec_success=10"

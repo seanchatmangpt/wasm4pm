@@ -14,13 +14,7 @@
  */
 
 const path = require('path');
-const wasm = require(path.resolve(__dirname, '../wasm4pm/pkg/wasm4pm.js'));
-const parse = r => (typeof r === 'string' ? JSON.parse(r) : r);
 
-wasm.init();
-
-// Fulfillment log: each trace = one customer order.
-// QC Inspect has rework loops — the throughput bottleneck.
 const FULFILLMENT_LOG = `<?xml version="1.0" encoding="UTF-8"?>
 <log xes.version="1.0">
   <classifier name="Activity" keys="concept:name"/>
@@ -62,37 +56,74 @@ const FULFILLMENT_LOG = `<?xml version="1.0" encoding="UTF-8"?>
   </trace>
 </log>`;
 
-const t0 = performance.now();
-const handle  = wasm.load_eventlog_from_xes(FULFILLMENT_LOG);
-const dfg     = parse(wasm.discover_dfg(handle, 'concept:name'));
-const rework  = parse(wasm.detect_rework(handle, 'concept:name'));
-const elapsed = (performance.now() - t0).toFixed(2);
+const NAME = 'fulfillment';
+const JTBD = 'Which station is the throughput constraint?';
 
-// Self-loops in the DFG (from === to) reveal rework at specific activities
-const selfLoops = dfg.edges.filter(e => e.from === e.to);
-const traceCount = wasm.get_trace_count(handle);
+function run(wasm, xes) {
+  const parse   = r => (typeof r === 'string' ? JSON.parse(r) : r);
+  const xesData = xes || FULFILLMENT_LOG;
 
-console.log('=== Fulfillment Bottleneck Report ===');
-console.log(`Orders analysed : ${traceCount}`);
-console.log(`Activities      : ${dfg.nodes.length}`);
-console.log(`Process edges   : ${dfg.edges.length}`);
-console.log(`Rework loops    : ${selfLoops.length} self-loop(s) detected`);
+  const t0      = performance.now();
+  const handle  = wasm.load_eventlog_from_xes(xesData);
+  const dfg     = parse(wasm.discover_dfg(handle, 'concept:name'));
+  const rework  = parse(wasm.detect_rework(handle, 'concept:name'));
+  const elapsed = (performance.now() - t0).toFixed(2);
 
-if (selfLoops.length > 0) {
-  // Rank by loop frequency descending
-  const ranked = selfLoops.sort((a, b) => (b.frequency ?? 0) - (a.frequency ?? 0));
-  const top = ranked[0];
-  const loopPct = ((top.frequency ?? 0) / traceCount * 100).toFixed(0);
+  const traceCount = wasm.get_trace_count(handle);
+  const selfLoops  = dfg.edges.filter(e => e.from === e.to);
+  const ranked     = selfLoops.slice().sort((a, b) => (b.frequency ?? 0) - (a.frequency ?? 0));
+  const top        = ranked[0] ?? null;
 
-  console.log(`\n  BOTTLENECK: "${top.from}"`);
-  console.log(`  Rework frequency: ${top.frequency} re-executions across ${rework.traces_with_rework} of ${traceCount} orders (${rework.rework_percentage}%)`);
-  console.log(`  Impact: ~${loopPct}% of orders pass through this station more than once`);
-  console.log(`\n  → Capacity intervention options:`);
-  console.log(`     1. Add parallel ${top.from} stations (reduces queue depth)`);
-  console.log(`     2. Move defect detection upstream to Pack (prevents QC rejects)`);
-  console.log(`     3. Set SLA alert when ${top.from} rework rate exceeds 20%`);
-} else {
-  console.log('\n  ✓ No rework bottleneck detected — process is flowing linearly');
+  const violations = top
+    ? [`Bottleneck: "${top.from}" — ${top.frequency} re-executions across ${rework.traces_with_rework}/${traceCount} orders (${rework.rework_percentage}%)`]
+    : [];
+
+  return {
+    name: NAME,
+    jtbd: JTBD,
+    violations,
+    summary: {
+      orders:             traceCount,
+      activities:         dfg.nodes.length,
+      edges:              dfg.edges.length,
+      rework_loops:       selfLoops.length,
+      traces_with_rework: rework.traces_with_rework,
+      rework_percentage:  rework.rework_percentage,
+      bottleneck: top ? { activity: top.from, frequency: top.frequency } : null,
+    },
+    findings: { self_loops: selfLoops, rework },
+    compliant: selfLoops.length === 0,
+    elapsed_ms: parseFloat(elapsed),
+  };
 }
 
-console.log(`\nCompleted in ${elapsed} ms`);
+module.exports = { run, name: NAME, jtbd: JTBD };
+
+if (require.main === module) {
+  const wasm = require(path.resolve(__dirname, '../wasm4pm/pkg/wasm4pm.js'));
+  wasm.init();
+  const result  = run(wasm, null);
+  const { summary } = result;
+
+  console.log('=== Fulfillment Bottleneck Report ===');
+  console.log(`Orders analysed : ${summary.orders}`);
+  console.log(`Activities      : ${summary.activities}`);
+  console.log(`Process edges   : ${summary.edges}`);
+  console.log(`Rework loops    : ${summary.rework_loops} self-loop(s) detected`);
+
+  if (summary.rework_loops > 0) {
+    const top     = summary.bottleneck;
+    const loopPct = ((top.frequency ?? 0) / summary.orders * 100).toFixed(0);
+    console.log(`\n  BOTTLENECK: "${top.activity}"`);
+    console.log(`  Rework frequency: ${top.frequency} re-executions across ${summary.traces_with_rework} of ${summary.orders} orders (${summary.rework_percentage}%)`);
+    console.log(`  Impact: ~${loopPct}% of orders pass through this station more than once`);
+    console.log(`\n  → Capacity intervention options:`);
+    console.log(`     1. Add parallel ${top.activity} stations (reduces queue depth)`);
+    console.log(`     2. Move defect detection upstream to Pack (prevents QC rejects)`);
+    console.log(`     3. Set SLA alert when ${top.activity} rework rate exceeds 20%`);
+  } else {
+    console.log('\n  ✓ No rework bottleneck detected — process is flowing linearly');
+  }
+
+  console.log(`\nCompleted in ${result.elapsed_ms.toFixed(2)} ms`);
+}

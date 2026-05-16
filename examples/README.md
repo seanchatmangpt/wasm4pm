@@ -1,5 +1,32 @@
 # wasm4pm Examples
 
+## Runner (single entry point)
+
+```bash
+# Run all 5 JTBDs — exits 1 if any violations found
+node examples/index.js
+
+# Single JTBD against your own data
+node examples/index.js --jtbd safety --log your-process.xes
+
+# Machine-readable output for CI/dashboards
+node examples/index.js --format json | jq '.payload.summary'
+
+# Watch mode — re-evaluate every 30s, auto-diff each tick
+node examples/index.js --watch 30 --jtbd compliance
+
+# Diff against previous run
+node examples/index.js --compare
+```
+
+**Options:** `--jtbd <name>` · `--log <path>` · `--format human|json` · `--watch <seconds>` · `--compare` · `--no-save` · `--help`
+
+**Exit codes:** `0` = all clear · `1` = violations found · `2` = bad input · `3` = WASM error
+
+Results auto-saved to `.wasm4pm/results/examples/` — `--no-save` skips persistence.
+
+---
+
 ## Fortune 5 JTBD Examples (start here)
 
 Five self-contained Node.js scripts — no configuration, no external data.
