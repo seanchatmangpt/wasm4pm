@@ -1,8 +1,15 @@
-/**
- * Structured error handling for WASM exports
- * All errors returned to JavaScript should follow this format:
- * { code: string, message: string, handle?: string }
- */
+//! Structured error handling for WASM exports.
+//!
+//! All errors returned to JavaScript follow a machine-readable JSON schema:
+//! `{"code":"PARSE_ERROR","message":"...","remediation":"..."}`.
+//!
+//! [`Wasm4pmError`] is the canonical typed error enum. Call [`Wasm4pmError::code`]
+//! to get a stable string key for JS `switch` dispatch, and [`Wasm4pmError::remediation`]
+//! for optional fix guidance to show to callers.
+//!
+//! Error codes: `PARSE_ERROR`, `VALIDATION_ERROR`, `BINARY_FORMAT_ERROR`,
+//! `ALGORITHM_ERROR`, `HANDLE_NOT_FOUND`.
+
 use wasm_bindgen::prelude::*;
 
 /// Typed error enum for wasm4pm public APIs.
@@ -32,6 +39,21 @@ pub enum Wasm4pmError {
 
 impl Wasm4pmError {
     /// Machine-readable error code for JS switch/dispatch.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use wasm4pm::error::Wasm4pmError;
+    ///
+    /// assert_eq!(Wasm4pmError::Parse("bad XES".into()).code(), "PARSE_ERROR");
+    /// assert_eq!(
+    ///     Wasm4pmError::Algorithm {
+    ///         algorithm: "alpha++".into(),
+    ///         reason: "empty log".into(),
+    ///     }.code(),
+    ///     "ALGORITHM_ERROR"
+    /// );
+    /// ```
     pub fn code(&self) -> &'static str {
         match self {
             Self::Parse(_) => "PARSE_ERROR",
@@ -42,8 +64,22 @@ impl Wasm4pmError {
         }
     }
 
-    /// Human-readable remediation hint for JS callers — how to fix the error.
-    /// Returns `None` for variants where the message is already self-explanatory.
+    /// Human-readable remediation hint for JS callers, or `None` for self-explanatory errors.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use wasm4pm::error::Wasm4pmError;
+    ///
+    /// // Parse errors include fix guidance
+    /// assert!(Wasm4pmError::Parse("x".into()).remediation().is_some());
+    ///
+    /// // Algorithm errors do not (the reason field already explains it)
+    /// assert!(Wasm4pmError::Algorithm {
+    ///     algorithm: "heuristic".into(),
+    ///     reason: "threshold too low".into(),
+    /// }.remediation().is_none());
+    /// ```
     pub fn remediation(&self) -> Option<&'static str> {
         match self {
             Self::HandleNotFound(_) => Some(
