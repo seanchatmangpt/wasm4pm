@@ -55,3 +55,12 @@ data/Road_Traffic_Fine_Management_Process.xes
 
 # Agent hook evidence logs
 .claude/evidence/
+
+# packages/agents: compiled artifacts in src/ (NodeNext shadowing fix — iter13)
+# tsconfig.json outDir is ./dist; these .js/.d.ts/.map files were committed before
+# that outDir was set and cause NodeNext resolution to pick stale artifacts over
+# freshly compiled dist/ output.
+packages/agents/src/**/*.js
+packages/agents/src/**/*.d.ts
+packages/agents/src/**/*.js.map
+packages/agents/src/**/*.d.ts.map
