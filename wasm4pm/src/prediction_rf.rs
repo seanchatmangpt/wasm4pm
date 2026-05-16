@@ -64,7 +64,20 @@ struct RfPredictorSnapshot {
     activity_key: String,
     n_samples: usize,
     n_features: usize, // always N_FEATURES (7)
+    /// Maximum trace length observed at training time. Persisted so that
+    /// inference can use the same normalisation as training for col0
+    /// (`prefix_len / max_trace_len`). Falls back to the prefix length when
+    /// missing (legacy snapshots) — see `predict_next_activity_rf`.
+    #[serde(default)]
+    max_trace_len: usize,
+    /// Maximum case duration in milliseconds observed at training time.
+    /// Persisted for inference-side temporal normalisation when callers
+    /// supply elapsed_ms in a future extension. Always ≥ 1.0 to avoid ÷0.
+    #[serde(default = "default_max_case_ms")]
+    max_case_ms: f64,
 }
+
+fn default_max_case_ms() -> f64 { 1.0 }
 
 // ---------------------------------------------------------------------------
 // Feature extraction helpers
@@ -224,7 +237,11 @@ pub fn build_rf_predictor(
                 }
             }
 
-            // Temporal pass — compute case duration when timestamp_key is set
+            // Temporal pass — compute case duration when timestamp_key is set.
+            // Use min/max instead of first/last because XES events are not guaranteed
+            // chronologically ordered. Using first()/last() can yield negative
+            // durations or under-estimate `max_case_ms`, which then poisons col4
+            // (elapsed_ms / max_case_ms) for every training sample.
             if !timestamp_key.is_empty() {
                 let timestamps: Vec<i64> = trace
                     .events
@@ -238,8 +255,9 @@ pub fn build_rf_predictor(
                     .collect();
 
                 if timestamps.len() >= 2 {
-                    let dur =
-                        (timestamps.last().unwrap() - timestamps.first().unwrap()) as f64;
+                    let ts_min = *timestamps.iter().min().unwrap();
+                    let ts_max = *timestamps.iter().max().unwrap();
+                    let dur = (ts_max - ts_min) as f64;
                     if dur > max_case_ms {
                         max_case_ms = dur;
                     }
@@ -287,13 +305,17 @@ pub fn build_rf_predictor(
                 Vec::new()
             };
 
-            let trace_start_ms = timestamps.first().copied().unwrap_or(0);
+            // Anchor on the minimum timestamp (case start) rather than the first
+            // event, because events are not guaranteed chronologically ordered.
+            // Clamp negative values to 0 so col4 stays non-negative even if the
+            // i-th event happens to predate the case's earliest event.
+            let trace_start_ms = timestamps.iter().min().copied().unwrap_or(0);
 
             for i in 0..trace_len - 1 {
                 let prefix_ids = &ids[0..=i];
 
                 let elapsed_ms = if !timestamps.is_empty() && i < timestamps.len() {
-                    (timestamps[i] - trace_start_ms) as f64
+                    ((timestamps[i] - trace_start_ms) as f64).max(0.0)
                 } else {
                     0.0
                 };
@@ -331,6 +353,8 @@ pub fn build_rf_predictor(
             activity_key: activity_key.to_owned(),
             n_samples,
             n_features: N_FEATURES,
+            max_trace_len,
+            max_case_ms,
         })
     })?;
 
@@ -435,17 +459,30 @@ pub fn predict_next_activity_rf(
         }
 
         // ── 4. Build query feature vector ────────────────────────────────
-        // For inference we don't know the full trace length, so treat prefix
-        // length as the current trace length (col 6 = 1.0 for the query).
+        // For inference we don't know the full trace length, so col6 (position
+        // within trace) is necessarily underdetermined. But col0 (prefix progress
+        // through the *log's* longest trace) is well-defined when we persisted
+        // `max_trace_len` at training time — using prefix_len here would force
+        // col0 = 1.0 at every inference call, drifting away from the training
+        // distribution. Legacy snapshots (max_trace_len == 0) fall back to the
+        // conservative pre-fix behaviour.
         let vocab_size = snapshot.vocab.len();
-        let max_trace_len = prefix_ids.len(); // conservative approximation
+        let prefix_len = prefix_ids.len();
+        let train_max_trace_len = if snapshot.max_trace_len > 0 {
+            snapshot.max_trace_len
+        } else {
+            prefix_len.max(1)
+        };
+        // trace_len for col6: we still don't know the full trace at inference,
+        // so use prefix_len. col6 will therefore equal prefix_len/prefix_len = 1.0,
+        // documented behaviour: col6 means "we're observing the current tip".
         let query_features = build_feature_vec(
             &prefix_ids,
-            max_trace_len, // trace_len = prefix_len (unknown at inference time)
-            max_trace_len,
+            prefix_len,                              // col6 denominator
+            train_max_trace_len,                     // col0 denominator (from training)
             vocab_size,
             0.0, // temporal feature unavailable without timestamps at inference
-            1.0,
+            snapshot.max_case_ms.max(1.0),
         );
 
         // ── 5. Re-fit RF model from stored training data ──────────────────
@@ -653,6 +690,8 @@ mod tests {
             activity_key: "concept:name".to_owned(),
             n_samples: 1,
             n_features: N_FEATURES,
+            max_trace_len: 12,
+            max_case_ms: 86_400_000.0,
         };
 
         let json = serde_json::to_string(&snapshot).expect("serialise");
@@ -662,8 +701,50 @@ mod tests {
         assert_eq!(back.vocab, snapshot.vocab);
         assert_eq!(back.n_trees, 10);
         assert_eq!(back.n_features, N_FEATURES);
+        assert_eq!(back.max_trace_len, 12);
+        assert!((back.max_case_ms - 86_400_000.0).abs() < 1e-9);
         // Verify the JSON contains the expected type field for the unified dispatcher
         assert!(json.contains(r#""type":"rf_predictor""#));
+    }
+
+    /// Rank-1: legacy snapshots without `max_trace_len`/`max_case_ms` must
+    /// deserialise; max_case_ms must default to 1.0 (not 0.0 → ÷0 in col4).
+    #[test]
+    fn test_snapshot_legacy_defaults() {
+        let legacy = r#"{"type":"rf_predictor","vocab":["A","B"],
+            "training_data":[0.0,0.0,0.0,0.0,0.0,0.0,0.0],"training_labels":[0.0],
+            "n_trees":3,"max_depth":3,"min_samples_split":2,
+            "activity_key":"concept:name","n_samples":1,"n_features":7}"#;
+        let snap: RfPredictorSnapshot = serde_json::from_str(legacy).expect("deserialise");
+        assert_eq!(snap.max_trace_len, 0);
+        assert!((snap.max_case_ms - 1.0).abs() < 1e-9);
+    }
+
+    /// Rank-2 domain contract: max_case_ms must use `max - min`, not
+    /// `last - first` (depends on storage order, can yield negatives).
+    /// This mirrors the per-trace pass in `build_rf_predictor`.
+    #[test]
+    fn test_max_case_ms_unsorted_timestamps() {
+        // Unsorted: 5000, 1000, 3000 — first - last = +2000 (misleading),
+        // max - min = 4000 (correct).
+        let ts: Vec<i64> = vec![5000, 1000, 3000];
+        let span = |v: &[i64]| (*v.iter().max().unwrap() - *v.iter().min().unwrap()) as f64;
+        let buggy = (ts.last().unwrap() - ts.first().unwrap()) as f64;
+        assert_eq!(span(&ts), 4000.0);
+        assert_eq!(buggy, -2000.0, "buggy path produces negative span on this reordering");
+        // Metamorphic R3: permutation invariance.
+        assert_eq!(span(&ts), span(&[1000, 3000, 5000]));
+    }
+
+    /// Rank-1 invariant: col0 must normalise by the *training* longest trace,
+    /// not by prefix length. Pre-fix code forced col0 = 1.0 at every inference.
+    #[test]
+    fn test_inference_col0_uses_training_max_trace_len() {
+        let prefix = [0u32, 1u32];
+        let f_post = build_feature_vec(&prefix, prefix.len(), 10, 3, 0.0, 1.0);
+        let f_pre  = build_feature_vec(&prefix, prefix.len(), prefix.len(), 3, 0.0, 1.0);
+        assert!((f_post[0] - 0.2).abs() < 1e-10, "post-fix col0 = 2/10 = 0.2");
+        assert_eq!(f_pre[0], 1.0, "pre-fix col0 collapses to 1.0 (drift bug)");
     }
 
     #[test]
