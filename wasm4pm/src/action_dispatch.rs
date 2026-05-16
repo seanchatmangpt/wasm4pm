@@ -275,9 +275,10 @@ fn action_scale(context: &ExecutionContext) -> DispatchResult {
         }
         1 => {
             // Warning: increase timeout for safety margin
+            // Use saturating_mul to avoid u32 overflow on pathological inputs.
             (
                 context.current_memory_mb,
-                context.current_timeout_ms * 2,
+                context.current_timeout_ms.saturating_mul(2),
                 context.current_batch_size,
             )
         }
@@ -285,7 +286,7 @@ fn action_scale(context: &ExecutionContext) -> DispatchResult {
             // Degraded: reduce batch size, increase timeout
             (
                 context.current_memory_mb / 2,
-                context.current_timeout_ms * 2,
+                context.current_timeout_ms.saturating_mul(2),
                 context.current_batch_size / 2,
             )
         }
@@ -293,7 +294,7 @@ fn action_scale(context: &ExecutionContext) -> DispatchResult {
             // Critical: aggressive reduction
             (
                 context.current_memory_mb / 4,
-                context.current_timeout_ms * 3,
+                context.current_timeout_ms.saturating_mul(3),
                 context.current_batch_size / 4,
             )
         }
@@ -338,13 +339,25 @@ fn action_retry(context: &ExecutionContext) -> DispatchResult {
         return Err(DispatchError::MaxRetriesExceeded);
     }
 
-    // Exponential backoff: base * 2^attempt
-    let exponential_delay = context.base_backoff_ms * (1 << context.retry_count);
+    // Exponential backoff: base * 2^attempt.
+    //
+    // Defect-class DR-1 (this iteration): a naive `1u32 << retry_count` is
+    // *undefined behaviour* when `retry_count >= 32` and a naive
+    // `base_backoff_ms * (1 << retry_count)` silently wraps `u32` for
+    // retry_count >= 22 with the default `base_backoff_ms = 1000`. Both
+    // failures defeat the 60 000 ms cap that is supposed to bound the
+    // back-off; the operator can configure `max_retries` large enough to
+    // reach them.
+    //
+    // Use `checked_shl` + `saturating_mul` + `saturating_add` so we always
+    // either reach the cap or return the cap, never panic or wrap.
+    let shift_factor = 1u32.checked_shl(context.retry_count).unwrap_or(u32::MAX);
+    let exponential_delay = context.base_backoff_ms.saturating_mul(shift_factor);
 
     // Add jitter: up to 100% of base backoff using fastrand for robust retry distribution
     let jitter = fastrand::u32(0..=context.base_backoff_ms);
 
-    let total_delay_ms = exponential_delay + jitter;
+    let total_delay_ms = exponential_delay.saturating_add(jitter);
 
     // Cap maximum delay (e.g., 60 seconds)
     let total_delay_ms = total_delay_ms.min(60000);
@@ -472,10 +485,60 @@ mod tests {
 
         if let DispatchOutcome::RetryInitiated { attempt, delay_ms } = result.unwrap() {
             assert_eq!(attempt, 3); // next attempt
-                                    // Exponential: 1000 * 2^2 = 4000 + jitter(500) = 4500
-            assert_eq!(delay_ms, 4500);
+            // Exponential: 1000 * 2^2 = 4000 base, plus stochastic jitter
+            // in [0, base_backoff_ms] = [0, 1000]. The pre-existing test
+            // asserted `delay_ms == 4500` from when jitter was the
+            // deterministic value `base_backoff_ms / 2`; jitter is now
+            // `fastrand::u32(0..=base_backoff_ms)` so we assert the
+            // documented Rank-1 mathematical bound instead, which is the
+            // value the implementation guarantees rather than one
+            // particular sample.
+            assert!(
+                (4000..=5000).contains(&delay_ms),
+                "delay {delay_ms} must lie within [4000, 5000] (exponential + jitter bound)"
+            );
         } else {
             panic!("Expected RetryInitiated outcome");
+        }
+    }
+
+    /// Rank-1 regression: `1u32 << 32` is undefined behaviour in Rust and
+    /// `base * (1 << retry_count)` silently wraps `u32` long before that.
+    /// The cap at 60 000 ms must hold for any pathological `retry_count`
+    /// value the operator can construct, including the maximum.
+    #[test]
+    fn test_action_retry_does_not_overflow_at_or_above_shift_width() {
+        // u32::MAX max_retries is the largest the operator can configure;
+        // the function must accept any retry_count strictly less than that.
+        // We exercise the two known cliffs:
+        //   * retry_count = 22 — the `u32` product first overflows.
+        //   * retry_count = 32 — `1u32 << 32` is undefined behaviour.
+        //   * retry_count = u32::MAX - 1 — extreme upper bound just under max.
+        for retry_count in [22u32, 31, 32, 33, 64, u32::MAX - 1] {
+            let context = ExecutionContext {
+                retry_count,
+                base_backoff_ms: 1000,
+                max_retries: u32::MAX, // allow the retry to be attempted
+                ..Default::default()
+            };
+            let result = dispatch_action(&RlAction::Retry, &context);
+            // Must not panic, must produce a bounded delay.
+            assert!(
+                result.is_ok(),
+                "retry_count {} must not panic; got {:?}",
+                retry_count,
+                result
+            );
+            if let Ok(DispatchOutcome::RetryInitiated { delay_ms, .. }) = result {
+                assert!(
+                    delay_ms <= 60_000,
+                    "retry_count {} produced delay {} > 60 000 ms cap",
+                    retry_count,
+                    delay_ms
+                );
+            } else {
+                panic!("expected RetryInitiated, got {:?}", result);
+            }
         }
     }
 
@@ -502,6 +565,40 @@ mod tests {
         let result = dispatch_action(&RlAction::Retry, &context);
         assert!(result.is_err());
         assert_eq!(result.unwrap_err(), DispatchError::CircuitBreakerOpen);
+    }
+
+    /// Rank-1 oracle (no-panic property): for any u32 timeout in any
+    /// health level that multiplies it (1, 2, 3), `action_scale` must
+    /// return Ok without panicking. The prior `* 2` / `* 3` panicked in
+    /// debug builds and wrapped in release builds — both are silent
+    /// correctness bugs that produced absurdly small timeouts on the
+    /// degraded code path. Verified by passing u32::MAX.
+    #[test]
+    fn test_action_scale_saturates_on_timeout_overflow() {
+        for health_level in [1u8, 2, 3] {
+            let context = ExecutionContext {
+                health_level,
+                current_timeout_ms: u32::MAX,
+                ..Default::default()
+            };
+            let result = dispatch_action(&RlAction::Scale, &context);
+            assert!(
+                result.is_ok(),
+                "action_scale must not panic on overflow at health_level={}",
+                health_level
+            );
+            if let Ok(DispatchOutcome::Scaled { timeout_ms, .. }) = result {
+                // Saturating arithmetic must produce u32::MAX, not wrap to 0.
+                assert_eq!(
+                    timeout_ms,
+                    u32::MAX,
+                    "timeout must saturate at u32::MAX, not wrap, at health_level={}",
+                    health_level
+                );
+            } else {
+                panic!("Expected Scaled outcome at health_level={}", health_level);
+            }
+        }
     }
 
     #[test]

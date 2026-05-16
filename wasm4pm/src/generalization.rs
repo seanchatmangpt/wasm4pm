@@ -330,7 +330,18 @@ fn compute_generalization(
         return Ok((1.0, 0.0));
     }
 
-    let generalization = 1.0 - penalty_sum / visible_count as f64;
+    // Iter-10 hardening: the original `1.0 - penalty_sum / visible_count`
+    // can fall below 0.0 — penalty_sum is at most `visible_count * 1.0`
+    // (each never-firing transition adds exactly 1.0), so for a well-formed
+    // input the score sits in [0, 1]; but if a future caller wires in
+    // weighted penalties or visible_count drifts mid-run, the bare formula
+    // can produce out-of-range or NaN values. Defensively clamp + NaN-guard.
+    let raw = 1.0 - penalty_sum / visible_count as f64;
+    let generalization = if raw.is_finite() {
+        raw.clamp(0.0, 1.0)
+    } else {
+        0.0
+    };
     Ok((generalization, penalty_sum))
 }
 
@@ -693,5 +704,39 @@ mod tests {
         // Empty net with no visible transitions: generalization = 1.0 (perfect by definition)
         assert_eq!(result.generalization, 1.0);
         assert_eq!(result.num_visible_transitions, 0);
+    }
+
+    /// Iter-10 Rank-1: Range invariant. For ANY (net, log) pair the
+    /// reported `generalization` must lie in [0, 1]. Old code computed
+    /// `1.0 - penalty_sum / visible_count` raw, allowing values outside
+    /// the unit interval if penalty_sum grew unbounded relative to
+    /// visible_count.
+    #[test]
+    fn iter10_generalization_always_in_unit_interval() {
+        // Worst case: a net with N visible transitions, NONE of which
+        // fire during replay (so each contributes a penalty of 1.0).
+        // penalty_sum = visible_count → raw = 0, clamped = 0. Good.
+        let net = make_sequential_net();
+        let empty_log = EventLog {
+            attributes: HashMap::new(),
+            traces: vec![],
+        };
+        let result = compute_quality(&net, &empty_log, "concept:name").unwrap();
+        assert!(
+            (0.0..=1.0).contains(&result.generalization),
+            "generalization {} not in [0,1]",
+            result.generalization
+        );
+        assert!(result.generalization.is_finite());
+
+        // Best case: every transition fires many times. penalty_sum is
+        // small, raw is near 1.0, clamped stays ≤ 1.0.
+        let perfect_log = make_log_ab(100);
+        let perfect = compute_quality(&net, &perfect_log, "concept:name").unwrap();
+        assert!(
+            (0.0..=1.0).contains(&perfect.generalization),
+            "perfect generalization {} not in [0,1]",
+            perfect.generalization
+        );
     }
 }

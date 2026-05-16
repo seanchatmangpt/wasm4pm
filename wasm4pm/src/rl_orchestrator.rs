@@ -489,6 +489,61 @@ impl RlOrchestrator {
             }
         }
     }
+
+    /// Restore the full orchestrator state from a serialized snapshot.
+    ///
+    /// Replaces step-by-step mutation (`switch_agent` → `set_linucb_selection`
+    /// → `restore_telemetry`) with a single atomic assignment per field. The
+    /// previous step-by-step path had a PR #70-class drift bug: `switch_agent`
+    /// set `telemetry.active_agent_name`, then `restore_telemetry` clobbered it
+    /// back to `Default::default()` (`"QLearning"`). The clobber left
+    /// `active_agent` and `telemetry.active_agent_name` inconsistent whenever
+    /// the restored agent was anything other than QLearning.
+    ///
+    /// Fields not present on the wire (`last_guard_pass`,
+    /// `last_circuit_allowed`, `last_reward`, `consecutive_successes`) are
+    /// reset to their `Default::default()` values — which is the intended
+    /// semantics for a fresh-process resume. `active_agent_name` is derived
+    /// from `active_agent` so the invariant holds by construction.
+    ///
+    /// Returns the restored `cycle_count` so callers can log it without
+    /// re-borrowing the orchestrator.
+    pub fn restore_state(
+        &mut self,
+        snapshot: crate::rl_state_serialization::SerializedRlState,
+    ) -> u64 {
+        // Decode the active agent first; an unknown variant keeps the current
+        // agent rather than corrupting state.
+        let active = AgentType::from_u8(snapshot.active_agent).unwrap_or(self.active_agent);
+
+        // Q-tables — assigned via interior mutability (`&self`), so they can
+        // be restored before or after the field assignments below. We do them
+        // first so a failure mid-restore leaves at most Q-tables touched.
+        if !snapshot.agent_q_tables.is_empty() {
+            self.restore_all_q_tables(snapshot.agent_q_tables);
+        }
+
+        // Single, atomic field-by-field assignment. No method here writes
+        // a sibling field, so there is no clobber sequence.
+        self.active_agent = active;
+        self.use_linucb_for_selection = snapshot.linucb_enabled;
+        self.telemetry = CycleTelemetry {
+            cycle_count: snapshot.telemetry.cycle_count,
+            last_health_state: snapshot.telemetry.last_health_state,
+            last_action_label: snapshot.telemetry.last_action_label,
+            last_spc_alert_count: snapshot.telemetry.last_spc_alert_count,
+            last_guard_pass: false,
+            last_circuit_allowed: false,
+            cumulative_reward: snapshot.telemetry.cumulative_reward as f32,
+            last_reward: 0.0,
+            // Derived from active_agent so the invariant
+            // (active_agent_name == active_agent.name()) holds by construction.
+            active_agent_name: active.name().to_string(),
+            consecutive_successes: 0,
+        };
+
+        self.telemetry.cycle_count
+    }
 }
 
 #[cfg(test)]

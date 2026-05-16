@@ -89,18 +89,10 @@ fn applicable(rule: &Rule, state: &HashSet<String>) -> bool {
     rule.premise.iter().all(|p| state.contains(p))
 }
 
-fn apply(rule: &Rule, state: &HashSet<String>) -> HashSet<String> {
-    let eff = parse_effect(&rule.conclusion);
-    let mut next: HashSet<String> = state
-        .iter()
-        .filter(|a| !eff.dels.contains(a))
-        .cloned()
-        .collect();
-    for a in eff.adds {
-        next.insert(a);
-    }
-    next
-}
+// NOTE: a frame-less `apply()` once lived here. It was unreachable — every
+// caller now uses `apply_with_frames`, which is a strict superset (when
+// `frame_axioms` is empty its behavior reduces to the old `apply()`). The
+// dead-code copy was deleted as part of the iter-4 deferred-findings sweep.
 
 fn apply_with_frames(
     rule: &Rule,
@@ -289,5 +281,42 @@ impl CognitionBreed for Strips {
             return Err("STRIPS must record search steps".to_string());
         }
         Ok(())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::breeds::Rule;
+
+    /// Rank-1 invariant for iter-4 deferred finding (dead `apply()` removed):
+    /// `apply_with_frames` with an EMPTY frame-axiom set MUST produce the
+    /// exact same successor state the deleted `apply()` would have produced.
+    /// This is what justified the deletion — the live path subsumes the dead
+    /// path. If anyone ever resurrects a non-trivial difference between them,
+    /// this test will catch the regression.
+    #[test]
+    fn apply_with_frames_subsumes_frameless_apply() {
+        let rule = Rule {
+            id: "pick_up_block".to_string(),
+            premise: vec!["onTable=block".to_string()],
+            conclusion: "inHand=block;!onTable=block".to_string(),
+            certainty: 1.0,
+        };
+        let mut state: HashSet<String> = HashSet::new();
+        state.insert("onTable=block".to_string());
+        state.insert("clear=block".to_string());
+
+        let empty_frames: HashMap<String, FrameAxiom> = HashMap::new();
+        let next = apply_with_frames(&rule, &state, &empty_frames);
+
+        // With no frame axioms: deletion of `onTable=block` MUST fire,
+        // addition of `inHand=block` MUST fire, untouched `clear=block`
+        // MUST persist. This is identical to the frame-less semantics
+        // the deleted `apply()` would have provided.
+        assert!(!next.contains("onTable=block"), "delete must fire");
+        assert!(next.contains("inHand=block"), "add must fire");
+        assert!(next.contains("clear=block"), "untouched atom must persist");
+        assert_eq!(next.len(), 2);
     }
 }

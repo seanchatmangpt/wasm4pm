@@ -846,7 +846,25 @@ export async function classifyTraces(
   const matrix = buildFeatureMatrix(featuresJson, undefined, targetKey);
 
   if (matrix.data.length === 0 || matrix.labels.length === 0) {
-    return { method, predictions: [], modelInfo: { error: 'No features or labels available' } };
+    const inputLen = Array.isArray(featuresJson) ? featuresJson.length : 0;
+    const code: 'empty_input' | 'no_labels' =
+      matrix.data.length === 0 ? 'empty_input' : 'no_labels';
+    return {
+      method,
+      predictions: [],
+      modelInfo: { error: 'No features or labels available' },
+      metadata: {
+        warning: {
+          code,
+          message:
+            code === 'empty_input'
+              ? `classifyTraces received an empty input — no model was fit.`
+              : `classifyTraces received ${inputLen} row(s) but no rows had a '${targetKey}' label — no model was fit.`,
+          inputLength: inputLen,
+          minRequired: 1,
+        },
+      },
+    };
   }
 
   const { encoded, reverseMap } = encodeLabels(matrix.labels);

@@ -441,7 +441,18 @@ export class Instrumentation {
   }
 
   /**
-   * Create algorithm started event
+   * Create algorithm started event.
+   *
+   * Span name: `algorithm.<algorithmName>` (e.g. `algorithm.dfg`)
+   * Span kind: INTERNAL
+   *
+   * Attributes emitted on the start span (in addition to RequiredOtelAttributes):
+   *   algorithm.name       — canonical algorithm identifier
+   *   algorithm.step_id    — plan step ID, 'unspecified' when unknown
+   *   algorithm.profile    — execution profile (mirrors execution.profile from requiredAttrs)
+   *
+   * Callers MUST close the span by calling createAlgorithmCompletedEvent with the
+   * returned spanId. Leaving the span open results in status 'UNSET' in the exporter.
    */
   static createAlgorithmStartedEvent(
     traceId: string,
@@ -477,6 +488,7 @@ export class Instrumentation {
         ...requiredAttrs,
         'algorithm.name': algorithmName,
         'algorithm.step_id': options?.stepId || 'unspecified',
+        'algorithm.profile': requiredAttrs['execution.profile'],
       },
     };
 
@@ -1329,6 +1341,20 @@ export class Instrumentation {
 
   /**
    * Create conformance-check completed event with quality metrics.
+   *
+   * Span name: `conformance.check`
+   * Span kind: INTERNAL
+   *
+   * Required attributes on a completed conformance span (Van der Aalst four dimensions):
+   *   conformance.method        — 'token_replay' | 'alignments'
+   *   conformance.fitness       — 0..1 (defaults to -1.0 when not measured)
+   *   conformance.precision     — 0..1 (defaults to -1.0 when not measured)
+   *   conformance.generalization — 0..1 (defaults to -1.0 when not measured)
+   *   conformance.simplicity    — 0..1 (defaults to -1.0 when not measured)
+   *   conformance.duration_ms   — wall-clock time for the check
+   *
+   * A value of -1.0 signals "not computed" and is distinguishable from a 0.0 score.
+   * All four dimensions are always emitted so span queries never need null-checks.
    */
   static createConformanceCheckCompletedEvent(
     traceId: string,
@@ -1362,16 +1388,11 @@ export class Instrumentation {
         ...requiredAttrs,
         'conformance.method': method,
         'conformance.duration_ms': options?.durationMs || 0,
-        ...(options?.fitness !== undefined && { 'conformance.fitness': options.fitness }),
-        ...(options?.precision !== undefined && {
-          'conformance.precision': options.precision,
-        }),
-        ...(options?.generalization !== undefined && {
-          'conformance.generalization': options.generalization,
-        }),
-        ...(options?.simplicity !== undefined && {
-          'conformance.simplicity': options.simplicity,
-        }),
+        // Van der Aalst four quality dimensions — always emitted; -1.0 = not computed.
+        'conformance.fitness': options?.fitness ?? -1,
+        'conformance.precision': options?.precision ?? -1,
+        'conformance.generalization': options?.generalization ?? -1,
+        'conformance.simplicity': options?.simplicity ?? -1,
         ...(options?.errorCode && { 'error.code': options.errorCode }),
       },
     };
@@ -1481,31 +1502,33 @@ export class Instrumentation {
   }
 
   /**
-   * Generate a W3C-compliant span ID (16 hex chars = 8 random bytes).
-   * Uses crypto.getRandomValues when available (Node >= 19, all browsers).
-   * Falls back to Math.random only in environments with no Web Crypto API.
+   * Generate a W3C-compliant span ID (16 hex chars).
+   * Prefers crypto.getRandomValues for entropy quality; falls back to Math.random
+   * only in environments where globalThis.crypto is unavailable (e.g. some test runners).
    */
   static generateSpanId(): string {
+    const bytes = new Uint8Array(8);
     if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.getRandomValues) {
-      const bytes = new Uint8Array(8);
       globalThis.crypto.getRandomValues(bytes);
-      return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+    } else {
+      for (let i = 0; i < 8; i++) bytes[i] = Math.floor(Math.random() * 256); // @lint-allow-fakery — crypto fallback
     }
-    return Array.from({ length: 16 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
   }
 
   /**
-   * Generate a W3C-compliant trace ID (32 hex chars = 16 random bytes).
-   * Uses crypto.getRandomValues when available (Node >= 19, all browsers).
-   * Falls back to Math.random only in environments with no Web Crypto API.
+   * Generate a W3C-compliant trace ID (32 hex chars).
+   * Prefers crypto.getRandomValues for entropy quality; falls back to Math.random
+   * only in environments where globalThis.crypto is unavailable (e.g. some test runners).
    */
   static generateTraceId(): string {
+    const bytes = new Uint8Array(16);
     if (typeof globalThis.crypto !== 'undefined' && globalThis.crypto.getRandomValues) {
-      const bytes = new Uint8Array(16);
       globalThis.crypto.getRandomValues(bytes);
-      return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+    } else {
+      for (let i = 0; i < 16; i++) bytes[i] = Math.floor(Math.random() * 256); // @lint-allow-fakery — crypto fallback
     }
-    return Array.from({ length: 32 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
   }
 
   /**

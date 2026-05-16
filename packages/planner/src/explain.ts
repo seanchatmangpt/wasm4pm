@@ -57,6 +57,46 @@ export function explain(config: Config): string {
     lines.push(`- **Timeout**: ${config.execution.timeoutMs} ms`);
   }
 
+  // Algorithm override — surface it in the explanation so the narrative
+  // matches plan() output. Without this, a user reading explain() cannot tell
+  // their algorithm override was applied (parity violation per PRD §11).
+  if (config.algorithm?.name) {
+    lines.push(`- **Algorithm Override**: \`${config.algorithm.name}\``);
+    if (config.algorithm.parameters && Object.keys(config.algorithm.parameters).length > 0) {
+      lines.push('- **Algorithm Parameters**:');
+      for (const [key, value] of Object.entries(config.algorithm.parameters)) {
+        const valueStr = typeof value === 'string' ? value : JSON.stringify(value);
+        lines.push(`  - ${key}: ${valueStr}`);
+      }
+    }
+  }
+
+  // ML tasks — explain() previously dropped these from the narrative even
+  // though plan() emits ML_* steps for them. Surfacing them keeps explain()
+  // honest about what plan() will execute.
+  if (config.ml?.enabled && config.ml.tasks && config.ml.tasks.length > 0) {
+    lines.push(`- **ML Tasks**: ${config.ml.tasks.join(', ')}`);
+    if (config.ml.method) {
+      lines.push(`- **ML Method**: ${config.ml.method}`);
+    }
+  }
+
+  lines.push('');
+
+  // Budget Envelope — plan() always attaches a BudgetEnvelope per Section 4.1
+  // for backend selection. explain() must surface it so the explanation
+  // accurately reflects the dispatch constraints the runner will honor.
+  lines.push('## Budget Envelope');
+  lines.push(`- **Latency Budget**: ${executionPlan.budget.latencyBudget}`);
+  const memMB = executionPlan.budget.memoryBudget
+    ? `${(executionPlan.budget.memoryBudget / (1024 * 1024)).toFixed(0)} MB`
+    : 'unlimited';
+  lines.push(`- **Memory Budget**: ${memMB}`);
+  lines.push(`- **Quality Floor**: ${executionPlan.budget.qualityFloor}`);
+  lines.push(`- **Execution Mode**: ${executionPlan.budget.mode}`);
+  lines.push(
+    `- **Environment**: browser-safe=${executionPlan.budget.environment.browserSafe}, python-available=${executionPlan.budget.environment.pythonAvailable}`
+  );
   lines.push('');
 
   // Execution steps

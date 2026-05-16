@@ -32,6 +32,28 @@ const ALGORITHMS = [
 
 type Algorithm = (typeof ALGORITHMS)[number];
 
+/**
+ * Registry quality tier (0-100) for each algorithm supported by compare.
+ * Sourced from packages/kernel/src/registry.ts qualityTier values.
+ * Higher = better expected model quality (fitness-precision trade-off).
+ */
+const QUALITY_TIERS: Record<Algorithm, number> = {
+  dfg: 30,
+  alpha: 45,
+  heuristic: 50,
+  inductive: 55,
+  ilp: 90,
+  genetic: 80,
+  pso: 75,
+  astar: 70,
+  'hill-climbing': 55,
+  'simulated-annealing': 65,
+  'ant-colony': 75,
+  declare: 50,
+  skeleton: 25,
+  'dfg-optimized': 85,
+};
+
 interface ModelStats {
   algorithm: Algorithm;
   nodes: number;
@@ -40,6 +62,7 @@ interface ModelStats {
   density: number;
   complexity: number;
   elapsedMs: number;
+  qualityTier: number;
 }
 
 /**
@@ -273,6 +296,7 @@ export const compare = defineCommand({
             density: sharedMetrics.density,
             complexity: sharedMetrics.complexity,
             elapsedMs,
+            qualityTier: QUALITY_TIERS[algo],
           });
         }
         const totalElapsedMs = performance.now() - t0;
@@ -340,37 +364,66 @@ export const compare = defineCommand({
         const minTime = Math.min(...validStats.map((st) => st.elapsedMs));
         const maxTime = Math.max(...validStats.map((st) => st.elapsedMs));
 
-        // Table header
+        // Quality tier range for sparklines
+        const minQuality = Math.min(...validStats.map((st) => st.qualityTier));
+        const maxQuality = Math.max(...validStats.map((st) => st.qualityTier));
+
+        // Table header includes QTier so fitness-precision trade-off is visible at a glance
         projection.log(
-          `  ${'Algorithm'.padEnd(20)}  ${'Nodes'.padStart(6)}  ${'Edges'.padStart(6)}  ${'Time(ms)'.padStart(9)}  ${'Nodes'.padEnd(10)}  ${'Edges'.padEnd(10)}  ${'Time'.padEnd(10)}`
+          `  ${'Algorithm'.padEnd(20)}  ${'QTier'.padStart(5)}  ${'Nodes'.padStart(6)}  ${'Edges'.padStart(6)}  ${'Time(ms)'.padStart(9)}  ${'Quality'.padEnd(10)}  ${'Time'.padEnd(10)}`
         );
         projection.log(
-          `  ${'─'.repeat(20)}  ${'─'.repeat(6)}  ${'─'.repeat(6)}  ${'─'.repeat(9)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}`
+          `  ${'─'.repeat(20)}  ${'─'.repeat(5)}  ${'─'.repeat(6)}  ${'─'.repeat(6)}  ${'─'.repeat(9)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}`
         );
 
         for (const st of s) {
           const algoCol = col(st.algorithm, 20);
           if (st.nodes < 0) {
             projection.log(
-              `  ${algoCol}  ${'ERROR'.padStart(6)}  ${'─'.padStart(6)}  ${'─'.padStart(9)}`
+              `  ${algoCol}  ${'ERROR'.padStart(5)}  ${'─'.padStart(6)}  ${'─'.padStart(6)}  ${'─'.padStart(9)}`
             );
             continue;
           }
+          const qtierStr = numCol(st.qualityTier, 5);
           const nodesStr = numCol(st.nodes, 6);
           const edgesStr = numCol(st.edges, 6);
           const timeStr = numCol(st.elapsedMs, 9, 1);
-          const nodesBar = sparkBar(st.nodes, minNodes, maxNodes).padEnd(10);
-          const edgesBar = sparkBar(st.edges, minEdges, maxEdges).padEnd(10);
+          const qualityBar = sparkBar(st.qualityTier, minQuality, maxQuality).padEnd(10);
           const timeBar = sparkBar(st.elapsedMs, minTime, maxTime).padEnd(10);
           projection.log(
-            `  ${algoCol}  ${nodesStr}  ${edgesStr}  ${timeStr}  ${nodesBar}  ${edgesBar}  ${timeBar}`
+            `  ${algoCol}  ${qtierStr}  ${nodesStr}  ${edgesStr}  ${timeStr}  ${qualityBar}  ${timeBar}`
           );
         }
 
         projection.log('');
         projection.log(
+          '  QTier: registry quality score 0-100 (fitness+precision trade-off, higher=better)'
+        );
+        projection.log(
           '  Legend: ▓▓▓▓▓▓▓▓ = max  ░░░░░░░░ = min   bars are relative within this comparison'
         );
+
+        // Recommend the best quality-speed trade-off
+        const byQuality = validStats.slice().sort((a, b) => b.qualityTier - a.qualityTier);
+        const bySpeed = validStats.slice().sort((a, b) => a.elapsedMs - b.elapsedMs);
+        if (byQuality.length > 0 && bySpeed.length > 0) {
+          const bestQuality = byQuality[0];
+          const fastest = bySpeed[0];
+          projection.log('');
+          if (bestQuality.algorithm === fastest.algorithm) {
+            projection.log(
+              `  Recommendation: ${bestQuality.algorithm} is both fastest and highest quality in this set.`
+            );
+          } else {
+            projection.log(
+              `  Recommendation: ${bestQuality.algorithm} (quality ${bestQuality.qualityTier}/100) gives the best model; ` +
+                `${fastest.algorithm} (${fastest.elapsedMs.toFixed(1)}ms) is fastest.`
+            );
+            projection.log(
+              `  Next: run wpm conformance -i <log.xes> to verify fitness of the best model.`
+            );
+          }
+        }
         projection.log('');
 
         // Cache statistics (if fetched)

@@ -32,4 +32,28 @@ pub use ocel::{OCELEvent, OCELObject, OCEL};
 pub use provenance::ProvenanceChain;
 pub use choice_graph::{ChoiceGraph, ChoiceGraphNode, ChoiceGraphError};
 
-pub const VERSION: &str = "26.4.10";
+/// Crate version pulled from `Cargo.toml` at compile time.
+///
+/// PR #77 RF-3 class: the previous hardcoded `"26.4.10"` drifted from the
+/// workspace version (currently 26.5.x). Receipts include `algorithm_version`
+/// and `kernel_version`, so a stale constant produced provenance chains that
+/// claimed the wrong build identity. Sourcing from `CARGO_PKG_VERSION` keeps
+/// this in lockstep with `Cargo.toml` without manual updates.
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+#[cfg(test)]
+mod version_tests {
+    use super::VERSION;
+
+    /// Rank-2 (domain contract): VERSION must match the workspace package
+    /// version that produced this binary. Any drift is a provenance defect.
+    #[test]
+    fn version_matches_cargo_pkg_version() {
+        assert_eq!(VERSION, env!("CARGO_PKG_VERSION"));
+        // CalVer prefix sanity: starts with "26." (the year for this release).
+        assert!(
+            VERSION.starts_with("26."),
+            "VERSION {VERSION} must be CalVer-formatted"
+        );
+    }
+}

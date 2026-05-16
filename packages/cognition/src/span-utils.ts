@@ -12,7 +12,7 @@ export function hexId(length: number): string {
   if (g.crypto && typeof g.crypto.getRandomValues === 'function') {
     g.crypto.getRandomValues(bytes);
   } else {
-    bytes.forEach((_, i) => { bytes[i] = (Math.random() * 256) | 0; });
+    bytes.forEach((_, i) => { bytes[i] = (Math.random() * 256) | 0; }); // @lint-allow-fakery — crypto fallback for W3C span ID
   }
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('').slice(0, len);
 }

@@ -145,7 +145,10 @@ impl CognitionBreed for Gps {
         let mut plan: Vec<String> = Vec::new();
         let mut trace: Vec<TraceStep> = Vec::new();
 
-        // Check for pre-satisfied goals
+        // Check for pre-satisfied goals. Track whether ALL goals were already
+        // satisfied at entry — this distinguishes "empty plan because nothing
+        // needed to be done" (Some("")) from "no plan exists" (None).
+        let mut all_presatisfied = !input.goals.is_empty();
         for goal in &input.goals {
             if input.state.iter().any(|s| s.predicate == goal.predicate && s.value == goal.value) {
                 trace.push(TraceStep {
@@ -154,6 +157,8 @@ impl CognitionBreed for Gps {
                     detail: format!("goal {} is already satisfied", goal.id),
                     depth: 0,
                 });
+            } else {
+                all_presatisfied = false;
             }
         }
 
@@ -192,10 +197,21 @@ impl CognitionBreed for Gps {
             plan.len(),
             plan.join(" → ")
         );
-        let selected = if plan.is_empty() {
-            None
-        } else {
+        // Semantic contract for `selected`:
+        //   Some("op1,op2")  — non-empty plan that achieves the goals
+        //   Some("")         — pre-satisfied goals: the empty plan IS the plan
+        //   None             — only emitted when planning is unreachable;
+        //                      with strict gap-decreasing guard above, the
+        //                      planning loop either succeeds or returns Err,
+        //                      so None here means "no goals at entry that
+        //                      weren't already satisfied AND nothing happened"
+        //                      which collapses into the all_presatisfied case.
+        let selected = if !plan.is_empty() {
             Some(plan.join(","))
+        } else if all_presatisfied {
+            Some(String::new())
+        } else {
+            None
         };
 
         Ok(BreedOutput {
@@ -214,4 +230,84 @@ impl CognitionBreed for Gps {
         }
         Ok(())
     }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::breeds::{Fact, Goal, Rule, StateAtom};
+
+    /// Rank-2 (domain contract): the empty plan is a valid plan for goals
+    /// that are already satisfied. The caller must be able to distinguish
+    /// "empty plan because pre-satisfied" from "no plan exists".
+    /// Returning `None` for both collapses the two cases and forces the
+    /// caller to re-check state — a Rank-2 contract violation.
+    #[test]
+    fn presatisfied_goal_returns_empty_plan_not_none() {
+        let input = BreedInput {
+            intent: "x".into(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![],
+            rules: vec![Rule {
+                id: "dummy".into(),
+                premise: vec![],
+                conclusion: "anything".into(),
+                certainty: 1.0,
+            }],
+            goals: vec![Goal {
+                id: "g".into(),
+                predicate: "done".into(),
+                value: "yes".into(),
+            }],
+            state: vec![StateAtom {
+                predicate: "done".into(),
+                value: "yes".into(),
+            }],
+        };
+        let out = Gps.run(&input).expect("run ok");
+        assert_eq!(
+            out.selected.as_deref(),
+            Some(""),
+            "pre-satisfied goal MUST return Some(\"\") (empty plan), not None"
+        );
+        // Trace still records the check-presatisfied evidence.
+        assert!(out
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "check-presatisfied"));
+    }
+
+    /// Rank-2: with multiple goals, all pre-satisfied -> Some(""); planning
+    /// remains short-circuited (no apply-operator steps).
+    #[test]
+    fn all_goals_presatisfied_yields_empty_plan_no_operators() {
+        let input = BreedInput {
+            intent: "x".into(),
+            candidates: vec![],
+            facts: vec![],
+            cases: vec![],
+            rules: vec![Rule {
+                id: "noop".into(),
+                premise: vec![],
+                conclusion: "noop_effect".into(),
+                certainty: 1.0,
+            }],
+            goals: vec![
+                Goal { id: "g1".into(), predicate: "a".into(), value: "1".into() },
+                Goal { id: "g2".into(), predicate: "b".into(), value: "2".into() },
+            ],
+            state: vec![
+                StateAtom { predicate: "a".into(), value: "1".into() },
+                StateAtom { predicate: "b".into(), value: "2".into() },
+            ],
+        };
+        let out = Gps.run(&input).expect("run ok");
+        assert_eq!(out.selected.as_deref(), Some(""));
+        assert!(!out
+            .inference_trace
+            .iter()
+            .any(|t| t.kind == "apply-operator"));
+    }
+
 }

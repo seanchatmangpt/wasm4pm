@@ -105,14 +105,25 @@ impl StreamingAStarBuilder {
                 // Fitness contribution: how much of the log this edge explains
                 let fitness = count as f64 / total_possible as f64;
 
-                // Precision: how specific is this edge
-                // Low reverse count relative to forward count = high precision
+                // Precision: how specific is this edge.
+                // Low reverse count relative to forward count = high precision.
+                //
+                // Fix (RF-3 class): previously this looked up `reverse_edge_counts[(to,from)]`,
+                // but `reverse_edge_counts` is populated on `(pair[1], pair[0])` for every
+                // observed forward pair `(pair[0], pair[1])` (see close_trace), which makes
+                // `reverse_edge_counts[(to,from)]` numerically equal to `edge_counts[(from,to)]`.
+                // The result: `reverse == count` for every edge, so precision degenerated to
+                // `1.0 - count/(count+count) = 0.5` regardless of input.
+                //
+                // The true reverse-direction count is the forward count of the swapped edge,
+                // which lives in `edge_counts[(to,from)]`. Fall back to 0 when the reverse
+                // edge was never observed (high-precision case).
                 let reverse = self
-                    .reverse_edge_counts
+                    .edge_counts
                     .get(&(to, from))
                     .copied()
                     .unwrap_or(0);
-                let precision = if count > 0 {
+                let precision = if count + reverse > 0 {
                     1.0 - (reverse as f64 / (count + reverse) as f64)
                 } else {
                     0.0

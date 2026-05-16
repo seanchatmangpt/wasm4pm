@@ -13,6 +13,14 @@ pub struct RegressionResult {
     pub slope: f64,
     pub intercept: f64,
     pub r_squared: f64,
+    /// Mean Absolute Error on the training residuals: mean(|y_i - (slope*x_i + intercept)|).
+    /// Zero when no slope/intercept can be computed.
+    pub mae: f64,
+    /// Root Mean Squared Error on the training residuals: sqrt(mean((y_i - ŷ_i)^2)).
+    pub rmse: f64,
+    /// Standard error of the residuals (sqrt of unbiased variance, n-2 denominator).
+    /// Zero for n < 3 or when the regression is undefined.
+    pub residual_std: f64,
 }
 
 #[derive(serde::Serialize)]
@@ -32,7 +40,14 @@ struct MLRegressAutoMLOutput {
 pub fn regression_internal(x: &[f64], y: &[f64]) -> RegressionResult {
     let n = x.len();
     if n == 0 || n != y.len() {
-        return RegressionResult { slope: 0.0, intercept: 0.0, r_squared: 0.0 };
+        return RegressionResult {
+            slope: 0.0,
+            intercept: 0.0,
+            r_squared: 0.0,
+            mae: 0.0,
+            rmse: 0.0,
+            residual_std: 0.0,
+        };
     }
 
     let nf = n as f64;
@@ -104,7 +119,35 @@ pub fn regression_internal(x: &[f64], y: &[f64]) -> RegressionResult {
         0.0
     };
 
-    RegressionResult { slope, intercept, r_squared }
+    // Residual error metrics — second pass (|y - ŷ| needs the fitted line,
+    // only known after the OLS normal-equations reduction completes).
+    let mut sum_abs_err = 0.0_f64;
+    let mut sum_sq_err = 0.0_f64;
+    for (&xi, &yi) in x.iter().zip(y.iter()) {
+        let pred = slope * xi + intercept;
+        let residual = yi - pred;
+        let abs_r = if residual >= 0.0 { residual } else { -residual };
+        sum_abs_err += abs_r;
+        sum_sq_err += residual * residual;
+    }
+    let mae = sum_abs_err / nf;
+    let rmse = (sum_sq_err / nf).sqrt();
+    // Unbiased residual standard error: n - 2 (slope + intercept free params).
+    // Returns 0 sentinel for n <= 2 where the estimator is undefined.
+    let residual_std = if n > 2 {
+        (sum_sq_err / (n as f64 - 2.0)).sqrt()
+    } else {
+        0.0
+    };
+
+    RegressionResult {
+        slope,
+        intercept,
+        r_squared,
+        mae,
+        rmse,
+        residual_std,
+    }
 }
 
 fn extract_lengths_durations(eventlog_handle: &str) -> Result<(Vec<f64>, Vec<f64>), JsValue> {
@@ -153,7 +196,14 @@ pub fn discover_ml_regress(eventlog_handle: &str, _activity_key: &str) -> Result
     if lengths.is_empty() {
         return to_js(&MLRegressOutput {
             algorithm: "ml_regress",
-            regression: RegressionResult { slope: 0.0, intercept: 0.0, r_squared: 0.0 }
+            regression: RegressionResult {
+                slope: 0.0,
+                intercept: 0.0,
+                r_squared: 0.0,
+                mae: 0.0,
+                rmse: 0.0,
+                residual_std: 0.0,
+            },
         });
     }
 

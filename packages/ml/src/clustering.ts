@@ -145,10 +145,13 @@ function kmeansCore(
           const diff = cols[j][i] - centCols[j][c];
           ss += diff * diff;
         }
-        // Branchless argmin: +(ss < bestDist) is 1 when better, 0 otherwise.
-        const isBetter = +(ss < bestDist);
-        bestDist = bestDist - isBetter * (bestDist - ss);
-        bestC    = bestC    - isBetter * (bestC - c);
+        // NOTE: a branchless "Infinity - 1 * (Infinity - ss)" trick produces
+        // NaN on the first iteration (bestDist = Infinity), which silently
+        // sends every point to cluster 0. Keep the branched form.
+        if (ss < bestDist) {
+          bestDist = ss;
+          bestC = c;
+        }
       }
       if (assignments[i] !== bestC) {
         assignments[i] = bestC;
@@ -314,6 +317,16 @@ export async function clusterTraces(
       noiseCount: 0,
       assignments: [],
       modelInfo: { error: 'No features available' },
+      metadata: {
+        warning: {
+          code: 'empty_input',
+          message:
+            `clusterTraces received ${Array.isArray(featuresJson) ? featuresJson.length : 0} row(s) ` +
+            `but no usable numeric features were extracted — no clustering was performed.`,
+          inputLength: Array.isArray(featuresJson) ? featuresJson.length : 0,
+          minRequired: 1,
+        },
+      },
     };
   }
 
