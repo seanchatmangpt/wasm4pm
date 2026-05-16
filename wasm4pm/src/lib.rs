@@ -2266,38 +2266,22 @@ pub fn restore_rl_state(json: &str) -> Result<String, JsValue> {
     let state: rl_state_serialization::SerializedRlState = serde_json::from_str(json)
         .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
 
+    // Capture summary fields BEFORE the move into `restore_state` so we can
+    // build the log message without re-borrowing the orchestrator.
+    let active_agent_id = state.active_agent;
+    let linucb_enabled = state.linucb_enabled;
+    let num_q_tables = state.agent_q_tables.len();
+
     RL_ORCHESTRATOR
         .with(|orch| {
-            let mut orch_ref = orch.borrow_mut();
-
-            // Restore active agent
-            if let Some(agent_type) = rl_orchestrator::AgentType::from_u8(state.active_agent) {
-                orch_ref.switch_agent(agent_type);
-            }
-
-            // Restore LinUCB setting
-            orch_ref.set_linucb_selection(state.linucb_enabled);
-
-            // Restore telemetry (cycle_count, cumulative_reward, etc.)
-            let restored_telemetry = rl_orchestrator::CycleTelemetry {
-                cycle_count: state.telemetry.cycle_count,
-                last_health_state: state.telemetry.last_health_state,
-                last_action_label: state.telemetry.last_action_label.clone(),
-                last_spc_alert_count: state.telemetry.last_spc_alert_count,
-                cumulative_reward: state.telemetry.cumulative_reward as f32,
-                ..Default::default()
-            };
-            orch_ref.restore_telemetry(restored_telemetry);
-
-            // Restore Q-tables for all agents
-            let num_q_tables = state.agent_q_tables.len();
-            if num_q_tables > 0 {
-                orch_ref.restore_all_q_tables(state.agent_q_tables);
-            }
+            // Single restore call — see RlOrchestrator::restore_state for the
+            // rationale. Previously this did `switch_agent` → `restore_telemetry`
+            // which clobbered `telemetry.active_agent_name` (PR #70-class drift).
+            let cycle_count = orch.borrow_mut().restore_state(state);
 
             Ok::<String, JsValue>(format!(
                 "Restored RL state from cycle {} (agent {}, linucb={}, {} Q-tables)",
-                state.telemetry.cycle_count, state.active_agent, state.linucb_enabled, num_q_tables
+                cycle_count, active_agent_id, linucb_enabled, num_q_tables
             ))
         })
         .map_err(|_e| crate::error::js_val("Failed to restore RL state"))
@@ -2582,6 +2566,119 @@ mod tests {
         });
 
         // Reset back to clean state
+        RL_ORCHESTRATOR.with(|orch| {
+            *orch.borrow_mut() = rl_orchestrator::RlOrchestrator::new();
+        });
+    }
+
+    /// Rank-1 round-trip oracle: after `restore_rl_state`, the orchestrator's
+    /// `active_agent_name` (inside `telemetry`) must agree with the restored
+    /// `active_agent` enum. Previously the restore path called
+    /// `switch_agent(...)` (which set the name) and then
+    /// `restore_telemetry(CycleTelemetry { ..Default::default() })`, which
+    /// clobbered the name back to the default ("QLearning"). This is the same
+    /// class of bug as the `set_spc_history` cycle_count drift (PR #70):
+    /// per-step mutations followed by a final assignment that overwrites them.
+    ///
+    /// The contract: every documented serialized field round-trips AND the
+    /// orchestrator stays internally consistent (active_agent == name).
+    #[test]
+    #[cfg(feature = "cloud")]
+    fn test_restore_rl_state_keeps_active_agent_name_consistent() {
+        // active_agent = 2 (DoubleQLearning) — chosen because Default::default()
+        // returns "QLearning", so any clobber will be visible.
+        let state_json = r#"{
+            "telemetry": {
+                "cycle_count": 7,
+                "last_health_state": 0,
+                "last_action_label": "Continue",
+                "last_spc_alert_count": 0,
+                "cumulative_reward": 1.5
+            },
+            "active_agent": 2,
+            "linucb_enabled": false
+        }"#;
+
+        RL_ORCHESTRATOR.with(|orch| {
+            *orch.borrow_mut() = rl_orchestrator::RlOrchestrator::new();
+        });
+
+        restore_rl_state(state_json).expect("restore should succeed");
+
+        RL_ORCHESTRATOR.with(|orch| {
+            let orch = orch.borrow();
+            // active_agent enum is restored from the wire
+            assert_eq!(
+                orch.active_agent() as u8,
+                2,
+                "active_agent must be restored to DoubleQLearning (2)"
+            );
+            // Telemetry cycle_count round-trips
+            assert_eq!(orch.telemetry().cycle_count, 7);
+            // INVARIANT: telemetry.active_agent_name must match the active_agent.
+            // PR #70-class drift: switch_agent sets name; restore_telemetry must
+            // not clobber it back to a stale default.
+            assert_eq!(
+                orch.telemetry().active_agent_name,
+                "DoubleQLearning",
+                "telemetry.active_agent_name must agree with active_agent enum"
+            );
+        });
+
+        RL_ORCHESTRATOR.with(|orch| {
+            *orch.borrow_mut() = rl_orchestrator::RlOrchestrator::new();
+        });
+    }
+
+    /// Rank-2 round-trip contract: every documented wire field on
+    /// `SerializedRlState` survives `serialize_rl_state` → reset →
+    /// `restore_rl_state` unchanged. This guards against future drift in any
+    /// of the five `RlTelemetry` fields and in the orchestrator's
+    /// `active_agent` / `linucb_enabled` slots.
+    #[test]
+    #[cfg(feature = "cloud")]
+    fn test_serialize_restore_rl_state_full_roundtrip() {
+        // Seed the orchestrator with a non-default state.
+        RL_ORCHESTRATOR.with(|orch| {
+            let mut o = orch.borrow_mut();
+            *o = rl_orchestrator::RlOrchestrator::new();
+            o.switch_agent(rl_orchestrator::AgentType::ExpectedSARSA);
+            o.set_linucb_selection(true);
+            let t = o.telemetry_mut();
+            t.cycle_count = 123;
+            t.last_health_state = 3;
+            t.last_action_label = "Restart".to_string();
+            t.last_spc_alert_count = 4;
+            t.cumulative_reward = -7.25; // exactly representable in f32
+        });
+
+        let serialized = serialize_rl_state().expect("serialize must succeed");
+
+        // Reset to a different, known state — this is what catches "didn't
+        // really restore" bugs.
+        RL_ORCHESTRATOR.with(|orch| {
+            *orch.borrow_mut() = rl_orchestrator::RlOrchestrator::new();
+        });
+
+        restore_rl_state(&serialized).expect("restore must succeed");
+
+        RL_ORCHESTRATOR.with(|orch| {
+            let o = orch.borrow();
+            assert_eq!(o.active_agent() as u8, 3, "active_agent (ExpectedSARSA=3)");
+            assert!(o.linucb_selection_enabled(), "linucb flag");
+            let t = o.telemetry();
+            assert_eq!(t.cycle_count, 123, "cycle_count");
+            assert_eq!(t.last_health_state, 3, "last_health_state");
+            assert_eq!(t.last_action_label, "Restart", "last_action_label");
+            assert_eq!(t.last_spc_alert_count, 4, "last_spc_alert_count");
+            assert!(
+                (t.cumulative_reward - (-7.25_f32)).abs() < f32::EPSILON,
+                "cumulative_reward"
+            );
+            // Cross-check: derived name must match the restored agent.
+            assert_eq!(t.active_agent_name, "ExpectedSARSA");
+        });
+
         RL_ORCHESTRATOR.with(|orch| {
             *orch.borrow_mut() = rl_orchestrator::RlOrchestrator::new();
         });
