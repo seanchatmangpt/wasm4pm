@@ -97,6 +97,15 @@
 | `discover_ilp_petri_net(handle, activity_key)` | `Result<JsValue, JsValue>` | ILP Petri net (highest quality) |
 | `discover_optimized_dfg(handle, activity_key)` | `Result<JsValue, JsValue>` | Optimized DFG |
 
+## Social Network (social_network.rs)
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `discover_handover_network(handle, resource_key)` | `Result<JsValue, JsValue>` | Handover-of-work social network; edges weighted by direct handoff count between resource pairs |
+| `discover_working_together_network(handle, resource_key)` | `Result<JsValue, JsValue>` | Working-together social network; edges connect resources that handled the same case |
+
+Both return `{ nodes: [{id, label}], edges: [{from, to, weight/co_occurrences}] }`. `resource_key` is typically `"org:resource"` (XES standard).
+
 ## Conformance
 
 | Function | Returns | Description |
@@ -141,6 +150,17 @@
 |----------|---------|-------------|
 | `autonomic_execute_cycle(handle, activity_key, ...)` | `Result<String, JsValue>` | Execute one autonomic cycle (observe→select→act→reward→update) |
 
+## Agentic Pipeline (feature: cloud — fog/browser profiles only)
+
+Four functions for multi-agent task decomposition and evaluation. All gated on `#[cfg(feature = "cloud")]`.
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `run_agentic_pipeline(task_json)` | `Result<String, JsValue>` | Execute a multi-agent task pipeline; returns per-agent outcomes |
+| `validate_agentic_handoff(request_json)` | `Result<String, JsValue>` | Validate an agent handoff request against role and capability contracts |
+| `evaluate_agentic_counterfactuals(task_json)` | `Result<String, JsValue>` | Evaluate counterfactual task variants for robustness analysis |
+| `run_agentic_jtbd_suite(cases_json)` | `Result<String, JsValue>` | Run a Jobs-to-be-Done test suite across multiple agentic task cases |
+
 ## RL Orchestrator
 
 | Function | Returns | Description |
@@ -153,6 +173,8 @@
 | `rl_orchestrator_get_telemetry()` | `Result<JsValue, JsValue>` | Telemetry as JsValue |
 | `serialize_rl_state()` | `Result<String, JsValue>` | Serialize state to JSON |
 | `restore_rl_state(json)` | `Result<String, JsValue>` | Restore state from JSON |
+| `get_spc_history()` | `Result<String, JsValue>` | Export SPC ring-buffer history as JSON (cloud feature) |
+| `set_spc_history(json)` | `Result<String, JsValue>` | Restore SPC ring-buffer history from JSON (cloud feature) |
 
 ## RL State
 
@@ -166,6 +188,8 @@
 
 | Function | Returns | Description |
 |----------|---------|-------------|
+| `circuit_breaker_get_state()` | `Result<String, JsValue>` | Export circuit breaker state as JSON (cloud feature) |
+| `circuit_breaker_set_state(json)` | `Result<String, JsValue>` | Restore circuit breaker state from JSON (cloud feature) |
 | `circuit_breaker_configure(json)` | `Result<String, JsValue>` | Configure from JSON |
 | `circuit_breaker_get_config()` | `Result<String, JsValue>` | Get configuration |
 | `circuit_breaker_reset()` | `Result<String, JsValue>` | Reset to defaults |

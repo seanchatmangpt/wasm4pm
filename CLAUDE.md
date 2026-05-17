@@ -7,7 +7,7 @@
 
 **wasm4pm** is a process mining platform with two layers:
 
-1. **Rust/WASM core** (`wasm4pm/` — Cargo workspace member) — 36 algorithms registered in the kernel registry, compiled to WebAssembly via wasm-pack. This is the algorithm backend. Users rarely touch it directly.
+1. **Rust/WASM core** (`wasm4pm/` — Cargo workspace member) — 38 algorithms registered in the kernel registry, compiled to WebAssembly via wasm-pack. This is the algorithm backend. Users rarely touch it directly.
 
 2. **TypeScript monorepo** (`packages/` + `apps/`) — 11 packages that wrap, orchestrate, and expose the WASM core via a professional CLI (`wpm` (wasm4pm)), configuration system, observability, contracts, and testing harnesses.
 
@@ -15,9 +15,11 @@ The primary entry point for users is **`wpm` (wasm4pm)** (`apps/wasm4pm/`). The 
 
 **State machine source of truth:** `packages/engine/src/transitions.ts` — the VALID_TRANSITIONS map is authoritative, not the CLAUDE.md diagram.
 
-**WASM API reference:** `WASM_API.md` — complete catalog of all `wasm_bindgen` exports (70+ functions across 10 modules). Source scattered across `wasm4pm/src/*.rs`.
+**WASM API reference:** `WASM_API.md` — complete catalog of all `wasm_bindgen` exports (70+ functions across 11 modules, plus Prolog8 API). Source scattered across `wasm4pm/src/*.rs` and `crates/prolog8/src/*.rs`.
 
-**Testing docs:** `TESTING.md` (test layers, oracle hierarchy, gotchas), `ADVERSARIAL_TEST_PLAN.md` (categories A–H with specific tests and oracle ranks).
+**Testing docs:** 
+- `TESTING.md` — test layers, oracle hierarchy, gotchas, and Prolog8 AAT section
+- `ADVERSARIAL_TEST_PLAN.md` — RL categories A–H with oracle ranks, plus Prolog8 families P8-CF-1 to P8-CF-8 (36 tests, all passing)
 
 ---
 
@@ -60,7 +62,7 @@ wasm4pm/
 |---|---|
 | `@wasm4pm/contracts` | Shared types + receipts + errors + plans + hashing + algorithm registry + prediction tasks (leaf package, no deps) |
 | `@wasm4pm/engine` | Engine lifecycle state machine (uninitialized → bootstrapping → ready → planning → running → watching / degraded / failed) |
-| `@wasm4pm/kernel` | WASM facade — 36 registered algorithms (per `packages/kernel/src/registry.ts`), `run(algorithmName, handle, params)`, streaming via `stream()` |
+| `@wasm4pm/kernel` | WASM facade — 38 registered algorithms (per `packages/kernel/src/registry.ts`), `run(algorithmName, handle, params)`, streaming via `stream()` |
 | `@wasm4pm/config` | Zod-validated config, `resolveConfig()`, 5-layer precedence (CLI > TOML > JSON > ENV > defaults), provenance tracking |
 | `@wasm4pm/planner` | `plan(config)` → `ExecutionPlan`, `explain(config)` → string. 4 profiles: fast/balanced/quality/stream |
 | `@wasm4pm/observability` | 3-layer: CLI human output, JSONL machine output, OTEL spans. `Instrumentation.create*Event()` |
@@ -117,7 +119,7 @@ Config file names searched: `wasm4pm.toml`, `wasm4pm.json`
 
 ---
 
-## wasm4pm commands (29 total — count from `apps/wasm4pm/src/commands/*.ts`)
+## wasm4pm commands (35 total — count from `apps/wasm4pm/src/commands/*.ts`)
 
 ### Core
 | Command | Exit codes | Description |
@@ -160,8 +162,10 @@ Config file names searched: `wasm4pm.toml`, `wasm4pm.json`
 | `wpm autoprocess` | AutoProcess: Perception → Decision → Protection → Optimization |
 | `wpm doctor` | 17-check environment diagnostic |
 | `wpm explain` | Human/academic algorithm explanations |
-| `wpm init` | Scaffold `wasm4pm.toml`, `.env.example`, `.gitignore` |
-| `wpm results` | Browse/inspect saved results in `.wasm4pm/results/` |
+| `wpm init` | Scaffold `wasm4pm.toml`, `.env.example`, `.gitignore`. Presets: `fast`, `balanced`, `quality`, `conformance`, `streaming` |
+| `wpm results` | Browse/inspect saved results in `.wasm4pm/results/`. `--diff <ref1,ref2>` compares two results; `--verify <ref>` re-hashes and validates receipt integrity |
+| `wpm swarm` | Multi-worker swarm coordination with convergence detection |
+| `wpm prolog8 <show\|query\|replay>` | Byte-capped Horn-clause proof engine: report capabilities, evaluate queries, verify receipts |
 
 **Exit code contract:** 0=success, 1=config_error, 2=source_error, 3=execution_error, 4=partial_failure, 5=system_error
 
@@ -171,7 +175,7 @@ Auto-saves: discovery and prediction results to `.wasm4pm/results/<timestamp>-<t
 
 ---
 
-## Kernel algorithms (36 registered)
+## Kernel algorithms (38 registered)
 
 From `packages/kernel/src/registry.ts`:
 
@@ -195,31 +199,25 @@ From `packages/kernel/src/registry.ts`:
 | `ilp` | 80 | 90 | Petrinet |
 | `simd_streaming_dfg` | 2 | 28 | DFG |
 
-### ML Analysis (6)
+### ML Analysis (2)
 
 | Algorithm ID | Speed | Quality | Output |
 |---|---|---|---|
-| `ml_classify` | 40 | 60 | ml_result |
-| `ml_cluster` | 35 | 55 | ml_result | ⚠️ internal only — not yet exported to JS API |
-| `ml_forecast` | 30 | 50 | ml_result |
+| `ml_cluster` | 35 | 55 | ml_result |
 | `ml_anomaly` | 30 | 55 | ml_result |
-| `ml_regress` | 25 | 50 | ml_result |
-| `ml_pca` | 35 | 50 | ml_result |
 
-### Analysis & Utilities (20+)
+Note: `ml_classify`, `ml_forecast`, `ml_regress`, `ml_pca` removed in Phase 4 audit — no `#[wasm_bindgen]` exports found.
 
-`transition_system`, `log_to_trie`, `causal_graph`, `performance_spectrum`, `batches`, `correlation_miner`, `generalization`, `petri_net_reduction`, `etconformance_precision`, `alignments`, `complexity_metrics`, `pnml_import`, `bpmn_import`, `powl_to_process_tree`, `yawl_export`, `playout`, `monte_carlo_simulation`, `hierarchical_dfg`, `streaming_log`, `smart_engine`
+### Analysis & Utilities (19)
 
-### ML Analysis Algorithms
+`transition_system`, `log_to_trie`, `causal_graph`, `performance_spectrum`, `batches`, `correlation_miner`, `generalization`, `etconformance_precision`, `alignments`, `complexity_metrics`, `pnml_import`, `bpmn_import`, `powl_to_process_tree`, `yawl_export`, `playout`, `monte_carlo_simulation`, `hierarchical_dfg`, `streaming_log`, `smart_engine`
 
-| Algorithm ID | Speed | Quality | Output |
-|---|---|---|---|
-| `ml_classify` | 40 | 60 | ml_result |
-| `ml_cluster` | 35 | 55 | ml_result | ⚠️ internal only — not yet exported to JS API |
-| `ml_forecast` | 30 | 50 | ml_result |
-| `ml_anomaly` | 30 | 55 | ml_result |
-| `ml_regress` | 25 | 50 | ml_result |
-| `ml_pca` | 35 | 50 | ml_result |
+### Social Network (2)
+
+| Algorithm ID | Description |
+|---|---|
+| `handover_network` | Handover-of-work social network (resource pairs on direct handoffs) |
+| `working_together_network` | Working-together social network (resources co-occurring in the same case) |
 
 ML algorithms support `balanced` and `quality` profiles.
 
@@ -319,7 +317,7 @@ wasm4pm uses **12 canonical feature flags** that map to **5 deployment profiles*
 | `iot` | IoT devices, embedded | ~1MB | basic discovery, conformance | ~12-18 |
 | `edge` | CDN workers, edge servers | ~1.5MB | adv. discovery, basic streaming | ~18-25 |
 | `fog` | Fog computing, gateways | ~2MB | all except POWL, full streaming, ML | ~35-40 |
-| `browser` | Web browsers (DEFAULT) | **2.7MB** (measured: 2,752,160 bytes in `wasm4pm/pkg/wasm4pm_bg.wasm`) | all features (36 kernel-registered algorithms; many additional internal WASM exports) | 36 |
+| `browser` | Web browsers (DEFAULT) | **2.7MB** (measured: 2,752,160 bytes in `wasm4pm/pkg/wasm4pm_bg.wasm`) | all features (38 kernel-registered algorithms; many additional internal WASM exports) | 38 |
 
 ### Build Commands by Profile
 
@@ -403,6 +401,7 @@ interface Receipt {
 
 // Error codes: 200s=config, 300s=source, 400s=algorithm, 500s=wasm, 600s=sink, 700s=otel
 // Result<T> discriminated union: ok(value) | err(string) | error(ErrorInfo)
+// Type guards: isOk<T>(result), isErr<T>(result), isError<T>(result) — exported from @wasm4pm/contracts
 // Plan: DAG of PlanNode (source|algorithm|sink) validated by validatePlanDAG()
 ```
 
@@ -441,7 +440,10 @@ packages/swarm/src/convergence.ts # Convergence detection
 apps/wasm4pm/src/ml-runner.ts    # ML task execution logic
 apps/wasm4pm/src/commands/ml.ts  # `wpm ml` command
 apps/wasm4pm/src/commands/powl.ts # `wpm powl` command
+apps/wasm4pm/src/commands/prolog8.ts # `wpm prolog8` command
+apps/wasm4pm/src/commands/swarm.ts   # `wpm swarm` command
 wasm4pm/src/                 # Rust algorithm implementations
+wasm4pm/src/social_network.rs  # Social network mining (handover + working-together)
 wasm4pm/src/mcp_server.ts      # WASM MCP server
 wasm4pm/src/rl_orchestrator.rs # RL orchestrator (5 agents, LinUCB)
 wasm4pm/src/self_healing.rs     # Circuit breaker, retry policies
