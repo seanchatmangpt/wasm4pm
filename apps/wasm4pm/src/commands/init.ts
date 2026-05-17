@@ -4,31 +4,19 @@ import * as path from 'path';
 import { existsSync } from 'fs';
 import { emitResult, makeResult, makeErrorResult, ConsoleProjection } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import { getExampleTomlConfig, getExampleJsonConfig, getPublicPresetConfig, getExamplePresetConfig, type PublicPreset } from '@wasm4pm/config';
+import {
+  getExampleTomlConfig,
+  getExampleJsonConfig,
+  getPublicPresetConfig,
+  getExamplePresetConfig,
+  getExampleEnvFile,
+  type PublicPreset,
+} from '@wasm4pm/config';
 import { exitWithFlush } from '../otel/exit.js';
 import { withSpan } from './_otel.js';
 
-// Template content generators
-function getEnvExampleContent(): string {
-  return `# Environment variables for wasm4pm
-# Copy to .env and adjust as needed
-
-# Execution profile: fast, balanced, quality, stream
-WASM4PM_PROFILE=balanced
-
-# Logging level: debug, info, warn, error
-WASM4PM_LOG_LEVEL=info
-
-# Enable watch mode
-WASM4PM_WATCH=false
-
-# Output format: human, json
-WASM4PM_OUTPUT_FORMAT=human
-
-# Output destination: stdout, stderr, or file path
-WASM4PM_OUTPUT_DESTINATION=stdout
-`;
-}
+// getEnvExampleContent is sourced from @wasm4pm/config (getExampleEnvFile) so it always
+// stays in sync with the full set of WASM4PM_* variables the resolver actually handles.
 
 function getGitignoreContent(): string {
   return `# Node modules
@@ -212,6 +200,20 @@ async function validateConfigFiles(dirpath: string): Promise<boolean> {
   return true;
 }
 
+// Presets that have both TOML templates and a full BaseConfig object (JSON serialisable).
+const PUBLIC_PRESETS_WITH_JSON: ReadonlyArray<string> = ['fast', 'balanced', 'quality'];
+
+// All supported init preset names.
+const VALID_PRESETS: ReadonlyArray<string> = [
+  'fast',
+  'balanced',
+  'quality',
+  'conformance',
+  'streaming',
+];
+
+type AllPresets = 'fast' | 'balanced' | 'quality' | 'conformance' | 'streaming';
+
 export const init = defineCommand({
   meta: {
     name: 'init',
@@ -246,7 +248,8 @@ export const init = defineCommand({
     },
     preset: {
       type: 'string',
-      description: 'Initialize with a preset (fast, balanced, quality)',
+      description:
+        'Initialize with a preset: fast (DFG, no ML/prediction), balanced (heuristic+ML+prediction), quality (ILP+full ML+RL), conformance (alignment-based fitness check), streaming (SIMD DFG + drift detection)',
       alias: 'p',
     },
   },
@@ -278,7 +281,6 @@ export const init = defineCommand({
         return await exitWithFlush(result.exit_code);
       }
 
-      const VALID_PRESETS = ['fast', 'balanced', 'quality'];
       if (preset && !VALID_PRESETS.includes(preset)) {
         const result = makeErrorResult(
           'init',
@@ -290,15 +292,30 @@ export const init = defineCommand({
         return await exitWithFlush(result.exit_code);
       }
 
-      // Create config file
-      const configFilename = configFormat === 'toml' ? 'wasm4pm.toml' : 'wasm4pm.json';
+      // Create config file.
+      // conformance and streaming presets are workflow-specific templates — they only have a
+      // TOML representation and do not map to a full BaseConfig object. When those presets are
+      // requested with --config-format json, we silently fall back to TOML so the generated
+      // file is valid and human-readable.
+      const tomlOnlyPreset = preset !== undefined && !PUBLIC_PRESETS_WITH_JSON.includes(preset);
+      const effectiveFormat = tomlOnlyPreset ? 'toml' : configFormat;
+      const configFilename = effectiveFormat === 'toml' ? 'wasm4pm.toml' : 'wasm4pm.json';
       const configPath = path.join(cwd, configFilename);
+
       let configContent: string;
       try {
         if (preset) {
-          configContent = configFormat === 'toml'
-            ? getExamplePresetConfig(preset as PublicPreset)
-            : JSON.stringify(getPublicPresetConfig(preset as PublicPreset), null, 2);
+          if (tomlOnlyPreset && configFormat === 'json') {
+            earlyProjection.warn(
+              `The "${preset}" preset is a workflow template and only supports TOML format. Generating wasm4pm.toml instead of wasm4pm.json.`
+            );
+          }
+          if (effectiveFormat === 'toml') {
+            configContent = getExamplePresetConfig(preset as AllPresets);
+          } else {
+            // JSON format: only reachable for fast / balanced / quality
+            configContent = JSON.stringify(getPublicPresetConfig(preset as PublicPreset), null, 2);
+          }
         } else {
           configContent = configFormat === 'toml' ? getExampleTomlConfig() : getExampleJsonConfig();
         }
@@ -311,8 +328,10 @@ export const init = defineCommand({
 
       const configCreated = await safeWriteFile(configPath, configContent, force, earlyProjection);
 
+      // .env.example: use getExampleEnvFile() from @wasm4pm/config so every WASM4PM_* variable
+      // that the resolver understands is listed with a description.
       const envPath = path.join(cwd, '.env.example');
-      const envCreated = await safeWriteFile(envPath, getEnvExampleContent(), force, earlyProjection);
+      const envCreated = await safeWriteFile(envPath, getExampleEnvFile(), force, earlyProjection);
 
       const gitignorePath = path.join(cwd, '.gitignore');
       const gitignoreCreated = !existsSync(gitignorePath)
@@ -332,17 +351,27 @@ export const init = defineCommand({
       if (gitignoreCreated) filesCreated.push('.gitignore');
       if (readmeCreated) filesCreated.push('README.md');
 
+      // Algorithm guidance tailored to the chosen preset.
+      const algorithmHint = (() => {
+        if (preset === 'conformance') return 'etconformance_precision (fast) or alignments (exact)';
+        if (preset === 'streaming')   return 'simd_streaming_dfg (fastest) or dfg (default)';
+        if (preset === 'quality')     return 'ilp (highest quality) or genetic_algorithm (flexible)';
+        if (preset === 'balanced')    return 'heuristic_miner (default) or inductive_miner (structured)';
+        return 'dfg (fastest) → heuristic_miner (balanced) → ilp (highest quality)';
+      })();
+
       const payload = {
-        format: configFormat,
+        format: effectiveFormat,
         preset: preset ?? null,
         files_created: filesCreated,
         valid: isValid,
         instructions: [
-          `1. Edit ${configFilename}: set source.path to your .xes log file and pick an algorithm`,
-          '2. Run: wpm algorithms          — list all 36+ available algorithms with speed/quality scores',
-          '3. Run: wpm run <log.xes>       — discover a process model (uses config defaults)',
-          '4. Run: wpm doctor              — verify your environment is correctly configured',
-          '5. Copy .env.example to .env and add any secret values (OTEL endpoints, etc.)',
+          `1. Edit ${configFilename}: set [source] path to your .xes log file`,
+          `2. Algorithm guidance for this preset: ${algorithmHint}`,
+          '3. Run: wpm algorithms          — list all 36+ algorithms with speed/quality scores',
+          '4. Run: wpm run <log.xes>       — discover a process model (uses config defaults)',
+          '5. Run: wpm doctor              — verify your environment is correctly configured',
+          '6. Copy .env.example to .env — it lists ALL WASM4PM_* env vars with descriptions',
         ],
       };
 

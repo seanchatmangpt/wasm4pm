@@ -653,50 +653,84 @@ ucb1_exploration = 1.4142  # √2
  */
 export function getExampleEnvFile(): string {
   return `# wasm4pm environment variables (.env)
+# Copy this file to .env and adjust values as needed.
 # Place at: ./.env or ~/.wasm4pm/.env
+#
+# Precedence: CLI args > wasm4pm.toml > wasm4pm.json > ENV vars > defaults
 
-# --- Core ---
+# ==============================================================================
+# CORE
+# ==============================================================================
 WASM4PM_PROFILE=balanced              # fast | balanced | quality | stream
-WASM4PM_ALGORITHM=dfg
+WASM4PM_ALGORITHM=dfg                 # dfg | heuristic_miner | inductive_miner | ilp | genetic_algorithm | ...
 WASM4PM_OUTPUT_FORMAT=human           # human | json
-WASM4PM_OUTPUT_DESTINATION=stdout
-WASM4PM_LOG_LEVEL=info
-WASM4PM_WATCH=false
-WASM4PM_SOURCE_KIND=file
-WASM4PM_SINK_KIND=stdout
+WASM4PM_OUTPUT_DESTINATION=stdout     # stdout | stderr | /path/to/file
+WASM4PM_LOG_LEVEL=info                # debug | info | warn | error
+WASM4PM_WATCH=false                   # true | false
+WASM4PM_SOURCE_KIND=file              # file | stream | http
+WASM4PM_SINK_KIND=stdout              # stdout | file | http
 
-# --- OpenTelemetry ---
+# ==============================================================================
+# OPENTELEMETRY
+# ==============================================================================
 WASM4PM_OTEL_ENABLED=false
-WASM4PM_OTEL_ENDPOINT=http://localhost:4318
+WASM4PM_OTEL_ENDPOINT=http://localhost:4318   # OTLP HTTP collector URL
 
-# --- Prediction ---
+# ==============================================================================
+# PREDICTION (predictive process monitoring)
+# Six perspectives: next_activity | remaining_time | outcome | drift | features | resource
+# ==============================================================================
 WASM4PM_PREDICTION_ENABLED=false
 WASM4PM_PREDICTION_TASKS=next_activity,remaining_time,drift
-WASM4PM_PREDICTION_ACTIVITY_KEY=concept:name
-WASM4PM_PREDICTION_NGRAM_ORDER=2      # integer in [2, 5]
-WASM4PM_PREDICTION_DRIFT_WINDOW=10    # positive integer
-WASM4PM_PREDICTION_DRIFT_EWMA_ALPHA=0.2  # number in (0, 1]
-WASM4PM_PREDICTION_DRIFT_THRESHOLD=0.3   # number in (0, 1]
+WASM4PM_PREDICTION_ACTIVITY_KEY=concept:name  # XES standard attribute for activity names
+WASM4PM_PREDICTION_NGRAM_ORDER=2              # integer in [2, 5]; higher = more context
+WASM4PM_PREDICTION_DRIFT_WINDOW=10            # positive integer; sliding window size for drift
+WASM4PM_PREDICTION_DRIFT_EWMA_ALPHA=0.2       # number in (0, 1]; higher = more reactive
+WASM4PM_PREDICTION_DRIFT_THRESHOLD=0.3        # number in (0, 1]; drift score alert threshold
 
-# --- ML ---
+# ==============================================================================
+# ML (machine learning analysis)
+# Tasks: classify | cluster | forecast | anomaly | regress | pca
+# ==============================================================================
 WASM4PM_ML_ENABLED=false
 WASM4PM_ML_ALGORITHMS=classify,cluster,forecast
 
-# --- RL ---
+# ==============================================================================
+# RL (reinforcement learning orchestration)
+# Agents: QLearning | SARSA | DoubleQLearning | ExpectedSARSA | REINFORCE
+# ==============================================================================
 WASM4PM_RL_ENABLED=false
 WASM4PM_RL_AGENTS=QLearning,SARSA
-WASM4PM_RL_LEARNING_RATE=0.1          # α in (0, 1]
-WASM4PM_RL_DISCOUNT_FACTOR=0.99       # γ in [0, 1]
-WASM4PM_RL_EPSILON=0.1                # ε in [0, 1]
+WASM4PM_RL_LEARNING_RATE=0.1          # α in (0, 1]; higher = faster but less stable
+WASM4PM_RL_DISCOUNT_FACTOR=0.99       # γ in [0, 1]; higher = more foresighted
+WASM4PM_RL_EPSILON=0.1                # ε-greedy exploration in [0, 1]
+
+# ==============================================================================
+# MEMBRANE (pre-execution conformance membrane — 5 layers)
+# Layers: actor → object → route → automl → custody
+# ==============================================================================
+WASM4PM_MEMBRANE_ENABLED=false
+# WASM4PM_MEMBRANE_CUSTODY_ACTIONS=approve,release,transfer
+# WASM4PM_MEMBRANE_PERSIST=false
+# WASM4PM_MEMBRANE_PATH=.wasm4pm/envelopes
+# WASM4PM_MEMBRANE_ACTOR_ESCALATE=0.7   # anomaly score above which actor layer escalates
+# WASM4PM_MEMBRANE_AUTOML_ESCALATE=0.9  # score above which automl layer escalates
 `;
 }
 
 /**
  * Get a preset example config suitable for one of the standard execution profiles.
  *
- * Useful for `wpm init --preset fast|balanced|quality` and as documentation.
+ * Presets:
+ *   fast        — DFG discovery, minimal overhead, sub-second, no ML/prediction
+ *   balanced    — Heuristic miner, ML classify+anomaly, next-activity prediction
+ *   quality     — ILP/genetic, full ML suite, all prediction tasks, RL orchestration
+ *   conformance — Alignments-based fitness check against a normative model
+ *   streaming   — SIMD streaming DFG, drift detection, real-time log analysis
+ *
+ * Useful for `wpm init --preset <preset>` and as documentation.
  */
-export function getExamplePresetConfig(preset: 'fast' | 'balanced' | 'quality'): string {
+export function getExamplePresetConfig(preset: 'fast' | 'balanced' | 'quality' | 'conformance' | 'streaming'): string {
   switch (preset) {
     case 'fast':
       return `# wasm4pm — "fast" preset (latency-optimised)
@@ -820,6 +854,123 @@ ngramOrder = 4
 [prediction.drift]
 ewma_alpha = 0.1
 threshold = 0.2
+`;
+    case 'conformance':
+      return `# wasm4pm — "conformance" preset
+# Purpose: measure how well a real event log conforms to a normative process model.
+# Uses token-based replay for fitness and ET-conformance for precision.
+# Run: wpm conformance -i event_log.xes -m normative_model.pnml
+schema_version = ${SCHEMA_VERSION}
+version = "26.4.5"
+
+[source]
+kind = "file"
+# path = "./event_log.xes"
+
+[sink]
+kind = "stdout"
+
+# Conformance checking uses ETConformance + alignments for exact fitness/precision.
+# For large logs, start with etconformance_precision (fast).
+# For gold-standard results, use alignments (more expensive).
+# Typical healthy range: fitness > 0.85, precision > 0.70.
+[algorithm]
+name = "etconformance_precision"  # etconformance_precision | alignments | heuristic_miner
+
+[execution]
+profile = "quality"    # quality profile makes all conformance algorithms available
+timeout = 600000       # 10 minutes — alignments can be expensive for large logs
+
+[observability]
+logLevel = "info"
+metricsEnabled = true  # Emit fitness/precision metrics
+
+[observability.otel]
+enabled = false
+exporter = "otlp"
+required = false
+
+[watch]
+enabled = false
+poll_interval = 1000
+
+[output]
+format = "human"
+destination = "stdout"
+pretty = true
+colorize = true
+
+[prediction]
+enabled = false
+tasks = []
+
+[ml]
+enabled = false
+
+[rl]
+enabled = false
+`;
+    case 'streaming':
+      return `# wasm4pm — "streaming" preset
+# Purpose: real-time process monitoring on high-volume event streams.
+# Uses SIMD-accelerated streaming DFG + EWMA drift detection.
+# Run: wpm run --config wasm4pm.toml --watch
+schema_version = ${SCHEMA_VERSION}
+version = "26.4.5"
+
+[source]
+kind = "stream"   # stream = read from stdin or a message queue
+
+[sink]
+kind = "stdout"
+
+# simd_streaming_dfg is the fastest discovery algorithm (speed score: 2).
+# For slightly higher quality at acceptable latency: heuristic_miner (speed: 25).
+[algorithm]
+name = "simd_streaming_dfg"   # simd_streaming_dfg | dfg | heuristic_miner
+
+[execution]
+profile = "stream"    # enables streaming-full feature set + SIMD acceleration
+timeout = 0           # 0 = unlimited (streaming never stops voluntarily)
+
+[observability]
+logLevel = "warn"     # reduce log noise in high-throughput scenarios
+metricsEnabled = true # emit throughput metrics
+
+[observability.otel]
+enabled = false
+exporter = "otlp"
+required = false
+
+[watch]
+enabled = true         # re-run model update when config changes
+poll_interval = 500    # poll every 500ms (aggressive for streaming scenarios)
+# checkpoint_dir = "./.wasm4pm/checkpoints"
+
+[output]
+format = "json"        # machine-parseable — useful for downstream consumers
+destination = "stdout"
+pretty = false
+colorize = false
+
+# Drift detection: EWMA on the activity distribution of sliding trace windows.
+# Fire a drift event when the Jaccard distance exceeds the threshold.
+[prediction]
+enabled = true
+activityKey = "concept:name"
+ngramOrder = 2
+driftWindowSize = 20   # traces per window — larger = more stable, slower response
+tasks = ["drift", "next_activity"]
+
+[prediction.drift]
+ewma_alpha = 0.3       # more reactive (higher α) for streaming use cases
+threshold = 0.25
+
+[ml]
+enabled = false        # ML is disabled in stream profile for latency reasons
+
+[rl]
+enabled = false
 `;
   }
 }
