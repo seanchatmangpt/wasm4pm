@@ -26,13 +26,12 @@ verify: test lint bench-quick check-debt
 
 verify-wasm: verify
 # TypeScript-only path: pnpm test + lint + debt check (no cargo bench — avoids lock contention)
-# @wasm4pm/cli, @wasm4pm/engine, and @wasm4pm/lab-cli-tests are excluded: all require the
-# nodejs-target WASM binary produced by wasm-pack. Without it, vitest throws "ESM integration
-# proposal for Wasm is not supported" / "wasm4pm/pkg/ is not nodejs target". Those failures are
-# WASM environment issues, not TypeScript compilation errors, so they must not block TS-only
-# commits.
+# @wasm4pm/cli, @wasm4pm/engine, and @wasm4pm/kernel are excluded: all require the nodejs-target
+# WASM binary produced by wasm-pack. Without it, vitest throws "ESM integration proposal for Wasm
+# is not supported" / "wasm4pm/pkg/ is not nodejs target". Those failures are WASM environment
+# issues, not TypeScript compilation errors, so they must not block TS-only commits.
 verify-ts: lint check-debt
-	@pnpm -r --parallel --filter '!@wasm4pm/cli' --filter '!@wasm4pm/engine' --filter '!@wasm4pm/lab-cli-tests' test
+	@pnpm -r --parallel --filter '!@wasm4pm/cli' --filter '!@wasm4pm/engine' --filter '!@wasm4pm/kernel' test
 	@echo "✅ DoD Verification (TS-only) Complete."
 
 # ── Technical Debt Check ──────────────────────────────────────────────────────

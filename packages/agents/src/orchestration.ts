@@ -56,6 +56,8 @@ export class AgentOrchestrator {
     options: {
       registryPath?: string;
       auditPath?: string;
+      cycleTimeoutMs?: number;
+      agentTimeoutMs?: number;
     } = {}
   ) {
     this.registry = new AgentRegistry(options.registryPath);
