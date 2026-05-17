@@ -32,6 +32,27 @@ export enum WasmErrorCode {
 }
 
 /**
+ * Classified WASM load failure — carries a machine-readable cause code and the
+ * resolved module path so callers (and the bootstrap timeout handler) can emit
+ * specific, actionable error messages rather than generic "BOOTSTRAP_FAILED".
+ */
+export class WasmLoadError extends Error {
+  public readonly loadCause: 'FILE_NOT_FOUND' | 'CORRUPT_BINARY' | 'MISSING_EXPORTS' | 'LOAD_FAILED';
+  public readonly modulePath: string | undefined;
+
+  constructor(
+    loadCause: 'FILE_NOT_FOUND' | 'CORRUPT_BINARY' | 'MISSING_EXPORTS' | 'LOAD_FAILED',
+    message: string,
+    modulePath?: string
+  ) {
+    super(message);
+    this.loadCause = loadCause;
+    this.modulePath = modulePath;
+    this.name = 'WasmLoadError';
+  }
+}
+
+/**
  * WASM initialization status
  */
 export interface WasmLoaderStatus {
@@ -301,19 +322,16 @@ export class WasmLoader {
   }
 
   /**
-   * Load WASM module from wasm4pm/pkg directory
-   * Validates that the module exports required discovery functions (load_eventlog_from_xes)
-   * Ignore: memory field is bundler-specific and may not be present on all targets
+   * Load WASM module from wasm4pm/pkg directory.
+   * Validates that the module exports required discovery functions.
+   * Throws WasmLoadError with a classified cause for actionable diagnostics.
    */
   private async loadWasmModule(): Promise<WasmModule> {
-    // Dynamically import based on runtime environment
     let wasmModule: any;
+    let resolvedModulePath = this.config.modulePath;
 
     try {
-      // Import from the built wasm4pm WASM package
-      let modulePath = this.config.modulePath;
-
-      if (!modulePath) {
+      if (!resolvedModulePath) {
         // Compute workspace root from import.meta.url
         // In src: wasm-loader.ts at packages/engine/src/
         // In dist: wasm-loader.js at packages/engine/dist/
@@ -327,20 +345,77 @@ export class WasmLoader {
           throw new Error('Cannot determine workspace root: "packages/engine" not found in path');
         }
         const workspaceRoot = currentPath.substring(0, engineIndex);
-        modulePath = workspaceRoot + 'wasm4pm/pkg/wasm4pm.js';
+        resolvedModulePath = workspaceRoot + 'wasm4pm/pkg/wasm4pm.js';
+      }
+
+      // Verify the file exists before attempting dynamic import (Node.js only).
+      // This produces a precise "file not found" error rather than a cryptic
+      // "ERR_MODULE_NOT_FOUND" / "Cannot find module" message.
+      if (typeof process !== 'undefined' && process.versions?.node) {
+        const { existsSync } = await import('fs');
+        if (!existsSync(resolvedModulePath)) {
+          throw new WasmLoadError(
+            'FILE_NOT_FOUND',
+            `WASM binary not found at: ${resolvedModulePath}. ` +
+              `Run "npm run build" inside the wasm4pm/ directory to compile the WASM binary, ` +
+              `or set the modulePath config option to the correct wasm4pm.js path.`,
+            resolvedModulePath
+          );
+        }
       }
 
       // Use dynamic import for flexibility
-      wasmModule = await import(modulePath);
+      wasmModule = await import(resolvedModulePath);
     } catch (err) {
+      // Re-throw WasmLoadError instances as-is (already classified)
+      if (err instanceof WasmLoadError) throw err;
+
       const message = err instanceof Error ? err.message : String(err);
-      throw new Error(`Failed to load WASM module: ${message}`);
+
+      // Classify the error by its message pattern for actionable diagnostics
+      if (
+        message.includes('ERR_MODULE_NOT_FOUND') ||
+        message.includes('Cannot find module') ||
+        message.includes('MODULE_NOT_FOUND')
+      ) {
+        throw new WasmLoadError(
+          'FILE_NOT_FOUND',
+          `WASM module not found at "${resolvedModulePath}". ` +
+            `Run "npm run build" in the wasm4pm/ directory to compile the WASM binary.`,
+          resolvedModulePath
+        );
+      }
+
+      if (
+        message.includes('SyntaxError') ||
+        message.includes('Unexpected token') ||
+        message.includes('invalid wasm') ||
+        message.includes('WebAssembly.compile')
+      ) {
+        throw new WasmLoadError(
+          'CORRUPT_BINARY',
+          `WASM binary at "${resolvedModulePath}" appears corrupt or incomplete. ` +
+            `Delete wasm4pm/pkg/ and re-run "npm run build" to regenerate the binary.`,
+          resolvedModulePath
+        );
+      }
+
+      throw new WasmLoadError(
+        'LOAD_FAILED',
+        `Failed to load WASM module from "${resolvedModulePath}": ${message}`,
+        resolvedModulePath
+      );
     }
 
     // Validate that the module exports required functions
     // memory field may not be present depending on bundler target (nodejs vs bundler vs browser)
     if (!wasmModule || typeof wasmModule.load_eventlog_from_xes !== 'function') {
-      throw new Error('Invalid WASM module: missing required exports (load_eventlog_from_xes)');
+      throw new WasmLoadError(
+        'MISSING_EXPORTS',
+        `WASM module at "${resolvedModulePath}" is missing required export "load_eventlog_from_xes". ` +
+          `The binary may be from an incompatible version. Re-run "npm run build" to regenerate.`,
+        resolvedModulePath
+      );
     }
 
     return wasmModule as WasmModule;

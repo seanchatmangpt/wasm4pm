@@ -22,7 +22,7 @@ export { CheckpointManager } from './checkpointing.js';
 export type { Checkpoint } from './checkpointing.js';
 export { WasmLoader, createWasmLoader, getWasmLoader } from './wasm-loader.js';
 export type { WasmModule, WasmLoaderConfig, WasmLoaderStatus } from './wasm-loader.js';
-export { WasmErrorCode } from './wasm-loader.js';
+export { WasmErrorCode, WasmLoadError } from './wasm-loader.js';
 export { FederationController, FederationCircuitBreaker, initializeFederationStack, planFederationIntegration, } from './federation.js';
 export type { BackendState, CircuitBreakerState, DecisionTraceEntry } from './federation.js';
 export { NullBackend } from './null-backend.js';

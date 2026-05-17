@@ -150,6 +150,31 @@ export const social = defineCommand({
           // Centrality not available
         }
 
+        // Normalise edge weight: Rust emits `handovers` (handover metric) or
+        // `co_occurrences` (working-together metric) — map both to `weight`
+        // so the rendering layer always has a single field to sort on.
+        type RawEdge = { from: string; to: string; weight?: number; handovers?: number; co_occurrences?: number };
+        const rawEdges = ((network as Record<string, unknown>).edges ?? []) as RawEdge[];
+        const normalisedEdges = rawEdges.map((e) => ({
+          from: e.from,
+          to: e.to,
+          weight: e.weight ?? e.handovers ?? e.co_occurrences ?? 1,
+        }));
+
+        // Bottleneck detection: flag any resource that originates >50% of all handovers.
+        // A single resource dominating handovers signals a concentration-of-work risk
+        // (Van der Aalst organisational mining — social network bottleneck pattern).
+        const totalHandovers = normalisedEdges.reduce((s, e) => s + e.weight, 0);
+        const outboundByResource: Record<string, number> = {};
+        for (const e of normalisedEdges) {
+          outboundByResource[e.from] = (outboundByResource[e.from] ?? 0) + e.weight;
+        }
+        const bottleneckResources: Array<{ resource: string; share: number }> = Object.entries(
+          outboundByResource
+        )
+          .filter(([, count]) => totalHandovers > 0 && count / totalHandovers > 0.5)
+          .map(([resource, count]) => ({ resource, share: count / totalHandovers }));
+
         const payload = {
           input: inputPath,
           activityKey,
@@ -158,9 +183,10 @@ export const social = defineCommand({
           similarTaskWarning,
           network: {
             nodes: ((network as Record<string, unknown>).nodes ?? []) as Array<{ id: string; label?: string }>,
-            edges: ((network as Record<string, unknown>).edges ?? []) as Array<{ from: string; to: string; weight?: number }>,
+            edges: normalisedEdges,
           },
           centrality,
+          bottleneckResources,
         };
 
         const result = makeResult('social', payload, performance.now() - t0, EXIT_CODES.success);
@@ -181,6 +207,7 @@ export const social = defineCommand({
                 metric,
                 resources_count: payload.network.nodes.length,
                 edges_count: payload.network.edges.length,
+                bottleneck_count: payload.bottleneckResources.length,
               },
             };
             saveCommandReceipt(receipt);
@@ -209,11 +236,12 @@ function printHumanSocial(
     resourceKey: string;
     metric: string;
     similarTaskWarning: boolean;
-    network: { nodes: Array<{ id: string; label?: string }>; edges: Array<{ from: string; to: string; weight?: number }> };
+    network: { nodes: Array<{ id: string; label?: string }>; edges: Array<{ from: string; to: string; weight: number }> };
     centrality: Record<string, unknown> | null;
+    bottleneckResources: Array<{ resource: string; share: number }>;
   }
 ): void {
-  const { network, centrality, metric } = payload;
+  const { network, centrality, metric, bottleneckResources } = payload;
 
   projection.log('');
   projection.success(`Social Network Mining — ${payload.input}`);
@@ -226,17 +254,29 @@ function printHumanSocial(
     projection.warn('Similar-task metric not available in current WASM build');
   }
 
+  // Bottleneck warning: a single resource originating >50% of handovers
+  // is a concentration-of-work signal (Van der Aalst organisational mining)
+  if (bottleneckResources.length > 0) {
+    for (const b of bottleneckResources) {
+      projection.warn(
+        `Bottleneck detected: "${b.resource}" originates ${(b.share * 100).toFixed(1)}% of all handovers (>50% threshold)`
+      );
+    }
+    projection.log('');
+  }
+
   projection.log(`  Network statistics:`);
   projection.log(`    Nodes (resources): ${network.nodes.length}`);
   projection.log(`    Edges (interactions): ${network.edges.length}`);
   projection.log('');
 
   if (network.edges.length > 0) {
-    const sortedEdges = [...network.edges].sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0));
-    projection.log(`  Top interactions (by ${metric}):`);
+    const sortedEdges = [...network.edges].sort((a, b) => b.weight - a.weight);
+    // Handover metric shows directed arrows; working-together is undirected
+    const arrow = metric === 'handover' ? ' → ' : ' ↔ ';
+    projection.log(`  Top handover-of-work relationships (by frequency):`);
     for (const edge of sortedEdges.slice(0, 10)) {
-      const weight = edge.weight ?? 1;
-      projection.log(`    ${edge.from} ↔ ${edge.to}: ${weight}`);
+      projection.log(`    ${edge.from}${arrow}${edge.to}: ${edge.weight}`);
     }
     if (sortedEdges.length > 10) {
       projection.log(`    ... and ${sortedEdges.length - 10} more interactions`);
@@ -248,7 +288,7 @@ function printHumanSocial(
     const centralityScores = centrality.scores as Record<string, number>;
     if (centralityScores) {
       const sorted = Object.entries(centralityScores).sort((a, b) => b[1] - a[1]);
-      projection.log('  Centrality scores (top 10):');
+      projection.log('  Centrality scores — most connected resources (top 10):');
       for (const [resource, score] of sorted.slice(0, 10)) {
         projection.log(`    ${resource}: ${score.toFixed(3)}`);
       }

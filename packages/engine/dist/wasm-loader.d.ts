@@ -27,6 +27,16 @@ export declare enum WasmErrorCode {
     WASM_VERSION_MISMATCH = 5
 }
 /**
+ * Classified WASM load failure — carries a machine-readable cause code and the
+ * resolved module path so callers (and the bootstrap timeout handler) can emit
+ * specific, actionable error messages rather than generic "BOOTSTRAP_FAILED".
+ */
+export declare class WasmLoadError extends Error {
+    readonly loadCause: 'FILE_NOT_FOUND' | 'CORRUPT_BINARY' | 'MISSING_EXPORTS' | 'LOAD_FAILED';
+    readonly modulePath: string | undefined;
+    constructor(loadCause: 'FILE_NOT_FOUND' | 'CORRUPT_BINARY' | 'MISSING_EXPORTS' | 'LOAD_FAILED', message: string, modulePath?: string);
+}
+/**
  * WASM initialization status
  */
 export interface WasmLoaderStatus {
@@ -114,9 +124,9 @@ export declare class WasmLoader {
      */
     private validateMemory;
     /**
-     * Load WASM module from wasm4pm/pkg directory
-     * Validates that the module exports required discovery functions (load_eventlog_from_xes)
-     * Ignore: memory field is bundler-specific and may not be present on all targets
+     * Load WASM module from wasm4pm/pkg directory.
+     * Validates that the module exports required discovery functions.
+     * Throws WasmLoadError with a classified cause for actionable diagnostics.
      */
     private loadWasmModule;
     /**

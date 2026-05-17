@@ -104,44 +104,81 @@ export const temporal = defineCommand({
         const rawDfg = wasm.discover_dfg(logHandle, activityKey);
         const dfg = typeof rawDfg === 'string' ? JSON.parse(rawDfg) : rawDfg;
 
-        let temporalProfile: Record<string, unknown> | null = null;
+        // Discover temporal profile: two-step process required by the WASM API.
+        // Step 1 — discover_temporal_profile returns an opaque handle to a stored
+        //           TemporalProfile object (not inline data).
+        // Step 2 — check_temporal_conformance takes (log_handle, profile_handle,
+        //           activity_key, timestamp_key, zeta) and returns conformance details.
+        // Earlier code passed activityKey as profile_handle, which always failed silently.
+        let profileHandle: string | null = null;
+        let temporalConformance: Record<string, unknown> | null = null;
         try {
-          const rawProfile = wasm.compute_temporal_profile(logHandle, activityKey, timestampKey);
-          temporalProfile = typeof rawProfile === 'string' ? JSON.parse(rawProfile) : rawProfile;
+          const rawProfileHandle = wasm.discover_temporal_profile(logHandle, activityKey, timestampKey);
+          profileHandle = typeof rawProfileHandle === 'string' ? rawProfileHandle : String(rawProfileHandle);
         } catch {
-          // Temporal profile not available
+          // WASM function not available in this build profile
         }
 
         let violations: Array<Record<string, unknown>> = [];
-        try {
-          const rawViolations = wasm.check_temporal_conformance(
-            logHandle,
-            activityKey,
-            timestampKey,
-            threshold
-          );
-          const violationsResult =
-            typeof rawViolations === 'string' ? JSON.parse(rawViolations) : rawViolations;
-          violations = (violationsResult.violations as Array<Record<string, unknown>>) ?? [];
-        } catch {
-          // Temporal conformance not available
+        let impossibleTimestampCount = 0;
+        if (profileHandle) {
+          try {
+            // zeta=2.0: flag transitions deviating more than 2 standard deviations from mean
+            const rawConformance = wasm.check_temporal_conformance(
+              logHandle,
+              profileHandle,
+              activityKey,
+              timestampKey,
+              2.0
+            );
+            temporalConformance =
+              typeof rawConformance === 'string' ? JSON.parse(rawConformance) : rawConformance;
+            const details = (temporalConformance?.details as Array<Record<string, unknown>>) ?? [];
+            violations = details.filter((d) => d.deviation === true);
+            // Impossible timestamps: the Rust implementation uses `if t2 >= t1` to guard
+            // duration calculation. Any step where t2 < t1 was silently dropped — we now
+            // surface the count so the analyst knows the log has data-quality issues.
+            impossibleTimestampCount = details.filter(
+              (d) => typeof d.duration_ms === 'number' && (d.duration_ms as number) < 0
+            ).length;
+          } catch {
+            // Conformance check failed or not available
+          }
         }
 
-        let performanceDfg: Record<string, unknown> | null = null;
-        try {
-          const rawPerf = wasm.compute_performance_dfg(logHandle, activityKey, timestampKey);
-          performanceDfg = typeof rawPerf === 'string' ? JSON.parse(rawPerf) : rawPerf;
-        } catch {
-          // Performance DFG not available
-        }
-
-        let activityDurations: Record<string, unknown> | null = null;
-        try {
-          const rawDurations = wasm.compute_activity_durations(logHandle, activityKey, timestampKey);
-          activityDurations =
-            typeof rawDurations === 'string' ? JSON.parse(rawDurations) : rawDurations;
-        } catch {
-          // Activity durations not available
+        // Compute per-activity cycle-time distribution (P50/P90/P99) from the conformance
+        // details already retrieved — no extra WASM call needed.
+        // Sort by P90 descending to surface the slowest activities first.
+        let cycleTimePercentiles: Record<string, { p50: number; p90: number; p99: number; mean: number; count: number }> | null = null;
+        if (temporalConformance) {
+          const details = (temporalConformance.details as Array<Record<string, unknown>>) ?? [];
+          const durationsByActivity: Record<string, number[]> = {};
+          for (const d of details) {
+            const activity = d.from as string;
+            const dur = d.duration_ms as number;
+            if (typeof activity === 'string' && typeof dur === 'number' && dur >= 0) {
+              if (!durationsByActivity[activity]) durationsByActivity[activity] = [];
+              durationsByActivity[activity].push(dur);
+            }
+          }
+          if (Object.keys(durationsByActivity).length > 0) {
+            cycleTimePercentiles = {};
+            for (const [act, durations] of Object.entries(durationsByActivity)) {
+              const sorted = [...durations].sort((a, b) => a - b);
+              const pct = (p: number) => {
+                const idx = Math.ceil((p / 100) * sorted.length) - 1;
+                return sorted[Math.max(0, idx)];
+              };
+              const mean = sorted.reduce((s, v) => s + v, 0) / sorted.length;
+              cycleTimePercentiles[act] = {
+                p50: pct(50),
+                p90: pct(90),
+                p99: pct(99),
+                mean,
+                count: sorted.length,
+              };
+            }
+          }
         }
 
         const payload = {
@@ -153,14 +190,14 @@ export const temporal = defineCommand({
             nodes: (dfg as Record<string, unknown>).nodes ?? [],
             edges: (dfg as Record<string, unknown>).edges ?? [],
           },
-          temporalProfile,
+          temporalConformance,
           violations: {
             count: violations.length,
             threshold,
             items: violations,
           },
-          performanceDfg,
-          activityDurations,
+          impossibleTimestampCount,
+          cycleTimePercentiles,
         };
 
         const result = makeResult('temporal', payload, performance.now() - t0, EXIT_CODES.success);
@@ -182,8 +219,11 @@ export const temporal = defineCommand({
               status: 'success',
               summary: {
                 activities_analyzed: activitiesAnalyzed,
-                bottleneck_count: payload.violations.count,
-                threshold,
+                deviation_count: payload.violations.count,
+                impossible_timestamp_count: payload.impossibleTimestampCount,
+                percentile_activities: payload.cycleTimePercentiles
+                  ? Object.keys(payload.cycleTimePercentiles).length
+                  : 0,
               },
             };
             saveCommandReceipt(receipt);
@@ -212,70 +252,84 @@ function printHumanTemporal(
     timestampKey: string;
     threshold: number;
     violations: { count: number; threshold: number; items: Array<Record<string, unknown>> };
-    performanceDfg: Record<string, unknown> | null;
-    activityDurations: Record<string, unknown> | null;
+    impossibleTimestampCount: number;
+    cycleTimePercentiles: Record<string, { p50: number; p90: number; p99: number; mean: number; count: number }> | null;
+    temporalConformance: Record<string, unknown> | null;
   }
 ): void {
-  const { violations, performanceDfg, activityDurations } = payload;
+  const { violations, cycleTimePercentiles } = payload;
 
   projection.log('');
   projection.success(`Temporal Analysis — ${payload.input}`);
   projection.log(`  Activity key: ${payload.activityKey}`);
   projection.log(`  Timestamp key: ${payload.timestampKey}`);
-  projection.log(`  Threshold: ${payload.threshold.toFixed(3)}`);
   projection.log('');
 
-  if (violations.count > 0) {
-    projection.warn(`Found ${violations.count} temporal violation(s):`);
-    for (const v of violations.items.slice(0, 10)) {
-      const activity = v.activity as string;
-      const expected = v.expected as number;
-      const actual = v.actual as number;
-      const diff = v.diff as number;
-      projection.log(
-        `  - ${activity}: expected ${expected.toFixed(2)}ms, got ${actual.toFixed(2)}ms (diff: ${diff > 0 ? '+' : ''}${diff.toFixed(2)}ms)`
-      );
-    }
-    if (violations.items.length > 10) {
-      projection.log(`  ... and ${violations.items.length - 10} more violations`);
-    }
-  } else {
-    projection.success('No temporal violations found');
-  }
-  projection.log('');
-
-  if (activityDurations) {
-    projection.log('  Activity durations (ms):');
-    const durations = activityDurations.durations as Record<
-      string,
-      { mean: number; min: number; max: number; median: number }
-    >;
-    if (durations) {
-      for (const [activity, stats] of Object.entries(durations).slice(0, 10)) {
-        projection.log(
-          `    ${activity}: mean=${stats.mean.toFixed(1)}, min=${stats.min.toFixed(1)}, max=${stats.max.toFixed(1)}, median=${stats.median.toFixed(1)}`
-        );
-      }
-    }
+  // Impossible-timestamp validation errors — these are defects in the event log.
+  // An end < start timestamp means the log was corrupted or clocks were not synchronised.
+  if (payload.impossibleTimestampCount > 0) {
+    projection.warn(
+      `Validation error: ${payload.impossibleTimestampCount} event(s) with impossible timestamps (end < start) — skipped during analysis`
+    );
     projection.log('');
   }
 
-  if (performanceDfg) {
-    const edges = performanceDfg.edges as Array<{
-      from: string;
-      to: string;
-      avgDuration: number;
-      minDuration: number;
-      maxDuration: number;
-    }>;
-    if (edges && edges.length > 0) {
-      projection.log('  Performance DFG (top 10 edges by duration):');
-      const sortedEdges = [...edges].sort((a, b) => b.avgDuration - a.avgDuration).slice(0, 10);
-      for (const edge of sortedEdges) {
-        projection.log(
-          `    ${edge.from} → ${edge.to}: avg=${edge.avgDuration.toFixed(1)}ms (min: ${edge.minDuration.toFixed(1)}, max: ${edge.maxDuration.toFixed(1)})`
-        );
-      }
+  // Temporal conformance summary
+  if (payload.temporalConformance) {
+    const tc = payload.temporalConformance as { fitness?: number; total_steps?: number; deviations?: number };
+    if (typeof tc.fitness === 'number') {
+      const fitnessLabel = tc.fitness >= 0.85 ? 'good' : tc.fitness >= 0.70 ? 'fair' : 'poor';
+      projection.log(`  Temporal conformance fitness: ${(tc.fitness * 100).toFixed(1)}% (${fitnessLabel})`);
+      projection.log(`  Steps analysed: ${tc.total_steps ?? 0}  |  Deviations (>2σ): ${tc.deviations ?? 0}`);
+      projection.log('');
+    }
+  }
+
+  if (violations.count > 0) {
+    projection.warn(`Found ${violations.count} temporal deviation(s) (>2σ from mean):`);
+    for (const v of violations.items.slice(0, 10)) {
+      const from = v.from as string;
+      const to = v.to as string;
+      const durMs = typeof v.duration_ms === 'number' ? (v.duration_ms as number) : 0;
+      const meanMs = typeof v.mean_ms === 'number' ? (v.mean_ms as number) : 0;
+      const zeta = typeof v.zeta === 'number' ? (v.zeta as number) : 0;
+      projection.log(
+        `  - ${from} → ${to}: ${durMs.toFixed(0)}ms (mean ${meanMs.toFixed(0)}ms, z=${zeta.toFixed(1)}σ)`
+      );
+    }
+    if (violations.items.length > 10) {
+      projection.log(`  ... and ${violations.items.length - 10} more deviations`);
+    }
+    projection.log('');
+  } else if (payload.temporalConformance) {
+    projection.success('No temporal deviations found (all steps within 2σ of mean)');
+    projection.log('');
+  }
+
+  // Cycle time distribution — P50/P90/P99 per originating activity.
+  // P90/P99 gap reveals tail-heavy distributions (outlier cases dominating cycle time).
+  // Sorted by P90 descending to surface the slowest activities first.
+  if (cycleTimePercentiles && Object.keys(cycleTimePercentiles).length > 0) {
+    const sorted = Object.entries(cycleTimePercentiles).sort(
+      ([, a], [, b]) => b.p90 - a.p90
+    );
+    // Identify the slowest activity by P90 — the most likely bottleneck
+    const [slowestActivity, slowestStats] = sorted[0];
+    projection.warn(
+      `Slowest activity (by P90): "${slowestActivity}" — P90 wait = ${(slowestStats.p90 / 1000).toFixed(1)}s (n=${slowestStats.count})`
+    );
+    projection.log('');
+    projection.log('  Cycle time distribution (ms) — top 10 activities by P90:');
+    projection.log('    Activity                                 | count |   mean |    P50 |    P90 |    P99');
+    projection.log('    ' + '-'.repeat(90));
+    for (const [act, stats] of sorted.slice(0, 10)) {
+      const label = act.length > 40 ? act.slice(0, 37) + '...' : act.padEnd(40);
+      projection.log(
+        `    ${label} | ${String(stats.count).padStart(5)} | ${(stats.mean / 1000).toFixed(1).padStart(6)}s | ${(stats.p50 / 1000).toFixed(1).padStart(6)}s | ${(stats.p90 / 1000).toFixed(1).padStart(6)}s | ${(stats.p99 / 1000).toFixed(1).padStart(6)}s`
+      );
+    }
+    if (sorted.length > 10) {
+      projection.log(`    ... and ${sorted.length - 10} more activities`);
     }
     projection.log('');
   }

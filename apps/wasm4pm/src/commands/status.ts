@@ -4,6 +4,7 @@ import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
 import { getRegistry } from '@wasm4pm/kernel';
+import { resolveConfig } from '@wasm4pm/config';
 import { exitWithFlush } from '../otel/exit.js';
 import { withSpan } from './_otel.js';
 
@@ -102,6 +103,35 @@ export const status = defineCommand({
       lateAlgorithmCount = algorithmCount;
       lateWasmVersion = wasmVersion ?? '';
 
+      // Step 3b: Resolve config to surface provenance (best-effort — no CLI overrides here).
+      // Shows which config keys came from ENV, TOML, JSON, CLI, or defaults.
+      // This is the data behind "algorithm: dfg (from ENV)" diagnostics.
+      let configProvenance: Record<string, { source: string; path?: string }> = {};
+      let configHash: string | null = null;
+      try {
+        const cfg = await resolveConfig();
+        configHash = cfg.metadata.hash;
+        // Flatten provenance for display: keep only non-default keys and the
+        // "interesting keys" that operators most often override.
+        const prov = cfg.metadata.provenance;
+        const interestingKeys = new Set([
+          'algorithm.name',
+          'execution.profile',
+          'output.format',
+          'observability.logLevel',
+          'prediction.enabled',
+          'source.kind',
+          'sink.kind',
+        ]);
+        for (const [key, entry] of Object.entries(prov)) {
+          if (interestingKeys.has(key) || entry.source !== 'default') {
+            configProvenance[key] = { source: entry.source, path: entry.path };
+          }
+        }
+      } catch {
+        // Config load failures are non-fatal for the status command
+      }
+
       // Step 4: Load autonomic state (best-effort — may not exist yet)
       const autonomicState = await loadAutonomicState();
       const rl = autonomicState?.rl_state ?? null;
@@ -147,6 +177,10 @@ export const status = defineCommand({
           rss: Math.round(memoryUsage.rss / 1024 / 1024),
         },
         autonomic,
+        config: {
+          hash: configHash,
+          provenance: configProvenance,
+        },
       };
 
       const result = makeResult('status', statusReport, Date.now() - start);
@@ -198,6 +232,50 @@ export const status = defineCommand({
           p.log(`  Health: ${a.health_state}  SPC alerts (last cycle): ${a.spc_alerts}`);
           const circuitIcon = a.circuit_state === 'Open' ? '! OPEN' : a.circuit_state === 'HalfOpen' ? '~ HALF-OPEN' : '+ Closed';
           p.log(`  Circuit breaker: ${circuitIcon}  (failures: ${a.circuit_failures}, successes: ${a.circuit_successes})`);
+        }
+
+        // Config provenance section — always shows key sources; --verbose shows all overrides.
+        // This closes the gap where a user setting WASM4PM_ALGORITHM=dfg had no feedback
+        // that their ENV var was actually being picked up.
+        p.log('');
+        p.log('Config Provenance:');
+        const cfg = r.config as { hash: string | null; provenance: Record<string, { source: string; path?: string }> };
+        if (cfg.hash) {
+          p.log(`  Hash: ${cfg.hash.slice(0, 16)}...`);
+        }
+        const provEntries = Object.entries(cfg.provenance);
+        if (provEntries.length === 0) {
+          p.log('  All values from defaults (no config file or ENV overrides detected)');
+        } else {
+          // Always show the two most operator-visible keys
+          const priorityKeys = ['algorithm.name', 'execution.profile'];
+          for (const key of priorityKeys) {
+            if (cfg.provenance[key]) {
+              const entry = cfg.provenance[key];
+              const loc = entry.path ? ` (${entry.path})` : '';
+              p.log(`  ${key}: ${entry.source}${loc}`);
+            }
+          }
+          if (verbose) {
+            // In verbose mode, show all non-default provenance keys beyond the priority ones
+            const nonDefault = provEntries.filter(
+              ([k, v]) => v.source !== 'default' && !priorityKeys.includes(k)
+            );
+            if (nonDefault.length > 0) {
+              p.log('  Additional overrides:');
+              for (const [key, entry] of nonDefault) {
+                const loc = entry.path ? ` (${entry.path})` : '';
+                p.log(`    ${key}: ${entry.source}${loc}`);
+              }
+            }
+          } else {
+            const nonDefaultCount = provEntries.filter(
+              ([k, v]) => v.source !== 'default' && !priorityKeys.includes(k)
+            ).length;
+            if (nonDefaultCount > 0) {
+              p.log(`  (+${nonDefaultCount} more overridden key(s) — use --verbose to see all)`);
+            }
+          }
         }
 
         p.log('');

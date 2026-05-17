@@ -69,8 +69,8 @@ export type { Checkpoint } from './checkpointing.js';
 export { WasmLoader, createWasmLoader, getWasmLoader } from './wasm-loader.js';
 export type { WasmModule, WasmLoaderConfig, WasmLoaderStatus } from './wasm-loader.js';
 
-// Re-export error code for tests
-export { WasmErrorCode } from './wasm-loader.js';
+// Re-export error codes and classified load error for tests and consumers
+export { WasmErrorCode, WasmLoadError } from './wasm-loader.js';
 
 // Federation and execution modes (Section 5)
 export {
