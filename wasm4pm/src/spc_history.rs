@@ -528,6 +528,67 @@ mod tests {
         assert_eq!(history.history.len(), 0);
     }
 
+    /// Push 101 snapshots into a capacity-100 ring buffer.
+    /// Verify that:
+    /// - Only 100 snapshots are retained (oldest evicted).
+    /// - The first retained snapshot is the 2nd one pushed (cycle-1, event_rate=1.0).
+    /// - The last retained snapshot is the 101st one pushed (cycle-100, event_rate=100.0).
+    /// - All 100 retained snapshots are in strict chronological order (event_rate ascending).
+    #[test]
+    fn test_ring_buffer_101_pushes_chronological_order() {
+        let mut history = SpcHistory::new();
+
+        for i in 0..=100u64 {
+            history.record_snapshot(SpcSnapshot::new(
+                format!("cycle-{}", i),
+                i as f64, // event_rate doubles as unique marker
+                150.0,
+                0.8,
+                0,
+            ));
+        }
+
+        // Exactly 100 snapshots remain (oldest, cycle-0 with rate=0.0, was evicted).
+        assert_eq!(history.history.len(), 100, "ring buffer must cap at 100");
+        assert_eq!(
+            history.cycle_count, 101,
+            "cycle counter must be monotonically 101"
+        );
+
+        let snapshots = history.get_all_snapshots();
+
+        // Oldest retained is cycle-1 (event_rate=1.0).
+        assert_eq!(
+            snapshots[0].timestamp, "cycle-1",
+            "oldest retained must be cycle-1 after 101 pushes"
+        );
+        assert_eq!(
+            snapshots[0].event_rate, 1.0,
+            "oldest retained event_rate must be 1.0"
+        );
+
+        // Newest retained is cycle-100 (event_rate=100.0).
+        assert_eq!(
+            snapshots[99].timestamp, "cycle-100",
+            "newest retained must be cycle-100"
+        );
+        assert_eq!(
+            snapshots[99].event_rate, 100.0,
+            "newest retained event_rate must be 100.0"
+        );
+
+        // All entries are in strict chronological order (event_rate strictly increasing).
+        let rates: Vec<f64> = snapshots.iter().map(|s| s.event_rate).collect();
+        for w in rates.windows(2) {
+            assert!(
+                w[1] > w[0],
+                "snapshots must be in chronological order: {} followed by {}",
+                w[0],
+                w[1]
+            );
+        }
+    }
+
     #[test]
     fn test_spc_history_get_all_snapshots() {
         let mut history = SpcHistory::new();

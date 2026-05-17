@@ -144,10 +144,14 @@ function runDiscovery(
       raw = wasm['discover_declare'](logHandle, activityKey);
       break;
     case 'skeleton':
-      raw = wasm['extract_process_skeleton'](logHandle, activityKey);
+      // min_frequency=1 includes all directly-follows relations (no filtering)
+      raw = wasm['extract_process_skeleton'](logHandle, activityKey, 1);
       break;
     case 'dfg-optimized':
-      raw = wasm['discover_dfg'](logHandle, activityKey);
+      // discover_dfg_filtered prunes edges below the frequency threshold — the
+      // "optimized" variant filters out low-frequency noise (threshold=2 keeps edges
+      // seen at least twice, reducing spurious arcs in large logs).
+      raw = wasm['discover_dfg_filtered'](logHandle, activityKey, 2);
       break;
     default: {
       // Exhaustiveness guard — TypeScript ensures this is unreachable
@@ -250,6 +254,10 @@ export const compare = defineCommand({
       type: 'boolean',
       description: 'Print cache hit/miss statistics after comparison',
     },
+    'no-save': {
+      type: 'boolean',
+      description: 'Do not auto-save the receipt to .wasm4pm/results/',
+    },
   },
   async run(ctx) {
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
@@ -307,37 +315,71 @@ export const compare = defineCommand({
         async (wasmBase, logHandle) => {
         const wasm = wasmBase as Record<string, CallableFunction>;
 
-        // Get shared metrics (variants, density, complexity) once from the log
-        const sharedMetrics = extractModelMetrics(wasm, logHandle, activityKey);
+        // Get shared metrics (variants, density, complexity) once from the log.
+        // If metrics are unavailable (e.g. WASM version mismatch), fall back to
+        // sentinel values so the comparison still runs.
+        let sharedMetrics: { variants: number; density: number; complexity: number };
+        try {
+          sharedMetrics = extractModelMetrics(wasm, logHandle, activityKey);
+        } catch {
+          sharedMetrics = { variants: -1, density: -1, complexity: -1 };
+        }
 
-        // Run each algorithm
+        // Run each algorithm individually. Errors are isolated per-algorithm so
+        // a single failure produces a sentinel row rather than aborting the batch.
         const t0 = performance.now();
         const stats: ModelStats[] = [];
+        const algorithmErrors: string[] = [];
         for (const algo of algos) {
-          const { raw, elapsedMs } = runDiscovery(wasm, algo, logHandle, activityKey);
-          const { nodes, edges } = toUniformStats(discriminate(raw, algo));
-          stats.push({
-            algorithm: algo,
-            nodes,
-            edges,
-            variants: sharedMetrics.variants,
-            density: sharedMetrics.density,
-            complexity: sharedMetrics.complexity,
-            elapsedMs,
-          });
+          try {
+            const { raw, elapsedMs } = runDiscovery(wasm, algo, logHandle, activityKey);
+            const { nodes, edges } = toUniformStats(discriminate(raw, algo));
+            stats.push({
+              algorithm: algo,
+              nodes,
+              edges,
+              variants: sharedMetrics.variants,
+              density: sharedMetrics.density,
+              complexity: sharedMetrics.complexity,
+              elapsedMs,
+            });
+          } catch (err) {
+            // Record the failure; push a sentinel row so output is always complete
+            const msg = err instanceof Error ? err.message : String(err);
+            algorithmErrors.push(`${algo}: ${msg}`);
+            stats.push({
+              algorithm: algo,
+              nodes: -1,
+              edges: -1,
+              variants: sharedMetrics.variants,
+              density: sharedMetrics.density,
+              complexity: sharedMetrics.complexity,
+              elapsedMs: 0,
+            });
+          }
         }
         const totalElapsedMs = performance.now() - t0;
 
         // Derive winner recommendations before building payload
         const recommendation = deriveRecommendation(stats);
 
-        // Build canonical result payload
-        const payload = {
+        // Build canonical result payload. Include algorithm_errors only when some
+        // runs failed so consumers can distinguish partial from full success.
+        const payload: {
+          input: string;
+          activityKey: string;
+          algorithms: ModelStats[];
+          recommendation: AlgorithmRecommendation | null;
+          algorithm_errors?: string[];
+        } = {
           input: inputPath,
           activityKey,
           algorithms: stats,
           recommendation,
         };
+        if (algorithmErrors.length > 0) {
+          payload.algorithm_errors = algorithmErrors;
+        }
 
         // Handle --cache-stats (fetch before emitting)
         let cacheStats: Record<string, unknown> | null = null;
@@ -351,7 +393,11 @@ export const compare = defineCommand({
           cacheStats = (typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw) as Record<string, unknown>;
         }
 
-        const cmdResult = makeResult('compare', payload, totalElapsedMs, EXIT_CODES.success);
+        // Partial failure (exit 4) when at least one algorithm produced a sentinel row;
+        // full success (exit 0) when all algorithms ran cleanly.
+        const resultExitCode =
+          algorithmErrors.length > 0 ? EXIT_CODES.partial_failure : EXIT_CODES.success;
+        const cmdResult = makeResult('compare', payload, totalElapsedMs, resultExitCode);
 
         // Persist BLAKE3 receipt for proof-of-execution
         if (!ctx.args['no-save']) {
@@ -361,11 +407,12 @@ export const compare = defineCommand({
               ...newReceipt('compare'),
               input_hash: blake3Hex(inputBytes),
               output_hash: blake3Hex(JSON.stringify(payload)),
-              status: 'success',
+              status: algorithmErrors.length > 0 ? 'partial' : 'success',
               summary: {
                 algorithms: algos,
                 activityKey,
                 elapsedMs: Math.round(totalElapsedMs * 100) / 100,
+                ...(algorithmErrors.length > 0 ? { errors: algorithmErrors } : {}),
               },
             };
             saveCommandReceipt(receipt);
@@ -427,6 +474,15 @@ export const compare = defineCommand({
           '  Legend: ▓▓▓▓▓▓▓▓ = max  ░░░░░░░░ = min   bars are relative within this comparison'
         );
         projection.log('');
+
+        // Partial failure notice
+        if (p.algorithm_errors && p.algorithm_errors.length > 0) {
+          projection.log('  Algorithm errors (partial results):');
+          for (const e of p.algorithm_errors) {
+            projection.warn(`    ${e}`);
+          }
+          projection.log('');
+        }
 
         // Winner recommendation section
         if (recommendation) {
