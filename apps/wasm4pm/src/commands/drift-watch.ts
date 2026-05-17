@@ -21,9 +21,18 @@ const RED = '\x1b[31m';
 const GREEN = '\x1b[32m';
 const CYAN = '\x1b[36m';
 
+interface DriftPoint {
+  position: number;
+  distance: number;
+  type: string;
+  appeared?: string[];
+  disappeared?: string[];
+  suggestion?: string;
+}
+
 interface DriftResult {
   drifts_detected: number;
-  drifts: Array<{ position: number; distance: number; type: string }>;
+  drifts: DriftPoint[];
   window_size: number;
   method: string;
 }
@@ -277,6 +286,7 @@ export const driftWatch = defineCommand({
 
       // ── Output ────────────────────────────────────────────────────────────
       if (jsonMode) {
+        const newPoints = newDriftCount > 0 ? drifts.slice(previousDriftCount) : [];
         const line = {
           timestamp: new Date().toISOString(),
           ewma: parseFloat(ewma.toFixed(4)),
@@ -285,6 +295,14 @@ export const driftWatch = defineCommand({
           window_size: windowSize,
           new_drift_points: Math.max(0, newDriftCount),
           distances: ewmaResult.smoothed,
+          // Structural change details for new drift points
+          new_drifts: newPoints.map((dp) => ({
+            position: dp.position,
+            distance: parseFloat(dp.distance.toFixed(4)),
+            appeared: dp.appeared ?? [],
+            disappeared: dp.disappeared ?? [],
+            suggestion: dp.suggestion ?? null,
+          })),
         };
         process.stdout.write(JSON.stringify(line) + '\n');
       } else {
@@ -305,6 +323,22 @@ export const driftWatch = defineCommand({
             `${BOLD}${RED}  ⚠  ALERT${RESET} — ${newDriftCount} new drift point${newDriftCount !== 1 ? 's' : ''} ` +
             `at position ${latest?.position ?? '?'}, distance=${(latest?.distance ?? 0).toFixed(4)}`;
           console.log(alertLine);
+          // Surface structural change details when available
+          if (latest?.disappeared && latest.disappeared.length > 0) {
+            console.log(
+              `${RED}     disappeared:${RESET} ${latest.disappeared.slice(0, 5).join(', ')}` +
+              (latest.disappeared.length > 5 ? ` (+${latest.disappeared.length - 5} more)` : '')
+            );
+          }
+          if (latest?.appeared && latest.appeared.length > 0) {
+            console.log(
+              `${GREEN}     appeared:${RESET}    ${latest.appeared.slice(0, 5).join(', ')}` +
+              (latest.appeared.length > 5 ? ` (+${latest.appeared.length - 5} more)` : '')
+            );
+          }
+          if (latest?.suggestion) {
+            console.log(`${YELLOW}     suggestion:${RESET}  ${latest.suggestion}`);
+          }
         }
       }
       // Track ewma for late-attr callback

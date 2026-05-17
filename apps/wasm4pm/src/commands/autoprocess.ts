@@ -206,10 +206,24 @@ export const autoprocess = defineCommand({
           projection.log('');
           const optimization = cycle.optimization as Record<string, unknown>;
           projection.log('  Optimization:');
-          projection.log(`    Action: ${optimization.rl_action}`);
+          projection.log(`    Agent:   ${optimization.rl_agent ?? 'QLearning'} (LinUCB-selected)`);
+          projection.log(`    Action:  ${optimization.rl_action}`);
+          const reward = typeof optimization.reward === 'number' ? optimization.reward : 0;
+          const cumReward = typeof optimization.cumulative_reward === 'number' ? optimization.cumulative_reward : 0;
+          const rewardSign = reward >= 0 ? '+' : '';
+          projection.log(`    Reward:  ${rewardSign}${reward.toFixed(3)} (cumulative: ${cumReward >= 0 ? '+' : ''}${cumReward.toFixed(3)}, cycle #${optimization.cycle_count ?? '?'})`);
+          if (optimization.dispatch_detail) {
+            projection.log(`    Detail:  ${optimization.dispatch_detail}`);
+          }
           projection.log('');
           projection.log('  Timing:');
-          projection.log(`    Total: ${timing.total_ns} ns (see benchmarks for nanosecond measurements)`);
+          projection.log(`    Perception:  ${timing.perception_us ?? '?'} µs`);
+          projection.log(`    Decision:    ${timing.decision_us ?? '?'} µs`);
+          projection.log(`    Protection:  ${timing.protection_us ?? '?'} µs`);
+          projection.log(`    Total:       ${timing.total_us ?? '?'} µs`);
+          if (timing.cycle_latency_budget_exceeded) {
+            projection.log(`    Warning: cycle exceeded latency budget`);
+          }
           projection.log('');
           if (cycle.success) { projection.log('  Result: Cycle completed successfully'); }
           else { projection.log('  Result: Cycle completed with warnings'); }

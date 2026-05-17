@@ -1,9 +1,46 @@
 import { defineCommand } from 'citty';
+import * as fs from 'fs/promises';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
 import { getRegistry } from '@wasm4pm/kernel';
 import { exitWithFlush } from '../otel/exit.js';
+
+const AUTOPROCESS_STATE_FILE = '.wasm4pm/autoprocess-state.json';
+
+interface AutoprocessStateSnapshot {
+  rl_state?: {
+    cycle_count?: number;
+    last_reward?: number;
+    cumulative_reward?: number;
+    active_agent?: number;
+    active_agent_name?: string;
+    last_action_label?: string;
+    last_health_state?: number;
+    last_spc_alert_count?: number;
+    linucb_enabled?: boolean;
+  };
+  circuit_breaker_state?: {
+    state?: number;
+    failure_count?: number;
+    success_count?: number;
+  };
+  spc_history?: unknown;
+  saved_at?: string;
+}
+
+const CIRCUIT_STATE_NAMES = ['Closed', 'HalfOpen', 'Open'] as const;
+const HEALTH_STATE_NAMES = ['Normal', 'Warning', 'Degraded', 'Critical', 'Failed'] as const;
+const AGENT_NAMES = ['QLearning', 'SARSA', 'DoubleQLearning', 'ExpectedSARSA', 'REINFORCE'] as const;
+
+async function loadAutonomicState(): Promise<AutoprocessStateSnapshot | null> {
+  try {
+    const content = await fs.readFile(AUTOPROCESS_STATE_FILE, 'utf-8');
+    return JSON.parse(content) as AutoprocessStateSnapshot;
+  } catch {
+    return null;
+  }
+}
 
 export const status = defineCommand({
   meta: {
@@ -55,7 +92,30 @@ export const status = defineCommand({
       const registry = getRegistry();
       const algorithmCount = registry.list().length;
 
-      // Step 4: Build status report
+      // Step 4: Load autonomic state (best-effort — may not exist yet)
+      const autonomicState = await loadAutonomicState();
+      const rl = autonomicState?.rl_state ?? null;
+      const cb = autonomicState?.circuit_breaker_state ?? null;
+      const autonomic = autonomicState
+        ? {
+            active: true,
+            saved_at: autonomicState.saved_at ?? null,
+            cycle_count: rl?.cycle_count ?? 0,
+            last_action: rl?.last_action_label ?? 'none',
+            last_reward: rl?.last_reward ?? 0,
+            cumulative_reward: rl?.cumulative_reward ?? 0,
+            active_agent: AGENT_NAMES[rl?.active_agent ?? 0] ?? 'QLearning',
+            active_agent_name: rl?.active_agent_name ?? 'QLearning',
+            linucb_enabled: rl?.linucb_enabled ?? false,
+            health_state: HEALTH_STATE_NAMES[rl?.last_health_state ?? 0] ?? 'Normal',
+            spc_alerts: rl?.last_spc_alert_count ?? 0,
+            circuit_state: CIRCUIT_STATE_NAMES[cb?.state ?? 0] ?? 'Closed',
+            circuit_failures: cb?.failure_count ?? 0,
+            circuit_successes: cb?.success_count ?? 0,
+          }
+        : { active: false };
+
+      // Step 5: Build status report
       const statusReport = {
         engine: {
           state: 'ready',
@@ -76,6 +136,7 @@ export const status = defineCommand({
           external: Math.round(memoryUsage.external / 1024 / 1024),
           rss: Math.round(memoryUsage.rss / 1024 / 1024),
         },
+        autonomic,
       };
 
       const result = makeResult('status', statusReport, Date.now() - start);
@@ -110,6 +171,24 @@ export const status = defineCommand({
         p.log(`  Heap Total: ${r.memory.heapTotal} MB`);
         p.log(`  RSS: ${r.memory.rss} MB`);
         p.log(`  External: ${r.memory.external} MB`);
+
+        // Autonomic subsystem section
+        p.log('');
+        p.log('Autonomic Subsystem:');
+        const a = r.autonomic as Record<string, unknown>;
+        if (!a.active) {
+          p.log('  State: not yet active (run `wpm autoprocess <log>` to initialize)');
+        } else {
+          p.log(`  State: active (last saved: ${a.saved_at ?? 'unknown'})`);
+          p.log(`  RL Agent: ${a.active_agent_name} (LinUCB: ${a.linucb_enabled ? 'on' : 'off'})`);
+          p.log(`  Cycles: ${a.cycle_count}  Last action: ${a.last_action}`);
+          const lastRwd = typeof a.last_reward === 'number' ? a.last_reward : 0;
+          const cumRwd = typeof a.cumulative_reward === 'number' ? a.cumulative_reward : 0;
+          p.log(`  Reward: ${lastRwd >= 0 ? '+' : ''}${(lastRwd as number).toFixed(3)} last  /  ${cumRwd >= 0 ? '+' : ''}${(cumRwd as number).toFixed(3)} cumulative`);
+          p.log(`  Health: ${a.health_state}  SPC alerts (last cycle): ${a.spc_alerts}`);
+          const circuitIcon = a.circuit_state === 'Open' ? '! OPEN' : a.circuit_state === 'HalfOpen' ? '~ HALF-OPEN' : '+ Closed';
+          p.log(`  Circuit breaker: ${circuitIcon}  (failures: ${a.circuit_failures}, successes: ${a.circuit_successes})`);
+        }
 
         p.log('');
       });
