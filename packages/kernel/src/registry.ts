@@ -1601,6 +1601,102 @@ export class AlgorithmRegistry {
       scalesWell: true,
       references: ['van der Aalst et al. (2005) Mining Social Networks from Event Logs'],
     });
+
+    // ─── OCEL (Object-Centric Event Log) algorithms ────────────────────────
+    //
+    // These algorithms operate on OCEL handles (loaded via load_ocel_from_json).
+    // They are only available in WASM builds with feature-ocel (fog and browser profiles).
+    // Input: an OCEL handle (NOT a conventional XES event log handle).
+
+    this.registerWithInferredProfiles({
+      id: 'ocel_dfg',
+      name: 'OC-DFG (Aggregate)',
+      description:
+        'Discover an aggregate Object-Centric Directly-Follows Graph (OC-DFG) across all object types. ' +
+        'Produces a single DFG where each node is an activity and edges reflect directly-follows relations ' +
+        'observed across all object types in the OCEL. ' +
+        'WASM export: discover_ocel_dfg(ocel_handle). Requires feature-ocel.',
+      outputType: 'dfg',
+      complexity: 'O(n)',
+      speedTier: 5,
+      qualityTier: 30,
+      parameters: [],
+      supportedProfiles: ['fast', 'balanced', 'quality'],
+      estimatedDurationMs: 1,
+      estimatedMemoryMB: 30,
+      robustToNoise: true,
+      scalesWell: true,
+      references: ['van der Aalst (2019) Object-Centric Process Mining'],
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'ocel_dfg_per_type',
+      name: 'OC-DFG Per Object Type',
+      description:
+        'Discover per-object-type Directly-Follows Graphs from an OCEL. Returns a map from ' +
+        'object_type to DFG, allowing separate process views for each object type (e.g. Order, Item). ' +
+        'This is the canonical OC-DFG projection for object-centric process mining. ' +
+        'WASM export: discover_ocel_dfg_per_type(ocel_handle). Requires feature-ocel.',
+      outputType: 'dfg',
+      complexity: 'O(n)',
+      speedTier: 8,
+      qualityTier: 40,
+      parameters: [],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 2,
+      estimatedMemoryMB: 40,
+      robustToNoise: true,
+      scalesWell: true,
+      references: ['van der Aalst (2019) Object-Centric Process Mining'],
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'ocel_petri_net',
+      name: 'OC-Petri Net Discovery',
+      description:
+        'Discover an Object-Centric Petri Net (OC-Petri net) from an OCEL. The OC-Petri net captures ' +
+        'concurrency and synchronization between different object types. ' +
+        'WASM export: discover_oc_petri_net(ocel_handle, algorithm). Requires feature-ocel.',
+      outputType: 'petrinet',
+      complexity: 'O(n²)',
+      speedTier: 35,
+      qualityTier: 65,
+      parameters: [
+        {
+          name: 'algorithm',
+          type: 'select',
+          description: 'Discovery algorithm variant',
+          required: false,
+          default: 'inductive',
+          options: ['inductive', 'alpha', 'heuristic'],
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 20,
+      estimatedMemoryMB: 80,
+      robustToNoise: true,
+      scalesWell: false,
+      references: ['van der Aalst (2019) Object-Centric Process Mining'],
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'ocel_encode',
+      name: 'OCEL Text Encoding',
+      description:
+        'Encode an OCEL as a compact human-readable text representation suitable for LLM context, ' +
+        'process inspection, and diff display. ' +
+        'WASM export: encode_ocel_as_text(ocel_handle). Requires feature-ocel.',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 5,
+      qualityTier: 20,
+      parameters: [],
+      supportedProfiles: ['fast', 'balanced', 'quality', 'stream'],
+      estimatedDurationMs: 0.5,
+      estimatedMemoryMB: 10,
+      robustToNoise: true,
+      scalesWell: true,
+    });
   }
 
   /**

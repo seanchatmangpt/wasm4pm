@@ -342,26 +342,48 @@ export const run = defineCommand({
 
       // Preflight: only accept supported input extensions.
       const lowerInput = inputPath.toLowerCase();
+      const isOcelInput =
+        lowerInput.endsWith('.ocel.json') ||
+        lowerInput.endsWith('.ocel') ||
+        (ctx.args as Record<string, unknown>)['format'] === 'ocel';
       const acceptedExt =
         lowerInput.endsWith('.xes') ||
         lowerInput.endsWith('.xes.gz') ||
-        lowerInput.endsWith('.json');
+        lowerInput.endsWith('.json') ||
+        isOcelInput;
       if (!acceptedExt) {
         const ext = path.extname(inputPath) || '(no extension)';
         const result = makeErrorResult(
           'run',
           new Error(
-            `Unsupported file extension '${ext}' — wpm run accepts: .xes, .xes.gz, .json\n\n` +
+            `Unsupported file extension '${ext}' — wpm run accepts: .xes, .xes.gz, .json, .ocel.json\n\n` +
             `  Given: ${inputPath}\n\n` +
-            `  If your log is in a different format, convert it first:\n` +
-            `    XES is the IEEE standard for process mining event logs.\n` +
-            `    See: https://www.xes-standard.org/`
+            `  For XES event logs: wpm run process.xes\n` +
+            `  For OCEL 2.0 logs:  wpm run log.ocel.json\n\n` +
+            `  XES is the IEEE standard for process mining event logs.\n` +
+            `  OCEL is the IEEE standard for object-centric event logs.\n` +
+            `  See: https://www.xes-standard.org/ and https://www.ocel-standard.org/`
           ),
           EXIT_CODES.source_error,
           'UNSUPPORTED_EXTENSION'
         );
         emitResult(result, emitOptions);
         return await exitWithFlush(result.exit_code);
+      }
+
+      // OCEL input path — bypass withLogSession (which is XES-only) and invoke
+      // OCEL WASM functions directly.
+      if (isOcelInput) {
+        return await runOcelDiscovery({
+          inputPath,
+          activityKey,
+          resolvedAlgo,
+          ctx,
+          emitOptions,
+          format,
+          verbose,
+          quiet,
+        });
       }
 
       await withLogSession(
@@ -899,6 +921,276 @@ export const run = defineCommand({
     );
   },
 });
+
+// ─── OCEL discovery helper ────────────────────────────────────────────────────
+
+interface OcelDiscoveryOptions {
+  inputPath: string;
+  activityKey: string;
+  resolvedAlgo: Algorithm;
+  ctx: { args: Record<string, unknown> };
+  emitOptions: { format: 'json' | 'human'; verbose: boolean; quiet: boolean };
+  format: 'json' | 'human';
+  verbose: boolean;
+  quiet: boolean;
+}
+
+/**
+ * Discover a process model from an OCEL 2.0 JSON file.
+ *
+ * Routes through load_ocel_from_json → discover_ocel_dfg_per_type (default)
+ * or discover_ocel_dfg (aggregate), bypassing the XES-only withLogSession.
+ *
+ * Exit codes follow the same contract as wpm run for XES files.
+ */
+async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
+  const { inputPath, emitOptions, ctx } = opts;
+
+  const { WasmLoader } = await import('@wasm4pm/engine');
+  const { exitWithFlush: exitFlush } = await import('../otel/exit.js');
+  const { saveCommandReceipt, blake3Hex, newReceipt } = await import('../receipts/_shared.js');
+
+  // File existence
+  try {
+    await fs.access(inputPath);
+  } catch {
+    const result = makeErrorResult(
+      'run',
+      new Error(`Input file not found: ${inputPath}`),
+      EXIT_CODES.source_error,
+      'INPUT_NOT_FOUND'
+    );
+    emitResult(result, emitOptions);
+    return exitFlush(result.exit_code);
+  }
+
+  // WASM init
+  const loader = WasmLoader.getInstance();
+  try {
+    await loader.init();
+  } catch (initError) {
+    const msg = initError instanceof Error ? initError.message : String(initError);
+    const result = makeErrorResult(
+      'run',
+      new Error(`WASM initialization failed: ${msg}\n\nRun "wpm doctor" to diagnose.`),
+      EXIT_CODES.execution_error,
+      'WASM_INIT_FAILED'
+    );
+    emitResult(result, emitOptions);
+    return exitFlush(result.exit_code);
+  }
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const wasm = loader.get() as Record<string, any>;
+
+  // Check feature availability
+  if (typeof wasm['load_ocel_from_json'] !== 'function') {
+    const result = makeErrorResult(
+      'run',
+      new Error(
+        'OCEL support is not available in this WASM build.\n\n' +
+        '  The loaded WASM binary was compiled without feature-ocel.\n' +
+        '  OCEL requires the "fog" or "browser" deployment profile.\n\n' +
+        '  To rebuild with OCEL support:\n' +
+        '    cd wasm4pm && npm run build   # browser profile (all features)\n' +
+        '    cd wasm4pm && npm run build:fog  # fog profile (includes feature-ocel)'
+      ),
+      EXIT_CODES.execution_error,
+      'OCEL_NOT_AVAILABLE'
+    );
+    emitResult(result, emitOptions);
+    return exitFlush(result.exit_code);
+  }
+
+  // Read OCEL file
+  let ocelContent: string;
+  try {
+    ocelContent = await fs.readFile(inputPath, 'utf-8');
+  } catch (readError) {
+    const msg = readError instanceof Error ? readError.message : String(readError);
+    const result = makeErrorResult(
+      'run',
+      new Error(`Failed to read OCEL file: ${msg}`),
+      EXIT_CODES.source_error,
+      'READ_FAILED'
+    );
+    emitResult(result, emitOptions);
+    return exitFlush(result.exit_code);
+  }
+
+  if (!ocelContent.trim()) {
+    const result = makeErrorResult(
+      'run',
+      new Error(`Input file is empty: ${inputPath}`),
+      EXIT_CODES.source_error,
+      'EMPTY_INPUT'
+    );
+    emitResult(result, emitOptions);
+    return exitFlush(result.exit_code);
+  }
+
+  // Parse JSON sanity check
+  try {
+    JSON.parse(ocelContent);
+  } catch {
+    const result = makeErrorResult(
+      'run',
+      new Error(
+        `OCEL file is not valid JSON: ${inputPath}\n\n` +
+        '  OCEL 2.0 JSON format must be a valid JSON object with keys:\n' +
+        '    "event_types", "object_types", "events", "objects"\n'
+      ),
+      EXIT_CODES.source_error,
+      'INVALID_JSON'
+    );
+    emitResult(result, emitOptions);
+    return exitFlush(result.exit_code);
+  }
+
+  // Load OCEL into WASM
+  let ocelHandle: string;
+  try {
+    ocelHandle = wasm['load_ocel_from_json'](ocelContent) as string;
+  } catch (loadErr) {
+    const msg = loadErr instanceof Error ? loadErr.message : String(loadErr);
+    const result = makeErrorResult(
+      'run',
+      new Error(`Failed to parse OCEL: ${msg}`),
+      EXIT_CODES.source_error,
+      'OCEL_PARSE_FAILED'
+    );
+    emitResult(result, emitOptions);
+    return exitFlush(result.exit_code);
+  }
+
+  // Discover — default: per-type DFG (most informative for OCEL)
+  const t0 = performance.now();
+  let raw: unknown;
+  let discoveryAlgo = 'ocel_dfg_per_type';
+
+  try {
+    if (typeof wasm['discover_ocel_dfg_per_type'] === 'function') {
+      raw = wasm['discover_ocel_dfg_per_type'](ocelHandle);
+      discoveryAlgo = 'ocel_dfg_per_type';
+    } else if (typeof wasm['discover_ocel_dfg'] === 'function') {
+      raw = wasm['discover_ocel_dfg'](ocelHandle);
+      discoveryAlgo = 'ocel_dfg';
+    } else {
+      throw new Error('No OCEL discovery function available in this WASM build');
+    }
+  } catch (discErr) {
+    try { (wasm['delete_object'] as ((h: string) => void) | undefined)?.(ocelHandle); } catch { /* best-effort */ }
+    const msg = discErr instanceof Error ? discErr.message : String(discErr);
+    const result = makeErrorResult(
+      'run',
+      new Error(`OCEL discovery failed: ${msg}`),
+      EXIT_CODES.execution_error,
+      'OCEL_DISCOVERY_FAILED'
+    );
+    emitResult(result, emitOptions);
+    return exitFlush(result.exit_code);
+  }
+
+  const elapsedMs = performance.now() - t0;
+
+  // Normalise result
+  const resultData: unknown = typeof raw === 'string' ? JSON.parse(raw) : raw;
+
+  // Cleanup WASM handle
+  try { (wasm['delete_object'] as ((h: string) => void) | undefined)?.(ocelHandle); } catch { /* best-effort */ }
+
+  // Build payload
+  const payload = {
+    status: 'success',
+    algorithm: discoveryAlgo,
+    activityKey: opts.activityKey,
+    input: inputPath,
+    inputFormat: 'ocel',
+    elapsedMs: Math.round(elapsedMs * 100) / 100,
+    model: resultData,
+  };
+
+  // Auto-save
+  let savedPath: string | null = null;
+  if (!ctx.args['no-save']) {
+    savedPath = await savePredictionResult(
+      `discover-${discoveryAlgo}`,
+      inputPath,
+      opts.activityKey,
+      payload as unknown as Record<string, unknown>
+    );
+
+    try {
+      const inputBytes = await fs.readFile(inputPath).catch(() => Buffer.from(inputPath));
+      const receipt = {
+        ...newReceipt('run'),
+        input_hash: blake3Hex(inputBytes),
+        output_hash: blake3Hex(JSON.stringify(payload)),
+        status: 'success' as const,
+        summary: {
+          algorithm: discoveryAlgo,
+          activityKey: opts.activityKey,
+          elapsedMs: Math.round(elapsedMs * 100) / 100,
+          inputFormat: 'ocel',
+        },
+      };
+      saveCommandReceipt(receipt);
+    } catch { /* receipt write must never break the command */ }
+  }
+
+  // Output
+  const cmdResult = makeResult('run', payload, elapsedMs, EXIT_CODES.success);
+  emitResult(cmdResult, emitOptions, (_res, projection) => {
+    projection.info(`Discovering OCEL process model with ${discoveryAlgo}...`);
+    projection.success(`Discovery completed in ${elapsedMs.toFixed(1)}ms`);
+    projection.info(`Algorithm: ${discoveryAlgo}`);
+    projection.info(`Input format: OCEL 2.0 JSON`);
+    projection.info(`Input: ${inputPath}`);
+    if (ctx.args['output']) {
+      projection.info(`Output: ${String(ctx.args['output'])}`);
+    }
+    if (savedPath) {
+      projection.debug(`Result saved: ${path.relative(process.cwd(), savedPath)}`);
+    }
+    const m = resultData as Record<string, unknown>;
+    if (m && typeof m === 'object') {
+      const keys = Object.keys(m);
+      if (keys.length > 0 && typeof (m[keys[0]] as Record<string, unknown>)?.nodes !== 'undefined') {
+        projection.info(`Object types discovered: ${keys.join(', ')}`);
+        for (const k of keys) {
+          const dfg = m[k] as { nodes?: unknown[]; edges?: unknown[] };
+          projection.info(`  ${k}: ${(dfg.nodes ?? []).length} activities, ${(dfg.edges ?? []).length} edges`);
+        }
+      } else if (Array.isArray((m as { nodes?: unknown[] }).nodes)) {
+        const dfg = m as { nodes?: unknown[]; edges?: unknown[] };
+        projection.info(`Activities: ${(dfg.nodes ?? []).length}`);
+        projection.info(`Edges: ${(dfg.edges ?? []).length}`);
+      }
+    }
+    projection.log('');
+    projection.log('  Run "wpm results" to view saved results.');
+  });
+
+  // Write output file if requested
+  if (ctx.args['output']) {
+    try {
+      const outputDir = path.dirname(String(ctx.args['output']));
+      await fs.mkdir(outputDir, { recursive: true });
+      await fs.writeFile(String(ctx.args['output']), JSON.stringify(payload, null, 2));
+    } catch (writeError) {
+      const msg = writeError instanceof Error ? writeError.message : String(writeError);
+      const errResult = makeErrorResult(
+        'run',
+        new Error(`Failed to write output: ${msg}`),
+        EXIT_CODES.partial_failure,
+        'SINK_WRITE_FAILED'
+      );
+      emitResult(errResult, emitOptions);
+      return exitFlush(errResult.exit_code);
+    }
+  }
+
+  return exitFlush(EXIT_CODES.success);
+}
 
 /**
  * Extract a brief summary from a discovery result.

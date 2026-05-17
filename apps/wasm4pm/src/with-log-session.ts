@@ -37,14 +37,16 @@ export async function withLogSession<T>(
     process.exit(result.exit_code);
   }
 
-  // Extension check
+  // Extension check — accept XES and JSON-based logs (not OCEL; those are handled
+  // by runOcelDiscovery before withLogSession is ever called).
   const ext = path.extname(inputPath).toLowerCase();
-  if (ext && !['.xes', '.xml'].includes(ext)) {
+  if (ext && !['.xes', '.xml', '.json'].includes(ext)) {
     const result = makeErrorResult(
       commandName,
       new Error(
-        `Unsupported file extension '${ext}' — this command accepts: .xes, .xml\n\n` +
+        `Unsupported file extension '${ext}' — this command accepts: .xes, .xml, .json\n\n` +
         `  Given: ${inputPath}\n\n` +
+        `  For OCEL 2.0 object-centric logs, use: wpm run log.ocel.json\n` +
         `  XES (.xes) is the IEEE standard for process mining event logs.\n` +
         `  See: https://www.xes-standard.org/`
       ),

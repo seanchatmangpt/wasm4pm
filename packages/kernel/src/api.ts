@@ -127,6 +127,21 @@ export interface KernelWasmModule extends WasmModule {
   /** Load an event log from an XES string and return an opaque handle */
   load_eventlog_from_xes?(xes: string): string;
 
+  /** Load an OCEL 2.0 JSON string and return an opaque OCEL handle */
+  load_ocel_from_json?(content: string): string;
+
+  /** Load an OCEL 2.0 JSON string (WASM2 variant name) */
+  load_ocel2_from_json?(content: string): string;
+
+  /** Discover OC-Petri net from an OCEL handle using a named algorithm */
+  discover_oc_petri_net?(ocel_handle: string, algorithm: string): unknown;
+
+  /** Encode OCEL as compact text representation */
+  encode_ocel_as_text?(ocel_handle: string): string;
+
+  /** Flatten one object type from an OCEL into a conventional flat EventLog handle */
+  flatten_ocel_to_eventlog?(ocel_handle: string, object_type: string): string;
+
   /** Delete an object handle from WASM memory */
   delete_object?(handle: string): void;
 
@@ -708,6 +723,52 @@ export class Kernel {
           eventLogHandle,
           (params.resource_key as string) ?? 'org:resource'
         );
+
+      // ─── OCEL (Object-Centric Event Log) algorithms ──────────────────────
+      //
+      // These algorithms operate on OCEL handles, not conventional XES log handles.
+      // The eventLogHandle parameter is interpreted as an OCEL handle for these cases.
+      // The caller must have loaded the OCEL via wasm.load_ocel_from_json() externally
+      // before calling kernel.run() with an ocel_* algorithm ID.
+
+      case 'ocel_dfg': {
+        const wasmAny = this.wasm as unknown as Record<string, (h: string) => unknown>;
+        if (typeof wasmAny['discover_ocel_dfg'] !== 'function') {
+          throw new Error('discover_ocel_dfg is not available in this WASM build (requires feature-ocel)');
+        }
+        // OCEL DFG functions return data directly (not an opaque handle); we store
+        // the result in the module-level result store and return a synthetic handle.
+        wasmAny['discover_ocel_dfg'](eventLogHandle);
+        return { handle: `ocel_dfg_${Date.now()}` };
+      }
+
+      case 'ocel_dfg_per_type': {
+        const wasmAny = this.wasm as unknown as Record<string, (h: string) => unknown>;
+        if (typeof wasmAny['discover_ocel_dfg_per_type'] !== 'function') {
+          throw new Error('discover_ocel_dfg_per_type is not available in this WASM build (requires feature-ocel)');
+        }
+        wasmAny['discover_ocel_dfg_per_type'](eventLogHandle);
+        return { handle: `ocel_dfg_per_type_${Date.now()}` };
+      }
+
+      case 'ocel_petri_net': {
+        const fn = this.wasm.discover_oc_petri_net;
+        if (!fn) {
+          throw new Error('discover_oc_petri_net is not available in this WASM build (requires feature-ocel)');
+        }
+        const algorithm = (params.algorithm as string) ?? 'inductive';
+        fn.call(this.wasm, eventLogHandle, algorithm);
+        return { handle: `ocel_petri_net_${Date.now()}` };
+      }
+
+      case 'ocel_encode': {
+        const fn = this.wasm.encode_ocel_as_text;
+        if (!fn) {
+          throw new Error('encode_ocel_as_text is not available in this WASM build (requires feature-ocel)');
+        }
+        fn.call(this.wasm, eventLogHandle);
+        return { handle: `ocel_encode_${Date.now()}` };
+      }
 
       // ─── ML algorithms (TypeScript, not WASM) ────────────────────────────
 
