@@ -159,3 +159,49 @@ let agent = QLearning::new_with_seed(lr, gamma, 42);
 2. **P1** (High): Category E — Metamorphic, no randomness, easy to implement
 3. **P2** (Medium): Categories B, G — Statistical, require multi-seed infrastructure
 4. **P3** (Low): Category H — Mutation testing, requires tooling setup
+
+---
+
+## Prolog8 AAT Families (P8-CF-1 to P8-CF-8)
+
+**Engine under test:** `crates/prolog8/` — byte-capped Horn-clause proof engine.
+
+**Test file:** `crates/prolog8/tests/aat_live_counterfactual.rs` — 36 tests, all passing.
+
+| Family | Description | Oracle Rank | Tests |
+|--------|-------------|-------------|-------|
+| **P8-CF-1** | Arity cap enforcement | Rank 1 (mathematical theorem) | 4 |
+| **P8-CF-2** | Rule body cap enforcement | Rank 1 | 2 |
+| **P8-CF-3** | Rule derivation proof nodes | Rank 2 (domain contract) | 4 |
+| **P8-CF-4** | Deny path with negative proof | Rank 2 | 3 |
+| **P8-CF-5** | Receipt determinism | Rank 1 (hash collision impossibility) | 3 |
+| **P8-CF-6** | Independent kernel isolation | Rank 2 | 1 |
+| **P8-CF-7** | BLAKE3 domain separation | Rank 1 (cryptographic property) | 5 |
+| **P8-CF-8** | Admission mask validation | Rank 1 (structural invariant) | 14 |
+| **Total** | | | **36** |
+
+### Hostile Assumptions (Prolog8)
+
+- The kernel may silently clamp arity instead of rejecting (`Atom8::new` clamps to 8 — admission must check independently)
+- Receipt hashes may collide under different catalogs or term orderings
+- A rule proof node may be omitted even when `proof_mode = Both`
+- Deny decisions may lack negative proof when `proof_mode = PositiveOnly` (by design)
+- Body mask / negation mask / proof mask checks may fire in wrong order, allowing bypass
+
+### Critical Bugs Caught
+
+| Bug | Description | Family |
+|-----|-------------|--------|
+| **P8-CLAMP** | `Atom8::new(pred, 9, ...)` clamps arity to 8 — ArityCapExceeded never fires via constructor. Tests must use struct literal to bypass. | P8-CF-1 |
+| **P8-DENY-MODE** | Deny proof nodes only appear when `proof_mode = Both` or `NegativeOnly`. Tests expecting proof in Deny with `PositiveOnly` fail. | P8-CF-3, P8-CF-4 |
+| **P8-MASK-ORDER** | `body_mask` check fires before `proof_mask` check. A test setting `proof_mask=0xFF` but wrong `body_mask` hit `BodyMaskMismatch` before `ProofMaskOutOfRange`. | P8-CF-8 |
+
+### Running Prolog8 AAT
+
+```bash
+cargo test -p prolog8 2>&1 | grep "test result"
+# Expected:
+#   test result: ok. 31 passed  (unit)
+#   test result: ok. 36 passed  (AAT counterfactual)
+#   test result: ok. 11 passed  (integration)
+```

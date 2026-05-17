@@ -404,6 +404,126 @@ cargo test --test membrane_oracle_tests --features miniml 2>&1 | tail -10
 # Expected: 29 passed; 0 failed
 ```
 
+## Prolog8 — Byte-Capped Proof Engine
+
+**Package:** `crates/prolog8/` | **Build:** `cd crates/prolog8 && wasm-pack build --target nodejs --out-dir pkg`
+
+**Engine limits:** arity ≤ 8, body atoms ≤ 8, variables ≤ 8, binding patterns ≤ 256, answers ≤ 128
+
+### Functions
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `prolog8_show()` | `Result<JsValue, JsValue>` | Capability report — engine name, version, byte caps |
+| `prolog8_query(input_json)` | `Result<JsValue, JsValue>` | Evaluate a query — returns Allow/Deny/Invalid + BLAKE3 proof |
+| `prolog8_replay(input_json)` | `Result<JsValue, JsValue>` | Verify a receipt — detects tampering in proof chain |
+
+### `prolog8_show` Output
+
+```json
+{ "engine": "prolog8", "version": "0.1.0",
+  "caps": { "arity": 8, "body": 8, "vars": 8, "binding_patterns": 256, "max_answers": 128 } }
+```
+
+### `prolog8_query` Input Schema
+
+```json
+{
+  "catalog": {
+    "catalog_id": 1,
+    "predicates": {
+      "1": { "pred_id": 1, "label": "parent", "arity": 2,
+             "proof_policy": "OnRequest", "materialized": false, "access_orders": [] }
+    },
+    "term_labels": { "1": "alice", "2": "bob" },
+    "predicate_by_label": { "parent": 1 },
+    "term_by_label": { "alice": 1, "bob": 2 }
+  },
+  "facts": [
+    { "pred_id": 1, "arity": 2,
+      "rows": [ { "pred_id": 1, "arity": 2, "args": [1, 2], "source_id": 0 } ] }
+  ],
+  "rules": [],
+  "query": {
+    "atom":         { "pred_id": 1, "arity": 2, "args": [1, 2] },
+    "binding_mask": 3,
+    "output_mask":  0,
+    "proof_mode":   "PositiveOnly",
+    "epoch":        0
+  }
+}
+```
+
+**Key fields:**
+- `binding_mask` is a **top-level field on the `query` object** (not nested inside `atom`). Bit i set means position i is bound for matching. Defaults to 0 (all unbound = scan all).
+- `args` are 1-based TermId values (TermId 0 is sentinel/unbound).
+- `proof_mode`: `"PositiveOnly"` (default), `"NegativeOnly"`, `"Both"`, `"Hashed"`. Use `"Both"` to get proof nodes in Deny answers.
+- `facts[*]` only requires `pred_id`, `arity`, `rows` — metadata (block_hash, arg_order) is computed automatically.
+
+### `prolog8_query` Output Variants
+
+| Variant | Meaning |
+|---------|---------|
+| `{ "Answered": [...] }` | One or more Allow decisions with BLAKE3 receipts |
+| `{ "TruncatedAnswers": [...] }` | More than 128 answers matched — narrow binding_mask or use epoch pagination |
+| `{ "Denied": { ... } }` | Query denied (negative proof) |
+| `{ "Invalid": "reason string" }` | Admission rejected — human-readable reason included |
+
+### `prolog8_replay` Input Schema
+
+Same as `prolog8_query` plus a `receipt` field from a prior query response.
+
+### `prolog8_replay` Output Variants
+
+| Output | Meaning |
+|--------|---------|
+| `"Verified"` | Receipt intact, proof replays correctly |
+| `"ReceiptInvalid"` | receipt_hash tampering detected |
+| `"Mismatch"` | proof/catalog/rule/fact root tampering |
+| `"VersionIncompatible"` | Engine version mismatch |
+| `"MissingArtifact"` | Required fact or rule not present |
+
+### Node.js Usage
+
+```javascript
+const wasm = require('./crates/prolog8/pkg/prolog8.js');
+const parse = r => typeof r === 'string' ? JSON.parse(r) : r;
+
+// Show capabilities
+const caps = parse(wasm.prolog8_show());
+console.log(caps.caps.arity);  // 8
+
+// Query
+const input = JSON.stringify({
+  catalog: { catalog_id: 1, predicates: { "1": { pred_id: 1, label: "parent", arity: 2,
+             proof_policy: "OnRequest", materialized: false, access_orders: [] }},
+             term_labels: { "1": "alice", "2": "bob" },
+             predicate_by_label: { parent: 1 }, term_by_label: { alice: 1, bob: 2 }},
+  facts: [{ pred_id: 1, arity: 2, rows: [{ pred_id: 1, arity: 2, args: [1, 2], source_id: 0 }] }],
+  rules: [],
+  query: { atom: { pred_id: 1, arity: 2, args: [1, 2] }, binding_mask: 3, proof_mode: "PositiveOnly", epoch: 0 }
+});
+const result = parse(wasm.prolog8_query(input));
+// result: { Answered: [{ bindings: [...], proof: [...], receipt: { receipt_hash: "...", ... } }] }
+```
+
+### CLI Integration
+
+```bash
+wpm prolog8 show                       # Report capabilities
+wpm prolog8 query  -i <input.json>    # Evaluate a query (Allow / Deny / Invalid)
+wpm prolog8 replay -i <input.json>    # Verify a receipt (detect tampering)
+```
+
+### Test Coverage
+
+| Suite | Count | Status |
+|-------|-------|--------|
+| Unit (inline) | 31 | Passing |
+| AAT counterfactual (P8-CF-1 to P8-CF-8) | 36 | Passing |
+| Integration | 11 | Passing |
+| **Total** | **78** | **All passing** |
+
 ## Serialization Notes
 
 - All `Result<JsValue, JsValue>` returns use `serde_json::to_string()` + `JsValue::from_str()` — NOT `serde_wasm_bindgen` (known bug with `json!()` macro)

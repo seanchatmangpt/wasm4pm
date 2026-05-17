@@ -101,6 +101,32 @@ Consistency across algorithms, configurations, or data sources.
 | **G** — Integration behavioral | Full autonomic loop | 2-4 | Multi-seed statistical assertions |
 | **H** — Mutation adequacy | All tests | 5 | Mutation testing to verify test sensitivity |
 
+## Prolog8 AAT (P8-CF Families)
+
+**File:** `crates/prolog8/tests/aat_live_counterfactual.rs` | **Total: 36 tests (all passing)**
+
+| Family | Oracle | Covers |
+|--------|--------|--------|
+| P8-CF-1 | Rank 1 | Arity cap: `ArityCapExceeded`, body cap, body length |
+| P8-CF-2 | Rank 1 | Rule body cap: `RuleBodyCapExceeded` |
+| P8-CF-3 | Rank 2 | Rule derivation: proof nodes include rule nodes when `proof_mode=Both` |
+| P8-CF-4 | Rank 2 | Deny path: negative proof present when `proof_mode=Both` |
+| P8-CF-5 | Rank 1 | Receipt determinism: identical inputs produce identical `receipt_hash` |
+| P8-CF-6 | Rank 2 | Kernel isolation: independent instances don't share state |
+| P8-CF-7 | Rank 1 | BLAKE3 domain separation: catalog/rule/fact/input/proof/output roots are distinct |
+| P8-CF-8 | Rank 1 | Admission mask invariants: body_mask, negation_mask, builtin_mask, proof_mask bounds |
+
+**Gotchas specific to Prolog8:**
+- `Atom8::new(pred, 9, ...)` clamps arity to 8 — use struct literal to test `ArityCapExceeded`
+- Deny proof nodes only appear with `proof_mode = Both` or `NegativeOnly` — `PositiveOnly` gives empty proof in Deny
+- `body_mask` check fires before `proof_mask` — set `body_mask` correctly when testing `ProofMaskOutOfRange`
+
+```bash
+# Run all Prolog8 tests
+cargo test -p prolog8 2>&1 | grep "test result"
+# Expected: 31 + 36 + 11 = 78 passing
+```
+
 ## Critical Bugs Under Test
 
 | Bug ID | Description | Detection Method |
@@ -109,6 +135,8 @@ Consistency across algorithms, configurations, or data sources.
 | **TS-1** | `String::len()` as timestamp proxy (ISO-8601 near-identical lengths) | Inject known time differences, verify duration in time units |
 | **CB-1** | Circuit breaker step counter never advanced | Construct breaker in Open, advance clock, assert allow_request |
 | **SP-1** | SPC one-shot → ring buffer (regression) | Verify snapshot count after 101+ observations |
+| **P8-CLAMP** | `Atom8::new` clamps arity — admission check independent | Use struct literal with arity=9, verify `ArityCapExceeded` |
+| **P8-DENY-MODE** | Deny proof only with `proof_mode=Both/NegativeOnly` | Set proof_mode before querying for denial, assert proof nodes |
 
 ## Coverage Targets
 
