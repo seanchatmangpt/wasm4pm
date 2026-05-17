@@ -78,34 +78,16 @@ mod tests {
 
     #[test]
     fn test_heuristic_miner_simple() {
-        let mut attrs_a = std::collections::HashMap::new();
-        attrs_a.insert(
-            "concept:name".to_string(),
-            AttributeValue::String("A".to_string()),
-        );
-
-        let mut attrs_b = std::collections::HashMap::new();
-        attrs_b.insert(
-            "concept:name".to_string(),
-            AttributeValue::String("B".to_string()),
-        );
-
-        let mut attrs_c = std::collections::HashMap::new();
-        attrs_c.insert(
-            "concept:name".to_string(),
-            AttributeValue::String("C".to_string()),
-        );
-
         let log = EventLog::new(
             vec![Trace::new(
                 "case1".to_string(),
                 vec![
-                    Event::new(attrs_a.clone()),
-                    Event::new(attrs_b.clone()),
-                    Event::new(attrs_c.clone()),
+                    Event::with_activity("A"),
+                    Event::with_activity("B"),
+                    Event::with_activity("C"),
                 ],
             )],
-            std::collections::HashMap::new(),
+            Vec::new(),
         );
 
         let dfg = discover_heuristic(&log, "concept:name").unwrap();
@@ -117,30 +99,18 @@ mod tests {
 
     #[test]
     fn test_heuristic_miner_parallel() {
-        let mut attrs_a = std::collections::HashMap::new();
-        attrs_a.insert(
-            "concept:name".to_string(),
-            AttributeValue::String("A".to_string()),
-        );
-
-        let mut attrs_b = std::collections::HashMap::new();
-        attrs_b.insert(
-            "concept:name".to_string(),
-            AttributeValue::String("B".to_string()),
-        );
-
         let log = EventLog::new(
             vec![
                 Trace::new(
                     "case1".to_string(),
-                    vec![Event::new(attrs_a.clone()), Event::new(attrs_b.clone())],
+                    vec![Event::with_activity("A"), Event::with_activity("B")],
                 ),
                 Trace::new(
                     "case2".to_string(),
-                    vec![Event::new(attrs_a.clone()), Event::new(attrs_b.clone())],
+                    vec![Event::with_activity("A"), Event::with_activity("B")],
                 ),
             ],
-            std::collections::HashMap::new(),
+            Vec::new(),
         );
 
         let dfg = discover_heuristic(&log, "concept:name").unwrap();

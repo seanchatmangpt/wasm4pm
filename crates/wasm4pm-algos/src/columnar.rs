@@ -135,7 +135,6 @@ pub fn jaccard_similarity(a: &[u64], b: &[u64]) -> f32 {
 mod tests {
     use super::*;
     use wasm4pm_types::{Event, EventLog, Trace};
-    use std::collections::HashMap as StdHashMap;
 
     fn make_log(traces: Vec<Vec<&str>>) -> EventLog {
         let traces = traces
@@ -144,19 +143,12 @@ mod tests {
             .map(|(i, activities)| {
                 let events = activities
                     .into_iter()
-                    .map(|a| {
-                        let mut attrs = StdHashMap::new();
-                        attrs.insert(
-                            "concept:name".to_string(),
-                            AttributeValue::String(a.to_string()),
-                        );
-                        Event::new(attrs)
-                    })
+                    .map(|a| Event::with_activity(a))
                     .collect();
                 Trace::new(format!("case{i}"), events)
             })
             .collect();
-        EventLog::new(traces, StdHashMap::new())
+        EventLog::new(traces, Vec::new())
     }
 
     #[test]

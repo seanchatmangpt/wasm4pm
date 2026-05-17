@@ -32,4 +32,4 @@ pub use ocel::{OCELEvent, OCELObject, OCEL};
 pub use provenance::ProvenanceChain;
 pub use choice_graph::{ChoiceGraph, ChoiceGraphNode, ChoiceGraphError};
 
-pub const VERSION: &str = "26.4.10";
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");

@@ -11,3 +11,6 @@ serde = { workspace = true }
 smallvec = { workspace = true }
 itertools = { workspace = true }
 hashbrown = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }

@@ -388,21 +388,11 @@ fn align_trace_to_model(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::collections::HashMap;
-
-    fn make_event(activity: &str) -> Event {
-        let mut attrs = HashMap::new();
-        attrs.insert(
-            "concept:name".to_string(),
-            AttributeValue::String(activity.to_string()),
-        );
-        Event::new(attrs)
-    }
 
     fn make_trace(case_id: &str, activities: &[&str]) -> Trace {
         Trace::new(
             case_id.to_string(),
-            activities.iter().map(|a| make_event(a)).collect(),
+            activities.iter().map(|a| Event::with_activity(a)).collect(),
         )
     }
 
@@ -426,7 +416,7 @@ mod tests {
     #[test]
     fn test_token_replay_conforming_trace_fitness_1() {
         // Model: A -> B -> C
-        let log = EventLog::new(vec![make_trace("c1", &["A", "B", "C"])], HashMap::new());
+        let log = EventLog::new(vec![make_trace("c1", &["A", "B", "C"])], Vec::new());
         let model = make_dfg(&[("A", "B"), ("B", "C")], &["A"], &["C"]);
 
         let result = check_conformance_token_replay(&log, &model, "concept:name").unwrap();
@@ -445,7 +435,7 @@ mod tests {
         // Model: A -> B -> C, but trace has extra event D
         let log = EventLog::new(
             vec![make_trace("c1", &["A", "B", "D", "C"])],
-            HashMap::new(),
+            Vec::new(),
         );
         let model = make_dfg(&[("A", "B"), ("B", "C")], &["A"], &["C"]);
 
@@ -461,7 +451,7 @@ mod tests {
     #[test]
     fn test_alignment_conforming_trace_zero_cost() {
         // Simple linear Petri net: source -> t_A -> p1 -> t_B -> sink
-        let mut net = PetriNet::new();
+        let mut net = PetriNet::default();
         net.places.push(Place { id: "source".to_string() });
         net.places.push(Place { id: "p1".to_string() });
         net.places.push(Place { id: "sink".to_string() });
@@ -472,7 +462,7 @@ mod tests {
         net.arcs.push(Arc { from: "p1".to_string(), to: "t_B".to_string(), weight: Some(1) });
         net.arcs.push(Arc { from: "t_B".to_string(), to: "sink".to_string(), weight: Some(1) });
 
-        let log = EventLog::new(vec![make_trace("c1", &["A", "B"])], HashMap::new());
+        let log = EventLog::new(vec![make_trace("c1", &["A", "B"])], Vec::new());
 
         let result = check_conformance_alignment(&log, &net, "concept:name").unwrap();
         assert_eq!(
@@ -484,7 +474,7 @@ mod tests {
     #[test]
     fn test_alignment_nonconforming_trace_has_cost() {
         // Same linear net: A -> B, but trace is A -> B -> C (extra C)
-        let mut net = PetriNet::new();
+        let mut net = PetriNet::default();
         net.places.push(Place { id: "source".to_string() });
         net.places.push(Place { id: "p1".to_string() });
         net.places.push(Place { id: "sink".to_string() });
@@ -495,7 +485,7 @@ mod tests {
         net.arcs.push(Arc { from: "p1".to_string(), to: "t_B".to_string(), weight: Some(1) });
         net.arcs.push(Arc { from: "t_B".to_string(), to: "sink".to_string(), weight: Some(1) });
 
-        let log = EventLog::new(vec![make_trace("c1", &["A", "B", "C"])], HashMap::new());
+        let log = EventLog::new(vec![make_trace("c1", &["A", "B", "C"])], Vec::new());
 
         let result = check_conformance_alignment(&log, &net, "concept:name").unwrap();
         assert!(
