@@ -26,6 +26,9 @@ export async function runContract(
     typeof performance !== 'undefined' ? performance.now() : Date.now();
   let status: 'OK' | 'ERROR' = 'OK';
   let errMsg: string | undefined;
+  // Captured after successful parse so the finally block can include
+  // 'cognition.run_id' in the span — critical for Jaeger traceability.
+  let capturedRunId: string | undefined;
 
   try {
     let inputJson: string;
@@ -61,7 +64,10 @@ export async function runContract(
         { cause: e },
       );
     }
-    return parsed as ContractResult;
+    // Capture run_id before returning so the finally span can carry it.
+    const result = parsed as ContractResult;
+    capturedRunId = result.run_id;
+    return result;
   } catch (err) {
     status = 'ERROR';
     errMsg = err instanceof Error ? err.message : String(err);
@@ -84,6 +90,12 @@ export async function runContract(
           'service.name': 'wasm4pm',
           'cognition.operation': 'run',
           'cognition.duration_ms': endMs - startMs,
+          // Breed name is always known at call site; run_id is captured after
+          // successful WASM parse (undefined on error — still informative).
+          'cognition.breed': breed,
+          ...(capturedRunId !== undefined
+            ? { 'cognition.run_id': capturedRunId }
+            : {}),
         },
       });
     } catch {
