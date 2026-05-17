@@ -55,9 +55,21 @@ export async function withLogSession<T>(
     process.exit(result.exit_code);
   }
 
-  // WASM init
+  // WASM init — failure is a WASM runtime error (exit 3), not a source error
   const loader = WasmLoader.getInstance();
-  await loader.init();
+  try {
+    await loader.init();
+  } catch (initError) {
+    const msg = initError instanceof Error ? initError.message : String(initError);
+    const result = makeErrorResult(
+      commandName,
+      new Error(`WASM initialization failed: ${msg}\n\nEnsure Node.js 16+ is installed and the @wasm4pm/engine package is intact.\nTry reinstalling: npm install @wasm4pm/engine`),
+      EXIT_CODES.execution_error,
+      'WASM_INIT_FAILED'
+    );
+    emitResult(result, emitOptions);
+    process.exit(result.exit_code);
+  }
   const wasm = loader.get() as Record<string, unknown>;
 
   // Read + validate XES

@@ -2749,7 +2749,9 @@ export const doctorReport = defineCommand({
       }
     }
 
-    const reportExitCode = summary.fail > 0 ? EXIT_CODES.config_error : EXIT_CODES.success;
+    // report subcommand always exits 0 when the file is successfully written —
+    // failing checks are recorded in the report content, not a reason to exit non-zero.
+    const reportExitCode = EXIT_CODES.success;
     const result = makeResult(
       'doctor report',
       { report_path: outPath, summary, format: reportFormat },

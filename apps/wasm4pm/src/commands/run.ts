@@ -739,6 +739,7 @@ export const run = defineCommand({
       }
 
       // Step 10: Write output file if specified
+      // Discovery succeeded; a write failure is a sink error → partial_failure (4), not system_error (5).
       if (ctx.args.output) {
         try {
           const outputDir = path.dirname(ctx.args.output);
@@ -746,7 +747,16 @@ export const run = defineCommand({
           await fs.writeFile(ctx.args.output, JSON.stringify(payload, null, 2));
         } catch (error) {
           const message = error instanceof Error ? error.message : String(error);
-          const errResult = makeErrorResult('run', new Error(`Output error: ${message}`), EXIT_CODES.system_error, 'OUTPUT_WRITE_ERROR');
+          const errResult = makeErrorResult(
+            'run',
+            new Error(
+              `Failed to write output to '${ctx.args.output}': ${message}\n\n` +
+              `The process model was discovered successfully — only the file write failed.\n` +
+              `Check that the destination directory exists and is writable: chmod 755 ${path.dirname(ctx.args.output as string)}`
+            ),
+            EXIT_CODES.partial_failure,
+            'SINK_WRITE_FAILED'
+          );
           emitResult(errResult, emitOptions);
           return await exitWithFlush(errResult.exit_code);
         }
