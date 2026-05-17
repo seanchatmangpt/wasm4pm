@@ -11,6 +11,16 @@ import { exitWithFlush } from '../otel/exit.js';
 
 const AUTOPROCESS_STATE_FILE = '.wasm4pm/autoprocess-state.json';
 
+/**
+ * Current schema version for autoprocess-state.json.
+ *
+ * Increment this constant whenever the persisted shape changes in a
+ * backward-incompatible way.  On load, a version mismatch causes a
+ * deliberate warning + fresh-start rather than silently feeding stale
+ * data into the WASM layer.
+ */
+const STATE_SCHEMA_VERSION = 2;
+
 async function ensureStateDir() {
   try {
     const dir = path.dirname(AUTOPROCESS_STATE_FILE);
@@ -28,28 +38,134 @@ async function hashStateFile(stateFilePath: string): Promise<string> {
   }
 }
 
-async function loadState(wasm: any): Promise<void> {
+/**
+ * Return true when `fn` is exported by the current WASM build.
+ *
+ * Several persistence functions are compiled only with the `cloud` feature
+ * flag (serialize_rl_state, restore_rl_state, get_spc_history,
+ * set_spc_history, circuit_breaker_get_state, circuit_breaker_set_state).
+ * Calling an absent export throws "X is not a function"; this guard lets the
+ * caller decide how to handle unavailability explicitly rather than letting the
+ * error propagate into the outer catch block that also swallows ENOENT.
+ */
+function wasmHas(wasm: Record<string, unknown>, fn: string): boolean {
+  return typeof wasm[fn] === 'function';
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function loadState(wasm: Record<string, any>): Promise<void> {
+  let rawContent: string;
   try {
-    const content = await fs.readFile(AUTOPROCESS_STATE_FILE, 'utf-8');
-    const state = JSON.parse(content);
-    if (state.rl_state) { wasm.restore_rl_state(JSON.stringify(state.rl_state)); }
-    if (state.spc_history) { wasm.set_spc_history(JSON.stringify(state.spc_history)); }
-    if (state.circuit_breaker_state) { wasm.circuit_breaker_set_state(JSON.stringify(state.circuit_breaker_state)); }
+    rawContent = await fs.readFile(AUTOPROCESS_STATE_FILE, 'utf-8');
+  } catch (err: unknown) {
+    // ENOENT — state file does not yet exist.  This is the expected cold-start
+    // path; start fresh without any warning.
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT') return;
+    // Any other I/O error (permissions, device failure) is surfaced.
+    console.warn(`[autoprocess] state file read error (${code ?? 'unknown'}): starting fresh`);
+    return;
+  }
+
+  let state: Record<string, unknown>;
+  try {
+    state = JSON.parse(rawContent) as Record<string, unknown>;
   } catch {
-    // File doesn't exist or is invalid - start fresh
+    // The file exists but is not valid JSON — most likely a crash-truncated
+    // write.  Warn the user so they know state was discarded, then start fresh.
+    // DO NOT silently reset: an operator who sees this message can investigate
+    // before a second crash wipes the circuit breaker's Open state.
+    console.warn(
+      `[autoprocess] state file is malformed (truncated crash?): discarding and starting fresh. ` +
+      `Delete ${AUTOPROCESS_STATE_FILE} to suppress this warning.`
+    );
+    return;
+  }
+
+  // Schema version guard — reject states written by an incompatible version.
+  // Missing version means the file was written before versioning was introduced
+  // (pre-v2 schema had different top-level keys); treat as stale.
+  const savedVersion = typeof state['version'] === 'number' ? state['version'] : 0;
+  if (savedVersion !== STATE_SCHEMA_VERSION) {
+    console.warn(
+      `[autoprocess] state file schema version ${savedVersion} !== expected ${STATE_SCHEMA_VERSION}: ` +
+      `discarding stale state and starting fresh. ` +
+      `Delete ${AUTOPROCESS_STATE_FILE} to suppress this warning.`
+    );
+    return;
+  }
+
+  // Restore each component only when the corresponding WASM export exists.
+  // The persistence functions are guarded by the `cloud` feature flag and are
+  // absent in the default browser build — calling them would throw, and that
+  // error must NOT fall through to the outer execution-error handler.
+  if (state['rl_state'] && wasmHas(wasm, 'restore_rl_state')) {
+    try {
+      wasm['restore_rl_state'](JSON.stringify(state['rl_state']));
+    } catch (e) {
+      console.warn(`[autoprocess] restore_rl_state failed: ${(e as Error).message ?? e}`);
+    }
+  }
+
+  if (state['spc_history'] && wasmHas(wasm, 'set_spc_history')) {
+    try {
+      wasm['set_spc_history'](JSON.stringify(state['spc_history']));
+    } catch (e) {
+      console.warn(`[autoprocess] set_spc_history failed: ${(e as Error).message ?? e}`);
+    }
+  }
+
+  if (state['circuit_breaker_state'] && wasmHas(wasm, 'circuit_breaker_set_state')) {
+    try {
+      wasm['circuit_breaker_set_state'](JSON.stringify(state['circuit_breaker_state']));
+    } catch (e) {
+      console.warn(`[autoprocess] circuit_breaker_set_state failed: ${(e as Error).message ?? e}`);
+    }
   }
 }
 
-async function saveState(wasm: any): Promise<void> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function saveState(wasm: Record<string, any>): Promise<void> {
+  // Collect only the components whose WASM exports are available in this build.
+  // If none are available (e.g., non-cloud build) we still write the file with
+  // the version sentinel so that future cloud builds see a consistent schema.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const partial: Record<string, any> = {
+    version: STATE_SCHEMA_VERSION,
+    saved_at: new Date().toISOString(),
+  };
+
+  if (wasmHas(wasm, 'serialize_rl_state')) {
+    try {
+      partial['rl_state'] = JSON.parse(wasm['serialize_rl_state']());
+    } catch (e) {
+      console.warn(`[autoprocess] serialize_rl_state failed: ${(e as Error).message ?? e}`);
+    }
+  }
+
+  if (wasmHas(wasm, 'get_spc_history')) {
+    try {
+      partial['spc_history'] = JSON.parse(wasm['get_spc_history']());
+    } catch (e) {
+      console.warn(`[autoprocess] get_spc_history failed: ${(e as Error).message ?? e}`);
+    }
+  }
+
+  if (wasmHas(wasm, 'circuit_breaker_get_state')) {
+    try {
+      partial['circuit_breaker_state'] = JSON.parse(wasm['circuit_breaker_get_state']());
+    } catch (e) {
+      console.warn(`[autoprocess] circuit_breaker_get_state failed: ${(e as Error).message ?? e}`);
+    }
+  }
+
   try {
-    const rl_state = JSON.parse(wasm.serialize_rl_state());
-    const spc_history = JSON.parse(wasm.get_spc_history());
-    const circuit_breaker_state = JSON.parse(wasm.circuit_breaker_get_state());
-    const fullState = { rl_state, spc_history, circuit_breaker_state, saved_at: new Date().toISOString() };
     await ensureStateDir();
-    await fs.writeFile(AUTOPROCESS_STATE_FILE, JSON.stringify(fullState, null, 2));
-  } catch {
-    // Silently fail on save - don't block execution
+    await fs.writeFile(AUTOPROCESS_STATE_FILE, JSON.stringify(partial, null, 2));
+  } catch (e) {
+    // File-write failures (disk full, permissions) must warn — silently
+    // dropping the save would leave a stale state file on the next run.
+    console.warn(`[autoprocess] state file write failed: ${(e as Error).message ?? e}`);
   }
 }
 
