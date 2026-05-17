@@ -242,7 +242,7 @@ name = "scalability_report"
 
 # Conformance checking (fitness, precision, generalization)
 feature-conformance-basic = ["conformance_basic"]
-feature-conformance-full = ["conformance_full", "alignment_fitness", "align_etconformance"]
+feature-conformance-full = ["feature-conformance-basic", "conformance_full", "alignment_fitness", "align_etconformance"]
 
 # Discovery algorithms (advanced = genetic, ILP, ACO, PSO)
 feature-discovery-advanced = ["discovery_advanced", "genetic", "ilp", "a_star", "aco", "pso", "simulated_annealing"]
@@ -260,13 +260,27 @@ feature-powl = ["powl"]
 feature-streaming-basic = ["streaming_basic", "streaming_dfg"]
 
 # Streaming algorithms (full = SIMD-accelerated)
-feature-streaming-full = ["streaming_full", "streaming_basic", "simd"]
+feature-streaming-full = ["feature-streaming-basic", "streaming_full", "streaming_basic", "simd"]
 
 # Hand-rolled statistics (size optimization)
 feature-hand-rolled-stats = ["hand_rolled_stats"]
 
 # Full-precision statistics (full statrs library)
 feature-statrs = ["statrs", "dep:statrs"]
+
+# GPU-accelerated LinUCB contextual bandit (NOT for wasm32 — targets native GPU: Vulkan/Metal/DX12)
+# PREREQUISITE: add `wgpu = { version = "0.19", optional = true }` and
+#               `pollster = { version = "0.3", optional = true }` to [dependencies],
+#               then change this to feature-gpu = ["gpu", "dep:wgpu", "dep:pollster"].
+# Until those deps are added the internal "gpu" flag is NOT activated to prevent
+# compile errors from missing wgpu/pollster crates.
+feature-gpu = []
+
+# Parallel processing via rayon (NOT for wasm32 — WASM is single-threaded)
+# PREREQUISITE: add `rayon = { version = "1", optional = true }` to [dependencies],
+#               then change this to feature-rayon = ["rayon", "dep:rayon"].
+# Until that dep is added the internal "rayon" flag is NOT activated.
+feature-rayon = []
 
 # Branchless algorithms (bcinr integration)
 bcinr = ["dep:bcinr"]
