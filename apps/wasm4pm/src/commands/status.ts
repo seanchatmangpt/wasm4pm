@@ -108,6 +108,12 @@ export const status = defineCommand({
       // This is the data behind "algorithm: dfg (from ENV)" diagnostics.
       let configProvenance: Record<string, { source: string; path?: string }> = {};
       let configHash: string | null = null;
+      let membraneStatus: {
+        enabled: boolean;
+        custody_actions: string[];
+        envelopes_path: string;
+        source: string;
+      } | null = null;
       try {
         const cfg = await resolveConfig();
         configHash = cfg.metadata.hash;
@@ -127,6 +133,23 @@ export const status = defineCommand({
           if (interestingKeys.has(key) || entry.source !== 'default') {
             configProvenance[key] = { source: entry.source, path: entry.path };
           }
+        }
+        // Extract membrane section — present when enabled or explicitly configured
+        type CfgWithMembrane = typeof cfg & {
+          membrane?: {
+            enabled?: boolean;
+            custody_actions?: string[];
+            envelopes?: { path?: string };
+          };
+        };
+        const memCfg = (cfg as CfgWithMembrane).membrane;
+        if (memCfg !== undefined) {
+          membraneStatus = {
+            enabled: memCfg.enabled === true,
+            custody_actions: memCfg.custody_actions ?? [],
+            envelopes_path: memCfg.envelopes?.path ?? '.wasm4pm/envelopes',
+            source: prov['membrane.enabled']?.source ?? 'default',
+          };
         }
       } catch {
         // Config load failures are non-fatal for the status command
@@ -177,6 +200,7 @@ export const status = defineCommand({
           rss: Math.round(memoryUsage.rss / 1024 / 1024),
         },
         autonomic,
+        membrane: membraneStatus,
         config: {
           hash: configHash,
           provenance: configProvenance,
@@ -232,6 +256,28 @@ export const status = defineCommand({
           p.log(`  Health: ${a.health_state}  SPC alerts (last cycle): ${a.spc_alerts}`);
           const circuitIcon = a.circuit_state === 'Open' ? '! OPEN' : a.circuit_state === 'HalfOpen' ? '~ HALF-OPEN' : '+ Closed';
           p.log(`  Circuit breaker: ${circuitIcon}  (failures: ${a.circuit_failures}, successes: ${a.circuit_successes})`);
+        }
+
+        // AutoMembrane section — shown whenever membrane is configured (enabled or disabled).
+        // Closes the gap where WASM4PM_MEMBRANE_ENABLED=true had zero visibility in status.
+        const mem = r.membrane as {
+          enabled: boolean;
+          custody_actions: string[];
+          envelopes_path: string;
+          source: string;
+        } | null;
+        if (mem !== null) {
+          p.log('');
+          p.log('AutoMembrane:');
+          const memState = mem.enabled ? 'enabled' : 'disabled';
+          p.log(`  State: ${memState} (config source: ${mem.source})`);
+          if (mem.enabled) {
+            p.log(`  Custody actions: ${mem.custody_actions.join(', ') || '(none)'}`);
+            p.log(`  Envelopes path: ${mem.envelopes_path}`);
+            p.log('  Run `wpm membrane check` to verify envelope readiness.');
+          } else {
+            p.log('  Set WASM4PM_MEMBRANE_ENABLED=true or add [membrane] enabled=true to wasm4pm.toml to activate.');
+          }
         }
 
         // Config provenance section — always shows key sources; --verbose shows all overrides.

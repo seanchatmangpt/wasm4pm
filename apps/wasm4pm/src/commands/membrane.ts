@@ -4,6 +4,7 @@ import * as path from 'path';
 import { emitResult, makeResult, makeErrorResult, EmitOptions, ConsoleProjection } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
+import { resolveConfig } from '@wasm4pm/config';
 import { buildSarifOutput } from '../sarif.js';
 import { exitWithFlush } from '../otel/exit.js';
 
@@ -1203,45 +1204,58 @@ const membraneDoctor = defineCommand({
       fix: 'Review benchmark failures with `wpm membrane benchmark`',
     });
 
-    // Check 4: membrane.enabled = true in config
+    // Checks 4 & 5: read membrane config via resolveConfig() so that ENV vars
+    // (WASM4PM_MEMBRANE_ENABLED, WASM4PM_MEMBRANE_CUSTODY_ACTIONS) are honoured
+    // in addition to wasm4pm.toml.  Fall back to TOML-only regex if resolveConfig fails.
     let membraneEnabled = false;
-    let configDetail = 'Could not read wasm4pm.toml';
+    let configDetail = 'Could not read membrane config';
+    let custodyOk = false;
+    let custodyDetail = 'custody_actions not configured (empty or missing)';
     try {
-      const tomlContent = await fs
-        .readFile(path.join(process.cwd(), 'wasm4pm.toml'), 'utf-8')
-        .catch(() => '');
-      membraneEnabled =
-        tomlContent.includes('[membrane]') && /enabled\s*=\s*true/.test(tomlContent);
+      const cfg = await resolveConfig();
+      const memCfg = (cfg as unknown as { membrane?: { enabled?: boolean; custody_actions?: string[] } }).membrane;
+      membraneEnabled = memCfg?.enabled === true;
+      const provSource = (cfg.metadata.provenance['membrane.enabled']?.source ?? 'default');
       configDetail = membraneEnabled
-        ? 'membrane.enabled = true in wasm4pm.toml'
-        : '[membrane] section missing or enabled = false';
+        ? `membrane.enabled = true (source: ${provSource})`
+        : `membrane.enabled is false or unset (source: ${provSource})`;
+      const actions = memCfg?.custody_actions ?? [];
+      custodyOk = actions.length > 0;
+      custodyDetail = custodyOk
+        ? `custody_actions = [${actions.join(', ')}]`
+        : 'custody_actions not configured (empty or missing)';
     } catch {
-      /* file unreadable */
+      // resolveConfig failed (e.g. invalid config) — fall back to TOML regex
+      try {
+        const tomlContent = await fs
+          .readFile(path.join(process.cwd(), 'wasm4pm.toml'), 'utf-8')
+          .catch(() => '');
+        membraneEnabled =
+          tomlContent.includes('[membrane]') && /enabled\s*=\s*true/.test(tomlContent);
+        configDetail = membraneEnabled
+          ? 'membrane.enabled = true in wasm4pm.toml (regex fallback)'
+          : '[membrane] section missing or enabled = false (regex fallback)';
+        custodyOk = /custody_actions\s*=\s*\[.+\]/.test(tomlContent);
+        custodyDetail = custodyOk
+          ? 'custody_actions found in wasm4pm.toml (regex fallback)'
+          : 'custody_actions not configured (empty or missing)';
+      } catch {
+        /* file unreadable */
+      }
     }
     checks.push({
       name: 'membrane.enabled = true in config',
       pass: membraneEnabled,
       detail: configDetail,
-      fix: 'Run `wpm membrane init` then set enabled = true',
+      fix: 'Run `wpm membrane init` then set enabled = true, or set WASM4PM_MEMBRANE_ENABLED=true',
     });
 
-    // Check 5: custody_actions non-empty in config
-    let custodyOk = false;
-    try {
-      const tomlContent = await fs
-        .readFile(path.join(process.cwd(), 'wasm4pm.toml'), 'utf-8')
-        .catch(() => '');
-      custodyOk = /custody_actions\s*=\s*\[.+\]/.test(tomlContent);
-    } catch {
-      /* file unreadable */
-    }
+    // Check 5: custody_actions non-empty in config (resolved above alongside check 4)
     checks.push({
       name: 'custody_actions configured',
       pass: custodyOk,
-      detail: custodyOk
-        ? 'custody_actions found in wasm4pm.toml'
-        : 'custody_actions not configured (empty or missing)',
-      fix: 'Add `custody_actions = ["approve", "release", "transfer"]` to [membrane] section',
+      detail: custodyDetail,
+      fix: 'Add `custody_actions = ["approve", "release", "transfer"]` to [membrane] section, or set WASM4PM_MEMBRANE_CUSTODY_ACTIONS=approve,release,transfer',
     });
 
     // Check 6: Membrane health check passes
