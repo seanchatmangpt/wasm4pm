@@ -410,11 +410,21 @@ async function executePowlCommand(
         return await exitWithFlush(EXIT_CODES.source_error);
       }
       const confActivityKey = (args['activity-key'] as string) || 'concept:name';
-      const logHandle: string = wasm.load_eventlog_from_xes(logContent);
+      let logHandle: string;
+      try {
+        logHandle = wasm.load_eventlog_from_xes(logContent);
+      } catch (e) {
+        throw new PowlSourceError(
+          `Cannot parse XES log "${logPath}": ${e instanceof Error ? e.message : String(e)}`
+        );
+      }
       const modelsLogJson: string = wasm.export_eventlog_to_json(logHandle);
       wasm.delete_object(logHandle);
       const logJson: string = convertModelsLogToPowlLog(modelsLogJson, confActivityKey);
       const raw: string = wasm.token_replay_fitness(modelStr, logJson);
+      // token_replay_fitness returns FitnessResult:
+      //   { percentage, avg_trace_fitness, avg_trace_precision, perfectly_fitting_traces,
+      //     total_traces, trace_results: [{ case_id, fitness, precision, ... }] }
       return JSON.parse(raw);
     }
 
@@ -477,8 +487,15 @@ async function executePowlCommand(
         logJson = await fs.readFile(input, 'utf-8');
       }
 
+      // Use config path when any non-default option was explicitly provided.
+      // Note: citsy always populates all declared args (they are never absent from
+      // Object.keys(args)), so we test actual *values* rather than key presence.
+      const useConfig =
+        activityKey !== 'concept:name' ||
+        minTraceCount !== 1 ||
+        noiseThreshold !== 0.0;
       let raw;
-      if (Object.keys(args).some((k) => ['min-trace-count', 'noise-threshold'].includes(k))) {
+      if (useConfig) {
         raw = wasm.discover_powl_from_log_config(
           logJson,
           activityKey,
@@ -733,15 +750,29 @@ function formatHumanOutput(
     }
 
     case 'conformance': {
+      // Van der Aalst: fitness AND precision must both be shown together —
+      // presenting fitness alone misleads the practitioner (flower model trap).
+      const fitPct = ((result.percentage as number) * 100).toFixed(1);
+      const precPct =
+        typeof result.avg_trace_precision === 'number'
+          ? ((result.avg_trace_precision as number) * 100).toFixed(1)
+          : 'n/a';
+      // ASCII proportion glyph: ▓ = fitted, ░ = missing
+      const barWidth = 20;
+      const fitFilled = Math.round(((result.percentage as number) * barWidth));
+      const fitBar = '▓'.repeat(fitFilled) + '░'.repeat(barWidth - fitFilled);
+      const precVal = typeof result.avg_trace_precision === 'number'
+        ? (result.avg_trace_precision as number) : 0;
+      const precFilled = Math.round(precVal * barWidth);
+      const precBar = '▓'.repeat(precFilled) + '░'.repeat(barWidth - precFilled);
       projection.log('');
+      projection.log(`  Fitness:             ${fitPct.padStart(6)}%  [${fitBar}]  (token replay)`);
+      projection.log(`  Precision:           ${precPct.padStart(6)}%  [${precBar}]  (token replay)`);
       projection.log(
-        `  Fitness:                    ${((result.percentage as number) * 100).toFixed(1)}%`
+        `  Avg trace fitness:   ${((result.avg_trace_fitness as number) * 100).toFixed(1).padStart(6)}%`
       );
       projection.log(
-        `  Avg trace fitness:          ${((result.avg_trace_fitness as number) * 100).toFixed(1)}%`
-      );
-      projection.log(
-        `  Perfectly fitting traces:    ${result.perfectly_fitting_traces} / ${result.total_traces}`
+        `  Perfectly fitting:   ${result.perfectly_fitting_traces} / ${result.total_traces} traces`
       );
       if (
         result.trace_results &&
@@ -751,11 +782,15 @@ function formatHumanOutput(
         for (const tr of result.trace_results as Array<Record<string, unknown>>) {
           const caseId = String(tr.case_id ?? '?');
           const fit = ((tr.fitness as number) * 100).toFixed(1);
+          const prec =
+            typeof tr.precision === 'number'
+              ? ((tr.precision as number) * 100).toFixed(1)
+              : 'n/a';
           const missing = tr.missing_tokens ?? 0;
           const remaining = tr.remaining_tokens ?? 0;
           const marker = tr.missing_tokens === 0 && tr.remaining_tokens === 0 ? '✓' : '✗';
           projection.log(
-            `    ${marker} ${caseId.padEnd(20)} fitness=${fit}%  missing=${missing} remaining=${remaining}`
+            `    ${marker} ${caseId.padEnd(20)} fitness=${fit}%  prec=${prec}%  missing=${missing} remaining=${remaining}`
           );
         }
       }
