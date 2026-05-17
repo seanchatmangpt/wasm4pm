@@ -1,0 +1,187 @@
+groups:
+  - id: pm.discovery
+    type: attribute_group
+    brief: Process discovery attributes — discovering a process model from an event log.
+    attributes:
+      - id: pm.discovery.algorithm
+        type: string
+        stability: development
+        brief: Discovery algorithm name (e.g. dfg, alpha_plus_plus, ilp, genetic)
+        requirement_level: required
+        examples: ['dfg', 'alpha_plus_plus', 'inductive_miner', 'genetic_algorithm', 'ilp']
+      - id: pm.discovery.input_format
+        type: string
+        stability: development
+        brief: Input event log format
+        requirement_level: required
+        examples: ['xes', 'ocel', 'csv', 'json']
+      - id: pm.discovery.model_type
+        type: string
+        stability: development
+        brief: Output model type produced by the algorithm
+        requirement_level: required
+        examples: ['dfg', 'petri_net', 'process_tree', 'bpmn', 'declare']
+      - id: pm.discovery.trace_count
+        type: int
+        stability: development
+        brief: Number of traces in the input log
+        requirement_level: recommended
+      - id: pm.discovery.event_count
+        type: int
+        stability: development
+        brief: Total number of events in the input log
+        requirement_level: recommended
+      - id: pm.discovery.activity_count
+        type: int
+        stability: development
+        brief: Number of unique activities discovered
+        requirement_level: recommended
+      - id: pm.discovery.execution_time_ms
+        type: int
+        stability: development
+        brief: Algorithm execution time in milliseconds
+        requirement_level: recommended
+
+  - id: pm.conformance
+    type: attribute_group
+    brief: >
+      Process conformance checking — verifying how well an event log conforms to
+      a process model (van der Aalst four quality dimensions).
+    attributes:
+      - id: pm.conformance.method
+        type: string
+        stability: development
+        brief: Conformance checking method
+        requirement_level: required
+        examples: ['token_replay', 'alignments']
+      - id: pm.conformance.fitness
+        type: double
+        stability: development
+        brief: >
+          Log-model fitness (0-1). Van der Aalst target >= 0.85.
+          formula: 1 - (missing + consumed) / (produced + remaining)
+        requirement_level: required
+      - id: pm.conformance.precision
+        type: double
+        stability: development
+        brief: Model precision (0-1). Low precision means the model allows behaviour not in the log.
+        requirement_level: required
+      - id: pm.conformance.generalization
+        type: double
+        stability: development
+        brief: Model generalization (0-1). Low value means overfitting to the training log.
+        requirement_level: recommended
+      - id: pm.conformance.simplicity
+        type: double
+        stability: development
+        brief: Model simplicity score (0-1). Fewer transitions is preferred.
+        requirement_level: recommended
+      - id: pm.conformance.model_kind
+        type: string
+        stability: development
+        brief: Kind of model being checked
+        requirement_level: recommended
+        examples: ['petri_net', 'dfg', 'process_tree']
+      - id: pm.conformance.trace_count
+        type: int
+        stability: development
+        brief: Number of traces replayed
+        requirement_level: recommended
+      - id: pm.conformance.deviation_count
+        type: int
+        stability: development
+        brief: Number of deviating traces found
+        requirement_level: recommended
+      - id: pm.conformance.conforms
+        type: boolean
+        stability: development
+        brief: True when fitness >= configured threshold
+        requirement_level: recommended
+      - id: pm.conformance.duration_ms
+        type: int
+        stability: development
+        brief: Conformance check wall-clock duration in milliseconds
+        requirement_level: recommended
+
+  - id: pm.drift
+    type: attribute_group
+    brief: Concept drift detection — detecting changes in process behaviour over time.
+    attributes:
+      - id: pm.drift.method
+        type: string
+        stability: development
+        brief: Drift detection method used
+        requirement_level: required
+        examples: ['ewma', 'jaccard_window', 'cusum', 'page_hinkley']
+      - id: pm.drift.detected
+        type: boolean
+        stability: development
+        brief: True if concept drift was detected in the evaluation window
+        requirement_level: required
+      - id: pm.drift.score
+        type: double
+        stability: development
+        brief: Drift magnitude score (0-1 normalised)
+        requirement_level: recommended
+      - id: pm.drift.window_size
+        type: int
+        stability: development
+        brief: Number of traces per sliding detection window
+        requirement_level: recommended
+      - id: pm.drift.threshold
+        type: double
+        stability: development
+        brief: Detection threshold above which drift is declared
+        requirement_level: recommended
+      - id: pm.drift.drift_point_count
+        type: int
+        stability: development
+        brief: Number of drift change-points identified
+        requirement_level: recommended
+      - id: pm.drift.duration_ms
+        type: int
+        stability: development
+        brief: Drift check wall-clock duration in milliseconds
+        requirement_level: recommended
+
+  - id: pm.ml
+    type: attribute_group
+    brief: Machine-learning analysis over event log features.
+    attributes:
+      - id: pm.ml.task
+        type: string
+        stability: development
+        brief: ML task name
+        requirement_level: required
+        examples: ['classify', 'cluster', 'forecast', 'anomaly', 'regress', 'pca']
+      - id: pm.ml.method
+        type: string
+        stability: development
+        brief: Specific ML algorithm used
+        requirement_level: recommended
+        examples: ['knn', 'logistic_regression', 'kmeans', 'dbscan', 'linear', 'pca']
+      - id: pm.ml.feature_count
+        type: int
+        stability: development
+        brief: Number of input features
+        requirement_level: recommended
+      - id: pm.ml.cluster_count
+        type: int
+        stability: development
+        brief: Number of clusters (for clustering tasks)
+        requirement_level: opt_in
+      - id: pm.ml.anomaly_count
+        type: int
+        stability: development
+        brief: Number of anomalies detected
+        requirement_level: opt_in
+      - id: pm.ml.r_squared
+        type: double
+        stability: development
+        brief: R-squared goodness-of-fit (for regression tasks)
+        requirement_level: opt_in
+      - id: pm.ml.duration_ms
+        type: int
+        stability: development
+        brief: ML analysis wall-clock duration in milliseconds
+        requirement_level: recommended

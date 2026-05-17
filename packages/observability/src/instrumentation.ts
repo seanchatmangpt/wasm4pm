@@ -705,6 +705,7 @@ export class Instrumentation {
 
     const jsonEvent: JsonEvent = {
       timestamp: new Date().toISOString(),
+      level: 'info',
       component: 'engine',
       event_type: 'progress',
       run_id: requiredAttrs['run.id'],
@@ -779,6 +780,7 @@ export class Instrumentation {
 
     const jsonEvent: JsonEvent = {
       timestamp: new Date().toISOString(),
+      level: severity === 'warning' ? 'warn' : severity === 'info' ? 'info' : 'error',
       component: 'engine',
       event_type: 'error',
       run_id: requiredAttrs['run.id'],

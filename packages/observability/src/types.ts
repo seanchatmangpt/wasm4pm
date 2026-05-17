@@ -21,6 +21,7 @@ export interface CliEvent {
  */
 export interface JsonEvent {
   timestamp: string; // ISO 8601
+  level: 'info' | 'warn' | 'error' | 'debug'; // Severity level — required for machine filtering
   component: string; // e.g., "engine", "planner", "connector"
   event_type: string; // e.g., "execution_start", "trace_processed"
   run_id?: string; // UUID of the execution run

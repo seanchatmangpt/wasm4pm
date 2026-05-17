@@ -146,24 +146,24 @@ else
   echo "FAIL|OT-10|weaver not found — install from https://github.com/open-telemetry/weaver"
 fi
 
-# OT-11: weaver registry check — semconv structure assessment
+# OT-11: weaver registry check — semconv/model/ must be a valid weaver registry directory
 WEAVER_BIN=$(which weaver 2>/dev/null || echo "")
+MODEL_DIR="$REPO_ROOT/semconv/model"
 if [ -n "$WEAVER_BIN" ]; then
-  YAML_N=$(find "$REPO_ROOT/semconv" -name "*.yaml" 2>/dev/null | wc -l | tr -d ' ')
-  YAML_INT=$(echo "$YAML_N" | tr -d '[:space:]')
-  # The wasm4pm semconv is a flat YAML, not a weaver registry directory format.
-  # A weaver registry requires groups/ subdirectory structure.
-  HAS_REGISTRY_STRUCT=$(find "$REPO_ROOT/semconv" -name "*.yaml" -path "*/groups/*" 2>/dev/null | wc -l | tr -d ' ')
-  HRS_INT=$(echo "$HAS_REGISTRY_STRUCT" | tr -d '[:space:]')
-  if [ "$HRS_INT" -gt 0 ]; then
-    WEAVER_OUT=$("$WEAVER_BIN" registry check -r "$REPO_ROOT/semconv" 2>&1 || true)
-    if echo "$WEAVER_OUT" | grep -q "error\|Error\|FAIL"; then
-      echo "FAIL|OT-11|weaver registry check failed: $(echo "$WEAVER_OUT" | grep -i error | head -1)"
+  if [ -d "$MODEL_DIR" ]; then
+    MODEL_YAML_N=$(find "$MODEL_DIR" -name "*.yaml" 2>/dev/null | wc -l | tr -d ' ')
+    MODEL_YAML_INT=$(echo "$MODEL_YAML_N" | tr -d '[:space:]')
+    WEAVER_OUT=$("$WEAVER_BIN" registry check -r "$MODEL_DIR" 2>&1 || true)
+    WEAVER_EXIT=$("$WEAVER_BIN" registry check -r "$MODEL_DIR" --quiet 2>&1; echo $?)
+    if echo "$WEAVER_OUT" | grep -qE "^\s*×"; then
+      FIRST_ERR=$(echo "$WEAVER_OUT" | grep -E "^\s*×" | head -1 | sed 's/^ *× //')
+      echo "FAIL|OT-11|weaver registry check failed ($MODEL_YAML_INT yaml files): $FIRST_ERR"
     else
-      echo "PASS|OT-11|weaver registry check: passed"
+      echo "PASS|OT-11|weaver registry check passed: semconv/model/ ($MODEL_YAML_INT yaml files, groups/ structure)"
     fi
   else
-    echo "WARN|OT-11|semconv/ is a flat YAML schema ($YAML_INT files), not a weaver registry directory. Convert to weaver registry format (groups/ structure) to enable 'weaver registry check'."
+    FLAT_YAML_N=$(find "$REPO_ROOT/semconv" -maxdepth 1 -name "*.yaml" 2>/dev/null | wc -l | tr -d ' ')
+    echo "FAIL|OT-11|semconv/model/ registry directory missing. Found flat YAML schema ($FLAT_YAML_N files) but weaver registry check requires semconv/model/ with groups/ structure."
   fi
 else
   echo "FAIL|OT-11|Cannot run weaver check: weaver not found"
