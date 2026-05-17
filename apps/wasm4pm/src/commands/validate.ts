@@ -6,6 +6,7 @@ import { WasmLoader } from '@wasm4pm/engine';
 import { createQuietObservabilityLayer } from '../observability-util.js';
 import { withSpan } from './_otel.js';
 import { exitWithFlush } from '../otel/exit.js';
+import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
 
 type CheckStatus = 'pass' | 'fail' | 'warn';
 interface ValidationCheck {
@@ -69,6 +70,10 @@ export const validate = defineCommand({
       type: 'boolean',
       description: 'Suppress non-error output',
       alias: 'q',
+    },
+    'no-save': {
+      type: 'boolean',
+      description: 'Do not auto-save the validation receipt to .wasm4pm/receipts/',
     },
   },
   async run(ctx) {
@@ -291,6 +296,28 @@ export const validate = defineCommand({
         warnings,
       };
 
+      // Persist BLAKE3 receipt for proof-of-validation (unless --no-save)
+      if (!ctx.args['no-save']) {
+        try {
+          const inputBytes = await fs.readFile(inputPath).catch(() => Buffer.from(inputPath));
+          const receipt: CommandReceipt = {
+            ...newReceipt('validate'),
+            input_hash: blake3Hex(inputBytes),
+            output_hash: blake3Hex(JSON.stringify(payload)),
+            status: hasErrors ? 'failed' : 'success',
+            summary: {
+              checks_passed: checks.filter((c) => c.status === 'pass').length,
+              checks_warned: checks.filter((c) => c.status === 'warn').length,
+              checks_failed: checks.filter((c) => c.status === 'fail').length,
+              overall_status: overallStatus,
+            },
+          };
+          saveCommandReceipt(receipt);
+        } catch {
+          /* receipt write must never break the command */
+        }
+      }
+
       const result = makeResult('validate', payload, performance.now() - t0, exitCode);
       emitResult(result, { format, verbose, quiet }, (res, projection) => {
         printHumanValidation(projection, res.payload as typeof payload);
@@ -317,7 +344,7 @@ const FIX_GUIDANCE: Record<string, { fail?: string; warn?: string }> = {
     warn: 'Fix: Check for events with null/empty activity names, duplicate events within the same case at the same timestamp, or activities with very low frequency that may be noise.',
   },
   trace_completeness: {
-    warn: 'Fix: Incomplete traces often lack a final end activity. Ensure each case has a clear start and end event. Consider filtering incomplete cases before mining.',
+    warn: 'Fix: Incomplete traces often lack a final end activity. Ensure each case has a clear start and end event. Consider filtering incomplete cases before running.',
   },
   timestamp_ordering: {
     warn: 'Fix: Sort events within each trace by time:timestamp before running process mining. Out-of-order timestamps cause incorrect directly-follows graphs and fitness scores.',

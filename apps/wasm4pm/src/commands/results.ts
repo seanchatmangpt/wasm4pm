@@ -6,6 +6,8 @@ import { emitResult, makeResult, makeErrorResult, ConsoleProjection } from '../o
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
 import { withSpan } from './_otel.js';
+import { blake3Hex } from '../receipts/_shared.js';
+import type { CommandReceipt } from '../receipts/_shared.js';
 
 /**
  * Default directory where prediction results are persisted.
@@ -223,6 +225,13 @@ export const results = defineCommand({
       description: 'Suppress non-error output',
       alias: 'q',
     },
+    verify: {
+      type: 'string',
+      description:
+        'Verify the BLAKE3 integrity of a saved result by re-hashing its payload and ' +
+        'matching against the stored receipt. Pass a 1-based index or filename.',
+      alias: 'V',
+    },
   },
   async run(ctx) {
     const t0 = performance.now();
@@ -231,7 +240,8 @@ export const results = defineCommand({
     const quiet = Boolean(ctx.args.quiet);
 
     // Determine operation early so the span attribute is always set
-    const operation = ctx.args.path ? 'path'
+    const operation = ctx.args.verify ? 'verify'
+      : ctx.args.path ? 'path'
       : ctx.args.last ? 'last'
       : ctx.args.cat ? 'cat'
       : ctx.args.diff ? 'diff'
@@ -254,6 +264,119 @@ export const results = defineCommand({
         return await exitWithFlush(errResult.exit_code);
       }
       const limit = parsedLimit ?? 20;
+
+      // --verify <ref>: re-hash the stored result payload and compare against the receipt
+      if (ctx.args.verify) {
+        const ref = ctx.args.verify as string;
+        const receiptsDir = path.resolve(process.cwd(), '.wasm4pm', 'receipts');
+
+        const resultFilepath = resolveRef(ref, files);
+        if (!resultFilepath) {
+          const hint = files.length > 0
+            ? `\n\n  Available indexes: 1–${files.length}. Run 'wpm results' to list them.`
+            : '\n\n  No results saved yet.';
+          const errResult = makeErrorResult(
+            'results',
+            new Error(`Result not found: '${ref}'${hint}`),
+            EXIT_CODES.source_error,
+            'RESULT_NOT_FOUND'
+          );
+          emitResult(errResult, { format, verbose, quiet });
+          return await exitWithFlush(errResult.exit_code);
+        }
+
+        let savedResult: SavedResult;
+        try {
+          const raw = await fs.readFile(resultFilepath, 'utf-8');
+          savedResult = JSON.parse(raw) as SavedResult;
+        } catch (e) {
+          const errResult = makeErrorResult(
+            'results',
+            new Error(`Failed to read result file: ${(e as Error).message}`),
+            EXIT_CODES.source_error,
+            'RESULT_READ_ERROR'
+          );
+          emitResult(errResult, { format, verbose, quiet });
+          return await exitWithFlush(errResult.exit_code);
+        }
+
+        // output_hash was computed as blake3(JSON.stringify(payload)) where payload
+        // is the result field inside the SavedResult wrapper.
+        const recomputedOutputHash = blake3Hex(JSON.stringify(savedResult.result));
+
+        // Scan receipts for any whose output_hash matches (check latest first as fast path)
+        let matchedReceipt: CommandReceipt | null = null;
+        let matchedReceiptFile: string | null = null;
+        const candidateFiles: string[] = [];
+        try {
+          if (existsSync(receiptsDir)) {
+            candidateFiles.push(
+              ...(await fs.readdir(receiptsDir)).filter(
+                (f) => f.endsWith('.json') && f !== 'latest.json'
+              )
+            );
+          }
+        } catch { /* receipts dir unreadable */ }
+
+        // Prepend latest.json for the fast path
+        for (const rFile of ['latest.json', ...candidateFiles]) {
+          try {
+            const rPath = path.join(receiptsDir, rFile);
+            if (!existsSync(rPath)) continue;
+            const r = JSON.parse(await fs.readFile(rPath, 'utf-8')) as CommandReceipt;
+            if (r.output_hash === recomputedOutputHash) {
+              matchedReceipt = r;
+              matchedReceiptFile = rFile;
+              break;
+            }
+          } catch { /* skip unreadable files */ }
+        }
+
+        const integrity = matchedReceipt
+          ? (matchedReceipt.output_hash === recomputedOutputHash ? 'ok' : 'mismatch')
+          : 'no_receipt';
+
+        const verifyPayload = {
+          result_file: path.basename(resultFilepath),
+          recomputed_output_hash: recomputedOutputHash,
+          receipt_found: matchedReceipt !== null,
+          receipt_file: matchedReceiptFile,
+          receipt_output_hash: matchedReceipt?.output_hash ?? null,
+          integrity,
+          run_id: matchedReceipt?.run_id ?? null,
+          command: matchedReceipt?.command ?? null,
+          timestamp: matchedReceipt?.timestamp ?? null,
+        };
+
+        const verifyExitCode =
+          integrity === 'mismatch' ? EXIT_CODES.partial_failure : EXIT_CODES.success;
+
+        const verifyResult = makeResult('results', verifyPayload, performance.now() - t0, verifyExitCode);
+        emitResult(verifyResult, { format, verbose, quiet }, (_res, projection) => {
+          const p = _res.payload as typeof verifyPayload;
+          projection.log('');
+          projection.log(`  Result file:  ${p.result_file}`);
+          projection.log(`  Output hash (recomputed):`);
+          projection.log(`    ${p.recomputed_output_hash}`);
+          projection.log('');
+          if (p.integrity === 'ok') {
+            projection.success(`Integrity OK — receipt ${p.receipt_file} matches`);
+            projection.log(`  run_id:  ${p.run_id}`);
+            projection.log(`  command: ${p.command}`);
+            projection.log(`  saved:   ${p.timestamp}`);
+          } else if (p.integrity === 'mismatch') {
+            projection.error('Integrity MISMATCH — receipt hash differs from recomputed hash');
+            projection.log(`  Receipt:     ${p.receipt_output_hash}`);
+            projection.log(`  Recomputed:  ${p.recomputed_output_hash}`);
+          } else {
+            projection.warn('No receipt found for this result file');
+            projection.log('  The result may have been saved with --no-save, or receipts were cleared.');
+            projection.log(`  Recomputed hash: ${p.recomputed_output_hash}`);
+          }
+          projection.log('');
+        });
+        return await exitWithFlush(verifyExitCode);
+      }
 
       // --path: cat a specific file by absolute or relative path
       if (ctx.args.path) {

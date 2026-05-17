@@ -435,7 +435,7 @@ export const driftWatch = defineCommand({
             saveCommandReceipt({
               ...newReceipt('drift-watch'),
               command: 'drift-watch',
-              input_hash: blake3Hex(inputPath),
+              input_hash: await fs.readFile(inputPath).then((b) => blake3Hex(b)).catch(() => blake3Hex(inputPath)),
               output_hash: blake3Hex(
                 JSON.stringify({ windowsProcessed, alertsFired, totalDriftPoints }),
               ),
