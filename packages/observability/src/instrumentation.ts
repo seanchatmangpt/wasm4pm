@@ -308,6 +308,33 @@ export interface ConformanceCheckEvent {
 }
 
 /**
+ * Recovery event — emitted by engine.recover() and engine.fastRecoverFromFailed().
+ *
+ * Span names:
+ *   RecoveryStarted   → `engine.recovery_started`
+ *   RecoveryCompleted → `engine.recovery_completed`
+ *
+ * Required attributes:
+ *   recovery.type        — 'soft' (degraded→ready) | 'fast' (failed→ready) | 'full' (failed→bootstrap→ready)
+ *   recovery.from_state  — the state recovery is leaving
+ *   recovery.duration_ms — wall-clock elapsed (only on RecoveryCompleted)
+ *   recovery.mttr_ms     — current mean MTTR across all recorded recoveries (RecoveryCompleted only)
+ */
+export interface RecoveryEvent {
+  type: 'RecoveryStarted' | 'RecoveryCompleted';
+  traceId: string;
+  spanId: string;
+  parentSpanId?: string;
+  runId: string;
+  recoveryType: 'soft' | 'fast' | 'full';
+  fromState: string;
+  durationMs?: number;
+  mttrMs?: number;
+  status: 'OK' | 'ERROR' | 'UNSET';
+  requiredAttrs: RequiredOtelAttributes;
+}
+
+/**
  * ML analysis event
  */
 export interface MlAnalysisEvent {
@@ -1480,6 +1507,105 @@ export class Instrumentation {
       /* never block on OTEL */
     }
     return result;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  //  Recovery instrumentation
+  // ─────────────────────────────────────────────────────────────────────
+
+  /**
+   * Create a RecoveryStarted event with a dedicated OTEL span.
+   * Span name: `engine.recovery_started`
+   *
+   * @param recoveryType 'soft' = degraded→ready, 'fast' = failed→ready, 'full' = failed→bootstrap→ready
+   * @param fromState    The state the engine is recovering from ('degraded' or 'failed')
+   */
+  static createRecoveryStartedEvent(
+    traceId: string,
+    recoveryType: 'soft' | 'fast' | 'full',
+    fromState: string,
+    requiredAttrs: RequiredOtelAttributes,
+    options?: { parentSpanId?: string }
+  ): { event: RecoveryEvent; otelEvent: OtelEvent } {
+    const spanId = this.generateSpanId();
+    const now = Date.now() * 1000000;
+
+    const event: RecoveryEvent = {
+      type: 'RecoveryStarted',
+      traceId,
+      spanId,
+      parentSpanId: options?.parentSpanId,
+      runId: requiredAttrs['run.id'],
+      recoveryType,
+      fromState,
+      status: 'UNSET',
+      requiredAttrs,
+    };
+
+    const otelEvent: OtelEvent = {
+      trace_id: traceId,
+      span_id: spanId,
+      parent_span_id: options?.parentSpanId,
+      name: 'engine.recovery_started',
+      kind: 'INTERNAL',
+      start_time: now,
+      status: { code: 'UNSET' },
+      attributes: {
+        'service.name': 'wasm4pm',
+        ...requiredAttrs,
+        'recovery.type': recoveryType,
+        'recovery.from_state': fromState,
+      },
+    };
+
+    return { event, otelEvent };
+  }
+
+  /**
+   * Create a RecoveryCompleted event with a dedicated OTEL span.
+   * Span name: `engine.recovery_completed`
+   *
+   * @param spanId       The span ID from the matching RecoveryStarted event (for correlation)
+   * @param recoveryType 'soft' | 'fast' | 'full'
+   * @param fromState    State the engine recovered from
+   * @param durationMs   Wall-clock elapsed milliseconds for this recovery
+   * @param mttrMs       Current mean MTTR across all recorded recoveries
+   */
+  static createRecoveryCompletedEvent(
+    traceId: string,
+    spanId: string,
+    recoveryType: 'soft' | 'fast' | 'full',
+    fromState: string,
+    requiredAttrs: RequiredOtelAttributes,
+    options?: {
+      durationMs?: number;
+      mttrMs?: number;
+      status?: 'OK' | 'ERROR';
+      errorMessage?: string;
+      parentSpanId?: string;
+    }
+  ): OtelEvent {
+    const now = Date.now() * 1000000;
+    const status = options?.status || 'OK';
+
+    return {
+      trace_id: traceId,
+      span_id: spanId,
+      parent_span_id: options?.parentSpanId,
+      name: 'engine.recovery_completed',
+      kind: 'INTERNAL',
+      start_time: now - (options?.durationMs || 0) * 1000000,
+      end_time: now,
+      status: { code: status, message: options?.errorMessage },
+      attributes: {
+        'service.name': 'wasm4pm',
+        ...requiredAttrs,
+        'recovery.type': recoveryType,
+        'recovery.from_state': fromState,
+        'recovery.duration_ms': options?.durationMs || 0,
+        ...(options?.mttrMs !== undefined && { 'recovery.mttr_ms': options.mttrMs }),
+      },
+    };
   }
 
   /**

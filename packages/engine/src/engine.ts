@@ -299,6 +299,7 @@ export class Engine {
       // Emit bootstrap metrics to JSON layer
       this.observability.emitJsonSafe({
         timestamp: new Date().toISOString(),
+        level: 'info',
         component: 'engine',
         event_type: 'bootstrap_completed',
         run_id: this.requiredOtelAttrs['run.id'],
@@ -435,6 +436,7 @@ export class Engine {
       // Emit JSON event with plan metrics
       this.observability.emitJsonSafe({
         timestamp: new Date().toISOString(),
+        level: 'info',
         component: 'engine',
         event_type: 'plan_generated',
         run_id: this.requiredOtelAttrs['run.id'],
@@ -530,6 +532,7 @@ export class Engine {
       // Emit JSON event with execution metrics
       this.observability.emitJsonSafe({
         timestamp: new Date().toISOString(),
+        level: 'info',
         component: 'engine',
         event_type: 'execution_completed',
         run_id: this.currentRunId,
@@ -583,6 +586,7 @@ export class Engine {
         (heartbeat: HeartbeatEvent) => {
           this.observability.emitJsonSafe({
             timestamp: heartbeat.timestamp.toISOString(),
+            level: 'debug',
             component: 'engine',
             event_type: 'heartbeat',
             run_id: this.currentRunId,
@@ -597,6 +601,7 @@ export class Engine {
         (checkpoint: Checkpoint) => {
           this.observability.emitJsonSafe({
             timestamp: checkpoint.timestamp.toISOString(),
+            level: 'info',
             component: 'engine',
             event_type: 'checkpoint',
             run_id: this.currentRunId,
@@ -687,6 +692,7 @@ export class Engine {
   /**
    * Attempts recovery from degraded state
    * Transitions: degraded -> bootstrapping -> ready
+   * Emits RecoveryStarted and RecoveryCompleted OTEL spans
    */
   async recover(options?: { timeout?: number }): Promise<void> {
     const timeoutMs = options?.timeout ?? 30000; // 30 second default
@@ -702,15 +708,22 @@ export class Engine {
       this.stateMachine.transition('bootstrapping', 'Starting recovery');
       this.statusTracker.setState('bootstrapping');
 
-      // Emit recovery start event
-      const recoveryStartEvent = Instrumentation.createStateChangeEvent(
+      // Emit dedicated RecoveryStarted span (not a generic state change)
+      const recoveryStartedSpan = Instrumentation.createRecoveryStartedEvent(
         this.traceId,
+        'soft',
         previousState,
-        'bootstrapping',
-        this.requiredOtelAttrs,
-        { reason: 'Recovery started' }
+        this.requiredOtelAttrs
       );
-      this.observability.emitOtelSafe(recoveryStartEvent.otelEvent);
+      this.observability.emitOtelSafe(recoveryStartedSpan.otelEvent);
+      this.observability.emitJsonSafe({
+        timestamp: new Date().toISOString(),
+        level: 'info',
+        component: 'engine',
+        event_type: 'recovery_started',
+        run_id: this.requiredOtelAttrs['run.id'],
+        data: { recovery_type: 'soft', from_state: previousState, trace_id: this.traceId },
+      });
 
       // Soft reset WASM loader to preserve compiled module
       this.wasmLoader.softReset();
@@ -730,20 +743,35 @@ export class Engine {
       this.stateMachine.transition('ready', 'Recovery completed');
       this.statusTracker.setState('ready');
 
-      // Emit recovery completed event with duration
+      // Record recovery duration for MTTR tracking
       const recoveryDuration = Date.now() - recoveryStart;
-      const recoveryCompleteEvent = Instrumentation.createStateChangeEvent(
-        this.traceId,
-        'bootstrapping',
-        'ready',
-        this.requiredOtelAttrs,
-        { reason: 'Recovery completed' }
-      );
-      recoveryCompleteEvent.event.durationMs = recoveryDuration;
-      this.observability.emitOtelSafe(recoveryCompleteEvent.otelEvent);
-
-      // Track MTTR in state machine
       this.stateMachine.recordRecovery(recoveryDuration);
+
+      // Emit dedicated RecoveryCompleted span with duration and updated MTTR
+      this.observability.emitOtelSafe(
+        Instrumentation.createRecoveryCompletedEvent(
+          this.traceId,
+          recoveryStartedSpan.event.spanId,
+          'soft',
+          previousState,
+          this.requiredOtelAttrs,
+          { durationMs: recoveryDuration, mttrMs: this.stateMachine.getMTTR() }
+        )
+      );
+      this.observability.emitJsonSafe({
+        timestamp: new Date().toISOString(),
+        level: 'info',
+        component: 'engine',
+        event_type: 'recovery_completed',
+        run_id: this.requiredOtelAttrs['run.id'],
+        data: {
+          recovery_type: 'soft',
+          from_state: previousState,
+          duration_ms: recoveryDuration,
+          mttr_ms: this.stateMachine.getMTTR(),
+          trace_id: this.traceId,
+        },
+      });
     } catch (err) {
       const isTimeout = err instanceof Error && err.message.includes('timeout');
       this.handleEngineError(err, isTimeout ? 'RECOVERY_TIMEOUT' : 'RECOVERY_FAILED', 'Check WASM module and kernel state', 'failed');
@@ -755,6 +783,7 @@ export class Engine {
    * Fast recovery from failed state - reuses existing WASM module
    * Only works if WASM module is still valid (not corrupted)
    * Falls back to full bootstrap if WASM is not initialized
+   * Emits RecoveryStarted and RecoveryCompleted OTEL spans
    */
   async fastRecoverFromFailed(): Promise<void> {
     if (this.state() !== 'failed') {
@@ -762,15 +791,60 @@ export class Engine {
     }
 
     const recoveryStart = Date.now();
+    const recoveryType = this.wasmLoader.isInitialized() ? 'fast' : 'full';
+
+    // Emit RecoveryStarted span before attempting any state changes
+    const recoveryStartedSpan = Instrumentation.createRecoveryStartedEvent(
+      this.traceId,
+      recoveryType,
+      'failed',
+      this.requiredOtelAttrs
+    );
+    this.observability.emitOtelSafe(recoveryStartedSpan.otelEvent);
+    this.observability.emitJsonSafe({
+      timestamp: new Date().toISOString(),
+      level: 'info',
+      component: 'engine',
+      event_type: 'recovery_started',
+      run_id: this.requiredOtelAttrs['run.id'],
+      data: { recovery_type: recoveryType, from_state: 'failed', trace_id: this.traceId },
+    });
 
     try {
       // Check if WASM module is still accessible
       if (!this.wasmLoader.isInitialized()) {
-        // Fall back to full bootstrap
-        return this.bootstrap();
+        // Fall back to full bootstrap (failed → bootstrapping → ready)
+        await this.bootstrap();
+        const recoveryDuration = Date.now() - recoveryStart;
+        this.stateMachine.recordRecovery(recoveryDuration);
+        this.observability.emitOtelSafe(
+          Instrumentation.createRecoveryCompletedEvent(
+            this.traceId,
+            recoveryStartedSpan.event.spanId,
+            'full',
+            'failed',
+            this.requiredOtelAttrs,
+            { durationMs: recoveryDuration, mttrMs: this.stateMachine.getMTTR() }
+          )
+        );
+        this.observability.emitJsonSafe({
+          timestamp: new Date().toISOString(),
+          level: 'info',
+          component: 'engine',
+          event_type: 'recovery_completed',
+          run_id: this.requiredOtelAttrs['run.id'],
+          data: {
+            recovery_type: 'full',
+            from_state: 'failed',
+            duration_ms: recoveryDuration,
+            mttr_ms: this.stateMachine.getMTTR(),
+            trace_id: this.traceId,
+          },
+        });
+        return;
       }
 
-      // Soft reset and re-init kernel only
+      // Fast path: soft reset and re-init kernel only (failed → ready directly)
       this.wasmLoader.softReset();
       await this.kernel.init();
 
@@ -781,12 +855,55 @@ export class Engine {
       this.stateMachine.transition('ready', 'Fast recovery completed');
       this.statusTracker.setState('ready');
 
-      // Track recovery time
+      // Record and emit
       const recoveryDuration = Date.now() - recoveryStart;
       this.stateMachine.recordRecovery(recoveryDuration);
+
+      this.observability.emitOtelSafe(
+        Instrumentation.createRecoveryCompletedEvent(
+          this.traceId,
+          recoveryStartedSpan.event.spanId,
+          'fast',
+          'failed',
+          this.requiredOtelAttrs,
+          { durationMs: recoveryDuration, mttrMs: this.stateMachine.getMTTR() }
+        )
+      );
+      this.observability.emitJsonSafe({
+        timestamp: new Date().toISOString(),
+        level: 'info',
+        component: 'engine',
+        event_type: 'recovery_completed',
+        run_id: this.requiredOtelAttrs['run.id'],
+        data: {
+          recovery_type: 'fast',
+          from_state: 'failed',
+          duration_ms: recoveryDuration,
+          mttr_ms: this.stateMachine.getMTTR(),
+          trace_id: this.traceId,
+        },
+      });
     } catch (err) {
-      // Fast recovery failed, fall back to full bootstrap
+      // Fast recovery failed — emit error span and fall back to full bootstrap
+      const recoveryDuration = Date.now() - recoveryStart;
+      this.observability.emitOtelSafe(
+        Instrumentation.createRecoveryCompletedEvent(
+          this.traceId,
+          recoveryStartedSpan.event.spanId,
+          recoveryType,
+          'failed',
+          this.requiredOtelAttrs,
+          {
+            durationMs: recoveryDuration,
+            status: 'ERROR',
+            errorMessage: err instanceof Error ? err.message : String(err),
+          }
+        )
+      );
+      // Final fallback: full bootstrap — may throw if bootstrap itself fails
       await this.bootstrap();
+      const totalDuration = Date.now() - recoveryStart;
+      this.stateMachine.recordRecovery(totalDuration);
     }
   }
 
@@ -847,6 +964,55 @@ export class Engine {
    */
   getTransitionHistory(): LifecycleEvent[] {
     return this.stateMachine.getTransitionHistory();
+  }
+
+  /**
+   * Gets Mean Time To Recovery (MTTR) in milliseconds.
+   *
+   * Returns the mean of all recovery durations recorded via recordRecovery()
+   * since this engine instance was created. Returns 0 if no recoveries have
+   * been recorded.
+   *
+   * Per the critical constraint: MTTR must be < 1000ms.
+   * Do NOT hardcode expected values — always measure via this method.
+   */
+  getMTTR(): number {
+    return this.stateMachine.getMTTR();
+  }
+
+  /**
+   * Gets the number of recovery operations performed since engine creation.
+   */
+  getRecoveryCount(): number {
+    return this.stateMachine.getRecoveryCount();
+  }
+
+  /**
+   * Compute MTTR from transition history timestamps.
+   *
+   * Alternative to getMTTR() that derives MTTR by scanning getTransitionHistory()
+   * for entries where toState is 'degraded' or 'failed' followed by a 'ready'
+   * entry. Each such pair is measured as wall-clock elapsed.
+   *
+   * This is independent of recordRecovery() calls — it works even if a recovery
+   * path forgot to call recordRecovery().
+   */
+  computeMTTRFromHistory(): number {
+    const history = this.stateMachine.getTransitionHistory();
+    const durations: number[] = [];
+    let failureEntryTime: number | null = null;
+
+    for (const event of history) {
+      if (event.toState === 'degraded' || event.toState === 'failed') {
+        failureEntryTime = event.timestamp.getTime();
+      } else if (event.toState === 'ready' && failureEntryTime !== null) {
+        durations.push(event.timestamp.getTime() - failureEntryTime);
+        failureEntryTime = null;
+      }
+    }
+
+    if (durations.length === 0) return 0;
+    return durations.reduce((a, b) => a + b, 0) / durations.length;
   }
 
   /**

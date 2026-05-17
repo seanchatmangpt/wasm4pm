@@ -28,6 +28,7 @@ describe('ObservabilityWrapper', () => {
     it('should emit JSON events safely', () => {
       const result = wrapper.emitJsonSafe({
         timestamp: new Date().toISOString(),
+        level: 'info',
         component: 'test',
         event_type: 'test_event',
         data: { test: 'data' },
@@ -40,6 +41,7 @@ describe('ObservabilityWrapper', () => {
     it('should redact secrets from JSON events', () => {
       const result = wrapper.emitJsonSafe({
         timestamp: new Date().toISOString(),
+        level: 'info',
         component: 'test',
         event_type: 'test_event',
         data: { password: 'secret123', username: 'alice' },
@@ -71,6 +73,7 @@ describe('ObservabilityWrapper', () => {
         cli: { level: 'info', message: 'Test' },
         json: {
           timestamp: new Date().toISOString(),
+          level: 'info',
           component: 'test',
           event_type: 'test',
           data: {},
@@ -227,6 +230,7 @@ describe('ObservabilityWrapper', () => {
 
       const result = wrapper.emitJsonSafe({
         timestamp: new Date().toISOString(),
+        level: 'info',
         component: 'test',
         event_type: 'config_loaded',
         data: {
@@ -324,6 +328,7 @@ describe('ObservabilityWrapper', () => {
       // Try to emit with invalid data (should not throw)
       const result = wrapper.emitJsonSafe({
         timestamp: new Date().toISOString(),
+        level: 'info',
         component: 'test',
         event_type: 'test',
         data: {

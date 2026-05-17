@@ -135,6 +135,7 @@ export declare class Engine {
     /**
      * Attempts recovery from degraded state
      * Transitions: degraded -> bootstrapping -> ready
+     * Emits RecoveryStarted and RecoveryCompleted OTEL spans
      */
     recover(options?: {
         timeout?: number;
@@ -143,6 +144,7 @@ export declare class Engine {
      * Fast recovery from failed state - reuses existing WASM module
      * Only works if WASM module is still valid (not corrupted)
      * Falls back to full bootstrap if WASM is not initialized
+     * Emits RecoveryStarted and RecoveryCompleted OTEL spans
      */
     fastRecoverFromFailed(): Promise<void>;
     /**
@@ -162,6 +164,32 @@ export declare class Engine {
      * Gets transition history for debugging
      */
     getTransitionHistory(): LifecycleEvent[];
+    /**
+     * Gets Mean Time To Recovery (MTTR) in milliseconds.
+     *
+     * Returns the mean of all recovery durations recorded via recordRecovery()
+     * since this engine instance was created. Returns 0 if no recoveries have
+     * been recorded.
+     *
+     * Per the critical constraint: MTTR must be < 1000ms.
+     * Do NOT hardcode expected values — always measure via this method.
+     */
+    getMTTR(): number;
+    /**
+     * Gets the number of recovery operations performed since engine creation.
+     */
+    getRecoveryCount(): number;
+    /**
+     * Compute MTTR from transition history timestamps.
+     *
+     * Alternative to getMTTR() that derives MTTR by scanning getTransitionHistory()
+     * for entries where toState is 'degraded' or 'failed' followed by a 'ready'
+     * entry. Each such pair is measured as wall-clock elapsed.
+     *
+     * This is independent of recordRecovery() calls — it works even if a recovery
+     * path forgot to call recordRecovery().
+     */
+    computeMTTRFromHistory(): number;
     /**
      * Gets the initialized WASM module
      * Throws if module is not initialized (bootstrap() must be called first)
