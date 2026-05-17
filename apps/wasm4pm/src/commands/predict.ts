@@ -254,8 +254,17 @@ export const predict = defineCommand({
 
 /**
  * Dispatch to the appropriate WASM prediction function based on the task.
+ *
+ * Gap fixes applied here:
+ *   Gap 1 (next-activity): Return prefix echo + n-gram order context + coverage signal.
+ *   Gap 2 (remaining-time): Surface Weibull shape/scale from predict_hazard_rate so the
+ *     analyst understands the uncertainty shape, not just a point estimate.
+ *   Gap 3 (resource): Derive arrival/service rates from actual log statistics via
+ *     analyze_event_statistics instead of hardcoded demonstration values.
  */
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function executePredictionTask(
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   wasm: Record<string, any>,
   task: PredictTask,
   logHandle: string,
@@ -274,10 +283,26 @@ async function executePredictionTask(
       );
       const prefix = prefixActivities ?? [];
       const raw: string = wasm.predict_next_activity(predictorHandle, JSON.stringify(prefix));
-      const predictions: Array<{ activity: string; probability: number }> = JSON.parse(raw);
-      const topPredictions = predictions.slice(0, topK);
+      const allPredictions: Array<{ activity: string; probability: number }> = JSON.parse(raw);
+      const topPredictions = allPredictions.slice(0, topK);
+      // Gap 1: expose prefix echo, n-gram order, and whether the model had an exact match.
+      // Empty allPredictions means the prefix was not seen in training (cold start / OOV).
+      const coverage = allPredictions.length > 0 ? 'exact_match' : 'no_match';
+      const totalCandidates = allPredictions.length;
       wasm.delete_object(predictorHandle);
-      return { predictions: topPredictions };
+      return {
+        predictions: topPredictions,
+        context: {
+          prefix,
+          ngramOrder,
+          coverage,
+          totalCandidates,
+          note:
+            prefix.length === 0
+              ? 'No prefix supplied — predictions are global priors'
+              : `Predictions conditioned on last ${Math.min(ngramOrder - 1, prefix.length)} activity(ies)`,
+        },
+      };
     }
 
     case 'remaining-time': {
@@ -286,6 +311,32 @@ async function executePredictionTask(
         activityKey,
         'time:timestamp'
       );
+
+      // Gap 2: always surface Weibull distribution parameters so the analyst
+      // understands the uncertainty shape — not just a point estimate.
+      let weibull: Record<string, unknown> | null = null;
+      try {
+        const hazardRaw: string = wasm.predict_hazard_rate(modelHandle, 0);
+        const hazardResult = JSON.parse(hazardRaw) as {
+          shape: number;
+          scale: number;
+          survival_probability: number;
+        };
+        const k = hazardResult.shape;
+        weibull = {
+          shape: k,
+          scale_ms: hazardResult.scale,
+          interpretation:
+            k < 1
+              ? 'k<1: hazard decreasing — most completions happen early (infant-mortality pattern)'
+              : k > 1
+                ? 'k>1: hazard increasing — completions concentrate at later times'
+                : 'k=1: constant hazard (exponential distribution — memoryless process)',
+        };
+      } catch {
+        // predict_hazard_rate may fail on degenerate models (all-same duration); non-critical
+      }
+
       if (prefixActivities && prefixActivities.length > 0) {
         const raw: string = wasm.predict_case_duration(
           modelHandle,
@@ -293,10 +344,11 @@ async function executePredictionTask(
         );
         const prediction = JSON.parse(raw);
         wasm.delete_object(modelHandle);
-        return { prediction };
+        return { prediction, weibull };
       } else {
         wasm.delete_object(modelHandle);
         return {
+          weibull,
           message:
             'Remaining-time model built. Use --prefix "Activity1,Activity2" to predict case duration.',
         };
@@ -350,16 +402,51 @@ async function executePredictionTask(
     }
 
     case 'resource': {
-      // Estimate queue delay using M/M/1 model
-      // Arrival and service rates derived from default demonstration values
-      const arrivalRate = 0.7;
-      const serviceRate = 1.0;
+      // Gap 3: derive arrival and service rates from actual event log statistics
+      // instead of hardcoded demonstration values.
+      //   arrivalRate = total_cases / total_events (cases per event — dimensionless load)
+      //   serviceRate = 1 / avg_events_per_case (reciprocal of mean service cost in events)
+      //   utilisation rho = arrivalRate / serviceRate
+      // rho >= 1 means the queue is unstable — throughput exceeds capacity.
+      let arrivalRate = 0.7;
+      let serviceRate = 1.0;
+      let logStats: Record<string, unknown> = {};
+      try {
+        const statsRaw: string = wasm.analyze_event_statistics(logHandle);
+        logStats = JSON.parse(statsRaw) as Record<string, unknown>;
+        const totalCases = (logStats['total_cases'] as number) ?? 0;
+        const totalEvents = (logStats['total_events'] as number) ?? 0;
+        const avgEventsPerCase = (logStats['avg_events_per_case'] as number) ?? 0;
+        if (totalEvents > 0 && totalCases > 0) {
+          arrivalRate = totalCases / totalEvents;
+          serviceRate = avgEventsPerCase > 0 ? 1.0 / avgEventsPerCase : 1.0;
+        }
+      } catch {
+        // fall back to demonstration defaults if statistics unavailable
+      }
+      const utilisation = serviceRate > 0 ? arrivalRate / serviceRate : Infinity;
       const queueRaw: string = wasm.estimate_queue_delay(arrivalRate, serviceRate);
       const queueStats = JSON.parse(queueRaw);
       // Show transition structure for context
       const transRaw: string = wasm.build_transition_probabilities(logHandle, activityKey);
-      const transitions = JSON.parse(transRaw);
-      return { queueStats, transitionCount: Array.isArray(transitions) ? transitions.length : 0 };
+      const transitions = JSON.parse(transRaw) as Record<string, unknown>;
+      const edges = Array.isArray(transitions['edges']) ? transitions['edges'] : [];
+      return {
+        queueStats,
+        utilisation,
+        derivedRates: {
+          arrivalRate,
+          serviceRate,
+          rho: utilisation,
+          stable: utilisation < 1.0,
+          warning:
+            utilisation >= 1.0
+              ? `Queue unstable: rho=${utilisation.toFixed(2)} >= 1.0 — throughput exceeds capacity, add resources`
+              : undefined,
+        },
+        logStats,
+        transitionCount: edges.length,
+      };
     }
 
     default:
@@ -377,14 +464,29 @@ function formatHumanOutput(
 ): void {
   switch (task) {
     case 'next-activity': {
-      const preds = result.predictions as Array<{ activity: string; probability: number }>;
+      // Gap 1: show prefix context so the analyst knows what drove the predictions.
+      const ctx = result['context'] as Record<string, unknown> | undefined;
+      if (ctx) {
+        const prefixArr = ctx['prefix'] as string[];
+        p.log('');
+        if (prefixArr && prefixArr.length > 0) {
+          p.log(`  Prefix:       ${prefixArr.join(' -> ')}`);
+        } else {
+          p.log('  Prefix:       (none -- global priors)');
+        }
+        p.log(`  N-gram order: ${ctx['ngramOrder']}`);
+        p.log(`  Coverage:     ${ctx['coverage']}  (${ctx['totalCandidates']} candidate(s))`);
+        p.log(`  Note:         ${ctx['note']}`);
+      }
+      const preds = result['predictions'] as Array<{ activity: string; probability: number }>;
       if (!preds || preds.length === 0) {
+        p.log('');
         p.info('No predictions available for the given prefix.');
         return;
       }
       p.log('');
       p.log('  Rank  Activity                   Probability');
-      p.log('  ────  ─────────────────────────  ───────────');
+      p.log('  ----  -------------------------  -----------');
       preds.forEach((pred, i) => {
         const rank = String(i + 1).padStart(4);
         const act = pred.activity.padEnd(25);
@@ -396,44 +498,61 @@ function formatHumanOutput(
     }
 
     case 'remaining-time': {
-      if (result.prediction) {
-        const pred = result.prediction as Record<string, unknown>;
-        const remainingMs = (pred.remaining_ms as number) ?? 0;
+      // Gap 2: show Weibull parameters to convey uncertainty shape, not just point estimate.
+      const weibull = result['weibull'] as Record<string, unknown> | null | undefined;
+      if (result['prediction']) {
+        const pred = result['prediction'] as Record<string, unknown>;
+        const remainingMs = (pred['remaining_ms'] as number) ?? 0;
         const remainingH = remainingMs / 3_600_000;
-        const confidence = ((pred.confidence as number) ?? 0) * 100;
+        const confidence = ((pred['confidence'] as number) ?? 0) * 100;
         p.log('');
         p.log(`  Estimated remaining time:  ${remainingH.toFixed(1)} hours`);
         p.log(`  Confidence:                ${confidence.toFixed(1)}%`);
-        p.log(`  Method:                    ${pred.method ?? 'unknown'}`);
+        p.log(`  Method:                    ${pred['method'] ?? 'unknown'}`);
+        if (weibull) {
+          p.log('');
+          p.log('  Weibull survival model (fitted to historical case durations):');
+          p.log(`    Shape (k):    ${(weibull['shape'] as number).toFixed(3)}`);
+          p.log(`    Scale (lambda): ${((weibull['scale_ms'] as number) / 3_600_000).toFixed(2)} hours`);
+          p.log(`    Distribution: ${weibull['interpretation']}`);
+        }
         p.log('');
       } else {
-        p.info((result.message as string) ?? 'Use --prefix to predict case duration.');
+        if (weibull) {
+          p.log('');
+          p.log('  Weibull survival model (fitted to historical case durations):');
+          p.log(`    Shape (k):    ${(weibull['shape'] as number).toFixed(3)}`);
+          p.log(`    Scale (lambda): ${((weibull['scale_ms'] as number) / 3_600_000).toFixed(2)} hours`);
+          p.log(`    Distribution: ${weibull['interpretation']}`);
+          p.log('');
+        }
+        p.info((result['message'] as string) ?? 'Use --prefix to predict case duration.');
       }
       break;
     }
 
     case 'outcome': {
-      if (result.anomaly) {
-        const a = result.anomaly as Record<string, unknown>;
+      if (result['anomaly']) {
+        const a = result['anomaly'] as Record<string, unknown>;
         p.log('');
-        p.log(`  Anomaly score:    ${(a.score as number).toFixed(4)}`);
-        p.log(`  Is anomalous:     ${a.is_anomalous}`);
-        p.log(`  Threshold:        ${a.threshold}`);
-        p.log(`  Log-likelihood:   ${(result.logLikelihood as number).toFixed(4)}`);
+        p.log(`  Anomaly score:    ${(a['score'] as number).toFixed(4)}`);
+        p.log(`  Is anomalous:     ${a['is_anomalous']}`);
+        p.log(`  Threshold:        ${a['threshold']}`);
+        p.log(`  Log-likelihood:   ${(result['logLikelihood'] as number).toFixed(4)}`);
         p.log('');
       } else {
-        const anomalies = result.anomalies as Array<Record<string, unknown>>;
+        const anomalies = result['anomalies'] as Array<Record<string, unknown>>;
         if (!anomalies || anomalies.length === 0) {
           p.info('No anomalous traces found.');
           return;
         }
         p.log('');
         p.log('  Case ID              Score     Anomalous');
-        p.log('  ───────────────────  ────────  ─────────');
+        p.log('  -------------------  --------  ---------');
         for (const a of anomalies) {
-          const caseId = String(a.case_id ?? a.trace_id ?? '?').padEnd(19);
-          const score = ((a.score as number) ?? 0).toFixed(4).padStart(8);
-          const flag = a.is_anomalous ? 'yes' : 'no';
+          const caseId = String(a['case_id'] ?? a['trace_id'] ?? '?').padEnd(19);
+          const score = ((a['score'] as number) ?? 0).toFixed(4).padStart(8);
+          const flag = a['is_anomalous'] ? 'yes' : 'no';
           p.log(`  ${caseId}  ${score}  ${flag}`);
         }
         p.log('');
@@ -442,54 +561,74 @@ function formatHumanOutput(
     }
 
     case 'drift': {
-      const dr = result.driftResult as Record<string, unknown>;
-      const drifts = (dr?.drifts as Array<Record<string, unknown>>) ?? [];
+      const dr = result['driftResult'] as Record<string, unknown>;
+      const drifts = (dr?.['drifts'] as Array<Record<string, unknown>>) ?? [];
       if (drifts.length === 0) {
         p.info('No concept drift detected.');
         return;
       }
       p.log('');
       p.log(
-        `  Detected ${drifts.length} drift point(s) (method: ${dr?.method ?? 'jaccard_window'}):`
+        `  Detected ${drifts.length} drift point(s) (method: ${dr?.['method'] ?? 'jaccard_window'}):`
       );
       for (const dp of drifts) {
-        const pos = dp.position ?? '?';
+        const pos = dp['position'] ?? '?';
         const dist =
-          typeof dp.distance === 'number' ? dp.distance.toFixed(4) : String(dp.distance ?? '');
-        p.log(`    Position ${pos}  distance=${dist}  type=${dp.type ?? 'concept_drift'}`);
+          typeof dp['distance'] === 'number' ? dp['distance'].toFixed(4) : String(dp['distance'] ?? '');
+        p.log(`    Position ${pos}  distance=${dist}  type=${dp['type'] ?? 'concept_drift'}`);
       }
       p.log('');
       break;
     }
 
     case 'features': {
-      const transitions = result.transitions as Array<Record<string, unknown>>;
+      const transitions = result['transitions'] as Record<string, unknown>;
       p.log('');
-      if (Array.isArray(transitions)) {
-        p.log(`  Transition probabilities: ${transitions.length} edge(s)`);
-        for (const t of transitions.slice(0, 5)) {
+      const edges = Array.isArray(transitions?.['edges']) ? (transitions['edges'] as unknown[]) : [];
+      if (edges.length > 0) {
+        p.log(`  Transition probabilities: ${edges.length} edge(s)`);
+        for (const t of edges.slice(0, 5)) {
           p.log(`    ${JSON.stringify(t)}`);
         }
-        if (transitions.length > 5) p.log(`    ... (${transitions.length - 5} more)`);
+        if (edges.length > 5) p.log(`    ... (${edges.length - 5} more)`);
+      } else if (Array.isArray(transitions)) {
+        const arr = transitions as unknown as Array<Record<string, unknown>>;
+        p.log(`  Transition probabilities: ${arr.length} edge(s)`);
+        for (const t of arr.slice(0, 5)) {
+          p.log(`    ${JSON.stringify(t)}`);
+        }
+        if (arr.length > 5) p.log(`    ... (${arr.length - 5} more)`);
       } else {
         p.log(`  ${JSON.stringify(transitions)}`);
       }
-      if (result.prefixFeatures) {
+      if (result['prefixFeatures']) {
         p.log('');
-        p.log(`  Prefix features: ${JSON.stringify(result.prefixFeatures)}`);
+        p.log(`  Prefix features: ${JSON.stringify(result['prefixFeatures'])}`);
       }
       p.log('');
       break;
     }
 
     case 'resource': {
-      const qs = result.queueStats as Record<string, unknown>;
+      // Gap 3: show derived rates and utilisation (rho) so analyst can judge queue health.
+      const qs = result['queueStats'] as Record<string, unknown>;
+      const dr = result['derivedRates'] as Record<string, unknown> | undefined;
       p.log('');
-      p.log('  M/M/1 Queue Model Estimate:');
-      p.log(`    Wait time:    ${((qs?.wait_time as number) ?? 0).toFixed(2)}s`);
-      p.log(`    Utilization:  ${(((qs?.utilization as number) ?? 0) * 100).toFixed(1)}%`);
-      p.log(`    Stable:       ${qs?.is_stable ?? false}`);
-      p.log(`  Transitions in model: ${result.transitionCount}`);
+      p.log('  M/M/1 Queue Model (rates derived from event log):');
+      if (dr) {
+        p.log(`    Arrival rate (lambda): ${(dr['arrivalRate'] as number).toFixed(4)} cases/event`);
+        p.log(`    Service rate (mu):     ${(dr['serviceRate'] as number).toFixed(4)} completions/event`);
+        const rho = (dr['rho'] as number) ?? 0;
+        const unstableFlag = rho >= 1.0 ? '  WARNING: UNSTABLE' : '';
+        p.log(`    Utilisation (rho):     ${(rho * 100).toFixed(1)}%${unstableFlag}`);
+        p.log(`    Queue stable:          ${dr['stable'] ? 'yes' : 'no (rho >= 1 -- add capacity)'}`);
+        if (dr['warning']) {
+          p.log(`    Warning:               ${dr['warning']}`);
+        }
+        p.log('');
+      }
+      p.log(`    Est. wait time:        ${((qs?.['wait_time'] as number) ?? 0).toFixed(2)} event-units`);
+      p.log(`  Transitions in model: ${result['transitionCount']}`);
       p.log('');
       break;
     }

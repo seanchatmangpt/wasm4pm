@@ -58,12 +58,7 @@ type PowlSubcommand = (typeof POWL_SUBCOMMANDS)[number];
  * receipt. Read subs are pure analysis and emit only an OTEL span — saving a
  * receipt for them was a forgery (asymmetric proof) and has been removed.
  */
-const POWL_WRITE_SUBS = new Set<PowlSubcommand>([
-  'simplify',
-  'convert',
-  'import',
-  'discover',
-]);
+const POWL_WRITE_SUBS = new Set<PowlSubcommand>(['simplify', 'convert', 'import', 'discover']);
 
 const CONVERT_TARGETS = ['petri-net', 'process-tree', 'bpmn'] as const;
 type ConvertTarget = (typeof CONVERT_TARGETS)[number];
@@ -211,13 +206,7 @@ export const powl = defineCommand({
           const wasm = loader.get();
 
           // Execute subcommand
-          const payload = await executePowlCommand(
-            wasm,
-            sub,
-            modelStr,
-            modelInput ?? '',
-            ctx.args
-          );
+          const payload = await executePowlCommand(wasm, sub, modelStr, modelInput ?? '', ctx.args);
 
           // Persist — receipts only for WRITE subs (Surface Q).
           // Read subs (parse/diff/complexity/footprints/conformance/get-children/node-info)
@@ -242,7 +231,12 @@ export const powl = defineCommand({
             }
           }
 
-          const result = makeResult(`powl ${sub}`, payload, performance.now() - t0, EXIT_CODES.success);
+          const result = makeResult(
+            `powl ${sub}`,
+            payload,
+            performance.now() - t0,
+            EXIT_CODES.success
+          );
           emitResult(result, { format, verbose, quiet }, (res, projection) => {
             const data = res.payload as typeof payload;
             projection.success(`POWL ${sub} complete`);
@@ -253,16 +247,17 @@ export const powl = defineCommand({
           });
           return await exitWithFlush(result.exit_code);
         } catch (error) {
-          const exitCode = error instanceof PowlConfigError
-            ? EXIT_CODES.config_error
-            : error instanceof PowlSourceError
-              ? EXIT_CODES.source_error
-              : EXIT_CODES.execution_error;
+          const exitCode =
+            error instanceof PowlConfigError
+              ? EXIT_CODES.config_error
+              : error instanceof PowlSourceError
+                ? EXIT_CODES.source_error
+                : EXIT_CODES.execution_error;
           const result = makeErrorResult('powl', error, exitCode);
           emitResult(result, { format, verbose, quiet });
           return await exitWithFlush(result.exit_code);
         }
-      },
+      }
     );
   },
 });
@@ -426,7 +421,9 @@ async function executePowlCommand(
     case 'import': {
       const source = args.from as string;
       if (!source || !IMPORT_SOURCES.includes(source as ImportSource)) {
-        throw new PowlConfigError(`Unknown source format: "${source}". Valid: ${IMPORT_SOURCES.join(', ')}`);
+        throw new PowlConfigError(
+          `Unknown source format: "${source}". Valid: ${IMPORT_SOURCES.join(', ')}`
+        );
       }
       let fileContent: string;
       try {
@@ -540,58 +537,198 @@ function formatHumanOutput(
 
     case 'diff': {
       projection.log('');
-      projection.log(`  Severity: ${result.severity}`);
+      const sevGlyph: Record<string, string> = {
+        None: '[=]',
+        Minor: '[~]',
+        Moderate: '[!]',
+        Breaking: '[X]',
+      };
+      const sev = String(result.severity ?? 'None');
+      projection.log(`  Severity: ${sevGlyph[sev] ?? '[?]'} ${sev}`);
       projection.log(`  Behaviorally equivalent: ${result.behaviourally_equivalent}`);
-      projection.log(`  Trace length delta: ${result.min_trace_length_delta}`);
-
+      if ((result.min_trace_length_delta as number) !== 0) {
+        projection.log(`  Trace length delta: ${result.min_trace_length_delta}`);
+      }
       if (result.added_activities && (result.added_activities as string[]).length > 0) {
-        projection.log(`  Added activities: ${(result.added_activities as string[]).join(', ')}`);
+        projection.log(
+          `  Added activities:    ${(result.added_activities as string[]).join(', ')}`
+        );
       }
       if (result.removed_activities && (result.removed_activities as string[]).length > 0) {
-        projection.log(`  Removed activities: ${(result.removed_activities as string[]).join(', ')}`);
+        projection.log(
+          `  Removed activities:  ${(result.removed_activities as string[]).join(', ')}`
+        );
       }
-      if (result.always_changes && (result.always_changes as Array<Record<string, unknown>>).length > 0) {
-        projection.log(`  Always-changes:`);
+      if (
+        result.always_changes &&
+        (result.always_changes as Array<Record<string, unknown>>).length > 0
+      ) {
+        projection.log('  Mandatory/optional changes:');
         for (const ac of result.always_changes as Array<Record<string, unknown>>) {
-          const type = Object.keys(ac)[0];
-          projection.log(`    ${type}: ${ac[type]}`);
+          const chType = Object.keys(ac)[0] as string;
+          const chAct = ac[chType] as string;
+          if (chType === 'BecameMandatory') {
+            projection.log(`    + mandatory: ${chAct}`);
+          } else if (chType === 'BecameOptional') {
+            projection.log(`    - optional:  ${chAct}`);
+          } else {
+            projection.log(`    ${chType}: ${chAct}`);
+          }
         }
       }
-      if (result.order_changes && (result.order_changes as Array<Record<string, unknown>>).length > 0) {
-        projection.log(`  Order changes: ${(result.order_changes as unknown[]).length}`);
+      if (
+        result.order_changes &&
+        (result.order_changes as Array<Record<string, unknown>>).length > 0
+      ) {
+        projection.log('  Ordering constraint changes:');
+        for (const oc of result.order_changes as Array<Record<string, unknown>>) {
+          const chType = Object.keys(oc)[0] as string;
+          const val = oc[chType];
+          if (chType === 'SequenceAdded') {
+            const p = val as [string, string];
+            projection.log(`    + sequence:  ${p[0]} --> ${p[1]}`);
+          } else if (chType === 'SequenceRemoved') {
+            const p = val as [string, string];
+            projection.log(`    - sequence:  ${p[0]} --> ${p[1]}`);
+          } else if (chType === 'ParallelAdded') {
+            const p = val as [string, string];
+            projection.log(`    + parallel:  ${p[0]} || ${p[1]}`);
+          } else if (chType === 'ParallelRemoved') {
+            const p = val as [string, string];
+            projection.log(`    - parallel:  ${p[0]} || ${p[1]}`);
+          } else if (chType === 'StartAdded') {
+            projection.log(`    + start:     ${val}`);
+          } else if (chType === 'StartRemoved') {
+            projection.log(`    - start:     ${val}`);
+          } else if (chType === 'EndAdded') {
+            projection.log(`    + end:       ${val}`);
+          } else if (chType === 'EndRemoved') {
+            projection.log(`    - end:       ${val}`);
+          } else {
+            projection.log(`    ${chType}: ${JSON.stringify(val)}`);
+          }
+        }
       }
-      if (result.structure_changes && (result.structure_changes as Array<Record<string, unknown>>).length > 0) {
-        projection.log(`  Structure changes: ${(result.structure_changes as unknown[]).length}`);
+      if (
+        result.structure_changes &&
+        (result.structure_changes as Array<Record<string, unknown>>).length > 0
+      ) {
+        projection.log('  Structure changes:');
+        for (const sc of result.structure_changes as Array<Record<string, unknown>>) {
+          projection.log(`    @ ${sc['location']}: ${sc['from']} => ${sc['to']}`);
+        }
       }
       projection.log('');
       break;
     }
 
     case 'complexity': {
+      // Van der Aalst maintainability thresholds:
+      //   cyclomatic: simple <5, moderate 5-10, complex >10
+      //   cognitive:  simple <10, moderate 10-25, complex >25
+      const cyc = result.cyclomatic as number;
+      const cog = result.cognitive as number;
+      const cfc = result.cfc as number;
+      const cycBand = cyc < 5 ? 'simple' : cyc <= 10 ? 'moderate' : 'complex';
+      const cogBand = cog < 10 ? 'simple' : cog <= 25 ? 'moderate' : 'complex';
+      const cycBar =
+        '[' +
+        '#'.repeat(Math.min(5, Math.floor(cyc / 2))) +
+        '.'.repeat(Math.max(0, 5 - Math.floor(cyc / 2))) +
+        ']';
       projection.log('');
       projection.log(`  Activities:      ${result.activity_count}`);
-      projection.log(`  Cyclomatic:      ${result.cyclomatic}`);
-      projection.log(`  CFC:             ${result.cfc}`);
-      projection.log(`  Cognitive:       ${result.cognitive}`);
+      projection.log(`  Node count:      ${result.node_count}`);
+      projection.log(`  Nesting depth:   ${result.nesting_depth}`);
+      projection.log(
+        `  Branching factor:${typeof result.branching_factor === 'number' ? ` ${(result.branching_factor as number).toFixed(2)}` : ' n/a'}`
+      );
+      projection.log('');
+      projection.log(
+        `  Cyclomatic:      ${cyc.toString().padStart(3)}  ${cycBar}  ${cycBand}  (simple<5, moderate<=10, complex>10)`
+      );
+      projection.log(`  CFC:             ${cfc.toString().padStart(3)}`);
+      projection.log(
+        `  Cognitive:       ${cog.toString().padStart(3)}  ${cogBand}  (simple<10, moderate<=25, complex>25)`
+      );
       if (result.halstead) {
         const h = result.halstead as Record<string, unknown>;
-        projection.log(`  Halstead volume: ${h.volume}`);
-        projection.log(`  Halstead effort: ${h.effort}`);
+        projection.log('');
+        projection.log(
+          `  Halstead volume: ${typeof h.volume === 'number' ? (h.volume as number).toFixed(1) : h.volume}`
+        );
+        projection.log(
+          `  Halstead effort: ${typeof h.effort === 'number' ? (h.effort as number).toFixed(1) : h.effort}`
+        );
+        projection.log(
+          `  Halstead vocab:  ${h.vocabulary}  (${h.n1} operators + ${h.n2} operands)`
+        );
       }
       projection.log('');
       break;
     }
 
     case 'footprints': {
+      // Normalize set fields — WASM may serialize a HashSet as array or object keys
+      const toSorted = (v: unknown): string[] => {
+        if (Array.isArray(v)) return (v as string[]).slice().sort();
+        if (v !== null && typeof v === 'object') return Object.keys(v as object).sort();
+        return [];
+      };
+      // Pairs: HashSet<(String,String)> serializes as [[a,b],...] array of 2-tuples
+      const toPairs = (v: unknown): Array<[string, string]> => {
+        if (!Array.isArray(v)) return [];
+        return (v as unknown[]).filter(
+          (p): p is [string, string] =>
+            Array.isArray(p) &&
+            p.length === 2 &&
+            typeof p[0] === 'string' &&
+            typeof p[1] === 'string'
+        );
+      };
+      const acts = toSorted(result.activities);
+      const startActs = toSorted(result.start_activities);
+      const endActs = toSorted(result.end_activities);
+      const alwaysActs = toSorted(result.activities_always_happening);
+      const seqPairs = toPairs(result.sequence);
+      const parPairs = toPairs(result.parallel);
       projection.log('');
-      projection.log(`  Activities: ${JSON.stringify(result.activities)}`);
-      projection.log(`  Start activities: ${JSON.stringify(result.start_activities)}`);
-      projection.log(`  End activities:   ${JSON.stringify(result.end_activities)}`);
-      projection.log(`  Always happening: ${JSON.stringify(result.activities_always_happening)}`);
-      projection.log(`  Sequences: ${(result.sequence as unknown[])?.length ?? 0}`);
-      projection.log(`  Parallels:  ${(result.parallel as unknown[])?.length ?? 0}`);
-      projection.log(`  Min trace length: ${result.min_trace_length}`);
+      projection.log(`  Activities (${acts.length}):        ${acts.join(', ')}`);
+      projection.log(`  Start activities (${startActs.length}):   ${startActs.join(', ')}`);
+      projection.log(`  End activities (${endActs.length}):       ${endActs.join(', ')}`);
+      if (alwaysActs.length > 0) {
+        projection.log(`  Always happening (${alwaysActs.length}):   ${alwaysActs.join(', ')}`);
+      }
+      projection.log(`  Min trace length:           ${result.min_trace_length}`);
       projection.log('');
+      if (seqPairs.length > 0) {
+        projection.log(`  Sequence ordering (${seqPairs.length} pairs):`);
+        const sorted = seqPairs
+          .slice()
+          .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : a[1] < b[1] ? -1 : 1));
+        for (const [a, b] of sorted) {
+          projection.log(`    ${a.padEnd(30)} -->  ${b}`);
+        }
+        projection.log('');
+      }
+      if (parPairs.length > 0) {
+        // Parallel pairs are bidirectional — deduplicate: show only a < b
+        const seen = new Set<string>();
+        const deduped: Array<[string, string]> = [];
+        for (const [a, b] of parPairs) {
+          const key = a < b ? `${a}|${b}` : `${b}|${a}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            deduped.push(a < b ? [a, b] : [b, a]);
+          }
+        }
+        deduped.sort((x, y) => (x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : 0));
+        projection.log(`  Parallel (concurrent) (${deduped.length} pairs):`);
+        for (const [a, b] of deduped) {
+          projection.log(`    ${a.padEnd(30)} ||   ${b}`);
+        }
+        projection.log('');
+      }
       break;
     }
 
@@ -606,7 +743,10 @@ function formatHumanOutput(
       projection.log(
         `  Perfectly fitting traces:    ${result.perfectly_fitting_traces} / ${result.total_traces}`
       );
-      if (result.trace_results && (result.trace_results as Array<Record<string, unknown>>).length > 0) {
+      if (
+        result.trace_results &&
+        (result.trace_results as Array<Record<string, unknown>>).length > 0
+      ) {
         projection.log('  Per-trace results:');
         for (const tr of result.trace_results as Array<Record<string, unknown>>) {
           const caseId = String(tr.case_id ?? '?');
