@@ -72,9 +72,27 @@ export async function runSwarm(config: SwarmConfig): Promise<SwarmArtifact> {
       });
 
       try {
-        // Fan-out: run all workers in parallel
+        // Fan-out: run all workers in parallel.
+        // Individual worker failures are isolated — a failed worker produces a
+        // degraded WorkerResult (failed=true, error=message) rather than
+        // aborting the entire episode via Promise.all rejection.
         const workerResults: WorkerResult[] = await Promise.all(
-          workerSpecs.map((spec) => runWorker(spec, config))
+          workerSpecs.map((spec) =>
+            runWorker(spec, config).catch((err: unknown) => {
+              const errorMessage = err instanceof Error ? err.message : String(err);
+              return {
+                workerId: spec.workerId,
+                algorithmId: spec.algorithmId,
+                resultHash: 'FAILED',
+                result: null,
+                runAt: new Date().toISOString(),
+                durationMs: 0,
+                resultType: spec.algorithmId.startsWith('ml_') ? ('ml' as const) : ('discovery' as const),
+                error: errorMessage,
+                failed: true,
+              } satisfies WorkerResult;
+            })
+          )
         );
 
         // Enforce hard iteration cap before any further processing
@@ -130,12 +148,19 @@ export async function runSwarm(config: SwarmConfig): Promise<SwarmArtifact> {
       throw new ConvergenceTimeoutError(episodes.length, maxEpisodes, rate);
     }
 
+    const failedWorkers = finalWorkerResults
+      .filter((r) => r.failed === true)
+      .map((r) => r.workerId);
+    const healthyWorkerCount = finalWorkerResults.filter((r) => !r.failed).length;
+
     const artifact = {
       episodes,
       finalWorkerResults,
       converged: didConverge,
       artifact: buildArtifact(episodes),
       convergenceTimeout: !didConverge,
+      failedWorkers,
+      healthyWorkerCount,
     };
 
     swarmSpan.setAttribute('swarm.final_episodes', episodes.length);

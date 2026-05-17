@@ -5,6 +5,7 @@ import { EXIT_CODES } from '../exit-codes.js';
 import { runSwarm } from '@wasm4pm/swarm';
 import { withSpan } from './_otel.js';
 import { exitWithFlush } from '../otel/exit.js';
+import { resolveConfig } from '@wasm4pm/config';
 
 export const swarm = defineCommand({
   meta: {
@@ -34,7 +35,23 @@ export const swarm = defineCommand({
     },
     'max-episodes': {
       type: 'string',
-      description: 'Maximum number of swarm episodes (default: 3)',
+      description: 'Maximum number of swarm episodes (overrides wasm4pm.toml [swarm].max_episodes)',
+    },
+    'convergence-runs': {
+      type: 'string',
+      description: 'Identical consecutive rounds required for stability (overrides [swarm].convergence_runs)',
+    },
+    'convergence-threshold': {
+      type: 'string',
+      description: 'Quorum fraction [0,1] for convergence (overrides [swarm].convergence_threshold). 1.0=unanimous',
+    },
+    'worker-model': {
+      type: 'string',
+      description: 'Groq model ID for worker agents (overrides [swarm].worker_model)',
+    },
+    algorithms: {
+      type: 'string',
+      description: 'Comma-separated algorithm IDs to run (overrides [swarm].algorithm_ids)',
     },
   },
   async run(ctx) {
@@ -45,55 +62,146 @@ export const swarm = defineCommand({
 
     return withSpan('swarm', {
       input: String(ctx.args.input ?? ''),
-      max_episodes: Number(ctx.args['max-episodes'] ?? 3),
       format,
     }, async () => {
     try {
       const inputPath = ctx.args.input as string;
-      const xesContent = await fs.readFile(inputPath, 'utf-8');
-      const maxEpisodes = ctx.args['max-episodes'] ? parseInt(ctx.args['max-episodes'], 10) : 3;
+
+      // Load config to read [swarm] section
+      const resolvedConfig = await resolveConfig();
+      const swarmCfg = resolvedConfig.swarm;
+
+      // CLI args override config file values (precedence: CLI > config > built-in defaults)
+      const maxEpisodes = ctx.args['max-episodes']
+        ? parseInt(ctx.args['max-episodes'], 10)
+        : (swarmCfg?.max_episodes ?? 5);
+
+      const convergenceRuns = ctx.args['convergence-runs']
+        ? parseInt(ctx.args['convergence-runs'], 10)
+        : (swarmCfg?.convergence_runs ?? 2);
+
+      const convergenceThreshold = ctx.args['convergence-threshold']
+        ? parseFloat(ctx.args['convergence-threshold'])
+        : (swarmCfg?.convergence_threshold ?? 1.0);
+
+      const workerModel = (ctx.args['worker-model'] as string | undefined)
+        ?? swarmCfg?.worker_model
+        ?? 'llama-3.1-70b-versatile';
+
+      const algorithmIds = ctx.args.algorithms
+        ? (ctx.args.algorithms as string).split(',').map((s) => s.trim()).filter(Boolean)
+        : (swarmCfg?.algorithm_ids ?? ['dfg', 'analyze_statistics', 'detect_drift']);
+
+      // Verify the XES file is accessible
+      try {
+        await fs.access(inputPath);
+      } catch (readErr) {
+        const result = makeErrorResult('swarm', readErr, EXIT_CODES.source_error);
+        emitResult(result, { format, verbose, quiet });
+        return await exitWithFlush(result.exit_code);
+      }
 
       const config = {
         maxEpisodes,
         maxSteps: 20,
-        convergenceRuns: 2,
-        algorithmIds: ['dfg', 'analyze_statistics', 'detect_drift'],
+        convergenceRuns,
+        algorithmIds,
         logPaths: [inputPath],
-        workerModel: 'llama-3.1-70b-versatile',
+        workerModel,
       };
 
       const swarmResult = await runSwarm(config);
 
-      const payload = { ...swarmResult, input: inputPath, maxEpisodes };
+      const lastEpisode = swarmResult.episodes[swarmResult.episodes.length - 1];
+      const finalReport = lastEpisode?.convergenceReport;
+
+      const payload = {
+        ...swarmResult,
+        input: inputPath,
+        maxEpisodes,
+        convergenceRuns,
+        convergenceThreshold,
+        algorithmIds,
+        workerModel,
+        consensusRatio: finalReport?.consensusRatio ?? 0,
+        dominantHash: finalReport?.dominantHash ?? null,
+        dissentingWorkers: finalReport?.dissentingWorkers ?? [],
+        stableWorkerCount: swarmResult.healthyWorkerCount,
+        failedWorkerCount: swarmResult.failedWorkers.length,
+      };
+
       const result = makeResult('swarm', payload, performance.now() - t0, EXIT_CODES.success);
+
       emitResult(result, { format, verbose, quiet }, (res, projection) => {
         const data = res.payload as typeof payload;
 
-        projection.warn('GROQ_API_KEY environment variable is missing.');
-        projection.warn(
-          'The swarm relies on Vercel AI SDK and Groq for orchestrating the mining agents.'
-        );
-        projection.warn('Running with mocked LLM output for demonstration purposes.');
-
-        projection.log('');
-        projection.info(`Initializing Agent Swarm Logic on ${data.input}...`);
-        projection.log('');
-        projection.success(`Swarm reached convergence: ${data.converged ? 'YES' : 'NO'}`);
-        projection.log(`Episodes run: ${data.episodes.length}`);
-
-        projection.log('');
-        projection.info('Final Worker Results (Core Mining Backends):');
-        for (const worker of data.finalWorkerResults) {
-          projection.log(
-            `  - Worker [${worker.workerId}]: executed ${worker.algorithmId} in ${worker.durationMs}ms`
-          );
+        if (!process.env['GROQ_API_KEY']) {
+          projection.warn('GROQ_API_KEY environment variable is missing.');
+          projection.warn('The swarm relies on Vercel AI SDK + Groq for orchestrating mining agents.');
+          projection.warn('Running with mocked LLM output for demonstration purposes.');
         }
 
-        if (verbose) {
+        projection.log('');
+        projection.info(`Swarm on: ${data.input}`);
+        projection.log(
+          `  Config: ${data.maxEpisodes} max episodes, ${data.convergenceRuns} convergence runs, ` +
+          `threshold=${(data.convergenceThreshold * 100).toFixed(0)}%, model=${data.workerModel}`
+        );
+        projection.log(`  Algorithms: ${data.algorithmIds.join(', ')}`);
+        projection.log('');
+
+        if (data.converged) {
+          projection.success(`Convergence: YES (${data.episodes.length} episode(s))`);
+        } else if (data.convergenceTimeout) {
+          projection.warn(`Convergence: NO — exhausted ${data.episodes.length} episode(s) without converging`);
+        } else {
+          projection.warn('Convergence: NO');
+        }
+
+        const ratePct = (data.consensusRatio * 100).toFixed(1);
+        projection.log(`  Consensus ratio:   ${ratePct}%`);
+        projection.log(`  Dominant hash:     ${data.dominantHash ? data.dominantHash.slice(0, 12) + '...' : 'n/a'}`);
+        projection.log(`  Healthy workers:   ${data.stableWorkerCount}`);
+
+        if (data.failedWorkerCount > 0) {
+          projection.warn(`  Failed workers:    ${data.failedWorkerCount} (isolated, did not abort swarm)`);
+          for (const wid of data.failedWorkers) {
+            const workerResult = data.finalWorkerResults.find((r) => r.workerId === wid);
+            projection.warn(`    ${wid}: ${workerResult?.error ?? 'unknown error'}`);
+          }
+        }
+
+        if (data.dissentingWorkers.length > 0 && !data.converged) {
+          projection.warn(`  Dissenting workers: ${data.dissentingWorkers.join(', ')}`);
+        }
+
+        projection.log('');
+        projection.info('Worker results:');
+        for (const worker of data.finalWorkerResults) {
+          if (worker.failed) {
+            projection.warn(`  [FAILED] ${worker.workerId} (${worker.algorithmId}): ${worker.error}`);
+          } else {
+            projection.log(
+              `  [OK]     ${worker.workerId} (${worker.algorithmId}) — ` +
+              `${worker.durationMs}ms  hash=${worker.resultHash.slice(0, 8)}...`
+            );
+          }
+        }
+
+        if (verbose && data.episodes.length > 0) {
           projection.log('');
-          projection.log(JSON.stringify(data.artifact, null, 2));
+          projection.log('Episode convergence trajectory:');
+          for (const ep of data.episodes) {
+            const r = ep.convergenceReport;
+            const marker = r.converged ? 'CONV' : '    ';
+            projection.log(
+              `  [${marker}] ep=${ep.ep}  ratio=${(r.consensusRatio * 100).toFixed(1)}%` +
+              `  checked=${r.totalChecked}  dissenting=${r.dissentingWorkers.length}`
+            );
+          }
         }
       });
+
       return await exitWithFlush(result.exit_code);
     } catch (error) {
       const result = makeErrorResult('swarm', error, EXIT_CODES.execution_error);

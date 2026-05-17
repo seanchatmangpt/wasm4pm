@@ -64,6 +64,7 @@ export {
   membraneThresholdsSchema,
   membraneDriftSchema,
   membraneEnvelopesSchema,
+  swarmConfigSchema,
 } from './schema.js';
 export type { AlgorithmId } from './schema.js';
 

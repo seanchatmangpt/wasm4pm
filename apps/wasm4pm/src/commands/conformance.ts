@@ -7,6 +7,21 @@ import { withSpan } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
 
+interface TraceDeviation {
+  event_index: number;
+  activity: string;
+  deviation_type: string;
+}
+
+interface TraceResult {
+  case_id: string;
+  is_conforming: boolean;
+  trace_fitness: number;
+  tokens_missing: number;
+  tokens_remaining: number;
+  deviations: TraceDeviation[];
+}
+
 interface ConformancePayload {
   schema: string;
   status: string;
@@ -14,17 +29,24 @@ interface ConformancePayload {
   activityKey: string;
   method: string;
   threshold: number;
-  fitness: unknown;
+  fitness: number;
   precision: number | null;
   precision_available: boolean;
   isFit: boolean;
-  diagnostics: {
-    traced: unknown;
-    remaining: unknown;
-    missing: unknown;
-    consumed: unknown;
-    produced: unknown;
+  summary: {
+    total_cases: number;
+    conforming_cases: number;
+    deviating_cases: number;
+    conformance_rate: number;
   };
+  diagnostics: {
+    traced: number;
+    remaining: number;
+    missing: number;
+    consumed: number;
+    produced: number;
+  };
+  deviating_traces: TraceResult[];
   modelHandle: string;
 }
 
@@ -204,9 +226,51 @@ export const conformance = defineCommand({
       const precision = null;
       const precision_available = false;
 
-      // Build payload
-      const fitnessValue = conformanceResult.fitness ?? 0.0;
-      const isFit = (fitnessValue as number) >= threshold;
+      // The token-replay WASM function returns ConformanceResult with:
+      //   avg_fitness, conforming_cases, total_cases, case_fitness[]
+      // Each case_fitness entry has: case_id, is_conforming, trace_fitness,
+      //   tokens_missing, tokens_remaining, deviations[]
+      // alignment_fitness returns a different shape (fitness at top level).
+      const isTokenReplay = method !== 'alignment';
+      let fitnessValue: number;
+      let totalCases: number;
+      let conformingCases: number;
+      let caseFitness: TraceResult[] = [];
+
+      if (isTokenReplay) {
+        fitnessValue = (conformanceResult.avg_fitness as number) ?? 0.0;
+        totalCases = (conformanceResult.total_cases as number) ?? 0;
+        conformingCases = (conformanceResult.conforming_cases as number) ?? 0;
+        const rawCases = conformanceResult.case_fitness as TraceResult[] | undefined;
+        caseFitness = Array.isArray(rawCases) ? rawCases : [];
+      } else {
+        // alignment path — shape differs, fitness is at root
+        fitnessValue = (conformanceResult.fitness as number) ?? 0.0;
+        totalCases = 0;
+        conformingCases = 0;
+      }
+
+      const deviatingCases = isTokenReplay
+        ? totalCases - conformingCases
+        : 0;
+      const conformanceRate = totalCases > 0
+        ? conformingCases / totalCases
+        : fitnessValue;
+
+      // Separate deviating traces for reporting (up to 20 to keep output manageable)
+      const deviatingTraces = caseFitness
+        .filter((t) => !t.is_conforming)
+        .slice(0, 20);
+
+      // Aggregate token counts across all traces for diagnostics
+      let totalMissing = 0;
+      let totalRemaining = 0;
+      for (const t of caseFitness) {
+        totalMissing += t.tokens_missing ?? 0;
+        totalRemaining += t.tokens_remaining ?? 0;
+      }
+
+      const isFit = fitnessValue >= threshold;
       const payload: ConformancePayload = {
         schema: 'chatmangpt.wasm4pm.conformance.v1',
         status: isFit ? 'success' : 'conformance_fail',
@@ -218,13 +282,20 @@ export const conformance = defineCommand({
         precision,
         precision_available,
         isFit,
-        diagnostics: {
-          traced: conformanceResult.traced ?? 0,
-          remaining: conformanceResult.remaining ?? 0,
-          missing: conformanceResult.missing ?? 0,
-          consumed: conformanceResult.consumed ?? 0,
-          produced: conformanceResult.produced ?? 0,
+        summary: {
+          total_cases: totalCases,
+          conforming_cases: conformingCases,
+          deviating_cases: deviatingCases,
+          conformance_rate: conformanceRate,
         },
+        diagnostics: {
+          traced: totalCases,
+          remaining: totalRemaining,
+          missing: totalMissing,
+          consumed: 0,
+          produced: 0,
+        },
+        deviating_traces: deviatingTraces,
         modelHandle: petriNetHandle,
       };
 
@@ -281,35 +352,74 @@ export const conformance = defineCommand({
 import type { ConsoleProjection } from '../output.js';
 
 function printHumanConformance(payload: ConformancePayload, projection: ConsoleProjection): void {
-  const fitness = (payload.fitness as number) ?? 0.0;
+  const fitness = payload.fitness ?? 0.0;
   const precisionRaw = payload.precision;
   const precisionAvailable = payload.precision_available;
   const threshold = payload.threshold ?? 1.0;
   const isFit = payload.isFit;
-  const diagnostics = payload.diagnostics;
+  const summary = payload.summary;
+  const deviatingTraces = payload.deviating_traces ?? [];
 
   projection.log('');
   projection.success(`Conformance Check — ${payload.input}`);
   projection.log(`  Activity key: ${payload.activityKey}`);
   projection.log(`  Method: ${payload.method}`);
   projection.log('');
+
+  // Primary fitness score with Van der Aalst threshold context
+  const fitnessStatus = fitness >= 0.85 ? 'excellent' : fitness >= threshold ? 'acceptable' : 'below threshold';
   projection.log(
-    `  Fitness: ${fitness.toFixed(3)} ${isFit ? '✓' : '✗'} (threshold: ${threshold.toFixed(2)})`
+    `  Fitness: ${fitness.toFixed(3)} ${isFit ? '✓' : '✗'}  [threshold: ${threshold.toFixed(2)}, Van der Aalst target: >=0.85 — ${fitnessStatus}]`
   );
   const precisionDisplay =
     precisionAvailable && precisionRaw !== null ? precisionRaw.toFixed(3) : 'N/A (not computed)';
   projection.log(`  Precision: ${precisionDisplay}`);
   projection.log('');
-  projection.log('  Diagnostics (token replay):');
-  projection.log(`    Traced:     ${diagnostics.traced as number}`);
-  projection.log(`    Remaining:  ${diagnostics.remaining as number}`);
-  projection.log(`    Missing:    ${diagnostics.missing as number}`);
-  projection.log(`    Consumed:   ${diagnostics.consumed as number}`);
-  projection.log(`    Produced:   ${diagnostics.produced as number}`);
-  projection.log('');
+
+  // Case summary — only shown for token-replay (alignment returns no case breakdown)
+  if (summary.total_cases > 0) {
+    const conformanceRatePct = (summary.conformance_rate * 100).toFixed(1);
+    projection.log('  Case Summary:');
+    projection.log(`    Total cases:      ${summary.total_cases}`);
+    projection.log(`    Conforming:       ${summary.conforming_cases}  (${conformanceRatePct}%)`);
+    projection.log(`    Deviating:        ${summary.deviating_cases}`);
+    projection.log('');
+  }
+
+  // Deviating trace details — the key practitioner insight
+  if (deviatingTraces.length > 0) {
+    const totalDeviating = summary.deviating_cases;
+    const shown = deviatingTraces.length;
+    const suffix = totalDeviating > shown ? ` (showing first ${shown} of ${totalDeviating})` : '';
+    projection.log(`  Deviating Traces${suffix}:`);
+
+    for (const trace of deviatingTraces) {
+      projection.log(`    Case ${trace.case_id}  fitness=${trace.trace_fitness.toFixed(3)}  missing_tokens=${trace.tokens_missing}  remaining_tokens=${trace.tokens_remaining}`);
+      if (trace.deviations.length > 0) {
+        for (const dev of trace.deviations) {
+          const label = dev.deviation_type === 'missing_activity'
+            ? `activity "${dev.activity}" was expected by the model but not found in the log (log move)`
+            : dev.deviation_type === 'missing_tokens'
+            ? `activity "${dev.activity}" fired but required tokens were not available (model move)`
+            : `${dev.deviation_type} at "${dev.activity}"`;
+          projection.log(`      [event ${dev.event_index}] ${label}`);
+        }
+      } else {
+        projection.log(`      (deviation: final marking not reached)`);
+      }
+    }
+    projection.log('');
+    if (!isFit) {
+      projection.log('  How to interpret deviations:');
+      projection.log('    "log move"   — the log contains an activity the model does not expect; the model is too restrictive.');
+      projection.log('    "model move" — the model requires an activity that was skipped in the log; the log is missing steps.');
+      projection.log('  To fix: either relax the model (add transitions) or investigate why steps are skipped in the log.');
+      projection.log('');
+    }
+  }
 
   if (isFit) {
-    projection.success('Log conforms to model (fitness ≥ threshold)');
+    projection.success('Log conforms to model (fitness >= threshold)');
   } else {
     projection.warn('Log does NOT conform to model (fitness < threshold)');
   }

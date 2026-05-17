@@ -26,6 +26,11 @@ export interface WorkerResult {
   runAt: string;
   durationMs: number;
   resultType?: 'discovery' | 'ml';
+  /** Present only when the worker failed. The swarm degrades gracefully: the
+   *  episode continues with the remaining healthy workers rather than aborting. */
+  error?: string;
+  /** True when this result slot represents a failed worker (error isolation). */
+  failed?: boolean;
 }
 
 export interface DirectiveType {
@@ -80,6 +85,10 @@ export interface SwarmArtifact {
   artifact?: unknown;
   /** True when all episodes were exhausted without convergence (no throwOnTimeout). */
   convergenceTimeout?: boolean;
+  /** Workers that failed in the final episode (error-isolated, did not abort the swarm). */
+  failedWorkers: string[];
+  /** Number of healthy (non-failed) workers in the final episode. */
+  healthyWorkerCount: number;
 }
 
 /**

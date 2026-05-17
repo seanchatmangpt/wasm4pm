@@ -350,6 +350,46 @@ export const rlConfigSchema = z
   );
 
 // =============================================================================
+// Swarm configuration — multi-worker convergence orchestration
+// =============================================================================
+
+/**
+ * Swarm orchestration — controls how many parallel workers run, how many
+ * identical consecutive rounds are required to declare convergence, and what
+ * quorum fraction constitutes "consensus" when using checkConvergence().
+ *
+ * Example wasm4pm.toml section:
+ *
+ *   [swarm]
+ *   max_episodes = 5
+ *   convergence_runs = 3
+ *   convergence_threshold = 0.8
+ *   worker_model = "llama-3.1-70b-versatile"
+ *   algorithm_ids = ["dfg", "heuristic_miner"]
+ */
+export const swarmConfigSchema = z
+  .object({
+    /** Maximum number of swarm episodes before giving up. */
+    max_episodes: z.number().int().positive().default(5),
+    /** Number of consecutive identical rounds a worker must produce before
+     *  it is counted as "stable" (feeds into inter-episode ring buffer). */
+    convergence_runs: z.number().int().min(2).default(2),
+    /**
+     * Fraction of workers that must agree on the dominant hash before the
+     * swarm declares convergence (passed to checkConvergence as `threshold`).
+     * 1.0 = unanimous, 0.8 = 80 % quorum.
+     */
+    convergence_threshold: z.number().positive().max(1).default(1.0),
+    /** Groq model ID used for each worker generateText call. */
+    worker_model: z.string().min(1).default('llama-3.1-70b-versatile'),
+    /** Algorithm IDs to run in parallel across workers. Defaults to ["dfg"]. */
+    algorithm_ids: z.array(z.string().min(1)).default(['dfg']),
+  })
+  .describe(
+    'Swarm orchestration — multi-worker convergence: episodes, quorum threshold, worker model'
+  );
+
+// =============================================================================
 // Membrane configuration — AutoMembrane 5-layer conformance membrane
 // =============================================================================
 
@@ -398,6 +438,7 @@ export const configSchema = z
     ml: mlConfigSchema.optional(),
     rl: rlConfigSchema.optional(),
     membrane: membraneConfigSchema.optional(),
+    swarm: swarmConfigSchema.optional(),
   })
   .describe('wasm4pm configuration');
 
