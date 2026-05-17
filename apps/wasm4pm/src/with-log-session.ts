@@ -42,7 +42,12 @@ export async function withLogSession<T>(
   if (ext && !['.xes', '.xml'].includes(ext)) {
     const result = makeErrorResult(
       commandName,
-      new Error(`Input file must be an XES or XML event log (got: ${ext})`),
+      new Error(
+        `Unsupported file extension '${ext}' — this command accepts: .xes, .xml\n\n` +
+        `  Given: ${inputPath}\n\n` +
+        `  XES (.xes) is the IEEE standard for process mining event logs.\n` +
+        `  See: https://www.xes-standard.org/`
+      ),
       EXIT_CODES.source_error,
       'INVALID_EXTENSION'
     );

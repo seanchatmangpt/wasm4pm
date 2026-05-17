@@ -347,9 +347,16 @@ export const run = defineCommand({
         lowerInput.endsWith('.xes.gz') ||
         lowerInput.endsWith('.json');
       if (!acceptedExt) {
+        const ext = path.extname(inputPath) || '(no extension)';
         const result = makeErrorResult(
           'run',
-          new Error(`unsupported input file extension: ${inputPath}`),
+          new Error(
+            `Unsupported file extension '${ext}' — wpm run accepts: .xes, .xes.gz, .json\n\n` +
+            `  Given: ${inputPath}\n\n` +
+            `  If your log is in a different format, convert it first:\n` +
+            `    XES is the IEEE standard for process mining event logs.\n` +
+            `    See: https://www.xes-standard.org/`
+          ),
           EXIT_CODES.source_error,
           'UNSUPPORTED_EXTENSION'
         );
