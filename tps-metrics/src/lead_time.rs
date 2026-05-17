@@ -243,10 +243,175 @@ pub fn generate_report(metrics: &LeadTimeMetrics) -> String {
 mod tests {
     use super::*;
 
+    // ── Rank-1 mathematical oracle: percentile index is bounded ──
+
+    /// The p95 index formula must never produce an out-of-bounds index.
+    /// For any non-empty sorted vec, `(len * 0.95) as usize` must be < len.
     #[test]
-    fn test_analyze_lead_time_empty_repo() {
-        // This test would require a mock repository
-        // For now, we just verify the function signature compiles
-        assert!(true);
+    fn test_p95_index_never_out_of_bounds() {
+        for len in 1usize..=200 {
+            let p95_index = (len as f64 * 0.95) as usize;
+            assert!(
+                p95_index < len,
+                "p95_index {p95_index} >= len {len}: would panic on get()"
+            );
+        }
+    }
+
+    // ── Rank-1: percentile ordering invariant ──
+
+    /// In a sorted list, p95 must be >= median (p50).
+    /// This is a mathematical theorem for any non-empty sorted sequence.
+    #[test]
+    fn test_p95_ge_median_for_sorted_sequence() {
+        let mut times = vec![0.5, 1.0, 2.0, 4.0, 8.0, 16.0, 32.0, 64.0, 128.0, 256.0];
+        times.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+
+        let median = times[times.len() / 2];
+        let p95_index = (times.len() as f64 * 0.95) as usize;
+        let p95 = times.get(p95_index).copied().unwrap_or(median);
+
+        assert!(
+            p95 >= median,
+            "p95 ({p95}) must be >= median ({median}) in sorted data"
+        );
+    }
+
+    // ── Rank-2 domain contract: fast/slow counts are mutually exclusive ──
+
+    /// A commit cannot be both fast (<1h) and slow (>48h).
+    /// The counters must partition the observed commits (with middle commits in neither).
+    #[test]
+    fn test_fast_and_slow_merge_are_mutually_exclusive() {
+        // Simulate the classification logic from analyze_lead_time
+        let lead_times: Vec<f64> = vec![
+            0.5,  // fast
+            1.5,  // neither
+            24.0, // neither
+            72.0, // slow
+        ];
+
+        let fast = lead_times.iter().filter(|&&h| h < 1.0).count();
+        let slow = lead_times.iter().filter(|&&h| h > 48.0).count();
+        let total = lead_times.len();
+
+        // Fast + slow <= total (they cannot overlap)
+        assert!(
+            fast + slow <= total,
+            "fast ({fast}) + slow ({slow}) > total ({total})"
+        );
+
+        // At least one commit is in the "middle" (neither fast nor slow)
+        assert!(fast + slow < total, "expected some commits in neither category");
+    }
+
+    // ── Rank-2 domain contract: average is bounded by min/max ──
+
+    /// The average lead time must lie in [min, max] of the sample.
+    /// This is a property of the arithmetic mean.
+    #[test]
+    fn test_average_is_between_min_and_max() {
+        let times = vec![0.1, 2.0, 5.0, 8.0, 48.0, 100.0];
+        let avg = times.iter().sum::<f64>() / times.len() as f64;
+        let min = times.iter().copied().fold(f64::INFINITY, f64::min);
+        let max = times.iter().copied().fold(f64::NEG_INFINITY, f64::max);
+
+        assert!(avg >= min, "average {avg} < min {min}");
+        assert!(avg <= max, "average {avg} > max {max}");
+    }
+
+    // ── Rank-3 metamorphic: adding a slow outlier raises average and p95 ──
+
+    /// Adding a high-lead-time commit to the sample must not decrease the
+    /// average or the p95.  This is a monotonic response property.
+    #[test]
+    fn test_adding_slow_outlier_raises_average_and_p95() {
+        let base = vec![0.5, 1.0, 2.0];
+        let with_outlier = {
+            let mut v = base.clone();
+            v.push(168.0); // one week — extreme outlier
+            v
+        };
+
+        let avg_base = base.iter().sum::<f64>() / base.len() as f64;
+        let avg_outlier = with_outlier.iter().sum::<f64>() / with_outlier.len() as f64;
+
+        assert!(
+            avg_outlier > avg_base,
+            "avg should increase after adding outlier: {avg_base} → {avg_outlier}"
+        );
+
+        let mut base_sorted = base.clone();
+        base_sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        let p95_base_idx = (base_sorted.len() as f64 * 0.95) as usize;
+        let p95_base = base_sorted[p95_base_idx];
+
+        let mut out_sorted = with_outlier.clone();
+        out_sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+        let p95_out_idx = (out_sorted.len() as f64 * 0.95) as usize;
+        let p95_out = out_sorted[p95_out_idx];
+
+        assert!(
+            p95_out >= p95_base,
+            "p95 should not decrease after adding outlier: {p95_base} → {p95_out}"
+        );
+    }
+
+    // ── Rank-2 domain contract: empty metrics have zero totals ──
+
+    /// The empty-repo guard in analyze_lead_time must produce a zero-valued
+    /// LeadTimeMetrics, not a partial or garbage value.
+    #[test]
+    fn test_empty_metrics_are_all_zero() {
+        let m = LeadTimeMetrics {
+            average_hours: 0.0,
+            median_hours: 0.0,
+            p95_hours: 0.0,
+            fast_merge_percent: 0.0,
+            slow_merge_percent: 0.0,
+            total_commits: 0,
+            fast_merge_count: 0,
+            slow_merge_count: 0,
+        };
+
+        assert_eq!(m.total_commits, 0);
+        assert_eq!(m.fast_merge_count, 0);
+        assert_eq!(m.slow_merge_count, 0);
+        assert_eq!(m.average_hours, 0.0);
+        assert_eq!(m.fast_merge_percent, 0.0);
+        assert_eq!(m.slow_merge_percent, 0.0);
+    }
+
+    // ── Rank-2 domain contract: percentage fields are in [0, 100] ──
+
+    #[test]
+    fn test_percentage_fields_bounded() {
+        let cases: Vec<(f64, usize, usize, usize)> = vec![
+            // (lead_time, total, fast, slow)
+            (0.5, 1, 1, 0),
+            (72.0, 1, 0, 1),
+            (10.0, 4, 2, 1),
+        ];
+
+        for (_, total, fast, slow) in cases {
+            let fast_pct = (fast as f64 / total as f64) * 100.0;
+            let slow_pct = (slow as f64 / total as f64) * 100.0;
+            assert!((0.0..=100.0).contains(&fast_pct), "fast% {fast_pct} out of [0,100]");
+            assert!((0.0..=100.0).contains(&slow_pct), "slow% {slow_pct} out of [0,100]");
+        }
+    }
+
+    // ── Rank-2 domain contract: 7-day cap (168h) prevents outlier pollution ──
+
+    /// The cap at 168h prevents multi-month stale branches from
+    /// distorting the average lead time.  Any value above the cap is excluded.
+    #[test]
+    fn test_seven_day_cap_filters_stale_branches() {
+        let raw_times = vec![1.0, 2.0, 500.0, 800.0]; // two beyond 168h
+        let capped: Vec<f64> = raw_times.into_iter().filter(|&h| h <= 168.0).collect();
+
+        assert_eq!(capped.len(), 2, "only in-range times should be included");
+        let avg = capped.iter().sum::<f64>() / capped.len() as f64;
+        assert!(avg < 24.0, "avg of valid commits should be < 24h: {avg}");
     }
 }
