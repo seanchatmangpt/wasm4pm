@@ -22,6 +22,47 @@ export interface SavedResult {
 }
 
 /**
+ * Key metrics extracted from a SavedResult for compact listing.
+ * All fields are optional — older result files may not have them.
+ */
+interface ResultSummary {
+  algorithm?: string;
+  elapsedMs?: number;
+  fitness?: number;
+  traces?: number;
+}
+
+/**
+ * Extract a brief summary from a SavedResult without loading the full object.
+ */
+function extractSummary(saved: SavedResult): ResultSummary {
+  const r = saved.result as Record<string, unknown>;
+  const algorithm = typeof r['algorithm'] === 'string' ? r['algorithm'] : undefined;
+  const elapsedMs = typeof r['elapsedMs'] === 'number' ? r['elapsedMs'] : undefined;
+
+  // Quality metrics may live at result.quality.fitness (wpm run --with-quality)
+  // or directly in the result (prediction tasks emit fitness-like scores).
+  let fitness: number | undefined;
+  const quality = r['quality'] as Record<string, unknown> | undefined;
+  if (quality && typeof quality['fitness'] === 'number') {
+    fitness = quality['fitness'];
+  } else if (typeof r['fitness'] === 'number') {
+    fitness = r['fitness'];
+  }
+
+  // For predictions: next-activity has predictions[], remaining-time has remaining_time_mean
+  let traces: number | undefined;
+  const model = r['model'] as Record<string, unknown> | undefined;
+  if (model && typeof model['traces'] === 'number') {
+    traces = model['traces'];
+  } else if (typeof r['traces'] === 'number') {
+    traces = r['traces'];
+  }
+
+  return { algorithm, elapsedMs, fitness, traces };
+}
+
+/**
  * Derive a safe filename slug from a task name and timestamp.
  * Format: <timestamp>-<task>.json  e.g. 20260406T143012-next-activity.json
  */
@@ -101,6 +142,39 @@ async function catResult(filepath: string): Promise<SavedResult> {
   return JSON.parse(raw) as SavedResult;
 }
 
+/**
+ * Resolve a result reference (1-based index or filename) to a filepath.
+ * Returns undefined if the reference does not match any file.
+ */
+function resolveRef(
+  ref: string,
+  files: Array<{ name: string; filepath: string }>
+): string | undefined {
+  const idx = parseInt(ref, 10);
+  if (!isNaN(idx) && idx >= 1 && idx <= files.length) {
+    return files[idx - 1].filepath;
+  }
+  const name = ref.endsWith('.json') ? ref : `${ref}.json`;
+  return files.find((f) => f.name === name)?.filepath;
+}
+
+/**
+ * Format a number as a compact millisecond string for display.
+ */
+function fmtMs(ms: number | undefined): string {
+  if (ms === undefined) return '     ';
+  if (ms < 1000) return `${ms.toFixed(0)}ms `.padStart(6);
+  return `${(ms / 1000).toFixed(1)}s `.padStart(6);
+}
+
+/**
+ * Format a fitness score as a compact percentage string for display.
+ */
+function fmtFitness(fitness: number | undefined): string {
+  if (fitness === undefined) return '    ';
+  return `${(fitness * 100).toFixed(0)}%`.padStart(4);
+}
+
 export const results = defineCommand({
   meta: {
     name: 'results',
@@ -109,13 +183,19 @@ export const results = defineCommand({
   args: {
     cat: {
       type: 'string',
-      description: 'Print the full content of a saved result file (by name or index)',
+      description: 'Print the full content of a saved result file (by name or 1-based index)',
       alias: 'c',
     },
     last: {
       type: 'boolean',
       description: 'Print the most recent saved result',
       alias: 'l',
+    },
+    diff: {
+      type: 'string',
+      description:
+        'Compare two saved results side-by-side — pass two indexes or names separated by a comma (e.g. --diff 1,2)',
+      alias: 'd',
     },
     limit: {
       type: 'string',
@@ -129,7 +209,7 @@ export const results = defineCommand({
     },
     verbose: {
       type: 'boolean',
-      description: 'Show full result data when listing',
+      description: 'Show input path and activity key for each listed result',
       alias: 'v',
     },
     path: {
@@ -224,21 +304,15 @@ export const results = defineCommand({
       // --cat <name|index>: print a specific result
       if (ctx.args.cat) {
         const ref = ctx.args.cat as string;
-        let filepath: string | undefined;
-
-        const idx = parseInt(ref, 10);
-        if (!isNaN(idx) && idx >= 1 && idx <= files.length) {
-          filepath = files[idx - 1].filepath;
-        } else {
-          const name = ref.endsWith('.json') ? ref : `${ref}.json`;
-          const match = files.find((f) => f.name === name);
-          if (match) filepath = match.filepath;
-        }
+        const filepath = resolveRef(ref, files);
 
         if (!filepath) {
+          const hint = files.length > 0
+            ? `\n\n  Available indexes: 1–${files.length}. Run 'wpm results' to list them.`
+            : '\n\n  No results saved yet.';
           const errResult = makeErrorResult(
             'results',
-            new Error(`Result not found: ${ref}`),
+            new Error(`Result not found: '${ref}'${hint}`),
             EXIT_CODES.source_error,
             'RESULT_NOT_FOUND'
           );
@@ -254,24 +328,94 @@ export const results = defineCommand({
         return await exitWithFlush(EXIT_CODES.success);
       }
 
-      // Default: list results
+      // --diff <ref1,ref2>: compare two saved results side-by-side
+      if (ctx.args.diff) {
+        const parts = (ctx.args.diff as string).split(',').map((s) => s.trim());
+        if (parts.length !== 2) {
+          const errResult = makeErrorResult(
+            'results',
+            new Error(
+              `--diff expects two references separated by a comma.\n\n` +
+              `  Examples:\n` +
+              `    wpm results --diff 1,2          Compare result #1 vs #2\n` +
+              `    wpm results --diff 3,5          Compare result #3 vs #5\n` +
+              `    wpm results --diff 20260507T003718-discover-dfg,20260507T003718-discover-heuristic`
+            ),
+            EXIT_CODES.config_error,
+            'DIFF_INVALID_REFS'
+          );
+          emitResult(errResult, { format, verbose, quiet });
+          return await exitWithFlush(errResult.exit_code);
+        }
+
+        const [ref1, ref2] = parts;
+        const fp1 = resolveRef(ref1, files);
+        const fp2 = resolveRef(ref2, files);
+
+        if (!fp1 || !fp2) {
+          const missing = !fp1 ? ref1 : ref2;
+          const hint = files.length > 0
+            ? `  Available indexes: 1–${files.length}. Run 'wpm results' to list them.`
+            : '  No results saved yet.';
+          const errResult = makeErrorResult(
+            'results',
+            new Error(`Result not found: '${missing}'\n\n${hint}`),
+            EXIT_CODES.source_error,
+            'RESULT_NOT_FOUND'
+          );
+          emitResult(errResult, { format, verbose, quiet });
+          return await exitWithFlush(errResult.exit_code);
+        }
+
+        const [parsed1, parsed2] = await Promise.all([catResult(fp1), catResult(fp2)]);
+        const diffPayload = { left: parsed1, right: parsed2, leftPath: fp1, rightPath: fp2 };
+        const result = makeResult('results', diffPayload, performance.now() - t0);
+        emitResult(result, { format, verbose, quiet }, (_res, projection) => {
+          printDiffResult(fp1, parsed1, fp2, parsed2, projection);
+        });
+        return await exitWithFlush(EXIT_CODES.success);
+      }
+
+      // Default: list results — eagerly read each file to extract key metrics
       const displayed = files.slice(0, limit);
+
+      // Read summaries in parallel; failures return null (we skip silently)
+      const summaries = await Promise.all(
+        displayed.map(async (f) => {
+          try {
+            const raw = await fs.readFile(f.filepath, 'utf-8');
+            const saved = JSON.parse(raw) as SavedResult;
+            return { saved, summary: extractSummary(saved) };
+          } catch {
+            return null;
+          }
+        })
+      );
 
       const payload = {
         directory: dir,
         count: files.length,
         showing: displayed.length,
-        results: displayed.map((f, i) => ({
-          index: i + 1,
-          name: f.name,
-          filepath: f.filepath,
-          savedAt: f.mtime.toISOString(),
-        })),
+        results: displayed.map((f, i) => {
+          const s = summaries[i];
+          return {
+            index: i + 1,
+            name: f.name,
+            filepath: f.filepath,
+            savedAt: f.mtime.toISOString(),
+            task: s?.saved.task ?? f.name.replace(/^\d{8}T\d{6}-/, '').replace(/\.json$/, ''),
+            input: s?.saved.input,
+            activityKey: s?.saved.activityKey,
+            algorithm: s?.summary.algorithm,
+            elapsedMs: s?.summary.elapsedMs,
+            fitness: s?.summary.fitness,
+          };
+        }),
       };
 
       const result = makeResult('results', payload, performance.now() - t0, EXIT_CODES.success);
-      emitResult(result, { format, verbose, quiet }, async (res, projection) => {
-        const p = res.payload as typeof payload;
+      emitResult(result, { format, verbose, quiet }, (_res, projection) => {
+        const p = _res.payload as typeof payload;
 
         if (p.count === 0) {
           projection.info('No saved results found.');
@@ -286,28 +430,23 @@ export const results = defineCommand({
         projection.info(`Saved results (${p.count} total — discovery + prediction)`);
         projection.log(`  Directory: ${p.directory}`);
         projection.log('');
-        projection.log(`  #   Saved at              Task              File`);
+        projection.log(`  #    Saved at             Algorithm         ms      Fit   Task`);
         projection.log(
-          `  ──  ────────────────────  ────────────────  ────────────────────────────────────`
+          `  ───  ───────────────────  ────────────────  ──────  ────  ─────────────────`
         );
 
         for (const entry of p.results) {
-          const taskSlug = entry.name.replace(/^\d{8}T\d{6}-/, '').replace(/\.json$/, '');
           const savedAt = entry.savedAt.slice(0, 19).replace('T', ' ');
           const idxStr = String(entry.index).padStart(3);
-          const task = taskSlug.padEnd(16);
-          const at = savedAt.padEnd(20);
-          projection.log(`  ${idxStr}  ${at}  ${task}  ${entry.name}`);
+          const algo = (entry.algorithm ?? '—').padEnd(16);
+          const ms = fmtMs(entry.elapsedMs);
+          const fit = fmtFitness(entry.fitness);
+          const taskSlug = entry.task.replace(/^discover-/, '');
+          projection.log(`  ${idxStr}  ${savedAt}  ${algo}  ${ms}  ${fit}  ${taskSlug}`);
 
           if (verbose) {
-            try {
-              const raw = await fs.readFile(entry.filepath, 'utf-8');
-              const parsed: SavedResult = JSON.parse(raw);
-              projection.log(`       Input: ${parsed.input}`);
-              projection.log(`       Activity key: ${parsed.activityKey}`);
-            } catch {
-              // skip unreadable files
-            }
+            if (entry.input) projection.log(`       Input:        ${entry.input}`);
+            if (entry.activityKey) projection.log(`       Activity key: ${entry.activityKey}`);
           }
         }
 
@@ -319,6 +458,7 @@ export const results = defineCommand({
         projection.log('');
         projection.log('  Tip: wpm results --last          Print the most recent result');
         projection.log('  Tip: wpm results --cat 1         Print result #1 in full');
+        projection.log('  Tip: wpm results --diff 1,2      Compare result #1 vs #2 side-by-side');
         projection.log('');
       });
 
@@ -335,17 +475,67 @@ export const results = defineCommand({
  * Emit a single saved result to the console projection.
  */
 function printCatResult(filepath: string, parsed: SavedResult, projection: ConsoleProjection): void {
+  const summary = extractSummary(parsed);
   projection.log('');
   projection.log(`  File:         ${path.basename(filepath)}`);
   projection.log(`  Task:         ${parsed.task}`);
   projection.log(`  Saved at:     ${parsed.savedAt}`);
   projection.log(`  Input:        ${parsed.input}`);
   projection.log(`  Activity key: ${parsed.activityKey}`);
+  if (summary.algorithm) projection.log(`  Algorithm:    ${summary.algorithm}`);
+  if (summary.elapsedMs !== undefined) projection.log(`  Elapsed:      ${fmtMs(summary.elapsedMs).trim()}`);
+  if (summary.fitness !== undefined) projection.log(`  Fitness:      ${(summary.fitness * 100).toFixed(1)}%`);
   projection.log('');
   projection.log('  Result:');
   const lines = JSON.stringify(parsed.result, null, 2).split('\n');
   for (const line of lines) {
     projection.log(`    ${line}`);
   }
+  projection.log('');
+}
+
+/**
+ * Emit a side-by-side diff of two saved results.
+ */
+function printDiffResult(
+  fp1: string,
+  p1: SavedResult,
+  fp2: string,
+  p2: SavedResult,
+  projection: ConsoleProjection
+): void {
+  const s1 = extractSummary(p1);
+  const s2 = extractSummary(p2);
+
+  projection.log('');
+  projection.log('  Comparing two saved results:');
+  projection.log('');
+  projection.log(`  Left  (#A): ${path.basename(fp1)}`);
+  projection.log(`  Right (#B): ${path.basename(fp2)}`);
+  projection.log('');
+
+  // Header row
+  projection.log(`  Field              #A                              #B`);
+  projection.log(`  ─────────────────  ──────────────────────────────  ──────────────────────────────`);
+
+  function row(label: string, a: string | undefined, b: string | undefined): void {
+    const aStr = (a ?? '—').padEnd(30);
+    const bStr = b ?? '—';
+    const changed = a !== b ? ' <' : '';
+    projection.log(`  ${label.padEnd(17)}  ${aStr}  ${bStr}${changed}`);
+  }
+
+  row('Task', p1.task, p2.task);
+  row('Algorithm', s1.algorithm, s2.algorithm);
+  row('Elapsed', s1.elapsedMs !== undefined ? fmtMs(s1.elapsedMs).trim() : undefined, s2.elapsedMs !== undefined ? fmtMs(s2.elapsedMs).trim() : undefined);
+  row('Fitness', s1.fitness !== undefined ? `${(s1.fitness * 100).toFixed(1)}%` : undefined, s2.fitness !== undefined ? `${(s2.fitness * 100).toFixed(1)}%` : undefined);
+  row('Input', p1.input ? path.basename(p1.input) : undefined, p2.input ? path.basename(p2.input) : undefined);
+  row('Activity key', p1.activityKey, p2.activityKey);
+  row('Saved at', p1.savedAt.slice(0, 19), p2.savedAt.slice(0, 19));
+
+  projection.log('');
+  projection.log('  Fields marked with "<" differ between the two results.');
+  projection.log('');
+  projection.log(`  Use 'wpm results --cat <ref>' to see the full result for either entry.`);
   projection.log('');
 }

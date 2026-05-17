@@ -5,7 +5,7 @@ import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
 import { savePredictionResult } from './results.js';
 import { VALID_ML_TASKS, executeMlTask } from '../ml-runner.js';
-import type { MlTask } from '../ml-runner.js';
+import type { MlTask, MlQualitySummary } from '../ml-runner.js';
 import { withSpan } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
@@ -175,11 +175,29 @@ export const ml = defineCommand({
   },
 });
 
+function renderQualityBanner(
+  projection: import('../output.js').ConsoleProjection,
+  qs: MlQualitySummary
+): void {
+  const tick = qs.primaryGood ? '[OK]' : '[!!]';
+  const primary = `${qs.primaryLabel}: ${qs.primaryValue}`;
+  const secondary = qs.secondary.map((s) => `${s.label}: ${s.value}`).join('  ');
+  projection.log('');
+  projection.log(`  ${tick} ${primary}  ${secondary}`);
+  projection.log(`     ${qs.interpretation}`);
+}
+
 function formatMlHumanOutput(
   projection: import('../output.js').ConsoleProjection,
   task: MlTask,
   result: Record<string, unknown>
 ): void {
+  // Render quality banner (Gap 1) — present on every result from executeMlTask
+  const qs = result._qualitySummary as MlQualitySummary | undefined;
+  if (qs) {
+    renderQualityBanner(projection, qs);
+  }
+
   switch (task) {
     case 'classify': {
       const predictions = result.predictions as Array<{
@@ -191,6 +209,28 @@ function formatMlHumanOutput(
         projection.info('No predictions available.');
         return;
       }
+
+      // Gap 3: Class distribution table — signal check before the raw prediction list
+      const classDist = result._classDistribution as
+        | Array<{ className: string; count: number; pct: number; meanConf: number }>
+        | undefined;
+      if (classDist && classDist.length > 0) {
+        projection.log('');
+        projection.log('  Class distribution (signal check):');
+        projection.log('  ────────────────────────────────────────────────────');
+        projection.log('  Class                 Count    Share    Mean conf');
+        projection.log('  ────────────────────  ───────  ───────  ─────────');
+        for (const row of classDist) {
+          const cls = (row.className ?? '?').padEnd(20);
+          const cnt = String(row.count).padStart(7);
+          const share = `${(row.pct * 100).toFixed(1)}%`.padStart(7);
+          const conf = `${(row.meanConf * 100).toFixed(1)}%`.padStart(8);
+          // Dominance warning: one class takes >80% — model may be predicting trivially
+          const warn = row.pct > 0.8 ? ' (dominant)' : '';
+          projection.log(`  ${cls}  ${cnt}  ${share}  ${conf}${warn}`);
+        }
+      }
+
       projection.log('');
       projection.log('  Case ID              Predicted         Confidence');
       projection.log('  ───────────────────  ────────────────  ─────────');
