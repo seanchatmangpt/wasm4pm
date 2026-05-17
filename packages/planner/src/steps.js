@@ -27,6 +27,7 @@ export var PlanStepType;
     PlanStepType["DISCOVER_ACO"] = "discover_aco";
     PlanStepType["DISCOVER_SIMULATED_ANNEALING"] = "discover_simulated_annealing";
     PlanStepType["DISCOVER_OPTIMIZED_DFG"] = "discover_optimized_dfg";
+    PlanStepType["DISCOVER_SIMD_STREAMING_DFG"] = "discover_simd_streaming_dfg";
     // Wave 1 Discovery
     PlanStepType["DISCOVER_TRANSITION_SYSTEM"] = "discover_transition_system";
     PlanStepType["DISCOVER_LOG_TO_TRIE"] = "discover_log_to_trie";

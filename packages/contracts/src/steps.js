@@ -30,6 +30,7 @@ export const PLAN_STEP_TYPE_VALUES = [
     'discover_aco',
     'discover_simulated_annealing',
     'discover_optimized_dfg',
+    'discover_simd_streaming_dfg',
     // Wave 1 Discovery
     'discover_transition_system',
     'discover_log_to_trie',
