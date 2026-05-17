@@ -152,9 +152,40 @@ export interface ExecutionPlan {
  * Discovery algorithm IDs come from @wasm4pm/generated (ontology-derived).
  * Analysis steps are structural and always appended for non-fast profiles.
  */
+/** ML algorithm IDs (from kernel registry supportedProfiles: ['balanced', 'quality']) */
+const ML_ALGORITHM_IDS = new Set([
+  'ml_classify',
+  'ml_cluster',
+  'ml_forecast',
+  'ml_anomaly',
+  'ml_regress',
+  'ml_pca',
+]);
+
+/** ML PlanStepType values, in canonical order */
+const ML_STEP_TYPES: PlanStepType[] = [
+  PlanStepType.ML_CLASSIFY,
+  PlanStepType.ML_CLUSTER,
+  PlanStepType.ML_FORECAST,
+  PlanStepType.ML_ANOMALY,
+  PlanStepType.ML_REGRESS,
+  PlanStepType.ML_PCA,
+];
+
+/**
+ * Returns true if the profile includes ML algorithms by default.
+ * balanced and quality profiles automatically include all 6 ML algorithms.
+ */
+function profileIncludesML(profile: string): boolean {
+  return profile === 'balanced' || profile === 'quality';
+}
+
 function getDefaultPipeline(profile: string): PlanStepType[] {
   const discoveryIds = getProfileAlgorithms(profile);
-  const discoverySteps = discoveryIds
+  // Exclude ML algorithm IDs from the discovery pipeline — ML steps are handled
+  // separately so they can be deduplicated cleanly with config.ml.tasks opt-ins.
+  const nonMlDiscoveryIds = discoveryIds.filter((id) => !ML_ALGORITHM_IDS.has(id));
+  const discoverySteps = nonMlDiscoveryIds
     .map((id) => ALGORITHM_ID_TO_STEP_TYPE[id])
     .filter((st): st is string => Boolean(st))
     .map((st) => st as PlanStepType);
@@ -446,41 +477,75 @@ export function plan(config: Config): ExecutionPlan {
     stepIds.add(planStep.id);
   }
 
-  // 3b. Add ML analysis steps if configured
-  if (config.ml?.enabled && config.ml.tasks && config.ml.tasks.length > 0) {
-    const mlStepMap: Record<string, PlanStepType> = {
-      classify: PlanStepType.ML_CLASSIFY,
-      cluster: PlanStepType.ML_CLUSTER,
-      forecast: PlanStepType.ML_FORECAST,
-      anomaly: PlanStepType.ML_ANOMALY,
-      regress: PlanStepType.ML_REGRESS,
-      pca: PlanStepType.ML_PCA,
-    };
+  // 3b. Add ML analysis steps.
+  //
+  // Two sources of ML step requests:
+  //   A) Profile auto-inclusion: balanced and quality profiles include all 6 ML algorithms
+  //      (kernel registry: supportedProfiles: ['balanced', 'quality']).
+  //      ML_STEP_TYPES (module-level constant) lists all 6, in canonical order.
+  //   B) Explicit config.ml.tasks opt-in: caller requests specific ML tasks with parameters.
+  //      Works on any profile, including fast/stream.
+  //
+  // Merge strategy: collect all desired (mlType, mlParams) pairs, then add each type at most
+  // once.  Explicit config.ml.tasks overrides profile defaults for the same type.
+  //
+  // ml_classify = 'ml_classify' etc. — step IDs are the enum value string.
+  // stepIds (Set<string>) already contains all step IDs pushed in section 3.
 
+  const mlStepMap: Record<string, PlanStepType> = {
+    classify: PlanStepType.ML_CLASSIFY,
+    cluster: PlanStepType.ML_CLUSTER,
+    forecast: PlanStepType.ML_FORECAST,
+    anomaly: PlanStepType.ML_ANOMALY,
+    regress: PlanStepType.ML_REGRESS,
+    pca: PlanStepType.ML_PCA,
+  };
+
+  // Collect the desired params per ML step type.
+  // Profile auto-inclusion uses empty params (inherits execution defaults).
+  // Explicit config.ml.tasks overrides with caller-supplied params.
+  const mlStepsToAdd = new Map<PlanStepType, Record<string, unknown>>();
+
+  // A) Profile auto-inclusion
+  if (profileIncludesML(profile)) {
+    const defaultMlParams: Record<string, unknown> = {
+      ...(config.execution.parameters || {}),
+    };
+    for (const mlType of ML_STEP_TYPES) {
+      mlStepsToAdd.set(mlType, defaultMlParams);
+    }
+  }
+
+  // B) Explicit config.ml.tasks (overrides profile defaults for any overlapping type)
+  if (config.ml?.enabled && config.ml.tasks) {
+    const explicitMlParams: Record<string, unknown> = {
+      ...(config.execution.parameters || {}),
+      method: config.ml.method,
+      k: config.ml.k,
+      target_key: config.ml.targetKey,
+      forecast_periods: config.ml.forecastPeriods,
+      n_components: config.ml.nComponents,
+      eps: config.ml.eps,
+    };
     for (const mlTask of config.ml.tasks) {
       const mlType = mlStepMap[mlTask];
-      if (!mlType) continue;
-
-      const mlParams: Record<string, unknown> = {
-        ...config.execution.parameters,
-        method: config.ml.method,
-        k: config.ml.k,
-        target_key: config.ml.targetKey,
-        forecast_periods: config.ml.forecastPeriods,
-        n_components: config.ml.nComponents,
-        eps: config.ml.eps,
-      };
-
-      const mlStep = createAnalysisStep(
-        algorithmNameFromStepType(mlType),
-        mlType,
-        mlParams,
-        ['validate_source'],
-        true
-      );
-      steps.push(mlStep);
-      stepIds.add(mlStep.id);
+      if (mlType) {
+        mlStepsToAdd.set(mlType, explicitMlParams); // override profile default if present
+      }
     }
+  }
+
+  // Add each ML step exactly once (Map guarantees uniqueness per type)
+  for (const [mlType, mlParams] of mlStepsToAdd) {
+    const mlStep = createAnalysisStep(
+      algorithmNameFromStepType(mlType),
+      mlType,
+      mlParams,
+      ['validate_source'],
+      true
+    );
+    steps.push(mlStep);
+    stepIds.add(mlStep.id);
   }
 
   // Collect IDs of discovery/analysis steps for later dependencies

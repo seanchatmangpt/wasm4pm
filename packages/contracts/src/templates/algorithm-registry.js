@@ -244,8 +244,19 @@ export const ALGORITHM_DISPLAY_NAMES = {
  * Profile → algorithm selection derived from wasm4pm:supportedIn ontology triples.
  */
 export function getProfileAlgorithms(profile) {
+    // The 6 ML algorithm IDs supported by @wasm4pm/ml and the kernel registry.
+    const ML_ALGORITHMS = [
+        'ml_classify',
+        'ml_cluster',
+        'ml_forecast',
+        'ml_anomaly',
+        'ml_regress',
+        'ml_pca',
+    ];
     const map = {
-        fast: ['process_skeleton', 'dfg', 'transition_system', 'log_to_trie', 'causal_graph'],
+        // fast: only the two truly O(n) graph-construction algorithms (CLAUDE.md: "dfg/skeleton")
+        fast: ['process_skeleton', 'dfg'],
+        // balanced: heuristic/alpha discovery + conformance analysis + all ML
         balanced: [
             'alpha_plus_plus',
             'heuristic_miner',
@@ -256,7 +267,9 @@ export function getProfileAlgorithms(profile) {
             'batches',
             'generalization',
             'etconformance_precision',
+            ...ML_ALGORITHMS,
         ],
+        // quality: best-quality discovery + full analysis suite + all ML
         quality: [
             'simulated_annealing',
             'a_star',
@@ -271,11 +284,12 @@ export function getProfileAlgorithms(profile) {
             'petri_net_reduction',
             'monte_carlo_simulation',
             'playout',
+            ...ML_ALGORITHMS,
         ],
         stream: ['simd_streaming_dfg'],
         ensemble: ['dfg', 'heuristic_miner', 'inductive_miner', 'genetic_algorithm'],
         auto: ['dfg', 'heuristic_miner', 'inductive_miner', 'genetic_algorithm', 'ilp'],
-        ml: ['ml_classify', 'ml_cluster', 'ml_forecast', 'ml_anomaly', 'ml_regress', 'ml_pca'],
+        ml: ML_ALGORITHMS,
     };
     return map[profile.toLowerCase()] ?? map['balanced'];
 }

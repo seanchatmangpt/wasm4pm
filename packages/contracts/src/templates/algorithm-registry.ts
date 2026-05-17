@@ -250,10 +250,33 @@ export const ALGORITHM_DISPLAY_NAMES: Record<string, string> = {
 /**
  * Returns the primary algorithm IDs for a given execution profile.
  * Profile → algorithm selection derived from wasm4pm:supportedIn ontology triples.
+ *
+ * fast    → dfg + process_skeleton only (O(n), sub-millisecond, as specified in CLAUDE.md)
+ * balanced → heuristic/alpha + conformance/quality analysis + all 6 ML algorithms
+ *            (kernel registry declares ML algorithms as supportedProfiles: ['balanced', 'quality'])
+ * quality → genetic/ilp + full analysis suite + all 6 ML algorithms
+ * stream  → simd_streaming_dfg only (streaming-safe, single algorithm)
+ *
+ * Note: ML algorithms (ml_classify … ml_pca) appear here because the kernel registry
+ * marks them with supportedProfiles: ['balanced', 'quality'].  The explicit
+ * config.ml.tasks path is still honoured for opt-in ML on any profile; the planner
+ * deduplicates so that a task listed both here and in config.ml.tasks appears exactly once.
  */
 export function getProfileAlgorithms(profile: string): string[] {
+  // The 6 ML algorithm IDs supported by @wasm4pm/ml and the kernel registry.
+  const ML_ALGORITHMS = [
+    'ml_classify',
+    'ml_cluster',
+    'ml_forecast',
+    'ml_anomaly',
+    'ml_regress',
+    'ml_pca',
+  ];
+
   const map: Record<string, string[]> = {
-    fast: ['process_skeleton', 'dfg', 'transition_system', 'log_to_trie', 'causal_graph'],
+    // fast: only the two truly O(n) graph-construction algorithms (CLAUDE.md: "dfg/skeleton")
+    fast: ['process_skeleton', 'dfg'],
+    // balanced: heuristic/alpha discovery + conformance analysis + all ML
     balanced: [
       'alpha_plus_plus',
       'heuristic_miner',
@@ -264,7 +287,9 @@ export function getProfileAlgorithms(profile: string): string[] {
       'batches',
       'generalization',
       'etconformance_precision',
+      ...ML_ALGORITHMS,
     ],
+    // quality: best-quality discovery + full analysis suite + all ML
     quality: [
       'simulated_annealing',
       'a_star',
@@ -279,11 +304,13 @@ export function getProfileAlgorithms(profile: string): string[] {
       'petri_net_reduction',
       'monte_carlo_simulation',
       'playout',
+      ...ML_ALGORITHMS,
     ],
+    // stream: single SIMD-accelerated DFG, no ML (streaming pipelines are latency-sensitive)
     stream: ['simd_streaming_dfg'],
     ensemble: ['dfg', 'heuristic_miner', 'inductive_miner', 'genetic_algorithm'],
     auto: ['dfg', 'heuristic_miner', 'inductive_miner', 'genetic_algorithm', 'ilp'],
-    ml: ['ml_classify', 'ml_cluster', 'ml_forecast', 'ml_anomaly', 'ml_regress', 'ml_pca'],
+    ml: ML_ALGORITHMS,
   };
   return map[profile.toLowerCase()] ?? map['balanced']!;
 }
