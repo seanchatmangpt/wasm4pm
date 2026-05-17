@@ -63,7 +63,13 @@ export async function withLogSession<T>(
     const msg = initError instanceof Error ? initError.message : String(initError);
     const result = makeErrorResult(
       commandName,
-      new Error(`WASM initialization failed: ${msg}\n\nEnsure Node.js 16+ is installed and the @wasm4pm/engine package is intact.\nTry reinstalling: npm install @wasm4pm/engine`),
+      new Error(
+        `WASM initialization failed: ${msg}\n\n` +
+        `  Diagnostic steps:\n` +
+        `    1. Run "wpm doctor" to check all environment requirements\n` +
+        `    2. Ensure the WASM binary is compiled: cd wasm4pm && npm run build\n` +
+        `    3. Reinstall if the package is corrupt: npm install @wasm4pm/engine`
+      ),
       EXIT_CODES.execution_error,
       'WASM_INIT_FAILED'
     );
@@ -75,28 +81,73 @@ export async function withLogSession<T>(
   // Read + validate XES
   const xesContent = await fs.readFile(inputPath, 'utf-8');
   if (xesContent.trim() === '') {
-    const result = makeErrorResult(commandName, new Error('Input file is empty'), EXIT_CODES.source_error, 'EMPTY_INPUT');
+    const result = makeErrorResult(
+      commandName,
+      new Error(
+        `Input file is empty: ${inputPath}\n\n` +
+        `  The file exists but contains no data. Check that you supplied the correct path.`
+      ),
+      EXIT_CODES.source_error,
+      'EMPTY_INPUT'
+    );
     emitResult(result, emitOptions);
     process.exit(result.exit_code);
   }
 
   const looksLikeXes = xesContent.includes('<log') || xesContent.includes('<trace') || xesContent.includes('<event');
   if (!looksLikeXes) {
-    const result = makeErrorResult(commandName, new Error('Input does not appear to be a valid XES event log'), EXIT_CODES.source_error, 'INVALID_XES');
+    const result = makeErrorResult(
+      commandName,
+      new Error(
+        `File does not appear to be a valid XES event log: ${inputPath}\n\n` +
+        `  A valid XES file must contain XML elements such as <log>, <trace>, or <event>.\n` +
+        `  XES is the IEEE standard for process mining event logs.\n\n` +
+        `  If your data is in a different format:\n` +
+        `    CSV   → convert with pm4py: pm4py.format_dataframe() + pm4py.write_xes()\n` +
+        `    JSON  → rename to .json and use "wpm run <file.json>"\n` +
+        `  See: https://www.xes-standard.org/`
+      ),
+      EXIT_CODES.source_error,
+      'INVALID_XES'
+    );
     emitResult(result, emitOptions);
     process.exit(result.exit_code);
   }
 
   const isWellFormed = xesContent.includes('</log>') || xesContent.includes('</trace>');
   if (looksLikeXes && !isWellFormed) {
-    const result = makeErrorResult(commandName, new Error('XES file is malformed — missing closing tags'), EXIT_CODES.source_error, 'MALFORMED_XES');
+    const result = makeErrorResult(
+      commandName,
+      new Error(
+        `XES file is malformed (missing closing tags): ${inputPath}\n\n` +
+        `  The file starts with XES elements (<log>, <trace>, etc.) but is missing ` +
+        `closing tags (</log> or </trace>).\n` +
+        `  This usually means the file was truncated during export or transfer.\n\n` +
+        `  Try: re-exporting the log from your process mining tool, or validate the XML with:\n` +
+        `    xmllint --noout ${inputPath}`
+      ),
+      EXIT_CODES.source_error,
+      'MALFORMED_XES'
+    );
     emitResult(result, emitOptions);
     process.exit(result.exit_code);
   }
 
   const logHandle = (wasm['load_eventlog_from_xes'] as (s: string) => string)(xesContent);
   if (!logHandle) {
-    const result = makeErrorResult(commandName, new Error('Failed to parse XES event log — file may be corrupted or malformed'), EXIT_CODES.source_error, 'PARSE_FAILED');
+    const result = makeErrorResult(
+      commandName,
+      new Error(
+        `Failed to parse XES event log: ${inputPath}\n\n` +
+        `  The file appears to be valid XML but the WASM parser could not load it.\n` +
+        `  Possible causes:\n` +
+        `    - Non-standard XES attributes or encoding (expected UTF-8)\n` +
+        `    - Corrupted or incomplete XML\n\n` +
+        `  Try validating the file: xmllint --noout ${inputPath}`
+      ),
+      EXIT_CODES.source_error,
+      'PARSE_FAILED'
+    );
     emitResult(result, emitOptions);
     process.exit(result.exit_code);
   }
@@ -104,7 +155,17 @@ export async function withLogSession<T>(
   const traceCount = (xesContent.match(/<trace[\s>]/g) ?? []).length;
   if (traceCount === 0) {
     (wasm['delete_object'] as (h: string) => void)(logHandle);
-    const result = makeErrorResult(commandName, new Error('XES file contains no traces — nothing to discover'), EXIT_CODES.source_error, 'NO_TRACES');
+    const result = makeErrorResult(
+      commandName,
+      new Error(
+        `XES file contains no traces: ${inputPath}\n\n` +
+        `  Process discovery requires at least one <trace> element in the log.\n` +
+        `  The file was parsed successfully but contained 0 traces — nothing to discover.\n\n` +
+        `  Check that the correct file was supplied, or that the export included trace data.`
+      ),
+      EXIT_CODES.source_error,
+      'NO_TRACES'
+    );
     emitResult(result, emitOptions);
     process.exit(result.exit_code);
   }

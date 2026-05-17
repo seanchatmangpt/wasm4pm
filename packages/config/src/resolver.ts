@@ -92,8 +92,21 @@ export async function resolveConfig(options?: LoadConfigOptions): Promise<Config
     cliProvenance
   );
 
-  // Validate the merged config
-  const validated = validate(merged) as BaseConfig;
+  // Validate the merged config — augment Zod errors with the config file path so
+  // the user knows which file to fix rather than seeing an anonymous field path.
+  let validated: BaseConfig;
+  try {
+    validated = validate(merged) as BaseConfig;
+  } catch (validationError) {
+    if (validationError instanceof Error && filePath) {
+      throw new Error(
+        `${validationError.message}\n\n` +
+        `  Config file: ${filePath}\n` +
+        `  Run "wpm init --force" to reset to a valid default configuration.`
+      );
+    }
+    throw validationError;
+  }
 
   // Compute hash
   const hash = hashConfig(validated);
