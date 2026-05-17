@@ -436,8 +436,20 @@ impl RlOrchestrator {
             self.select_action(next_state);
         }
 
+        // FM-1 fix: when state == next_state (health is unchanged, e.g. guard_pass
+        // && circuit_allowed but consecutive_successes < IMPROVEMENT_THRESHOLD), the
+        // Bellman update bootstraps from itself:
+        //   Q(s,a) = r + gamma * max_a' Q(s, a')
+        // which is self-referential and can diverge or lock up.
+        //
+        // Principle: an undifferentiated state transition carries no information
+        // about future value, so the correct target is the immediate reward alone
+        // (terminal-equivalent). Force done=true in this case so every agent
+        // collapses to: target = r.
+        let effective_done = done || (state == next_state);
+
         // Update agent with proper state transition (state -> next_state)
-        self.update(state, &action, reward, next_state, done);
+        self.update(state, &action, reward, next_state, effective_done);
 
         // Update LinUCB
         self.linucb_update(features, reward);
