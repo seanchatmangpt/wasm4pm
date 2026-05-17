@@ -10,7 +10,7 @@ import { exitWithFlush } from '../otel/exit.js';
 export const simulate = defineCommand({
   meta: {
     name: 'simulate',
-    description: 'Monte Carlo simulation and process tree playout to generate synthetic traces',
+    description: 'Monte Carlo simulation and DFG playout to generate synthetic traces',
   },
   args: {
     input: {
@@ -144,19 +144,32 @@ export const simulate = defineCommand({
         });
         const rawSim = wasm.monte_carlo_simulation(logHandle, '', '', config);
         const simResult = typeof rawSim === 'string' ? JSON.parse(rawSim) : rawSim;
+        const sim = simResult as Record<string, unknown>;
 
+        // Attempt DFG playout using the real WASM export `play_out_dfg`.
+        // The previously used alias `simulate_process_tree_playout` was never
+        // exported by the WASM binary and always threw silently. We now
+        // discover the DFG first and hand its JSON to play_out_dfg.
         let playoutResult: Record<string, unknown> | null = null;
         try {
-          const rawPlayout = wasm.simulate_process_tree_playout(
-            logHandle,
-            activityKey,
-            numCases,
-            seed
-          );
+          const rawDfg = wasm.discover_dfg(logHandle, activityKey);
+          const dfgJson = typeof rawDfg === 'string' ? rawDfg : JSON.stringify(rawDfg);
+          const playoutParams = { num_traces: numCases };
+          const rawPlayout = wasm.play_out_dfg(dfgJson, playoutParams);
           playoutResult = typeof rawPlayout === 'string' ? JSON.parse(rawPlayout) : rawPlayout;
         } catch {
-          // Process tree playout not available
+          // DFG playout not available in this WASM profile — silent skip
         }
+
+        // resource_utilization is HashMap<String, f64>; compute mean across resources
+        const resourceUtil = sim.resource_utilization;
+        const resourceUtilMean = (() => {
+          if (typeof resourceUtil === 'object' && resourceUtil !== null) {
+            const vals = Object.values(resourceUtil as Record<string, number>);
+            return vals.length > 0 ? vals.reduce((a, b) => a + b, 0) / vals.length : 0;
+          }
+          return typeof resourceUtil === 'number' ? resourceUtil : 0;
+        })();
 
         const payload = {
           input: inputPath,
@@ -164,16 +177,22 @@ export const simulate = defineCommand({
           simulation: {
             method: 'monte_carlo',
             casesRequested: numCases,
-            casesCompleted: (simResult as Record<string, unknown>).completed_cases ?? numCases,
+            casesCompleted: sim.completed_cases ?? numCases,
             elapsedMs: Math.round((performance.now() - t0) * 100) / 100,
             seed,
           },
           statistics: {
-            avgTraceLength: (simResult as Record<string, unknown>).avg_trace_length ?? 0,
-            avgSojournTime: (simResult as Record<string, unknown>).avg_sojourn_time ?? 0,
-            resourceUtilization: (simResult as Record<string, unknown>).resource_utilization ?? 0,
+            avgTraceLength: sim.avg_trace_length ?? 0,
+            avgSojournTimeMs: sim.avg_sojourn_time_ms ?? 0,
+            sojournTimeStdMs: sim.sojourn_time_std_ms ?? 0,
+            sojournTimeP5Ms: sim.sojourn_time_p5_ms ?? 0,
+            sojournTimeP50Ms: sim.sojourn_time_p50_ms ?? 0,
+            sojournTimeP95Ms: sim.sojourn_time_p95_ms ?? 0,
+            resourceUtilization: resourceUtilMean,
+            resourceUtilizationByActivity: (sim.resource_utilization as Record<string, number> | undefined) ?? {},
+            activityStatistics: (sim.activity_statistics as Record<string, unknown> | undefined) ?? {},
           },
-          traces: ((simResult as Record<string, unknown>).traces ?? []) as Array<Record<string, unknown>>,
+          traces: ((sim.traces ?? []) as Array<Record<string, unknown>>),
           ...(playoutResult && { playout: playoutResult }),
         };
 
@@ -192,7 +211,8 @@ export const simulate = defineCommand({
               output_hash: blake3Hex(JSON.stringify(payload)),
               status: 'success',
               summary: {
-                cases_generated: payload.traces.length,
+                cases_simulated: payload.simulation.casesCompleted,
+                avg_sojourn_time_ms: payload.statistics.avgSojournTimeMs,
                 seed,
                 model_kind: 'monte-carlo',
               },
@@ -215,14 +235,34 @@ export const simulate = defineCommand({
   },
 });
 
+function fmt(n: unknown, decimals = 1): string {
+  if (typeof n !== 'number' || !isFinite(n)) return '—';
+  return n.toFixed(decimals);
+}
+
 function printHumanSimulation(
   projection: import('../output.js').ConsoleProjection,
   payload: {
     input: string;
     activityKey: string;
-    simulation: { method: string; casesRequested: number; casesCompleted: unknown; elapsedMs: number; seed: number };
-    statistics: { avgTraceLength: unknown; avgSojournTime: unknown; resourceUtilization: unknown };
+    simulation: {
+      method: string;
+      casesRequested: number;
+      casesCompleted: unknown;
+      elapsedMs: number;
+      seed: number;
+    };
+    statistics: {
+      avgTraceLength: unknown;
+      avgSojournTimeMs: unknown;
+      sojournTimeStdMs: unknown;
+      sojournTimeP5Ms: unknown;
+      sojournTimeP50Ms: unknown;
+      sojournTimeP95Ms: unknown;
+      resourceUtilization: unknown;
+    };
     traces: Array<Record<string, unknown>>;
+    playout?: Record<string, unknown>;
   }
 ): void {
   const { simulation: sim, statistics: stats } = payload;
@@ -237,22 +277,29 @@ function printHumanSimulation(
   projection.log(`    Cases completed:  ${sim.casesCompleted}`);
   projection.log(`    Elapsed time:     ${sim.elapsedMs}ms`);
   projection.log('');
-  projection.log('  Statistics:');
-  projection.log(`    Avg trace length:    ${stats.avgTraceLength}`);
-  projection.log(`    Avg sojourn time:    ${stats.avgSojournTime}`);
-  projection.log(
-    `    Resource utilization: ${((stats.resourceUtilization as number) * 100).toFixed(1)}%`
-  );
+  projection.log('  Performance distribution (sojourn time per case):');
+  projection.log(`    Mean:   ${fmt(stats.avgSojournTimeMs, 1)} ms`);
+  projection.log(`    Std:    ${fmt(stats.sojournTimeStdMs, 1)} ms`);
+  projection.log(`    P5:     ${fmt(stats.sojournTimeP5Ms, 1)} ms`);
+  projection.log(`    Median: ${fmt(stats.sojournTimeP50Ms, 1)} ms`);
+  projection.log(`    P95:    ${fmt(stats.sojournTimeP95Ms, 1)} ms`);
+  projection.log('');
+  projection.log('  Process structure:');
+  projection.log(`    Avg trace length:   ${fmt(stats.avgTraceLength, 2)} activities`);
+  projection.log(`    Avg resource util:  ${fmt((stats.resourceUtilization as number) * 100, 1)}%`);
   projection.log('');
 
-  if (payload.traces.length > 0) {
-    projection.log('  Sample traces (first 5):');
-    for (const trace of payload.traces.slice(0, 5)) {
-      const activities = trace.activities as string[];
-      projection.log(`    ${activities.join(' → ')}`);
+  if (payload.playout) {
+    const p = payload.playout;
+    projection.log('  DFG playout:');
+    if (p.trace_count !== undefined) {
+      projection.log(`    Traces generated: ${p.trace_count}`);
     }
-    if (payload.traces.length > 5) {
-      projection.log(`    ... and ${payload.traces.length - 5} more traces`);
+    if (p.event_count !== undefined) {
+      projection.log(`    Events generated: ${p.event_count}`);
+    }
+    if (p.handle !== undefined) {
+      projection.log(`    Result handle:    ${p.handle}`);
     }
     projection.log('');
   }
