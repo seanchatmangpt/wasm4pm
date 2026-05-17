@@ -478,6 +478,24 @@ fn sample_gamma(shape: f64, scale: f64) -> f64 {
 mod tests {
     use super::*;
 
+    // time_series_warp is pure Rust (no js_sys calls) — safe on native targets.
+    #[test]
+    fn test_time_series_warp() {
+        let series = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        let warped = time_series_warp(&series, 1.5, 5);
+
+        assert!(warped.len() > 5, "warped length {} should be > 5", warped.len());
+        assert_eq!(warped[0], series[0]); // First value should match
+    }
+}
+
+// These tests call smote/random_oversample/mixup which return js_sys::Array,
+// and inject_noise/time_series_shift which use js_sys::Math::random().
+// They run correctly under `wasm-pack test` but panic on native cargo test targets.
+#[cfg(all(test, target_arch = "wasm32"))]
+mod wasm_tests {
+    use super::*;
+
     #[test]
     fn test_smote() {
         let X = vec![1.0, 2.0, 3.0, 4.0, 5.0, 6.0];
@@ -512,25 +530,17 @@ mod tests {
 
     #[test]
     fn test_inject_noise_gaussian() {
+        // inject_noise uses js_sys::Math::random() via inject_noise_impl closure.
         let X = vec![1.0, 2.0, 3.0, 4.0];
         let noisy = inject_noise(&X, 0.1, "gaussian", 2, 2);
 
         assert_eq!(noisy.len(), 4);
-        // Values should be different from original
         assert!(noisy[0] != 1.0 || noisy[1] != 2.0);
     }
 
     #[test]
-    fn test_time_series_warp() {
-        let series = vec![1.0, 2.0, 3.0, 4.0, 5.0];
-        let warped = time_series_warp(&series, 1.5, 5);
-
-        assert!(warped.len() > 5); // Should be longer
-        assert_eq!(warped[0], series[0]); // First value should match
-    }
-
-    #[test]
     fn test_time_series_shift() {
+        // time_series_shift uses js_sys::Math::random() when min != max.
         let series = vec![1.0, 2.0, 3.0, 4.0, 5.0];
         let shifted = time_series_shift(&series, -2, 2, 5);
 

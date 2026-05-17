@@ -463,6 +463,9 @@ mod tests {
         assert_eq!(cf.feature_indices, vec![0, 2]);
     }
 
+    // test_prediction_interval calls prediction_interval() which returns js_sys::Array —
+    // a wasm32-only type. Run this test only under wasm-pack test, not native cargo test.
+    #[cfg(target_arch = "wasm32")]
     #[test]
     fn test_prediction_interval() {
         let predictions = vec![0.5, 0.6, 0.55, 0.7, 0.45, 0.65, 0.6];

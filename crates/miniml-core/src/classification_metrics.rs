@@ -85,7 +85,6 @@ pub fn cohens_kappa_impl(y_true: &[f64], y_pred: &[f64]) -> Result<f64, MlError>
             .map(|j| observed[j])
             .sum();
         let col_sum: usize = (0..n_classes)
-            .filter(|j| i < n_classes)
             .map(|j| observed[j * n_classes + i])
             .sum();
 
