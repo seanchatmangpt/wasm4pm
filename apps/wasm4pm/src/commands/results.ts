@@ -5,6 +5,7 @@ import { existsSync } from 'fs';
 import { emitResult, makeResult, makeErrorResult, ConsoleProjection } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
+import { withSpan } from './_otel.js';
 
 /**
  * Default directory where prediction results are persisted.
@@ -229,6 +230,14 @@ export const results = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
 
+    // Determine operation early so the span attribute is always set
+    const operation = ctx.args.path ? 'path'
+      : ctx.args.last ? 'last'
+      : ctx.args.cat ? 'cat'
+      : ctx.args.diff ? 'diff'
+      : 'list';
+
+    return withSpan('results', { operation, format }, async () => {
     try {
       const dir = path.resolve(process.cwd(), RESULTS_DIR);
       const files = await listResultFiles(dir);
@@ -468,6 +477,7 @@ export const results = defineCommand({
       emitResult(errResult, { format, verbose, quiet });
       return await exitWithFlush(errResult.exit_code);
     }
+    }); // end withSpan
   },
 });
 

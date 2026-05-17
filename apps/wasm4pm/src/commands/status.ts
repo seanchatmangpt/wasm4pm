@@ -5,6 +5,7 @@ import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
 import { getRegistry } from '@wasm4pm/kernel';
 import { exitWithFlush } from '../otel/exit.js';
+import { withSpan } from './_otel.js';
 
 const AUTOPROCESS_STATE_FILE = '.wasm4pm/autoprocess-state.json';
 
@@ -70,6 +71,13 @@ export const status = defineCommand({
     const quiet = Boolean(ctx.args.quiet);
     const start = Date.now();
 
+    let lateAlgorithmCount = 0;
+    let lateWasmVersion = '';
+
+    return withSpan(
+      'status',
+      { format },
+      async () => {
     try {
       // Step 1: Gather system information
       const memoryUsage = process.memoryUsage();
@@ -91,6 +99,8 @@ export const status = defineCommand({
       // Step 3: Query algorithm registry count
       const registry = getRegistry();
       const algorithmCount = registry.list().length;
+      lateAlgorithmCount = algorithmCount;
+      lateWasmVersion = wasmVersion ?? '';
 
       // Step 4: Load autonomic state (best-effort — may not exist yet)
       const autonomicState = await loadAutonomicState();
@@ -198,5 +208,8 @@ export const status = defineCommand({
       emitResult(result, { format, verbose, quiet });
       return await exitWithFlush(result.exit_code);
     }
+      },
+      () => ({ algorithm_count: lateAlgorithmCount, wasm_version: lateWasmVersion }),
+    ); // end withSpan
   },
 });

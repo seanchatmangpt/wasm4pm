@@ -3,6 +3,7 @@ import { resolveConfig as loadConfig } from '@wasm4pm/config';
 import { emitResult, makeResult, makeErrorResult, ConsoleProjection } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
+import { withSpan } from './_otel.js';
 
 export interface ExplainOptions {
   format?: 'human' | 'json';
@@ -66,6 +67,20 @@ export const explain = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
 
+    // Determine algorithm early (positional may override --algorithm)
+    const earlyAlgo = (ctx.args.algorithm as string | undefined)
+      ?? (typeof ctx.args.target === 'string' && ctx.args.target.length > 0
+        ? ctx.args.target
+        : undefined);
+    const level = (ctx.args.level || 'detailed') as string;
+
+    return withSpan('explain', {
+      algorithm: earlyAlgo ?? '',
+      level,
+      has_model: Boolean(ctx.args.model),
+      has_config: Boolean(ctx.args.config),
+      format,
+    }, async () => {
     try {
       // Accept positional <algorithm> as alias for --algorithm
       if (!ctx.args.algorithm && typeof ctx.args.target === 'string' && ctx.args.target.length > 0) {
@@ -138,6 +153,7 @@ export const explain = defineCommand({
       emitResult(result, { format, verbose, quiet });
       return await exitWithFlush(result.exit_code);
     }
+    }); // end withSpan
   },
 });
 

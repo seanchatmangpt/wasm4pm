@@ -3,6 +3,7 @@ import { getRegistry } from '@wasm4pm/kernel';
 import { emitResult, makeResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
+import { withSpan } from './_otel.js';
 
 type Tier = 'fast' | 'balanced' | 'quality' | 'stream';
 
@@ -47,8 +48,16 @@ export const algorithms = defineCommand({
     const quiet = Boolean(ctx.args.quiet);
     const tierFilter = ctx.args.tier as Tier | undefined;
 
+    let lateTotal = 0;
+    let lateFiltered = 0;
+
+    return withSpan(
+      'algorithms',
+      { tier_filter: tierFilter ?? 'all', format },
+      async () => {
     const registry = getRegistry();
     let all = registry.list();
+    lateTotal = all.length;
 
     if (tierFilter) {
       const validTiers: Tier[] = ['fast', 'balanced', 'quality', 'stream'];
@@ -61,6 +70,7 @@ export const algorithms = defineCommand({
       const [lo, hi] = TIER_SPEED_RANGES[tierFilter];
       all = all.filter((a) => a.speedTier >= lo && a.speedTier <= hi);
     }
+    lateFiltered = all.length;
 
     const grouped: Record<Tier, typeof all> = {
       stream: all.filter((a) => classifyTier(a.speedTier) === 'stream'),
@@ -125,5 +135,8 @@ export const algorithms = defineCommand({
     });
 
     return await exitWithFlush(EXIT_CODES.success);
+      },
+      () => ({ algorithm_count: lateTotal, filtered_count: lateFiltered }),
+    ); // end withSpan
   },
 });

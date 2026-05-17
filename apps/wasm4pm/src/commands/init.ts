@@ -6,6 +6,7 @@ import { emitResult, makeResult, makeErrorResult, ConsoleProjection } from '../o
 import { EXIT_CODES } from '../exit-codes.js';
 import { getExampleTomlConfig, getExampleJsonConfig, getPublicPresetConfig, getExamplePresetConfig, type PublicPreset } from '@wasm4pm/config';
 import { exitWithFlush } from '../otel/exit.js';
+import { withSpan } from './_otel.js';
 
 // Template content generators
 function getEnvExampleContent(): string {
@@ -255,15 +256,16 @@ export const init = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
 
+    const configFormat = ((ctx.args.configFormat as string) || (ctx.args['config-format'] as string) || 'toml').toLowerCase();
+    const preset = ctx.args.preset as string | undefined;
+    const force = Boolean(ctx.args.force);
+
+    return withSpan('init', { config_format: configFormat, preset: preset ?? '', force, format }, async () => {
     // Use a temporary projection for early validation warnings before the result is built
     const earlyProjection = new ConsoleProjection({ verbose, quiet });
 
     try {
       const cwd = process.cwd();
-      // Accept both camelCase (--configFormat) and kebab-case (--config-format).
-      const configFormat = ((ctx.args.configFormat as string) || (ctx.args['config-format'] as string) || 'toml').toLowerCase();
-      const force = ctx.args.force ?? false;
-      const preset = ctx.args.preset as string | undefined;
 
       if (configFormat !== 'toml' && configFormat !== 'json') {
         const result = makeErrorResult(
@@ -388,5 +390,6 @@ export const init = defineCommand({
       emitResult(result, { format, verbose, quiet });
       return await exitWithFlush(result.exit_code);
     }
+    }); // end withSpan
   },
 });

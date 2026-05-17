@@ -7,6 +7,7 @@ import * as os from 'os';
 import { emitResult, makeResult, makeErrorResult, ConsoleProjection } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
+import { withSpan } from './_otel.js';
 
 export interface DoctorOptions {
   fix?: boolean;
@@ -1878,6 +1879,15 @@ async function runChecks(
   precomputedDiagnoses?: Diagnosis[],
   commandName: string = 'doctor'
 ): Promise<DoctorReport> {
+  let latePass = 0;
+  let lateWarn = 0;
+  let lateFail = 0;
+  let lateHealthy = false;
+
+  return withSpan(
+    commandName,
+    { check_count: precomputedDiagnoses?.length ?? checks.length, format },
+    async () => {
   const start = Date.now();
   const diagnoses: Diagnosis[] =
     precomputedDiagnoses ?? (await Promise.all(checks.map((fn) => fn())));
@@ -1889,6 +1899,10 @@ async function runChecks(
     stopTheLine: diagnoses.filter((c) => c.severity === 'STOP_THE_LINE').length,
     epistemicHealth: diagnoses.every((c) => c.severity === 'INFO'),
   };
+  latePass = report.info;
+  lateWarn = report.warnings;
+  lateFail = report.stopTheLine;
+  lateHealthy = report.epistemicHealth;
 
   const checksPayload = report.diagnoses.map((c) => ({ ...c }));
   const summaryPayload = {
@@ -1914,6 +1928,9 @@ async function runChecks(
 
   // Exit immediately to prevent parent main.run() from emitting trailing help text.
   return await exitWithFlush(exitCode);
+    },
+    () => ({ checks_pass: latePass, checks_warn: lateWarn, checks_fail: lateFail, healthy: lateHealthy }),
+  ); // end withSpan
 }
 
 // ────────────────────────────────────────────────────────────────────────────
