@@ -6,6 +6,14 @@ pub struct DefaultRoleSelector;
 
 impl RoleSelector for DefaultRoleSelector {
     fn select_role(&self, task: &TaskContext) -> Result<RoleDecision, AgenticError> {
+        let _span = tracing::debug_span!(
+            "agentic.select_role",
+            task_id = %task.task_id,
+            phase = ?task.phase,
+            risk = ?task.risk_level,
+        )
+        .entered();
+
         // Phase → primary role mapping
         let (primary_role, candidates) = match &task.phase {
             WorkflowPhase::Intake => (
@@ -86,6 +94,14 @@ impl RoleSelector for DefaultRoleSelector {
             format!("phase:{:?}", task.phase),
             format!("risk:{:?}", task.risk_level),
         ];
+
+        tracing::debug!(
+            target: "agentic.select_role",
+            task_id = %task.task_id,
+            role = ?selected_role,
+            confidence = ?confidence_band,
+            "role selected"
+        );
 
         Ok(RoleDecision {
             selected_role,

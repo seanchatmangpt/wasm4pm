@@ -6,6 +6,15 @@ pub struct DefaultEscalationEngine;
 
 impl EscalationEngine for DefaultEscalationEngine {
     fn evaluate_escalation(&self, task: &TaskContext) -> Result<EscalationDecision, AgenticError> {
+        let _span = tracing::debug_span!(
+            "agentic.evaluate_escalation",
+            task_id = %task.task_id,
+            risk = ?task.risk_level,
+            phase = ?task.phase,
+            drift = ?task.evidence.drift_status,
+        )
+        .entered();
+
         let mut should_escalate = false;
         let mut reason_codes = vec![];
 
@@ -35,6 +44,13 @@ impl EscalationEngine for DefaultEscalationEngine {
         } else {
             None
         };
+
+        tracing::debug!(
+            target: "agentic.evaluate_escalation",
+            task_id = %task.task_id,
+            should_escalate,
+            "escalation evaluated"
+        );
 
         Ok(EscalationDecision {
             should_escalate,

@@ -6,6 +6,14 @@ pub struct DefaultHandoffValidator;
 
 impl HandoffValidator for DefaultHandoffValidator {
     fn validate_handoff(&self, req: &HandoffRequest) -> Result<HandoffDecision, AgenticError> {
+        let _span = tracing::debug_span!(
+            "agentic.validate_handoff",
+            task_id = %req.task.task_id,
+            from = %req.from_agent,
+            to_role = ?req.to_role,
+        )
+        .entered();
+
         let policy = &req.task.policy;
 
         // Gate 1: Check if to_role is blocked
@@ -50,6 +58,13 @@ impl HandoffValidator for DefaultHandoffValidator {
             allowed: true,
             reason_codes: vec!["handoff:approved".to_string()],
         };
+
+        tracing::debug!(
+            target: "agentic.validate_handoff",
+            task_id = %req.task.task_id,
+            allowed = true,
+            "handoff approved"
+        );
 
         Ok(HandoffDecision {
             allowed: true,

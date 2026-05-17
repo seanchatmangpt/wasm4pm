@@ -6,6 +6,14 @@ pub struct DefaultEvidenceSufficiencyChecker;
 
 impl EvidenceSufficiencyChecker for DefaultEvidenceSufficiencyChecker {
     fn is_sufficient(&self, task: &TaskContext) -> Result<bool, AgenticError> {
+        let _span = tracing::debug_span!(
+            "agentic.is_sufficient",
+            task_id = %task.task_id,
+            confidence = ?task.evidence.confidence_band,
+            drift = ?task.evidence.drift_status,
+        )
+        .entered();
+
         let envelope = &task.evidence;
 
         // Check: all required evidence classes are available
@@ -23,10 +31,25 @@ impl EvidenceSufficiencyChecker for DefaultEvidenceSufficiencyChecker {
         // Check: drift is not out of control
         let drift_ok = !matches!(envelope.drift_status, DriftStatus::OutOfControl);
 
-        Ok(classes_ok && confidence_ok && drift_ok)
+        let sufficient = classes_ok && confidence_ok && drift_ok;
+        tracing::debug!(
+            target: "agentic.is_sufficient",
+            task_id = %task.task_id,
+            sufficient,
+            classes_ok,
+            confidence_ok,
+            drift_ok,
+            "evidence sufficiency evaluated"
+        );
+        Ok(sufficient)
     }
 
     fn summarize_gaps(&self, task: &TaskContext) -> Result<Vec<String>, AgenticError> {
+        let _span = tracing::debug_span!(
+            "agentic.summarize_gaps",
+            task_id = %task.task_id,
+        )
+        .entered();
         let envelope = &task.evidence;
         let mut gaps = vec![];
 
