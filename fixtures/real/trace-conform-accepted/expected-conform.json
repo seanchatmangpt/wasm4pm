@@ -1,0 +1,46 @@
+{
+  "route_id": "ai-accepted-fixture",
+  "fitness": 1,
+  "precision": 1,
+  "required_stage_coverage": 1,
+  "receipt_coverage": 1,
+  "object_lifecycle_validity": 1,
+  "verdict": "Accepted",
+  "details": [
+    {
+      "dimension": "object_evidence_present",
+      "ok": true,
+      "detail": "3/3 events have object evidence"
+    },
+    {
+      "dimension": "fitness",
+      "ok": true,
+      "detail": "3/3 observed activities in model (100.0%)"
+    },
+    {
+      "dimension": "precision",
+      "ok": true,
+      "detail": "3/3 model activities observed (100.0%)"
+    },
+    {
+      "dimension": "required_stage_coverage",
+      "ok": true,
+      "detail": "all 3 required stages present"
+    },
+    {
+      "dimension": "route_sequence_valid",
+      "ok": true,
+      "detail": "observed sequence matches a valid route path"
+    },
+    {
+      "dimension": "object_lifecycle_validity",
+      "ok": true,
+      "detail": "all declared object types follow lifecycle + cardinality constraints"
+    },
+    {
+      "dimension": "receipt_coverage",
+      "ok": true,
+      "detail": "3/3 activities have receipts; 3 receipt object(s) validated against schema"
+    }
+  ]
+}

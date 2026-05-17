@@ -863,6 +863,19 @@ const ingest = defineCommand({
         return exitWithFlush(EXIT_CODES.config_error);
       }
     }
+
+    // Diagnostic: non-empty input that yields zero frames is a silent parse failure.
+    // Emit a warning so callers can distinguish "parsed nothing" from "file was empty".
+    const inputLineCount = text.split('\n').filter((l) => l.trim().length > 0).length;
+    const zeroFramesWarning =
+      frames.length === 0 && inputLineCount > 0
+        ? `zero frames parsed from ${inputLineCount} non-empty line(s) — input may not be a valid ${lang} stack trace`
+        : undefined;
+
+    if (zeroFramesWarning && !quiet) {
+      process.stderr.write(`[trace ingest] WARN: ${zeroFramesWarning}\n`);
+    }
+
     const graph = framesToTraceGraph(frames, runId, lang, inputPath ?? 'stdin');
     const graphJson = JSON.stringify(graph, null, 2);
 
@@ -882,16 +895,20 @@ const ingest = defineCommand({
       events: graph['trace:events'].length,
       objects: graph['trace:objects'].length,
       out: outPath ?? 'stdout',
+      ...(zeroFramesWarning && { warning: zeroFramesWarning }),
     }, performance.now() - t0, EXIT_CODES.success);
 
     emitResult(result, { format, verbose, quiet }, (res, p) => {
-      const d = res.payload as { run_id: string; language: string; frames: number; events: number; out: string };
+      const d = res.payload as { run_id: string; language: string; frames: number; events: number; out: string; warning?: string };
       p.log('');
       p.log(`wpm trace ingest — TraceGraph projection`);
       p.log(`  Language:  ${d.language}`);
       p.log(`  Frames:    ${d.frames}`);
       p.log(`  Events:    ${d.events}`);
       p.log(`  Output:    ${d.out}`);
+      if (d.warning) {
+        p.warn(`  Warning:   ${d.warning}`);
+      }
       if (verbose && outPath && existsSync(outPath)) {
         p.log('  TraceGraph written to: ' + outPath);
       } else if (!outPath) {
