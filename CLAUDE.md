@@ -47,12 +47,35 @@ wasm4pm/
 │   ├── src/                # Rust sources (discovery.rs, conformance.rs, etc.)
 │   ├── Cargo.toml
 │   └── package.json        # npm package for the compiled WASM
+├── crates/
+│   ├── wasm4pm-cli/        # SECONDARY Rust binary (also named "wpm") — NOT published
+│   │                       # See crates/wasm4pm-cli/README.md for full audit
+│   │                       # Unique commands: telco, spc, agent (direct RL/SPC access)
+│   │                       # WARNING: `cargo install --path crates/wasm4pm-cli` shadows
+│   │                       #          the TypeScript CLI if both are on PATH
+│   ├── wasm4pm-algos/      # Algorithm implementations (Rust, used by wasm4pm-cli)
+│   ├── wasm4pm-types/      # Shared Rust types (EventLog, DFG, etc.)
+│   ├── wasm4pm-utils/      # Shared Rust utilities
+│   ├── miniml-core/        # Micro-ML Rust crate
+│   ├── wasm4pm-cognition/  # Cognition layer WASM crate
+│   └── prolog8/            # Prolog8 inference engine
 ├── packages/               # TypeScript monorepo (11 packages)
 ├── apps/
-│   └── wasm4pm/              # CLI tool (@wasm4pm/cli)
+│   └── wasm4pm/            # PRIMARY CLI tool (@wasm4pm/cli) — this is what ships
 ├── lab/                    # Post-publish artifact validation (tests published npm package)
 └── playground/             # Local dev behavior testing (tests local source)
 ```
+
+### Two binaries named `wpm` — source of truth
+
+There are two binaries in this repo that both use the name `wpm`:
+
+| Binary | Source | Published | Commands | Auth |
+|--------|--------|-----------|----------|------|
+| TypeScript CLI | `apps/wasm4pm/` | YES (`@wasm4pm/cli` on npm) | 35+ (full Van der Aalst coverage) | **Source of truth** |
+| Rust CLI | `crates/wasm4pm-cli/` | NO (Cargo workspace only) | 10 (direct Rust/RL/SPC access) | Developer tool |
+
+The Rust binary (`crates/wasm4pm-cli/`) is part of the Cargo workspace (`cargo build --workspace` builds it) but is never invoked by `pnpm build` or `npm publish`. It does NOT shadow the TypeScript CLI unless explicitly `cargo install`ed. It exposes three commands with no TypeScript equivalent: `telco`, `spc status|history`, and `agent list|status|switch|reset`.
 
 ---
 
