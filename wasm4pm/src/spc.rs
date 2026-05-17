@@ -4,14 +4,15 @@
 //!
 //! ## Control Chart Monitoring
 //!
-//! [`check_western_electric_rules`] detects three classes of special causes against a
+//! [`check_western_electric_rules`] detects four classes of special causes against a
 //! trailing window of [`ChartData`] observations:
 //!
 //! | Rule | Signal |
 //! |------|--------|
-//! | Rule 1 | Single point beyond UCL or LCL |
+//! | Rule 1 | Single point beyond UCL or LCL (beyond 3σ) |
 //! | Rule 2 | 9 consecutive points on the same side of the center line |
 //! | Rule 3 | 6 consecutive strictly monotone points |
+//! | Rule 4 | 2 of 3 consecutive points beyond 2σ on the same side |
 //!
 //! ## Process Capability
 //!
@@ -61,7 +62,7 @@ pub enum TrendDirection {
 #[derive(Debug, Clone, PartialEq)]
 #[allow(dead_code)]
 pub enum SpecialCause {
-    /// Rule 1: Point beyond UCL or LCL.
+    /// Rule 1: Point beyond UCL or LCL (beyond 3σ).
     OutOfControl { value: f64, ucl: f64, lcl: f64 },
     /// Rule 2: N consecutive points on same side of CL.
     Shift {
@@ -73,6 +74,8 @@ pub enum SpecialCause {
         direction: TrendDirection,
         count: usize,
     },
+    /// Rule 4: 2 of 3 consecutive points beyond 2σ on the same side of CL.
+    TwoOfThree { direction: ShiftDirection },
 }
 
 // ---------------------------------------------------------------------------
@@ -83,9 +86,10 @@ pub enum SpecialCause {
 /// trailing window of chart data.
 ///
 /// Rules evaluated:
-/// 1. Point beyond UCL or LCL.
+/// 1. Point beyond UCL or LCL (beyond 3σ).
 /// 2. 9 consecutive points on same side of center line.
 /// 3. 6 consecutive points increasing or decreasing.
+/// 4. 2 of 3 consecutive points beyond 2σ on the same side of CL.
 ///
 /// Returns all signals found (may be empty).
 ///
@@ -133,7 +137,7 @@ pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
         }
     }
 
-    // Rules 2 and 3 require at least 9 points
+    // Rules 2, 3, and 4 require at least 9 points (Rule 4 needs 3, but we guard uniformly)
     if data.len() < 9 {
         return alerts;
     }
@@ -173,6 +177,36 @@ pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
         let key = (incr as usize) | ((decr as usize) << 1);
         if let Some(dir) = TREND_DIR[key] {
             alerts.push(SpecialCause::Trend { direction: dir, count: 6 });
+        }
+    }
+
+    // Rule 4: 2 of 3 consecutive points beyond 2σ on the same side of CL.
+    //
+    // The 2σ boundary is derived from the control limits stored in ChartData:
+    //   sigma = (ucl - cl) / 3.0
+    //   upper_2sigma = cl + 2.0 * sigma  (i.e. cl + (ucl - cl) * 2/3)
+    //   lower_2sigma = cl - 2.0 * sigma  (i.e. cl - (ucl - cl) * 2/3)
+    //
+    // We scan the last 3 points. If ≥2 are beyond the 2σ line above CL, or ≥2 are
+    // beyond the 2σ line below CL, the rule fires.
+    if recent.len() >= 3 {
+        let last_3 = &recent[recent.len() - 3..];
+
+        // Count how many of the last 3 points are beyond 2σ above or below CL.
+        let beyond_2sigma_above = last_3.iter().filter(|d| {
+            let sigma = (d.ucl - d.cl) / 3.0;
+            sigma > 0.0 && d.value > d.cl + 2.0 * sigma
+        }).count();
+
+        let beyond_2sigma_below = last_3.iter().filter(|d| {
+            let sigma = (d.ucl - d.cl) / 3.0;
+            sigma > 0.0 && d.value < d.cl - 2.0 * sigma
+        }).count();
+
+        if beyond_2sigma_above >= 2 {
+            alerts.push(SpecialCause::TwoOfThree { direction: ShiftDirection::Above });
+        } else if beyond_2sigma_below >= 2 {
+            alerts.push(SpecialCause::TwoOfThree { direction: ShiftDirection::Below });
         }
     }
 
