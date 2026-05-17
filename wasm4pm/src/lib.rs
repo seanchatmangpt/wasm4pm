@@ -2587,3 +2587,156 @@ mod tests {
         });
     }
 }
+
+// ============================================================================
+// Agentic Framework WASM Exports
+// ============================================================================
+//
+// These four functions are the WASM public API for the agentic framework.
+// Each accepts a JSON-encoded input and returns a JSON-encoded output so that
+// no `serde_wasm_bindgen` round-trip is required (avoiding the known to_value
+// serialization bug with serde_json::Value on wasm32).
+//
+// All four are gated on `feature = "cloud"` — the same gate that controls
+// `pub mod agentic` — so they are never compiled into browser/edge/iot/fog
+// profiles unless cloud features are explicitly requested.
+//
+// # JS usage pattern
+//
+// ```js
+// const wasm = require('./pkg/wasm4pm.js');
+// const parse = r => typeof r === 'string' ? JSON.parse(r) : r;
+//
+// const taskJson = JSON.stringify({
+//   task_id: "t1", title: "triage", phase: "Triage",
+//   risk_level: "High",
+//   policy: { policy_ids:[], allowed_actions:["Delegate","Read"],
+//             forbidden_actions:[], required_roles:[], blocked_roles:[] },
+//   evidence: { receipt_refs:[], required_evidence_classes:["otel_span"],
+//               available_evidence_classes:["otel_span"], confidence_score:null,
+//               confidence_band:"High", drift_status:"Stable" },
+//   tags:[], metadata:{}
+// });
+// const bindings = parse(wasm.run_agentic_pipeline(taskJson));
+// ```
+
+/// Run the full agentic pipeline for a task: role selection → topology selection →
+/// evidence sufficiency → escalation check → prompt binding compilation.
+///
+/// Input: JSON-encoded `TaskContext`
+/// Output: JSON-encoded `{ bindings: PromptBindingSet, evidence_sufficient: bool,
+///         should_escalate: bool, escalation_target: AgentRole|null,
+///         gaps: string[] }`
+#[cfg(feature = "cloud")]
+#[wasm_bindgen]
+pub fn run_agentic_pipeline(task_json: &str) -> Result<String, JsValue> {
+    use crate::agentic::prelude::*;
+
+    let task: agentic::types::TaskContext = serde_json::from_str(task_json)
+        .map_err(|e| crate::error::js_val(&format!("invalid TaskContext JSON: {e}")))?;
+
+    let compiler = DefaultPromptBindingCompiler;
+    let bindings = compiler
+        .compile_bindings(&task)
+        .map_err(|e| crate::error::js_val(&format!("compile_bindings failed: {e}")))?;
+
+    let evidence_checker = DefaultEvidenceSufficiencyChecker;
+    let evidence_sufficient = evidence_checker
+        .is_sufficient(&task)
+        .map_err(|e| crate::error::js_val(&format!("is_sufficient failed: {e}")))?;
+    let gaps = evidence_checker
+        .summarize_gaps(&task)
+        .map_err(|e| crate::error::js_val(&format!("summarize_gaps failed: {e}")))?;
+
+    let escalation_engine = DefaultEscalationEngine;
+    let escalation = escalation_engine
+        .evaluate_escalation(&task)
+        .map_err(|e| crate::error::js_val(&format!("evaluate_escalation failed: {e}")))?;
+
+    let result = serde_json::json!({
+        "bindings": bindings,
+        "evidence_sufficient": evidence_sufficient,
+        "should_escalate": escalation.should_escalate,
+        "escalation_target": escalation.target_role,
+        "gaps": gaps,
+    });
+
+    serde_json::to_string(&result)
+        .map_err(|e| crate::error::js_val(&format!("serialization failed: {e}")))
+}
+
+/// Validate a handoff request between two agents.
+///
+/// Input: JSON-encoded `HandoffRequest`
+/// Output: JSON-encoded `HandoffDecision`
+#[cfg(feature = "cloud")]
+#[wasm_bindgen]
+pub fn validate_agentic_handoff(request_json: &str) -> Result<String, JsValue> {
+    use crate::agentic::prelude::*;
+
+    let req: agentic::types::HandoffRequest = serde_json::from_str(request_json)
+        .map_err(|e| crate::error::js_val(&format!("invalid HandoffRequest JSON: {e}")))?;
+
+    let validator = DefaultHandoffValidator;
+    let decision = validator
+        .validate_handoff(&req)
+        .map_err(|e| crate::error::js_val(&format!("validate_handoff failed: {e}")))?;
+
+    serde_json::to_string(&decision)
+        .map_err(|e| crate::error::js_val(&format!("serialization failed: {e}")))
+}
+
+/// Evaluate counterfactual action options for a task using the RL reward model.
+///
+/// Input: JSON-encoded `TaskContext`
+/// Output: JSON-encoded `CounterfactualResult` — ranked action options with
+///         estimated rewards from the RL orchestrator.
+#[cfg(feature = "cloud")]
+#[wasm_bindgen]
+pub fn evaluate_agentic_counterfactuals(task_json: &str) -> Result<String, JsValue> {
+    use crate::agentic::prelude::*;
+
+    let task: agentic::types::TaskContext = serde_json::from_str(task_json)
+        .map_err(|e| crate::error::js_val(&format!("invalid TaskContext JSON: {e}")))?;
+
+    let evaluator = DefaultCounterfactualEvaluator;
+    let result = evaluator
+        .evaluate_options(&task)
+        .map_err(|e| crate::error::js_val(&format!("evaluate_options failed: {e}")))?;
+
+    serde_json::to_string(&result)
+        .map_err(|e| crate::error::js_val(&format!("serialization failed: {e}")))
+}
+
+/// Run a JTBD (Jobs-to-be-Done) test suite against the agentic framework.
+///
+/// Accepts a JSON array of `JtbdCase` objects and returns a JSON array of
+/// `JtbdResult` objects, each containing per-assertion pass/fail details.
+///
+/// Input: JSON-encoded `JtbdCase[]`
+/// Output: JSON-encoded `{ passed: number, failed: number, results: JtbdResult[] }`
+#[cfg(feature = "cloud")]
+#[wasm_bindgen]
+pub fn run_agentic_jtbd_suite(cases_json: &str) -> Result<String, JsValue> {
+    use crate::agentic::prelude::*;
+
+    let cases: Vec<agentic::types::JtbdCase> = serde_json::from_str(cases_json)
+        .map_err(|e| crate::error::js_val(&format!("invalid JtbdCase[] JSON: {e}")))?;
+
+    let runner = DefaultJtbdRunner;
+    let results = runner
+        .run_suite(&cases)
+        .map_err(|e| crate::error::js_val(&format!("run_suite failed: {e}")))?;
+
+    let passed = results.iter().filter(|r| r.passed).count();
+    let failed = results.len() - passed;
+
+    let output = serde_json::json!({
+        "passed": passed,
+        "failed": failed,
+        "results": results,
+    });
+
+    serde_json::to_string(&output)
+        .map_err(|e| crate::error::js_val(&format!("serialization failed: {e}")))
+}

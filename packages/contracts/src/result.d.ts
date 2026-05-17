@@ -11,24 +11,24 @@ import type { ErrorInfo as ErrorDetails } from './errors.js';
  * @internal
  */
 interface Ok<T> {
-  type: 'ok';
-  value: T;
+    type: 'ok';
+    value: T;
 }
 /**
  * Error result wrapping an error message (simple string variant)
  * @internal
  */
 interface Err {
-  type: 'err';
-  error: string;
+    type: 'err';
+    error: string;
 }
 /**
  * Error result wrapping structured error info (PRD §14)
  * @internal
  */
 interface ErrorResult {
-  type: 'error';
-  error: ErrorDetails;
+    type: 'error';
+    error: ErrorDetails;
 }
 /**
  * Result type: Either Ok<T>, Err (string), or ErrorResult (structured)
@@ -53,9 +53,33 @@ export declare function err(error: string): Err;
  * Check if result is Ok
  *
  * @param result Result to check
- * @returns true if Ok, false if Err
+ * @returns true if Ok, false if Err or ErrorResult
  */
 export declare function isOk<T>(result: Result<T>): result is Ok<T>;
+/**
+ * Check if result is a simple string Err
+ *
+ * @param result Result to check
+ * @returns true if Err (string error), false otherwise
+ */
+export declare function isErr<T>(result: Result<T>): result is Err;
+/**
+ * Check if result is a structured ErrorResult (carries ErrorInfo with exit_code and remediation)
+ *
+ * Documented in ERROR_SYSTEM.md and CONTRACTS.md but previously missing from the implementation.
+ *
+ * @param result Result to check
+ * @returns true if ErrorResult (structured error), false otherwise
+ *
+ * @example
+ * ```ts
+ * const result: Result<Config> = error(createError('CONFIG_MISSING', '...'));
+ * if (isError(result)) {
+ *   process.exit(result.error.exit_code); // type-safe: result.error is ErrorInfo
+ * }
+ * ```
+ */
+export declare function isError<T>(result: Result<T>): result is ErrorResult;
 /**
  * Create an error result with structured ErrorDetails (PRD §14)
  *
@@ -112,7 +136,7 @@ export declare function deriveLatencyClass(latency_ms: number): LatencyClass;
  * - `algorithm_id`: Which algorithm was executed
  * - `algorithm_version`: Semver or CalVer version of the algorithm
  * - `backend_id`: Which backend executed it (wasm, pm4py, ml, null)
- * - `kernel_version`: @seanchatmangpt/wasm4pm npm package version
+ * - `kernel_version`: @wasm4pm/cli npm package version
  * - `wasm_build_hash`: Content hash of the wasm4pm.wasm binary
  *
  * **Invariants:**
@@ -120,16 +144,16 @@ export declare function deriveLatencyClass(latency_ms: number): LatencyClass;
  * - A missing or empty `combined_hash` is a schema violation, not a warning
  */
 export interface ProvenanceChain {
-  readonly input_hash: string;
-  readonly config_hash: string;
-  readonly plan_hash: string;
-  readonly output_hash: string;
-  readonly combined_hash: string;
-  readonly algorithm_id: string;
-  readonly algorithm_version: string;
-  readonly backend_id: string;
-  readonly kernel_version: string;
-  readonly wasm_build_hash: string;
+    readonly input_hash: string;
+    readonly config_hash: string;
+    readonly plan_hash: string;
+    readonly output_hash: string;
+    readonly combined_hash: string;
+    readonly algorithm_id: string;
+    readonly algorithm_version: string;
+    readonly backend_id: string;
+    readonly kernel_version: string;
+    readonly wasm_build_hash: string;
 }
 /**
  * Typed wrapper around every algorithm output with provenance and metadata.
@@ -180,20 +204,20 @@ export interface ProvenanceChain {
  * ```
  */
 export interface ResultEnvelope<T = unknown> {
-  readonly run_id: string;
-  readonly status: 'success' | 'partial' | 'failed';
-  readonly payload: T;
-  readonly error?: string;
-  readonly latency_ms: number;
-  readonly latency_class: LatencyClass;
-  readonly backend_id: string;
-  readonly invocation_id: string;
-  readonly cycle_seq: number;
-  readonly algorithm_id: string;
-  readonly model_ir?: ModelIR;
-  readonly provenance: ProvenanceChain;
-  readonly stale?: boolean;
-  readonly stale_age_ms?: number;
+    readonly run_id: string;
+    readonly status: 'success' | 'partial' | 'failed';
+    readonly payload: T;
+    readonly error?: string;
+    readonly latency_ms: number;
+    readonly latency_class: LatencyClass;
+    readonly backend_id: string;
+    readonly invocation_id: string;
+    readonly cycle_seq: number;
+    readonly algorithm_id: string;
+    readonly model_ir?: ModelIR;
+    readonly provenance: ProvenanceChain;
+    readonly stale?: boolean;
+    readonly stale_age_ms?: number;
 }
 /**
  * Guard function to check if a value is a valid ProvenanceChain.

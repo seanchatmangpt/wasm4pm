@@ -53,9 +53,33 @@ export declare function err(error: string): Err;
  * Check if result is Ok
  *
  * @param result Result to check
- * @returns true if Ok, false if Err
+ * @returns true if Ok, false if Err or ErrorResult
  */
 export declare function isOk<T>(result: Result<T>): result is Ok<T>;
+/**
+ * Check if result is a simple string Err
+ *
+ * @param result Result to check
+ * @returns true if Err (string error), false otherwise
+ */
+export declare function isErr<T>(result: Result<T>): result is Err;
+/**
+ * Check if result is a structured ErrorResult (carries ErrorInfo with exit_code and remediation)
+ *
+ * Documented in ERROR_SYSTEM.md and CONTRACTS.md but previously missing from the implementation.
+ *
+ * @param result Result to check
+ * @returns true if ErrorResult (structured error), false otherwise
+ *
+ * @example
+ * ```ts
+ * const result: Result<Config> = error(createError('CONFIG_MISSING', '...'));
+ * if (isError(result)) {
+ *   process.exit(result.error.exit_code); // type-safe: result.error is ErrorInfo
+ * }
+ * ```
+ */
+export declare function isError<T>(result: Result<T>): result is ErrorResult;
 /**
  * Create an error result with structured ErrorDetails (PRD §14)
  *

@@ -59,3 +59,116 @@ impl HandoffValidator for DefaultHandoffValidator {
         })
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::BTreeSet;
+
+    fn make_req(
+        to_role: AgentRole,
+        blocked: Vec<AgentRole>,
+        allowed_actions: Vec<ActionClass>,
+        required_roles: Vec<AgentRole>,
+    ) -> HandoffRequest {
+        let mut blocked_set = BTreeSet::new();
+        for r in blocked {
+            blocked_set.insert(r);
+        }
+        let mut allowed_set = BTreeSet::new();
+        for a in allowed_actions {
+            allowed_set.insert(a);
+        }
+        let mut required_set = BTreeSet::new();
+        for r in required_roles {
+            required_set.insert(r);
+        }
+        HandoffRequest {
+            from_agent: "agent-a".to_string(),
+            to_role,
+            task: TaskContext {
+                task_id: "t-ho".to_string(),
+                policy: PolicyEnvelope {
+                    blocked_roles: blocked_set,
+                    allowed_actions: allowed_set,
+                    required_roles: required_set,
+                    ..Default::default()
+                },
+                ..Default::default()
+            },
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn open_policy_allows_handoff() {
+        let validator = DefaultHandoffValidator;
+        let req = make_req(AgentRole::Executor, vec![], vec![], vec![]);
+        let d = validator.validate_handoff(&req).unwrap();
+        assert!(d.allowed);
+        assert_eq!(d.disposition, DecisionDisposition::Allow);
+        assert!(d.transition.is_some());
+    }
+
+    #[test]
+    fn blocked_role_denies_handoff() {
+        let validator = DefaultHandoffValidator;
+        let req = make_req(
+            AgentRole::Executor,
+            vec![AgentRole::Executor],
+            vec![],
+            vec![],
+        );
+        let d = validator.validate_handoff(&req).unwrap();
+        assert!(!d.allowed);
+        assert_eq!(d.disposition, DecisionDisposition::Deny);
+        assert!(d.reason_codes.iter().any(|r| r.contains("blocked")));
+    }
+
+    #[test]
+    fn delegate_action_not_in_allowed_set_denies() {
+        let validator = DefaultHandoffValidator;
+        // allowed_actions set is non-empty and does NOT contain Delegate
+        let req = make_req(AgentRole::Executor, vec![], vec![ActionClass::Read], vec![]);
+        let d = validator.validate_handoff(&req).unwrap();
+        assert!(!d.allowed);
+        assert!(d.reason_codes.iter().any(|r| r.contains("delegate")));
+    }
+
+    #[test]
+    fn delegate_action_allowed_when_in_set() {
+        let validator = DefaultHandoffValidator;
+        let req = make_req(
+            AgentRole::Executor,
+            vec![],
+            vec![ActionClass::Delegate, ActionClass::Read],
+            vec![],
+        );
+        let d = validator.validate_handoff(&req).unwrap();
+        assert!(d.allowed);
+    }
+
+    #[test]
+    fn required_role_mismatch_escalates() {
+        let validator = DefaultHandoffValidator;
+        // Required: Validator, but we're handing off to Executor
+        let req = make_req(
+            AgentRole::Executor,
+            vec![],
+            vec![],
+            vec![AgentRole::Validator],
+        );
+        let d = validator.validate_handoff(&req).unwrap();
+        assert!(!d.allowed);
+        assert_eq!(d.disposition, DecisionDisposition::Escalate);
+    }
+
+    #[test]
+    fn transition_envelope_carries_task_id() {
+        let validator = DefaultHandoffValidator;
+        let req = make_req(AgentRole::Planner, vec![], vec![], vec![]);
+        let d = validator.validate_handoff(&req).unwrap();
+        let transition = d.transition.unwrap();
+        assert!(transition.transition_id.contains("t-ho"));
+    }
+}

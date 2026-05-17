@@ -147,11 +147,18 @@ export function createValidateSourceStep() {
     };
 }
 /**
- * Creates an algorithm discovery step
+ * Creates an algorithm discovery step.
+ *
+ * The step `id` is always the PlanStepType enum value so that DAG edges,
+ * dependency references, and topological-sort assertions are stable identifiers
+ * that do not contain display-name artefacts (e.g. "++", spaces, "*").
+ * The human-readable `algorithmName` is used only in `description`.
+ *
  * @internal
  */
 export function createAlgorithmStep(algorithmName, stepType, parameters = {}, required = true, dependsOn = ['validate_source'], parallelizable = true) {
-    const id = `discover_${algorithmName.toLowerCase().replace(/\s+/g, '_')}`;
+    // Use the step type enum value as the canonical stable ID.
+    const id = stepType;
     return {
         id,
         type: stepType,
@@ -165,11 +172,17 @@ export function createAlgorithmStep(algorithmName, stepType, parameters = {}, re
     };
 }
 /**
- * Creates an analysis step
+ * Creates an analysis step.
+ *
+ * The step `id` is always the PlanStepType enum value so that DAG edges,
+ * dependency references, and topological-sort assertions are stable identifiers.
+ * The human-readable `analysisName` is used only in `description`.
+ *
  * @internal
  */
 export function createAnalysisStep(analysisName, stepType, parameters = {}, dependsOn = ['validate_source'], parallelizable = true) {
-    const id = `analyze_${analysisName.toLowerCase().replace(/\s+/g, '_')}`;
+    // Use the step type enum value as the canonical stable ID.
+    const id = stepType;
     return {
         id,
         type: stepType,

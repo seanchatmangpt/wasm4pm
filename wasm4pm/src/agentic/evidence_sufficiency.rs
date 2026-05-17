@@ -56,3 +56,90 @@ impl EvidenceSufficiencyChecker for DefaultEvidenceSufficiencyChecker {
         Ok(gaps)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::BTreeSet;
+
+    fn task_with_evidence(ev: EvidenceEnvelope) -> TaskContext {
+        TaskContext {
+            task_id: "t-ev".to_string(),
+            evidence: ev,
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn sufficient_when_all_classes_available_and_confidence_high() {
+        let mut req = BTreeSet::new();
+        req.insert("otel_span".to_string());
+        let mut avail = BTreeSet::new();
+        avail.insert("otel_span".to_string());
+
+        let ev = EvidenceEnvelope {
+            required_evidence_classes: req,
+            available_evidence_classes: avail,
+            confidence_band: ConfidenceBand::High,
+            drift_status: DriftStatus::Stable,
+            ..Default::default()
+        };
+        let checker = DefaultEvidenceSufficiencyChecker;
+        assert!(checker.is_sufficient(&task_with_evidence(ev)).unwrap());
+    }
+
+    #[test]
+    fn insufficient_when_required_class_missing() {
+        let mut req = BTreeSet::new();
+        req.insert("receipt".to_string());
+
+        let ev = EvidenceEnvelope {
+            required_evidence_classes: req,
+            available_evidence_classes: BTreeSet::new(),
+            confidence_band: ConfidenceBand::High,
+            drift_status: DriftStatus::Stable,
+            ..Default::default()
+        };
+        let checker = DefaultEvidenceSufficiencyChecker;
+        assert!(!checker.is_sufficient(&task_with_evidence(ev)).unwrap());
+    }
+
+    #[test]
+    fn insufficient_when_confidence_unknown() {
+        let ev = EvidenceEnvelope {
+            confidence_band: ConfidenceBand::Unknown,
+            drift_status: DriftStatus::Stable,
+            ..Default::default()
+        };
+        let checker = DefaultEvidenceSufficiencyChecker;
+        assert!(!checker.is_sufficient(&task_with_evidence(ev)).unwrap());
+    }
+
+    #[test]
+    fn insufficient_when_drift_out_of_control() {
+        let ev = EvidenceEnvelope {
+            confidence_band: ConfidenceBand::High,
+            drift_status: DriftStatus::OutOfControl,
+            ..Default::default()
+        };
+        let checker = DefaultEvidenceSufficiencyChecker;
+        assert!(!checker.is_sufficient(&task_with_evidence(ev)).unwrap());
+    }
+
+    #[test]
+    fn gaps_reports_missing_classes_and_drift() {
+        let mut req = BTreeSet::new();
+        req.insert("audit_log".to_string());
+        let ev = EvidenceEnvelope {
+            required_evidence_classes: req,
+            available_evidence_classes: BTreeSet::new(),
+            confidence_band: ConfidenceBand::High,
+            drift_status: DriftStatus::OutOfControl,
+            ..Default::default()
+        };
+        let checker = DefaultEvidenceSufficiencyChecker;
+        let gaps = checker.summarize_gaps(&task_with_evidence(ev)).unwrap();
+        assert!(gaps.iter().any(|g| g.contains("audit_log")));
+        assert!(gaps.iter().any(|g| g.contains("drift")));
+    }
+}

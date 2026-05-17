@@ -74,15 +74,21 @@ export function validatePlanDAG(plan) {
             errors.push(`Self-loop detected on node: ${edge.from}`);
         }
     }
-    // Cycle detection via topological sort (Kahn's algorithm)
-    if (errors.length === 0) {
+    // Cycle detection via Kahn's algorithm (topological sort).
+    //
+    // Run unconditionally — a plan that has BOTH dangling edge references AND
+    // a cycle is doubly defective and both defects must be reported.  We filter
+    // out dangling edges (both endpoints must be known nodes) before building
+    // the in-degree map so the Kahn traversal is not corrupted by ghost nodes.
+    {
+        const validEdges = plan.edges.filter((edge) => nodeIds.has(edge.from) && nodeIds.has(edge.to));
         const inDegree = new Map();
         const adj = new Map();
         for (const id of nodeIds) {
             inDegree.set(id, 0);
             adj.set(id, []);
         }
-        for (const edge of plan.edges) {
+        for (const edge of validEdges) {
             adj.get(edge.from).push(edge.to);
             inDegree.set(edge.to, (inDegree.get(edge.to) ?? 0) + 1);
         }
