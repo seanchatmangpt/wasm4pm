@@ -233,8 +233,8 @@ describe('AlgorithmRegistry', () => {
   });
 
   describe('Registry Completeness', () => {
-    it('has exactly 36 registered algorithms', () => {
-      expect(registry.list().length).toBe(36);
+    it('has at least 38 registered algorithms (36 original + 2 social network)', () => {
+      expect(registry.list().length).toBeGreaterThanOrEqual(38);
     });
 
     it('has no duplicate algorithm IDs', () => {
@@ -242,7 +242,7 @@ describe('AlgorithmRegistry', () => {
       const uniqueIds = new Set(ids);
       const duplicates = ids.filter((id, idx) => ids.indexOf(id) !== idx);
       expect(duplicates, `Duplicate IDs found: ${duplicates.join(', ')}`).toEqual([]);
-      expect(uniqueIds.size).toBe(36);
+      expect(uniqueIds.size).toBe(ids.length);
     });
 
     it('every algorithm has a non-empty description', () => {

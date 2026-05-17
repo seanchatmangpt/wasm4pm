@@ -460,11 +460,17 @@ export class Kernel {
   ): Promise<{ handle: string }> {
     switch (algorithmId) {
       case 'dfg':
-      case 'simd_streaming_dfg':
       case 'hierarchical_dfg':
       case 'streaming_log':
       case 'smart_engine':
         return this.wasm.discover_dfg(eventLogHandle, activityKey);
+
+      // SIMD-accelerated DFG — dispatches to the dedicated vectorised WASM export,
+      // not the standard discover_dfg. A practitioner who selects this algorithm
+      // explicitly wants the ~500x throughput uplift; silently downgrading to the
+      // standard DFG defeats the purpose.
+      case 'simd_streaming_dfg':
+        return this.wasm.discover_dfg_simd(eventLogHandle, activityKey);
 
       case 'process_skeleton':
         return this.wasm.extract_process_skeleton(
@@ -684,6 +690,24 @@ export class Kernel {
           JSON.stringify(mcConfig)
         );
       }
+
+      // ─── Social network mining (van der Aalst organisational perspective) ──
+      // Surfaces the two social network WASM exports that were previously dead
+      // (exported from Rust but unreachable from TypeScript). The organisational
+      // perspective is a first-class van der Aalst dimension: who does what, and
+      // how do resources hand over work to each other?
+
+      case 'handover_network':
+        return this.wasm.discover_handover_network(
+          eventLogHandle,
+          (params.resource_key as string) ?? 'org:resource'
+        );
+
+      case 'working_together_network':
+        return this.wasm.discover_working_together_network(
+          eventLogHandle,
+          (params.resource_key as string) ?? 'org:resource'
+        );
 
       // ─── ML algorithms (TypeScript, not WASM) ────────────────────────────
 

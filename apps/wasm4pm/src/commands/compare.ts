@@ -43,6 +43,57 @@ interface ModelStats {
 }
 
 /**
+ * A recommendation of which algorithm to use, derived from the comparison results.
+ * Three recommendations are produced, one per criterion.
+ */
+interface AlgorithmRecommendation {
+  /** Fastest algorithm (lowest elapsedMs among successful runs). */
+  fastest: { algorithm: Algorithm; elapsedMs: number; rationale: string };
+  /** Most detailed algorithm (highest edge count among successful runs). */
+  mostDetailed: { algorithm: Algorithm; edges: number; rationale: string };
+  /** Best quality/speed tradeoff — highest edges-per-ms ratio. */
+  bestTradeoff: { algorithm: Algorithm; edgesPerMs: number; rationale: string };
+}
+
+/**
+ * Derive a winner recommendation from a set of model stats.
+ * Only considers successful runs (nodes >= 0).
+ * Returns null if there are fewer than 2 successful runs.
+ */
+function deriveRecommendation(stats: ModelStats[]): AlgorithmRecommendation | null {
+  const valid = stats.filter((s) => s.nodes >= 0 && s.elapsedMs > 0);
+  if (valid.length < 2) return null;
+
+  // Fastest
+  const fastest = valid.reduce((a, b) => (a.elapsedMs <= b.elapsedMs ? a : b));
+
+  // Most detailed (most edges — richer structural model)
+  const mostDetailed = valid.reduce((a, b) => (a.edges >= b.edges ? a : b));
+
+  // Best tradeoff: edges-per-ms (normalised quality per unit time)
+  const withRatio = valid.map((s) => ({ ...s, edgesPerMs: s.edges / s.elapsedMs }));
+  const bestTradeoff = withRatio.reduce((a, b) => (a.edgesPerMs >= b.edgesPerMs ? a : b));
+
+  return {
+    fastest: {
+      algorithm: fastest.algorithm,
+      elapsedMs: fastest.elapsedMs,
+      rationale: `Lowest wall-clock time (${fastest.elapsedMs.toFixed(1)} ms) — use when throughput matters`,
+    },
+    mostDetailed: {
+      algorithm: mostDetailed.algorithm,
+      edges: mostDetailed.edges,
+      rationale: `Highest edge count (${mostDetailed.edges} edges) — use when model fidelity matters`,
+    },
+    bestTradeoff: {
+      algorithm: bestTradeoff.algorithm,
+      edgesPerMs: Math.round(bestTradeoff.edgesPerMs * 100) / 100,
+      rationale: `Best edges-per-ms ratio (${bestTradeoff.edgesPerMs.toFixed(2)}) — use for balanced analysis`,
+    },
+  };
+}
+
+/**
  * Invoke the appropriate WASM discovery function for the given algorithm,
  * then extract common DFG-shaped statistics from the result.
  */
@@ -277,11 +328,15 @@ export const compare = defineCommand({
         }
         const totalElapsedMs = performance.now() - t0;
 
+        // Derive winner recommendations before building payload
+        const recommendation = deriveRecommendation(stats);
+
         // Build canonical result payload
         const payload = {
           input: inputPath,
           activityKey,
           algorithms: stats,
+          recommendation,
         };
 
         // Handle --cache-stats (fetch before emitting)
@@ -372,6 +427,21 @@ export const compare = defineCommand({
           '  Legend: ▓▓▓▓▓▓▓▓ = max  ░░░░░░░░ = min   bars are relative within this comparison'
         );
         projection.log('');
+
+        // Winner recommendation section
+        if (recommendation) {
+          projection.log('  Recommendations:');
+          projection.success(
+            `    Fastest      → ${recommendation.fastest.algorithm.padEnd(18)}  ${recommendation.fastest.rationale}`
+          );
+          projection.success(
+            `    Most detailed→ ${recommendation.mostDetailed.algorithm.padEnd(18)}  ${recommendation.mostDetailed.rationale}`
+          );
+          projection.success(
+            `    Best tradeoff→ ${recommendation.bestTradeoff.algorithm.padEnd(18)}  ${recommendation.bestTradeoff.rationale}`
+          );
+          projection.log('');
+        }
 
         // Cache statistics (if fetched)
         if (cacheStats) {

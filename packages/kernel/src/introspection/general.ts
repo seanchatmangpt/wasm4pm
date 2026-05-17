@@ -32,11 +32,11 @@ export interface ProfileCapabilities {
 }
 
 const PROFILE_SIZES: Record<DeploymentProfile, string> = {
-  browser: '~2.7MB',
+  browser: '~2.7MB', // full-featured default (wasm-pack bundler target)
   fog: '~2.0MB',
   edge: '~1.5MB',
   iot: '~1.0MB',
-  cloud: '~2.7MB',
+  mobile: '~500KB',
 };
 
 /**

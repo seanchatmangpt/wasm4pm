@@ -38,14 +38,21 @@ export type QualityTier = number; // 0-100
 export type ExecutionProfile = 'fast' | 'balanced' | 'quality' | 'stream';
 
 /**
- * Deployment profile: WASM build configuration
- * - browser: Minimal features for web browsers (~500KB)
+ * Deployment profile: WASM build configuration.
+ *
+ * Profile hierarchy (smallest binary → largest):
+ *   mobile (~500KB) ⊆ iot (~1MB) ⊆ edge (~1.5MB) ⊆ fog (~2MB) ⊆ browser (~2.7MB)
+ *
+ * - mobile: Minimal features for mobile devices (~500KB)
+ * - iot: Minimal features for IoT devices (~1.0MB)
  * - edge: Advanced algorithms for edge servers (~1.5MB)
  * - fog: Full features except POWL for fog computing (~2.0MB)
- * - iot: Minimal features for IoT devices (~1.0MB)
- * - cloud: Full feature set for cloud servers (~2.78MB)
+ * - browser: Full feature set, all algorithms (~2.7MB, DEFAULT wasm-pack target)
+ *
+ * Note: 'browser' is the FULL-FEATURED profile — not a size-constrained target.
+ * The name comes from the wasm-pack --target bundler option, not a capability limit.
  */
-export type DeploymentProfile = 'browser' | 'edge' | 'fog' | 'iot' | 'cloud';
+export type DeploymentProfile = 'mobile' | 'iot' | 'edge' | 'fog' | 'browser';
 
 /**
  * Algorithm metadata
@@ -1365,6 +1372,67 @@ export class AlgorithmRegistry {
       robustToNoise: true,
       scalesWell: false,
     });
+
+    // ─── Social Network Mining (van der Aalst organisational perspective) ──
+    // These two WASM exports (discover_handover_network, discover_working_together_network)
+    // existed in Rust but were completely unreachable from TypeScript — dead exports.
+    // The organisational perspective is a first-class van der Aalst dimension.
+
+    this.registerWithInferredProfiles({
+      id: 'handover_network',
+      name: 'Handover-of-Work Network',
+      description:
+        'Mine organisational handover-of-work networks from event logs (van der Aalst social network mining). ' +
+        'Produces a weighted graph where edge weight = number of direct handovers between resource pairs. ' +
+        'WASM export: discover_handover_network(log_handle, resource_key).',
+      outputType: 'analytics',
+      complexity: 'O(n²)',
+      speedTier: 40,
+      qualityTier: 60,
+      parameters: [
+        {
+          name: 'resource_key',
+          type: 'string',
+          description: 'Event attribute key for the resource/performer (e.g. "org:resource")',
+          required: true,
+          default: 'org:resource',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 15,
+      estimatedMemoryMB: 40,
+      robustToNoise: true,
+      scalesWell: true,
+      references: ['van der Aalst et al. (2005) Mining Social Networks from Event Logs'],
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'working_together_network',
+      name: 'Working-Together Network',
+      description:
+        'Mine working-together social networks: edges represent resources that handled the same case. ' +
+        'Complements handover-of-work by capturing collaboration rather than sequential handoff. ' +
+        'WASM export: discover_working_together_network(log_handle, resource_key).',
+      outputType: 'analytics',
+      complexity: 'O(n²)',
+      speedTier: 45,
+      qualityTier: 60,
+      parameters: [
+        {
+          name: 'resource_key',
+          type: 'string',
+          description: 'Event attribute key for the resource/performer (e.g. "org:resource")',
+          required: true,
+          default: 'org:resource',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 18,
+      estimatedMemoryMB: 45,
+      robustToNoise: true,
+      scalesWell: true,
+      references: ['van der Aalst et al. (2005) Mining Social Networks from Event Logs'],
+    });
   }
 
   /**
@@ -1386,11 +1454,17 @@ export class AlgorithmRegistry {
   }
 
   /**
-   * Infer deployment profiles from supported execution profiles
-   * - fast profile → browser, iot
-   * - balanced profile → browser, edge, fog, cloud
-   * - quality profile → edge, fog, cloud
-   * - stream profile → browser, edge, fog, iot, cloud
+   * Infer deployment profiles from supported execution profiles.
+   *
+   * Profile hierarchy (smallest → largest binary):
+   *   mobile (~500KB) ⊆ iot (~1MB) ⊆ edge (~1.5MB) ⊆ fog (~2MB) ⊆ browser (~2.7MB)
+   *
+   * - fast profile   → mobile, iot, browser       (basic DFG runs everywhere)
+   * - balanced profile → edge, fog, browser        (heuristic/alpha require edge+)
+   * - quality profile  → fog, browser              (genetic/ILP require fog+)
+   * - stream profile   → mobile, iot, edge, fog, browser (streaming is universal)
+   *
+   * Result: 'browser' always has the superset — it is the full-featured build.
    */
   private inferDeploymentProfiles(profiles: ExecutionProfile[]): DeploymentProfile[] {
     const result = new Set<DeploymentProfile>();
@@ -1398,26 +1472,25 @@ export class AlgorithmRegistry {
     for (const profile of profiles) {
       switch (profile) {
         case 'fast':
-          result.add('browser');
+          result.add('mobile');
           result.add('iot');
+          result.add('browser');
           break;
         case 'balanced':
-          result.add('browser');
           result.add('edge');
           result.add('fog');
-          result.add('cloud');
+          result.add('browser');
           break;
         case 'quality':
-          result.add('edge');
           result.add('fog');
-          result.add('cloud');
+          result.add('browser');
           break;
         case 'stream':
-          result.add('browser');
+          result.add('mobile');
+          result.add('iot');
           result.add('edge');
           result.add('fog');
-          result.add('iot');
-          result.add('cloud');
+          result.add('browser');
           break;
       }
     }
@@ -1486,7 +1559,7 @@ export class AlgorithmRegistry {
    */
   private buildDeploymentProfileMap(): void {
     const profileMap = new Map<DeploymentProfile, Set<string>>();
-    const profiles: DeploymentProfile[] = ['browser', 'edge', 'fog', 'iot', 'cloud'];
+    const profiles: DeploymentProfile[] = ['mobile', 'iot', 'edge', 'fog', 'browser'];
 
     for (const profile of profiles) {
       profileMap.set(profile, new Set());

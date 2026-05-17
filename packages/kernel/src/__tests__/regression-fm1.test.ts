@@ -95,6 +95,9 @@ function buildFm1Stub(): KernelWasmModule & {
     detect_drift(_h: string, _k: string, _w: number): string { return '{"drifts":[]}'; },
     async discover_ocel_dfg(_h: string) { return { handle: 'ocel' }; },
     async discover_ocel_dfg_per_type(_h: string) { return { handle: 'ocel_per' }; },
+    async discover_handover_network(_h: string, _k: string) { return { handle: 'hn' }; },
+    async discover_working_together_network(_h: string, _k: string) { return { handle: 'wt' }; },
+    async discover_dfg_simd(_h: string, _k: string) { return { handle: 'simd_dfg' }; },
     delete_object(_h: string) {},
     clear_all_objects() {},
   } satisfies KernelWasmModule;

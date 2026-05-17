@@ -45,6 +45,47 @@ function selectAutopilotAlgorithm(stats: LogStats): { algo: Algorithm; rationale
   return { algo: 'dfg', rationale: 'default — fast, always produces a result' };
 }
 
+// ---------------------------------------------------------------------------
+// Config snapshot helpers for what-changed display
+// ---------------------------------------------------------------------------
+
+/**
+ * Extract a comparable snapshot from a resolved config object.
+ * Only captures the fields a practitioner cares about (algorithm, source, profile, log level).
+ */
+function snapshotConfig(cfg: Record<string, unknown>): Record<string, unknown> {
+  const alg = cfg['algorithm'] as Record<string, unknown> | undefined;
+  const src = cfg['source'] as Record<string, unknown> | undefined;
+  const exec = cfg['execution'] as Record<string, unknown> | undefined;
+  const obs = cfg['observability'] as Record<string, unknown> | undefined;
+  return {
+    algorithm: alg?.['name'] ?? null,
+    algorithmParams: JSON.stringify(alg?.['parameters'] ?? {}),
+    sourceKind: src?.['kind'] ?? null,
+    sourcePath: src?.['path'] ?? null,
+    profile: exec?.['profile'] ?? null,
+    logLevel: obs?.['logLevel'] ?? null,
+  };
+}
+
+/**
+ * Produce a human-readable list of changed fields between two config snapshots.
+ * Returns an empty array when the effective config is unchanged.
+ */
+function diffConfigSnapshots(
+  prev: Record<string, unknown>,
+  next: Record<string, unknown>
+): Array<{ field: string; from: unknown; to: unknown }> {
+  const changes: Array<{ field: string; from: unknown; to: unknown }> = [];
+  const allKeys = new Set([...Object.keys(prev), ...Object.keys(next)]);
+  for (const key of allKeys) {
+    if (JSON.stringify(prev[key]) !== JSON.stringify(next[key])) {
+      changes.push({ field: key, from: prev[key], to: next[key] });
+    }
+  }
+  return changes;
+}
+
 export interface WatchOptions {
   config?: string;
   format?: 'human' | 'json';
@@ -154,6 +195,16 @@ export const watch = defineCommand({
       timestamp: new Date().toISOString(),
     });
 
+    // Load initial config snapshot so the first change cycle always has a baseline to diff against.
+    // If this fails (e.g. no config file yet), the first cycle emits no diff — non-fatal.
+    let prevConfigSnapshot: Record<string, unknown> | null = null;
+    try {
+      const initialConfig = await loadConfig({ configSearchPaths: [configPath] });
+      prevConfigSnapshot = snapshotConfig(initialConfig as unknown as Record<string, unknown>);
+    } catch {
+      /* initial config load failure is non-fatal — watch proceeds without a baseline */
+    }
+
     // Step 2: Set up Watcher using chokidar for better cross-platform support
     const watchPath = path.resolve(configPath);
     const watcher = chokidar.watch(watchPath, {
@@ -192,8 +243,34 @@ export const watch = defineCommand({
               async () => {
                 streaming.emitEvent('change_detected', { file: filePath });
 
-                // Reload and Run
+                // Reload config
                 const config = await loadConfig({ configSearchPaths: [configPath] });
+
+                // What-changed display: diff the new config against the last snapshot.
+                // This tells the practitioner which config field triggered the re-run.
+                const nextSnapshot = snapshotConfig(config as unknown as Record<string, unknown>);
+                if (prevConfigSnapshot !== null) {
+                  const changes = diffConfigSnapshots(prevConfigSnapshot, nextSnapshot);
+                  if (changes.length > 0) {
+                    streaming.emitEvent('config_changed', {
+                      file: filePath,
+                      changes: changes.map((c) => ({
+                        field: c.field,
+                        from: c.from,
+                        to: c.to,
+                        summary: `${c.field}: ${JSON.stringify(c.from)} → ${JSON.stringify(c.to)}`,
+                      })),
+                    });
+                  } else {
+                    // File changed but effective config values are identical (e.g., whitespace edit).
+                    streaming.emitEvent('config_unchanged', {
+                      file: filePath,
+                      message: 'File changed but effective config is unchanged — re-running anyway',
+                    });
+                  }
+                }
+                prevConfigSnapshot = nextSnapshot;
+
                 const executionPlan = plan(config as any);
 
                 streaming.emitEvent('processing_started', {
