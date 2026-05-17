@@ -345,6 +345,38 @@ export const quality = defineCommand({
 
 import type { ConsoleProjection } from '../output.js';
 
+// Van der Aalst threshold definitions per quality dimension
+const QUALITY_THRESHOLDS: Record<string, { target: number; min: number; label: string; interpretation: string; belowMinAdvice: string }> = {
+  fitness: {
+    target: 0.85,
+    min: 0.5,
+    label: 'Fitness',
+    interpretation: 'fraction of log traces the model can replay without missing tokens',
+    belowMinAdvice: 'Model is too restrictive. Consider using inductive miner or relaxing constraints.',
+  },
+  precision: {
+    target: 0.5,
+    min: 0.3,
+    label: 'Precision',
+    interpretation: 'fraction of model behavior that is also observed in the log (high = tight model)',
+    belowMinAdvice: 'Model allows much more behaviour than observed. Consider adding constraints or using ILP miner.',
+  },
+  generalization: {
+    target: 0.6,
+    min: 0.4,
+    label: 'Generalization',
+    interpretation: 'ability of the model to represent unseen but valid traces (high = not overfit)',
+    belowMinAdvice: 'Model may be overfit to the training log. Add more traces or use a higher-level miner.',
+  },
+  simplicity: {
+    target: 0.5,
+    min: 0.3,
+    label: 'Simplicity',
+    interpretation: 'inversely proportional to structural complexity (high = fewer places/transitions)',
+    belowMinAdvice: 'Model is overly complex. Use process tree or heuristic miner to reduce structure.',
+  },
+};
+
 function printHumanQuality(payload: QualityPayload, projection: ConsoleProjection): void {
   const scores = payload.scores;
   const aggregate = payload.aggregate;
@@ -364,17 +396,34 @@ function printHumanQuality(payload: QualityPayload, projection: ConsoleProjectio
     return '█'.repeat(filled) + '░'.repeat(width - filled);
   };
 
-  const scoreLabel = (score: number): string => {
-    if (score >= 0.8) return '✓';
-    if (score >= 0.6) return '○';
+  const scoreIcon = (score: number, target: number, min: number): string => {
+    if (score >= target) return '✓';
+    if (score >= min) return 'o';
     return '✗';
   };
 
-  projection.log('  Quality Scores:');
+  projection.log('  Quality Scores (Van der Aalst 4-dimension framework):');
+  projection.log('');
+
+  const advisories: string[] = [];
+
   for (const [metric, score] of Object.entries(scores)) {
+    const def = QUALITY_THRESHOLDS[metric];
+    if (!def) {
+      projection.log(`    ${metric.padEnd(15)} ${score.toFixed(3).padStart(6)}  o  ${sparkBar(score)}`);
+      continue;
+    }
+    const icon = scoreIcon(score, def.target, def.min);
     const bar = sparkBar(score);
-    const label = scoreLabel(score);
-    projection.log(`    ${metric.padEnd(15)} ${score.toFixed(3).padStart(6)}  ${label}  ${bar}`);
+    const thresholdTag = score >= def.target
+      ? `>=target(${def.target})`
+      : score >= def.min
+      ? `[target: >=${def.target}]`
+      : `[target: >=${def.target}, BELOW minimum ${def.min}]`;
+    projection.log(`    ${def.label.padEnd(16)} ${score.toFixed(3).padStart(6)}  ${icon}  ${bar}  ${thresholdTag}`);
+    if (score < def.min) {
+      advisories.push(`${def.label}: ${def.belowMinAdvice}`);
+    }
   }
   projection.log('');
 
@@ -382,17 +431,28 @@ function printHumanQuality(payload: QualityPayload, projection: ConsoleProjectio
   const aggScore = aggregate.score;
   const aggLevel = aggregate.level;
   const aggBar = sparkBar(aggScore);
-  const aggLabel = scoreLabel(aggScore);
+  const aggIcon = aggScore >= 0.7 ? '✓' : aggScore >= 0.5 ? 'o' : '✗';
   projection.log(
-    `  Aggregate: ${aggScore.toFixed(3).padStart(6)}  ${aggLabel}  ${aggBar}  (${aggLevel})`
+    `  Aggregate: ${aggScore.toFixed(3).padStart(6)}  ${aggIcon}  ${aggBar}  (${aggLevel})`
   );
   projection.log('');
 
-  // Interpretation
-  projection.log('  Interpretation:');
-  projection.log(`    - Fitness:       How well the model can replay the log`);
-  projection.log(`    - Precision:     How much unobserved behavior the model allows`);
-  projection.log(`    - Generalization: How well the model generalizes to unseen behavior`);
-  projection.log(`    - Simplicity:    How simple/complex the model is`);
+  // What each metric means — always shown
+  projection.log('  Dimension meanings:');
+  for (const [metric] of Object.entries(scores)) {
+    const def = QUALITY_THRESHOLDS[metric];
+    if (def) {
+      projection.log(`    ${def.label.padEnd(16)} ${def.interpretation}`);
+    }
+  }
   projection.log('');
+
+  // Contextual advisories — only shown when a score is below minimum
+  if (advisories.length > 0) {
+    projection.log('  Advisories:');
+    for (const advice of advisories) {
+      projection.log(`    ! ${advice}`);
+    }
+    projection.log('');
+  }
 }
