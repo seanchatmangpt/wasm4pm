@@ -305,6 +305,25 @@ export const validate = defineCommand({
   },
 });
 
+// Actionable fix guidance keyed by check name and status
+const FIX_GUIDANCE: Record<string, { fail?: string; warn?: string }> = {
+  schema: {
+    fail: 'Fix: Ensure the file is valid XES XML. Required structure: <log><trace><event><string key="concept:name" value="..."/><date key="time:timestamp" value="..."/></event></trace></log>',
+  },
+  required_attributes: {
+    fail: 'Fix: Every event must have concept:name (activity) and time:timestamp. Add missing attributes to your events, or use --activity-key / --timestamp-key to point to alternate attribute names.',
+  },
+  data_quality: {
+    warn: 'Fix: Check for events with null/empty activity names, duplicate events within the same case at the same timestamp, or activities with very low frequency that may be noise.',
+  },
+  trace_completeness: {
+    warn: 'Fix: Incomplete traces often lack a final end activity. Ensure each case has a clear start and end event. Consider filtering incomplete cases before mining.',
+  },
+  timestamp_ordering: {
+    warn: 'Fix: Sort events within each trace by time:timestamp before running process mining. Out-of-order timestamps cause incorrect directly-follows graphs and fitness scores.',
+  },
+};
+
 function printHumanValidation(
   projection: import('../output.js').ConsoleProjection,
   payload: {
@@ -354,6 +373,30 @@ function printHumanValidation(
     for (const warning of warnings) {
       projection.log(`    ${warning}`);
     }
+    projection.log('');
+  }
+
+  // Actionable fix guidance for any non-passing check
+  const actionableChecks = checks.filter((c) => c.status !== 'pass');
+  if (actionableChecks.length > 0) {
+    projection.log('  How to fix:');
+    for (const check of actionableChecks) {
+      const guidance = FIX_GUIDANCE[check.name];
+      if (guidance) {
+        const advice = check.status === 'fail' ? guidance.fail : guidance.warn;
+        if (advice) {
+          projection.log(`    [${check.name}] ${advice}`);
+        }
+      } else if (check.status === 'warn') {
+        projection.log(`    [${check.name}] Review the details above and address before running discovery or conformance.`);
+      }
+    }
+    projection.log('');
+  }
+
+  // OCEL format hint — shown for all XES runs to help users who may be trying to validate OCEL
+  if (payload.format === 'xes') {
+    projection.log('  Note: for object-centric event logs (OCEL), use wpm powl import for JSON-based OCEL files.');
     projection.log('');
   }
 
