@@ -771,8 +771,60 @@ export class AlgorithmRegistry {
     });
 
     // ── ML Analysis ──────────────────────────────────────────
+    // Note: these algorithms are backed by the @wasm4pm/ml TypeScript package,
+    // not direct WASM exports. The WASM binary also exposes discover_ml_classify,
+    // discover_ml_forecast, discover_ml_regress, discover_ml_pca, but the canonical
+    // path is through @wasm4pm/ml (which uses wasm.extract_case_features + native TS).
+    // The Phase 4 audit incorrectly removed these; they are re-added here.
 
-    // ml_classify: REMOVED — no WASM export (Phase 4 audit)
+    this.registerWithInferredProfiles({
+      id: 'ml_classify',
+      name: 'ML Trace Classification',
+      description:
+        'Classify traces by outcome using k-NN, logistic regression, decision tree, or naive Bayes.',
+      outputType: 'ml_result',
+      complexity: 'O(n²)',
+      speedTier: 30,
+      qualityTier: 55,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity key',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'method',
+          type: 'select',
+          description: 'Classification method',
+          required: false,
+          default: 'knn',
+          options: ['knn', 'logistic_regression', 'decision_tree', 'naive_bayes'],
+        },
+        {
+          name: 'k',
+          type: 'number',
+          description: 'k-NN neighbours',
+          required: false,
+          default: 5,
+          min: 1,
+          max: 50,
+        },
+        {
+          name: 'target_key',
+          type: 'string',
+          description: 'Target categorical column (e.g. outcome)',
+          required: false,
+          default: 'outcome',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 20,
+      estimatedMemoryMB: 50,
+      robustToNoise: true,
+      scalesWell: true,
+    });
 
     this.registerWithInferredProfiles({
       id: 'ml_cluster',
@@ -824,7 +876,46 @@ export class AlgorithmRegistry {
       scalesWell: true,
     });
 
-    // ml_forecast: REMOVED — no WASM export (Phase 4 audit)
+    this.registerWithInferredProfiles({
+      id: 'ml_forecast',
+      name: 'ML Throughput Forecasting',
+      description:
+        'Forecast future process throughput using linear trend, autocorrelation seasonality, and optional exponential overlay.',
+      outputType: 'ml_result',
+      complexity: 'O(n)',
+      speedTier: 25,
+      qualityTier: 50,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity key',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'forecast_periods',
+          type: 'number',
+          description: 'Number of future periods to forecast',
+          required: false,
+          default: 5,
+          min: 1,
+          max: 100,
+        },
+        {
+          name: 'use_exponential',
+          type: 'boolean',
+          description: 'Also fit exponential model (y = a·e^bx)',
+          required: false,
+          default: false,
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 10,
+      estimatedMemoryMB: 20,
+      robustToNoise: true,
+      scalesWell: true,
+    });
 
     this.registerWithInferredProfiles({
       id: 'ml_anomaly',
@@ -859,9 +950,86 @@ export class AlgorithmRegistry {
       scalesWell: true,
     });
 
-    // ml_regress: REMOVED — no WASM export (Phase 4 audit)
+    this.registerWithInferredProfiles({
+      id: 'ml_regress',
+      name: 'ML Remaining Time Regression',
+      description:
+        'Predict remaining case cycle time using linear, polynomial, or exponential regression on trace features.',
+      outputType: 'ml_result',
+      complexity: 'O(n)',
+      speedTier: 25,
+      qualityTier: 50,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity key',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'method',
+          type: 'select',
+          description: 'Regression method',
+          required: false,
+          default: 'linear_regression',
+          options: ['linear_regression', 'polynomial_regression', 'exponential_regression'],
+        },
+        {
+          name: 'target_key',
+          type: 'string',
+          description: 'Numeric target column (e.g. remaining_time)',
+          required: false,
+          default: 'remaining_time',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 15,
+      estimatedMemoryMB: 30,
+      robustToNoise: true,
+      scalesWell: true,
+    });
 
-    // ml_pca: REMOVED — no WASM export (Phase 4 audit)
+    this.registerWithInferredProfiles({
+      id: 'ml_pca',
+      name: 'ML PCA Feature Reduction',
+      description:
+        'Reduce trace feature dimensionality using Principal Component Analysis (Jacobi eigendecomposition).',
+      outputType: 'ml_result',
+      complexity: 'O(n³)',
+      speedTier: 25,
+      qualityTier: 55,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity key',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'n_components',
+          type: 'number',
+          description: 'Number of principal components to keep',
+          required: false,
+          default: 2,
+          min: 1,
+          max: 20,
+        },
+        {
+          name: 'normalize',
+          type: 'boolean',
+          description: 'Min-max normalise columns before PCA',
+          required: false,
+          default: true,
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 20,
+      estimatedMemoryMB: 40,
+      robustToNoise: false,
+      scalesWell: false,
+    });
 
     // ─── Wave 1 Migration: Discovery algorithms ───────────────────────────
 

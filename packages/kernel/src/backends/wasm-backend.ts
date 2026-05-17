@@ -44,13 +44,8 @@ const SUPPORTED_ALGORITHM_IDS = [
   'hierarchical_dfg',
   'smart_engine',
 
-  // ML Analysis
-  'ml_classify',
-  'ml_cluster',
-  'ml_forecast',
-  'ml_anomaly',
-  'ml_regress',
-  'ml_pca',
+  // ML Analysis algorithms are handled by MlBackend, not WasmBackend.
+  // They are listed separately in ml-backend.ts's SUPPORTED_ALGORITHM_IDS.
 
   // Analysis & Utilities
   'transition_system',

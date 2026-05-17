@@ -159,6 +159,61 @@ export class MlBackend implements MiningBackend {
           });
           break;
         }
+        case 'ml_anomaly': {
+          const driftRaw = wasm.detect_drift(logHandle, 'concept:name', params.window_size ?? 10);
+          const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
+          const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
+          resultRaw = await ml.detectEnhancedAnomalies(distances, {
+            smoothingMethod: (params.smoothing_method as 'sma' | 'ema') ?? 'sma',
+          });
+          break;
+        }
+        case 'ml_regress': {
+          const configJson = JSON.stringify({
+            features: params.features || [
+              'trace_length',
+              'elapsed_time',
+              'rework_count',
+              'unique_activities',
+              'avg_inter_event_time',
+            ],
+            target: params.target_key || 'remaining_time',
+          });
+          const rawFeatures = wasm.extract_case_features(
+            logHandle,
+            'concept:name',
+            'time:timestamp',
+            configJson
+          );
+          const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+          resultRaw = await ml.regressRemainingTime(features, {
+            method: params.method as any,
+          });
+          break;
+        }
+        case 'ml_pca': {
+          const configJson = JSON.stringify({
+            features: params.features || [
+              'trace_length',
+              'elapsed_time',
+              'activity_counts',
+              'rework_count',
+              'unique_activities',
+              'avg_inter_event_time',
+            ],
+          });
+          const rawFeatures = wasm.extract_case_features(
+            logHandle,
+            'concept:name',
+            'time:timestamp',
+            configJson
+          );
+          const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+          resultRaw = await ml.reduceFeaturesPCA(features, {
+            nComponents: params.n_components ?? 2,
+          });
+          break;
+        }
         default:
           throw new Error(
             `Execution for ML task ${task.task_type} not implemented in ML backend bridge`
