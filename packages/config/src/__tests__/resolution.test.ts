@@ -91,8 +91,9 @@ describe('Resolution', () => {
       const cfgSrcEnv = await resolveConfig({ configSearchPaths: [tmpDir], env: { WASM4PM_SOURCE_KIND: 'stream' } });
       expect(cfgSrcEnv.source.kind).toBe('stream');
 
-      const cfgSinkEnv = await resolveConfig({ configSearchPaths: [tmpDir], env: { WASM4PM_SINK_KIND: 'file' } });
-      expect(cfgSinkEnv.sink.kind).toBe('file');
+      // sink.kind='file' requires a path — use 'stdout' to test ENV var propagation
+      const cfgSinkEnv = await resolveConfig({ configSearchPaths: [tmpDir], env: { WASM4PM_SINK_KIND: 'stdout' } });
+      expect(cfgSinkEnv.sink.kind).toBe('stdout');
     });
   });
 

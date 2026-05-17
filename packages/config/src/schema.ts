@@ -54,6 +54,26 @@ export const sourceConfigSchema = z
     path: z.string().optional(),
     url: z.string().url().optional(),
   })
+  .superRefine((val, ctx) => {
+    if (val.kind === 'http' && !val.url) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['url'],
+        message:
+          'source.url is required when source.kind is "http". ' +
+          'Provide a valid URL (e.g. http://localhost:8080/events.xes).',
+      });
+    }
+    if (val.kind === 'file' && val.url) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['url'],
+        message:
+          'source.url is not applicable when source.kind is "file". ' +
+          'Use source.path instead.',
+      });
+    }
+  })
   .describe('Source configuration');
 
 export const sinkConfigSchema = z
@@ -61,6 +81,35 @@ export const sinkConfigSchema = z
     kind: sinkKindSchema,
     path: z.string().optional(),
     url: z.string().url().optional(),
+  })
+  .superRefine((val, ctx) => {
+    if (val.kind === 'http' && !val.url) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['url'],
+        message:
+          'sink.url is required when sink.kind is "http". ' +
+          'Provide a valid URL (e.g. http://localhost:9200/results).',
+      });
+    }
+    if (val.kind === 'file' && !val.path) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['path'],
+        message:
+          'sink.path is required when sink.kind is "file". ' +
+          'Provide a file path (e.g. ./output.pnml).',
+      });
+    }
+    if (val.kind === 'stdout' && val.path) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['path'],
+        message:
+          'sink.path is not applicable when sink.kind is "stdout". ' +
+          'Remove the path field or change sink.kind to "file".',
+      });
+    }
   })
   .describe('Sink configuration');
 
@@ -146,6 +195,17 @@ export const predictionConfigSchema = z
     tasks: z.array(z.enum(PREDICTION_TASKS)).default([]),
     /** Nested drift parameters (Van der Aalst time/concept-drift perspective). */
     drift: driftConfigSchema.default({}),
+  })
+  .superRefine((val, ctx) => {
+    if (val.enabled && val.tasks.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['tasks'],
+        message:
+          'prediction.tasks must not be empty when prediction.enabled is true. ' +
+          'Add at least one task: next_activity | remaining_time | outcome | drift | features | resource.',
+      });
+    }
   })
   .describe('Prediction configuration — which prediction tasks to run');
 
@@ -383,7 +443,7 @@ export const swarmConfigSchema = z
     /** Groq model ID used for each worker generateText call. */
     worker_model: z.string().min(1).default('llama-3.1-70b-versatile'),
     /** Algorithm IDs to run in parallel across workers. Defaults to ["dfg"]. */
-    algorithm_ids: z.array(z.string().min(1)).default(['dfg']),
+    algorithm_ids: z.array(algorithmIdSchema).default(['dfg']),
   })
   .describe(
     'Swarm orchestration — multi-worker convergence: episodes, quorum threshold, worker model'
@@ -617,6 +677,9 @@ function zodToJsonSchema(schema: z.ZodTypeAny): Record<string, unknown> {
       if (def.description) result.description = def.description;
       return result;
     }
+    case 'ZodEffects':
+      // superRefine / refine / transform — delegate to the inner schema
+      return zodToJsonSchema(def.schema ?? def.innerType);
     case 'ZodUnknown':
       return {};
     default:

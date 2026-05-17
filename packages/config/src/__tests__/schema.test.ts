@@ -55,12 +55,21 @@ describe('Schema', () => {
       expect(fullResult.watch?.poll_interval).toBe(500);
       expect(fullResult.watch?.checkpoint_dir).toBe('/tmp/ckpt');
 
-      for (const kind of ['file', 'stream', 'http'] as const) {
+      // source kinds: 'file' and 'stream' need no url; 'http' requires url
+      for (const kind of ['file', 'stream'] as const) {
         expect(() => validate({ ...minimal, source: { kind } })).not.toThrow();
       }
-      for (const kind of ['stdout', 'file', 'http'] as const) {
-        expect(() => validate({ ...minimal, sink: { kind } })).not.toThrow();
-      }
+      expect(() =>
+        validate({ ...minimal, source: { kind: 'http', url: 'http://localhost:8080/events.xes' } })
+      ).not.toThrow();
+      // sink kinds: 'stdout' needs no extra field; 'file' requires path; 'http' requires url
+      expect(() => validate({ ...minimal, sink: { kind: 'stdout' } })).not.toThrow();
+      expect(() =>
+        validate({ ...minimal, sink: { kind: 'file', path: './output.pnml' } })
+      ).not.toThrow();
+      expect(() =>
+        validate({ ...minimal, sink: { kind: 'http', url: 'http://localhost:9200/results' } })
+      ).not.toThrow();
       for (const profile of ['fast', 'balanced', 'quality', 'stream'] as const) {
         expect(() => validate({ ...minimal, execution: { profile } })).not.toThrow();
       }
@@ -96,7 +105,12 @@ describe('Schema', () => {
       expect(() => validatePartial({})).not.toThrow();
       expect(() => validatePartial({ execution: { profile: 'fast' } })).not.toThrow();
       expect(() => validatePartial({ algorithm: { name: 'alpha_plus_plus' } })).not.toThrow();
-      expect(() => validatePartial({ sink: { kind: 'http' } })).not.toThrow();
+      // sink.kind='http' without url is now always rejected — cross-field constraint
+      // fires even in partial validation because the constraint is on the object itself.
+      expect(() => validatePartial({ sink: { kind: 'http' } })).toThrow(/sink\.url is required/);
+      expect(() =>
+        validatePartial({ sink: { kind: 'http', url: 'http://localhost:9200/results' } })
+      ).not.toThrow();
       expect(() => validatePartial({ execution: { profile: 'turbo' } })).toThrow();
     });
   });

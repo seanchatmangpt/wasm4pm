@@ -95,7 +95,7 @@ export function getPresetConfig(scenario: PresetScenario): BaseConfig {
         schemaVersion: SCHEMA_VERSION,
         version: '26.4.5',
         source: { kind: 'file' },
-        sink: { kind: 'file' },
+        sink: { kind: 'file', path: './wasm4pm-results.pnml' },
         algorithm: { name: 'ilp', parameters: {} },
         execution: {
           profile: 'quality',
