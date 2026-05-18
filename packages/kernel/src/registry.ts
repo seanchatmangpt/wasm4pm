@@ -19,6 +19,43 @@ export type ComplexityClass =
   | 'NP-Hard';
 
 /**
+ * Log characteristics for algorithm suitability matching
+ */
+export interface LogCharacteristics {
+  /** Algorithm performs well on high-variance logs with many trace variants */
+  highVarianceOptimal?: boolean;
+
+  /** Algorithm performs well on logs with many distinct activities */
+  highActivityOptimal?: boolean;
+
+  /** Noise resistance score (0-100, higher is better) */
+  noiseResistance?: number;
+
+  /** Algorithm includes built-in rework detection */
+  reworkDetector?: boolean;
+}
+
+/**
+ * Log statistics for algorithm selection
+ */
+export interface LogStats {
+  /** Total number of events in the log */
+  eventCount: number;
+
+  /** Number of distinct traces */
+  traceCount: number;
+
+  /** Number of distinct activities */
+  activityCount: number;
+
+  /** Number of unique trace variants */
+  variantCount: number;
+
+  /** Estimated noise level (0-1, higher = more noise) */
+  estimatedNoiseLevel?: number;
+}
+
+/**
  * Speed tier: ordinal rank where lower = faster (1 = fastest, 80 = slowest registered).
  * Range spans [1 (simd_streaming_dfg) … 80 (ilp)] across the browser profile.
  * Do NOT change to a formula-derived value — ordering contracts are tested as Rank 2 domain invariants.
@@ -102,6 +139,9 @@ export interface AlgorithmMetadata {
 
   /** References or academic papers */
   references?: string[];
+
+  /** Log characteristics this algorithm is optimized for */
+  logCharacteristics?: LogCharacteristics;
 }
 
 /**
@@ -160,6 +200,9 @@ export class AlgorithmRegistry {
       estimatedMemoryMB: 20,
       robustToNoise: true,
       scalesWell: true,
+      logCharacteristics: {
+        noiseResistance: 60,
+      },
     });
 
     // Process Skeleton
@@ -254,6 +297,10 @@ export class AlgorithmRegistry {
       estimatedMemoryMB: 150,
       robustToNoise: true,
       scalesWell: true,
+      logCharacteristics: {
+        highVarianceOptimal: true,
+        noiseResistance: 75,
+      },
     });
 
     // Inductive Miner
@@ -289,6 +336,10 @@ export class AlgorithmRegistry {
       estimatedMemoryMB: 180,
       robustToNoise: true,
       scalesWell: true,
+      logCharacteristics: {
+        highVarianceOptimal: false,
+        noiseResistance: 50,
+      },
     });
 
     // Genetic Algorithm
@@ -333,6 +384,10 @@ export class AlgorithmRegistry {
       estimatedMemoryMB: 250,
       robustToNoise: true,
       scalesWell: false,
+      logCharacteristics: {
+        highVarianceOptimal: true,
+        noiseResistance: 85,
+      },
     });
 
     // PSO (Particle Swarm Optimization)
@@ -2043,6 +2098,175 @@ export class AlgorithmRegistry {
     if (activities < 20 && traces < 5_000) return 'inductive_miner';
     return 'heuristic_miner';
   }
+
+  /**
+   * Suggest algorithms suitable for specific log characteristics.
+   *
+   * Filters registered algorithms by matching their logCharacteristics against
+   * the observed log statistics. Returns algorithms ranked by suitability score.
+   *
+   * @param logStats Log statistics (event count, trace count, activities, variants, noise level)
+   * @param profile Execution profile to filter by (optional)
+   * @returns Array of algorithm IDs sorted by suitability (best first), or empty if no matches
+   *
+   * Example:
+   *   const stats = { eventCount: 10000, traceCount: 100, activityCount: 50, variantCount: 45 };
+   *   const suggestions = registry.suggestByLogCharacteristics(stats, 'quality');
+   *   // Returns: ['genetic_algorithm', 'heuristic_miner', ...] (algorithms optimized for high variance)
+   */
+  suggestByLogCharacteristics(logStats: LogStats, profile?: ExecutionProfile): string[] {
+    const { traceCount, activityCount, variantCount, estimatedNoiseLevel = 0 } = logStats;
+
+    // Detect log characteristics
+    const isHighVariance = variantCount / Math.max(traceCount, 1) > 0.7; // >70% unique variants
+    const isHighActivity = activityCount > 50;
+    const isNoisy = estimatedNoiseLevel > 0.3;
+
+    // Get candidate algorithms
+    let candidates = profile
+      ? this.getForProfile(profile)
+      : Array.from(this.algorithms.values());
+
+    // Score algorithms based on match with log characteristics
+    const scored = candidates
+      .map((algo) => {
+        let score = 0;
+
+        if (!algo.logCharacteristics) return { id: algo.id, score: 0 }; // 0 score = no metadata
+
+        // Match high variance preference
+        if (isHighVariance && algo.logCharacteristics.highVarianceOptimal === true) {
+          score += 30;
+        } else if (!isHighVariance && algo.logCharacteristics.highVarianceOptimal === false) {
+          score += 20;
+        }
+
+        // Match high activity preference
+        if (isHighActivity && algo.logCharacteristics.highActivityOptimal === true) {
+          score += 20;
+        } else if (!isHighActivity && algo.logCharacteristics.highActivityOptimal === false) {
+          score += 10;
+        }
+
+        // Match noise resistance
+        if (isNoisy && algo.logCharacteristics.noiseResistance !== undefined) {
+          score += Math.min(algo.logCharacteristics.noiseResistance / 100, 1) * 50;
+        } else if (!isNoisy && algo.logCharacteristics.noiseResistance !== undefined) {
+          // Even clean logs benefit from some noise resistance
+          score += Math.min(algo.logCharacteristics.noiseResistance / 100, 1) * 10;
+        }
+
+        // Bonus for rework detection on high-variance logs
+        if (isHighVariance && algo.logCharacteristics.reworkDetector === true) {
+          score += 15;
+        }
+
+        return { id: algo.id, score };
+      })
+      .filter((s) => s.score > 0)
+      .sort((a, b) => b.score - a.score);
+
+    return scored.map((s) => s.id);
+  }
+}
+
+/**
+ * JSON Schema representation of an algorithm parameter
+ */
+interface JsonSchemaProperty {
+  type: string | string[];
+  description: string;
+  default?: unknown;
+  enum?: unknown[];
+  minimum?: number;
+  maximum?: number;
+}
+
+/**
+ * Full JSON Schema for a single algorithm
+ */
+interface AlgorithmJsonSchema {
+  $schema: string;
+  title: string;
+  description: string;
+  type: 'object';
+  properties: Record<string, JsonSchemaProperty>;
+  required: string[];
+  additionalProperties: boolean;
+}
+
+/**
+ * Convert algorithm metadata to JSON Schema format.
+ *
+ * Maps AlgorithmParameter types to JSON Schema types:
+ *   - 'number' → 'number'
+ *   - 'string' → 'string'
+ *   - 'boolean' → 'boolean'
+ *   - 'select' → 'string' with enum
+ *
+ * Includes range constraints (min/max) and default values.
+ */
+export function algorithmToJsonSchema(metadata: AlgorithmMetadata): AlgorithmJsonSchema {
+  const properties: Record<string, JsonSchemaProperty> = {};
+  const required: string[] = [];
+
+  for (const param of metadata.parameters) {
+    const jsonType = param.type === 'select' ? 'string' : param.type;
+    const prop: JsonSchemaProperty = {
+      type: jsonType,
+      description: param.description,
+    };
+
+    if (param.default !== undefined) {
+      prop.default = param.default;
+    }
+
+    if (param.type === 'select' && param.options) {
+      prop.enum = param.options;
+    }
+
+    if (param.type === 'number') {
+      if (param.min !== undefined) {
+        prop.minimum = param.min;
+      }
+      if (param.max !== undefined) {
+        prop.maximum = param.max;
+      }
+    }
+
+    properties[param.name] = prop;
+
+    if (param.required) {
+      required.push(param.name);
+    }
+  }
+
+  return {
+    $schema: 'http://json-schema.org/draft-07/schema#',
+    title: metadata.name,
+    description: metadata.description,
+    type: 'object',
+    properties,
+    required,
+    additionalProperties: false,
+  };
+}
+
+/**
+ * Export entire registry to JSON Schema format (one schema per algorithm)
+ *
+ * Returns an object where each key is an algorithm ID and the value is its JSON Schema.
+ * Suitable for external tools to introspect available algorithms and their parameters.
+ */
+export function registryToJsonSchema(): Record<string, AlgorithmJsonSchema> {
+  const registry = getRegistry();
+  const schemas: Record<string, AlgorithmJsonSchema> = {};
+
+  for (const algo of registry.list()) {
+    schemas[algo.id] = algorithmToJsonSchema(algo);
+  }
+
+  return schemas;
 }
 
 /**

@@ -34,9 +34,9 @@ export interface WasmModule {
   // Basic discovery
   discover_dfg(eventlog_handle: string, activity_key: string): Promise<{ handle: string }>;
 
-  discover_ocel_dfg(ocel_handle: string): Promise<{ handle: string }>;
+  discover_ocel_dfg?(ocel_handle: string): Promise<{ handle: string }>;
 
-  discover_ocel_dfg_per_type(ocel_handle: string): Promise<{ handle: string }>;
+  discover_ocel_dfg_per_type?(ocel_handle: string): Promise<{ handle: string }>;
 
   // Alpha++ (improved Alpha algorithm)
   discover_alpha_plus_plus(

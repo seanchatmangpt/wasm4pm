@@ -59,7 +59,6 @@ function makeEntry(overrides: Partial<AlgorithmMetadata> = {}): AlgorithmMetadat
     estimatedMemoryMB: 20,
     robustToNoise: true,
     scalesWell: true,
-    fitnessRange: { min: 0.5, max: 0.9 },
     ...overrides,
   };
 }

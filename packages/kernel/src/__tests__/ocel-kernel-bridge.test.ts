@@ -34,7 +34,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { Kernel, type KernelWasmModule } from '../api.js';
 import { KernelError } from '../errors.js';
-import { getRegistry, type AlgorithmRegistry, AlgorithmRegistry } from '../registry.js';
+import { getRegistry, AlgorithmRegistry } from '../registry.js';
 
 // ---------------------------------------------------------------------------
 // Stubs
@@ -125,16 +125,24 @@ function buildOcelCapableStub(): KernelWasmModule & { ocelCallCounts: Record<str
       inc('flatten_ocel_to_eventlog');
       return `flattened_${ocel_handle}_${object_type}`;
     },
+    async discover_ocel_dfg(ocel_handle: string): Promise<{ handle: string }> {
+      inc('discover_ocel_dfg');
+      return { handle: `ocel_dfg_result_${ocel_handle}` };
+    },
+    async discover_ocel_dfg_per_type(ocel_handle: string): Promise<{ handle: string }> {
+      inc('discover_ocel_dfg_per_type');
+      return { handle: `ocel_dfg_per_type_result_${ocel_handle}` };
+    },
   };
 
   // Add the discover_ocel_dfg and discover_ocel_dfg_per_type functions that are
   // accessed via dynamic property lookup in api.ts (they are not on KernelWasmModule type
   // but are accessed as (wasm as Record<string, fn>)['discover_ocel_dfg'])
-  (stub as Record<string, unknown>)['discover_ocel_dfg'] = (h: string): { handle: string } => {
+  (stub as unknown as Record<string, unknown>)['discover_ocel_dfg'] = (h: string): { handle: string } => {
     inc('discover_ocel_dfg');
     return { handle: `ocel_dfg_result_${h}` };
   };
-  (stub as Record<string, unknown>)['discover_ocel_dfg_per_type'] = (h: string): { handle: string } => {
+  (stub as unknown as Record<string, unknown>)['discover_ocel_dfg_per_type'] = (h: string): { handle: string } => {
     inc('discover_ocel_dfg_per_type');
     return { handle: `ocel_dfg_per_type_result_${h}` };
   };

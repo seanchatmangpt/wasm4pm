@@ -24,6 +24,9 @@ export { detectEnhancedAnomalies } from './anomaly.js';
 // Dimensionality reduction
 export { reduceFeaturesPCA } from './reduction.js';
 
+// Parameter suggestions
+export { suggestClusteringK, suggestPCAComponents, suggestAnomalyThreshold } from './parameter-suggestions.js';
+
 // Types
 export type {
   FeatureMatrix,
