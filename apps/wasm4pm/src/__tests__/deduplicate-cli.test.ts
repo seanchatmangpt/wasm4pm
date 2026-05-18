@@ -6,9 +6,44 @@ import * as os from 'node:os';
 
 // Helper to extract JSON from CLI output (may have help text appended)
 function extractJsonFromOutput(output: string): unknown {
-  const jsonMatch = output.match(/\{[\s\S]*\}/);
-  if (!jsonMatch) throw new Error('No JSON found in output');
-  return JSON.parse(jsonMatch[0]);
+  // Find the first JSON object by looking for leading { and parsing carefully
+  const startIdx = output.indexOf('{');
+  if (startIdx === -1) throw new Error('No JSON found in output');
+
+  let braceCount = 0;
+  let inString = false;
+  let escaped = false;
+
+  for (let i = startIdx; i < output.length; i++) {
+    const char = output[i];
+
+    if (escaped) {
+      escaped = false;
+      continue;
+    }
+
+    if (char === '\\') {
+      escaped = true;
+      continue;
+    }
+
+    if (char === '"' && !escaped) {
+      inString = !inString;
+      continue;
+    }
+
+    if (!inString) {
+      if (char === '{') braceCount++;
+      if (char === '}') {
+        braceCount--;
+        if (braceCount === 0) {
+          return JSON.parse(output.substring(startIdx, i + 1));
+        }
+      }
+    }
+  }
+
+  throw new Error('No complete JSON object found in output');
 }
 
 describe('wpm deduplicate — result deduplication CLI', () => {
@@ -113,10 +148,7 @@ describe('wpm deduplicate — result deduplication CLI', () => {
       const result = await runCli(['deduplicate', 'report'], { env: env.env });
       expect(result.exitCode).toBe(EXIT_CODES.success);
 
-      // Extract JSON from output (may have help text appended)
-      const jsonMatch = result.stdout.match(/\{[\s\S]*\}/);
-      expect(jsonMatch).not.toBeNull();
-      const output = JSON.parse(jsonMatch![0]);
+      const output = extractJsonFromOutput(result.stdout);
       expect(output.payload).toBeDefined();
       expect(output.payload.total_cached_entries).toBeGreaterThanOrEqual(0);
       expect(output.payload.deduplicated_runs).toBeGreaterThanOrEqual(0);
