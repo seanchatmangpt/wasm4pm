@@ -30,8 +30,15 @@ export interface ConformanceCacheStats {
 }
 
 /**
- * Simple LRU cache with per-entry TTL.
- * Evicts oldest entries when capacity exceeded.
+ * LRU cache with per-entry TTL.
+ *
+ * Access order is maintained via delete-then-reinsert in `getCachedFitness()`,
+ * which moves the accessed entry to the tail of the Map's insertion-order
+ * sequence. When capacity is exceeded, the head of the sequence (least recently
+ * used entry) is evicted.
+ *
+ * Before applying LRU eviction, expired entries are purged first so that zombie
+ * entries do not consume capacity slots at the expense of valid live entries.
  */
 export class ConformanceCache {
   private cache: Map<string, CachedFitnessResult> = new Map();
@@ -93,10 +100,21 @@ export class ConformanceCache {
       ttl_ms: ttl,
     };
 
-    // Evict oldest if at capacity
+    // If at capacity, purge expired entries first to reclaim dead slots before
+    // evicting a potentially live entry.
     if (this.cache.size >= this.maxEntries) {
-      const oldestKey = this.cache.keys().next().value as string;
-      this.cache.delete(oldestKey);
+      const now = Date.now();
+      for (const [k, v] of this.cache.entries()) {
+        if (now - v.timestamp > v.ttl_ms) {
+          this.cache.delete(k);
+        }
+      }
+    }
+
+    // Still at capacity after purging expired entries: evict the LRU (head).
+    if (this.cache.size >= this.maxEntries) {
+      const lruKey = this.cache.keys().next().value as string;
+      this.cache.delete(lruKey);
     }
 
     this.cache.set(key, cached);
@@ -132,6 +150,12 @@ export class ConformanceCache {
     }
 
     this.hits++;
+
+    // Promote to tail (most-recently-used position) so the LRU eviction at
+    // cacheFitness() correctly evicts the least-recently-accessed entry.
+    this.cache.delete(key);
+    this.cache.set(key, cached);
+
     this.tryEmit(
       Instrumentation.createConformanceCacheHitEvent(
         logHash,

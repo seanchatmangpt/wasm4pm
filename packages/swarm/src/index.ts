@@ -58,6 +58,10 @@ export {
   type BeamMessage,
 } from './beam-bridge.js';
 
+// Typed span-name constants for mcpp LIVE-09 correlation (GAP-3 fix)
+export { SWARM_SPAN_NAMES } from './span-names.js';
+export type { SwarmSpanName } from './span-names.js';
+
 // POWL gap lifecycle span event emitters (LIVE-09)
 export {
   emitGapDetected,

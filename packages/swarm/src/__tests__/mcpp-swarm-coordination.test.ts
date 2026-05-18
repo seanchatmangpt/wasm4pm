@@ -87,6 +87,8 @@ import {
   type GapTraceRecord,
 } from '../gap-events.js';
 
+import { SWARM_SPAN_NAMES } from '../span-names.js';
+
 import {
   ROUTE_REFINEMENT_ANDON,
   createAttempt,
@@ -288,7 +290,7 @@ describe('Channel 2: Gap lifecycle spans for mcpp LIVE-09 correlation (Rank 2)',
       detectedAt: NOW_ISO,
     });
 
-    expect(record.name).toBe('powl.gap.detected');
+    expect(record.name).toBe(SWARM_SPAN_NAMES.GAP_DETECTED);
     expect(record.timestamp).toBe(NOW_ISO);
     expect(record.attributes['run.id']).toBe(UUID_V4);
     expect(record.attributes['powl.gap.activity_id']).toBe('activity:Approve');
@@ -304,7 +306,7 @@ describe('Channel 2: Gap lifecycle spans for mcpp LIVE-09 correlation (Rank 2)',
       closingVariant: 'RelaxThreshold',
     });
 
-    expect(record.name).toBe('powl.gap.closed');
+    expect(record.name).toBe(SWARM_SPAN_NAMES.GAP_CLOSED);
     expect(record.attributes['powl.gap.closing_variant']).toBe('RelaxThreshold');
   });
 
@@ -317,7 +319,7 @@ describe('Channel 2: Gap lifecycle spans for mcpp LIVE-09 correlation (Rank 2)',
       attemptsCount: 7,
     });
 
-    expect(record.name).toBe('powl.gap.exhausted');
+    expect(record.name).toBe(SWARM_SPAN_NAMES.GAP_EXHAUSTED);
     expect(record.attributes['powl.gap.attempts_count']).toBe(7);
   });
 
@@ -330,18 +332,14 @@ describe('Channel 2: Gap lifecycle spans for mcpp LIVE-09 correlation (Rank 2)',
       evidenceSource: 'wasm4pm:dfg:round3',
     });
 
-    expect(record.name).toBe('powl.gap.alternate_evidence_received');
+    expect(record.name).toBe(SWARM_SPAN_NAMES.GAP_ALTERNATE_EVIDENCE);
     expect(record.attributes['powl.gap.evidence_source']).toBe('wasm4pm:dfg:round3');
   });
 
   it('all four LIVE-09 span names use the "powl.gap." prefix (namespace contract)', () => {
-    const spanNames = [
-      'powl.gap.detected',
-      'powl.gap.closed',
-      'powl.gap.exhausted',
-      'powl.gap.alternate_evidence_received',
-    ];
-    // Validate these are the exact strings emitted (GAP-3: no compile-time check)
+    // Use SWARM_SPAN_NAMES constants — GAP-3 remediated; renames are now compile errors.
+    const spanNames = Object.values(SWARM_SPAN_NAMES);
+    expect(spanNames).toHaveLength(4);
     for (const name of spanNames) {
       expect(name.startsWith('powl.gap.')).toBe(true);
     }

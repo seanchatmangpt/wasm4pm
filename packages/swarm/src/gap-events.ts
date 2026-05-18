@@ -9,7 +9,12 @@
  *
  * These records are structurally compatible with the @wasm4pm/observability
  * TraceRecord type and can be forwarded to any OTEL-compatible exporter.
+ *
+ * Span names are centralised in SWARM_SPAN_NAMES (span-names.ts) so that
+ * mcpp LIVE-09 correlation key renames are caught at compile time (GAP-3 fix).
  */
+
+import { SWARM_SPAN_NAMES } from './span-names.js';
 
 // ---------------------------------------------------------------------------
 // Event payloads
@@ -61,10 +66,10 @@ export interface GapTraceRecord {
 // Emitters
 // ---------------------------------------------------------------------------
 
-/** Emits powl.gap.detected (LIVE-09 event 1/3). */
+/** Emits powl.gap.detected (LIVE-09 event 1/4). */
 export function emitGapDetected(evt: GapDetectedEvent): GapTraceRecord {
   return {
-    name: 'powl.gap.detected',
+    name: SWARM_SPAN_NAMES.GAP_DETECTED,
     timestamp: evt.detectedAt,
     attributes: {
       'run.id': evt.runId,
@@ -74,10 +79,10 @@ export function emitGapDetected(evt: GapDetectedEvent): GapTraceRecord {
   };
 }
 
-/** Emits powl.gap.closed (LIVE-09 event 2/3). */
+/** Emits powl.gap.closed (LIVE-09 event 2/4). */
 export function emitGapClosed(evt: GapClosedEvent): GapTraceRecord {
   return {
-    name: 'powl.gap.closed',
+    name: SWARM_SPAN_NAMES.GAP_CLOSED,
     timestamp: evt.closedAt,
     attributes: {
       'run.id': evt.runId,
@@ -92,7 +97,7 @@ export function emitGapClosed(evt: GapClosedEvent): GapTraceRecord {
  * This event triggers the RouteRefinementPolicy escalation ladder. */
 export function emitGapExhausted(evt: GapExhaustedEvent): GapTraceRecord {
   return {
-    name: 'powl.gap.exhausted',
+    name: SWARM_SPAN_NAMES.GAP_EXHAUSTED,
     timestamp: evt.exhaustedAt,
     attributes: {
       'run.id': evt.runId,
@@ -108,7 +113,7 @@ export function emitGapExhausted(evt: GapExhaustedEvent): GapTraceRecord {
  * rather than by escalating through the RouteRefinementVariant ladder. */
 export function emitGapAlternateEvidence(evt: GapAlternateEvidenceEvent): GapTraceRecord {
   return {
-    name: 'powl.gap.alternate_evidence_received',
+    name: SWARM_SPAN_NAMES.GAP_ALTERNATE_EVIDENCE,
     timestamp: evt.receivedAt,
     attributes: {
       'run.id': evt.runId,
