@@ -1225,8 +1225,8 @@ export const run = defineCommand({
         'status.code': finalExitCode,
         'status.ok': finalExitCode === EXIT_CODES.success,
         'algorithm.name': finalAlgorithm,
-        'quality.fitness': finalFitness > 0 ? finalFitness : undefined,
-        'quality.precision': finalPrecision > 0 ? finalPrecision : undefined,
+        ...(finalFitness > 0 ? { 'quality.fitness': finalFitness } : {}),
+        ...(finalPrecision > 0 ? { 'quality.precision': finalPrecision } : {}),
         'activity.key': 'concept:name',
       })
     );
