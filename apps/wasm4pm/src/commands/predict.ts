@@ -533,6 +533,22 @@ async function executePredictionTask(
 }
 
 /**
+ * Van der Aalst predictive perspective labels.
+ *
+ * Teinemaa et al. (2019) "Alarm-based prescriptive process monitoring" defines six
+ * prediction perspectives.  Surfacing the perspective name helps practitioners
+ * understand which aspect of the process they are inspecting.
+ */
+const PERSPECTIVE_LABELS: Record<PredictTask, string> = {
+  'next-activity':    'Control-flow perspective — predicting the next activity in a trace',
+  'remaining-time':  'Time perspective — estimating remaining case duration',
+  'outcome':         'Outcome perspective — scoring trace anomalies against observed behaviour',
+  'drift':           'Concept-drift perspective — detecting behaviour change over time',
+  'features':        'Control-flow / data perspective — extracting transition probabilities',
+  'resource':        'Resource perspective — M/M/1 queue model of workload',
+};
+
+/**
  * Format results for human-readable output via ConsoleProjection.
  */
 function formatHumanOutput(
@@ -540,6 +556,11 @@ function formatHumanOutput(
   task: PredictTask,
   result: Record<string, unknown>
 ): void {
+  // Always emit the Van der Aalst perspective so the practitioner knows which
+  // of the six prediction angles they are looking at.
+  p.log('');
+  p.log(`  Perspective:  ${PERSPECTIVE_LABELS[task]}`);
+
   switch (task) {
     case 'next-activity': {
       // Gap 1: show prefix context so the analyst knows what drove the predictions.

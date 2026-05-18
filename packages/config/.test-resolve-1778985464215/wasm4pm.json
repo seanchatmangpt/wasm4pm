@@ -1,0 +1,44 @@
+{
+  "schemaVersion": 1,
+  "version": "26.4.5",
+  "source": {
+    "kind": "file"
+  },
+  "sink": {
+    "kind": "stdout"
+  },
+  "algorithm": {
+    "name": "dfg",
+    "parameters": {}
+  },
+  "execution": {
+    "profile": "balanced",
+    "timeout": 300000
+  },
+  "observability": {
+    "logLevel": "info",
+    "metricsEnabled": false,
+    "otel": {
+      "enabled": true,
+      "exporter": "otlp",
+      "required": false
+    }
+  },
+  "watch": {
+    "enabled": false,
+    "poll_interval": 1000
+  },
+  "output": {
+    "format": "human",
+    "destination": "stdout",
+    "pretty": true,
+    "colorize": true
+  },
+  "prediction": {
+    "enabled": false,
+    "activityKey": "concept:name",
+    "ngramOrder": 2,
+    "driftWindowSize": 10,
+    "tasks": []
+  }
+}

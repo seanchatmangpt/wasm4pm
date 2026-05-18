@@ -1819,6 +1819,29 @@ export class AlgorithmRegistry {
   }
 
   /**
+   * Get algorithms that handle the given input format.
+   *
+   * 'ocel' returns all algorithms whose IDs start with 'ocel_' — these require
+   * an OCEL handle (loaded via load_ocel_from_json) rather than a flat XES handle.
+   * They are only available in fog and browser deployment profiles (feature-ocel).
+   *
+   * 'xes' returns all algorithms that operate on conventional XES event log handles.
+   *
+   * This method is the canonical way for the CLI and planner to filter algorithms
+   * by input format, enabling the PM lifecycle loop to guide practitioners to the
+   * right algorithm for their log type.
+   */
+  getForInputFormat(inputFormat: 'ocel' | 'xes'): AlgorithmMetadata[] {
+    return Array.from(this.algorithms.values()).filter((a) => {
+      if (inputFormat === 'ocel') {
+        return a.id.startsWith('ocel_');
+      }
+      // xes: everything that is NOT an OCEL-specific algorithm
+      return !a.id.startsWith('ocel_');
+    });
+  }
+
+  /**
    * Build deployment profile map from algorithm registrations
    */
   private buildDeploymentProfileMap(): void {

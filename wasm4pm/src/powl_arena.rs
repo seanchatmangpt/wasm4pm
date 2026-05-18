@@ -292,9 +292,48 @@ pub struct FrequentTransitionNode {
     pub label: String,
     /// Underlying activity name (without frequency annotation).
     pub activity: String,
+    /// Minimum execution count (>= 0). Matches TaggedPOWL.min_freq from the reference.
+    pub min_freq: i64,
+    /// Maximum execution count. None = unbounded. Matches TaggedPOWL.max_freq.
+    pub max_freq: Option<i64>,
+    /// Derived: min_freq == 0. Kept for backward compat with callers.
     pub skippable: bool,
+    /// Derived: max_freq.is_none(). Kept for backward compat with callers.
     pub selfloop: bool,
     pub id: u32,
+}
+
+impl FrequentTransitionNode {
+    /// Reference: TaggedPOWL.is_skippable() → min_freq == 0
+    #[inline]
+    pub fn is_skippable(&self) -> bool {
+        self.min_freq == 0
+    }
+
+    /// Reference: TaggedPOWL.is_repeatable() → max_freq is None or max_freq > 1
+    #[inline]
+    pub fn is_repeatable(&self) -> bool {
+        self.max_freq.is_none() || self.max_freq.unwrap() > 1
+    }
+
+    /// Reference: TaggedPOWL.is_unbounded() → max_freq is None
+    #[inline]
+    pub fn is_unbounded(&self) -> bool {
+        self.max_freq.is_none()
+    }
+
+    /// Reference: TaggedPOWL.freq_range() → (min_freq, max_freq)
+    #[inline]
+    pub fn freq_range(&self) -> (i64, Option<i64>) {
+        (self.min_freq, self.max_freq)
+    }
+
+    /// Shallow structural comparison matching TaggedPOWL.same_signature().
+    pub fn same_signature(&self, other: &FrequentTransitionNode) -> bool {
+        self.activity == other.activity
+            && self.min_freq == other.min_freq
+            && self.max_freq == other.max_freq
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -414,6 +453,10 @@ impl PowlArena {
     }
 
     /// Add a FrequentTransition node.
+    ///
+    /// Stores the exact `min_freq`/`max_freq` integers per the TaggedPOWL reference
+    /// (`vendors/POWL/powl/objects/tagged_powl/base.py`). The boolean helpers
+    /// `skippable` and `selfloop` are derived from these values for backward compat.
     pub fn add_frequent_transition(
         &mut self,
         activity: String,
@@ -426,7 +469,7 @@ impl PowlArena {
         let selfloop = max_freq.is_none();
         let max_str = max_freq.map_or_else(|| "-".to_string(), |v| v.to_string());
         let label = if skippable || selfloop {
-            format!("{}\n[1,{}]", activity, max_str)
+            format!("{}\n[{},{}]", activity, min_freq, max_str)
         } else {
             activity.clone()
         };
@@ -434,6 +477,8 @@ impl PowlArena {
             .push(PowlNode::FrequentTransition(FrequentTransitionNode {
                 label,
                 activity,
+                min_freq,
+                max_freq,
                 skippable,
                 selfloop,
                 id,
@@ -747,9 +792,7 @@ impl PowlArena {
             None => Err(format!("invalid arena index {}", idx)),
             Some(PowlNode::Transition(t)) => Ok(dest.add_transition(t.label.clone())),
             Some(PowlNode::FrequentTransition(t)) => {
-                let min_freq: i64 = if t.skippable { 0 } else { 1 };
-                let max_freq: Option<i64> = if t.selfloop { None } else { Some(1) };
-                Ok(dest.add_frequent_transition(t.activity.clone(), min_freq, max_freq))
+                Ok(dest.add_frequent_transition(t.activity.clone(), t.min_freq, t.max_freq))
             }
             Some(PowlNode::StrictPartialOrder(spo)) => {
                 let new_children: Vec<u32> = spo

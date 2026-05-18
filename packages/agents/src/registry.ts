@@ -266,23 +266,73 @@ export class AgentRegistry {
    *
    * Score interpretation: 0.0 = never fired, 1.0 = fired on every cycle.
    * Key format: "<agent_name>:<violation_type>"
+   *
+   * @returns thresholdAuditLog — one entry per threshold that changed.
+   *   Each entry records the agentId, violationType, driftScore, the field
+   *   that changed, its value before and after, and a human-readable reason.
+   *   Callers (e.g., orchestration.ts Learn phase) can log or persist this
+   *   for observability in the MAPE-K feedback loop.
    */
-  adaptThresholdsFromDrift(driftScores: Record<string, number>): void {
+  adaptThresholdsFromDrift(driftScores: Record<string, number>): Array<{
+    agentId: string;
+    violationType: string;
+    driftScore: number;
+    field: keyof AgentThresholds;
+    before: number;
+    after: number;
+    reason: string;
+  }> {
+    const auditLog: Array<{
+      agentId: string;
+      violationType: string;
+      driftScore: number;
+      field: keyof AgentThresholds;
+      before: number;
+      after: number;
+      reason: string;
+    }> = [];
+
     for (const [key, score] of Object.entries(driftScores)) {
-      const agentName = key.split(':')[0];
+      const [agentName, ...violationParts] = key.split(':');
+      const violationType = violationParts.join(':') || 'unknown';
       const agent = this.agents.get(agentName);
       if (!agent) continue;
 
       const thresholds = agent.config.thresholds;
+      const before = thresholds.max_deviations;
 
       if (score > 0.5) {
         // High recurring drift: tighten sensitivity (fewer allowed deviations)
         thresholds.max_deviations = Math.max(0, thresholds.max_deviations - 1);
+        if (thresholds.max_deviations !== before) {
+          auditLog.push({
+            agentId: agentName,
+            violationType,
+            driftScore: score,
+            field: 'max_deviations',
+            before,
+            after: thresholds.max_deviations,
+            reason: `drift score ${score.toFixed(3)} > 0.5 — tightened sensitivity (max_deviations ${before} → ${thresholds.max_deviations})`,
+          });
+        }
       } else if (score === 0 && agent.total_runs >= 5) {
         // No violations seen after several cycles: relax slightly to reduce noise
         thresholds.max_deviations = Math.min(3, thresholds.max_deviations + 1);
+        if (thresholds.max_deviations !== before) {
+          auditLog.push({
+            agentId: agentName,
+            violationType,
+            driftScore: score,
+            field: 'max_deviations',
+            before,
+            after: thresholds.max_deviations,
+            reason: `drift score 0.0 after ${agent.total_runs} runs — relaxed noise threshold (max_deviations ${before} → ${thresholds.max_deviations})`,
+          });
+        }
       }
     }
+
+    return auditLog;
   }
 
   /** Register a new agent */

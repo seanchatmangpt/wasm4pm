@@ -51,6 +51,16 @@ export interface SwarmConvergenceReport {
   dominantHash: string | null;
   dissentingWorkers: string[];
   totalChecked: number;
+  /**
+   * Human-readable explanation of why convergence was (or was not) reached.
+   * Examples:
+   *   "3/3 workers agree on hash abc123... (unanimous)"
+   *   "2/3 workers agree on hash abc123... (threshold 0.80 met)"
+   *   "no workers produced results for algorithm dfg"
+   *   "2/4 workers agree on hash abc123... (threshold 0.80 not met — need 3/4)"
+   *   "1/3 stable after 2 rounds (need all 3)"
+   */
+  convergenceReason: string;
 }
 
 export interface SwarmConfig {

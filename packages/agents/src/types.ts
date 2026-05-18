@@ -227,6 +227,24 @@ export interface ExecuteResult {
   failed_count: number;
 }
 
+/** One entry in the threshold audit log produced by the Learn phase */
+export interface ThresholdAuditEntry {
+  /** Agent whose threshold changed */
+  agentId: string;
+  /** Violation type that drove the change */
+  violationType: string;
+  /** Drift score that triggered adaptation */
+  driftScore: number;
+  /** Threshold field that was mutated */
+  field: keyof AgentThresholds;
+  /** Value before adaptation */
+  before: number;
+  /** Value after adaptation */
+  after: number;
+  /** Human-readable explanation of the change */
+  reason: string;
+}
+
 /** Learn phase: update knowledge */
 export interface LearnResult {
   /** Whether knowledge was updated */
@@ -235,6 +253,13 @@ export interface LearnResult {
   drift_scores: Record<string, number> | null;
   /** Ontology patches applied */
   ontology_patches: number;
+  /**
+   * Audit trail of threshold changes applied during this Learn phase.
+   * Each entry records which agent threshold changed, by how much, and why.
+   * Empty when no thresholds changed (score at floor/ceiling or score == 0 and
+   * agent has fewer than 5 runs).
+   */
+  thresholdAuditLog: ThresholdAuditEntry[];
 }
 
 /** Agent registry status */

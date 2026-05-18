@@ -1207,6 +1207,31 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
     return exitFlush(result.exit_code);
   }
 
+  // Collect OCEL statistics (event/object counts, per-type breakdown) before discovery
+  let ocelStats: {
+    total_events?: number;
+    total_objects?: number;
+    object_type_counts?: Record<string, number>;
+  } | null = null;
+  try {
+    if (typeof wasm['analyze_ocel_statistics'] === 'function') {
+      const statsRaw = wasm['analyze_ocel_statistics'](ocelHandle);
+      const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
+      ocelStats = {
+        total_events:
+          typeof stats.total_events === 'number' ? (stats.total_events as number) : undefined,
+        total_objects:
+          typeof stats.total_objects === 'number' ? (stats.total_objects as number) : undefined,
+        object_type_counts:
+          typeof stats.object_type_counts === 'object' && stats.object_type_counts !== null
+            ? (stats.object_type_counts as Record<string, number>)
+            : undefined,
+      };
+    }
+  } catch {
+    // OCEL statistics are best-effort and non-fatal
+  }
+
   // Discover — default: per-type DFG (most informative for OCEL)
   const t0 = performance.now();
   let raw: unknown;
@@ -1260,6 +1285,7 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
     inputFormat: 'ocel',
     elapsedMs: Math.round(elapsedMs * 100) / 100,
     model: resultData,
+    ...(ocelStats && { ocelStats }),
   };
 
   // Auto-save
@@ -1306,6 +1332,26 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
     if (savedPath) {
       projection.debug(`Result saved: ${path.relative(process.cwd(), savedPath)}`);
     }
+
+    // Object-centric context: event/object counts and per-type breakdown
+    const stats = (payload as typeof payload & { ocelStats?: typeof ocelStats }).ocelStats;
+    if (stats) {
+      projection.log('');
+      if (stats.total_events !== undefined) {
+        projection.info(`  Events:  ${stats.total_events}`);
+      }
+      if (stats.total_objects !== undefined) {
+        projection.info(`  Objects: ${stats.total_objects}`);
+      }
+      if (stats.object_type_counts && Object.keys(stats.object_type_counts).length > 0) {
+        const typeSummary = Object.entries(stats.object_type_counts)
+          .map(([t, c]) => `${t} (${c})`)
+          .join(', ');
+        projection.info(`  Object types: ${typeSummary}`);
+      }
+    }
+
+    // Per-type DFG breakdown
     const m = resultData as Record<string, unknown>;
     if (m && typeof m === 'object') {
       const keys = Object.keys(m);
@@ -1313,7 +1359,12 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
         keys.length > 0 &&
         typeof (m[keys[0]] as Record<string, unknown>)?.nodes !== 'undefined'
       ) {
-        projection.info(`Object types discovered: ${keys.join(', ')}`);
+        projection.log('');
+        projection.info(
+          'Object-centric DFG: shows the directly-follows graph for each object type'
+        );
+        projection.info('(Unlike flat log discovery, each object type gets its own process view)');
+        projection.log('');
         for (const k of keys) {
           const dfg = m[k] as { nodes?: unknown[]; edges?: unknown[] };
           projection.info(
@@ -1326,8 +1377,16 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
         projection.info(`Edges: ${(dfg.edges ?? []).length}`);
       }
     }
+
     projection.log('');
-    projection.log('  Run "wpm results" to view saved results.');
+    projection.log('Next steps:');
+    projection.log(
+      `  wpm run ${path.basename(inputPath)} --algorithm ocel_dfg   -- aggregate OC-DFG across all types`
+    );
+    projection.log(
+      `  wpm powl discover -i ${path.basename(inputPath)}            -- discover OC-Petri net`
+    );
+    projection.log('  wpm results   -- browse saved results');
   });
 
   // Write output file if requested

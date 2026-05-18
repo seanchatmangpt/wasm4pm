@@ -87,7 +87,9 @@ export async function runSwarm(config: SwarmConfig): Promise<SwarmArtifact> {
                 result: null,
                 runAt: new Date().toISOString(),
                 durationMs: 0,
-                resultType: spec.algorithmId.startsWith('ml_') ? ('ml' as const) : ('discovery' as const),
+                resultType: spec.algorithmId.startsWith('ml_')
+                  ? ('ml' as const)
+                  : ('discovery' as const),
                 error: errorMessage,
                 failed: true,
               } satisfies WorkerResult;
@@ -113,11 +115,8 @@ export async function runSwarm(config: SwarmConfig): Promise<SwarmArtifact> {
         }
 
         // Check swarm-level convergence
-        const { converged, stableWorkers, unstableWorkers, agreementRate } = checkSwarmConvergence(
-          workerResults,
-          hashHistory,
-          convergenceRuns
-        );
+        const { converged, stableWorkers, unstableWorkers, agreementRate, convergenceReason } =
+          checkSwarmConvergence(workerResults, hashHistory, convergenceRuns);
 
         const convergenceReport = {
           algorithm: workerSpecs[0]?.algorithmId ?? 'unknown',
@@ -126,6 +125,7 @@ export async function runSwarm(config: SwarmConfig): Promise<SwarmArtifact> {
           dominantHash: workerResults[0]?.resultHash ?? null,
           dissentingWorkers: unstableWorkers,
           totalChecked: workerResults.length,
+          convergenceReason,
         };
 
         episodes.push({ episodeId, ep, workerResults, convergenceReport });

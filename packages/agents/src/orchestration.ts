@@ -96,7 +96,12 @@ export class AgentOrchestrator {
           analyze,
           plan: { actions: [], critical_actions: 0, warning_actions: 0 },
           execute: { corrections: [], successful_count: 0, failed_count: 0 },
-          learn: { knowledge_updated: false, drift_scores: null, ontology_patches: 0 },
+          learn: {
+            knowledge_updated: false,
+            drift_scores: null,
+            ontology_patches: 0,
+            thresholdAuditLog: [],
+          },
           duration_ms: Date.now() - startTime,
         };
       }
@@ -435,14 +440,18 @@ export class AgentOrchestrator {
     // Feed drift scores back into agent registry to adapt thresholds.
     // This is the autonomic self-improvement loop: repeated violations tighten
     // sensitivity; prolonged silence relaxes it.
+    // The returned audit log records exactly which thresholds changed and why,
+    // providing observability for the Learn phase without relying on side-effects.
+    let thresholdAuditLog: import('./types.js').ThresholdAuditEntry[] = [];
     if (Object.keys(driftScores).length > 0) {
-      this.registry.adaptThresholdsFromDrift(driftScores);
+      thresholdAuditLog = this.registry.adaptThresholdsFromDrift(driftScores);
     }
 
     return {
       knowledge_updated: execute.corrections.length > 0 || Object.keys(driftScores).length > 0,
       drift_scores: Object.keys(driftScores).length > 0 ? driftScores : null,
       ontology_patches: execute.successful_count,
+      thresholdAuditLog,
     };
   }
 
