@@ -370,10 +370,44 @@ impl RlOrchestrator {
 
     /// Use LinUCB to recommend which RL agent to use based on features.
     /// Maps LinUCB actions 0..4 to AgentType.
+    /// Emits OTEL span with agent selection rationale (UCB score, context features, runner-up).
     pub fn linucb_select_agent(&mut self, features: &[f32; 8]) -> AgentType {
-        let (action_idx, _score) = self.linucb.select(features);
-        // action_idx is now 0..4 (directly maps to agents)
-        AgentType::from_u8(action_idx as u8).unwrap_or(AgentType::QLearning)
+        let (action_idx, ucb_score) = self.linucb.select(features);
+        let selected_agent = AgentType::from_u8(action_idx as u8).unwrap_or(AgentType::QLearning);
+
+        // Get all Q-values to identify runner-up agent
+        let q_values = self.linucb.get_q_values(features);
+        let mut runner_up_idx = 0_usize;
+        let mut runner_up_score = f32::NEG_INFINITY;
+        for (i, &q) in q_values.iter().enumerate() {
+            if i != action_idx as usize && q > runner_up_score {
+                runner_up_score = q;
+                runner_up_idx = i;
+            }
+        }
+        let runner_up_agent = AgentType::from_u8(runner_up_idx as u8)
+            .unwrap_or(AgentType::QLearning)
+            .name();
+
+        // Serialize 8-dim context as JSON for span attribute
+        let context_json = format!(
+            r#"{{"event_rate":{:.4},"trace_count":{:.4},"activity_count":{:.4},"health":{:.4},"circuit_state":{:.4},"spc_alert_level":{:.4},"drift_status":{:.4},"cycle_phase":{:.4}}}"#,
+            features[0], features[1], features[2], features[3],
+            features[4], features[5], features[6], features[7]
+        );
+
+        // Emit OTEL span with LinUCB decision rationale
+        let _span = tracing::info_span!(
+            "rl.linucb_agent_selection",
+            linucb_selected_agent = selected_agent.name(),
+            linucb_ucb_score = ucb_score,
+            linucb_context = context_json.as_str(),
+            linucb_runner_up = runner_up_agent,
+            service_name = "wpm",
+        );
+        let _entered = _span.enter();
+
+        selected_agent
     }
 
     /// Update LinUCB with reward for the current agent selection.

@@ -382,11 +382,48 @@ impl CircuitBreaker {
     }
 
     /// Transition to new state.
+    /// Emits OTEL span with elapsed time since last transition, timeout threshold,
+    /// and transition reason for auditability.
     fn transition_to(&mut self, new_state: CircuitState) {
         let prev_state = self.state;
+        let now = now_ms();
+        let elapsed_ms = now.saturating_sub(self.last_state_change_ms);
+
+        // Determine transition reason and timeout threshold
+        let (transition_reason, timeout_threshold_ms) = match (prev_state, new_state) {
+            // Success-based transitions
+            (CircuitState::HalfOpen, CircuitState::Closed) => {
+                ("success_threshold_reached", 0u64)
+            }
+            // Failure-based transitions
+            (CircuitState::Closed, CircuitState::Open) => {
+                ("failure_threshold_reached", 0u64)
+            }
+            // Timeout-based transitions
+            (CircuitState::Open, CircuitState::HalfOpen) => {
+                let threshold = self.config.open_timeout_ms;
+                ("timeout_expired_probing", threshold)
+            }
+            (CircuitState::HalfOpen, CircuitState::Open) => {
+                let threshold = self.config.half_open_timeout_ms;
+                ("timeout_expired_recovery_failed", threshold)
+            }
+            // Explicit resets (shouldn't happen, but covered for completeness)
+            (CircuitState::Closed, CircuitState::Closed) => {
+                ("no_transition", 0u64)
+            }
+            (CircuitState::Open, CircuitState::Open) => {
+                ("no_transition", self.config.open_timeout_ms)
+            }
+            (CircuitState::HalfOpen, CircuitState::HalfOpen) => {
+                ("no_transition", self.config.half_open_timeout_ms)
+            }
+            // Unusual transitions
+            _ => ("unexpected_transition", 0u64),
+        };
 
         self.state = new_state;
-        self.last_state_change_ms = now_ms();
+        self.last_state_change_ms = now;
 
         // Reset counters on state transition.
         match new_state {
@@ -402,14 +439,25 @@ impl CircuitBreaker {
             }
         }
 
-        tracing::info!(
-            prev_state = ?prev_state,
-            next_state = ?new_state,
-            timestamp_ms = self.last_state_change_ms,
+        // Emit OTEL span with transition rationale
+        tracing::info_span!(
+            "circuit_breaker.state_transition",
+            circuit_state_prev = ?prev_state,
+            circuit_state_next = ?new_state,
+            elapsed_ms = elapsed_ms,
+            timeout_threshold_ms = timeout_threshold_ms,
+            transition_reason = transition_reason,
+            timestamp_ms = now,
             status = "ok",
             service_name = "wpm",
-            "circuit breaker state transition"
-        );
+        )
+        .in_scope(|| {
+            tracing::info!(
+                prev_state = ?prev_state,
+                next_state = ?new_state,
+                "circuit breaker state transition"
+            );
+        });
     }
 
     /// Convert circuit state to u8 (0=Closed, 1=HalfOpen, 2=Open)
