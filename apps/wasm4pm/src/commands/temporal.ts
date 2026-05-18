@@ -84,6 +84,12 @@ export const temporal = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
 
+    // Late attributes captured after WASM execution — output metrics unknown at span-open time.
+    let lateViolationsCount = 0;
+    let lateTemporalFitness = -1; // -1 = not computed (profile unavailable)
+    let lateImpossibleTsCount = 0;
+    let lateStatus = 'ok';
+
     return withSpan(
       'temporal',
       {
@@ -266,6 +272,15 @@ export const temporal = defineCommand({
                 cycleTimePercentiles,
               };
 
+              // Capture output metrics for late OTEL span attributes
+              lateViolationsCount = payload.violations.count;
+              lateImpossibleTsCount = payload.impossibleTimestampCount;
+              lateTemporalFitness =
+                typeof (payload.temporalConformance as Record<string, unknown> | null)?.fitness === 'number'
+                  ? ((payload.temporalConformance as Record<string, unknown>).fitness as number)
+                  : -1;
+              lateStatus = 'ok';
+
               const result = makeResult(
                 'temporal',
                 payload,
@@ -309,11 +324,20 @@ export const temporal = defineCommand({
             }
           ); // end withLogSession
         } catch (error) {
+          lateStatus = 'error';
           const result = makeErrorResult('temporal', error, EXIT_CODES.execution_error);
           emitResult(result, { format, verbose, quiet });
           return await exitWithFlush(result.exit_code);
         }
-      }
+      },
+      // getLateAttrs: emit output metrics as OTEL span attributes.
+      // temporal_fitness = -1 signals the profile was unavailable in this WASM build.
+      () => ({
+        violations_count: lateViolationsCount,
+        temporal_fitness: lateTemporalFitness,
+        impossible_timestamp_count: lateImpossibleTsCount,
+        status: lateStatus,
+      })
     );
   },
 });

@@ -69,6 +69,14 @@ export const social = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
 
+    // Late attributes captured after execution completes — these are output metrics
+    // that are only known after the WASM call returns. They extend the span with
+    // actionable observability (Van der Aalst: enhancement perspective).
+    let lateNodesCount = 0;
+    let lateEdgesCount = 0;
+    let lateBottleneckCount = 0;
+    let lateStatus = 'ok';
+
     return withSpan(
       'social',
       {
@@ -212,6 +220,12 @@ export const social = defineCommand({
                 bottleneckResources,
               };
 
+              // Capture output metrics for late OTEL span attributes
+              lateNodesCount = payload.network.nodes.length;
+              lateEdgesCount = payload.network.edges.length;
+              lateBottleneckCount = payload.bottleneckResources.length;
+              lateStatus = 'ok';
+
               const result = makeResult(
                 'social',
                 payload,
@@ -250,11 +264,20 @@ export const social = defineCommand({
             }
           ); // end withLogSession
         } catch (error) {
+          lateStatus = 'error';
           const result = makeErrorResult('social', error, EXIT_CODES.execution_error);
           emitResult(result, { format, verbose, quiet });
           return await exitWithFlush(result.exit_code);
         }
-      }
+      },
+      // getLateAttrs: emit output metrics as OTEL span attributes after execution.
+      // These are not available at span-open time — they are computed from WASM results.
+      () => ({
+        nodes_count: lateNodesCount,
+        edges_count: lateEdgesCount,
+        bottleneck_count: lateBottleneckCount,
+        status: lateStatus,
+      })
     );
   },
 });

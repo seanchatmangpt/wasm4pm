@@ -86,6 +86,13 @@ export const simulate = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
 
+    // Late attributes captured after Monte Carlo simulation completes.
+    // These output metrics are only known after WASM returns — cannot be set at span-open time.
+    let lateCasesCompleted = 0;
+    let lateAvgSojournMs = 0;
+    let lateP95SojournMs = 0;
+    let lateStatus = 'ok';
+
     return withSpan(
       'simulate',
       {
@@ -244,6 +251,21 @@ export const simulate = defineCommand({
                 ...(playoutResult && { playout: playoutResult }),
               };
 
+              // Capture output metrics for late OTEL span attributes
+              lateCasesCompleted =
+                typeof payload.simulation.casesCompleted === 'number'
+                  ? payload.simulation.casesCompleted
+                  : numCases;
+              lateAvgSojournMs =
+                typeof payload.statistics.avgSojournTimeMs === 'number'
+                  ? payload.statistics.avgSojournTimeMs
+                  : 0;
+              lateP95SojournMs =
+                typeof payload.statistics.sojournTimeP95Ms === 'number'
+                  ? payload.statistics.sojournTimeP95Ms
+                  : 0;
+              lateStatus = 'ok';
+
               const result = makeResult(
                 'simulate',
                 payload,
@@ -282,11 +304,21 @@ export const simulate = defineCommand({
             }
           ); // end withLogSession
         } catch (error) {
+          lateStatus = 'error';
           const result = makeErrorResult('simulate', error, EXIT_CODES.execution_error);
           emitResult(result, { format, verbose, quiet });
           return await exitWithFlush(result.exit_code);
         }
-      }
+      },
+      // getLateAttrs: emit simulation output metrics as OTEL span attributes.
+      // avg_sojourn_time_ms and p95_sojourn_time_ms are key performance indicators
+      // for the Van der Aalst temporal perspective (remaining-time prediction context).
+      () => ({
+        cases_completed: lateCasesCompleted,
+        avg_sojourn_time_ms: lateAvgSojournMs,
+        p95_sojourn_time_ms: lateP95SojournMs,
+        status: lateStatus,
+      })
     );
   },
 });

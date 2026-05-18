@@ -212,7 +212,14 @@ async function runBenchmarks(
   }
 
   if (typeof wasm.run_all_benchmarks !== 'function') {
-    throw new Error('run_all_benchmarks not available — requires fog or browser profile');
+    throw new Error(
+      'Built-in benchmarks not available in this WASM build.\n\n' +
+      'This feature requires the "fog" or "browser" deployment profile.\n' +
+      'Current profile likely: mobile, iot, or edge.\n\n' +
+      'To enable: rebuild with `npm run build:fog` or `npm run build:browser`,\n' +
+      'then rebuild the CLI with `cd apps/wasm4pm && npm run build`.\n\n' +
+      'Or provide a custom corpus with `wpm benchmark replay --corpus <file.jsonl>`'
+    );
   }
   const raw = (wasm.run_all_benchmarks as () => unknown)();
   const r = parse(raw) as RunAllResult;
