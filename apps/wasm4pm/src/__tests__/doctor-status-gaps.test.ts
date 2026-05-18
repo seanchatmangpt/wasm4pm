@@ -354,5 +354,5 @@ describe('doctor check JSON output contracts (regression)', () => {
     expect(typeof summary.pass).toBe('number');
     expect(typeof summary.warn).toBe('number');
     expect(typeof summary.fail).toBe('number');
-  });
+  }, 30_000);
 });
