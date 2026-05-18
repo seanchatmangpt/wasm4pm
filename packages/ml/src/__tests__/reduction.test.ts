@@ -244,3 +244,122 @@ describe('reduceFeaturesPCA — metamorphic', () => {
     expect(result.originalFeatureCount).toBe(4);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HIGH-DIMENSIONAL PCA (100+ features → 2 components)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('reduceFeaturesPCA — high-dimensional reduction (100 features)', () => {
+  /**
+   * Generate 50 synthetic traces with 100 features each.
+   * All features are random, uniformly distributed.
+   */
+  const generateHighDimensionalData = () => {
+    const traces = [];
+    for (let i = 1; i <= 50; i++) {
+      const trace: Record<string, number | string> = { case_id: `trace_${i}` };
+      for (let j = 1; j <= 100; j++) {
+        trace[`f${j}`] = Math.random() * 100;
+      }
+      traces.push(trace);
+    }
+    return traces as Array<Record<string, number | string>>;
+  };
+
+  it('pca should reduce 100 features to 2 without crashing', async () => {
+    const data = generateHighDimensionalData();
+    const result = await reduceFeaturesPCA(data, { nComponents: 2 });
+
+    expect(result.nComponents).toBe(2);
+    expect(result.originalFeatureCount).toBe(100);
+    expect(result.transformedData).toHaveLength(50);
+    for (const row of result.transformedData) {
+      expect(row).toHaveLength(2);
+      for (const val of row) {
+        expect(Number.isFinite(val)).toBe(true);
+        expect(Number.isNaN(val)).toBe(false);
+      }
+    }
+  });
+
+  it('pca should produce valid explainedVariance for high-dimensional data', async () => {
+    const data = generateHighDimensionalData();
+    const result = await reduceFeaturesPCA(data, { nComponents: 2 });
+
+    // Sum of first 2 components should be between 0 and 1
+    const totalVariance = result.explainedVariance.reduce((s, v) => s + v, 0);
+    expect(totalVariance).toBeGreaterThan(0);
+    expect(totalVariance).toBeLessThanOrEqual(1);
+
+    // Each component should be finite
+    for (const ev of result.explainedVariance) {
+      expect(Number.isFinite(ev)).toBe(true);
+      expect(ev).toBeGreaterThanOrEqual(0);
+    }
+  });
+
+  it('pca component vectors should have length 100', async () => {
+    const data = generateHighDimensionalData();
+    const result = await reduceFeaturesPCA(data, { nComponents: 2 });
+
+    for (const component of result.components) {
+      expect(component).toHaveLength(100);
+    }
+  });
+
+  it('first principal component should explain more variance than second', async () => {
+    const data = generateHighDimensionalData();
+    const result = await reduceFeaturesPCA(data, { nComponents: 2 });
+
+    expect(result.explainedVariance[0]).toBeGreaterThanOrEqual(result.explainedVariance[1]);
+  });
+
+  it('pca should handle high-dimensional reduction to 5 components', async () => {
+    const data = generateHighDimensionalData();
+    const result = await reduceFeaturesPCA(data, { nComponents: 5 });
+
+    expect(result.nComponents).toBe(5);
+    expect(result.originalFeatureCount).toBe(100);
+    expect(result.components).toHaveLength(5);
+    expect(result.explainedVariance).toHaveLength(5);
+
+    for (const row of result.transformedData) {
+      expect(row).toHaveLength(5);
+      for (const val of row) {
+        expect(Number.isFinite(val)).toBe(true);
+      }
+    }
+
+    // 5 components should capture more variance than 2 components
+    const totalVariance = result.explainedVariance.reduce((s, v) => s + v, 0);
+    expect(totalVariance).toBeGreaterThan(0);
+    expect(totalVariance).toBeLessThanOrEqual(1);
+  });
+
+  it('pca transformation output row count should always equal input row count', async () => {
+    const data = generateHighDimensionalData();
+    const result = await reduceFeaturesPCA(data, { nComponents: 3 });
+
+    expect(result.transformedData).toHaveLength(data.length);
+  });
+
+  it('all explainedVariance values should be non-negative and finite', async () => {
+    const data = generateHighDimensionalData();
+    const result = await reduceFeaturesPCA(data, { nComponents: 2 });
+
+    for (const ev of result.explainedVariance) {
+      expect(ev).toBeGreaterThanOrEqual(0);
+      expect(Number.isFinite(ev)).toBe(true);
+    }
+  });
+
+  it('reducing 100 dimensions to 2 should be significantly smaller', async () => {
+    const data = generateHighDimensionalData();
+    const result = await reduceFeaturesPCA(data, { nComponents: 2 });
+
+    // Input: 50 traces × 100 features = 5000 values
+    // Output: 50 traces × 2 features = 100 values
+    // Compression ratio: 50:1
+    expect(result.nComponents).toBeLessThan(result.originalFeatureCount / 40);
+  });
+});

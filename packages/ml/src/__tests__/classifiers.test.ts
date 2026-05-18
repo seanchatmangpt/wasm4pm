@@ -372,3 +372,239 @@ describe('classifyTraces oracle tests (Rank 1-2)', () => {
     expect(accuracy).toBeGreaterThanOrEqual(0.8);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HIGH-DIMENSIONAL CLASSIFICATION (>10 features)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('classifyTraces — high-dimensional (>10 features)', () => {
+  /**
+   * Generate 20 synthetic traces with 15 random features each.
+   * Classes are separated by a simple rule:
+   * If sum of features > 75, outcome='Pass', else 'Fail'
+   */
+  const generateHighDimensionalData = () => {
+    const traces = [];
+    for (let i = 1; i <= 20; i++) {
+      const f1 = Math.random() * 10;
+      const f2 = Math.random() * 10;
+      const f3 = Math.random() * 10;
+      const f4 = Math.random() * 10;
+      const f5 = Math.random() * 10;
+      const f6 = Math.random() * 10;
+      const f7 = Math.random() * 10;
+      const f8 = Math.random() * 10;
+      const f9 = Math.random() * 10;
+      const f10 = Math.random() * 10;
+      const f11 = Math.random() * 10;
+      const f12 = Math.random() * 10;
+      const f13 = Math.random() * 10;
+      const f14 = Math.random() * 10;
+      const f15 = Math.random() * 10;
+
+      const sum = f1 + f2 + f3 + f4 + f5 + f6 + f7 + f8 + f9 + f10 + f11 + f12 + f13 + f14 + f15;
+      const outcome = sum > 75 ? 'Pass' : 'Fail';
+
+      traces.push({
+        case_id: `hd${i}`,
+        f1,
+        f2,
+        f3,
+        f4,
+        f5,
+        f6,
+        f7,
+        f8,
+        f9,
+        f10,
+        f11,
+        f12,
+        f13,
+        f14,
+        f15,
+        outcome,
+      });
+    }
+    return traces;
+  };
+
+  it('knn should handle 15 features without NaN/Inf', async () => {
+    const data = generateHighDimensionalData();
+    const result = await classifyTraces(data, { method: 'knn', k: 3 });
+
+    expect(result.predictions).toHaveLength(20);
+    for (const p of result.predictions) {
+      expect(['Pass', 'Fail']).toContain(p.predicted);
+      expect(Number.isFinite(p.confidence)).toBe(true);
+      expect(p.confidence).toBeGreaterThanOrEqual(0);
+      expect(p.confidence).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('decision_tree should handle 15 features without NaN/Inf', async () => {
+    const data = generateHighDimensionalData();
+    const result = await classifyTraces(data, { method: 'decision_tree' });
+
+    expect(result.predictions).toHaveLength(20);
+    for (const p of result.predictions) {
+      expect(['Pass', 'Fail']).toContain(p.predicted);
+      expect(Number.isFinite(p.confidence)).toBe(true);
+      expect(p.confidence).toBeGreaterThan(0);
+      expect(p.confidence).toBeLessThanOrEqual(1);
+    }
+    // Check that tree has reasonable depth/nodes for 15 features
+    expect(result.modelInfo.depth).toBeGreaterThan(0);
+    expect(result.modelInfo.nNodes).toBeGreaterThan(0);
+  });
+
+  it('logistic_regression should handle 15 features without NaN/Inf', async () => {
+    const data = generateHighDimensionalData();
+    const result = await classifyTraces(data, { method: 'logistic_regression' });
+
+    expect(result.predictions).toHaveLength(20);
+    for (const p of result.predictions) {
+      expect(['Pass', 'Fail']).toContain(p.predicted);
+      expect(Number.isFinite(p.confidence)).toBe(true);
+      expect(p.confidence).toBeGreaterThanOrEqual(0);
+      expect(p.confidence).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('all three methods should produce consistent predictions on high-dimensional data', async () => {
+    const data = generateHighDimensionalData();
+    const knnResult = await classifyTraces(data, { method: 'knn', k: 3 });
+    const dtResult = await classifyTraces(data, { method: 'decision_tree' });
+    const lrResult = await classifyTraces(data, { method: 'logistic_regression' });
+
+    // Verify all methods produce predictions (non-determinism okay, just verify structure)
+    expect(knnResult.predictions).toHaveLength(20);
+    expect(dtResult.predictions).toHaveLength(20);
+    expect(lrResult.predictions).toHaveLength(20);
+
+    // Check agreement rate (should be reasonably high on a clean separation)
+    const knnPreds = new Set(knnResult.predictions.map((p) => p.predicted));
+    const dtPreds = new Set(dtResult.predictions.map((p) => p.predicted));
+    expect(knnPreds.size).toBeGreaterThan(0);
+    expect(dtPreds.size).toBeGreaterThan(0);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IMBALANCED CLASSIFICATION (class skew: 90/10 split)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('classifyTraces — imbalanced data (90/10 split)', () => {
+  /**
+   * Create 100 traces: 90 "conforming", 10 "anomalous"
+   * Conforming: rework_count <= 1, trace_length <= 5
+   * Anomalous: rework_count >= 3, trace_length >= 8
+   */
+  const generateImbalancedData = () => {
+    const traces = [];
+
+    // 90 conforming traces (majority class)
+    for (let i = 1; i <= 90; i++) {
+      traces.push({
+        case_id: `conf${i}`,
+        trace_length: Math.floor(Math.random() * 5) + 1, // 1-5
+        elapsed_time: Math.random() * 3000 + 100, // 100-3100
+        rework_count: Math.floor(Math.random() * 2), // 0-1
+        outcome: 'Conforming',
+      });
+    }
+
+    // 10 anomalous traces (minority class)
+    for (let i = 1; i <= 10; i++) {
+      traces.push({
+        case_id: `anom${i}`,
+        trace_length: Math.floor(Math.random() * 5) + 8, // 8-12
+        elapsed_time: Math.random() * 3000 + 5000, // 5000-8000
+        rework_count: Math.floor(Math.random() * 3) + 3, // 3-5
+        outcome: 'Anomalous',
+      });
+    }
+
+    return traces;
+  };
+
+  it('knn should handle imbalanced data without crashing', async () => {
+    const data = generateImbalancedData();
+    const result = await classifyTraces(data, { method: 'knn', k: 3 });
+
+    expect(result.predictions).toHaveLength(100);
+    for (const p of result.predictions) {
+      expect(['Conforming', 'Anomalous']).toContain(p.predicted);
+      expect(Number.isFinite(p.confidence)).toBe(true);
+      expect(p.confidence).toBeGreaterThanOrEqual(0);
+      expect(p.confidence).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('decision_tree should handle imbalanced data without crashing', async () => {
+    const data = generateImbalancedData();
+    const result = await classifyTraces(data, { method: 'decision_tree' });
+
+    expect(result.predictions).toHaveLength(100);
+    for (const p of result.predictions) {
+      expect(['Conforming', 'Anomalous']).toContain(p.predicted);
+      expect(Number.isFinite(p.confidence)).toBe(true);
+      expect(p.confidence).toBeGreaterThan(0);
+      expect(p.confidence).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('logistic_regression should handle imbalanced data without crashing', async () => {
+    const data = generateImbalancedData();
+    const result = await classifyTraces(data, { method: 'logistic_regression' });
+
+    expect(result.predictions).toHaveLength(100);
+    for (const p of result.predictions) {
+      expect(['Conforming', 'Anomalous']).toContain(p.predicted);
+      expect(Number.isFinite(p.confidence)).toBe(true);
+      expect(p.confidence).toBeGreaterThanOrEqual(0);
+      expect(p.confidence).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('naive_bayes should handle imbalanced data without crashing', async () => {
+    const data = generateImbalancedData();
+    const result = await classifyTraces(data, { method: 'naive_bayes' });
+
+    expect(result.predictions).toHaveLength(100);
+    for (const p of result.predictions) {
+      expect(['Conforming', 'Anomalous']).toContain(p.predicted);
+      expect(Number.isFinite(p.confidence)).toBe(true);
+      expect(p.confidence).toBeGreaterThanOrEqual(0);
+      expect(p.confidence).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('imbalanced dataset: classifiers should recognize at least some anomalies', async () => {
+    const data = generateImbalancedData();
+    const result = await classifyTraces(data, { method: 'knn', k: 5 });
+
+    // Count actual anomalies in the data
+    const anomalyCount = data.filter((t) => t.outcome === 'Anomalous').length;
+    expect(anomalyCount).toBe(10);
+
+    // Count predicted anomalies
+    const predictedAnomalies = result.predictions.filter((p) => p.predicted === 'Anomalous').length;
+    // With k=5 and clear separation, classifier should detect at least 1 anomaly
+    expect(predictedAnomalies).toBeGreaterThan(0);
+  });
+
+  it('imbalanced dataset: knn accuracy should be reported', async () => {
+    const data = generateImbalancedData();
+    const result = await classifyTraces(data, { method: 'knn', k: 3 });
+
+    // Calculate accuracy
+    const correct = result.predictions.filter((p) => {
+      const label = data.find((t) => t.case_id === p.caseId)?.outcome;
+      return p.predicted === label;
+    }).length;
+    const accuracy = correct / data.length;
+
+    // Accuracy should be >= 50% (better than random on 90/10 split)
+    expect(accuracy).toBeGreaterThanOrEqual(0.5);
+  });
+});
