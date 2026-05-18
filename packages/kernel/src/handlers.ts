@@ -8,6 +8,25 @@ import { PlanStepType, type PlanStep } from '@wasm4pm/planner';
 import { getRegistry } from './registry.js';
 
 /**
+ * Drift window entry returned by WASM detect_drift.
+ */
+interface WasmDriftWindow {
+  window_start?: number;
+  window_end?: number;
+  distance?: number;
+  detected?: boolean;
+}
+
+/**
+ * Top-level result returned by WASM detect_drift.
+ */
+interface WasmDriftResult {
+  drifts?: WasmDriftWindow[];
+  ewma?: number;
+  threshold?: number;
+}
+
+/**
  * WASM module interface - defines all discoverable WASM functions
  * Maps to the actual wasm4pm Rust module compiled to JavaScript
  */
@@ -234,10 +253,7 @@ export interface WasmModule {
   // ── Social network mining (van der Aalst organisational perspective) ──
 
   /** Handover-of-work network: edges = direct resource handovers within a case */
-  discover_handover_network(
-    log_handle: string,
-    resource_key: string
-  ): Promise<{ handle: string }>;
+  discover_handover_network(log_handle: string, resource_key: string): Promise<{ handle: string }>;
 
   /** Working-together network: edges = resources who worked on the same case */
   discover_working_together_network(
@@ -248,10 +264,7 @@ export interface WasmModule {
   // ── SIMD-accelerated DFG ─────────────────────────────────────────────
 
   /** SIMD-vectorised DFG discovery — ~500x throughput vs standard discover_dfg */
-  discover_dfg_simd(
-    eventlog_handle: string,
-    activity_key: string
-  ): Promise<{ handle: string }>;
+  discover_dfg_simd(eventlog_handle: string, activity_key: string): Promise<{ handle: string }>;
 }
 
 /**
@@ -423,7 +436,11 @@ export async function implementAlgorithmStep(
 
       case 'alpha_plus_plus': {
         const minSupport = (params.min_support as number) ?? 0.0;
-        const result = await wasmModule.discover_alpha_plus_plus(eventLogHandle, activityKey, minSupport);
+        const result = await wasmModule.discover_alpha_plus_plus(
+          eventLogHandle,
+          activityKey,
+          minSupport
+        );
         modelHandle = result.handle;
         break;
       }
@@ -808,7 +825,9 @@ export async function implementAlgorithmStep(
         const { forecastSeries } = await import('@wasm4pm/ml');
         const driftRaw = wasmModule.detect_drift(eventLogHandle, activityKey, 5);
         const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
-        const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
+        const distances = ((driftResult as WasmDriftResult)?.drifts ?? []).map(
+          (d: WasmDriftWindow) => d.distance ?? 0
+        );
         const result = await forecastSeries(distances, {
           forecastPeriods: (params.forecast_periods as number) ?? 5,
           useExponential: params.use_exponential as boolean,
@@ -821,7 +840,9 @@ export async function implementAlgorithmStep(
         const { detectEnhancedAnomalies } = await import('@wasm4pm/ml');
         const driftRaw = wasmModule.detect_drift(eventLogHandle, activityKey, 10);
         const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
-        const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
+        const distances = ((driftResult as WasmDriftResult)?.drifts ?? []).map(
+          (d: WasmDriftWindow) => d.distance ?? 0
+        );
         const result = await detectEnhancedAnomalies(distances, {
           smoothingMethod: params.smoothing_method as 'sma' | 'ema',
         });

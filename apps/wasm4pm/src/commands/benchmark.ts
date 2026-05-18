@@ -41,6 +41,7 @@ type BenchmarkResult = {
   final_verdict: string;
   expected_verdict: string;
   failure_reason?: string;
+  elapsed_ms?: number;
 };
 
 type RunAllResult = {
@@ -129,6 +130,19 @@ const benchmarkBuild = defineCommand({
 });
 
 // ---------------------------------------------------------------------------
+// Visual helpers
+// ---------------------------------------------------------------------------
+
+/** Render a 16-char pass-rate bar using filled/empty block characters. */
+function passRateBar(passed: number, total: number): string {
+  const rate = total === 0 ? 0 : passed / total;
+  const filled = Math.round(rate * 16);
+  const bar = '█'.repeat(filled) + '░'.repeat(16 - filled);
+  const pct = Math.round(rate * 100);
+  return `Pass rate: ${bar}  ${pct}%  (${passed}/${total})`;
+}
+
+// ---------------------------------------------------------------------------
 // Shared runner
 // ---------------------------------------------------------------------------
 
@@ -173,19 +187,22 @@ async function runBenchmarks(
     const results: BenchmarkResult[] = filteredTraces
       .map((t) => {
         try {
+          const tTrace = performance.now();
           const raw = (wasm.classify_motion as (j: string) => unknown)(JSON.stringify(t.motion));
+          const elapsed_ms = Math.round(performance.now() - tTrace);
           const receipt = parse(raw) as { verdict: string };
           const actual = receipt.verdict ?? 'Unknown';
           const pass = actual.toLowerCase() === t.expected_verdict.toLowerCase();
           return {
             trace_id: t.trace_id, name: t.name, pass, final_verdict: actual,
-            expected_verdict: t.expected_verdict,
+            expected_verdict: t.expected_verdict, elapsed_ms,
             failure_reason: pass ? undefined : `Expected ${t.expected_verdict}, got ${actual}`,
           };
         } catch (e) {
           return {
             trace_id: t.trace_id, name: t.name, pass: false,
-            final_verdict: 'Error', expected_verdict: t.expected_verdict, failure_reason: String(e),
+            final_verdict: 'Error', expected_verdict: t.expected_verdict,
+            failure_reason: String(e),
           };
         }
       });
@@ -236,22 +253,37 @@ const benchmarkReplay = defineCommand({
 
       emitResult(result, { format, verbose, quiet }, (res, projection) => {
         const pad = (s: string, n: number) => s.padEnd(n);
+        const hasTiming = res.payload.results.some((r) => r.elapsed_ms !== undefined);
+        const dividerWidth = hasTiming ? 84 : 72;
+        const hdr = hasTiming
+          ? `${pad('Trace ID', 28)} ${pad('Verdict', 22)} ${pad('Expected', 20)} ${'Pass'} ${'Time'}`
+          : `${pad('Trace ID', 28)} ${pad('Verdict', 22)} Expected              Pass`;
         projection.info('\nBenchmark Results');
-        projection.info('─'.repeat(72));
-        projection.info(`${pad('Trace ID', 28)} ${pad('Verdict', 22)} Expected              Pass`);
-        projection.info('─'.repeat(72));
+        projection.info('─'.repeat(dividerWidth));
+        projection.info(hdr);
+        projection.info('─'.repeat(dividerWidth));
         for (const r of res.payload.results) {
           const ok = r.pass ? '✓' : '✗';
-          const line = `${pad(r.trace_id, 28)} ${pad(r.final_verdict, 22)} ${pad(r.expected_verdict, 20)} ${ok}`;
+          const timingCol = hasTiming
+            ? ` ${r.elapsed_ms !== undefined ? `${r.elapsed_ms}ms` : '—'}`
+            : '';
+          const line = `${pad(r.trace_id, 28)} ${pad(r.final_verdict, 22)} ${pad(r.expected_verdict, 20)} ${ok}${timingCol}`;
           if (r.pass) projection.info(line);
           else projection.warn(line);
           if (!r.pass && verbose && r.failure_reason) projection.warn(`  → ${r.failure_reason}`);
         }
-        projection.info('─'.repeat(72));
-        const pct = Math.round((passed / (total || 1)) * 100);
-        const summary = `${passed}/${total} passed (${pct}%)`;
-        if (failed === 0) projection.success(summary);
-        else projection.warn(summary);
+        projection.info('─'.repeat(dividerWidth));
+        projection.info(passRateBar(res.payload.passed, res.payload.total));
+        if (res.payload.failed > 0) {
+          projection.warn('\nFailures:');
+          for (const r of res.payload.results.filter((x) => !x.pass)) {
+            const reason = r.failure_reason ?? 'unknown';
+            projection.warn(
+              `  ✗ ${r.trace_id.padEnd(20)} expected: ${r.expected_verdict.padEnd(8)} got: ${r.final_verdict.padEnd(8)} (${reason})`
+            );
+          }
+        }
+        if (res.payload.failed === 0) projection.success(`All ${res.payload.total} traces passed`);
       });
 
       return await exitWithFlush(EXIT_CODES.success);
@@ -310,13 +342,20 @@ const benchmarkVerify = defineCommand({
       }, performance.now() - t0, exitCode);
 
       emitResult(result, { format, verbose, quiet }, (res, projection) => {
+        projection.info(passRateBar(res.payload.passed, res.payload.total));
         if (res.payload.failed === 0) {
           projection.success(`Benchmark verify: ${res.payload.passed}/${res.payload.total} passed`);
         } else {
-          projection.error(`Benchmark verify FAILED: ${res.payload.failed}/${res.payload.total} traces did not match expected verdict`);
+          projection.error(
+            `Benchmark verify FAILED: ${res.payload.failed}/${res.payload.total} traces did not match expected verdict`
+          );
           if (verbose || !quiet) {
+            projection.warn('\nFailures:');
             for (const r of res.payload.results.filter((x) => !x.pass)) {
-              projection.warn(`  ✗ ${r.trace_id}: expected ${r.expected_verdict}, got ${r.final_verdict}`);
+              const reason = r.failure_reason ?? 'unknown';
+              projection.warn(
+                `  ✗ ${r.trace_id.padEnd(20)} expected: ${r.expected_verdict.padEnd(8)} got: ${r.final_verdict.padEnd(8)} (${reason})`
+              );
             }
           }
         }

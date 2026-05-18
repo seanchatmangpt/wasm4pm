@@ -39,13 +39,19 @@ export const verify = defineCommand({
       const failCount = report.gates.filter((g) => !g.passed).length;
       const exitCode = failCount > 0 ? EXIT_CODES.execution_error : EXIT_CODES.success;
 
-      const result = makeResult('verify', {
-        passed: report.passed,
-        gates: report.gates,
-        summary: report.summary,
-        pass_count: passCount,
-        fail_count: failCount,
-      }, performance.now() - t0, exitCode);
+      const result = makeResult(
+        'verify',
+        {
+          passed: report.passed,
+          gates: report.gates,
+          summary: report.summary,
+          pass_count: passCount,
+          fail_count: failCount,
+          evidence: report.evidence,
+        },
+        performance.now() - t0,
+        exitCode
+      );
 
       emitResult(result, { format, verbose, quiet }, (res, projection) => {
         projection.info('wpm verify — Definition-of-Done gate check');
@@ -59,6 +65,42 @@ export const verify = defineCommand({
         projection.log(`${res.payload.pass_count}/${res.payload.gates.length} gates passed`);
         if (res.payload.fail_count > 0) {
           projection.warn(`${res.payload.fail_count} gate(s) failed`);
+        }
+
+        if (verbose && res.payload.evidence) {
+          const ev = res.payload.evidence;
+          projection.log('');
+          projection.log('Evidence:');
+          projection.log(`  corpus_hash:  ${ev.corpus_hash}`);
+          projection.log(`  node_version: ${ev.run_environment.node_version}`);
+          projection.log(`  platform:     ${ev.run_environment.platform}/${ev.run_environment.arch}`);
+          projection.log(`  wasm_profile: ${ev.wasm_build_profile}`);
+        }
+
+        if (res.payload.fail_count > 0) {
+          const failedGates = res.payload.gates.filter((g) => !g.passed);
+          projection.log('');
+          projection.warn('What to fix:');
+          for (const g of failedGates) {
+            projection.warn(`  ✗ ${g.gate}: ${g.details}`);
+            if (g.gate === 'parity:explain-run') {
+              projection.log(
+                '    → Run: wpm explain --algorithm dfg  and compare with  wpm run --dry-run'
+              );
+            } else if (g.gate === 'cli:exit-codes') {
+              projection.log(
+                '    → Run: wpm run /nonexistent/path.xes  and verify exit code is 2'
+              );
+            } else if (g.gate === 'performance:benchmarks') {
+              projection.log(
+                '    → Run: wpm benchmark calibrate  to measure this machine\'s baseline'
+              );
+            } else if (g.gate === 'config:resolution') {
+              projection.log('    → Run: wpm status  and check config precedence chain');
+            } else {
+              projection.log(`    → Gate: ${g.gate}`);
+            }
+          }
         }
       });
 
