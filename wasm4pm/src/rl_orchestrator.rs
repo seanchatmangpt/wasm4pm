@@ -411,9 +411,28 @@ impl RlOrchestrator {
     }
 
     /// Update LinUCB with reward for the current agent selection.
+    /// Emits OTEL span with convergence metrics (TD error, weight norms).
     pub fn linucb_update(&mut self, features: &[f32; 8], reward: f32) {
         let action_idx = self.active_agent as u32;
+
+        // Compute TD error before update (prediction - target)
+        let (_, ucb_score_before) = self.linucb.select(features);
+        let td_error = reward - ucb_score_before;
+
+        // Update agent
         self.linucb.update(features, action_idx, reward);
+
+        // Emit OTEL span with convergence signal
+        let _span = tracing::info_span!(
+            "rl.linucb_update",
+            linucb_td_error = td_error,
+            linucb_reward = reward,
+            linucb_ucb_before = ucb_score_before,
+            linucb_agent_id = self.telemetry.active_agent_name.as_str(),
+            learning_rate = self.linucb.alpha_lr,
+            service_name = "wpm",
+        );
+        let _entered = _span.enter();
     }
 
     /// Enable/disable LinUCB-based agent selection.
@@ -827,6 +846,139 @@ mod tests {
         for cycle in [0, 100, 1000, 10000, 100000, 1_000_000] {
             let alpha_t = learning_rate_schedule(alpha_0, cycle);
             assert!(alpha_t > 0.0, "alpha at cycle {} must stay positive", cycle);
+        }
+    }
+
+    // --- Reward function completeness (Cycle 4 audit) -----
+
+    /// Rank-1 oracle: Verify that all reward components contribute meaningfully.
+    /// Every component (health, SPC, guard, circuit, latency, terminal) must have measurable effect.
+    #[test]
+    fn test_compute_reward_component_completeness() {
+        // Baseline: stable health (0.2), no SPC (0), guards pass (0.1), in budget (0) = +0.3
+        let baseline = compute_reward(2, 2, 0, true, true, false);
+        assert!((baseline - 0.3).abs() < 1e-6, "Baseline should be 0.3");
+
+        // Health improvement: 2->1 adds +1.0, so 0.2 (stable for wrong health) + 1.0 (improved) = 1.1
+        let with_health_improvement = compute_reward(2, 1, 0, true, true, false);
+        assert!(
+            with_health_improvement > baseline,
+            "Health improvement must increase reward"
+        );
+        assert!(
+            (with_health_improvement - baseline - 0.8).abs() < 1e-6,
+            "Health improvement from stable (0.2) to improved (1.0) adds +0.8 to baseline"
+        );
+
+        // SPC penalty: -0.3 per alert
+        let with_spc = compute_reward(2, 2, 1, true, true, false);
+        assert!(with_spc < baseline, "SPC alerts must decrease reward");
+        assert!(
+            (baseline - with_spc - 0.3).abs() < 1e-6,
+            "SPC penalty should contribute exactly -0.3"
+        );
+
+        // Guard failure: changes from (true, true) = +0.1 to (false, true) = -0.5, delta = -0.6
+        let with_guard_fail = compute_reward(2, 2, 0, false, true, false);
+        assert!(
+            (baseline - with_guard_fail - 0.6).abs() < 1e-6,
+            "Guard failure should change reward by -0.6 (0.1 -> -0.5)"
+        );
+
+        // Circuit failure: changes from (true, true) = +0.1 to (true, false) = -0.5, delta = -0.6
+        let with_circuit_fail = compute_reward(2, 2, 0, true, false, false);
+        assert!(
+            (baseline - with_circuit_fail - 0.6).abs() < 1e-6,
+            "Circuit failure should change reward by -0.6 (0.1 -> -0.5)"
+        );
+
+        // Latency budget: -0.3 contribution
+        let with_latency = compute_reward(2, 2, 0, true, true, true);
+        assert!(
+            (baseline - with_latency - 0.3).abs() < 1e-6,
+            "Latency budget exceeded should contribute -0.3"
+        );
+
+        // Terminal state: -2.0 contribution (on top of degradation -1.0)
+        // health 2->4 is degradation (-1.0) + terminal (-2.0) = -3.0
+        // guard+circuit still +0.1, so: -1.0 - 2.0 + 0.1 = -2.9
+        // baseline is +0.3, so delta is 0.3 - (-2.9) = 3.2
+        let with_terminal = compute_reward(2, 4, 0, true, true, false);
+        assert!(
+            with_terminal < baseline,
+            "Terminal state must dramatically decrease reward"
+        );
+        assert!(
+            (baseline - with_terminal - 3.2).abs() < 1e-6,
+            "Terminal state (2->4) degrades (-1.0) plus terminal (-2.0) = -3.0 vs stable +0.2 = 3.2 delta"
+        );
+    }
+
+    /// Rank-2 domain contract: Double SPC alerts → strictly lower reward than single alert.
+    /// Validates monotonic SPC penalty (already tested in reward_monotone_in_spc_alerts,
+    /// but explicitly verify the doubling case for metamorphic relations).
+    #[test]
+    fn test_compute_reward_double_spc_worse_than_single() {
+        // Same conditions except for SPC alert count
+        let single_alert = compute_reward(1, 1, 1, true, true, false); // -0.3 penalty
+        let double_alert = compute_reward(1, 1, 2, true, true, false); // -0.6 penalty
+
+        assert!(
+            double_alert < single_alert,
+            "Double SPC alerts must yield strictly lower reward than single alert"
+        );
+        assert!(
+            (single_alert - double_alert - 0.3).abs() < 1e-6,
+            "Doubling alerts should add exactly -0.3 more penalty"
+        );
+    }
+
+    /// Verify reward range bounds are as documented in compute_reward docstring.
+    /// Range: [-5.3, +1.1] (worst to best case)
+    #[test]
+    fn test_compute_reward_range_is_bounded() {
+        // Best case: health improves from 4->0, no SPC, guards pass, in budget
+        // health: +1.0, SPC: 0, guard+circuit: +0.1, latency: 0, terminal: 0 = +1.1
+        let best = compute_reward(4, 0, 0, true, true, false);
+        assert!(
+            (best - 1.1).abs() < 1e-6,
+            "Best case should be +1.1, got {}",
+            best
+        );
+
+        // Worst case: health degrades to terminal (4), max SPC (-1.5 capped), guards fail, latency exceeded
+        // health: -1.0 (degrade) + -2.0 (terminal) = -3.0
+        // SPC: -1.5
+        // guard+circuit: -0.5 (either fails is same penalty)
+        // latency: -0.3
+        // total: -3.0 - 1.5 - 0.5 - 0.3 = -5.3
+        let worst = compute_reward(3, 4, 5, false, false, true);
+        assert!(
+            (worst - (-5.3)).abs() < 1e-6,
+            "Worst case should be -5.3, got {}",
+            worst
+        );
+
+        // Verify all intermediate cases stay within bounds
+        for health_prev in 0u8..=4 {
+            for health_curr in 0u8..=4 {
+                for spc_alerts in 0..=10 {
+                    for guard in [true, false] {
+                        for circuit in [true, false] {
+                            for latency in [true, false] {
+                                let r = compute_reward(
+                                    health_prev, health_curr, spc_alerts, guard, circuit, latency,
+                                );
+                                assert!(
+                                    r >= -5.3 && r <= 1.1,
+                                    "Reward {} out of bounds for ({}, {}, {}, {}, {}, {})",
+                                    r, health_prev, health_curr, spc_alerts, guard, circuit, latency
+                                );
+                            }
+                        }
+                    }
+                }
+            }
         }
     }
 }

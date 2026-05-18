@@ -301,6 +301,8 @@ impl CircuitBreaker {
     }
 
     /// Check if a call should be allowed.
+    /// Emits OTEL span with explicit healing decision rationale including timeout comparison
+    /// operands for FM-5 auditing.
     #[allow(dead_code)]
     pub fn allow_request(&mut self) -> bool {
         let span = span!(
@@ -318,6 +320,7 @@ impl CircuitBreaker {
         // Per-state timeout thresholds; Closed never times out.
         let timeouts: [u64; 3] = [u64::MAX, self.config.half_open_timeout_ms, self.config.open_timeout_ms];
         let timed_out = elapsed >= timeouts[self.state as usize];
+        let timeout_threshold = timeouts[self.state as usize];
 
         let (next_state, allow) = match (self.state, timed_out) {
             (CircuitState::Open, true)     => (CircuitState::HalfOpen, true),
@@ -328,12 +331,24 @@ impl CircuitBreaker {
             self.transition_to(next_state);
         }
 
+        // Emit healing decision span with full rationale and operands for auditing
+        let decision_reason = match (self.state, timed_out) {
+            (CircuitState::Closed, _) => "closed_allows_all",
+            (CircuitState::Open, true) => "open_timeout_expired_probe",
+            (CircuitState::Open, false) => "open_waiting_recovery",
+            (CircuitState::HalfOpen, true) => "halfopen_timeout_recovery_failed",
+            (CircuitState::HalfOpen, false) => "halfopen_waiting_threshold",
+        };
+
         tracing::debug!(
             is_allowed = allow,
             next_state = ?next_state,
             elapsed_ms = elapsed,
+            timeout_threshold_ms = timeout_threshold,
+            timeout_comparison_result = timed_out,
+            decision_reason = decision_reason,
             status = if allow { "ok" } else { "error" },
-            "circuit breaker decision"
+            "circuit breaker healing decision"
         );
 
         allow
