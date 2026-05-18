@@ -92,7 +92,11 @@ async function checkNodeVersion(): Promise<Diagnosis> {
 
 async function checkPnpmVersion(): Promise<Diagnosis> {
   try {
-    const version = execSync('pnpm --version', { encoding: 'utf8', stdio: 'pipe' }).trim();
+    const version = execSync('pnpm --version', {
+      encoding: 'utf8',
+      stdio: 'pipe',
+      timeout: 3000,
+    }).trim();
     const major = parseInt(version.split('.')[0], 10);
     if (major >= 8) {
       return {

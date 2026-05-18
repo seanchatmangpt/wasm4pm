@@ -254,8 +254,9 @@ export const autoprocess = defineCommand({
                 cycleResult = typeof rawResult === 'string' ? JSON.parse(rawResult) : rawResult;
                 cyclesRun++;
 
-                // Emit per-phase child spans so Jaeger shows the MAPE-K phases individually.
-                // These are fire-and-forget (best-effort); sink errors are already swallowed inside withSpanRaw.
+                // Emit per-phase MAPE-K child spans so Jaeger shows each phase individually.
+                // Span names follow the MAPE-K vocabulary: monitor/analyze/plan/execute/learn.
+                // These are fire-and-forget (best-effort); sink errors are swallowed inside withSpanRaw.
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
                 const cr = (cycleResult.cycle_result ?? cycleResult) as Record<string, any>;
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -285,8 +286,9 @@ export const autoprocess = defineCommand({
                 // drift_status: 0=none, 1=low (1-2 causes), 2=high (3+ causes)
                 const driftStatus = anomalyDetected ? (specialCauses.length >= 3 ? 2 : 1) : 0;
 
+                // ── MONITOR span (Perception surface: events, traces, health) ──
                 await withSpanRaw(
-                  'wasm4pm.autoprocess.perception',
+                  'wasm4pm.autoprocess.monitor',
                   {
                     cycle: cyclesRun,
                     health_level: healthLevel,
@@ -308,14 +310,17 @@ export const autoprocess = defineCommand({
                   }
                 );
 
+                // ── ANALYZE span (Decision surface: guard, pattern, anomalies) ──
                 await withSpanRaw(
-                  'wasm4pm.autoprocess.decision',
+                  'wasm4pm.autoprocess.analyze',
                   {
                     cycle: cyclesRun,
                     guard_result: Boolean(decData.guard_result),
                     pattern_result: String(decData.pattern_result ?? 'unknown'),
                     pattern_ticks:
                       typeof decData.pattern_ticks === 'number' ? decData.pattern_ticks : 0,
+                    special_cause_count: specialCauses.length,
+                    anomaly_detected: anomalyDetected,
                     duration_us: typeof timing.decision_us === 'number' ? timing.decision_us : 0,
                   },
                   async () => {
@@ -323,8 +328,9 @@ export const autoprocess = defineCommand({
                   }
                 );
 
+                // ── PLAN span (Protection surface: circuit breaker, SPC state) ──
                 await withSpanRaw(
-                  'wasm4pm.autoprocess.protection',
+                  'wasm4pm.autoprocess.plan',
                   {
                     cycle: cyclesRun,
                     circuit_state: String(protData.circuit_state ?? 'unknown'),
@@ -339,8 +345,9 @@ export const autoprocess = defineCommand({
                   }
                 );
 
+                // ── EXECUTE span (Optimization surface: RL action, reward) ──
                 await withSpanRaw(
-                  'wasm4pm.autoprocess.optimization',
+                  'wasm4pm.autoprocess.execute',
                   {
                     cycle: cyclesRun,
                     rl_action: String(optData.rl_action ?? 'none'),
@@ -355,6 +362,28 @@ export const autoprocess = defineCommand({
                         : 0,
                     duration_us:
                       typeof timing.optimization_us === 'number' ? timing.optimization_us : 0,
+                  },
+                  async () => {
+                    /* synchronous */
+                  }
+                );
+
+                // ── LEARN span (feedback: reward delta, SPC alerts consumed) ──
+                // The WASM cycle does not have a separate learn phase; we synthesise the
+                // key feedback signal — reward change relative to the previous cycle — so
+                // Jaeger operators can see whether the autonomic loop is converging.
+                const rewardVal = typeof optData.reward === 'number' ? optData.reward : 0;
+                const cumRewardVal =
+                  typeof optData.cumulative_reward === 'number' ? optData.cumulative_reward : 0;
+                await withSpanRaw(
+                  'wasm4pm.autoprocess.learn',
+                  {
+                    cycle: cyclesRun,
+                    reward: Math.round(rewardVal * 1000) / 1000,
+                    cumulative_reward: Math.round(cumRewardVal * 1000) / 1000,
+                    spc_causes_consumed: specialCauses.length,
+                    knowledge_updated: anomalyDetected || rewardVal !== 0,
+                    drift_status: driftStatus,
                   },
                   async () => {
                     /* synchronous */
@@ -441,72 +470,128 @@ export const autoprocess = defineCommand({
               );
               emitResult(result, { format, verbose, quiet }, (res, projection) => {
                 const data = res.payload as Record<string, unknown>;
-                const cycle = data.cycle_result as Record<string, unknown>;
-                const timing = data.timing as Record<string, unknown>;
-                projection.info('AutoProcess Results');
+                const cycle = (data.cycle_result ?? data) as Record<string, unknown>;
+                const timing = (data.timing ?? {}) as Record<string, unknown>;
+
+                projection.info('AutoProcess — MAPE-K Cycle Summary');
                 projection.log('');
-                const perception = cycle.perception as Record<string, unknown>;
-                projection.log('  Perception:');
-                projection.log(`    Events: ${perception.event_count}`);
-                projection.log(`    Activities: ${perception.unique_activities}`);
-                projection.log(`    Traces: ${perception.trace_count}`);
-                projection.log(
-                  `    Health: ${perception.health_state} (score ${perception.health_score})`
+
+                // ── Helper to format a labelled phase line ─────────────────────
+                const phaseLabel = (label: string, summary: string) => {
+                  const pad = label.padEnd(10);
+                  projection.log(`  ${pad}${summary}`);
+                };
+
+                // ── MONITOR ───────────────────────────────────────────────────
+                const perception = (cycle.perception ?? {}) as Record<string, unknown>;
+                const evCount = perception.event_count ?? '?';
+                const trCount = perception.trace_count ?? '?';
+                const actCount = perception.unique_activities ?? '?';
+                const healthState = String(perception.health_state ?? 'unknown');
+                const healthScore =
+                  typeof perception.health_score === 'number' ? perception.health_score : '?';
+                phaseLabel(
+                  'Monitor',
+                  `${evCount} events, ${trCount} traces, ${actCount} activities — health: ${healthState} (${healthScore}/4)`
                 );
-                projection.log('');
-                const decision = cycle.decision as Record<string, unknown>;
-                projection.log('  Decision:');
-                projection.log(`    Guard: ${decision.guard_result ? 'PASS' : 'FAIL'}`);
-                projection.log(
-                  `    Pattern: ${decision.pattern_result} (${decision.pattern_ticks} ticks)`
-                );
-                projection.log('');
-                const protection = cycle.protection as Record<string, unknown>;
-                projection.log('  Protection:');
-                projection.log(`    Circuit: ${protection.circuit_state}`);
-                const spc = protection.spc_results as Record<string, unknown> | undefined;
-                if (spc) {
-                  for (const [metric, status] of Object.entries(spc)) {
-                    const icon = status === 'OK' ? '+' : status === 'ALERT' ? '!' : '-';
-                    projection.log(`    SPC ${metric}: ${icon} ${status}`);
-                  }
-                }
-                projection.log(
-                  `    Special Causes: ${(protection.special_causes as unknown[]).length}`
-                );
-                projection.log('');
-                const optimization = cycle.optimization as Record<string, unknown>;
-                projection.log('  Optimization:');
-                projection.log(
-                  `    Agent:   ${optimization.rl_agent ?? 'QLearning'} (LinUCB-selected)`
-                );
-                projection.log(`    Action:  ${optimization.rl_action}`);
+
+                // ── ANALYZE ───────────────────────────────────────────────────
+                const decision = (cycle.decision ?? {}) as Record<string, unknown>;
+                const protection = (cycle.protection ?? {}) as Record<string, unknown>;
+                const spcResults = (protection.spc_results ?? {}) as Record<string, unknown>;
+                const specialCausesList = Array.isArray(protection.special_causes)
+                  ? (protection.special_causes as unknown[])
+                  : [];
+                const spcAlertCount = Object.values(spcResults).filter((v) => v === 'ALERT').length;
+                const guardOutcome = decision.guard_result ? 'guard PASS' : 'guard FAIL';
+                const patternSummary = decision.pattern_result
+                  ? `pattern: ${decision.pattern_result}`
+                  : 'no pattern';
+                const analyzeSummary =
+                  specialCausesList.length > 0
+                    ? `${specialCausesList.length} anomaly(ies) detected, ${spcAlertCount} SPC alert(s) — ${guardOutcome}, ${patternSummary}`
+                    : `no anomalies — ${guardOutcome}, ${patternSummary}`;
+                phaseLabel('Analyze', analyzeSummary);
+
+                // ── PLAN ──────────────────────────────────────────────────────
+                const circuitState = String(protection.circuit_state ?? 'unknown');
+                const circuitAllowed = Boolean(protection.circuit_allowed);
+                const circuitSummary = circuitAllowed
+                  ? `circuit ${circuitState} (allowed)`
+                  : `circuit ${circuitState} (BLOCKED)`;
+                const spcMetricList = Object.entries(spcResults)
+                  .map(([m, s]) => `${m}:${s}`)
+                  .join(', ');
+                const planSummary = spcMetricList
+                  ? `${circuitSummary} | SPC: ${spcMetricList}`
+                  : circuitSummary;
+                phaseLabel('Plan', planSummary);
+
+                // ── EXECUTE ───────────────────────────────────────────────────
+                const optimization = (cycle.optimization ?? {}) as Record<string, unknown>;
+                const rlAgent = String(optimization.rl_agent ?? 'QLearning');
+                const rlAction = String(optimization.rl_action ?? 'none');
                 const reward = typeof optimization.reward === 'number' ? optimization.reward : 0;
                 const cumReward =
                   typeof optimization.cumulative_reward === 'number'
                     ? optimization.cumulative_reward
                     : 0;
                 const rewardSign = reward >= 0 ? '+' : '';
-                projection.log(
-                  `    Reward:  ${rewardSign}${reward.toFixed(3)} (cumulative: ${cumReward >= 0 ? '+' : ''}${cumReward.toFixed(3)}, cycle #${optimization.cycle_count ?? '?'})`
+                const cycleNum = optimization.cycle_count ?? cyclesRun;
+                const dispatchDetail = optimization.dispatch_detail
+                  ? ` — ${optimization.dispatch_detail}`
+                  : '';
+                phaseLabel(
+                  'Execute',
+                  `${rlAgent} (LinUCB) → action: ${rlAction}${dispatchDetail} | reward: ${rewardSign}${reward.toFixed(3)} (cumulative: ${cumReward >= 0 ? '+' : ''}${cumReward.toFixed(3)}, cycle #${cycleNum})`
                 );
-                if (optimization.dispatch_detail) {
-                  projection.log(`    Detail:  ${optimization.dispatch_detail}`);
-                }
+
+                // ── LEARN ─────────────────────────────────────────────────────
+                // The WASM autonomic cycle feeds the reward signal back to the RL
+                // agent automatically. We surface the drift classification so the
+                // operator knows whether the feedback loop triggered any update.
+                const driftLabel =
+                  specialCausesList.length === 0
+                    ? 'none'
+                    : specialCausesList.length >= 3
+                      ? 'high'
+                      : 'low';
+                const learnSummary =
+                  specialCausesList.length > 0
+                    ? `drift classified as ${driftLabel} (${specialCausesList.length} special cause(s)) — RL Q-table updated via reward ${rewardSign}${reward.toFixed(3)}`
+                    : `no drift detected — RL Q-table stable (reward ${rewardSign}${reward.toFixed(3)})`;
+                phaseLabel('Learn', learnSummary);
+
+                // ── Timing breakdown ──────────────────────────────────────────
                 projection.log('');
                 projection.log('  Timing:');
-                projection.log(`    Perception:  ${timing.perception_us ?? '?'} µs`);
-                projection.log(`    Decision:    ${timing.decision_us ?? '?'} µs`);
-                projection.log(`    Protection:  ${timing.protection_us ?? '?'} µs`);
-                projection.log(`    Total:       ${timing.total_us ?? '?'} µs`);
+                projection.log(`    Monitor (perception): ${timing.perception_us ?? '?'} µs`);
+                projection.log(`    Analyze (decision):   ${timing.decision_us ?? '?'} µs`);
+                projection.log(`    Plan    (protection): ${timing.protection_us ?? '?'} µs`);
+                projection.log(`    Total:                ${timing.total_us ?? '?'} µs`);
                 if (timing.cycle_latency_budget_exceeded) {
-                  projection.log(`    Warning: cycle exceeded latency budget`);
+                  projection.warn('    Cycle exceeded latency budget');
                 }
+
+                // ── Verbose: full SPC + per-metric details ─────────────────────
+                if (verbose && Object.keys(spcResults).length > 0) {
+                  projection.log('');
+                  projection.log('  SPC detail:');
+                  for (const [metric, status] of Object.entries(spcResults)) {
+                    const icon = status === 'OK' ? '+' : status === 'ALERT' ? '!' : '-';
+                    projection.log(`    [${icon}] ${metric}: ${status}`);
+                  }
+                }
+
                 projection.log('');
                 if (cycle.success) {
-                  projection.log('  Result: Cycle completed successfully');
+                  projection.success(
+                    `Cycle #${cycleNum} completed successfully in ${(performance.now() - t0).toFixed(0)}ms`
+                  );
                 } else {
-                  projection.log('  Result: Cycle completed with warnings');
+                  projection.warn(
+                    `Cycle #${cycleNum} completed with warnings in ${(performance.now() - t0).toFixed(0)}ms`
+                  );
                 }
               });
               return await exitWithFlush(result.exit_code);

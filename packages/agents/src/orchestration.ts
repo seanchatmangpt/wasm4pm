@@ -455,6 +455,38 @@ export class AgentOrchestrator {
     };
   }
 
+  /**
+   * Format the Learn phase result as human-readable lines.
+   *
+   * Returns one line per threshold change (from thresholdAuditLog) plus a
+   * summary line.  When no thresholds changed, returns a single "stable"
+   * message.  Callers (CLI renderers, test helpers) use this to present the
+   * Learn phase without re-deriving the audit log structure.
+   *
+   * Example output:
+   *   Learn      mock-interceptor: max_deviations 0 → 0 (drift 0.600 — tightened sensitivity)
+   *   Learn      No threshold adjustments (all metrics within bounds)
+   */
+  static formatLearnSummary(learn: LearnResult): string[] {
+    const lines: string[] = [];
+
+    if (learn.thresholdAuditLog.length === 0) {
+      lines.push('Learn      No threshold adjustments (all metrics within bounds)');
+    } else {
+      for (const entry of learn.thresholdAuditLog) {
+        lines.push(
+          `Learn      ${entry.agentId}: ${entry.field} ${entry.before} → ${entry.after} (drift ${entry.driftScore.toFixed(3)} — ${entry.reason})`
+        );
+      }
+    }
+
+    if (learn.ontology_patches > 0) {
+      lines.push(`Learn      ${learn.ontology_patches} ontology patch(es) applied`);
+    }
+
+    return lines;
+  }
+
   // =========================================================================
   // Internal Methods
   // =========================================================================
