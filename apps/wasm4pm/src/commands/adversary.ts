@@ -491,7 +491,7 @@ export async function probeAdversary(projectDir: string): Promise<Probe[]> {
 
   // ── D2: Hooks audit JSON must exist for proof chain ───────────────────────
   {
-    const auditPath = join(projectDir, 'wasm4pm', 'target', 'audits', 'claude-hooks-jtbd-verification.json');
+    const auditPath = join(projectDir, '.wasm4pm', 'audits', 'claude-hooks-jtbd-verification.json');
     const exists = existsSync(auditPath);
     let verdict = 'AndonPull(MissingHooksAudit)';
     let valid = false;
@@ -504,7 +504,7 @@ export async function probeAdversary(projectDir: string): Promise<Probe[]> {
     }
     probes.push({
       job: 'Hooks JTBD audit JSON must exist on disk with Accepted verdict',
-      scenario: 'Check wasm4pm/target/audits/claude-hooks-jtbd-verification.json',
+      scenario: 'Check .wasm4pm/audits/claude-hooks-jtbd-verification.json',
       observed: !exists
         ? 'Audit JSON missing — wpm doctor hooks has not been run or audit was deleted'
         : valid
@@ -788,12 +788,14 @@ export const adversary = defineCommand({
     format: { type: 'string', default: 'human' },
     verbose: { type: 'boolean', alias: 'v' },
     quiet: { type: 'boolean', alias: 'q' },
+    'no-save': { type: 'boolean', description: 'Skip writing the audit JSON to disk' },
   },
   async run(ctx) {
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
+    const noSave = Boolean(ctx.args['no-save']);
 
     const projectDir = process.env['CLAUDE_PROJECT_DIR'] ?? process.cwd();
     const probes = await probeAdversary(projectDir);
@@ -807,26 +809,37 @@ export const adversary = defineCommand({
         ? 'AndonPull(AdversarialEscape)'
         : 'AndonPull(InconclusiveProbes)';
 
-    const auditDir = join(projectDir, 'wasm4pm', 'target', 'audits');
+    // Audit reports go under .wasm4pm/audits/ (gitignored), not under any target/.
+    const auditDir = join(projectDir, '.wasm4pm', 'audits');
     const auditPath = join(auditDir, 'adversarial-proof-lifecycle.json');
-    try {
-      mkdirSync(auditDir, { recursive: true });
-      writeFileSync(auditPath, JSON.stringify({
-        audit_timestamp: new Date().toISOString(),
-        auditor: 'wpm-doctor-adversary',
-        verdict,
-        total_adversarial_probes: probes.length,
-        blocked,
-        escaped,
-        inconclusive,
-        escaped_probes: probes.filter((p) => p.verdict === 'refuted').map((p) => ({
-          job: p.job, observed: p.observed,
-        })),
-        probes,
-      }, null, 2), 'utf8');
-    } catch { /* non-blocking */ }
+    if (!noSave) {
+      try {
+        mkdirSync(auditDir, { recursive: true });
+        writeFileSync(auditPath, JSON.stringify({
+          audit_timestamp: new Date().toISOString(),
+          auditor: 'wpm-doctor-adversary',
+          verdict,
+          total_adversarial_probes: probes.length,
+          blocked,
+          escaped,
+          inconclusive,
+          escaped_probes: probes.filter((p) => p.verdict === 'refuted').map((p) => ({
+            job: p.job, observed: p.observed,
+          })),
+          probes,
+        }, null, 2), 'utf8');
+      } catch { /* non-blocking */ }
+    }
 
-    const exitCode = verdict === 'Accepted' ? EXIT_CODES.success : EXIT_CODES.execution_error;
+    // Exit codes:
+    //   0 = Accepted (all probes verified)
+    //   3 = execution_error when adversary escaped (attack path not blocked — critical)
+    //   4 = partial_failure when inconclusive only (some probes verified, none escaped)
+    const exitCode = verdict === 'Accepted'
+      ? EXIT_CODES.success
+      : escaped > 0
+        ? EXIT_CODES.execution_error
+        : EXIT_CODES.partial_failure;
     const result = makeResult('doctor adversary', {
       verdict, probes, total: probes.length, blocked, escaped, inconclusive, audit_path: auditPath,
     }, performance.now() - t0, exitCode);

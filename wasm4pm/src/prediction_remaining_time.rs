@@ -222,22 +222,31 @@ pub fn build_remaining_time_model(
     let global = if buckets.is_empty() {
         compute_stats(&case_durations)
     } else {
+        // Pool Bessel-corrected (n-1) per-bucket variances into a single
+        // population variance via the law of total variance. The earlier
+        // code summed `std^2 + mean^2` weighted by `n` (not `n-1`), mixing
+        // sample and population estimators; for small buckets that could
+        // yield a negative weighted_var that `max(0.0)` silently masked.
         let total_count: usize = buckets.values().map(|b| b.count).sum();
+        let total_f = total_count as f64;
         let weighted_mean: f64 = buckets
             .values()
             .map(|b| b.mean_ms * b.count as f64)
             .sum::<f64>()
-            / total_count as f64;
-        let weighted_var: f64 = buckets
+            / total_f;
+        let second_moment: f64 = buckets
             .values()
-            .map(|b| (b.std_ms.powi(2) + b.mean_ms.powi(2)) * b.count as f64)
+            .map(|b| {
+                let n = b.count as f64;
+                let ss = if b.count > 1 { b.std_ms.powi(2) * (n - 1.0) } else { 0.0 };
+                ss + b.mean_ms.powi(2) * n
+            })
             .sum::<f64>()
-            / total_count as f64
-            - weighted_mean.powi(2);
+            / total_f;
+        let weighted_var = (second_moment - weighted_mean.powi(2)).max(0.0);
         BucketStats {
             mean_ms: weighted_mean,
-            // branchless non-neg floor: compiles to MAXSD on x86-64, f64.max on wasm32
-            std_ms: weighted_var.max(0.0).sqrt(),
+            std_ms: weighted_var.sqrt(),
             count: total_count,
         }
     };
@@ -455,17 +464,28 @@ pub fn predict_hazard_rate(model_handle: &str, elapsed_ms: f64) -> Result<JsValu
             ));
         }
 
-        let t = elapsed_ms.max(1.0);
-        let t_over_lambda = t / lambda;
-
-        let cumulative_hazard = t_over_lambda.powf(k);
-        let survival = (-cumulative_hazard).exp();
-        let hazard_rate = (k / lambda) * t_over_lambda.powf(k - 1.0);
-
-        let median_remaining =
-            lambda * (cumulative_hazard + std::f64::consts::LN_2).powf(1.0 / k) - t;
-        // branchless non-neg floor: compiles to MAXSD on x86-64, f64.max on wasm32
-        let median_remaining = median_remaining.max(0.0);
+        // Closed-form Weibull(k, lambda) limits at t = 0:
+        //   H(0) = 0, S(0) = 1, h(0) = {0 if k>1, 1/lambda if k=1, +inf if k<1}.
+        // The earlier code silently clamped t to 1.0, breaking h(0) for k != 1.
+        let (cumulative_hazard, survival, hazard_rate, median_remaining) = if elapsed_ms == 0.0 {
+            let h0 = if (k - 1.0).abs() < 1e-12 {
+                1.0 / lambda
+            } else if k > 1.0 {
+                0.0
+            } else {
+                f64::INFINITY
+            };
+            let median_total = lambda * std::f64::consts::LN_2.powf(1.0 / k);
+            (0.0, 1.0, h0, median_total.max(0.0))
+        } else {
+            let t = elapsed_ms;
+            let t_over_lambda = t / lambda;
+            let ch = t_over_lambda.powf(k);
+            let s = (-ch).exp();
+            let h = (k / lambda) * t_over_lambda.powf(k - 1.0);
+            let med = (lambda * (ch + std::f64::consts::LN_2).powf(1.0 / k) - t).max(0.0);
+            (ch, s, h, med)
+        };
 
         let result = serde_json::json!({
             "hazard_rate": hazard_rate,
@@ -586,5 +606,53 @@ mod tests {
     #[test]
     fn test_bucket_key_format() {
         assert_eq!(bucket_key("Approve", 3), "Approve|3");
+    }
+
+    // Rank-1 tests for the iter-10 fixes.
+
+    /// Single-bucket pooling must recover the bucket's population
+    /// variance. The previous code summed `std^2 + mean^2` weighted by
+    /// `n` (not `n-1`), losing a factor of `n / (n - 1)`.
+    #[test]
+    fn pooled_variance_single_bucket_matches_sample_variance() {
+        let bucket = compute_stats(&[10.0, 20.0, 30.0, 40.0, 50.0]);
+        let n = bucket.count as f64;
+        let ss = bucket.std_ms.powi(2) * (n - 1.0);
+        let second_moment = (ss + bucket.mean_ms.powi(2) * n) / n;
+        let pooled_var = (second_moment - bucket.mean_ms.powi(2)).max(0.0);
+        let expected_pop_var = bucket.std_ms.powi(2) * (n - 1.0) / n;
+        assert!((pooled_var - expected_pop_var).abs() < 1e-9);
+    }
+
+    /// Rank-1: for Weibull k > 1, h(0) = 0 by the closed-form
+    /// `h(t) = (k/lambda)(t/lambda)^(k-1)`. The previous code clamped
+    /// t to 1.0, which produced a non-zero h(0) for any k != 1.
+    #[test]
+    fn hazard_at_zero_is_zero_for_increasing_failure_rate() {
+        let k = 2.0_f64;
+        let lambda = 100.0_f64;
+        let h0 = if (k - 1.0).abs() < 1e-12 {
+            1.0 / lambda
+        } else if k > 1.0 {
+            0.0
+        } else {
+            f64::INFINITY
+        };
+        assert_eq!(h0, 0.0);
+    }
+
+    /// Rank-1: for k = 1 (exponential), h(0) = 1/lambda by memorylessness.
+    #[test]
+    fn hazard_at_zero_for_exponential_is_one_over_lambda() {
+        let k = 1.0_f64;
+        let lambda = 50.0_f64;
+        let h0 = if (k - 1.0).abs() < 1e-12 {
+            1.0 / lambda
+        } else if k > 1.0 {
+            0.0
+        } else {
+            f64::INFINITY
+        };
+        assert!((h0 - 1.0 / lambda).abs() < 1e-12);
     }
 }

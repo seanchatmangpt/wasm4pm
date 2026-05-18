@@ -27,7 +27,7 @@ export type {
 export { OcelHarvester } from './ocel-harvester.js';
 export type { OcelObject, OcelEvent, OcelEventLog } from './ocel-harvester.js';
 
-export { AlgorithmDiscovery } from './algorithm-discovery.js';
+export { AlgorithmDiscovery, ALGORITHM_PROFILES } from './algorithm-discovery.js';
 export type { AlgorithmResult, DiscoveryResults } from './algorithm-discovery.js';
 
 export { ConformanceChecker } from './conformance-checker.js';

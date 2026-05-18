@@ -68,7 +68,6 @@ const benchmarkBuild = defineCommand({
         EXIT_CODES.source_error, 'SOURCE_NOT_FOUND');
       emitResult(result, { format, quiet });
       return await exitWithFlush(EXIT_CODES.source_error);
-      return;
     }
 
     const lines = readFileSync(corpusPath, 'utf8').split('\n').filter((l) => l.trim());
@@ -283,7 +282,6 @@ const benchmarkVerify = defineCommand({
         }));
         process.stdout.write(JSON.stringify(buildSarifOutput('26.4.28', sarifResults), null, 2) + '\n');
         return await exitWithFlush(exitCode);
-        return;
       }
 
       const result = makeResult('benchmark verify', {
@@ -363,7 +361,6 @@ const benchmarkExport = defineCommand({
           EXIT_CODES.config_error, 'CONFIG_ERROR');
         emitResult(result, { format: 'human', quiet });
         return await exitWithFlush(EXIT_CODES.config_error);
-        return;
       }
 
       return await exitWithFlush(EXIT_CODES.success);

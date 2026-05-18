@@ -163,14 +163,21 @@ const session = defineCommand({
     const runDir = join(projectDir, 'wasm4pm', 'target', 'agent-runs', dateKey);
 
     if (!existsSync(runDir)) {
-      const result = makeErrorResult(
+      // No session evidence is a valid first-run state — not a data error.
+      // Hooks write evidence only when Claude Code tools fire, so an empty
+      // session directory means no activity yet, not a missing source.
+      const result = makeResult(
         'claude session',
-        `No session evidence for ${dateKey} at ${runDir}. Hooks write evidence when Claude Code tools fire.`,
-        EXIT_CODES.source_error,
-        'NO_SESSION',
+        { date: dateKey, run_dir: runDir, tool_events: { count: 0, by_tool: {}, recent: [] }, work_orders: { count: 0, recent: [] }, no_session: true },
+        performance.now() - t0,
+        EXIT_CODES.success,
       );
-      emitResult(result, { format, verbose, quiet });
-      return exitWithFlush(EXIT_CODES.source_error);
+      emitResult(result, { format, verbose, quiet }, (_res, p) => {
+        p.log('');
+        p.log(`Claude Code session evidence — ${dateKey}`);
+        p.log(`  No session evidence yet. Hooks write to ${runDir} when Claude Code tools fire.`);
+      });
+      return exitWithFlush(EXIT_CODES.success);
     }
 
     const toolEventsPath = join(runDir, 'tool-events.jsonl');
@@ -261,7 +268,14 @@ const hooks = defineCommand({
     const inconclusive = probes.filter((p) => p.verdict === 'inconclusive').length;
     const healthy = refuted === 0 && inconclusive === 0;
 
-    const exitCode = healthy ? EXIT_CODES.success : EXIT_CODES.config_error;
+    // Hook job failures are execution failures (the hook infrastructure failed to
+    // do its declared job), not configuration errors. Use execution_error (3) when
+    // hooks are refuted, partial_failure (4) when only inconclusive probes remain.
+    const exitCode = healthy
+      ? EXIT_CODES.success
+      : refuted > 0
+        ? EXIT_CODES.execution_error
+        : EXIT_CODES.partial_failure;
     const result = makeResult('claude hooks', {
       probes,
       summary: { verified, refuted, inconclusive, total: probes.length },

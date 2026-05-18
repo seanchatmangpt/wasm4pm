@@ -12,11 +12,22 @@
 
 use wasm4pm::rl_orchestrator::compute_reward;
 use wasm4pm::self_healing::{
-    advance_clock, reset_clock, CircuitBreaker, CircuitBreakerConfig, CircuitState,
+    advance_clock, reset_clock, CircuitBreaker, CircuitBreakerConfig, CircuitState, CLOCK_LOCK,
 };
 
-fn setup() {
+/// RAII guard returned from `setup()`. Holding it serializes all tests in
+/// this file (and any other file using `CLOCK_LOCK`) against the shared
+/// `TIME_OFFSET_MS` atomic so `reset_clock()` + `advance_clock()` are
+/// observed atomically by the test that called `setup()`.
+///
+/// Keep the binding alive (e.g. `let _g = setup();`) for the entire body
+/// of the test — dropping it early releases the lock and reopens the race.
+fn setup() -> std::sync::MutexGuard<'static, ()> {
+    let guard = CLOCK_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     reset_clock();
+    guard
 }
 
 // ===========================================================================
@@ -25,7 +36,7 @@ fn setup() {
 
 #[test]
 fn test_closed_to_open_on_threshold_failures() {
-    setup();
+    let _clock_guard = setup();
 
     let threshold = 5u32;
     let config = CircuitBreakerConfig {
@@ -67,7 +78,7 @@ fn test_closed_to_open_on_threshold_failures() {
 
 #[test]
 fn test_open_to_half_open_after_timeout() {
-    setup();
+    let _clock_guard = setup();
 
     let open_timeout_ms = 60_000u64;
     let config = CircuitBreakerConfig {
@@ -117,7 +128,7 @@ fn test_open_to_half_open_after_timeout() {
 
 #[test]
 fn test_half_open_to_closed_on_success() {
-    setup();
+    let _clock_guard = setup();
 
     let success_threshold = 2u32;
     let config = CircuitBreakerConfig {
@@ -166,7 +177,7 @@ fn test_half_open_to_closed_on_success() {
 
 #[test]
 fn test_half_open_to_open_on_failure() {
-    setup();
+    let _clock_guard = setup();
 
     let config = CircuitBreakerConfig {
         failure_threshold: 3,
@@ -203,7 +214,7 @@ fn test_half_open_to_open_on_failure() {
 
 #[test]
 fn test_allow_request_per_state() {
-    setup();
+    let _clock_guard = setup();
 
     // --- Closed: allow_request returns true ---
     let mut breaker_closed = CircuitBreaker::new();
@@ -255,7 +266,7 @@ fn test_allow_request_per_state() {
 
 #[test]
 fn test_failure_counter_resets_on_closed() {
-    setup();
+    let _clock_guard = setup();
 
     let threshold = 3u32;
     let config = CircuitBreakerConfig {
@@ -318,7 +329,7 @@ fn test_failure_counter_resets_on_closed() {
 
 #[test]
 fn test_recovery_timeout_is_configurable() {
-    setup();
+    let _clock_guard = setup();
 
     let short_timeout_ms = 100u64;
     let long_timeout_ms = 500u64;
@@ -397,7 +408,7 @@ fn test_recovery_timeout_is_configurable() {
 
 #[test]
 fn test_full_lifecycle_closed_open_half_open_closed() {
-    setup();
+    let _clock_guard = setup();
 
     let config = CircuitBreakerConfig {
         failure_threshold: 3,

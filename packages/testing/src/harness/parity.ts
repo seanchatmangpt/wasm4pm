@@ -106,7 +106,18 @@ export async function checkParityBatch(
 
   const allPassed = results.every((r) => r.passed);
   const passCount = results.filter((r) => r.passed).length;
-  const summary = `Parity: ${passCount}/${results.length} configs passed`;
+
+  let summary = `Parity: ${passCount}/${results.length} configs passed`;
+  if (!allPassed) {
+    const failLines: string[] = [];
+    results.forEach((r, i) => {
+      if (!r.passed) {
+        failLines.push(`  config[${i}]: ${r.details}`);
+      }
+    });
+    summary += '\nFailing configs:\n' + failLines.join('\n');
+    summary += '\nNext step: run wpm explain <log> to inspect the step order and compare against wpm run output.';
+  }
 
   return { results, allPassed, summary };
 }

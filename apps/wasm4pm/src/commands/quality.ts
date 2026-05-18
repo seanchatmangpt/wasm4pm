@@ -68,6 +68,10 @@ export const quality = defineCommand({
       description: 'Suppress non-error output',
       alias: 'q',
     },
+    'no-save': {
+      type: 'boolean',
+      description: 'Skip auto-save and BLAKE3 receipt',
+    },
   },
   async run(ctx) {
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
@@ -100,7 +104,6 @@ export const quality = defineCommand({
         );
         emitResult(result, { format, verbose, quiet });
         return await exitWithFlush(result.exit_code);
-        return;
       }
 
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
@@ -121,7 +124,6 @@ export const quality = defineCommand({
         );
         emitResult(result, { format, verbose, quiet });
         return await exitWithFlush(result.exit_code);
-        return;
       }
 
       await withLogSession(

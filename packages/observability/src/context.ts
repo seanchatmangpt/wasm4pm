@@ -34,7 +34,7 @@ export function generateTraceId(): string {
     globalThis.crypto.getRandomValues(bytes);
   } else {
     for (let i = 0; i < 16; i++) {
-      bytes[i] = Math.floor(Math.random() * 256);
+      bytes[i] = Math.floor(Math.random() * 256); // @lint-allow-fakery — crypto fallback for W3C trace ID
     }
   }
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
@@ -49,7 +49,7 @@ export function generateSpanId(): string {
     globalThis.crypto.getRandomValues(bytes);
   } else {
     for (let i = 0; i < 8; i++) {
-      bytes[i] = Math.floor(Math.random() * 256);
+      bytes[i] = Math.floor(Math.random() * 256); // @lint-allow-fakery — crypto fallback for W3C span ID
     }
   }
   return Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');

@@ -766,8 +766,11 @@ export class Engine {
     try {
       // Check if WASM module is still accessible
       if (!this.wasmLoader.isInitialized()) {
-        // Fall back to full bootstrap
-        return this.bootstrap();
+        // Fall back to full bootstrap, but still record the recovery duration
+        // so MTTR reflects this code path.
+        await this.bootstrap();
+        this.stateMachine.recordRecovery(Date.now() - recoveryStart);
+        return;
       }
 
       // Soft reset and re-init kernel only
@@ -782,11 +785,25 @@ export class Engine {
       this.statusTracker.setState('ready');
 
       // Track recovery time
-      const recoveryDuration = Date.now() - recoveryStart;
-      this.stateMachine.recordRecovery(recoveryDuration);
+      this.stateMachine.recordRecovery(Date.now() - recoveryStart);
     } catch (err) {
-      // Fast recovery failed, fall back to full bootstrap
-      await this.bootstrap();
+      // Fast recovery failed. Per absolute.md rule 5 (FAIL FAST), do not
+      // silently swallow the failure — attempt the bootstrap fallback and
+      // surface any resulting error to the caller so they can transition
+      // to a higher-severity recovery path.
+      try {
+        await this.bootstrap();
+        this.stateMachine.recordRecovery(Date.now() - recoveryStart);
+      } catch (bootstrapErr) {
+        // Both fast recovery and bootstrap failed — re-throw the bootstrap
+        // error (most recent / load-bearing) while attaching the original
+        // fast-recover error for diagnosis.
+        const original = err instanceof Error ? err.message : String(err);
+        const next = bootstrapErr instanceof Error ? bootstrapErr.message : String(bootstrapErr);
+        throw new Error(
+          `Fast recovery failed (${original}); subsequent bootstrap fallback also failed (${next})`
+        );
+      }
     }
   }
 
@@ -850,6 +867,29 @@ export class Engine {
   }
 
   /**
+   * Get Mean Time To Recovery (MTTR) in milliseconds.
+   *
+   * Measured from actual recordRecovery() calls in recover() and
+   * fastRecoverFromFailed() — NOT hardcoded. Per CLAUDE.md the MTTR
+   * target is < 1000 ms; callers should assert against this value
+   * rather than against wall-clock duration of an individual recover().
+   *
+   * @returns Mean recovery duration in milliseconds, or 0 if no
+   *          recoveries have been recorded yet.
+   */
+  getMTTR(): number {
+    return this.stateMachine.getMTTR();
+  }
+
+  /**
+   * Number of completed recoveries since engine creation.
+   * Useful for soak tests that need to assert "recovery happened at least N times".
+   */
+  getRecoveryCount(): number {
+    return this.stateMachine.getRecoveryCount();
+  }
+
+  /**
    * Gets the initialized WASM module
    * Throws if module is not initialized (bootstrap() must be called first)
    */
@@ -875,7 +915,8 @@ export class Engine {
 
   private generateRunId(): string {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const random = Math.random().toString(36).substring(2, 6);
+    // Run ID is a human-readable label, not a cryptographic hash — Math.random suffix is intentional. // @lint-allow-fakery
+    const random = Math.random().toString(36).substring(2, 6); // @lint-allow-fakery — run-ID label suffix, not a receipt hash
     return `run_${timestamp}_${random}`;
   }
 

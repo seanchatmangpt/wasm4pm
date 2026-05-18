@@ -1,5 +1,6 @@
 # Rust
-/target
+# Unanchored: matches workspace member target/ dirs at any depth.
+target/
 **/*.rs.bk
 
 # WASM build artifacts
@@ -9,8 +10,8 @@ wasm4pm/pkg/
 # Node
 node_modules/
 .pnpm-store/
-package-lock.json
-pnpm-lock.yaml
+# pnpm-lock.yaml is committed for reproducible workspace installs.
+# package-lock.json is blocked by .github/workflows/repo-hygiene.yml, not by ignore.
 
 # TypeScript build
 dist/
@@ -55,3 +56,12 @@ data/Road_Traffic_Fine_Management_Process.xes
 
 # Agent hook evidence logs
 .claude/evidence/
+
+# packages/agents: compiled artifacts in src/ (NodeNext shadowing fix — iter13)
+# tsconfig.json outDir is ./dist; these .js/.d.ts/.map files were committed before
+# that outDir was set and cause NodeNext resolution to pick stale artifacts over
+# freshly compiled dist/ output.
+packages/agents/src/**/*.js
+packages/agents/src/**/*.d.ts
+packages/agents/src/**/*.js.map
+packages/agents/src/**/*.d.ts.map

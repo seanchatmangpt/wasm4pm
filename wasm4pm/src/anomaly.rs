@@ -1,5 +1,21 @@
 use crate::state::{get_or_init_state, StoredObject};
 use serde_json::json;
+
+/// Compute log-level distribution statistics over raw anomaly scores.
+///
+/// Returned tuple is (mean, std_dev). Used internally to derive per-trace
+/// z-scores so that raw -log2(prob) costs become comparable across logs.
+/// Returns (0.0, 0.0) for an empty input — callers should treat std_dev <= 1e-12
+/// as "no spread" and default z-scores to 0.
+pub(crate) fn score_distribution_stats(scores: &[f64]) -> (f64, f64) {
+    if scores.is_empty() {
+        return (0.0, 0.0);
+    }
+    let n = scores.len() as f64;
+    let mean = scores.iter().sum::<f64>() / n;
+    let var = scores.iter().map(|s| (s - mean) * (s - mean)).sum::<f64>() / n;
+    (mean, var.sqrt())
+}
 /// Priority 7 — Trace anomaly scoring.
 ///
 /// Scores each trace against a reference DFG.  Unusual traces (those that
@@ -167,6 +183,29 @@ pub fn score_log_anomalies(
                     .partial_cmp(&a["score"].as_f64().unwrap_or(0.0))
                     .unwrap_or(std::cmp::Ordering::Equal)
             });
+
+            // Per-trace z-score relative to the log-level distribution. This
+            // turns a raw -log2(prob) cost into something comparable across
+            // logs — `is_outlier` flags z > 2 (≈ outside 95th percentile under
+            // a normal approximation). Counter to the upstream PR-50 pattern
+            // for classification (where macro-F1 was added because accuracy
+            // hid class imbalance), here a raw score hides distribution shape.
+            let scores: Vec<f64> = results
+                .iter()
+                .filter_map(|r| r["score"].as_f64())
+                .filter(|s| s.is_finite())
+                .collect();
+            if !scores.is_empty() {
+                let (mean, std_dev) = score_distribution_stats(&scores);
+                for r in results.iter_mut() {
+                    if let Some(score) = r["score"].as_f64() {
+                        let z = if std_dev > 1e-12 { (score - mean) / std_dev } else { 0.0 };
+                        let obj = r.as_object_mut().expect("results entry is an object");
+                        obj.insert("z_score".to_string(), json!(z));
+                        obj.insert("is_outlier".to_string(), json!(z > 2.0));
+                    }
+                }
+            }
             serde_json::to_string(&results).map_err(|e| crate::error::js_val(&e.to_string()))
         }
         Some(_) => Err(crate::error::js_val("log_handle is not an EventLog")),
@@ -174,4 +213,44 @@ pub fn score_log_anomalies(
     })?;
 
     Ok(crate::error::js_val(&results_json))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::score_distribution_stats;
+
+    /// Domain contract (definition of mean & population standard deviation):
+    /// for a constant series, mean equals that constant and std is exactly 0.
+    /// This is what guards the `std_dev > 1e-12` branch in score_log_anomalies.
+    #[test]
+    fn constant_scores_have_zero_std() {
+        let (mean, std) = score_distribution_stats(&[3.0, 3.0, 3.0, 3.0]);
+        assert!((mean - 3.0).abs() < 1e-12, "mean of constant series = constant");
+        assert!(std.abs() < 1e-12, "std of constant series = 0, got {}", std);
+    }
+
+    /// Domain contract anchoring the z>2 outlier threshold: for uniform [0..4]
+    /// no value reaches z=2 (max-z ≈ 1.414). Adding a true outlier at 12 must
+    /// push that outlier above z=2 — the entire is_outlier contract.
+    #[test]
+    fn z_score_threshold_matches_sigma_distance() {
+        let (mean, std) = score_distribution_stats(&[0.0, 1.0, 2.0, 3.0, 4.0]);
+        assert!((mean - 2.0).abs() < 1e-12);
+        let max_z = (4.0 - mean) / std;
+        assert!(max_z < 2.0, "uniform [0..4] must not contain z>2 outliers; got {}", max_z);
+
+        let (mean2, std2) = score_distribution_stats(&[0.0, 1.0, 2.0, 3.0, 4.0, 12.0]);
+        let z = (12.0 - mean2) / std2;
+        assert!(z > 2.0, "score 12 in [0..4, 12] must be z>2 outlier; got {}", z);
+    }
+
+    /// Empty input is the explicit caller-side guard: the score_log_anomalies
+    /// outer code already early-returns before invoking us, but exposing a
+    /// stable (0.0, 0.0) sentinel lets future callers reuse this helper safely.
+    #[test]
+    fn empty_scores_return_zero_zero() {
+        let (mean, std) = score_distribution_stats(&[]);
+        assert_eq!(mean, 0.0);
+        assert_eq!(std, 0.0);
+    }
 }

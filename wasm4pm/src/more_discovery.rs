@@ -372,6 +372,16 @@ pub fn discover_simulated_annealing_from_log(
     let vocab: Vec<String> = col.vocab.iter().map(|s| s.to_string()).collect();
     let vocab_len = edge_vocab.len();
     let cooling_rate = cooling_rate.clamp(0.001_f64, 0.9999_f64);
+    // Fix (PR #54 SPC NaN class): temperature was unguarded — a caller passing NaN
+    // skipped the entire loop (NaN > 0.01 is false) and the algorithm returned the
+    // empty edge set; a caller passing Inf would run for ~∞ iterations until
+    // cooling_rate exponential decay reached 0.01. Clamp into a finite, positive
+    // working range.
+    let temperature = if temperature.is_finite() && temperature > 0.0 {
+        temperature.clamp(0.02_f64, 1.0e6_f64)
+    } else {
+        1.0_f64
+    };
     let mut rng = StdRng::seed_from_u64(42);
 
     let mut current_edges: HS<(u32, u32)> = HS::new();
@@ -394,7 +404,15 @@ pub fn discover_simulated_annealing_from_log(
         }
         let neighbor_fitness = evaluate_edges_fitness(&neighbor, &col, vocab_len);
         let delta = neighbor_fitness - current_fitness;
-        let accept = delta >= 0.0 || rng.gen::<f64>() < (delta / temp).exp();
+        // Fix (PR #54 SPC NaN class): if either fitness was NaN, `delta` is NaN and
+        // `delta >= 0.0` is false; `(NaN/temp).exp()` is also NaN and `rng.gen() < NaN`
+        // is false, so the branch was silently always-reject. Treat NaN delta as a
+        // worst-case "do not accept" while still allowing the loop to terminate.
+        let accept = if delta.is_nan() {
+            false
+        } else {
+            delta >= 0.0 || rng.gen::<f64>() < (delta / temp).exp()
+        };
         if accept {
             current_edges = neighbor;
             current_fitness = neighbor_fitness;

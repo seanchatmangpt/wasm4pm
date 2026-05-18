@@ -2498,6 +2498,10 @@ export const doctorWatch = defineCommand({
     const quiet = Boolean(ctx.args.quiet);
     const onFail = ctx.args['on-fail'] as string | undefined;
     let intervalSec = parseInt((ctx.args.interval as string) ?? '30', 10);
+    // Guard against NaN (non-numeric --interval value): parseInt returns NaN for
+    // strings like "bad". NaN < 5 is false, so the minimum guard would be bypassed
+    // and setTimeout(NaN) fires at ~1ms — a busy loop. Default to 30 instead.
+    if (!Number.isFinite(intervalSec)) intervalSec = 30;
 
     const p = new ConsoleProjection({ verbose, quiet });
 
@@ -2621,6 +2625,8 @@ export const doctorWatch = defineCommand({
       ),
       { format, verbose, quiet }
     );
+
+    return await exitWithFlush(EXIT_CODES.success);
   },
 });
 
@@ -3521,8 +3527,10 @@ export const doctorHooks = defineCommand({
 
     const exitCode = healthy ? EXIT_CODES.success : EXIT_CODES.config_error;
 
-    // Write disk audit — the hooks probe must itself leave proof of execution
-    const auditDir = path.join(projectDir, 'wasm4pm', 'target', 'audits');
+    // Write disk audit — the hooks probe must itself leave proof of execution.
+    // Under .wasm4pm/audits/ (already gitignored) so it never gets committed
+    // and never lands in apps/wasm4pm/wasm4pm/target/ via cwd accidents.
+    const auditDir = path.join(projectDir, '.wasm4pm', 'audits');
     const auditPath = path.join(auditDir, 'claude-hooks-jtbd-verification.json');
     try {
       mkdirSync(auditDir, { recursive: true });

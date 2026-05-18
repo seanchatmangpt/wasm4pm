@@ -21,6 +21,11 @@ use crate::state::{get_or_init_state, StoredObject};
 // ---------------------------------------------------------------------------
 
 /// Extract (trace_index, duration_ms) pairs from an EventLog using the given timestamp key.
+///
+/// Duration is computed as `max(ts) - min(ts)` rather than `last - first`,
+/// because XES events are not guaranteed chronologically ordered. The
+/// first/last reading is order-sensitive and can yield zero or negative
+/// durations on permuted logs — a silent statistical-analysis defect.
 fn extract_case_durations_internal(
     log: &crate::models::EventLog,
     timestamp_key: &str,
@@ -40,8 +45,8 @@ fn extract_case_durations_internal(
         if timestamps.len() < 2 {
             continue;
         }
-        let start = *timestamps.first().unwrap();
-        let end = *timestamps.last().unwrap();
+        let start = *timestamps.iter().min().unwrap();
+        let end = *timestamps.iter().max().unwrap();
         let dur = (end - start) as f64;
         if dur > 0.0 {
             durations.push(dur);
@@ -97,8 +102,9 @@ fn extract_durations_by_case_attribute_internal(
         if timestamps.len() < 2 {
             continue;
         }
-        let start = *timestamps.first().unwrap();
-        let end = *timestamps.last().unwrap();
+        // Use min/max for order-invariance — see note on extract_case_durations_internal.
+        let start = *timestamps.iter().min().unwrap();
+        let end = *timestamps.iter().max().unwrap();
         let dur = (end - start) as f64;
         if dur > 0.0 {
             groups.entry(label).or_default().push(dur);
@@ -198,14 +204,45 @@ pub fn compare_cohort_durations(
             return Err(JsValue::from_str(&msg.to_string()));
         }
 
-        // Deterministic: sort keys and take first two
+        // Deterministic: sort keys and take first two. Each group must have at
+        // least 2 observations for a t-test to be meaningful (df = n_a+n_b−2);
+        // single-observation groups would give Inf variance under miniml.
         let mut sorted_keys: Vec<&String> = groups.keys().collect();
         sorted_keys.sort();
+        let total_cohorts = sorted_keys.len();
 
-        let label_a = sorted_keys[0].clone();
-        let label_b = sorted_keys[1].clone();
-        let group_a = &groups[sorted_keys[0]];
-        let group_b = &groups[sorted_keys[1]];
+        // Pick the first two alphabetically-sorted cohorts whose size ≥ 2.
+        let mut chosen: Vec<&String> = Vec::with_capacity(2);
+        let mut skipped_too_small: Vec<String> = Vec::new();
+        for k in &sorted_keys {
+            if groups[*k].len() >= 2 {
+                chosen.push(*k);
+                if chosen.len() == 2 { break; }
+            } else {
+                skipped_too_small.push((*k).clone());
+            }
+        }
+        if chosen.len() < 2 {
+            let msg = json!({
+                "error": "Need at least 2 cohorts with >=2 observations each",
+                "cohorts_seen": total_cohorts,
+                "skipped_too_small": skipped_too_small,
+            });
+            return Err(JsValue::from_str(&msg.to_string()));
+        }
+
+        let label_a = chosen[0].clone();
+        let label_b = chosen[1].clone();
+        let group_a = &groups[chosen[0]];
+        let group_b = &groups[chosen[1]];
+
+        // Report cohorts NOT included in the test so callers don't silently
+        // miss a 3-cohort situation (e.g. A/B/C) where only A vs B was tested.
+        let untested_cohorts: Vec<String> = sorted_keys
+            .iter()
+            .filter(|k| **k != &label_a && **k != &label_b)
+            .map(|k| (*k).clone())
+            .collect();
 
         let t_result = miniml::t_test_two_sample_impl(group_a, group_b, alpha)
             .map_err(|e| JsValue::from_str(&e.message))?;
@@ -227,6 +264,8 @@ pub fn compare_cohort_durations(
             "mean_diff_ms": t_result.mean_diff(),
             "ci_lower": t_result.ci_lower(),
             "ci_upper": t_result.ci_upper(),
+            "total_cohorts_seen": total_cohorts,
+            "untested_cohorts": untested_cohorts,
             "interpretation": if significant {
                 "Groups differ significantly"
             } else {
@@ -421,5 +460,60 @@ mod tests {
         let result =
             extract_durations_by_case_attribute_internal(&log, "cohort", "time:timestamp");
         assert!(result.is_empty());
+    }
+
+    use crate::models::{Event, Trace};
+    use std::collections::HashMap;
+
+    fn mk_ev(t: i64) -> Event {
+        let mut a = HashMap::new();
+        a.insert("time:timestamp".to_string(), AttributeValue::Int(t));
+        Event { attributes: a }
+    }
+    fn mk_trace(ts: &[i64], cohort: Option<&str>) -> Trace {
+        let mut tattrs = HashMap::new();
+        if let Some(c) = cohort {
+            tattrs.insert("cohort".to_string(),
+                          AttributeValue::String(c.to_string()));
+        }
+        Trace { attributes: tattrs, events: ts.iter().map(|&t| mk_ev(t)).collect() }
+    }
+
+    /// Rank-1: case duration must be permutation-invariant. The pre-fix
+    /// `first - last` reading depends on storage order.
+    #[test]
+    fn test_case_duration_order_invariant() {
+        let sorted = crate::models::EventLog {
+            traces: vec![mk_trace(&[1000, 3000, 5000], None)],
+            attributes: Default::default(),
+        };
+        let permuted = crate::models::EventLog {
+            traces: vec![mk_trace(&[5000, 1000, 3000], None)],
+            attributes: Default::default(),
+        };
+        assert_eq!(extract_case_durations_internal(&sorted, "time:timestamp"),
+                   vec![4000.0]);
+        assert_eq!(extract_case_durations_internal(&permuted, "time:timestamp"),
+                   vec![4000.0], "permuted log must yield same duration");
+    }
+
+    /// Rank-2: cohort grouping must expose all groups; pre-fix WASM silently
+    /// dropped 3rd+ cohorts when picking the alphabetic first two.
+    #[test]
+    fn test_cohort_grouping_preserves_all_groups() {
+        let log = crate::models::EventLog {
+            traces: vec![
+                mk_trace(&[0, 1000], Some("A")), mk_trace(&[0, 1100], Some("A")),
+                mk_trace(&[0, 2000], Some("B")), mk_trace(&[0, 2100], Some("B")),
+                mk_trace(&[0, 3000], Some("C")), mk_trace(&[0, 3100], Some("C")),
+            ],
+            attributes: Default::default(),
+        };
+        let groups = extract_durations_by_case_attribute_internal(
+            &log, "cohort", "time:timestamp");
+        assert_eq!(groups.len(), 3);
+        for k in &["A", "B", "C"] {
+            assert_eq!(groups.get(*k).map(|v| v.len()), Some(2));
+        }
     }
 }

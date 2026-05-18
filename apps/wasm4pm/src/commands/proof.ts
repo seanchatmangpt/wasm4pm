@@ -6,6 +6,7 @@ import { basename, join } from 'path';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
+import { withSpan } from './_otel.js';
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -68,6 +69,7 @@ const collect = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
+    return withSpan('proof.collect', { runId: String(ctx.args.runId ?? '') }, async () => {
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = ctx.args.verbose ?? false;
@@ -191,6 +193,7 @@ const collect = defineCommand({
     });
 
     await exitWithFlush(exitCode);
+    }); // end withSpan proof.collect
   },
 });
 
@@ -214,6 +217,7 @@ const verifyCmd = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
+    return withSpan('proof.verify', { packDir: String(ctx.args.packDir ?? '') }, async () => {
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = ctx.args.verbose ?? false;
@@ -357,6 +361,7 @@ const verifyCmd = defineCommand({
     });
 
     await exitWithFlush(exitCode);
+    }); // end withSpan proof.verify
   },
 });
 
@@ -378,6 +383,7 @@ const show = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
+    return withSpan('proof.show', { packDir: String(ctx.args.packDir ?? '') }, async () => {
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = ctx.args.verbose ?? false;
@@ -408,6 +414,7 @@ const show = defineCommand({
     });
 
     await exitWithFlush(exitCode);
+    }); // end withSpan proof.show
   },
 });
 
@@ -434,7 +441,7 @@ const audit = defineCommand({
   args: {
     out: {
       type: 'string',
-      description: 'Output path (default: target/audits/route-driven-tdd-independent-verification.json)',
+      description: 'Output path (default: .wasm4pm/audits/route-driven-tdd-independent-verification.json)',
     },
     packDir: {
       type: 'string',
@@ -445,14 +452,19 @@ const audit = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
+    return withSpan('proof.audit', { out: String(ctx.args.out ?? '') }, async () => {
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = ctx.args.verbose ?? false;
     const quiet = ctx.args.quiet ?? false;
-    // Rust workspace outputs live under wasm4pm/target/, not the monorepo root target/
+    // Rust test outputs (proof-packs, test-proof-packs) live under wasm4pm/target/.
     const RUST_TARGET = 'wasm4pm/target';
+    // Audit reports are runtime artifacts, not Rust build output. Write under
+    // .wasm4pm/audits/ (already gitignored as part of .wasm4pm/) regardless of
+    // which cwd the CLI is invoked from; the previous wasm4pm/target/audits/
+    // path doubly-nested to apps/wasm4pm/wasm4pm/target/ when run from apps/wasm4pm/.
     const outPath = (ctx.args.out as string | undefined)
-      ?? join(RUST_TARGET, 'audits', 'route-driven-tdd-independent-verification.json');
+      ?? join('.wasm4pm', 'audits', 'route-driven-tdd-independent-verification.json');
 
     const gates: Record<string, unknown> = {};
 
@@ -659,6 +671,7 @@ const audit = defineCommand({
     });
 
     await exitWithFlush(exitCode);
+    }); // end withSpan proof.audit
   },
 });
 
@@ -828,6 +841,7 @@ const promote = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
+    return withSpan('proof.promote', { pack: String(ctx.args.pack ?? '') }, async () => {
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const quiet = ctx.args.quiet ?? false;
@@ -935,6 +949,7 @@ const promote = defineCommand({
     });
 
     await exitWithFlush(EXIT_CODES.success);
+    }); // end withSpan proof.promote
   },
 });
 

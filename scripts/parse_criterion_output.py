@@ -134,6 +134,14 @@ def collect_measurements(criterion_dir):
     """
     crit_path = Path(criterion_dir)
     if not crit_path.exists():
+        print(
+            f"WARNING: Criterion directory not found: {crit_path}\n"
+            "  Next step: run benchmarks first with:\n"
+            "    cd wasm4pm && cargo bench\n"
+            "  This produces target/criterion/<bench_name>/new/estimates.json files.\n"
+            "  Without these, generate_benchmark_report.py will fall back to hardcoded baseline anchors.",
+            file=__import__("sys").stderr,
+        )
         return []
 
     measurements = []

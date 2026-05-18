@@ -139,13 +139,35 @@ export class OtelCapture {
     return this._jsonEvents.filter((e) => e.component === component);
   }
 
-  /** Assert that required OTEL attributes are present on all spans */
+  /** Assert that required OTEL attributes are present on all spans.
+   *
+   * Each violation string includes what span, which attribute, and what to do next.
+   * The practitioner receives actionable output, not just an ID and a field name.
+   *
+   * Example violation:
+   *   "Span 'algorithm.dfg' (a3f8b2c1): missing 'plan.hash'
+   *    → set requiredAttrs['plan.hash'] before calling createAlgorithmStartedEvent()"
+   */
   assertRequiredAttributes(requiredKeys: string[]): string[] {
     const errors: string[] = [];
+    // Build a map of attribute key → which factory method sets it, for actionable hints.
+    const attrHints: Record<string, string> = {
+      'run.id': "set requiredAttrs['run.id'] from the engine run UUID before emitting spans",
+      'config.hash': "set requiredAttrs['config.hash'] from resolveConfig().metadata.hash",
+      'input.hash': "set requiredAttrs['input.hash'] from the BLAKE3 hash of the input file",
+      'plan.hash': "set requiredAttrs['plan.hash'] from plan().planHash",
+      'execution.profile': "set requiredAttrs['execution.profile'] from config.execution.profile",
+      'source.kind': "set requiredAttrs['source.kind'] from config.source.kind",
+      'sink.kind': "set requiredAttrs['sink.kind'] from config.sink.kind",
+    };
     for (const span of this._spans) {
       for (const key of requiredKeys) {
         if (!(key in span.attributes) || span.attributes[key] === undefined) {
-          errors.push(`Span '${span.name}' (${span.spanId}) missing required attribute '${key}'`);
+          const hint = attrHints[key] ?? `add '${key}' to the span attributes object`;
+          errors.push(
+            `Span '${span.name}' (${span.spanId.slice(0, 8)}): missing '${key}'\n` +
+              `  → ${hint}`
+          );
         }
       }
     }
