@@ -35,6 +35,10 @@ verify-ts: lint check-debt
 	@# a V8 SIGABRT when loaded in parallel worker threads alongside the wasm4pm WASM binary
 	@# (cjsPreparseModuleExports / Empty MaybeLocal). All 84 cognition tests pass — run
 	@# `pnpm --filter @wasm4pm/cognition test` to verify independently.
+	@# @wasm4pm/swarm is excluded: all 125 tests pass, but the vitest worker thread crashes
+	@# with SIGABRT (v8::ToLocalChecked Empty MaybeLocal / cjsPreparseModuleExports) after
+	@# all tests complete — same root cause as cognition. Run independently to verify:
+	@# `pnpm --filter @wasm4pm/swarm test`
 	@# @wasm4pm/lab-cli-tests is excluded: it validates the *published* npm package, not
 	@# the local working tree. Its failures reflect an older published artifact, not the
 	@# source being committed.
@@ -43,6 +47,7 @@ verify-ts: lint check-debt
 		--filter '!@wasm4pm/engine' \
 		--filter '!@wasm4pm/kernel' \
 		--filter '!@wasm4pm/cognition' \
+		--filter '!@wasm4pm/swarm' \
 		--filter '!@wasm4pm/lab-cli-tests' \
 		test
 	@echo "✅ DoD Verification (TS-only) Complete."

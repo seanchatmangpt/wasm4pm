@@ -5,6 +5,7 @@ import { createRequire } from 'node:module';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
+import { withSpan, withSpanRaw } from './_otel.js';
 
 // Lazy-loaded require for CJS deps (ajv) — avoids module load cost on unrelated commands
 const _require = createRequire(import.meta.url);
@@ -896,122 +897,128 @@ const ingest = defineCommand({
     const lang = (ctx.args.from as string) ?? 'typescript';
     const runId = (ctx.args.runId as string | undefined) ?? `trace-${Date.now()}`;
 
-    let text: string;
-    const inputPath = ctx.args.input as string | undefined;
-    if (inputPath) {
-      if (!existsSync(inputPath)) {
-        const r = makeErrorResult(
-          'trace ingest',
-          `Input file not found: ${inputPath}`,
-          EXIT_CODES.source_error,
-          'FILE_NOT_FOUND'
-        );
-        emitResult(r, { format, verbose, quiet });
-        return exitWithFlush(EXIT_CODES.source_error);
+    return withSpan('trace.ingest', { 'trace.language': lang, input: ctx.args.input as string ?? 'stdin' }, async () => {
+      let text: string;
+      const inputPath = ctx.args.input as string | undefined;
+      if (inputPath) {
+        if (!existsSync(inputPath)) {
+          const r = makeErrorResult(
+            'trace ingest',
+            `Input file not found: ${inputPath}`,
+            EXIT_CODES.source_error,
+            'FILE_NOT_FOUND'
+          );
+          emitResult(r, { format, verbose, quiet });
+          return exitWithFlush(EXIT_CODES.source_error);
+        }
+        text = readFileSync(inputPath, 'utf8');
+      } else {
+        // Read from stdin
+        const chunks: Buffer[] = [];
+        for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
+        text = Buffer.concat(chunks).toString('utf8');
       }
-      text = readFileSync(inputPath, 'utf8');
-    } else {
-      // Read from stdin
-      const chunks: Buffer[] = [];
-      for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
-      text = Buffer.concat(chunks).toString('utf8');
-    }
 
-    let frames: TraceFrame[];
-    switch (lang) {
-      case 'rust':
-        frames = parseRustTrace(text);
-        break;
-      case 'typescript':
-        frames = parseTypeScriptTrace(text);
-        break;
-      case 'python':
-        frames = parsePythonTrace(text);
-        break;
-      case 'java':
-        frames = parseJavaTrace(text);
-        break;
-      case 'js':
-        frames = parseJsTrace(text);
-        break;
-      default: {
-        const r = makeErrorResult(
-          'trace ingest',
-          `Unknown language '${lang}'. Accepted: rust, typescript, python, java, js`,
-          EXIT_CODES.config_error,
-          'INVALID_LANGUAGE'
-        );
-        emitResult(r, { format, verbose, quiet });
-        return exitWithFlush(EXIT_CODES.config_error);
+      let frames: TraceFrame[];
+      switch (lang) {
+        case 'rust':
+          frames = parseRustTrace(text);
+          break;
+        case 'typescript':
+          frames = parseTypeScriptTrace(text);
+          break;
+        case 'python':
+          frames = parsePythonTrace(text);
+          break;
+        case 'java':
+          frames = parseJavaTrace(text);
+          break;
+        case 'js':
+          frames = parseJsTrace(text);
+          break;
+        default: {
+          const r = makeErrorResult(
+            'trace ingest',
+            `Unknown language '${lang}'. Accepted: rust, typescript, python, java, js`,
+            EXIT_CODES.config_error,
+            'INVALID_LANGUAGE'
+          );
+          emitResult(r, { format, verbose, quiet });
+          return exitWithFlush(EXIT_CODES.config_error);
+        }
       }
-    }
 
-    // Diagnostic: non-empty input that yields zero frames is a silent parse failure.
-    // Emit a warning so callers can distinguish "parsed nothing" from "file was empty".
-    const inputLineCount = text.split('\n').filter((l) => l.trim().length > 0).length;
-    const zeroFramesWarning =
-      frames.length === 0 && inputLineCount > 0
-        ? `zero frames parsed from ${inputLineCount} non-empty line(s) — input may not be a valid ${lang} stack trace`
-        : undefined;
+      // Diagnostic: non-empty input that yields zero frames is a silent parse failure.
+      // Emit a warning so callers can distinguish "parsed nothing" from "file was empty".
+      const inputLineCount = text.split('\n').filter((l) => l.trim().length > 0).length;
+      const zeroFramesWarning =
+        frames.length === 0 && inputLineCount > 0
+          ? `zero frames parsed from ${inputLineCount} non-empty line(s) — input may not be a valid ${lang} stack trace`
+          : undefined;
 
-    if (zeroFramesWarning && !quiet) {
-      process.stderr.write(`[trace ingest] WARN: ${zeroFramesWarning}\n`);
-    }
-
-    const graph = framesToTraceGraph(frames, runId, lang, inputPath ?? 'stdin');
-    const graphJson = JSON.stringify(graph, null, 2);
-
-    const outPath = ctx.args.out as string | undefined;
-    if (outPath) {
-      writeFileSync(outPath, graphJson, 'utf8');
-    } else if (format === 'json') {
-      // Pipe-friendly: emit only the raw TraceGraph JSON
-      process.stdout.write(graphJson + '\n');
-      return exitWithFlush(EXIT_CODES.success);
-    }
-
-    const result = makeResult(
-      'trace ingest',
-      {
-        run_id: runId,
-        language: lang,
-        frames: frames.length,
-        events: graph['trace:events'].length,
-        objects: graph['trace:objects'].length,
-        out: outPath ?? 'stdout',
-        ...(zeroFramesWarning && { warning: zeroFramesWarning }),
-      },
-      performance.now() - t0,
-      EXIT_CODES.success
-    );
-
-    emitResult(result, { format, verbose, quiet }, (res, p) => {
-      const d = res.payload as {
-        run_id: string;
-        language: string;
-        frames: number;
-        events: number;
-        out: string;
-        warning?: string;
-      };
-      p.log('');
-      p.log(`wpm trace ingest — TraceGraph projection`);
-      p.log(`  Language:  ${d.language}`);
-      p.log(`  Frames:    ${d.frames}`);
-      p.log(`  Events:    ${d.events}`);
-      p.log(`  Output:    ${d.out}`);
-      if (d.warning) {
-        p.warn(`  Warning:   ${d.warning}`);
+      if (zeroFramesWarning && !quiet) {
+        process.stderr.write(`[trace ingest] WARN: ${zeroFramesWarning}\n`);
       }
-      if (verbose && outPath && existsSync(outPath)) {
-        p.log('  TraceGraph written to: ' + outPath);
-      } else if (!outPath) {
+
+      let graph!: TraceGraph;
+      let graphJson!: string;
+      await withSpanRaw('trace.ingest.parse', { 'trace.language': lang, 'trace.frame_count': frames.length }, async () => {
+        graph = framesToTraceGraph(frames, runId, lang, inputPath ?? 'stdin');
+        graphJson = JSON.stringify(graph, null, 2);
+      });
+
+      const outPath = ctx.args.out as string | undefined;
+      if (outPath) {
+        writeFileSync(outPath, graphJson, 'utf8');
+      } else if (format === 'json') {
+        // Pipe-friendly: emit only the raw TraceGraph JSON
+        process.stdout.write(graphJson + '\n');
+        return exitWithFlush(EXIT_CODES.success);
+      }
+
+      const result = makeResult(
+        'trace ingest',
+        {
+          run_id: runId,
+          language: lang,
+          frames: frames.length,
+          events: graph['trace:events'].length,
+          objects: graph['trace:objects'].length,
+          out: outPath ?? 'stdout',
+          ...(zeroFramesWarning && { warning: zeroFramesWarning }),
+        },
+        performance.now() - t0,
+        EXIT_CODES.success
+      );
+
+      emitResult(result, { format, verbose, quiet }, (res, p) => {
+        const d = res.payload as {
+          run_id: string;
+          language: string;
+          frames: number;
+          events: number;
+          out: string;
+          warning?: string;
+        };
         p.log('');
-        p.log(graphJson);
-      }
-    });
+        p.log(`wpm trace ingest — TraceGraph projection`);
+        p.log(`  Language:  ${d.language}`);
+        p.log(`  Frames:    ${d.frames}`);
+        p.log(`  Events:    ${d.events}`);
+        p.log(`  Output:    ${d.out}`);
+        if (d.warning) {
+          p.warn(`  Warning:   ${d.warning}`);
+        }
+        if (verbose && outPath && existsSync(outPath)) {
+          p.log('  TraceGraph written to: ' + outPath);
+        } else if (!outPath) {
+          p.log('');
+          p.log(graphJson);
+        }
+      });
 
-    return exitWithFlush(EXIT_CODES.success);
+      return exitWithFlush(EXIT_CODES.success);
+    });
   },
 });
 
@@ -1035,85 +1042,91 @@ const ocel = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
 
-    let text: string;
-    const inputPath = ctx.args.input as string | undefined;
-    if (inputPath) {
-      if (!existsSync(inputPath)) {
+    return withSpan('trace.ocel', { input: (ctx.args.input as string | undefined) ?? 'stdin' }, async () => {
+      let text: string;
+      const inputPath = ctx.args.input as string | undefined;
+      if (inputPath) {
+        if (!existsSync(inputPath)) {
+          const r = makeErrorResult(
+            'trace ocel',
+            `Input file not found: ${inputPath}`,
+            EXIT_CODES.source_error,
+            'FILE_NOT_FOUND'
+          );
+          emitResult(r, { format, verbose, quiet });
+          return exitWithFlush(EXIT_CODES.source_error);
+        }
+        text = readFileSync(inputPath, 'utf8');
+      } else {
+        const chunks: Buffer[] = [];
+        for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
+        text = Buffer.concat(chunks).toString('utf8');
+      }
+
+      let graph: TraceGraph;
+      try {
+        graph = JSON.parse(text) as TraceGraph;
+      } catch {
         const r = makeErrorResult(
           'trace ocel',
-          `Input file not found: ${inputPath}`,
+          'Invalid TraceGraph JSON',
           EXIT_CODES.source_error,
-          'FILE_NOT_FOUND'
+          'PARSE_ERROR'
         );
         emitResult(r, { format, verbose, quiet });
         return exitWithFlush(EXIT_CODES.source_error);
       }
-      text = readFileSync(inputPath, 'utf8');
-    } else {
-      const chunks: Buffer[] = [];
-      for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
-      text = Buffer.concat(chunks).toString('utf8');
-    }
 
-    let graph: TraceGraph;
-    try {
-      graph = JSON.parse(text) as TraceGraph;
-    } catch {
-      const r = makeErrorResult(
-        'trace ocel',
-        'Invalid TraceGraph JSON',
-        EXIT_CODES.source_error,
-        'PARSE_ERROR'
-      );
-      emitResult(r, { format, verbose, quiet });
-      return exitWithFlush(EXIT_CODES.source_error);
-    }
+      let log!: OcelLog;
+      let logJson!: string;
+      await withSpanRaw('trace.convert_ocel', { 'trace.event_count': 0 }, async () => {
+        log = traceGraphToOcel(graph);
+        logJson = JSON.stringify(log, null, 2);
+      }, () => ({ 'trace.event_count': log?.ocel_events?.length ?? 0 }));
 
-    const log = traceGraphToOcel(graph);
-    const logJson = JSON.stringify(log, null, 2);
-
-    const outPath = ctx.args.out as string | undefined;
-    if (outPath) {
-      writeFileSync(outPath, logJson, 'utf8');
-    } else if (format === 'json') {
-      process.stdout.write(logJson + '\n');
-      return exitWithFlush(EXIT_CODES.success);
-    }
-
-    const result = makeResult(
-      'trace ocel',
-      {
-        events: log.ocel_events.length,
-        objects: log.ocel_objects.length,
-        activities: [...new Set(log.ocel_events.map((e) => e.activity))],
-        out: outPath ?? 'stdout',
-      },
-      performance.now() - t0,
-      EXIT_CODES.success
-    );
-
-    emitResult(result, { format, verbose, quiet }, (res, p) => {
-      const d = res.payload as {
-        events: number;
-        objects: number;
-        activities: string[];
-        out: string;
-      };
-      p.log('');
-      p.log('wpm trace ocel — OCEL projection');
-      p.log(`  Events:     ${d.events}`);
-      p.log(`  Objects:    ${d.objects}`);
-      p.log(
-        `  Activities: ${d.activities.slice(0, 5).join(', ')}${d.activities.length > 5 ? ` +${d.activities.length - 5} more` : ''}`
-      );
-      p.log(`  Output:     ${d.out}`);
-      if (!outPath) {
-        p.log('');
-        p.log(logJson);
+      const outPath = ctx.args.out as string | undefined;
+      if (outPath) {
+        writeFileSync(outPath, logJson, 'utf8');
+      } else if (format === 'json') {
+        process.stdout.write(logJson + '\n');
+        return exitWithFlush(EXIT_CODES.success);
       }
-    });
 
-    return exitWithFlush(EXIT_CODES.success);
+      const result = makeResult(
+        'trace ocel',
+        {
+          events: log.ocel_events.length,
+          objects: log.ocel_objects.length,
+          activities: [...new Set(log.ocel_events.map((e) => e.activity))],
+          out: outPath ?? 'stdout',
+        },
+        performance.now() - t0,
+        EXIT_CODES.success
+      );
+
+      emitResult(result, { format, verbose, quiet }, (res, p) => {
+        const d = res.payload as {
+          events: number;
+          objects: number;
+          activities: string[];
+          out: string;
+        };
+        p.log('');
+        p.log('wpm trace ocel — OCEL projection');
+        p.log(`  Events:     ${d.events}`);
+        p.log(`  Objects:    ${d.objects}`);
+        p.log(
+          `  Activities: ${d.activities.slice(0, 5).join(', ')}${d.activities.length > 5 ? ` +${d.activities.length - 5} more` : ''}`
+        );
+        p.log(`  Output:     ${d.out}`);
+        if (!outPath) {
+          p.log('');
+          p.log(logJson);
+        }
+      });
+
+      return exitWithFlush(EXIT_CODES.success);
+    });
   },
 });
 
@@ -1138,91 +1151,93 @@ const powlRoute = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
 
-    let text: string;
-    const inputPath = ctx.args.input as string | undefined;
-    if (inputPath) {
-      if (!existsSync(inputPath)) {
+    return withSpan('trace.powl', { input: (ctx.args.input as string | undefined) ?? 'stdin' }, async () => {
+      let text: string;
+      const inputPath = ctx.args.input as string | undefined;
+      if (inputPath) {
+        if (!existsSync(inputPath)) {
+          const r = makeErrorResult(
+            'trace powl',
+            `Input file not found: ${inputPath}`,
+            EXIT_CODES.source_error,
+            'FILE_NOT_FOUND'
+          );
+          emitResult(r, { format, verbose, quiet });
+          return exitWithFlush(EXIT_CODES.source_error);
+        }
+        text = readFileSync(inputPath, 'utf8');
+      } else {
+        const chunks: Buffer[] = [];
+        for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
+        text = Buffer.concat(chunks).toString('utf8');
+      }
+
+      let log: OcelLog;
+      try {
+        log = JSON.parse(text) as OcelLog;
+      } catch {
         const r = makeErrorResult(
           'trace powl',
-          `Input file not found: ${inputPath}`,
+          'Invalid OCEL JSON',
           EXIT_CODES.source_error,
-          'FILE_NOT_FOUND'
+          'PARSE_ERROR'
         );
         emitResult(r, { format, verbose, quiet });
         return exitWithFlush(EXIT_CODES.source_error);
       }
-      text = readFileSync(inputPath, 'utf8');
-    } else {
-      const chunks: Buffer[] = [];
-      for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
-      text = Buffer.concat(chunks).toString('utf8');
-    }
 
-    let log: OcelLog;
-    try {
-      log = JSON.parse(text) as OcelLog;
-    } catch {
-      const r = makeErrorResult(
-        'trace powl',
-        'Invalid OCEL JSON',
-        EXIT_CODES.source_error,
-        'PARSE_ERROR'
-      );
-      emitResult(r, { format, verbose, quiet });
-      return exitWithFlush(EXIT_CODES.source_error);
-    }
+      const observed = ocelToObservedRoute(log);
+      const uniqueActivities = [...new Set(observed)];
 
-    const observed = ocelToObservedRoute(log);
-    const uniqueActivities = [...new Set(observed)];
-
-    // Build a simple DFG from the observed sequence
-    const dfg: Record<string, Record<string, number>> = {};
-    for (let i = 0; i < observed.length - 1; i++) {
-      const a = observed[i]!;
-      const b = observed[i + 1]!;
-      if (!dfg[a]) dfg[a] = {};
-      dfg[a]![b] = (dfg[a]![b] ?? 0) + 1;
-    }
-
-    const observedRoute = {
-      observed_activities: observed,
-      unique_activities: uniqueActivities,
-      activity_count: observed.length,
-      dfg,
-    };
-
-    const outPath = ctx.args.out as string | undefined;
-    const outJson = JSON.stringify(observedRoute, null, 2);
-    if (outPath) writeFileSync(outPath, outJson, 'utf8');
-    else if (format === 'json') process.stdout.write(outJson + '\n');
-
-    const result = makeResult(
-      'trace powl',
-      {
-        ...observedRoute,
-        out: outPath ?? 'stdout',
-      },
-      performance.now() - t0,
-      EXIT_CODES.success
-    );
-
-    emitResult(result, { format, verbose, quiet }, (res, p) => {
-      const d = res.payload as { activity_count: number; unique_activities: string[]; out: string };
-      p.log('');
-      p.log('wpm trace powl — Observed POWL route');
-      p.log(`  Activities:   ${d.activity_count} total, ${d.unique_activities.length} unique`);
-      p.log(
-        `  Route:        ${d.unique_activities.slice(0, 6).join(' → ')}${d.unique_activities.length > 6 ? ' → ...' : ''}`
-      );
-      p.log(`  Output:       ${d.out}`);
-      if (verbose) {
-        p.log('');
-        p.log('  All activities:');
-        for (const a of d.unique_activities) p.log(`    • ${a}`);
+      // Build a simple DFG from the observed sequence
+      const dfg: Record<string, Record<string, number>> = {};
+      for (let i = 0; i < observed.length - 1; i++) {
+        const a = observed[i]!;
+        const b = observed[i + 1]!;
+        if (!dfg[a]) dfg[a] = {};
+        dfg[a]![b] = (dfg[a]![b] ?? 0) + 1;
       }
-    });
 
-    return exitWithFlush(EXIT_CODES.success);
+      const observedRoute = {
+        observed_activities: observed,
+        unique_activities: uniqueActivities,
+        activity_count: observed.length,
+        dfg,
+      };
+
+      const outPath = ctx.args.out as string | undefined;
+      const outJson = JSON.stringify(observedRoute, null, 2);
+      if (outPath) writeFileSync(outPath, outJson, 'utf8');
+      else if (format === 'json') process.stdout.write(outJson + '\n');
+
+      const result = makeResult(
+        'trace powl',
+        {
+          ...observedRoute,
+          out: outPath ?? 'stdout',
+        },
+        performance.now() - t0,
+        EXIT_CODES.success
+      );
+
+      emitResult(result, { format, verbose, quiet }, (res, p) => {
+        const d = res.payload as { activity_count: number; unique_activities: string[]; out: string };
+        p.log('');
+        p.log('wpm trace powl — Observed POWL route');
+        p.log(`  Activities:   ${d.activity_count} total, ${d.unique_activities.length} unique`);
+        p.log(
+          `  Route:        ${d.unique_activities.slice(0, 6).join(' → ')}${d.unique_activities.length > 6 ? ' → ...' : ''}`
+        );
+        p.log(`  Output:       ${d.out}`);
+        if (verbose) {
+          p.log('');
+          p.log('  All activities:');
+          for (const a of d.unique_activities) p.log(`    • ${a}`);
+        }
+      });
+
+      return exitWithFlush(EXIT_CODES.success);
+    });
   },
 });
 
@@ -1248,176 +1263,191 @@ const conform = defineCommand({
     const quiet = Boolean(ctx.args.quiet);
     const modelPath = ctx.args.model as string;
 
-    if (!existsSync(modelPath)) {
-      const r = makeErrorResult(
-        'trace conform',
-        `POWL v2 model not found: ${modelPath}`,
-        EXIT_CODES.source_error,
-        'MODEL_NOT_FOUND'
-      );
-      emitResult(r, { format, verbose, quiet });
-      return exitWithFlush(EXIT_CODES.source_error);
-    }
-
-    let ocelLog: OcelLog;
-    const inputPath = ctx.args.input as string | undefined;
-    if (inputPath) {
-      if (!existsSync(inputPath)) {
+    return withSpan('trace.conform', {
+      model: modelPath,
+      input: (ctx.args.input as string | undefined) ?? 'stdin',
+    }, async () => {
+      if (!existsSync(modelPath)) {
         const r = makeErrorResult(
           'trace conform',
-          `Input file not found: ${inputPath}`,
+          `POWL v2 model not found: ${modelPath}`,
           EXIT_CODES.source_error,
-          'FILE_NOT_FOUND'
+          'MODEL_NOT_FOUND'
         );
         emitResult(r, { format, verbose, quiet });
         return exitWithFlush(EXIT_CODES.source_error);
       }
-      try {
-        ocelLog = JSON.parse(readFileSync(inputPath, 'utf8')) as OcelLog;
-      } catch {
-        const r = makeErrorResult(
-          'trace conform',
-          'Invalid OCEL JSON',
-          EXIT_CODES.source_error,
-          'PARSE_ERROR'
-        );
-        emitResult(r, { format, verbose, quiet });
-        return exitWithFlush(EXIT_CODES.source_error);
-      }
-    } else {
-      const chunks: Buffer[] = [];
-      for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
-      try {
-        ocelLog = JSON.parse(Buffer.concat(chunks).toString('utf8')) as OcelLog;
-      } catch {
-        const r = makeErrorResult(
-          'trace conform',
-          'Invalid OCEL JSON from stdin',
-          EXIT_CODES.source_error,
-          'PARSE_ERROR'
-        );
-        emitResult(r, { format, verbose, quiet });
-        return exitWithFlush(EXIT_CODES.source_error);
-      }
-    }
 
-    let powlModel: Powl2Model;
-    try {
-      powlModel = JSON.parse(readFileSync(modelPath, 'utf8')) as Powl2Model;
-    } catch {
-      const r = makeErrorResult(
-        'trace conform',
-        `Invalid POWL v2 model JSON: ${modelPath}`,
-        EXIT_CODES.source_error,
-        'MODEL_PARSE_ERROR'
-      );
-      emitResult(r, { format, verbose, quiet });
-      return exitWithFlush(EXIT_CODES.source_error);
-    }
-
-    const projectDir = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
-    const conformance = checkPowl2Conformance(ocelLog, powlModel, projectDir);
-
-    // ── WASM4PM_CAPTURE_FIXTURE: one-shot capture for real-fixtures.test.ts ───
-    if (process.env.WASM4PM_CAPTURE_FIXTURE === '1') {
-      const label = process.env.WASM4PM_CAPTURE_LABEL ?? `trace-conform-${Date.now()}`;
-      const fixDir = join(projectDir, 'fixtures', 'real', label);
-      try {
-        mkdirSync(fixDir, { recursive: true });
-        const stack = new Error('capture-stack').stack ?? '';
-        writeFileSync(join(fixDir, 'stack.ts.txt'), stack, 'utf8');
-        writeFileSync(join(fixDir, 'expected-ocel.json'), JSON.stringify(ocelLog, null, 2), 'utf8');
-        writeFileSync(
-          join(fixDir, 'expected-conform.json'),
-          JSON.stringify(conformance, null, 2),
-          'utf8'
-        );
-        writeFileSync(join(fixDir, 'model.powl.json'), JSON.stringify(powlModel, null, 2), 'utf8');
-      } catch {
-        /* capture is best-effort */
-      }
-    }
-
-    const outPath = ctx.args.out as string | undefined;
-    if (outPath) {
-      const auditDir = resolve(outPath, '..');
-      mkdirSync(auditDir, { recursive: true });
-      writeFileSync(outPath, JSON.stringify(conformance, null, 2), 'utf8');
-    }
-
-    const exitCode =
-      conformance.verdict === 'Accepted' ? EXIT_CODES.success : EXIT_CODES.execution_error;
-    const result = makeResult(
-      'trace conform',
-      {
-        ...conformance,
-        observed_count: ocelLog.ocel_events.length,
-        out: outPath ?? 'none',
-      },
-      performance.now() - t0,
-      exitCode
-    );
-
-    emitResult(result, { format, verbose, quiet }, (res, p) => {
-      const d = res.payload as typeof conformance & { observed_count: number; out: string };
-      p.log('');
-      p.log(`wpm trace conform — POWL v2 Conformance Check`);
-      p.log(`  Route:        ${d.route_id}`);
-      p.log(`  Observed:     ${d.observed_count} activities`);
-      p.log('─'.repeat(52));
-      for (const dim of d.details) {
-        const icon = dim.ok ? '✓' : '✗';
-        p.log(`  ${icon} ${dim.dimension.padEnd(30)} ${dim.detail}`);
-      }
-      p.log('─'.repeat(52));
-      p.log(`  Fitness:      ${(d.fitness * 100).toFixed(1)}%`);
-      p.log(`  Stage cover:  ${(d.required_stage_coverage * 100).toFixed(1)}%`);
-      p.log('');
-      if (d.verdict === 'Accepted') {
-        p.success(`Accepted — route conforms to ${d.route_id}`);
-        p.log('');
-        p.log('  All declared stages are present, all observed activities are in the');
-        p.log('  model, and all object lifecycle + receipt constraints are satisfied.');
-        p.log('  This route is admissible per MCPP doctrine.');
-      } else {
-        p.error(`AndonPull(${d.andon_reason}) — ${d.route_id}`);
-        p.log('');
-        if (d.fitness < 1.0) {
-          const missingPct = ((1.0 - d.fitness) * 100).toFixed(1);
-          p.log(
-            `  Route conformance is ${(d.fitness * 100).toFixed(1)}% (below the required 1.0).`
+      let ocelLog: OcelLog;
+      const inputPath = ctx.args.input as string | undefined;
+      if (inputPath) {
+        if (!existsSync(inputPath)) {
+          const r = makeErrorResult(
+            'trace conform',
+            `Input file not found: ${inputPath}`,
+            EXIT_CODES.source_error,
+            'FILE_NOT_FOUND'
           );
-          p.log(`  ${missingPct}% of observed activities are not declared in the POWL model.`);
-          p.log('  This raises an AndonPull — the route cannot be admitted until conformance');
-          p.log('  reaches 1.0. Per MCPP doctrine: 0.999 is still a defect.');
-          p.log('');
-          p.log('  Recommended actions:');
-          p.log('    1. Run `wpm proof audit` to identify which activities lack BLAKE3 receipts.');
-          p.log('    2. Compare observed activities above against the declared model edges.');
-          p.log('    3. Either add the missing activities to the POWL model, or remove them');
-          p.log('       from the execution path if they represent rework or illegal steps.');
-        } else if (d.andon_reason === 'MissingRequiredStages') {
-          p.log('  One or more required stages were not observed in the event log.');
-          p.log('  These stages are mandatory checkpoints in the manufacturing route.');
-          p.log('  Run `wpm proof audit` to check receipt coverage for missing stages.');
-        } else if (d.andon_reason === 'TestRouteIncomplete') {
-          p.log('  The POWL model is missing `object_types` or `receipt_required` declarations.');
-          p.log('  Without these, object lifecycle and receipt coverage cannot be measured,');
-          p.log('  and the route is rejected as incomplete. Add both fields to the model.');
-        } else if (d.andon_reason === 'ActivityOnlyFakeRoute') {
-          p.log('  All events in the log have zero related objects — this is an activity-only');
-          p.log('  fake route. Real manufacturing routes must have object evidence (receipts,');
-          p.log('  artifacts) attached to events. Re-run with a real OCEL log.');
-        } else {
-          p.log(`  Andon reason: ${d.andon_reason ?? 'unknown'}`);
-          p.log('  Review the dimension details above to identify the failing constraint.');
-          p.log('  Run `wpm proof audit` to check receipt coverage.');
+          emitResult(r, { format, verbose, quiet });
+          return exitWithFlush(EXIT_CODES.source_error);
+        }
+        try {
+          ocelLog = JSON.parse(readFileSync(inputPath, 'utf8')) as OcelLog;
+        } catch {
+          const r = makeErrorResult(
+            'trace conform',
+            'Invalid OCEL JSON',
+            EXIT_CODES.source_error,
+            'PARSE_ERROR'
+          );
+          emitResult(r, { format, verbose, quiet });
+          return exitWithFlush(EXIT_CODES.source_error);
+        }
+      } else {
+        const chunks: Buffer[] = [];
+        for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
+        try {
+          ocelLog = JSON.parse(Buffer.concat(chunks).toString('utf8')) as OcelLog;
+        } catch {
+          const r = makeErrorResult(
+            'trace conform',
+            'Invalid OCEL JSON from stdin',
+            EXIT_CODES.source_error,
+            'PARSE_ERROR'
+          );
+          emitResult(r, { format, verbose, quiet });
+          return exitWithFlush(EXIT_CODES.source_error);
         }
       }
-      if (d.out !== 'none') p.log(`  Report:       ${d.out}`);
-    });
 
-    return exitWithFlush(exitCode);
+      let powlModel: Powl2Model;
+      try {
+        powlModel = JSON.parse(readFileSync(modelPath, 'utf8')) as Powl2Model;
+      } catch {
+        const r = makeErrorResult(
+          'trace conform',
+          `Invalid POWL v2 model JSON: ${modelPath}`,
+          EXIT_CODES.source_error,
+          'MODEL_PARSE_ERROR'
+        );
+        emitResult(r, { format, verbose, quiet });
+        return exitWithFlush(EXIT_CODES.source_error);
+      }
+
+      const projectDir = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
+
+      let conformance!: ConformanceResult;
+      await withSpanRaw('trace.conform.check', {
+        model: modelPath,
+        'trace.event_count': ocelLog.ocel_events.length,
+      }, async () => {
+        conformance = checkPowl2Conformance(ocelLog, powlModel, projectDir);
+      }, () => ({
+        'trace.verdict': conformance?.verdict ?? 'unknown',
+        'trace.fitness': conformance?.fitness ?? 0,
+      }));
+
+      // ── WASM4PM_CAPTURE_FIXTURE: one-shot capture for real-fixtures.test.ts ───
+      if (process.env.WASM4PM_CAPTURE_FIXTURE === '1') {
+        const label = process.env.WASM4PM_CAPTURE_LABEL ?? `trace-conform-${Date.now()}`;
+        const fixDir = join(projectDir, 'fixtures', 'real', label);
+        try {
+          mkdirSync(fixDir, { recursive: true });
+          const stack = new Error('capture-stack').stack ?? '';
+          writeFileSync(join(fixDir, 'stack.ts.txt'), stack, 'utf8');
+          writeFileSync(join(fixDir, 'expected-ocel.json'), JSON.stringify(ocelLog, null, 2), 'utf8');
+          writeFileSync(
+            join(fixDir, 'expected-conform.json'),
+            JSON.stringify(conformance, null, 2),
+            'utf8'
+          );
+          writeFileSync(join(fixDir, 'model.powl.json'), JSON.stringify(powlModel, null, 2), 'utf8');
+        } catch {
+          /* capture is best-effort */
+        }
+      }
+
+      const outPath = ctx.args.out as string | undefined;
+      if (outPath) {
+        const auditDir = resolve(outPath, '..');
+        mkdirSync(auditDir, { recursive: true });
+        writeFileSync(outPath, JSON.stringify(conformance, null, 2), 'utf8');
+      }
+
+      const exitCode =
+        conformance.verdict === 'Accepted' ? EXIT_CODES.success : EXIT_CODES.execution_error;
+      const result = makeResult(
+        'trace conform',
+        {
+          ...conformance,
+          observed_count: ocelLog.ocel_events.length,
+          out: outPath ?? 'none',
+        },
+        performance.now() - t0,
+        exitCode
+      );
+
+      emitResult(result, { format, verbose, quiet }, (res, p) => {
+        const d = res.payload as typeof conformance & { observed_count: number; out: string };
+        p.log('');
+        p.log(`wpm trace conform — POWL v2 Conformance Check`);
+        p.log(`  Route:        ${d.route_id}`);
+        p.log(`  Observed:     ${d.observed_count} activities`);
+        p.log('─'.repeat(52));
+        for (const dim of d.details) {
+          const icon = dim.ok ? '✓' : '✗';
+          p.log(`  ${icon} ${dim.dimension.padEnd(30)} ${dim.detail}`);
+        }
+        p.log('─'.repeat(52));
+        p.log(`  Fitness:      ${(d.fitness * 100).toFixed(1)}%`);
+        p.log(`  Stage cover:  ${(d.required_stage_coverage * 100).toFixed(1)}%`);
+        p.log('');
+        if (d.verdict === 'Accepted') {
+          p.success(`Accepted — route conforms to ${d.route_id}`);
+          p.log('');
+          p.log('  All declared stages are present, all observed activities are in the');
+          p.log('  model, and all object lifecycle + receipt constraints are satisfied.');
+          p.log('  This route is admissible per MCPP doctrine.');
+        } else {
+          p.error(`AndonPull(${d.andon_reason}) — ${d.route_id}`);
+          p.log('');
+          if (d.fitness < 1.0) {
+            const missingPct = ((1.0 - d.fitness) * 100).toFixed(1);
+            p.log(
+              `  Route conformance is ${(d.fitness * 100).toFixed(1)}% (below the required 1.0).`
+            );
+            p.log(`  ${missingPct}% of observed activities are not declared in the POWL model.`);
+            p.log('  This raises an AndonPull — the route cannot be admitted until conformance');
+            p.log('  reaches 1.0. Per MCPP doctrine: 0.999 is still a defect.');
+            p.log('');
+            p.log('  Recommended actions:');
+            p.log('    1. Run `wpm proof audit` to identify which activities lack BLAKE3 receipts.');
+            p.log('    2. Compare observed activities above against the declared model edges.');
+            p.log('    3. Either add the missing activities to the POWL model, or remove them');
+            p.log('       from the execution path if they represent rework or illegal steps.');
+          } else if (d.andon_reason === 'MissingRequiredStages') {
+            p.log('  One or more required stages were not observed in the event log.');
+            p.log('  These stages are mandatory checkpoints in the manufacturing route.');
+            p.log('  Run `wpm proof audit` to check receipt coverage for missing stages.');
+          } else if (d.andon_reason === 'TestRouteIncomplete') {
+            p.log('  The POWL model is missing `object_types` or `receipt_required` declarations.');
+            p.log('  Without these, object lifecycle and receipt coverage cannot be measured,');
+            p.log('  and the route is rejected as incomplete. Add both fields to the model.');
+          } else if (d.andon_reason === 'ActivityOnlyFakeRoute') {
+            p.log('  All events in the log have zero related objects — this is an activity-only');
+            p.log('  fake route. Real manufacturing routes must have object evidence (receipts,');
+            p.log('  artifacts) attached to events. Re-run with a real OCEL log.');
+          } else {
+            p.log(`  Andon reason: ${d.andon_reason ?? 'unknown'}`);
+            p.log('  Review the dimension details above to identify the failing constraint.');
+            p.log('  Run `wpm proof audit` to check receipt coverage.');
+          }
+        }
+        if (d.out !== 'none') p.log(`  Report:       ${d.out}`);
+      });
+
+      return exitWithFlush(exitCode);
+    });
   },
 });
 
