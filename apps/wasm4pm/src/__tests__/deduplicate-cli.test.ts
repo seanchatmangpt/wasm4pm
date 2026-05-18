@@ -1,5 +1,8 @@
-import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { runCli, EXIT_CODES, createCliTestEnv } from '@wasm4pm/testing';
+
+// Each test spawns a Node subprocess (WASM init + CLI); allow enough wall time
+vi.setConfig({ testTimeout: 15_000 });
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
@@ -267,7 +270,7 @@ describe('wpm deduplicate — result deduplication CLI', () => {
           expect(() => extractJsonFromOutput(result.stdout)).not.toThrow();
         }
       }
-    });
+    }, 30_000);
 
     it('should include status field in output', async () => {
       const result = await runCli(['deduplicate', 'report', '--format', 'json'], { env: env.env });
@@ -347,7 +350,7 @@ describe('wpm deduplicate — result deduplication CLI', () => {
       const result = await runCli(['deduplicate', 'clear'], { env: env.env });
       // Either guarded (config_error) or permitted if cache was empty
       expect([EXIT_CODES.success, EXIT_CODES.config_error]).toContain(result.exitCode);
-    });
+    }, 30_000);
 
     it('clear --force clears without error', async () => {
       const result = await runCli(['deduplicate', 'clear', '--force'], { env: env.env });

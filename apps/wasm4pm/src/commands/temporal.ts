@@ -214,6 +214,23 @@ export const temporal = defineCommand({
                 }
               }
 
+              // Helper function to compute percentile statistics (reused for activity and resource analysis)
+              const computePercentiles = (durations: number[]) => {
+                const sorted = [...durations].sort((a, b) => a - b);
+                const pct = (p: number) => {
+                  const idx = Math.ceil((p / 100) * sorted.length) - 1;
+                  return sorted[Math.max(0, idx)];
+                };
+                const mean = sorted.reduce((s, v) => s + v, 0) / sorted.length;
+                return {
+                  p50: pct(50),
+                  p90: pct(90),
+                  p99: pct(99),
+                  mean,
+                  count: sorted.length,
+                };
+              };
+
               // Compute per-activity cycle-time distribution (P50/P90/P99) from the conformance
               // details already retrieved — no extra WASM call needed.
               // Sort by P90 descending to surface the slowest activities first.
@@ -221,34 +238,46 @@ export const temporal = defineCommand({
                 string,
                 { p50: number; p90: number; p99: number; mean: number; count: number }
               > | null = null;
+              // NEW (Iteration 12e Gap T1): Per-resource cycle-time distribution
+              let cycleTimeByResource: Record<
+                string,
+                { p50: number; p90: number; p99: number; mean: number; count: number }
+              > | null = null;
               if (temporalConformance) {
                 const details =
                   (temporalConformance.details as Array<Record<string, unknown>>) ?? [];
                 const durationsByActivity: Record<string, number[]> = {};
+                // NEW: Track durations per resource (from 'resource' field in conformance details)
+                const durationsByResource: Record<string, number[]> = {};
                 for (const d of details) {
                   const activity = d.from as string;
+                  const resource = d.resource as string | undefined; // Requires WASM to emit 'resource' field
                   const dur = d.duration_ms as number;
                   if (typeof activity === 'string' && typeof dur === 'number' && dur >= 0) {
                     if (!durationsByActivity[activity]) durationsByActivity[activity] = [];
                     durationsByActivity[activity].push(dur);
                   }
+                  // NEW: Accumulate by resource if available
+                  if (
+                    typeof resource === 'string' &&
+                    typeof dur === 'number' &&
+                    dur >= 0
+                  ) {
+                    if (!durationsByResource[resource]) durationsByResource[resource] = [];
+                    durationsByResource[resource].push(dur);
+                  }
                 }
                 if (Object.keys(durationsByActivity).length > 0) {
                   cycleTimePercentiles = {};
                   for (const [act, durations] of Object.entries(durationsByActivity)) {
-                    const sorted = [...durations].sort((a, b) => a - b);
-                    const pct = (p: number) => {
-                      const idx = Math.ceil((p / 100) * sorted.length) - 1;
-                      return sorted[Math.max(0, idx)];
-                    };
-                    const mean = sorted.reduce((s, v) => s + v, 0) / sorted.length;
-                    cycleTimePercentiles[act] = {
-                      p50: pct(50),
-                      p90: pct(90),
-                      p99: pct(99),
-                      mean,
-                      count: sorted.length,
-                    };
+                    cycleTimePercentiles[act] = computePercentiles(durations);
+                  }
+                }
+                // NEW: Compute resource percentiles (Iteration 12e Gap T1)
+                if (Object.keys(durationsByResource).length > 0) {
+                  cycleTimeByResource = {};
+                  for (const [res, durations] of Object.entries(durationsByResource)) {
+                    cycleTimeByResource[res] = computePercentiles(durations);
                   }
                 }
               }
@@ -270,6 +299,8 @@ export const temporal = defineCommand({
                 },
                 impossibleTimestampCount,
                 cycleTimePercentiles,
+                // NEW (Iteration 12e, Gap T1): Per-resource duration metrics (Van der Aalst Resource perspective)
+                cycleTimeByResource,
               };
 
               // Capture output metrics for late OTEL span attributes

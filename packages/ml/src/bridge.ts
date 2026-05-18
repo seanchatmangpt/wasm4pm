@@ -165,3 +165,102 @@ export function encodeLabels(labels: string[]): LabelEncoding {
   const encoded = labels.map((l) => labelMap.get(l) ?? 0);
   return { encoded, labelMap, reverseMap };
 }
+
+/**
+ * Compute variance (population variance) for a column.
+ */
+function columnVariance(column: number[]): number {
+  if (column.length === 0) return 0;
+  const mean = column.reduce((a, b) => a + b, 0) / column.length;
+  const sumSq = column.reduce((sum, val) => sum + (val - mean) ** 2, 0);
+  return sumSq / column.length;
+}
+
+/**
+ * Select top features by variance, filtering out zero-variance
+ * and near-duplicates (correlation > threshold).
+ *
+ * @param data - Numeric feature matrix (rows = samples, cols = features)
+ * @param topK - Maximum number of features to keep (default 15)
+ * @param correlationThreshold - Remove features with |r| > this (default 0.95)
+ * @returns Array of selected feature indices, sorted by descending variance
+ */
+export function selectTopFeatures(
+  data: number[][],
+  topK: number = 15,
+  correlationThreshold: number = 0.95
+): number[] {
+  if (!data || data.length === 0 || data[0].length === 0) {
+    return [];
+  }
+
+  const numCols = data[0].length;
+  const numRows = data.length;
+
+  // Transpose to get columns
+  const columns: number[][] = Array(numCols)
+    .fill(null)
+    .map((_, colIdx) => data.map((row) => row[colIdx]));
+
+  // Compute variance for each feature
+  const variances: Array<{ idx: number; variance: number }> = [];
+  for (let i = 0; i < numCols; i++) {
+    const variance = columnVariance(columns[i]);
+    // Skip zero-variance columns
+    if (variance > 1e-10) {
+      variances.push({ idx: i, variance });
+    }
+  }
+
+  // Sort by descending variance
+  variances.sort((a, b) => b.variance - a.variance);
+
+  // Greedily select features, skipping highly correlated ones
+  const selected: number[] = [];
+  const selectedCols: number[] = [];
+
+  for (const { idx } of variances) {
+    // Check if this feature is highly correlated with any already-selected feature
+    let isCorrelated = false;
+    for (const selectedIdx of selectedCols) {
+      const corr = Math.abs(pearsonCorrelation(columns[idx], columns[selectedIdx]));
+      if (corr > correlationThreshold) {
+        isCorrelated = true;
+        break;
+      }
+    }
+    if (!isCorrelated) {
+      selected.push(idx);
+      selectedCols.push(idx);
+      if (selected.length >= topK) break;
+    }
+  }
+
+  return selected.sort((a, b) => a - b);
+}
+
+/**
+ * Compute Pearson correlation coefficient between two columns.
+ */
+function pearsonCorrelation(col1: number[], col2: number[]): number {
+  if (col1.length !== col2.length || col1.length === 0) return 0;
+
+  const n = col1.length;
+  const mean1 = col1.reduce((a, b) => a + b, 0) / n;
+  const mean2 = col2.reduce((a, b) => a + b, 0) / n;
+
+  let covariance = 0;
+  let sumSq1 = 0;
+  let sumSq2 = 0;
+
+  for (let i = 0; i < n; i++) {
+    const dev1 = col1[i] - mean1;
+    const dev2 = col2[i] - mean2;
+    covariance += dev1 * dev2;
+    sumSq1 += dev1 * dev1;
+    sumSq2 += dev2 * dev2;
+  }
+
+  const denom = Math.sqrt(sumSq1 * sumSq2);
+  return denom === 0 ? 0 : covariance / denom;
+}

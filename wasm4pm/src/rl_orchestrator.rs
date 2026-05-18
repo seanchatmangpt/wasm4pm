@@ -173,7 +173,7 @@ pub fn compute_health_state(event_count: u64, trace_count: u64, unique_activitie
     }
 }
 
-/// Compute reward signal from SPC alert count and health transition.
+/// Compute reward signal from SPC alert count, health transition, rework ratio, and action diversity.
 ///
 /// Reward semantics:
 ///   +1.0  : Health improved (lower health_state number) AND no SPC alerts
@@ -183,21 +183,33 @@ pub fn compute_health_state(event_count: u64, trace_count: u64, unique_activitie
 ///   -1.0  : Health degraded (higher health_state number)
 ///   -2.0  : Terminal state reached (health == 4 = Failed)
 ///   -0.3  : Cycle latency exceeded budget (added to total)
+///   -0.2  : Rework penalty (high rework_ratio_q indicates wasted cycles; penalty scales 0.0-0.2 as ratio 0-7)
+///   -0.1  : Action diversity penalty (if same action >70% of last 10 cycles)
 ///
-/// Bounded range: approximately [-5.3, +1.1]
+/// **Rework penalty rationale (NEW):**
+/// High rework_ratio_q (dimension 5 of 8D state space) indicates repeated activities,
+/// signaling inefficient or cyclical processes. Penalty scales from 0 at ratio_q=0
+/// to -0.2 at ratio_q=7 (max). Encourages policies that reduce rework.
+///
+/// **Action diversity penalty rationale:**
+/// If the RL agent picks the same action repeatedly (>70% frequency in last 10 cycles),
+/// it indicates a stuck or converged policy. Applying a small penalty encourages
+/// exploration of alternative actions to prevent policy lock-in.
+///
+/// Bounded range: approximately [-5.6, +1.1] (updated with rework penalty)
 ///
 /// # Examples
 ///
 /// ```
 /// use wasm4pm::rl_orchestrator::compute_reward;
 ///
-/// // Health improved, no SPC alerts → positive reward
-/// let r = compute_reward(2, 0, 0, true, true, false);
+/// // Health improved, no SPC alerts, no rework → positive reward
+/// let r = compute_reward(2, 1, 0, true, true, false, 0);
 /// assert!(r > 0.0, "health improvement must yield positive reward, got {r}");
 ///
-/// // Terminal failure state → large negative penalty
-/// let r2 = compute_reward(3, 4, 5, true, true, false);
-/// assert!(r2 < -1.0, "failed state must yield large negative reward, got {r2}");
+/// // Terminal failure state with high rework → large negative penalty
+/// let r2 = compute_reward(3, 4, 5, true, true, false, 7);
+/// assert!(r2 < -3.0, "failed state with rework must yield large negative reward, got {r2}");
 /// ```
 pub fn compute_reward(
     prev_health: u8,
@@ -206,6 +218,43 @@ pub fn compute_reward(
     guard_pass: bool,
     circuit_allowed: bool,
     latency_budget_exceeded: bool,
+    rework_ratio_q: u8,
+) -> f32 {
+    compute_reward_with_momentum(
+        prev_health,
+        curr_health,
+        spc_alert_count,
+        guard_pass,
+        circuit_allowed,
+        latency_budget_exceeded,
+        rework_ratio_q,
+        0, // default: no momentum bonus
+    )
+}
+
+/// Compute reward with momentum bonus for consecutive successes.
+///
+/// **Momentum bonus (NEW):**
+/// Rewards persistent improvement: 0.05 * min(consecutive_successes, 10) bonus
+/// when guard_pass && circuit_allowed. Scales from 0 to +0.5 over 10-cycle window.
+/// Encourages policies that achieve sustained positive outcomes.
+///
+/// # Examples
+///
+/// ```ignore
+/// // 5 consecutive successes: +0.25 bonus
+/// let r = compute_reward_with_momentum(2, 1, 0, true, true, false, 0, 5);
+/// assert!(r > 1.1, "momentum bonus should increase reward");
+/// ```
+pub fn compute_reward_with_momentum(
+    prev_health: u8,
+    curr_health: u8,
+    spc_alert_count: usize,
+    guard_pass: bool,
+    circuit_allowed: bool,
+    latency_budget_exceeded: bool,
+    rework_ratio_q: u8,
+    consecutive_successes: u32,
 ) -> f32 {
     let mut reward = 0.0_f32;
 
@@ -225,6 +274,19 @@ pub fn compute_reward(
 
     // Latency budget penalty — branchless
     reward -= latency_budget_exceeded as i32 as f32 * 0.3;
+
+    // Rework penalty (NEW): scales from 0 at ratio_q=0 to -0.2 at ratio_q=7
+    // Encourages policies that reduce repeated activities and cycle inefficiency
+    let rework_penalty = -(rework_ratio_q as f32 / 7.0) * 0.2;
+    reward += rework_penalty;
+
+    // Momentum bonus (NEW): reward persistent improvement
+    // Only applies when guard_pass && circuit_allowed (successful cycle)
+    // Scales from 0 to +0.5 over 10-cycle window
+    if guard_pass && circuit_allowed {
+        let momentum_bonus = 0.05 * (consecutive_successes as f32).min(10.0);
+        reward += momentum_bonus;
+    }
 
     // Terminal penalty — branchless
     reward -= (curr_health == 4) as i32 as f32 * 2.0;
@@ -489,11 +551,18 @@ impl RlOrchestrator {
             features[4], features[5], features[6], features[7]
         );
 
-        // Emit OTEL span with LinUCB decision rationale
+        // OBS-4 FIX: Get q_score (mean estimate) to compute exploration_bonus = ucb_score - q_score
+        let q_values = self.linucb.get_q_values(features);
+        let q_score = q_values[action_idx as usize];
+        let exploration_bonus = ucb_score - q_score;
+
+        // Emit OTEL span with LinUCB decision rationale (OBS-4 fix: add exploration_bonus)
         let _span = tracing::info_span!(
             "rl.linucb_agent_selection",
             linucb_selected_agent = selected_agent.name(),
             linucb_ucb_score = ucb_score,
+            linucb_q_score = q_score,
+            linucb_exploration_bonus = exploration_bonus,
             linucb_context = context_json.as_str(),
             linucb_runner_up = runner_up_agent,
             service_name = "wpm",
@@ -504,14 +573,17 @@ impl RlOrchestrator {
     }
 
     /// Update LinUCB with reward for the current agent selection.
-    /// Update LinUCB with reward for the current agent selection.
-    /// Emits OTEL span with convergence metrics (TD error, weight norms).
+    /// Emits OTEL span with convergence metrics (TD error, weight norms, weight delta).
     pub fn linucb_update(&mut self, features: &[f32; 8], reward: f32) {
         let action_idx = self.active_agent as u32;
 
         // Compute TD error before update (prediction - target)
         let (_, ucb_score_before) = self.linucb.select(features);
         let td_error = reward - ucb_score_before;
+
+        // Get weight norm BEFORE update for delta computation (OBS-1 fix)
+        let norms_before = self.linucb.weight_norms();
+        let active_norm_before = norms_before[action_idx as usize];
 
         // Update agent
         self.linucb.update(features, action_idx, reward);
@@ -523,7 +595,12 @@ impl RlOrchestrator {
             norms[0], norms[1], norms[2], norms[3], norms[4]
         );
 
-        // Emit OTEL span with convergence signal
+        // OBS-1 FIX: Extract active agent's weight delta for convergence signal
+        let active_norm_after = norms[action_idx as usize];
+        let weight_delta = (active_norm_after - active_norm_before).abs();
+        let convergence_signal = if weight_delta > 0.001 { "learning" } else { "stable" };
+
+        // Emit OTEL span with convergence signal (OBS-1 fix)
         let _span = tracing::info_span!(
             "rl.linucb_update",
             linucb_td_error = td_error,
@@ -531,6 +608,8 @@ impl RlOrchestrator {
             linucb_ucb_before = ucb_score_before,
             linucb_agent_id = self.telemetry.active_agent_name.as_str(),
             linucb_weight_norms = weight_norms_json.as_str(),
+            linucb_weight_delta = weight_delta,
+            linucb_convergence_signal = convergence_signal,
             learning_rate = self.linucb.alpha_lr,
             service_name = "wpm",
         );
@@ -670,16 +749,18 @@ impl RlOrchestrator {
             self.telemetry.last_health_state = state.health_level;
         }
 
-        // Compute reward based on health transition (prev -> next)
+        // Compute reward based on health transition (prev -> next) with momentum bonus
         let prev_health = self.telemetry.last_health_state;
         let curr_health = next_state.health_level; // Use NEXT state for reward computation
-        let reward = compute_reward(
+        let reward = compute_reward_with_momentum(
             prev_health,
             curr_health,
             spc_alert_count,
             guard_pass,
             circuit_allowed,
             latency_budget_exceeded,
+            next_state.rework_ratio_q, // NEW: pass rework ratio for penalty computation
+            self.telemetry.consecutive_successes, // NEW: pass momentum for bonus computation
         );
 
         // Emit state transition event
@@ -770,6 +851,41 @@ impl RlOrchestrator {
             self.action_history.pop_front();
         }
         self.action_history.push_back(action_entry.clone());
+
+        // Compute action diversity metric: if same action >70% in last 10 cycles, apply penalty
+        let action_repetition_penalty = if self.action_history.len() >= 10 {
+            let recent_10: Vec<_> = self.action_history
+                .iter()
+                .rev()
+                .take(10)
+                .map(|h| h.action.as_str())
+                .collect();
+
+            let current_action_count = recent_10.iter()
+                .filter(|a| **a == action_label_str)
+                .count();
+
+            if current_action_count > 7 {
+                // >70% of last 10 were same action — apply diversity penalty
+                tracing::debug!(
+                    action = action_label_str,
+                    repetition_count = current_action_count,
+                    window_size = 10,
+                    "action diversity penalty applied: policy may be locked"
+                );
+                -0.1
+            } else {
+                0.0
+            }
+        } else {
+            0.0
+        };
+
+        // Emit final reward adjustment if diversity penalty applied
+        let final_reward = reward + action_repetition_penalty;
+        if action_repetition_penalty != 0.0 {
+            self.telemetry.cumulative_reward += action_repetition_penalty;
+        }
 
         // Emit OTEL span with action distribution snapshot
         let stats = self.get_action_stats();
@@ -915,29 +1031,37 @@ mod tests {
 
     /// Best case: health improves, no SPC, guard+circuit pass, in budget.
     #[test]
-    fn reward_best_case_is_one_point_one() {
-        let r = compute_reward(2, 1, 0, true, true, false);
-        assert!((r - 1.1).abs() < 1e-6, "best case reward should be +1.1, got {}", r);
+    fn reward_best_case_without_momentum_is_one_point_one() {
+        // No momentum: health improved, no SPC, no rework, guard+circuit pass
+        let r = compute_reward(2, 1, 0, true, true, false, 0);
+        assert!((r - 1.1).abs() < 1e-6, "best case (no momentum) should be +1.1, got {}", r);
     }
 
-    /// Worst case: health degrades to terminal, max SPC penalty, guard fail,
-    /// latency exceeded. Per docstring: -5.3.
     #[test]
-    fn reward_worst_case_is_negative_five_point_three() {
+    fn reward_best_case_with_momentum_is_one_point_six() {
+        // With 10-cycle momentum: +0.5 bonus on top of +1.1 base
+        let r = compute_reward_with_momentum(2, 1, 0, true, true, false, 0, 10);
+        assert!((r - 1.6).abs() < 1e-6, "best case (10-cycle momentum) should be +1.6, got {}", r);
+    }
+
+    /// Worst case: health degrades to terminal, max SPC penalty, max rework, guard fail,
+    /// latency exceeded. Per docstring: -5.6.
+    #[test]
+    fn reward_worst_case_is_negative_five_point_six() {
         // health 3 -> 4 (degrade + terminal), 5 SPC alerts (caps at -1.5),
-        // guard fail, latency exceeded.
-        let r = compute_reward(3, 4, 5, false, false, true);
-        assert!((r - (-5.3)).abs() < 1e-6, "worst case reward should be -5.3, got {}", r);
+        // max rework_ratio_q=7 (penalty -0.2), guard fail, latency exceeded.
+        let r = compute_reward(3, 4, 5, false, false, true, 7);
+        assert!((r - (-5.6)).abs() < 1e-6, "worst case reward should be -5.6, got {}", r);
     }
 
     #[test]
     fn reward_health_components_are_correct() {
         // Improved (curr < prev): +1.0 contribution
-        let improved = compute_reward(2, 1, 0, true, true, false);
+        let improved = compute_reward(2, 1, 0, true, true, false, 0);
         // Stable (curr == prev): +0.2 contribution
-        let stable = compute_reward(1, 1, 0, true, true, false);
+        let stable = compute_reward(1, 1, 0, true, true, false, 0);
         // Degraded (curr > prev, non-terminal): -1.0 contribution
-        let degraded = compute_reward(1, 2, 0, true, true, false);
+        let degraded = compute_reward(1, 2, 0, true, true, false, 0);
 
         // Differences are exactly 0.8 (1.0 vs 0.2) and 1.2 (0.2 vs -1.0).
         assert!((improved - stable - 0.8).abs() < 1e-6);
@@ -986,6 +1110,39 @@ mod tests {
             assert!(r <= prev + 1e-6, "reward must be non-increasing in SPC alerts");
             prev = r;
         }
+    }
+
+    /// NEW: Rework penalty scales linearly from 0 to -0.2 as rework_ratio_q goes 0-7.
+    #[test]
+    fn reward_rework_penalty_scales_zero_to_negpoint_two() {
+        let no_rework = compute_reward(1, 1, 0, true, true, false, 0);
+        let max_rework = compute_reward(1, 1, 0, true, true, false, 7);
+        let diff = no_rework - max_rework;
+        assert!((diff - 0.2).abs() < 1e-6, "rework penalty should be 0.2, got {}", diff);
+    }
+
+    /// NEW: Momentum bonus applies only when guard_pass && circuit_allowed.
+    #[test]
+    fn reward_momentum_bonus_only_on_successful_cycles() {
+        // Successful: +0.05 * 5 = +0.25 bonus
+        let with_momentum = compute_reward_with_momentum(1, 1, 0, true, true, false, 0, 5);
+        // Without momentum: 0.2 + 0.1 = 0.3
+        let no_momentum = compute_reward(1, 1, 0, true, true, false, 0);
+        let bonus = with_momentum - no_momentum;
+        assert!((bonus - 0.25).abs() < 1e-6, "momentum bonus should be 0.25, got {}", bonus);
+
+        // Failed: no momentum bonus even with consecutive_successes>0
+        let failed = compute_reward_with_momentum(1, 1, 0, false, true, false, 0, 5);
+        let expected = no_momentum - 0.5; // only guard_fail penalty
+        assert!((failed - expected).abs() < 1e-6, "failed cycle must not get momentum bonus");
+    }
+
+    /// NEW: Momentum bonus caps at +0.5 (10-cycle window).
+    #[test]
+    fn reward_momentum_bonus_caps_at_point_five() {
+        let momentum_10 = compute_reward_with_momentum(1, 1, 0, true, true, false, 0, 10);
+        let momentum_100 = compute_reward_with_momentum(1, 1, 0, true, true, false, 0, 100);
+        assert!((momentum_10 - momentum_100).abs() < 1e-6, "momentum must cap at +0.5");
     }
 
     // --- CycleTelemetry default ------------------------------------------

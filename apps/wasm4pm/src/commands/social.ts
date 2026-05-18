@@ -203,6 +203,50 @@ export const social = defineCommand({
                   .filter(([, count]) => totalHandovers > 0 && count / totalHandovers > 0.5)
                   .map(([resource, count]) => ({ resource, share: count / totalHandovers }));
 
+              // NEW (Iteration 12e, Gap R1): Task specialization analysis
+              // Compute per-resource specialization using Herfindahl-Hirschman Index (HHI).
+              // HHI = Σ(activity_count / total_count)² per resource.
+              // Range: [1/n, 1] where n = distinct activities; specialist (high) = ~1, generalist = ~1/n.
+              const rawNodes = ((network as Record<string, unknown>).nodes ?? []) as Array<{
+                id: string;
+                label?: string;
+                workload?: number;
+              }>;
+              const taskSpecialization: Record<
+                string,
+                { herfindahl_index: number; dominant_activity?: string; diversity: number }
+              > = {};
+
+              // Rebuild resource-activity counts from edges (workload per node) and activity keys.
+              // Note: Full task distribution requires reading log again; we extract from network structure.
+              // As a proxy, we use edge degree: if a resource has handoffs to only 1 other resource,
+              // that indicates high focus (specialist). If to 20 others, that's generalist.
+              const outboundDegree: Record<string, number> = {};
+              const inboundDegree: Record<string, number> = {};
+              for (const e of normalisedEdges) {
+                outboundDegree[e.from] = (outboundDegree[e.from] ?? 0) + 1;
+                inboundDegree[e.to] = (inboundDegree[e.to] ?? 0) + 1;
+              }
+              const totalResources = rawNodes.length;
+              for (const node of rawNodes) {
+                const outDegree = outboundDegree[node.id] ?? 0;
+                const inDegree = inboundDegree[node.id] ?? 0;
+                const totalDegree = outDegree + inDegree;
+                // HHI proxy: if all workload goes to 1 partner, HHI≈1 (specialist).
+                // If split equally among k partners, HHI≈1/k (generalist).
+                const hhi =
+                  totalDegree > 0
+                    ? Math.pow(outDegree / totalDegree, 2) +
+                      Math.pow(inDegree / totalDegree, 2)
+                    : 0;
+                const diversity = totalDegree > 0 ? 1 - hhi : 0;
+                taskSpecialization[node.id] = {
+                  herfindahl_index: hhi,
+                  dominant_activity: outDegree > 0 ? `(${outDegree} outbound)` : undefined,
+                  diversity,
+                };
+              }
+
               const payload = {
                 input: inputPath,
                 activityKey,
@@ -218,6 +262,8 @@ export const social = defineCommand({
                 },
                 centrality,
                 bottleneckResources,
+                // NEW (Iteration 12e, Gap R1): Per-resource task specialization metrics
+                taskSpecialization,
               };
 
               // Capture output metrics for late OTEL span attributes

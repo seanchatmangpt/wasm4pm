@@ -13,7 +13,7 @@
  * Oracle hierarchy:
  *   Rank 1 (mathematical): JSON envelope always has {command, status, exit_code, payload}
  *   Rank 2 (domain contract): error envelopes have status="error" and non-null error.code
- *   Rank 3 (metamorphic): unknown subcommand → exit 2, missing required arg → exit 2
+ *   Rank 3 (metamorphic): unknown subcommand → exit 1, missing required arg → exit 2
  *
  * Seed: tests use fixed models; no faker needed here (all inputs are deterministic
  * constants). Test runtime is fast because most cases hit the pre-WASM guard path.
@@ -173,9 +173,11 @@ describe('POWL JSON envelope — always-present fields (Rank 1 mathematical inva
 // ─── Unknown subcommand (Rank 2) ─────────────────────────────────────────────
 
 describe('POWL unknown subcommand — exit code contract (Rank 2 domain contract)', () => {
-  it('unknown subcommand exits 2 (source_error) with INVALID_SUBCOMMAND code', async () => {
+  it('unknown subcommand exits 1 (config_error) with INVALID_SUBCOMMAND code', async () => {
+    // An unknown subcommand is a user argument error (like an unknown flag), not a
+    // source error. Source errors are for missing/unreadable files. Exit 1 = config_error.
     const result = await runCli(['powl', 'nonexistent', '--format=json']);
-    expect(result.exitCode).toBe(2);
+    expect(result.exitCode).toBe(1);
     const env = parseEnvelope(result);
     expect(env.status).toBe('error');
     expect(env.error?.code).toBe('INVALID_SUBCOMMAND');
@@ -400,13 +402,16 @@ describe('powl footprints — structural field contract', () => {
 // ─── diff — missing model2 error (Rank 2) ────────────────────────────────────
 
 describe('powl diff — required arg contract', () => {
-  it('diff without --model2 exits 2 (source_error) and emits JSON error envelope', async () => {
+  it('diff without --model2 exits 2 (source_error) with MISSING_MODEL2 code', async () => {
     const result = await runCli(['powl', 'diff', `--model=${SINGLE_A}`, '--format=json', '--no-save']);
     expect(result.exitCode).toBe(2);
     const env = parseEnvelope(result);
     expect(env.status).toBe('error');
     expect(env.exit_code).toBe(2);
     expect(env.error?.message).toMatch(/--model2/i);
+    // Specific error code improves DX: tooling and scripts can react to MISSING_MODEL2
+    // rather than parsing the human message.
+    expect(env.error?.code).toBe('MISSING_MODEL2');
   });
 
   it('diff of model with itself has severity=None (Rank 3 metamorphic: no change = no severity)', async () => {
@@ -498,11 +503,17 @@ describe('powl discover — required arg contract', () => {
     expect(env.error?.message).toContain('--input');
   });
 
-  it('discover with nonexistent XES path exits non-zero', async () => {
+  it('discover with nonexistent XES path exits 2 (source_error) with DISCOVER_INPUT_NOT_FOUND', async () => {
+    // A missing input file is a source_error (exit 2), not an execution_error (exit 3).
+    // The file-not-found is known before any WASM work begins.
     const result = await runCli([
       'powl', 'discover', '--input=/no/such/log.xes', '--format=json',
     ]);
-    expect(result.exitCode).toBeGreaterThan(0);
+    expect(result.exitCode).toBe(2);
+    const env = parseEnvelope(result);
+    expect(env.status).toBe('error');
+    expect(env.exit_code).toBe(2);
+    expect(env.error?.code).toBe('DISCOVER_INPUT_NOT_FOUND');
   });
 });
 

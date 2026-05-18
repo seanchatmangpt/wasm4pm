@@ -322,12 +322,18 @@ export const run = defineCommand({
     // Detect if this is a first-run for UX hints
     const isFirstRunResult = await isFirstRun().catch(() => false);
 
+    let finalAlgorithm = '';
+    let finalFitness = 0;
+    let finalPrecision = 0;
+    let finalExitCode = EXIT_CODES.success;
+
     return withSpan(
       'run',
       {
         algorithm: String(ctx.args.algorithm ?? ''),
         input: String(ctx.args.input ?? ''),
         format,
+        'activity.key': 'concept:name',
       },
       async () => {
         try {
@@ -953,6 +959,14 @@ export const run = defineCommand({
                 ...(estimatedMs > 0 && { estimatedMs }),
               };
 
+              // Capture final values for OTEL span (semantic attributes)
+              finalAlgorithm = resolvedAlgoFinal;
+              if (qualityMetrics) {
+                finalFitness = qualityMetrics.fitness;
+                finalPrecision = qualityMetrics.precision;
+              }
+              finalExitCode = EXIT_CODES.success;
+
               // Step 9a: Build semantic payload for deterministic hashing (excludes timing metrics)
               const semanticPayload = {
                 status: 'success',
@@ -1202,10 +1216,19 @@ export const run = defineCommand({
             EXIT_CODES.execution_error,
             'DISCOVERY_FAILED'
           );
+          finalExitCode = result.exit_code;
           emitResult(result, emitOptions);
           return await exitWithFlush(result.exit_code);
         }
-      }
+      },
+      () => ({
+        'status.code': finalExitCode,
+        'status.ok': finalExitCode === EXIT_CODES.success,
+        'algorithm.name': finalAlgorithm,
+        'quality.fitness': finalFitness > 0 ? finalFitness : undefined,
+        'quality.precision': finalPrecision > 0 ? finalPrecision : undefined,
+        'activity.key': 'concept:name',
+      })
     );
   },
 });

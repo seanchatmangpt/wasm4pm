@@ -810,14 +810,16 @@ describe('wpm predict — predictive process mining CLI', () => {
       expect([1, 2, 3]).toContain(result.exitCode);
     });
 
-    it('should exit with source_error for invalid task name', async () => {
+    it('should exit with config_error for invalid task name (task validation happens before file access)', async () => {
       const result = await runCli([
         'predict',
         'invalid-task',
         '--input',
         'test.xes',
       ]);
-      expect(result.exitCode).toBe(EXIT_CODES.source_error);
+      // Invalid task is a config/argument error (exit 1), not a source/file error (exit 2).
+      // Task validation fires before any file I/O.
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
     });
   });
 

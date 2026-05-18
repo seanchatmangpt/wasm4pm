@@ -99,15 +99,19 @@ export const predict = defineCommand({
     const quiet = Boolean(ctx.args.quiet);
     const start = Date.now();
 
+    let finalTask = '';
+    let finalPredictionsCount = 0;
+    let finalExitCode = EXIT_CODES.success;
+
     return withSpan(
       'predict',
       {
         task: String(ctx.args.task ?? ''),
         input: String(ctx.args.input ?? ''),
-        activity_key: String(ctx.args['activity-key'] ?? ''),
-        top_k: Number(ctx.args['top-k'] ?? 0),
-        ngram_order: Number(ctx.args['ngram-order'] ?? 0),
-        drift_window: Number(ctx.args['drift-window'] ?? 0),
+        'activity.key': String(ctx.args['activity-key'] ?? ''),
+        'prediction.top_k': Number(ctx.args['top-k'] ?? 0),
+        'prediction.ngram_order': Number(ctx.args['ngram-order'] ?? 0),
+        'prediction.drift_window': Number(ctx.args['drift-window'] ?? 0),
         format,
       },
       async () => {
@@ -135,19 +139,10 @@ export const predict = defineCommand({
             return await exitWithFlush(result.exit_code);
           }
 
-          // Step 2: Load config to get prediction defaults
-          const cliOverrides = buildCliOverrides({
-            config: ctx.args.config,
-            predictionActivityKey: ctx.args['activity-key'],
-            predictionNgramOrder: ctx.args['ngram-order'],
-            predictionDriftWindow: ctx.args['drift-window'],
-          });
-          const config = await loadWasm4pmConfig(cliOverrides);
-          const pred = config.prediction;
+          // Step 2: Validate and parse numeric CLI arguments BEFORE config loading.
+          // This ensures invalid values produce config_error (1), not execution_error (3)
+          // from Zod schema rejection inside loadWasm4pmConfig.
 
-          // Resolve parameters: CLI flag > config > hardcoded default
-          const activityKey =
-            (ctx.args['activity-key'] as string) || pred?.activityKey || 'concept:name';
           const rawTopK = ctx.args['top-k'] as string | undefined;
           const parsedTopK = rawTopK != null ? parseInt(rawTopK, 10) : undefined;
           if (parsedTopK !== undefined && Number.isNaN(parsedTopK)) {
@@ -160,7 +155,6 @@ export const predict = defineCommand({
             emitResult(result, { format, verbose, quiet });
             return await exitWithFlush(result.exit_code);
           }
-          const topK = parsedTopK ?? 3;
 
           const rawNgram = ctx.args['ngram-order'] as string | undefined;
           const parsedNgram = rawNgram != null ? parseInt(rawNgram, 10) : undefined;
@@ -174,7 +168,6 @@ export const predict = defineCommand({
             emitResult(result, { format, verbose, quiet });
             return await exitWithFlush(result.exit_code);
           }
-          const ngramOrder = parsedNgram ?? pred?.ngramOrder ?? 2;
 
           const rawDrift = ctx.args['drift-window'] as string | undefined;
           const parsedDrift = rawDrift != null ? parseInt(rawDrift, 10) : undefined;
@@ -188,6 +181,44 @@ export const predict = defineCommand({
             emitResult(result, { format, verbose, quiet });
             return await exitWithFlush(result.exit_code);
           }
+          // Drift-window must be a positive integer (>= 1) when the drift task is used.
+          // Zero or negative values are meaningless for sliding-window drift detection
+          // (you cannot compare two windows of size 0). Only enforce this for the 'drift'
+          // task — other tasks ignore the drift-window flag entirely.
+          // Validate before config loading so the exit code is always config_error (1),
+          // not execution_error (3) from Zod schema rejection.
+          if (task === 'drift' && parsedDrift !== undefined && parsedDrift <= 0) {
+            const result = makeErrorResult(
+              'predict',
+              new Error(
+                `Invalid --drift-window value: "${rawDrift}". Must be a positive integer (>= 1). ` +
+                  `A drift window of 0 or negative is meaningless for sliding-window analysis.`
+              ),
+              EXIT_CODES.config_error,
+              'INVALID_ARG'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
+
+          // Step 3: Load config. Only forward drift-window when it is valid (> 0) so that
+          // Zod schema does not reject it. Invalid values (0 or negative) were already
+          // rejected for the 'drift' task above; for other tasks the value is silently
+          // ignored here by not forwarding it.
+          const cliOverrides = buildCliOverrides({
+            config: ctx.args.config,
+            predictionActivityKey: ctx.args['activity-key'],
+            predictionNgramOrder: ctx.args['ngram-order'],
+            predictionDriftWindow: parsedDrift !== undefined && parsedDrift > 0 ? String(parsedDrift) : undefined,
+          });
+          const config = await loadWasm4pmConfig(cliOverrides);
+          const pred = config.prediction;
+
+          // Resolve parameters: CLI flag > config > hardcoded default
+          const activityKey =
+            (ctx.args['activity-key'] as string) || pred?.activityKey || 'concept:name';
+          const topK = parsedTopK ?? 3;
+          const ngramOrder = parsedNgram ?? pred?.ngramOrder ?? 2;
           const driftWindow = parsedDrift ?? pred?.driftWindowSize ?? 10;
           const prefixActivities = ctx.args.prefix
             ? (ctx.args.prefix as string).split(',').map((s) => s.trim())
@@ -249,6 +280,13 @@ export const predict = defineCommand({
 
               const result = makeResult('predict', payload, Date.now() - start);
 
+              // Capture final values for OTEL span (semantic attributes)
+              finalTask = task;
+              finalPredictionsCount = Array.isArray((taskResult as Record<string, unknown>).predictions)
+                ? ((taskResult as Record<string, unknown>).predictions as unknown[]).length
+                : 0;
+              finalExitCode = result.exit_code;
+
               // Step 6: Emit result
               emitResult(result, { format, verbose, quiet }, (res, p) => {
                 p.success(`Prediction complete: ${res.payload.task}`);
@@ -306,10 +344,17 @@ export const predict = defineCommand({
             EXIT_CODES.execution_error,
             'PREDICTION_ERROR'
           );
+          finalExitCode = result.exit_code;
           emitResult(result, { format, verbose, quiet });
           return await exitWithFlush(result.exit_code);
         }
-      }
+      },
+      () => ({
+        'status.code': finalExitCode,
+        'status.ok': finalExitCode === EXIT_CODES.success,
+        'prediction.task': finalTask,
+        'prediction.count': finalPredictionsCount > 0 ? finalPredictionsCount : undefined,
+      })
     );
   },
 });

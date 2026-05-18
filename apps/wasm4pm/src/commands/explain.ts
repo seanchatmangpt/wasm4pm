@@ -247,12 +247,14 @@ export const explain = defineCommand({
           });
           return await exitWithFlush(result.exit_code);
         } catch (error) {
-          const result = makeErrorResult(
-            'explain',
-            error,
-            EXIT_CODES.execution_error,
-            'EXPLAIN_ERROR'
-          );
+          // UNKNOWN_ALGORITHM is a user argument error — emit config_error (exit 1).
+          // All other errors fall through to execution_error (exit 3).
+          const isUnknownAlgo =
+            error instanceof Error &&
+            (error as Error & { code?: string }).code === 'UNKNOWN_ALGORITHM';
+          const exitCode = isUnknownAlgo ? EXIT_CODES.config_error : EXIT_CODES.execution_error;
+          const errorCode = isUnknownAlgo ? 'UNKNOWN_ALGORITHM' : 'EXPLAIN_ERROR';
+          const result = makeErrorResult('explain', error, exitCode, errorCode);
           emitResult(result, { format, verbose, quiet });
           return await exitWithFlush(result.exit_code);
         }
@@ -1058,17 +1060,21 @@ Maximize: Σ yₜ - λ × Σ xₑ
   const algo = Object.keys(explanations).find((k) => algoKey.includes(k) || k.includes(algoKey));
 
   if (!algo || !explanations[algo]) {
-    // Unknown algorithm — list what is available so the user knows what to type next
+    // Unknown algorithm — throw a typed error so the caller can emit config_error (exit 1).
+    // We use a plain Error with a recognisable code property rather than a custom class
+    // so the existing catch handler in run() can inspect it without importing a new type.
     const available = Object.keys(explanations).join(', ');
-    return (
-      `No explanation available for '${algorithm}'.\n\n` +
-      `Algorithms with explanations: ${available}\n\n` +
-      `Examples:\n` +
-      `  wpm explain dfg          — simplest/fastest algorithm\n` +
-      `  wpm explain heuristic    — balanced, noise-robust\n` +
-      `  wpm explain ilp          — highest quality\n` +
-      `  wpm explain              — show full algorithm menu`
+    const err = new Error(
+      `Unknown algorithm: '${algorithm}'.\n\n` +
+        `Algorithms with explanations: ${available}\n\n` +
+        `Examples:\n` +
+        `  wpm explain dfg          — simplest/fastest algorithm\n` +
+        `  wpm explain heuristic    — balanced, noise-robust\n` +
+        `  wpm explain ilp          — highest quality\n` +
+        `  wpm explain              — show full algorithm menu`
     );
+    (err as Error & { code: string }).code = 'UNKNOWN_ALGORITHM';
+    throw err;
   }
 
   return explanations[algo][level] || explanations[algo].detailed;

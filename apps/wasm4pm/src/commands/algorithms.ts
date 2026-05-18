@@ -48,7 +48,7 @@ export const algorithms = defineCommand({
   meta: {
     name: 'algorithms',
     description:
-      'List all registered algorithms with speed, quality, and output type. Use --tier to filter.',
+      'List all registered discovery algorithms with speed score, quality ratings, and output type. Filter by tier: fast (<30ms), balanced (31-55ms), quality (56-85ms), or stream (<10ms).',
   },
   args: {
     tier: {

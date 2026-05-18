@@ -3808,7 +3808,7 @@ export async function probeHooks(projectDir: string): Promise<JtbdProbe[]> {
 export const doctorHooks = defineCommand({
   meta: {
     name: 'hooks',
-    description: 'JTBD verification: test whether each Claude Code hook does its declared job',
+    description: 'Verify Claude Code hooks work as declared. Tests that git hooks, pre-commit gates, and proof checks actually execute and enforce their constraints.',
   },
   args: {
     format: { type: 'string', default: 'human' },

@@ -22,17 +22,21 @@ import { exitWithFlush } from '../otel/exit.js';
 
 /** User argument is invalid — maps to config_error (exit 1). */
 class PowlConfigError extends Error {
-  constructor(message: string) {
+  readonly code: string;
+  constructor(message: string, code = 'POWL_CONFIG_ERROR') {
     super(message);
     this.name = 'PowlConfigError';
+    this.code = code;
   }
 }
 
 /** Source file is missing or unreadable — maps to source_error (exit 2). */
 class PowlSourceError extends Error {
-  constructor(message: string) {
+  readonly code: string;
+  constructor(message: string, code = 'POWL_SOURCE_ERROR') {
     super(message);
     this.name = 'PowlSourceError';
+    this.code = code;
   }
 }
 
@@ -152,13 +156,14 @@ export const powl = defineCommand({
     const quiet = Boolean(ctx.args.quiet);
     const subcommand = ctx.args.subcommand as string;
 
-    // Validate sub before opening a span — invalid sub is a usage error,
-    // not a powl execution.
+    // Validate sub before opening a span — invalid sub is a usage error (config_error),
+    // not a source_error. Passing an unknown subcommand is equivalent to passing an
+    // unknown flag — exit 1.
     if (!POWL_SUBCOMMANDS.includes(subcommand as PowlSubcommand)) {
       const result = makeErrorResult(
         'powl',
         `Unknown operation: "${subcommand}". Valid: ${POWL_SUBCOMMANDS.join(', ')}`,
-        EXIT_CODES.source_error,
+        EXIT_CODES.config_error,
         'INVALID_SUBCOMMAND'
       );
       emitResult(result, { format, verbose, quiet });
@@ -254,7 +259,12 @@ export const powl = defineCommand({
               : error instanceof PowlSourceError
                 ? EXIT_CODES.source_error
                 : EXIT_CODES.execution_error;
-          const result = makeErrorResult('powl', error, exitCode);
+          // Forward the typed error code when the error carries one (PowlConfigError, PowlSourceError).
+          const errorCode =
+            error instanceof PowlConfigError || error instanceof PowlSourceError
+              ? (error as PowlConfigError | PowlSourceError).code
+              : 'COMMAND_ERROR';
+          const result = makeErrorResult('powl', error, exitCode, errorCode);
           emitResult(result, { format, verbose, quiet });
           return await exitWithFlush(result.exit_code);
         }
@@ -385,11 +395,17 @@ async function executePowlCommand(
     case 'diff': {
       const model2Input = args.model2 as string;
       if (!model2Input) {
-        throw new PowlSourceError('Missing required argument: --model2 (second POWL model for diff)');
+        throw new PowlSourceError(
+          'Missing required argument: --model2 (second POWL model for diff)',
+          'MISSING_MODEL2'
+        );
       }
       const model2 = await resolveModelInput(model2Input);
       if (!model2) {
-        throw new PowlSourceError(`Cannot resolve second model: ${model2Input}`);
+        throw new PowlSourceError(
+          `Cannot resolve second model: ${model2Input}`,
+          'MISSING_MODEL2'
+        );
       }
       const raw: string = wasm.diff_models(modelStr, model2);
       return normalizeResult(raw);
@@ -487,12 +503,27 @@ async function executePowlCommand(
 
       let logJson: string;
       if (input.endsWith('.xes')) {
-        const xesContent = await fs.readFile(input, 'utf-8');
+        let xesContent: string;
+        try {
+          xesContent = await fs.readFile(input, 'utf-8');
+        } catch (e) {
+          throw new PowlSourceError(
+            `Cannot read XES log file: "${input}": ${e instanceof Error ? e.message : String(e)}`,
+            'DISCOVER_INPUT_NOT_FOUND'
+          );
+        }
         const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
         logJson = wasm.export_eventlog_to_json(logHandle);
         wasm.delete_object(logHandle);
       } else {
-        logJson = await fs.readFile(input, 'utf-8');
+        try {
+          logJson = await fs.readFile(input, 'utf-8');
+        } catch (e) {
+          throw new PowlSourceError(
+            `Cannot read log file: "${input}": ${e instanceof Error ? e.message : String(e)}`,
+            'DISCOVER_INPUT_NOT_FOUND'
+          );
+        }
       }
 
       // Use config path when any non-default option was explicitly provided.

@@ -22,8 +22,11 @@ import {
   forecastSeries,
   detectEnhancedAnomalies,
   reduceFeaturesPCA,
+  suggestClusteringK,
+  detectLogCharacteristics,
+  assessFeatureQuality,
 } from '@wasm4pm/ml';
-import type { ClassificationMethod, ClusteringMethod, RegressionMethod } from '@wasm4pm/ml';
+import type { ClassificationMethod, ClusteringMethod, RegressionMethod, QualityReport } from '@wasm4pm/ml';
 import { Instrumentation } from '@wasm4pm/observability';
 import type { OtelEvent, RequiredOtelAttributes } from '@wasm4pm/observability';
 
@@ -445,15 +448,38 @@ export async function executeMlTask(
         configJson
       );
       const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+
+      // Gap 2: Assess feature quality before classification
+      const featureMatrix = buildFeatureMatrixFromExtraction(features);
+      const qualityReport = assessFeatureQuality(featureMatrix.data);
+      if (qualityReport.warnings.length > 0) {
+        console.warn(`[ML Feature Quality] ${qualityReport.warnings.join('; ')}`);
+        qualityReport.recommendations.forEach((rec) => console.warn(`  → ${rec}`));
+      }
+
+      // Gap 1: Suggest algorithm based on feature quality and dataset size (ADAPTIVE)
+      let method: ClassificationMethod = 'knn';
+      if (!options.method) {
+        const traceCount = features.length;
+        if (traceCount > 50 && qualityReport.score >= 0.6) {
+          method = 'logistic_regression'; // Large dataset with good features → logistic
+        }
+        // else: default kNN (stable, no assumptions)
+      } else {
+        method = options.method as ClassificationMethod;
+      }
+
       const k = parseInt(String(options.k ?? '5'), 10);
       if (Number.isNaN(k) || k <= 0)
         throw new Error('Classification parameter k must be a positive number');
       rawResult = (await classifyTraces(features, {
-        method: (options.method as ClassificationMethod) || 'knn',
+        method,
         k,
       })) as unknown as Record<string, unknown>;
       // Gap 3: attach class distribution so formatter can render a signal-check table
       rawResult = attachClassDistribution(rawResult);
+      // Gap 2a: Attach feature quality report to output for CLI rendering
+      (rawResult as Record<string, unknown>)._featureQualityReport = qualityReport;
       break;
     }
 
@@ -474,7 +500,19 @@ export async function executeMlTask(
         configJson
       );
       const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
-      const k = parseInt(String(options.k ?? '3'), 10);
+
+      // Get log characteristics for parameter suggestion
+      const statsRaw = wasm.analyze_statistics(logHandle);
+      const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
+      const traceCount = (stats?.trace_count as number) ?? (stats?.traceCount as number) ?? 0;
+      const variantCount = (stats?.variant_count as number) ?? (stats?.variantCount as number) ?? 0;
+      const activityCount = (stats?.num_activities as number) ?? 15; // fallback
+
+      // Detect characteristics and suggest k if not provided
+      const characteristics = detectLogCharacteristics(traceCount, variantCount, activityCount);
+      const defaultK = suggestClusteringK(traceCount, activityCount, characteristics);
+      const k = parseInt(String(options.k ?? defaultK), 10);
+
       const eps = parseFloat(String(options.eps ?? '1.0'));
       if (Number.isNaN(k) || k <= 0)
         throw new Error('Clustering parameter k must be a positive number');
@@ -771,4 +809,43 @@ function attachClassDistribution(result: Record<string, unknown>): Record<string
     }));
 
   return { ...result, _classDistribution: distribution };
+}
+
+/**
+ * Helper: convert extract_case_features JSON output to numeric feature matrix.
+ * Used for feature quality assessment.
+ */
+function buildFeatureMatrixFromExtraction(
+  features: Array<Record<string, unknown>>
+): { data: number[][]; featureNames: string[] } {
+  if (!features || !Array.isArray(features) || features.length === 0) {
+    return { data: [], featureNames: [] };
+  }
+
+  const firstRow = features[0];
+  const featureNames = Object.keys(firstRow).filter((k) => k !== 'case_id');
+  const excludeKeys = new Set(['case_id']);
+
+  const data: number[][] = [];
+  for (const row of features) {
+    if (row == null || typeof row !== 'object') continue;
+    const numRow: number[] = [];
+    for (const key of featureNames) {
+      if (excludeKeys.has(key)) continue;
+      const val = row[key];
+      let num = 0;
+      if (typeof val === 'number') {
+        num = val;
+      } else if (typeof val === 'string') {
+        num = parseFloat(val);
+        if (Number.isNaN(num)) num = 0;
+      }
+      numRow.push(num);
+    }
+    if (numRow.length > 0) {
+      data.push(numRow);
+    }
+  }
+
+  return { data, featureNames: featureNames.filter((k) => !excludeKeys.has(k)) };
 }

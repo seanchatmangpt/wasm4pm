@@ -20,10 +20,18 @@ interface QualityPayload {
   activityKey: string;
   metrics: string[];
   scores: Record<string, number>;
+  /** Van der Aalst 4-dimension quality scores — identical to `scores`.
+   * Exposed as `dimensions` so that PM lifecycle pipelines can use the
+   * academically-conventional field name without knowing the internal alias. */
+  dimensions: Record<string, number>;
   aggregate: {
     score: number;
     level: string;
+    /** When --threshold was supplied, indicates whether the aggregate score
+     * passed (true) or failed (false) the threshold check. */
+    passed_threshold?: boolean;
   };
+  threshold?: number | null;
   model: {
     type: string;
     nodes: number;
@@ -74,6 +82,13 @@ export const quality = defineCommand({
       type: 'boolean',
       description: 'Suppress non-error output',
       alias: 'q',
+    },
+    threshold: {
+      type: 'string',
+      description:
+        'Minimum acceptable aggregate quality score in [0, 1]. ' +
+        'When the aggregate score falls below this value the command exits 3 (execution_error). ' +
+        'Default: no threshold check. Value must be a number in [0, 1].',
     },
     'no-save': {
       type: 'boolean',
@@ -135,6 +150,30 @@ export const quality = defineCommand({
             );
             emitResult(result, { format, verbose, quiet });
             return await exitWithFlush(result.exit_code);
+          }
+
+          // Validate --threshold: must be a number in [0, 1] when provided.
+          let qualityThreshold: number | null = null;
+          const rawThreshold = ctx.args.threshold as string | undefined;
+          if (rawThreshold !== undefined && rawThreshold !== '') {
+            const parsed = Number(rawThreshold);
+            if (Number.isNaN(parsed) || parsed < 0 || parsed > 1) {
+              const result = makeErrorResult(
+                'quality',
+                new Error(
+                  `Invalid --threshold value: "${rawThreshold}". ` +
+                    `Threshold must be a number in [0, 1] (e.g. --threshold 0.85).\n\n` +
+                    `  Valid range: 0.0 to 1.0 (inclusive)\n` +
+                    `  Your value: ${rawThreshold}\n\n` +
+                    `  Run "wpm quality --help" for details.`
+                ),
+                EXIT_CODES.config_error,
+                'INVALID_THRESHOLD'
+              );
+              emitResult(result, { format, verbose, quiet });
+              return await exitWithFlush(result.exit_code);
+            }
+            qualityThreshold = parsed;
           }
 
           await withLogSession(
@@ -353,6 +392,13 @@ export const quality = defineCommand({
                 // Cleanup failure is non-fatal — do not block output
               }
 
+              // Evaluate threshold check when --threshold was provided.
+              // The threshold test uses the aggregate score, not individual dimensions.
+              const passedThreshold =
+                qualityThreshold !== null
+                  ? aggregate >= qualityThreshold
+                  : undefined;
+
               // Build payload
               const payload: QualityPayload = {
                 status: 'success',
@@ -360,6 +406,10 @@ export const quality = defineCommand({
                 activityKey,
                 metrics: requestedMetrics,
                 scores: qualityScores,
+                // `dimensions` is the Van der Aalst-conventional alias for `scores`.
+                // Both fields carry identical data; `dimensions` is the preferred
+                // name in academic and PM lifecycle pipeline contexts.
+                dimensions: qualityScores,
                 aggregate: {
                   score: aggregate,
                   level:
@@ -370,7 +420,9 @@ export const quality = defineCommand({
                         : aggregate >= 0.4
                           ? 'fair'
                           : 'poor',
+                  ...(passedThreshold !== undefined ? { passed_threshold: passedThreshold } : {}),
                 },
+                ...(qualityThreshold !== null ? { threshold: qualityThreshold } : {}),
                 model: {
                   type: 'ilp_petri_net',
                   nodes: modelStats.nodes,
@@ -379,7 +431,13 @@ export const quality = defineCommand({
               };
 
               const elapsedMs = Date.now() - t0;
-              const result = makeResult('quality', payload, elapsedMs, EXIT_CODES.success);
+              // When a threshold was provided and the aggregate score is below it,
+              // emit the result but exit with execution_error (3) to signal failure.
+              const exitCode =
+                qualityThreshold !== null && !passedThreshold
+                  ? EXIT_CODES.execution_error
+                  : EXIT_CODES.success;
+              const result = makeResult('quality', payload, elapsedMs, exitCode);
 
               emitResult(result, { format, verbose, quiet }, (res, projection) => {
                 printHumanQuality(res.payload, projection);

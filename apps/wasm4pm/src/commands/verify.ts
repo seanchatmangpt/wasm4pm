@@ -1,10 +1,59 @@
 import { defineCommand } from 'citty';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { runCertification } from '@wasm4pm/testing';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withSpan } from './_otel.js';
 import pkg from '../../package.json' with { type: 'json' };
 import { exitWithFlush } from '../otel/exit.js';
+
+/**
+ * Save certification gate receipt to .wasm4pm/receipts/
+ */
+async function saveCertificationReceipt(
+  report: any,
+  elapsedMs: number,
+  version: string,
+): Promise<string> {
+  const receiptDir = path.resolve('.wasm4pm/receipts');
+  await fs.mkdir(receiptDir, { recursive: true });
+
+  const now = new Date();
+  const timestamp = now.toISOString();
+
+  const passCount = report.gates.filter((g: any) => g.passed).length;
+  const failCount = report.gates.filter((g: any) => !g.passed).length;
+
+  // Compute hash for receipt chain
+  const outputHash = createHash('sha256')
+    .update(JSON.stringify({
+      passed: report.passed,
+      pass_count: passCount,
+      fail_count: failCount,
+      gates: report.gates.map((g: any) => ({ gate: g.gate, passed: g.passed })),
+    }))
+    .digest('hex');
+
+  const receipt = {
+    run_id: randomUUID(),
+    timestamp,
+    duration_ms: elapsedMs,
+    output_hash: outputHash,
+    status: report.passed ? 'success' : 'partial',
+    passed: report.passed,
+    pass_count: passCount,
+    fail_count: failCount,
+    version,
+  };
+
+  const receiptPath = path.join(receiptDir, `verify-${receipt.run_id}.json`);
+  await fs.writeFile(receiptPath, JSON.stringify(receipt, null, 2));
+
+  return receiptPath;
+}
 
 export const verify = defineCommand({
   meta: {
@@ -38,6 +87,9 @@ export const verify = defineCommand({
       const passCount = report.gates.filter((g) => g.passed).length;
       const failCount = report.gates.filter((g) => !g.passed).length;
       const exitCode = failCount > 0 ? EXIT_CODES.execution_error : EXIT_CODES.success;
+
+      // Save receipt for audit trail
+      await saveCertificationReceipt(report, performance.now() - t0, version);
 
       const result = makeResult(
         'verify',

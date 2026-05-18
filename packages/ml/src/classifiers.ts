@@ -131,6 +131,74 @@ function rSquared(actual: number[], predicted: number[]): number {
 }
 
 // ---------------------------------------------------------------------------
+// Stratified k-fold cross-validation
+// ---------------------------------------------------------------------------
+
+/**
+ * Stratified k-fold partition that maintains class distribution across folds.
+ * Returns k pairs of (train, test) index sets.
+ */
+function stratifiedKFold(
+  labels: number[],
+  k: number = 3
+): { trainIndices: Int32Array[]; testIndices: Int32Array[] } {
+  const n = labels.length;
+  if (k < 2 || k > n) {
+    throw new Error(`k must be in range [2, ${n}], got ${k}`);
+  }
+
+  // Group indices by label for stratification
+  const labelGroups = new Map<number, number[]>();
+  for (let i = 0; i < n; i++) {
+    const label = labels[i];
+    if (!labelGroups.has(label)) {
+      labelGroups.set(label, []);
+    }
+    labelGroups.get(label)!.push(i);
+  }
+
+  // Assign each label's samples to folds (round-robin to balance)
+  const foldAssignment = new Int32Array(n);
+  for (const [label, indices] of labelGroups) {
+    for (let i = 0; i < indices.length; i++) {
+      foldAssignment[indices[i]] = i % k;
+    }
+  }
+
+  // Build train/test sets for each fold
+  const trainIndices: Int32Array[] = [];
+  const testIndices: Int32Array[] = [];
+
+  for (let foldIdx = 0; foldIdx < k; foldIdx++) {
+    const train: number[] = [];
+    const test: number[] = [];
+    for (let i = 0; i < n; i++) {
+      if (foldAssignment[i] === foldIdx) {
+        test.push(i);
+      } else {
+        train.push(i);
+      }
+    }
+    trainIndices.push(new Int32Array(train));
+    testIndices.push(new Int32Array(test));
+  }
+
+  return { trainIndices, testIndices };
+}
+
+/**
+ * Compute accuracy metric: fraction of correct predictions.
+ */
+function computeAccuracy(actual: number[], predicted: number[]): number {
+  if (actual.length === 0) return 0;
+  let correct = 0;
+  for (let i = 0; i < actual.length; i++) {
+    if (actual[i] === predicted[i]) correct++;
+  }
+  return correct / actual.length;
+}
+
+// ---------------------------------------------------------------------------
 // k-NN (squared-distance, pre-allocated sort buffer)
 // ---------------------------------------------------------------------------
 

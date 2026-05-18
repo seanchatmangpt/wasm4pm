@@ -25,7 +25,7 @@ export const validate = defineCommand({
   meta: {
     name: 'validate',
     description:
-      'Validate event log schema and data quality. Ex: wpm validate process.xes',
+      'Validate event log schema, attributes, and data quality. Checks for required fields, missing timestamps, duplicate events, and case coverage. Ex: wpm validate process.xes',
   },
   args: {
     input: {
@@ -352,6 +352,11 @@ export const validate = defineCommand({
             valid: !hasErrors,
             checks,
             errors,
+            /** `violations` is the PM-conventional alias for `errors`.
+             * Both fields carry the same strings. `violations` matches
+             * the Van der Aalst conformance vocabulary used by the quality
+             * command and PM lifecycle pipelines. */
+            violations: errors,
             warnings,
           };
 
@@ -661,6 +666,10 @@ async function validateOcel(opts: {
     valid: !hasErrors,
     checks,
     errors,
+    /** `violations` is the PM-conventional alias for `errors`.
+     * Both fields carry the same strings. `violations` matches
+     * the Van der Aalst conformance vocabulary. */
+    violations: errors,
     warnings,
     ocelSummary: {
       total_events: events.length,

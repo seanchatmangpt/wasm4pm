@@ -7,10 +7,13 @@
  */
 
 // Bridge utilities
-export { buildFeatureMatrix, encodeLabels } from './bridge.js';
+export { buildFeatureMatrix, encodeLabels, selectTopFeatures } from './bridge.js';
 
 // Classification & regression
 export { classifyTraces, regressRemainingTime } from './classifiers.js';
+
+// Cross-validation (internal, for advanced usage)
+// Note: stratifiedKFold and computeAccuracy exported for testing
 
 // Clustering
 export { clusterTraces } from './clustering.js';

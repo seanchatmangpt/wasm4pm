@@ -7,11 +7,13 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { randomUUID } from 'node:crypto';
 import { BatchRunner, type BatchConfig, type BatchResult } from '@wasm4pm/kernel';
 import { emitResult, makeResult, makeErrorResult, type CommandResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
 import { withSpan } from './_otel.js';
+import { createHash } from 'node:crypto';
 
 /**
  * Payload type for batch command results
@@ -63,6 +65,46 @@ async function findLogFiles(directory: string): Promise<string[]> {
 function formatTime(ms: number): string {
   if (ms < 1000) return `${Math.round(ms)}ms`;
   return `${(ms / 1000).toFixed(2)}s`;
+}
+
+/**
+ * Save batch execution receipt to .wasm4pm/receipts/
+ */
+async function saveBatchReceipt(
+  batchResult: BatchResult,
+  elapsedMs: number,
+  inputFiles: string[],
+): Promise<string> {
+  const receiptDir = path.resolve('.wasm4pm/receipts');
+  await fs.mkdir(receiptDir, { recursive: true });
+
+  const now = new Date();
+  const timestamp = now.toISOString();
+
+  // Compute hashes for receipt chain
+  const inputHash = createHash('sha256')
+    .update(JSON.stringify({ files: inputFiles, count: inputFiles.length }))
+    .digest('hex');
+
+  const outputHash = createHash('sha256')
+    .update(JSON.stringify(batchResult.summary))
+    .digest('hex');
+
+  const receipt = {
+    run_id: randomUUID(),
+    timestamp,
+    duration_ms: elapsedMs,
+    input_hash: inputHash,
+    output_hash: outputHash,
+    status: batchResult.summary.failed > 0 ? 'partial' : 'success',
+    batch_summary: batchResult.summary,
+    log_count: inputFiles.length,
+  };
+
+  const receiptPath = path.join(receiptDir, `batch-${receipt.run_id}.json`);
+  await fs.writeFile(receiptPath, JSON.stringify(receipt, null, 2));
+
+  return receiptPath;
 }
 
 /**
@@ -233,6 +275,12 @@ export const batch = defineCommand({
           result.summary.failed > 0 || result.summary.timedOut > 0
             ? EXIT_CODES.partial_failure
             : EXIT_CODES.success;
+
+        // Save receipt for audit trail
+        let receiptPath: string | undefined;
+        if (!noSave) {
+          receiptPath = await saveBatchReceipt(result, elapsedMs, logFiles);
+        }
 
         // Build structured payload — JSON consumers get machine-readable fields,
         // human consumers get a formatted string in the `output` field.

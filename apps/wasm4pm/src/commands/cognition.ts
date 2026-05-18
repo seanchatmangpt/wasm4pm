@@ -17,7 +17,7 @@ export const cognition = defineCommand({
   meta: {
     name: 'cognition',
     description:
-      'Old-AI cognition kernel: contracts, breed selection, receipt chains, adversarial gates',
+      'Breed selection, contract verification, and receipt chain validation. Run cognitive tasks (run), explain selections (explain), or audit chain integrity (verify).',
   },
   subCommands: {
     run,

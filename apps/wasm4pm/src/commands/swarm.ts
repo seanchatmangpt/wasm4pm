@@ -1,11 +1,61 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
+import * as path from 'path';
+import { randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { runSwarm } from '@wasm4pm/swarm';
 import { withSpan } from './_otel.js';
 import { exitWithFlush } from '../otel/exit.js';
 import { resolveConfig } from '@wasm4pm/config';
+
+/**
+ * Save swarm execution receipt to .wasm4pm/receipts/
+ */
+async function saveSwarmReceipt(
+  swarmResult: any,
+  elapsedMs: number,
+  inputPath: string,
+): Promise<string> {
+  const receiptDir = path.resolve('.wasm4pm/receipts');
+  await fs.mkdir(receiptDir, { recursive: true });
+
+  const now = new Date();
+  const timestamp = now.toISOString();
+
+  // Compute hashes for receipt chain
+  const inputHash = createHash('sha256')
+    .update(await fs.readFile(inputPath, 'utf-8'))
+    .digest('hex');
+
+  const outputHash = createHash('sha256')
+    .update(JSON.stringify({
+      converged: swarmResult.converged,
+      episodes: swarmResult.episodes.length,
+      healthyWorkers: swarmResult.healthyWorkerCount,
+      dominantHash: swarmResult.episodes[swarmResult.episodes.length - 1]?.convergenceReport.dominantHash,
+    }))
+    .digest('hex');
+
+  const receipt = {
+    run_id: randomUUID(),
+    timestamp,
+    duration_ms: elapsedMs,
+    input_hash: inputHash,
+    output_hash: outputHash,
+    status: swarmResult.converged ? 'success' : 'partial',
+    converged: swarmResult.converged,
+    episode_count: swarmResult.episodes.length,
+    healthy_worker_count: swarmResult.healthyWorkerCount,
+    failed_worker_count: swarmResult.failedWorkers.length,
+  };
+
+  const receiptPath = path.join(receiptDir, `swarm-${receipt.run_id}.json`);
+  await fs.writeFile(receiptPath, JSON.stringify(receipt, null, 2));
+
+  return receiptPath;
+}
 
 export const swarm = defineCommand({
   meta: {
@@ -114,9 +164,26 @@ export const swarm = defineCommand({
             ? parseInt(ctx.args['convergence-runs'], 10)
             : (swarmCfg?.convergence_runs ?? 2);
 
-          const convergenceThreshold = ctx.args['convergence-threshold']
-            ? parseFloat(ctx.args['convergence-threshold'])
-            : (swarmCfg?.convergence_threshold ?? 1.0);
+          // --convergence-threshold validation: must be in [0, 1]
+          const rawThreshold = ctx.args['convergence-threshold'] as string | undefined;
+          let convergenceThreshold = swarmCfg?.convergence_threshold ?? 1.0;
+          if (rawThreshold !== undefined) {
+            const parsedThreshold = parseFloat(rawThreshold);
+            if (!Number.isFinite(parsedThreshold) || parsedThreshold < 0 || parsedThreshold > 1) {
+              const result = makeErrorResult(
+                'swarm',
+                new Error(
+                  `Invalid --convergence-threshold value: "${rawThreshold}". ` +
+                    `Must be a number in [0, 1] (e.g. 0.75 for 75% quorum, 1.0 for unanimous).`
+                ),
+                EXIT_CODES.config_error,
+                'INVALID_CONVERGENCE_THRESHOLD'
+              );
+              emitResult(result, { format, verbose, quiet });
+              return await exitWithFlush(result.exit_code);
+            }
+            convergenceThreshold = parsedThreshold;
+          }
 
           const workerModel =
             (ctx.args['worker-model'] as string | undefined) ??
@@ -170,6 +237,12 @@ export const swarm = defineCommand({
           };
 
           const swarmResult = await runSwarm(config);
+
+          // Save receipt for audit trail (unless --no-save is specified)
+          const noSave = ctx.args['no-save'] === true;
+          if (!noSave) {
+            await saveSwarmReceipt(swarmResult, performance.now() - t0, inputPath);
+          }
 
           const lastEpisode = swarmResult.episodes[swarmResult.episodes.length - 1];
           const finalReport = lastEpisode?.convergenceReport;
