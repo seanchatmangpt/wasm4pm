@@ -79,6 +79,7 @@ impl CounterfactualEvaluator for DefaultCounterfactualEvaluator {
                     guard_pass,
                     circuit_allowed,
                     false,
+                    0,  // rework_ratio_q = 0 (default)
                 );
 
                 // Domain contract: estimated_reward must be in the RL reward range [-5.0, 1.1]
