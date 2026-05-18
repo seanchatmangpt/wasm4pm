@@ -10,6 +10,8 @@ export { TransitionValidator };
  * State machine managing engine lifecycle transitions
  * Enforces valid state transitions and emits events for lifecycle changes
  */
+/** Maximum number of transition history entries retained (ring-buffer cap). */
+const TRANSITION_HISTORY_MAX = 1000;
 export class StateMachine {
     currentState = 'uninitialized';
     listeners = new Set();
@@ -43,10 +45,17 @@ export class StateMachine {
         return this.lastTransitionTime;
     }
     /**
-     * Gets full transition history
+     * Gets full transition history (capped at TRANSITION_HISTORY_MAX entries)
      */
     getTransitionHistory() {
         return [...this.transitionHistory];
+    }
+    /**
+     * Returns the maximum number of transition history entries retained.
+     * When the cap is exceeded the oldest entry is evicted (ring-buffer).
+     */
+    getTransitionHistoryMaxSize() {
+        return TRANSITION_HISTORY_MAX;
     }
     /**
      * Validates if a transition from current state to target state is valid
@@ -80,6 +89,10 @@ export class StateMachine {
         this.stateEnteredAt = event.timestamp;
         this.lastTransitionTime = event.timestamp;
         this.transitionHistory.push(event);
+        // Cap history to prevent unbounded growth in long-running engines
+        if (this.transitionHistory.length > TRANSITION_HISTORY_MAX) {
+            this.transitionHistory.shift();
+        }
         // Emit event to all listeners — listener errors must not be hidden
         const listenerErrors = [];
         this.listeners.forEach((listener) => {

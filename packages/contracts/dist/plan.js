@@ -120,6 +120,31 @@ export function validatePlanDAG(plan) {
     if (!kinds.has('sink')) {
         errors.push('Plan must contain at least one sink node');
     }
+    // Validate sink nodes: a sink must not have outgoing edges.
+    // A sink node that emits to another node is semantically invalid — sinks only receive.
+    const sinkIds = new Set(plan.nodes.filter((n) => n.kind === 'sink').map((n) => n.id));
+    for (const edge of plan.edges) {
+        if (sinkIds.has(edge.from)) {
+            errors.push(`Sink node must not have outgoing edges: ${edge.from} → ${edge.to}`);
+        }
+    }
+    // Detect disconnected (island) nodes: nodes with no valid edges touching them.
+    // Such nodes are unreachable from source and can never contribute to a result.
+    // Only applies when the plan has edges — an edge-free plan with one source + one sink
+    // is not erroneous (no flow is a degenerate but structurally valid graph).
+    if (plan.edges.length > 0) {
+        const validEdges = plan.edges.filter((edge) => nodeIds.has(edge.from) && nodeIds.has(edge.to) && edge.from !== edge.to);
+        const connectedIds = new Set();
+        for (const edge of validEdges) {
+            connectedIds.add(edge.from);
+            connectedIds.add(edge.to);
+        }
+        for (const node of plan.nodes) {
+            if (!connectedIds.has(node.id)) {
+                errors.push(`Disconnected node has no edges: ${node.id} (${node.kind})`);
+            }
+        }
+    }
     return errors;
 }
 /**

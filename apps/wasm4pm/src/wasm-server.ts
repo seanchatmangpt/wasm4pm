@@ -68,12 +68,10 @@ export class WasmServer {
   private server?: net.Server;
   private socketPath: string;
   private maxConnections: number;
-  private _requestTimeout: number;
   private _idleTimeout: number;
   private verbose: boolean;
   private kernel?: Kernel;
   private wasmLoader?: WasmLoader;
-  private _observability: ObservabilityLayer;
   private state: ServerState = {
     startTime: Date.now(),
     activeConnections: 0,
@@ -87,10 +85,8 @@ export class WasmServer {
       config.socketPath ??
       path.join(os.homedir(), '.wasm4pm', 'wasm-server.sock');
     this.maxConnections = config.maxConnections ?? 10;
-    this._requestTimeout = config.requestTimeout ?? 30000;
     this._idleTimeout = config.idleTimeout ?? 0;
     this.verbose = config.verbose ?? false;
-    this._observability = new ObservabilityLayer();
   }
 
   /**

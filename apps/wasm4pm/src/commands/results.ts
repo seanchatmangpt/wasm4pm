@@ -144,12 +144,39 @@ async function listResultFiles(
 }
 
 /**
- * Read and pretty-print a single saved result file.
- * Returns parsed SavedResult for machine output; emits human projection inline.
+ * Error thrown by catResult when a result file exists but contains malformed JSON.
+ * Distinguished from other errors so callers can emit source_error (2) rather than system_error (5).
+ */
+export class ResultParseError extends Error {
+  constructor(
+    public readonly filepath: string,
+    cause: unknown
+  ) {
+    super(
+      `Result file is not valid JSON: ${filepath}
+` +
+        `  Cause: ${cause instanceof Error ? cause.message : String(cause)}
+` +
+        `  The file may have been truncated or manually edited.
+` +
+        `  Delete it with: rm ${filepath}`
+    );
+    this.name = 'ResultParseError';
+  }
+}
+
+/**
+ * Read and parse a single saved result file.
+ * Throws ResultParseError on malformed JSON (so callers can return source_error 2).
+ * Throws the original fs error on I/O failure.
  */
 async function catResult(filepath: string): Promise<SavedResult> {
   const raw = await fs.readFile(filepath, 'utf-8');
-  return JSON.parse(raw) as SavedResult;
+  try {
+    return JSON.parse(raw) as SavedResult;
+  } catch (parseErr) {
+    throw new ResultParseError(filepath, parseErr);
+  }
 }
 
 /**
@@ -561,14 +588,26 @@ export const results = defineCommand({
             return await exitWithFlush(EXIT_CODES.success);
           }
           const file = files[0];
-          const parsed = await catResult(file.filepath);
+          let lastParsed: SavedResult;
+          try {
+            lastParsed = await catResult(file.filepath);
+          } catch (e) {
+            const errResult = makeErrorResult(
+              'results',
+              new Error(e instanceof ResultParseError ? e.message : `Failed to read result file: ${(e as Error).message}`),
+              EXIT_CODES.source_error,
+              e instanceof ResultParseError ? 'RESULT_PARSE_ERROR' : 'RESULT_READ_ERROR'
+            );
+            emitResult(errResult, { format, verbose, quiet });
+            return await exitWithFlush(errResult.exit_code);
+          }
           const result = makeResult(
             'results',
-            { cat: parsed, filepath: file.filepath },
+            { cat: lastParsed, filepath: file.filepath },
             performance.now() - t0
           );
           emitResult(result, { format, verbose, quiet }, (_res, projection) => {
-            printCatResult(file.filepath, parsed, projection);
+            printCatResult(file.filepath, lastParsed, projection);
           });
           return await exitWithFlush(EXIT_CODES.success);
         }
@@ -593,10 +632,22 @@ export const results = defineCommand({
             return await exitWithFlush(errResult.exit_code);
           }
 
-          const parsed = await catResult(filepath);
-          const result = makeResult('results', { cat: parsed, filepath }, performance.now() - t0);
+          let catParsed: SavedResult;
+          try {
+            catParsed = await catResult(filepath);
+          } catch (e) {
+            const errResult = makeErrorResult(
+              'results',
+              new Error(e instanceof ResultParseError ? e.message : `Failed to read result file: ${(e as Error).message}`),
+              EXIT_CODES.source_error,
+              e instanceof ResultParseError ? 'RESULT_PARSE_ERROR' : 'RESULT_READ_ERROR'
+            );
+            emitResult(errResult, { format, verbose, quiet });
+            return await exitWithFlush(errResult.exit_code);
+          }
+          const result = makeResult('results', { cat: catParsed, filepath }, performance.now() - t0);
           emitResult(result, { format, verbose, quiet }, (_res, projection) => {
-            printCatResult(filepath!, parsed, projection);
+            printCatResult(filepath!, catParsed, projection);
           });
           return await exitWithFlush(EXIT_CODES.success);
         }
@@ -626,14 +677,16 @@ export const results = defineCommand({
           const fp2 = resolveRef(ref2, files, dir);
 
           if (!fp1 || !fp2) {
-            const missing = !fp1 ? ref1 : ref2;
+            // Report both missing refs if both are absent, or just the one that's missing.
+            const bothMissing = !fp1 && !fp2;
+            const missing = bothMissing ? `'${ref1}' and '${ref2}'` : !fp1 ? `'${ref1}'` : `'${ref2}'`;
             const hint =
               files.length > 0
                 ? `  Available indexes: 1–${files.length}. Run 'wpm results' to list them.`
                 : '  No results saved yet.';
             const errResult = makeErrorResult(
               'results',
-              new Error(`Result not found: '${missing}'\n\n${hint}`),
+              new Error(`Result not found: ${missing}\n\n${hint}`),
               EXIT_CODES.source_error,
               'RESULT_NOT_FOUND'
             );
@@ -641,11 +694,24 @@ export const results = defineCommand({
             return await exitWithFlush(errResult.exit_code);
           }
 
-          const [parsed1, parsed2] = await Promise.all([catResult(fp1), catResult(fp2)]);
-          const diffPayload = { left: parsed1, right: parsed2, leftPath: fp1, rightPath: fp2 };
+          let diffParsed1: SavedResult;
+          let diffParsed2: SavedResult;
+          try {
+            [diffParsed1, diffParsed2] = await Promise.all([catResult(fp1), catResult(fp2)]);
+          } catch (e) {
+            const errResult = makeErrorResult(
+              'results',
+              new Error(e instanceof ResultParseError ? e.message : `Failed to read result file: ${(e as Error).message}`),
+              EXIT_CODES.source_error,
+              e instanceof ResultParseError ? 'RESULT_PARSE_ERROR' : 'RESULT_READ_ERROR'
+            );
+            emitResult(errResult, { format, verbose, quiet });
+            return await exitWithFlush(errResult.exit_code);
+          }
+          const diffPayload = { left: diffParsed1, right: diffParsed2, leftPath: fp1, rightPath: fp2 };
           const result = makeResult('results', diffPayload, performance.now() - t0);
           emitResult(result, { format, verbose, quiet }, (_res, projection) => {
-            printDiffResult(fp1, parsed1, fp2, parsed2, projection);
+            printDiffResult(fp1, diffParsed1, fp2, diffParsed2, projection);
           });
           return await exitWithFlush(EXIT_CODES.success);
         }

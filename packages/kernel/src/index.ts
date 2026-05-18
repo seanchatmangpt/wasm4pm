@@ -27,7 +27,7 @@ export type { KernelResult, PartialResult, KernelStats, KernelWasmModule } from 
  * @description Singleton accessor; use to enumerate algorithms, check metadata, query by profile.
  * @example const registry = getRegistry(); const dfg = registry.get('dfg');
  */
-export { AlgorithmRegistry, getRegistry } from './registry.js';
+export { AlgorithmRegistry, getRegistry, algorithmToJsonSchema, registryToJsonSchema } from './registry.js';
 export type {
   AlgorithmMetadata,
   AlgorithmParameter,

@@ -16,10 +16,6 @@ export interface LifecycleEvent {
     reason?: string;
     metadata?: Record<string, unknown>;
 }
-/**
- * State machine managing engine lifecycle transitions
- * Enforces valid state transitions and emits events for lifecycle changes
- */
 export declare class StateMachine {
     private currentState;
     private listeners;
@@ -45,9 +41,14 @@ export declare class StateMachine {
      */
     getLastTransitionTime(): Date | null;
     /**
-     * Gets full transition history
+     * Gets full transition history (capped at TRANSITION_HISTORY_MAX entries)
      */
     getTransitionHistory(): LifecycleEvent[];
+    /**
+     * Returns the maximum number of transition history entries retained.
+     * When the cap is exceeded the oldest entry is evicted (ring-buffer).
+     */
+    getTransitionHistoryMaxSize(): number;
     /**
      * Validates if a transition from current state to target state is valid
      */

@@ -1,7 +1,32 @@
 import { consola } from 'consola';
 import { randomUUID } from 'node:crypto';
 import pkg from '../package.json' with { type: 'json' };
-import { getQuickRecoverySuggestion } from './error-recovery.js';
+import { getQuickRecoverySuggestion, getRecoveryHintStructured } from './error-recovery.js';
+
+// ─── Verbose level helpers ────────────────────────────────────────────────────
+/**
+ * Normalize verbose flag to a 0-3 level (0=default, 1=debug, 2=decision, 3=spans).
+ * Supports: verbose=true (→1), verbose=1,2,3 (→explicit), verboseLevel=0-3 (explicit).
+ */
+export function normalizeVerboseLevel(options: EmitOptions): 0 | 1 | 2 | 3 {
+  // Explicit verboseLevel takes precedence
+  if (options.verboseLevel !== undefined) {
+    return options.verboseLevel;
+  }
+
+  // If verbose is a number, use directly (clamped 0-3)
+  if (typeof options.verbose === 'number') {
+    return Math.min(3, Math.max(0, options.verbose)) as 0 | 1 | 2 | 3;
+  }
+
+  // If verbose is true, use level 1 (debug)
+  if (options.verbose === true) {
+    return 1;
+  }
+
+  // Default: level 0 (normal)
+  return 0;
+}
 
 // ─── Canonical output types ───────────────────────────────────────────────────
 // Every command builds CommandResult<T> first.
@@ -15,9 +40,12 @@ export interface CommandResult<T = unknown> {
   readonly exit_code: number; // EXIT_CODES value
   readonly payload: T;
   readonly error?: {
-    readonly code: string; // machine-readable
+    readonly code: string; // machine-readable (CONFIG_*, SOURCE_*, EXEC_*, SYS_*)
     readonly message: string;
     readonly remediation?: string;
+    readonly didYouMean?: string; // Suggestion if similar match found
+    readonly docsUrl?: string; // Link to relevant documentation
+    readonly alternatives?: string[]; // List of valid options
   };
   readonly meta: {
     readonly run_id: string; // UUID v4
@@ -30,7 +58,8 @@ export interface CommandResult<T = unknown> {
 /** Emit options — replaces OutputOptions for the canonical path */
 export interface EmitOptions {
   format: 'json' | 'sarif' | 'jsonl' | 'human';
-  verbose?: boolean;
+  verbose?: boolean | number; // true = 1, can be 1, 2, 3 for -v, -vv, -vvv
+  verboseLevel?: 0 | 1 | 2 | 3; // Explicit level (0=default, 1=debug, 2=decision, 3=spans)
   quiet?: boolean;
 }
 
@@ -122,8 +151,9 @@ function defaultConsoleRenderer<T>(
 ): void {
   if (result.status === 'ok') {
     projection.success(`${result.command} completed in ${result.meta.duration_ms.toFixed(0)}ms`);
-    if (options.verbose && result.payload !== null && result.payload !== undefined) {
-      projection.info(JSON.stringify(result.payload, null, 2));
+    const level = normalizeVerboseLevel(options);
+    if (level >= 1 && result.payload !== null && result.payload !== undefined) {
+      projection.debug(`Payload: ${JSON.stringify(result.payload, null, 2)}`);
     }
   } else {
     projection.error(result.error?.message ?? 'Command failed');
@@ -185,6 +215,7 @@ function redactPathsFromError(message: string): string {
 /**
  * Build an error CommandResult.
  * Automatically generates recovery suggestions if not provided.
+ * Includes structured error codes, docs URLs, alternatives, and "did you mean?" suggestions.
  */
 export function makeErrorResult(
   command: string,
@@ -200,10 +231,12 @@ export function makeErrorResult(
 
   // Auto-generate recovery suggestion if not provided
   let finalRemediation = remediation;
+  let structuredHint: ReturnType<typeof getRecoveryHintStructured> | null = null;
   if (!finalRemediation) {
     try {
       const errorType = codeToErrorType(code);
       if (errorType) {
+        structuredHint = getRecoveryHintStructured(message, errorType);
         finalRemediation = getQuickRecoverySuggestion(message, errorType);
       }
     } catch {
@@ -216,7 +249,14 @@ export function makeErrorResult(
     status: 'error',
     exit_code: exitCode,
     payload: null,
-    error: { code, message, remediation: finalRemediation },
+    error: {
+      code: structuredHint?.code || code,
+      message,
+      remediation: finalRemediation,
+      didYouMean: structuredHint?.didYouMean,
+      docsUrl: structuredHint?.docsUrl,
+      alternatives: structuredHint?.alternatives,
+    },
     meta: {
       run_id: randomUUID(),
       timestamp: new Date().toISOString(),
@@ -243,10 +283,12 @@ function codeToErrorType(code: string): 'config' | 'source' | 'execution' | 'sys
 
 export class ConsoleProjection {
   readonly verbose: boolean;
+  readonly verboseLevel: 0 | 1 | 2 | 3; // 0=normal, 1=debug, 2=decision, 3=spans
   readonly quiet: boolean;
 
-  constructor(options: { verbose?: boolean; quiet?: boolean } = {}) {
-    this.verbose = options.verbose ?? false;
+  constructor(options: { verbose?: boolean | number; verboseLevel?: 0 | 1 | 2 | 3; quiet?: boolean } = {}) {
+    this.verbose = !!options.verbose;
+    this.verboseLevel = normalizeVerboseLevel(options as EmitOptions);
     this.quiet = options.quiet ?? false;
   }
 
@@ -266,8 +308,26 @@ export class ConsoleProjection {
     consola.error(message);
   }
 
+  /** Level 1: debug logs and diagnostic info */
   debug(message: string): void {
-    if (this.verbose) consola.log(`[DEBUG] ${message}`);
+    if (this.verboseLevel >= 1 && !this.quiet) {
+      consola.log(`${'\x1b[2m'}[DEBUG]${'\x1b[0m'} ${message}`);
+    }
+  }
+
+  /** Level 2: decision tree and reasoning (why was this chosen?) */
+  decision(message: string): void {
+    if (this.verboseLevel >= 2 && !this.quiet) {
+      consola.log(`${'\x1b[36m'}[DECISION]${'\x1b[0m'} ${message}`);
+    }
+  }
+
+  /** Level 3: OTEL span IDs for Jaeger correlation */
+  span(message: string, spanId?: string): void {
+    if (this.verboseLevel >= 3 && !this.quiet) {
+      const span = spanId ? ` ${'\x1b[33m'}(${spanId})${'\x1b[0m'}` : '';
+      consola.log(`${'\x1b[35m'}[SPAN]${'\x1b[0m'} ${message}${span}`);
+    }
   }
 
   box(message: string): void {

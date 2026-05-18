@@ -21,6 +21,7 @@ export const config = defineCommand({
     wpm config check                      Warn check — exit non-zero if warnings exist
     wpm config verify                     Schema + provenance + hash + zero warnings gate
     wpm config export [--format toml|json|env]  Export resolved config
+                      [--registry]        Export algorithm registry as JSON Schema
 
   Run "wpm config <subcommand> --help" for detailed usage.
 `);

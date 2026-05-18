@@ -70,21 +70,94 @@ export const algorithms = defineCommand({
       description: 'Show Van der Aalst quality dimension ratings (fitness/precision/generalization/simplicity)',
       default: false,
     },
+    'show-parameters': {
+      type: 'string',
+      description: 'Show parameters for a specific algorithm (e.g. --show-parameters heuristic_miner)',
+    },
   },
   async run(ctx) {
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const quiet = Boolean(ctx.args.quiet);
     const tierFilter = ctx.args.tier as Tier | undefined;
     const showRatings = Boolean(ctx.args['show-ratings']);
+    const showParameters = ctx.args['show-parameters'] as string | undefined;
 
     let lateTotal = 0;
     let lateFiltered = 0;
 
     return withSpan(
       'algorithms',
-      { tier_filter: tierFilter ?? 'all', format, show_ratings: showRatings },
+      { tier_filter: tierFilter ?? 'all', format, show_ratings: showRatings, show_parameters: showParameters ?? 'none' },
       async () => {
     const registry = getRegistry();
+
+    // Handle --show-parameters flag
+    if (showParameters) {
+      const algo = registry.get(showParameters);
+      if (!algo) {
+        process.stderr.write(`Algorithm not found: ${showParameters}\n`);
+        return await exitWithFlush(EXIT_CODES.config_error);
+      }
+
+      const payload = {
+        algorithmId: algo.id,
+        algorithmName: algo.name,
+        parameters: algo.parameters.map(p => ({
+          name: p.name,
+          type: p.type,
+          description: p.description,
+          required: p.required,
+          default: p.default,
+          ...(p.min !== undefined && { min: p.min }),
+          ...(p.max !== undefined && { max: p.max }),
+          ...(p.options && { options: p.options }),
+        })),
+      };
+
+      const result = makeResult('algorithm-parameters', payload, 0, EXIT_CODES.success);
+
+      emitResult(result, { format, verbose: false, quiet }, (_res, p) => {
+        p.log('');
+        p.log(`Algorithm: ${algo.name} (${algo.id})`);
+        p.log(`Description: ${algo.description}`);
+        p.log('');
+
+        if (algo.parameters.length === 0) {
+          p.log('No parameters (activity_key is implicit).');
+          p.log('');
+          return;
+        }
+
+        p.log('Parameters:');
+        p.log('─'.repeat(100));
+        p.log(
+          `${'Name'.padEnd(25)} ${'Type'.padEnd(12)} ${'Required'.padEnd(10)} ${'Range / Options'.padEnd(30)} ${'Default'.padEnd(20)} Description`
+        );
+        p.log('─'.repeat(100));
+
+        for (const param of algo.parameters) {
+          const rangeOrOptions = param.options
+            ? `[${param.options.join(', ')}]`
+            : param.min !== undefined || param.max !== undefined
+              ? `${param.min ?? '—'}..${param.max ?? '—'}`
+              : '—';
+          const defaultStr = param.default !== undefined ? String(param.default) : '(none)';
+          const requiredStr = param.required ? 'yes' : 'no';
+
+          p.log(
+            `${param.name.padEnd(25)} ${param.type.padEnd(12)} ${requiredStr.padEnd(10)} ${rangeOrOptions.padEnd(30)} ${defaultStr.padEnd(20)} ${param.description}`
+          );
+        }
+        p.log('─'.repeat(100));
+        p.log('');
+        p.log(`Usage example:`);
+        p.log(`  wpm run log.xes --algorithm ${algo.id} --parameters '{"${algo.parameters[0]?.name ?? 'activity_key'}":"concept:name"}'`);
+        p.log('');
+      });
+
+      return await exitWithFlush(EXIT_CODES.success);
+    }
+
     let all = registry.list();
     lateTotal = all.length;
 

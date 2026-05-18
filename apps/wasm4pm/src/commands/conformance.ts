@@ -68,6 +68,9 @@ interface ConformancePayload {
   };
 }
 
+const VALID_PRECISION_MODES = ['fast', 'lazy', 'full'] as const;
+type PrecisionMode = (typeof VALID_PRECISION_MODES)[number];
+
 export const conformance = defineCommand({
   meta: {
     name: 'conformance',
@@ -102,7 +105,7 @@ export const conformance = defineCommand({
     },
     threshold: {
       type: 'string',
-      description: 'Fitness threshold for "good" conformance (default: 0.8)',
+      description: 'Fitness threshold for "good" conformance, in [0, 1] (default: 0.8)',
       default: '0.8',
     },
     format: {
@@ -126,12 +129,35 @@ export const conformance = defineCommand({
         'Precision computation strategy: fast (fitness only, ~100ms faster), lazy (defer precision), full (bundled, default)',
       default: 'full',
     },
+    'no-save': {
+      type: 'boolean',
+      description: 'Do not auto-save the receipt to .wasm4pm/receipts/',
+    },
   },
   async run(ctx) {
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
-    const precisionMode = (ctx.args['precision-mode'] as 'fast' | 'lazy' | 'full') ?? 'full';
+
+    // Validate --precision-mode before doing any I/O
+    const rawPrecisionMode = (ctx.args['precision-mode'] as string) ?? 'full';
+    if (!VALID_PRECISION_MODES.includes(rawPrecisionMode as PrecisionMode)) {
+      const result = makeErrorResult(
+        'conformance',
+        new Error(
+          `Invalid --precision-mode value '${rawPrecisionMode}': must be one of: fast, lazy, full.\n\n` +
+            `  fast  — fitness only (~100ms faster, precision not computed)\n` +
+            `  lazy  — cache fitness, defer precision computation\n` +
+            `  full  — bundled fitness + precision (default)\n\n` +
+            `  Example: wpm conformance log.xes --precision-mode fast`
+        ),
+        EXIT_CODES.config_error,
+        'CONFIG_ERROR'
+      );
+      emitResult(result, { format, verbose, quiet });
+      return await exitWithFlush(result.exit_code);
+    }
+    const precisionMode = rawPrecisionMode as PrecisionMode;
 
     const t0 = Date.now();
 
@@ -167,11 +193,15 @@ export const conformance = defineCommand({
           const method = ctx.args.method as 'token-replay' | 'alignment';
           const rawThreshold = ctx.args.threshold as string | undefined;
           const parsedThreshold = rawThreshold != null ? parseFloat(rawThreshold) : undefined;
-          if (parsedThreshold !== undefined && Number.isNaN(parsedThreshold)) {
+          // Validate threshold: must be a finite number in [0, 1]
+          const thresholdIsInvalid =
+            parsedThreshold !== undefined &&
+            (Number.isNaN(parsedThreshold) || parsedThreshold < 0 || parsedThreshold > 1);
+          if (thresholdIsInvalid) {
             const result = makeErrorResult(
               'conformance',
               new Error(
-                `Invalid --threshold value '${rawThreshold}': must be a number between 0.0 and 1.0.\n\n` +
+                `Invalid --threshold value '${rawThreshold}': must be a number between 0.0 and 1.0 (inclusive).\n\n` +
                   `  --threshold sets the minimum accepted fitness score (default: 0.80).\n` +
                   `  Example: wpm conformance log.xes --threshold 0.85`
               ),
@@ -437,7 +467,7 @@ export const conformance = defineCommand({
                 }
               }
 
-             return await exitWithFlush(result.exit_code);
+              return await exitWithFlush(result.exit_code);
             }
           ); // end withLogSession
         } catch (error) {
