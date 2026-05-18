@@ -1,8 +1,17 @@
 import { defineCommand } from 'citty';
+import * as fs from 'node:fs';
 import { getResultDeduplicator } from '@wasm4pm/observability';
-import { emitResult, makeResult } from '../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withSpan } from './_otel.js';
+import { exitWithFlush } from '../otel/exit.js';
+
+/** Shared --format arg definition for all subcommands */
+const formatArg = {
+  type: 'string' as const,
+  description: 'Output format: human (default) or json',
+  default: 'human',
+};
 
 export default defineCommand({
   meta: {
@@ -21,15 +30,31 @@ export default defineCommand({
           description: 'Directory to scan for duplicate logs',
           required: true,
         },
+        format: formatArg,
       },
       async run(args) {
         const t0 = Date.now();
         const scanDir = (args as Record<string, unknown>).dir as string;
+        const format = ((args as Record<string, unknown>).format as string ?? 'human') as
+          | 'human'
+          | 'json';
 
         return await withSpan(
           'deduplicate.scan',
           { directory: scanDir },
           async () => {
+            // Validate the directory exists before attempting scan
+            if (!fs.existsSync(scanDir) || !fs.statSync(scanDir).isDirectory()) {
+              const errResult = makeErrorResult(
+                'deduplicate.scan',
+                new Error(`Directory not found: ${scanDir}`),
+                EXIT_CODES.source_error,
+                'SOURCE_ERROR'
+              );
+              emitResult(errResult, { format, quiet: false });
+              return await exitWithFlush(errResult.exit_code);
+            }
+
             const dedup = getResultDeduplicator();
             const duplicates = await dedup.scanDirectoryForDuplicates(scanDir);
 
@@ -56,7 +81,10 @@ export default defineCommand({
               'deduplicate.scan',
               {
                 directory: scanDir,
-                total_files_scanned: duplicates.size > 0 ? Array.from(duplicates.values()).reduce((sum, f) => sum + f.length, 0) : 0,
+                total_files_scanned:
+                  duplicates.size > 0
+                    ? Array.from(duplicates.values()).reduce((sum, f) => sum + f.length, 0)
+                    : 0,
                 duplicate_groups: duplicateGroups.length,
                 total_duplicates: totalDuplicates,
                 groups: duplicateGroups,
@@ -65,7 +93,7 @@ export default defineCommand({
               EXIT_CODES.success
             );
 
-            emitResult(result, { format: 'json' });
+            emitResult(result, { format, quiet: false });
             return EXIT_CODES.success;
           }
         );
@@ -77,8 +105,15 @@ export default defineCommand({
         name: 'report',
         description: 'Show deduplication statistics and cached results',
       },
-      async run() {
+      args: {
+        format: formatArg,
+      },
+      async run(args) {
         const t0 = Date.now();
+        const format = ((args as Record<string, unknown>).format as string ?? 'human') as
+          | 'human'
+          | 'json';
+
         return await withSpan(
           'deduplicate.report',
           {},
@@ -101,7 +136,7 @@ export default defineCommand({
               EXIT_CODES.success
             );
 
-            emitResult(result, { format: 'json' });
+            emitResult(result, { format, quiet: false });
             return EXIT_CODES.success;
           }
         );
@@ -116,20 +151,45 @@ export default defineCommand({
       args: {
         memory: {
           type: 'boolean',
-          description: 'Clear only in-memory cache (default: clear both)',
+          description: 'Clear only in-memory cache (default: clear both memory and disk)',
         },
+        force: {
+          type: 'boolean',
+          description: 'Skip confirmation prompt and clear immediately',
+          default: false,
+        },
+        format: formatArg,
       },
       async run(args) {
         const t0 = Date.now();
         const clearMemoryOnly = (args as Record<string, unknown>).memory === true;
+        const force = (args as Record<string, unknown>).force === true;
+        const format = ((args as Record<string, unknown>).format as string ?? 'human') as
+          | 'human'
+          | 'json';
 
         return await withSpan(
           'deduplicate.clear',
-          { target: clearMemoryOnly ? 'memory' : 'all' },
+          { target: clearMemoryOnly ? 'memory' : 'all', force },
           async () => {
             const dedup = getResultDeduplicator();
-
             const statsBefore = dedup.stats();
+
+            // Guard: destructive all-clear requires --force unless in JSON mode
+            // (JSON mode is typically scripted, so treat as implicitly confirmed)
+            if (!clearMemoryOnly && !force && format === 'human' && statsBefore.total_entries > 0) {
+              const errResult = makeErrorResult(
+                'deduplicate.clear',
+                new Error(
+                  `This will permanently delete ${statsBefore.total_entries} cached dedup entries and the on-disk database. ` +
+                    `Re-run with --force to confirm, or use --memory to clear only the in-memory cache.`
+                ),
+                EXIT_CODES.config_error,
+                'CONFIG_ERROR'
+              );
+              emitResult(errResult, { format, quiet: false });
+              return await exitWithFlush(errResult.exit_code);
+            }
 
             if (clearMemoryOnly) {
               dedup.clearMemory();
@@ -150,7 +210,7 @@ export default defineCommand({
               EXIT_CODES.success
             );
 
-            emitResult(result, { format: 'json' });
+            emitResult(result, { format, quiet: false });
             return EXIT_CODES.success;
           }
         );
@@ -162,8 +222,15 @@ export default defineCommand({
         name: 'load',
         description: 'Load persisted deduplication database into memory',
       },
-      async run() {
+      args: {
+        format: formatArg,
+      },
+      async run(args) {
         const t0 = Date.now();
+        const format = ((args as Record<string, unknown>).format as string ?? 'human') as
+          | 'human'
+          | 'json';
+
         return await withSpan(
           'deduplicate.load',
           {},
@@ -184,7 +251,7 @@ export default defineCommand({
               EXIT_CODES.success
             );
 
-            emitResult(result, { format: 'json' });
+            emitResult(result, { format, quiet: false });
             return EXIT_CODES.success;
           }
         );

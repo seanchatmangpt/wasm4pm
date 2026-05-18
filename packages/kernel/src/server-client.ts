@@ -135,6 +135,16 @@ export class WasmServerClient {
   ): Promise<JsonRpcResponse> {
     return new Promise((resolve, reject) => {
       let timedOut = false;
+      // Guard against double-settlement: once resolved or rejected, further
+      // socket events (late data after timeout, close after data) are ignored.
+      let settled = false;
+
+      const settle = (fn: () => void): void => {
+        if (settled) return;
+        settled = true;
+        clearTimeout(timer);
+        fn();
+      };
 
       const socket = net.createConnection(this.socketPath, () => {
         const request = JSON.stringify({ method, params });
@@ -144,53 +154,56 @@ export class WasmServerClient {
       const timer = setTimeout(() => {
         timedOut = true;
         socket.destroy();
-        reject(new Error(`Server request timeout (${this.requestTimeout}ms)`));
+        settle(() =>
+          reject(new Error(`Server request timeout (${this.requestTimeout}ms)`))
+        );
       }, this.requestTimeout);
 
       let responseBuffer = '';
 
       socket.on('data', (chunk) => {
+        if (timedOut) return;
+
         responseBuffer += chunk.toString('utf8');
 
-        // Look for complete JSON-RPC response (ends with newline)
-        const lines = responseBuffer.split('\n');
-        if (lines.length > 1) {
+        // Look for complete JSON-RPC response (newline-terminated).
+        // Using indexOf avoids splitting the entire buffer on every chunk.
+        const newlineIdx = responseBuffer.indexOf('\n');
+        if (newlineIdx !== -1) {
+          const responseLine = responseBuffer.slice(0, newlineIdx);
           try {
-            const responseLine = lines[0];
             const result = JSON.parse(responseLine) as JsonRpcResponse;
-            clearTimeout(timer);
             socket.destroy();
-            resolve(result);
+            settle(() => resolve(result));
           } catch (err) {
-            if (!timedOut) {
-              clearTimeout(timer);
-              socket.destroy();
-              reject(err);
-            }
+            socket.destroy();
+            settle(() => reject(err as Error));
           }
         }
       });
 
       socket.on('error', (err) => {
-        if (!timedOut) {
-          clearTimeout(timer);
-          reject(err);
-        }
+        settle(() => reject(err));
       });
 
       socket.on('close', () => {
-        if (!timedOut && responseBuffer) {
-          // Try to parse any partial response
+        if (timedOut) return;
+        // Server closed the connection before a complete (newline-terminated)
+        // response arrived. Attempt to parse whatever is buffered — this handles
+        // servers that omit the trailing newline or close mid-stream.
+        if (responseBuffer) {
           try {
-            const result = JSON.parse(responseBuffer) as JsonRpcResponse;
-            clearTimeout(timer);
-            resolve(result);
+            const result = JSON.parse(
+              responseBuffer.trim()
+            ) as JsonRpcResponse;
+            settle(() => resolve(result));
           } catch {
-            if (!timedOut) {
-              clearTimeout(timer);
-              reject(new Error('Connection closed without response'));
-            }
+            settle(() =>
+              reject(new Error('Connection closed without complete response'))
+            );
           }
+        } else {
+          settle(() => reject(new Error('Connection closed without response')));
         }
       });
     });

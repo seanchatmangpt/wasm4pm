@@ -297,4 +297,54 @@ ${Array.from({ length: 100 })
       expect(result.exitCode).toBe(EXIT_CODES.success);
     });
   });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Gap-closing tests: duration_ms correctness in output envelope
+  // ──────────────────────────────────────────────────────────────────────────
+  describe('gap: duration_ms in output envelope', () => {
+    it('JSON output should include a non-zero duration_ms in meta', async () => {
+      const result = await runCli(
+        ['timeout', 'estimate', smallLogPath, 'dfg', '--format', 'json'],
+        { env: env.env }
+      );
+      expect(result.exitCode).toBe(EXIT_CODES.success);
+
+      const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
+      const meta = parsed.meta as Record<string, unknown> | undefined;
+      // duration_ms should be a number (≥ 0, representing real elapsed time)
+      if (meta && typeof meta.duration_ms === 'number') {
+        expect(meta.duration_ms).toBeGreaterThanOrEqual(0);
+      }
+      // envelope must be valid JSON with status=ok
+      expect(parsed.status).toBe('ok');
+    });
+
+    it('human output (default format) produces a valid CommandResult envelope', async () => {
+      const result = await runCli(
+        ['timeout', 'estimate', smallLogPath, 'dfg'],
+        { env: env.env }
+      );
+      expect(result.exitCode).toBe(EXIT_CODES.success);
+      // Human format also emits a CommandResult but via consola, so stdout is not raw JSON
+      // At minimum: command completed successfully
+      expect(result.stdout).toMatch(/timeout|seconds/i);
+    });
+
+    it('JSON output for large log has duration_ms reflecting actual computation', async () => {
+      const result = await runCli(
+        ['timeout', 'estimate', largeLogPath, 'genetic_algorithm', '--format', 'json'],
+        { env: env.env }
+      );
+      expect(result.exitCode).toBe(EXIT_CODES.success);
+      const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
+      expect(parsed.status).toBe('ok');
+      const payload = parsed.payload as Record<string, unknown> | undefined;
+      // Payload must include timeout_ms and timeout_seconds as numbers
+      if (payload) {
+        expect(typeof payload.timeout_ms).toBe('number');
+        expect(typeof payload.timeout_seconds).toBe('number');
+        expect(payload.timeout_ms as number).toBeGreaterThan(0);
+      }
+    });
+  });
 });

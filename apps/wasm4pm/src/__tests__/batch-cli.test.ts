@@ -341,4 +341,85 @@ describe('wpm batch — parallel discovery of multiple event logs', () => {
       expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
     });
   });
+
+  // ──────────────────────────────────────────────────────────────────────────
+  // Gap-closing tests: --workers validation, --no-save, structured JSON payload
+  // ──────────────────────────────────────────────────────────────────────────
+  describe('gap: --workers validation', () => {
+    it('should return config_error (1) when --workers 0', async () => {
+      await createMockXesFiles(1);
+      const result = await runCli(['batch', tmpDir, '--workers', '0']);
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+    });
+
+    it('should return config_error (1) when --workers 0.5 (non-integer)', async () => {
+      await createMockXesFiles(1);
+      // parseInt('0.5') = 0, which is ≤ 0 and should be rejected
+      const result = await runCli(['batch', tmpDir, '--workers', '0.5']);
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+    });
+
+    it('should return config_error (1) when --workers is not a number', async () => {
+      await createMockXesFiles(1);
+      const result = await runCli(['batch', tmpDir, '--workers', 'abc']);
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+    });
+
+    it('should include a helpful message when --workers is invalid', async () => {
+      await createMockXesFiles(1);
+      const result = await runCli(['batch', tmpDir, '--workers', '0']);
+      expect(result.stdout + result.stderr).toMatch(/workers|positive integer/i);
+    });
+
+    it('should accept --workers 1 (boundary: minimum valid value)', async () => {
+      await createMockXesFiles(1);
+      const result = await runCli(['batch', tmpDir, '--workers', '1']);
+      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
+    });
+  });
+
+  describe('gap: --no-save flag', () => {
+    it('should accept --no-save flag without error', async () => {
+      await createMockXesFiles(1);
+      const result = await runCli(['batch', tmpDir, '--no-save']);
+      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
+    });
+
+    it('--no-save with --format json should still produce structured output', async () => {
+      await createMockXesFiles(1);
+      const result = await runCli(['batch', tmpDir, '--no-save', '--format', 'json']);
+      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
+      expect(result.stdout).toBeTruthy();
+    });
+  });
+
+  describe('gap: structured JSON payload fields', () => {
+    it('--format json should include success_count field', async () => {
+      await createMockXesFiles(2);
+      const result = await runCli(['batch', tmpDir, '--format', 'json']);
+      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
+      expect(result.stdout).toMatch(/success_count/);
+    });
+
+    it('--format json should include failure_count field', async () => {
+      await createMockXesFiles(2);
+      const result = await runCli(['batch', tmpDir, '--format', 'json']);
+      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
+      expect(result.stdout).toMatch(/failure_count/);
+    });
+
+    it('--format json should include total_duration_ms field', async () => {
+      await createMockXesFiles(1);
+      const result = await runCli(['batch', tmpDir, '--format', 'json']);
+      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
+      expect(result.stdout).toMatch(/total_duration_ms/);
+    });
+
+    it('--format json should include per_file_results array', async () => {
+      await createMockXesFiles(2);
+      const result = await runCli(['batch', tmpDir, '--format', 'json']);
+      expect([EXIT_CODES.success, EXIT_CODES.partial_failure]).toContain(result.exitCode);
+      expect(result.stdout).toMatch(/per_file_results/);
+    });
+  });
 });

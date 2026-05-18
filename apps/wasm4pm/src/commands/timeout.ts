@@ -59,6 +59,7 @@ export const timeout = defineCommand({
         },
       },
       async run(ctx) {
+        const t0 = performance.now();
         const logPath = ctx.args.log as string;
         const algorithmName = ctx.args.algorithm as string;
         const format = (ctx.args.format as 'json' | 'human') ?? 'human';
@@ -171,6 +172,7 @@ export const timeout = defineCommand({
 
               // Step 6: Format output
               if (format === 'json') {
+                const elapsedMs = performance.now() - t0;
                 const result = makeResult(
                   'timeout',
                   {
@@ -185,6 +187,7 @@ export const timeout = defineCommand({
                     timeout_seconds: Math.round(timeoutResult.timeoutMs / 1000),
                     breakdown: timeoutResult.breakdown,
                   },
+                  elapsedMs,
                   EXIT_CODES.success
                 );
                 emitResult(result, { format: 'json' });
@@ -210,7 +213,8 @@ export const timeout = defineCommand({
 
                 console.log(output);
 
-                const result = makeResult('timeout', { output }, EXIT_CODES.success);
+                const elapsedMs = performance.now() - t0;
+                const result = makeResult('timeout', { output }, elapsedMs, EXIT_CODES.success);
                 emitResult(result, { format: 'human', verbose: false });
               }
 
