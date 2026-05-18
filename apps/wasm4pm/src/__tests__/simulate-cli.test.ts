@@ -30,13 +30,6 @@ const MINIMAL_XES = `<?xml version="1.0" encoding="UTF-8"?>
   <extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xesext"/>
   <extension name="Time" prefix="time" uri="http://www.xes-standard.org/time.xesext"/>
   <extension name="Organizational" prefix="org" uri="http://www.xes-standard.org/org.xesext"/>
-  <global scope="trace">
-    <string key="concept:name" value="Case ID"/>
-  </global>
-  <global scope="event">
-    <string key="concept:name" value="Activity"/>
-    <date key="time:timestamp" value="Timestamp"/>
-  </global>
   <trace>
     <string key="concept:name" value="case1"/>
     <event>
