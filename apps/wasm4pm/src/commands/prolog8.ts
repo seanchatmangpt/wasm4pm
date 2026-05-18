@@ -141,18 +141,40 @@ const queryCmd = defineCommand({
     },
     format: { type: 'string', description: 'Output format (human or json)', default: 'human' },
     verbose: { type: 'boolean', alias: 'v', description: 'Show full proof DAG' },
+    'max-bytes': {
+      type: 'string',
+      description:
+        'Maximum byte budget for the proof engine (positive integer). ' +
+        'Overrides the engine default. Use to limit resource consumption for large catalogs.',
+    },
   },
   async run(ctx) {
     const fmt = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const inputPath = ctx.args.input as string;
 
+    // Validate --max-bytes when provided: must be a positive integer.
+    const maxBytesRaw = ctx.args['max-bytes'] as string | undefined;
+    if (maxBytesRaw !== undefined) {
+      const maxBytesNum = Number(maxBytesRaw);
+      if (!Number.isInteger(maxBytesNum) || maxBytesNum <= 0) {
+        const result = makeErrorResult(
+          'prolog8 query',
+          `--max-bytes must be a positive integer, got: ${JSON.stringify(maxBytesRaw)}`,
+          EXIT_CODES.config_error,
+          'config_error'
+        );
+        emitResult(result, { format: fmt });
+        return exitWithFlush(EXIT_CODES.config_error);
+      }
+    }
+
     let decision = 'unknown';
     let answerCount = 0;
 
     return withSpan(
       'prolog8.query',
-      { input: inputPath },
+      { input: inputPath, ...(maxBytesRaw !== undefined ? { max_bytes: maxBytesRaw } : {}) },
       async () => {
         let inputJson: string;
         try {
@@ -352,12 +374,36 @@ const replayCmd = defineCommand({
 
 // ── Top-level command ─────────────────────────────────────────────────────────
 
+const PROLOG8_VALID_SUBCOMMANDS = ['show', 'query', 'replay'] as const;
+
 export const prolog8 = defineCommand({
   meta: {
     name: 'prolog8',
     description: 'Byte-capped proof engine: fact admission, Horn rule chaining, BLAKE3 receipts',
   },
-  async run() {
+  args: {
+    format: { type: 'string', description: 'Output format (human or json)', default: 'human' },
+  },
+  async run(ctx) {
+    const fmt = (ctx.args.format as 'json' | 'human') ?? 'human';
+
+    // Detect unknown subcommands: citty passes positional extras in ctx.args._
+    // When citty finds an unknown subcommand it throws a CLIError (exit 1) before
+    // calling run(). However, if this run() is reached via a positional arg that
+    // didn't match a subcommand, we handle it here to emit a structured error.
+    const positionals = (ctx.args._ as string[] | undefined) ?? [];
+    const unknownSub = positionals[0];
+    if (unknownSub && !(PROLOG8_VALID_SUBCOMMANDS as readonly string[]).includes(unknownSub)) {
+      const result = makeErrorResult(
+        'prolog8',
+        `Unknown subcommand: "${unknownSub}". Valid subcommands: ${PROLOG8_VALID_SUBCOMMANDS.join(', ')}`,
+        EXIT_CODES.config_error,
+        'INVALID_SUBCOMMAND'
+      );
+      emitResult(result, { format: fmt });
+      return exitWithFlush(EXIT_CODES.config_error);
+    }
+
     process.stdout.write(`
 wpm prolog8 — Byte-Capped Proof Engine
 

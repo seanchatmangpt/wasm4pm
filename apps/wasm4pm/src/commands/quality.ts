@@ -91,7 +91,6 @@ export const quality = defineCommand({
       'quality',
       {
         input: String(ctx.args.input ?? ctx.args.file ?? ''),
-        algorithm: String(ctx.args.algorithm ?? ''),
         format,
       },
       async () => {

@@ -307,20 +307,37 @@ describe('powl convert — all three targets and error contracts', () => {
     expect(payload.output as string).toContain('BPMN');
   });
 
-  it('convert without --to exits 2 (source_error)', async () => {
-    // Missing --to calls exitWithFlush directly (no JSON envelope on stdout).
-    // Only assert the process exit code.
+  it('convert without --to exits 1 (config_error) and emits JSON error envelope', async () => {
     const result = await runCli([
       'powl', 'convert', `--model=${SINGLE_A}`, '--format=json', '--no-save',
     ]);
-    expect(result.exitCode).toBe(2);
+    expect(result.exitCode).toBe(1);
+    const env = parseEnvelope(result);
+    expect(env.status).toBe('error');
+    expect(env.exit_code).toBe(1);
+    expect(env.error?.message).toMatch(/--to/i);
   });
 
-  it('convert with invalid --to target exits 2', async () => {
+  it('convert without --to error message lists valid targets', async () => {
+    const result = await runCli([
+      'powl', 'convert', `--model=${SINGLE_A}`, '--format=json', '--no-save',
+    ]);
+    const env = parseEnvelope(result);
+    const msg = env.error?.message ?? '';
+    expect(msg).toContain('petri-net');
+    expect(msg).toContain('process-tree');
+    expect(msg).toContain('bpmn');
+  });
+
+  it('convert with invalid --to target exits 1 (config_error) and emits JSON error envelope', async () => {
     const result = await runCli([
       'powl', 'convert', `--model=${SINGLE_A}`, '--to=invalid-format', '--format=json', '--no-save',
     ]);
-    expect(result.exitCode).toBe(2);
+    expect(result.exitCode).toBe(1);
+    const env = parseEnvelope(result);
+    expect(env.status).toBe('error');
+    expect(env.exit_code).toBe(1);
+    expect(env.error?.message).toMatch(/invalid-format/);
   });
 });
 
@@ -383,11 +400,13 @@ describe('powl footprints — structural field contract', () => {
 // ─── diff — missing model2 error (Rank 2) ────────────────────────────────────
 
 describe('powl diff — required arg contract', () => {
-  it('diff without --model2 exits 2 (source_error)', async () => {
-    // Missing --model2 calls exitWithFlush directly (no JSON envelope on stdout).
-    // Only assert the process exit code.
+  it('diff without --model2 exits 2 (source_error) and emits JSON error envelope', async () => {
     const result = await runCli(['powl', 'diff', `--model=${SINGLE_A}`, '--format=json', '--no-save']);
     expect(result.exitCode).toBe(2);
+    const env = parseEnvelope(result);
+    expect(env.status).toBe('error');
+    expect(env.exit_code).toBe(2);
+    expect(env.error?.message).toMatch(/--model2/i);
   });
 
   it('diff of model with itself has severity=None (Rank 3 metamorphic: no change = no severity)', async () => {
@@ -405,11 +424,13 @@ describe('powl diff — required arg contract', () => {
 // ─── conformance — missing --log error (Rank 2) ───────────────────────────────
 
 describe('powl conformance — required arg contract', () => {
-  it('conformance without --log exits 2 (source_error)', async () => {
-    // The missing-log path calls exitWithFlush directly (no JSON envelope emitted).
-    // Only assert the process exit code — stdout will be empty.
+  it('conformance without --log exits 2 (source_error) and emits JSON error envelope', async () => {
     const result = await runCli(['powl', 'conformance', `--model=${SINGLE_A}`, '--format=json', '--no-save']);
     expect(result.exitCode).toBe(2);
+    const env = parseEnvelope(result);
+    expect(env.status).toBe('error');
+    expect(env.exit_code).toBe(2);
+    expect(env.error?.message).toMatch(/--log/i);
   });
 
   it('conformance with a valid XES log returns percentage and total_traces', async () => {
@@ -423,13 +444,15 @@ describe('powl conformance — required arg contract', () => {
     expect(payload.total_traces).toBe(1);
   });
 
-  it('conformance with nonexistent XES path exits 2 (source_error)', async () => {
-    // The missing-file path calls exitWithFlush directly (no JSON envelope emitted).
-    // Only assert the process exit code — stdout will be empty.
+  it('conformance with nonexistent XES path exits 2 (source_error) and emits JSON error envelope', async () => {
     const result = await runCli([
       'powl', 'conformance', `--model=${SINGLE_A}`, '--log=/no/such/file.xes', '--format=json', '--no-save',
     ]);
     expect(result.exitCode).toBe(2);
+    const env = parseEnvelope(result);
+    expect(env.status).toBe('error');
+    expect(env.exit_code).toBe(2);
+    expect(env.error?.message).toMatch(/no\/such\/file\.xes|Cannot read/i);
   });
 });
 

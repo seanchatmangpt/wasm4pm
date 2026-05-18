@@ -159,4 +159,55 @@ describe('wpm init — configuration scaffolding', () => {
       expect([0, 1, 2, 3, 4]).toContain(result.exitCode);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // Gap: .wasm4pm/ directory scaffolding + wasm4pm_dir_created in JSON output
+  // Closed this cycle: init now creates the results directory on first run.
+  // -------------------------------------------------------------------------
+
+  describe('init — .wasm4pm/ directory and wasm4pm_dir_created JSON field', () => {
+    it('JSON output includes wasm4pm_dir_created field', async () => {
+      const result = await runCli(['init', '--format', 'json', '--force'], {
+        cwd: env.tempDir,
+      });
+      expect(result.exitCode).toBe(EXIT_CODES.success);
+
+      const parsed = JSON.parse(result.stdout) as {
+        status: string;
+        payload?: { wasm4pm_dir_created?: unknown };
+      };
+      expect(parsed.status).toBe('ok');
+      expect(parsed.payload).toHaveProperty('wasm4pm_dir_created');
+      expect(typeof parsed.payload?.wasm4pm_dir_created).toBe('boolean');
+    });
+
+    it('wasm4pm_dir_created is false when .wasm4pm/ already exists', async () => {
+      // Run init twice: second run sees dir already exists → wasm4pm_dir_created=false
+      await runCli(['init', '--force'], { cwd: env.tempDir });
+      const result = await runCli(['init', '--format', 'json', '--force'], {
+        cwd: env.tempDir,
+      });
+      expect(result.exitCode).toBe(EXIT_CODES.success);
+
+      const parsed = JSON.parse(result.stdout) as {
+        status: string;
+        payload?: { wasm4pm_dir_created?: boolean };
+      };
+      expect(parsed.payload?.wasm4pm_dir_created).toBe(false);
+    });
+
+    it('unknown preset exits config_error (1)', async () => {
+      const result = await runCli(['init', '--preset', 'bogus'], { cwd: env.tempDir });
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+    });
+
+    it('unknown preset JSON output has error status', async () => {
+      const result = await runCli(['init', '--preset', 'bogus', '--format', 'json'], {
+        cwd: env.tempDir,
+      });
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+      const parsed = JSON.parse(result.stdout) as { status: string };
+      expect(parsed.status).toBe('error');
+    });
+  });
 });

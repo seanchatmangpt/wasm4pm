@@ -634,12 +634,14 @@ export const compare = defineCommand({
               // Build canonical result payload. Include algorithm_errors only when some
               // runs failed so consumers can distinguish partial from full success.
               const payload: {
+                status: 'ok';
                 input: string;
                 activityKey: string;
                 algorithms: ModelStats[];
                 recommendation: AlgorithmRecommendation | null;
                 algorithm_errors?: string[];
               } = {
+                status: 'ok' as const,
                 input: inputPath,
                 activityKey,
                 algorithms: stats,

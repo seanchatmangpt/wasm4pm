@@ -277,6 +277,21 @@ impl LinUCBAgent {
     pub fn inverse_covariance(&self) -> [[f32; N_FEATURES]; N_FEATURES] {
         self.a_inv
     }
+
+    /// Compute L2 norms of all weight vectors (convergence metric).
+    /// Returns array of 5 norms, one per action.
+    /// Can be used to track learning progress (larger norms = more adapted agents).
+    pub fn weight_norms(&self) -> [f32; N_ACTIONS] {
+        let mut norms = [0.0_f32; N_ACTIONS];
+        for a in 0..N_ACTIONS {
+            let mut norm_sq = 0.0_f32;
+            for &w in &self.w[a] {
+                norm_sq += w * w;
+            }
+            norms[a] = norm_sq.sqrt();
+        }
+        norms
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -536,18 +551,3 @@ mod tests {
         out
     }
 }
-
-    /// Compute L2 norms of all weight vectors (convergence metric).
-    /// Returns array of 5 norms, one per action.
-    /// Can be used to track learning progress (larger norms = more adapted agents).
-    pub fn weight_norms(&self) -> [f32; N_ACTIONS] {
-        let mut norms = [0.0_f32; N_ACTIONS];
-        for a in 0..N_ACTIONS {
-            let mut norm_sq = 0.0_f32;
-            for &w in &self.w[a] {
-                norm_sq += w * w;
-            }
-            norms[a] = norm_sq.sqrt();
-        }
-        norms
-    }

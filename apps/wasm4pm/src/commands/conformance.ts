@@ -159,6 +159,33 @@ export const conformance = defineCommand({
     }
     const precisionMode = rawPrecisionMode as PrecisionMode;
 
+    // Validate --threshold before any I/O — it is a CLI config value, not a file-dependent check.
+    // Doing this here (alongside --precision-mode validation) ensures config errors are caught
+    // eagerly and exit code 1 (config_error) is returned even when no input file is given.
+    const rawThresholdEarly = ctx.args.threshold as string | undefined;
+    const parsedThresholdEarly =
+      rawThresholdEarly != null ? parseFloat(rawThresholdEarly) : undefined;
+    const thresholdIsInvalidEarly =
+      parsedThresholdEarly !== undefined &&
+      (Number.isNaN(parsedThresholdEarly) ||
+        parsedThresholdEarly < 0 ||
+        parsedThresholdEarly > 1);
+    if (thresholdIsInvalidEarly) {
+      const result = makeErrorResult(
+        'conformance',
+        new Error(
+          `Invalid --threshold value '${rawThresholdEarly}': must be a number between 0.0 and 1.0 (inclusive).\n\n` +
+            `  --threshold sets the minimum accepted fitness score (default: 0.80).\n` +
+            `  Example: wpm conformance log.xes --threshold 0.85`
+        ),
+        EXIT_CODES.config_error,
+        'CONFIG_ERROR'
+      );
+      emitResult(result, { format, verbose, quiet });
+      return await exitWithFlush(result.exit_code);
+    }
+    const thresholdEarly = parsedThresholdEarly ?? 0.8;
+
     const t0 = Date.now();
 
     return withSpan(
@@ -186,33 +213,12 @@ export const conformance = defineCommand({
             );
             emitResult(result, { format, verbose, quiet });
             return await exitWithFlush(result.exit_code);
-            return;
           }
 
+          // threshold is pre-validated at run() start — use the early-validated value
+          const threshold = thresholdEarly;
           const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
           const method = ctx.args.method as 'token-replay' | 'alignment';
-          const rawThreshold = ctx.args.threshold as string | undefined;
-          const parsedThreshold = rawThreshold != null ? parseFloat(rawThreshold) : undefined;
-          // Validate threshold: must be a finite number in [0, 1]
-          const thresholdIsInvalid =
-            parsedThreshold !== undefined &&
-            (Number.isNaN(parsedThreshold) || parsedThreshold < 0 || parsedThreshold > 1);
-          if (thresholdIsInvalid) {
-            const result = makeErrorResult(
-              'conformance',
-              new Error(
-                `Invalid --threshold value '${rawThreshold}': must be a number between 0.0 and 1.0 (inclusive).\n\n` +
-                  `  --threshold sets the minimum accepted fitness score (default: 0.80).\n` +
-                  `  Example: wpm conformance log.xes --threshold 0.85`
-              ),
-              EXIT_CODES.config_error,
-              'CONFIG_ERROR'
-            );
-            emitResult(result, { format, verbose, quiet });
-            return await exitWithFlush(result.exit_code);
-            return;
-          }
-          const threshold = parsedThreshold ?? 0.8;
 
           await withLogSession(
             {
@@ -248,7 +254,6 @@ export const conformance = defineCommand({
                   );
                   emitResult(result, { format, verbose, quiet });
                   return await exitWithFlush(result.exit_code);
-                  return;
                 }
               } else {
                 // Auto-discover a Petri Net using Alpha++
@@ -272,7 +277,6 @@ export const conformance = defineCommand({
                   );
                   emitResult(result, { format, verbose, quiet });
                   return await exitWithFlush(result.exit_code);
-                  return;
                 }
               }
 
@@ -329,6 +333,26 @@ export const conformance = defineCommand({
 
               const deviatingCases = isTokenReplay ? totalCases - conformingCases : 0;
               const conformanceRate = totalCases > 0 ? conformingCases / totalCases : fitnessValue;
+
+              // In full mode, attempt precision computation via ETConformance (wasm_compute_precision).
+              // fast and lazy modes skip this call intentionally to save ~100ms.
+              if (precisionMode === 'full' && typeof wasm.wasm_compute_precision === 'function') {
+                try {
+                  const rawPrec = wasm.wasm_compute_precision(
+                    logHandle,
+                    petriNetHandle,
+                    activityKey
+                  );
+                  const precResult = typeof rawPrec === 'string' ? JSON.parse(rawPrec) : rawPrec;
+                  const p = (precResult as Record<string, unknown>).precision as number | undefined;
+                  if (typeof p === 'number' && Number.isFinite(p)) {
+                    precision = p;
+                    precision_available = true;
+                  }
+                } catch {
+                  // Precision computation is best-effort in full mode; never block on fitness
+                }
+              }
 
               // Separate deviating traces for reporting (up to 20 to keep output manageable)
               const deviatingTraces = caseFitness.filter((t) => !t.is_conforming).slice(0, 20);

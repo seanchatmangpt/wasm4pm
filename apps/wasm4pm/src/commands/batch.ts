@@ -20,7 +20,16 @@ interface BatchPayload {
   status: 'completed' | 'failed';
   summary: BatchResult['summary'];
   logCount: number;
-  output: string;
+  /** Only present in human format — JSON consumers use summary fields directly */
+  output?: string;
+  /** Structured per-file results for JSON consumers */
+  per_file_results?: Array<{ log: string; status: string; elapsed_ms: number; error?: string }>;
+  /** Total wall-clock duration in milliseconds */
+  total_duration_ms?: number;
+  /** Count of successfully processed logs */
+  success_count?: number;
+  /** Count of failed logs */
+  failure_count?: number;
 }
 
 /**
@@ -122,6 +131,11 @@ export const batch = defineCommand({
       type: 'string',
       description: 'Number of parallel workers (default: CPU count)',
     },
+    'no-save': {
+      type: 'boolean',
+      description: 'Skip auto-saving batch results to .wasm4pm/results/',
+      default: false,
+    },
     timeout: {
       type: 'string',
       description: 'Timeout per log in seconds (default: 300)',
@@ -151,6 +165,23 @@ export const batch = defineCommand({
     const formatStr = String(ctx.args.format ?? 'human');
     const format = formatStr as 'json' | 'sarif' | 'jsonl' | 'human';
     const verbose = ctx.args.verbose === true;
+    const noSave = ctx.args['no-save'] === true;
+
+    // Validate --workers: must be a positive integer when provided
+    if (workersStr !== undefined) {
+      if (isNaN(workers!) || !Number.isInteger(workers) || workers! <= 0) {
+        const errResult = makeErrorResult(
+          'batch',
+          new Error(
+            `--workers must be a positive integer (got: ${workersStr}). Example: --workers 4`
+          ),
+          EXIT_CODES.config_error,
+          'CONFIG_ERROR'
+        );
+        emitResult(errResult, { format, quiet: false });
+        return await exitWithFlush(errResult.exit_code);
+      }
+    }
 
     const spanAttrs: Record<string, string | number> = { directory, algorithm };
     if (workers !== undefined) {
@@ -197,27 +228,35 @@ export const batch = defineCommand({
         const runner = new BatchRunner(batchConfig);
         const result = await runner.run(logFiles);
 
-        // Format output
-        let output = '';
-        if (format === 'json' || format === 'jsonl' || format === 'sarif') {
-          output = JSON.stringify(result, null, 2);
-        } else {
-          output = formatBatchSummary(result);
-          output += formatLogResults(result, verbose).join('\n');
-        }
-
         const elapsedMs = performance.now() - t0;
         const exitCode =
           result.summary.failed > 0 || result.summary.timedOut > 0
             ? EXIT_CODES.partial_failure
             : EXIT_CODES.success;
 
+        // Build structured payload — JSON consumers get machine-readable fields,
+        // human consumers get a formatted string in the `output` field.
+        const perFileResults = result.results?.map((r) => ({
+          log: r.logPath,
+          status: r.status,
+          elapsed_ms: r.elapsedMs,
+          ...(r.error ? { error: r.error } : {}),
+        })) ?? [];
+
         const payload: BatchPayload = {
           status: result.summary.successful > 0 ? 'completed' : 'failed',
           summary: result.summary,
           logCount: logFiles.length,
-          output,
+          per_file_results: perFileResults,
+          total_duration_ms: Math.round(elapsedMs),
+          success_count: result.summary.successful,
+          failure_count: result.summary.failed,
         };
+
+        // Human format: embed formatted text in `output` field
+        if (format !== 'json' && format !== 'jsonl' && format !== 'sarif') {
+          payload.output = formatBatchSummary(result) + formatLogResults(result, verbose).join('\n');
+        }
 
         const successResult = makeResult('batch', payload, elapsedMs, exitCode);
 

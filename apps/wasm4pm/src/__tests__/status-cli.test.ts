@@ -288,3 +288,41 @@ describe('wpm status — flag acceptance', () => {
     expect(r.exitCode).toBe(0);
   }, 30_000);
 });
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// wasmBinarySize field — gap closed this cycle
+// ═══════════════════════════════════════════════════════════════════════════════
+
+describe('wpm status --format json — wasmBinarySize field', () => {
+  it('payload.engine.wasmBinarySize key is present', async () => {
+    const r = await runCli(['status', '--format', 'json']);
+    expect(r.exitCode).toBe(0);
+    const parsed = tryParseJson(r.stdout);
+    const engine = (parsed?.payload as Record<string, unknown>)?.engine as Record<string, unknown> | undefined;
+    expect(engine).toHaveProperty('wasmBinarySize');
+  }, 30_000);
+
+  it('payload.engine.wasmBinarySize is positive number when binary is on disk', async () => {
+    const r = await runCli(['status', '--format', 'json']);
+    expect(r.exitCode).toBe(0);
+    const parsed = tryParseJson(r.stdout);
+    const engine = (parsed?.payload as Record<string, unknown>)?.engine as Record<string, unknown> | undefined;
+    const sz = engine?.wasmBinarySize;
+    if (sz !== null && sz !== undefined) {
+      expect(typeof sz).toBe('number');
+      expect(sz as number).toBeGreaterThan(0);
+    }
+  }, 30_000);
+
+  it('human output mentions WASM binary size', async () => {
+    const r = await runCli(['status', '--format', 'human']);
+    expect(r.exitCode).toBe(0);
+    // If binary size is reported in JSON, human output must mention it too
+    const jsonR = await runCli(['status', '--format', 'json']);
+    const parsed = tryParseJson(jsonR.stdout);
+    const engine = (parsed?.payload as Record<string, unknown>)?.engine as Record<string, unknown> | undefined;
+    if (engine?.wasmBinarySize !== null && engine?.wasmBinarySize !== undefined) {
+      expect(r.stdout + r.stderr).toMatch(/wasm binary size|mb.*bytes|bytes.*mb/i);
+    }
+  }, 30_000);
+});

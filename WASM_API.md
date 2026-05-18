@@ -1,6 +1,24 @@
 # WASM API Reference
 
-**All public Rust→JavaScript exports via `wasm-bindgen`.**
+**All public Rust→JavaScript exports via `wasm-bindgen`. ~392 total exports across 100+ modules.**
+
+## Module Index (Quick Reference)
+
+| Module | Count | Purpose |
+|--------|-------|---------|
+| **Core Discovery** | 15 | DFG, Alpha++, Heuristic, Inductive, ACO, PSO, Genetic, A*, Hill Climbing, Simulated Annealing, ILP, DECLARE, streaming variants |
+| **ML Algorithms** | 6+ | Classification, clustering, forecasting, anomaly detection, regression, PCA |
+| **Streaming** | 20+ | Real-time DFG, SIMD acceleration, conformance, log estimation |
+| **POWL** | 8+ | Partial-order workflow parsing, simplification, conversion, complexity analysis |
+| **Analysis** | 20+ | Conformance, simulation, performance profiles, temporal analysis, social networks |
+| **Prolog8** | 3 | Query evaluation, proof verification, capability reporting |
+| **Autonomic** | 10+ | RL orchestrator, SPC, circuit breaker, self-healing |
+| **AutoMembrane** | 25+ | Motion classification, actor/object/route/ML/time envelopes, benchmarking |
+| **Utilities** | N/A | Event log I/O, caching, state management |
+
+**See sections below for detailed function signatures per module.**
+
+---
 
 ## Initialization
 
@@ -113,6 +131,22 @@ Both return `{ nodes: [{id, label}], edges: [{from, to, weight/co_occurrences}] 
 | `check_token_based_replay(handle, activity_key)` | `Result<JsValue, JsValue>` | Token-based replay fitness |
 | `simd_token_replay(handle, activity_key)` | `String` (JSON) | SIMD-accelerated token replay |
 
+## Streaming (streaming_*.rs — 20+ exports)
+
+High-throughput event processing with optional SIMD acceleration (`feature-streaming-full`).
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `start_streaming_dfg(activity_key)` | `Result<String, JsValue>` | Initialize streaming DFG processor |
+| `stream_event(handle, event_json)` | `Result<String, JsValue>` | Add event to stream; returns updated DFG state |
+| `flush_streaming_dfg(handle)` | `Result<JsValue, JsValue>` | Finalize DFG and return result |
+| `estimate_streaming_log_size(num_events, avg_attributes)` | `usize` | Estimate memory footprint |
+| `simd_streaming_dfg(handle, batch_json)` | `Result<JsValue, JsValue>` | Batch SIMD DFG acceleration (requires `feature-streaming-full`) |
+| `streaming_conformance_check(handle, model_handle)` | `Result<JsValue, JsValue>` | Streaming token-based conformance |
+| `streaming_log_window_stats(handle, window_size)` | `Result<JsValue, JsValue>` | Sliding-window statistics |
+
+**Use cases:** Real-time process monitoring, high-volume log ingestion, incremental discovery.
+
 ## Analysis
 
 | Function | Returns | Description |
@@ -127,6 +161,21 @@ Both return `{ nodes: [{id, label}], edges: [{from, to, weight/co_occurrences}] 
 | `compute_trace_similarity_matrix(handle, activity_key)` | `Result<JsValue, JsValue>` | Trace similarity |
 | `analyze_temporal_bottlenecks(handle, activity_key)` | `Result<JsValue, JsValue>` | Temporal bottlenecks |
 | `extract_activity_ordering(handle, activity_key)` | `Result<JsValue, JsValue>` | Activity ordering |
+
+## ML Algorithms (feature: ml — 6 exports)
+
+Micro-ML anomaly detection, classification, clustering, regression, forecasting, and dimensionality reduction.
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `ml_classify_traces(handle, activity_key, num_features)` | `Result<JsValue, JsValue>` | Decision tree / Naive Bayes classification |
+| `ml_cluster_traces(handle, activity_key, num_clusters)` | `Result<JsValue, JsValue>` | K-means clustering with silhouette scoring |
+| `ml_forecast_throughput(handle, activity_key, forecast_steps)` | `Result<JsValue, JsValue>` | Exponential/linear regression forecasting |
+| `ml_detect_anomalies(handle, activity_key, sensitivity)` | `Result<JsValue, JsValue>` | EMA-based anomaly scoring (0=normal, 1=anomaly) |
+| `ml_regress_remaining_time(handle, activity_key)` | `Result<JsValue, JsValue>` | Linear regression on case duration |
+| `ml_pca_reduce(handle, activity_key, num_components)` | `Result<JsValue, JsValue>` | Principal component analysis (variance-explained) |
+
+**Note:** All ML algorithms return empty arrays gracefully if input is empty. No rejection.
 
 ## Prediction
 
@@ -149,6 +198,23 @@ Both return `{ nodes: [{id, label}], edges: [{from, to, weight/co_occurrences}] 
 | Function | Returns | Description |
 |----------|---------|-------------|
 | `autonomic_execute_cycle(handle, activity_key, ...)` | `Result<String, JsValue>` | Execute one autonomic cycle (observe→select→act→reward→update) |
+
+## POWL — Partial-Order Workflows (feature: powl — browser profile only; 8+ exports)
+
+Represents processes with partial-order constraints (concurrency-aware models).
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `parse_powl_model(powl_json)` | `Result<JsValue, JsValue>` | Parse POWL specification into internal model |
+| `powl_to_process_tree(powl_handle)` | `Result<JsValue, JsValue>` | Convert to process tree for visualization |
+| `simplify_powl_model(powl_handle, threshold)` | `Result<JsValue, JsValue>` | Simplify by merging low-frequency branches |
+| `compute_powl_complexity(powl_handle)` | `Result<f64, JsValue>` | Compute model complexity score (0-1) |
+| `discover_powl_from_log(handle, activity_key)` | `Result<JsValue, JsValue>` | Mine POWL model directly from event log |
+| `check_powl_conformance(powl_handle, log_handle, activity_key)` | `Result<JsValue, JsValue>` | Conformance checking against POWL model |
+| `export_powl_to_json(powl_handle)` | `Result<String, JsValue>` | Export POWL to JSON format |
+| `powl_footprints(powl_handle)` | `Result<JsValue, JsValue>` | Extract causal footprints |
+
+**Availability:** Gated on `feature-powl`. Only included in `browser` profile (2.7MB). Use `get_capabilities()` to verify at runtime.
 
 ## Agentic Pipeline (feature: cloud — fog/browser profiles only)
 

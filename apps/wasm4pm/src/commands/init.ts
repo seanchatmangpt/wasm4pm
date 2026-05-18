@@ -379,7 +379,7 @@ export const init = defineCommand({
             );
           }
 
-          const { filesCreated, isValid } = await withSpanRaw(
+          const { filesCreated, isValid, wasm4pmDirCreated } = await withSpanRaw(
             'init.scaffold',
             { 'init.preset': preset ?? '', 'init.format': effectiveFormat, 'init.force': force },
             async () => {
@@ -410,6 +410,29 @@ export const init = defineCommand({
                 ? await safeWriteFile(readmePath, getReadmeContent(), force, earlyProjection)
                 : false;
 
+              // Ensure .wasm4pm/ directory exists — wpm run and other commands auto-save
+              // results here. Creating it during init avoids surprise ENOENT errors on first run.
+              const wasm4pmDir = path.join(cwd, '.wasm4pm');
+              let wasm4pmDirCreated = false;
+              if (!existsSync(wasm4pmDir)) {
+                try {
+                  await fs.mkdir(wasm4pmDir, { recursive: true });
+                  wasm4pmDirCreated = true;
+                } catch (dirErr) {
+                  const dirErrTyped = dirErr as NodeJS.ErrnoException;
+                  if (
+                    dirErrTyped &&
+                    (dirErrTyped.code === 'EACCES' || dirErrTyped.code === 'ENOSPC')
+                  ) {
+                    throw new InitFileSystemError(EXIT_CODES.system_error, wasm4pmDir, dirErrTyped);
+                  }
+                  // Non-fatal: log a warning but do not abort init
+                  earlyProjection.warn(
+                    `Could not create .wasm4pm/ directory: ${dirErrTyped.message ?? String(dirErr)}`
+                  );
+                }
+              }
+
               const valid = await validateConfigFiles(cwd);
 
               const created: string[] = [];
@@ -417,8 +440,9 @@ export const init = defineCommand({
               if (envCreated) created.push('.env.example');
               if (gitignoreCreated) created.push('.gitignore');
               if (readmeCreated) created.push('README.md');
+              if (wasm4pmDirCreated) created.push('.wasm4pm/');
 
-              return { filesCreated: created, isValid: valid };
+              return { filesCreated: created, isValid: valid, wasm4pmDirCreated };
             }
           );
 
@@ -454,6 +478,7 @@ export const init = defineCommand({
             preset: preset ?? null,
             preset_description: presetDescription,
             files_created: filesCreated,
+            wasm4pm_dir_created: wasm4pmDirCreated,
             valid: isValid,
             log_file_needed: true,
             instructions: [

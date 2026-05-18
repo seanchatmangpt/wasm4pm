@@ -708,4 +708,112 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
       expect(r1.exitCode).toBe(r2.exitCode);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // Gap fixes — unknown subcommand exit code + --max-bytes validation
+  // -------------------------------------------------------------------------
+
+  describe('Gap fix: unknown subcommand exits CONFIG_ERROR (1), not success (0)', () => {
+    // citty intercepts unknown subcommands before our run() is called and
+    // calls process.exit(1) — the exit code contract is correct (1, not 0).
+
+    it('wpm prolog8 bogus exits 1 (config_error)', async () => {
+      const result = await runCli(['prolog8', 'bogus'], { env: env.env });
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+    });
+
+    it('wpm prolog8 bogus combined output mentions "bogus" or "Unknown"', async () => {
+      const result = await runCli(['prolog8', 'bogus'], { env: env.env });
+      const combined = result.stdout + result.stderr;
+      expect(combined).toMatch(/bogus|unknown/i);
+    });
+
+    it('wpm prolog8 bogus --format json exits 1 (exit code contract holds regardless of format)', async () => {
+      const result = await runCli(['prolog8', 'bogus', '--format', 'json'], { env: env.env });
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+    });
+
+    it('wpm prolog8 completely-unknown exits 1 (not 0)', async () => {
+      const result = await runCli(['prolog8', 'completely-unknown'], { env: env.env });
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+      expect(result.exitCode).not.toBe(EXIT_CODES.success);
+    });
+
+    it('wpm prolog8 show (valid subcommand) exits 0 or SOURCE_ERROR — never config_error', async () => {
+      const result = await runCli(['prolog8', 'show'], { env: env.env });
+      expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
+    });
+  });
+
+  describe('Gap fix: query --max-bytes validation', () => {
+    it('--max-bytes with a valid positive integer is accepted (no config_error)', async () => {
+      const inputPath = writeTmp(tmpDir, 'mb-valid.json', makeQueryInput());
+      const result = await runCli(
+        ['prolog8', 'query', '-i', inputPath, '--max-bytes', '1024'],
+        { env: env.env }
+      );
+      // Should not fail due to --max-bytes validation (may fail due to WASM availability)
+      expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
+    });
+
+    it('--max-bytes 0 exits CONFIG_ERROR (1) — zero is not a positive integer', async () => {
+      const inputPath = writeTmp(tmpDir, 'mb-zero.json', makeQueryInput());
+      const result = await runCli(
+        ['prolog8', 'query', '-i', inputPath, '--max-bytes', '0'],
+        { env: env.env }
+      );
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+    });
+
+    it('--max-bytes 0 --format json emits JSON error envelope with config_error status', async () => {
+      const inputPath = writeTmp(tmpDir, 'mb-zero-json.json', makeQueryInput());
+      const result = await runCli(
+        ['prolog8', 'query', '-i', inputPath, '--max-bytes', '0', '--format', 'json'],
+        { env: env.env }
+      );
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+      expect(() => JSON.parse(result.stdout)).not.toThrow();
+      const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
+      expect(parsed['status']).toBe('error');
+      expect(parsed['exit_code']).toBe(EXIT_CODES.config_error);
+    });
+
+    it('--max-bytes -1 exits CONFIG_ERROR (1) — negative is not a positive integer', async () => {
+      const inputPath = writeTmp(tmpDir, 'mb-neg.json', makeQueryInput());
+      const result = await runCli(
+        ['prolog8', 'query', '-i', inputPath, '--max-bytes', '-1'],
+        { env: env.env }
+      );
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+    });
+
+    it('--max-bytes abc exits CONFIG_ERROR (1) — non-numeric is invalid', async () => {
+      const inputPath = writeTmp(tmpDir, 'mb-abc.json', makeQueryInput());
+      const result = await runCli(
+        ['prolog8', 'query', '-i', inputPath, '--max-bytes', 'abc'],
+        { env: env.env }
+      );
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+    });
+
+    it('--max-bytes abc --format json error message mentions --max-bytes', async () => {
+      const inputPath = writeTmp(tmpDir, 'mb-abc-json.json', makeQueryInput());
+      const result = await runCli(
+        ['prolog8', 'query', '-i', inputPath, '--max-bytes', 'abc', '--format', 'json'],
+        { env: env.env }
+      );
+      const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
+      const msg = String((parsed['error'] as Record<string, unknown>)['message'] ?? '');
+      expect(msg).toMatch(/max-bytes/i);
+    });
+
+    it('--max-bytes 3.5 exits CONFIG_ERROR (1) — float is not an integer', async () => {
+      const inputPath = writeTmp(tmpDir, 'mb-float.json', makeQueryInput());
+      const result = await runCli(
+        ['prolog8', 'query', '-i', inputPath, '--max-bytes', '3.5'],
+        { env: env.env }
+      );
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+    });
+  });
 });

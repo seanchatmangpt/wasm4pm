@@ -55,6 +55,16 @@ export const swarm = defineCommand({
       type: 'string',
       description: 'Comma-separated algorithm IDs to run (overrides [swarm].algorithm_ids)',
     },
+    workers: {
+      type: 'string',
+      description:
+        'Number of parallel workers to spawn (must be >= 1; trims algorithm list to this count)',
+      alias: 'w',
+    },
+    'no-save': {
+      type: 'boolean',
+      description: 'Do not auto-save the swarm result to .wasm4pm/results/',
+    },
   },
   async run(ctx) {
     const t0 = performance.now();
@@ -71,6 +81,25 @@ export const swarm = defineCommand({
       async () => {
         try {
           const inputPath = ctx.args.input as string;
+
+          // --workers validation: must be a positive integer when supplied
+          const workersRaw = ctx.args.workers as string | undefined;
+          let workersOverride: number | null = null;
+          if (workersRaw !== undefined) {
+            workersOverride = parseInt(workersRaw, 10);
+            if (!Number.isFinite(workersOverride) || workersOverride <= 0) {
+              const result = makeErrorResult(
+                'swarm',
+                new Error(
+                  `Invalid --workers value: "${workersRaw}". Must be a positive integer (>= 1).`
+                ),
+                EXIT_CODES.config_error,
+                'INVALID_WORKERS'
+              );
+              emitResult(result, { format, verbose, quiet });
+              return await exitWithFlush(result.exit_code);
+            }
+          }
 
           // Load config to read [swarm] section
           const resolvedConfig = await resolveConfig();
@@ -94,18 +123,39 @@ export const swarm = defineCommand({
             swarmCfg?.worker_model ??
             'llama-3.1-70b-versatile';
 
-          const algorithmIds = ctx.args.algorithms
+          let algorithmIds = ctx.args.algorithms
             ? (ctx.args.algorithms as string)
                 .split(',')
                 .map((s) => s.trim())
                 .filter(Boolean)
             : (swarmCfg?.algorithm_ids ?? ['dfg', 'analyze_statistics', 'detect_drift']);
 
+          // Apply --workers cap: trim algorithm list to at most N entries
+          if (workersOverride !== null && algorithmIds.length > workersOverride) {
+            algorithmIds = algorithmIds.slice(0, workersOverride);
+          }
+
           // Verify the XES file is accessible
           try {
             await fs.access(inputPath);
           } catch (readErr) {
             const result = makeErrorResult('swarm', readErr, EXIT_CODES.source_error);
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
+
+          // Verify the input log is non-empty — an empty file cannot be parsed and would
+          // produce misleading worker results. Fail fast with source_error.
+          const fileStat = await fs.stat(inputPath);
+          if (fileStat.size === 0) {
+            const result = makeErrorResult(
+              'swarm',
+              new Error(
+                `Input log is empty: ${inputPath}. Provide a non-empty XES or OCEL event log file.`
+              ),
+              EXIT_CODES.source_error,
+              'EMPTY_INPUT_LOG'
+            );
             emitResult(result, { format, verbose, quiet });
             return await exitWithFlush(result.exit_code);
           }
@@ -133,6 +183,13 @@ export const swarm = defineCommand({
             convergenceThreshold,
             algorithmIds,
             workerModel,
+            workerCount: algorithmIds.length,
+            iterationCount: swarmResult.episodes.length,
+            convergenceStatus: swarmResult.converged
+              ? 'converged'
+              : swarmResult.convergenceTimeout
+                ? 'timeout'
+                : 'not_converged',
             consensusAlgorithm,
             consensusRatio: finalReport?.consensusRatio ?? 0,
             dominantHash: finalReport?.dominantHash ?? null,

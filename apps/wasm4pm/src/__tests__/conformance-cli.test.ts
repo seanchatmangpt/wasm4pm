@@ -291,4 +291,110 @@ describe('wpm conformance — log-to-model conformance checking CLI', () => {
       }
     });
   });
+
+  describe('conformance --precision-mode validation (unit, no WASM)', () => {
+    it('should reject --precision-mode invalid with config_error (exit 1)', async () => {
+      const result = await runCli(
+        ['conformance', '--precision-mode', 'invalid', '--format', 'json'],
+        { env: env.env }
+      );
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+      const json = JSON.parse(result.stdout);
+      expect(json.status).toBe('error');
+      expect(json.error.message).toMatch(/precision-mode/i);
+    });
+
+    it('should reject --precision-mode FAST (wrong case) with config_error (exit 1)', async () => {
+      const result = await runCli(
+        ['conformance', '--precision-mode', 'FAST', '--format', 'json'],
+        { env: env.env }
+      );
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+    });
+
+    it('should accept --precision-mode fast (exits non-config-error)', async () => {
+      const result = await runCli(
+        ['conformance', '--precision-mode', 'fast', '--format', 'json'],
+        { env: env.env }
+      );
+      // Fails on missing input (source_error=2) not config_error (1)
+      expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
+    });
+
+    it('should accept --precision-mode lazy (exits non-config-error)', async () => {
+      const result = await runCli(
+        ['conformance', '--precision-mode', 'lazy', '--format', 'json'],
+        { env: env.env }
+      );
+      expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
+    });
+
+    it('should accept --precision-mode full (exits non-config-error)', async () => {
+      const result = await runCli(
+        ['conformance', '--precision-mode', 'full', '--format', 'json'],
+        { env: env.env }
+      );
+      expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
+    });
+  });
+
+  describe('conformance --threshold validation (unit, no WASM)', () => {
+    it('should reject --threshold 1.5 with config_error (exit 1) even without input', async () => {
+      const result = await runCli(
+        ['conformance', '--threshold', '1.5', '--format', 'json'],
+        { env: env.env }
+      );
+      // Threshold is now validated before I/O — fires even without an input file
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+      const json = JSON.parse(result.stdout);
+      expect(json.status).toBe('error');
+      expect(json.error.message).toMatch(/threshold/i);
+    });
+
+    it('should reject --threshold -0.1 with config_error (exit 1)', async () => {
+      const result = await runCli(
+        ['conformance', '--threshold', '-0.1', '--format', 'json'],
+        { env: env.env }
+      );
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+    });
+
+    it('should reject --threshold abc with config_error (exit 1)', async () => {
+      const result = await runCli(
+        ['conformance', '--threshold', 'abc', '--format', 'json'],
+        { env: env.env }
+      );
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+    });
+
+    it('should accept --threshold 0 (valid lower boundary)', async () => {
+      const result = await runCli(
+        ['conformance', '--threshold', '0', '--format', 'json'],
+        { env: env.env }
+      );
+      // Fails on missing input (source_error=2) not config_error (1)
+      expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
+    });
+
+    it('should accept --threshold 1 (valid upper boundary)', async () => {
+      const result = await runCli(
+        ['conformance', '--threshold', '1', '--format', 'json'],
+        { env: env.env }
+      );
+      expect(result.exitCode).not.toBe(EXIT_CODES.config_error);
+    });
+  });
+
+  describe('conformance JSON payload fields (computed_at and precision_available)', () => {
+    it('error envelope for --precision-mode invalid is structured JSON with correct fields', async () => {
+      const result = await runCli(
+        ['conformance', '--precision-mode', 'invalid', '--format', 'json'],
+        { env: env.env }
+      );
+      const json = JSON.parse(result.stdout);
+      expect(json).toHaveProperty('command', 'conformance');
+      expect(json).toHaveProperty('status', 'error');
+      expect(json).toHaveProperty('exit_code', EXIT_CODES.config_error);
+    });
+  });
 });

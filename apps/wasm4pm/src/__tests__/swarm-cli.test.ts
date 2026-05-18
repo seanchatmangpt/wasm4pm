@@ -441,4 +441,143 @@ describe('wpm swarm — multi-worker convergence CLI', () => {
       expect([SUCCESS, EXECUTION_ERROR, PARTIAL_FAILURE]).toContain(result.exitCode);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // Gap: --workers flag validation (closed this cycle)
+  // -------------------------------------------------------------------------
+
+  describe('--workers flag validation', () => {
+    it('--workers 0 should exit config_error (1)', async () => {
+      const result = await runCli(['swarm', testXesPath, '--workers', '0'], {
+        cwd: env.tempDir,
+      });
+      expect(result.exitCode).toBe(1);
+    });
+
+    it('--workers -1 should exit config_error (1)', async () => {
+      const result = await runCli(['swarm', testXesPath, '--workers', '-1'], {
+        cwd: env.tempDir,
+      });
+      expect(result.exitCode).toBe(1);
+    });
+
+    it('--workers 0 with json format should produce INVALID_WORKERS error code', async () => {
+      const result = await runCli(
+        ['swarm', testXesPath, '--workers', '0', '--format', 'json'],
+        { cwd: env.tempDir }
+      );
+      expect(result.exitCode).toBe(1);
+      const parsed = JSON.parse(result.stdout) as { status: string; error?: { code: string } };
+      expect(parsed.status).toBe('error');
+      expect(parsed.error?.code).toBe('INVALID_WORKERS');
+    });
+
+    it('--workers 1 should be accepted (not config_error)', async () => {
+      const result = await runCli(
+        ['swarm', testXesPath, '--workers', '1', '--max-episodes', '1', '--format', 'json'],
+        { cwd: env.tempDir }
+      );
+      expect(result.exitCode).not.toBe(1);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Gap: --no-save flag declared (closed this cycle)
+  // -------------------------------------------------------------------------
+
+  describe('--no-save flag', () => {
+    it('--no-save appears in --help output', async () => {
+      const result = await runCli(['swarm', '--help']);
+      expect(result.exitCode).toBe(SUCCESS);
+      expect(result.stdout).toMatch(/no-save/i);
+    });
+
+    it('--no-save accepted without parse error', async () => {
+      const result = await runCli(
+        ['swarm', testXesPath, '--no-save', '--max-episodes', '1', '--format', 'json'],
+        { cwd: env.tempDir }
+      );
+      expect(result.exitCode).not.toBe(1);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Gap: iterationCount, workerCount, convergenceStatus in JSON payload
+  // -------------------------------------------------------------------------
+
+  describe('JSON payload — new fields: iterationCount, workerCount, convergenceStatus', () => {
+    it('iterationCount is present and non-negative on success', async () => {
+      const result = await runCli(
+        ['swarm', testXesPath, '--max-episodes', '1', '--format', 'json'],
+        { cwd: env.tempDir }
+      );
+      const parsed = JSON.parse(result.stdout) as {
+        status: string;
+        payload?: { iterationCount?: number };
+      };
+      if (parsed.status === 'ok') {
+        expect(parsed.payload).toHaveProperty('iterationCount');
+        expect(parsed.payload?.iterationCount as number).toBeGreaterThanOrEqual(0);
+      }
+    });
+
+    it('workerCount is present and >= 1 on success', async () => {
+      const result = await runCli(
+        ['swarm', testXesPath, '--max-episodes', '1', '--format', 'json'],
+        { cwd: env.tempDir }
+      );
+      const parsed = JSON.parse(result.stdout) as {
+        status: string;
+        payload?: { workerCount?: number };
+      };
+      if (parsed.status === 'ok') {
+        expect(parsed.payload).toHaveProperty('workerCount');
+        expect(parsed.payload?.workerCount as number).toBeGreaterThanOrEqual(1);
+      }
+    });
+
+    it('convergenceStatus is one of converged/timeout/not_converged on success', async () => {
+      const result = await runCli(
+        ['swarm', testXesPath, '--max-episodes', '1', '--format', 'json'],
+        { cwd: env.tempDir }
+      );
+      const parsed = JSON.parse(result.stdout) as {
+        status: string;
+        payload?: { convergenceStatus?: string };
+      };
+      if (parsed.status === 'ok') {
+        expect(parsed.payload).toHaveProperty('convergenceStatus');
+        expect(['converged', 'timeout', 'not_converged']).toContain(
+          parsed.payload?.convergenceStatus
+        );
+      }
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Gap: empty input log → source_error (closed this cycle)
+  // -------------------------------------------------------------------------
+
+  describe('empty input log', () => {
+    it('empty XES file should exit source_error (2)', async () => {
+      const emptyXesPath = path.join(env.tempDir, 'empty.xes');
+      await fs.writeFile(emptyXesPath, '', 'utf-8');
+      const result = await runCli(['swarm', emptyXesPath, '--format', 'json'], {
+        cwd: env.tempDir,
+      });
+      expect(result.exitCode).toBe(SOURCE_ERROR);
+    });
+
+    it('empty XES file produces EMPTY_INPUT_LOG error code', async () => {
+      const emptyXesPath = path.join(env.tempDir, 'empty2.xes');
+      await fs.writeFile(emptyXesPath, '', 'utf-8');
+      const result = await runCli(['swarm', emptyXesPath, '--format', 'json'], {
+        cwd: env.tempDir,
+      });
+      expect(result.exitCode).toBe(SOURCE_ERROR);
+      const parsed = JSON.parse(result.stdout) as { status: string; error?: { code: string } };
+      expect(parsed.status).toBe('error');
+      expect(parsed.error?.code).toBe('EMPTY_INPUT_LOG');
+    });
+  });
 });

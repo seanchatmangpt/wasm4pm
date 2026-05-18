@@ -108,11 +108,45 @@ export const ml = defineCommand({
                   `  wpm ml classify -i process.xes\n\n` +
                   `Run 'wpm ml --help' for full task descriptions.`
               ),
-              EXIT_CODES.source_error,
+              EXIT_CODES.config_error,
               'INVALID_TASK'
             );
             emitResult(result, { format, verbose, quiet });
             return await exitWithFlush(result.exit_code);
+          }
+
+          // Validate --format value
+          if (format !== 'human' && format !== 'json') {
+            const result = makeErrorResult(
+              'ml',
+              new Error(
+                `Invalid --format value: "${format}". Must be "human" or "json".\n` +
+                  `Usage:  wpm ml <task> -i <log.xes> --format human|json`
+              ),
+              EXIT_CODES.config_error,
+              'INVALID_FORMAT'
+            );
+            emitResult(result, { format: 'human', verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
+
+          // Validate --k (clusters / neighbors) when provided
+          const rawK = ctx.args.k as string | undefined;
+          if (rawK !== undefined) {
+            const parsedK = parseInt(rawK, 10);
+            if (Number.isNaN(parsedK) || parsedK <= 0) {
+              const result = makeErrorResult(
+                'ml',
+                new Error(
+                  `Invalid --k value: "${rawK}". Must be a positive integer.\n` +
+                    `Example:  wpm ml cluster -i log.xes --k 3`
+                ),
+                EXIT_CODES.config_error,
+                'INVALID_K'
+              );
+              emitResult(result, { format, verbose, quiet });
+              return await exitWithFlush(result.exit_code);
+            }
           }
 
           const inputPath = ctx.args.input as string;
@@ -147,7 +181,7 @@ export const ml = defineCommand({
                 }
               }
 
-              const payload = { task, input: inputPath, ...mlResult };
+              const payload = { status: 'ok' as const, task, input: inputPath, ...mlResult };
               const result = makeResult('ml', payload, performance.now() - t0, EXIT_CODES.success);
               emitResult(result, { format, verbose, quiet }, (res, projection) => {
                 const data = res.payload as typeof payload;

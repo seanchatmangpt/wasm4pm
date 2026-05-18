@@ -355,8 +355,15 @@ async function executePowlCommand(
 
     case 'convert': {
       const target = args.to as string;
-      if (!target || !CONVERT_TARGETS.includes(target as ConvertTarget)) {
-        return await exitWithFlush(EXIT_CODES.source_error);
+      if (!target) {
+        throw new PowlConfigError(
+          `Missing required argument: --to. Valid targets: ${CONVERT_TARGETS.join(', ')}`
+        );
+      }
+      if (!CONVERT_TARGETS.includes(target as ConvertTarget)) {
+        throw new PowlConfigError(
+          `Unknown convert target: "${target}". Valid targets: ${CONVERT_TARGETS.join(', ')}`
+        );
       }
       switch (target as ConvertTarget) {
         case 'petri-net': {
@@ -378,11 +385,11 @@ async function executePowlCommand(
     case 'diff': {
       const model2Input = args.model2 as string;
       if (!model2Input) {
-        return await exitWithFlush(EXIT_CODES.source_error);
+        throw new PowlSourceError('Missing required argument: --model2 (second POWL model for diff)');
       }
       const model2 = await resolveModelInput(model2Input);
       if (!model2) {
-        return await exitWithFlush(EXIT_CODES.source_error);
+        throw new PowlSourceError(`Cannot resolve second model: ${model2Input}`);
       }
       const raw: string = wasm.diff_models(modelStr, model2);
       return normalizeResult(raw);
@@ -401,14 +408,14 @@ async function executePowlCommand(
     case 'conformance': {
       const logPath = args.log as string;
       if (!logPath) {
-        return await exitWithFlush(EXIT_CODES.source_error);
+        throw new PowlSourceError('Missing required argument: --log (path to XES event log)');
       }
       let logContent: string;
       try {
         await fs.access(logPath);
         logContent = await fs.readFile(logPath, 'utf-8');
       } catch {
-        return await exitWithFlush(EXIT_CODES.source_error);
+        throw new PowlSourceError(`Cannot read XES log file: "${logPath}"`);
       }
       const confActivityKey = (args['activity-key'] as string) || 'concept:name';
       let logHandle: string;

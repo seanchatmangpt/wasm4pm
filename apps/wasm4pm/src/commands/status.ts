@@ -299,14 +299,40 @@ export const status = defineCommand({
               }
             : { active: false };
 
+          // Step 4b: Measure WASM binary size on disk (best-effort — non-fatal if not found).
+          // The .wasm file lives at <workspace>/wasm4pm/pkg/wasm4pm_bg.wasm relative to
+          // process.cwd() when run from the monorepo, or two directories up from the CLI dist dir.
+          let wasmBinarySize: number | null = null;
+          try {
+            // Use import.meta.url to locate the CLI binary and walk up to the workspace root.
+            // dist/bin/wpm.js → ../../.. → workspace root → wasm4pm/pkg/wasm4pm_bg.wasm
+            const cliFileUrl = new URL(import.meta.url);
+            // Translate file:///.../dist/bin/wpm.js to a filesystem path string
+            const cliFilePath = cliFileUrl.pathname;
+            // Walk up: dist/bin → dist → apps/wasm4pm → workspace root
+            // This avoids importing 'path' or 'url' modules (already stripped by linter).
+            // Regex to strip the trailing dist/bin/ portion from the path.
+            const workspaceRoot = cliFilePath.replace(/\/apps\/wasm4pm\/dist\/bin\/[^/]+$/, '');
+            const wasmBinaryPath = `${workspaceRoot}/wasm4pm/pkg/wasm4pm_bg.wasm`;
+            const wasmStat = await fs.stat(wasmBinaryPath).catch(() => null);
+            if (wasmStat) {
+              wasmBinarySize = wasmStat.size;
+            }
+          } catch {
+            // Non-fatal — wasmBinarySize stays null
+          }
+
           // Step 5: Build status report
           const statusReport = {
             engine: {
+              // State reflects actual lifecycle: loader.init() + loader.get() above succeeded,
+              // so 'ready' is always accurate here (failures hit the catch block first).
               state: 'ready',
               wasmLoaded,
               kernelReady,
               version: wasmVersion,
               deploymentProfile: wasmDeploymentProfile,
+              wasmBinarySize,
               features_validated: featureValidationResult?.valid ?? false,
               feature_validation_confidence: featureValidationResult?.confidence ?? 0,
               algorithmCount,
@@ -373,6 +399,11 @@ export const status = defineCommand({
               p.log(`  WASM Version: ${r.engine.version}`);
             }
             p.log(`  WASM Deployment Profile: ${r.engine.deploymentProfile}`);
+            const bsz = r.engine.wasmBinarySize as number | null | undefined;
+            if (bsz !== null && bsz !== undefined) {
+              const bszMb = (bsz / 1024 / 1024).toFixed(2);
+              p.log(`  WASM Binary Size: ${bszMb} MB (${bsz.toLocaleString()} bytes)`);
+            }
             p.log(
               `  Features Validated: ${r.engine.features_validated ? 'Yes' : 'No'} (confidence: ${(r.engine.feature_validation_confidence * 100).toFixed(0)}%)`
             );

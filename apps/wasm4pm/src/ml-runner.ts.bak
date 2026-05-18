@@ -22,8 +22,6 @@ import {
   forecastSeries,
   detectEnhancedAnomalies,
   reduceFeaturesPCA,
-  suggestClusteringK,
-  detectLogCharacteristics,
 } from '@wasm4pm/ml';
 import type { ClassificationMethod, ClusteringMethod, RegressionMethod } from '@wasm4pm/ml';
 import { Instrumentation } from '@wasm4pm/observability';
@@ -476,19 +474,7 @@ export async function executeMlTask(
         configJson
       );
       const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
-
-      // Get log characteristics for parameter suggestion
-      const statsRaw = wasm.analyze_statistics(logHandle);
-      const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
-      const traceCount = (stats?.trace_count as number) ?? (stats?.traceCount as number) ?? 0;
-      const variantCount = (stats?.variant_count as number) ?? (stats?.variantCount as number) ?? 0;
-      const activityCount = (stats?.num_activities as number) ?? 15; // fallback
-
-      // Detect characteristics and suggest k if not provided
-      const characteristics = detectLogCharacteristics(traceCount, variantCount, activityCount);
-      const defaultK = suggestClusteringK(traceCount, activityCount, characteristics);
-      const k = parseInt(String(options.k ?? defaultK), 10);
-
+      const k = parseInt(String(options.k ?? '3'), 10);
       const eps = parseFloat(String(options.eps ?? '1.0'));
       if (Number.isNaN(k) || k <= 0)
         throw new Error('Clustering parameter k must be a positive number');

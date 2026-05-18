@@ -124,7 +124,13 @@ export const driftWatch = defineCommand({
     const rawWindow = ctx.args.window as string | undefined;
     const parsedWindow = rawWindow != null ? parseInt(rawWindow, 10) : undefined;
     if (parsedWindow !== undefined && Number.isNaN(parsedWindow)) {
-      console.error(`[drift-watch] Invalid --window value: must be a number`);
+      console.error(`[drift-watch] Invalid --window value: must be a positive integer`);
+      return await exitWithFlush(EXIT_CODES.config_error);
+    }
+    if (parsedWindow !== undefined && parsedWindow <= 0) {
+      console.error(
+        `[drift-watch] Invalid --window value: must be a positive integer (got ${parsedWindow})`
+      );
       return await exitWithFlush(EXIT_CODES.config_error);
     }
     const windowSize = parsedWindow ?? DEFAULT_WINDOW;
@@ -132,7 +138,13 @@ export const driftWatch = defineCommand({
     const rawInterval = ctx.args.interval as string | undefined;
     const parsedInterval = rawInterval != null ? parseInt(rawInterval, 10) : undefined;
     if (parsedInterval !== undefined && Number.isNaN(parsedInterval)) {
-      console.error(`[drift-watch] Invalid --interval value: must be a number`);
+      console.error(`[drift-watch] Invalid --interval value: must be a positive integer`);
+      return await exitWithFlush(EXIT_CODES.config_error);
+    }
+    if (parsedInterval !== undefined && parsedInterval <= 0) {
+      console.error(
+        `[drift-watch] Invalid --interval value: must be a positive integer (got ${parsedInterval})`
+      );
       return await exitWithFlush(EXIT_CODES.config_error);
     }
     const intervalMs = parsedInterval ?? DEFAULT_INTERVAL_MS;
@@ -140,7 +152,13 @@ export const driftWatch = defineCommand({
     const rawAlpha = ctx.args.alpha as string | undefined;
     const parsedAlpha = rawAlpha != null ? parseFloat(rawAlpha) : undefined;
     if (parsedAlpha !== undefined && Number.isNaN(parsedAlpha)) {
-      console.error(`[drift-watch] Invalid --alpha value: must be a number`);
+      console.error(`[drift-watch] Invalid --alpha value: must be a number in (0, 1]`);
+      return await exitWithFlush(EXIT_CODES.config_error);
+    }
+    if (parsedAlpha !== undefined && (parsedAlpha <= 0 || parsedAlpha > 1)) {
+      console.error(
+        `[drift-watch] Invalid --alpha value: must be in (0, 1] (got ${parsedAlpha})`
+      );
       return await exitWithFlush(EXIT_CODES.config_error);
     }
     const ewmaAlpha = parsedAlpha ?? EWMA_ALPHA;
@@ -148,7 +166,13 @@ export const driftWatch = defineCommand({
     const rawThreshold = ctx.args.threshold as string | undefined;
     const parsedThreshold = rawThreshold != null ? parseFloat(rawThreshold) : undefined;
     if (parsedThreshold !== undefined && Number.isNaN(parsedThreshold)) {
-      console.error(`[drift-watch] Invalid --threshold value: must be a number`);
+      console.error(`[drift-watch] Invalid --threshold value: must be a number in [0, 1]`);
+      return await exitWithFlush(EXIT_CODES.config_error);
+    }
+    if (parsedThreshold !== undefined && (parsedThreshold < 0 || parsedThreshold > 1)) {
+      console.error(
+        `[drift-watch] Invalid --threshold value: must be in [0, 1] (got ${parsedThreshold})`
+      );
       return await exitWithFlush(EXIT_CODES.config_error);
     }
     const driftThreshold = parsedThreshold ?? DRIFT_THRESHOLD;
