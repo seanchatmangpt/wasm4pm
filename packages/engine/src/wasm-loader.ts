@@ -160,9 +160,21 @@ export class WasmLoader {
         message: 'Initializing WASM module',
       });
 
-      // Load WASM module
-      const module = await this.loadWasmModule();
-      this.module = module;
+      // If a module is already loaded (e.g. after softReset()), reuse it
+      // without the expensive dynamic import() + WebAssembly.compile() step.
+      // This is the fast-path that makes softReset() actually fast.
+      let module: WasmModule;
+      if (this.module) {
+        module = this.module;
+        this.observability.emitCli({
+          level: 'debug',
+          message: 'Reusing already-loaded WASM module (fast reinit after softReset)',
+        });
+      } else {
+        // Cold path: load WASM module from disk / network
+        module = await this.loadWasmModule();
+        this.module = module;
+      }
 
       // Setup panic hook for readable error messages
       if (this.config.enablePanicHook !== false) {
