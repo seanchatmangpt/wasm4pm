@@ -634,6 +634,15 @@ impl RlOrchestrator {
         let (_, ucb_score_before) = self.linucb.select(features);
         let td_error = reward - ucb_score_before;
 
+        // **GUARD (GAP-RL-6):** Detect pathological TD errors indicating divergence.
+        // TD error >100 suggests either unbounded reward or diverged value estimates.
+        // This should never occur with reward bounds [-5.5, +1.6] and clamped targets.
+        debug_assert!(
+            td_error.abs() < 100.0,
+            "TD error divergence detected: {:.2} (indicates learning breakdown)",
+            td_error
+        );
+
         // Get weight norm BEFORE update for delta computation (OBS-1 fix)
         let norms_before = self.linucb.weight_norms();
         let active_norm_before = norms_before[action_idx as usize];
@@ -863,6 +872,15 @@ impl RlOrchestrator {
         // Compute reward based on health transition (prev -> next) with momentum bonus
         let prev_health = self.telemetry.last_health_state;
         let curr_health = next_state.health_level; // Use NEXT state for reward computation
+
+        // **GUARD (GAP-RL-5):** SPC alert count must be valid (will be quantized [0-3] in reward computation).
+        // Assert that no overflow or pathological SPC count reaches the reward function.
+        debug_assert!(
+            spc_alert_count <= 255,
+            "SPC alert count must fit in u8: {}, will overflow quantization",
+            spc_alert_count
+        );
+
         let reward = compute_reward_with_momentum(
             prev_health,
             curr_health,
@@ -938,13 +956,16 @@ impl RlOrchestrator {
         self.telemetry.last_reward = reward;
 
         // Track consecutive successes for health improvement eligibility.
+        // **CRITICAL:** Success is defined as BOTH guard_pass AND circuit_allowed.
+        // This must match the reward computation (GUARD_CIRCUIT matrix logic).
+        // If either condition is false, the streak resets to 0.
         // saturating_add prevents pathological wraparound on extremely long
         // runs (>4 billion successful cycles).
         if guard_pass && circuit_allowed {
             self.telemetry.consecutive_successes =
                 self.telemetry.consecutive_successes.saturating_add(1);
         } else {
-            self.telemetry.consecutive_successes = 0; // Reset on failure
+            self.telemetry.consecutive_successes = 0; // Reset on ANY failure
         }
 
         // Track healing action outcome (success = reward_after > reward_before)
