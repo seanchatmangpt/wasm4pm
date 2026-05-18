@@ -78,6 +78,13 @@ export interface SwarmConfig {
   maxIterations?: number;
   /** When true, throws ConvergenceTimeoutError if all episodes exhaust without convergence. */
   throwOnTimeout?: boolean;
+  /**
+   * Per-worker timeout in milliseconds.
+   * If a worker's generateText call exceeds this deadline, the worker is
+   * treated as failed (error-isolated) and the episode continues with the
+   * remaining healthy workers.  Default: no timeout (waits indefinitely).
+   */
+  workerTimeoutMs?: number;
 }
 
 export interface SwarmEpisode {

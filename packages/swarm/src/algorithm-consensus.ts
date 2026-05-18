@@ -219,6 +219,12 @@ export class AlgorithmConsensus {
    * Get the current best algorithm based on mean quality.
    */
   getBestAlgorithm(): string {
+    // Guard: empty map (no algorithms registered) — return sentinel rather than
+    // returning undefined cast to string (Gap #4 fix).
+    if (this.performanceHistory.size === 0) {
+      return '';
+    }
+
     let best = '';
     let bestQuality = -1;
     for (const perf of this.performanceHistory.values()) {
@@ -227,7 +233,10 @@ export class AlgorithmConsensus {
         best = perf.algorithmId;
       }
     }
-    return best || (this.performanceHistory.keys().next().value as string);
+    // If no algorithm has been run yet, fall back to the first registered one.
+    // Using optional chaining avoids the unsafe `as string` cast when the map
+    // is non-empty but all runCounts are 0.
+    return best || (this.performanceHistory.keys().next().value ?? '');
   }
 
   /**

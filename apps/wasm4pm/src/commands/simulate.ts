@@ -15,7 +15,20 @@ import { exitWithFlush } from '../otel/exit.js';
 export const simulate = defineCommand({
   meta: {
     name: 'simulate',
-    description: 'Monte Carlo simulation and DFG playout to generate synthetic traces',
+    description:
+      'Monte Carlo simulation and DFG playout to generate synthetic event log traces.\n' +
+      '\n' +
+      'Examples:\n' +
+      '  wpm simulate log.xes                          # simulate 100 cases, random seed\n' +
+      '  wpm simulate log.xes --cases 500              # simulate 500 cases\n' +
+      '  wpm simulate log.xes --cases 200 --seed 42    # reproducible run (fixed seed)\n' +
+      '  wpm simulate log.xes --time 120000            # cap at 120 s wall time\n' +
+      '  wpm simulate log.xes --format json            # machine-readable output\n' +
+      '\n' +
+      'Output includes: sojourn-time distribution (mean, P5/P50/P95), resource utilisation,\n' +
+      '  avg trace length, and DFG playout traces (when available).\n' +
+      '\n' +
+      'Exit codes: 0=success  1=config/arg error  2=source/file error  3=execution error',
   },
   args: {
     input: {
@@ -136,9 +149,24 @@ export const simulate = defineCommand({
             return await exitWithFlush(result.exit_code);
           }
           const maxTime = parsedTime ?? 60000;
-          const seed = ctx.args.seed
-            ? parseInt(ctx.args.seed as string, 10)
-            : Math.floor(Math.random() * 2_147_483_647);
+          const rawSeed = ctx.args.seed as string | undefined;
+          const parsedSeed = rawSeed != null ? parseInt(rawSeed, 10) : undefined;
+          if (parsedSeed !== undefined && Number.isNaN(parsedSeed)) {
+            const result = makeErrorResult(
+              'simulate',
+              new Error(
+                `Invalid --seed value '${rawSeed}': must be an integer.\n\n` +
+                  `  --seed sets the random seed for reproducible simulation runs.\n` +
+                  `  Example: wpm simulate <log.xes> --seed 42`
+              ),
+              EXIT_CODES.config_error,
+              'INVALID_ARG'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
+          const seed =
+            parsedSeed != null ? parsedSeed : Math.floor(Math.random() * 2_147_483_647);
 
           await withLogSession(
             {

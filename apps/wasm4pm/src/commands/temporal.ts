@@ -15,7 +15,22 @@ import { exitWithFlush } from '../otel/exit.js';
 export const temporal = defineCommand({
   meta: {
     name: 'temporal',
-    description: 'Analyze temporal profiles and performance patterns in event logs',
+    description:
+      'Analyze temporal profiles and performance patterns in event logs.\n' +
+      '\n' +
+      'Examples:\n' +
+      '  wpm temporal log.xes                          # full temporal analysis, threshold=0.05\n' +
+      '  wpm temporal log.xes --threshold 0.01         # stricter: flag only severe deviations\n' +
+      '  wpm temporal -i log.xes --format json         # machine-readable output\n' +
+      '\n' +
+      'Output includes:\n' +
+      '  • Temporal conformance fitness (0–100%) — how well the log fits the discovered profile\n' +
+      '  • Deviations flagged at >2σ from the mean transition duration\n' +
+      '  • Waiting-time distribution per activity (mean, P50, P90, P99)\n' +
+      '  • Primary bottleneck: the activity whose P90 waiting time is longest\n' +
+      '  • Impossible-timestamp count (end < start — data quality defects)\n' +
+      '\n' +
+      'Exit codes: 0=success  1=config/arg error  2=source/file error  3=execution error',
   },
   args: {
     input: {
@@ -106,6 +121,19 @@ export const temporal = defineCommand({
                 `  --threshold sets the significance threshold for temporal violations (default: 0.05).\n` +
                 `  Lower values flag more violations; higher values flag only severe deviations.\n` +
                 `  Example: wpm temporal log.xes --threshold 0.01`,
+              EXIT_CODES.config_error,
+              'INVALID_THRESHOLD'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
+          if (!Number.isNaN(threshold) && (threshold < 0 || threshold > 1)) {
+            const result = makeErrorResult(
+              'temporal',
+              `Invalid --threshold value '${rawThreshold}': must be between 0.0 and 1.0, got ${threshold}.\n\n` +
+                `  --threshold is a significance level (p-value) between 0.0 and 1.0.\n` +
+                `  Typical values: 0.01 (strict), 0.05 (default), 0.10 (lenient).\n` +
+                `  Example: wpm temporal log.xes --threshold 0.05`,
               EXIT_CODES.config_error,
               'INVALID_THRESHOLD'
             );

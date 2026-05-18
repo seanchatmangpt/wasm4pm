@@ -22,7 +22,19 @@ export const predict = defineCommand({
   meta: {
     name: 'predict',
     description:
-      'Run predictive process mining (6 tasks: next-activity, remaining-time, outcome, drift, features, resource). Ex: wpm predict next-activity -i log.xes --prefix "Submit,Approve"',
+      'Run predictive process mining. Tasks: next-activity, remaining-time, outcome, drift, features, resource.\n' +
+      '\n' +
+      'Examples:\n' +
+      '  wpm predict next-activity  -i log.xes                          # top-3 next activities (global priors)\n' +
+      '  wpm predict next-activity  -i log.xes --prefix "Submit,Approve" --top-k 5\n' +
+      '  wpm predict remaining-time -i log.xes --prefix "Register,Approve"\n' +
+      '  wpm predict outcome        -i log.xes --prefix "A,B"           # anomaly score for a case prefix\n' +
+      '  wpm predict drift          -i log.xes --drift-window 20        # concept-drift detection\n' +
+      '  wpm predict features       -i log.xes                          # transition probability table\n' +
+      '  wpm predict resource       -i log.xes                          # M/M/1 queue model\n' +
+      '  wpm predict next-activity  -i log.xes --format json            # machine-readable output\n' +
+      '\n' +
+      'Exit codes: 0=success  1=config/arg error  2=source/file error  3=execution error',
   },
   args: {
     task: {
@@ -116,7 +128,7 @@ export const predict = defineCommand({
                   `  wpm predict remaining-time -i process.xes --prefix "A,B"\n\n` +
                   `Run 'wpm predict --help' for full task descriptions.`
               ),
-              EXIT_CODES.source_error,
+              EXIT_CODES.config_error,
               'INVALID_TASK'
             );
             emitResult(result, { format, verbose, quiet });

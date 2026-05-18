@@ -134,16 +134,11 @@ export async function runSwarm(config: SwarmConfig): Promise<SwarmArtifact> {
           throw new ConvergenceMaxIterationsError(totalIterations, maxIterations, rate);
         }
 
-        // Update hash history ring buffer
-        for (const result of workerResults) {
-          const key = `${result.workerId}/${result.algorithmId}`;
-          const hist = hashHistory.get(key) ?? [];
-          hist.push(result.resultHash);
-          if (hist.length > convergenceRuns) hist.shift();
-          hashHistory.set(key, hist);
-        }
-
-        // Check swarm-level convergence
+        // Check swarm-level convergence.
+        // checkSwarmConvergence mutates hashHistory internally (ring-buffer update) —
+        // do NOT update hashHistory here as well; that would cause double-buffering
+        // which makes the ring buffer fill 2x too fast and falsely declare convergence
+        // one episode early (Gap #2 fix).
         const { converged, stableWorkers, unstableWorkers, agreementRate, convergenceReason } =
           checkSwarmConvergence(workerResults, hashHistory, convergenceRuns);
 
@@ -263,7 +258,11 @@ async function runWorker(spec: WorkerSpec, config: SwarmConfig): Promise<WorkerR
 
     const modelId = spec.model || config.workerModel || 'llama-3.1-70b-versatile';
 
-    const { text, toolResults } = await generateText({
+    // Wrap the generateText call with an optional per-worker timeout.
+    // If workerTimeoutMs is set and the LLM call exceeds it, we throw a
+    // timeout error so the caller's catch block can produce a degraded
+    // WorkerResult rather than hanging the entire episode (Gap #3 fix).
+    const generatePromise = generateText({
       model: groq(modelId),
       tools: swarmTools,
       prompt:
@@ -273,6 +272,23 @@ Use the provided tools to analyze the XES log content associated with this worke
 XES Content Preview: ${worker.xesContent.substring(0, 500)}...
 Goal: Discover the process model or analyze statistics as requested.`,
     });
+
+    const { text, toolResults } = await (config.workerTimeoutMs != null
+      ? Promise.race([
+          generatePromise,
+          new Promise<never>((_, reject) =>
+            setTimeout(
+              () =>
+                reject(
+                  new Error(
+                    `Worker ${spec.workerId} timed out after ${config.workerTimeoutMs}ms`
+                  )
+                ),
+              config.workerTimeoutMs
+            )
+          ),
+        ])
+      : generatePromise);
 
     // We take the result from the last tool call or the text if no tool was called.
     // `WorkerResult.result` is typed `unknown`; keep this as unknown throughout.

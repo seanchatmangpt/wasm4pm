@@ -14,7 +14,6 @@ import {
   AlgorithmConsensus,
   computeQualityScore,
   type LogStats,
-  type ConsensusDecision,
 } from '../algorithm-consensus.js';
 import type { WorkerResult } from '../types.js';
 
@@ -195,7 +194,7 @@ describe('AlgorithmConsensus', () => {
     });
 
     it('should compute mean quality correctly', () => {
-      const result = (quality: number, idx: number): WorkerResult => ({
+      const result = (_quality: number, idx: number): WorkerResult => ({
         workerId: `worker-${idx}`,
         algorithmId: 'heuristic',
         resultHash: `hash${idx}`,
@@ -214,7 +213,7 @@ describe('AlgorithmConsensus', () => {
     });
 
     it('should compute variance and standard deviation', () => {
-      const result = (quality: number, idx: number): WorkerResult => ({
+      const result = (_quality: number, idx: number): WorkerResult => ({
         workerId: `worker-${idx}`,
         algorithmId: 'genetic',
         resultHash: `hash${idx}`,
@@ -284,7 +283,7 @@ describe('AlgorithmConsensus', () => {
 
   describe('best algorithm selection', () => {
     it('should return algorithm with highest mean quality', () => {
-      const result = (algo: string, quality: number, idx: number): WorkerResult => ({
+      const result = (algo: string, _quality: number, idx: number): WorkerResult => ({
         workerId: `worker-${algo}-${idx}`,
         algorithmId: algo,
         resultHash: `hash${algo}${idx}`,
