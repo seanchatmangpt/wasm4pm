@@ -441,7 +441,7 @@ const audit = defineCommand({
   args: {
     out: {
       type: 'string',
-      description: 'Output path (default: target/audits/route-driven-tdd-independent-verification.json)',
+      description: 'Output path (default: .wasm4pm/audits/route-driven-tdd-independent-verification.json)',
     },
     packDir: {
       type: 'string',
@@ -457,10 +457,14 @@ const audit = defineCommand({
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = ctx.args.verbose ?? false;
     const quiet = ctx.args.quiet ?? false;
-    // Rust workspace outputs live under wasm4pm/target/, not the monorepo root target/
+    // Rust test outputs (proof-packs, test-proof-packs) live under wasm4pm/target/.
     const RUST_TARGET = 'wasm4pm/target';
+    // Audit reports are runtime artifacts, not Rust build output. Write under
+    // .wasm4pm/audits/ (already gitignored as part of .wasm4pm/) regardless of
+    // which cwd the CLI is invoked from; the previous wasm4pm/target/audits/
+    // path doubly-nested to apps/wasm4pm/wasm4pm/target/ when run from apps/wasm4pm/.
     const outPath = (ctx.args.out as string | undefined)
-      ?? join(RUST_TARGET, 'audits', 'route-driven-tdd-independent-verification.json');
+      ?? join('.wasm4pm', 'audits', 'route-driven-tdd-independent-verification.json');
 
     const gates: Record<string, unknown> = {};
 

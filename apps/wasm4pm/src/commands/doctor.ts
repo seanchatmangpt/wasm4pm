@@ -3527,8 +3527,10 @@ export const doctorHooks = defineCommand({
 
     const exitCode = healthy ? EXIT_CODES.success : EXIT_CODES.config_error;
 
-    // Write disk audit — the hooks probe must itself leave proof of execution
-    const auditDir = path.join(projectDir, 'wasm4pm', 'target', 'audits');
+    // Write disk audit — the hooks probe must itself leave proof of execution.
+    // Under .wasm4pm/audits/ (already gitignored) so it never gets committed
+    // and never lands in apps/wasm4pm/wasm4pm/target/ via cwd accidents.
+    const auditDir = path.join(projectDir, '.wasm4pm', 'audits');
     const auditPath = path.join(auditDir, 'claude-hooks-jtbd-verification.json');
     try {
       mkdirSync(auditDir, { recursive: true });

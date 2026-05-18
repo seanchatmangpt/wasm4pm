@@ -491,7 +491,7 @@ export async function probeAdversary(projectDir: string): Promise<Probe[]> {
 
   // ── D2: Hooks audit JSON must exist for proof chain ───────────────────────
   {
-    const auditPath = join(projectDir, 'wasm4pm', 'target', 'audits', 'claude-hooks-jtbd-verification.json');
+    const auditPath = join(projectDir, '.wasm4pm', 'audits', 'claude-hooks-jtbd-verification.json');
     const exists = existsSync(auditPath);
     let verdict = 'AndonPull(MissingHooksAudit)';
     let valid = false;
@@ -504,7 +504,7 @@ export async function probeAdversary(projectDir: string): Promise<Probe[]> {
     }
     probes.push({
       job: 'Hooks JTBD audit JSON must exist on disk with Accepted verdict',
-      scenario: 'Check wasm4pm/target/audits/claude-hooks-jtbd-verification.json',
+      scenario: 'Check .wasm4pm/audits/claude-hooks-jtbd-verification.json',
       observed: !exists
         ? 'Audit JSON missing — wpm doctor hooks has not been run or audit was deleted'
         : valid
@@ -809,7 +809,8 @@ export const adversary = defineCommand({
         ? 'AndonPull(AdversarialEscape)'
         : 'AndonPull(InconclusiveProbes)';
 
-    const auditDir = join(projectDir, 'wasm4pm', 'target', 'audits');
+    // Audit reports go under .wasm4pm/audits/ (gitignored), not under any target/.
+    const auditDir = join(projectDir, '.wasm4pm', 'audits');
     const auditPath = join(auditDir, 'adversarial-proof-lifecycle.json');
     if (!noSave) {
       try {
