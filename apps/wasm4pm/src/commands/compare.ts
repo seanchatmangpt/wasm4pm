@@ -205,6 +205,21 @@ interface ModelStats {
   density: number;
   complexity: number;
   elapsedMs: number;
+  /**
+   * Alias for `elapsedMs` — satisfies the JSON contract field name `duration_ms`.
+   * Both fields are present so consumers can use either name.
+   */
+  duration_ms: number;
+  /**
+   * Shape/type of the model returned by this algorithm:
+   * 'dfg' | 'petrinet' | 'tree' | 'declare' | 'unknown' (on error).
+   * Lets consumers distinguish Petri net from DFG without inspecting raw output.
+   */
+  output_type: 'dfg' | 'petrinet' | 'tree' | 'declare' | 'unknown';
+  /** Number of nodes (alias: node_count) */
+  node_count: number;
+  /** Number of edges (alias: edge_count) */
+  edge_count: number;
   /** Quality tier from ALGO_PROFILES (0-100) */
   qualityTier: number;
   /** Speed tier from ALGO_PROFILES (0-100, lower = faster) */
@@ -390,7 +405,10 @@ function extractModelMetrics(
  * Width = 8 chars, filled with block characters.
  */
 function sparkBar(value: number, min: number, max: number, width = 8): string {
-  if (max <= min) return '░'.repeat(width);
+  // When all compared values are equal (max == min), every algorithm is tied at the
+  // same level. Rendering all-░ (minimum) is misleading — the values are not minimal,
+  // they are identical. Render all-▓ (maximum) to signal "tied at ceiling" clearly.
+  if (max <= min) return '▓'.repeat(width);
   const ratio = Math.max(0, Math.min(1, (value - min) / (max - min)));
   const filled = Math.round(ratio * width);
   return '▓'.repeat(filled) + '░'.repeat(width - filled);
@@ -461,6 +479,23 @@ export const compare = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
     const emitOptions = { format, verbose, quiet };
+
+    // Pre-WASM validation: reject unknown format values before loading WASM.
+    // Doing this early avoids wasting time on WASM initialisation for a config error.
+    if (format !== 'json' && format !== 'human') {
+      const result = makeErrorResult(
+        'compare',
+        new Error(
+          `Invalid --format value: '${format}'. Must be 'human' or 'json'.\n\n` +
+            `Usage:  wpm compare dfg,heuristic -i log.xes --format json`
+        ),
+        EXIT_CODES.config_error,
+        'INVALID_FORMAT'
+      );
+      // Emit as JSON regardless of the bad format so the envelope is machine-readable.
+      emitResult(result, { format: 'json', verbose, quiet });
+      return await exitWithFlush(result.exit_code);
+    }
 
     return withSpan(
       'compare',
@@ -594,16 +629,21 @@ export const compare = defineCommand({
                   for (const algo of algos) {
                     try {
                       const { raw, elapsedMs } = runDiscovery(wasm, algo, logHandle, activityKey);
-                      const { nodes, edges } = toUniformStats(discriminate(raw, algo));
+                      const shape = discriminate(raw, algo);
+                      const { nodes, edges } = toUniformStats(shape);
                       const profile = ALGO_PROFILES[algo];
                       stats.push({
                         algorithm: algo,
                         nodes,
                         edges,
+                        node_count: nodes,
+                        edge_count: edges,
+                        output_type: shape.kind,
                         variants: sharedMetrics.variants,
                         density: sharedMetrics.density,
                         complexity: sharedMetrics.complexity,
                         elapsedMs,
+                        duration_ms: elapsedMs,
                         qualityTier: profile.qualityTier,
                         speedTier: profile.speedTier,
                         quality_tier_is_proxy: true,
@@ -617,10 +657,14 @@ export const compare = defineCommand({
                         algorithm: algo,
                         nodes: -1,
                         edges: -1,
+                        node_count: -1,
+                        edge_count: -1,
+                        output_type: 'unknown' as const,
                         variants: sharedMetrics.variants,
                         density: sharedMetrics.density,
                         complexity: sharedMetrics.complexity,
                         elapsedMs: 0,
+                        duration_ms: 0,
                         qualityTier: profile.qualityTier,
                         speedTier: profile.speedTier,
                         quality_tier_is_proxy: true,
@@ -639,20 +683,32 @@ export const compare = defineCommand({
               // Derive winner recommendations before building payload
               const recommendation = deriveRecommendation(stats);
 
+              // Derive a single "winner" string — the algorithm with the highest qualityTier
+              // among successful runs, or null if fewer than 2 runs succeeded.
+              const winner: string | null =
+                recommendation !== null ? recommendation.highestQuality.algorithm : null;
+
               // Build canonical result payload. Include algorithm_errors only when some
               // runs failed so consumers can distinguish partial from full success.
               const payload: {
                 status: 'ok';
                 input: string;
                 activityKey: string;
-                algorithms: ModelStats[];
+                /** Array of algorithm name strings that were compared. */
+                algorithms: string[];
+                /** Per-algorithm comparison results (one entry per algorithm). */
+                comparisons: ModelStats[];
+                /** Algorithm with the highest quality tier, or null if fewer than 2 succeeded. */
+                winner: string | null;
                 recommendation: AlgorithmRecommendation | null;
                 algorithm_errors?: string[];
               } = {
                 status: 'ok' as const,
                 input: inputPath,
                 activityKey,
-                algorithms: stats,
+                algorithms: algos,
+                comparisons: stats,
+                winner,
                 recommendation,
               };
               if (algorithmErrors.length > 0) {
@@ -708,18 +764,27 @@ export const compare = defineCommand({
 
               emitResult(cmdResult, emitOptions, (res, projection) => {
                 const p = res.payload as typeof payload;
-                const s = p.algorithms;
+                const s = p.comparisons;
 
                 projection.info(`Comparing algorithms: ${algos.join(', ')}`);
                 projection.log('');
-                projection.success(`Algorithm comparison — ${p.input}`);
+
+                // Compute ranges for sparklines (must be before header so we know success count)
+                const validStats = s.filter((st) => st.nodes >= 0);
+
+                // BUG-2 FIX: Show warning/error header when 0 algorithms succeeded rather than
+                // unconditionally emitting a green ✔ even when all runs failed.
+                if (validStats.length === 0) {
+                  projection.error(`Algorithm comparison — ${p.input} (all algorithms failed)`);
+                } else if (validStats.length < s.length) {
+                  projection.warn(`Algorithm comparison — ${p.input} (partial: ${validStats.length}/${s.length} succeeded)`);
+                } else {
+                  projection.success(`Algorithm comparison — ${p.input}`);
+                }
                 projection.log(
                   `  Activity key: ${p.activityKey}  |  Log variants: ${sharedMetrics.variants}`
                 );
                 projection.log('');
-
-                // Compute ranges for sparklines
-                const validStats = s.filter((st) => st.nodes >= 0);
                 const minNodes = Math.min(...validStats.map((st) => st.nodes));
                 const maxNodes = Math.max(...validStats.map((st) => st.nodes));
                 const minEdges = Math.min(...validStats.map((st) => st.edges));

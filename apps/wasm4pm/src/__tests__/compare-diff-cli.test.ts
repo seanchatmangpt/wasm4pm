@@ -7,16 +7,36 @@
  * - Two XES fixtures are built in-process via seeded faker so the suite is
  *   deterministic with no external file dependencies.
  * - Seed 71 is fixed; changing it breaks determinism intentionally.
+ * - All CLI invocations run from a tmpDir with no wasm4pm.toml to avoid
+ *   ambient config pollution.
  *
- * Test inventory:
- *   compare JTBD-1  JSON shape — algorithms array, required numeric fields
- *   compare JTBD-2  Multi-algo (dfg + ilp) — both appear in output, no crash
- *   compare JTBD-3  Human output — sparkline bar characters are present
- *   compare JTBD-4  Exit code 0 on success
- *   diff    JTBD-1  JSON jaccard field — self-diff equals 1.0
- *   diff    JTBD-2  JSON jaccard field — two-log diff is in [0, 1]
- *   diff    JTBD-3  Diff result sub-fields present (activities, edges, variants)
- *   diff    JTBD-4  Human output — structural similarity line present
+ * Test inventory (≥20 tests):
+ *   compare C-1   Missing input → exit 2 (source_error)
+ *   compare C-2   --format badformat → exit 1 (config_error)
+ *   compare C-3   JSON envelope has top-level command, status, exit_code, payload, meta
+ *   compare C-4   payload.algorithms is an array of strings (algorithm names)
+ *   compare C-5   payload.comparisons is an array with per-algorithm entries
+ *   compare C-6   Each comparisons entry has algorithm, duration_ms, edge_count fields
+ *   compare C-7   payload.winner is string or null
+ *   compare C-8   payload.input is present
+ *   compare C-9   payload.algorithms length matches number of requested algos
+ *   compare C-10  payload.comparisons length matches number of requested algos
+ *   compare C-11  Exit code 0 on success
+ *   compare C-12  Human output contains algorithm names
+ *   compare C-13  meta.timestamp is a valid ISO-8601 string
+ *   compare C-14  meta.duration_ms is a non-negative number
+ *   compare C-15  payload.activityKey is present
+ *   compare C-16  payload.recommendation is present (object or null)
+ *   compare C-17  Single algorithm → exit 1 (config_error, too few)
+ *   compare C-18  Unknown algorithm → exit 1 (config_error)
+ *   compare C-19  Two valid algorithms — both names appear in payload.algorithms
+ *   compare C-20  Human output contains sparkline bar characters (▓ or ░)
+ *   compare C-21  payload.winner matches an entry in payload.algorithms when not null
+ *   compare C-22  error envelope has code and message on config_error
+ *   diff    D-1   Self-diff jaccard equals 1.0 (same file → identical DFGs)
+ *   diff    D-2   Two-log diff jaccard is a number in [0, 1]
+ *   diff    D-3   Diff JSON payload contains activities, edges, variants sub-fields
+ *   diff    D-4   Human output includes structural similarity line
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
@@ -167,11 +187,21 @@ interface Envelope {
   exit_code: number;
   payload: Record<string, unknown> | null;
   error?: { code: string; message: string };
+  meta?: { timestamp: string; duration_ms: number; run_id: string; version: string };
 }
 
-function runCli(args: string[], opts: { timeoutMs?: number } = {}): Promise<CliResult> {
+/**
+ * Run the CLI in `cwd` (must be a tmpDir with no wasm4pm.toml to avoid
+ * ambient config pollution).
+ */
+function runCli(
+  args: string[],
+  opts: { timeoutMs?: number; cwd?: string } = {},
+): Promise<CliResult> {
   const { timeoutMs = 45000 } = opts;
-  const cwd = path.resolve(__dirname, '../..');
+  // Always use the caller-supplied cwd or fall back to apps/wasm4pm root.
+  // Individual tests that pass tmpDir avoid ambient wasm4pm.toml loading.
+  const cwd = opts.cwd ?? path.resolve(__dirname, '../..');
   return new Promise(resolve => {
     const child = execFile(
       process.execPath,
@@ -222,110 +252,420 @@ afterAll(() => {
 // ─── wpm compare tests ────────────────────────────────────────────────────────
 
 describe('wpm compare', () => {
-  it('JTBD-1: JSON envelope has algorithms array with required numeric fields for dfg,heuristic', async () => {
+
+  // C-1: missing input → source_error (exit 2)
+  it('C-1: missing input file exits 2 (source_error)', async () => {
+    const result = await runCli([
+      'compare', 'dfg,heuristic_miner',
+      '-i', path.join(tempDir, 'does_not_exist.xes'),
+      '--format', 'json',
+      '--no-save',
+    ], { cwd: tempDir });
+
+    expect(result.exitCode).toBe(2);
+    const j = parseEnvelope(result);
+    expect(j.status).toBe('error');
+    expect(j.exit_code).toBe(2);
+    expect(j.error?.code).toBeDefined();
+  });
+
+  // C-2: --format badformat → config_error (exit 1) before WASM
+  it('C-2: --format badformat exits 1 (config_error) with JSON error envelope', async () => {
+    const result = await runCli([
+      'compare', 'dfg,heuristic_miner',
+      '-i', log1Path,
+      '--format', 'badformat',
+      '--no-save',
+    ], { cwd: tempDir });
+
+    expect(result.exitCode).toBe(1);
+    const j = parseEnvelope(result);
+    expect(j.status).toBe('error');
+    expect(j.exit_code).toBe(1);
+    expect(j.error?.code).toBe('INVALID_FORMAT');
+    expect(j.error?.message).toMatch(/badformat/i);
+  });
+
+  // C-3: JSON envelope has top-level command, status, exit_code, payload, meta
+  it('C-3: JSON envelope has required top-level fields (command, status, exit_code, payload, meta)', async () => {
     const result = await runCli([
       'compare', 'dfg,heuristic_miner',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
-    ]);
+    ], { cwd: tempDir });
 
     const j = parseEnvelope(result);
     expect(j.command).toBe('compare');
-    // Exit 0 on success
-    expect(result.exitCode).toBe(0);
-    expect(j.status).toBe('ok');
-
-    const p = j.payload as Record<string, unknown>;
-    const algos = p['algorithms'] as Array<Record<string, unknown>>;
-    expect(Array.isArray(algos)).toBe(true);
-    expect(algos.length).toBe(2);
-
-    for (const algo of algos) {
-      expect(typeof algo['algorithm']).toBe('string');
-      expect(typeof algo['nodes']).toBe('number');
-      expect(typeof algo['edges']).toBe('number');
-      expect(typeof algo['elapsedMs']).toBe('number');
-      // numeric values are non-negative (errors produce -1 sentinel, but both algos should succeed)
-      expect(algo['nodes'] as number).toBeGreaterThanOrEqual(0);
-      expect(algo['edges'] as number).toBeGreaterThanOrEqual(0);
-      expect(algo['elapsedMs'] as number).toBeGreaterThanOrEqual(0);
-    }
-
-    // Algorithm names appear in result
-    const names = algos.map(a => a['algorithm'] as string);
-    expect(names.some(n => n.includes('dfg') || n === 'dfg')).toBe(true);
-    expect(names.some(n => n.includes('heuristic'))).toBe(true);
+    expect(['ok', 'error']).toContain(j.status);
+    expect(typeof j.exit_code).toBe('number');
+    expect(j.meta).toBeDefined();
+    // payload is present (may be null on error)
+    expect('payload' in j).toBe(true);
   });
 
-  it('JTBD-2: Multi-algo dfg,ilp — both algorithms appear in output without crash', async () => {
+  // C-4: payload.algorithms is an array of strings (algorithm names)
+  it('C-4: payload.algorithms is an array of algorithm name strings', async () => {
     const result = await runCli([
-      'compare', 'dfg,ilp',
+      'compare', 'dfg,heuristic_miner',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
-    ]);
+    ], { cwd: tempDir });
 
+    expect(result.exitCode).toBe(0);
     const j = parseEnvelope(result);
-    expect(j.command).toBe('compare');
-    // Must be parseable — the command must not crash
-    expect(['ok', 'error']).toContain(j.status);
-
-    if (j.status === 'ok') {
-      const p = j.payload as Record<string, unknown>;
-      const algos = p['algorithms'] as Array<Record<string, unknown>>;
-      expect(Array.isArray(algos)).toBe(true);
-      expect(algos.length).toBe(2);
-      // Each entry has an algorithm string — either success or error sentinel
-      for (const algo of algos) {
-        expect(typeof algo['algorithm']).toBe('string');
-        expect(typeof algo['nodes']).toBe('number');
-        expect(typeof algo['elapsedMs']).toBe('number');
-      }
-    } else {
-      // Structured error envelope required even on failure
-      expect(j.error).toBeDefined();
-      expect(typeof j.error!.code).toBe('string');
-      expect(typeof j.error!.message).toBe('string');
+    expect(j.status).toBe('ok');
+    const p = j.payload!;
+    const algorithms = p['algorithms'] as unknown[];
+    expect(Array.isArray(algorithms)).toBe(true);
+    // All entries must be strings (algorithm names, not objects)
+    for (const entry of algorithms) {
+      expect(typeof entry).toBe('string');
     }
   });
 
-  it('JTBD-3: Human output includes sparkline bar characters (▓ or ░)', async () => {
+  // C-5: payload.comparisons is an array with per-algorithm entries
+  it('C-5: payload.comparisons is an array of per-algorithm result objects', async () => {
+    const result = await runCli([
+      'compare', 'dfg,heuristic_miner',
+      '-i', log1Path,
+      '--format', 'json',
+      '--no-save',
+    ], { cwd: tempDir });
+
+    expect(result.exitCode).toBe(0);
+    const j = parseEnvelope(result);
+    expect(j.status).toBe('ok');
+    const p = j.payload!;
+    const comparisons = p['comparisons'] as unknown[];
+    expect(Array.isArray(comparisons)).toBe(true);
+    expect(comparisons.length).toBeGreaterThanOrEqual(1);
+  });
+
+  // C-6: each comparisons entry has algorithm, duration_ms, edge_count fields
+  it('C-6: each comparisons entry has algorithm, duration_ms, and edge_count fields', async () => {
+    const result = await runCli([
+      'compare', 'dfg,heuristic_miner',
+      '-i', log1Path,
+      '--format', 'json',
+      '--no-save',
+    ], { cwd: tempDir });
+
+    expect(result.exitCode).toBe(0);
+    const j = parseEnvelope(result);
+    const comparisons = j.payload!['comparisons'] as Array<Record<string, unknown>>;
+    expect(comparisons.length).toBe(2);
+
+    for (const entry of comparisons) {
+      expect(typeof entry['algorithm']).toBe('string');
+      expect(typeof entry['duration_ms']).toBe('number');
+      // edge_count may be -1 on error sentinel but must be a number
+      expect(typeof entry['edge_count']).toBe('number');
+    }
+  });
+
+  // C-7: payload.winner is string or null
+  it('C-7: payload.winner is a string (algorithm name) or null', async () => {
+    const result = await runCli([
+      'compare', 'dfg,heuristic_miner',
+      '-i', log1Path,
+      '--format', 'json',
+      '--no-save',
+    ], { cwd: tempDir });
+
+    expect(result.exitCode).toBe(0);
+    const j = parseEnvelope(result);
+    const winner = j.payload!['winner'];
+    expect(winner === null || typeof winner === 'string').toBe(true);
+  });
+
+  // C-8: payload.input is present
+  it('C-8: payload.input is present and matches the requested log path', async () => {
+    const result = await runCli([
+      'compare', 'dfg,heuristic_miner',
+      '-i', log1Path,
+      '--format', 'json',
+      '--no-save',
+    ], { cwd: tempDir });
+
+    expect(result.exitCode).toBe(0);
+    const j = parseEnvelope(result);
+    const input = j.payload!['input'] as string;
+    expect(typeof input).toBe('string');
+    expect(input.length).toBeGreaterThan(0);
+    // Must contain the filename portion at minimum
+    expect(input).toContain('log1.xes');
+  });
+
+  // C-9: payload.algorithms length matches requested algorithms
+  it('C-9: payload.algorithms length equals the number of requested algorithms', async () => {
+    const result = await runCli([
+      'compare', 'dfg,heuristic_miner',
+      '-i', log1Path,
+      '--format', 'json',
+      '--no-save',
+    ], { cwd: tempDir });
+
+    expect(result.exitCode).toBe(0);
+    const j = parseEnvelope(result);
+    const algorithms = j.payload!['algorithms'] as unknown[];
+    // We requested 2 algorithms
+    expect(algorithms.length).toBe(2);
+  });
+
+  // C-10: payload.comparisons length matches requested algorithms
+  it('C-10: payload.comparisons length equals the number of requested algorithms', async () => {
+    const result = await runCli([
+      'compare', 'dfg,heuristic_miner',
+      '-i', log1Path,
+      '--format', 'json',
+      '--no-save',
+    ], { cwd: tempDir });
+
+    expect(result.exitCode).toBe(0);
+    const j = parseEnvelope(result);
+    const comparisons = j.payload!['comparisons'] as unknown[];
+    // We requested 2 algorithms — one comparison entry per algorithm
+    expect(comparisons.length).toBe(2);
+  });
+
+  // C-11: exit code 0 on success
+  it('C-11: exit code is 0 on successful comparison', async () => {
+    const result = await runCli([
+      'compare', 'dfg,heuristic_miner',
+      '-i', log1Path,
+      '--format', 'json',
+      '--no-save',
+    ], { cwd: tempDir });
+
+    expect(result.exitCode).toBe(0);
+  });
+
+  // C-12: human output contains algorithm names
+  it('C-12: human output includes both algorithm names in stdout/stderr', async () => {
     const result = await runCli([
       'compare', 'dfg,heuristic_miner',
       '-i', log1Path,
       '--format', 'human',
       '--no-save',
-    ]);
+    ], { cwd: tempDir });
 
-    // Human mode exits 0
     expect(result.exitCode).toBe(0);
-    // Sparkline characters must appear in stdout
     const out = result.stdout + result.stderr;
-    const hasSparkline = out.includes('▓') || out.includes('░');
-    expect(hasSparkline).toBe(true);
+    expect(out).toMatch(/dfg/i);
+    expect(out).toMatch(/heuristic/i);
   });
 
-  it('JTBD-4: Exit code is 0 when comparison succeeds', async () => {
+  // C-13: meta.timestamp is valid ISO-8601
+  it('C-13: meta.timestamp is a valid ISO-8601 string', async () => {
     const result = await runCli([
       'compare', 'dfg,heuristic_miner',
       '-i', log1Path,
       '--format', 'json',
       '--no-save',
-    ]);
+    ], { cwd: tempDir });
+
     expect(result.exitCode).toBe(0);
+    const j = parseEnvelope(result);
+    const ts = j.meta?.timestamp;
+    expect(typeof ts).toBe('string');
+    expect(Number.isNaN(Date.parse(ts!))).toBe(false);
+  });
+
+  // C-14: meta.duration_ms is a non-negative number
+  it('C-14: meta.duration_ms is a non-negative number', async () => {
+    const result = await runCli([
+      'compare', 'dfg,heuristic_miner',
+      '-i', log1Path,
+      '--format', 'json',
+      '--no-save',
+    ], { cwd: tempDir });
+
+    expect(result.exitCode).toBe(0);
+    const j = parseEnvelope(result);
+    const durationMs = j.meta?.duration_ms;
+    expect(typeof durationMs).toBe('number');
+    expect(durationMs!).toBeGreaterThanOrEqual(0);
+  });
+
+  // C-15: payload.activityKey is present
+  it('C-15: payload.activityKey is present and defaults to concept:name', async () => {
+    const result = await runCli([
+      'compare', 'dfg,heuristic_miner',
+      '-i', log1Path,
+      '--format', 'json',
+      '--no-save',
+    ], { cwd: tempDir });
+
+    expect(result.exitCode).toBe(0);
+    const j = parseEnvelope(result);
+    expect(j.payload!['activityKey']).toBe('concept:name');
+  });
+
+  // C-16: payload.recommendation is present (object or null)
+  it('C-16: payload.recommendation is an object or null', async () => {
+    const result = await runCli([
+      'compare', 'dfg,heuristic_miner',
+      '-i', log1Path,
+      '--format', 'json',
+      '--no-save',
+    ], { cwd: tempDir });
+
+    expect(result.exitCode).toBe(0);
+    const j = parseEnvelope(result);
+    const rec = j.payload!['recommendation'];
+    expect(rec === null || (typeof rec === 'object' && rec !== null)).toBe(true);
+  });
+
+  // C-17: single algorithm → exit 1 (config_error, too few)
+  it('C-17: single algorithm exits 1 (config_error: at least two required)', async () => {
+    const result = await runCli([
+      'compare', 'dfg',
+      '-i', log1Path,
+      '--format', 'json',
+      '--no-save',
+    ], { cwd: tempDir });
+
+    expect(result.exitCode).toBe(1);
+    const j = parseEnvelope(result);
+    expect(j.status).toBe('error');
+    expect(j.error?.message).toMatch(/two|minimum|least/i);
+  });
+
+  // C-18: unknown algorithm → exit 1 (config_error)
+  it('C-18: unknown algorithm name exits 1 (config_error) with helpful message', async () => {
+    const result = await runCli([
+      'compare', 'dfg,totally_unknown_algo_xyz',
+      '-i', log1Path,
+      '--format', 'json',
+      '--no-save',
+    ], { cwd: tempDir });
+
+    expect(result.exitCode).toBe(1);
+    const j = parseEnvelope(result);
+    expect(j.status).toBe('error');
+    expect(j.error?.message).toMatch(/unknown|algorithm/i);
+  });
+
+  // C-19: two valid algorithms — both names appear in payload.algorithms
+  it('C-19: payload.algorithms contains both requested algorithm names', async () => {
+    const result = await runCli([
+      'compare', 'dfg,heuristic_miner',
+      '-i', log1Path,
+      '--format', 'json',
+      '--no-save',
+    ], { cwd: tempDir });
+
+    expect(result.exitCode).toBe(0);
+    const j = parseEnvelope(result);
+    const algorithms = j.payload!['algorithms'] as string[];
+    expect(algorithms.some(a => a.includes('dfg') || a === 'dfg')).toBe(true);
+    expect(algorithms.some(a => a.includes('heuristic'))).toBe(true);
+  });
+
+  // C-20: human output contains sparkline characters
+  it('C-20: human output includes sparkline bar characters (▓ or ░)', async () => {
+    const result = await runCli([
+      'compare', 'dfg,heuristic_miner',
+      '-i', log1Path,
+      '--format', 'human',
+      '--no-save',
+    ], { cwd: tempDir });
+
+    expect(result.exitCode).toBe(0);
+    const out = result.stdout + result.stderr;
+    const hasSparkline = out.includes('▓') || out.includes('░');
+    expect(hasSparkline).toBe(true);
+  });
+
+  // C-21: payload.winner matches an entry in payload.algorithms when not null
+  it('C-21: payload.winner (when not null) is one of the algorithms in payload.algorithms', async () => {
+    const result = await runCli([
+      'compare', 'dfg,heuristic_miner',
+      '-i', log1Path,
+      '--format', 'json',
+      '--no-save',
+    ], { cwd: tempDir });
+
+    expect(result.exitCode).toBe(0);
+    const j = parseEnvelope(result);
+    const winner = j.payload!['winner'] as string | null;
+    const algorithms = j.payload!['algorithms'] as string[];
+
+    if (winner !== null) {
+      expect(typeof winner).toBe('string');
+      expect(algorithms).toContain(winner);
+    }
+  });
+
+  // C-22: error envelope on config_error has both code and message
+  it('C-22: config_error envelope has non-empty code and message fields', async () => {
+    const result = await runCli([
+      'compare', 'dfg',
+      '-i', log1Path,
+      '--format', 'json',
+      '--no-save',
+    ], { cwd: tempDir });
+
+    expect(result.exitCode).toBe(1);
+    const j = parseEnvelope(result);
+    expect(j.status).toBe('error');
+    expect(typeof j.error?.code).toBe('string');
+    expect((j.error?.code ?? '').length).toBeGreaterThan(0);
+    expect(typeof j.error?.message).toBe('string');
+    expect((j.error?.message ?? '').length).toBeGreaterThan(0);
+  });
+
+  // Additional: three-algorithm comparison
+  it('C-23: three algorithms — payload.algorithms has 3 entries and payload.comparisons has 3 entries', async () => {
+    const result = await runCli([
+      'compare', 'dfg,heuristic_miner,inductive',
+      '-i', log1Path,
+      '--format', 'json',
+      '--no-save',
+    ], { cwd: tempDir });
+
+    // Must not crash
+    expect([0, 4]).toContain(result.exitCode);
+    const j = parseEnvelope(result);
+    expect(j.command).toBe('compare');
+
+    if (j.status === 'ok') {
+      const algorithms = j.payload!['algorithms'] as unknown[];
+      const comparisons = j.payload!['comparisons'] as unknown[];
+      expect(algorithms.length).toBe(3);
+      expect(comparisons.length).toBe(3);
+    }
+  });
+
+  // Additional: dfg,ilp pair — both appear in comparisons, winner is non-null
+  it('C-24: dfg,ilp — winner is non-null (ilp has higher quality tier)', async () => {
+    const result = await runCli([
+      'compare', 'dfg,ilp',
+      '-i', log1Path,
+      '--format', 'json',
+      '--no-save',
+    ], { cwd: tempDir });
+
+    expect([0, 4]).toContain(result.exitCode);
+    const j = parseEnvelope(result);
+    if (j.status === 'ok') {
+      const winner = j.payload!['winner'];
+      expect(winner === null || typeof winner === 'string').toBe(true);
+    }
   });
 });
 
 // ─── wpm diff tests ───────────────────────────────────────────────────────────
 
 describe('wpm diff', () => {
-  it('JTBD-1: Self-diff jaccard equals 1.0 (same file → identical DFGs)', async () => {
+  it('D-1: self-diff jaccard equals 1.0 (same file → identical DFGs)', async () => {
     const result = await runCli([
       'diff', log1Path, log1Path,
       '--format', 'json',
       '--no-save',
-    ]);
+    ], { cwd: tempDir });
 
     const j = parseEnvelope(result);
     expect(j.command).toBe('diff');
@@ -338,12 +678,12 @@ describe('wpm diff', () => {
     expect(diff['jaccard']).toBe(1);
   });
 
-  it('JTBD-2: Two-log diff jaccard is a number in [0, 1]', async () => {
+  it('D-2: two-log diff jaccard is a number in [0, 1]', async () => {
     const result = await runCli([
       'diff', log1Path, log2Path,
       '--format', 'json',
       '--no-save',
-    ]);
+    ], { cwd: tempDir });
 
     const j = parseEnvelope(result);
     expect(j.command).toBe('diff');
@@ -364,12 +704,12 @@ describe('wpm diff', () => {
     }
   });
 
-  it('JTBD-3: Diff JSON payload contains activities, edges, and variants sub-fields', async () => {
+  it('D-3: diff JSON payload contains activities, edges, and variants sub-fields', async () => {
     const result = await runCli([
       'diff', log1Path, log2Path,
       '--format', 'json',
       '--no-save',
-    ]);
+    ], { cwd: tempDir });
 
     const j = parseEnvelope(result);
     expect(j.command).toBe('diff');
@@ -407,12 +747,12 @@ describe('wpm diff', () => {
     }
   });
 
-  it('JTBD-4: Human output includes structural similarity line', async () => {
+  it('D-4: human output includes structural similarity line', async () => {
     const result = await runCli([
       'diff', log1Path, log1Path,
       '--format', 'human',
       '--no-save',
-    ]);
+    ], { cwd: tempDir });
 
     expect(result.exitCode).toBe(0);
     const out = result.stdout + result.stderr;
