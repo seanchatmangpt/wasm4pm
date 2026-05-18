@@ -103,7 +103,7 @@ export const social = defineCommand({
             const result = makeErrorResult(
               'social',
               `Invalid metric: ${metric}. Must be one of: handover, working-together, similar-task`,
-              EXIT_CODES.source_error,
+              EXIT_CODES.config_error,
               'INVALID_METRIC'
             );
             emitResult(result, { format, verbose, quiet });

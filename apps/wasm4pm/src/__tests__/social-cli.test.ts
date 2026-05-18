@@ -15,7 +15,7 @@
  *   SN-3: Nonexistent file exits 2 (source_error).
  *   SN-4: --metric handover is accepted.
  *   SN-5: --metric working-together is accepted.
- *   SN-6: Invalid --metric exits 2 (source_error).
+ *   SN-6: Invalid --metric exits 1 (config_error) — bad flag value is a config error, not source error.
  *   SN-7: Valid input + --format json produces parseable JSON envelope.
  *   SN-8: JSON payload has network.nodes and network.edges arrays.
  *   SN-9: JSON payload has status field.
@@ -253,16 +253,19 @@ describe('SN-5: --metric working-together is accepted', () => {
 });
 
 // ---------------------------------------------------------------------------
-// SN-6: Invalid --metric exits 2 (source_error)
+// SN-6: Invalid --metric exits 1 (config_error)
+// An unknown --metric value is a CLI argument error (config_error=1), not a
+// source data error (source_error=2).  Source errors are reserved for bad input
+// files; flag validation failures are always config errors.
 // ---------------------------------------------------------------------------
 
-describe('SN-6: invalid --metric exits 2', () => {
-  it('--metric invalid-network exits 2', async () => {
+describe('SN-6: invalid --metric exits 1 (config_error)', () => {
+  it('--metric invalid-network exits 1 (config_error)', async () => {
     const result = await runCli(
       ['social', '-i', xesPath, '--metric', 'invalid-network', '--format', 'json', '--no-save'],
       { timeout: SOCIAL_TEST_TIMEOUT_MS }
     );
-    expect(result.exitCode).toBe(EXIT_CODES.source_error);
+    expect(result.exitCode).toBe(EXIT_CODES.config_error);
   }, SOCIAL_TEST_TIMEOUT_MS);
 
   it('invalid metric error envelope names the invalid value', async () => {

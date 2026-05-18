@@ -328,6 +328,57 @@ describe('wpm watch: flag acceptance', () => {
   });
 });
 
+// ─── --interval validation ────────────────────────────────────────────────────
+
+describe('wpm watch: --interval validation', () => {
+  it('--interval 0 exits 1 (config_error) immediately', async () => {
+    const { dir, cleanup } = await makeTempDir();
+    try {
+      // Invalid interval (0 is not positive) — must exit config_error (1) before starting watch
+      const result = await runWatch(['--interval', '0'], dir, 600);
+      // Process must have exited on its own (not killed by SIGTERM timeout) with exit code 1
+      expect(result.exitCode).toBe(1);
+      expect(result.signal).toBeNull();
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it('--interval abc exits 1 (config_error) immediately', async () => {
+    const { dir, cleanup } = await makeTempDir();
+    try {
+      const result = await runWatch(['--interval', 'abc'], dir, 600);
+      expect(result.exitCode).toBe(1);
+      expect(result.signal).toBeNull();
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it('--interval -100 exits 1 (config_error) immediately', async () => {
+    const { dir, cleanup } = await makeTempDir();
+    try {
+      const result = await runWatch(['--interval', '-100'], dir, 600);
+      expect(result.exitCode).toBe(1);
+      expect(result.signal).toBeNull();
+    } finally {
+      await cleanup();
+    }
+  });
+
+  it('--interval 100 (valid positive integer) does not exit immediately', async () => {
+    const { dir, cleanup } = await makeTempDir();
+    try {
+      const result = await runWatch(['--interval', '100'], dir, 800);
+      // Valid interval — must not crash immediately with exit code 1
+      const badExit = result.exitCode === 1 && result.signal === null;
+      expect(badExit).toBe(false);
+    } finally {
+      await cleanup();
+    }
+  });
+});
+
 // ─── With a config file in the directory ─────────────────────────────────────
 
 describe('wpm watch: with wasm4pm.toml in directory', () => {

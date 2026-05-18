@@ -406,6 +406,24 @@ ${events}
       }
     });
 
+    it('--format json (canonical form) produces parseable JSON envelope', async () => {
+      // --format json is the CLI-wide canonical output format flag.
+      // validate supports it as an alias for --output-format json.
+      const test = await createTestXes('case-001', 3);
+      try {
+        const result = await runCli(['validate', test.path, '--format', 'json']);
+        // Must not exit source_error (2) from treating 'json' as an unknown log format
+        expect(result.exitCode).not.toBe(2);
+        if (result.stdout.trim()) {
+          expect(() => JSON.parse(result.stdout)).not.toThrow();
+          const output = JSON.parse(result.stdout);
+          expect(output).toHaveProperty('status');
+        }
+      } finally {
+        await test.cleanup();
+      }
+    });
+
     it('should support verbose output with -v flag', async () => {
       const test = await createTestXes('case-001', 3);
       try {

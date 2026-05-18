@@ -360,11 +360,23 @@ describe('wpm explain — algorithm explanations and process model documentation
       expect(result.stdout).toMatch(/dfg|heuristic|alpha|ilp/i);
     });
 
-    it('should accept any --level value without crashing', async () => {
+    it('should reject invalid --level with config_error (1)', async () => {
+      // An unknown --level value is a configuration argument error (config_error=1).
       const result = await runCli(['explain', 'dfg', '--level', 'super_detailed'], {
         env: env.env,
       });
-      expect([EXIT_CODES.success, EXIT_CODES.config_error]).toContain(result.exitCode);
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+    });
+
+    it('invalid --level JSON output has status=error and error.code=INVALID_LEVEL', async () => {
+      const result = await runCli(
+        ['explain', 'dfg', '--level', 'bad_level', '--format', 'json'],
+        { env: env.env }
+      );
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+      const json = JSON.parse(result.stdout);
+      expect(json.status).toBe('error');
+      expect(json.error?.code).toBe('INVALID_LEVEL');
     });
 
     it('should accept any --format value without crashing', async () => {

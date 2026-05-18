@@ -87,6 +87,20 @@ export const explain = defineCommand({
       },
       async () => {
         try {
+          // Validate --level: only brief|detailed|academic are accepted.
+          // An unrecognised value is a configuration error (exit 1).
+          const VALID_LEVELS = ['brief', 'detailed', 'academic'];
+          if (ctx.args.level && !VALID_LEVELS.includes(ctx.args.level as string)) {
+            const result = makeErrorResult(
+              'explain',
+              `Invalid level: "${ctx.args.level}". Must be one of: brief, detailed, academic`,
+              EXIT_CODES.config_error,
+              'INVALID_LEVEL'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
+
           // Accept positional <algorithm> as alias for --algorithm
           if (
             !ctx.args.algorithm &&

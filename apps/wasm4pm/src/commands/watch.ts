@@ -142,6 +142,21 @@ export const watch = defineCommand({
     },
   },
   async run(ctx) {
+    // Validate --interval when provided: must be a positive integer.
+    // An invalid value is a config_error (exit 1) — fail fast before starting the watcher.
+    const rawInterval = ctx.args.interval as string | undefined;
+    let pollIntervalMs: number | undefined;
+    if (rawInterval !== undefined) {
+      const parsed = parseInt(rawInterval, 10);
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        process.stderr.write(
+          `wpm watch: invalid --interval value "${rawInterval}". Must be a positive integer (milliseconds).\n`
+        );
+        process.exit(1);
+      }
+      pollIntervalMs = parsed;
+    }
+
     const streaming = new StreamingOutput({
       format: ctx.args.format as 'human' | 'json',
       verbose: ctx.args.verbose,
@@ -223,6 +238,8 @@ export const watch = defineCommand({
       ignored: /(^|[\/\\])\../, // ignore dotfiles
       persistent: true,
       ignoreInitial: true,
+      // Use --interval as polling interval when provided (usePolling required for interval to take effect)
+      ...(pollIntervalMs !== undefined ? { usePolling: true, interval: pollIntervalMs } : {}),
     });
 
     // Count watched paths for the startup status line.

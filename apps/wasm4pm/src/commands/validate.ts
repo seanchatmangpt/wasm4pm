@@ -87,12 +87,24 @@ export const validate = defineCommand({
       'validate',
       {
         input: String(ctx.args.input ?? ctx.args.file ?? ''),
-        format: String(ctx.args.format ?? 'xes'),
+        log_format: String(
+          ctx.args.format === 'human' || ctx.args.format === 'json'
+            ? 'xes'
+            : (ctx.args.format ?? 'xes')
+        ),
         activity_key: String(ctx.args['activity-key'] ?? 'concept:name'),
       },
       async () => {
         const t0 = performance.now();
-        const outFmt = (ctx.args['output-format'] as string | undefined) ?? 'human';
+        // --format human|json is the canonical output-format flag used by all other
+        // commands.  --output-format is the legacy flag kept for backward compat.
+        // If --format is 'human' or 'json', treat it as output-format.
+        const rawFmtArg = ctx.args.format as string | undefined;
+        const isOutputFmtOverride = rawFmtArg === 'human' || rawFmtArg === 'json';
+        const outFmt =
+          isOutputFmtOverride
+            ? rawFmtArg
+            : ((ctx.args['output-format'] as string | undefined) ?? 'human');
         const format = (outFmt === 'json' ? 'json' : 'human') as 'json' | 'human';
         const verbose = Boolean(ctx.args.verbose);
         const quiet = Boolean(ctx.args.quiet);
@@ -126,7 +138,9 @@ export const validate = defineCommand({
             return await exitWithFlush(result.exit_code);
           }
 
-          const logFormat = (ctx.args.format as string) || 'xes';
+          // When --format was used as an output-format override (human|json), fall back to
+          // 'xes' as the log format so the parse path is not corrupted.
+          const logFormat = isOutputFmtOverride ? 'xes' : ((ctx.args.format as string) || 'xes');
           const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
           const caseIdKey = (ctx.args['case-id-key'] as string) || 'case:concept:name';
           const timestampKey = (ctx.args['timestamp-key'] as string) || 'time:timestamp';
