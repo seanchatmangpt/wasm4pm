@@ -20,6 +20,7 @@ import {
   type CommandReceipt,
 } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
+import { isFirstRun, formatFirstRunHints } from '../first-run-ux.js';
 
 export interface RunOptions {
   config?: string;
@@ -313,6 +314,9 @@ export const run = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
     const emitOptions = { format, verbose, quiet };
+
+    // Detect if this is a first-run for UX hints
+    const isFirstRunResult = await isFirstRun().catch(() => false);
 
     return withSpan(
       'run',
@@ -1092,18 +1096,31 @@ export const run = defineCommand({
                   }
                 }
 
-                projection.log('');
-                projection.log('Next steps:');
-                projection.log(
-                  `  wpm conformance -i ${path.basename(p.input)}   -- measure fitness and precision`
-                );
-                projection.log(
-                  `  wpm compare dfg,heuristic -i ${path.basename(p.input)}   -- compare algorithms`
-                );
-                projection.log('  wpm results   -- browse saved results');
+                // First-run UX hints
+                if (isFirstRunResult && format === 'human') {
+                  const hints = formatFirstRunHints(
+                    (p.quality as { fitness?: number } | undefined)?.fitness,
+                    p.algorithm,
+                    p.input,
+                    savedPath
+                  );
+                  for (const hint of hints) {
+                    projection.log(hint);
+                  }
+                } else {
+                  projection.log('');
+                  projection.log('Next steps:');
+                  projection.log(
+                    `  wpm conformance -i ${path.basename(p.input)}   -- measure fitness and precision`
+                  );
+                  projection.log(
+                    `  wpm compare dfg,heuristic -i ${path.basename(p.input)}   -- compare algorithms`
+                  );
+                  projection.log('  wpm results   -- browse saved results');
 
-                if (savedPath) {
-                  projection.debug(`Result saved: ${path.relative(process.cwd(), savedPath)}`);
+                  if (savedPath) {
+                    projection.debug(`Result saved: ${path.relative(process.cwd(), savedPath)}`);
+                  }
                 }
               });
 

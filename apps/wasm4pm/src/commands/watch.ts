@@ -5,7 +5,7 @@ import { randomBytes } from 'node:crypto';
 import chokidar from 'chokidar';
 import { resolveConfig as loadConfig } from '@wasm4pm/config';
 import { createFullEngine, WasmLoader } from '@wasm4pm/engine';
-import type { ExecutionPlan } from '@wasm4pm/engine';
+import type { ExecutionPlan } from "@wasm4pm/planner";
 import { getTracer, WatchingSpans } from '@wasm4pm/observability';
 import { WasmBackend } from '@wasm4pm/kernel';
 import { plan } from '@wasm4pm/planner';
@@ -194,7 +194,7 @@ export const watch = defineCommand({
       plan as any,
       {
         run: async (p: ExecutionPlan) => {
-          streaming.emitEvent('executing', { plan: p.planId });
+          streaming.emitEvent('executing', { plan: p.id });
           await new Promise((resolve) => setTimeout(resolve, 500));
           return { run_id: 'watch-run', status: 'success', payload: {} } as any;
         },

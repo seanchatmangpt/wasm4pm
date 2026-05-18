@@ -164,6 +164,64 @@ describe('wpm algorithms — algorithm registry CLI', () => {
       const result = await runCli(['algorithms', '--filter', 'nonexistent'], { env: env.env });
       expect([1, 2]).toContain(result.exitCode);
     });
+
+    it('should handle invalid tier gracefully', async () => {
+      const result = await runCli(['algorithms', '--tier', 'invalid_tier'], { env: env.env });
+      expect([EXIT_CODES.config_error, 1, 2]).toContain(result.exitCode);
+      expect(result.stdout).toMatch(/Unknown tier|Valid:/i);
+    });
+  });
+
+  describe('algorithms -- tier filtering', () => {
+    it('should list only stream-tier algorithms when filtering by stream', async () => {
+      const result = await runCli(['algorithms', '--tier', 'stream'], { env: env.env });
+      expect(result.exitCode).toBe(EXIT_CODES.success);
+      expect(result.stdout).toMatch(/STREAMING|stream|speed/i);
+    });
+
+    it('should list only fast-tier algorithms when filtering by fast', async () => {
+      const result = await runCli(['algorithms', '--tier', 'fast'], { env: env.env });
+      expect(result.exitCode).toBe(EXIT_CODES.success);
+      expect(result.stdout).toMatch(/FAST|dfg|skeleton/i);
+    });
+
+    it('should include algorithms in balanced tier', async () => {
+      const result = await runCli(['algorithms', '--tier', 'balanced'], { env: env.env });
+      expect(result.exitCode).toBe(EXIT_CODES.success);
+      expect(result.stdout).toMatch(/BALANCED|heuristic|inductive|alpha/i);
+    });
+
+    it('should include quality algorithms in quality tier', async () => {
+      const result = await runCli(['algorithms', '--tier', 'quality'], { env: env.env });
+      expect(result.exitCode).toBe(EXIT_CODES.success);
+      expect(result.stdout).toMatch(/QUALITY|genetic|ilp|aco|pso/i);
+    });
+  });
+
+  describe('algorithms -- Van der Aalst ratings', () => {
+    it('should show Van der Aalst quality ratings when requested', async () => {
+      const result = await runCli(['algorithms', '--show-ratings'], { env: env.env });
+      expect(result.exitCode).toBe(EXIT_CODES.success);
+      expect(result.stdout).toMatch(/Van der Aalst|Fitness|Precision|Simplicity|General/i);
+    });
+
+    it('should include fitness level indicators in ratings', async () => {
+      const result = await runCli(['algorithms', '--show-ratings'], { env: env.env });
+      expect(result.exitCode).toBe(EXIT_CODES.success);
+      expect(result.stdout).toMatch(/high|med|low/i);
+    });
+
+    it('should show algorithm recommendations in ratings view', async () => {
+      const result = await runCli(['algorithms', '--show-ratings'], { env: env.env });
+      expect(result.exitCode).toBe(EXIT_CODES.success);
+      expect(result.stdout).toMatch(/fitness.*precision|benchmark|compare/i);
+    });
+
+    it('should include algorithm notes in ratings', async () => {
+      const result = await runCli(['algorithms', '--show-ratings'], { env: env.env });
+      expect(result.exitCode).toBe(EXIT_CODES.success);
+      expect(result.stdout).toMatch(/best|exploration|noise|sound|exact/i);
+    });
   });
 
   describe('algorithms performance', () => {

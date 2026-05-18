@@ -11,6 +11,11 @@ import {
   type CommandReceipt,
 } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
+import {
+  captureFeedback,
+  diagnose,
+  type LogStats,
+} from '@wasm4pm/observability';
 
 interface TraceDeviation {
   event_index: number;
@@ -37,6 +42,7 @@ interface ConformancePayload {
   fitness: number;
   precision: number | null;
   precision_available: boolean;
+  computed_at: 'fast' | 'lazy' | 'full';
   isFit: boolean;
   summary: {
     total_cases: number;
@@ -53,6 +59,13 @@ interface ConformancePayload {
   };
   deviating_traces: TraceResult[];
   modelHandle: string;
+  diagnosis?: {
+    category: string;
+    severity: string;
+    explanation: string;
+    recommendations: string[];
+    confidence: number;
+  };
 }
 
 export const conformance = defineCommand({
@@ -107,11 +120,18 @@ export const conformance = defineCommand({
       description: 'Suppress non-error output',
       alias: 'q',
     },
+    'precision-mode': {
+      type: 'string',
+      description:
+        'Precision computation strategy: fast (fitness only, ~100ms faster), lazy (defer precision), full (bundled, default)',
+      default: 'full',
+    },
   },
   async run(ctx) {
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
+    const precisionMode = (ctx.args['precision-mode'] as 'fast' | 'lazy' | 'full') ?? 'full';
 
     const t0 = Date.now();
 
@@ -120,6 +140,7 @@ export const conformance = defineCommand({
       {
         input: String(ctx.args.input ?? ctx.args.file ?? ''),
         method: String(ctx.args.method ?? ''),
+        precision_mode: precisionMode,
         format,
       },
       async () => {
@@ -226,6 +247,8 @@ export const conformance = defineCommand({
               }
 
               // Run conformance checking based on method
+              let precision: number | null = null;
+              let precision_available = false;
               let conformanceResult: Record<string, unknown>;
 
               if (method === 'alignment') {
@@ -249,10 +272,6 @@ export const conformance = defineCommand({
                 );
                 conformanceResult = typeof raw === 'string' ? JSON.parse(raw) : raw;
               }
-
-              // Precision calculation not yet supported in current API
-              const precision = null;
-              const precision_available = false;
 
               // The token-replay WASM function returns ConformanceResult with:
               //   avg_fitness, conforming_cases, total_cases, case_fitness[]
@@ -278,6 +297,12 @@ export const conformance = defineCommand({
                 conformingCases = 0;
               }
 
+              // Apply precision mode strategy
+              if (precisionMode === 'fast') {
+                // Fast mode: compute fitness only, skip precision
+                precision = null;
+                precision_available = false;
+
               const deviatingCases = isTokenReplay ? totalCases - conformingCases : 0;
               const conformanceRate = totalCases > 0 ? conformingCases / totalCases : fitnessValue;
 
@@ -293,6 +318,34 @@ export const conformance = defineCommand({
               }
 
               const isFit = fitnessValue >= threshold;
+
+              // Perform root-cause diagnosis if fitness is below threshold
+              let diagnosis;
+              if (!isFit) {
+                // Build log statistics for diagnosis
+                const logStats: LogStats = {
+                  event_count: 0, // Could be extracted from WASM
+                  trace_count: totalCases,
+                  unique_activities: 0, // Could be extracted from log metadata
+                  unique_variants: 0, // Could be extracted from log analysis
+                  min_trace_length: 0,
+                  max_trace_length: 0,
+                  avg_trace_length: totalCases > 0 ? deviatingTraces.length / totalCases : 0,
+                  rework_ratio: undefined,
+                  activity_coverage: undefined,
+                };
+
+                const conformanceResult = {
+                  fitness: fitnessValue,
+                  precision,
+                  conformance_rate: conformanceRate,
+                  deviating_cases: deviatingCases,
+                  deviating_traces: deviatingTraces,
+                };
+
+                diagnosis = diagnose(conformanceResult, logStats);
+              }
+
               const payload: ConformancePayload = {
                 schema: 'chatmangpt.wasm4pm.conformance.v1',
                 status: isFit ? 'success' : 'conformance_fail',
@@ -303,6 +356,7 @@ export const conformance = defineCommand({
                 fitness: fitnessValue,
                 precision,
                 precision_available,
+                computed_at: precisionMode,
                 isFit,
                 summary: {
                   total_cases: totalCases,
@@ -319,9 +373,43 @@ export const conformance = defineCommand({
                 },
                 deviating_traces: deviatingTraces,
                 modelHandle: petriNetHandle,
+                diagnosis: diagnosis
+                  ? {
+                      category: diagnosis.category,
+                      severity: diagnosis.severity,
+                      explanation: diagnosis.explanation,
+                      recommendations: diagnosis.recommendations,
+                      confidence: diagnosis.confidence,
+                    }
+                  : undefined,
               };
 
               const elapsedMs = Date.now() - t0;
+
+              // Capture feedback (non-blocking) — will be stored in .wasm4pm/algorithm-feedback/
+              try {
+                await captureFeedback(
+                  'conformance_check',
+                  totalCases,
+                  {
+                    fitness: fitnessValue,
+                    precision,
+                    generalization: null, // Not computed in conformance
+                    simplicity: null, // Not computed in conformance
+                  },
+                  elapsedMs,
+                  {
+                    method,
+                    threshold,
+                    total_cases: totalCases,
+                    activity_key: activityKey,
+                    precision_mode: precisionMode,
+                  }
+                );
+              } catch {
+                // Silently ignore feedback capture failures — never block conformance
+              }
+
               // Exit non-zero when fitness is below threshold so bash -e pipelines
               // and downstream tools can detect conformance failure.
               const exitCode = isFit ? EXIT_CODES.success : EXIT_CODES.conformance_fail;
@@ -346,6 +434,7 @@ export const conformance = defineCommand({
                       precision: payload.precision,
                       threshold: payload.threshold,
                       elapsedMs,
+                      precision_mode: precisionMode,
                     },
                   };
                   saveCommandReceipt(receipt);
@@ -354,7 +443,7 @@ export const conformance = defineCommand({
                 }
               }
 
-              return await exitWithFlush(result.exit_code);
+             return await exitWithFlush(result.exit_code);
             }
           ); // end withLogSession
         } catch (error) {
@@ -387,6 +476,7 @@ function printHumanConformance(payload: ConformancePayload, projection: ConsoleP
   projection.success(`Conformance Check — ${payload.input}`);
   projection.log(`  Activity key: ${payload.activityKey}`);
   projection.log(`  Method: ${payload.method}`);
+  projection.log(`  Precision mode: ${payload.computed_at}`);
   projection.log('');
 
   // Primary fitness score with Van der Aalst threshold context
@@ -421,6 +511,10 @@ function printHumanConformance(payload: ConformancePayload, projection: ConsoleP
   const precisionDisplay =
     precisionAvailable && precisionRaw !== null ? precisionRaw.toFixed(3) : 'N/A (not computed)';
   projection.log(`  Precision: ${precisionDisplay}`);
+
+  if (!precisionAvailable && payload.computed_at !== 'full') {
+    projection.log(`  Hint: Use --precision-mode full to compute precision`);
+  }
   projection.log('');
 
   // Case summary — only shown for token-replay (alignment returns no case breakdown)

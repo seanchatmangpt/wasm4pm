@@ -259,12 +259,46 @@ export const init = defineCommand({
         'Initialize with a preset: fast (DFG, no ML/prediction), balanced (heuristic+ML+prediction), quality (ILP+full ML+RL), conformance (alignment-based fitness check), streaming (SIMD DFG + drift detection)',
       alias: 'p',
     },
+    'profile-guide': {
+      type: 'boolean',
+      description: 'Run interactive profile guide to recommend deployment profile',
+    },
   },
   async run(ctx) {
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
+    const profileGuide = Boolean(ctx.args['profile-guide']);
+
+    // If --profile-guide requested, run the interactive questionnaire and exit
+    if (profileGuide) {
+      const { profileGuideQuestionnaire, recommendProfile, formatRecommendation } = await import(
+        '../profile-guide.js'
+      );
+      const response = await profileGuideQuestionnaire();
+      const recommendation = recommendProfile(response);
+      const formatted = formatRecommendation(recommendation);
+
+      if (format === 'json') {
+        // JSON output for scripting
+        const jsonOutput = {
+          status: 'profile_guide_recommendation',
+          profile: recommendation.profile,
+          reasoning: recommendation.reasoning,
+          size_estimate: recommendation.sizeEstimate,
+          features: recommendation.features,
+          tradeoffs: recommendation.tradeoffs,
+          next_steps: recommendation.nextSteps,
+        };
+        console.log(JSON.stringify(jsonOutput, null, 2));
+      } else {
+        // Human output with formatting
+        console.log(formatted);
+      }
+
+      return await exitWithFlush(EXIT_CODES.success);
+    }
 
     const configFormat = (
       (ctx.args.configFormat as string) ||

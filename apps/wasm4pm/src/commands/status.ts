@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
-import { getRegistry } from '@wasm4pm/kernel';
+import { getRegistry, validateDeploymentProfile } from '@wasm4pm/kernel';
 import { resolveConfig } from '@wasm4pm/config';
 import { exitWithFlush } from '../otel/exit.js';
 import { withSpan } from './_otel.js';
@@ -103,6 +103,14 @@ export const status = defineCommand({
           const wasmLoaded = true;
           let wasmVersion: string | null = null;
           const kernelReady = true;
+          let featureValidationResult:
+            | {
+                valid: boolean;
+                profile: string;
+                confidence: number;
+                missingRequired: string[];
+              }
+            | null = null;
 
           // Try to get the version from the WASM module
           if (typeof wasm.get_version === 'function') {
@@ -142,6 +150,28 @@ export const status = defineCommand({
             } catch {
               // Non-fatal — leave as 'browser' (the default/full build)
             }
+          }
+
+          // Validate features against the claimed deployment profile
+          try {
+            const validation = validateDeploymentProfile(
+              wasm as unknown as import('@wasm4pm/kernel').WasmModule,
+              wasmDeploymentProfile as
+                | 'mobile'
+                | 'iot'
+                | 'edge'
+                | 'fog'
+                | 'browser'
+            );
+            featureValidationResult = {
+              valid: validation.valid,
+              profile: validation.profile,
+              confidence: validation.confidence,
+              missingRequired: validation.missingRequired,
+            };
+          } catch {
+            // Feature validation failure is non-fatal — continue with status report
+            featureValidationResult = null;
           }
 
           // Step 3: Query algorithm registry count
@@ -275,6 +305,8 @@ export const status = defineCommand({
               kernelReady,
               version: wasmVersion,
               deploymentProfile: wasmDeploymentProfile,
+              features_validated: featureValidationResult?.valid ?? false,
+              feature_validation_confidence: featureValidationResult?.confidence ?? 0,
               algorithmCount,
               algorithmBreakdown: {
                 discovery: discoveryCount,
@@ -339,6 +371,9 @@ export const status = defineCommand({
               p.log(`  WASM Version: ${r.engine.version}`);
             }
             p.log(`  WASM Deployment Profile: ${r.engine.deploymentProfile}`);
+            p.log(
+              `  Features Validated: ${r.engine.features_validated ? 'Yes' : 'No'} (confidence: ${(r.engine.feature_validation_confidence * 100).toFixed(0)}%)`
+            );
             p.log(`  Kernel Ready: Yes`);
             p.log(
               `  Algorithm Count: ${r.engine.algorithmCount}` +
