@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
-import { discriminate, toUniformStats } from '../discriminator.js';
+// discriminate / toUniformStats not needed — Petri net metrics come directly from discover_ilp_petri_net
 import { withSpan } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
@@ -100,7 +100,6 @@ export const quality = defineCommand({
         );
         emitResult(result, { format, verbose, quiet });
         return await exitWithFlush(result.exit_code);
-        return;
       }
 
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
@@ -121,7 +120,6 @@ export const quality = defineCommand({
         );
         emitResult(result, { format, verbose, quiet });
         return await exitWithFlush(result.exit_code);
-        return;
       }
 
       await withLogSession(
@@ -131,47 +129,63 @@ export const quality = defineCommand({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const wasm = wasmBase as Record<string, any>;
 
-      // Discover a model for quality assessment (use inductive miner — produces Petri net handle)
+      // Discover a Petri net model for quality assessment.
+      // discover_ilp_petri_net stores the net in WASM memory and returns:
+      //   { handle, places, transitions, arcs, fitness, precision, simplicity }
+      // This is the only discovery algorithm that:
+      //   (a) returns a stored PetriNet handle required by compute_optimal_alignments,
+      //       wasm_compute_precision, and generalization, AND
+      //   (b) already provides seed fitness/precision values for free.
+      //
+      // discover_inductive_miner returns an INLINE process tree JSON (no stored handle)
+      // and cannot be used with the conformance/generalization WASM calls — they
+      // require a StoredObject::PetriNet in the WASM object store.
       let modelHandle: string;
+      let discoveryPlaces = 0;
+      let discoveryTransitions = 0;
+      let discoveryArcs = 0;
+      let discoveryFitness: number | null = null;
+      let discoveryPrecision: number | null = null;
+      let discoverySimplicity: number | null = null;
       try {
-        const modelResult = wasm.discover_inductive_miner(logHandle, activityKey);
+        const modelResult = wasm.discover_ilp_petri_net(logHandle, activityKey);
         const parsed = typeof modelResult === 'string' ? JSON.parse(modelResult) : modelResult;
         modelHandle = (parsed as Record<string, unknown>).handle as string;
         if (!modelHandle) {
-          throw new Error(`Inductive miner returned unexpected result: ${JSON.stringify(parsed)}`);
+          throw new Error(`ILP petri net discovery returned no handle: ${JSON.stringify(parsed)}`);
         }
+        discoveryPlaces = ((parsed as Record<string, unknown>).places as number) ?? 0;
+        discoveryTransitions = ((parsed as Record<string, unknown>).transitions as number) ?? 0;
+        discoveryArcs = ((parsed as Record<string, unknown>).arcs as number) ?? 0;
+        discoveryFitness = (parsed as Record<string, unknown>).fitness as number ?? null;
+        discoveryPrecision = (parsed as Record<string, unknown>).precision as number ?? null;
+        discoverySimplicity = (parsed as Record<string, unknown>).simplicity as number ?? null;
       } catch (e) {
         wasm.delete_object(logHandle);
         throw new Error(`Failed to discover model: ${e instanceof Error ? e.message : String(e)}`);
       }
 
-      // Discriminate model JSON for structural info.
-      // The inductive miner produces a process tree; we may also encounter Petri
-      // nets in this branch if the discovery path changes in the future.
-      let modelStats: { nodes: number; edges: number } = { nodes: 0, edges: 0 };
-      let petriCounts: { places: number; transitions: number; arcs: number } | null = null;
-      try {
-        const rawModelJson = wasm.get_object_json ? wasm.get_object_json(modelHandle) : null;
-        if (rawModelJson) {
-          const shape = discriminate(rawModelJson, 'inductive');
-          modelStats = toUniformStats(shape);
-          if (shape.kind === 'petrinet') {
-            petriCounts = {
-              places: shape.places,
-              transitions: shape.transitions,
-              arcs: shape.arcs,
-            };
-          }
-        }
-      } catch {
-        // Model JSON retrieval not available, or shape did not match a known kind.
-        // Quality scoring will fall back to defaults below.
-      }
+      // Petri net metrics available directly from discovery result — no get_object_json needed.
+      // get_object_json does not exist in the WASM exports.
+      const petriCounts = {
+        places: discoveryPlaces,
+        transitions: discoveryTransitions,
+        arcs: discoveryArcs,
+      };
+      // For a Petri net: nodes = places + transitions, edges = arcs
+      const modelStats = {
+        nodes: discoveryPlaces + discoveryTransitions,
+        edges: discoveryArcs,
+      };
 
       // Compute quality metrics via WASM conformance functions
       const qualityScores: Record<string, number> = {};
 
-      // Fitness — via token-based replay (alignments)
+      // Fitness — via alignment-based replay against the stored PetriNet handle.
+      // compute_optimal_alignments returns { total_traces, avg_cost, alignments[] }
+      // where each alignment has { cost, sync_moves, log_moves, model_moves }.
+      // alignments[] NOT traces[] — the field was previously misread.
+      // Fitness = 1 - avg_cost / avg_trace_length; fall back to discovery seed on failure.
       if (requestedMetrics.includes('fitness')) {
         try {
           const costConfig = JSON.stringify({
@@ -186,60 +200,66 @@ export const quality = defineCommand({
             costConfig
           );
           const alignResult = typeof rawAlign === 'string' ? JSON.parse(rawAlign) : rawAlign;
-          // Fitness = 1 - (total cost / max possible cost); alignments return per-trace costs
-          const traces = alignResult.traces as
-            | Array<{ cost?: number; num_moves?: number }>
+          // alignments[] — NOT traces[]
+          const alignments = alignResult.alignments as
+            | Array<{ cost?: number; sync_moves?: number; log_moves?: number; model_moves?: number }>
             | undefined;
-          if (traces && traces.length > 0) {
+          if (alignments && alignments.length > 0) {
             let totalCost = 0;
             let totalMoves = 0;
-            for (const trace of traces) {
-              totalCost += trace.cost ?? 0;
-              totalMoves += trace.num_moves ?? 1;
+            for (const a of alignments) {
+              const cost = (a.cost ?? 0) < 0 ? 0 : (a.cost ?? 0); // -1 = no alignment found
+              const moves = (a.sync_moves ?? 0) + (a.log_moves ?? 0) + (a.model_moves ?? 0);
+              totalCost += cost;
+              totalMoves += Math.max(moves, 1);
             }
             qualityScores.fitness = totalMoves > 0 ? Math.max(0, 1 - totalCost / totalMoves) : 1.0;
+          } else if (typeof discoveryFitness === 'number') {
+            // Fall back to seed value from discovery
+            qualityScores.fitness = discoveryFitness;
           } else {
-            qualityScores.fitness =
-              ((alignResult as Record<string, unknown>).fitness as number) ?? 1.0;
+            qualityScores.fitness = 0.0;
           }
         } catch {
-          qualityScores.fitness = 0.0;
+          // Fall back to seed value from discovery on alignment failure
+          qualityScores.fitness = typeof discoveryFitness === 'number' ? discoveryFitness : 0.0;
         }
       }
 
-      // Precision — via ETConformance escaping-edge analysis
+      // Precision — via ETConformance escaping-edge analysis.
+      // wasm_compute_precision returns JSON string { precision, total_escaping, total_consumed, total_traces }
       if (requestedMetrics.includes('precision')) {
         try {
           const rawPrec = wasm.wasm_compute_precision(logHandle, modelHandle, activityKey);
           const precResult = typeof rawPrec === 'string' ? JSON.parse(rawPrec) : rawPrec;
           qualityScores.precision =
             ((precResult as Record<string, unknown>).precision as number) ??
-            ((precResult as Record<string, unknown>).value as number) ??
-            0.5;
+            discoveryPrecision ??
+            0.0;
         } catch {
-          qualityScores.precision = 0.0;
+          qualityScores.precision = typeof discoveryPrecision === 'number' ? discoveryPrecision : 0.0;
         }
       }
 
-      // Generalization — via WASM generalization metric
+      // Generalization — via WASM generalization metric.
+      // Returns JsValue (JSON string via to_js_str) { generalization, num_places, num_transitions,
+      //   num_visible_transitions, num_arcs, penalty }
       if (requestedMetrics.includes('generalization')) {
         try {
           const rawGen = wasm.generalization(logHandle, modelHandle, activityKey);
           const genResult = typeof rawGen === 'string' ? JSON.parse(rawGen) : rawGen;
           qualityScores.generalization =
-            ((genResult as Record<string, unknown>).generalization as number) ??
-            ((genResult as Record<string, unknown>).value as number) ??
-            0.5;
+            ((genResult as Record<string, unknown>).generalization as number) ?? 0.0;
         } catch {
           qualityScores.generalization = 0.0;
         }
       }
 
-      // Simplicity — via WASM compute_simplicity(places, transitions, arcs)
+      // Simplicity — via wasm_compute_simplicity(places, transitions, arcs).
+      // Returns a plain number (not JSON). Falls back to the seed value from ILP discovery.
       if (requestedMetrics.includes('simplicity')) {
         try {
           if (
-            petriCounts &&
             typeof wasm.wasm_compute_simplicity === 'function' &&
             petriCounts.places + petriCounts.transitions + petriCounts.arcs > 0
           ) {
@@ -248,15 +268,15 @@ export const quality = defineCommand({
               petriCounts.transitions,
               petriCounts.arcs
             );
+          } else if (typeof discoverySimplicity === 'number') {
+            qualityScores.simplicity = discoverySimplicity;
           } else {
-            // Fallback: heuristic if WASM function unavailable or model is not a Petri net
+            // Heuristic fallback
             const totalElements = modelStats.nodes + modelStats.edges;
             qualityScores.simplicity = 1.0 / (1.0 + totalElements / 10.0);
           }
         } catch {
-          // Fallback: heuristic on failure
-          const totalElements = modelStats.nodes + modelStats.edges;
-          qualityScores.simplicity = 1.0 / (1.0 + totalElements / 10.0);
+          qualityScores.simplicity = typeof discoverySimplicity === 'number' ? discoverySimplicity : 0.0;
         }
       }
 
@@ -292,7 +312,7 @@ export const quality = defineCommand({
                   : 'poor',
         },
         model: {
-          type: 'inductive_miner',
+          type: 'ilp_petri_net',
           nodes: modelStats.nodes,
           edges: modelStats.edges,
         },

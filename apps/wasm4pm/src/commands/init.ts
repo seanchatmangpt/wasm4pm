@@ -368,7 +368,7 @@ export const init = defineCommand({
         instructions: [
           `1. Edit ${configFilename}: set [source] path to your .xes log file`,
           `2. Algorithm guidance for this preset: ${algorithmHint}`,
-          '3. Run: wpm algorithms          — list all 36+ algorithms with speed/quality scores',
+          '3. Run: wpm explain             — compare algorithms and choose one for your situation',
           '4. Run: wpm run <log.xes>       — discover a process model (uses config defaults)',
           '5. Run: wpm doctor              — verify your environment is correctly configured',
           '6. Copy .env.example to .env — it lists ALL WASM4PM_* env vars with descriptions',

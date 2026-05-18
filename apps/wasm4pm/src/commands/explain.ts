@@ -87,15 +87,23 @@ export const explain = defineCommand({
         ctx.args.algorithm = ctx.args.target;
       }
 
-      // Step 1: Validate input
+      // Step 1: Zero-arg mode — show algorithm menu instead of a bare error
       if (!ctx.args.model && !ctx.args.algorithm && !ctx.args.config) {
-        const result = makeErrorResult(
-          'explain',
-          new Error('No model, algorithm, or config specified. Use --model, --algorithm, or --config'),
-          EXIT_CODES.source_error,
-          'MISSING_INPUT'
-        );
-        emitResult(result, { format, verbose, quiet });
+        const menuContent = getAlgorithmMenu();
+        const payload = {
+          subject: 'algorithm-menu',
+          level: 'brief' as const,
+          content: menuContent,
+        };
+        const result = makeResult('explain', payload, performance.now() - t0, EXIT_CODES.success);
+        emitResult(result, { format, verbose, quiet }, (res, projection) => {
+          const p = res.payload as typeof payload;
+          projection.log(p.content);
+          projection.log('');
+          projection.log('  Run "wpm explain <algorithm>"   — detailed explanation of one algorithm');
+          projection.log('  Run "wpm explain <algorithm> --level academic" — formal definitions');
+          projection.log('  Run "wpm algorithms"            — full list with speed/quality scores');
+        });
         return await exitWithFlush(result.exit_code);
       }
 
@@ -679,8 +687,61 @@ Maximize: Σ yₜ - λ × Σ xₑ
   const algo = Object.keys(explanations).find((k) => algoKey.includes(k) || k.includes(algoKey));
 
   if (!algo || !explanations[algo]) {
-    return `No detailed explanation available for algorithm: ${algorithm}`;
+    // Unknown algorithm — list what is available so the user knows what to type next
+    const available = Object.keys(explanations).join(', ');
+    return (
+      `No explanation available for '${algorithm}'.\n\n` +
+      `Algorithms with explanations: ${available}\n\n` +
+      `Examples:\n` +
+      `  wpm explain dfg          — simplest/fastest algorithm\n` +
+      `  wpm explain heuristic    — balanced, noise-robust\n` +
+      `  wpm explain ilp          — highest quality\n` +
+      `  wpm explain              — show full algorithm menu`
+    );
   }
 
   return explanations[algo][level] || explanations[algo].detailed;
+}
+
+/**
+ * Returns a curated comparison table for zero-arg `wpm explain` invocations.
+ * The goal is to answer the first question a practitioner has:
+ * "Which algorithm should I use for my situation?"
+ */
+function getAlgorithmMenu(): string {
+  return `
+wpm explain — Process Mining Algorithm Guide
+============================================
+
+When to use which algorithm (Van der Aalst quality dimensions):
+
+  SITUATION                          RECOMMENDED ALGORITHM     WHY
+  ─────────────────────────────────────────────────────────────────────────────
+  First look at a new log            dfg                       Linear time, instant overview
+  Noisy log (many variants)          heuristic                 Threshold filters outliers
+  Structured workflow (BPMN-like)    inductive                 Guaranteed sound process tree
+  Need Petri net, quick              alpha                     Classic algorithm, parallelism
+  Best possible model (slow ok)      ilp                       Optimal fitness/precision trade-off
+  Population-based refinement        genetic                   Balances quality + flexibility
+  Avoid local optima                 annealing                 Escapes local optima via temperature
+  Swarm-style exploration            aco or pso                Pheromone/particle global search
+  Declarative / compliance rules     declare                   Constraint names (response, precedence)
+  Compressed skeleton view           skeleton                  Core structure, low noise
+  Real-time / streaming              simd-dfg                  SIMD-accelerated, lowest latency
+
+Quality vs Speed trade-off:
+  Speed:    dfg > skeleton > simd-dfg > alpha > heuristic > inductive > hill-climbing
+            > annealing > a_star > aco > pso > genetic > ilp
+  Quality:  ilp > genetic > pso > aco > a_star > annealing > heuristic > inductive
+            > alpha > skeleton > dfg
+
+Van der Aalst quality dimensions:
+  Fitness      — model can replay what was observed (>0.85 is good)
+  Precision    — model does not allow too much unobserved behaviour
+  Simplicity   — fewer places/transitions is better (Occam's razor)
+  Generalization — model covers future behaviour, not just the sample
+
+Available algorithms with explanations:
+  dfg, alpha, heuristic, inductive, astar, aco, hill, annealing, pso,
+  skeleton, declare, ilp, genetic`.trim();
 }

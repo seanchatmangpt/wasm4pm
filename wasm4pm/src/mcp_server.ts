@@ -809,6 +809,140 @@ export class Wasm4pmMCPServer {
           required: ['xes_content'],
         },
       },
+      // Resource perspective — Social Network Mining (van der Aalst 6th perspective)
+      {
+        name: 'discover_handover_network',
+        description:
+          'Mine the handover-of-work social network from an event log. Answers "Which resources hand off work to which other resources, and how often?" Each edge (from→to) represents a direct handoff between two resources on the same case. Edge weight is the number of handoffs. Use org:resource as the resource_key for standard XES logs. This is van der Aalst\'s Resource perspective: it reveals collaboration patterns, identifies isolated workers, and surfaces hidden coordination bottlenecks. Returns { nodes: [{id, label}], edges: [{from, to, weight}] }.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            resource_key: {
+              type: 'string',
+              description:
+                'XES attribute key that identifies the resource (default: org:resource). Use org:resource for standard XES logs.',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'discover_working_together_network',
+        description:
+          'Mine the working-together social network from an event log. Answers "Which resources collaborate by working on the same cases?" Two resources are connected if they both handled at least one event in the same case. Edge weight is the number of cases where both appeared. Complements discover_handover_network: handover shows sequential dependencies, working-together shows case-level co-occurrence. Returns { nodes: [{id, label}], edges: [{from, to, co_occurrences}] }.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            resource_key: {
+              type: 'string',
+              description:
+                'XES attribute key that identifies the resource (default: org:resource). Use org:resource for standard XES logs.',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      // Enhancement perspective — rework detection
+      {
+        name: 'detect_rework',
+        description:
+          'Detect rework loops in a process — activities that are repeated within the same case. Answers "Where does this process have rework?" Returns rework_by_activity (which activities are repeated and how often), traces_with_rework (count of cases containing at least one repeated activity), rework_percentage (fraction of all cases with rework), and total_rework_instances. High rework on "Check" or "Approve" activities is a strong indicator of quality problems upstream. Use this as an Enhancement perspective tool to identify where the process loops back unnecessarily.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            activity_key: {
+              type: 'string',
+              description: 'XES activity attribute key (default: concept:name)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      // LLM-readable text encodings — high-value conversational tools
+      {
+        name: 'encode_variants_as_text',
+        description:
+          'Describe the top process variants in human-readable English. Answers "What are the main paths through this process?" Returns a narrative listing the most frequent trace sequences with their occurrence percentages. Use this instead of discover_variants when you want to describe variants in a conversation rather than process raw JSON. Example output: "Top 3 process variants: 1. Register→Check→Approve→Close (45%), 2. Register→Reject→Close (30%), ..."',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            activity_key: {
+              type: 'string',
+              description: 'XES activity attribute key (default: concept:name)',
+            },
+            top_n: {
+              type: 'number',
+              description: 'Maximum number of variants to describe (default: 10)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'encode_statistics_as_text',
+        description:
+          'Summarize event log statistics in human-readable English. Answers "What does this event log contain?" Returns a natural-language summary including case count, event count, average events per case, unique activities, and activity frequency rankings. Use this as the first tool when exploring an unknown event log — it gives an immediate natural-language overview without any JSON parsing. Equivalent to analyze_statistics but formatted for conversational output.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      // Beam search — predictive next-activity sequences
+      {
+        name: 'predict_beam_paths',
+        description:
+          'Predict the top-k most likely complete activity sequences (paths) from a prefix using beam search over the n-gram model. Unlike predict_next_activity (which predicts one step), this predicts entire future paths. Answers "What are the most likely ways this case will complete?" Returns sequences sorted by probability with their full activity lists. Use k=3 to get the top 3 predicted paths, depth controls how many future activities to predict (default: 5). Example: prefix ["Register","Check"] might yield paths ["Register","Check","Approve","Close"], ["Register","Check","Reject","Close"], etc.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content used to train the n-gram model',
+            },
+            prefix: {
+              type: 'array',
+              items: { type: 'string' },
+              description:
+                'Activity names seen so far in the running case, e.g. ["Register", "Check"]',
+            },
+            k: {
+              type: 'number',
+              description: 'Number of top paths to return (default: 3)',
+            },
+            depth: {
+              type: 'number',
+              description: 'Maximum number of future activities to predict per path (default: 5)',
+            },
+            n: {
+              type: 'number',
+              description: 'N-gram context size (default: 2)',
+            },
+          },
+          required: ['xes_content', 'prefix'],
+        },
+      },
       // Registry
       {
         name: 'get_capability_registry',
@@ -978,13 +1112,6 @@ export class Wasm4pmMCPServer {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
           const threshold = BigInt((input.threshold as number) ?? 3600);
           result = wasm.detect_bottlenecks(logHandle, 'concept:name', 'time:timestamp', threshold);
-          break;
-        }
-
-        case 'detect_concept_drift': {
-          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
-          const windowSize = (input.window_size as number) ?? 5;
-          result = wasm.detect_drift(logHandle, 'concept:name', windowSize);
           break;
         }
 
@@ -1614,6 +1741,190 @@ export class Wasm4pmMCPServer {
           break;
         }
 
+        // Resource perspective — Social Network Mining
+        case 'discover_handover_network': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const resourceKey = (input.resource_key as string) ?? 'org:resource';
+            const raw = wasm.discover_handover_network(logHandle, resourceKey);
+            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            const nodes: Array<{ id: string; label: string }> = parsed?.nodes ?? [];
+            const edges: Array<{ from: string; to: string; weight: number }> = parsed?.edges ?? [];
+            const topEdge = edges.slice().sort((a, b) => (b.weight ?? 0) - (a.weight ?? 0))[0];
+            result = {
+              nodes,
+              edges,
+              node_count: nodes.length,
+              edge_count: edges.length,
+              interpretation:
+                nodes.length === 0
+                  ? `No handover network found. Verify the resource_key parameter is "${resourceKey}" and that events in this log include that attribute.`
+                  : topEdge
+                    ? `Handover-of-work network has ${nodes.length} resource(s) and ${edges.length} handoff edge(s). Most frequent handoff: ${topEdge.from} → ${topEdge.to} (${topEdge.weight} time${topEdge.weight !== 1 ? 's' : ''}). Resources with many outgoing edges are handoff sources; those with many incoming edges are receiving bottlenecks.`
+                    : `${nodes.length} resource(s) found, ${edges.length} handoff edge(s).`,
+            };
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+
+        case 'discover_working_together_network': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const resourceKey = (input.resource_key as string) ?? 'org:resource';
+            const raw = wasm.discover_working_together_network(logHandle, resourceKey);
+            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            const nodes: Array<{ id: string; label: string }> = parsed?.nodes ?? [];
+            const edges: Array<{ from: string; to: string; co_occurrences: number }> =
+              parsed?.edges ?? [];
+            const topEdge = edges
+              .slice()
+              .sort((a, b) => (b.co_occurrences ?? 0) - (a.co_occurrences ?? 0))[0];
+            result = {
+              nodes,
+              edges,
+              node_count: nodes.length,
+              edge_count: edges.length,
+              interpretation:
+                nodes.length === 0
+                  ? `No working-together network found. Verify the resource_key parameter is "${resourceKey}" and that events include that attribute.`
+                  : topEdge
+                    ? `Working-together network has ${nodes.length} resource(s) and ${edges.length} collaboration edge(s). Most frequent collaboration: ${topEdge.from} and ${topEdge.to} worked together on ${topEdge.co_occurrences} case(s). Resources with the most edges are central collaborators; isolated resources may be working in silos.`
+                    : `${nodes.length} resource(s) found, ${edges.length} collaboration edge(s).`,
+            };
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+
+        // Enhancement perspective — rework detection
+        case 'detect_rework': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const actKey = (input.activity_key as string) ?? 'concept:name';
+            const raw = wasm.detect_rework(logHandle, actKey);
+            const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+            const reworkByActivity: Array<{ activity: string; count: number }> =
+              parsed?.rework_by_activity ?? [];
+            const tracesWithRework: number = parsed?.traces_with_rework ?? 0;
+            const reworkPct: number = parsed?.rework_percentage ?? 0;
+            const totalInstances: number = parsed?.total_rework_instances ?? 0;
+            const topRework = reworkByActivity
+              .slice()
+              .sort((a, b) => (b.count ?? 0) - (a.count ?? 0))[0];
+            result = {
+              rework_by_activity: reworkByActivity,
+              traces_with_rework: tracesWithRework,
+              rework_percentage:
+                typeof reworkPct === 'number' ? parseFloat(reworkPct.toFixed(2)) : 0,
+              total_rework_instances: totalInstances,
+              interpretation:
+                tracesWithRework === 0
+                  ? 'No rework detected. Every activity appears at most once in each case.'
+                  : topRework
+                    ? `Rework detected in ${tracesWithRework} case(s) (${typeof reworkPct === 'number' ? (reworkPct * 100).toFixed(1) : '?'}% of traces). Most repeated activity: "${topRework.activity}" (${topRework.count} extra occurrences). Rework indicates upstream quality issues — consider root-cause analysis on cases that repeat "${topRework.activity}".`
+                    : `Rework found in ${tracesWithRework} case(s) with ${totalInstances} total rework event(s).`,
+            };
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+
+        // LLM-readable text encodings
+        case 'encode_variants_as_text': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const actKey = (input.activity_key as string) ?? 'concept:name';
+            const topN = (input.top_n as number) ?? 10;
+            const raw = wasm.encode_variants_as_text(logHandle, actKey, topN);
+            result = { text: typeof raw === 'string' ? raw : String(raw) };
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+
+        case 'encode_statistics_as_text': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const raw = wasm.encode_statistics_as_text(logHandle);
+            result = { text: typeof raw === 'string' ? raw : String(raw) };
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+
+        // Beam search — full path prediction
+        case 'predict_beam_paths': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const actKey = (input.activity_key as string) ?? 'concept:name';
+            const n = (input.n as number) ?? 2;
+            const k = (input.k as number) ?? 3;
+            const depth = (input.depth as number) ?? 5;
+            const predictorHandle = wasm.build_ngram_predictor(logHandle, actKey, n);
+            try {
+              const prefixJson = JSON.stringify(input.prefix as string[]);
+              const raw = wasm.predict_beam_paths(String(predictorHandle), prefixJson, k, depth);
+              const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw;
+              const paths: Array<{ sequence: string[]; probability: number; length: number }> =
+                Array.isArray(parsed) ? parsed : (parsed?.paths ?? []);
+              const prefix = input.prefix as string[];
+              const top = paths[0];
+              result = {
+                paths,
+                interpretation:
+                  paths.length === 0
+                    ? `No beam paths found for prefix [${prefix.join('→')}]. The prefix may not appear in the training log. Try a shorter prefix or check the activity_key parameter.`
+                    : top
+                      ? `Top predicted path: [${top.sequence.join('→')}] (probability ${(top.probability * 100).toFixed(1)}%). Found ${paths.length} candidate path(s) from prefix [${prefix.join('→')}] using ${n}-gram beam search with depth ${depth}.`
+                      : `${paths.length} path(s) predicted.`,
+                prefix,
+                n_gram_order: n,
+                beam_width: k,
+                max_depth: depth,
+              };
+            } finally {
+              try {
+                wasm.delete_object(String(predictorHandle));
+              } catch {
+                /* best-effort */
+              }
+            }
+          } finally {
+            try {
+              wasm.delete_object(logHandle);
+            } catch {
+              /* best-effort */
+            }
+          }
+          break;
+        }
+
         // Process boundary analysis — start and end activities
         case 'analyze_start_end_activities': {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
@@ -1842,11 +2153,46 @@ export class Wasm4pmMCPServer {
         ],
       };
     } catch (error) {
+      const msg = error instanceof Error ? error.message : String(error);
+      // Classify the error to give actionable guidance
+      let guidance = '';
+      if (
+        msg.includes('XES') ||
+        msg.includes('parse') ||
+        msg.includes('UTF') ||
+        msg.includes('unexpected token')
+      ) {
+        guidance =
+          ' The xes_content may be malformed. Verify it is valid XES XML starting with <?xml...> or <log...>.';
+      } else if (
+        msg.includes('handle') ||
+        msg.includes('not found') ||
+        msg.includes('invalid handle')
+      ) {
+        guidance =
+          ' A handle argument may be invalid or already freed. Ensure ocel_handle or model handles come from the corresponding load_* tool in the same session.';
+      } else if (msg.includes('undefined') || msg.includes('null')) {
+        guidance =
+          ' An argument may be missing or of the wrong type. Check that all required fields match the inputSchema.';
+      } else if (msg.includes('memory') || msg.includes('oom') || msg.includes('allocation')) {
+        guidance =
+          ' The event log may be too large for the current WASM memory limit. Try a smaller log or use streaming_log_estimate instead.';
+      }
       return {
         content: [
           {
             type: 'text',
-            text: `Error: ${error instanceof Error ? error.message : String(error)}`,
+            text: JSON.stringify(
+              {
+                error: msg,
+                tool: toolName,
+                guidance:
+                  guidance.trim() ||
+                  'Check that all required inputs are present and correctly formatted.',
+              },
+              null,
+              2
+            ),
           },
         ],
         isError: true,

@@ -285,6 +285,10 @@ export const driftWatch = defineCommand({
       const ts = timestamp();
 
       // ── Output ────────────────────────────────────────────────────────────
+      // Compute derived thresholds for early-warning logic
+      const preAlertThreshold = driftThreshold / 2;
+      const approachingThreshold = ewma > preAlertThreshold && ewma <= driftThreshold && trend === 'rising';
+
       if (jsonMode) {
         const newPoints = newDriftCount > 0 ? drifts.slice(previousDriftCount) : [];
         const line = {
@@ -295,7 +299,9 @@ export const driftWatch = defineCommand({
           window_size: windowSize,
           new_drift_points: Math.max(0, newDriftCount),
           distances: ewmaResult.smoothed,
-          // Structural change details for new drift points
+          // Early-warning flag: EWMA is rising toward threshold but has not yet crossed it
+          approaching_threshold: approachingThreshold,
+          // Structural change details for ALL new drift points in this burst
           new_drifts: newPoints.map((dp) => ({
             position: dp.position,
             distance: parseFloat(dp.distance.toFixed(4)),
@@ -307,7 +313,7 @@ export const driftWatch = defineCommand({
         process.stdout.write(JSON.stringify(line) + '\n');
       } else {
         // One-line status
-        const driftColor = ewma > driftThreshold ? RED : ewma > driftThreshold / 2 ? YELLOW : GREEN;
+        const driftColor = ewma > driftThreshold ? RED : ewma > preAlertThreshold ? YELLOW : GREEN;
         const statusLine =
           `${CYAN}[${ts}]${RESET} ` +
           `drift=${driftColor}${ewma.toFixed(4)}${RESET} (${trendArrow(trend)}) | ` +
@@ -315,29 +321,54 @@ export const driftWatch = defineCommand({
           `window=${windowSize}`;
         console.log(statusLine);
 
-        // Alert on new drift points
+        // Early-warning: EWMA is rising and between half-threshold and threshold.
+        // This fires BEFORE a threshold crossing so analysts can investigate early.
+        if (approachingThreshold && newDriftCount === 0) {
+          console.log(
+            `${YELLOW}  ~ PRE-ALERT${RESET} — EWMA rising toward threshold ` +
+            `(${ewma.toFixed(4)} of ${driftThreshold}). ` +
+            `Consider inspecting recent windows before a full alert fires.`
+          );
+        }
+
+        // Alert on new drift points — show structural changes for EVERY point in the burst,
+        // not just the last one, so multi-point bursts don't silently drop information.
         if (newDriftCount > 0) {
           alertsFired += 1;
-          const latest = drifts[drifts.length - 1];
+          const newPoints = drifts.slice(previousDriftCount);
+          const latest = newPoints[newPoints.length - 1];
           const alertLine =
             `${BOLD}${RED}  ⚠  ALERT${RESET} — ${newDriftCount} new drift point${newDriftCount !== 1 ? 's' : ''} ` +
             `at position ${latest?.position ?? '?'}, distance=${(latest?.distance ?? 0).toFixed(4)}`;
           console.log(alertLine);
-          // Surface structural change details when available
-          if (latest?.disappeared && latest.disappeared.length > 0) {
+
+          // Aggregate appeared/disappeared across ALL new points in this burst
+          const burstAppeared = Array.from(
+            new Set(newPoints.flatMap((dp) => dp.appeared ?? []))
+          );
+          const burstDisappeared = Array.from(
+            new Set(newPoints.flatMap((dp) => dp.disappeared ?? []))
+          );
+          const burstSuggestions = newPoints
+            .map((dp) => dp.suggestion)
+            .filter((s): s is string => Boolean(s));
+
+          if (burstDisappeared.length > 0) {
             console.log(
-              `${RED}     disappeared:${RESET} ${latest.disappeared.slice(0, 5).join(', ')}` +
-              (latest.disappeared.length > 5 ? ` (+${latest.disappeared.length - 5} more)` : '')
+              `${RED}     disappeared:${RESET} ${burstDisappeared.slice(0, 5).join(', ')}` +
+              (burstDisappeared.length > 5 ? ` (+${burstDisappeared.length - 5} more)` : '')
             );
           }
-          if (latest?.appeared && latest.appeared.length > 0) {
+          if (burstAppeared.length > 0) {
             console.log(
-              `${GREEN}     appeared:${RESET}    ${latest.appeared.slice(0, 5).join(', ')}` +
-              (latest.appeared.length > 5 ? ` (+${latest.appeared.length - 5} more)` : '')
+              `${GREEN}     appeared:${RESET}    ${burstAppeared.slice(0, 5).join(', ')}` +
+              (burstAppeared.length > 5 ? ` (+${burstAppeared.length - 5} more)` : '')
             );
           }
-          if (latest?.suggestion) {
-            console.log(`${YELLOW}     suggestion:${RESET}  ${latest.suggestion}`);
+          // Show unique suggestions across the burst (deduped)
+          const uniqueSuggestions = Array.from(new Set(burstSuggestions));
+          for (const s of uniqueSuggestions) {
+            console.log(`${YELLOW}     suggestion:${RESET}  ${s}`);
           }
         }
       }

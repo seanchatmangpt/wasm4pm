@@ -214,13 +214,14 @@ describe('quality: metric whitelist', () => {
     expect(e.message).toContain('simplicity');
   });
 
-  it('quality response always returns a structured envelope — even when inductive miner fails for small logs', async () => {
-    const r = await run(['quality', '-i', XES, '--format', 'json', '--no-save']);
+  it('quality response always returns a structured envelope — even when ILP discovery takes time', async () => {
+    // ILP discovery + conformance checks take 10-15s — override the 5s vitest default
+    const r = await run(['quality', '-i', XES, '--format', 'json', '--no-save'], 45_000);
     const j = json(r);
     // Must be parseable and have command + status fields
     expect(j['command']).toBe('quality');
     expect(['ok', 'error']).toContain(j['status']);
-  });
+  }, 45_000);
 });
 
 // ---------------------------------------------------------------------------

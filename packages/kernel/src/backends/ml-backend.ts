@@ -215,8 +215,11 @@ export class MlBackend implements MiningBackend {
           break;
         }
         default:
+          // This branch is unreachable: the SUPPORTED_ALGORITHM_IDS guard above
+          // throws before the switch if task_type is not in the supported list.
+          // The throw here is retained as a TypeScript exhaustiveness sentinel.
           throw new Error(
-            `Execution for ML task ${task.task_type} not implemented in ML backend bridge`
+            `Unreachable: ML task ${task.task_type} passed guard but has no switch case`
           );
       }
 

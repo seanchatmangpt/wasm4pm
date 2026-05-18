@@ -330,7 +330,12 @@ export class AgentOrchestrator {
         };
     }
     /**
-     * LEARN: Update knowledge base
+     * LEARN: Update knowledge base and adapt agent thresholds.
+     *
+     * Drift scores are fed back into the agent registry so that thresholds
+     * tighten for noisy agents and relax for quiet ones. This closes the
+     * MAPE-K feedback loop: Execute results influence future Monitor/Analyze
+     * sensitivity.
      */
     learn(analyze, execute) {
         // Track drift by violation patterns
@@ -339,12 +344,16 @@ export class AgentOrchestrator {
             const key = `${violation.agent_name}:${violation.violation_type}`;
             driftScores[key] = (driftScores[key] || 0) + 1;
         }
-        // Normalize drift scores
+        // Normalize drift scores to [0, 1]
         for (const key of Object.keys(driftScores)) {
             driftScores[key] = Math.min(driftScores[key] / 10, 1.0);
         }
+        // Feed drift scores back into agent registry to adapt thresholds.
+        if (Object.keys(driftScores).length > 0) {
+            this.registry.adaptThresholdsFromDrift(driftScores);
+        }
         return {
-            knowledge_updated: execute.corrections.length > 0,
+            knowledge_updated: execute.corrections.length > 0 || Object.keys(driftScores).length > 0,
             drift_scores: Object.keys(driftScores).length > 0 ? driftScores : null,
             ontology_patches: execute.successful_count,
         };

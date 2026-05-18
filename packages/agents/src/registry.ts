@@ -256,6 +256,35 @@ export class AgentRegistry {
     }
   }
 
+  /**
+   * Adapt agent thresholds based on drift scores from the Learn phase.
+   *
+   * When a violation type fires repeatedly (drift score > 0), the agent's
+   * max_deviations threshold is tightened (lower bound) to increase sensitivity.
+   * When a violation type never fires (drift score == 0) and the agent has been
+   * running for several cycles, the threshold relaxes slightly to reduce noise.
+   *
+   * Score interpretation: 0.0 = never fired, 1.0 = fired on every cycle.
+   * Key format: "<agent_name>:<violation_type>"
+   */
+  adaptThresholdsFromDrift(driftScores: Record<string, number>): void {
+    for (const [key, score] of Object.entries(driftScores)) {
+      const agentName = key.split(':')[0];
+      const agent = this.agents.get(agentName);
+      if (!agent) continue;
+
+      const thresholds = agent.config.thresholds;
+
+      if (score > 0.5) {
+        // High recurring drift: tighten sensitivity (fewer allowed deviations)
+        thresholds.max_deviations = Math.max(0, thresholds.max_deviations - 1);
+      } else if (score === 0 && agent.total_runs >= 5) {
+        // No violations seen after several cycles: relax slightly to reduce noise
+        thresholds.max_deviations = Math.min(3, thresholds.max_deviations + 1);
+      }
+    }
+  }
+
   /** Register a new agent */
   registerAgent(config: AgentConfig): void {
     this.agents.set(config.name, {

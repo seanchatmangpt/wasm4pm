@@ -811,9 +811,6 @@ export const run = defineCommand({
           }
         }
 
-        // Inform about WASM init and algorithm selection
-        projection.info(`Discovering process model with ${p.algorithm}...`);
-
         // ML analysis summary
         if (p.ml && Object.keys(p.ml as Record<string, unknown>).length > 0) {
           projection.info(`ML analysis complete: ${Object.keys(p.ml as Record<string, unknown>).join(', ')}`);

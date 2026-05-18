@@ -32,6 +32,9 @@ export * from './observability-wrapper.js';
 
 export * from './observability.js';
 
+// LIVE-10 relay bridge: cross-enterprise A2A relay span emitters
+export * from './relay-bridge.js';
+
 // Global singleton access
 import { ObservabilityWrapper } from './observability-wrapper.js';
 import { Tracer } from './spans.js';

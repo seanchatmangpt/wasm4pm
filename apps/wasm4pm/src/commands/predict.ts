@@ -383,8 +383,65 @@ async function executePredictionTask(
 
     case 'drift': {
       const raw: string = wasm.detect_drift(logHandle, activityKey, driftWindow);
-      const driftResult = JSON.parse(raw);
-      return { driftResult };
+      const driftResult = JSON.parse(raw) as {
+        drifts_detected: number;
+        drifts: Array<{
+          position: number;
+          distance: number;
+          type: string;
+          appeared?: string[];
+          disappeared?: string[];
+          suggestion?: string;
+        }>;
+        window_size: number;
+        method: string;
+      };
+
+      // Apply EWMA smoothing to the distance series extracted from drift points.
+      // This gives the analyst the same smoothed trend signal that drift-watch
+      // provides in streaming mode — a single static snapshot of the series.
+      const distances = driftResult.drifts.map((dp) => dp.distance);
+      let ewmaResult: { smoothed: number[]; trend: string; last_value: number | null } | null = null;
+      if (distances.length > 0) {
+        try {
+          const ewmaRaw: string = wasm.compute_ewma(JSON.stringify(distances), 0.3);
+          ewmaResult = JSON.parse(ewmaRaw) as {
+            smoothed: number[];
+            trend: string;
+            last_value: number | null;
+          };
+        } catch {
+          // compute_ewma is best-effort; missing it does not invalidate the drift result
+        }
+      }
+
+      // Aggregate structural changes across all drift points so the analyst
+      // sees the full picture, not just the last point.
+      const allAppeared = Array.from(
+        new Set(driftResult.drifts.flatMap((dp) => dp.appeared ?? []))
+      );
+      const allDisappeared = Array.from(
+        new Set(driftResult.drifts.flatMap((dp) => dp.disappeared ?? []))
+      );
+      const suggestions = driftResult.drifts
+        .map((dp) => dp.suggestion)
+        .filter((s): s is string => Boolean(s));
+
+      return {
+        driftResult,
+        ewma: ewmaResult
+          ? {
+              trend: ewmaResult.trend,
+              last_value: ewmaResult.last_value,
+              smoothed: ewmaResult.smoothed,
+            }
+          : null,
+        structural_changes: {
+          appeared: allAppeared,
+          disappeared: allDisappeared,
+          suggestions,
+        },
+      };
     }
 
     case 'features': {
@@ -563,19 +620,58 @@ function formatHumanOutput(
     case 'drift': {
       const dr = result['driftResult'] as Record<string, unknown>;
       const drifts = (dr?.['drifts'] as Array<Record<string, unknown>>) ?? [];
+
+      // EWMA smoothing context (from the enriched predict result)
+      const ewma = result['ewma'] as Record<string, unknown> | null | undefined;
+      // Structural change aggregates across all drift points
+      const sc = result['structural_changes'] as Record<string, unknown> | undefined;
+      const appeared = (sc?.['appeared'] as string[]) ?? [];
+      const disappeared = (sc?.['disappeared'] as string[]) ?? [];
+      const suggestions = (sc?.['suggestions'] as string[]) ?? [];
+
       if (drifts.length === 0) {
         p.info('No concept drift detected.');
         return;
       }
       p.log('');
       p.log(
-        `  Detected ${drifts.length} drift point(s) (method: ${dr?.['method'] ?? 'jaccard_window'}):`
+        `  Detected ${drifts.length} drift point(s) (method: ${dr?.['method'] ?? 'jaccard_window'}, window=${dr?.['window_size'] ?? '?'}):`
       );
       for (const dp of drifts) {
         const pos = dp['position'] ?? '?';
         const dist =
           typeof dp['distance'] === 'number' ? dp['distance'].toFixed(4) : String(dp['distance'] ?? '');
         p.log(`    Position ${pos}  distance=${dist}  type=${dp['type'] ?? 'concept_drift'}`);
+      }
+
+      // EWMA trend summary
+      if (ewma) {
+        const trendLabel =
+          ewma['trend'] === 'rising'
+            ? 'RISING (drift is accelerating)'
+            : ewma['trend'] === 'falling'
+              ? 'falling (drift is subsiding)'
+              : 'stable';
+        const lastVal = typeof ewma['last_value'] === 'number' ? (ewma['last_value'] as number).toFixed(4) : '–';
+        p.log('');
+        p.log(`  EWMA trend: ${trendLabel}  (smoothed last value: ${lastVal})`);
+      }
+
+      // Structural changes aggregated across all drift points
+      if (disappeared.length > 0) {
+        p.log('');
+        p.log(`  Activities that disappeared across drift windows:`);
+        p.log(`    ${disappeared.slice(0, 8).join(', ')}${disappeared.length > 8 ? ` (+${disappeared.length - 8} more)` : ''}`);
+      }
+      if (appeared.length > 0) {
+        p.log(`  Activities that appeared across drift windows:`);
+        p.log(`    ${appeared.slice(0, 8).join(', ')}${appeared.length > 8 ? ` (+${appeared.length - 8} more)` : ''}`);
+      }
+      if (suggestions.length > 0) {
+        p.log('');
+        for (const s of suggestions) {
+          p.log(`  Suggestion: ${s}`);
+        }
       }
       p.log('');
       break;
