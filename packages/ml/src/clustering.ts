@@ -109,17 +109,24 @@ function kmeansCore(
       if (ss < minDists[i]) minDists[i] = ss;
     }
 
-    // Weighted random selection (deterministic: first qualifying index)
+    // Weighted selection (deterministic: first qualifying index).
+    // Guard: if totalDist == 0 all remaining points coincide with existing
+    // centroids — pick the next distinct data point instead (index c mod n).
     let totalDist = 0;
     for (let i = 0; i < n; i++) totalDist += minDists[i];
-    let cumulative = 0;
-    const threshold = (c / k) * totalDist;
     let chosen = n - 1;
-    for (let i = 0; i < n; i++) {
-      cumulative += minDists[i];
-      if (cumulative >= threshold) {
-        chosen = i;
-        break;
+    if (totalDist === 0) {
+      // Degenerate: pick next data point by position to avoid duplicate centroid
+      chosen = c % n;
+    } else {
+      let cumulative = 0;
+      const threshold = (c / k) * totalDist;
+      for (let i = 0; i < n; i++) {
+        cumulative += minDists[i];
+        if (cumulative >= threshold) {
+          chosen = i;
+          break;
+        }
       }
     }
 
