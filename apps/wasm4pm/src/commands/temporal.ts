@@ -18,17 +18,20 @@ export const temporal = defineCommand({
     description:
       'Analyze temporal profiles and performance patterns in event logs.\n' +
       '\n' +
+      'Detects slow or unusually fast activity transitions, measures waiting times,\n' +
+      'and identifies bottlenecks that may indicate process problems or data quality issues.\n' +
+      '\n' +
       'Examples:\n' +
-      '  wpm temporal log.xes                          # full temporal analysis, threshold=0.05\n' +
-      '  wpm temporal log.xes --threshold 0.01         # stricter: flag only severe deviations\n' +
-      '  wpm temporal -i log.xes --format json         # machine-readable output\n' +
+      '  wpm temporal log.xes                          # analyze all temporal patterns\n' +
+      '  wpm temporal log.xes --threshold 0.01         # stricter detection (1% significance vs default 5%)\n' +
+      '  wpm temporal -i log.xes --format json         # machine-readable output for automation\n' +
       '\n' +
       'Output includes:\n' +
-      '  • Temporal conformance fitness (0–100%) — how well the log fits the discovered profile\n' +
-      '  • Deviations flagged at >2σ from the mean transition duration\n' +
-      '  • Waiting-time distribution per activity (mean, P50, P90, P99)\n' +
-      '  • Primary bottleneck: the activity whose P90 waiting time is longest\n' +
-      '  • Impossible-timestamp count (end < start — data quality defects)\n' +
+      '  • Temporal conformance fitness (0–100%) — percentage of time transitions match the average pattern\n' +
+      '  • Outlier transitions — activities that take >2 standard deviations from their mean duration\n' +
+      '  • Waiting-time distribution per activity (median, P90, P99 percentiles)\n' +
+      '  • Primary bottleneck — the single activity where work queues longest (P90 wait time)\n' +
+      '  • Impossible timestamps — events where end time < start time (data quality issues)\n' +
       '\n' +
       'Exit codes: 0=success  1=config/arg error  2=source/file error  3=execution error',
   },
