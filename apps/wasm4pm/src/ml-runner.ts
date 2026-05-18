@@ -24,8 +24,9 @@ import {
   reduceFeaturesPCA,
   suggestClusteringK,
   detectLogCharacteristics,
+  assessFeatureQuality,
 } from '@wasm4pm/ml';
-import type { ClassificationMethod, ClusteringMethod, RegressionMethod } from '@wasm4pm/ml';
+import type { ClassificationMethod, ClusteringMethod, RegressionMethod, QualityReport } from '@wasm4pm/ml';
 import { Instrumentation } from '@wasm4pm/observability';
 import type { OtelEvent, RequiredOtelAttributes } from '@wasm4pm/observability';
 
@@ -447,6 +448,15 @@ export async function executeMlTask(
         configJson
       );
       const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+
+      // Gap 2: Assess feature quality before classification
+      const featureMatrix = buildFeatureMatrixFromExtraction(features);
+      const qualityReport = assessFeatureQuality(featureMatrix.data);
+      if (qualityReport.warnings.length > 0) {
+        console.warn(`[ML Feature Quality] ${qualityReport.warnings.join('; ')}`);
+        qualityReport.recommendations.forEach((rec) => console.warn(`  → ${rec}`));
+      }
+
       const k = parseInt(String(options.k ?? '5'), 10);
       if (Number.isNaN(k) || k <= 0)
         throw new Error('Classification parameter k must be a positive number');
@@ -785,4 +795,43 @@ function attachClassDistribution(result: Record<string, unknown>): Record<string
     }));
 
   return { ...result, _classDistribution: distribution };
+}
+
+/**
+ * Helper: convert extract_case_features JSON output to numeric feature matrix.
+ * Used for feature quality assessment.
+ */
+function buildFeatureMatrixFromExtraction(
+  features: Array<Record<string, unknown>>
+): { data: number[][]; featureNames: string[] } {
+  if (!features || !Array.isArray(features) || features.length === 0) {
+    return { data: [], featureNames: [] };
+  }
+
+  const firstRow = features[0];
+  const featureNames = Object.keys(firstRow).filter((k) => k !== 'case_id');
+  const excludeKeys = new Set(['case_id']);
+
+  const data: number[][] = [];
+  for (const row of features) {
+    if (row == null || typeof row !== 'object') continue;
+    const numRow: number[] = [];
+    for (const key of featureNames) {
+      if (excludeKeys.has(key)) continue;
+      const val = row[key];
+      let num = 0;
+      if (typeof val === 'number') {
+        num = val;
+      } else if (typeof val === 'string') {
+        num = parseFloat(val);
+        if (Number.isNaN(num)) num = 0;
+      }
+      numRow.push(num);
+    }
+    if (numRow.length > 0) {
+      data.push(numRow);
+    }
+  }
+
+  return { data, featureNames: featureNames.filter((k) => !excludeKeys.has(k)) };
 }

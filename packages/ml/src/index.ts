@@ -33,6 +33,9 @@ export {
   type LogCharacteristicsDetection,
 } from './parameter-suggestions.js';
 
+// Feature quality assessment
+export { assessFeatureQuality, type QualityReport } from './feature-quality.js';
+
 // Types
 export type {
   FeatureMatrix,
