@@ -1,5 +1,6 @@
 import { defineCommand } from 'citty';
 import { run } from './commands/run.js';
+import { batch } from './commands/batch.js';
 import { watch } from './commands/watch.js';
 import { status } from './commands/status.js';
 import { explain } from './commands/explain.js';
@@ -39,6 +40,8 @@ import { feedback } from './commands/feedback.js';
 import { wasmServer } from './commands/wasm-server.js';
 import { timeout } from './commands/timeout.js';
 import cache from './commands/cache.js';
+import deduplicate from './commands/deduplicate.js';
+import models from './commands/models.js';
 import pkg from '../package.json' with { type: 'json' };
 
 export const main = defineCommand({
@@ -140,6 +143,14 @@ ${BOLD}RESULTS & HEALTH${RESET}
   ${GREEN}wpm results${RESET} --last                  Print the most recent result
   ${GREEN}wpm cache stats${RESET}                     Show discovery cache hit rate, entry count, memory usage
   ${GREEN}wpm cache clear${RESET} [--algorithm algo]  Clear cache entries (all or by algorithm)
+  ${GREEN}wpm models list${RESET}                     List cached process models from warm-start cache
+  ${GREEN}wpm models stats${RESET}                    Show model cache statistics and performance metrics
+  ${GREEN}wpm models clear${RESET}                    Clear cached models (all or by algorithm)
+  ${GREEN}wpm models warm${RESET}                     Show warm-start caching status and recommendations
+  ${GREEN}wpm deduplicate scan${RESET} <dir>          Identify duplicate logs by content hash
+  ${GREEN}wpm deduplicate report${RESET}              Show deduplication statistics
+  ${GREEN}wpm deduplicate clear${RESET}               Clear deduplication data
+  ${GREEN}wpm deduplicate load${RESET}                Load persisted deduplication database
   ${GREEN}wpm doctor${RESET}                          Check environment health + pipeline integrity (24 checks)
   ${GREEN}wpm doctor hooks${RESET}                    JTBD verification: test whether each Claude Code hook does its job
   ${GREEN}wpm status${RESET}                          WASM module status and memory usage
@@ -180,6 +191,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
   },
   subCommands: {
     run,
+    batch,
     watch,
     status,
     explain,
@@ -219,6 +231,8 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     timeout,
     'wasm-server': wasmServer,
     cache,
+    deduplicate,
+    models,
   },
 });
 
@@ -227,6 +241,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
  */
 export {
   run,
+  batch,
   watch,
   status,
   explain,

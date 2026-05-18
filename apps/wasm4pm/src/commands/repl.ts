@@ -224,9 +224,9 @@ async function handleCommand(
       const tierFilter = args.indexOf('--tier') >= 0 ? args[args.indexOf('--tier') + 1] : null;
       const registry = getRegistry();
       const all = registry.list();
-      const classified = all.map((a) => ({
-        ...a,
-        tier: a.speedTier <= 10 ? 'stream' : a.speedTier <= 30 ? 'fast' : a.speedTier <= 55 ? 'balanced' : 'quality',
+      const classified = all.map((algo) => ({
+        ...algo,
+        tier: algo.speedTier <= 10 ? 'stream' : algo.speedTier <= 30 ? 'fast' : algo.speedTier <= 55 ? 'balanced' : 'quality',
       }));
       const filtered = tierFilter ? classified.filter((a) => a.tier === tierFilter) : classified;
       out('');

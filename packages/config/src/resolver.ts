@@ -38,7 +38,6 @@ export async function resolveConfig(options?: LoadConfigOptions): Promise<Config
   let fileLayer: Record<string, unknown> = {};
   let fileProvenance: ProvenanceMap = {};
   let filePath: string | undefined;
-  let fileSource: 'toml' | 'json' | undefined;
 
   for (const dir of searchPaths) {
     // Try TOML first (higher priority)
@@ -48,7 +47,6 @@ export async function resolveConfig(options?: LoadConfigOptions): Promise<Config
         const content = await fs.readFile(tomlPath, 'utf-8');
         fileLayer = toml.parse(content);
         filePath = tomlPath;
-        fileSource = 'toml';
         fileProvenance = trackProvenance(fileLayer, 'toml', tomlPath);
         break;
       } catch (error) {
@@ -63,7 +61,6 @@ export async function resolveConfig(options?: LoadConfigOptions): Promise<Config
         const content = await fs.readFile(jsonPath, 'utf-8');
         fileLayer = JSON.parse(content);
         filePath = jsonPath;
-        fileSource = 'json';
         fileProvenance = trackProvenance(fileLayer, 'json', jsonPath);
         break;
       } catch (error) {

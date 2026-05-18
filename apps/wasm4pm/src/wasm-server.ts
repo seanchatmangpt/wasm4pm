@@ -68,12 +68,12 @@ export class WasmServer {
   private server?: net.Server;
   private socketPath: string;
   private maxConnections: number;
-  private requestTimeout: number;
-  private idleTimeout: number;
+  private _requestTimeout: number;
+  private _idleTimeout: number;
   private verbose: boolean;
   private kernel?: Kernel;
   private wasmLoader?: WasmLoader;
-  private observability: ObservabilityLayer;
+  private _observability: ObservabilityLayer;
   private state: ServerState = {
     startTime: Date.now(),
     activeConnections: 0,
@@ -87,10 +87,10 @@ export class WasmServer {
       config.socketPath ??
       path.join(os.homedir(), '.wasm4pm', 'wasm-server.sock');
     this.maxConnections = config.maxConnections ?? 10;
-    this.requestTimeout = config.requestTimeout ?? 30000;
-    this.idleTimeout = config.idleTimeout ?? 0;
+    this._requestTimeout = config.requestTimeout ?? 30000;
+    this._idleTimeout = config.idleTimeout ?? 0;
     this.verbose = config.verbose ?? false;
-    this.observability = new ObservabilityLayer();
+    this._observability = new ObservabilityLayer();
   }
 
   /**
@@ -322,15 +322,12 @@ export class WasmServer {
   /**
    * Create a minimal Kernel wrapper that uses the WASM module directly
    */
-  private createKernel(wasmModule: any): Kernel {
+  private createKernel(wasmModule: any): any {
     return {
       init: async () => {
         if (wasmModule.init) {
           await wasmModule.init();
         }
-      },
-      shutdown: async () => {
-        // No-op for now
       },
       isReady: () => true,
       algorithms: () => {
@@ -379,6 +376,7 @@ export class WasmServer {
           algorithm: algorithmName,
           outputType: 'dfg',
           durationMs: duration,
+          execution_ms: duration,
           params: params ?? {},
           hash: `hash_${Date.now()}`,
         };
@@ -442,5 +440,3 @@ async function main(): Promise<void> {
 if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch(() => process.exit(1));
 }
-
-export { WasmServer, WasmServerConfig };

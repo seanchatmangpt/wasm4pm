@@ -225,12 +225,14 @@ describe('AlgorithmConsensus', () => {
       });
 
       // High variance: [0.2, 0.8]
+      // Expected variance: ((0.2-0.5)^2 + (0.8-0.5)^2) / 2 = 0.09
+      // Expected stddev: sqrt(0.09) ≈ 0.3
       consensus.updatePerformance('genetic', result(0.2, 1), 0.2);
       consensus.updatePerformance('genetic', result(0.8, 2), 0.8);
 
       const metrics = consensus.exportPerformanceMetrics();
-      expect(metrics.genetic.variance).toBeGreaterThan(0.1);
-      expect(metrics.genetic.standardDeviation).toBeGreaterThan(0.2);
+      expect(metrics.genetic.variance).toBeGreaterThan(0.08); // Allow floating-point precision
+      expect(metrics.genetic.standardDeviation).toBeGreaterThan(0.25);
     });
 
     it('should maintain ring buffer of quality scores', () => {
@@ -370,8 +372,8 @@ describe('AlgorithmConsensus', () => {
       consensus.reset();
 
       const metrics = consensus.exportPerformanceMetrics();
-      expect(metrics.dfg.runCount).toBe(0);
-      expect(metrics.dfg.qualityScores.length).toBe(0);
+      // After reset, performanceHistory is empty, so metrics should be an empty object
+      expect(Object.keys(metrics).length).toBe(0);
       expect(consensus.getDecisionHistory().length).toBe(0);
     });
   });
@@ -400,7 +402,8 @@ describe('AlgorithmConsensus', () => {
       expect(decision.confidence).toBeGreaterThanOrEqual(0);
       expect(decision.confidence).toBeLessThanOrEqual(1);
       expect(decision.explorationRate).toBeGreaterThanOrEqual(0);
-      expect(decision.reason).toBeInstanceOf(String);
+      expect(typeof decision.reason).toBe('string');
+      expect(decision.reason.length).toBeGreaterThan(0);
     });
   });
 });

@@ -1,12 +1,6 @@
 import { defineConfig } from 'vitest/config';
-import { resolve } from 'node:path';
 
 export default defineConfig({
-  resolve: {
-    alias: [
-      { find: /^(\.\.?\/.*?)\.js$/, replacement: '$1.ts' },
-    ],
-  },
   test: {
     environment: 'node',
     globals: true,

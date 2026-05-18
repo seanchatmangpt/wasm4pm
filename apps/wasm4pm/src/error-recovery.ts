@@ -11,8 +11,8 @@
  * - Include related env var names where applicable
  */
 
-import { EXIT_CODES } from './exit-codes.js';
-import { ALGORITHM_CLI_ALIASES } from '@wasm4pm/contracts';
+import { EXIT_CODES as _EXIT_CODES } from './exit-codes.js';
+import { ALGORITHM_CLI_ALIASES as _ALGORITHM_CLI_ALIASES } from '@wasm4pm/contracts';
 
 export interface RecoveryHint {
   /** Human-readable recovery suggestion (1-2 sentences max) */
@@ -36,7 +36,7 @@ export interface RecoveryHint {
 export function getRecoveryHint(
   errorMessage: string,
   errorType: 'config' | 'source' | 'execution' | 'system',
-  command: string
+  _command: string
 ): RecoveryHint {
   // Config error patterns
   if (errorType === 'config') {

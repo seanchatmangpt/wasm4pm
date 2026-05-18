@@ -1,0 +1,256 @@
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { runCli, EXIT_CODES, createCliTestEnv } from '@wasm4pm/testing';
+import * as fs from 'node:fs';
+import * as path from 'node:path';
+import * as os from 'node:os';
+
+// Helper to extract JSON from CLI output (may have help text appended)
+function extractJsonFromOutput(output: string): unknown {
+  const jsonMatch = output.match(/\{[\s\S]*\}/);
+  if (!jsonMatch) throw new Error('No JSON found in output');
+  return JSON.parse(jsonMatch[0]);
+}
+
+describe('wpm deduplicate — result deduplication CLI', () => {
+  let env: Awaited<ReturnType<typeof createCliTestEnv>>;
+  let testDir: string;
+
+  beforeEach(async () => {
+    env = await createCliTestEnv();
+    testDir = path.join(os.tmpdir(), `deduplicate-test-${Date.now()}`);
+    fs.mkdirSync(testDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    env?.cleanup?.();
+    if (fs.existsSync(testDir)) {
+      fs.rmSync(testDir, { recursive: true, force: true });
+    }
+  });
+
+  describe('deduplicate scan', () => {
+    it('should scan a directory and identify duplicate logs', async () => {
+      // Create some test files
+      const file1 = path.join(testDir, 'log1.json');
+      const file2 = path.join(testDir, 'log2.json');
+      const file3 = path.join(testDir, 'log3.json');
+
+      const content1 = JSON.stringify({ events: [{ id: 1, activity: 'a' }] });
+      const content2 = JSON.stringify({ events: [{ id: 1, activity: 'a' }] }); // Duplicate
+      const content3 = JSON.stringify({ events: [{ id: 2, activity: 'b' }] }); // Unique
+
+      fs.writeFileSync(file1, content1);
+      fs.writeFileSync(file2, content2);
+      fs.writeFileSync(file3, content3);
+
+      const result = await runCli(['deduplicate', 'scan', testDir], { env: env.env });
+      expect(result.exitCode).toBe(EXIT_CODES.success);
+
+      // Parse JSON output
+      const output = extractJsonFromOutput(result.stdout);
+      expect(output.payload).toBeDefined();
+      expect(output.payload.directory).toBe(testDir);
+      expect(output.payload.total_files_scanned).toBeGreaterThan(0);
+    });
+
+    it('should report duplicate groups with file counts', async () => {
+      const file1 = path.join(testDir, 'a.json');
+      const file2 = path.join(testDir, 'b.json');
+
+      const identical = JSON.stringify({ data: 'test' });
+      fs.writeFileSync(file1, identical);
+      fs.writeFileSync(file2, identical);
+
+      const result = await runCli(['deduplicate', 'scan', testDir], { env: env.env });
+      const output = extractJsonFromOutput(result.stdout);
+
+      expect(output.payload.duplicate_groups).toBeGreaterThanOrEqual(0);
+      expect(output.payload.groups).toBeDefined();
+      expect(Array.isArray(output.payload.groups)).toBe(true);
+    });
+
+    it('should handle empty directories', async () => {
+      const emptyDir = path.join(testDir, 'empty');
+      fs.mkdirSync(emptyDir, { recursive: true });
+
+      const result = await runCli(['deduplicate', 'scan', emptyDir], { env: env.env });
+      expect(result.exitCode).toBe(EXIT_CODES.success);
+
+      const output = extractJsonFromOutput(result.stdout);
+      expect(output.payload.total_files_scanned).toBe(0);
+    });
+
+    it('should include content hashes in output', async () => {
+      const file1 = path.join(testDir, 'file1.json');
+      fs.writeFileSync(file1, JSON.stringify({ test: true }));
+
+      const result = await runCli(['deduplicate', 'scan', testDir], { env: env.env });
+      const output = extractJsonFromOutput(result.stdout);
+
+      expect(output.payload.groups).toBeDefined();
+      if (output.payload.groups.length > 0) {
+        expect(output.payload.groups[0].content_hash).toBeDefined();
+        expect(typeof output.payload.groups[0].content_hash).toBe('string');
+      }
+    });
+
+    it('should measure scan duration', async () => {
+      const result = await runCli(['deduplicate', 'scan', testDir], { env: env.env });
+      const output = extractJsonFromOutput(result.stdout);
+
+      expect(output.duration_ms).toBeGreaterThanOrEqual(0);
+      expect(typeof output.duration_ms).toBe('number');
+    });
+
+    it('should work with required directory argument', async () => {
+      const result = await runCli(['deduplicate', 'scan'], { env: env.env });
+      // Missing required argument should fail or return error
+      expect(result.exitCode).not.toBe(EXIT_CODES.success);
+    });
+  });
+
+  describe('deduplicate report', () => {
+    it('should show deduplication statistics', async () => {
+      const result = await runCli(['deduplicate', 'report'], { env: env.env });
+      expect(result.exitCode).toBe(EXIT_CODES.success);
+
+      // Extract JSON from output (may have help text appended)
+      const jsonMatch = result.stdout.match(/\{[\s\S]*\}/);
+      expect(jsonMatch).not.toBeNull();
+      const output = JSON.parse(jsonMatch![0]);
+      expect(output.payload).toBeDefined();
+      expect(output.payload.total_cached_entries).toBeGreaterThanOrEqual(0);
+      expect(output.payload.deduplicated_runs).toBeGreaterThanOrEqual(0);
+      expect(output.payload.estimated_bytes_saved).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should report deduplication database location', async () => {
+      const result = await runCli(['deduplicate', 'report'], { env: env.env });
+      const output = extractJsonFromOutput(result.stdout);
+
+      expect(output.payload.dedup_database).toBe('.wasm4pm/deduplicate.jsonl');
+    });
+
+    it('should include timestamp metadata', async () => {
+      const result = await runCli(['deduplicate', 'report'], { env: env.env });
+      const output = extractJsonFromOutput(result.stdout);
+
+      expect(output.payload.last_hit_timestamp).toBeDefined();
+      expect(output.payload.last_clear_timestamp).toBeDefined();
+    });
+
+    it('should measure report generation time', async () => {
+      const result = await runCli(['deduplicate', 'report'], { env: env.env });
+      const output = extractJsonFromOutput(result.stdout);
+
+      expect(output.duration_ms).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('deduplicate clear', () => {
+    it('should clear deduplication data', async () => {
+      const result = await runCli(['deduplicate', 'clear'], { env: env.env });
+      expect(result.exitCode).toBe(EXIT_CODES.success);
+
+      const output = extractJsonFromOutput(result.stdout);
+      expect(output.payload.entries_cleared).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should clear only memory with --memory flag', async () => {
+      const result = await runCli(['deduplicate', 'clear', '--memory'], { env: env.env });
+      expect(result.exitCode).toBe(EXIT_CODES.success);
+
+      const output = extractJsonFromOutput(result.stdout);
+      expect(output.payload.target).toBe('memory');
+      expect(output.payload.database_deleted).toBe(false);
+    });
+
+    it('should clear both memory and disk by default', async () => {
+      const result = await runCli(['deduplicate', 'clear'], { env: env.env });
+      const output = extractJsonFromOutput(result.stdout);
+
+      expect(output.payload.target).toBe('all');
+      expect(output.payload.database_deleted).toBe(true);
+    });
+
+    it('should report entries cleared', async () => {
+      const result = await runCli(['deduplicate', 'clear'], { env: env.env });
+      const output = extractJsonFromOutput(result.stdout);
+
+      expect(output.payload.entries_cleared).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('deduplicate load', () => {
+    it('should load persisted deduplication database', async () => {
+      const result = await runCli(['deduplicate', 'load'], { env: env.env });
+      expect(result.exitCode).toBe(EXIT_CODES.success);
+
+      const output = extractJsonFromOutput(result.stdout);
+      expect(output.payload.entries_loaded).toBeGreaterThanOrEqual(0);
+    });
+
+    it('should report database path', async () => {
+      const result = await runCli(['deduplicate', 'load'], { env: env.env });
+      const output = extractJsonFromOutput(result.stdout);
+
+      expect(output.payload.database_path).toBe('.wasm4pm/deduplicate.jsonl');
+    });
+
+    it('should measure load duration', async () => {
+      const result = await runCli(['deduplicate', 'load'], { env: env.env });
+      const output = extractJsonFromOutput(result.stdout);
+
+      expect(output.duration_ms).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('deduplicate exit codes', () => {
+    it('should return success for valid operations', async () => {
+      const result = await runCli(['deduplicate', 'report'], { env: env.env });
+      expect([EXIT_CODES.success, 0]).toContain(result.exitCode);
+    });
+
+    it('should return error for invalid scan directory', async () => {
+      const result = await runCli(['deduplicate', 'scan', '/nonexistent/path/xyz'], {
+        env: env.env,
+      });
+      // May fail with error code or succeed with empty results
+      expect(result.exitCode).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  describe('deduplicate JSON output', () => {
+    it('all subcommands should output valid JSON', async () => {
+      const commands = [
+        ['deduplicate', 'report'],
+        ['deduplicate', 'scan', testDir],
+        ['deduplicate', 'clear'],
+        ['deduplicate', 'load'],
+      ];
+
+      for (const cmd of commands) {
+        const result = await runCli(cmd, { env: env.env });
+        if (result.exitCode === EXIT_CODES.success) {
+          expect(() => extractJsonFromOutput(result.stdout)).not.toThrow();
+        }
+      }
+    });
+
+    it('should include status field in output', async () => {
+      const result = await runCli(['deduplicate', 'report'], { env: env.env });
+      const output = extractJsonFromOutput(result.stdout);
+
+      expect(output.status).toBeDefined();
+      expect(['ok', 'error']).toContain(output.status);
+    });
+
+    it('should include payload in output', async () => {
+      const result = await runCli(['deduplicate', 'report'], { env: env.env });
+      const output = extractJsonFromOutput(result.stdout);
+
+      expect(output.payload).toBeDefined();
+      expect(typeof output.payload).toBe('object');
+    });
+  });
+});

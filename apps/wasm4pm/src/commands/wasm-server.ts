@@ -245,7 +245,7 @@ export const wasmServer = defineCommand({
     description:
       'Manage the long-lived WASM server (reduces CLI latency from 2,273ms → <500ms)',
   },
-  subcommands: {
+  subCommands: {
     start: wasmServerStart,
     stop: wasmServerStop,
     status: wasmServerStatus,
