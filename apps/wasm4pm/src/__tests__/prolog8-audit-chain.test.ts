@@ -996,7 +996,9 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
       expect([EXIT_CODES.success, EXIT_CODES.source_error]).toContain(result.exitCode);
     });
 
-    it('all three subcommands complete within 1000ms', async () => {
+    it('all three subcommands complete within 3000ms', async () => {
+      // Three parallel CLI child-processes on a loaded machine; 3s is a generous
+      // but bounded budget — avoids flakiness while still catching hung processes.
       const queryPath = writeTmp(tmpDir, 'timing.json', makeSimpleReceiptQuery());
       const replayPath = writeTmp(tmpDir, 'timing-r.json', makeGapReceiptReplay());
       const start = Date.now();
@@ -1005,7 +1007,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
         runCli(['prolog8', 'query', '-i', queryPath], { env: env.env }),
         runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env }),
       ]);
-      expect(Date.now() - start).toBeLessThan(1000);
+      expect(Date.now() - start).toBeLessThan(3000);
     });
   });
 });
