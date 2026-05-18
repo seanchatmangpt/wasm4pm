@@ -34,7 +34,8 @@ describe('first-run-ux', () => {
       try {
         process.chdir(tempDir);
         await fs.mkdir(resultsDir, { recursive: true });
-        await fs.writeFile(path.join(resultsDir, 'discover-dfg.json'), '{}');
+        // Actual filename format: <timestamp>-discover-<algo>.json
+        await fs.writeFile(path.join(resultsDir, '20260518T090000-discover-dfg.json'), '{}');
 
         const result = await isFirstRun();
         expect(result).toBe(true);
@@ -52,8 +53,9 @@ describe('first-run-ux', () => {
       try {
         process.chdir(tempDir);
         await fs.mkdir(resultsDir, { recursive: true });
-        await fs.writeFile(path.join(resultsDir, 'discover-dfg.json'), '{}');
-        await fs.writeFile(path.join(resultsDir, 'discover-heuristic.json'), '{}');
+        // Actual filename format: <timestamp>-discover-<algo>.json
+        await fs.writeFile(path.join(resultsDir, '20260518T090000-discover-dfg.json'), '{}');
+        await fs.writeFile(path.join(resultsDir, '20260518T090100-discover-heuristic.json'), '{}');
 
         const result = await isFirstRun();
         expect(result).toBe(false);
@@ -63,7 +65,7 @@ describe('first-run-ux', () => {
       }
     });
 
-    it('should filter to only .json files with discover- prefix', async () => {
+    it('should filter to only .json files with -discover- infix (timestamp-based filenames)', async () => {
       const originalCwd = process.cwd();
       const tempDir = await fs.mkdtemp('/tmp/wpm-test-');
       const resultsDir = path.join(tempDir, '.wasm4pm/results');
@@ -71,12 +73,15 @@ describe('first-run-ux', () => {
       try {
         process.chdir(tempDir);
         await fs.mkdir(resultsDir, { recursive: true });
-        await fs.writeFile(path.join(resultsDir, 'discover-dfg.json'), '{}');
+        // One matching discovery result (timestamp-discover-algo format)
+        await fs.writeFile(path.join(resultsDir, '20260518T090000-discover-dfg.json'), '{}');
+        // Non-matching: no -discover- infix
         await fs.writeFile(path.join(resultsDir, 'other-file.json'), '{}');
-        await fs.writeFile(path.join(resultsDir, 'discover-heuristic.txt'), '{}');
+        // Non-matching: wrong extension
+        await fs.writeFile(path.join(resultsDir, '20260518T090100-discover-heuristic.txt'), '{}');
 
         const result = await isFirstRun();
-        // Should only count discover-dfg.json (1 file), so still first run
+        // Should only count the one matching file (1 < 2), so still first run
         expect(result).toBe(true);
       } finally {
         process.chdir(originalCwd);
@@ -90,7 +95,7 @@ describe('first-run-ux', () => {
       const result = interpretFitness(0.85);
       expect(result.level).toBe('High');
       expect(result.emoji).toBe('✓');
-      expect(result.explanation).toContain('Most observed');
+      expect(result.explanation).toContain('most observed behavior');
     });
 
     it('should classify fitness 0.60-0.85 as Medium', () => {
@@ -234,11 +239,12 @@ describe('wpm run — first-run UX integration', () => {
       return;
     }
 
-    // Create results directory with 2+ files to simulate non-first run
+    // Create results directory with 2+ files to simulate non-first run.
+    // Use the actual filename format: <timestamp>-discover-<algo>.json
     const resultsDir = path.join(env.cwd, '.wasm4pm/results');
     await fs.mkdir(resultsDir, { recursive: true });
-    await fs.writeFile(path.join(resultsDir, 'discover-dfg.json'), '{}');
-    await fs.writeFile(path.join(resultsDir, 'discover-heuristic.json'), '{}');
+    await fs.writeFile(path.join(resultsDir, '20260518T090000-discover-dfg.json'), '{}');
+    await fs.writeFile(path.join(resultsDir, '20260518T090100-discover-heuristic.json'), '{}');
 
     const result = await runCli(['run', env.testLog, '--algorithm', 'dfg'], { env: env.env });
     expect(result.exitCode).toBe(EXIT_CODES.success);

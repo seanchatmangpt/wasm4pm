@@ -425,12 +425,12 @@ describe('Conformance Invariant Validation', () => {
       expect(i3Violations).toHaveLength(0);
     });
 
-    it('computes avg from cases and uses that for validation', () => {
+    it('works with convenience API', () => {
       const cases: CaseFitnessResult[] = [
         {
           case_id: 'a',
           is_conforming: true,
-          trace_fitness: 0.8,
+          trace_fitness: 1.0,
           tokens_missing: 0,
           tokens_remaining: 0,
           deviations: [],
@@ -438,18 +438,16 @@ describe('Conformance Invariant Validation', () => {
         {
           case_id: 'b',
           is_conforming: false,
-          trace_fitness: 0.6,
+          trace_fitness: 0.8,
           tokens_missing: 5,
           tokens_remaining: 0,
           deviations: [{ event_index: 2, activity: 'A', deviation_type: 'missing_tokens' }],
         },
       ];
-      // The convenience function computes avgFitness = 0.7 internally
-      // But we don't test it in the way we thought - we use the direct validator
-      const violations = validateConformanceResult(0.95, null, 2, cases, 0.7);
-      const i3Violations = violations.filter((v) => v.id === 'I-3');
-      // Should detect the mismatch (0.95 != 0.7)
-      expect(i3Violations.length).toBeGreaterThan(0);
+      // Convenience function infers avgFitness = 0.9 and totalCases = 2
+      const violations = validateConformanceResultFromCases(0.9, 0.85, cases);
+      // Should have no violations when inputs are consistent
+      expect(violations.filter((v) => v.severity === 'critical')).toHaveLength(0);
     });
   });
 
