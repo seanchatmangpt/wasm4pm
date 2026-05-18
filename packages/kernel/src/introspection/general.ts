@@ -36,7 +36,7 @@ const PROFILE_SIZES: Record<DeploymentProfile, string> = {
   fog: '~2.0MB',
   edge: '~1.5MB',
   iot: '~1.0MB',
-  cloud: '~2.7MB',
+  mobile: '~500KB',
 };
 
 /**

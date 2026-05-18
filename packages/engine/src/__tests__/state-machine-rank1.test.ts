@@ -10,7 +10,7 @@ import { VALID_TRANSITIONS, canTransition, getValidTransitions } from '../transi
 import { StateMachine } from '../lifecycle.js';
 // Import the .ts source directly to bypass any stale compiled .js sitting
 // next to the .ts source (a known repo-hygiene quirk).
-import { bootstrapEngine } from '../bootstrap.ts';
+import { bootstrapEngine } from '../bootstrap.js';
 
 const ALL_STATES: EngineState[] = [
   'uninitialized',
