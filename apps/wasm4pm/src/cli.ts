@@ -35,6 +35,8 @@ import { algorithms } from './commands/algorithms.js';
 import { examples } from './commands/examples.js';
 import { repl } from './commands/repl.js';
 import { prolog8 } from './commands/prolog8.js';
+import { feedback } from './commands/feedback.js';
+import { wasmServer } from './commands/wasm-server.js';
 import pkg from '../package.json' with { type: 'json' };
 
 export const main = defineCommand({
@@ -138,6 +140,12 @@ ${BOLD}RESULTS & HEALTH${RESET}
   ${GREEN}wpm doctor hooks${RESET}                    JTBD verification: test whether each Claude Code hook does its job
   ${GREEN}wpm status${RESET}                          WASM module status and memory usage
 
+${BOLD}WASM SERVER${RESET}  ${DIM}(reduce latency from 2,273ms → <500ms)${RESET}
+  ${GREEN}wpm wasm-server start${RESET}               Start the long-lived WASM server (one-time 1,872ms init)
+  ${GREEN}wpm wasm-server stop${RESET}                Stop the running WASM server
+  ${GREEN}wpm wasm-server status${RESET}              Check server status and statistics
+  ${GREEN}wpm wasm-server reset${RESET}               Kill and restart the server
+
 ${BOLD}TRACE-TO-POWL v2 PIPELINE${RESET}  ${DIM}(stack traces → object evidence → conformance)${RESET}
   ${GREEN}wpm trace ingest${RESET} --from rust|ts [-i f]  Parse stack trace → TraceGraph JSON-LD
   ${GREEN}wpm trace ocel${RESET}   [-i graph.json]        TraceGraph → OCEL object-centric events
@@ -203,6 +211,8 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     examples,
     repl,
     prolog8,
+    feedback,
+    'wasm-server': wasmServer,
   },
 });
 

@@ -50,6 +50,15 @@ export * from './feedback-loop.js';
 // Root cause diagnosis: classify conformance failures into categories
 export * from './root-cause.js';
 
+// Conformance caching: lazy precision computation and result memoization
+export * from './conformance-cache.js';
+
+// Cache invalidation: smart parameter-aware cache invalidation
+export * from './cache-invalidation.js';
+
+// Algorithm ranking: multi-algorithm performance comparison
+export * from './algorithm-ranking.js';
+
 // Global singleton access
 import { ObservabilityWrapper } from './observability-wrapper.js';
 import { Tracer } from './spans.js';

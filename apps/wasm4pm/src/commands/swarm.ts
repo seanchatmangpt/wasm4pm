@@ -124,6 +124,7 @@ export const swarm = defineCommand({
           const lastEpisode = swarmResult.episodes[swarmResult.episodes.length - 1];
           const finalReport = lastEpisode?.convergenceReport;
 
+          const consensusAlgorithm = finalReport?.algorithm ?? 'unknown';
           const payload = {
             ...swarmResult,
             input: inputPath,
@@ -132,6 +133,7 @@ export const swarm = defineCommand({
             convergenceThreshold,
             algorithmIds,
             workerModel,
+            consensusAlgorithm,
             consensusRatio: finalReport?.consensusRatio ?? 0,
             dominantHash: finalReport?.dominantHash ?? null,
             dissentingWorkers: finalReport?.dissentingWorkers ?? [],
@@ -159,6 +161,7 @@ export const swarm = defineCommand({
                 `threshold=${(data.convergenceThreshold * 100).toFixed(0)}%, model=${data.workerModel}`
             );
             projection.log(`  Algorithms: ${data.algorithmIds.join(', ')}`);
+            projection.log(`  Consensus algorithm: ${data.consensusAlgorithm}`);
             projection.log('');
 
             // Per-round convergence progress (always shown, not just verbose)

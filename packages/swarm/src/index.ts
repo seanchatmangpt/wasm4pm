@@ -25,6 +25,15 @@ export {
   checkMlConvergence,
 } from './convergence.js';
 
+export {
+  AlgorithmConsensus,
+  computeQualityScore,
+} from './algorithm-consensus.js';
+export type { LogStats, AlgorithmPerformance, ConsensusDecision } from './algorithm-consensus.js';
+
+export { ConsensusLogger, getConsensusLogger, resetConsensusLogger } from './consensus-logger.js';
+export type { ConsensusLogEntry } from './consensus-logger.js';
+
 export { aggregate } from './aggregation.js';
 export type { AggregationStrategy } from './aggregation.js';
 

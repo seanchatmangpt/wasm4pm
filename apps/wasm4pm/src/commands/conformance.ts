@@ -297,12 +297,6 @@ export const conformance = defineCommand({
                 conformingCases = 0;
               }
 
-              // Apply precision mode strategy
-              if (precisionMode === 'fast') {
-                // Fast mode: compute fitness only, skip precision
-                precision = null;
-                precision_available = false;
-
               const deviatingCases = isTokenReplay ? totalCases - conformingCases : 0;
               const conformanceRate = totalCases > 0 ? conformingCases / totalCases : fitnessValue;
 

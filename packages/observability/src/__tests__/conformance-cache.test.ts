@@ -1,10 +1,9 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import {
   ConformanceCache,
   getConformanceCache,
   resetConformanceCache,
   hashLogOrModel,
-  type CachedFitnessResult,
 } from '../conformance-cache.js';
 
 describe('ConformanceCache', () => {

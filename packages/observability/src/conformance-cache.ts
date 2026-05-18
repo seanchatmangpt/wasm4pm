@@ -131,7 +131,7 @@ export class ConformanceCache {
    */
   public stats(): ConformanceCacheStats {
     let bytes = 0;
-    for (const entry of this.cache.values()) {
+    for (const _ of this.cache.values()) {
       // Rough estimate: key (32) + fitness (8) + precision (8) + bools (1) + timestamp (8) + ttl (8)
       bytes += 65;
     }
