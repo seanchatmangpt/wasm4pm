@@ -877,7 +877,120 @@ function expFit(
 }
 
 // ---------------------------------------------------------------------------
-// Public API
+// Public API — cross-validation helper
+// ---------------------------------------------------------------------------
+
+/**
+ * Run stratified k-fold cross-validation for a given classifier.
+ *
+ * Trains and evaluates using the same algorithm as classifyTraces so CV accuracy
+ * is directly comparable to in-sample accuracy. Honest estimates will be lower
+ * than in-sample for overfit-prone methods on small datasets.
+ *
+ * Returns empty scores (mean=0, stdDev=0) when n < 2*cvFolds rather than
+ * throwing, allowing callers to degrade gracefully.
+ */
+export function runCrossValidation(
+  data: number[][],
+  encoded: number[],
+  method: ClassificationMethod,
+  cvFolds: number = 3,
+  knnK: number = 5,
+  maxDepth: number = 5
+): { scores: number[]; mean: number; stdDev: number } {
+  const n = data.length;
+  if (n < 2 * cvFolds) {
+    return { scores: [], mean: 0, stdDev: 0 };
+  }
+
+  const { trainIndices, testIndices } = stratifiedKFold(encoded, cvFolds);
+  const scores: number[] = [];
+
+  for (let foldIdx = 0; foldIdx < cvFolds; foldIdx++) {
+    const trainIdx = trainIndices[foldIdx];
+    const testIdx = testIndices[foldIdx];
+
+    const trainData = Array.from(trainIdx).map((i) => data[i]);
+    const trainLabels = Array.from(trainIdx).map((i) => encoded[i]);
+    const testData = Array.from(testIdx).map((i) => data[i]);
+    const testLabels = Array.from(testIdx).map((i) => encoded[i]);
+
+    if (trainData.length === 0 || testData.length === 0) {
+      scores.push(0);
+      continue;
+    }
+
+    let predicted: number[];
+
+    if (method === 'knn') {
+      const validK = validateKnnK(knnK, trainData.length);
+      const trainCol = toColumnar(trainData);
+      predicted = testData.map((testPoint) => {
+        const distBuf = new Float64Array(trainData.length);
+        for (let i = 0; i < trainData.length; i++) {
+          let ss = 0;
+          for (let j = 0; j < trainCol.d; j++) {
+            const diff = trainCol.cols[j][i] - testPoint[j];
+            ss += diff * diff;
+          }
+          distBuf[i] = ss;
+        }
+        const kk = Math.min(validK, trainData.length);
+        const sorted: number[] = [];
+        for (let i = 0; i < trainData.length; i++) {
+          if (sorted.length < kk) {
+            let pos = sorted.length;
+            while (pos > 0 && distBuf[i] < distBuf[sorted[pos - 1]]) pos--;
+            sorted.splice(pos, 0, i);
+          } else if (distBuf[i] < distBuf[sorted[kk - 1]]) {
+            let pos = kk - 1;
+            while (pos > 0 && distBuf[i] < distBuf[sorted[pos - 1]]) pos--;
+            sorted.splice(pos, 0, i);
+            sorted.pop();
+          }
+        }
+        const votes = new Map<number, number>();
+        let bestLabel = trainLabels[sorted[0]];
+        let bestWeight = 0;
+        for (const ni of sorted) {
+          const dist = Math.sqrt(distBuf[ni]);
+          const w = dist < 1e-10 ? 1e10 : 1 / dist;
+          const vw = (votes.get(trainLabels[ni]) ?? 0) + w;
+          votes.set(trainLabels[ni], vw);
+          if (vw > bestWeight) {
+            bestWeight = vw;
+            bestLabel = trainLabels[ni];
+          }
+        }
+        return bestLabel;
+      });
+    } else if (method === 'naive_bayes') {
+      const model = gaussianNBTrain(trainData, trainLabels);
+      predicted = gaussianNBPredictBatch(model, testData).map((r) => r.label);
+    } else if (method === 'logistic_regression') {
+      const model = logisticRegressionTrain(trainData, trainLabels);
+      predicted = logisticRegressionPredictBatch(model, testData).map((r) => r.label);
+    } else {
+      // decision_tree
+      const classCount = new Set(trainLabels).size;
+      const d = trainData[0]?.length ?? 0;
+      const indices = new Int32Array(trainData.length);
+      for (let i = 0; i < trainData.length; i++) indices[i] = i;
+      const tree = buildTree(trainData, trainLabels, indices, 0, maxDepth, d, classCount);
+      predicted = testData.map((row) => predictTree(tree, row).label);
+    }
+
+    scores.push(computeAccuracy(testLabels, predicted));
+  }
+
+  const mean = scores.length > 0 ? scores.reduce((s, v) => s + v, 0) / scores.length : 0;
+  const variance =
+    scores.length > 1 ? scores.reduce((s, v) => s + (v - mean) ** 2, 0) / scores.length : 0;
+  return { scores, mean, stdDev: Math.sqrt(variance) };
+}
+
+// ---------------------------------------------------------------------------
+// Public API — classifyTraces
 // ---------------------------------------------------------------------------
 
 /**
@@ -907,6 +1020,10 @@ export async function classifyTraces(
     method?: ClassificationMethod;
     k?: number;
     maxDepth?: number;
+    /** When true, run stratified CV and attach cv_accuracy/cv_std_dev/cv_folds. */
+    crossValidate?: boolean;
+    /** Number of CV folds. Default 3. Minimum 2. */
+    cvFolds?: number;
   } = {}
 ): Promise<ClassificationResult> {
   const targetKey = options.targetKey ?? 'outcome';
@@ -919,16 +1036,19 @@ export async function classifyTraces(
 
   const { encoded, reverseMap } = encodeLabels(matrix.labels);
 
+  // ── In-sample prediction dispatch ─────────────────────────────────────────
+  let result: ClassificationResult;
+
   if (method === 'knn') {
     const validatedK = validateKnnK(options.k, matrix.data.length);
     const col = toColumnar(matrix.data);
     const batch = knnBatch(col, encoded, validatedK);
-    return {
+    result = {
       method: 'knn',
       predictions: matrix.caseIds.map((caseId, i) => ({
         caseId,
         predicted: reverseMap.get(batch[i].label) ?? 'unknown',
-        confidence: Math.max(0, Math.min(1, batch[i].confidence)), // Clamp confidence to [0, 1]
+        confidence: Math.max(0, Math.min(1, batch[i].confidence)),
       })),
       modelInfo: {
         k: validatedK,
@@ -937,19 +1057,16 @@ export async function classifyTraces(
         classCount: reverseMap.size,
       },
     };
-  }
-
-  if (method === 'logistic_regression') {
+  } else if (method === 'logistic_regression') {
     const model = logisticRegressionTrain(matrix.data, encoded);
     const batch = logisticRegressionPredictBatch(model, matrix.data);
-    return {
+    result = {
       method: 'logistic_regression',
       predictions: matrix.caseIds.map((caseId, i) => ({
         caseId,
         predicted: reverseMap.get(batch[i].label) ?? 'unknown',
         confidence: batch[i].confidence,
       })),
-      // Convert Float64Array to plain arrays for JSON serialization
       modelInfo: {
         weights: model.weights.map((w) => Array.from(w)),
         iterations: model.iterations,
@@ -958,9 +1075,7 @@ export async function classifyTraces(
         classCount: reverseMap.size,
       },
     };
-  }
-
-  if (method === 'decision_tree') {
+  } else if (method === 'decision_tree') {
     const validatedMaxDepth = validateMaxDepth(options.maxDepth);
     const classCount = reverseMap.size;
     const n = matrix.data.length;
@@ -968,14 +1083,14 @@ export async function classifyTraces(
     const indices = new Int32Array(n);
     for (let i = 0; i < n; i++) indices[i] = i;
     const tree = buildTree(matrix.data, encoded, indices, 0, validatedMaxDepth, d, classCount);
-    return {
+    result = {
       method: 'decision_tree',
       predictions: matrix.caseIds.map((caseId, i) => {
         const { label, confidence } = predictTree(tree, matrix.data[i]);
         return {
           caseId,
           predicted: reverseMap.get(label) ?? 'unknown',
-          confidence: Math.max(0, Math.min(1, confidence)), // Clamp confidence to [0, 1]
+          confidence: Math.max(0, Math.min(1, confidence)),
         };
       }),
       modelInfo: {
@@ -986,26 +1101,45 @@ export async function classifyTraces(
         classCount: reverseMap.size,
       },
     };
+  } else {
+    // naive_bayes
+    const model = gaussianNBTrain(matrix.data, encoded);
+    const batch = gaussianNBPredictBatch(model, matrix.data);
+    result = {
+      method: 'naive_bayes',
+      predictions: matrix.caseIds.map((caseId, i) => ({
+        caseId,
+        predicted: reverseMap.get(batch[i].label) ?? 'unknown',
+        confidence: Math.max(0, Math.min(1, batch[i].confidence)),
+      })),
+      modelInfo: {
+        nClasses: model.nClasses,
+        nFeatures: model.nFeatures,
+        featureCount: matrix.featureNames.length,
+        traceCount: matrix.data.length,
+        classCount: reverseMap.size,
+      },
+    };
   }
 
-  // naive_bayes
-  const model = gaussianNBTrain(matrix.data, encoded);
-  const batch = gaussianNBPredictBatch(model, matrix.data);
-  return {
-    method: 'naive_bayes',
-    predictions: matrix.caseIds.map((caseId, i) => ({
-      caseId,
-      predicted: reverseMap.get(batch[i].label) ?? 'unknown',
-      confidence: Math.max(0, Math.min(1, batch[i].confidence)), // Clamp confidence to [0, 1]
-    })),
-    modelInfo: {
-      nClasses: model.nClasses,
-      nFeatures: model.nFeatures,
-      featureCount: matrix.featureNames.length,
-      traceCount: matrix.data.length,
-      classCount: reverseMap.size,
-    },
-  };
+  // ── Optional stratified k-fold cross-validation ───────────────────────────
+  // Backward compatible: crossValidate defaults to false. When enabled, the
+  // cv_* fields carry the honest held-out accuracy estimate. In-sample
+  // predictions above are kept intact — CV only adds the cv_* fields.
+  if (options.crossValidate) {
+    const cvFolds = Math.max(2, options.cvFolds ?? 3);
+    const validatedK = method === 'knn' ? validateKnnK(options.k, matrix.data.length) : 5;
+    const validatedDepth = method === 'decision_tree' ? validateMaxDepth(options.maxDepth) : 5;
+    const cv = runCrossValidation(matrix.data, encoded, method, cvFolds, validatedK, validatedDepth);
+    if (cv.scores.length > 0) {
+      result.cv_accuracy = cv.mean;
+      result.cv_std_dev = cv.stdDev;
+      result.cv_folds = cvFolds;
+      result.cv_fold_scores = cv.scores;
+    }
+  }
+
+  return result;
 }
 
 /**

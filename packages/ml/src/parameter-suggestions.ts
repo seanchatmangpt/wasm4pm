@@ -384,3 +384,40 @@ export function suggestForecastHorizon(windowCount: number): number {
 
   return Math.min(suggested, maxHorizon);
 }
+
+/**
+ * Adaptive algorithm selection for classification based on log characteristics.
+ *
+ * Selects between knn and logistic_regression based on:
+ * - Feature quality (zero-variance, multicollinearity)
+ * - Dataset size (trace count)
+ * - Feature variance and complexity
+ */
+export function suggestClassificationAlgorithm(
+  traceCount: number,
+  featureCount: number,
+  featureQualityScore: number,
+  characteristics?: Partial<LogCharacteristicsDetection>,
+): 'knn' | 'logistic_regression' {
+  // Small datasets: prefer kNN (stable, no assumptions)
+  if (traceCount < 30) return 'knn';
+
+  // Low feature quality: prefer kNN (robust to collinearity, zero-variance)
+  if (featureQualityScore < 0.6) return 'knn';
+
+  // Noisy logs: prefer kNN (less sensitive to noise)
+  if (characteristics?.isNoisy) return 'knn';
+
+  // High-variance logs: prefer logistic regression (learns complex decision boundaries)
+  if (characteristics?.isHighVariance && traceCount > 100 && featureQualityScore >= 0.7) {
+    return 'logistic_regression';
+  }
+
+  // Large dataset + good features: prefer logistic regression
+  if (traceCount > 100 && featureQualityScore >= 0.6) {
+    return 'logistic_regression';
+  }
+
+  // Default safe choice
+  return 'knn';
+}

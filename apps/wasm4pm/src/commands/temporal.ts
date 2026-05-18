@@ -285,6 +285,46 @@ export const temporal = defineCommand({
                 }
               }
 
+              // NEW (Gap T1/T2): Bottleneck drift and stability analysis
+              let bottleneckDrift: { trend: string; change_magnitude: number } | null = null;
+              let bottleneckStability: Record<
+                string,
+                { p90: number; trend: string; coefficient_of_variation: number }
+              > | null = null;
+
+              if (violations.length > 4) {
+                const mid = Math.floor(violations.length / 2);
+                const earlyViolations = violations.slice(0, mid);
+                const lateViolations = violations.slice(mid);
+                const earlyMeanDuration =
+                  earlyViolations.reduce((s, v) => s + ((v.duration_ms as number) || 0), 0) /
+                  earlyViolations.length;
+                const lateMeanDuration =
+                  lateViolations.reduce((s, v) => s + ((v.duration_ms as number) || 0), 0) /
+                  lateViolations.length;
+                const changePercent =
+                  earlyMeanDuration > 0
+                    ? ((lateMeanDuration - earlyMeanDuration) / earlyMeanDuration) * 100
+                    : 0;
+                bottleneckDrift = {
+                  trend: changePercent > 5 ? 'worsening' : changePercent < -5 ? 'improving' : 'stable',
+                  change_magnitude: changePercent,
+                };
+              }
+
+              if (cycleTimePercentiles && Object.keys(cycleTimePercentiles).length > 0) {
+                bottleneckStability = {};
+                for (const [act, stats] of Object.entries(cycleTimePercentiles)) {
+                  const cv =
+                    stats.mean > 0 ? Math.abs((stats.p90 - stats.mean) / stats.mean) : 0;
+                  bottleneckStability[act] = {
+                    p90: stats.p90,
+                    trend: cv > 0.5 ? 'high-variance' : cv > 0.3 ? 'moderate-variance' : 'stable',
+                    coefficient_of_variation: cv,
+                  };
+                }
+              }
+
               const payload = {
                 input: inputPath,
                 activityKey,
@@ -304,6 +344,10 @@ export const temporal = defineCommand({
                 cycleTimePercentiles,
                 // NEW (Iteration 12e, Gap T1): Per-resource duration metrics (Van der Aalst Resource perspective)
                 cycleTimeByResource,
+                // NEW (Gap T1): Bottleneck drift detection
+                bottleneckDrift,
+                // NEW (Gap T2): Bottleneck stability (variance)
+                bottleneckStability,
               };
 
               // Capture output metrics for late OTEL span attributes

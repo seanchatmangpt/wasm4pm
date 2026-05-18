@@ -264,3 +264,53 @@ function pearsonCorrelation(col1: number[], col2: number[]): number {
   const denom = Math.sqrt(sumSq1 * sumSq2);
   return denom === 0 ? 0 : covariance / denom;
 }
+
+/**
+ * Normalize feature matrix to [0, 1] range (min-max scaling).
+ *
+ * Each feature is scaled as: (x - min) / (max - min)
+ * Constant features (max == min) remain at 0.5.
+ *
+ * Used before algorithms sensitive to feature scale (kNN, logistic regression).
+ */
+export function normalizeFeatures(data: number[][]): number[][] {
+  if (!data || data.length === 0 || data[0].length === 0) {
+    return data;
+  }
+
+  const numCols = data[0].length;
+  const numRows = data.length;
+
+  // Compute min/max for each column
+  const mins = new Array<number>(numCols).fill(Infinity);
+  const maxs = new Array<number>(numCols).fill(-Infinity);
+
+  for (let i = 0; i < numRows; i++) {
+    for (let j = 0; j < numCols; j++) {
+      const val = data[i][j];
+      if (Number.isFinite(val)) {
+        mins[j] = Math.min(mins[j], val);
+        maxs[j] = Math.max(maxs[j], val);
+      }
+    }
+  }
+
+  // Normalize each column
+  const normalized = data.map((row) => [...row]);
+  for (let i = 0; i < numRows; i++) {
+    for (let j = 0; j < numCols; j++) {
+      const val = data[i][j];
+      const min = mins[j];
+      const max = maxs[j];
+      if (min === Infinity || max === -Infinity) {
+        normalized[i][j] = 0.5;
+      } else if (max === min) {
+        normalized[i][j] = 0.5;
+      } else {
+        normalized[i][j] = (val - min) / (max - min);
+      }
+    }
+  }
+
+  return normalized;
+}

@@ -4,6 +4,7 @@
  * Bridge between planner (algorithm name) and WASM module (function calls)
  */
 
+import { randomBytes } from 'node:crypto';
 import { PlanStepType, type PlanStep } from '@wasm4pm/planner';
 import { getRegistry } from './registry.js';
 

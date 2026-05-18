@@ -7,10 +7,13 @@
  */
 
 // Bridge utilities
-export { buildFeatureMatrix, encodeLabels, selectTopFeatures, normalizeFeatures } from './bridge.js';
+export { buildFeatureMatrix, encodeLabels, selectTopFeatures } from './bridge.js';
 
-// Classification & regression (includes runCrossValidation for advanced usage)
-export { classifyTraces, regressRemainingTime, runCrossValidation } from './classifiers.js';
+// Classification & regression
+export { classifyTraces, regressRemainingTime } from './classifiers.js';
+
+// Cross-validation (internal, for advanced usage)
+// Note: stratifiedKFold and computeAccuracy exported for testing
 
 // Clustering
 export { clusterTraces } from './clustering.js';
@@ -33,7 +36,6 @@ export {
   suggestDecisionTreeDepth,
   suggestPolynomialDegree,
   suggestForecastHorizon,
-  suggestClassificationAlgorithm,
   detectLogCharacteristics,
   type LogCharacteristicsDetection,
 } from './parameter-suggestions.js';

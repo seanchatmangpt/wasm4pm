@@ -203,6 +203,29 @@ export const social = defineCommand({
                   .filter(([, count]) => totalHandovers > 0 && count / totalHandovers > 0.5)
                   .map(([resource, count]) => ({ resource, share: count / totalHandovers }));
 
+              // NEW (Gap R1): Workload balance analysis (Gini coefficient)
+              const workloadByResource = Object.values(outboundByResource);
+              let workloadBalance: { gini_coefficient: number; interpretation: string } | null =
+                null;
+              if (workloadByResource.length > 0) {
+                let giniSum = 0;
+                for (let i = 0; i < workloadByResource.length; i++) {
+                  for (let j = i + 1; j < workloadByResource.length; j++) {
+                    giniSum += Math.abs(workloadByResource[i] - workloadByResource[j]);
+                  }
+                }
+                const totalWorkload = workloadByResource.reduce((s, v) => s + v, 0);
+                const giniCoeff =
+                  totalWorkload > 0
+                    ? (2 * giniSum) / (workloadByResource.length * workloadByResource.length * totalWorkload)
+                    : 0;
+                workloadBalance = {
+                  gini_coefficient: giniCoeff,
+                  interpretation:
+                    giniCoeff > 0.6 ? 'highly-imbalanced' : giniCoeff > 0.3 ? 'moderately-imbalanced' : 'balanced',
+                };
+              }
+
               // NEW (Iteration 12e, Gap R1): Task specialization analysis
               // Compute per-resource specialization using Herfindahl-Hirschman Index (HHI).
               // HHI = Σ(activity_count / total_count)² per resource.
@@ -264,6 +287,8 @@ export const social = defineCommand({
                 bottleneckResources,
                 // NEW (Iteration 12e, Gap R1): Per-resource task specialization metrics
                 taskSpecialization,
+                // NEW (Gap R1): Workload balance (Gini coefficient)
+                workloadBalance,
               };
 
               // Capture output metrics for late OTEL span attributes

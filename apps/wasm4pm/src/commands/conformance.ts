@@ -30,6 +30,14 @@ interface TraceResult {
   tokens_missing: number;
   tokens_remaining: number;
   deviations: TraceDeviation[];
+  // NEW (Gap CF-2): Root-cause classification for trace deviations
+  primary_deviation_class?: string;
+  deviation_summary?: {
+    missing_activities: number;
+    extra_activities: number;
+    late_activities: number;
+    reordered_activities: number;
+  };
 }
 
 interface ConformancePayload {
@@ -355,7 +363,36 @@ export const conformance = defineCommand({
               }
 
               // Separate deviating traces for reporting (up to 20 to keep output manageable)
-              const deviatingTraces = caseFitness.filter((t) => !t.is_conforming).slice(0, 20);
+              let deviatingTraces = caseFitness.filter((t) => !t.is_conforming).slice(0, 20);
+
+              // NEW (Gap CF-2): Classify trace deviations into root-cause categories
+              const classifyDeviation = (dev: TraceDeviation): string => {
+                if (!dev.deviation_type) return 'unknown';
+                const dtype = dev.deviation_type.toLowerCase();
+                if (dtype.includes('missing')) return 'missing_activity';
+                if (dtype.includes('extra') || dtype.includes('skip')) return 'extra_activity';
+                if (dtype.includes('late')) return 'late_activity';
+                if (dtype.includes('reorder') || dtype.includes('sequence')) return 'reordered_activities';
+                return 'other';
+              };
+
+              // Augment deviating traces with root-cause classification
+              deviatingTraces = deviatingTraces.map((t) => ({
+                ...t,
+                primary_deviation_class:
+                  t.deviations.length > 0 ? classifyDeviation(t.deviations[0]) : 'no_deviations',
+                deviation_summary: {
+                  missing_activities: t.deviations.filter((d) => classifyDeviation(d) === 'missing_activity')
+                    .length,
+                  extra_activities: t.deviations.filter((d) => classifyDeviation(d) === 'extra_activity')
+                    .length,
+                  late_activities: t.deviations.filter((d) => classifyDeviation(d) === 'late_activity')
+                    .length,
+                  reordered_activities: t.deviations.filter((d) =>
+                    classifyDeviation(d) === 'reordered_activities'
+                  ).length,
+                },
+              }));
 
               // Aggregate token counts across all traces for diagnostics
               let totalMissing = 0;

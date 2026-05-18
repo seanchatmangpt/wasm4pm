@@ -47,6 +47,29 @@ export interface ClassificationResult {
   method: ClassificationMethod;
   predictions: Array<{ caseId: string; predicted: string; confidence: number }>;
   modelInfo: Record<string, unknown>;
+  /**
+   * Mean cross-validation accuracy over k held-out folds.
+   * Present only when crossValidate=true is passed to classifyTraces.
+   * This is the honest accuracy estimate: it is evaluated on data the model
+   * never saw during training, so it will be lower than in-sample accuracy
+   * for methods prone to overfitting (e.g. kNN with small k, deep trees).
+   */
+  cv_accuracy?: number;
+  /**
+   * Standard deviation of per-fold accuracy scores.
+   * High std dev signals that the model is sensitive to which data it sees —
+   * a sign of overfitting or insufficient training data.
+   */
+  cv_std_dev?: number;
+  /** Number of CV folds used (default: 3). */
+  cv_folds?: number;
+  /** Per-fold accuracy scores for debugging and audit trails. */
+  cv_fold_scores?: number[];
+  /**
+   * Method selected by the data-driven algorithm selector when the user did
+   * not specify --method. Absent when the user explicitly chose a method.
+   */
+  suggested_method?: ClassificationMethod;
 }
 
 export interface RegressionResult {
