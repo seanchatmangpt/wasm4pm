@@ -1,5 +1,5 @@
 {
-  "audit_timestamp": "2026-05-18T01:09:57.175Z",
+  "audit_timestamp": "2026-05-18T04:46:26.138Z",
   "auditor": "wpm-adversary",
   "verdict": "AndonPull(AdversarialEscape)",
   "defense_posture": "WEAK",
@@ -51,17 +51,17 @@
     },
     {
       "job": "Hooks JTBD audit JSON must exist on disk with Accepted verdict",
-      "observed": "Audit JSON missing — wpm doctor hooks has not been run or audit was deleted"
+      "observed": "Audit exists but verdict=AndonPull(RefutedJobs) (not Accepted)"
     }
   ],
   "inconclusive_probes": [
     {
       "job": "Block stop when verifier (wpm) is unavailable and critical files are dirty",
-      "observed": "Probe error: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/Users/sac/.cache/tmp/adv-stop-novpm-SnV27S/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n"
+      "observed": "Probe error: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/tmp/adv-stop-novpm-3duMm2/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n"
     },
     {
       "job": "Block stop when audit exits 0 but does not contain Accepted verdict",
-      "observed": "Probe error: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/Users/sac/.cache/tmp/adv-stop-0-SxhHU1/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n"
+      "observed": "Probe error: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/tmp/adv-stop-0-taPdF2/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n"
     }
   ],
   "probes": [
@@ -138,14 +138,14 @@
     {
       "job": "Block stop when verifier (wpm) is unavailable and critical files are dirty",
       "scenario": "harness.rs modified, apps/wasm4pm/dist/bin/wpm.js does not exist",
-      "observed": "Probe error: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/Users/sac/.cache/tmp/adv-stop-novpm-SnV27S/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n",
+      "observed": "Probe error: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/tmp/adv-stop-novpm-3duMm2/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n",
       "verdict": "inconclusive",
       "evidence": "probe-error"
     },
     {
       "job": "Block stop when audit exits 0 but does not contain Accepted verdict",
       "scenario": "harness.rs dirty, fake wpm exits 0 with JSON missing final_verdict=Accepted",
-      "observed": "Probe error: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/Users/sac/.cache/tmp/adv-stop-0-SxhHU1/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n",
+      "observed": "Probe error: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/tmp/adv-stop-0-taPdF2/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n",
       "verdict": "inconclusive",
       "evidence": "probe-error"
     },
@@ -187,9 +187,9 @@
     {
       "job": "Hooks JTBD audit JSON must exist on disk with Accepted verdict",
       "scenario": "Check wasm4pm/target/audits/claude-hooks-jtbd-verification.json",
-      "observed": "Audit JSON missing — wpm doctor hooks has not been run or audit was deleted",
+      "observed": "Audit exists but verdict=AndonPull(RefutedJobs) (not Accepted)",
       "verdict": "refuted",
-      "evidence": "exists=false; verdict=AndonPull(MissingHooksAudit)"
+      "evidence": "exists=true; verdict=AndonPull(RefutedJobs)"
     },
     {
       "job": "Activity-only fake route rejected with AndonPull(ActivityOnlyFakeRoute)",
