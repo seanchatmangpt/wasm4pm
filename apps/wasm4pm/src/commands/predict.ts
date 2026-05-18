@@ -101,7 +101,7 @@ export const predict = defineCommand({
 
     let finalTask = '';
     let finalPredictionsCount = 0;
-    let finalExitCode = EXIT_CODES.success;
+    let finalExitCode: number = EXIT_CODES.success;
 
     return withSpan(
       'predict',
@@ -353,7 +353,7 @@ export const predict = defineCommand({
         'status.code': finalExitCode,
         'status.ok': finalExitCode === EXIT_CODES.success,
         'prediction.task': finalTask,
-        'prediction.count': finalPredictionsCount > 0 ? finalPredictionsCount : undefined,
+        ...(finalPredictionsCount > 0 ? { 'prediction.count': finalPredictionsCount } : {}),
       })
     );
   },

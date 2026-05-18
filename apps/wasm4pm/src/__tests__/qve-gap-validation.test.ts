@@ -113,11 +113,15 @@ describe('QG-1: wpm quality --threshold flag', () => {
   );
 
   it(
-    'QG-1-c: --threshold -0.1 (below 0) exits 1 (config_error)',
+    'QG-1-c: --threshold=-0.1 (below 0) exits 1 (config_error)',
     async () => {
+      // Negative numbers require the `=` form (`--threshold=-0.1`) because
+      // citty interprets `--threshold -0.1` as `--threshold` (no value) plus
+      // a separate flag `-0.1`. The `=` form forces the value to be parsed
+      // as the threshold argument rather than a standalone flag.
       const result = await runCli([
         'quality', '-i', '/no/such/file.xes',
-        '--threshold', '-0.1',
+        '--threshold=-0.1',
         '--format', 'json',
       ]);
       expect(result.exitCode).toBe(1);

@@ -325,7 +325,7 @@ export const run = defineCommand({
     let finalAlgorithm = '';
     let finalFitness = 0;
     let finalPrecision = 0;
-    let finalExitCode = EXIT_CODES.success;
+    let finalExitCode: number = EXIT_CODES.success;
 
     return withSpan(
       'run',
