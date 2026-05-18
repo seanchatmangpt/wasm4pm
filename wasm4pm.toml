@@ -1,137 +1,60 @@
-# wasm4pm Configuration
-# Place at: ./wasm4pm.toml or ~/.wasm4pm/wasm4pm.toml
-
+# wasm4pm — "streaming" preset
+# Purpose: real-time process monitoring on high-volume event streams.
+# Uses SIMD-accelerated streaming DFG + EWMA drift detection.
+# Run: wpm run --config wasm4pm.toml --watch
 schema_version = 1
 version = "26.4.5"
 
 [source]
-kind = "file"          # file | stream | http
-# path = "./events.xes"
+kind = "stream"   # stream = read from stdin or a message queue
 
 [sink]
-kind = "stdout"        # stdout | file | http
-# path = "./output.pnml"
+kind = "stdout"
 
+# simd_streaming_dfg is the fastest discovery algorithm (speed score: 2).
+# For slightly higher quality at acceptable latency: heuristic_miner (speed: 25).
 [algorithm]
-name = "dfg"           # dfg | heuristic | inductive | alpha | ilp | genetic | pso | astar | hill-climbing | simulated-annealing | ant-colony | declare | skeleton | simd-dfg | hierarchical-dfg | smart-engine
-
-[algorithm.parameters]
+name = "simd_streaming_dfg"   # simd_streaming_dfg | dfg | heuristic_miner
 
 [execution]
-profile = "balanced"   # fast | balanced | quality | stream
-timeout = 300000       # ms (5 min)
-# maxMemory = 1073741824  # bytes (1 GB)
+profile = "stream"    # enables streaming-full feature set + SIMD acceleration
+timeout = 0           # 0 = unlimited (streaming never stops voluntarily)
 
 [observability]
-logLevel = "info"      # debug | info | warn | error
-metricsEnabled = false # true | false
+logLevel = "warn"     # reduce log noise in high-throughput scenarios
+metricsEnabled = true # emit throughput metrics
 
 [observability.otel]
 enabled = false
-exporter = "otlp"      # otlp | console | none
-# endpoint = "http://localhost:4318"
+exporter = "otlp"
 required = false
 
 [watch]
-enabled = false
-poll_interval = 1000   # ms
+enabled = true         # re-run model update when config changes
+poll_interval = 500    # poll every 500ms (aggressive for streaming scenarios)
 # checkpoint_dir = "./.wasm4pm/checkpoints"
 
 [output]
-format = "human"       # human | json
-destination = "stdout" # stdout | stderr | <file path>
-pretty = true          # true | false
-colorize = true        # true | false (disable for CI/pipes)
+format = "json"        # machine-parseable — useful for downstream consumers
+destination = "stdout"
+pretty = false
+colorize = false
 
+# Drift detection: EWMA on the activity distribution of sliding trace windows.
+# Fire a drift event when the Jaccard distance exceeds the threshold.
 [prediction]
-enabled = false
-activityKey = "concept:name"  # XES attribute name used to identify activities
-ngramOrder = 2           # 2–5 (n-gram order for next-activity prediction)
-driftWindowSize = 10     # positive integer (sliding window size for drift detection)
-# tasks = ["next_activity", "remaining_time", "drift", "outcome", "features", "resource"]
-tasks = []
+enabled = true
+activityKey = "concept:name"
+ngramOrder = 2
+driftWindowSize = 20   # traces per window — larger = more stable, slower response
+tasks = ["drift", "next_activity"]
 
 [prediction.drift]
-ewma_alpha = 0.2   # EWMA smoothing factor in (0, 1]
-threshold  = 0.3   # drift threshold in (0, 1]
+ewma_alpha = 0.3       # more reactive (higher α) for streaming use cases
+threshold = 0.25
 
-# ---------------------------------------------------------------------------
-# ML analysis (classify / cluster / forecast / anomaly / regress / pca)
-# ---------------------------------------------------------------------------
 [ml]
-enabled    = false
-algorithms = ["classify", "cluster", "forecast"]   # alias of "tasks"
+enabled = false        # ML is disabled in stream profile for latency reasons
 
-[ml.classify]
-model     = "decision_tree"   # decision_tree | naive_bayes | logistic_regression | knn
-targetKey = "outcome"
-k         = 5                 # only used when model = "knn"
-
-[ml.cluster]
-method = "kmeans"             # kmeans | dbscan | hierarchical
-k      = 5
-eps    = 1.0                  # DBSCAN ε
-
-[ml.forecast]
-method            = "linear"  # linear | exponential | polynomial
-periods           = 5
-polynomialDegree  = 2
-
-[ml.anomaly]
-method    = "ema"             # ema | isolation_forest | zscore
-alpha     = 0.3
-threshold = 2.5
-
-[ml.regress]
-method    = "linear"          # linear | polynomial | ridge
-targetKey = "outcome"
-lambda    = 0.0               # L2 strength (ridge only)
-
-[ml.pca]
-nComponents = 2
-
-# ---------------------------------------------------------------------------
-# RL system (tabular TD agents + LinUCB algorithm-selector)
-# ---------------------------------------------------------------------------
 [rl]
-enabled         = false
-agents          = ["QLearning", "SARSA", "DoubleQLearning"]
-learning_rate   = 0.1     # α in (0, 1]
-discount_factor = 0.99    # γ in [0, 1]
-epsilon         = 0.1     # ε-greedy exploration in [0, 1]
-
-[rl.convergence]
-min_cycles                = 50
-target_reward_improvement = 0.05
-window_size               = 10
-
-# LinUCB / GPU dispatch (algorithm-selector)
-gpu_enabled      = false
-linucb_lambda    = 1.0
-ucb1_exploration = 1.4142  # √2
-
-# ---------------------------------------------------------------------------
-# AutoMembrane — pre-execution 5-layer conformance membrane
-# Layers: actor → object → route → automl → custody
-# Set enabled = true to activate the membrane for all algorithm executions.
-# ---------------------------------------------------------------------------
-# [membrane]
-# enabled = false
-# custody_actions = ["approve", "release", "transfer"]   # "delete" is also valid
-#
-# [membrane.thresholds]
-# actor_anomaly_escalate = 0.7   # score above which actor layer escalates
-# actor_anomaly_warn     = 0.4   # score above which actor layer warns
-# route_match_allow      = 0.5   # score below which route layer allows
-# automl_escalate        = 0.9   # score above which automl layer escalates
-# automl_warn            = 0.7   # score above which automl layer warns
-#
-# [membrane.drift]
-# stable_threshold   = 0.10
-# moderate_threshold = 0.25
-# high_threshold     = 0.50
-# severe_threshold   = 0.75
-#
-# [membrane.envelopes]
-# persist = true
-# path    = ".wasm4pm/envelopes"
+enabled = false
