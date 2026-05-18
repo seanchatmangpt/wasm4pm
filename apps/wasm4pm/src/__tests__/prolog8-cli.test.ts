@@ -102,11 +102,12 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
       expect(result.stdout).toMatch(/prolog8/i);
     });
 
-    // TODO(citty-pipe-drain): citty's runMain calls process.exit(0) immediately
-    // after showUsage writes to stdout. Under vitest's execFile pipe capture, the
-    // child exits before the parent reads — stdout AND stderr come back empty.
-    // Manual invocation works (522 bytes captured). Re-enable once upstream
-    // citty drains stdout before exit, or wpm wraps showUsage with a flush.
+    // TODO(vitest-pipe-capture): vitest's execFile-based runCli loses tiny
+    // (<1KB) child stdout writes that arrive before child exit. The wpm bin
+    // now wraps process.exit to drain stdio first (verified manually: 522
+    // bytes captured by a direct execFile call), but vitest's worker still
+    // sees empty stdout/stderr. Tracked as a vitest 1.6 quirk; revisit when
+    // upgrading vitest or switching to a tty-emulating test harness.
     it.skip('--help exits 0 and shows subcommand names', async () => {
       const result = await runCli(['prolog8', '--help'], { env: env.env });
       expect(result.exitCode).toBe(EXIT_CODES.success);
