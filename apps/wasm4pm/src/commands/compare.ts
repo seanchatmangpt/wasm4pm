@@ -475,10 +475,18 @@ export const compare = defineCommand({
           const resolved = rawAlgos.map((a) => ALGORITHM_CLI_ALIASES[a] ?? a);
           const invalid = resolved.filter((a) => !ALGORITHMS.includes(a as Algorithm));
           if (invalid.length > 0) {
+            // rawAlgos entries that did not resolve — show what the user typed
+            const invalidRaw = rawAlgos.filter((a) => {
+              const cli = ALGORITHM_CLI_ALIASES[a] ?? a;
+              return !ALGORITHMS.includes(cli as Algorithm);
+            });
             const result = makeErrorResult(
               'compare',
               new Error(
-                `Unknown algorithm(s): ${invalid.join(', ')}. Available: ${Object.keys(ALGORITHM_CLI_ALIASES).join(', ')}`
+                `Unknown algorithm(s): ${invalidRaw.join(', ')}.\n\n` +
+                  `  Available CLI aliases: ${ALGORITHMS.join(', ')}\n\n` +
+                  `  Usage:  wpm compare dfg,heuristic,genetic -i log.xes\n` +
+                  `  Run 'wpm algorithms' to list all available algorithms with descriptions.`
               ),
               EXIT_CODES.source_error,
               'UNKNOWN_ALGORITHMS'

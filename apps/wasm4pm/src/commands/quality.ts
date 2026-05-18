@@ -35,7 +35,8 @@ export const quality = defineCommand({
   meta: {
     name: 'quality',
     description:
-      'Assess multi-dimensional quality of a process model (fitness, precision, generalization, simplicity)',
+      'Assess the Van der Aalst four-dimensional quality of a process model discovered from an XES event log. ' +
+      'Ex: wpm quality process.xes  |  wpm quality log.xes --metrics fitness,precision',
   },
   args: {
     input: {
@@ -51,7 +52,7 @@ export const quality = defineCommand({
     metrics: {
       type: 'string',
       description:
-        'Comma-separated quality metrics to compute (default: fitness,precision,generalization,simplicity)',
+        'Comma-separated quality metrics to compute: fitness, precision, generalization, simplicity (default: all four)',
       default: 'fitness,precision,generalization,simplicity',
     },
     'activity-key': {
@@ -73,6 +74,10 @@ export const quality = defineCommand({
       type: 'boolean',
       description: 'Suppress non-error output',
       alias: 'q',
+    },
+    'no-save': {
+      type: 'boolean',
+      description: 'Do not auto-save the receipt to .wasm4pm/receipts/',
     },
   },
   async run(ctx) {
@@ -119,10 +124,15 @@ export const quality = defineCommand({
             const result = makeErrorResult(
               'quality',
               new Error(
-                `Invalid metric(s): ${invalidMetrics.join(', ')}. Valid: ${validMetrics.join(', ')}`
+                `Invalid --metrics value(s): ${invalidMetrics.join(', ')}.\n\n` +
+                  `  Valid metrics: ${validMetrics.join(', ')}\n\n` +
+                  `  Examples:\n` +
+                  `    wpm quality log.xes                              # all four metrics\n` +
+                  `    wpm quality log.xes --metrics fitness,precision  # selected metrics\n\n` +
+                  `  Run "wpm quality --help" for details.`
               ),
-              EXIT_CODES.source_error,
-              'SOURCE_ERROR'
+              EXIT_CODES.config_error,
+              'INVALID_METRICS'
             );
             emitResult(result, { format, verbose, quiet });
             return await exitWithFlush(result.exit_code);

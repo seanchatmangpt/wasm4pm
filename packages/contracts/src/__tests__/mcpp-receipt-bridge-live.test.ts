@@ -788,3 +788,155 @@ describe('H: Wire serialisability — no undefined values, no circular refs (Ran
     expect(ndjson2).toBe(ndjson1);
   });
 });
+
+// ===========================================================================
+// I. Boundary regression tests — gaps at the mcpp integration boundary (Rank 2)
+//
+// These tests catch regressions that would silently corrupt the proof chain
+// between wasm4pm and mcpp without causing an immediate throw or test failure
+// in the existing suites.
+//
+// Gap I-1: partial status must NOT be admitted by the mcpp gate.
+//          partial → refused in the OCEL verdict, and MUST NOT produce
+//          fitness=1.0 (which would pass the admission threshold).
+//
+// Gap I-2: OCEL verdict vmap contains `fitness: null` — this is a distinct
+//          field from `mcpp.conformance.fitness` in the complete event.
+//          The null sentinel must NOT be confused with a real fitness score.
+//
+// Gap I-3: fromMcppResponse throws on uppercase hex in blake3: transport ref.
+//          The stripper regex is case-sensitive; mcpp wire format specifies
+//          lowercase hex.  An uppercase transport hash must be caught early,
+//          not silently accepted as a valid bare-hex string.
+//
+// Gap I-4: ARGR-enriched OCEL events survive NDJSON round-trip with all
+//          numeric fields preserved at full precision.
+// ===========================================================================
+
+import { validateReceipt } from '../validation.js';
+
+describe('I: Integration boundary regression — gaps at the mcpp proof-chain boundary', () => {
+
+  // ── I-1: partial status → refused (not admitted) ──────────────────────────
+
+  it('I01: partial receipt produces refused verdict event — NEVER admitted (Rank 2)', () => {
+    // A partial receipt cannot be admitted by the mcpp gate.
+    // If this emits "admitted", a partial execution would silently pass the gate.
+    const [,, verdict] = receiptToOcelEvents(makeReceipt({ status: 'partial' }));
+    expect(verdict['ocel:activity']).toBe('refused');
+    expect(verdict['ocel:activity']).not.toBe('admitted');
+  });
+
+  it('I02: partial receipt mcpp.conformance.fitness=0.0 — never 1.0 (Rank 1)', () => {
+    // MCPP conformance doctrine: partial ≠ success.
+    // fitness=1.0 would cause the admission gate to pass a non-conforming run.
+    const [, complete] = receiptToOcelEvents(makeReceipt({ status: 'partial' }));
+    const fitness = (complete['ocel:vmap'] as Record<string, unknown>)['mcpp.conformance.fitness'];
+    expect(fitness).toBe(0.0);
+    // Explicit: not 1.0 (would be a gate-bypass vulnerability)
+    expect(fitness).not.toBe(1.0);
+  });
+
+  it('I03: partial receipt passes validateReceipt structural check but gate still refuses (Rank 2)', () => {
+    // A partial receipt is structurally valid but semantically refused.
+    // Ensure structural validity alone does NOT imply admission.
+    const partialReceipt = makeReceipt({ status: 'partial' });
+    const validation = validateReceipt(partialReceipt);
+    // Structural validation passes (partial is a valid status)
+    expect(validation.valid).toBe(true);
+    // But the OCEL gate still refuses it
+    const [,, verdict] = receiptToOcelEvents(partialReceipt);
+    expect(verdict['ocel:activity']).toBe('refused');
+  });
+
+  // ── I-2: verdict vmap fitness=null sentinel is distinct from conformance score ─
+
+  it('I04: admitted verdict vmap has fitness=null (sentinel, not a conformance score) (Rank 2)', () => {
+    // The verdict event's `fitness: null` field is a NOT a conformance score.
+    // The real conformance score lives in the `algorithm.complete` event as
+    // `mcpp.conformance.fitness`.  Confusing these would corrupt the proof chain.
+    const [, complete, verdict] = receiptToOcelEvents(makeReceipt({ status: 'success' }));
+    const verdictVmap = verdict['ocel:vmap'] as Record<string, unknown>;
+    const completeVmap = complete['ocel:vmap'] as Record<string, unknown>;
+    // Verdict: null sentinel (not 1.0)
+    expect(verdictVmap['fitness']).toBeNull();
+    // Complete: real conformance score
+    expect(completeVmap['mcpp.conformance.fitness']).toBe(1.0);
+    // These are DIFFERENT fields — null sentinel is never confused with the score
+    expect(verdictVmap['fitness']).not.toBe(completeVmap['mcpp.conformance.fitness']);
+  });
+
+  it('I05: refused verdict vmap has fitness=null (same sentinel as admitted) (Rank 2)', () => {
+    // The verdict event always uses fitness=null.
+    // The refusal is signalled by the ocel:activity="refused" and
+    // mcpp.refusal_class — NOT by a non-null fitness value.
+    const [,, verdict] = receiptToOcelEvents(makeReceipt({ status: 'failed' }));
+    const verdictVmap = verdict['ocel:vmap'] as Record<string, unknown>;
+    expect(verdictVmap['fitness']).toBeNull();
+    // Refusal is encoded in activity + refusal_class
+    expect(verdict['ocel:activity']).toBe('refused');
+    expect(verdictVmap['mcpp.refusal_class']).toBe('ConformanceBelowThreshold');
+  });
+
+  // ── I-3: fromMcppResponse rejects uppercase hex in blake3: transport refs ─────
+
+  it('I06: fromMcppResponse throws on uppercase hex in blake3: proof_pack hash (Rank 1)', () => {
+    // The mcpp wire format specifies lowercase hex-64 after the blake3: prefix.
+    // Uppercase hex fails the regex (/^[0-9a-f]{64}$/) in stripBlake3Prefix.
+    // This must throw early, not silently pass a bad hash into the proof chain.
+    const upperCaseHex = 'A'.repeat(64); // uppercase — invalid
+    const response = makeMcppAcceptedResponse({ proofPackHex: upperCaseHex });
+    // Override the hash field directly to inject uppercase
+    (response as Record<string, unknown>)['proof_pack'] = {
+      uri: `urn:mcpp:proof-pack:${RUN_ID}`,
+      hash: `blake3:${upperCaseHex}`,
+      size_bytes: 4096,
+    };
+    expect(() => fromMcppResponse(response)).toThrow();
+  });
+
+  it('I07: fromMcppResponse throws on uppercase hex in blake3: receipt hash (Rank 1)', () => {
+    // Same as I06 but for the receipt hash field.
+    const upperCaseHex = 'F'.repeat(64);
+    const response = makeMcppAcceptedResponse();
+    (response as Record<string, unknown>)['receipt'] = {
+      uri: `urn:mcpp:receipt:${RUN_ID}`,
+      hash: `blake3:${upperCaseHex}`,
+      chain_predecessor: 'genesis',
+    };
+    expect(() => fromMcppResponse(response)).toThrow();
+  });
+
+  // ── I-4: ARGR-enriched OCEL events survive NDJSON round-trip ──────────────
+
+  it('I08: ARGR rate survives NDJSON round-trip at full precision (Rank 1)', () => {
+    // ARGR metrics (Actor-Resolved Gap Rate) must survive serialisation.
+    // Floating-point precision loss would corrupt the mcpp ARGR correlation.
+    const rate = 0.123456789;
+    const events = receiptToOcelEvents(makeReceipt(), { rate, handoverDensity: 3.14159 });
+    const roundTripped = fromMcppJsonl(toOcelJsonl(events));
+    const completeVmap = roundTripped[1]['ocel:vmap'] as Record<string, unknown>;
+    expect(completeVmap['powl.gap.argr']).toBe(rate);
+  });
+
+  it('I09: ARGR handoverDensity survives NDJSON round-trip at full precision (Rank 1)', () => {
+    const handoverDensity = 2.718281828;
+    const events = receiptToOcelEvents(makeReceipt(), { rate: 0.5, handoverDensity });
+    const roundTripped = fromMcppJsonl(toOcelJsonl(events));
+    const completeVmap = roundTripped[1]['ocel:vmap'] as Record<string, unknown>;
+    expect(completeVmap['powl.gap.handover_density']).toBe(handoverDensity);
+  });
+
+  it('I10: ARGR fields are absent from start and verdict events after NDJSON round-trip (Rank 2)', () => {
+    // ARGR fields must ONLY appear in the complete event.
+    // After round-trip, no leakage into start or verdict.
+    const events = receiptToOcelEvents(makeReceipt(), { rate: 0.42, handoverDensity: 1.1 });
+    const roundTripped = fromMcppJsonl(toOcelJsonl(events));
+    const startVmap = roundTripped[0]['ocel:vmap'] as Record<string, unknown>;
+    const verdictVmap = roundTripped[2]['ocel:vmap'] as Record<string, unknown>;
+    expect(startVmap).not.toHaveProperty('powl.gap.argr');
+    expect(startVmap).not.toHaveProperty('powl.gap.handover_density');
+    expect(verdictVmap).not.toHaveProperty('powl.gap.argr');
+    expect(verdictVmap).not.toHaveProperty('powl.gap.handover_density');
+  });
+});

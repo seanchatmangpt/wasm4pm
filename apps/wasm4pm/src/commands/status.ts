@@ -53,7 +53,9 @@ async function loadAutonomicState(): Promise<AutoprocessStateSnapshot | null> {
 export const status = defineCommand({
   meta: {
     name: 'status',
-    description: 'Show status of discovery operations and system health',
+    description:
+      'Show WASM engine health, algorithm registry, memory, and config provenance. ' +
+      'Ex: wpm status  |  wpm status --show-config  |  wpm status --format json',
   },
   args: {
     format: {

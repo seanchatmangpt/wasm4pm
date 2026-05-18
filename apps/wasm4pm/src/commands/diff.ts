@@ -74,17 +74,19 @@ interface DiffPayload {
 export const diff = defineCommand({
   meta: {
     name: 'diff',
-    description: 'Compare two logs via Jaccard similarity. Ex: wpm diff log1.xes log2.xes',
+    description:
+      'Compare two XES event logs via Jaccard similarity on DFG edges. ' +
+      'Ex: wpm diff before.xes after.xes  |  wpm diff log1.xes log2.xes --format json',
   },
   args: {
     log1: {
       type: 'positional',
-      description: 'Path to first XES event log file',
+      description: 'Path to first XES event log file (.xes)',
       required: true,
     },
     log2: {
       type: 'positional',
-      description: 'Path to second XES event log file',
+      description: 'Path to second XES event log file (.xes)',
       required: true,
     },
     'activity-key': {
@@ -105,6 +107,10 @@ export const diff = defineCommand({
       type: 'boolean',
       description: 'Suppress non-error output',
       alias: 'q',
+    },
+    'no-save': {
+      type: 'boolean',
+      description: 'Do not auto-save the receipt to .wasm4pm/receipts/',
     },
   },
   async run(ctx) {
@@ -137,7 +143,12 @@ export const diff = defineCommand({
             } catch {
               const result = makeErrorResult(
                 'diff',
-                new Error(`Input file not found (${label}): ${filePath}`),
+                new Error(
+                  `Input file not found (${label}): ${filePath}\n\n` +
+                    `  wpm diff accepts XES event logs (.xes files).\n` +
+                    `  Usage:  wpm diff before.xes after.xes\n\n` +
+                    `  Check that the file path is correct and the file is readable.`
+                ),
                 EXIT_CODES.source_error,
                 'SOURCE_ERROR'
               );
