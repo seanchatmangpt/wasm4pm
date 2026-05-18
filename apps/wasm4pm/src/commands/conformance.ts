@@ -334,6 +334,45 @@ export const conformance = defineCommand({
                 conformingCases = (conformanceResult.conforming_cases as number) ?? 0;
                 const rawCases = conformanceResult.case_fitness as TraceResult[] | undefined;
                 caseFitness = Array.isArray(rawCases) ? rawCases : [];
+
+                // DEGENERATE CASE 1: Empty log
+                if (totalCases === 0) {
+                  const result = makeErrorResult(
+                    'conformance',
+                    new Error(
+                      'Degenerate case: Log contains no traces.\n\nDiagnostic: Ensure the XES file contains at least one <trace> element with at least one <event>.'
+                    ),
+                    EXIT_CODES.source_error,
+                    'SOURCE_ERROR'
+                  );
+                  emitResult(result, { format, verbose, quiet });
+                  return await exitWithFlush(result.exit_code);
+                }
+
+                // DEGENERATE CASE 2: All traces identical (schema mismatch or data quality issue)
+                if (totalCases > 1 && caseFitness.length > 0) {
+                  const fitnessValues = caseFitness.map((c) => c.trace_fitness);
+                  const uniqueFitnesses = new Set(fitnessValues.map((f) => f.toFixed(3)));
+                  const uniqueActivityCounts = new Set(caseFitness.map((c) => c.deviations.length));
+
+                  if (uniqueFitnesses.size === 1 && uniqueActivityCounts.size === 1) {
+                    if (verbose) {
+                      console.warn(
+                        '\nWARNING (Degenerate Case 2): All traces have identical structure and fitness.\n' +
+                          'This suggests possible activity-key mismatch or intentional log homogeneity.\n' +
+                          'Consider checking the activity key with: wpm run log.xes --algorithm dfg\n'
+                      );
+                    }
+                  }
+                }
+
+                // DEGENERATE CASE 3: Single trace (no variance for statistical analysis)
+                if (totalCases === 1 && verbose) {
+                  console.warn(
+                    '\nWARNING (Degenerate Case 3): Log contains only 1 trace.\n' +
+                      'Statistical conformance analysis requires multiple traces for validity.\n'
+                  );
+                }
               } else {
                 // alignment path — shape differs, fitness is at root
                 fitnessValue = (conformanceResult.fitness as number) ?? 0.0;
