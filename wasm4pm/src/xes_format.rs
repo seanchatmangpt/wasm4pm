@@ -4,6 +4,75 @@ use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 
 // ---------------------------------------------------------------------------
+// Conversion from wasm4pm_types::EventLog (parser output) → models::EventLog
+// ---------------------------------------------------------------------------
+//
+// The wasm4pm-types crate carries a port of the `process_mining` crate's
+// real XES parser (handles <global>, non-self-closing typed tags, etc.).
+// Its data model uses `Vec<Attribute>` keyed by name; our in-crate model
+// uses `HashMap<String, AttributeValue>`. The conversions below flatten
+// one into the other.
+
+#[cfg(feature = "import")]
+mod xes_compat {
+    use super::{AttributeValue, Attributes, Event, EventLog, Trace};
+    use std::collections::HashMap;
+    use wasm4pm_types::event_log as ext;
+
+    fn conv_value(v: ext::AttributeValue) -> Option<AttributeValue> {
+        match v {
+            ext::AttributeValue::String(s) => Some(AttributeValue::String(s)),
+            ext::AttributeValue::Date(d) => Some(AttributeValue::Date(d.to_rfc3339())),
+            ext::AttributeValue::Int(i) => Some(AttributeValue::Int(i)),
+            ext::AttributeValue::Float(f) => Some(AttributeValue::Float(f)),
+            ext::AttributeValue::Boolean(b) => Some(AttributeValue::Boolean(b)),
+            ext::AttributeValue::ID(u) => Some(AttributeValue::String(u.to_string())),
+            ext::AttributeValue::List(items) => Some(AttributeValue::List(
+                items.into_iter().filter_map(|a| conv_value(a.value)).collect(),
+            )),
+            ext::AttributeValue::Container(items) => Some(AttributeValue::Container(
+                conv_attrs(items),
+            )),
+            ext::AttributeValue::None() => None,
+        }
+    }
+
+    fn conv_attrs(attrs: Vec<ext::Attribute>) -> Attributes {
+        let mut out: HashMap<String, AttributeValue> = HashMap::with_capacity(attrs.len());
+        for a in attrs {
+            if let Some(v) = conv_value(a.value) {
+                out.insert(a.key, v);
+            }
+        }
+        out
+    }
+
+    impl From<ext::Event> for Event {
+        fn from(e: ext::Event) -> Self {
+            Event { attributes: conv_attrs(e.attributes) }
+        }
+    }
+
+    impl From<ext::Trace> for Trace {
+        fn from(t: ext::Trace) -> Self {
+            Trace {
+                attributes: conv_attrs(t.attributes),
+                events: t.events.into_iter().map(Into::into).collect(),
+            }
+        }
+    }
+
+    impl From<ext::EventLog> for EventLog {
+        fn from(l: ext::EventLog) -> Self {
+            EventLog {
+                attributes: conv_attrs(l.attributes),
+                traces: l.traces.into_iter().map(Into::into).collect(),
+            }
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Fast attribute extraction helpers
 // ---------------------------------------------------------------------------
 
