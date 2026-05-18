@@ -19,9 +19,13 @@ export type ComplexityClass =
   | 'NP-Hard';
 
 /**
- * Speed tier: 0-100 (lower = faster)
- * 0-10: instant (<1ms), 10-30: very fast (1-10ms), 30-50: fast (10-100ms)
- * 50-70: moderate (100ms-1s), 70-85: slow (1-10s), 85-100: very slow (10s+)
+ * Speed tier: 0-100 (logarithmic scale, measured on BPI 2020 with 56K events)
+ * Formula: score = Math.min(100, Math.max(0, Math.log2(timeMs) * 10))
+ * 0-10: sub-millisecond (<1ms)
+ * 10-33: millisecond (1-10ms)
+ * 33-67: tens of milliseconds (10-100ms)
+ * 67-100: hundreds of milliseconds to seconds (100ms-10s+)
+ * Reference: SIMD DFG ~11ms = score 34, DFG ~192ms = score 76, ILP ~3000ms = score 100
  */
 export type SpeedTier = number; // 0-100
 
@@ -144,7 +148,7 @@ export class AlgorithmRegistry {
         'Discovers a directly-follows graph from an event log. Fastest algorithm with minimal memory overhead.',
       outputType: 'dfg',
       complexity: 'O(n)',
-      speedTier: 5,
+      speedTier: 76,
       qualityTier: 30,
       parameters: [
         {
@@ -169,7 +173,7 @@ export class AlgorithmRegistry {
       description: 'Discovers a minimal process skeleton with start and end activities. Very fast.',
       outputType: 'dfg',
       complexity: 'O(n)',
-      speedTier: 3,
+      speedTier: 73,
       qualityTier: 25,
       parameters: [
         {
@@ -195,7 +199,7 @@ export class AlgorithmRegistry {
         'Alpha++ algorithm (de Medeiros et al. 2004). Extends the original Alpha algorithm with explicit handling of length-1 loops (self-loops) and length-2 loops, reclassifying parallel short-loop pairs as causal. Produces a proper Petri net with source/sink places and maximal (A,B) place candidates.',
       outputType: 'petrinet',
       complexity: 'O(n²)',
-      speedTier: 20,
+      speedTier: 79,
       qualityTier: 45,
       parameters: [
         {
@@ -229,7 +233,7 @@ export class AlgorithmRegistry {
         'Discovers models from real-world logs with noise. Uses dependency threshold to filter weak dependencies.',
       outputType: 'dfg',
       complexity: 'O(n²)',
-      speedTier: 25,
+      speedTier: 63,
       qualityTier: 50,
       parameters: [
         {
@@ -264,7 +268,7 @@ export class AlgorithmRegistry {
         'Recursive cut-based process tree discovery (XOR/Sequence/Parallel/Loop cuts). IM-basic: no noise filtering, all directly-follows preserved.',
       outputType: 'tree',
       complexity: 'O(n log n)',
-      speedTier: 30,
+      speedTier: 65,
       qualityTier: 55,
       parameters: [
         {
