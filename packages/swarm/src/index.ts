@@ -102,3 +102,14 @@ export {
 
 // OCEL 2.0 serialiser — closes GAP-2 (mcpp offline POWL discovery)
 export { swarmArtifactToOcel, swarmResultToOcelJsonl } from './ocel-export.js';
+
+// Shared route-refinement spec and validator — closes GAP-4
+// (TS ladder + Rust mcpp-automl ladder both validated against this shared JSON spec)
+export {
+  validateRefinementLadder,
+  REFINEMENT_ANDON_SIGNAL,
+  SPEC_VARIANT_COUNT,
+  getSpecVariants,
+  REFINEMENT_SPEC,
+  type ValidationResult,
+} from './route-refinement-validator.js';
