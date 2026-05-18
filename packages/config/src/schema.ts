@@ -305,6 +305,8 @@ export const mlConfigSchema = z
   .object({
     enabled: z.boolean().default(false),
     tasks: z.array(mlTaskSchema).default([]),
+    // Note: ML tasks can be empty when enabled=false; when enabled=true, it's OK to have no tasks
+    // (unlike prediction which enforces non-empty tasks). This is intentional: ML is optional.
 
     // --- Nested per-task sub-sections (preferred) ---
     classify: classifyConfigSchema.default({}),
@@ -378,7 +380,7 @@ export const rlConfigSchema = z
     enabled: z.boolean().default(false),
 
     /** Active agents (one or more). All five must be valid identifiers. */
-    agents: z.array(rlAgentSchema).default(['QLearning']),
+    agents: z.array(rlAgentSchema).min(1).default(['QLearning']),
 
     /** TD learning rate α in (0, 1]. */
     learning_rate: z.number().positive().max(1).default(0.1),
@@ -442,8 +444,8 @@ export const swarmConfigSchema = z
     convergence_threshold: z.number().positive().max(1).default(1.0),
     /** Groq model ID used for each worker generateText call. */
     worker_model: z.string().min(1).default('llama-3.1-70b-versatile'),
-    /** Algorithm IDs to run in parallel across workers. Defaults to ["dfg"]. */
-    algorithm_ids: z.array(algorithmIdSchema).default(['dfg']),
+    /** Algorithm IDs to run in parallel across workers. Defaults to ["dfg"]. Must have at least one. */
+    algorithm_ids: z.array(algorithmIdSchema).min(1).default(['dfg']),
   })
   .describe(
     'Swarm orchestration — multi-worker convergence: episodes, quorum threshold, worker model'

@@ -303,7 +303,7 @@ export class AlgorithmRegistry {
         'Uses evolutionary computation. Actually returns DFG, not Petri net (Phase 4 audit correction).',
       outputType: 'dfg',
       complexity: 'Exponential',
-      speedTier: 75,
+      speedTier: 100,
       qualityTier: 80,
       parameters: [
         {
@@ -347,7 +347,7 @@ export class AlgorithmRegistry {
         'Swarm-based algorithm. Actually returns DFG, not Petri net (Phase 4 audit correction).',
       outputType: 'dfg',
       complexity: 'Exponential',
-      speedTier: 70,
+      speedTier: 100,
       qualityTier: 75,
       parameters: [
         {
@@ -391,7 +391,7 @@ export class AlgorithmRegistry {
         'Heuristic search algorithm. Actually returns DFG, not Petri net (Phase 4 audit correction).',
       outputType: 'dfg',
       complexity: 'Exponential',
-      speedTier: 60,
+      speedTier: 100,
       qualityTier: 70,
       parameters: [
         {
@@ -426,7 +426,7 @@ export class AlgorithmRegistry {
         'Greedy local search. Actually returns DFG, not Petri net (Phase 4 audit correction).',
       outputType: 'dfg',
       complexity: 'O(n²)',
-      speedTier: 40,
+      speedTier: 76,
       qualityTier: 55,
       parameters: [
         {
@@ -461,7 +461,7 @@ export class AlgorithmRegistry {
         'Swarm intelligence algorithm. Actually returns DFG, not Petri net (Phase 4 audit correction).',
       outputType: 'dfg',
       complexity: 'Exponential',
-      speedTier: 65,
+      speedTier: 100,
       qualityTier: 75,
       parameters: [
         {
@@ -505,7 +505,7 @@ export class AlgorithmRegistry {
         'Probabilistic technique. Actually returns DFG, not Petri net (Phase 4 audit correction).',
       outputType: 'dfg',
       complexity: 'Exponential',
-      speedTier: 55,
+      speedTier: 100,
       qualityTier: 65,
       parameters: [
         {
@@ -549,7 +549,7 @@ export class AlgorithmRegistry {
         'Discovers declarative (constraint-based) process models. Good for flexible processes.',
       outputType: 'declare',
       complexity: 'O(n²)',
-      speedTier: 35,
+      speedTier: 75,
       qualityTier: 50,
       parameters: [
         {
@@ -583,7 +583,7 @@ export class AlgorithmRegistry {
       description: 'ILP-based DFG optimization. Minimal model with best fitness.',
       outputType: 'dfg',
       complexity: 'NP-Hard',
-      speedTier: 70,
+      speedTier: 100,
       qualityTier: 85,
       parameters: [
         {
@@ -618,7 +618,7 @@ export class AlgorithmRegistry {
         'Region-based Petri net discovery. Finds causal place candidates (1-to-1, AND-splits, AND-joins) validated by token replay, with greedy minimization. Produces precise Petri nets with explicit parallel-join/split structure.',
       outputType: 'petrinet',
       complexity: 'NP-Hard',
-      speedTier: 80,
+      speedTier: 100,
       qualityTier: 90,
       parameters: [
         {
@@ -644,7 +644,7 @@ export class AlgorithmRegistry {
         'SIMD-accelerated streaming directly-follows graph discovery. Approximately 500x faster than standard DFG via vectorized event processing.',
       outputType: 'dfg',
       complexity: 'O(n)',
-      speedTier: 1,
+      speedTier: 34,
       qualityTier: 30,
       parameters: [
         {
