@@ -372,8 +372,20 @@ function printHumanSocial(
     if (centralityScores) {
       const sorted = Object.entries(centralityScores).sort((a, b) => b[1] - a[1]);
       projection.log('  Centrality scores — most connected resources (top 10):');
+      projection.log(
+        '    High centrality = this resource receives work from many sources and hands off to many'
+      );
+      projection.log(
+        '    targets. If it is also slow, it is a structural bottleneck for the whole network.'
+      );
+      projection.log('');
+      const maxCentrality = sorted.length > 0 ? sorted[0][1] : 1;
       for (const [resource, score] of sorted.slice(0, 10)) {
-        projection.log(`    ${resource}: ${score.toFixed(3)}`);
+        const interpretation =
+          maxCentrality > 0 && score / maxCentrality >= 0.8
+            ? ' ← highest centrality: potential coordination hub / bottleneck'
+            : '';
+        projection.log(`    ${resource.padEnd(25)} ${score.toFixed(3)}${interpretation}`);
       }
       if (sorted.length > 10) {
         projection.log(`    ... and ${sorted.length - 10} more resources`);
@@ -382,12 +394,42 @@ function printHumanSocial(
     }
   }
 
-  // Next-steps hint: social network issues (bottlenecks, dominant handover paths)
-  // often correlate with process deviations. Directing the practitioner to
-  // conformance checking closes the Van der Aalst discovery → conformance →
-  // enhancement loop.
-  projection.log('  Next step: social network issues often signal process deviations.');
-  projection.log(`    Run: wpm conformance -i ${payload.input}`);
-  projection.log('    to see which traces deviate from the discovered process model.');
+  // Working-together: identify tightly coupled resource pairs (always appear together).
+  // A pair that co-occurs in a high fraction of shared cases is a team dependency —
+  // absence of one blocks the other (Van der Aalst, organisational mining §9.3).
+  if (metric === 'working-together' && network.edges.length > 0) {
+    const totalCoOccurrences = network.edges.reduce((s, e) => s + e.weight, 0);
+    const sortedEdges = [...network.edges].sort((a, b) => b.weight - a.weight);
+    const tightlyCoupled = sortedEdges.filter(
+      (e) => totalCoOccurrences > 0 && e.weight / totalCoOccurrences >= 0.4
+    );
+    if (tightlyCoupled.length > 0) {
+      projection.log('  Tightly coupled resource pairs (co-occur in >=40% of all interactions):');
+      projection.log('    These pairs are likely a team unit — if one is unavailable, the');
+      projection.log('    other is blocked. Consider whether this coupling is intentional.');
+      projection.log('');
+      for (const edge of tightlyCoupled.slice(0, 5)) {
+        const pct =
+          totalCoOccurrences > 0 ? ((edge.weight / totalCoOccurrences) * 100).toFixed(0) : '?';
+        projection.log(
+          `    ${edge.from} ↔ ${edge.to}: ${edge.weight} co-occurrences (${pct}% of total)`
+        );
+      }
+      projection.log('');
+    }
+  }
+
+  // Next-steps: close the Van der Aalst discovery → conformance → enhancement loop.
+  // Social network anomalies (bottlenecks, dominant handover paths, tightly coupled pairs)
+  // often manifest as conformance deviations and temporal bottlenecks.
+  projection.log('  Suggested follow-up:');
+  projection.log(`    wpm conformance -i ${payload.input}`);
+  projection.log('      → check which traces deviate from the discovered process model');
+  if (bottleneckResources.length > 0) {
+    projection.log(`    wpm temporal -i ${payload.input}`);
+    projection.log(
+      `      → check if the bottleneck resource(s) above are driving cycle time increases`
+    );
+  }
   projection.log('');
 }

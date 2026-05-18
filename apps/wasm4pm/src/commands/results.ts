@@ -373,25 +373,67 @@ export const results = defineCommand({
             const p = _res.payload as typeof verifyPayload;
             projection.log('');
             projection.log(`  Result file:  ${p.result_file}`);
-            projection.log(`  Output hash (recomputed):`);
-            projection.log(`    ${p.recomputed_output_hash}`);
             projection.log('');
             if (p.integrity === 'ok') {
-              projection.success(`Integrity OK — receipt ${p.receipt_file} matches`);
-              projection.log(`  run_id:  ${p.run_id}`);
-              projection.log(`  command: ${p.command}`);
-              projection.log(`  saved:   ${p.timestamp}`);
+              projection.success(`PASS — receipt hash matches recomputed hash`);
+              projection.log('');
+              projection.log(`  Output hash: ${p.recomputed_output_hash}`);
+              projection.log(`  Receipt:     ${p.receipt_file ?? '(none)'}`);
+              projection.log(`  run_id:      ${p.run_id}`);
+              projection.log(`  command:     ${p.command}`);
+              projection.log(`  saved:       ${p.timestamp}`);
             } else if (p.integrity === 'mismatch') {
-              projection.error('Integrity MISMATCH — receipt hash differs from recomputed hash');
-              projection.log(`  Receipt:     ${p.receipt_output_hash}`);
-              projection.log(`  Recomputed:  ${p.recomputed_output_hash}`);
+              projection.error(`FAIL — hash mismatch detected`);
+              projection.log('');
+              projection.log('  The stored receipt hash does not match the result payload.');
+              projection.log('  This means the file was altered after the receipt was issued,');
+              projection.log('  or the receipt belongs to a different run.');
+              projection.log('');
+              // Show both hashes and highlight the first differing character position
+              const rec = p.receipt_output_hash ?? '';
+              const recomp = p.recomputed_output_hash;
+              let firstDiff = -1;
+              for (let i = 0; i < Math.max(rec.length, recomp.length); i++) {
+                if (rec[i] !== recomp[i]) {
+                  firstDiff = i;
+                  break;
+                }
+              }
+              projection.log(`  Receipt hash (stored):`);
+              projection.log(`    ${rec}`);
+              projection.log(`  Recomputed hash:`);
+              projection.log(`    ${recomp}`);
+              if (firstDiff >= 0) {
+                projection.log(
+                  `    ${'~'.repeat(firstDiff)}^ first difference at byte ${firstDiff}`
+                );
+              }
             } else {
-              projection.warn('No receipt found for this result file');
-              projection.log(
-                '  The result may have been saved with --no-save, or receipts were cleared.'
-              );
+              projection.warn(`INFO — no receipt found for this result`);
+              projection.log('');
+              projection.log('  The result payload was hashed successfully, but no matching');
+              projection.log('  receipt was found in .wasm4pm/receipts/.');
+              projection.log('  This is expected if the result was saved with --no-save,');
+              projection.log('  or if receipts were cleared manually.');
+              projection.log('');
               projection.log(`  Recomputed hash: ${p.recomputed_output_hash}`);
             }
+            projection.log('');
+            projection.log('  When to use --verify vs --diff:');
+            projection.log(
+              '    --verify <ref>   Checks that a saved result has not been tampered with.'
+            );
+            projection.log(
+              '                     Use this to confirm a result is the exact artifact from'
+            );
+            projection.log('                     its original run (receipt chain audit).');
+            projection.log(
+              '    --diff <r1,r2>   Compares the process model quality of two separate runs.'
+            );
+            projection.log(
+              '                     Use this to decide which algorithm or configuration'
+            );
+            projection.log('                     produced a better-fitting model.');
             projection.log('');
           });
           return await exitWithFlush(verifyExitCode);
@@ -619,7 +661,26 @@ export const results = defineCommand({
           projection.log('');
           projection.log('  Tip: wpm results --last          Print the most recent result');
           projection.log('  Tip: wpm results --cat 1         Print result #1 in full');
-          projection.log('  Tip: wpm results --diff 1,2      Compare result #1 vs #2 side-by-side');
+          projection.log(
+            '  Tip: wpm results --diff 1,2      Compare process model quality of #1 vs #2'
+          );
+          projection.log(
+            '  Tip: wpm results --verify 1      Confirm result #1 has not been tampered with'
+          );
+          projection.log('');
+          projection.log('  When to use --diff vs --verify:');
+          projection.log(
+            '    --diff    Compare two runs to decide which algorithm produced a better model.'
+          );
+          projection.log(
+            '              Shows fitness delta, speed ratio, and Jaccard edge overlap.'
+          );
+          projection.log(
+            '    --verify  Audit a single result — confirms the payload matches its receipt.'
+          );
+          projection.log(
+            '              Use before submitting a result as evidence or sharing externally.'
+          );
           projection.log('');
         });
 
@@ -665,6 +726,51 @@ function printCatResult(
     projection.log(`    ${line}`);
   }
   projection.log('');
+}
+
+/**
+ * Extract a set of edge keys ("from->to") from a saved result's DFG output.
+ * Looks in common locations: result.edges[], result.dfg.edges[], result.model.edges[].
+ */
+function extractEdgeSet(saved: SavedResult): Set<string> {
+  const r = saved.result as Record<string, unknown>;
+  let edges: unknown[] = [];
+
+  // Direct edges array (dfg output)
+  if (Array.isArray(r['edges'])) {
+    edges = r['edges'];
+  } else {
+    // Nested under dfg or model
+    for (const key of ['dfg', 'model', 'graph']) {
+      const sub = r[key] as Record<string, unknown> | undefined;
+      if (sub && Array.isArray(sub['edges'])) {
+        edges = sub['edges'];
+        break;
+      }
+    }
+  }
+
+  const set = new Set<string>();
+  for (const e of edges) {
+    const edge = e as Record<string, unknown>;
+    if (typeof edge['from'] === 'string' && typeof edge['to'] === 'string') {
+      set.add(`${edge['from']}->${edge['to']}`);
+    } else if (typeof edge['source'] === 'string' && typeof edge['target'] === 'string') {
+      set.add(`${edge['source']}->${edge['target']}`);
+    }
+  }
+  return set;
+}
+
+/**
+ * Compute Jaccard similarity between two edge sets.
+ * J = |A ∩ B| / |A ∪ B|. Returns null when both sets are empty.
+ */
+function jaccardSimilarity(a: Set<string>, b: Set<string>): number | null {
+  if (a.size === 0 && b.size === 0) return null;
+  const intersection = new Set([...a].filter((x) => b.has(x)));
+  const union = new Set([...a, ...b]);
+  return intersection.size / union.size;
 }
 
 /**
@@ -735,6 +841,19 @@ function printDiffResult(
     fitWinner
   );
 
+  // Jaccard similarity over DFG edge sets
+  const edgesA = extractEdgeSet(p1);
+  const edgesB = extractEdgeSet(p2);
+  const jaccard = jaccardSimilarity(edgesA, edgesB);
+  if (jaccard !== null) {
+    row(
+      'Edge overlap (Jaccard)',
+      `${(jaccard * 100).toFixed(1)}%`,
+      `${(jaccard * 100).toFixed(1)}%`,
+      'tie'
+    );
+  }
+
   row(
     'Input',
     p1.input ? path.basename(p1.input) : undefined,
@@ -747,15 +866,44 @@ function printDiffResult(
   projection.log('  Fields marked with "<" differ between the two results.');
   projection.log('');
 
+  // Jaccard plain-language explanation
+  if (jaccard !== null) {
+    const jPct = Math.round(jaccard * 100);
+    const sharedEdges = [...edgesA].filter((x) => edgesB.has(x)).length;
+    const totalEdges = new Set([...edgesA, ...edgesB]).size;
+    projection.log(`  Edge similarity (Jaccard):`);
+    projection.log(`    ${jPct}% of process edges are shared between these two runs`);
+    projection.log(
+      `    (${sharedEdges} shared out of ${totalEdges} unique edges across both models).`
+    );
+    if (jaccard >= 0.95) {
+      projection.log(`    The two models are structurally near-identical. Any quality difference`);
+      projection.log(`    is due to parameter tuning, not algorithm choice.`);
+    } else if (jaccard >= 0.75) {
+      projection.log(`    The two models agree on most process flows but differ on some paths.`);
+      projection.log(`    Inspect the deviating edges with: wpm diff <log1.xes> <log2.xes>`);
+    } else {
+      projection.log(`    The two models have substantially different process structures.`);
+      projection.log(`    This is likely algorithm-driven, not just noise. Fitness alone does not`);
+      projection.log(
+        `    capture this — a high-fitness model may still be imprecise (flower model).`
+      );
+      projection.log(`    Use: wpm compare <algos> -i <log.xes> to compare algorithms directly.`);
+    }
+    projection.log('');
+  }
+
   // PM-aware interpretation of the fitness delta
   if (fA !== undefined && fB !== undefined && fA !== fB) {
     const delta = Math.abs(fA - fB);
     const higher = fA > fB ? '#A' : '#B';
     const lowerPct = Math.round(Math.min(fA, fB) * 100);
-    const unrplayedPct = Math.round((1 - Math.min(fA, fB)) * 100);
+    const unreplayedPct = Math.round((1 - Math.min(fA, fB)) * 100);
     projection.log(`  Fitness interpretation:`);
     projection.log(`    ${higher} has ${(delta * 100).toFixed(1)}pp higher fitness.`);
-    projection.log(`    The lower-fitness result (${lowerPct}%) means ~${unrplayedPct}% of traces`);
+    projection.log(
+      `    The lower-fitness result (${lowerPct}%) means ~${unreplayedPct}% of traces`
+    );
     projection.log(`    had missing or extra tokens during model replay — those traces deviate`);
     projection.log(`    from the discovered process model.`);
     if (Math.min(fA, fB) < 0.85) {
@@ -779,6 +927,12 @@ function printDiffResult(
     projection.log('');
   }
 
+  projection.log('  When to use --diff vs --verify:');
+  projection.log('    --diff <r1,r2>   Compare process model quality between two runs.');
+  projection.log('                     Use this to choose between algorithms or configurations.');
+  projection.log('    --verify <ref>   Check that a saved result has not been tampered with.');
+  projection.log('                     Use this before treating a result as audit evidence.');
+  projection.log('');
   projection.log(`  Use 'wpm results --cat <ref>' to see the full result for either entry.`);
   projection.log('');
 }

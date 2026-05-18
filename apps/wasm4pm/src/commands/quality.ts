@@ -395,45 +395,69 @@ export const quality = defineCommand({
 
 import type { ConsoleProjection } from '../output.js';
 
-// Van der Aalst threshold definitions per quality dimension
+// Van der Aalst threshold definitions per quality dimension.
+// excellent: score is genuinely good — report in green
+// target: acceptable minimum — score >= target is passing
+// min: below this, the model has a serious problem
+// algorithm_hint: suggested remedy when score < target
 const QUALITY_THRESHOLDS: Record<
   string,
-  { target: number; min: number; label: string; interpretation: string; belowMinAdvice: string }
+  {
+    excellent: number;
+    target: number;
+    min: number;
+    label: string;
+    interpretation: string;
+    belowMinAdvice: string;
+    algorithmHint: string;
+  }
 > = {
   fitness: {
+    excellent: 0.95,
     target: 0.85,
-    min: 0.5,
+    min: 0.7,
     label: 'Fitness',
     interpretation: 'fraction of log traces the model can replay without missing tokens',
     belowMinAdvice:
-      'Model is too restrictive. Consider using inductive miner or relaxing constraints.',
+      'Model is too restrictive for this log. Many traces require missing or extra tokens.',
+    algorithmHint:
+      'Try: wpm run <log.xes> --algorithm inductive_miner  (higher fitness, tolerates noise)',
   },
   precision: {
-    target: 0.5,
-    min: 0.3,
+    excellent: 0.9,
+    target: 0.8,
+    min: 0.5,
     label: 'Precision',
     interpretation:
-      'fraction of model behavior that is also observed in the log (high = tight model)',
+      'fraction of model behaviour also observed in the log (low = underfitting; model too permissive)',
     belowMinAdvice:
-      'Model allows much more behaviour than observed. Consider adding constraints or using ILP miner.',
+      'Model allows far more behaviour than observed — it is underfitting (flower model risk).',
+    algorithmHint:
+      'Try: wpm run <log.xes> --algorithm ilp  (ILP miner produces tighter, more precise models)',
   },
   generalization: {
-    target: 0.6,
-    min: 0.4,
+    excellent: 0.9,
+    target: 0.75,
+    min: 0.5,
     label: 'Generalization',
     interpretation:
-      'ability of the model to represent unseen but valid traces (high = not overfit)',
+      'ability of the model to represent unseen but valid traces (low = overfitting to this log)',
     belowMinAdvice:
-      'Model may be overfit to the training log. Add more traces or use a higher-level miner.',
+      'Model is overfit — it captures only the exact traces in this log, not the process.',
+    algorithmHint:
+      'Try: wpm run <log.xes> --algorithm heuristic_miner  (tolerates infrequent behaviour)',
   },
   simplicity: {
+    excellent: 0.7,
     target: 0.5,
     min: 0.3,
     label: 'Simplicity',
     interpretation:
-      'inversely proportional to structural complexity (high = fewer places/transitions)',
+      'inversely proportional to structural complexity (high = fewer places/transitions/arcs)',
     belowMinAdvice:
-      'Model is overly complex. Use process tree or heuristic miner to reduce structure.',
+      'Model is overly complex and may be hard to interpret or explain to stakeholders.',
+    algorithmHint:
+      'Try: wpm run <log.xes> --algorithm inductive_miner  (produces compact process trees)',
   },
 };
 
@@ -447,29 +471,39 @@ function scoreImplication(metric: string, score: number): string {
   const inv = ((1 - score) * 100).toFixed(0);
   switch (metric) {
     case 'fitness':
-      if (score >= 0.99) return `Model replays 100% of log traces without missing tokens.`;
-      if (score >= 0.85)
-        return `${pct}% of log traces replay cleanly; ${inv}% have at least one deviation.`;
-      if (score >= 0.5)
-        return `Only ${pct}% of traces can be replayed — ${inv}% require missing or extra tokens.`;
-      return `${inv}% of traces cannot be replayed: the model is too restrictive for this log.`;
-    case 'precision':
+      if (score >= 0.99)
+        return `Excellent — model replays 100% of log traces without missing tokens.`;
       if (score >= 0.95)
-        return `Model is very tight — allows almost no behaviour beyond what was observed.`;
-      if (score >= 0.5) return `Model allows ~${inv}% more behaviour than was observed in the log.`;
-      return `Model is highly permissive — allows far more paths than the log shows (underfitting).`;
-    case 'generalization':
+        return `Excellent — ${pct}% of traces replay cleanly; model captures the process well.`;
       if (score >= 0.85)
-        return `Model generalises well and is unlikely to be overfit to this specific log.`;
+        return `Acceptable — ${pct}% of log traces replay cleanly; ${inv}% have at least one deviation.`;
+      if (score >= 0.7)
+        return `Borderline — only ${pct}% of traces can be replayed; ${inv}% require missing/extra tokens.`;
+      return `Problematic — ${inv}% of traces cannot be replayed: model is too restrictive for this log.`;
+    case 'precision':
+      if (score >= 0.9)
+        return `Excellent — model is very tight, allowing almost no unobserved behaviour.`;
+      if (score >= 0.8)
+        return `Acceptable — model allows ~${inv}% more behaviour than observed; reasonably tight fit.`;
       if (score >= 0.5)
-        return `Moderate generalization: model may struggle to replay unseen but valid traces.`;
-      return `Model is likely overfit — it captures only the exact traces in this log, not the process.`;
+        return `Low — model allows significantly more paths than the log shows (underfitting risk).`;
+      return `Poor — model is highly permissive (flower model); far more paths allowed than observed.`;
+    case 'generalization':
+      if (score >= 0.9)
+        return `Excellent — model generalises well and is unlikely to be overfit to this specific log.`;
+      if (score >= 0.75)
+        return `Acceptable — model generalises adequately; will likely handle unseen valid traces.`;
+      if (score >= 0.5)
+        return `Moderate — model may struggle to replay unseen but valid traces (possible overfitting).`;
+      return `Poor — model is likely overfit; it captures only the exact traces seen, not the process.`;
     case 'simplicity':
       if (score >= 0.7)
-        return `Model is compact and easy to interpret (low structural complexity).`;
-      if (score >= 0.4)
-        return `Model has moderate complexity — may be harder to inspect or explain.`;
-      return `Model is overly complex; consider a higher-level algorithm to reduce structure.`;
+        return `Good — model is compact and easy to interpret (low structural complexity).`;
+      if (score >= 0.5)
+        return `Acceptable — model has moderate complexity; interpretable with some effort.`;
+      if (score >= 0.3)
+        return `Complex — model may be harder to inspect or explain to stakeholders.`;
+      return `Very complex — consider a higher-level algorithm to reduce structural noise.`;
     default:
       return '';
   }
@@ -492,16 +526,20 @@ function printHumanQuality(payload: QualityPayload, projection: ConsoleProjectio
     return '█'.repeat(filled) + '░'.repeat(width - filled);
   };
 
-  const scoreIcon = (score: number, target: number, min: number): string => {
+  // icon: ★ excellent  ✓ acceptable  o borderline  ✗ problematic
+  const scoreIcon = (score: number, excellent: number, target: number, min: number): string => {
+    if (score >= excellent) return '★';
     if (score >= target) return '✓';
     if (score >= min) return 'o';
     return '✗';
   };
 
   projection.log('  Quality Scores (Van der Aalst 4-dimension framework):');
+  projection.log('  Legend: ★ excellent  ✓ acceptable  o borderline  ✗ problematic');
   projection.log('');
 
   const advisories: string[] = [];
+  const algorithmHints: string[] = [];
 
   for (const [metric, score] of Object.entries(scores)) {
     const def = QUALITY_THRESHOLDS[metric];
@@ -511,19 +549,26 @@ function printHumanQuality(payload: QualityPayload, projection: ConsoleProjectio
       );
       continue;
     }
-    const icon = scoreIcon(score, def.target, def.min);
+    const icon = scoreIcon(score, def.excellent, def.target, def.min);
     const bar = sparkBar(score);
-    const thresholdTag =
-      score >= def.target
-        ? `>=target(${def.target})`
-        : score >= def.min
-          ? `[target: >=${def.target}]`
-          : `[target: >=${def.target}, BELOW minimum ${def.min}]`;
+    let thresholdTag: string;
+    if (score >= def.excellent) {
+      thresholdTag = `excellent (>=${def.excellent})`;
+    } else if (score >= def.target) {
+      thresholdTag = `acceptable [excellent: >=${def.excellent}]`;
+    } else if (score >= def.min) {
+      thresholdTag = `borderline [target: >=${def.target}]`;
+    } else {
+      thresholdTag = `PROBLEMATIC [target: >=${def.target}, min: ${def.min}]`;
+    }
     projection.log(
       `    ${def.label.padEnd(16)} ${score.toFixed(3).padStart(6)}  ${icon}  ${bar}  ${thresholdTag}`
     );
     if (score < def.min) {
       advisories.push(`${def.label}: ${def.belowMinAdvice}`);
+      algorithmHints.push(def.algorithmHint);
+    } else if (score < def.target) {
+      algorithmHints.push(def.algorithmHint);
     }
   }
   projection.log('');
@@ -532,7 +577,7 @@ function printHumanQuality(payload: QualityPayload, projection: ConsoleProjectio
   const aggScore = aggregate.score;
   const aggLevel = aggregate.level;
   const aggBar = sparkBar(aggScore);
-  const aggIcon = aggScore >= 0.7 ? '✓' : aggScore >= 0.5 ? 'o' : '✗';
+  const aggIcon = aggScore >= 0.8 ? '★' : aggScore >= 0.65 ? '✓' : aggScore >= 0.5 ? 'o' : '✗';
   projection.log(
     `  Aggregate: ${aggScore.toFixed(3).padStart(6)}  ${aggIcon}  ${aggBar}  (${aggLevel})`
   );
@@ -558,6 +603,24 @@ function printHumanQuality(payload: QualityPayload, projection: ConsoleProjectio
     for (const advice of advisories) {
       projection.log(`    ! ${advice}`);
     }
+    projection.log('');
+  }
+
+  // Algorithm hints — shown when any score is below its target threshold.
+  // Guides the practitioner to the next algorithm to try rather than leaving
+  // them with only a number (Van der Aalst: make it actionable).
+  if (algorithmHints.length > 0) {
+    projection.log('  Suggested next steps:');
+    const seen = new Set<string>();
+    for (const hint of algorithmHints) {
+      if (!seen.has(hint)) {
+        seen.add(hint);
+        projection.log(`    > ${hint}`);
+      }
+    }
+    projection.log(
+      `    > wpm quality <log.xes> --metrics fitness,precision  (re-assess after change)`
+    );
     projection.log('');
   }
 }
