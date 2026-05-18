@@ -7,6 +7,7 @@ import { withSpan, withSpanRaw } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
 import { WasmInstrumentation } from './_wasm-instrumentation.js';
+import { validatePositiveInt, validateFloatInRange, exitValidationError } from '../_cli-validator.js';
 
 const EWMA_ALPHA = 0.3;
 const DRIFT_THRESHOLD = 0.3;
@@ -121,61 +122,30 @@ export const driftWatch = defineCommand({
     const inputPath: string = ctx.args.input as string;
     const activityKey: string = (ctx.args['activity-key'] as string) || DEFAULT_ACTIVITY_KEY;
 
-    const rawWindow = ctx.args.window as string | undefined;
-    const parsedWindow = rawWindow != null ? parseInt(rawWindow, 10) : undefined;
-    if (parsedWindow !== undefined && Number.isNaN(parsedWindow)) {
-      console.error(`[drift-watch] Invalid --window value: must be a positive integer`);
-      return await exitWithFlush(EXIT_CODES.config_error);
+    // Validate numeric parameters using centralized validator
+    const windowResult = validatePositiveInt(ctx.args.window as string | undefined, 'window', DEFAULT_WINDOW, { min: 1 });
+    if (!windowResult.success) {
+      exitValidationError(windowResult.error!, EXIT_CODES.config_error);
     }
-    if (parsedWindow !== undefined && parsedWindow <= 0) {
-      console.error(
-        `[drift-watch] Invalid --window value: must be a positive integer (got ${parsedWindow})`
-      );
-      return await exitWithFlush(EXIT_CODES.config_error);
-    }
-    const windowSize = parsedWindow ?? DEFAULT_WINDOW;
+    const windowSize = windowResult.value!;
 
-    const rawInterval = ctx.args.interval as string | undefined;
-    const parsedInterval = rawInterval != null ? parseInt(rawInterval, 10) : undefined;
-    if (parsedInterval !== undefined && Number.isNaN(parsedInterval)) {
-      console.error(`[drift-watch] Invalid --interval value: must be a positive integer`);
-      return await exitWithFlush(EXIT_CODES.config_error);
+    const intervalResult = validatePositiveInt(ctx.args.interval as string | undefined, 'interval', DEFAULT_INTERVAL_MS, { min: 100 });
+    if (!intervalResult.success) {
+      exitValidationError(intervalResult.error!, EXIT_CODES.config_error);
     }
-    if (parsedInterval !== undefined && parsedInterval <= 0) {
-      console.error(
-        `[drift-watch] Invalid --interval value: must be a positive integer (got ${parsedInterval})`
-      );
-      return await exitWithFlush(EXIT_CODES.config_error);
-    }
-    const intervalMs = parsedInterval ?? DEFAULT_INTERVAL_MS;
+    const intervalMs = intervalResult.value!;
 
-    const rawAlpha = ctx.args.alpha as string | undefined;
-    const parsedAlpha = rawAlpha != null ? parseFloat(rawAlpha) : undefined;
-    if (parsedAlpha !== undefined && Number.isNaN(parsedAlpha)) {
-      console.error(`[drift-watch] Invalid --alpha value: must be a number in (0, 1]`);
-      return await exitWithFlush(EXIT_CODES.config_error);
+    const alphaResult = validateFloatInRange(ctx.args.alpha as string | undefined, 'alpha', EWMA_ALPHA, 0.001, 1);
+    if (!alphaResult.success) {
+      exitValidationError(alphaResult.error!, EXIT_CODES.config_error);
     }
-    if (parsedAlpha !== undefined && (parsedAlpha <= 0 || parsedAlpha > 1)) {
-      console.error(
-        `[drift-watch] Invalid --alpha value: must be in (0, 1] (got ${parsedAlpha})`
-      );
-      return await exitWithFlush(EXIT_CODES.config_error);
-    }
-    const ewmaAlpha = parsedAlpha ?? EWMA_ALPHA;
+    const ewmaAlpha = alphaResult.value!;
 
-    const rawThreshold = ctx.args.threshold as string | undefined;
-    const parsedThreshold = rawThreshold != null ? parseFloat(rawThreshold) : undefined;
-    if (parsedThreshold !== undefined && Number.isNaN(parsedThreshold)) {
-      console.error(`[drift-watch] Invalid --threshold value: must be a number in [0, 1]`);
-      return await exitWithFlush(EXIT_CODES.config_error);
+    const thresholdResult = validateFloatInRange(ctx.args.threshold as string | undefined, 'threshold', DRIFT_THRESHOLD, 0, 1);
+    if (!thresholdResult.success) {
+      exitValidationError(thresholdResult.error!, EXIT_CODES.config_error);
     }
-    if (parsedThreshold !== undefined && (parsedThreshold < 0 || parsedThreshold > 1)) {
-      console.error(
-        `[drift-watch] Invalid --threshold value: must be in [0, 1] (got ${parsedThreshold})`
-      );
-      return await exitWithFlush(EXIT_CODES.config_error);
-    }
-    const driftThreshold = parsedThreshold ?? DRIFT_THRESHOLD;
+    const driftThreshold = thresholdResult.value!;
     const jsonMode: boolean = ctx.args.json === true;
     const enhancedMode: boolean = ctx.args.enhanced === true;
     const autoRefitMode: boolean = ctx.args['auto-refit'] === true;
