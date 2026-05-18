@@ -552,19 +552,51 @@ async function executePredictionTask(
 }
 
 /**
- * Van der Aalst predictive perspective labels.
+ * Van der Aalst predictive perspective context.
  *
  * Teinemaa et al. (2019) "Alarm-based prescriptive process monitoring" defines six
- * prediction perspectives.  Surfacing the perspective name helps practitioners
- * understand which aspect of the process they are inspecting.
+ * prediction perspectives.  Each entry captures:
+ *   perspective   — the Van der Aalst mining perspective (control-flow, time, etc.)
+ *   vda_dimension — which quality dimension the result speaks to
+ *   when_to_use   — practitioner-oriented guidance on when this task is relevant
  */
-const PERSPECTIVE_LABELS: Record<PredictTask, string> = {
-  'next-activity': 'Control-flow perspective — predicting the next activity in a trace',
-  'remaining-time': 'Time perspective — estimating remaining case duration',
-  outcome: 'Outcome perspective — scoring trace anomalies against observed behaviour',
-  drift: 'Concept-drift perspective — detecting behaviour change over time',
-  features: 'Control-flow / data perspective — extracting transition probabilities',
-  resource: 'Resource perspective — M/M/1 queue model of workload',
+interface PerspectiveContext {
+  perspective: string;
+  vda_dimension: string;
+  when_to_use: string;
+}
+
+const PERSPECTIVE_CONTEXT: Record<PredictTask, PerspectiveContext> = {
+  'next-activity': {
+    perspective: 'Control-Flow',
+    vda_dimension: 'fitness',
+    when_to_use: 'When you need to guide the next step in a running case',
+  },
+  'remaining-time': {
+    perspective: 'Time',
+    vda_dimension: 'performance',
+    when_to_use: 'When SLA compliance is at risk or bottlenecks must be found',
+  },
+  outcome: {
+    perspective: 'Case Data',
+    vda_dimension: 'generalization',
+    when_to_use: 'When predicting whether a case will succeed or fail',
+  },
+  drift: {
+    perspective: 'Time / Process Change',
+    vda_dimension: 'fitness over time',
+    when_to_use: 'When monitoring for concept drift or process change',
+  },
+  features: {
+    perspective: 'Case Data',
+    vda_dimension: 'precision',
+    when_to_use: 'When building ML models that need process-aware features',
+  },
+  resource: {
+    perspective: 'Organizational',
+    vda_dimension: 'resource allocation',
+    when_to_use: 'When optimizing workload assignment or capacity planning',
+  },
 };
 
 /**
@@ -575,10 +607,14 @@ function formatHumanOutput(
   task: PredictTask,
   result: Record<string, unknown>
 ): void {
-  // Always emit the Van der Aalst perspective so the practitioner knows which
-  // of the six prediction angles they are looking at.
+  // Always emit the Van der Aalst perspective banner so the practitioner knows
+  // which of the six prediction angles they are looking at, which quality
+  // dimension the result speaks to, and when to reach for this task.
+  const perspCtx = PERSPECTIVE_CONTEXT[task];
   p.log('');
-  p.log(`  Perspective:  ${PERSPECTIVE_LABELS[task]}`);
+  p.log(
+    `  Perspective: ${perspCtx.perspective}  ·  Dimension: ${perspCtx.vda_dimension}  ·  When to use: ${perspCtx.when_to_use}`
+  );
 
   switch (task) {
     case 'next-activity': {
@@ -603,39 +639,47 @@ function formatHumanOutput(
         return;
       }
       p.log('');
-      p.log('  Rank  Activity                   Probability');
-      p.log('  ----  -------------------------  -----------');
+      p.log('  Rank  Activity                   Probability  Confidence');
+      p.log('  ----  -------------------------  -----------  ----------');
       preds.forEach((pred, i) => {
         const rank = String(i + 1).padStart(4);
         const act = pred.activity.padEnd(25);
         const prob = (pred.probability * 100).toFixed(1).padStart(8) + '%';
-        p.log(`  ${rank}  ${act}  ${prob}`);
+        const tier =
+          pred.probability >= 0.8
+            ? '★ High   — safe to act on'
+            : pred.probability >= 0.5
+              ? '◆ Medium — verify before critical decisions'
+              : '○ Low    — uncertain, use with caution';
+        p.log(`  ${rank}  ${act}  ${prob}  ${tier}`);
       });
       p.log('');
       // Plain-English interpretation of the top prediction
       if (preds.length > 0) {
         const top = preds[0];
         const pct = (top.probability * 100).toFixed(0);
-        const confidence =
-          top.probability >= 0.7 ? 'high' : top.probability >= 0.4 ? 'moderate' : 'low';
+        const confidenceLabel =
+          top.probability >= 0.8 ? 'High' : top.probability >= 0.5 ? 'Medium' : 'Low';
         p.info(
-          `Top prediction: "${top.activity}" with ${pct}% probability (${confidence} confidence)`
+          `Top prediction: "${top.activity}" with ${pct}% probability (${confidenceLabel} confidence)`
         );
-        if (top.probability < 0.4) {
+        if (top.probability < 0.5) {
           p.info(
-            '  Low confidence — the process may have high variant diversity after this prefix.'
+            '  Low/Medium confidence — the process may have high variant diversity after this prefix.'
           );
           p.info('  Consider supplying a longer --prefix or increasing --ngram-order.');
         }
       }
       p.log('');
-      p.log('Next steps:');
+      p.log('  Next actions:');
       p.log(
-        '  wpm predict next-activity -i <log> --prefix "<A>,<B>,<C>"  -- narrow to a specific prefix'
+        '    • Narrow to a prefix:  wpm predict next-activity -i <log> --prefix "<A>,<B>,<C>"'
       );
       p.log(
-        '  wpm predict remaining-time -i <log> --prefix "<A>,<B>"     -- estimate time to completion'
+        '    • Estimate completion: wpm predict remaining-time -i <log> --prefix "<A>,<B>"'
       );
+      p.log('    • Check conformance:   wpm conformance -i <log>');
+      p.log('    • Discover full model: wpm run -i <log> --algorithm inductive_miner');
       p.log('');
       break;
     }
@@ -675,6 +719,12 @@ function formatHumanOutput(
         }
         p.info((result['message'] as string) ?? 'Use --prefix to predict case duration.');
       }
+      p.log('');
+      p.log('  Next actions:');
+      p.log('    • Predict with prefix: wpm predict remaining-time -i <log> --prefix "<A>,<B>"');
+      p.log('    • Check SLA breaches:  wpm temporal -i <log>');
+      p.log('    • Detect bottlenecks:  wpm run -i <log> --algorithm inductive_miner');
+      p.log('');
       break;
     }
 
@@ -704,6 +754,11 @@ function formatHumanOutput(
         }
         p.log('');
       }
+      p.log('  Next actions:');
+      p.log('    • Inspect deviating cases: wpm conformance -i <log>');
+      p.log('    • Discover reference model: wpm run -i <log> --algorithm inductive_miner');
+      p.log('    • Score a specific prefix:  wpm predict outcome -i <log> --prefix "<A>,<B>"');
+      p.log('');
       break;
     }
 
@@ -800,6 +855,11 @@ function formatHumanOutput(
         }
       }
       p.log('');
+      p.log('  Next actions:');
+      p.log('    • Continuous monitoring:  wpm drift-watch -i <log>');
+      p.log('    • Compare pre/post models: wpm diff <log1> <log2>');
+      p.log('    • Re-discover after drift: wpm run -i <log> --algorithm inductive_miner');
+      p.log('');
       break;
     }
 
@@ -835,10 +895,10 @@ function formatHumanOutput(
       p.log('  to the next. High-probability edges are the process backbone; low-probability');
       p.log('  edges indicate rare variants, rework loops, or exceptions.');
       p.log('');
-      p.log('  What to do next:');
-      p.log('  - Use these features as inputs to an ML classifier (wpm ml classify -i <log>)');
-      p.log('  - Feed --prefix "A,B,C" to narrow features to a specific case prefix');
-      p.log('  - Use with wpm compare to see how transition structure differs across algorithms');
+      p.log('  Next actions:');
+      p.log('    • Feed to ML classifier:   wpm ml classify -i <log>');
+      p.log('    • Narrow by prefix:        wpm predict features -i <log> --prefix "<A>,<B>"');
+      p.log('    • Compare algorithm views: wpm compare -i <log>');
       p.log('');
       break;
     }
@@ -876,10 +936,10 @@ function formatHumanOutput(
       p.log('  rho 0.7–1.0 — approaching saturation; wait times grow non-linearly.');
       p.log('  rho >= 1.0  — queue is unstable; cases accumulate without bound.');
       p.log('');
-      p.log('  What to do next:');
-      p.log('  - If rho >= 1: use wpm social -i <log> to identify overloaded resources');
-      p.log('  - If rho < 1: use wpm temporal -i <log> to find bottleneck activities');
-      p.log('  - Compare resource profiles across algorithm tiers: wpm compare -i <log>');
+      p.log('  Next actions:');
+      p.log('    • Identify overloaded resources: wpm social -i <log>');
+      p.log('    • Find bottleneck activities:    wpm temporal -i <log>');
+      p.log('    • Compare algorithm views:       wpm compare -i <log>');
       p.log('');
       break;
     }
