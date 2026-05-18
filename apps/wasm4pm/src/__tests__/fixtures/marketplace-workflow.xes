@@ -1,0 +1,121 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<log xes.version="1.0" xes.features="nested-attributes" xmlns="http://www.xes-standard.org/">
+  <extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xesext"/>
+  <extension name="Time" prefix="time" uri="http://www.xes-standard.org/time.xesext"/>
+  <extension name="Organizational" prefix="org" uri="http://www.xes-standard.org/org.xesext"/>
+
+  <!-- Case 1: Complete happy-path purchase workflow -->
+  <trace>
+    <string key="concept:name" value="order-001"/>
+    <event>
+      <string key="concept:name" value="place_order"/>
+      <date key="time:timestamp" value="2026-05-01T09:00:00.000Z"/>
+      <string key="org:resource" value="customer"/>
+    </event>
+    <event>
+      <string key="concept:name" value="validate_payment"/>
+      <date key="time:timestamp" value="2026-05-01T09:05:00.000Z"/>
+      <string key="org:resource" value="payment-service"/>
+    </event>
+    <event>
+      <string key="concept:name" value="fulfill_order"/>
+      <date key="time:timestamp" value="2026-05-01T09:30:00.000Z"/>
+      <string key="org:resource" value="warehouse"/>
+    </event>
+    <event>
+      <string key="concept:name" value="ship_order"/>
+      <date key="time:timestamp" value="2026-05-01T10:00:00.000Z"/>
+      <string key="org:resource" value="logistics"/>
+    </event>
+    <event>
+      <string key="concept:name" value="deliver_order"/>
+      <date key="time:timestamp" value="2026-05-03T14:00:00.000Z"/>
+      <string key="org:resource" value="logistics"/>
+    </event>
+  </trace>
+
+  <!-- Case 2: Complete happy-path purchase workflow -->
+  <trace>
+    <string key="concept:name" value="order-002"/>
+    <event>
+      <string key="concept:name" value="place_order"/>
+      <date key="time:timestamp" value="2026-05-02T11:00:00.000Z"/>
+      <string key="org:resource" value="customer"/>
+    </event>
+    <event>
+      <string key="concept:name" value="validate_payment"/>
+      <date key="time:timestamp" value="2026-05-02T11:03:00.000Z"/>
+      <string key="org:resource" value="payment-service"/>
+    </event>
+    <event>
+      <string key="concept:name" value="fulfill_order"/>
+      <date key="time:timestamp" value="2026-05-02T11:45:00.000Z"/>
+      <string key="org:resource" value="warehouse"/>
+    </event>
+    <event>
+      <string key="concept:name" value="ship_order"/>
+      <date key="time:timestamp" value="2026-05-02T13:00:00.000Z"/>
+      <string key="org:resource" value="logistics"/>
+    </event>
+    <event>
+      <string key="concept:name" value="deliver_order"/>
+      <date key="time:timestamp" value="2026-05-04T10:00:00.000Z"/>
+      <string key="org:resource" value="logistics"/>
+    </event>
+  </trace>
+
+  <!-- Case 3: Complete happy-path purchase workflow -->
+  <trace>
+    <string key="concept:name" value="order-003"/>
+    <event>
+      <string key="concept:name" value="place_order"/>
+      <date key="time:timestamp" value="2026-05-03T08:00:00.000Z"/>
+      <string key="org:resource" value="customer"/>
+    </event>
+    <event>
+      <string key="concept:name" value="validate_payment"/>
+      <date key="time:timestamp" value="2026-05-03T08:07:00.000Z"/>
+      <string key="org:resource" value="payment-service"/>
+    </event>
+    <event>
+      <string key="concept:name" value="fulfill_order"/>
+      <date key="time:timestamp" value="2026-05-03T09:00:00.000Z"/>
+      <string key="org:resource" value="warehouse"/>
+    </event>
+    <event>
+      <string key="concept:name" value="ship_order"/>
+      <date key="time:timestamp" value="2026-05-03T10:30:00.000Z"/>
+      <string key="org:resource" value="logistics"/>
+    </event>
+    <event>
+      <string key="concept:name" value="deliver_order"/>
+      <date key="time:timestamp" value="2026-05-05T15:00:00.000Z"/>
+      <string key="org:resource" value="logistics"/>
+    </event>
+  </trace>
+
+  <!-- Case 4: Variant with a delayed fulfillment (non-conforming) -->
+  <trace>
+    <string key="concept:name" value="order-004"/>
+    <event>
+      <string key="concept:name" value="place_order"/>
+      <date key="time:timestamp" value="2026-05-04T07:00:00.000Z"/>
+      <string key="org:resource" value="customer"/>
+    </event>
+    <event>
+      <string key="concept:name" value="validate_payment"/>
+      <date key="time:timestamp" value="2026-05-04T07:10:00.000Z"/>
+      <string key="org:resource" value="payment-service"/>
+    </event>
+    <event>
+      <string key="concept:name" value="ship_order"/>
+      <date key="time:timestamp" value="2026-05-04T08:00:00.000Z"/>
+      <string key="org:resource" value="logistics"/>
+    </event>
+    <event>
+      <string key="concept:name" value="deliver_order"/>
+      <date key="time:timestamp" value="2026-05-06T12:00:00.000Z"/>
+      <string key="org:resource" value="logistics"/>
+    </event>
+  </trace>
+</log>

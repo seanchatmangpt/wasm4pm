@@ -1,0 +1,198 @@
+{
+  "eventTypes": [
+    "place_order",
+    "validate_payment",
+    "fulfill_order",
+    "ship_order",
+    "deliver_order"
+  ],
+  "objectTypes": [
+    "Order",
+    "Payment",
+    "Shipment"
+  ],
+  "events": [
+    {
+      "id": "e1",
+      "type": "place_order",
+      "time": "2026-05-01T09:00:00.000Z",
+      "object_ids": ["order-001"],
+      "attributes": [
+        { "name": "channel", "value": "web" }
+      ]
+    },
+    {
+      "id": "e2",
+      "type": "validate_payment",
+      "time": "2026-05-01T09:05:00.000Z",
+      "object_ids": ["order-001", "payment-001"],
+      "attributes": [
+        { "name": "method", "value": "credit_card" }
+      ]
+    },
+    {
+      "id": "e3",
+      "type": "fulfill_order",
+      "time": "2026-05-01T09:30:00.000Z",
+      "object_ids": ["order-001"],
+      "attributes": [
+        { "name": "warehouse", "value": "WH-01" }
+      ]
+    },
+    {
+      "id": "e4",
+      "type": "ship_order",
+      "time": "2026-05-01T10:00:00.000Z",
+      "object_ids": ["order-001", "shipment-001"],
+      "attributes": [
+        { "name": "carrier", "value": "FedEx" }
+      ]
+    },
+    {
+      "id": "e5",
+      "type": "deliver_order",
+      "time": "2026-05-03T14:00:00.000Z",
+      "object_ids": ["order-001", "shipment-001"],
+      "attributes": [
+        { "name": "signature", "value": "required" }
+      ]
+    },
+    {
+      "id": "e6",
+      "type": "place_order",
+      "time": "2026-05-02T11:00:00.000Z",
+      "object_ids": ["order-002"],
+      "attributes": [
+        { "name": "channel", "value": "mobile" }
+      ]
+    },
+    {
+      "id": "e7",
+      "type": "validate_payment",
+      "time": "2026-05-02T11:03:00.000Z",
+      "object_ids": ["order-002", "payment-002"],
+      "attributes": [
+        { "name": "method", "value": "paypal" }
+      ]
+    },
+    {
+      "id": "e8",
+      "type": "fulfill_order",
+      "time": "2026-05-02T11:45:00.000Z",
+      "object_ids": ["order-002"],
+      "attributes": [
+        { "name": "warehouse", "value": "WH-02" }
+      ]
+    },
+    {
+      "id": "e9",
+      "type": "ship_order",
+      "time": "2026-05-02T13:00:00.000Z",
+      "object_ids": ["order-002", "shipment-002"],
+      "attributes": [
+        { "name": "carrier", "value": "UPS" }
+      ]
+    },
+    {
+      "id": "e10",
+      "type": "deliver_order",
+      "time": "2026-05-04T10:00:00.000Z",
+      "object_ids": ["order-002", "shipment-002"],
+      "attributes": [
+        { "name": "signature", "value": "not_required" }
+      ]
+    },
+    {
+      "id": "e11",
+      "type": "place_order",
+      "time": "2026-05-03T08:00:00.000Z",
+      "object_ids": ["order-003"],
+      "attributes": [
+        { "name": "channel", "value": "web" }
+      ]
+    },
+    {
+      "id": "e12",
+      "type": "validate_payment",
+      "time": "2026-05-03T08:07:00.000Z",
+      "object_ids": ["order-003", "payment-003"],
+      "attributes": [
+        { "name": "method", "value": "credit_card" }
+      ]
+    },
+    {
+      "id": "e13",
+      "type": "fulfill_order",
+      "time": "2026-05-03T09:00:00.000Z",
+      "object_ids": ["order-003"],
+      "attributes": [
+        { "name": "warehouse", "value": "WH-01" }
+      ]
+    },
+    {
+      "id": "e14",
+      "type": "ship_order",
+      "time": "2026-05-03T10:30:00.000Z",
+      "object_ids": ["order-003", "shipment-003"],
+      "attributes": [
+        { "name": "carrier", "value": "DHL" }
+      ]
+    },
+    {
+      "id": "e15",
+      "type": "deliver_order",
+      "time": "2026-05-05T15:00:00.000Z",
+      "object_ids": ["order-003", "shipment-003"],
+      "attributes": [
+        { "name": "signature", "value": "required" }
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "order-001",
+      "type": "Order",
+      "attributes": { "value": 150.00, "currency": "USD" }
+    },
+    {
+      "id": "order-002",
+      "type": "Order",
+      "attributes": { "value": 89.99, "currency": "USD" }
+    },
+    {
+      "id": "order-003",
+      "type": "Order",
+      "attributes": { "value": 245.50, "currency": "USD" }
+    },
+    {
+      "id": "payment-001",
+      "type": "Payment",
+      "attributes": { "status": "approved" }
+    },
+    {
+      "id": "payment-002",
+      "type": "Payment",
+      "attributes": { "status": "approved" }
+    },
+    {
+      "id": "payment-003",
+      "type": "Payment",
+      "attributes": { "status": "approved" }
+    },
+    {
+      "id": "shipment-001",
+      "type": "Shipment",
+      "attributes": { "tracking": "FEDEX123" }
+    },
+    {
+      "id": "shipment-002",
+      "type": "Shipment",
+      "attributes": { "tracking": "UPS456" }
+    },
+    {
+      "id": "shipment-003",
+      "type": "Shipment",
+      "attributes": { "tracking": "DHL789" }
+    }
+  ]
+}
