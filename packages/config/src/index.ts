@@ -22,6 +22,8 @@ export {
   getExampleJsonConfig,
   getExampleEnvFile,
   getExamplePresetConfig,
+  configToToml,
+  configToEnv,
 } from './resolver.js';
 
 // Schema & validation

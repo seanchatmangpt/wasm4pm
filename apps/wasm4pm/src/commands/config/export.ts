@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty';
-import { resolveConfig, getExampleTomlConfig, getExampleEnvFile } from '@wasm4pm/config';
+import { resolveConfig, configToToml, configToEnv } from '@wasm4pm/config';
 import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { exitWithFlush } from '../../otel/exit.js';
@@ -24,17 +24,18 @@ export const configExport = defineCommand({
 
     try {
       let content: string;
-      if (fmt === 'toml' || fmt === 'env') {
-        content = fmt === 'toml' ? getExampleTomlConfig() : getExampleEnvFile();
+      const config = await resolveConfig();
+      if (fmt === 'toml') {
+        content = configToToml(config);
+      } else if (fmt === 'env') {
+        content = configToEnv(config);
       } else if (fmt === 'json') {
-        const config = await resolveConfig();
         content = JSON.stringify(config, null, 2);
       } else {
         const result = makeErrorResult('config export', `Unknown format: ${fmt}. Use toml, json, or env.`,
           EXIT_CODES.config_error, 'CONFIG_ERROR');
         emitResult(result, { format: 'human', quiet });
         return await exitWithFlush(EXIT_CODES.config_error);
-        return;
       }
 
       // Export commands write artifact content directly to stdout — the content IS the machine output
