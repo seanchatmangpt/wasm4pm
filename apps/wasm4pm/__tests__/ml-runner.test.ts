@@ -24,6 +24,7 @@ describe('executeMlTask — parameter validation', () => {
   const mockWasm = {
     extract_case_features: () => JSON.stringify({ features: [], caseIds: [] }),
     detect_drift: () => JSON.stringify({ drifts: [] }),
+    analyze_statistics: () => JSON.stringify({ trace_count: 10, variant_count: 5, num_activities: 8 }),
   };
   const logHandle = 'test-handle';
   const activityKey = 'concept:name';

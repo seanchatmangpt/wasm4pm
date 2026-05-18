@@ -553,6 +553,14 @@ export async function executeMlTask(
       );
       const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
 
+      // Assess feature quality before clustering
+      const featureMatrix = buildFeatureMatrixFromExtraction(features);
+      const qualityReport = assessFeatureQuality(featureMatrix.data);
+      if (qualityReport.warnings.length > 0) {
+        console.warn(`[ML Feature Quality] ${qualityReport.warnings.join('; ')}`);
+        qualityReport.recommendations.forEach((rec) => console.warn(`  → ${rec}`));
+      }
+
       // Get log characteristics for parameter suggestion
       const statsRaw = wasm.analyze_statistics(logHandle);
       const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
@@ -647,6 +655,15 @@ export async function executeMlTask(
         configJson
       );
       const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+
+      // Assess feature quality before regression
+      const featureMatrix = buildFeatureMatrixFromExtraction(features);
+      const qualityReport = assessFeatureQuality(featureMatrix.data);
+      if (qualityReport.warnings.length > 0) {
+        console.warn(`[ML Feature Quality] ${qualityReport.warnings.join('; ')}`);
+        qualityReport.recommendations.forEach((rec) => console.warn(`  → ${rec}`));
+      }
+
       rawResult = (await regressRemainingTime(features, {
         method: options.method as RegressionMethod | undefined,
       })) as unknown as Record<string, unknown>;
@@ -671,6 +688,15 @@ export async function executeMlTask(
         configJson
       );
       const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+
+      // Assess feature quality before PCA
+      const featureMatrix = buildFeatureMatrixFromExtraction(features);
+      const qualityReport = assessFeatureQuality(featureMatrix.data);
+      if (qualityReport.warnings.length > 0) {
+        console.warn(`[ML Feature Quality] ${qualityReport.warnings.join('; ')}`);
+        qualityReport.recommendations.forEach((rec) => console.warn(`  → ${rec}`));
+      }
+
       const nComponents = parseInt(String(options.nComponents ?? '2'), 10);
       if (Number.isNaN(nComponents) || nComponents <= 0)
         throw new Error('PCA parameter nComponents must be a positive number');
