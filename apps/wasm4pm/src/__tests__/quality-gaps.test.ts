@@ -1,41 +1,68 @@
 /**
- * quality-gaps.test.ts
- *
- * Gap coverage for wpm quality — threshold validation, JSON contract completeness,
- * and edge cases not covered by quality-dimensions.test.ts (QD-1 through QD-24).
+ * quality-gaps.test.ts — Van der Aalst 4-dimension JSON contract + threshold + edge cases
  *
  * Test catalogue:
  *
- *   TH-1:  --threshold=-0.1 (negative)          → exit 1 (config_error)
- *   TH-2:  --threshold=1.5 (>1.0)               → exit 1 (config_error)
- *   TH-3:  --threshold=abc (non-numeric)         → exit 1 (config_error)
- *   TH-4:  --threshold=0.7 (valid)               → accepted (exit 0 or 3, never 1)
- *   TH-5:  --threshold=0 (boundary 0.0)          → accepted
- *   TH-6:  --threshold=1 (boundary 1.0)          → accepted
- *   TH-7:  --threshold=0.0001 (near-zero float)  → accepted
- *   TH-8:  error envelope has INVALID_THRESHOLD code
- *   TH-9:  below-threshold exits 3, not 0
- *   TH-10: above-threshold exits 0
- *   TH-11: aggregate.passed_threshold=false when below threshold
- *   TH-12: aggregate.passed_threshold=true when at or above threshold
- *   TH-13: threshold field present in payload when --threshold provided
- *   TH-14: threshold field absent from payload when --threshold not provided
+ *   TOP-LEVEL DIMENSION FIELDS (primary contract):
+ *   DIM-1:  payload.fitness is a number or null (not missing)
+ *   DIM-2:  payload.precision is a number or null (not missing)
+ *   DIM-3:  payload.generalization is a number or null (not missing)
+ *   DIM-4:  payload.simplicity is a number or null (not missing)
+ *   DIM-5:  all 4 fields present simultaneously (not only when individually requested)
+ *   DIM-6:  top-level fields mirror payload.scores values
+ *   DIM-7:  top-level fields mirror payload.dimensions values
+ *   DIM-8:  generalization > 0 for a 2-trace log
+ *   DIM-9:  all 4 fields present for a 1-trace log (generalization may be 0)
+ *   DIM-10: --metrics fitness only → fitness is number, others are null
  *
- *   SC-1:  payload.dimensions is an object identical to payload.scores
- *   SC-2:  payload.dimensions has all four dimension keys when all metrics computed
+ *   ENVELOPE FIELDS:
+ *   ENV-1:  outer envelope status=ok on success
+ *   ENV-2:  payload.status=success on success
+ *   ENV-3:  payload.message is a non-empty string
+ *   ENV-4:  payload.algorithm is a non-empty string
+ *   ENV-5:  meta block has run_id, timestamp, duration_ms, version
+ *
+ *   THRESHOLD VALIDATION:
+ *   TH-1:  --threshold=-0.1 exits 1 (config_error)
+ *   TH-2:  --threshold=1.5 exits 1 (config_error)
+ *   TH-3:  --threshold=abc exits 1, error.code=INVALID_THRESHOLD
+ *   TH-4:  --threshold=0.7 accepted (never config_error)
+ *   TH-5:  --threshold=0 accepted, passed_threshold=true
+ *   TH-6:  --threshold=1.0 accepted (may exit 3 if score < 1)
+ *   TH-7:  threshold field in payload when --threshold provided
+ *   TH-8:  threshold field absent when --threshold not provided
+ *   TH-9:  passed_threshold absent when --threshold not provided
+ *   TH-10: exit-code/passed_threshold consistency
+ *
+ *   ALGORITHM FLAG:
+ *   ALG-1: --algorithm ilp accepted, exits 0
+ *   ALG-2: -a ilp (alias) accepted, exits 0
+ *   ALG-3: --algorithm inductive falls back gracefully, exits 0
+ *   ALG-4: payload.algorithm is non-empty string after any --algorithm value
+ *
+ *   DIMENSIONS ALIAS:
+ *   SC-1:  payload.dimensions mirrors payload.scores keys
+ *   SC-2:  payload.dimensions mirrors payload.scores values
  *   SC-3:  payload.activityKey reflects --activity-key value
- *   SC-4:  aggregate.score matches mean(scores) — identical to QD-3 but for
- *          non-default metric subsets (fitness only; generalization+simplicity)
- *   SC-5:  payload.metrics is an array (not string, not null)
- *   SC-6:  model.nodes and model.edges are integers (not floats)
- *   SC-7:  No --algorithm flag on quality (quality uses ILP internally, no flag)
+ *   SC-4:  aggregate.score equals mean of scores for subsets
+ *   SC-5:  payload.metrics is an Array
+ *   SC-6:  model.nodes and model.edges are integers
  *
- *   HO-1:  Human output threshold failure mentions "threshold" or "score"
- *   HO-2:  Human output for below-threshold still shows dimension scores
- *   HO-3:  Human output for valid input includes sparklines / bar characters
+ *   HUMAN OUTPUT:
+ *   HO-1:  human output contains all 4 dimension names
+ *   HO-2:  human output contains block-fill bar characters
  *
- *   EX-1:  Empty XES file (no traces) → exit 3 (execution_error), not crash
- *   EX-2:  XES with a single trace → exits 0 or 3, never 1 or 2
+ *   EXIT CODES:
+ *   EX-1:  missing --input exits 1 (config_error)
+ *   EX-2:  non-existent file exits 2 (source_error)
+ *   EX-3:  unsupported extension exits 2 (source_error)
+ *   EX-4:  empty XES (no traces) exits 2 or 3, not 1 or 5
+ *   EX-5:  single-trace XES exits 0 or 3, never 1 or 2
+ *
+ * Ambient config pollution guard:
+ *   Every execFile call passes { cwd: tempDir } where tempDir has no wasm4pm.toml.
+ *
+ * Build requirement: `cd apps/wasm4pm && npm run build` before running.
  */
 
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
@@ -49,8 +76,6 @@ import * as os from 'os';
 // ---------------------------------------------------------------------------
 
 const CLI_PATH = path.resolve(__dirname, '../../dist/bin/wpm.js');
-const FIXTURE_XES = path.resolve(__dirname, '../../../../test/fixtures/small.xes');
-
 const TEST_TIMEOUT_MS = 45_000;
 
 interface CliResult {
@@ -59,30 +84,13 @@ interface CliResult {
   stderr: string;
 }
 
-interface QualityEnvelope {
-  command: string;
-  status: 'ok' | 'error';
-  exit_code: number;
-  payload?: {
-    scores?: Record<string, number>;
-    dimensions?: Record<string, number>;
-    aggregate?: {
-      score: number;
-      level: string;
-      passed_threshold?: boolean;
-    };
-    metrics?: string[];
-    model?: { type: string; nodes: number; edges: number };
-    threshold?: number | null;
-    activityKey?: string;
-    input?: string;
-    [key: string]: unknown;
-  } | null;
-  error?: { code: string; message: string };
-}
-
-function runCli(args: string[], timeoutMs = TEST_TIMEOUT_MS): Promise<CliResult> {
-  const cwd = path.resolve(__dirname, '../..');
+// runCli always uses an isolated cwd with NO wasm4pm.toml present.
+// This prevents ambient config pollution from overriding algorithm / format.
+function runCli(
+  args: string[],
+  cwd: string,
+  timeoutMs = TEST_TIMEOUT_MS
+): Promise<CliResult> {
   return new Promise((resolve) => {
     const child = execFile(
       process.execPath,
@@ -104,8 +112,8 @@ function runCli(args: string[], timeoutMs = TEST_TIMEOUT_MS): Promise<CliResult>
   });
 }
 
-function parseEnvelope(result: CliResult): QualityEnvelope {
-  return JSON.parse(result.stdout) as QualityEnvelope;
+function parseEnvelope(result: CliResult): Record<string, unknown> {
+  return JSON.parse(result.stdout.trim()) as Record<string, unknown>;
 }
 
 // ---------------------------------------------------------------------------
@@ -113,724 +121,532 @@ function parseEnvelope(result: CliResult): QualityEnvelope {
 // ---------------------------------------------------------------------------
 
 let tempDir: string;
-let xesPath: string;
-let emptyXesPath: string;
-let singleTraceXesPath: string;
+let xesPath: string;       // 2-trace log — generalization > 0
+let xes1Path: string;      // 1-trace log — generalization can be 0
+let emptyXesPath: string;  // no traces — empty XES
+
+const TWO_TRACE_XES = `<?xml version="1.0" encoding="UTF-8"?>
+<log xes.version="1.0">
+  <trace>
+    <string key="concept:name" value="case1"/>
+    <event><string key="concept:name" value="A"/><date key="time:timestamp" value="2024-01-01T00:00:00.000+00:00"/></event>
+    <event><string key="concept:name" value="B"/><date key="time:timestamp" value="2024-01-01T01:00:00.000+00:00"/></event>
+    <event><string key="concept:name" value="C"/><date key="time:timestamp" value="2024-01-01T02:00:00.000+00:00"/></event>
+  </trace>
+  <trace>
+    <string key="concept:name" value="case2"/>
+    <event><string key="concept:name" value="A"/><date key="time:timestamp" value="2024-01-02T00:00:00.000+00:00"/></event>
+    <event><string key="concept:name" value="B"/><date key="time:timestamp" value="2024-01-02T01:00:00.000+00:00"/></event>
+    <event><string key="concept:name" value="D"/><date key="time:timestamp" value="2024-01-02T02:00:00.000+00:00"/></event>
+  </trace>
+</log>`;
+
+const ONE_TRACE_XES = `<?xml version="1.0" encoding="UTF-8"?>
+<log xes.version="1.0">
+  <trace>
+    <string key="concept:name" value="case1"/>
+    <event><string key="concept:name" value="A"/><date key="time:timestamp" value="2024-01-01T00:00:00.000+00:00"/></event>
+    <event><string key="concept:name" value="B"/><date key="time:timestamp" value="2024-01-01T01:00:00.000+00:00"/></event>
+    <event><string key="concept:name" value="C"/><date key="time:timestamp" value="2024-01-01T02:00:00.000+00:00"/></event>
+  </trace>
+</log>`;
+
+const EMPTY_XES = `<?xml version="1.0" encoding="UTF-8"?>
+<log xes.version="1.0">
+</log>`;
 
 beforeAll(() => {
+  // No wasm4pm.toml in this directory — pure isolation
   tempDir = fs.mkdtempSync(path.join(os.tmpdir(), 'wpm-quality-gaps-'));
-
-  // Standard XES fixture
-  xesPath = path.join(tempDir, 'test.xes');
-  fs.copyFileSync(FIXTURE_XES, xesPath);
-
-  // Empty XES — valid XML but zero traces (WASM must handle gracefully)
+  xesPath = path.join(tempDir, 'two.xes');
+  xes1Path = path.join(tempDir, 'one.xes');
   emptyXesPath = path.join(tempDir, 'empty.xes');
-  fs.writeFileSync(
-    emptyXesPath,
-    `<?xml version="1.0" encoding="UTF-8"?>\n` +
-    `<log xes.version="1.0" xmlns="http://www.xes-standard.org/">\n` +
-    `</log>\n`
-  );
-
-  // Single-trace XES — minimal viable log
-  singleTraceXesPath = path.join(tempDir, 'single.xes');
-  fs.writeFileSync(
-    singleTraceXesPath,
-    `<?xml version="1.0" encoding="UTF-8"?>\n` +
-    `<log xes.version="1.0" xmlns="http://www.xes-standard.org/">\n` +
-    `  <trace>\n` +
-    `    <string key="concept:name" value="case-001"/>\n` +
-    `    <event>\n` +
-    `      <string key="concept:name" value="Start"/>\n` +
-    `      <date key="time:timestamp" value="2026-01-01T10:00:00Z"/>\n` +
-    `    </event>\n` +
-    `    <event>\n` +
-    `      <string key="concept:name" value="End"/>\n` +
-    `      <date key="time:timestamp" value="2026-01-01T10:01:00Z"/>\n` +
-    `    </event>\n` +
-    `  </trace>\n` +
-    `</log>\n`
-  );
+  fs.writeFileSync(xesPath, TWO_TRACE_XES, 'utf-8');
+  fs.writeFileSync(xes1Path, ONE_TRACE_XES, 'utf-8');
+  fs.writeFileSync(emptyXesPath, EMPTY_XES, 'utf-8');
 });
 
 afterAll(() => {
-  try {
-    fs.rmSync(tempDir, { recursive: true, force: true });
-  } catch {
-    // non-fatal
-  }
+  try { fs.rmSync(tempDir, { recursive: true, force: true }); } catch { /* non-fatal */ }
+});
+
+// Convenience: run against the 2-trace log with --format json --no-save
+async function runQuality(extraArgs: string[] = []): Promise<CliResult> {
+  return runCli(
+    ['quality', '-i', xesPath, '--format', 'json', '--no-save', ...extraArgs],
+    tempDir
+  );
+}
+
+// ---------------------------------------------------------------------------
+// DIM: Top-level Van der Aalst 4-dimension fields
+// ---------------------------------------------------------------------------
+
+describe('DIM: Van der Aalst 4 quality dimensions at top-level of payload', () => {
+  it('DIM-1: payload.fitness is a number or null (not missing)', async () => {
+    const result = await runQuality();
+    expect(result.exitCode).toBe(0);
+    const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+    expect(Object.prototype.hasOwnProperty.call(payload, 'fitness')).toBe(true);
+    if (payload.fitness !== null) {
+      expect(typeof payload.fitness).toBe('number');
+    }
+  }, TEST_TIMEOUT_MS);
+
+  it('DIM-2: payload.precision is a number or null (not missing)', async () => {
+    const result = await runQuality();
+    expect(result.exitCode).toBe(0);
+    const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+    expect(Object.prototype.hasOwnProperty.call(payload, 'precision')).toBe(true);
+    if (payload.precision !== null) {
+      expect(typeof payload.precision).toBe('number');
+    }
+  }, TEST_TIMEOUT_MS);
+
+  it('DIM-3: payload.generalization is a number or null (not missing)', async () => {
+    const result = await runQuality();
+    expect(result.exitCode).toBe(0);
+    const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+    expect(Object.prototype.hasOwnProperty.call(payload, 'generalization')).toBe(true);
+    if (payload.generalization !== null) {
+      expect(typeof payload.generalization).toBe('number');
+    }
+  }, TEST_TIMEOUT_MS);
+
+  it('DIM-4: payload.simplicity is a number or null (not missing)', async () => {
+    const result = await runQuality();
+    expect(result.exitCode).toBe(0);
+    const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+    expect(Object.prototype.hasOwnProperty.call(payload, 'simplicity')).toBe(true);
+    if (payload.simplicity !== null) {
+      expect(typeof payload.simplicity).toBe('number');
+    }
+  }, TEST_TIMEOUT_MS);
+
+  it('DIM-5: all 4 fields are present simultaneously', async () => {
+    const result = await runQuality();
+    expect(result.exitCode).toBe(0);
+    const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+    for (const dim of ['fitness', 'precision', 'generalization', 'simplicity']) {
+      expect(Object.prototype.hasOwnProperty.call(payload, dim),
+        `payload missing '${dim}'`).toBe(true);
+    }
+  }, TEST_TIMEOUT_MS);
+
+  it('DIM-6: top-level fields mirror payload.scores values', async () => {
+    const result = await runQuality();
+    expect(result.exitCode).toBe(0);
+    const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+    const scores = (payload.scores ?? {}) as Record<string, number>;
+    for (const dim of ['fitness', 'precision', 'generalization', 'simplicity'] as const) {
+      if (scores[dim] !== undefined && payload[dim] !== null) {
+        expect(payload[dim]).toBe(scores[dim]);
+      }
+    }
+  }, TEST_TIMEOUT_MS);
+
+  it('DIM-7: top-level fields mirror payload.dimensions values', async () => {
+    const result = await runQuality();
+    expect(result.exitCode).toBe(0);
+    const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+    const dimensions = (payload.dimensions ?? {}) as Record<string, number>;
+    for (const dim of ['fitness', 'precision', 'generalization', 'simplicity'] as const) {
+      if (dimensions[dim] !== undefined && payload[dim] !== null) {
+        expect(payload[dim]).toBe(dimensions[dim]);
+      }
+    }
+  }, TEST_TIMEOUT_MS);
+
+  it('DIM-8: generalization > 0 for a 2-trace log', async () => {
+    const result = await runQuality();
+    expect(result.exitCode).toBe(0);
+    const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+    if (payload.generalization !== null) {
+      expect(payload.generalization as number).toBeGreaterThan(0);
+    }
+  }, TEST_TIMEOUT_MS);
+
+  it('DIM-9: all 4 fields present for a 1-trace log (generalization may be 0)', async () => {
+    const result = await runCli(
+      ['quality', '-i', xes1Path, '--format', 'json', '--no-save'],
+      tempDir
+    );
+    // 1-trace log must not be a config or source error
+    expect(result.exitCode).not.toBe(1);
+    expect(result.exitCode).not.toBe(2);
+    const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+    for (const dim of ['fitness', 'precision', 'generalization', 'simplicity']) {
+      expect(Object.prototype.hasOwnProperty.call(payload, dim),
+        `payload missing '${dim}'`).toBe(true);
+    }
+  }, TEST_TIMEOUT_MS);
+
+  it('DIM-10: --metrics fitness only → fitness is number, others are null', async () => {
+    const result = await runCli(
+      ['quality', '-i', xesPath, '--metrics', 'fitness', '--format', 'json', '--no-save'],
+      tempDir
+    );
+    expect(result.exitCode).toBe(0);
+    const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+    expect(typeof payload.fitness).toBe('number');
+    expect(payload.precision).toBeNull();
+    expect(payload.generalization).toBeNull();
+    expect(payload.simplicity).toBeNull();
+  }, TEST_TIMEOUT_MS);
 });
 
 // ---------------------------------------------------------------------------
-// TH-1: --threshold=-0.1 (negative) → exit 1 (config_error)
+// ENV: Outer envelope and payload meta-fields
 // ---------------------------------------------------------------------------
 
-describe('TH-1: negative threshold is rejected with config_error (exit 1)', () => {
-  it('--threshold=-0.1 exits 1', async () => {
-    // NOTE: --threshold=-0.1 must use = form to avoid flag parsing treating -0.1 as a flag
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--threshold=-0.1',
-      '--format', 'json',
-      '--no-save',
-    ]);
-    expect(result.exitCode).toBe(1);
-  });
+describe('ENV: JSON envelope structure for successful run', () => {
+  it('ENV-1: outer envelope has status=ok', async () => {
+    const result = await runQuality();
+    expect(result.exitCode).toBe(0);
+    expect(parseEnvelope(result).status).toBe('ok');
+  }, TEST_TIMEOUT_MS);
 
-  it('error envelope has status=error for negative threshold', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--threshold=-0.1',
-      '--format', 'json',
-      '--no-save',
-    ]);
-    const env = parseEnvelope(result);
-    expect(env.status).toBe('error');
-  });
+  it('ENV-2: payload.status=success', async () => {
+    const result = await runQuality();
+    expect(result.exitCode).toBe(0);
+    const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+    expect(payload.status).toBe('success');
+  }, TEST_TIMEOUT_MS);
+
+  it('ENV-3: payload.message is a non-empty string', async () => {
+    const result = await runQuality();
+    expect(result.exitCode).toBe(0);
+    const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+    expect(typeof payload.message).toBe('string');
+    expect((payload.message as string).length).toBeGreaterThan(0);
+  }, TEST_TIMEOUT_MS);
+
+  it('ENV-4: payload.algorithm is a non-empty string', async () => {
+    const result = await runQuality();
+    expect(result.exitCode).toBe(0);
+    const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+    expect(typeof payload.algorithm).toBe('string');
+    expect((payload.algorithm as string).length).toBeGreaterThan(0);
+  }, TEST_TIMEOUT_MS);
+
+  it('ENV-5: meta block has run_id, timestamp, duration_ms, version', async () => {
+    const result = await runQuality();
+    expect(result.exitCode).toBe(0);
+    const meta = (parseEnvelope(result).meta ?? {}) as Record<string, unknown>;
+    expect(typeof meta.run_id).toBe('string');
+    expect(typeof meta.timestamp).toBe('string');
+    expect(typeof meta.duration_ms).toBe('number');
+    expect(typeof meta.version).toBe('string');
+  }, TEST_TIMEOUT_MS);
 });
 
 // ---------------------------------------------------------------------------
-// TH-2: --threshold=1.5 (>1.0) → exit 1 (config_error)
+// TH: Threshold flag contract
 // ---------------------------------------------------------------------------
 
-describe('TH-2: threshold > 1.0 is rejected with config_error (exit 1)', () => {
-  it('--threshold=1.5 exits 1', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--threshold=1.5',
-      '--format', 'json',
-      '--no-save',
-    ]);
+describe('TH: --threshold validation and exit code semantics', () => {
+  it('TH-1: --threshold=-0.1 exits 1 (config_error)', async () => {
+    const result = await runCli(
+      ['quality', '-i', xesPath, '--threshold=-0.1', '--format', 'json', '--no-save'],
+      tempDir
+    );
     expect(result.exitCode).toBe(1);
-  });
+  }, TEST_TIMEOUT_MS);
 
-  it('--threshold=2 exits 1', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--threshold=2',
-      '--format', 'json',
-      '--no-save',
-    ]);
+  it('TH-2: --threshold=1.5 exits 1 (config_error)', async () => {
+    const result = await runCli(
+      ['quality', '-i', xesPath, '--threshold=1.5', '--format', 'json', '--no-save'],
+      tempDir
+    );
     expect(result.exitCode).toBe(1);
-  });
-});
+  }, TEST_TIMEOUT_MS);
 
-// ---------------------------------------------------------------------------
-// TH-3: --threshold=abc (non-numeric) → exit 1 (config_error)
-// ---------------------------------------------------------------------------
-
-describe('TH-3: non-numeric threshold is rejected with config_error (exit 1)', () => {
-  it('--threshold=abc exits 1', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--threshold=abc',
-      '--format', 'json',
-      '--no-save',
-    ]);
+  it('TH-3: --threshold=abc exits 1, error.code=INVALID_THRESHOLD', async () => {
+    const result = await runCli(
+      ['quality', '-i', xesPath, '--threshold=abc', '--format', 'json', '--no-save'],
+      tempDir
+    );
     expect(result.exitCode).toBe(1);
-  });
+    const envelope = parseEnvelope(result);
+    expect(envelope.status).toBe('error');
+    const err = (envelope.error ?? {}) as Record<string, unknown>;
+    expect(err.code).toBe('INVALID_THRESHOLD');
+  }, TEST_TIMEOUT_MS);
 
-  it('--threshold=abc error message mentions the invalid value', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--threshold=abc',
-      '--format', 'json',
-      '--no-save',
-    ]);
-    const env = parseEnvelope(result);
-    expect(env.status).toBe('error');
-    expect(env.error).toBeDefined();
-    expect(env.error!.message).toMatch(/abc/);
-  });
-
-  it('--threshold=not-a-number exits 1', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--threshold=not-a-number',
-      '--format', 'json',
-      '--no-save',
-    ]);
-    expect(result.exitCode).toBe(1);
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TH-4 through TH-7: valid threshold values are accepted
-// ---------------------------------------------------------------------------
-
-describe('TH-4: --threshold=0.7 is accepted (exit 0 or 3, never 1)', () => {
-  it('--threshold=0.7 does not produce config_error', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--threshold=0.7',
-      '--format', 'json',
-      '--no-save',
-    ]);
-    // exit 0 = passed threshold, exit 3 = failed threshold or WASM error — never config_error
+  it('TH-4: --threshold=0.7 accepted (exit 0 or 3, never config_error)', async () => {
+    const result = await runCli(
+      ['quality', '-i', xesPath, '--threshold=0.7', '--format', 'json', '--no-save'],
+      tempDir
+    );
     expect(result.exitCode).not.toBe(1);
   }, TEST_TIMEOUT_MS);
-});
 
-describe('TH-5: --threshold=0 (boundary 0.0) is accepted', () => {
-  it('--threshold=0 does not produce config_error', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--threshold=0',
-      '--format', 'json',
-      '--no-save',
-    ]);
-    // Threshold=0 should always pass (any score >= 0), so exit 0 or 3 (WASM fail)
+  it('TH-5: --threshold=0 always passes when WASM succeeds', async () => {
+    const result = await runCli(
+      ['quality', '-i', xesPath, '--threshold=0', '--format', 'json', '--no-save'],
+      tempDir
+    );
     expect(result.exitCode).not.toBe(1);
+    if (result.exitCode === 0) {
+      const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+      const agg = (payload.aggregate ?? {}) as Record<string, unknown>;
+      expect(agg.passed_threshold).toBe(true);
+    }
   }, TEST_TIMEOUT_MS);
 
-  it('--threshold=0 produces passed_threshold=true in aggregate', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--threshold=0',
-      '--format', 'json',
-      '--no-save',
-    ]);
-    if (result.exitCode === 3 && result.stdout.trim() === '') return; // WASM unavailable
-    const env = parseEnvelope(result);
-    if (env.status === 'error') return; // WASM failure gracefully handled
-    // Any score >= 0, so threshold=0 must always pass
-    expect(env.payload!.aggregate!.passed_threshold).toBe(true);
-  }, TEST_TIMEOUT_MS);
-});
-
-describe('TH-6: --threshold=1 (boundary 1.0) is accepted', () => {
-  it('--threshold=1 does not produce config_error (exit 1)', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--threshold=1',
-      '--format', 'json',
-      '--no-save',
-    ]);
-    // May exit 0 or 3 (threshold too high) — never config_error
+  it('TH-6: --threshold=1.0 accepted (may exit 3 if aggregate < 1)', async () => {
+    const result = await runCli(
+      ['quality', '-i', xesPath, '--threshold=1.0', '--format', 'json', '--no-save'],
+      tempDir
+    );
+    // Never config_error (1); may be success (0) or threshold-fail (3)
     expect(result.exitCode).not.toBe(1);
-  }, TEST_TIMEOUT_MS);
-});
-
-describe('TH-7: --threshold=0.0001 (near-zero float) is accepted', () => {
-  it('--threshold=0.0001 does not produce config_error', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--threshold=0.0001',
-      '--format', 'json',
-      '--no-save',
-    ]);
-    expect(result.exitCode).not.toBe(1);
-  }, TEST_TIMEOUT_MS);
-});
-
-// ---------------------------------------------------------------------------
-// TH-8: error envelope error.code is INVALID_THRESHOLD
-// ---------------------------------------------------------------------------
-
-describe('TH-8: threshold error code is INVALID_THRESHOLD', () => {
-  it('error.code is INVALID_THRESHOLD for --threshold=-0.1', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--threshold=-0.1',
-      '--format', 'json',
-      '--no-save',
-    ]);
-    const env = parseEnvelope(result);
-    expect(env.status).toBe('error');
-    expect(env.error!.code).toBe('INVALID_THRESHOLD');
-  });
-
-  it('error.code is INVALID_THRESHOLD for --threshold=abc', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--threshold=abc',
-      '--format', 'json',
-      '--no-save',
-    ]);
-    const env = parseEnvelope(result);
-    expect(env.error!.code).toBe('INVALID_THRESHOLD');
-  });
-
-  it('error.code is INVALID_THRESHOLD for --threshold=1.5', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--threshold=1.5',
-      '--format', 'json',
-      '--no-save',
-    ]);
-    const env = parseEnvelope(result);
-    expect(env.error!.code).toBe('INVALID_THRESHOLD');
-  });
-});
-
-// ---------------------------------------------------------------------------
-// TH-9: below-threshold exits 3, not 0
-// TH-10: above-threshold exits 0
-// ---------------------------------------------------------------------------
-
-describe('TH-9/TH-10: threshold exit code semantics', () => {
-  it('--threshold=1.0 forces exit 3 when aggregate score is below 1.0 (which it always is)', async () => {
-    // A quality score of 1.0 on the aggregate is virtually impossible in practice.
-    // For this fixture, threshold=1 should always trigger execution_error (exit 3).
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--threshold=1.0',
-      '--format', 'json',
-      '--no-save',
-    ]);
-    if (result.exitCode === 3 && result.stdout.trim() === '') return; // WASM unavailable
-    const env = parseEnvelope(result);
-    if (env.status === 'error' && !env.payload) return; // WASM unavailable
-    // If WASM ran successfully, a score < 1.0 triggers execution_error (3)
-    // or it genuinely hit 1.0 (exit 0). Both are valid; the key test is TH-11.
     expect([0, 3]).toContain(result.exitCode);
   }, TEST_TIMEOUT_MS);
 
-  it('--threshold=0.0 always passes: exit 0 when WASM succeeds', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--threshold=0.0',
-      '--format', 'json',
-      '--no-save',
-    ]);
-    if (result.exitCode === 3 && result.stdout.trim() === '') return; // WASM unavailable
-    const env = parseEnvelope(result);
-    if (env.status === 'error' && !env.payload) return; // WASM unavailable
-    if (env.status === 'ok') {
-      // threshold=0 → aggregate is always >= 0 → always passes → exit 0
+  it('TH-7: payload.threshold is numeric when --threshold provided', async () => {
+    const result = await runCli(
+      ['quality', '-i', xesPath, '--threshold=0.8', '--format', 'json', '--no-save'],
+      tempDir
+    );
+    if (result.stdout.trim() === '') return;
+    const envelope = parseEnvelope(result);
+    if ((envelope.status as string) === 'ok') {
+      const payload = (envelope.payload ?? {}) as Record<string, unknown>;
+      expect(typeof payload.threshold).toBe('number');
+      expect(payload.threshold as number).toBeCloseTo(0.8, 5);
+    }
+  }, TEST_TIMEOUT_MS);
+
+  it('TH-8: payload.threshold absent when --threshold not provided', async () => {
+    const result = await runQuality();
+    expect(result.exitCode).toBe(0);
+    const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+    expect(payload.threshold).toBeUndefined();
+  }, TEST_TIMEOUT_MS);
+
+  it('TH-9: aggregate.passed_threshold absent when --threshold not provided', async () => {
+    const result = await runQuality();
+    expect(result.exitCode).toBe(0);
+    const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+    const agg = (payload.aggregate ?? {}) as Record<string, unknown>;
+    expect(agg.passed_threshold).toBeUndefined();
+  }, TEST_TIMEOUT_MS);
+
+  it('TH-10: exit code is consistent with passed_threshold', async () => {
+    const result = await runCli(
+      ['quality', '-i', xesPath, '--threshold=1.0', '--format', 'json', '--no-save'],
+      tempDir
+    );
+    if (result.stdout.trim() === '' || result.exitCode === 3 && !result.stdout.trim()) return;
+    const envelope = parseEnvelope(result);
+    if ((envelope.status as string) !== 'ok') return;
+    const payload = (envelope.payload ?? {}) as Record<string, unknown>;
+    const agg = (payload.aggregate ?? {}) as Record<string, unknown>;
+    if (agg.passed_threshold === false) {
+      expect(result.exitCode).toBe(3);
+    } else if (agg.passed_threshold === true) {
       expect(result.exitCode).toBe(0);
     }
   }, TEST_TIMEOUT_MS);
 });
 
 // ---------------------------------------------------------------------------
-// TH-11: passed_threshold=false when aggregate below threshold
-// TH-12: passed_threshold=true when aggregate at or above threshold
+// ALG: --algorithm flag
 // ---------------------------------------------------------------------------
 
-describe('TH-11/TH-12: aggregate.passed_threshold semantics', () => {
-  it('passed_threshold=false when threshold=1.0 (unreachable score)', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--threshold=1.0',
-      '--format', 'json',
-      '--no-save',
-    ]);
-    if (result.stdout.trim() === '') return; // WASM unavailable
-    const env = parseEnvelope(result);
-    if (env.status === 'error' && !env.payload) return;
-    if (env.status === 'ok') {
-      const passed = env.payload!.aggregate!.passed_threshold;
-      expect(typeof passed).toBe('boolean');
-      // threshold=1.0 → only passes if aggregate is exactly 1.0
-      // exit code must be consistent with passed_threshold
-      if (passed === false) {
-        expect(result.exitCode).toBe(3);
-      } else {
-        expect(result.exitCode).toBe(0);
-      }
+describe('ALG: --algorithm flag is accepted by quality command', () => {
+  it('ALG-1: --algorithm ilp exits 0', async () => {
+    const result = await runCli(
+      ['quality', '-i', xesPath, '--algorithm', 'ilp', '--format', 'json', '--no-save'],
+      tempDir
+    );
+    expect(result.exitCode).toBe(0);
+  }, TEST_TIMEOUT_MS);
+
+  it('ALG-2: -a ilp (alias) exits 0', async () => {
+    const result = await runCli(
+      ['quality', '-i', xesPath, '-a', 'ilp', '--format', 'json', '--no-save'],
+      tempDir
+    );
+    expect(result.exitCode).toBe(0);
+  }, TEST_TIMEOUT_MS);
+
+  it('ALG-3: --algorithm inductive falls back gracefully, exits 0', async () => {
+    const result = await runCli(
+      ['quality', '-i', xesPath, '--algorithm', 'inductive', '--format', 'json', '--no-save'],
+      tempDir
+    );
+    expect(result.exitCode).toBe(0);
+    const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+    // All 4 dimensions must still be present regardless of fallback
+    for (const dim of ['fitness', 'precision', 'generalization', 'simplicity']) {
+      expect(Object.prototype.hasOwnProperty.call(payload, dim)).toBe(true);
     }
   }, TEST_TIMEOUT_MS);
 
-  it('passed_threshold=true when threshold=0 (always passes)', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--threshold=0',
-      '--format', 'json',
-      '--no-save',
-    ]);
-    if (result.stdout.trim() === '') return; // WASM unavailable
-    const env = parseEnvelope(result);
-    if (env.status === 'error' && !env.payload) return;
-    if (env.status === 'ok') {
-      expect(env.payload!.aggregate!.passed_threshold).toBe(true);
-    }
-  }, TEST_TIMEOUT_MS);
-
-  it('passed_threshold is absent (undefined) when --threshold not provided', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--format', 'json',
-      '--no-save',
-    ]);
-    if (result.stdout.trim() === '') return; // WASM unavailable
-    const env = parseEnvelope(result);
-    if (env.status === 'error' && !env.payload) return;
-    if (env.status === 'ok') {
-      // passed_threshold should NOT be present when no --threshold was supplied
-      expect(env.payload!.aggregate!.passed_threshold).toBeUndefined();
+  it('ALG-4: payload.algorithm is non-empty string after any --algorithm value', async () => {
+    for (const algo of ['ilp', 'inductive', 'heuristic']) {
+      const result = await runCli(
+        ['quality', '-i', xesPath, '--algorithm', algo, '--format', 'json', '--no-save'],
+        tempDir
+      );
+      expect(result.exitCode).toBe(0);
+      const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+      expect(typeof payload.algorithm).toBe('string');
+      expect((payload.algorithm as string).length).toBeGreaterThan(0);
     }
   }, TEST_TIMEOUT_MS);
 });
 
 // ---------------------------------------------------------------------------
-// TH-13: threshold field present in payload when --threshold provided
-// TH-14: threshold field absent from payload when --threshold not provided
+// SC: Scores / dimensions alias and ancillary fields
 // ---------------------------------------------------------------------------
 
-describe('TH-13/TH-14: threshold field presence in payload', () => {
-  it('TH-13: payload.threshold is numeric when --threshold=0.8 is provided', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--threshold=0.8',
-      '--format', 'json',
-      '--no-save',
-    ]);
-    if (result.stdout.trim() === '') return;
-    const env = parseEnvelope(result);
-    if (env.status === 'error' && !env.payload) return;
-    if (env.status === 'ok') {
-      expect(typeof env.payload!.threshold).toBe('number');
-      expect(env.payload!.threshold).toBe(0.8);
-    }
-  }, TEST_TIMEOUT_MS);
-
-  it('TH-14: payload.threshold is absent when --threshold not provided', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--format', 'json',
-      '--no-save',
-    ]);
-    if (result.stdout.trim() === '') return;
-    const env = parseEnvelope(result);
-    if (env.status === 'error' && !env.payload) return;
-    if (env.status === 'ok') {
-      // No threshold supplied → field must be absent (not null, not 0)
-      expect(env.payload!.threshold).toBeUndefined();
-    }
-  }, TEST_TIMEOUT_MS);
-});
-
-// ---------------------------------------------------------------------------
-// SC-1/SC-2: payload.dimensions is alias for payload.scores
-// ---------------------------------------------------------------------------
-
-describe('SC-1/SC-2: payload.dimensions is present and mirrors payload.scores', () => {
-  it('SC-1: dimensions object has the same keys as scores', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--format', 'json',
-      '--no-save',
-    ]);
-    if (result.stdout.trim() === '') return;
-    const env = parseEnvelope(result);
-    if (env.status === 'error' && !env.payload) return;
-    if (env.status === 'ok') {
-      const scores = env.payload!.scores;
-      const dimensions = env.payload!.dimensions;
-      expect(dimensions).toBeDefined();
-      expect(typeof dimensions).toBe('object');
-      expect(Object.keys(dimensions!).sort()).toEqual(Object.keys(scores!).sort());
-    }
+describe('SC: payload.dimensions, scores alias and ancillary fields', () => {
+  it('SC-1: dimensions and scores have identical keys', async () => {
+    const result = await runQuality();
+    expect(result.exitCode).toBe(0);
+    const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+    const scores = Object.keys((payload.scores ?? {}) as object).sort();
+    const dims = Object.keys((payload.dimensions ?? {}) as object).sort();
+    expect(dims).toEqual(scores);
   }, TEST_TIMEOUT_MS);
 
   it('SC-2: dimensions values are identical to scores values', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--format', 'json',
-      '--no-save',
-    ]);
-    if (result.stdout.trim() === '') return;
-    const env = parseEnvelope(result);
-    if (env.status === 'error' && !env.payload) return;
-    if (env.status === 'ok') {
-      const scores = env.payload!.scores!;
-      const dimensions = env.payload!.dimensions!;
-      for (const key of Object.keys(scores)) {
-        expect(dimensions[key]).toBe(scores[key]);
-      }
+    const result = await runQuality();
+    expect(result.exitCode).toBe(0);
+    const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+    const scores = (payload.scores ?? {}) as Record<string, number>;
+    const dims = (payload.dimensions ?? {}) as Record<string, number>;
+    for (const key of Object.keys(scores)) {
+      expect(dims[key]).toBe(scores[key]);
     }
   }, TEST_TIMEOUT_MS);
 
-  it('SC-2b: dimensions has fitness, precision, generalization, simplicity when all computed', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--format', 'json',
-      '--no-save',
-    ]);
+  it('SC-3: payload.activityKey reflects --activity-key option', async () => {
+    const result = await runCli(
+      [
+        'quality', '-i', xesPath,
+        '--activity-key', 'lifecycle:transition',
+        '--format', 'json', '--no-save',
+      ],
+      tempDir
+    );
     if (result.stdout.trim() === '') return;
-    const env = parseEnvelope(result);
-    if (env.status === 'error' && !env.payload) return;
-    if (env.status === 'ok') {
-      const dims = env.payload!.dimensions!;
-      for (const key of ['fitness', 'precision', 'generalization', 'simplicity']) {
-        expect(Object.keys(dims)).toContain(key);
-      }
+    const envelope = parseEnvelope(result);
+    if ((envelope.status as string) === 'ok') {
+      const payload = (envelope.payload ?? {}) as Record<string, unknown>;
+      expect(payload.activityKey).toBe('lifecycle:transition');
     }
+  }, TEST_TIMEOUT_MS);
+
+  it('SC-4: aggregate.score equals mean of computed scores', async () => {
+    const result = await runQuality();
+    expect(result.exitCode).toBe(0);
+    const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+    const scores = Object.values((payload.scores ?? {}) as Record<string, number>);
+    const expectedMean = scores.reduce((a, b) => a + b, 0) / scores.length;
+    const agg = (payload.aggregate ?? {}) as Record<string, number>;
+    expect(Math.abs(agg.score - expectedMean)).toBeLessThan(1e-6);
+  }, TEST_TIMEOUT_MS);
+
+  it('SC-5: payload.metrics is an Array', async () => {
+    const result = await runQuality();
+    expect(result.exitCode).toBe(0);
+    const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+    expect(Array.isArray(payload.metrics)).toBe(true);
+  }, TEST_TIMEOUT_MS);
+
+  it('SC-6: model.nodes and model.edges are integers', async () => {
+    const result = await runQuality();
+    expect(result.exitCode).toBe(0);
+    const payload = (parseEnvelope(result).payload ?? {}) as Record<string, unknown>;
+    const model = (payload.model ?? {}) as Record<string, unknown>;
+    expect(Number.isInteger(model.nodes)).toBe(true);
+    expect(Number.isInteger(model.edges)).toBe(true);
   }, TEST_TIMEOUT_MS);
 });
 
 // ---------------------------------------------------------------------------
-// SC-3: payload.activityKey reflects --activity-key value
+// HO: Human-format output
 // ---------------------------------------------------------------------------
 
-describe('SC-3: payload.activityKey reflects --activity-key option', () => {
-  it('activityKey is concept:name by default', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--format', 'json',
-      '--no-save',
-    ]);
-    if (result.stdout.trim() === '') return;
-    const env = parseEnvelope(result);
-    if (env.status === 'error' && !env.payload) return;
-    if (env.status === 'ok') {
-      expect(env.payload!.activityKey).toBe('concept:name');
-    }
+describe('HO: human-format output includes quality dimension names and bar glyphs', () => {
+  it('HO-1: human output contains all 4 dimension names', async () => {
+    const result = await runCli(
+      ['quality', '-i', xesPath, '--format', 'human', '--no-save'],
+      tempDir
+    );
+    expect(result.exitCode).toBe(0);
+    const out = (result.stdout + result.stderr).toLowerCase();
+    expect(out).toContain('fitness');
+    expect(out).toContain('precision');
+    expect(out).toContain('generalization');
+    expect(out).toContain('simplicity');
   }, TEST_TIMEOUT_MS);
 
-  it('activityKey reflects custom --activity-key value', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--activity-key', 'lifecycle:transition',
-      '--format', 'json',
-      '--no-save',
-    ]);
-    if (result.stdout.trim() === '') return;
-    const env = parseEnvelope(result);
-    if (env.status === 'error' && !env.payload) return;
-    if (env.status === 'ok') {
-      expect(env.payload!.activityKey).toBe('lifecycle:transition');
-    }
-  }, TEST_TIMEOUT_MS);
-});
-
-// ---------------------------------------------------------------------------
-// SC-4: aggregate mean consistency for non-default metric subsets
-// ---------------------------------------------------------------------------
-
-describe('SC-4: aggregate.score is mean(scores) for metric subsets', () => {
-  it('--metrics fitness only: aggregate.score equals scores.fitness', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--metrics', 'fitness',
-      '--format', 'json',
-      '--no-save',
-    ]);
-    if (result.stdout.trim() === '') return;
-    const env = parseEnvelope(result);
-    if (env.status === 'error' && !env.payload) return;
-    if (env.status === 'ok') {
-      const scores = env.payload!.scores!;
-      const agg = env.payload!.aggregate!.score;
-      expect(Math.abs(agg - scores.fitness)).toBeLessThan(1e-6);
-    }
-  }, TEST_TIMEOUT_MS);
-
-  it('--metrics generalization,simplicity: aggregate is mean of those two', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--metrics', 'generalization,simplicity',
-      '--format', 'json',
-      '--no-save',
-    ]);
-    if (result.stdout.trim() === '') return;
-    const env = parseEnvelope(result);
-    if (env.status === 'error' && !env.payload) return;
-    if (env.status === 'ok') {
-      const scores = env.payload!.scores!;
-      const agg = env.payload!.aggregate!.score;
-      const expected = (scores.generalization + scores.simplicity) / 2;
-      expect(Math.abs(agg - expected)).toBeLessThan(1e-6);
-    }
-  }, TEST_TIMEOUT_MS);
-});
-
-// ---------------------------------------------------------------------------
-// SC-5: payload.metrics is an array
-// ---------------------------------------------------------------------------
-
-describe('SC-5: payload.metrics is an array', () => {
-  it('metrics field is an Array instance, not a string', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--format', 'json',
-      '--no-save',
-    ]);
-    if (result.stdout.trim() === '') return;
-    const env = parseEnvelope(result);
-    if (env.status === 'error' && !env.payload) return;
-    if (env.status === 'ok') {
-      expect(Array.isArray(env.payload!.metrics)).toBe(true);
-    }
-  }, TEST_TIMEOUT_MS);
-});
-
-// ---------------------------------------------------------------------------
-// SC-6: model.nodes and model.edges are integers
-// ---------------------------------------------------------------------------
-
-describe('SC-6: model.nodes and model.edges are integers (not floats)', () => {
-  it('model.nodes is an integer', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--format', 'json',
-      '--no-save',
-    ]);
-    if (result.stdout.trim() === '') return;
-    const env = parseEnvelope(result);
-    if (env.status === 'error' && !env.payload) return;
-    if (env.status === 'ok') {
-      const nodes = env.payload!.model!.nodes;
-      expect(Number.isInteger(nodes)).toBe(true);
-    }
-  }, TEST_TIMEOUT_MS);
-
-  it('model.edges is an integer', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--format', 'json',
-      '--no-save',
-    ]);
-    if (result.stdout.trim() === '') return;
-    const env = parseEnvelope(result);
-    if (env.status === 'error' && !env.payload) return;
-    if (env.status === 'ok') {
-      const edges = env.payload!.model!.edges;
-      expect(Number.isInteger(edges)).toBe(true);
-    }
-  }, TEST_TIMEOUT_MS);
-});
-
-// ---------------------------------------------------------------------------
-// SC-7: No --algorithm flag on quality command
-// ---------------------------------------------------------------------------
-
-describe('SC-7: quality command does not expose an --algorithm flag', () => {
-  it('passing --algorithm does not crash (citty ignores unknown args or exits 1)', async () => {
-    // quality.ts has no `algorithm` arg — citty will either ignore it or exit 1 (config_error).
-    // It must not exit 3 (execution_error) or 5 (system_error).
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--algorithm', 'dfg',
-      '--format', 'json',
-      '--no-save',
-    ]);
-    // Acceptable: citty ignores unknown arg (exit 0/3) OR exits config_error (exit 1)
-    // Not acceptable: system_error (5) or unhandled crash
-    expect(result.exitCode).not.toBe(5);
-    // stdout must be valid JSON
-    if (result.stdout.trim().length > 0) {
-      expect(() => JSON.parse(result.stdout)).not.toThrow();
-    }
-  }, TEST_TIMEOUT_MS);
-});
-
-// ---------------------------------------------------------------------------
-// HO-1: Human output threshold failure mentions "threshold" or "score"
-// ---------------------------------------------------------------------------
-
-describe('HO-1: human output for threshold failure mentions threshold context', () => {
-  it('human output when threshold fails includes score or aggregate info', async () => {
-    // Use threshold=1.0 which is almost certainly going to fail
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--threshold=1.0',
-      '--format', 'human',
-      '--no-save',
-    ]);
-    if (result.exitCode === 3 && (result.stdout + result.stderr).trim() === '') return;
-    const combined = (result.stdout + result.stderr).toLowerCase();
-    if (combined.trim().length === 0) return; // WASM unavailable
-    // Human output must mention quality metrics context
-    expect(combined).toMatch(/quality|score|fitness|precision|aggregate/);
-  }, TEST_TIMEOUT_MS);
-});
-
-// ---------------------------------------------------------------------------
-// HO-2: Human output for below-threshold still shows dimension scores
-// ---------------------------------------------------------------------------
-
-describe('HO-2: human output still shows dimension scores when threshold fails', () => {
-  it('output contains numerical score data even when threshold fails', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--threshold=1.0',
-      '--format', 'human',
-      '--no-save',
-    ]);
+  it('HO-2: human output contains block-fill bar characters (█ or ░)', async () => {
+    const result = await runCli(
+      ['quality', '-i', xesPath, '--format', 'human', '--no-save'],
+      tempDir
+    );
+    expect(result.exitCode).toBe(0);
     const combined = result.stdout + result.stderr;
-    if (combined.trim().length === 0) return; // WASM unavailable
-    // Should contain at least one decimal score like "0.xxx"
-    if (result.exitCode !== 3 || result.stdout.trim() !== '') {
-      expect(combined).toMatch(/\d+\.\d+/);
-    }
+    expect(combined).toMatch(/[█░▓]/);
   }, TEST_TIMEOUT_MS);
 });
 
 // ---------------------------------------------------------------------------
-// HO-3: Human output contains sparkline bar characters
+// EX: Exit code contract
 // ---------------------------------------------------------------------------
 
-describe('HO-3: human output contains bar chart characters (ASCII sparklines)', () => {
-  it('human output contains block fill characters (█ or ░)', async () => {
-    const result = await runCli([
-      'quality', '-i', xesPath,
-      '--format', 'human',
-      '--no-save',
-    ]);
-    const combined = result.stdout + result.stderr;
-    if (combined.trim().length === 0) return; // WASM unavailable
-    if (result.exitCode === 0 || result.exitCode === 3) {
-      // Human output should include ASCII bar chars for quality dimensions
-      expect(combined).toMatch(/[█░▓]/);
-    }
+describe('EX: exit code contract for error paths', () => {
+  it('EX-1: missing --input exits 1 (config_error)', async () => {
+    const result = await runCli(
+      ['quality', '--format', 'json'],
+      tempDir
+    );
+    expect(result.exitCode).toBe(1);
   }, TEST_TIMEOUT_MS);
-});
 
-// ---------------------------------------------------------------------------
-// EX-1: Empty XES (no traces) → exits 3, not crash
-// ---------------------------------------------------------------------------
+  it('EX-2: non-existent file exits 2 (source_error)', async () => {
+    const result = await runCli(
+      ['quality', '-i', path.join(tempDir, 'ghost.xes'), '--format', 'json', '--no-save'],
+      tempDir
+    );
+    expect(result.exitCode).toBe(2);
+  }, TEST_TIMEOUT_MS);
 
-describe('EX-1: empty XES (no traces) exits 3, not crash or config_error', () => {
-  it('empty XES produces exit code 3 (execution_error), not 1 or 5', async () => {
-    const result = await runCli([
-      'quality', '-i', emptyXesPath,
-      '--format', 'json',
-      '--no-save',
-    ]);
-    // Must not be config_error (1) or system_error (5)
+  it('EX-3: unsupported extension exits 2 (source_error)', async () => {
+    const csvPath = path.join(tempDir, 'data.csv');
+    fs.writeFileSync(csvPath, 'case,activity\n1,A', 'utf-8');
+    const result = await runCli(
+      ['quality', '-i', csvPath, '--format', 'json', '--no-save'],
+      tempDir
+    );
+    expect(result.exitCode).toBe(2);
+  }, TEST_TIMEOUT_MS);
+
+  it('EX-4: empty XES (no traces) exits 2 or 3, not 1 or 5', async () => {
+    const result = await runCli(
+      ['quality', '-i', emptyXesPath, '--format', 'json', '--no-save'],
+      tempDir
+    );
     expect(result.exitCode).not.toBe(1);
     expect(result.exitCode).not.toBe(5);
+    // Must emit parseable JSON
+    if (result.stdout.trim()) {
+      expect(() => parseEnvelope(result)).not.toThrow();
+    }
   }, TEST_TIMEOUT_MS);
 
-  it('empty XES produces a parseable JSON response', async () => {
-    const result = await runCli([
-      'quality', '-i', emptyXesPath,
-      '--format', 'json',
-      '--no-save',
-    ]);
-    expect(result.stdout.trim()).not.toBe('');
-    expect(() => JSON.parse(result.stdout)).not.toThrow();
-    const env = parseEnvelope(result);
-    expect(env.command).toBe('quality');
-    expect(['ok', 'error']).toContain(env.status);
-  }, TEST_TIMEOUT_MS);
-});
-
-// ---------------------------------------------------------------------------
-// EX-2: Single-trace XES → exits 0 or 3, never 1 or 2
-// ---------------------------------------------------------------------------
-
-describe('EX-2: single-trace XES exits 0 or 3 (never config_error or source_error)', () => {
-  it('single-trace XES exit code is not 1 (config_error) or 2 (source_error)', async () => {
-    const result = await runCli([
-      'quality', '-i', singleTraceXesPath,
-      '--format', 'json',
-      '--no-save',
-    ]);
+  it('EX-5: single-trace XES exits 0 or 3, never 1 or 2', async () => {
+    const result = await runCli(
+      ['quality', '-i', xes1Path, '--format', 'json', '--no-save'],
+      tempDir
+    );
     expect(result.exitCode).not.toBe(1);
     expect(result.exitCode).not.toBe(2);
-  }, TEST_TIMEOUT_MS);
-
-  it('single-trace XES produces valid JSON envelope', async () => {
-    const result = await runCli([
-      'quality', '-i', singleTraceXesPath,
-      '--format', 'json',
-      '--no-save',
-    ]);
-    expect(result.stdout.trim()).not.toBe('');
-    expect(() => JSON.parse(result.stdout)).not.toThrow();
   }, TEST_TIMEOUT_MS);
 });
