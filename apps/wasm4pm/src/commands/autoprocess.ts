@@ -52,6 +52,42 @@ function wasmHas(wasm: Record<string, unknown>, fn: string): boolean {
   return typeof wasm[fn] === 'function';
 }
 
+/**
+ * Derive a one-line system-state narrative from the health scores of the last
+ * (up to) 3 cycles.  Health score 0 = healthy, 4 = failed (matches WASM RL
+ * state dimension `health_level`).
+ *
+ * Decision rules (domain contract, Rank-2):
+ *  - Consistently improving: last score strictly lower than first score
+ *    AND last score lower than middle score (monotone down over the window)
+ *  - Degrading: last score strictly higher than first score
+ *    AND last score higher than middle score (monotone up over the window)
+ *  - Stable otherwise
+ *
+ * With fewer than 2 data points the trend is indeterminate → stable message.
+ */
+export function computeHealthNarrative(cycles: Array<{ healthScore: number }>): string {
+  const window = cycles.slice(-3);
+  if (window.length < 2) {
+    return 'System stable — operating within normal bounds';
+  }
+  const first = window[0].healthScore;
+  const last = window[window.length - 1].healthScore;
+  // For a 3-point window check strict monotonicity; for 2 points just compare endpoints.
+  const middle = window.length === 3 ? window[1].healthScore : undefined;
+  const improving =
+    last < first && (middle === undefined || (last < middle && middle <= first));
+  const degrading =
+    last > first && (middle === undefined || (last > middle && middle >= first));
+  if (improving) {
+    return 'System improving — autonomic agents converging on stable operating point';
+  }
+  if (degrading) {
+    return 'System degrading — consider running wpm doctor';
+  }
+  return 'System stable — operating within normal bounds';
+}
+
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 async function loadState(wasm: Record<string, any>): Promise<void> {
   let rawContent: string;
@@ -244,6 +280,9 @@ export const autoprocess = defineCommand({
               let cyclesRun = 0;
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               let cycleResult: Record<string, any> = {};
+              // Accumulates per-cycle health scores for the system-state narrative.
+              // Only the last 3 are needed; we keep all and slice in computeHealthNarrative.
+              const cycleHealthScores: Array<{ healthScore: number }> = [];
               do {
                 // Execute cycle and parse raw WASM result
                 const rawResult = wasm.autonomic_execute_cycle(
@@ -273,6 +312,9 @@ export const autoprocess = defineCommand({
                 // health_score here is the numeric 0-4 integer stored as health_score in Rust output
                 const healthLevel =
                   typeof percData.health_score === 'number' ? percData.health_score : -1;
+                // Record health score for multi-cycle system-state narrative.
+                // Use 0 as sentinel for unknown (-1) so it reads as healthy.
+                cycleHealthScores.push({ healthScore: healthLevel >= 0 ? healthLevel : 0 });
                 // event_rate = events / traces (0 when no traces)
                 const traceCount =
                   typeof percData.trace_count === 'number' ? percData.trace_count : 0;
@@ -561,6 +603,16 @@ export const autoprocess = defineCommand({
                     ? `drift classified as ${driftLabel} (${specialCausesList.length} special cause(s)) — RL Q-table updated via reward ${rewardSign}${reward.toFixed(3)}`
                     : `no drift detected — RL Q-table stable (reward ${rewardSign}${reward.toFixed(3)})`;
                 phaseLabel('Learn', learnSummary);
+
+                // ── System State narrative (multi-cycle health trend) ──────────
+                // Only meaningful when more than one cycle has run; with a single
+                // cycle there is no trend to report.
+                if (cycleHealthScores.length > 1) {
+                  projection.log('');
+                  projection.log(
+                    `  System State: ${computeHealthNarrative(cycleHealthScores)}`
+                  );
+                }
 
                 // ── Next Actions (cross-phase synthesis) ───────────────────────
                 // Synthesise actionable recommendations from each MAPE-K phase.

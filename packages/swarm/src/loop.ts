@@ -245,8 +245,9 @@ XES Content Preview: ${worker.xesContent.substring(0, 500)}...
 Goal: Discover the process model or analyze statistics as requested.`,
     });
 
-    // We take the result from the last tool call or the text if no tool was called
-    let lastToolResult: any = { text };
+    // We take the result from the last tool call or the text if no tool was called.
+    // `WorkerResult.result` is typed `unknown`; keep this as unknown throughout.
+    let lastToolResult: unknown = { text };
     if (toolResults && toolResults.length > 0) {
       const lastResult = toolResults[toolResults.length - 1];
       lastToolResult = 'result' in lastResult ? lastResult.result : lastResult;

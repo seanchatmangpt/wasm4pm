@@ -23,9 +23,33 @@ import {
   detectEnhancedAnomalies,
   reduceFeaturesPCA,
 } from '@wasm4pm/ml';
-import type { ClassificationMethod, ClusteringMethod } from '@wasm4pm/ml';
+import type { ClassificationMethod, ClusteringMethod, RegressionMethod } from '@wasm4pm/ml';
 import { Instrumentation } from '@wasm4pm/observability';
 import type { OtelEvent, RequiredOtelAttributes } from '@wasm4pm/observability';
+
+// ─────────────────────────────────────────────────────────────────────────────
+// WASM result shapes
+//
+// Typed envelopes for the raw JSON that wasm.detect_drift() returns.  These
+// replace the `(d: any)` casts in the forecast and anomaly dispatch branches
+// and make the field access explicit so TypeScript will catch any WASM output
+// shape change at compile time.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/** One entry in the `drifts` array returned by wasm.detect_drift(). */
+interface WasmDriftWindow {
+  window_start?: number;
+  window_end?: number;
+  distance?: number;
+  detected?: boolean;
+}
+
+/** Top-level shape returned by wasm.detect_drift(). */
+interface WasmDriftResult {
+  drifts?: WasmDriftWindow[];
+  ewma?: number;
+  threshold?: number;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Task registry
@@ -468,9 +492,12 @@ export async function executeMlTask(
 
     case 'forecast': {
       const driftRaw = wasm.detect_drift(logHandle, activityKey, 5);
-      const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
+      const driftResult = (
+        typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw
+      ) as WasmDriftResult;
+      const distances = (driftResult?.drifts ?? []).map(
+        (d: WasmDriftWindow) => d.distance ?? 0
+      );
       const forecastPeriods = parseInt(String(options.forecastPeriods ?? '5'), 10);
       if (Number.isNaN(forecastPeriods) || forecastPeriods <= 0)
         throw new Error('Forecast parameter forecastPeriods must be a positive number');
@@ -483,9 +510,12 @@ export async function executeMlTask(
 
     case 'anomaly': {
       const driftRaw = wasm.detect_drift(logHandle, activityKey, 10);
-      const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
+      const driftResult = (
+        typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw
+      ) as WasmDriftResult;
+      const distances = (driftResult?.drifts ?? []).map(
+        (d: WasmDriftWindow) => d.distance ?? 0
+      );
       rawResult = (await detectEnhancedAnomalies(distances, {
         smoothingMethod: options.smoothingMethod,
       })) as unknown as Record<string, unknown>;
@@ -511,8 +541,7 @@ export async function executeMlTask(
       );
       const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
       rawResult = (await regressRemainingTime(features, {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        method: options.method as any,
+        method: options.method as RegressionMethod | undefined,
       })) as unknown as Record<string, unknown>;
       break;
     }
