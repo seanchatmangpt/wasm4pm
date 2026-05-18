@@ -3,7 +3,7 @@ import { resolveConfig as loadConfig } from '@wasm4pm/config';
 import { emitResult, makeResult, makeErrorResult, ConsoleProjection } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
-import { withSpan } from './_otel.js';
+import { withSpan, withSpanRaw } from './_otel.js';
 
 export interface ExplainOptions {
   format?: 'human' | 'json';
@@ -152,7 +152,11 @@ export const explain = defineCommand({
               );
             }
           } else if (ctx.args.algorithm) {
-            explanationContent = getAlgorithmExplanation(ctx.args.algorithm, level);
+            explanationContent = await withSpanRaw(
+              'explain.algorithm',
+              { 'explain.algorithm': String(ctx.args.algorithm), 'explain.level': level },
+              async () => getAlgorithmExplanation(ctx.args.algorithm as string, level)
+            );
           }
 
           // Step 3: Build result and emit

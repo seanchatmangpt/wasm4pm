@@ -4,7 +4,8 @@ import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
 import { discriminate } from '../discriminator.js';
-import { withSpan } from './_otel.js';
+import { withSpan, withSpanRaw } from './_otel.js';
+import { AnalysisSpans } from '@wasm4pm/observability';
 import {
   saveCommandReceipt,
   blake3Hex,
@@ -158,41 +159,55 @@ export const diff = defineCommand({
           const handle1: string = wasm.load_eventlog_from_xes(xes1);
           const handle2: string = wasm.load_eventlog_from_xes(xes2);
 
-          // Discover DFGs for both logs
-          const dfg1Raw = wasm.discover_dfg(handle1, activityKey);
-          const dfg2Raw = wasm.discover_dfg(handle2, activityKey);
+          let diffResult!: DiffResult;
+          await withSpanRaw(
+            `wasm4pm.${AnalysisSpans.diffCompute()}`,
+            { activityKey, log1: log1Path, log2: log2Path },
+            async () => {
+              // Discover DFGs for both logs
+              const dfg1Raw = wasm.discover_dfg(handle1, activityKey);
+              const dfg2Raw = wasm.discover_dfg(handle2, activityKey);
 
-          // Validate both outputs are DFGs (diff is DFG-only).
-          const shape1 = discriminate(dfg1Raw, 'dfg');
-          const shape2 = discriminate(dfg2Raw, 'dfg');
-          if (shape1.kind !== 'dfg' || shape2.kind !== 'dfg') {
-            const offending = shape1.kind !== 'dfg' ? shape1.kind : shape2.kind;
-            const result = makeErrorResult(
-              'diff',
-              new Error(`diff requires DFG output (got ${offending})`),
-              EXIT_CODES.execution_error,
-              'DIFF_REQUIRES_DFG'
-            );
-            emitResult(result, { format, verbose, quiet });
-            return await exitWithFlush(result.exit_code);
-          }
+              // Validate both outputs are DFGs (diff is DFG-only).
+              const shape1 = discriminate(dfg1Raw, 'dfg');
+              const shape2 = discriminate(dfg2Raw, 'dfg');
+              if (shape1.kind !== 'dfg' || shape2.kind !== 'dfg') {
+                const offending = shape1.kind !== 'dfg' ? shape1.kind : shape2.kind;
+                const result = makeErrorResult(
+                  'diff',
+                  new Error(`diff requires DFG output (got ${offending})`),
+                  EXIT_CODES.execution_error,
+                  'DIFF_REQUIRES_DFG'
+                );
+                emitResult(result, { format, verbose, quiet });
+                await exitWithFlush(result.exit_code);
+                return;
+              }
 
-          const dfg1: Dfg = shape1.raw as Dfg;
-          const dfg2: Dfg = shape2.raw as Dfg;
+              const dfg1: Dfg = shape1.raw as Dfg;
+              const dfg2: Dfg = shape2.raw as Dfg;
 
-          // Discover trace variants for both logs
-          const variants1Raw = wasm.analyze_trace_variants(handle1, activityKey);
-          const variants2Raw = wasm.analyze_trace_variants(handle2, activityKey);
+              // Discover trace variants for both logs
+              const variants1Raw = wasm.analyze_trace_variants(handle1, activityKey);
+              const variants2Raw = wasm.analyze_trace_variants(handle2, activityKey);
 
-          const variants1: TraceVariant[] = normalizeVariants(
-            typeof variants1Raw === 'string' ? JSON.parse(variants1Raw) : variants1Raw
+              const variants1: TraceVariant[] = normalizeVariants(
+                typeof variants1Raw === 'string' ? JSON.parse(variants1Raw) : variants1Raw
+              );
+              const variants2: TraceVariant[] = normalizeVariants(
+                typeof variants2Raw === 'string' ? JSON.parse(variants2Raw) : variants2Raw
+              );
+
+              diffResult = computeDiff(dfg1, dfg2, variants1, variants2);
+            },
+            () => ({
+              jaccard: diffResult ? Math.round(diffResult.jaccard * 1000) / 1000 : 0,
+              activities_added: diffResult ? diffResult.activities.added.length : 0,
+              activities_removed: diffResult ? diffResult.activities.removed.length : 0,
+              edges_added: diffResult ? diffResult.edges.added.length : 0,
+              edges_removed: diffResult ? diffResult.edges.removed.length : 0,
+            })
           );
-          const variants2: TraceVariant[] = normalizeVariants(
-            typeof variants2Raw === 'string' ? JSON.parse(variants2Raw) : variants2Raw
-          );
-
-          // Compute diff
-          const diffResult = computeDiff(dfg1, dfg2, variants1, variants2);
 
           // Free handles
           wasm.delete_object(handle1);

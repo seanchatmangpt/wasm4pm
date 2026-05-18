@@ -1903,6 +1903,40 @@ export class AlgorithmRegistry {
 
     return candidates[0];
   }
+
+  /**
+   * Recommend the best discovery algorithm for a given log size and execution profile.
+   *
+   * Implements the Van der Aalst quality/speed tradeoff:
+   *   - fast   → dfg always (linear time, suits any log size)
+   *   - quality → genetic_algorithm when feasible, heuristic_miner as speed guard for large logs
+   *   - balanced → size-aware heuristic: inductive for small/simple logs, heuristic for medium,
+   *               dfg when the log is too large to afford O(n²) algorithms
+   *
+   * Returns a registered algorithm ID that callers can pass directly to `run()`.
+   */
+  getBestAlgorithmForLogSize(logSize: {
+    traces: number;
+    activities: number;
+    profile: 'fast' | 'balanced' | 'quality';
+  }): string {
+    const { traces, activities, profile } = logSize;
+
+    // Quality profile: use best available, but guard against extreme log sizes
+    if (profile === 'quality') {
+      if (traces > 10_000) return 'heuristic_miner'; // speed guard — genetic too slow
+      return 'genetic_algorithm'; // best quality when feasible
+    }
+
+    // Fast profile: always dfg — linear time, fits any log size
+    if (profile === 'fast') return 'dfg';
+
+    // Balanced: heuristic tradeoff — dfg at scale, inductive for small clean logs, heuristic otherwise
+    if (traces > 50_000 || activities > 200) return 'dfg';
+    if (traces > 10_000) return 'heuristic_miner';
+    if (activities < 20 && traces < 5_000) return 'inductive_miner';
+    return 'heuristic_miner';
+  }
 }
 
 /**

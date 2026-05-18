@@ -159,6 +159,14 @@ export const WatchingSpans = {
   checkpointLoad: () => spanName('watching', 'checkpoint_load'),
 } as const;
 
+// Watching phase spans
+export const AnalysisSpans = {
+  compareStart: (algCount: number) => spanName('analysis', `compare.start.${algCount}_algos`),
+  compareEnd: () => spanName('analysis', 'compare.end'),
+  qualityCheck: (algo: string) => spanName('analysis', `quality.check.${algo}`),
+  diffCompute: () => spanName('analysis', 'diff.compute'),
+} as const;
+
 // Lawful Dispatch phase spans (Phase 1, 2, 3)
 export const LawfulDispatchSpans = {
   perception: () => spanName('lawful_dispatch', 'phase_1.perception'),

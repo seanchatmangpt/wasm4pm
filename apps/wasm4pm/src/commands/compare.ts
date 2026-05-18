@@ -5,7 +5,8 @@ import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
 import { discriminate, toUniformStats, DiscoveryShapeError } from '../discriminator.js';
 import * as fs from 'node:fs';
-import { withSpan } from './_otel.js';
+import { withSpan, withSpanRaw } from './_otel.js';
+import { AnalysisSpans } from '@wasm4pm/observability';
 import {
   saveCommandReceipt,
   blake3Hex,
@@ -521,40 +522,51 @@ export const compare = defineCommand({
               const t0 = performance.now();
               const stats: ModelStats[] = [];
               const algorithmErrors: string[] = [];
-              for (const algo of algos) {
-                try {
-                  const { raw, elapsedMs } = runDiscovery(wasm, algo, logHandle, activityKey);
-                  const { nodes, edges } = toUniformStats(discriminate(raw, algo));
-                  const profile = ALGO_PROFILES[algo];
-                  stats.push({
-                    algorithm: algo,
-                    nodes,
-                    edges,
-                    variants: sharedMetrics.variants,
-                    density: sharedMetrics.density,
-                    complexity: sharedMetrics.complexity,
-                    elapsedMs,
-                    qualityTier: profile.qualityTier,
-                    speedTier: profile.speedTier,
-                  });
-                } catch (err) {
-                  // Record the failure; push a sentinel row so output is always complete
-                  const msg = err instanceof Error ? err.message : String(err);
-                  algorithmErrors.push(`${algo}: ${msg}`);
-                  const profile = ALGO_PROFILES[algo];
-                  stats.push({
-                    algorithm: algo,
-                    nodes: -1,
-                    edges: -1,
-                    variants: sharedMetrics.variants,
-                    density: sharedMetrics.density,
-                    complexity: sharedMetrics.complexity,
-                    elapsedMs: 0,
-                    qualityTier: profile.qualityTier,
-                    speedTier: profile.speedTier,
-                  });
-                }
-              }
+              await withSpanRaw(
+                `wasm4pm.${AnalysisSpans.compareStart(algos.length)}`,
+                { algorithms: algos.join(','), activityKey, log: inputPath },
+                async () => {
+                  for (const algo of algos) {
+                    try {
+                      const { raw, elapsedMs } = runDiscovery(wasm, algo, logHandle, activityKey);
+                      const { nodes, edges } = toUniformStats(discriminate(raw, algo));
+                      const profile = ALGO_PROFILES[algo];
+                      stats.push({
+                        algorithm: algo,
+                        nodes,
+                        edges,
+                        variants: sharedMetrics.variants,
+                        density: sharedMetrics.density,
+                        complexity: sharedMetrics.complexity,
+                        elapsedMs,
+                        qualityTier: profile.qualityTier,
+                        speedTier: profile.speedTier,
+                      });
+                    } catch (err) {
+                      // Record the failure; push a sentinel row so output is always complete
+                      const msg = err instanceof Error ? err.message : String(err);
+                      algorithmErrors.push(`${algo}: ${msg}`);
+                      const profile = ALGO_PROFILES[algo];
+                      stats.push({
+                        algorithm: algo,
+                        nodes: -1,
+                        edges: -1,
+                        variants: sharedMetrics.variants,
+                        density: sharedMetrics.density,
+                        complexity: sharedMetrics.complexity,
+                        elapsedMs: 0,
+                        qualityTier: profile.qualityTier,
+                        speedTier: profile.speedTier,
+                      });
+                    }
+                  }
+                },
+                () => ({
+                  algo_count: algos.length,
+                  error_count: algorithmErrors.length,
+                  elapsed_ms: Math.round(performance.now() - t0),
+                })
+              );
               const totalElapsedMs = performance.now() - t0;
 
               // Derive winner recommendations before building payload

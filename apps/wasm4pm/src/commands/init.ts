@@ -13,7 +13,7 @@ import {
   type PublicPreset,
 } from '@wasm4pm/config';
 import { exitWithFlush } from '../otel/exit.js';
-import { withSpan } from './_otel.js';
+import { withSpan, withSpanRaw } from './_otel.js';
 
 // getEnvExampleContent is sourced from @wasm4pm/config (getExampleEnvFile) so it always
 // stays in sync with the full set of WASM4PM_* variables the resolver actually handles.
@@ -345,40 +345,48 @@ export const init = defineCommand({
             );
           }
 
-          const configCreated = await safeWriteFile(
-            configPath,
-            configContent,
-            force,
-            earlyProjection
+          const { filesCreated, isValid } = await withSpanRaw(
+            'init.scaffold',
+            { 'init.preset': preset ?? '', 'init.format': effectiveFormat, 'init.force': force },
+            async () => {
+              const configCreated = await safeWriteFile(
+                configPath,
+                configContent,
+                force,
+                earlyProjection
+              );
+
+              // .env.example: use getExampleEnvFile() from @wasm4pm/config so every WASM4PM_* variable
+              // that the resolver understands is listed with a description.
+              const envPath = path.join(cwd, '.env.example');
+              const envCreated = await safeWriteFile(
+                envPath,
+                getExampleEnvFile(),
+                force,
+                earlyProjection
+              );
+
+              const gitignorePath = path.join(cwd, '.gitignore');
+              const gitignoreCreated = !existsSync(gitignorePath)
+                ? await safeWriteFile(gitignorePath, getGitignoreContent(), force, earlyProjection)
+                : false;
+
+              const readmePath = path.join(cwd, 'README.md');
+              const readmeCreated = !existsSync(readmePath)
+                ? await safeWriteFile(readmePath, getReadmeContent(), force, earlyProjection)
+                : false;
+
+              const valid = await validateConfigFiles(cwd);
+
+              const created: string[] = [];
+              if (configCreated) created.push(configFilename);
+              if (envCreated) created.push('.env.example');
+              if (gitignoreCreated) created.push('.gitignore');
+              if (readmeCreated) created.push('README.md');
+
+              return { filesCreated: created, isValid: valid };
+            }
           );
-
-          // .env.example: use getExampleEnvFile() from @wasm4pm/config so every WASM4PM_* variable
-          // that the resolver understands is listed with a description.
-          const envPath = path.join(cwd, '.env.example');
-          const envCreated = await safeWriteFile(
-            envPath,
-            getExampleEnvFile(),
-            force,
-            earlyProjection
-          );
-
-          const gitignorePath = path.join(cwd, '.gitignore');
-          const gitignoreCreated = !existsSync(gitignorePath)
-            ? await safeWriteFile(gitignorePath, getGitignoreContent(), force, earlyProjection)
-            : false;
-
-          const readmePath = path.join(cwd, 'README.md');
-          const readmeCreated = !existsSync(readmePath)
-            ? await safeWriteFile(readmePath, getReadmeContent(), force, earlyProjection)
-            : false;
-
-          const isValid = await validateConfigFiles(cwd);
-
-          const filesCreated: string[] = [];
-          if (configCreated) filesCreated.push(configFilename);
-          if (envCreated) filesCreated.push('.env.example');
-          if (gitignoreCreated) filesCreated.push('.gitignore');
-          if (readmeCreated) filesCreated.push('README.md');
 
           // Algorithm guidance tailored to the chosen preset.
           const algorithmHint = (() => {

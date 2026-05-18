@@ -4,7 +4,8 @@ import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
 // discriminate / toUniformStats not needed — Petri net metrics come directly from discover_ilp_petri_net
-import { withSpan } from './_otel.js';
+import { withSpan, withSpanRaw } from './_otel.js';
+import { AnalysisSpans } from '@wasm4pm/observability';
 import {
   saveCommandReceipt,
   blake3Hex,
@@ -199,114 +200,135 @@ export const quality = defineCommand({
               // Compute quality metrics via WASM conformance functions
               const qualityScores: Record<string, number> = {};
 
-              // Fitness — via alignment-based replay against the stored PetriNet handle.
-              // compute_optimal_alignments returns { total_traces, avg_cost, alignments[] }
-              // where each alignment has { cost, sync_moves, log_moves, model_moves }.
-              // alignments[] NOT traces[] — the field was previously misread.
-              // Fitness = 1 - avg_cost / avg_trace_length; fall back to discovery seed on failure.
-              if (requestedMetrics.includes('fitness')) {
-                try {
-                  const costConfig = JSON.stringify({
-                    sync_cost: 0,
-                    log_move_cost: 1,
-                    model_move_cost: 1,
-                  });
-                  const rawAlign = wasm.compute_optimal_alignments(
-                    logHandle,
-                    modelHandle,
-                    activityKey,
-                    costConfig
-                  );
-                  const alignResult =
-                    typeof rawAlign === 'string' ? JSON.parse(rawAlign) : rawAlign;
-                  // alignments[] — NOT traces[]
-                  const alignments = alignResult.alignments as
-                    | Array<{
-                        cost?: number;
-                        sync_moves?: number;
-                        log_moves?: number;
-                        model_moves?: number;
-                      }>
-                    | undefined;
-                  if (alignments && alignments.length > 0) {
-                    let totalCost = 0;
-                    let totalMoves = 0;
-                    for (const a of alignments) {
-                      const cost = (a.cost ?? 0) < 0 ? 0 : (a.cost ?? 0); // -1 = no alignment found
-                      const moves = (a.sync_moves ?? 0) + (a.log_moves ?? 0) + (a.model_moves ?? 0);
-                      totalCost += cost;
-                      totalMoves += Math.max(moves, 1);
+              await withSpanRaw(
+                `wasm4pm.${AnalysisSpans.qualityCheck('ilp_petri_net')}`,
+                { activityKey, log: inputPath, metrics: requestedMetrics.join(',') },
+                async () => {
+                  // Fitness — via alignment-based replay against the stored PetriNet handle.
+                  // compute_optimal_alignments returns { total_traces, avg_cost, alignments[] }
+                  // where each alignment has { cost, sync_moves, log_moves, model_moves }.
+                  // alignments[] NOT traces[] — the field was previously misread.
+                  // Fitness = 1 - avg_cost / avg_trace_length; fall back to discovery seed on failure.
+                  if (requestedMetrics.includes('fitness')) {
+                    try {
+                      const costConfig = JSON.stringify({
+                        sync_cost: 0,
+                        log_move_cost: 1,
+                        model_move_cost: 1,
+                      });
+                      const rawAlign = wasm.compute_optimal_alignments(
+                        logHandle,
+                        modelHandle,
+                        activityKey,
+                        costConfig
+                      );
+                      const alignResult =
+                        typeof rawAlign === 'string' ? JSON.parse(rawAlign) : rawAlign;
+                      // alignments[] — NOT traces[]
+                      const alignments = alignResult.alignments as
+                        | Array<{
+                            cost?: number;
+                            sync_moves?: number;
+                            log_moves?: number;
+                            model_moves?: number;
+                          }>
+                        | undefined;
+                      if (alignments && alignments.length > 0) {
+                        let totalCost = 0;
+                        let totalMoves = 0;
+                        for (const a of alignments) {
+                          const cost = (a.cost ?? 0) < 0 ? 0 : (a.cost ?? 0); // -1 = no alignment found
+                          const moves =
+                            (a.sync_moves ?? 0) + (a.log_moves ?? 0) + (a.model_moves ?? 0);
+                          totalCost += cost;
+                          totalMoves += Math.max(moves, 1);
+                        }
+                        qualityScores.fitness =
+                          totalMoves > 0 ? Math.max(0, 1 - totalCost / totalMoves) : 1.0;
+                      } else if (typeof discoveryFitness === 'number') {
+                        // Fall back to seed value from discovery
+                        qualityScores.fitness = discoveryFitness;
+                      } else {
+                        qualityScores.fitness = 0.0;
+                      }
+                    } catch {
+                      // Fall back to seed value from discovery on alignment failure
+                      qualityScores.fitness =
+                        typeof discoveryFitness === 'number' ? discoveryFitness : 0.0;
                     }
-                    qualityScores.fitness =
-                      totalMoves > 0 ? Math.max(0, 1 - totalCost / totalMoves) : 1.0;
-                  } else if (typeof discoveryFitness === 'number') {
-                    // Fall back to seed value from discovery
-                    qualityScores.fitness = discoveryFitness;
-                  } else {
-                    qualityScores.fitness = 0.0;
                   }
-                } catch {
-                  // Fall back to seed value from discovery on alignment failure
-                  qualityScores.fitness =
-                    typeof discoveryFitness === 'number' ? discoveryFitness : 0.0;
-                }
-              }
 
-              // Precision — via ETConformance escaping-edge analysis.
-              // wasm_compute_precision returns JSON string { precision, total_escaping, total_consumed, total_traces }
-              if (requestedMetrics.includes('precision')) {
-                try {
-                  const rawPrec = wasm.wasm_compute_precision(logHandle, modelHandle, activityKey);
-                  const precResult = typeof rawPrec === 'string' ? JSON.parse(rawPrec) : rawPrec;
-                  qualityScores.precision =
-                    ((precResult as Record<string, unknown>).precision as number) ??
-                    discoveryPrecision ??
-                    0.0;
-                } catch {
-                  qualityScores.precision =
-                    typeof discoveryPrecision === 'number' ? discoveryPrecision : 0.0;
-                }
-              }
-
-              // Generalization — via WASM generalization metric.
-              // Returns JsValue (JSON string via to_js_str) { generalization, num_places, num_transitions,
-              //   num_visible_transitions, num_arcs, penalty }
-              if (requestedMetrics.includes('generalization')) {
-                try {
-                  const rawGen = wasm.generalization(logHandle, modelHandle, activityKey);
-                  const genResult = typeof rawGen === 'string' ? JSON.parse(rawGen) : rawGen;
-                  qualityScores.generalization =
-                    ((genResult as Record<string, unknown>).generalization as number) ?? 0.0;
-                } catch {
-                  qualityScores.generalization = 0.0;
-                }
-              }
-
-              // Simplicity — via wasm_compute_simplicity(places, transitions, arcs).
-              // Returns a plain number (not JSON). Falls back to the seed value from ILP discovery.
-              if (requestedMetrics.includes('simplicity')) {
-                try {
-                  if (
-                    typeof wasm.wasm_compute_simplicity === 'function' &&
-                    petriCounts.places + petriCounts.transitions + petriCounts.arcs > 0
-                  ) {
-                    qualityScores.simplicity = wasm.wasm_compute_simplicity(
-                      petriCounts.places,
-                      petriCounts.transitions,
-                      petriCounts.arcs
-                    );
-                  } else if (typeof discoverySimplicity === 'number') {
-                    qualityScores.simplicity = discoverySimplicity;
-                  } else {
-                    // Heuristic fallback
-                    const totalElements = modelStats.nodes + modelStats.edges;
-                    qualityScores.simplicity = 1.0 / (1.0 + totalElements / 10.0);
+                  // Precision — via ETConformance escaping-edge analysis.
+                  // wasm_compute_precision returns JSON string { precision, total_escaping, total_consumed, total_traces }
+                  if (requestedMetrics.includes('precision')) {
+                    try {
+                      const rawPrec = wasm.wasm_compute_precision(
+                        logHandle,
+                        modelHandle,
+                        activityKey
+                      );
+                      const precResult = typeof rawPrec === 'string' ? JSON.parse(rawPrec) : rawPrec;
+                      qualityScores.precision =
+                        ((precResult as Record<string, unknown>).precision as number) ??
+                        discoveryPrecision ??
+                        0.0;
+                    } catch {
+                      qualityScores.precision =
+                        typeof discoveryPrecision === 'number' ? discoveryPrecision : 0.0;
+                    }
                   }
-                } catch {
-                  qualityScores.simplicity =
-                    typeof discoverySimplicity === 'number' ? discoverySimplicity : 0.0;
-                }
-              }
+
+                  // Generalization — via WASM generalization metric.
+                  // Returns JsValue (JSON string via to_js_str) { generalization, num_places, num_transitions,
+                  //   num_visible_transitions, num_arcs, penalty }
+                  if (requestedMetrics.includes('generalization')) {
+                    try {
+                      const rawGen = wasm.generalization(logHandle, modelHandle, activityKey);
+                      const genResult = typeof rawGen === 'string' ? JSON.parse(rawGen) : rawGen;
+                      qualityScores.generalization =
+                        ((genResult as Record<string, unknown>).generalization as number) ?? 0.0;
+                    } catch {
+                      qualityScores.generalization = 0.0;
+                    }
+                  }
+
+                  // Simplicity — via wasm_compute_simplicity(places, transitions, arcs).
+                  // Returns a plain number (not JSON). Falls back to the seed value from ILP discovery.
+                  if (requestedMetrics.includes('simplicity')) {
+                    try {
+                      if (
+                        typeof wasm.wasm_compute_simplicity === 'function' &&
+                        petriCounts.places + petriCounts.transitions + petriCounts.arcs > 0
+                      ) {
+                        qualityScores.simplicity = wasm.wasm_compute_simplicity(
+                          petriCounts.places,
+                          petriCounts.transitions,
+                          petriCounts.arcs
+                        );
+                      } else if (typeof discoverySimplicity === 'number') {
+                        qualityScores.simplicity = discoverySimplicity;
+                      } else {
+                        // Heuristic fallback
+                        const totalElements = modelStats.nodes + modelStats.edges;
+                        qualityScores.simplicity = 1.0 / (1.0 + totalElements / 10.0);
+                      }
+                    } catch {
+                      qualityScores.simplicity =
+                        typeof discoverySimplicity === 'number' ? discoverySimplicity : 0.0;
+                    }
+                  }
+                },
+                () => ({
+                  metrics_computed: Object.keys(qualityScores).join(','),
+                  aggregate_score: Object.values(qualityScores).length > 0
+                    ? Math.round(
+                        (Object.values(qualityScores).reduce((a, b) => a + b, 0) /
+                          Object.values(qualityScores).length) *
+                          1000
+                      ) / 1000
+                    : 0,
+                })
+              );
 
               // Compute aggregate quality score
               const scores = Object.values(qualityScores);
