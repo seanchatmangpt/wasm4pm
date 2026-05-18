@@ -37,6 +37,8 @@ import { repl } from './commands/repl.js';
 import { prolog8 } from './commands/prolog8.js';
 import { feedback } from './commands/feedback.js';
 import { wasmServer } from './commands/wasm-server.js';
+import { timeout } from './commands/timeout.js';
+import cache from './commands/cache.js';
 import pkg from '../package.json' with { type: 'json' };
 
 export const main = defineCommand({
@@ -136,6 +138,8 @@ ${BOLD}VAN DER AALST AGENTS${RESET}  ${DIM}(8 autonomous adversarial validators)
 ${BOLD}RESULTS & HEALTH${RESET}
   ${GREEN}wpm results${RESET}                         View all saved discovery & prediction results
   ${GREEN}wpm results${RESET} --last                  Print the most recent result
+  ${GREEN}wpm cache stats${RESET}                     Show discovery cache hit rate, entry count, memory usage
+  ${GREEN}wpm cache clear${RESET} [--algorithm algo]  Clear cache entries (all or by algorithm)
   ${GREEN}wpm doctor${RESET}                          Check environment health + pipeline integrity (24 checks)
   ${GREEN}wpm doctor hooks${RESET}                    JTBD verification: test whether each Claude Code hook does its job
   ${GREEN}wpm status${RESET}                          WASM module status and memory usage
@@ -212,7 +216,9 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     repl,
     prolog8,
     feedback,
+    timeout,
     'wasm-server': wasmServer,
+    cache,
   },
 });
 

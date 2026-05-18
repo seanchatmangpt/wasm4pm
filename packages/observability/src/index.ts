@@ -53,6 +53,9 @@ export * from './root-cause.js';
 // Conformance caching: lazy precision computation and result memoization
 export * from './conformance-cache.js';
 
+// Discovery caching: TTL-based result memoization for identical log+algorithm+params
+export * from './discovery-cache.js';
+
 // Cache invalidation: smart parameter-aware cache invalidation
 export * from './cache-invalidation.js';
 

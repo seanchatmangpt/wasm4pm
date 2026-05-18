@@ -108,6 +108,15 @@ export {
 } from './errors.js';
 export type { KernelErrorCode } from './errors.js';
 
+// Adaptive timeout exports
+/**
+ * computeTimeout — Calculate runtime-adaptive timeout for algorithm execution.
+ * @description Scales timeout based on log event count, complexity, and algorithm tier.
+ * @example const result = computeTimeout({ eventCount: 100000, complexity: 'complex', algorithmTier: 'quality' });
+ */
+export { computeTimeout, classifyComplexity, detectAlgorithmTier } from './adaptive-timeout.js';
+export type { TimeoutFactors, TimeoutResult } from './adaptive-timeout.js';
+
 // Validation exports
 export { ValidationError } from './validation.js';
 export type { ViolationReport } from './validation.js';
@@ -216,3 +225,11 @@ export {
  * @example const client = new WasmServerClient(); if (await client.isAvailable()) { const result = await client.runAlgorithm('dfg', handle); }
  */
 export { WasmServerClient, isWasmServerAvailable } from './server-client.js';
+
+// Discovery caching — see @wasm4pm/observability
+/**
+ * Discovery caching is managed by @wasm4pm/observability.DiscoveryCache.
+ * Caching integrates at the CLI layer (apps/wasm4pm/src/commands/cache.ts),
+ * not at the kernel layer, to maintain acyclic dependency graph.
+ */
+export { CACHE_ADAPTER_INFO } from './discovery-cache-adapter.js';
