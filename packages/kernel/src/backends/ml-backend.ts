@@ -111,8 +111,8 @@ export class MlBackend implements MiningBackend {
       const logJson = JSON.stringify(log);
       const logHandle = wasm.load_eventlog_from_json(logJson);
 
-      let resultRaw: any;
-      const params = (task.parameters as Record<string, any>) || {};
+      let resultRaw: unknown;
+      const params = (task.parameters as Record<string, unknown>) || {};
 
       switch (task.task_type) {
         case 'ml_classify': {
@@ -128,8 +128,8 @@ export class MlBackend implements MiningBackend {
           );
           const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
           resultRaw = await ml.classifyTraces(features, {
-            method: params.method || 'knn',
-            k: params.k ?? 5,
+            method: (params.method as 'knn' | 'logistic_regression' | 'decision_tree' | 'naive_bayes' | undefined) ?? 'knn',
+            k: (params.k as number | undefined) ?? 5,
           });
           break;
         }
@@ -145,24 +145,24 @@ export class MlBackend implements MiningBackend {
           );
           const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
           resultRaw = await ml.clusterTraces(features, {
-            method: params.method || 'kmeans',
-            k: params.k ?? 3,
+            method: (params.method as 'kmeans' | 'dbscan' | undefined) ?? 'kmeans',
+            k: (params.k as number | undefined) ?? 3,
           });
           break;
         }
         case 'ml_forecast': {
-          const driftRaw = wasm.detect_drift(logHandle, 'concept:name', params.window_size ?? 5);
+          const driftRaw = wasm.detect_drift(logHandle, 'concept:name', (params.window_size as number | undefined) ?? 5);
           const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
-          const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
+          const distances = (driftResult?.drifts ?? []).map((d: Record<string, unknown>) => (d.distance as number) ?? 0);
           resultRaw = await ml.forecastThroughput(distances, {
-            forecastPeriods: params.forecast_periods ?? 5,
+            forecastPeriods: (params.forecast_periods as number | undefined) ?? 5,
           });
           break;
         }
         case 'ml_anomaly': {
-          const driftRaw = wasm.detect_drift(logHandle, 'concept:name', params.window_size ?? 10);
+          const driftRaw = wasm.detect_drift(logHandle, 'concept:name', (params.window_size as number | undefined) ?? 10);
           const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
-          const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
+          const distances = (driftResult?.drifts ?? []).map((d: Record<string, unknown>) => (d.distance as number) ?? 0);
           resultRaw = await ml.detectEnhancedAnomalies(distances, {
             smoothingMethod: (params.smoothing_method as 'sma' | 'ema') ?? 'sma',
           });
@@ -187,7 +187,7 @@ export class MlBackend implements MiningBackend {
           );
           const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
           resultRaw = await ml.regressRemainingTime(features, {
-            method: params.method as any,
+            method: params.method as 'linear_regression' | 'polynomial_regression' | 'exponential_regression' | undefined,
           });
           break;
         }
@@ -210,7 +210,7 @@ export class MlBackend implements MiningBackend {
           );
           const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
           resultRaw = await ml.reduceFeaturesPCA(features, {
-            nComponents: params.n_components ?? 2,
+            nComponents: (params.n_components as number | undefined) ?? 2,
           });
           break;
         }
@@ -239,7 +239,7 @@ export class MlBackend implements MiningBackend {
         stale: false,
       };
     } catch (error) {
-      return this.createFailedResult(task.task_type, startMs, String(error)) as any;
+      return this.createFailedResult(task.task_type, startMs, String(error));
     }
   }
 

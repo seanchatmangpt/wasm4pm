@@ -27,6 +27,15 @@ import type {
 import { hashOutput, canonicalize } from '../hashing.js';
 
 /**
+ * Structural interface for the dynamically-loaded WASM module.
+ * All exports are optional because the module shape depends on the build profile.
+ * Values are functions accepting unknown arguments and returning unknown (or void).
+ */
+interface Pm4WasmModule {
+  [key: string]: ((...args: unknown[]) => unknown) | undefined;
+}
+
+/**
  * Algorithm metadata: Maps algorithmId to pm4wasm function and budget tier.
  */
 interface AlgorithmMetadata {
@@ -178,9 +187,9 @@ export class Pm4wasmBackend implements MiningBackend {
 
   /**
    * Optional WASM module (passed at construction or lazy-loaded).
-   * Type is any to avoid hard dependency on @wasm4pm/pm4wasm during testing.
+   * Typed as Pm4WasmModule to avoid hard dependency on @wasm4pm/pm4wasm during testing.
    */
-  private wasmModule: any;
+  private wasmModule: Pm4WasmModule | null;
 
   async init(): Promise<void> {
     this.wasmModule = await this.loadWasmModule();
@@ -200,8 +209,8 @@ export class Pm4wasmBackend implements MiningBackend {
    * Constructor: Accept optional pre-loaded WASM module.
    * If not provided, WASM is loaded lazily on first use.
    */
-  constructor(wasmModule?: any) {
-    this.wasmModule = wasmModule;
+  constructor(wasmModule?: Pm4WasmModule) {
+    this.wasmModule = wasmModule ?? null;
   }
 
   /**
@@ -245,7 +254,7 @@ export class Pm4wasmBackend implements MiningBackend {
         return {
           run_id: runId,
           status: 'failed',
-          payload: null as any,
+          payload: null as unknown as ModelIR,
           error: `Algorithm ${algorithmId} not supported by Pm4wasmBackend (supported: ${Object.keys(ALGORITHM_MAP).join(', ')})`,
           latency_ms,
           latency_class: deriveLatencyClass(latency_ms),
@@ -264,7 +273,7 @@ export class Pm4wasmBackend implements MiningBackend {
         return {
           run_id: runId,
           status: 'partial',
-          payload: null as any,
+          payload: null as unknown as ModelIR,
           error: `budget_exceeded: algorithm requires ${algo.budgetTier} but budget is ${budget.latencyBudget}`,
           latency_ms,
           latency_class: deriveLatencyClass(latency_ms),
@@ -323,7 +332,7 @@ export class Pm4wasmBackend implements MiningBackend {
         return {
           run_id: runId,
           status: 'partial',
-          payload: null as any,
+          payload: null as unknown as ModelIR,
           error: `budget_exceeded: ${errorMsg}`,
           latency_ms,
           latency_class: deriveLatencyClass(latency_ms),
@@ -339,7 +348,7 @@ export class Pm4wasmBackend implements MiningBackend {
       return {
         run_id: runId,
         status: 'failed',
-        payload: null as any,
+        payload: null as unknown as ModelIR,
         error: `Discovery failed: ${errorMsg}`,
         latency_ms,
         latency_class: deriveLatencyClass(latency_ms),
@@ -582,7 +591,7 @@ export class Pm4wasmBackend implements MiningBackend {
 
     // Call WASM function to parse and store log
     if (this.wasmModule && typeof this.wasmModule.eventlog_from_json === 'function') {
-      return await this.wasmModule.eventlog_from_json(logJson);
+      return String(await this.wasmModule.eventlog_from_json(logJson));
     }
 
     // Fallback: return handle-like string for testing
@@ -611,8 +620,8 @@ export class Pm4wasmBackend implements MiningBackend {
       throw new Error(`WASM function '${wasmFunctionName}' not found in loaded module`);
     }
 
-    // Call the WASM function with the log handle
-    return await fn(logHandle);
+    // Call the WASM function with the log handle; WASM returns serialized JSON string
+    return String(await fn(logHandle));
   }
 
   /**
@@ -625,15 +634,15 @@ export class Pm4wasmBackend implements MiningBackend {
     algorithmId: string
   ): ModelIR {
     // Parse WASM JSON output
-    let parsed: any;
+    let parsed: Record<string, unknown>;
     try {
-      parsed = JSON.parse(wasmOutput);
+      const raw = JSON.parse(wasmOutput) as unknown;
+      parsed = (raw !== null && typeof raw === 'object' && !Array.isArray(raw))
+        ? (raw as Record<string, unknown>)
+        : { nodes: [], edges: [] };
     } catch {
       // Fallback: create stub model
-      parsed = {
-        nodes: [],
-        edges: [],
-      };
+      parsed = { nodes: [], edges: [] };
     }
 
     // Map WASM output to ModelIR
@@ -650,9 +659,9 @@ export class Pm4wasmBackend implements MiningBackend {
         exportable_to_pnml: outputType === 'petri_net',
         exportable_to_bpmn: outputType === 'petri_net',
       },
-      nodes: parsed.nodes || [],
-      edges: parsed.edges || [],
-      quality: parsed.quality || {
+      nodes: (parsed['nodes'] as ReadonlyArray<{ id: string; label: string; type: string }>) || [],
+      edges: (parsed['edges'] as ReadonlyArray<{ from: string; to: string; weight?: number }>) || [],
+      quality: (parsed['quality'] as { fitness: number; precision: number; generalization: number; simplicity: number } | undefined) || {
         fitness: 0.85,
         precision: 0.8,
         generalization: 0.75,
@@ -778,7 +787,7 @@ export class Pm4wasmBackend implements MiningBackend {
    * Load WASM module dynamically.
    * In Phase 2, this will import from @wasm4pm/cli or equivalent.
    */
-  private async loadWasmModule(): Promise<any> {
-    return await import('wasm4pm');
+  private async loadWasmModule(): Promise<Pm4WasmModule> {
+    return await import('wasm4pm') as unknown as Pm4WasmModule;
   }
 }
