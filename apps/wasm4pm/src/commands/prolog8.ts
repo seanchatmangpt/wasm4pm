@@ -192,17 +192,30 @@ const queryCmd = defineCommand({
 
         let queryResult: unknown;
         try {
-          const wasm = loadProlog8();
+          let wasm: Prolog8Module;
+          try {
+            wasm = loadProlog8();
+          } catch (loadErr) {
+            const result = makeErrorResult(
+              'prolog8 query',
+              String(loadErr),
+              EXIT_CODES.source_error,
+              'source_error'
+            );
+            emitResult(result, { format: fmt });
+            return exitWithFlush(EXIT_CODES.source_error);
+          }
           queryResult = parseResult(wasm.prolog8_query(inputJson));
         } catch (err) {
+          // WASM loaded but engine threw during execution (e.g. malformed input)
           const result = makeErrorResult(
             'prolog8 query',
             String(err),
-            EXIT_CODES.source_error,
-            'source_error'
+            EXIT_CODES.execution_error,
+            'execution_error'
           );
           emitResult(result, { format: fmt });
-          return exitWithFlush(EXIT_CODES.source_error);
+          return exitWithFlush(EXIT_CODES.execution_error);
         }
 
         const r = queryResult as Record<string, unknown>;
@@ -321,17 +334,30 @@ const replayCmd = defineCommand({
 
         let replayResult: unknown;
         try {
-          const wasm = loadProlog8();
+          let wasm: Prolog8Module;
+          try {
+            wasm = loadProlog8();
+          } catch (loadErr) {
+            const result = makeErrorResult(
+              'prolog8 replay',
+              String(loadErr),
+              EXIT_CODES.source_error,
+              'source_error'
+            );
+            emitResult(result, { format: fmt });
+            return exitWithFlush(EXIT_CODES.source_error);
+          }
           replayResult = parseResult(wasm.prolog8_replay(inputJson));
         } catch (err) {
+          // WASM loaded but engine threw during replay (e.g. malformed JSON input)
           const result = makeErrorResult(
             'prolog8 replay',
             String(err),
-            EXIT_CODES.source_error,
-            'source_error'
+            EXIT_CODES.execution_error,
+            'execution_error'
           );
           emitResult(result, { format: fmt });
-          return exitWithFlush(EXIT_CODES.source_error);
+          return exitWithFlush(EXIT_CODES.execution_error);
         }
 
         const verified = replayResult === 'Verified';
