@@ -237,17 +237,40 @@ export const swarm = defineCommand({
           };
 
           const swarmResult = await runSwarm(config);
+          const elapsedMs = Math.round(performance.now() - t0);
 
           // Save receipt for audit trail (unless --no-save is specified)
           const noSave = ctx.args['no-save'] === true;
           if (!noSave) {
-            await saveSwarmReceipt(swarmResult, performance.now() - t0, inputPath);
+            await saveSwarmReceipt(swarmResult, elapsedMs, inputPath);
           }
 
           const lastEpisode = swarmResult.episodes[swarmResult.episodes.length - 1];
           const finalReport = lastEpisode?.convergenceReport;
 
           const consensusAlgorithm = finalReport?.algorithm ?? 'unknown';
+
+          // Derive best_result: the healthy worker result whose hash matches
+          // the dominant hash from the final convergence report (i.e. the
+          // result that the majority of workers agree on).  Falls back to
+          // the first healthy worker result when no dominant hash exists, and
+          // to null when all workers failed.
+          const dominantHashValue = finalReport?.dominantHash ?? null;
+          const bestResult: import('@wasm4pm/swarm').WorkerResult | null =
+            swarmResult.finalWorkerResults.find(
+              (r) => !r.failed && (dominantHashValue === null || r.resultHash === dominantHashValue)
+            ) ??
+            swarmResult.finalWorkerResults.find((r) => !r.failed) ??
+            null;
+
+          // summary sub-object: structured overview consumed by downstream tooling
+          const summary = {
+            total_workers: algorithmIds.length,
+            converged_workers: swarmResult.healthyWorkerCount,
+            elapsed_ms: elapsedMs,
+            convergence_achieved: swarmResult.converged,
+          };
+
           const payload = {
             ...swarmResult,
             input: inputPath,
@@ -265,10 +288,19 @@ export const swarm = defineCommand({
                 : 'not_converged',
             consensusAlgorithm,
             consensusRatio: finalReport?.consensusRatio ?? 0,
-            dominantHash: finalReport?.dominantHash ?? null,
+            dominantHash: dominantHashValue,
             dissentingWorkers: finalReport?.dissentingWorkers ?? [],
             stableWorkerCount: swarmResult.healthyWorkerCount,
             failedWorkerCount: swarmResult.failedWorkers.length,
+            // ── New fields closing JSON contract gaps ──────────────────────
+            // best_result: the worker result that represents the consensus
+            // output (dominant-hash match).  null when all workers failed or
+            // no result could be selected.
+            best_result: bestResult,
+            // summary: structured overview for downstream tooling / CI gates.
+            // Fields: total_workers, converged_workers, elapsed_ms,
+            //         convergence_achieved.
+            summary,
           };
 
           const result = makeResult('swarm', payload, performance.now() - t0, EXIT_CODES.success);

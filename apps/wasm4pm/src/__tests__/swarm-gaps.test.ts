@@ -289,13 +289,12 @@ describe('G7–G14 — JSON payload field contract', () => {
     }
   });
 
-  // G9: `best_result` is NOT in the payload — documents missing field gap
-  it('[G9] payload does not have best_result key (gap: not yet implemented)', async () => {
+  // G9: `best_result` IS in the payload — gap closed
+  it('[G9] payload has best_result key (gap closed: field now implemented)', async () => {
     const parsed = await getPayload();
     if (parsed.status === 'ok') {
-      // This test documents the gap: best_result is not yet in the payload.
-      // When the gap is closed, update this test to assert the field IS present.
-      expect(parsed.payload).not.toHaveProperty('best_result');
+      // best_result is now in the payload (may be null when all workers fail)
+      expect(parsed.payload).toHaveProperty('best_result');
     }
   });
 
@@ -308,16 +307,17 @@ describe('G7–G14 — JSON payload field contract', () => {
     }
   });
 
-  // G11: `summary` with sub-keys is NOT in the payload — documents missing field gap
-  it('[G11] payload does not have summary.total_workers key (gap: not yet implemented)', async () => {
+  // G11: `summary` with sub-keys IS in the payload — gap closed
+  it('[G11] payload has summary.total_workers key (gap closed: field now implemented)', async () => {
     const parsed = await getPayload();
     if (parsed.status === 'ok') {
       const summary = parsed.payload?.['summary'] as Record<string, unknown> | undefined;
-      // Either summary is absent, or it does not have the sub-keys the spec requires
-      if (summary !== undefined) {
-        // If summary exists, it currently lacks the standard sub-keys — document them
-        expect(summary).not.toHaveProperty('total_workers');
-      }
+      // summary is now present with the required sub-keys
+      expect(summary).toBeDefined();
+      expect(summary).toHaveProperty('total_workers');
+      expect(summary).toHaveProperty('elapsed_ms');
+      expect(summary).toHaveProperty('convergence_achieved');
+      expect(summary).toHaveProperty('converged_workers');
     }
   });
 
