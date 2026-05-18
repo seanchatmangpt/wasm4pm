@@ -67,9 +67,13 @@ export class DiscoveryCache {
     // Evict oldest if at capacity
     if (this.cache.size >= this.maxEntries) {
       const oldestKey = this.cache.keys().next().value as string;
+      // Retrieve the entry BEFORE deleting so the algorithm index can be cleaned up.
+      // Bug fix: previously `this.cache.get(oldestKey)` was called after
+      // `this.cache.delete(oldestKey)`, which always returned undefined and left
+      // stale references in the algorithm index.
+      const oldestEntry = this.cache.get(oldestKey);
       this.cache.delete(oldestKey);
       // Clean up algorithm index
-      const oldestEntry = this.cache.get(oldestKey);
       if (oldestEntry) {
         const keys = this.algorithmIndex.get(oldestEntry.algorithm);
         if (keys) {
