@@ -52,24 +52,24 @@ fn test_orchestrator_persists_across_cycles() {
 
 #[test]
 fn test_reward_improves_with_health_gain() {
-    let r_good = compute_reward(3, 1, 0, true, true, false);
-    let r_stable = compute_reward(2, 2, 0, true, true, false);
-    let r_bad = compute_reward(1, 3, 0, true, true, false);
+    let r_good = compute_reward(3, 1, 0, true, true, false, 0);
+    let r_stable = compute_reward(2, 2, 0, true, true, false, 0);
+    let r_bad = compute_reward(1, 3, 0, true, true, false, 0);
     assert!(r_good > r_stable);
     assert!(r_stable > r_bad);
 }
 
 #[test]
 fn test_reward_penalizes_spc_alerts() {
-    let r_clean = compute_reward(2, 2, 0, true, true, false);
-    let r_dirty = compute_reward(2, 2, 5, true, true, false);
+    let r_clean = compute_reward(2, 2, 0, true, true, false, 0);
+    let r_dirty = compute_reward(2, 2, 5, true, true, false, 0);
     assert!(r_clean > r_dirty);
 }
 
 #[test]
 fn test_reward_terminal_is_worst() {
-    let r_terminal = compute_reward(3, 4, 0, true, true, false);
-    let r_stable = compute_reward(4, 4, 0, true, true, false); // already at 4
+    let r_terminal = compute_reward(3, 4, 0, true, true, false, 0);
+    let r_stable = compute_reward(4, 4, 0, true, true, false, 0); // already at 4
     assert!(r_terminal <= r_stable);
 }
 
@@ -288,10 +288,10 @@ fn test_reward_penalizes_latency_budget_exceeded() {
     // Verify: latency_budget_exceeded=true → reward -= 0.3
 
     // Baseline reward without latency budget exceeded
-    let r_no_latency = compute_reward(2, 1, 0, true, true, false);
+    let r_no_latency = compute_reward(2, 1, 0, true, true, false, 0);
 
     // Same reward components but with latency budget exceeded
-    let r_with_latency = compute_reward(2, 1, 0, true, true, true);
+    let r_with_latency = compute_reward(2, 1, 0, true, true, true, 0);
 
     // Assert: penalty is exactly -0.3
     let penalty = r_no_latency - r_with_latency;
@@ -303,8 +303,8 @@ fn test_reward_penalizes_latency_budget_exceeded() {
     );
 
     // Additional test: verify latency penalty stacks with other penalties
-    let r_spc_only = compute_reward(2, 2, 1, true, true, false);
-    let r_spc_and_latency = compute_reward(2, 2, 1, true, true, true);
+    let r_spc_only = compute_reward(2, 2, 1, true, true, false, 0);
+    let r_spc_and_latency = compute_reward(2, 2, 1, true, true, true, 0);
     let stacked_penalty = r_spc_only - r_spc_and_latency;
     assert_eq!(
         stacked_penalty, 0.3,
@@ -346,9 +346,9 @@ fn test_mape_k_chain_spc_violations_reduce_reward() {
     // Rank 1: Mathematical theorem — SPC alert count monotonically reduces reward.
     // This verifies the full MAPE-K chain: Protection (SPC) → Optimization (RL reward).
 
-    let r_zero_alerts = compute_reward(2, 2, 0, true, true, false);
-    let r_few_alerts = compute_reward(2, 2, 3, true, true, false);
-    let r_many_alerts = compute_reward(2, 2, 8, true, true, false);
+    let r_zero_alerts = compute_reward(2, 2, 0, true, true, false, 0);
+    let r_few_alerts = compute_reward(2, 2, 3, true, true, false, 0);
+    let r_many_alerts = compute_reward(2, 2, 8, true, true, false, 0);
 
     assert!(
         r_zero_alerts > r_few_alerts,
@@ -394,8 +394,8 @@ fn test_mape_k_chain_spc_shift_detected_and_propagates() {
     );
 
     // Verify the chain: SPC causes propagate to reward reduction
-    let r_baseline = compute_reward(2, 2, 0, true, true, false);
-    let r_shifted = compute_reward(2, 2, shifted_causes.len(), true, true, false);
+    let r_baseline = compute_reward(2, 2, 0, true, true, false, 0);
+    let r_shifted = compute_reward(2, 2, shifted_causes.len(), true, true, false, 0);
     assert!(
         r_shifted < r_baseline,
         "SPC shift alerts must reduce reward: r_baseline={:.4}, r_shifted={:.4}, causes={}",
@@ -444,8 +444,8 @@ fn test_mape_k_chain_circuit_breaker_reduces_reward() {
     // Rank 1: circuit_allowed=false must reduce reward below circuit_allowed=true.
     // This verifies Protection (circuit breaker) → Optimization (reward) chain.
 
-    let r_circuit_open = compute_reward(2, 2, 0, false, true, false);
-    let r_circuit_closed = compute_reward(2, 2, 0, true, true, false);
+    let r_circuit_open = compute_reward(2, 2, 0, false, true, false, 0);
+    let r_circuit_closed = compute_reward(2, 2, 0, true, true, false, 0);
 
     assert!(
         r_circuit_closed > r_circuit_open,
@@ -466,11 +466,11 @@ fn snapshot_reward_function_shape() {
     // Snapshot the reward computation for canonical health transitions.
     // Any change to the reward formula will fail this test.
     let cases = vec![
-        ("normal_healthy", compute_reward(0, 0, 0, true, true, false)),
-        ("degraded_recovering", compute_reward(3, 2, 0, true, true, false)),
-        ("critical_worsening", compute_reward(2, 3, 5, false, false, false)),
-        ("terminal_transition", compute_reward(3, 4, 0, true, true, false)),
-        ("latency_penalty", compute_reward(2, 2, 0, true, true, true)),
+        ("normal_healthy", compute_reward(0, 0, 0, true, true, false, 0)),
+        ("degraded_recovering", compute_reward(3, 2, 0, true, true, false, 0)),
+        ("critical_worsening", compute_reward(2, 3, 5, false, false, false, 0)),
+        ("terminal_transition", compute_reward(3, 4, 0, true, true, false, 0)),
+        ("latency_penalty", compute_reward(2, 2, 0, true, true, true, 0)),
     ];
     // Round to 4 decimal places for float stability
     let rounded: Vec<(&str, f64)> = cases

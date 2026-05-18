@@ -339,6 +339,7 @@ fn d6_open_circuit_reward_strictly_lower_than_closed() {
         guard_pass,
         true,  // circuit_allowed
         false, // latency_budget_exceeded
+        0,     // rework_ratio_q
     );
 
     // Open circuit — circuit_allowed = false.
@@ -349,6 +350,7 @@ fn d6_open_circuit_reward_strictly_lower_than_closed() {
         guard_pass,
         false, // circuit_allowed
         false,
+        0,     // rework_ratio_q
     );
 
     // Domain contract: Open circuit must yield strictly lower reward.
@@ -369,8 +371,8 @@ fn d6_open_circuit_reward_strictly_lower_than_closed() {
 
     // Metamorphic: adding SPC alerts should not change the circuit delta.
     // The penalty is additive; the guard/circuit component is independent.
-    let reward_closed_spc = compute_reward(prev_health, curr_health, 3, guard_pass, true, false);
-    let reward_open_spc = compute_reward(prev_health, curr_health, 3, guard_pass, false, false);
+    let reward_closed_spc = compute_reward(prev_health, curr_health, 3, guard_pass, true, false, 0);
+    let reward_open_spc = compute_reward(prev_health, curr_health, 3, guard_pass, false, false, 0);
     let delta_spc = reward_closed_spc - reward_open_spc;
 
     assert!(

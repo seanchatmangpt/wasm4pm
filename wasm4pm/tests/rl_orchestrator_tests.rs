@@ -99,7 +99,7 @@ fn test_telemetry_default() {
 #[test]
 fn test_compute_reward_health_improvement() {
     // Health improved (2 -> 1), no SPC alerts, guards pass
-    let reward = compute_reward(2, 1, 0, true, true, false);
+    let reward = compute_reward(2, 1, 0, true, true, false, 0);
     assert!(
         reward > 0.0,
         "Health improvement should yield positive reward"
@@ -109,7 +109,7 @@ fn test_compute_reward_health_improvement() {
 #[test]
 fn test_compute_reward_health_degradation() {
     // Health degraded (1 -> 3), no SPC alerts
-    let reward = compute_reward(1, 3, 0, true, true, false);
+    let reward = compute_reward(1, 3, 0, true, true, false, 0);
     assert!(
         reward < 0.0,
         "Health degradation should yield negative reward"
@@ -119,8 +119,8 @@ fn test_compute_reward_health_degradation() {
 #[test]
 fn test_compute_reward_spc_penalty() {
     // Stable health, but SPC alerts
-    let reward_with_alerts = compute_reward(1, 1, 5, true, true, false);
-    let reward_no_alerts = compute_reward(1, 1, 0, true, true, false);
+    let reward_with_alerts = compute_reward(1, 1, 5, true, true, false, 0);
+    let reward_no_alerts = compute_reward(1, 1, 0, true, true, false, 0);
     assert!(
         reward_with_alerts < reward_no_alerts,
         "SPC alerts should decrease reward"
@@ -130,8 +130,8 @@ fn test_compute_reward_spc_penalty() {
 #[test]
 fn test_compute_reward_terminal_penalty() {
     // Terminal state (health == 4)
-    let reward_terminal = compute_reward(3, 4, 0, true, true, false);
-    let reward_stable = compute_reward(3, 3, 0, true, true, false);
+    let reward_terminal = compute_reward(3, 4, 0, true, true, false, 0);
+    let reward_stable = compute_reward(3, 3, 0, true, true, false, 0);
     assert!(
         reward_terminal < reward_stable,
         "Terminal state should have extra penalty"
@@ -141,16 +141,16 @@ fn test_compute_reward_terminal_penalty() {
 #[test]
 fn test_compute_reward_bounded() {
     // Test extreme inputs to verify boundedness
-    let max_reward = compute_reward(4, 0, 0, true, true, false); // best case
-    let min_reward = compute_reward(0, 4, 100, false, false, false); // worst case
+    let max_reward = compute_reward(4, 0, 0, true, true, false, 0); // best case
+    let min_reward = compute_reward(0, 4, 100, false, false, false, 7); // worst case
     assert!(max_reward < 2.0, "Reward should be bounded above");
     assert!(min_reward > -10.0, "Reward should be bounded below");
 }
 
 #[test]
 fn test_compute_reward_circuit_failure() {
-    let reward_ok = compute_reward(1, 1, 0, true, true, false);
-    let reward_fail = compute_reward(1, 1, 0, true, false, false);
+    let reward_ok = compute_reward(1, 1, 0, true, true, false, 0);
+    let reward_fail = compute_reward(1, 1, 0, true, false, false, 0);
     assert!(
         reward_fail < reward_ok,
         "Circuit breaker failure should decrease reward"
@@ -536,49 +536,49 @@ fn fm1_no_self_referential_bellman_when_state_equals_next_state() {
 #[test]
 fn rank2_reward_exact_component_values() {
     // Health improvement: prev=2, curr=1 → +1.0 + 0.1 = +1.1
-    let r_improve = compute_reward(2, 1, 0, true, true, false);
+    let r_improve = compute_reward(2, 1, 0, true, true, false, 0);
     assert!(
         (r_improve - 1.1).abs() < 1e-6,
         "health improvement: expected 1.1, got {r_improve}"
     );
 
     // Health stability: prev=2, curr=2 → +0.2 + 0.1 = +0.3
-    let r_stable = compute_reward(2, 2, 0, true, true, false);
+    let r_stable = compute_reward(2, 2, 0, true, true, false, 0);
     assert!(
         (r_stable - 0.3).abs() < 1e-6,
         "health stability: expected 0.3, got {r_stable}"
     );
 
     // Degradation (non-terminal): prev=1, curr=2 → -1.0 + 0.1 = -0.9
-    let r_degrade = compute_reward(1, 2, 0, true, true, false);
+    let r_degrade = compute_reward(1, 2, 0, true, true, false, 0);
     assert!(
         (r_degrade - (-0.9)).abs() < 1e-6,
         "health degradation: expected -0.9, got {r_degrade}"
     );
 
     // 1 SPC alert (stable health, guard+circuit pass): 0.2 + 0.1 - 0.3 = 0.0
-    let r_1spc = compute_reward(1, 1, 1, true, true, false);
+    let r_1spc = compute_reward(1, 1, 1, true, true, false, 0);
     assert!(
         r_1spc.abs() < 1e-6,
         "1 SPC alert: expected 0.0, got {r_1spc}"
     );
 
     // 5 SPC alerts (capped at -1.5): 0.2 + 0.1 - 1.5 = -1.2
-    let r_5spc = compute_reward(1, 1, 5, true, true, false);
+    let r_5spc = compute_reward(1, 1, 5, true, true, false, 0);
     assert!(
         (r_5spc - (-1.2)).abs() < 1e-6,
         "5 SPC alerts (cap): expected -1.2, got {r_5spc}"
     );
 
     // Both guard and circuit fail (single -0.5 penalty): 0.2 - 0.5 = -0.3
-    let r_both_fail = compute_reward(1, 1, 0, false, false, false);
+    let r_both_fail = compute_reward(1, 1, 0, false, false, false, 0);
     assert!(
         (r_both_fail - (-0.3)).abs() < 1e-6,
         "guard+circuit both fail: expected -0.3, got {r_both_fail}"
     );
 
     // Terminal degradation: prev=3, curr=4 → -1.0 + 0.1 - 2.0 = -2.9
-    let r_terminal = compute_reward(3, 4, 0, true, true, false);
+    let r_terminal = compute_reward(3, 4, 0, true, true, false, 0);
     assert!(
         (r_terminal - (-2.9)).abs() < 1e-6,
         "terminal degradation: expected -2.9, got {r_terminal}"
