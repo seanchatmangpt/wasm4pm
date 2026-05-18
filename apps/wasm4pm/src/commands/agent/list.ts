@@ -35,6 +35,7 @@ export const list = defineCommand({
   async run(ctx) {
     return withSpanRaw('wasm4pm.command.agent.list', {
       command: 'agent', subcommand: 'list',
+      filter: String(ctx.args.filter ?? ''),
     }, async () => {
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';

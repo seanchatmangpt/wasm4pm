@@ -21,6 +21,7 @@ import type {
   ConformanceResult,
   AnalysisTask,
   ProvenanceChain,
+  KernelWasmModule,
 } from '@wasm4pm/kernel';
 import { DefaultBackendRegistry, WasmBackend, MlBackend } from '@wasm4pm/kernel';
 import { NullBackend } from './null-backend.js';
@@ -379,7 +380,7 @@ export class FederationController {
  * ```
  */
 export async function initializeFederationStack(
-  wasmModule: any, // KernelWasmModule
+  wasmModule: KernelWasmModule,
   pm4pyMcpPath: string = 'pm4py-mcp'
 ): Promise<FederationController> {
   const registry = new DefaultBackendRegistry();

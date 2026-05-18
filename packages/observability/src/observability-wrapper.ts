@@ -7,7 +7,7 @@
 import { ObservabilityLayer } from './observability.js';
 import { SecretRedaction } from './secret-redaction.js';
 import { createRequiredFields } from './fields.js';
-import { generateTraceId, generateSpanId } from './context.js';
+import { generateTraceId, generateSpanId, type SpanContext } from './context.js';
 import {
   CliEvent,
   JsonEvent,
@@ -251,7 +251,7 @@ export class ObservabilityWrapper {
     return {
       startSpan: (
         name: string,
-        options?: { kind?: SpanKind; parent?: any; attributes?: Record<string, unknown> }
+        options?: { kind?: SpanKind; parent?: SpanContext; attributes?: Record<string, unknown> }
       ) => {
         const traceId = options?.parent?.traceId || generateTraceId();
         const parentSpanId = options?.parent?.spanId;

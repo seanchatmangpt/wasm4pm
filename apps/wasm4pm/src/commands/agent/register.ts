@@ -25,9 +25,10 @@ export const register = defineCommand({
     },
   },
   async run(ctx) {
+    const configPath = String(ctx.args.config ?? '');
     return withSpanRaw('wasm4pm.command.agent.register', {
       command: 'agent', subcommand: 'register',
-      config: String(ctx.args.config ?? ''),
+      config_path: configPath,
     }, async () => {
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
@@ -35,7 +36,6 @@ export const register = defineCommand({
     const quiet = false;
 
     try {
-      const configPath = ctx.args.config as string;
       const raw = readFileSync(configPath, 'utf-8');
       const config: AgentConfig = JSON.parse(raw);
 

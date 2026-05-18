@@ -34,7 +34,8 @@ export const audit = defineCommand({
   async run(ctx) {
     return withSpanRaw('wasm4pm.command.agent.audit', {
       command: 'agent', subcommand: 'audit',
-      last: Number(ctx.args.last ?? 0),
+      agent_id: String(ctx.args.agent ?? ''),
+      limit: Number(ctx.args.last ?? 0),
     }, async () => {
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
