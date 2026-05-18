@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
 import {
-  RefinementOrchestrator,
+
   initRefinementState,
   stepRefinement,
   serializeState,
   deserializeState,
-} from '../refinement-orchestrator';
+} from '../refinement-orchestrator.js';
 
 const BASE_CTX = {
   ocel_path: '/tmp/test.ocel',

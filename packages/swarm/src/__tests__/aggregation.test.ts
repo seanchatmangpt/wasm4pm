@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { aggregate } from '../aggregation';
-import type { WorkerResult } from '../types';
+import { aggregate } from '../aggregation.js';
+import type { WorkerResult } from '../types.js';
 
 function makeResult(workerId: string, algorithmId: string, data: unknown, hash?: string): WorkerResult {
   return {
@@ -8,7 +8,7 @@ function makeResult(workerId: string, algorithmId: string, data: unknown, hash?:
     algorithmId,
     result: data,
     resultHash: hash ?? String(JSON.stringify(data)).length.toString(),
-    timestamp: Date.now(),
+    runAt: new Date().toISOString(), durationMs: 100,
     success: true,
   } as WorkerResult;
 }

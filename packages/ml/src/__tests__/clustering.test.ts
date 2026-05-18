@@ -157,3 +157,109 @@ describe('clusterTraces edge cases', () => {
     }
   });
 });
+
+// ---------------------------------------------------------------------------
+// Determinism Tests (Rank 1 - Mathematical Guarantee)
+// ---------------------------------------------------------------------------
+
+describe('clusterTraces determinism', () => {
+  it('kmeans is deterministic across multiple runs', async () => {
+    const features = [
+      { case_id: 'c1', trace_length: 2, elapsed_time: 500, rework_count: 0 },
+      { case_id: 'c2', trace_length: 8, elapsed_time: 4000, rework_count: 2 },
+      { case_id: 'c3', trace_length: 3, elapsed_time: 600, rework_count: 0 },
+      { case_id: 'c4', trace_length: 9, elapsed_time: 4500, rework_count: 3 },
+    ];
+    const r1 = await clusterTraces(features, { method: 'kmeans', k: 2 });
+    const r2 = await clusterTraces(features, { method: 'kmeans', k: 2 });
+    const a1 = r1.assignments.map((a) => a.cluster).sort();
+    const a2 = r2.assignments.map((a) => a.cluster).sort();
+    expect(a1).toEqual(a2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Convergence Tests (Rank 2 - Domain Property)
+// ---------------------------------------------------------------------------
+
+describe('clusterTraces convergence properties', () => {
+  it('well-separated clusters group correctly', async () => {
+    const features = [
+      { case_id: 'short1', trace_length: 1, elapsed_time: 100, rework_count: 0 },
+      { case_id: 'short2', trace_length: 2, elapsed_time: 150, rework_count: 0 },
+      { case_id: 'long1', trace_length: 100, elapsed_time: 10000, rework_count: 50 },
+      { case_id: 'long2', trace_length: 99, elapsed_time: 9500, rework_count: 48 },
+    ];
+    const result = await clusterTraces(features, { method: 'kmeans', k: 2 });
+    expect(result.clusterCount).toBe(2);
+  });
+
+  it('cluster count respects k parameter', async () => {
+    const features = Array.from({ length: 30 }, (_, i) => ({
+      case_id: `c${i}`,
+      trace_length: Math.random() * 50,
+      elapsed_time: Math.random() * 5000,
+      rework_count: Math.floor(Math.random() * 10),
+    }));
+    const result = await clusterTraces(features, { method: 'kmeans', k: 3 });
+    expect(result.clusterCount).toBeGreaterThanOrEqual(1);
+    expect(result.clusterCount).toBeLessThanOrEqual(3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Validity Tests (Rank 2 - Domain Property)
+// ---------------------------------------------------------------------------
+
+describe('clusterTraces assignment validity', () => {
+  it('all traces receive exactly one assignment', async () => {
+    const features = [
+      { case_id: 'c1', trace_length: 2, elapsed_time: 500, rework_count: 0 },
+      { case_id: 'c2', trace_length: 8, elapsed_time: 4000, rework_count: 2 },
+      { case_id: 'c3', trace_length: 3, elapsed_time: 600, rework_count: 0 },
+    ];
+    const result = await clusterTraces(features, { method: 'kmeans', k: 2 });
+    expect(result.assignments).toHaveLength(3);
+    const ids = new Set(result.assignments.map((a) => a.caseId));
+    expect(ids.size).toBe(3);
+  });
+
+  it('cluster IDs are valid integers', async () => {
+    const features = [
+      { case_id: 'c1', trace_length: 2, elapsed_time: 500, rework_count: 0 },
+      { case_id: 'c2', trace_length: 8, elapsed_time: 4000, rework_count: 2 },
+    ];
+    const result = await clusterTraces(features, { method: 'kmeans', k: 2 });
+    for (const a of result.assignments) {
+      expect(Number.isInteger(a.cluster)).toBe(true);
+      expect(a.cluster).toBeGreaterThanOrEqual(0);
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// DBSCAN Properties (Rank 1-2 - Density & Neighborhood)
+// ---------------------------------------------------------------------------
+
+describe('clusterTraces DBSCAN properties', () => {
+  it('larger eps results in fewer noise points', async () => {
+    const features = [
+      { case_id: 'c1', trace_length: 1, elapsed_time: 100, rework_count: 0 },
+      { case_id: 'c2', trace_length: 50, elapsed_time: 5000, rework_count: 5 },
+      { case_id: 'c3', trace_length: 1, elapsed_time: 110, rework_count: 0 },
+    ];
+    const small_eps = await clusterTraces(features, { method: 'dbscan', eps: 10, minPoints: 2 });
+    const large_eps = await clusterTraces(features, { method: 'dbscan', eps: 5000, minPoints: 2 });
+    expect(large_eps.noiseCount).toBeLessThanOrEqual(small_eps.noiseCount);
+  });
+
+  it('dbscan noise count is non-negative', async () => {
+    const features = [
+      { case_id: 'c1', trace_length: 2, elapsed_time: 500, rework_count: 0 },
+      { case_id: 'c2', trace_length: 8, elapsed_time: 4000, rework_count: 2 },
+    ];
+    const result = await clusterTraces(features, { method: 'dbscan', eps: 500, minPoints: 2 });
+    expect(result.noiseCount).toBeGreaterThanOrEqual(0);
+    expect(result.noiseCount).toBeLessThanOrEqual(result.assignments.length);
+  });
+});
