@@ -563,6 +563,15 @@ pub mod rl_stability_monitor;
 #[cfg(feature = "cloud")]
 pub use rl_stability_monitor::RlStabilityMonitor;
 
+// RL Dimensionality Analysis — analyzes state space coverage and dimension usage
+#[cfg(feature = "cloud")]
+pub mod rl_dimensionality_analysis;
+#[cfg(feature = "cloud")]
+pub use rl_dimensionality_analysis::{
+    analyze_dimension_usage, format_dimensionality_report, DimensionalityAnalyzer,
+    DimensionUsageReport, StateClustering,
+};
+
 // Action Dispatch Layer — converts RL action labels to executable operations
 #[cfg(feature = "cloud")]
 pub mod action_dispatch;

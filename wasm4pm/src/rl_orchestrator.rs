@@ -501,6 +501,46 @@ impl RlOrchestrator {
         }
     }
 
+    /// Analyze dimensionality of visited state space.
+    ///
+    /// **Rank-1 Oracle:** Deterministic measurement of dimension coverage.
+    /// Reconstructs visited states from stored bins and analyzes per-dimension usage,
+    /// interactions, and bottlenecks.
+    ///
+    /// This method requires access to the full RlState values. Since only state bins
+    /// (u32) are stored in `visited_states`, this method reconstructs approximate
+    /// RlState instances by inverse-transforming the bin values.
+    ///
+    /// **Performance:** O(n) where n = number of visited bins (typically < 1000).
+    #[cfg(feature = "cloud")]
+    pub fn analyze_dimensionality(&self) -> crate::DimensionalityAnalyzer {
+        // Reconstruct RlState instances from visited bins
+        let mut states = Vec::new();
+        for &bin in &self.visited_states {
+            let h = (bin / 61440) as u8;
+            let e = ((bin % 61440) / 7680) as u8;
+            let a = ((bin % 7680) / 960) as u8;
+            let s = ((bin % 960) / 240) as u8;
+            let d = ((bin % 240) / 80) as u8;
+            let r = ((bin % 80) / 10) as u8;
+            let c = ((bin % 10) / 3) as u8;
+            let p = (bin % 3) as u8;
+
+            states.push(RlState {
+                health_level: h,
+                event_rate_q: e,
+                activity_count_q: a,
+                spc_alert_level: s,
+                drift_status: d,
+                rework_ratio_q: r,
+                circuit_state: c,
+                cycle_phase: p,
+            });
+        }
+
+        crate::analyze_dimension_usage(&states, self.telemetry.cycle_count)
+    }
+
     /// Select action using the active RL agent.
     pub fn select_action(&self, state: &RlState) -> RlAction {
         self.agents[self.active_agent as usize].select_action(state)
@@ -760,6 +800,45 @@ impl RlOrchestrator {
                 service_name = "wpm",
                 "state coverage diagnostics"
             );
+
+            // Emit dimensionality analysis span (detailed per-dimension metrics)
+            #[cfg(feature = "cloud")]
+            {
+                let analyzer = self.analyze_dimensionality();
+                let bottleneck_dims = &analyzer.clustering.bottleneck_dimensions;
+                let high_var_dims = &analyzer.clustering.high_variance_dimensions;
+
+                tracing::info!(
+                    rl_unique_states = analyzer.clustering.unique_states,
+                    rl_total_observed_states = analyzer.clustering.total_states_observed,
+                    rl_health_spc_interaction_coverage = analyzer.clustering.health_spc_interaction_coverage,
+                    rl_circuit_drift_interaction_coverage = analyzer.clustering.circuit_drift_interaction_coverage,
+                    rl_bottleneck_dimensions_count = bottleneck_dims.len(),
+                    rl_high_variance_dimensions_count = high_var_dims.len(),
+                    rl_state_distribution_entropy = analyzer.clustering.state_distribution_entropy,
+                    rl_cycle_count = analyzer.total_cycles,
+                    service_name = "wpm",
+                    "rl.state_space.dimensionality"
+                );
+
+                // Emit detailed per-dimension metrics
+                for (i, report) in analyzer.per_dimension_reports.iter().enumerate() {
+                    let dim_name = &report.dimension_name;
+                    tracing::debug!(
+                        rl_dimension_index = i,
+                        rl_dimension_name = dim_name.as_str(),
+                        rl_dimension_min = report.min_value,
+                        rl_dimension_max = report.max_value,
+                        rl_dimension_unique_count = report.unique_count,
+                        rl_dimension_coverage_percent = report.coverage_percent,
+                        rl_dimension_is_bottleneck = report.is_bottleneck,
+                        rl_dimension_is_high_variance = report.is_high_variance,
+                        rl_dimension_gaps_count = report.gaps.len(),
+                        service_name = "wpm",
+                        "rl.dimension.analysis"
+                    );
+                }
+            }
         }
 
         // LinUCB agent selection (if enabled)
