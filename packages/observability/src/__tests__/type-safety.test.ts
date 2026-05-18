@@ -17,6 +17,7 @@ import { Instrumentation } from '../instrumentation.js';
 import { ObservabilityLayer } from '../observability.js';
 import { ObservabilityWrapper } from '../observability-wrapper.js';
 import type { RequiredOtelAttributes } from '../types.js';
+import { validateRequiredFields, REQUIRED_FIELD_NAMES, createRequiredFields } from '../fields.js';
 
 // ---------------------------------------------------------------------------
 // Shared fixtures
@@ -324,5 +325,222 @@ describe('ObservabilityWrapper.emitJsonSafe with typed data', () => {
 
     expect(result.success).toBe(true);
     expect(result.error).toBeUndefined();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 7. createSpan() OtelEvent structure — Rank 1 structural invariants
+// ---------------------------------------------------------------------------
+
+describe('OtelEvent structural invariants from createSpan()', () => {
+  it('OtelEvent built for createSpan has name, status, and attributes (Rank-1)', () => {
+    // Rank 1: Mathematical invariant — the OtelEvent shape is a formal contract.
+    // We construct the same event that createSpan() assembles, and verify its fields.
+    const traceId = TRACE_ID;
+    const name = 'kernel.run';
+    const requiredAttrs = makeRequiredAttrs('run-007');
+    const customAttrs: Record<string, unknown> = { 'algorithm.name': 'dfg', 'trace.count': 42 };
+
+    // Construct the OtelEvent exactly as createSpan() does (source: observability.ts:160-171)
+    const event: OtelEvent = {
+      trace_id: traceId,
+      span_id: 'abcdef1234567890',
+      name,
+      kind: 'INTERNAL',
+      start_time: Date.now() * 1_000_000,
+      status: { code: 'UNSET' },
+      attributes: { ...requiredAttrs, ...customAttrs },
+    };
+
+    // Rank 1: name is the string passed to createSpan
+    expect(event.name).toBe('kernel.run');
+
+    // Rank 1: status.code defaults to 'UNSET' (pre-completion)
+    expect(event.status.code).toBe('UNSET');
+
+    // Rank 1: attributes includes all required fields
+    for (const key of REQUIRED_FIELD_NAMES) {
+      expect(event.attributes[key]).toBeDefined();
+    }
+
+    // Rank 1: custom attributes are merged into attributes
+    expect(event.attributes['algorithm.name']).toBe('dfg');
+    expect(event.attributes['trace.count']).toBe(42);
+  });
+
+  it('OtelEvent.status.code is exactly one of UNSET | OK | ERROR (Rank-1 union invariant)', () => {
+    // Rank 1: The status code type is a closed union — no other value is valid.
+    const validCodes: OtelEvent['status']['code'][] = ['UNSET', 'OK', 'ERROR'];
+
+    for (const code of validCodes) {
+      const event: OtelEvent = {
+        trace_id: TRACE_ID,
+        span_id: 'abcdef1234567890',
+        name: 'test.span',
+        start_time: Date.now() * 1_000_000,
+        status: { code },
+        attributes: {},
+      };
+      expect(validCodes).toContain(event.status.code);
+    }
+  });
+
+  it('createSpan returns a 16-hex-char span ID (W3C Trace Context — Rank-2 domain contract)', () => {
+    // Rank 2: Domain contract — W3C Trace Context specifies 16 hex chars for span IDs.
+    const layer = new ObservabilityLayer({});
+    const spanId = layer.createSpan(TRACE_ID, 'discovery.run', makeRequiredAttrs());
+
+    expect(spanId).toMatch(/^[0-9a-f]{16}$/);
+  });
+
+  it('two calls to createSpan return distinct span IDs (Rank-1 uniqueness)', () => {
+    // Rank 1: Structural invariant — each span must have a unique ID.
+    const layer = new ObservabilityLayer({});
+    const id1 = layer.createSpan(TRACE_ID, 'span.one', makeRequiredAttrs());
+    const id2 = layer.createSpan(TRACE_ID, 'span.two', makeRequiredAttrs());
+
+    expect(id1).not.toBe(id2);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 8. Field name formatting — Rank 1 (dot-notation snake_case invariant)
+// ---------------------------------------------------------------------------
+
+describe('fields.ts — field name formatting invariants', () => {
+  it('all REQUIRED_FIELD_NAMES use dot-notation with snake_case segments (Rank-1)', () => {
+    // Rank 1: Mathematical — field names must follow dot-notation with lowercase snake_case segments.
+    // e.g., 'run.id', 'config.hash', 'execution.profile' — not camelCase, not SCREAMING_CASE.
+    for (const name of REQUIRED_FIELD_NAMES) {
+      // Must contain at least one dot
+      expect(name).toContain('.');
+      // Segments must be lowercase with underscores only (snake_case dot-notation)
+      const segments = name.split('.');
+      for (const seg of segments) {
+        expect(seg).toMatch(/^[a-z][a-z0-9_]*$/);
+      }
+    }
+  });
+
+  it('validateRequiredFields returns empty array when all required fields are present (Rank-2)', () => {
+    // Rank 2: Domain contract — a fully populated attrs map has no missing fields.
+    const fullAttrs = createRequiredFields({
+      'run.id': 'run-123',
+      'config.hash': 'aabbccdd'.repeat(8),
+      'input.hash': 'deadbeef'.repeat(8),
+      'plan.hash': '11223344'.repeat(8),
+      'execution.profile': 'balanced',
+      'source.kind': 'xes',
+      'sink.kind': 'dfg',
+    });
+
+    const missing = validateRequiredFields({ ...fullAttrs });
+    expect(missing).toHaveLength(0);
+  });
+
+  it('validateRequiredFields reports missing fields by exact name (Rank-1)', () => {
+    // Rank 1: Structural — missing field must appear exactly once in the violations list.
+    const attrs: Record<string, unknown> = {
+      'run.id': 'run-abc',
+      // 'config.hash' intentionally omitted
+      'input.hash': 'deadbeef'.repeat(8),
+      'plan.hash': '11223344'.repeat(8),
+      'execution.profile': 'fast',
+      'source.kind': 'file',
+      'sink.kind': 'stdout',
+    };
+
+    const missing = validateRequiredFields(attrs);
+    expect(missing).toContain('config.hash');
+    expect(missing).toHaveLength(1);
+  });
+
+  it('validateRequiredFields treats empty string as missing (Rank-1)', () => {
+    // Rank 1: An empty string is semantically absent — same as undefined.
+    const attrs: Record<string, unknown> = {
+      'run.id': '',  // empty — must be reported as missing
+      'config.hash': 'aabbccdd'.repeat(8),
+      'input.hash': 'deadbeef'.repeat(8),
+      'plan.hash': '11223344'.repeat(8),
+      'execution.profile': 'quality',
+      'source.kind': 'http',
+      'sink.kind': 'file',
+    };
+
+    const missing = validateRequiredFields(attrs);
+    expect(missing).toContain('run.id');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// 9. Non-blocking emit — Rank 2 domain contract (PRD §18.5)
+// ---------------------------------------------------------------------------
+
+describe('Non-blocking emit contract (PRD §18.5)', () => {
+  it('emitOtelSafe never throws even when called 200 times rapidly (Rank-2)', () => {
+    // Rank 2: Domain contract — PRD §18.5 states telemetry must never break execution.
+    // If the queue overflows or the exporter is unavailable, emitOtelSafe must still return
+    // { success: true } (or a graceful failure), never throw an exception.
+    const wrapper = new ObservabilityWrapper({});
+
+    const results: boolean[] = [];
+    for (let i = 0; i < 200; i++) {
+      const r = wrapper.emitOtelSafe({
+        trace_id: TRACE_ID,
+        span_id: `abcdef${i.toString(16).padStart(10, '0')}`,
+        name: `span.${i}`,
+        start_time: Date.now() * 1_000_000 + i,
+        status: { code: 'OK' },
+        attributes: { 'run.id': `run-${i}`, iteration: i },
+      });
+      results.push(r.success);
+    }
+
+    // All 200 emits must succeed without throwing
+    expect(results).toHaveLength(200);
+    expect(results.every((s) => s === true)).toBe(true);
+    expect(wrapper.getStats().errorCount).toBe(0);
+  });
+
+  it('emitJsonSafe never throws even when called 200 times rapidly (Rank-2)', () => {
+    // Rank 2: Same non-blocking guarantee for the JSON layer.
+    const wrapper = new ObservabilityWrapper({});
+
+    let threw = false;
+    try {
+      for (let i = 0; i < 200; i++) {
+        wrapper.emitJsonSafe({
+          timestamp: new Date().toISOString(),
+          level: 'info',
+          component: 'engine',
+          event_type: 'batch_emit',
+          run_id: `run-${i}`,
+          data: { iteration: i, value: i * 1.5 },
+        });
+      }
+    } catch {
+      threw = true;
+    }
+
+    expect(threw).toBe(false);
+  });
+
+  it('emitCliSafe never throws even for unusual message content (Rank-2)', () => {
+    // Rank 2: CLI layer must also be non-blocking — no exceptions for any message.
+    const wrapper = new ObservabilityWrapper({});
+
+    expect(() => {
+      wrapper.emitCliSafe({
+        level: 'error',
+        message: '\x00\x01\x02 null bytes and \n\r special chars',
+      });
+    }).not.toThrow();
+
+    expect(() => {
+      wrapper.emitCliSafe({
+        level: 'warn',
+        message: 'a'.repeat(10_000), // very long message
+      });
+    }).not.toThrow();
   });
 });

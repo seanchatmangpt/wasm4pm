@@ -499,7 +499,7 @@ export function checkConfigWarnings(
 
   // Algorithm profile compatibility
   if (config.algorithm?.name && config.execution?.profile) {
-    const result = validateAlgorithmProfile(config.algorithm.name, config.execution.profile as any);
+    const result = validateAlgorithmProfile(config.algorithm.name, config.execution.profile);
     if (!result.compatible && result.warning) {
       warnings.push({ field: 'algorithm.name', warning: result.warning });
     }

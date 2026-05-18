@@ -53,15 +53,45 @@ export function formatDetailedZodError(error: z.ZodError, config: unknown): stri
   return lines.join('\n');
 }
 
+/** Execution profiles from the config schema */
+type ExecutionProfile = 'fast' | 'balanced' | 'quality' | 'stream';
+/** Deployment profiles from the WASM feature flags */
+type DeploymentProfile = 'mobile' | 'iot' | 'edge' | 'fog' | 'browser';
+
 /**
- * Validate algorithm compatibility with the selected deployment profile.
+ * Map a config execution profile to the corresponding WASM deployment profile.
+ * Execution profiles (fast/balanced/quality/stream) are config-layer concepts;
+ * deployment profiles (mobile/iot/edge/fog/browser) are WASM binary concepts.
+ * All execution profiles run against the browser deployment profile by default.
+ */
+function executionToDeploymentProfile(profile: ExecutionProfile): DeploymentProfile {
+  // All standard execution profiles run against the full browser WASM binary.
+  // Deployment-profile restrictions are a build-time concern, not a config-time concern.
+  switch (profile) {
+    case 'fast':
+    case 'balanced':
+    case 'quality':
+    case 'stream':
+      return 'browser';
+  }
+}
+
+/**
+ * Validate algorithm compatibility with the selected profile.
+ * Accepts both execution profiles ('fast' | 'balanced' | 'quality' | 'stream')
+ * and deployment profiles ('mobile' | 'iot' | 'edge' | 'fog' | 'browser').
  * Returns warnings if algorithm is not available in the profile.
  */
 export function validateAlgorithmProfile(
   algorithm: string,
-  profile: 'mobile' | 'iot' | 'edge' | 'fog' | 'browser'
+  profile: ExecutionProfile | DeploymentProfile
 ): { compatible: boolean; warning?: string } {
-  const profileAlgos = getAlgorithmsForProfile(profile);
+  // Map execution profiles to their corresponding deployment profile
+  const deploymentProfile: DeploymentProfile =
+    profile === 'fast' || profile === 'balanced' || profile === 'quality' || profile === 'stream'
+      ? executionToDeploymentProfile(profile)
+      : profile;
+  const profileAlgos = getAlgorithmsForProfile(deploymentProfile);
 
   if (!ALGORITHM_IDS_STR.includes(algorithm)) {
     return {
@@ -75,7 +105,7 @@ export function validateAlgorithmProfile(
     return {
       compatible: false,
       warning: availableInBrowser
-        ? `Algorithm "${algorithm}" is not available in profile "${profile}". Upgrade to "browser" profile to use it.`
+        ? `Algorithm "${algorithm}" is not available in profile "${deploymentProfile}". Upgrade to "browser" profile to use it.`
         : `Algorithm "${algorithm}" is not available in any profile.`,
     };
   }

@@ -46,7 +46,8 @@ describe('Provenance', () => {
     });
 
     it('skips undefined and null values', () => {
-      const map = trackProvenance({ a: undefined, b: null, c: 'ok' } as any, 'env');
+      const input: Record<string, unknown> = { a: undefined, b: null, c: 'ok' };
+      const map = trackProvenance(input, 'env');
       expect(map['a']).toBeUndefined();
       expect(map['b']).toBeUndefined();
       expect(map['c']).toEqual({ value: 'ok', source: 'env' });
