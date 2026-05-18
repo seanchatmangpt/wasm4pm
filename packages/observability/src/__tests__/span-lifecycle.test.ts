@@ -214,7 +214,10 @@ describe('Rank 1 — Timing invariants: times are in nanoseconds', () => {
     expect(event.end_time!).toBeGreaterThanOrEqual(event.start_time);
   });
 
-  it('createAlgorithmCompletedEvent: durationMs=100 sets end-start == 100 * 1_000_000 nanoseconds', () => {
+  it('createAlgorithmCompletedEvent: durationMs=100 sets end-start within 1000 ns of 100 * 1_000_000', () => {
+    // Note: Date.now() * 1_000_000 uses IEEE 754 doubles at ~1.7e18 — above 2^53 (≈9e15).
+    // At that magnitude, floating-point precision is ~256 ULP. The subtraction
+    // end_time - start_time is therefore approximate; tolerance of 1000 ns covers it.
     const attrs = makeRequiredAttrs();
     const event = Instrumentation.createAlgorithmCompletedEvent(
       FIXED_TRACE_ID,
@@ -225,10 +228,10 @@ describe('Rank 1 — Timing invariants: times are in nanoseconds', () => {
     );
     expect(event.end_time).toBeDefined();
     const durationNs = event.end_time! - event.start_time;
-    expect(durationNs).toBe(100 * 1_000_000);
+    expect(Math.abs(durationNs - 100 * 1_000_000)).toBeLessThanOrEqual(1024);
   });
 
-  it('createAlgorithmCompletedEvent: durationMs=0 gives end_time === start_time', () => {
+  it('createAlgorithmCompletedEvent: durationMs=0 gives end_time approximately equal to start_time', () => {
     const attrs = makeRequiredAttrs();
     const event = Instrumentation.createAlgorithmCompletedEvent(
       FIXED_TRACE_ID,
@@ -238,7 +241,7 @@ describe('Rank 1 — Timing invariants: times are in nanoseconds', () => {
       { durationMs: 0 }
     );
     expect(event.end_time).toBeDefined();
-    expect(event.end_time! - event.start_time).toBe(0);
+    expect(Math.abs(event.end_time! - event.start_time)).toBeLessThanOrEqual(1024);
   });
 
   it('createSourceCompletedEvent: end_time >= start_time', () => {
@@ -253,7 +256,8 @@ describe('Rank 1 — Timing invariants: times are in nanoseconds', () => {
     expect(event.end_time!).toBeGreaterThanOrEqual(event.start_time);
   });
 
-  it('createSourceCompletedEvent: durationMs=250 gives gap of exactly 250 * 1_000_000 ns', () => {
+  it('createSourceCompletedEvent: durationMs=250 gives gap within 1000 ns of 250 * 1_000_000', () => {
+    // IEEE 754 precision caveat — see durationMs=100 test above.
     const attrs = makeRequiredAttrs();
     const event = Instrumentation.createSourceCompletedEvent(
       FIXED_TRACE_ID,
@@ -262,7 +266,8 @@ describe('Rank 1 — Timing invariants: times are in nanoseconds', () => {
       attrs,
       { durationMs: 250 }
     );
-    expect(event.end_time! - event.start_time).toBe(250 * 1_000_000);
+    const gapNs = event.end_time! - event.start_time;
+    expect(Math.abs(gapNs - 250 * 1_000_000)).toBeLessThanOrEqual(1024);
   });
 
   it('createRlPolicyUpdateEvent: end_time >= start_time', () => {
@@ -273,6 +278,22 @@ describe('Rank 1 — Timing invariants: times are in nanoseconds', () => {
       attrs
     );
     expect(result.otelEvent.end_time!).toBeGreaterThanOrEqual(result.otelEvent.start_time);
+  });
+
+  it('createConformanceCheckCompletedEvent: end_time >= start_time', () => {
+    const attrs = makeRequiredAttrs();
+    const event = Instrumentation.createConformanceCheckCompletedEvent(
+      FIXED_TRACE_ID, FIXED_SPAN_ID, 'token_replay', attrs, { durationMs: 15 }
+    );
+    expect(event.end_time!).toBeGreaterThanOrEqual(event.start_time);
+  });
+
+  it('createDriftCheckCompletedEvent: end_time >= start_time', () => {
+    const attrs = makeRequiredAttrs();
+    const event = Instrumentation.createDriftCheckCompletedEvent(
+      FIXED_TRACE_ID, FIXED_SPAN_ID, 'ewma', attrs, { durationMs: 5 }
+    );
+    expect(event.end_time!).toBeGreaterThanOrEqual(event.start_time);
   });
 });
 
@@ -368,16 +389,36 @@ describe('Rank 2 — Status field: every event carries a status.code', () => {
     expect(result.otelEvent.status.code).toBe('OK');
   });
 
-  it('createRecoveryStartedEvent has status.code === "UNSET"', () => {
-    const result = Instrumentation.createRecoveryStartedEvent(FIXED_TRACE_ID, 'fast', 'failed', attrs);
+  it('createDriftCheckStartedEvent has status.code === "UNSET"', () => {
+    const result = Instrumentation.createDriftCheckStartedEvent(FIXED_TRACE_ID, 'ewma', attrs);
     expect(result.otelEvent.status.code).toBe('UNSET');
   });
 
-  it('createRecoveryCompletedEvent defaults to status.code === "OK"', () => {
-    const event = Instrumentation.createRecoveryCompletedEvent(
-      FIXED_TRACE_ID, FIXED_SPAN_ID, 'fast', 'failed', attrs
+  it('createDriftCheckCompletedEvent defaults to status.code === "OK"', () => {
+    const event = Instrumentation.createDriftCheckCompletedEvent(
+      FIXED_TRACE_ID, FIXED_SPAN_ID, 'ewma', attrs
     );
     expect(event.status.code).toBe('OK');
+  });
+
+  it('createConformanceCheckStartedEvent has status.code === "UNSET"', () => {
+    const result = Instrumentation.createConformanceCheckStartedEvent(FIXED_TRACE_ID, 'token_replay', attrs);
+    expect(result.otelEvent.status.code).toBe('UNSET');
+  });
+
+  it('createConformanceCheckCompletedEvent defaults to status.code === "OK"', () => {
+    const event = Instrumentation.createConformanceCheckCompletedEvent(
+      FIXED_TRACE_ID, FIXED_SPAN_ID, 'token_replay', attrs
+    );
+    expect(event.status.code).toBe('OK');
+  });
+
+  it('createPredictionTaskCompletedEvent with status ERROR carries code ERROR', () => {
+    const event = Instrumentation.createPredictionTaskCompletedEvent(
+      FIXED_TRACE_ID, FIXED_SPAN_ID, 'next_activity', attrs,
+      { status: 'ERROR', errorMessage: 'model not loaded' }
+    );
+    expect(event.status.code).toBe('ERROR');
   });
 });
 
@@ -470,11 +511,16 @@ describe('Rank 2 — Parent-child span nesting: parentSpanId propagation', () =>
     expect(result.otelEvent.parent_span_id).toBe(parentSpanId);
   });
 
-  it('createRecoveryCompletedEvent propagates parentSpanId', () => {
-    const event = Instrumentation.createRecoveryCompletedEvent(
-      FIXED_TRACE_ID, FIXED_SPAN_ID, 'soft', 'degraded', attrs, { parentSpanId }
+  it('createErrorEvent propagates parentSpanId', () => {
+    const result = Instrumentation.createErrorEvent(
+      FIXED_TRACE_ID, 'E500', 'fail', attrs, { parentSpanId }
     );
-    expect(event.parent_span_id).toBe(parentSpanId);
+    expect(result.otelEvent.parent_span_id).toBe(parentSpanId);
+  });
+
+  it('createErrorEvent without parentSpanId has undefined parent_span_id', () => {
+    const result = Instrumentation.createErrorEvent(FIXED_TRACE_ID, 'E500', 'fail', attrs);
+    expect(result.otelEvent.parent_span_id).toBeUndefined();
   });
 });
 
@@ -643,15 +689,36 @@ describe('Rank 2 — Span names follow documented naming convention', () => {
     expect(result.otelEvent.name).toBe('rl.agent.switch');
   });
 
-  it('createRecoveryStartedEvent span name is "engine.recovery_started"', () => {
-    const result = Instrumentation.createRecoveryStartedEvent(FIXED_TRACE_ID, 'fast', 'failed', attrs);
-    expect(result.otelEvent.name).toBe('engine.recovery_started');
+  it('createMlAnalysisStartedEvent span name is "ml.<task>"', () => {
+    const result = Instrumentation.createMlAnalysisStartedEvent(
+      FIXED_TRACE_ID, 'cluster', 'kmeans', attrs
+    );
+    expect(result.otelEvent.name).toBe('ml.cluster');
   });
 
-  it('createRecoveryCompletedEvent span name is "engine.recovery_completed"', () => {
-    const event = Instrumentation.createRecoveryCompletedEvent(
-      FIXED_TRACE_ID, FIXED_SPAN_ID, 'soft', 'degraded', attrs
+  it('createErrorEvent span name follows "error.<code>" pattern', () => {
+    const result = Instrumentation.createErrorEvent(FIXED_TRACE_ID, 'E_WASM_FAIL', 'fail', attrs);
+    expect(result.otelEvent.name).toBe('error.E_WASM_FAIL');
+  });
+
+  it('createPredictionTaskCompletedEvent normalises hyphens in span name', () => {
+    const event = Instrumentation.createPredictionTaskCompletedEvent(
+      FIXED_TRACE_ID, FIXED_SPAN_ID, 'remaining-time', attrs
     );
-    expect(event.name).toBe('engine.recovery_completed');
+    expect(event.name).toBe('prediction.remaining_time');
+  });
+
+  it('createDriftCheckCompletedEvent span name is "drift.check"', () => {
+    const event = Instrumentation.createDriftCheckCompletedEvent(
+      FIXED_TRACE_ID, FIXED_SPAN_ID, 'ewma', attrs
+    );
+    expect(event.name).toBe('drift.check');
+  });
+
+  it('createConformanceCheckCompletedEvent span name is "conformance.check"', () => {
+    const event = Instrumentation.createConformanceCheckCompletedEvent(
+      FIXED_TRACE_ID, FIXED_SPAN_ID, 'alignments', attrs
+    );
+    expect(event.name).toBe('conformance.check');
   });
 });

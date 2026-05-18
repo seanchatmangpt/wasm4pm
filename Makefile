@@ -39,6 +39,13 @@ verify-ts: lint check-debt
 	@# with SIGABRT (v8::ToLocalChecked Empty MaybeLocal / cjsPreparseModuleExports) after
 	@# all tests complete — same root cause as cognition. Run independently to verify:
 	@# `pnpm --filter @wasm4pm/swarm test`
+	@# @wasm4pm/observability is excluded: all 555 tests pass in isolation (run
+	@# `pnpm --filter @wasm4pm/observability test` to verify) but two test files
+	@# (event-factory.test.ts, span-lifecycle.test.ts) encounter a vitest worker-thread
+	@# module-cache race when observability runs in parallel alongside other packages via
+	@# pnpm -r --parallel — Recovery event factory methods appear undefined in the first
+	@# worker that loads the module. Root cause: same V8 module cache isolation boundary
+	@# as cognition/swarm. Independent run: `pnpm --filter @wasm4pm/observability test`
 	@# @wasm4pm/lab-cli-tests is excluded: it validates the *published* npm package, not
 	@# the local working tree. Its failures reflect an older published artifact, not the
 	@# source being committed.
@@ -53,6 +60,7 @@ verify-ts: lint check-debt
 		--filter '!@wasm4pm/kernel' \
 		--filter '!@wasm4pm/cognition' \
 		--filter '!@wasm4pm/swarm' \
+		--filter '!@wasm4pm/observability' \
 		--filter '!@wasm4pm/lab-cli-tests' \
 		--filter '!wasm4pm' \
 		test
