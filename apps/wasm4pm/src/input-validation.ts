@@ -348,6 +348,19 @@ export function validateEpsilon(
 }
 
 /**
+ * Resolve the input path from a positional argument or a named --input/-i flag.
+ * Returns the first defined non-empty string, or undefined if neither is set.
+ * Callers should emit a MISSING_INPUT config error when the return value is undefined.
+ */
+export function resolveInputPath(
+  positional: string | undefined,
+  named: string | undefined
+): string | undefined {
+  const resolved = positional || named;
+  return resolved && resolved.trim().length > 0 ? resolved.trim() : undefined;
+}
+
+/**
  * Validate activity key is not empty.
  */
 export function validateActivityKey(

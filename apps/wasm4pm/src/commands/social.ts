@@ -62,6 +62,11 @@ export const social = defineCommand({
       type: 'boolean',
       description: 'Skip auto-save and BLAKE3 receipt',
     },
+    'min-weight': {
+      type: 'string',
+      description: 'Minimum edge weight to include (must be >= 0, default: 0)',
+      default: '0',
+    },
   },
   async run(ctx) {
     const t0 = performance.now();
@@ -113,6 +118,20 @@ export const social = defineCommand({
               `Invalid metric: ${metric}. Must be one of: handover, working-together, similar-task`,
               EXIT_CODES.config_error,
               'INVALID_METRIC'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
+
+          // Validate --min-weight: must be a non-negative finite number
+          const minWeightRaw = String(ctx.args['min-weight'] ?? '0');
+          const minWeight = Number(minWeightRaw);
+          if (!Number.isFinite(minWeight) || minWeight < 0) {
+            const result = makeErrorResult(
+              'social',
+              `Invalid --min-weight: ${minWeightRaw}. Must be a non-negative number (>= 0).`,
+              EXIT_CODES.config_error,
+              'INVALID_MIN_WEIGHT'
             );
             emitResult(result, { format, verbose, quiet });
             return await exitWithFlush(result.exit_code);
@@ -184,11 +203,14 @@ export const social = defineCommand({
                 co_occurrences?: number;
               };
               const rawEdges = ((network as Record<string, unknown>).edges ?? []) as RawEdge[];
-              const normalisedEdges = rawEdges.map((e) => ({
-                from: e.from,
-                to: e.to,
-                weight: e.weight ?? e.handovers ?? e.co_occurrences ?? 1,
-              }));
+              const normalisedEdges = rawEdges
+                .map((e) => ({
+                  from: e.from,
+                  to: e.to,
+                  weight: e.weight ?? e.handovers ?? e.co_occurrences ?? 1,
+                }))
+                // Apply --min-weight filter: drop edges below threshold
+                .filter((e) => e.weight >= minWeight);
 
               // Bottleneck detection: flag any resource that originates >50% of all handovers.
               // A single resource dominating handovers signals a concentration-of-work risk
@@ -270,19 +292,27 @@ export const social = defineCommand({
                 };
               }
 
+              const networkNodes = ((network as Record<string, unknown>).nodes ?? []) as Array<{
+                id: string;
+                label?: string;
+              }>;
+
               const payload = {
                 input: inputPath,
                 activityKey,
                 resourceKey,
                 metric,
+                // network_type: machine-readable canonical snake_case discriminator.
+                // Consumers should prefer this over parsing the metric string.
+                network_type: metric === 'handover' ? 'handover' : metric === 'working-together' ? 'working_together' : 'similar_task',
                 similarTaskWarning,
                 network: {
-                  nodes: ((network as Record<string, unknown>).nodes ?? []) as Array<{
-                    id: string;
-                    label?: string;
-                  }>,
+                  nodes: networkNodes,
                   edges: normalisedEdges,
                 },
+                // Convenience counts — callers need not compute .length themselves
+                node_count: networkNodes.length,
+                edge_count: normalisedEdges.length,
                 centrality,
                 bottleneckResources,
                 // NEW (Iteration 12e, Gap R1): Per-resource task specialization metrics
@@ -336,7 +366,7 @@ export const social = defineCommand({
           ); // end withLogSession
         } catch (error) {
           lateStatus = 'error';
-          const result = makeErrorResult('social', error, EXIT_CODES.execution_error);
+          const result = makeErrorResult('social', error, EXIT_CODES.execution_error, 'EXECUTION_ERROR');
           emitResult(result, { format, verbose, quiet });
           return await exitWithFlush(result.exit_code);
         }
