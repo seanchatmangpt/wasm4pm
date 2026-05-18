@@ -197,9 +197,14 @@ export {
   crashEventsToOcel,
   supervisorReportsToOcel,
   detectAbnormalExits,
+  traceGraphToOcelLog,
   type ErlangFrame,
   type ErlangCrashEvent,
   type ErlangSupervisorReport,
+  type TraceGraphOutput,
+  type TraceGraphEvent as ErlangTraceGraphEvent,
+  type OcelLogEvent as ErlangOcelLogEvent,
+  type OcelLog as ErlangOcelLog,
 } from './erlang-bridge.js';
 
 // Prolog8 Rule8/Fact8 compiler helpers — pre-compile Horn clauses for the WASM kernel
