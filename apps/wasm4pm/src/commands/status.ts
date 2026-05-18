@@ -304,15 +304,13 @@ export const status = defineCommand({
           // process.cwd() when run from the monorepo, or two directories up from the CLI dist dir.
           let wasmBinarySize: number | null = null;
           try {
-            // Use import.meta.url to locate the CLI binary and walk up to the workspace root.
-            // dist/bin/wpm.js → ../../.. → workspace root → wasm4pm/pkg/wasm4pm_bg.wasm
+            // Use import.meta.url to locate this module and walk up to the workspace root.
+            // This module compiles to dist/commands/status.js (not dist/bin/wpm.js), so
+            // strip everything from /apps/wasm4pm/dist/ onward to reach the workspace root.
             const cliFileUrl = new URL(import.meta.url);
-            // Translate file:///.../dist/bin/wpm.js to a filesystem path string
             const cliFilePath = cliFileUrl.pathname;
-            // Walk up: dist/bin → dist → apps/wasm4pm → workspace root
-            // This avoids importing 'path' or 'url' modules (already stripped by linter).
-            // Regex to strip the trailing dist/bin/ portion from the path.
-            const workspaceRoot = cliFilePath.replace(/\/apps\/wasm4pm\/dist\/bin\/[^/]+$/, '');
+            // Pattern covers both dist/bin/ and dist/commands/ (and any other dist sub-path)
+            const workspaceRoot = cliFilePath.replace(/\/apps\/wasm4pm\/dist\/.*$/, '');
             const wasmBinaryPath = `${workspaceRoot}/wasm4pm/pkg/wasm4pm_bg.wasm`;
             const wasmStat = await fs.stat(wasmBinaryPath).catch(() => null);
             if (wasmStat) {
@@ -341,6 +339,10 @@ export const status = defineCommand({
                 ml: mlCount,
                 analytics: analyticsCount,
               },
+              // verbose=true: include full algorithm ID list for machine-readable consumers.
+              // Closes the gap where --verbose with --format json returned identical payload
+              // to non-verbose mode. The IDs are the canonical names from @wasm4pm/kernel.
+              algorithms: verbose ? allAlgorithms.map((a) => a.id) : undefined,
               health: {
                 // Summarises WASM + autonomic health in a single machine-readable field.
                 // ok: all subsystems nominal; degraded: autonomic circuit open or health >= Warning;

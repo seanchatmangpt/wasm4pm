@@ -427,15 +427,20 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
     });
 
     it('should handle partial failures or errors gracefully', async () => {
+      // Use comma-separated algorithms in a single positional arg — the correct invocation pattern.
+      // Space-separated args after the first positional are not picked up by citty.
       const result = await runCli([
         'compare',
-        'dfg',
-        'heuristic',
+        'dfg,heuristic',
         '--input',
         'test.xes',
       ]);
       // Can succeed, partially fail, or error depending on log and WASM state
-      expect([EXIT_CODES.success, EXIT_CODES.source_error, EXIT_CODES.partial_failure]).toContain(result.exitCode);
+      // exit 1 = config_error (e.g. file not found before WASM loads in some paths)
+      // exit 2 = source_error (file not found)
+      // exit 3 = execution_error (WASM failure)
+      // exit 4 = partial_failure (some algorithms failed)
+      expect([EXIT_CODES.config_error, EXIT_CODES.source_error, EXIT_CODES.execution_error, EXIT_CODES.partial_failure]).toContain(result.exitCode);
     });
 
     it('should return exit code 4 (partial failure) when some algorithms fail', async () => {
@@ -740,27 +745,25 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
     });
 
     it('should exit 2 on source error (invalid input file)', async () => {
+      // Use comma-separated algorithms in a single positional arg — citty only captures the first positional.
       const result = await runCli([
         'compare',
-        'dfg',
-        'heuristic',
+        'dfg,heuristic',
         '--input',
         '/nonexistent.xes',
       ]);
-      expect([EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(
-        result.exitCode
-      );
+      expect(result.exitCode).toBe(EXIT_CODES.source_error);
     });
 
-    it('should exit 3 or 0 on algorithm execution (depends on WASM state)', async () => {
+    it('should exit 1 on config error or 2 on source error for algorithm execution (depends on WASM state)', async () => {
+      // Use comma-separated algorithms — the correct invocation pattern.
       const result = await runCli([
         'compare',
-        'dfg',
-        'heuristic',
+        'dfg,heuristic',
         '--input',
         'test.xes',
       ]);
-      expect([EXIT_CODES.success, EXIT_CODES.source_error, EXIT_CODES.execution_error, EXIT_CODES.partial_failure]).toContain(result.exitCode);
+      expect([EXIT_CODES.config_error, EXIT_CODES.source_error, EXIT_CODES.execution_error, EXIT_CODES.partial_failure]).toContain(result.exitCode);
     });
 
     it('should exit 1 or 2 on invalid algorithm', async () => {
