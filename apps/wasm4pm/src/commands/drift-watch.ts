@@ -163,7 +163,7 @@ export const driftWatch = defineCommand({
       );
       return await exitWithFlush(EXIT_CODES.execution_error);
     }
-    const wasm = loader.get();
+    const wasm = loader.get() as any;
 
     // ── Step 3: State for incremental monitoring ─────────────────────────────
     let previousDriftCount = 0;

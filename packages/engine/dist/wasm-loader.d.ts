@@ -10,13 +10,27 @@ import { ObservabilityLayer } from '@wasm4pm/observability';
  */
 type RuntimeEnvironment = 'browser' | 'nodejs' | 'wasi';
 /**
+ * Minimal structural type for WebAssembly.Memory (avoids requiring the DOM lib).
+ * Captures the two fields we actually access in this module.
+ */
+export interface WasmMemory {
+    /** Backing ArrayBuffer for the WASM linear memory. */
+    buffer: ArrayBuffer;
+    /** Maximum number of 64 KiB pages (undefined when no maximum was declared). */
+    maximum?: number;
+}
+/**
  * WASM module type - minimal interface covering common operations
+ * The index signature uses `unknown` to preserve type safety; callers that
+ * access arbitrary WASM exports cast the module to a narrower type (e.g.
+ * `Record<string, (...args: unknown[]) => unknown>`) after `loader.get()`.
  */
 export interface WasmModule {
-    memory: any;
+    /** WebAssembly linear memory — may be absent for bundler targets */
+    memory: WasmMemory;
     version?: () => string;
     init?: () => void;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 /**
  * WASM initialization error codes

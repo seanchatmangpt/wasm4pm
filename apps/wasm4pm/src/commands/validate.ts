@@ -158,7 +158,7 @@ export const validate = defineCommand({
             format === 'json' ? { observability: createQuietObservabilityLayer() } : {};
           const loader = WasmLoader.getInstance(loaderConfig);
           await loader.init();
-          const wasm = loader.get();
+          const wasm = loader.get() as any;
 
           // Read file
           const content = await fs.readFile(inputPath, 'utf-8');

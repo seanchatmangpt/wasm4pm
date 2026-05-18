@@ -14,16 +14,18 @@ export interface CliTestEnv {
     tempDir: string;
     configPath: string;
     outputDir: string;
+    env?: Record<string, string>;
     cleanup: () => Promise<void>;
 }
 /** Known exit codes — must match wpm exit-codes.ts */
 export declare const EXIT_CODES: {
-    readonly SUCCESS: 0;
-    readonly CONFIG_ERROR: 1;
-    readonly SOURCE_ERROR: 2;
-    readonly EXECUTION_ERROR: 3;
-    readonly PARTIAL_FAILURE: 4;
-    readonly SYSTEM_ERROR: 5;
+    readonly success: 0;
+    readonly config_error: 1;
+    readonly source_error: 2;
+    readonly execution_error: 3;
+    readonly partial_failure: 4;
+    readonly system_error: 5;
+    readonly conformance_fail: 6;
 };
 export type ExitCodeName = keyof typeof EXIT_CODES;
 /**

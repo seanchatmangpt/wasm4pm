@@ -15,26 +15,26 @@ describe('wpm config show — display configuration with sources', () => {
   describe('config show (basic)', () => {
     it('should display default configuration on success', async () => {
       const result = await runCli(['config', 'show']);
-      expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+      expect(result.exitCode).toBe(EXIT_CODES.success);
       expect(result.stdout).toMatch(/wasm4pm configuration/i);
       expect(result.stdout).toMatch(/source kind|algorithm|execution profile|output format/i);
     });
 
     it('should show provenance for each field', async () => {
       const result = await runCli(['config', 'show']);
-      expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+      expect(result.exitCode).toBe(EXIT_CODES.success);
       expect(result.stdout).toMatch(/\[DEFAULT\]|\[ENV\]|\[TOML\]|\[JSON\]|\[CLI\]/);
     });
 
     it('should include environment variable names in output', async () => {
       const result = await runCli(['config', 'show']);
-      expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+      expect(result.exitCode).toBe(EXIT_CODES.success);
       expect(result.stdout).toMatch(/WASM4PM_PROFILE|WASM4PM_ALGORITHM|WASM4PM_OUTPUT_FORMAT/);
     });
 
     it('should respect --format json flag', async () => {
       const result = await runCli(['config', 'show', '--format', 'json']);
-      expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+      expect(result.exitCode).toBe(EXIT_CODES.success);
       expect(() => JSON.parse(result.stdout)).not.toThrow();
       const json = JSON.parse(result.stdout);
       expect(json.payload).toBeDefined();
@@ -45,21 +45,21 @@ describe('wpm config show — display configuration with sources', () => {
 
     it('should respect --quiet flag', async () => {
       const result = await runCli(['config', 'show', '--quiet']);
-      expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+      expect(result.exitCode).toBe(EXIT_CODES.success);
     });
   });
 
   describe('config show --detailed', () => {
     it('should expand to show all 24+ environment variables', async () => {
       const result = await runCli(['config', 'show', '--detailed']);
-      expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+      expect(result.exitCode).toBe(EXIT_CODES.success);
       expect(result.stdout).toMatch(/Available environment variables/i);
       expect(result.stdout).toMatch(/WASM4PM_PREDICTION|WASM4PM_ML|WASM4PM_RL/);
     });
 
     it('should show field constraints', async () => {
       const result = await runCli(['config', 'show', '--detailed']);
-      expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+      expect(result.exitCode).toBe(EXIT_CODES.success);
       expect(result.stdout).toMatch(/fast|balanced|quality|stream/);
     });
   });
@@ -67,7 +67,7 @@ describe('wpm config show — display configuration with sources', () => {
   describe('config show JSON output structure', () => {
     it('should have correct payload structure in JSON mode', async () => {
       const result = await runCli(['config', 'show', '--format', 'json']);
-      expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+      expect(result.exitCode).toBe(EXIT_CODES.success);
       const json = JSON.parse(result.stdout);
       expect(json).toHaveProperty('status');
       expect(json).toHaveProperty('payload');
@@ -106,7 +106,7 @@ describe('wpm config show — display configuration with sources', () => {
   describe('config show missing required arguments', () => {
     it('config show has no required positional arguments', async () => {
       const result = await runCli(['config', 'show']);
-      expect([EXIT_CODES.SUCCESS]).toContain(result.exitCode);
+      expect([EXIT_CODES.success]).toContain(result.exitCode);
     });
   });
 });

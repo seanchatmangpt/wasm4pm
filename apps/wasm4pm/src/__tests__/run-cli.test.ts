@@ -41,13 +41,13 @@ describe('wpm run — primary process discovery CLI', () => {
   describe('run (base command)', () => {
     it('should require input file', async () => {
       const result = await runCli(['run']);
-      expect([EXIT_CODES.SOURCE_ERROR, EXIT_CODES.CONFIG_ERROR]).toContain(result.exitCode);
+      expect([EXIT_CODES.source_error, EXIT_CODES.config_error]).toContain(result.exitCode);
       expect(result.stderr || result.stdout).toMatch(/input|file|required|usage/i);
     });
 
     it('should reject missing input file', async () => {
       const result = await runCli(['run', '/nonexistent/log.xes']);
-      expect([1, EXIT_CODES.SOURCE_ERROR, EXIT_CODES.EXECUTION_ERROR]).toContain(result.exitCode);
+      expect([1, EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(result.exitCode);
     });
 
     it('should show help text', async () => {
@@ -154,7 +154,7 @@ describe('wpm run — primary process discovery CLI', () => {
 
     it('should reject invalid format', async () => {
       const result = await runCli(['run', testXesPath, '--format', 'invalid']);
-      expect([EXIT_CODES.CONFIG_ERROR, EXIT_CODES.SOURCE_ERROR]).toContain(result.exitCode);
+      expect([EXIT_CODES.config_error, EXIT_CODES.source_error]).toContain(result.exitCode);
     });
   });
 
@@ -209,7 +209,7 @@ describe('wpm run — primary process discovery CLI', () => {
 
     it('should reject invalid timeout', async () => {
       const result = await runCli(['run', testXesPath, '--timeout', 'invalid']);
-      expect([EXIT_CODES.CONFIG_ERROR, EXIT_CODES.SOURCE_ERROR]).toContain(result.exitCode);
+      expect([EXIT_CODES.config_error, EXIT_CODES.source_error]).toContain(result.exitCode);
     });
   });
 
@@ -325,12 +325,12 @@ describe('wpm run — primary process discovery CLI', () => {
       const corruptedPath = path.join(env.tempDir, 'corrupted.xes');
       await fs.writeFile(corruptedPath, 'not valid xml', 'utf-8');
       const result = await runCli(['run', corruptedPath]);
-      expect([1, EXIT_CODES.SOURCE_ERROR, EXIT_CODES.EXECUTION_ERROR]).toContain(result.exitCode);
+      expect([1, EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(result.exitCode);
     });
 
     it('should handle I/O errors gracefully', async () => {
       const result = await runCli(['run', '/nonexistent/directory/log.xes']);
-      expect([1, EXIT_CODES.SOURCE_ERROR, EXIT_CODES.EXECUTION_ERROR]).toContain(result.exitCode);
+      expect([1, EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(result.exitCode);
     });
 
     it('should complete in reasonable time', async () => {

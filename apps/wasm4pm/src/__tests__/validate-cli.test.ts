@@ -122,7 +122,7 @@ ${events}
   describe('base command requirements', () => {
     it('should require input file (no positional arg)', async () => {
       const result = await runCli(['validate']);
-      expect(result.exitCode).toBe(EXIT_CODES.SOURCE_ERROR);
+      expect(result.exitCode).toBe(2);
       expect(result.stdout + result.stderr).toMatch(/input.*required|usage|log.*file/i);
     });
 
@@ -224,7 +224,7 @@ ${events}
       const test = await createTestXes('case-001', 3);
       try {
         const result = await runCli(['validate', test.path, '--format', 'invalid']);
-        expect([EXIT_CODES.SOURCE_ERROR, EXIT_CODES.CONFIG_ERROR]).toContain(result.exitCode);
+        expect([2, 1]).toContain(result.exitCode);
         expect(result.stdout + result.stderr).toMatch(/format|xes|csv|ocel/i);
       } finally {
         await test.cleanup();
@@ -432,7 +432,7 @@ ${events}
   describe('error handling', () => {
     it('should fail with source error on missing file', async () => {
       const result = await runCli(['validate', '/nonexistent/file.xes']);
-      expect(result.exitCode).toBe(EXIT_CODES.SOURCE_ERROR);
+      expect(result.exitCode).toBe(2);
       expect(result.stdout + result.stderr).toMatch(/not found|does not exist|cannot read|file|missing/i);
     });
 
@@ -444,7 +444,7 @@ ${events}
       try {
         const result = await runCli(['validate', filePath]);
         // Malformed XML might parse as a valid log with warnings, so accept 0 or 2
-        expect([0, EXIT_CODES.SOURCE_ERROR]).toContain(result.exitCode);
+        expect([0, 2]).toContain(result.exitCode);
       } finally {
         try {
           await fs.rm(tempDir, { recursive: true, force: true });
@@ -461,7 +461,7 @@ ${events}
 
       try {
         const result = await runCli(['validate', filePath]);
-        expect(result.exitCode).toBe(EXIT_CODES.SOURCE_ERROR);
+        expect(result.exitCode).toBe(2);
       } finally {
         try {
           await fs.rm(tempDir, { recursive: true, force: true });
@@ -504,12 +504,12 @@ ${events}
 
     it('should exit 2 (source_error) on missing file', async () => {
       const result = await runCli(['validate', '/nonexistent.xes']);
-      expect(result.exitCode).toBe(EXIT_CODES.SOURCE_ERROR);
+      expect(result.exitCode).toBe(2);
     });
 
     it('should exit 2 (source_error) on missing input', async () => {
       const result = await runCli(['validate']);
-      expect(result.exitCode).toBe(EXIT_CODES.SOURCE_ERROR);
+      expect(result.exitCode).toBe(2);
     });
 
     it('should exit 1 or 2 on invalid format option', async () => {
@@ -517,7 +517,7 @@ ${events}
       try {
         const result = await runCli(['validate', test.path, '--format', 'invalid']);
         // Invalid format is treated as source error (2) not config error (1)
-        expect([EXIT_CODES.CONFIG_ERROR, EXIT_CODES.SOURCE_ERROR]).toContain(result.exitCode);
+        expect([1, 2]).toContain(result.exitCode);
       } finally {
         await test.cleanup();
       }
@@ -527,7 +527,7 @@ ${events}
       const test = await createTestXes('case-001', 3);
       try {
         const result = await runCli(['validate', test.path]);
-        expect(result.exitCode).not.toBe(EXIT_CODES.EXECUTION_ERROR);
+        expect(result.exitCode).not.toBe(3);
       } finally {
         await test.cleanup();
       }

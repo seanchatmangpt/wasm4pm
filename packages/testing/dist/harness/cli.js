@@ -11,12 +11,13 @@ import * as path from 'path';
 import { tmpdir } from 'os';
 /** Known exit codes — must match wpm exit-codes.ts */
 export const EXIT_CODES = {
-    SUCCESS: 0,
-    CONFIG_ERROR: 1,
-    SOURCE_ERROR: 2,
-    EXECUTION_ERROR: 3,
-    PARTIAL_FAILURE: 4,
-    SYSTEM_ERROR: 5,
+    success: 0,
+    config_error: 1,
+    source_error: 2,
+    execution_error: 3,
+    partial_failure: 4,
+    system_error: 5,
+    conformance_fail: 6,
 };
 /**
  * Create an isolated temp environment for CLI tests.
@@ -33,6 +34,7 @@ export async function createCliTestEnv(configContent) {
         tempDir,
         configPath,
         outputDir,
+        env: {},
         cleanup: async () => {
             try {
                 await fs.rm(tempDir, { recursive: true, force: true });
@@ -79,9 +81,11 @@ export function runCli(args, options) {
     const timeout = options?.timeout ?? 30000;
     return new Promise((resolve) => {
         const start = Date.now();
+        // Build minimal env to avoid vitest's process.env interference with child process stdout
+        const env = { PATH: process.env.PATH || '', HOME: process.env.HOME || '', ...(options?.env || {}) };
         const child = execFile(exec, fullArgs, {
             cwd: options?.cwd,
-            env: { ...process.env, ...options?.env },
+            env,
             timeout,
             maxBuffer: 10 * 1024 * 1024,
         }, (error, stdout, stderr) => {
@@ -92,7 +96,7 @@ export function runCli(args, options) {
         // Handle process timeout
         child.on('error', () => {
             resolve({
-                exitCode: EXIT_CODES.SYSTEM_ERROR,
+                exitCode: EXIT_CODES.system_error,
                 stdout: '',
                 stderr: 'Process failed to start',
                 durationMs: Date.now() - start,

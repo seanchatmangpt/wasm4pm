@@ -24,7 +24,7 @@ export declare function validateReceipt(receipt: unknown): ValidationResult;
  * @param plan Execution plan
  * @returns Validation result with hash verification
  */
-export declare function verifyReceiptHashes(receipt: unknown, config: Record<string, any>, input: any, plan: Record<string, any>): ValidationResult;
+export declare function verifyReceiptHashes(receipt: unknown, config: Record<string, unknown>, input: unknown, plan: Record<string, unknown>): ValidationResult;
 /**
  * Verify a complete receipt against expected hashes for all 5 hash fields
  * Per task requirement: verify receipt with known inputs produces expected BLAKE3 output
@@ -46,5 +46,5 @@ export declare function verifyReceipt(receipt: unknown, expectedHashes: {
  * @param plan Execution plan
  * @returns True if any hash mismatches detected
  */
-export declare function detectTampering(receipt: unknown, config: Record<string, any>, input: any, plan: Record<string, any>): boolean;
+export declare function detectTampering(receipt: unknown, config: Record<string, unknown>, input: unknown, plan: Record<string, unknown>): boolean;
 //# sourceMappingURL=validation.d.ts.map

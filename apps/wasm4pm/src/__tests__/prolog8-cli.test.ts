@@ -98,19 +98,19 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
   describe('prolog8 root command', () => {
     it('exits 0 when called with no subcommand and prints usage banner', async () => {
       const result = await runCli(['prolog8'], { env: env.env });
-      expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+      expect(result.exitCode).toBe(EXIT_CODES.success);
       expect(result.stdout).toMatch(/prolog8/i);
     });
 
     it('--help exits 0 and shows subcommand names', async () => {
       const result = await runCli(['prolog8', '--help'], { env: env.env });
-      expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+      expect(result.exitCode).toBe(EXIT_CODES.success);
       expect(result.stdout).toMatch(/show|query|replay/i);
     });
 
     it('invalid subcommand exits non-zero', async () => {
       const result = await runCli(['prolog8', 'invalid-subcommand'], { env: env.env });
-      expect(result.exitCode).not.toBe(EXIT_CODES.SUCCESS);
+      expect(result.exitCode).not.toBe(EXIT_CODES.success);
     });
 
     it('invalid subcommand stderr contains error message', async () => {
@@ -127,7 +127,7 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
   describe('prolog8 show', () => {
     it('exits 0 or SOURCE_ERROR (WASM may not be built)', async () => {
       const result = await runCli(['prolog8', 'show'], { env: env.env });
-      expect([EXIT_CODES.SUCCESS, EXIT_CODES.SOURCE_ERROR]).toContain(result.exitCode);
+      expect([EXIT_CODES.success, EXIT_CODES.source_error]).toContain(result.exitCode);
     });
 
     it('--format json produces valid JSON output', async () => {
@@ -164,7 +164,7 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
 
     it('--help exits 0 and lists --format option', async () => {
       const result = await runCli(['prolog8', 'show', '--help'], { env: env.env });
-      expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+      expect(result.exitCode).toBe(EXIT_CODES.success);
       expect(result.stdout).toMatch(/format/i);
     });
 
@@ -176,18 +176,18 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
 
     it('when WASM not available, error message mentions build instructions', async () => {
       const result = await runCli(['prolog8', 'show'], { env: env.env });
-      if (result.exitCode === EXIT_CODES.SOURCE_ERROR) {
+      if (result.exitCode === EXIT_CODES.source_error) {
         const combined = result.stdout + result.stderr;
         expect(combined).toMatch(/wasm-pack|build|prolog8/i);
       }
       // If WASM is available exitCode is 0 — test passes vacuously
-      expect([EXIT_CODES.SUCCESS, EXIT_CODES.SOURCE_ERROR]).toContain(result.exitCode);
+      expect([EXIT_CODES.success, EXIT_CODES.source_error]).toContain(result.exitCode);
     });
 
     it('--format json error envelope includes error.code field when WASM unavailable', async () => {
       const result = await runCli(['prolog8', 'show', '--format', 'json'], { env: env.env });
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
-      if (result.exitCode === EXIT_CODES.SOURCE_ERROR) {
+      if (result.exitCode === EXIT_CODES.source_error) {
         expect(parsed).toHaveProperty('error');
         const err = parsed['error'] as Record<string, unknown>;
         expect(err).toHaveProperty('code');
@@ -197,7 +197,7 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
 
     it('when WASM is available, JSON payload has capabilities object', async () => {
       const result = await runCli(['prolog8', 'show', '--format', 'json'], { env: env.env });
-      if (result.exitCode === EXIT_CODES.SUCCESS) {
+      if (result.exitCode === EXIT_CODES.success) {
         const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
         // Success response has payload with capabilities
         expect(parsed).toHaveProperty('payload');
@@ -212,18 +212,18 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
   describe('prolog8 query', () => {
     it('--help exits 0 and shows -i / --input option', async () => {
       const result = await runCli(['prolog8', 'query', '--help'], { env: env.env });
-      expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+      expect(result.exitCode).toBe(EXIT_CODES.success);
       expect(result.stdout).toMatch(/-i|--input/i);
     });
 
     it('with no arguments exits CONFIG_ERROR (missing --input)', async () => {
       const result = await runCli(['prolog8', 'query'], { env: env.env });
-      expect(result.exitCode).toBe(EXIT_CODES.CONFIG_ERROR);
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
     });
 
     it('non-zero exit when --input is missing', async () => {
       const result = await runCli(['prolog8', 'query'], { env: env.env });
-      expect(result.exitCode).not.toBe(EXIT_CODES.SUCCESS);
+      expect(result.exitCode).not.toBe(EXIT_CODES.success);
     });
 
     it('--input pointing to nonexistent file exits SOURCE_ERROR', async () => {
@@ -231,7 +231,7 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
         ['prolog8', 'query', '-i', '/nonexistent-p8-query.json'],
         { env: env.env }
       );
-      expect(result.exitCode).toBe(EXIT_CODES.SOURCE_ERROR);
+      expect(result.exitCode).toBe(EXIT_CODES.source_error);
     });
 
     it('--input nonexistent --format json produces JSON with status "error"', async () => {
@@ -239,7 +239,7 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
         ['prolog8', 'query', '-i', '/nonexistent-p8-query.json', '--format', 'json'],
         { env: env.env }
       );
-      expect(result.exitCode).toBe(EXIT_CODES.SOURCE_ERROR);
+      expect(result.exitCode).toBe(EXIT_CODES.source_error);
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
       expect(parsed['status']).toBe('error');
     });
@@ -257,7 +257,7 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
     it('valid input file exits SOURCE_ERROR when WASM not built, or 0/3 when built', async () => {
       const inputPath = writeTmp(tmpDir, 'query.json', makeQueryInput());
       const result = await runCli(['prolog8', 'query', '-i', inputPath], { env: env.env });
-      expect([EXIT_CODES.SUCCESS, EXIT_CODES.SOURCE_ERROR, EXIT_CODES.EXECUTION_ERROR]).toContain(
+      expect([EXIT_CODES.success, EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(
         result.exitCode
       );
     });
@@ -285,7 +285,7 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
       const badPath = writeTmp(tmpDir, 'bad.json', 'not valid json {{{');
       const result = await runCli(['prolog8', 'query', '-i', badPath], { env: env.env });
       // WASM not built → SOURCE_ERROR; WASM built + bad JSON → SOURCE_ERROR (schema rejected)
-      expect([EXIT_CODES.SOURCE_ERROR, EXIT_CODES.EXECUTION_ERROR]).toContain(result.exitCode);
+      expect([EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(result.exitCode);
     });
 
     it('--verbose flag is accepted without argument error', async () => {
@@ -295,7 +295,7 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
         { env: env.env }
       );
       // Should not fail due to unknown-flag; may fail due to WASM availability
-      expect([EXIT_CODES.SUCCESS, EXIT_CODES.SOURCE_ERROR, EXIT_CODES.EXECUTION_ERROR]).toContain(
+      expect([EXIT_CODES.success, EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(
         result.exitCode
       );
     });
@@ -308,7 +308,7 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
   describe('prolog8 replay', () => {
     it('--help exits 0', async () => {
       const result = await runCli(['prolog8', 'replay', '--help'], { env: env.env });
-      expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+      expect(result.exitCode).toBe(EXIT_CODES.success);
     });
 
     it('--help output mentions replay/verify/receipt terminology', async () => {
@@ -318,7 +318,7 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
 
     it('with no arguments exits CONFIG_ERROR (missing --input)', async () => {
       const result = await runCli(['prolog8', 'replay'], { env: env.env });
-      expect(result.exitCode).toBe(EXIT_CODES.CONFIG_ERROR);
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
     });
 
     it('--input pointing to nonexistent file exits SOURCE_ERROR', async () => {
@@ -326,7 +326,7 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
         ['prolog8', 'replay', '-i', '/nonexistent-receipt.json'],
         { env: env.env }
       );
-      expect(result.exitCode).toBe(EXIT_CODES.SOURCE_ERROR);
+      expect(result.exitCode).toBe(EXIT_CODES.source_error);
     });
 
     it('--input nonexistent --format json produces JSON error with status "error"', async () => {
@@ -334,7 +334,7 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
         ['prolog8', 'replay', '-i', '/nonexistent-receipt.json', '--format', 'json'],
         { env: env.env }
       );
-      expect(result.exitCode).toBe(EXIT_CODES.SOURCE_ERROR);
+      expect(result.exitCode).toBe(EXIT_CODES.source_error);
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
       expect(parsed['status']).toBe('error');
     });
@@ -352,7 +352,7 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
     it('valid replay input exits SOURCE_ERROR when WASM not built, else 0 or 3', async () => {
       const replayPath = writeTmp(tmpDir, 'replay.json', makeReplayInput());
       const result = await runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env });
-      expect([EXIT_CODES.SUCCESS, EXIT_CODES.SOURCE_ERROR, EXIT_CODES.EXECUTION_ERROR]).toContain(
+      expect([EXIT_CODES.success, EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(
         result.exitCode
       );
     });
@@ -384,7 +384,7 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
   describe('prolog8 show (original tests — fixed)', () => {
     it('should display Prolog8 capabilities text or error', async () => {
       const result = await runCli(['prolog8', 'show'], { env: env.env });
-      expect([EXIT_CODES.SUCCESS, EXIT_CODES.SOURCE_ERROR]).toContain(result.exitCode);
+      expect([EXIT_CODES.success, EXIT_CODES.source_error]).toContain(result.exitCode);
       // When WASM available, stdout matches capability text; when not, stderr has build hint
       const combined = result.stdout + result.stderr;
       expect(combined).toMatch(/prolog8|build|wasm-pack/i);
@@ -393,7 +393,7 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
     it('should list available predicates (--predicates flag tolerated)', async () => {
       const result = await runCli(['prolog8', 'show', '--predicates'], { env: env.env });
       // Unknown flag is passed through; exit depends on WASM availability
-      expect([EXIT_CODES.SUCCESS, EXIT_CODES.SOURCE_ERROR]).toContain(result.exitCode);
+      expect([EXIT_CODES.success, EXIT_CODES.source_error]).toContain(result.exitCode);
     });
 
     it('should mention byte/capacity limits in combined output', async () => {
@@ -411,14 +411,14 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
       });
       // --rule is not a declared argument; citty treats it as unknown → CONFIG_ERROR (1)
       // or passes it and fails due to missing required --input → CONFIG_ERROR (1)
-      expect([EXIT_CODES.CONFIG_ERROR, EXIT_CODES.SOURCE_ERROR]).toContain(result.exitCode);
+      expect([EXIT_CODES.config_error, EXIT_CODES.source_error]).toContain(result.exitCode);
     });
 
     it('should exit non-zero for --rule append([1],[2],X) (missing --input)', async () => {
       const result = await runCli(['prolog8', 'query', '--rule', 'append([1], [2], X)'], {
         env: env.env,
       });
-      expect([EXIT_CODES.CONFIG_ERROR, EXIT_CODES.SOURCE_ERROR]).toContain(result.exitCode);
+      expect([EXIT_CODES.config_error, EXIT_CODES.source_error]).toContain(result.exitCode);
     });
 
     it('--format json returns parseable JSON for any valid invocation pattern', async () => {
@@ -427,7 +427,7 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
         ['prolog8', 'query', '-i', inputPath, '--format', 'json'],
         { env: env.env }
       );
-      expect([EXIT_CODES.SUCCESS, EXIT_CODES.SOURCE_ERROR, EXIT_CODES.EXECUTION_ERROR]).toContain(
+      expect([EXIT_CODES.success, EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(
         result.exitCode
       );
       expect(() => JSON.parse(result.stdout)).not.toThrow();
@@ -436,7 +436,7 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
     it('should handle X = 42 style queries (file-based, tolerated)', async () => {
       const inputPath = writeTmp(tmpDir, 'q3.json', makeQueryInput());
       const result = await runCli(['prolog8', 'query', '-i', inputPath], { env: env.env });
-      expect([EXIT_CODES.SUCCESS, EXIT_CODES.SOURCE_ERROR, EXIT_CODES.EXECUTION_ERROR]).toContain(
+      expect([EXIT_CODES.success, EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(
         result.exitCode
       );
     });
@@ -446,7 +446,7 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
     it('should handle replay with file-based input', async () => {
       const replayPath = writeTmp(tmpDir, 'rp.json', makeReplayInput());
       const result = await runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env });
-      expect([EXIT_CODES.SUCCESS, EXIT_CODES.SOURCE_ERROR, EXIT_CODES.EXECUTION_ERROR]).toContain(
+      expect([EXIT_CODES.success, EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(
         result.exitCode
       );
     });
@@ -458,10 +458,10 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
         { env: env.env }
       );
       expect([
-        EXIT_CODES.SUCCESS,
-        EXIT_CODES.CONFIG_ERROR,
-        EXIT_CODES.SOURCE_ERROR,
-        EXIT_CODES.EXECUTION_ERROR,
+        EXIT_CODES.success,
+        EXIT_CODES.config_error,
+        EXIT_CODES.source_error,
+        EXIT_CODES.execution_error,
       ]).toContain(result.exitCode);
     });
 
@@ -477,10 +477,10 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
         { env: env.env }
       );
       expect([
-        EXIT_CODES.SUCCESS,
-        EXIT_CODES.CONFIG_ERROR,
-        EXIT_CODES.SOURCE_ERROR,
-        EXIT_CODES.EXECUTION_ERROR,
+        EXIT_CODES.success,
+        EXIT_CODES.config_error,
+        EXIT_CODES.source_error,
+        EXIT_CODES.execution_error,
       ]).toContain(result.exitCode);
     });
   });
@@ -490,14 +490,14 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
       const result = await runCli(['prolog8', 'replay', '-i', '/nonexistent.ocel.json'], {
         env: env.env,
       });
-      expect(result.exitCode).toBe(EXIT_CODES.SOURCE_ERROR);
+      expect(result.exitCode).toBe(EXIT_CODES.source_error);
     });
 
     it('invalid syntax via --rule flag exits non-zero (no --input → CONFIG_ERROR)', async () => {
       const result = await runCli(['prolog8', 'query', '--rule', 'invalid syntax ]['], {
         env: env.env,
       });
-      expect([EXIT_CODES.CONFIG_ERROR, EXIT_CODES.SOURCE_ERROR]).toContain(result.exitCode);
+      expect([EXIT_CODES.config_error, EXIT_CODES.source_error]).toContain(result.exitCode);
     });
   });
 

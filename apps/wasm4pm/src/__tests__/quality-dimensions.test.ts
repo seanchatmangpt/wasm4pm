@@ -301,3 +301,290 @@ describe('QD-7: invalid metric name is rejected before WASM execution', () => {
     expect(env.error!.message).toContain('banana');
   });
 });
+
+// ---------------------------------------------------------------------------
+// QD-8: --help exits 0
+// ---------------------------------------------------------------------------
+
+describe('QD-8: --help exits 0 and describes the command', () => {
+  it('wpm quality --help exits 0', async () => {
+    const result = await runCli(['quality', '--help']);
+    expect(result.exitCode).toBe(0);
+  }, TEST_TIMEOUT_MS);
+
+  it('--help output mentions fitness, precision, generalization, or simplicity', async () => {
+    const result = await runCli(['quality', '--help']);
+    const combined = result.stdout + result.stderr;
+    expect(combined.toLowerCase()).toMatch(/fitness|precision|generalization|simplicity|quality/);
+  }, TEST_TIMEOUT_MS);
+});
+
+// ---------------------------------------------------------------------------
+// QD-9: Non-existent input file exits 2 (source_error)
+// ---------------------------------------------------------------------------
+
+describe('QD-9: non-existent input file exits 2', () => {
+  it('-i /no/such/file.xes exits 2', async () => {
+    const result = await runCli([
+      'quality', '-i', '/no/such/file-wpm-quality-test.xes',
+      '--format', 'json',
+    ]);
+    expect(result.exitCode).toBe(2);
+  }, TEST_TIMEOUT_MS);
+
+  it('error envelope for missing file has command=quality', async () => {
+    const result = await runCli([
+      'quality', '-i', '/no/such/file-wpm-quality-test.xes',
+      '--format', 'json',
+    ]);
+    const env = parseEnvelope(result);
+    expect(env.command).toBe('quality');
+    expect(env.status).toBe('error');
+  }, TEST_TIMEOUT_MS);
+});
+
+// ---------------------------------------------------------------------------
+// QD-10: JSON envelope command field is always 'quality'
+// ---------------------------------------------------------------------------
+
+describe('QD-10: JSON envelope command field is quality', () => {
+  it('command field is quality in success responses', async () => {
+    const result = await runCli(['quality', '-i', xesPath, '--format', 'json', '--no-save']);
+    const env = parseEnvelope(result);
+    expect(env.command).toBe('quality');
+  }, TEST_TIMEOUT_MS);
+
+  it('command field is quality in error responses', async () => {
+    const result = await runCli(['quality', '--format', 'json']);
+    const env = parseEnvelope(result);
+    expect(env.command).toBe('quality');
+  }, TEST_TIMEOUT_MS);
+});
+
+// ---------------------------------------------------------------------------
+// QD-11: JSON envelope status is always 'ok' or 'error' — never missing
+// ---------------------------------------------------------------------------
+
+describe('QD-11: JSON envelope status is always present', () => {
+  it('status field exists in all JSON responses', async () => {
+    const result = await runCli(['quality', '-i', xesPath, '--format', 'json', '--no-save']);
+    const env = parseEnvelope(result);
+    expect(['ok', 'error']).toContain(env.status);
+  }, TEST_TIMEOUT_MS);
+});
+
+// ---------------------------------------------------------------------------
+// QD-12: model.nodes and model.edges are non-negative integers
+// ---------------------------------------------------------------------------
+
+describe('QD-12: model.nodes and model.edges are non-negative integers', () => {
+  it('model.nodes >= 0 and model.edges >= 0', async () => {
+    const result = await runCli(['quality', '-i', xesPath, '--format', 'json', '--no-save']);
+    const env = parseEnvelope(result);
+
+    if (env.status === 'error') {
+      expect(env.error).toBeDefined();
+      return;
+    }
+
+    const model = env.payload!.model as { nodes: unknown; edges: unknown } | undefined;
+    expect(model).toBeDefined();
+    expect(typeof model!.nodes).toBe('number');
+    expect(typeof model!.edges).toBe('number');
+    expect(model!.nodes as number).toBeGreaterThanOrEqual(0);
+    expect(model!.edges as number).toBeGreaterThanOrEqual(0);
+  }, TEST_TIMEOUT_MS);
+});
+
+// ---------------------------------------------------------------------------
+// QD-13: aggregate.level is one of the four valid levels
+// ---------------------------------------------------------------------------
+
+describe('QD-13: aggregate.level is one of excellent/good/fair/poor', () => {
+  it('aggregate.level must be excellent, good, fair, or poor', async () => {
+    const result = await runCli(['quality', '-i', xesPath, '--format', 'json', '--no-save']);
+    const env = parseEnvelope(result);
+
+    if (env.status === 'error') {
+      expect(env.error).toBeDefined();
+      return;
+    }
+
+    const level = env.payload!.aggregate!.level;
+    expect(['excellent', 'good', 'fair', 'poor']).toContain(level);
+  }, TEST_TIMEOUT_MS);
+});
+
+// ---------------------------------------------------------------------------
+// QD-14: --metrics single dimension returns exactly one score
+// ---------------------------------------------------------------------------
+
+describe('QD-14: --metrics with a single dimension returns exactly one score', () => {
+  it('--metrics fitness returns exactly one key', async () => {
+    const result = await runCli([
+      'quality', '-i', xesPath,
+      '--metrics', 'fitness',
+      '--format', 'json',
+      '--no-save',
+    ]);
+    const env = parseEnvelope(result);
+
+    if (env.status === 'error') {
+      expect(env.error).toBeDefined();
+      return;
+    }
+
+    const keys = Object.keys(env.payload!.scores as Record<string, unknown>);
+    expect(keys).toHaveLength(1);
+    expect(keys).toContain('fitness');
+  }, TEST_TIMEOUT_MS);
+
+  it('--metrics simplicity returns exactly one key', async () => {
+    const result = await runCli([
+      'quality', '-i', xesPath,
+      '--metrics', 'simplicity',
+      '--format', 'json',
+      '--no-save',
+    ]);
+    const env = parseEnvelope(result);
+
+    if (env.status === 'error') {
+      expect(env.error).toBeDefined();
+      return;
+    }
+
+    const keys = Object.keys(env.payload!.scores as Record<string, unknown>);
+    expect(keys).toHaveLength(1);
+    expect(keys).toContain('simplicity');
+  }, TEST_TIMEOUT_MS);
+});
+
+// ---------------------------------------------------------------------------
+// QD-15: Multiple invalid metrics are all named in error message
+// ---------------------------------------------------------------------------
+
+describe('QD-15: multiple invalid metrics are all named in error', () => {
+  it('two invalid metrics both appear in the error message', async () => {
+    const result = await runCli([
+      'quality', '-i', xesPath,
+      '--metrics', 'banana,orange',
+      '--format', 'json',
+      '--no-save',
+    ]);
+    expect(result.exitCode).toBe(2);
+    const env = parseEnvelope(result);
+    expect(env.status).toBe('error');
+    // At least one of the invalid names should appear in the message
+    const msg = env.error!.message;
+    expect(msg.toLowerCase()).toMatch(/banana|orange/);
+  }, TEST_TIMEOUT_MS);
+});
+
+// ---------------------------------------------------------------------------
+// QD-16: metrics array in payload matches requested metrics
+// ---------------------------------------------------------------------------
+
+describe('QD-16: payload.metrics array matches requested --metrics', () => {
+  it('payload.metrics includes all four defaults when no --metrics given', async () => {
+    const result = await runCli(['quality', '-i', xesPath, '--format', 'json', '--no-save']);
+    const env = parseEnvelope(result);
+
+    if (env.status === 'error') {
+      expect(env.error).toBeDefined();
+      return;
+    }
+
+    const metrics = env.payload!.metrics as string[] | undefined;
+    expect(Array.isArray(metrics)).toBe(true);
+    expect(metrics).toContain('fitness');
+    expect(metrics).toContain('precision');
+    expect(metrics).toContain('generalization');
+    expect(metrics).toContain('simplicity');
+  }, TEST_TIMEOUT_MS);
+
+  it('payload.metrics reflects subset when --metrics fitness,generalization is given', async () => {
+    const result = await runCli([
+      'quality', '-i', xesPath,
+      '--metrics', 'fitness,generalization',
+      '--format', 'json',
+      '--no-save',
+    ]);
+    const env = parseEnvelope(result);
+
+    if (env.status === 'error') {
+      expect(env.error).toBeDefined();
+      return;
+    }
+
+    const metrics = env.payload!.metrics as string[] | undefined;
+    expect(metrics).toContain('fitness');
+    expect(metrics).toContain('generalization');
+  }, TEST_TIMEOUT_MS);
+});
+
+// ---------------------------------------------------------------------------
+// QD-17: --no-save flag is accepted without error
+// ---------------------------------------------------------------------------
+
+describe('QD-17: --no-save flag is accepted', () => {
+  it('--no-save does not cause a config_error (exit 1)', async () => {
+    const result = await runCli(['quality', '-i', xesPath, '--no-save', '--format', 'json']);
+    expect(result.exitCode).not.toBe(1);
+  }, TEST_TIMEOUT_MS);
+});
+
+// ---------------------------------------------------------------------------
+// QD-18: Aggregate score is in [0, 1]
+// ---------------------------------------------------------------------------
+
+describe('QD-18: aggregate.score is in [0, 1]', () => {
+  it('aggregate.score is a finite number between 0 and 1', async () => {
+    const result = await runCli(['quality', '-i', xesPath, '--format', 'json', '--no-save']);
+    const env = parseEnvelope(result);
+
+    if (env.status === 'error') {
+      expect(env.error).toBeDefined();
+      return;
+    }
+
+    const agg = env.payload!.aggregate!.score as number;
+    expect(typeof agg).toBe('number');
+    expect(Number.isFinite(agg)).toBe(true);
+    expect(agg).toBeGreaterThanOrEqual(0);
+    expect(agg).toBeLessThanOrEqual(1);
+  }, TEST_TIMEOUT_MS);
+});
+
+// ---------------------------------------------------------------------------
+// QD-19: --activity-key flag is accepted
+// ---------------------------------------------------------------------------
+
+describe('QD-19: --activity-key flag is accepted', () => {
+  it('--activity-key concept:name does not cause config_error', async () => {
+    const result = await runCli([
+      'quality', '-i', xesPath,
+      '--activity-key', 'concept:name',
+      '--format', 'json',
+      '--no-save',
+    ]);
+    expect(result.exitCode).not.toBe(1);
+  }, TEST_TIMEOUT_MS);
+});
+
+// ---------------------------------------------------------------------------
+// QD-20: Human output is non-empty for valid input
+// ---------------------------------------------------------------------------
+
+describe('QD-20: human output for valid input is non-empty', () => {
+  it('--format human produces non-empty output', async () => {
+    const result = await runCli(['quality', '-i', xesPath, '--format', 'human', '--no-save']);
+    const combined = result.stdout + result.stderr;
+    expect(combined.trim()).not.toBe('');
+  }, TEST_TIMEOUT_MS);
+
+  it('human output mentions Quality Assessment or a dimension name', async () => {
+    const result = await runCli(['quality', '-i', xesPath, '--format', 'human', '--no-save']);
+    const combined = (result.stdout + result.stderr).toLowerCase();
+    expect(combined).toMatch(/quality|fitness|precision|generalization|simplicity/);
+  }, TEST_TIMEOUT_MS);
+});

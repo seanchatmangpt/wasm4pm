@@ -184,7 +184,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
         '--format',
         'json',
       ]);
-      if (result.exitCode === EXIT_CODES.SUCCESS || result.exitCode === EXIT_CODES.PARTIAL_FAILURE) {
+      if (result.exitCode === EXIT_CODES.success || result.exitCode === EXIT_CODES.partial_failure) {
         expect(() => JSON.parse(result.stdout)).not.toThrow();
       }
     });
@@ -219,7 +219,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
         '--format',
         'json',
       ]);
-      if (result.exitCode === EXIT_CODES.SUCCESS || result.exitCode === EXIT_CODES.PARTIAL_FAILURE) {
+      if (result.exitCode === EXIT_CODES.success || result.exitCode === EXIT_CODES.partial_failure) {
         const json = JSON.parse(result.stdout);
         expect(json.payload?.algorithms).toBeDefined();
         if (json.payload.algorithms.length > 0) {
@@ -238,7 +238,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
         '--format',
         'json',
       ]);
-      if (result.exitCode === EXIT_CODES.SUCCESS || result.exitCode === EXIT_CODES.PARTIAL_FAILURE) {
+      if (result.exitCode === EXIT_CODES.success || result.exitCode === EXIT_CODES.partial_failure) {
         const json = JSON.parse(result.stdout);
         if (json.payload.algorithms.length > 0) {
           expect(json.payload.algorithms[0]).toHaveProperty('nodes');
@@ -256,7 +256,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
         '--format',
         'json',
       ]);
-      if (result.exitCode === EXIT_CODES.SUCCESS || result.exitCode === EXIT_CODES.PARTIAL_FAILURE) {
+      if (result.exitCode === EXIT_CODES.success || result.exitCode === EXIT_CODES.partial_failure) {
         const json = JSON.parse(result.stdout);
         if (json.payload.algorithms.length > 0) {
           expect(json.payload.algorithms[0]).toHaveProperty('edges');
@@ -274,7 +274,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
         '--format',
         'json',
       ]);
-      if (result.exitCode === EXIT_CODES.SUCCESS || result.exitCode === EXIT_CODES.PARTIAL_FAILURE) {
+      if (result.exitCode === EXIT_CODES.success || result.exitCode === EXIT_CODES.partial_failure) {
         const json = JSON.parse(result.stdout);
         if (json.payload.algorithms.length > 0) {
           expect(json.payload.algorithms[0]).toHaveProperty('qualityTier');
@@ -292,7 +292,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
         '--format',
         'json',
       ]);
-      if (result.exitCode === EXIT_CODES.SUCCESS || result.exitCode === EXIT_CODES.PARTIAL_FAILURE) {
+      if (result.exitCode === EXIT_CODES.success || result.exitCode === EXIT_CODES.partial_failure) {
         const json = JSON.parse(result.stdout);
         // DFG should be faster than ILP
         expect(json.payload?.recommendation).toBeDefined();
@@ -309,7 +309,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
         '--format',
         'json',
       ]);
-      if (result.exitCode === EXIT_CODES.SUCCESS || result.exitCode === EXIT_CODES.PARTIAL_FAILURE) {
+      if (result.exitCode === EXIT_CODES.success || result.exitCode === EXIT_CODES.partial_failure) {
         const json = JSON.parse(result.stdout);
         // ILP should rank higher in quality than DFG
         expect(json.payload?.recommendation?.highestQuality).toBeDefined();
@@ -328,7 +328,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
         '--format',
         'json',
       ]);
-      if (result.exitCode === EXIT_CODES.SUCCESS || result.exitCode === EXIT_CODES.PARTIAL_FAILURE) {
+      if (result.exitCode === EXIT_CODES.success || result.exitCode === EXIT_CODES.partial_failure) {
         const json = JSON.parse(result.stdout);
         expect(json.payload?.recommendation?.fastest).toBeDefined();
         expect(json.payload?.recommendation?.fastest).toHaveProperty('algorithm');
@@ -347,7 +347,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
         '--format',
         'json',
       ]);
-      if (result.exitCode === EXIT_CODES.SUCCESS || result.exitCode === EXIT_CODES.PARTIAL_FAILURE) {
+      if (result.exitCode === EXIT_CODES.success || result.exitCode === EXIT_CODES.partial_failure) {
         const json = JSON.parse(result.stdout);
         expect(json.payload?.recommendation?.highestQuality).toBeDefined();
         expect(json.payload?.recommendation?.highestQuality).toHaveProperty('algorithm');
@@ -365,7 +365,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
         '--format',
         'json',
       ]);
-      if (result.exitCode === EXIT_CODES.SUCCESS || result.exitCode === EXIT_CODES.PARTIAL_FAILURE) {
+      if (result.exitCode === EXIT_CODES.success || result.exitCode === EXIT_CODES.partial_failure) {
         const json = JSON.parse(result.stdout);
         expect(json.payload?.recommendation?.bestTradeoff).toBeDefined();
         expect(json.payload?.recommendation?.bestTradeoff).toHaveProperty('algorithm');
@@ -383,7 +383,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
         '--format',
         'json',
       ]);
-      if (result.exitCode === EXIT_CODES.SUCCESS || result.exitCode === EXIT_CODES.PARTIAL_FAILURE) {
+      if (result.exitCode === EXIT_CODES.success || result.exitCode === EXIT_CODES.partial_failure) {
         const json = JSON.parse(result.stdout);
         expect(json.payload?.recommendation?.tradeoffNarrative).toBeDefined();
         expect(typeof json.payload?.recommendation?.tradeoffNarrative).toBe('string');
@@ -435,7 +435,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
         'test.xes',
       ]);
       // Can succeed, partially fail, or error depending on log and WASM state
-      expect([EXIT_CODES.SUCCESS, EXIT_CODES.SOURCE_ERROR, EXIT_CODES.PARTIAL_FAILURE]).toContain(result.exitCode);
+      expect([EXIT_CODES.success, EXIT_CODES.source_error, EXIT_CODES.partial_failure]).toContain(result.exitCode);
     });
 
     it('should return exit code 4 (partial failure) when some algorithms fail', async () => {
@@ -446,7 +446,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
         '--input',
         'test.xes',
       ]);
-      if (result.exitCode !== EXIT_CODES.SUCCESS) {
+      if (result.exitCode !== EXIT_CODES.success) {
         expect([1, 2, 4]).toContain(result.exitCode);
       }
     });
@@ -454,7 +454,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
     it('should exit 0 (success) when help is displayed', async () => {
       // Help is always successful
       const result = await runCli(['compare', '--help']);
-      expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+      expect(result.exitCode).toBe(EXIT_CODES.success);
     });
 
     it('should exit 1 or 2 (error) for config/syntax issues', async () => {
@@ -500,7 +500,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
         '--format',
         'json',
       ]);
-      if (result.exitCode === EXIT_CODES.SUCCESS || result.exitCode === EXIT_CODES.PARTIAL_FAILURE) {
+      if (result.exitCode === EXIT_CODES.success || result.exitCode === EXIT_CODES.partial_failure) {
         expect(() => JSON.parse(result.stdout)).not.toThrow();
       }
     });
@@ -588,7 +588,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
   describe('compare help documentation', () => {
     it('should display help text with --help', async () => {
       const result = await runCli(['compare', '--help']);
-      expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+      expect(result.exitCode).toBe(EXIT_CODES.success);
       expect(result.stdout).toMatch(/algorithm|compare|input|format/i);
     });
 
@@ -649,7 +649,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
         '--format',
         'json',
       ]);
-      if (result.exitCode === EXIT_CODES.SUCCESS || result.exitCode === EXIT_CODES.PARTIAL_FAILURE) {
+      if (result.exitCode === EXIT_CODES.success || result.exitCode === EXIT_CODES.partial_failure) {
         const json = JSON.parse(result.stdout);
         expect(json.payload?.input).toBeDefined();
       }
@@ -665,7 +665,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
         '--format',
         'json',
       ]);
-      if (result.exitCode === EXIT_CODES.SUCCESS || result.exitCode === EXIT_CODES.PARTIAL_FAILURE) {
+      if (result.exitCode === EXIT_CODES.success || result.exitCode === EXIT_CODES.partial_failure) {
         const json = JSON.parse(result.stdout);
         expect(json.payload?.activityKey).toBeDefined();
       }
@@ -681,7 +681,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
         '--format',
         'json',
       ]);
-      if (result.exitCode === EXIT_CODES.SUCCESS || result.exitCode === EXIT_CODES.PARTIAL_FAILURE) {
+      if (result.exitCode === EXIT_CODES.success || result.exitCode === EXIT_CODES.partial_failure) {
         const json = JSON.parse(result.stdout);
         expect(Array.isArray(json.payload?.algorithms)).toBe(true);
         expect(json.payload?.algorithms.length).toBeGreaterThanOrEqual(0);
@@ -698,7 +698,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
         '--format',
         'json',
       ]);
-      if (result.exitCode === EXIT_CODES.SUCCESS || result.exitCode === EXIT_CODES.PARTIAL_FAILURE) {
+      if (result.exitCode === EXIT_CODES.success || result.exitCode === EXIT_CODES.partial_failure) {
         const json = JSON.parse(result.stdout);
         // Recommendation may be null if fewer than 2 successful runs
         expect(
@@ -718,10 +718,10 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
         '--format',
         'json',
       ]);
-      if (result.exitCode === EXIT_CODES.SUCCESS || result.exitCode === EXIT_CODES.PARTIAL_FAILURE) {
+      if (result.exitCode === EXIT_CODES.success || result.exitCode === EXIT_CODES.partial_failure) {
         const json = JSON.parse(result.stdout);
         // algorithm_errors should only be present if some algorithms failed
-        if (json.exitCode === EXIT_CODES.PARTIAL_FAILURE) {
+        if (json.exitCode === EXIT_CODES.partial_failure) {
           expect(Array.isArray(json.payload?.algorithm_errors)).toBe(true);
         }
       }
@@ -731,12 +731,12 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
   describe('compare exit codes', () => {
     it('should exit 0 on full success', async () => {
       const result = await runCli(['compare', '--help']);
-      expect(result.exitCode).toEqual(EXIT_CODES.SUCCESS);
+      expect(result.exitCode).toEqual(EXIT_CODES.success);
     });
 
     it('should exit 1 on config error (too few algorithms)', async () => {
       const result = await runCli(['compare', 'dfg']);
-      expect(result.exitCode).toEqual(EXIT_CODES.CONFIG_ERROR);
+      expect(result.exitCode).toEqual(EXIT_CODES.config_error);
     });
 
     it('should exit 2 on source error (invalid input file)', async () => {
@@ -747,7 +747,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
         '--input',
         '/nonexistent.xes',
       ]);
-      expect([EXIT_CODES.SOURCE_ERROR, EXIT_CODES.EXECUTION_ERROR]).toContain(
+      expect([EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(
         result.exitCode
       );
     });
@@ -760,7 +760,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
         '--input',
         'test.xes',
       ]);
-      expect([EXIT_CODES.SUCCESS, EXIT_CODES.SOURCE_ERROR, EXIT_CODES.EXECUTION_ERROR, EXIT_CODES.PARTIAL_FAILURE]).toContain(result.exitCode);
+      expect([EXIT_CODES.success, EXIT_CODES.source_error, EXIT_CODES.execution_error, EXIT_CODES.partial_failure]).toContain(result.exitCode);
     });
 
     it('should exit 1 or 2 on invalid algorithm', async () => {
@@ -771,7 +771,7 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
         '--input',
         'test.xes',
       ]);
-      expect([EXIT_CODES.CONFIG_ERROR, EXIT_CODES.SOURCE_ERROR]).toContain(result.exitCode);
+      expect([EXIT_CODES.config_error, EXIT_CODES.source_error]).toContain(result.exitCode);
     });
   });
 });

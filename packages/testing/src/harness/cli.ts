@@ -22,17 +22,19 @@ export interface CliTestEnv {
   tempDir: string;
   configPath: string;
   outputDir: string;
+  env?: Record<string, string>;
   cleanup: () => Promise<void>;
 }
 
 /** Known exit codes — must match wpm exit-codes.ts */
 export const EXIT_CODES = {
-  SUCCESS: 0,
-  CONFIG_ERROR: 1,
-  SOURCE_ERROR: 2,
-  EXECUTION_ERROR: 3,
-  PARTIAL_FAILURE: 4,
-  SYSTEM_ERROR: 5,
+  success: 0,
+  config_error: 1,
+  source_error: 2,
+  execution_error: 3,
+  partial_failure: 4,
+  system_error: 5,
+  conformance_fail: 6,
 } as const;
 
 export type ExitCodeName = keyof typeof EXIT_CODES;
@@ -54,6 +56,7 @@ export async function createCliTestEnv(configContent?: string): Promise<CliTestE
     tempDir,
     configPath,
     outputDir,
+    env: {},
     cleanup: async () => {
       try {
         await fs.rm(tempDir, { recursive: true, force: true });
@@ -127,7 +130,7 @@ export function runCli(
     // Handle process timeout
     child.on('error', () => {
       resolve({
-        exitCode: EXIT_CODES.SYSTEM_ERROR,
+        exitCode: EXIT_CODES.system_error,
         stdout: '',
         stderr: 'Process failed to start',
         durationMs: Date.now() - start,

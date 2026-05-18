@@ -15,12 +15,12 @@ describe('wpm config check — warn on configuration issues', () => {
   describe('config check (basic)', () => {
     it('should exit 0 or 3 (success or execution_error)', async () => {
       const result = await runCli(['config', 'check']);
-      expect([EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR]).toContain(result.exitCode);
+      expect([EXIT_CODES.success, EXIT_CODES.execution_error]).toContain(result.exitCode);
     });
 
     it('should list warning fields if warnings exist', async () => {
       const result = await runCli(['config', 'check']);
-      if (result.exitCode === EXIT_CODES.EXECUTION_ERROR) {
+      if (result.exitCode === EXIT_CODES.execution_error) {
         expect(result.stdout || result.stderr).toMatch(/field:|warning/i);
       }
     });
@@ -29,7 +29,7 @@ describe('wpm config check — warn on configuration issues', () => {
   describe('config check --format json', () => {
     it('should output valid JSON', async () => {
       const result = await runCli(['config', 'check', '--format', 'json']);
-      expect([EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR]).toContain(result.exitCode);
+      expect([EXIT_CODES.success, EXIT_CODES.execution_error]).toContain(result.exitCode);
       expect(() => JSON.parse(result.stdout)).not.toThrow();
     });
 
@@ -44,7 +44,7 @@ describe('wpm config check — warn on configuration issues', () => {
     it('JSON payload.all_clear should match exit code', async () => {
       const result = await runCli(['config', 'check', '--format', 'json']);
       const json = JSON.parse(result.stdout);
-      const isSuccess = result.exitCode === EXIT_CODES.SUCCESS;
+      const isSuccess = result.exitCode === EXIT_CODES.success;
       expect(json.payload.all_clear).toBe(isSuccess);
     });
 
@@ -59,12 +59,12 @@ describe('wpm config check — warn on configuration issues', () => {
   describe('config check --quiet', () => {
     it('should accept --quiet flag', async () => {
       const result = await runCli(['config', 'check', '--quiet']);
-      expect([EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR]).toContain(result.exitCode);
+      expect([EXIT_CODES.success, EXIT_CODES.execution_error]).toContain(result.exitCode);
     });
 
     it('should accept -q as alias for --quiet', async () => {
       const result = await runCli(['config', 'check', '-q']);
-      expect([EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR]).toContain(result.exitCode);
+      expect([EXIT_CODES.success, EXIT_CODES.execution_error]).toContain(result.exitCode);
     });
   });
 

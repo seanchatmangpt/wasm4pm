@@ -7,13 +7,13 @@ import * as os from 'os';
 describe('wpm run --preflight validation', () => {
   it('runs mandatory Pass 1 (structural) validation on missing file', async () => {
     const result = await runCli(['run', '/nonexistent/missing.xes']);
-    expect(result?.exitCode).toBe(EXIT_CODES.SOURCE_ERROR);
+    expect(result?.exitCode).toBe(EXIT_CODES.source_error);
   });
 
   it('rejects unsupported input file extension with SOURCE_ERROR', async () => {
     // Plan A preflight: unknown extensions must fail before WASM init.
     const result = await runCli(['run', 'no-such.txt']);
-    expect(result?.exitCode).toBe(EXIT_CODES.SOURCE_ERROR);
+    expect(result?.exitCode).toBe(EXIT_CODES.source_error);
   });
 
   it('requires --preflight flag for full Pass 2 (semantic) validation', async () => {

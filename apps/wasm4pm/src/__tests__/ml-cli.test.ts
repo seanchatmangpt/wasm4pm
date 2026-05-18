@@ -144,7 +144,7 @@ describe('wpm ml — machine learning analysis CLI', () => {
     });
     it('should support JSON output', async () => {
       const result = await runCli(['ml', 'classify', '--input', 'test.xes', '--format', 'json']);
-      if (result.exitCode === EXIT_CODES.SUCCESS) {
+      if (result.exitCode === EXIT_CODES.success) {
         expect(() => JSON.parse(result.stdout)).not.toThrow();
       }
     });

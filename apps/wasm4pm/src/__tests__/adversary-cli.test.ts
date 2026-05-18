@@ -15,7 +15,7 @@ describe('wpm adversary — adversarial test suite CLI', () => {
   describe('adversary run', () => {
     it('should execute adversarial test suite', async () => {
       const result = await runCli(['adversary', 'run'], { env: env.env });
-      expect([EXIT_CODES.SUCCESS, 4]).toContain(result.exitCode); // success or partial_failure
+      expect([EXIT_CODES.success, 4]).toContain(result.exitCode); // success or partial_failure
     });
 
     it('should output test results', async () => {
@@ -25,7 +25,7 @@ describe('wpm adversary — adversarial test suite CLI', () => {
 
     it('should support --format json', async () => {
       const result = await runCli(['adversary', 'run', '--format', 'json'], { env: env.env });
-      expect([EXIT_CODES.SUCCESS, 4]).toContain(result.exitCode);
+      expect([EXIT_CODES.success, 4]).toContain(result.exitCode);
       expect(() => JSON.parse(result.stdout)).not.toThrow();
     });
   });
@@ -33,7 +33,7 @@ describe('wpm adversary — adversarial test suite CLI', () => {
   describe('adversary check', () => {
     it('should validate proof gate compliance', async () => {
       const result = await runCli(['adversary', 'check'], { env: env.env });
-      expect([EXIT_CODES.SUCCESS, 1, 4]).toContain(result.exitCode);
+      expect([EXIT_CODES.success, 1, 4]).toContain(result.exitCode);
     });
 
     it('should report gate status', async () => {
@@ -48,7 +48,7 @@ describe('wpm adversary — adversarial test suite CLI', () => {
     categories.forEach((cat) => {
       it(`should support category ${cat}`, async () => {
         const result = await runCli(['adversary', 'run', '--category', cat], { env: env.env });
-        expect([EXIT_CODES.SUCCESS, 4]).toContain(result.exitCode);
+        expect([EXIT_CODES.success, 4]).toContain(result.exitCode);
       });
     });
   });
@@ -66,7 +66,7 @@ describe('wpm adversary — adversarial test suite CLI', () => {
       );
 
       const result = await runCli(['adversary', 'run', '--manifest', manifest], { env: env.env });
-      expect([EXIT_CODES.SUCCESS, 4]).toContain(result.exitCode);
+      expect([EXIT_CODES.success, 4]).toContain(result.exitCode);
     });
   });
 
@@ -86,7 +86,7 @@ describe('wpm adversary — adversarial test suite CLI', () => {
     it('should save detailed report to file', async () => {
       const report = env.tmpDir + '/adversary-report.json';
       const result = await runCli(['adversary', 'run', '--save-report', report], { env: env.env });
-      expect([EXIT_CODES.SUCCESS, 4]).toContain(result.exitCode);
+      expect([EXIT_CODES.success, 4]).toContain(result.exitCode);
 
       const fs = require('fs');
       expect(fs.existsSync(report)).toBe(true);
@@ -96,7 +96,7 @@ describe('wpm adversary — adversarial test suite CLI', () => {
   describe('adversary --stop-on-escape', () => {
     it('should halt immediately if probe escapes', async () => {
       const result = await runCli(['adversary', 'run', '--stop-on-escape'], { env: env.env });
-      expect([EXIT_CODES.SUCCESS, 2, 4]).toContain(result.exitCode);
+      expect([EXIT_CODES.success, 2, 4]).toContain(result.exitCode);
     });
   });
 
@@ -126,20 +126,20 @@ describe('wpm adversary — adversarial test suite CLI', () => {
   describe('adversary output formats', () => {
     it('should support human format (default)', async () => {
       const result = await runCli(['adversary', 'run', '--format', 'human'], { env: env.env });
-      expect([EXIT_CODES.SUCCESS, 4]).toContain(result.exitCode);
+      expect([EXIT_CODES.success, 4]).toContain(result.exitCode);
       expect(result.stdout).not.toMatch(/^\s*{/); // Not JSON
     });
 
     it('should support JSON format', async () => {
       const result = await runCli(['adversary', 'run', '--format', 'json'], { env: env.env });
-      expect([EXIT_CODES.SUCCESS, 4]).toContain(result.exitCode);
+      expect([EXIT_CODES.success, 4]).toContain(result.exitCode);
       const json = JSON.parse(result.stdout);
       expect(json.status).toBeDefined();
     });
 
     it('should include detailed failure reasons in output', async () => {
       const result = await runCli(['adversary', 'run'], { env: env.env });
-      if (result.exitCode !== EXIT_CODES.SUCCESS) {
+      if (result.exitCode !== EXIT_CODES.success) {
         expect(result.stdout || result.stderr).toMatch(/reason|cause|details|explain/i);
       }
     });

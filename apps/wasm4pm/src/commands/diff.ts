@@ -148,7 +148,7 @@ export const diff = defineCommand({
           // Load WASM module
           const loader = WasmLoader.getInstance();
           await loader.init();
-          const wasm = loader.get();
+          const wasm = loader.get() as any;
 
           // Read and parse both XES files
           const [xes1, xes2] = await Promise.all([

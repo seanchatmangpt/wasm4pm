@@ -43,7 +43,7 @@ export declare class ReceiptBuilder {
      * @param data Input data
      * @returns This builder for chaining
      */
-    setInput(data: any): this;
+    setInput(data: unknown): this;
     /**
      * Set execution plan and compute its hash
      * @param plan Execution plan object
@@ -55,7 +55,7 @@ export declare class ReceiptBuilder {
      * @param output Output data
      * @returns This builder for chaining
      */
-    setOutput(output: any): this;
+    setOutput(output: unknown): this;
     /**
      * Set execution timeline
      * @param startTime ISO 8601 start time

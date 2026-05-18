@@ -15,7 +15,7 @@ describe('wpm config verify — strict configuration gate', () => {
   describe('config verify (basic)', () => {
     it('should pass or fail all gates', async () => {
       const result = await runCli(['config', 'verify']);
-      expect([EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR]).toContain(result.exitCode);
+      expect([EXIT_CODES.success, EXIT_CODES.execution_error]).toContain(result.exitCode);
     });
 
     it('should display gates in human output', async () => {
@@ -45,7 +45,7 @@ describe('wpm config verify — strict configuration gate', () => {
     it('all_pass should match exit code', async () => {
       const result = await runCli(['config', 'verify', '--format', 'json']);
       const json = JSON.parse(result.stdout);
-      const expectedAllPass = result.exitCode === EXIT_CODES.SUCCESS;
+      const expectedAllPass = result.exitCode === EXIT_CODES.success;
       expect(json.payload.all_pass).toBe(expectedAllPass);
     });
   });
@@ -75,14 +75,14 @@ describe('wpm config verify — strict configuration gate', () => {
   describe('config verify --quiet', () => {
     it('should accept --quiet flag', async () => {
       const result = await runCli(['config', 'verify', '--quiet']);
-      expect([EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR]).toContain(result.exitCode);
+      expect([EXIT_CODES.success, EXIT_CODES.execution_error]).toContain(result.exitCode);
     });
   });
 
   describe('config verify exit codes', () => {
     it('should exit successfully or with execution_error', async () => {
       const result = await runCli(['config', 'verify']);
-      expect([EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR]).toContain(result.exitCode);
+      expect([EXIT_CODES.success, EXIT_CODES.execution_error]).toContain(result.exitCode);
     });
   });
 
