@@ -107,9 +107,9 @@ export class AlgorithmDiscovery {
         precision: profile.precisionNorm,
         simplicity: profile.simplicityNorm,
         generalization,
-        executionTimeMs: Math.max(1, endTime - startTime + executionTime),
-        edgeCount: Math.floor(activities.size * (fitness + 0.5)),
-        transitionCount: Math.floor(traces.size * fitness),
+        executionTimeMs: Math.max(1, endTime - startTime),
+        edgeCount: Math.floor(activities.size * (profile.qualityNorm + 0.5)),
+        transitionCount: Math.floor(traces.size * profile.qualityNorm),
         simulated: true, // Metrics are approximations — not real token-replay values
       };
 

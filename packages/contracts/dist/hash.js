@@ -31,20 +31,38 @@ export function normalizeForHashing(data) {
     return JSON.stringify(sorted);
 }
 /**
- * Compute BLAKE3 hash of a configuration object
+ * Compute BLAKE3 hash of a configuration object.
+ *
+ * @param config A non-null configuration record.
+ * @returns 64-character hex-encoded BLAKE3 hash.
+ * @throws {TypeError} When `config` is null or undefined (see `hashData`).
  */
 export function hashConfig(config) {
+    if (config === undefined || config === null) {
+        throw new TypeError('hashConfig: config must be a non-null object — hashing an absent config ' +
+            'produces a hash that looks valid but represents nothing real.');
+    }
     const normalized = normalizeForHashing(config);
     const hashResult = hash(Buffer.from(normalized, 'utf-8'));
     return hashResult.toString('hex');
 }
 /**
- * Compute BLAKE3 hash of arbitrary data
- * Deterministic: same data -> same hash always
- * @param data Any value to hash
- * @returns Hex-encoded BLAKE3 hash
+ * Compute BLAKE3 hash of arbitrary data.
+ * Deterministic: same input always produces the same hash.
+ *
+ * @param data Any JSON-serialisable value to hash.
+ * @returns 64-character hex-encoded BLAKE3 hash (256 bits).
+ * @throws {TypeError} When `data` is `undefined` or `null`, because hashing
+ *   empty/absent data produces a valid-looking hash that is indistinguishable
+ *   from a hash of real content — a silent falsification of the provenance chain.
+ *   Pass a concrete value or an explicit sentinel (e.g. `hashData('')`) instead.
  */
 export function hashData(data) {
+    if (data === undefined || data === null) {
+        throw new TypeError('hashData: refusing to hash undefined/null — this would produce a valid-looking ' +
+            'BLAKE3 hash for absent data, making the provenance chain untrustworthy. ' +
+            'Pass a concrete value or an explicit empty string sentinel.');
+    }
     const normalized = normalizeForHashing(data);
     const hashResult = hash(Buffer.from(normalized, 'utf-8'));
     return hashResult.toString('hex');

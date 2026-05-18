@@ -24,6 +24,14 @@ export { detectEnhancedAnomalies } from './anomaly.js';
 // Dimensionality reduction
 export { reduceFeaturesPCA } from './reduction.js';
 
+// Feature quality assessment
+export { assessFeatureQuality } from './feature-quality.js';
+export type { FeatureQualityReport, FeatureQualityIssue } from './feature-quality.js';
+
+// Parameter suggestions
+export { suggestParameters, pickBestAlgorithm } from './parameter-suggestions.js';
+export type { ParameterSuggestions, AlgorithmSuggestion } from './parameter-suggestions.js';
+
 // Types
 export type {
   EmptyInputWarning,

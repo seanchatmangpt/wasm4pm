@@ -66,9 +66,24 @@ export async function checkDeterminism(producer, iterations = 5) {
             }
         }
     }
-    const details = passed
-        ? `Determinism verified: ${iterations} iterations, hash=${hashes[0]}`
-        : `Non-deterministic: ${uniqueHashes.size} unique hashes from ${iterations} iterations. Hashes: [${hashes.join(', ')}]`;
+    let details;
+    if (passed) {
+        details = `Determinism verified: ${iterations} iterations, hash=${hashes[0]}`;
+    }
+    else {
+        // Surface the unstable fields so the practitioner knows where non-determinism lives.
+        // Without this, "3 unique hashes from 5 iterations" tells them nothing actionable.
+        const unexpectedUnstable = unstableFields.filter((f) => !UNSTABLE_FIELDS.has(f));
+        const fieldNote = unexpectedUnstable.length > 0
+            ? `\n  Unstable fields (unexpected): [${unexpectedUnstable.join(', ')}]` +
+                `\n  → Check whether these fields use wall-clock time, random IDs, or floating-point accumulators.` +
+                `\n  → Add them to UNSTABLE_FIELDS if non-determinism is expected, or fix the algorithm.`
+            : '';
+        details =
+            `Non-deterministic: ${uniqueHashes.size} unique hashes from ${iterations} iterations.` +
+                `\n  Hashes: [${hashes.join(', ')}]` +
+                fieldNote;
+    }
     return { passed, iterations, stableFields, unstableFields, hashes, details };
 }
 /**

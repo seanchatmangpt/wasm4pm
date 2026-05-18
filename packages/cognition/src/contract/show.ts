@@ -20,16 +20,18 @@ function assertShowReport(raw: unknown): ShowReport {
     );
   };
   if (!isObj(raw)) reject(`expected object, got ${typeof raw}`);
-  if (!Array.isArray(raw.breeds)) reject('breeds must be an array');
-  const breeds = raw.breeds as unknown[];
+  const r = raw as Record<string, unknown>;
+  if (!Array.isArray(r.breeds)) reject('breeds must be an array');
+  const breeds = r.breeds as unknown[];
   for (let i = 0; i < breeds.length; i++) {
     const b = breeds[i];
     if (!isObj(b)) reject(`breeds[${i}] must be an object`);
-    if (typeof b.id !== 'string' || b.id.length === 0)
+    const bb = b as Record<string, unknown>;
+    if (typeof bb.id !== 'string' || bb.id.length === 0)
       reject(`breeds[${i}].id must be non-empty string`);
-    if (typeof b.name !== 'string' || b.name.length === 0)
+    if (typeof bb.name !== 'string' || bb.name.length === 0)
       reject(`breeds[${i}].name must be non-empty string`);
-    if (typeof b.year !== 'number' || !Number.isFinite(b.year))
+    if (typeof bb.year !== 'number' || !Number.isFinite(bb.year))
       reject(`breeds[${i}].year must be finite number`);
   }
   return { breeds: breeds as BreedDescriptor[] };

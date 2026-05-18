@@ -102,12 +102,17 @@ export function runCli(args, options) {
 }
 /**
  * Assert that a CLI result matches expected exit code.
+ *
+ * When the assertion fails, output is truncated at 500 chars with an explicit
+ * "[... N chars truncated]" trailer so the practitioner knows there is more
+ * context available rather than seeing a cliff-edge mid-word.
  */
 export function assertExitCode(result, expected) {
     if (result.exitCode !== expected) {
-        throw new Error(`Exit code mismatch: expected ${expected}, got ${result.exitCode}\n` +
-            `stdout: ${result.stdout.slice(0, 500)}\n` +
-            `stderr: ${result.stderr.slice(0, 500)}`);
+        const truncate = (s, limit = 500) => s.length > limit ? s.slice(0, limit) + `\n[... ${s.length - limit} chars truncated]` : s;
+        throw new Error(`Exit code mismatch: expected ${expected}, got ${result.exitCode} (${result.durationMs}ms)\n` +
+            `stdout: ${truncate(result.stdout)}\n` +
+            `stderr: ${truncate(result.stderr)}`);
     }
 }
 /**

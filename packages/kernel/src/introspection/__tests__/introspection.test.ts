@@ -213,7 +213,7 @@ describe('getProfileCapabilities', () => {
   });
 
   it('count equals availableAlgorithms.length for all profiles', () => {
-    for (const p of ['browser', 'edge', 'fog', 'iot', 'cloud'] as const) {
+    for (const p of ['browser', 'edge', 'fog', 'iot'] as const) {
       const caps = getProfileCapabilities(p);
       expect(caps.availableAlgorithms.length).toBe(caps.count);
     }

@@ -26,19 +26,8 @@ const HOME = os.homedir();
 const PM4PY_DATA = `${HOME}/chatmangpt/pm4py/tests/input_data`;
 const REPO_BENCH = path.resolve(__dirname, '../../bench_data');
 
-// The WASM XES parser currently rejects several patterns that are valid per
-// the XES standard and appear in pm4py's shipped fixtures:
-//   - <global scope="..."> declarations (running-example.xes, others)
-//   - non-self-closing <int>/<float> tags with text content
-//     (roadtraffic*.xes, receipt.xes ship these with meta-statistics)
-// Until the parser supports them, paths under PM4PY_DATA are skipped during
-// resolution so the tests fall back to repo-shipped fixtures or skip cleanly.
-// Track at: TODO(parser): support <global> and non-self-closing typed tags.
-const SKIP_PM4PY_PATHS = true;
-
 function resolveFile(candidates: string[]): string | null {
   for (const p of candidates) {
-    if (SKIP_PM4PY_PATHS && p.startsWith(PM4PY_DATA)) continue;
     const abs = path.resolve(p);
     if (fs.existsSync(abs)) {
       const size = fs.statSync(abs).size;

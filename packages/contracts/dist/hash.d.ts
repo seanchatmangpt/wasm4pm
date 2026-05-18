@@ -8,14 +8,23 @@
  */
 export declare function normalizeForHashing(data: any): string;
 /**
- * Compute BLAKE3 hash of a configuration object
+ * Compute BLAKE3 hash of a configuration object.
+ *
+ * @param config A non-null configuration record.
+ * @returns 64-character hex-encoded BLAKE3 hash.
+ * @throws {TypeError} When `config` is null or undefined (see `hashData`).
  */
 export declare function hashConfig(config: Record<string, any>): string;
 /**
- * Compute BLAKE3 hash of arbitrary data
- * Deterministic: same data -> same hash always
- * @param data Any value to hash
- * @returns Hex-encoded BLAKE3 hash
+ * Compute BLAKE3 hash of arbitrary data.
+ * Deterministic: same input always produces the same hash.
+ *
+ * @param data Any JSON-serialisable value to hash.
+ * @returns 64-character hex-encoded BLAKE3 hash (256 bits).
+ * @throws {TypeError} When `data` is `undefined` or `null`, because hashing
+ *   empty/absent data produces a valid-looking hash that is indistinguishable
+ *   from a hash of real content — a silent falsification of the provenance chain.
+ *   Pass a concrete value or an explicit sentinel (e.g. `hashData('')`) instead.
  */
 export declare function hashData(data: any): string;
 /**

@@ -41,9 +41,15 @@ export type GateFunction = () => Promise<GateResult> | GateResult;
 export declare function registerGate(name: string, fn: GateFunction): void;
 /**
  * Run all registered certification gates.
+ *
+ * The returned report always includes an `evidence` envelope so a practitioner
+ * can reproduce any certification run exactly: same version, same node version,
+ * same platform, same feature flags, same wasm profile.
  */
 export declare function runCertification(version: string, options?: {
     fast?: boolean;
+    wasmBuildProfile?: string;
+    featureFlags?: string[];
 }): Promise<CertificationReport>;
 /**
  * Clear all registered gates (for testing the certification system itself).

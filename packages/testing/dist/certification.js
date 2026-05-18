@@ -16,6 +16,10 @@ export function registerGate(name, fn) {
 }
 /**
  * Run all registered certification gates.
+ *
+ * The returned report always includes an `evidence` envelope so a practitioner
+ * can reproduce any certification run exactly: same version, same node version,
+ * same platform, same feature flags, same wasm profile.
  */
 export async function runCertification(version, options) {
     const gates = [];
@@ -47,12 +51,31 @@ export async function runCertification(version, options) {
     const passed = gates.every((g) => g.passed);
     const passCount = gates.filter((g) => g.passed).length;
     const summary = `${passCount}/${gates.length} gates passed`;
+    // Compute a stable corpus hash from the gate names so a later run can
+    // detect if the gate set has changed (gate added/removed = different corpus).
+    const gateNames = [...registeredGates.keys()].sort();
+    const corpusHash = gateNames
+        .join('|')
+        .split('')
+        .reduce((acc, c) => (Math.imul(31, acc) + c.charCodeAt(0)) | 0, 0)
+        .toString(16)
+        .padStart(8, '0');
     return {
         timestamp: new Date().toISOString(),
         version,
         gates,
         passed,
         summary,
+        evidence: {
+            corpus_hash: corpusHash,
+            feature_flags: options?.featureFlags ?? [],
+            wasm_build_profile: options?.wasmBuildProfile ?? 'browser',
+            run_environment: {
+                node_version: typeof process !== 'undefined' ? process.version : 'unknown',
+                platform: typeof process !== 'undefined' ? process.platform : 'unknown',
+                arch: typeof process !== 'undefined' ? process.arch : 'unknown',
+            },
+        },
     };
 }
 /**

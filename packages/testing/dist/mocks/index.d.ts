@@ -1,4 +1,4 @@
-export { MockSourceAdapter, createMockSource } from './source.js';
+export { MockSourceAdapter, createMockSource, SENTINEL_FINGERPRINT } from './source.js';
 export type { MockSourceOptions, Capabilities } from './source.js';
 export { MockSinkAdapter, createMockSink } from './sink.js';
 export type { MockSinkOptions, WrittenArtifact, ArtifactType } from './sink.js';

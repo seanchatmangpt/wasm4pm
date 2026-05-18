@@ -74,6 +74,21 @@ export interface Receipt {
     profile?: ExecutionProfile;
 }
 /**
+ * Format a Receipt as a human-readable one-liner for practitioner QoL.
+ *
+ * A practitioner glancing at a saved result file should immediately see:
+ *   what ran | what data | how many traces/variants | how long | outcome
+ *
+ * Without this, they must parse 64-char BLAKE3 hex strings to reconstruct context.
+ *
+ * Example output:
+ *   "dfg on xes [342 traces, 8 variants, 47 edges] — 47ms — success [run: a3f8b2c1]"
+ *
+ * The short run_id prefix (8 chars) is enough for log correlation without
+ * overwhelming the terminal line. Full hashes are already in the receipt JSON.
+ */
+export declare function formatReceipt(receipt: Receipt): string;
+/**
  * Type guard to check if a value is a valid Receipt
  */
 export declare function isReceipt(value: unknown): value is Receipt;

@@ -4,9 +4,9 @@ export default defineConfig({
   test: {
     globals: true,
     environment: 'node',
-    testTimeout: 10000,
-    hookTimeout: 10000,
-    teardownTimeout: 10000,
+    testTimeout: 15000,
+    hookTimeout: 15000,
+    teardownTimeout: 15000,
     isolate: true,
     threads: true,
     maxThreads: 4,

@@ -230,76 +230,6 @@ pub fn compute_reward(
     reward
 }
 
-/// Action history tracking for observability.
-/// Maintains a rolling window of the last 100 actions with success metrics.
-#[derive(Debug, Clone)]
-pub struct ActionHistory {
-    /// Rolling window of recent actions (max 100).
-    actions: std::collections::VecDeque<(RlAction, f32)>,
-    /// Success count per action type.
-    success_counts: [u32; 5],
-    /// Total count per action type.
-    total_counts: [u32; 5],
-}
-
-impl ActionHistory {
-    pub fn new() -> Self {
-        Self {
-            actions: std::collections::VecDeque::with_capacity(100),
-            success_counts: [0; 5],
-            total_counts: [0; 5],
-        }
-    }
-
-    pub fn record_action(&mut self, action: RlAction, reward: f32) {
-        if self.actions.len() >= 100 {
-            let _ = self.actions.pop_front();
-        }
-        self.actions.push_back((action, reward));
-
-        let action_idx = match action {
-            RlAction::Continue => 0,
-            RlAction::Scale => 1,
-            RlAction::Retry => 2,
-            RlAction::Fallback => 3,
-            RlAction::Restart => 4,
-        };
-        self.total_counts[action_idx] = self.total_counts[action_idx].saturating_add(1);
-        if reward > 0.0 {
-            self.success_counts[action_idx] = self.success_counts[action_idx].saturating_add(1);
-        }
-    }
-
-    pub fn get_success_rate(&self, action: RlAction) -> f32 {
-        let action_idx = match action {
-            RlAction::Continue => 0,
-            RlAction::Scale => 1,
-            RlAction::Retry => 2,
-            RlAction::Fallback => 3,
-            RlAction::Restart => 4,
-        };
-        if self.total_counts[action_idx] == 0 {
-            0.0
-        } else {
-            self.success_counts[action_idx] as f32 / self.total_counts[action_idx] as f32
-        }
-    }
-
-    pub fn recent_actions(&self) -> Vec<(RlAction, f32)> {
-        self.actions.iter().copied().collect()
-    }
-
-    pub fn distribution(&self) -> [(&'static str, u32); 5] {
-        [
-            ("Continue", self.total_counts[0]),
-            ("Scale", self.total_counts[1]),
-            ("Retry", self.total_counts[2]),
-            ("Fallback", self.total_counts[3]),
-            ("Restart", self.total_counts[4]),
-        ]
-    }
-}
-
 /// The RL Orchestrator — holds all agents, dispatches to active one.
 pub struct RlOrchestrator {
     // Indexed by AgentType discriminant (0–4); vtable dispatch replaces match blocks.
@@ -307,7 +237,6 @@ pub struct RlOrchestrator {
     active_agent: AgentType,
     linucb: LinUCBAgent,
     telemetry: CycleTelemetry,
-    action_history: ActionHistory,
     use_linucb_for_selection: bool,
 }
 
@@ -330,7 +259,6 @@ impl RlOrchestrator {
             active_agent: AgentType::QLearning,
             linucb: LinUCBAgent::new(),
             telemetry: CycleTelemetry::default(),
-            action_history: ActionHistory::new(),
             use_linucb_for_selection: false,
         }
     }
@@ -350,7 +278,6 @@ impl RlOrchestrator {
             active_agent: AgentType::QLearning,
             linucb: LinUCBAgent::new(),
             telemetry: CycleTelemetry::default(),
-            action_history: ActionHistory::new(),
             use_linucb_for_selection: false,
         }
     }
@@ -427,11 +354,6 @@ impl RlOrchestrator {
     /// Check if LinUCB-based selection is enabled.
     pub fn linucb_selection_enabled(&self) -> bool {
         self.use_linucb_for_selection
-    }
-
-    /// Get action history statistics for observability.
-    pub fn get_action_stats(&self) -> &ActionHistory {
-        &self.action_history
     }
 
     /// Restore telemetry from a serialized snapshot.
@@ -522,9 +444,6 @@ impl RlOrchestrator {
 
         // Decay exploration
         self.decay_exploration();
-
-        // Record action and reward for observability
-        self.action_history.record_action(action, reward);
 
         // Update telemetry with NEXT state (post-cycle)
         self.telemetry.cycle_count += 1;
