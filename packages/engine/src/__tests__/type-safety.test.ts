@@ -203,7 +203,7 @@ describe('FileLogSinkAdapter — appendArtifact unknown narrowing', () => {
 // ---------------------------------------------------------------------------
 
 describe('buildModelIR — node and edge narrowing', () => {
-  const capabilities = {
+  const capabilities: ModelCapabilities = {
     online_safe: true,
     offline_only: false,
     requires_python: false,
@@ -211,7 +211,7 @@ describe('buildModelIR — node and edge narrowing', () => {
     explainable: true,
     streaming: false,
     ml_based: false,
-  } as const;
+  };
 
   it('maps nodes with id, label, type fields correctly', () => {
     const raw: RawModelOutput = {

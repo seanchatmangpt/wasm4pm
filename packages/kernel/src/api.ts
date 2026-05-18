@@ -142,31 +142,6 @@ export interface KernelWasmModule extends WasmModule {
   /** Flatten one object type from an OCEL into a conventional flat EventLog handle */
   flatten_ocel_to_eventlog?(ocel_handle: string, object_type: string): string;
 
-  /** Discover POWL from event log */
-  discover_powl_from_log?(
-    log_json: string,
-    variant: string
-  ): Promise<{ root: number; node_count: number; repr: string; variant: string }>;
-
-  /** Discover POWL from event log with config */
-  discover_powl_from_log_config?(
-    log_json: string,
-    activity_key: string,
-    variant: string,
-    min_trace_count: number,
-    noise_threshold: number
-  ): Promise<{
-    root: number;
-    node_count: number;
-    repr: string;
-    variant: string;
-    config: {
-      activity_key: string;
-      min_trace_count: number;
-      noise_threshold: number;
-    };
-  }>;
-
   /** Delete an object handle from WASM memory */
   delete_object?(handle: string): void;
 
