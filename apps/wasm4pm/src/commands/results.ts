@@ -22,6 +22,12 @@ export interface SavedResult {
   input: string;
   activityKey: string;
   result: Record<string, unknown>;
+  /**
+   * BLAKE3 hex-64 of JSON.stringify(result) computed at save time.
+   * Present in results saved with wpm >= 26.5.17.
+   * When present, --verify detects tampering even without a matching receipt.
+   */
+  output_hash?: string;
 }
 
 /**
@@ -102,6 +108,7 @@ export async function savePredictionResult(
       input,
       activityKey,
       result,
+      output_hash: blake3Hex(JSON.stringify(result)),
     };
 
     await fs.writeFile(filepath, JSON.stringify(payload, null, 2), 'utf-8');
@@ -306,11 +313,25 @@ export const results = defineCommand({
             return await exitWithFlush(errResult.exit_code);
           }
 
-          // output_hash was computed as blake3(JSON.stringify(payload)) where payload
-          // is the result field inside the SavedResult wrapper.
+          // Recompute the blake3 hash of the current result payload.
+          // If the file was tampered with, this will differ from the stored output_hash.
           const recomputedOutputHash = blake3Hex(JSON.stringify(savedResult.result));
 
-          // Scan receipts for any whose output_hash matches (check latest first as fast path)
+          // Primary tamper detection: if the SavedResult carries its own output_hash
+          // (written at save time), compare immediately without scanning receipts.
+          // This enables tamper detection even when no receipt exists.
+          const storedHash = typeof savedResult.output_hash === 'string'
+            ? savedResult.output_hash
+            : null;
+          const storedHashMismatch =
+            storedHash !== null && storedHash !== recomputedOutputHash;
+
+          // Scan receipts for matching output_hash.
+          // Match against recomputed hash (clean file) or stored hash (tampered file,
+          // so we can report which receipt it originally belonged to).
+          const hashesToMatch = new Set<string>([recomputedOutputHash]);
+          if (storedHash) hashesToMatch.add(storedHash);
+
           let matchedReceipt: CommandReceipt | null = null;
           let matchedReceiptFile: string | null = null;
           const candidateFiles: string[] = [];
@@ -332,7 +353,7 @@ export const results = defineCommand({
               const rPath = path.join(receiptsDir, rFile);
               if (!existsSync(rPath)) continue;
               const r = JSON.parse(await fs.readFile(rPath, 'utf-8')) as CommandReceipt;
-              if (r.output_hash === recomputedOutputHash) {
+              if (hashesToMatch.has(r.output_hash)) {
                 matchedReceipt = r;
                 matchedReceiptFile = rFile;
                 break;
@@ -342,15 +363,20 @@ export const results = defineCommand({
             }
           }
 
-          const integrity = matchedReceipt
-            ? matchedReceipt.output_hash === recomputedOutputHash
+          // Determine integrity:
+          //   mismatch   — stored output_hash differs from current payload (tampering detected)
+          //   ok         — hashes agree and a matching receipt was found
+          //   no_receipt — hashes agree (or no stored hash) but no receipt found
+          const integrity: 'ok' | 'mismatch' | 'no_receipt' = storedHashMismatch
+            ? 'mismatch'
+            : matchedReceipt !== null && matchedReceipt.output_hash === recomputedOutputHash
               ? 'ok'
-              : 'mismatch'
-            : 'no_receipt';
+              : 'no_receipt';
 
           const verifyPayload = {
             result_file: path.basename(resultFilepath),
             recomputed_output_hash: recomputedOutputHash,
+            stored_output_hash: storedHash,
             receipt_found: matchedReceipt !== null,
             receipt_file: matchedReceiptFile,
             receipt_output_hash: matchedReceipt?.output_hash ?? null,
@@ -383,14 +409,13 @@ export const results = defineCommand({
               projection.log(`  command:     ${p.command}`);
               projection.log(`  saved:       ${p.timestamp}`);
             } else if (p.integrity === 'mismatch') {
-              projection.error(`FAIL — hash mismatch detected`);
+              projection.error(`FAIL — payload hash mismatch detected`);
               projection.log('');
-              projection.log('  The stored receipt hash does not match the result payload.');
-              projection.log('  This means the file was altered after the receipt was issued,');
-              projection.log('  or the receipt belongs to a different run.');
+              projection.log('  The result file payload does not match the hash stored at save time.');
+              projection.log('  This means the result file was altered after it was originally written.');
               projection.log('');
               // Show both hashes and highlight the first differing character position
-              const rec = p.receipt_output_hash ?? '';
+              const rec = p.stored_output_hash ?? p.receipt_output_hash ?? '';
               const recomp = p.recomputed_output_hash;
               let firstDiff = -1;
               for (let i = 0; i < Math.max(rec.length, recomp.length); i++) {
@@ -399,8 +424,8 @@ export const results = defineCommand({
                   break;
                 }
               }
-              projection.log(`  Receipt hash (stored):`);
-              projection.log(`    ${rec}`);
+              projection.log(`  Hash at save time:`);
+              projection.log(`    ${rec || '(not stored)'}`);
               projection.log(`  Recomputed hash:`);
               projection.log(`    ${recomp}`);
               if (firstDiff >= 0) {

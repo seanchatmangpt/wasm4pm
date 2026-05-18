@@ -5,7 +5,7 @@ import { EXIT_CODES, translateContractExitCode } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
 import { loadWasm4pmConfig, buildCliOverrides } from '../config-loader.js';
 import { savePredictionResult } from './results.js';
-import { VALID_PREDICT_CLI_TASKS, createError } from '@wasm4pm/contracts';
+import { VALID_PREDICT_CLI_TASKS, createError, findClosestMatch } from '@wasm4pm/contracts';
 import { withSpan } from './_otel.js';
 import {
   saveCommandReceipt,
@@ -102,9 +102,19 @@ export const predict = defineCommand({
           // Step 1: Validate task
           const task = ctx.args.task as string;
           if (!VALID_TASKS.includes(task as PredictTask)) {
+            const suggestion = findClosestMatch(task, [...VALID_TASKS], 3);
+            const didYouMean = suggestion ? `\nDid you mean: '${suggestion}'?` : '';
             const result = makeErrorResult(
               'predict',
-              new Error(`Unknown task: "${task}". Valid tasks: ${VALID_TASKS.join(', ')}`),
+              new Error(
+                `Unknown task: "${task}".${didYouMean}\n` +
+                  `Valid tasks: ${VALID_TASKS.join(', ')}\n\n` +
+                  `Usage:  wpm predict <task> -i <log.xes>\n` +
+                  `Examples:\n` +
+                  `  wpm predict next-activity -i process.xes\n` +
+                  `  wpm predict remaining-time -i process.xes --prefix "A,B"\n\n` +
+                  `Run 'wpm predict --help' for full task descriptions.`
+              ),
               EXIT_CODES.source_error,
               'INVALID_TASK'
             );

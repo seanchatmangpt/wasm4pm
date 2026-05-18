@@ -3,9 +3,12 @@
  * Provides exact field paths, allowed values, and helpful suggestions.
  */
 
-import type { z } from 'zod';
+import type { z, ZodTooSmallIssue, ZodTooBigIssue } from 'zod';
 import type { Config } from '../types.js';
 import { executionProfileSchema, mlTaskSchema, rlAgentSchema, ALGORITHM_IDS } from '../schema.js';
+
+/** Cast once — avoids `as any` on every `.includes()` call. */
+const ALGORITHM_IDS_STR = ALGORITHM_IDS as readonly string[];
 
 export interface ValidationErrorContext {
   field: string;
@@ -60,15 +63,15 @@ export function validateAlgorithmProfile(
 ): { compatible: boolean; warning?: string } {
   const profileAlgos = getAlgorithmsForProfile(profile);
 
-  if (!ALGORITHM_IDS.includes(algorithm as any)) {
+  if (!ALGORITHM_IDS_STR.includes(algorithm)) {
     return {
       compatible: false,
       warning: `Algorithm "${algorithm}" is not registered. Available: ${ALGORITHM_IDS.slice(0, 5).join(', ')}...`,
     };
   }
 
-  if (!profileAlgos.includes(algorithm as any)) {
-    const availableInBrowser = getAlgorithmsForProfile('browser').includes(algorithm as any);
+  if (!profileAlgos.includes(algorithm)) {
+    const availableInBrowser = getAlgorithmsForProfile('browser').includes(algorithm);
     return {
       compatible: false,
       warning: availableInBrowser
@@ -319,10 +322,10 @@ function inferConstraints(issue: z.ZodIssue): Record<string, unknown> {
   const constraints: Record<string, unknown> = {};
 
   if (issue.code === 'too_small' && 'minimum' in issue) {
-    constraints.minimum = (issue as any).minimum;
+    constraints.minimum = (issue as ZodTooSmallIssue).minimum;
   }
   if (issue.code === 'too_big' && 'maximum' in issue) {
-    constraints.maximum = (issue as any).maximum;
+    constraints.maximum = (issue as ZodTooBigIssue).maximum;
   }
 
   return constraints;
@@ -401,7 +404,7 @@ function getAlgorithmsForProfile(
 ): string[] {
   // Simplified profiles; in production, this would be derived from feature flags
   const allAlgos = ALGORITHM_IDS;
-  const advanced = [
+  const advanced: readonly string[] = [
     'genetic_algorithm',
     'ilp',
     'aco',
@@ -414,19 +417,17 @@ function getAlgorithmsForProfile(
     'ml_regress',
     'ml_pca',
   ];
-  const ocel = ['log_to_ocel'];
-  const powl = ['powl_to_process_tree'];
+  const ocel: readonly string[] = ['log_to_ocel'];
+  const powl: readonly string[] = ['powl_to_process_tree'];
 
   if (profile === 'browser') return [...allAlgos];
-  if (profile === 'fog') return allAlgos.filter((a) => !powl.includes(a as any));
+  if (profile === 'fog') return allAlgos.filter((a) => !powl.includes(a));
   if (profile === 'edge')
-    return allAlgos.filter((a) => !advanced.includes(a as any) && !ocel.includes(a as any));
+    return allAlgos.filter((a) => !advanced.includes(a) && !ocel.includes(a));
   if (profile === 'iot')
     return allAlgos.filter(
       (a) =>
-        ![...advanced, ...ocel, 'simulated_annealing', 'hill_climbing', 'declare'].includes(
-          a as any
-        )
+        ![...advanced, ...ocel, 'simulated_annealing', 'hill_climbing', 'declare'].includes(a)
     );
   if (profile === 'mobile')
     return allAlgos.filter(
@@ -439,7 +440,7 @@ function getAlgorithmsForProfile(
           'declare',
           'heuristic_miner',
           'inductive_miner',
-        ].includes(a as any)
+        ].includes(a)
     );
 
   return [...allAlgos];

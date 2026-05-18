@@ -6,6 +6,7 @@ import { withLogSession } from '../with-log-session.js';
 import { savePredictionResult } from './results.js';
 import { VALID_ML_TASKS, executeMlTask } from '../ml-runner.js';
 import type { MlTask, MlQualitySummary, ClusterProfile } from '../ml-runner.js';
+import { findClosestMatch } from '@wasm4pm/contracts';
 import { withSpan } from './_otel.js';
 import {
   saveCommandReceipt,
@@ -94,9 +95,19 @@ export const ml = defineCommand({
         try {
           const task = ctx.args.task as string;
           if (!VALID_ML_TASKS.includes(task as MlTask)) {
+            const suggestion = findClosestMatch(task, [...VALID_ML_TASKS], 3);
+            const didYouMean = suggestion ? `\nDid you mean: '${suggestion}'?` : '';
             const result = makeErrorResult(
               'ml',
-              `Unknown ML task: "${task}". Valid: ${VALID_ML_TASKS.join(', ')}`,
+              new Error(
+                `Unknown ML task: "${task}".${didYouMean}\n` +
+                  `Valid tasks: ${VALID_ML_TASKS.join(', ')}\n\n` +
+                  `Usage:  wpm ml <task> -i <log.xes>\n` +
+                  `Examples:\n` +
+                  `  wpm ml cluster -i process.xes\n` +
+                  `  wpm ml classify -i process.xes\n\n` +
+                  `Run 'wpm ml --help' for full task descriptions.`
+              ),
               EXIT_CODES.source_error,
               'INVALID_TASK'
             );
@@ -184,7 +195,13 @@ export const ml = defineCommand({
             }
           ); // end withLogSession
         } catch (error) {
-          const result = makeErrorResult('ml', error, EXIT_CODES.execution_error);
+          const msg = error instanceof Error ? error.message : String(error);
+          const result = makeErrorResult(
+            'ml',
+            new Error(`ML analysis failed: ${msg}\n\nRun 'wpm doctor' to check your environment.`),
+            EXIT_CODES.execution_error,
+            'ML_EXECUTION_ERROR'
+          );
           emitResult(result, { format, verbose, quiet });
           return await exitWithFlush(result.exit_code);
         }

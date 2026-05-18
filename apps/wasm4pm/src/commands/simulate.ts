@@ -106,7 +106,11 @@ export const simulate = defineCommand({
           if (parsedCases !== undefined && Number.isNaN(parsedCases)) {
             const result = makeErrorResult(
               'simulate',
-              'Invalid --cases value: must be a number',
+              new Error(
+                `Invalid --cases value '${rawCases}': must be a positive integer.\n\n` +
+                  `  --cases sets the number of synthetic traces to generate (default: 100).\n` +
+                  `  Example: wpm simulate <log.xes> --cases 500`
+              ),
               EXIT_CODES.config_error,
               'INVALID_ARG'
             );
@@ -120,7 +124,11 @@ export const simulate = defineCommand({
           if (parsedTime !== undefined && Number.isNaN(parsedTime)) {
             const result = makeErrorResult(
               'simulate',
-              'Invalid --time value: must be a number',
+              new Error(
+                `Invalid --time value '${rawTime}': must be a positive integer (milliseconds).\n\n` +
+                  `  --time sets the maximum simulation duration in milliseconds (default: 60000).\n` +
+                  `  Example: wpm simulate <log.xes> --time 120000`
+              ),
               EXIT_CODES.config_error,
               'INVALID_ARG'
             );

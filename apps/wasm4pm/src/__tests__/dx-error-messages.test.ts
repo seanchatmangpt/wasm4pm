@@ -292,6 +292,124 @@ describe('DX: --format json always produces parseable output on error', () => {
 });
 
 // ---------------------------------------------------------------------------
+// DX: wpm ml improved task error — did-you-mean + usage
+// ---------------------------------------------------------------------------
+
+describe('DX: wpm ml invalid task message is actionable', () => {
+  it('ml invalid task message names the bad task', async () => {
+    const r = await run(['ml', 'BADTASK', '-i', XES, '--format', 'json']);
+    expect(r.exitCode).toBe(2);
+    expect(errMsg(r)).toContain('BADTASK');
+  });
+
+  it('ml invalid task message lists all valid tasks', async () => {
+    const r = await run(['ml', 'BADTASK', '-i', XES, '--format', 'json']);
+    const msg = errMsg(r);
+    expect(msg).toMatch(/classify|cluster|forecast|anomaly|regress|pca/i);
+  });
+
+  it('ml invalid task message includes a usage example', async () => {
+    const r = await run(['ml', 'BADTASK', '-i', XES, '--format', 'json']);
+    const msg = errMsg(r);
+    expect(msg).toMatch(/wpm ml|Usage/i);
+  });
+
+  it('ml typo "clustr" offers did-you-mean "cluster"', async () => {
+    const r = await run(['ml', 'clustr', '-i', XES, '--format', 'json']);
+    const msg = errMsg(r);
+    expect(msg).toMatch(/cluster|Did you mean/i);
+  });
+
+  it('ml invalid task error is parseable JSON', async () => {
+    const r = await run(['ml', 'BADTASK', '-i', XES, '--format', 'json']);
+    expect(() => JSON.parse(r.stdout)).not.toThrow();
+    const e = envelope(r);
+    expect(e.status).toBe('error');
+    expect(e.error?.code).toBe('INVALID_TASK');
+    expect(e.command).toBe('ml');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// DX: wpm predict improved task error — did-you-mean + usage
+// ---------------------------------------------------------------------------
+
+describe('DX: wpm predict invalid task message is actionable', () => {
+  it('predict invalid task message names the bad task', async () => {
+    const r = await run(['predict', 'BADTASK', '-i', XES, '--format', 'json']);
+    expect(r.exitCode).toBe(2);
+    expect(errMsg(r)).toContain('BADTASK');
+  });
+
+  it('predict invalid task message lists all valid tasks', async () => {
+    const r = await run(['predict', 'BADTASK', '-i', XES, '--format', 'json']);
+    const msg = errMsg(r);
+    expect(msg).toMatch(/next-activity|remaining-time|outcome|drift|features|resource/i);
+  });
+
+  it('predict invalid task message includes a usage example', async () => {
+    const r = await run(['predict', 'BADTASK', '-i', XES, '--format', 'json']);
+    const msg = errMsg(r);
+    expect(msg).toMatch(/wpm predict|Usage/i);
+  });
+
+  it('predict typo "drfit" offers did-you-mean "drift"', async () => {
+    const r = await run(['predict', 'drfit', '-i', XES, '--format', 'json']);
+    const msg = errMsg(r);
+    expect(msg).toMatch(/drift|Did you mean/i);
+  });
+
+  it('predict invalid task error is parseable JSON', async () => {
+    const r = await run(['predict', 'BADTASK', '-i', XES, '--format', 'json']);
+    expect(() => JSON.parse(r.stdout)).not.toThrow();
+    const e = envelope(r);
+    expect(e.status).toBe('error');
+    expect(e.error?.code).toBe('INVALID_TASK');
+    expect(e.command).toBe('predict');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// DX: wpm simulate improved --cases error — names bad value + usage example
+// ---------------------------------------------------------------------------
+
+describe('DX: wpm simulate --cases bad value message names the bad value', () => {
+  it('simulate --cases with letters names the exact bad value', async () => {
+    const r = await run(['simulate', '-i', XES, '--cases', 'notanumber', '--format', 'json']);
+    expect(r.exitCode).toBe(1);
+    const msg = errMsg(r);
+    expect(msg).toContain('notanumber');
+  });
+
+  it('simulate --cases with letters provides a corrective example', async () => {
+    const r = await run(['simulate', '-i', XES, '--cases', 'notanumber', '--format', 'json']);
+    const msg = errMsg(r);
+    expect(msg).toMatch(/wpm simulate|--cases 500|integer/i);
+  });
+
+  it('simulate --time with letters names the exact bad value', async () => {
+    const r = await run(['simulate', '-i', XES, '--time', 'forever', '--format', 'json']);
+    expect(r.exitCode).toBe(1);
+    const msg = errMsg(r);
+    expect(msg).toContain('forever');
+  });
+
+  it('simulate --time error provides a usage example with milliseconds', async () => {
+    const r = await run(['simulate', '-i', XES, '--time', 'forever', '--format', 'json']);
+    const msg = errMsg(r);
+    expect(msg).toMatch(/milliseconds|--time 120000|integer/i);
+  });
+
+  it('simulate bad numeric flags produce parseable JSON errors', async () => {
+    const r = await run(['simulate', '-i', XES, '--cases', 'abc', '--format', 'json']);
+    expect(() => JSON.parse(r.stdout)).not.toThrow();
+    const e = envelope(r);
+    expect(e.status).toBe('error');
+    expect(e.error?.code).toBe('INVALID_ARG');
+  });
+});
+
+// ---------------------------------------------------------------------------
 // DX: exit code consistency
 // ---------------------------------------------------------------------------
 
