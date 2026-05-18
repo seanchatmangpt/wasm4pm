@@ -40,7 +40,13 @@ export type EventType =
   | 'DriftDetected'
   // Conformance events
   | 'ConformanceCheckStarted'
-  | 'ConformanceCheckCompleted';
+  | 'ConformanceCheckCompleted'
+  // Cache observability events
+  | 'ConformanceCacheHit'
+  | 'ConformanceCacheMiss'
+  | 'DedupHit'
+  // Feedback events
+  | 'FeedbackCaptured';
 
 /**
  * State change event
@@ -1402,6 +1408,148 @@ export class Instrumentation {
           'conformance.simplicity': options.simplicity,
         }),
         ...(options?.errorCode && { 'error.code': options.errorCode }),
+      },
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  //  Cache and feedback observability
+  // ─────────────────────────────────────────────────────────────────────
+
+  /**
+   * Create a conformance cache hit event.
+   * Span name: `conformance.cache_hit`
+   * Emitted when `getCachedFitness()` returns a cached result.
+   *
+   * Required attributes (beyond service.name):
+   *   cache.log_hash    — hex digest of the log
+   *   cache.model_hash  — hex digest of the model
+   *   cache.precision_available — whether precision is populated
+   *   cache.age_ms      — milliseconds since the entry was stored
+   */
+  static createConformanceCacheHitEvent(
+    logHash: string,
+    modelHash: string,
+    precisionAvailable: boolean,
+    ageMs: number
+  ): OtelEvent {
+    const now = Date.now() * 1_000_000;
+    return {
+      trace_id: '0'.repeat(32),
+      span_id: this.generateSpanId(),
+      name: 'conformance.cache_hit',
+      kind: 'INTERNAL',
+      start_time: now,
+      end_time: now,
+      status: { code: 'OK' },
+      attributes: {
+        'service.name': 'wasm4pm',
+        'cache.log_hash': logHash,
+        'cache.model_hash': modelHash,
+        'cache.precision_available': precisionAvailable,
+        'cache.age_ms': ageMs,
+      },
+    };
+  }
+
+  /**
+   * Create a conformance cache miss event.
+   * Span name: `conformance.cache_miss`
+   * Emitted when `getCachedFitness()` returns null.
+   *
+   * Required attributes (beyond service.name):
+   *   cache.log_hash   — hex digest of the log
+   *   cache.model_hash — hex digest of the model
+   *   cache.reason     — 'not_found' | 'expired'
+   */
+  static createConformanceCacheMissEvent(
+    logHash: string,
+    modelHash: string,
+    reason: 'not_found' | 'expired'
+  ): OtelEvent {
+    const now = Date.now() * 1_000_000;
+    return {
+      trace_id: '0'.repeat(32),
+      span_id: this.generateSpanId(),
+      name: 'conformance.cache_miss',
+      kind: 'INTERNAL',
+      start_time: now,
+      end_time: now,
+      status: { code: 'OK' },
+      attributes: {
+        'service.name': 'wasm4pm',
+        'cache.log_hash': logHash,
+        'cache.model_hash': modelHash,
+        'cache.miss_reason': reason,
+      },
+    };
+  }
+
+  /**
+   * Create a result deduplication hit event.
+   * Span name: `kernel.result_dedup_hit`
+   * Emitted when `getExistingResult()` returns a cached result.
+   *
+   * Required attributes (beyond service.name):
+   *   dedup.log_path   — path to the log file
+   *   dedup.algorithm  — algorithm name
+   *   dedup.age_ms     — milliseconds since the result was stored
+   */
+  static createDedupHitEvent(
+    logPath: string,
+    algorithm: string,
+    ageMs: number
+  ): OtelEvent {
+    const now = Date.now() * 1_000_000;
+    return {
+      trace_id: '0'.repeat(32),
+      span_id: this.generateSpanId(),
+      name: 'kernel.result_dedup_hit',
+      kind: 'INTERNAL',
+      start_time: now,
+      end_time: now,
+      status: { code: 'OK' },
+      attributes: {
+        'service.name': 'wasm4pm',
+        'dedup.log_path': logPath,
+        'dedup.algorithm': algorithm,
+        'dedup.age_ms': ageMs,
+      },
+    };
+  }
+
+  /**
+   * Create a feedback-captured event.
+   * Span name: `feedback.captured`
+   * Emitted when `captureFeedback()` successfully writes a feedback record.
+   *
+   * Required attributes (beyond service.name):
+   *   feedback.algorithm       — algorithm ID
+   *   feedback.log_size_bucket — e.g. '100-1K'
+   *   feedback.fitness         — token-replay fitness score
+   *   feedback.execution_time_ms — algorithm execution time
+   */
+  static createFeedbackCapturedEvent(
+    algorithm: string,
+    logSizeBucket: string,
+    fitness: number,
+    executionTimeMs: number
+  ): OtelEvent {
+    const now = Date.now() * 1_000_000;
+    return {
+      trace_id: '0'.repeat(32),
+      span_id: this.generateSpanId(),
+      name: 'feedback.captured',
+      kind: 'INTERNAL',
+      start_time: now,
+      end_time: now,
+      status: { code: 'OK' },
+      attributes: {
+        'service.name': 'wasm4pm',
+        'feedback.algorithm': algorithm,
+        'feedback.log_size_bucket': logSizeBucket,
+        'feedback.fitness': fitness,
+        'feedback.execution_time_ms': executionTimeMs,
       },
     };
   }

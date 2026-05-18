@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import type { OtelEvent } from '../types.js';
 import {
   ConformanceCache,
   getConformanceCache,
@@ -301,6 +302,78 @@ describe('ConformanceCache', () => {
       const hash2 = hashLogOrModel(content);
 
       expect(hash1).toBe(hash2);
+    });
+  });
+
+  describe('OTEL span emission (Rank 2 — domain contract)', () => {
+    it('emits conformance.cache_miss (not_found) when entry is absent', () => {
+      const emitted: OtelEvent[] = [];
+      cache.setSpanEmitter((e) => emitted.push(e));
+
+      cache.getCachedFitness('missing-log', 'missing-model');
+
+      expect(emitted).toHaveLength(1);
+      expect(emitted[0].name).toBe('conformance.cache_miss');
+      expect(emitted[0].attributes['cache.miss_reason']).toBe('not_found');
+    });
+
+    it('emits conformance.cache_miss (expired) when entry is past TTL', async () => {
+      const emitted: OtelEvent[] = [];
+      cache.setSpanEmitter((e) => emitted.push(e));
+
+      cache.cacheFitness('log-x', 'model-x', {
+        fitness: 0.9,
+        precision: null,
+        precision_available: false,
+      }, 50); // 50ms TTL
+
+      await new Promise((resolve) => setTimeout(resolve, 80));
+
+      cache.getCachedFitness('log-x', 'model-x');
+
+      expect(emitted).toHaveLength(1);
+      expect(emitted[0].name).toBe('conformance.cache_miss');
+      expect(emitted[0].attributes['cache.miss_reason']).toBe('expired');
+    });
+
+    it('emits conformance.cache_hit with precision_available when entry exists', () => {
+      const emitted: OtelEvent[] = [];
+      cache.setSpanEmitter((e) => emitted.push(e));
+
+      cache.cacheFitness('log-y', 'model-y', {
+        fitness: 0.88,
+        precision: 0.85,
+        precision_available: true,
+      });
+
+      cache.getCachedFitness('log-y', 'model-y');
+
+      expect(emitted).toHaveLength(1);
+      expect(emitted[0].name).toBe('conformance.cache_hit');
+      expect(emitted[0].attributes['cache.precision_available']).toBe(true);
+      expect(emitted[0].attributes['cache.log_hash']).toBe('log-y');
+      expect(emitted[0].attributes['cache.model_hash']).toBe('model-y');
+    });
+
+    it('span emitter errors are swallowed (non-blocking)', () => {
+      cache.setSpanEmitter(() => { throw new Error('OTEL exporter down'); });
+
+      // Must not throw
+      expect(() => cache.getCachedFitness('any', 'any')).not.toThrow();
+    });
+
+    it('hit span includes service.name = wasm4pm', () => {
+      const emitted: OtelEvent[] = [];
+      cache.setSpanEmitter((e) => emitted.push(e));
+
+      cache.cacheFitness('log-z', 'model-z', {
+        fitness: 0.9,
+        precision: null,
+        precision_available: false,
+      });
+      cache.getCachedFitness('log-z', 'model-z');
+
+      expect(emitted[0].attributes['service.name']).toBe('wasm4pm');
     });
   });
 });

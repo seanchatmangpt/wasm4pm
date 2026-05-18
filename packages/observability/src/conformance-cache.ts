@@ -11,6 +11,8 @@
  */
 
 import * as crypto from 'crypto';
+import type { OtelEvent } from './types.js';
+import { Instrumentation } from './instrumentation.js';
 
 export interface CachedFitnessResult {
   fitness: number;
@@ -37,10 +39,33 @@ export class ConformanceCache {
   private misses: number = 0;
   private readonly maxEntries: number;
   private readonly defaultTtlMs: number;
+  /** Optional OTEL span emitter. Set via `setSpanEmitter()`. Non-blocking. */
+  private spanEmitter: ((event: OtelEvent) => void) | null = null;
 
   constructor(maxEntries: number = 1000, defaultTtlMs: number = 24 * 60 * 60 * 1000) {
     this.maxEntries = maxEntries;
     this.defaultTtlMs = defaultTtlMs;
+  }
+
+  /**
+   * Register an OTEL span emitter for cache observability.
+   * The emitter is called synchronously but must never throw
+   * (per TPS non-blocking OTEL rule).
+   */
+  public setSpanEmitter(emit: (event: OtelEvent) => void): void {
+    this.spanEmitter = emit;
+  }
+
+  /**
+   * Emit an OTEL event without blocking the caller.
+   */
+  private tryEmit(event: OtelEvent): void {
+    if (!this.spanEmitter) return;
+    try {
+      this.spanEmitter(event);
+    } catch {
+      /* never block on OTEL */
+    }
   }
 
   /**
@@ -79,6 +104,8 @@ export class ConformanceCache {
 
   /**
    * Retrieve a cached fitness result if it exists and hasn't expired.
+   * Emits `conformance.cache_hit` or `conformance.cache_miss` OTEL spans
+   * when a span emitter has been registered via `setSpanEmitter()`.
    */
   public getCachedFitness(logHash: string, modelHash: string): CachedFitnessResult | null {
     const key = this.cacheKey(logHash, modelHash);
@@ -86,6 +113,9 @@ export class ConformanceCache {
 
     if (!cached) {
       this.misses++;
+      this.tryEmit(
+        Instrumentation.createConformanceCacheMissEvent(logHash, modelHash, 'not_found')
+      );
       return null;
     }
 
@@ -95,10 +125,21 @@ export class ConformanceCache {
     if (age > cached.ttl_ms) {
       this.cache.delete(key);
       this.misses++;
+      this.tryEmit(
+        Instrumentation.createConformanceCacheMissEvent(logHash, modelHash, 'expired')
+      );
       return null;
     }
 
     this.hits++;
+    this.tryEmit(
+      Instrumentation.createConformanceCacheHitEvent(
+        logHash,
+        modelHash,
+        cached.precision_available,
+        age
+      )
+    );
     return cached;
   }
 

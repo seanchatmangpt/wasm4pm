@@ -16,6 +16,8 @@ import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
 import { promisify } from 'util';
+import { Instrumentation } from './instrumentation.js';
+import type { OtelEvent } from './types.js';
 
 const fsReadFile = promisify(fs.readFile);
 const fsWriteFile = promisify(fs.writeFile);
@@ -56,10 +58,32 @@ export class ResultDeduplicator {
   private lastClearTime: number = 0;
   private readonly dedup_db_path: string;
   private readonly defaultTtlMs: number;
+  /** Optional OTEL span emitter. Set via `setSpanEmitter()`. Non-blocking. */
+  private spanEmitter: ((event: OtelEvent) => void) | null = null;
 
   constructor(dedupDbPath: string = '.wasm4pm/deduplicate.jsonl', defaultTtlMs: number = 24 * 60 * 60 * 1000) {
     this.dedup_db_path = dedupDbPath;
     this.defaultTtlMs = defaultTtlMs;
+  }
+
+  /**
+   * Register an OTEL span emitter for dedup observability.
+   * The emitter is called synchronously but must never throw.
+   */
+  public setSpanEmitter(emit: (event: OtelEvent) => void): void {
+    this.spanEmitter = emit;
+  }
+
+  /**
+   * Emit an OTEL event without blocking the caller.
+   */
+  private tryEmit(event: OtelEvent): void {
+    if (!this.spanEmitter) return;
+    try {
+      this.spanEmitter(event);
+    } catch {
+      /* never block on OTEL */
+    }
   }
 
   /**
@@ -110,6 +134,10 @@ export class ResultDeduplicator {
           if (age <= result.ttl_ms) {
             this.deduplicatedCount++;
             this.lastHitTime = now;
+            // Emit OTEL dedup hit span
+            this.tryEmit(
+              Instrumentation.createDedupHitEvent(logFilePath, algorithm, age)
+            );
             return result;
           }
         }

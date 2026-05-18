@@ -8,6 +8,8 @@
 
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { Instrumentation } from './instrumentation.js';
+import type { OtelEvent } from './types.js';
 
 /**
  * Quality metrics from a discovery run
@@ -118,11 +120,11 @@ export async function captureFeedback(
   logSize: number,
   metrics: QualityMetrics,
   executionTimeMs: number,
-  metadata?: Record<string, unknown>
+  metadata?: Record<string, unknown>,
+  emit?: (event: OtelEvent) => void
 ): Promise<void> {
   try {
     // Ensure .wasm4pm/algorithm-feedback/ directory exists
-    // const __dirname   = dirname(fileURLToPath(import.meta.url));
     const baseDir = path.resolve(process.cwd(), '.wasm4pm', 'algorithm-feedback');
 
     await fs.mkdir(baseDir, { recursive: true });
@@ -148,6 +150,22 @@ export async function captureFeedback(
 
     // Append record as JSONL (one record per line)
     await fs.appendFile(feedbackFile, JSON.stringify(record) + '\n', 'utf8');
+
+    // Emit OTEL span for feedback capture (non-blocking)
+    if (emit) {
+      try {
+        emit(
+          Instrumentation.createFeedbackCapturedEvent(
+            algorithm,
+            bucket,
+            metrics.fitness,
+            executionTimeMs
+          )
+        );
+      } catch {
+        /* never block on OTEL */
+      }
+    }
   } catch (err) {
     // Per TPS rules: never swallow errors silently
     // However, feedback capture is non-blocking, so log but don't throw

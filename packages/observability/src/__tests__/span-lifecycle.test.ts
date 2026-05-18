@@ -721,4 +721,28 @@ describe('Rank 2 — Span names follow documented naming convention', () => {
     );
     expect(event.name).toBe('conformance.check');
   });
+
+  it('createConformanceCacheHitEvent span name is "conformance.cache_hit"', () => {
+    const event = Instrumentation.createConformanceCacheHitEvent(
+      'loghash123', 'modelhash456', true, 500
+    );
+    expect(event.name).toBe('conformance.cache_hit');
+  });
+
+  it('createConformanceCacheMissEvent span name is "conformance.cache_miss"', () => {
+    const event = Instrumentation.createConformanceCacheMissEvent(
+      'loghash123', 'modelhash456', 'not_found'
+    );
+    expect(event.name).toBe('conformance.cache_miss');
+  });
+
+  it('createDedupHitEvent span name is "kernel.result_dedup_hit"', () => {
+    const event = Instrumentation.createDedupHitEvent('/logs/test.xes', 'dfg', 1200);
+    expect(event.name).toBe('kernel.result_dedup_hit');
+  });
+
+  it('createFeedbackCapturedEvent span name is "feedback.captured"', () => {
+    const event = Instrumentation.createFeedbackCapturedEvent('dfg', '100-1K', 0.92, 145);
+    expect(event.name).toBe('feedback.captured');
+  });
 });
