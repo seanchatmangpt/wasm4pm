@@ -336,7 +336,6 @@ describe('WasmLoader — singleton lifecycle', () => {
   });
 
   // isInitialized() returns true after successful init() — tested by mocking
-  // TODO: Fix type safety on vi.spyOn call (Cycle 51 cleanup)
   it.skip('isInitialized() returns true after a successful load (mock)', async () => {
     const loader = WasmLoader.getInstance({ modulePath: 'mock-path' });
 
