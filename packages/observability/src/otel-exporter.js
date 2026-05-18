@@ -10,11 +10,15 @@
  * All operations are non-blocking and async
  */
 export class OtelExporter {
+    getDropCount() { return this.droppedCount; }
+    resetDropCount() { this.droppedCount = 0; }
     constructor(config) {
         this.queue = [];
         this.flushPromise = Promise.resolve();
         this.isShuttingDown = false;
         this.flushErrors = [];
+        this.droppedCount = 0;
+        this.flushAttempts = 0;
         this.config = config;
         if (config.enabled) {
             this.startAutoFlush();
@@ -27,6 +31,30 @@ export class OtelExporter {
     }
     getFlushErrors() {
         return [...this.flushErrors];
+    }
+    /**
+     * Return structured diagnostic summary of flush health.
+     * error_rate is computed as errors / total flush attempts (0 when no attempts).
+     * healthy is true when error_rate < 0.1 (fewer than 10% of flushes failed).
+     */
+    getFlushSummary() {
+        const errors = this.flushErrors;
+        const total_errors = errors.length;
+        const error_rate = this.flushAttempts > 0 ? total_errors / this.flushAttempts : 0;
+        let last_error;
+        if (total_errors > 0) {
+            const last = errors[errors.length - 1];
+            last_error = {
+                timestamp: last.timestamp.toISOString(),
+                message: last.error instanceof Error ? last.error.message : String(last.error),
+            };
+        }
+        return {
+            total_errors,
+            last_error,
+            error_rate,
+            healthy: error_rate < 0.1,
+        };
     }
     /**
      * Start automatic flush timer
@@ -60,6 +88,7 @@ export class OtelExporter {
         // Drop oldest if queue is full (PRD §18.5: never block)
         if (this.queue.length >= maxSize) {
             this.queue.shift();
+            this.droppedCount++;
             console.warn(`[observability] OTEL queue full (${maxSize}), dropping oldest event`);
         }
         this.queue.push(event);
@@ -95,6 +124,7 @@ export class OtelExporter {
         const events = this.queue.splice(0, this.config.batch_size ?? 100);
         if (events.length === 0)
             return;
+        this.flushAttempts++;
         try {
             await this.exportEvents(events);
         }
@@ -274,4 +304,3 @@ export class OtelExporter {
         }
     }
 }
-//# sourceMappingURL=otel-exporter.js.map

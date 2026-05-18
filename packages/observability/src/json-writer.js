@@ -15,6 +15,7 @@ export class JsonWriter {
         this.BUFFER_SIZE = 100;
         this.FLUSH_INTERVAL_MS = 1000;
         this.flushErrors = [];
+        this.flushAttempts = 0;
         this.config = config;
         if (config.enabled && config.dest !== 'stdout') {
             this.initPromise = this.initializeFile();
@@ -91,6 +92,7 @@ export class JsonWriter {
         const events = this.buffer.splice(0, this.BUFFER_SIZE);
         if (events.length === 0)
             return;
+        this.flushAttempts++;
         const lines = events.map((e) => JSON.stringify(e)).join('\n') + '\n';
         try {
             if (this.config.dest === 'stdout') {
@@ -121,6 +123,30 @@ export class JsonWriter {
     }
     getFlushErrors() {
         return [...this.flushErrors];
+    }
+    /**
+     * Return structured diagnostic summary of flush health.
+     * error_rate is computed as errors / total flush attempts (0 when no attempts).
+     * healthy is true when error_rate < 0.1 (fewer than 10% of flushes failed).
+     */
+    getFlushSummary() {
+        const errors = this.flushErrors;
+        const total_errors = errors.length;
+        const error_rate = this.flushAttempts > 0 ? total_errors / this.flushAttempts : 0;
+        let last_error;
+        if (total_errors > 0) {
+            const last = errors[errors.length - 1];
+            last_error = {
+                timestamp: last.timestamp.toISOString(),
+                message: last.error instanceof Error ? last.error.message : String(last.error),
+            };
+        }
+        return {
+            total_errors,
+            last_error,
+            error_rate,
+            healthy: error_rate < 0.1,
+        };
     }
     /**
      * Redact secrets from event data
@@ -197,4 +223,3 @@ export class JsonWriter {
         }
     }
 }
-//# sourceMappingURL=json-writer.js.map

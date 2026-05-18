@@ -18,8 +18,9 @@ export class OtelExporter {
   private flushTimer?: NodeJS.Timeout;
   private flushPromise: Promise<void> = Promise.resolve();
   private isShuttingDown = false;
-  private flushErrors: Array<{ timestamp: Date; error: any }> = [];
+  private flushErrors: Array<{ timestamp: Date; error: unknown }> = [];
   private droppedCount = 0;
+  private flushAttempts = 0;
 
   public getDropCount(): number { return this.droppedCount; }
   public resetDropCount(): void { this.droppedCount = 0; }
@@ -31,13 +32,45 @@ export class OtelExporter {
     }
   }
 
-  private recordFlushError(error: any): void {
+  private recordFlushError(error: unknown): void {
     this.flushErrors.push({ timestamp: new Date(), error });
     if (this.flushErrors.length > 50) this.flushErrors.shift();
   }
 
-  public getFlushErrors(): Array<{ timestamp: Date; error: any }> {
+  public getFlushErrors(): Array<{ timestamp: Date; error: unknown }> {
     return [...this.flushErrors];
+  }
+
+  /**
+   * Return structured diagnostic summary of flush health.
+   * error_rate is computed as errors / total flush attempts (0 when no attempts).
+   * healthy is true when error_rate < 0.1 (fewer than 10% of flushes failed).
+   */
+  public getFlushSummary(): {
+    total_errors: number;
+    last_error?: { timestamp: string; message: string };
+    error_rate: number;
+    healthy: boolean;
+  } {
+    const errors = this.flushErrors;
+    const total_errors = errors.length;
+    const error_rate = this.flushAttempts > 0 ? total_errors / this.flushAttempts : 0;
+
+    let last_error: { timestamp: string; message: string } | undefined;
+    if (total_errors > 0) {
+      const last = errors[errors.length - 1];
+      last_error = {
+        timestamp: last.timestamp.toISOString(),
+        message: last.error instanceof Error ? last.error.message : String(last.error),
+      };
+    }
+
+    return {
+      total_errors,
+      last_error,
+      error_rate,
+      healthy: error_rate < 0.1,
+    };
   }
 
   /**
@@ -113,6 +146,7 @@ export class OtelExporter {
   private async doFlush(): Promise<void> {
     const events = this.queue.splice(0, this.config.batch_size ?? 100);
     if (events.length === 0) return;
+    this.flushAttempts++;
 
     try {
       await this.exportEvents(events);
@@ -175,7 +209,7 @@ export class OtelExporter {
   /**
    * Send payload to OTEL endpoint via HTTP POST
    */
-  private async sendToEndpoint(payload: any, timeoutMs: number): Promise<void> {
+  private async sendToEndpoint(payload: unknown, timeoutMs: number): Promise<void> {
     // Use AbortController for timeout
     const controller = new AbortController();
     const timeoutHandle = setTimeout(() => controller.abort(), timeoutMs);
@@ -230,7 +264,7 @@ export class OtelExporter {
    * Encode attributes for OTEL format
    * OTEL uses typed attributes
    */
-  private encodeAttributes(attrs: Record<string, any>): Array<{
+  private encodeAttributes(attrs: Record<string, unknown>): Array<{
     key: string;
     value: { stringValue?: string; intValue?: string; doubleValue?: number; boolValue?: boolean };
   }> {
@@ -243,7 +277,7 @@ export class OtelExporter {
   /**
    * Encode a single attribute value
    */
-  private encodeValue(value: any): {
+  private encodeValue(value: unknown): {
     stringValue?: string;
     intValue?: string;
     doubleValue?: number;

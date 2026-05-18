@@ -67,7 +67,7 @@ export class ObservabilityWrapper {
     try {
       const redactedEvent = {
         ...event,
-        data: SecretRedaction.redactObject(event.data),
+        data: SecretRedaction.redactObject(event.data) as Record<string, unknown>,
       };
       this.layer.emitJson(redactedEvent);
       this.emitCount++;
@@ -89,7 +89,7 @@ export class ObservabilityWrapper {
     try {
       const redactedEvent = {
         ...event,
-        attributes: SecretRedaction.redactObject(event.attributes),
+        attributes: SecretRedaction.redactObject(event.attributes) as Record<string, unknown>,
       };
       this.layer.emitOtel(redactedEvent);
       this.emitCount++;

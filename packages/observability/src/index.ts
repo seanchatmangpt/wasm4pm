@@ -27,6 +27,9 @@ export * from './secret-redaction.js';
 // Instrumentation helpers
 export * from './instrumentation.js';
 
+// Streaming bridge: wasm4pm StreamingLog → mcpp LIVE correlation events
+export * from './streaming-bridge.js';
+
 // Observability wrapper (facade)
 export * from './observability-wrapper.js';
 
