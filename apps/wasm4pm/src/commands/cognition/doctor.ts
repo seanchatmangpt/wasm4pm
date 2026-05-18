@@ -5,6 +5,7 @@ import * as path from 'node:path';
 import * as url from 'node:url';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { exitWithFlush } from '../../otel/exit.js';
+import { withSpanRaw } from '../_otel.js';
 
 // Exported so tests can inject a controlled spawn without module-level mocking.
 export type SpawnFn = (cmd: string, args: string[], opts: object) => ChildProcess;
@@ -271,9 +272,14 @@ export const doctor = defineCommand({
     },
   },
   async run(ctx) {
-    await runDoctor({
-      format: (ctx.args.format as string) === 'json' ? 'json' : 'human',
-      quiet: ctx.args.quiet === true,
-    });
+    const format = (ctx.args.format as string) === 'json' ? 'json' : 'human';
+    const quiet = ctx.args.quiet === true;
+    return withSpanRaw(
+      'wasm4pm.command.cognition.doctor',
+      { 'cognition.format': format },
+      async () => {
+        await runDoctor({ format, quiet });
+      },
+    );
   },
 });
