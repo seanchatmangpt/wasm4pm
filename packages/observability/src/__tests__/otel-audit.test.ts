@@ -10,10 +10,10 @@
  * Time budget: 12 minutes
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
-import { LiveSpan, RunningSpans, WatchingSpans } from '../spans.js';
+import { describe, it, expect } from 'vitest';
+import { LiveSpan, RunningSpans } from '../spans.js';
 import { createRequiredFields } from '../fields.js';
-import type { Span, SpanContext } from '../spans.js';
+import type { SpanContext } from '../context.js';
 
 describe('OTEL Instrumentation Audit', () => {
   describe('Semantic Correctness: service.name', () => {

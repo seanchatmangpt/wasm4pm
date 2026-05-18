@@ -29,6 +29,8 @@ import {
 import type { ClassificationMethod, ClusteringMethod, RegressionMethod, QualityReport } from '@wasm4pm/ml';
 import { Instrumentation } from '@wasm4pm/observability';
 import type { OtelEvent, RequiredOtelAttributes } from '@wasm4pm/observability';
+import { suggestClassificationMethod } from './algorithm-selector.js';
+import type { LogCharacteristics } from './algorithm-selector.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WASM result shapes
@@ -81,6 +83,13 @@ export interface MlTaskOptions {
   eps?: number | string;
   smoothingMethod?: 'sma' | 'ema';
   useExponential?: boolean;
+  /**
+   * When true, run stratified k-fold cross-validation on classify and attach
+   * cv_accuracy, cv_std_dev, cv_folds to the result. Default false.
+   */
+  crossValidate?: boolean;
+  /** Number of CV folds. Default 3. */
+  cvFolds?: number | string;
   /**
    * Optional OTEL instrumentation. When provided, every ML task execution
    * emits a `ml.<task>` start/complete span pair via {@link Instrumentation.instrumentMlExecution}.
@@ -457,14 +466,44 @@ export async function executeMlTask(
         qualityReport.recommendations.forEach((rec) => console.warn(`  → ${rec}`));
       }
 
-      // Gap 1: Suggest algorithm based on feature quality and dataset size (ADAPTIVE)
-      let method: ClassificationMethod = 'knn';
+      // G1: Data-driven algorithm selection via suggestClassificationMethod.
+      // Derive log characteristics from the extracted features + stats.
+      let suggestedMethod: ClassificationMethod | undefined;
+      let method: ClassificationMethod;
       if (!options.method) {
+        // Build LogCharacteristics from features and WASM stats
+        let statsForSuggest: Record<string, unknown> = {};
+        try {
+          const sRaw = wasm.analyze_statistics(logHandle);
+          statsForSuggest = typeof sRaw === 'string' ? JSON.parse(sRaw) : sRaw;
+        } catch { /* ignore — use feature array length as fallback */ }
+
         const traceCount = features.length;
-        if (traceCount > 50 && qualityReport.qualityScore >= 0.6) {
-          method = 'logistic_regression'; // Large dataset with good features → logistic
-        }
-        // else: default kNN (stable, no assumptions)
+        const activityCount =
+          (statsForSuggest?.num_activities as number) ??
+          (statsForSuggest?.activity_count as number) ??
+          15;
+        const avgTraceLength =
+          (statsForSuggest?.avg_trace_length as number) ??
+          (statsForSuggest?.mean_trace_length as number) ??
+          (traceCount > 0
+            ? features.reduce((s: number, f: Record<string, unknown>) => s + (Number(f.trace_length ?? 0)), 0) / traceCount
+            : 5);
+        const eventCount =
+          (statsForSuggest?.event_count as number) ??
+          (statsForSuggest?.num_events as number) ??
+          traceCount * avgTraceLength;
+
+        const logChars: LogCharacteristics = {
+          traceCount,
+          eventCount,
+          activityCount,
+          avgTraceLength,
+          maxTraceLength: avgTraceLength * 2, // conservative estimate
+        };
+
+        suggestedMethod = suggestClassificationMethod(logChars);
+        method = suggestedMethod;
       } else {
         method = options.method as ClassificationMethod;
       }
@@ -472,10 +511,17 @@ export async function executeMlTask(
       const k = parseInt(String(options.k ?? '5'), 10);
       if (Number.isNaN(k) || k <= 0)
         throw new Error('Classification parameter k must be a positive number');
+      const cvFolds = options.cvFolds !== undefined ? parseInt(String(options.cvFolds), 10) : 3;
       rawResult = (await classifyTraces(features, {
         method,
         k,
+        crossValidate: options.crossValidate,
+        cvFolds: Number.isNaN(cvFolds) ? 3 : cvFolds,
       })) as unknown as Record<string, unknown>;
+      // Attach suggested_method so the output records which method was auto-selected
+      if (suggestedMethod) {
+        (rawResult as Record<string, unknown>).suggested_method = suggestedMethod;
+      }
       // Gap 3: attach class distribution so formatter can render a signal-check table
       rawResult = attachClassDistribution(rawResult);
       // Gap 2a: Attach feature quality report to output for CLI rendering

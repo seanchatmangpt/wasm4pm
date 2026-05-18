@@ -1244,7 +1244,14 @@ pub fn autonomic_execute_cycle(
             serde_json::json!(if causes.is_empty() { "OK" } else { "ALERT" }),
         );
         for c in &causes {
-            tracing::warn!(target: "autonomic.spc", kind = "event_rate", cause = ?c, "Western Electric rule violation");
+            tracing::warn!(
+                target: "autonomic.spc",
+                kind = "event_rate",
+                cause = ?c,
+                service_name = "wpm",
+                status = "error",
+                "Western Electric rule violation"
+            );
             all_special_causes.push(format!("event_rate: {:?}", c));
         }
     } else {
@@ -1285,7 +1292,14 @@ pub fn autonomic_execute_cycle(
             serde_json::json!(if causes.is_empty() { "OK" } else { "ALERT" }),
         );
         for c in &causes {
-            tracing::warn!(target: "autonomic.spc", kind = "trace_duration", cause = ?c, "Western Electric rule violation");
+            tracing::warn!(
+                target: "autonomic.spc",
+                kind = "trace_duration",
+                cause = ?c,
+                service_name = "wpm",
+                status = "error",
+                "Western Electric rule violation"
+            );
             all_special_causes.push(format!("trace_duration: {:?}", c));
         }
     } else {
@@ -1326,7 +1340,14 @@ pub fn autonomic_execute_cycle(
             serde_json::json!(if causes.is_empty() { "OK" } else { "ALERT" }),
         );
         for c in &causes {
-            tracing::warn!(target: "autonomic.spc", kind = "activity_frequency", cause = ?c, "Western Electric rule violation");
+            tracing::warn!(
+                target: "autonomic.spc",
+                kind = "activity_frequency",
+                cause = ?c,
+                service_name = "wpm",
+                status = "error",
+                "Western Electric rule violation"
+            );
             all_special_causes.push(format!("activity_frequency: {:?}", c));
         }
     } else {
@@ -1415,7 +1436,14 @@ pub fn autonomic_execute_cycle(
                     serde_json::json!("ALERT"),
                 );
                 for c in &causes_hist {
-                    tracing::warn!(target: "autonomic.spc", kind = "event_rate_historical", cause = ?c, "Western Electric rule violation");
+                    tracing::warn!(
+                        target: "autonomic.spc",
+                        kind = "event_rate_historical",
+                        cause = ?c,
+                        service_name = "wpm",
+                        status = "error",
+                        "Western Electric rule violation"
+                    );
                     all_special_causes.push(format!("event_rate_historical: {:?}", c));
                 }
             } else {
@@ -1446,7 +1474,14 @@ pub fn autonomic_execute_cycle(
                     serde_json::json!("ALERT"),
                 );
                 for c in &causes_hist {
-                    tracing::warn!(target: "autonomic.spc", kind = "trace_duration_historical", cause = ?c, "Western Electric rule violation");
+                    tracing::warn!(
+                        target: "autonomic.spc",
+                        kind = "trace_duration_historical",
+                        cause = ?c,
+                        service_name = "wpm",
+                        status = "error",
+                        "Western Electric rule violation"
+                    );
                     all_special_causes.push(format!("trace_duration_historical: {:?}", c));
                 }
             } else {
@@ -1480,7 +1515,14 @@ pub fn autonomic_execute_cycle(
                     serde_json::json!("ALERT"),
                 );
                 for c in &causes_hist {
-                    tracing::warn!(target: "autonomic.spc", kind = "activity_frequency_historical", cause = ?c, "Western Electric rule violation");
+                    tracing::warn!(
+                        target: "autonomic.spc",
+                        kind = "activity_frequency_historical",
+                        cause = ?c,
+                        service_name = "wpm",
+                        status = "error",
+                        "Western Electric rule violation"
+                    );
                     all_special_causes.push(format!("activity_frequency_historical: {:?}", c));
                 }
             } else {

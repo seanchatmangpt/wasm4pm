@@ -15,7 +15,7 @@ import {
   encodeLabels,
   normalizeFeatures,
   selectTopFeatures,
-} from '../bridge.js';
+} from '../index.js';
 
 // ─── GAP 1: Extreme Outliers (NaN/Inf/Negative Inf) ──────────────────────────
 

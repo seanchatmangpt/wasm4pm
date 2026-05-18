@@ -351,7 +351,9 @@ impl CircuitBreaker {
             failure_count = self.failure_count,
             success_count = self.success_count,
             service_name = "wpm",
-            status = if self.state as u8 != CircuitState::Open as u8 { "ok" } else { "error" }
+            status = if self.state as u8 != CircuitState::Open as u8 { "ok" } else { "error" },
+            circuit.purpose = "healing_guard",
+            circuit.role = "autonomous_recovery"
         );
         let _enter = span.enter();
 

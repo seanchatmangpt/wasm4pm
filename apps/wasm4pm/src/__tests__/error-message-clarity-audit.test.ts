@@ -26,7 +26,7 @@ describe('Error Message Clarity Audit', () => {
         'This usually indicates the WASM module is corrupted or incompatible with your Node.js version. ' +
         'Try: npm reinstall @wasm4pm/engine (requires Node.js 16+)';
 
-      expect(improvedError).toContain('what'); // explains what went wrong
+      expect(improvedError).toContain('failed'); // explains what went wrong
       expect(improvedError).toContain('Try:'); // includes actionable fix
       expect(improvedError).toContain('16+'); // specific version requirement
       expect(improvedError.length).toBeGreaterThan(vagueError.length);
@@ -79,7 +79,7 @@ describe('Error Message Clarity Audit', () => {
 
       expect(improvedError).toContain('recoverable');
       expect(improvedError).toContain('wpm doctor');
-      expect(improvedError).toContain('retry');
+      expect(improvedError).toContain('Retry');
     });
   });
 

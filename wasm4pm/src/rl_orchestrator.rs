@@ -578,6 +578,7 @@ impl RlOrchestrator {
             linucb_context = context_json.as_str(),
             linucb_runner_up = runner_up_agent,
             service_name = "wpm",
+            status = "ok",
         );
         let _entered = _span.enter();
 
@@ -734,6 +735,7 @@ impl RlOrchestrator {
             agent_id = self.telemetry.active_agent_name.as_str(),
             spc_alerts = spc_alert_count,
             service_name = "wpm",
+            status = "ok",
         )
         .entered();
 

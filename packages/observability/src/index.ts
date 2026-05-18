@@ -48,6 +48,9 @@ export * from './atomvm-bridge.js';
 export * from './healthcare-bridge.js';
 
 // Algorithm feedback loop: capture quality metrics per algorithm per log size
+
+// Conformance invariant validation (5-layer audit)
+export * from './conformance-invariants.js';
 export * from './feedback-loop.js';
 
 // Root cause diagnosis: classify conformance failures into categories

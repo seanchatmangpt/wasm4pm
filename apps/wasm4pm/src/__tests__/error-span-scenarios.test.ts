@@ -9,14 +9,46 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { createOtelCapture, OtelCapture } from '@wasm4pm/testing';
-import type { OtelSpan } from '@wasm4pm/cognition';
+
+/**
+ * Mock OtelSpan type (matches @wasm4pm/cognition)
+ */
+interface OtelSpan {
+  trace_id: string;
+  span_id: string;
+  name: string;
+  kind: string;
+  start_time: number;
+  end_time: number;
+  status?: { code: string; message?: string };
+  attributes: Record<string, unknown>;
+}
+
+/**
+ * Simple mock capture to track emitted spans
+ */
+class MockOtelCapture {
+  private spans: OtelSpan[] = [];
+
+  addSpan(span: OtelSpan) {
+    this.spans.push(span);
+  }
+
+  getAllSpans(name?: string): OtelSpan[] {
+    if (!name) return this.spans;
+    return this.spans.filter((s) => s.name === name);
+  }
+
+  reset() {
+    this.spans = [];
+  }
+}
 
 describe('Error Scenario Observability', () => {
-  let capture: OtelCapture;
+  let capture: MockOtelCapture;
 
   beforeEach(() => {
-    capture = createOtelCapture();
+    capture = new MockOtelCapture();
   });
 
   afterEach(() => {
@@ -204,9 +236,8 @@ describe('Error Scenario Observability', () => {
     };
 
     // Execute — should NOT throw
-    await expect(async () => {
-      await instrumentDeleteObject(mockWasm, 'handle-freed');
-    }).resolves.toBeUndefined();
+    const result = await instrumentDeleteObject(mockWasm, 'handle-freed');
+    expect(result).toBeUndefined();
 
     // Verify: Error span emitted with status=ERROR
     const spans = capture.getAllSpans('wasm.delete_object');
@@ -341,10 +372,10 @@ describe('Error Scenario Observability', () => {
  * Integration tests: Error span gaps in real command execution
  */
 describe('Error Span Gaps in CLI Commands', () => {
-  let capture: OtelCapture;
+  let capture: MockOtelCapture;
 
   beforeEach(() => {
-    capture = createOtelCapture();
+    capture = new MockOtelCapture();
   });
 
   /**

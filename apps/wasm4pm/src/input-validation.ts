@@ -97,7 +97,7 @@ export function validateAlgorithm(algoName: string): AlgorithmValidationResult {
   const { getRegistry } = require('@wasm4pm/kernel');
   const registry = getRegistry();
   const allAlgos = registry.list();
-  const algoIds = allAlgos.map((a) => a.id);
+  const algoIds = (allAlgos as { id: string }[]).map((a) => a.id);
 
   // Try exact match first
   if (algoIds.includes(algoName)) {
