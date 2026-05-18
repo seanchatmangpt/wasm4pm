@@ -10,8 +10,6 @@ export const XES_MINIMAL = `<?xml version="1.0" encoding="UTF-8"?>
 <log xes.version="1.0" openlog.version="1.0">
   <extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xesext"/>
   <extension name="Time" prefix="time" uri="http://www.xes-standard.org/time.xesext"/>
-  <global scope="trace"><string key="concept:name" value="undefined"/></global>
-  <global scope="event"><string key="concept:name" value="undefined"/><date key="time:timestamp" value="1970-01-01T00:00:00.000+00:00"/></global>
   <trace><string key="concept:name" value="Case1"/>
     <event><string key="concept:name" value="ActivityA"/><date key="time:timestamp" value="2023-01-01T10:00:00"/></event>
     <event><string key="concept:name" value="ActivityB"/><date key="time:timestamp" value="2023-01-01T11:00:00"/></event>
@@ -25,8 +23,6 @@ export const XES_SEQUENTIAL = `<?xml version="1.0" encoding="UTF-8"?>
 <log xes.version="1.0" openlog.version="1.0">
   <extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xesext"/>
   <extension name="Time" prefix="time" uri="http://www.xes-standard.org/time.xesext"/>
-  <global scope="trace"><string key="concept:name" value="undefined"/></global>
-  <global scope="event"><string key="concept:name" value="undefined"/><date key="time:timestamp" value="1970-01-01T00:00:00.000+00:00"/></global>
   <trace><string key="concept:name" value="Case1"/>
     <event><string key="concept:name" value="Start"/><date key="time:timestamp" value="2023-01-01T10:00:00"/></event>
     <event><string key="concept:name" value="Process"/><date key="time:timestamp" value="2023-01-01T11:00:00"/></event>
@@ -51,8 +47,6 @@ export const XES_PARALLEL = `<?xml version="1.0" encoding="UTF-8"?>
 <log xes.version="1.0" openlog.version="1.0">
   <extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xesext"/>
   <extension name="Time" prefix="time" uri="http://www.xes-standard.org/time.xesext"/>
-  <global scope="trace"><string key="concept:name" value="undefined"/></global>
-  <global scope="event"><string key="concept:name" value="undefined"/><date key="time:timestamp" value="1970-01-01T00:00:00.000+00:00"/></global>
   <trace><string key="concept:name" value="Case1"/>
     <event><string key="concept:name" value="Start"/><date key="time:timestamp" value="2023-01-01T10:00:00"/></event>
     <event><string key="concept:name" value="TaskA"/><date key="time:timestamp" value="2023-01-01T10:30:00"/></event>

@@ -6,16 +6,6 @@
   <extension name="Semantic" prefix="semantic" uri="http://www.xes-standard.org/semantic.xesext"/>
   <extension name="Cost" prefix="cost" uri="http://www.xes-standard.org/cost.xesext"/>
 
-  <global scope="trace">
-    <string key="concept:name" value="undefined"/>
-  </global>
-  <global scope="event">
-    <string key="concept:name" value="undefined"/>
-    <string key="org:resource" value="undefined"/>
-    <string key="org:role" value="undefined"/>
-    <date key="time:timestamp" value="1970-01-01T00:00:00.000+00:00"/>
-  </global>
-
   <classifier name="Event Name" keys="concept:name"/>
   <classifier name="Resource" keys="org:resource"/>
 
