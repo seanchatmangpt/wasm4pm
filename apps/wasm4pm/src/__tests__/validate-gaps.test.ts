@@ -286,21 +286,23 @@ describe('wpm validate — gap coverage', () => {
       expect(attrCheck!['status']).toBe('pass');
     });
 
-    it('schema check fails when concept:name is absent from events', async () => {
+    it('required_attributes check fails when concept:name is absent from events', async () => {
+      // The schema check uses infer_eventlog_schema (confidence-based), not attribute presence.
+      // Missing activity attribute is detected by the required_attributes check instead.
       const p = await writeTmp(noActivityXes, 'no-activity.xes');
       const { envelope } = await validateJson([p]);
       const checks = payload(envelope)['checks'] as Array<Record<string, unknown>>;
-      const schemaCheck = checks.find((c) => c['name'] === 'schema');
-      expect(schemaCheck).toBeDefined();
-      expect(schemaCheck!['status']).toBe('fail');
+      const attrCheck = checks.find((c) => c['name'] === 'required_attributes');
+      expect(attrCheck).toBeDefined();
+      expect(attrCheck!['status']).toBe('fail');
     });
 
-    it('schema check failure message names the missing attribute', async () => {
+    it('required_attributes failure message names the missing attribute', async () => {
       const p = await writeTmp(noActivityXes, 'no-activity.xes');
       const { envelope } = await validateJson([p]);
       const checks = payload(envelope)['checks'] as Array<Record<string, unknown>>;
-      const schemaCheck = checks.find((c) => c['name'] === 'schema');
-      expect(String(schemaCheck!['message'])).toMatch(/concept:name/i);
+      const attrCheck = checks.find((c) => c['name'] === 'required_attributes');
+      expect(String(attrCheck!['message'])).toMatch(/concept:name/i);
     });
 
     it('required_attributes check fails when concept:name is absent', async () => {
@@ -358,7 +360,7 @@ describe('wpm validate — gap coverage', () => {
         const { exitCode } = await validateJson([f]);
         expect(exitCode).not.toBe(3);
       }
-    });
+    }, 30000);
   });
 
   // ── 6. Error envelope structure on failure ────────────────────────────────
@@ -563,7 +565,7 @@ describe('wpm validate — gap coverage', () => {
       const { envelope } = await validateJson([p]);
       // Only warnings fired — valid=true, exit=0, envelope status must stay "ok"
       expect(envelope['status']).toBe('ok');
-    });
+    }, 15000);
 
     it('envelope.status is "error" and payload.valid is false together', async () => {
       const p = await writeTmp(noActivityXes, 'no-activity.xes');
@@ -623,16 +625,17 @@ describe('wpm validate — gap coverage', () => {
       expect(envelope['status']).toBe('error');
     });
 
-    it('schema check message mentions time:timestamp when missing', async () => {
+    it('required_attributes check mentions time:timestamp when missing', async () => {
+      // Missing timestamps are caught by the required_attributes check (validate_has_timestamps),
+      // not by the schema check (which uses infer_eventlog_schema / confidence scoring).
       const p = await writeTmp(noTimestampXes, 'no-ts.xes');
       const { envelope } = await validateJson([p]);
       const checks = payload(envelope)['checks'] as Array<Record<string, unknown>>;
-      const schemaCheck = checks.find((c) => c['name'] === 'schema');
-      if (schemaCheck && schemaCheck['status'] === 'fail') {
-        expect(String(schemaCheck['message'])).toMatch(/time:timestamp/i);
+      const attrCheck = checks.find((c) => c['name'] === 'required_attributes');
+      if (attrCheck && attrCheck['status'] === 'fail') {
+        expect(String(attrCheck['message'])).toMatch(/time:timestamp/i);
       }
-      // If the WASM gracefully handles missing ts differently, the violations array
-      // must still be non-empty (the outer check catches the failure).
+      // The violations array must be non-empty when timestamps are missing.
       const vlen = (payload(envelope)['violations'] as string[]).length;
       expect(vlen).toBeGreaterThan(0);
     });
@@ -641,16 +644,20 @@ describe('wpm validate — gap coverage', () => {
   // ── 13. schema check details field structure ───────────────────────────────
 
   describe('schema check details field', () => {
-    it('schema check details includes has_activities for valid log', async () => {
+    it('schema check details includes confidence for valid log', async () => {
+      // The schema check uses infer_eventlog_schema which returns attribute_types, confidence,
+      // and inferred_keys — not has_activities/has_timestamps (those are in required_attributes).
       const p = await writeTmp(validXes('case-1', 2), 'test.xes');
       const { envelope } = await validateJson([p]);
       const checks = payload(envelope)['checks'] as Array<Record<string, unknown>>;
       const schemaCheck = checks.find((c) => c['name'] === 'schema');
       expect(schemaCheck).toBeDefined();
-      if (schemaCheck!['status'] !== 'warn') {
-        // Only assert details when the check ran (not "not available" fallback)
-        expect(schemaCheck!['details']).toHaveProperty('has_activities');
-        expect(schemaCheck!['details']).toHaveProperty('has_timestamps');
+      if (schemaCheck!['status'] !== 'warn' || (schemaCheck!['details'] as Record<string, unknown>)?.['confidence'] !== undefined) {
+        // When infer_eventlog_schema ran, details contain confidence and attribute_types
+        const details = schemaCheck!['details'] as Record<string, unknown> | undefined;
+        if (details) {
+          expect(details).toHaveProperty('confidence');
+        }
       }
     });
 

@@ -206,20 +206,43 @@ export const validate = defineCommand({
           const errors: string[] = [];
           const warnings: string[] = [];
 
-          // Check 1: Schema validation
+          // Collect trace_count and event_count via the actual WASM API.
+          // get_trace_count / get_event_count are canonical counters present in all profiles.
+          let traceCount = 0;
+          let eventCount = 0;
           try {
-            const rawSchema = wasm.validate_log_schema(logHandle, logFormat);
-            const schemaResult = typeof rawSchema === 'string' ? JSON.parse(rawSchema) : rawSchema;
+            traceCount = Number(wasm.get_trace_count(logHandle)) || 0;
+            eventCount = Number(wasm.get_event_count(logHandle)) || 0;
+          } catch {
+            // counters stay 0 — not fatal
+          }
+
+          // Check 1: Schema inference via infer_eventlog_schema (available in all profiles).
+          // infer_eventlog_schema returns a JS Map (serde_wasm_bindgen), access via .get().
+          // Confidence < 0.5 means the schema is ambiguous — warn; >= 0.5 is pass.
+          try {
+            const rawSchema: unknown = wasm.infer_eventlog_schema(logHandle);
+            const getField = (obj: unknown, key: string): unknown => {
+              if (obj instanceof Map) return (obj as Map<string, unknown>).get(key);
+              if (typeof obj === 'string') return (JSON.parse(obj) as Record<string, unknown>)[key];
+              return (obj as Record<string, unknown>)[key];
+            };
+            const confidence = (getField(rawSchema, 'confidence') as number | undefined) ?? 0;
+            const schemaOk = confidence >= 0.5;
+            const schemaDetails: Record<string, unknown> =
+              rawSchema instanceof Map
+                ? Object.fromEntries(rawSchema as Map<string, unknown>)
+                : (rawSchema as Record<string, unknown>);
             checks.push({
               name: 'schema',
-              status: (schemaResult.valid as boolean) ? 'pass' : 'fail',
-              message: (schemaResult.valid as boolean)
-                ? 'Log schema is valid'
-                : 'Log schema validation failed',
-              details: schemaResult,
+              status: schemaOk ? 'pass' : 'warn',
+              message: schemaOk
+                ? `Log schema inferred (confidence: ${(confidence * 100).toFixed(0)}%)`
+                : `Schema inference confidence low (${(confidence * 100).toFixed(0)}%)`,
+              details: schemaDetails,
             });
-            if (!(schemaResult.valid as boolean)) {
-              errors.push(`Schema validation failed: ${schemaResult.message as string}`);
+            if (!schemaOk) {
+              warnings.push(`Schema inference confidence low (${(confidence * 100).toFixed(0)}%)`);
             }
           } catch {
             checks.push({
@@ -230,17 +253,14 @@ export const validate = defineCommand({
             warnings.push('Schema validation not available for this log format');
           }
 
-          // Check 2: Required attributes
+          // Check 2: Required attributes — validate_has_activities + validate_has_timestamps.
+          // These boolean-returning WASM functions exist in all deployment profiles.
           try {
-            const rawAttrs = wasm.validate_required_attributes(
-              logHandle,
-              activityKey,
-              caseIdKey,
-              timestampKey,
-              resourceKey
-            );
-            const attrsResult = typeof rawAttrs === 'string' ? JSON.parse(rawAttrs) : rawAttrs;
-            const missing = (attrsResult.missing as string[]) ?? [];
+            const hasActivities = Boolean(wasm.validate_has_activities(logHandle, activityKey));
+            const hasTimestamps = Boolean(wasm.validate_has_timestamps(logHandle, timestampKey));
+            const missing: string[] = [];
+            if (!hasActivities) missing.push(activityKey);
+            if (!hasTimestamps) missing.push(timestampKey);
             checks.push({
               name: 'required_attributes',
               status: missing.length === 0 ? 'pass' : 'fail',
@@ -248,7 +268,7 @@ export const validate = defineCommand({
                 missing.length === 0
                   ? 'All required attributes present'
                   : `Missing attributes: ${missing.join(', ')}`,
-              details: attrsResult,
+              details: { missing, has_activities: hasActivities, has_timestamps: hasTimestamps },
             });
             if (missing.length > 0) {
               errors.push(`Missing required attributes: ${missing.join(', ')}`);
@@ -262,22 +282,24 @@ export const validate = defineCommand({
             warnings.push('Attribute validation not available for this log format');
           }
 
-          // Check 3: Data quality
+          // Check 3: Data quality — analyze_event_statistics provides event distribution info.
           try {
-            const rawQuality = wasm.validate_data_quality(logHandle);
-            const qualityResult =
-              typeof rawQuality === 'string' ? JSON.parse(rawQuality) : rawQuality;
-            const hasIssues = (qualityResult.issues as number) > 0;
+            const parse = (r: unknown) =>
+              typeof r === 'string'
+                ? (JSON.parse(r) as Record<string, unknown>)
+                : (r as Record<string, unknown>);
+            const stats = parse(wasm.analyze_event_statistics(logHandle));
+            const hasIssues = eventCount === 0 && traceCount === 0;
             checks.push({
               name: 'data_quality',
               status: hasIssues ? 'warn' : 'pass',
               message: hasIssues
-                ? `Found ${qualityResult.issues} data quality issue(s)`
-                : 'No data quality issues',
-              details: qualityResult,
+                ? 'Log contains no events — data quality issue'
+                : `${eventCount} event(s) across ${traceCount} trace(s)`,
+              details: stats,
             });
             if (hasIssues) {
-              warnings.push(`Data quality: ${qualityResult.issues} issue(s) found`);
+              warnings.push('Log contains no events — data quality issue');
             }
           } catch {
             checks.push({
@@ -287,56 +309,38 @@ export const validate = defineCommand({
             });
           }
 
-          // Check 4: Trace completeness
-          try {
-            const rawTraces = wasm.validate_trace_completeness(logHandle);
-            const tracesResult = typeof rawTraces === 'string' ? JSON.parse(rawTraces) : rawTraces;
-            const incompleteTraces = (tracesResult.incomplete as number) ?? 0;
-            checks.push({
-              name: 'trace_completeness',
-              status: incompleteTraces === 0 ? 'pass' : 'warn',
-              message:
-                incompleteTraces === 0
-                  ? 'All traces are complete'
-                  : `${incompleteTraces} incomplete trace(s) found`,
-              details: tracesResult,
-            });
-            if (incompleteTraces > 0) {
-              warnings.push(`${incompleteTraces} incomplete trace(s) found`);
+          // Check 4: Trace completeness — derived from trace_count / event_count.
+          // validate_trace_completeness does not exist in this WASM profile.
+          {
+            let tcStatus: CheckStatus;
+            let tcMessage: string;
+            if (traceCount === 0) {
+              tcStatus = 'warn';
+              tcMessage = 'Log contains no traces — completeness cannot be verified';
+            } else if (eventCount === 0) {
+              tcStatus = 'warn';
+              tcMessage = `${traceCount} trace(s) appear to have no events`;
+            } else {
+              tcStatus = 'pass';
+              tcMessage = 'All traces have events';
             }
-          } catch {
             checks.push({
               name: 'trace_completeness',
-              status: 'warn',
-              message: 'Trace completeness validation not available',
+              status: tcStatus,
+              message: tcMessage,
+              details: { trace_count: traceCount, event_count: eventCount },
             });
+            if (tcStatus === 'warn') {
+              warnings.push(tcMessage);
+            }
           }
 
-          // Check 5: Timestamp ordering
-          try {
-            const rawOrdering = wasm.validate_timestamp_ordering(logHandle);
-            const orderingResult =
-              typeof rawOrdering === 'string' ? JSON.parse(rawOrdering) : rawOrdering;
-            const outOfOrder = (orderingResult.out_of_order as number) ?? 0;
-            checks.push({
-              name: 'timestamp_ordering',
-              status: outOfOrder === 0 ? 'pass' : 'warn',
-              message:
-                outOfOrder === 0
-                  ? 'All timestamps are correctly ordered'
-                  : `${outOfOrder} event(s) with out-of-order timestamps`,
-              details: orderingResult,
-            });
-            if (outOfOrder > 0) {
-              warnings.push(`${outOfOrder} event(s) with out-of-order timestamps`);
-            }
-          } catch {
-            checks.push({
-              name: 'timestamp_ordering',
-              status: 'warn',
-              message: 'Timestamp ordering validation not available',
-            });
-          }
+          // Check 5: Timestamp ordering — no dedicated WASM function in this profile.
+          checks.push({
+            name: 'timestamp_ordering',
+            status: 'warn',
+            message: 'Timestamp ordering check not available in this profile',
+          });
 
           wasm.delete_object(logHandle);
 
@@ -350,6 +354,10 @@ export const validate = defineCommand({
             format: logFormat,
             status: overallStatus,
             valid: !hasErrors,
+            /** Total number of traces (cases) in the log. */
+            trace_count: traceCount,
+            /** Total number of events across all traces. */
+            event_count: eventCount,
             checks,
             errors,
             /** `violations` is the PM-conventional alias for `errors`.
