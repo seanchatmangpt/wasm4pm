@@ -123,11 +123,11 @@ export const simulate = defineCommand({
           const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
           const rawCases = ctx.args.cases as string | undefined;
           const parsedCases = rawCases != null ? parseInt(rawCases, 10) : undefined;
-          if (parsedCases !== undefined && Number.isNaN(parsedCases)) {
+          if (parsedCases !== undefined && (Number.isNaN(parsedCases) || parsedCases <= 0)) {
             const result = makeErrorResult(
               'simulate',
               new Error(
-                `Invalid --cases value '${rawCases}': must be a positive integer.\n\n` +
+                `Invalid --cases value '${rawCases}': must be a positive integer (≥ 1).\n\n` +
                   `  --cases sets the number of synthetic traces to generate (default: 100).\n` +
                   `  Example: wpm simulate <log.xes> --cases 500`
               ),
@@ -141,11 +141,11 @@ export const simulate = defineCommand({
 
           const rawTime = ctx.args.time as string | undefined;
           const parsedTime = rawTime != null ? parseInt(rawTime, 10) : undefined;
-          if (parsedTime !== undefined && Number.isNaN(parsedTime)) {
+          if (parsedTime !== undefined && (Number.isNaN(parsedTime) || parsedTime <= 0)) {
             const result = makeErrorResult(
               'simulate',
               new Error(
-                `Invalid --time value '${rawTime}': must be a positive integer (milliseconds).\n\n` +
+                `Invalid --time value '${rawTime}': must be a positive integer (milliseconds, ≥ 1).\n\n` +
                   `  --time sets the maximum simulation duration in milliseconds (default: 60000).\n` +
                   `  Example: wpm simulate <log.xes> --time 120000`
               ),
@@ -158,11 +158,11 @@ export const simulate = defineCommand({
           const maxTime = parsedTime ?? 60000;
           const rawSeed = ctx.args.seed as string | undefined;
           const parsedSeed = rawSeed != null ? parseInt(rawSeed, 10) : undefined;
-          if (parsedSeed !== undefined && Number.isNaN(parsedSeed)) {
+          if (parsedSeed !== undefined && (Number.isNaN(parsedSeed) || parsedSeed < 0)) {
             const result = makeErrorResult(
               'simulate',
               new Error(
-                `Invalid --seed value '${rawSeed}': must be an integer.\n\n` +
+                `Invalid --seed value '${rawSeed}': must be a non-negative integer (≥ 0).\n\n` +
                   `  --seed sets the random seed for reproducible simulation runs.\n` +
                   `  Example: wpm simulate <log.xes> --seed 42`
               ),
