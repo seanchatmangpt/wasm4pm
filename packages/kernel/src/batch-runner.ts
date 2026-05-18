@@ -124,7 +124,9 @@ export class BatchRunner extends EventEmitter {
       }
     }
 
-    return this.createBatchResult();
+    const batchResult = this.createBatchResult();
+    this.emit('completed', batchResult);
+    return batchResult;
   }
 
   /**
@@ -157,8 +159,10 @@ export class BatchRunner extends EventEmitter {
   }
 
   /**
-   * Process a single log file with timeout protection
-   * OTEL span emission is deferred to the consumer
+   * Process a single log file with timeout protection.
+   * Emits a `progress` event after each log completes:
+   *   { logPath, status, elapsedMs, completed: number, total: number }
+   * OTEL span emission is deferred to the consumer.
    */
   private async processLog(item: WorkItem): Promise<BatchLogResult> {
     const t0 = performance.now();
@@ -170,20 +174,39 @@ export class BatchRunner extends EventEmitter {
       const result = await this.simulateDiscovery(item.logPath);
       const elapsedMs = performance.now() - t0;
 
-      return {
+      const logResult: BatchLogResult = {
         logPath: item.logPath,
         status: 'success',
         elapsedMs,
         result,
       };
+
+      this.emit('progress', {
+        logPath: item.logPath,
+        status: 'success',
+        elapsedMs,
+        completed: this.results.length + 1,
+      });
+
+      return logResult;
     } catch (error) {
       const elapsedMs = performance.now() - t0;
-      return {
+      const logResult: BatchLogResult = {
         logPath: item.logPath,
         status: 'failed',
         elapsedMs,
         error: error instanceof Error ? error.message : String(error),
       };
+
+      this.emit('progress', {
+        logPath: item.logPath,
+        status: 'failed',
+        elapsedMs,
+        completed: this.results.length + 1,
+        error: logResult.error,
+      });
+
+      return logResult;
     }
   }
 
