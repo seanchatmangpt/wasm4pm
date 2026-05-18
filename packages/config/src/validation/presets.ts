@@ -425,6 +425,20 @@ export interface PresetConstraints {
   requiredFeatures?: string[];
 }
 
+/**
+ * Observed characteristics of the event log being analysed.
+ * When provided to `generateOptimalConfig`, these influence the
+ * selection reason and can surface additional instinct signals.
+ */
+export interface LogCharacteristics {
+  /** Total number of events in the log (sum across all traces). */
+  eventCount?: number;
+  /** Number of distinct cases / traces in the log. */
+  traceCount?: number;
+  /** Number of unique activity labels observed. */
+  activityCount?: number;
+}
+
 const QUALITY_ALGORITHMS = new Set([
   'genetic_algorithm',
   'ilp',
@@ -589,18 +603,49 @@ export function suggestPresetFromBenchmarks(
  * 4. Profile / algorithm mismatch - when a required algorithm is absent
  *    from the requested deployment profile, `_warning` identifies the mismatch
  *    and the system gracefully falls back to `suggestPreset`.
+ *
+ * 5. User preset override - when `userPreset` is provided, the instinct
+ *    selection logic is skipped and the caller's explicit choice is used
+ *    as the preset.  `_instinctSource` is set to `'user'` to make this
+ *    visible to downstream consumers.
+ *
+ * 6. Degenerate log guard - when `logSizeHint` is 0 the latency filter
+ *    would pass every algorithm (0ms estimated latency).  The guard
+ *    detects this, skips latency filtering, and appends a `_warning`.
  */
 export function generateOptimalConfig(
-  constraints: PresetConstraints & { deploymentProfile?: string; logSizeHint?: number },
+  constraints: PresetConstraints & {
+    deploymentProfile?: string;
+    logSizeHint?: number;
+    /** When provided, bypass instinct preset selection and use this preset directly. */
+    userPreset?: PublicPreset;
+    /** Observed log characteristics for richer selection reasons. */
+    logCharacteristics?: LogCharacteristics;
+  },
   benchmarks?: BenchmarkData
-): BaseConfig & { _selectedAlgorithm: string; _selectionReason: string; _warning?: string } {
+): BaseConfig & {
+  _selectedAlgorithm: string;
+  _selectionReason: string;
+  _warning?: string;
+  /** 'auto' = derived by instinct logic; 'user' = caller supplied userPreset */
+  _instinctSource: 'auto' | 'user';
+  /** Echo of logCharacteristics when provided, undefined otherwise. */
+  _logCharacteristics?: LogCharacteristics;
+} {
   const {
     maxMemoryMb,
     requiredAlgorithms = [],
     deploymentProfile = 'browser',
     logSizeHint = 100,
     maxLatencyMs,
+    userPreset,
+    logCharacteristics,
   } = constraints;
+
+  // --- G6: User preset override — skip instinct selection entirely ---
+  // When the caller explicitly specifies a preset (e.g., from a CLI --profile flag),
+  // the AutoInstincts selection logic must not overrule that choice.
+  const instinctSource: 'auto' | 'user' = userPreset !== undefined ? 'user' : 'auto';
 
   // --- Instinct: detect unknown algorithms before any scoring ---
   let unknownWarning: string | undefined;
@@ -612,16 +657,45 @@ export function generateOptimalConfig(
     }
   }
 
+  // --- G1: Degenerate log guard (logSizeHint === 0) ---
+  // A zero-size logSizeHint makes every latency estimate 0ms, which would pass
+  // all latency filters regardless of maxLatencyMs. Surface this as a warning
+  // and treat it as if no logSizeHint was supplied (use defaults).
+  const effectiveLogSizeHint = logSizeHint === 0 ? 100 : logSizeHint;
+  const degenerateLogWarning: string | undefined =
+    logSizeHint === 0
+      ? 'logSizeHint=0 (degenerate log): latency estimation skipped; defaulting to 100-event baseline'
+      : undefined;
+
   // --- Preset selection ---
-  const preset = benchmarks
-    ? suggestPresetFromBenchmarks(benchmarks, constraints)
-    : suggestPreset(constraints);
+  // When userPreset is provided, use it directly without running instinct logic.
+  const preset: PublicPreset =
+    userPreset ??
+    (benchmarks
+      ? suggestPresetFromBenchmarks(benchmarks, { ...constraints, logSizeHint: effectiveLogSizeHint })
+      : suggestPreset(constraints));
 
   const base = getPublicPresetConfig(preset);
 
   let selectedAlgorithm = base.algorithm.name;
-  let selectionReason = `Preset '${preset}' selected by hardcoded rules; default algorithm '${base.algorithm.name}' used`;
-  let warning: string | undefined = unknownWarning;
+  let selectionReason: string;
+  if (instinctSource === 'user') {
+    selectionReason = `Preset '${preset}' supplied by caller (user override); default algorithm '${base.algorithm.name}' used`;
+    // Optionally append log characteristics for context
+    if (logCharacteristics) {
+      const { eventCount, traceCount, activityCount } = logCharacteristics;
+      const parts: string[] = [];
+      if (eventCount !== undefined) parts.push(`${eventCount} events`);
+      if (traceCount !== undefined) parts.push(`${traceCount} traces`);
+      if (activityCount !== undefined) parts.push(`${activityCount} activities`);
+      if (parts.length > 0) {
+        selectionReason += `; log: ${parts.join(', ')}`;
+      }
+    }
+  } else {
+    selectionReason = `Preset '${preset}' selected by hardcoded rules; default algorithm '${base.algorithm.name}' used`;
+  }
+  let warning: string | undefined = unknownWarning ?? degenerateLogWarning;
 
   // --- Memory cascade explanation ---
   // When maxMemoryMb drives the preset to 'fast' via suggestPreset (or the new
@@ -662,11 +736,11 @@ export function generateOptimalConfig(
       }
     }
 
-    // Filter by latency
+    // Filter by latency (use effectiveLogSizeHint — guards against the degenerate 0-event case)
     if (maxLatencyMs !== undefined && maxLatencyMs > 0) {
       candidates = candidates.filter(([, m]) => {
         if (m.median_ms_per_100_events === null) return false;
-        return m.median_ms_per_100_events * (logSizeHint / 100) <= maxLatencyMs;
+        return m.median_ms_per_100_events * (effectiveLogSizeHint / 100) <= maxLatencyMs;
       });
     }
 
@@ -714,10 +788,24 @@ export function generateOptimalConfig(
     ? { ...base.source, kind: 'stream' as const }
     : base.source;
 
+  // Append log characteristics to benchmark-derived selection reason when available
+  if (logCharacteristics && instinctSource === 'auto') {
+    const { eventCount, traceCount, activityCount } = logCharacteristics;
+    const parts: string[] = [];
+    if (eventCount !== undefined) parts.push(`${eventCount} events`);
+    if (traceCount !== undefined) parts.push(`${traceCount} traces`);
+    if (activityCount !== undefined) parts.push(`${activityCount} activities`);
+    if (parts.length > 0) {
+      selectionReason += `; log characteristics: ${parts.join(', ')}`;
+    }
+  }
+
   const result: BaseConfig & {
     _selectedAlgorithm: string;
     _selectionReason: string;
     _warning?: string;
+    _instinctSource: 'auto' | 'user';
+    _logCharacteristics?: LogCharacteristics;
   } = {
     ...base,
     source: effectiveSource,
@@ -727,10 +815,15 @@ export function generateOptimalConfig(
     },
     _selectedAlgorithm: selectedAlgorithm,
     _selectionReason: selectionReason,
+    _instinctSource: instinctSource,
   };
 
   if (warning !== undefined) {
     result._warning = warning;
+  }
+
+  if (logCharacteristics !== undefined) {
+    result._logCharacteristics = logCharacteristics;
   }
 
   return result;

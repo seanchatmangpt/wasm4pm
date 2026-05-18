@@ -204,4 +204,5 @@ export {
   type PresetConstraints,
   type AlgorithmMeasurement,
   type BenchmarkData,
+  type LogCharacteristics,
 } from './validation/presets.js';

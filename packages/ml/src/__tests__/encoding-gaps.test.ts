@@ -22,9 +22,12 @@ describe('ENCODING GAP 1: Extreme Outliers in Numeric Columns', () => {
       { case_id: 'c3', value: 30, other: 300 },
     ];
     const result = buildFeatureMatrix(features);
-    expect(result.data[1][0]).toBe(0); // NaN → 0
+    // GAP 3 FIX: Columns are now sorted alphabetically (other < value)
+    const otherIdx = result.featureNames.indexOf('other');
+    const valueIdx = result.featureNames.indexOf('value');
+    expect(result.data[1][valueIdx]).toBe(0); // value NaN → 0
     expect(result.data).toHaveLength(3);
-    expect(result.data[0][1]).toBe(100); // other column unaffected
+    expect(result.data[0][otherIdx]).toBe(100); // other column unaffected
   });
 
   it('handles Infinity in numeric column (should coerce to 0)', () => {
@@ -34,8 +37,9 @@ describe('ENCODING GAP 1: Extreme Outliers in Numeric Columns', () => {
       { case_id: 'c3', value: 30 },
     ];
     const result = buildFeatureMatrix(features);
-    expect(result.data[1][0]).toBe(0); // Inf → 0
-    expect(Number.isFinite(result.data[1][0])).toBe(true);
+    const valueIdx = result.featureNames.indexOf('value');
+    expect(result.data[1][valueIdx]).toBe(0); // Inf → 0
+    expect(Number.isFinite(result.data[1][valueIdx])).toBe(true);
   });
 
   it('handles negative Infinity in numeric column', () => {
@@ -45,8 +49,9 @@ describe('ENCODING GAP 1: Extreme Outliers in Numeric Columns', () => {
       { case_id: 'c3', value: 30 },
     ];
     const result = buildFeatureMatrix(features);
-    expect(result.data[1][0]).toBe(0); // -Inf → 0
-    expect(Number.isFinite(result.data[1][0])).toBe(true);
+    const valueIdx = result.featureNames.indexOf('value');
+    expect(result.data[1][valueIdx]).toBe(0); // -Inf → 0
+    expect(Number.isFinite(result.data[1][valueIdx])).toBe(true);
   });
 
   it('cascade detection: mixed NaN/Inf in same column should not propagate', () => {
@@ -58,9 +63,10 @@ describe('ENCODING GAP 1: Extreme Outliers in Numeric Columns', () => {
     ];
     const result = buildFeatureMatrix(features, 'target');
     // All non-finite values should be 0, not propagate
-    expect(result.data[1][0]).toBe(0);
-    expect(result.data[2][0]).toBe(0);
-    expect(result.data[3][0]).toBe(0);
+    const valIdx = result.featureNames.indexOf('val');
+    expect(result.data[1][valIdx]).toBe(0);
+    expect(result.data[2][valIdx]).toBe(0);
+    expect(result.data[3][valIdx]).toBe(0);
     // Targets: NaN → 0, others preserved
     expect(result.targets[1]).toBe(0);
     expect(result.targets[2]).toBe(200);

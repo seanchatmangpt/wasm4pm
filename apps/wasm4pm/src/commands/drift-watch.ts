@@ -174,6 +174,7 @@ export const driftWatch = defineCommand({
     // ── Step 3: State for incremental monitoring ─────────────────────────────
     let previousDriftCount = 0;
     let previousMtimeMs = 0;
+    let previousEwma = 0; // Tracks EWMA from prior tick for threshold-crossing detection
     const distanceHistory: number[] = [];
     const MAX_DISTANCE_HISTORY = 10_000;
 
@@ -331,7 +332,18 @@ export const driftWatch = defineCommand({
         const newPoints = newDriftCount > 0 ? drifts.slice(previousDriftCount) : [];
         const line = {
           timestamp: new Date().toISOString(),
+          // drift_detected: true when the EWMA score has crossed the alert threshold.
+          // This is the primary boolean signal for downstream consumers — more
+          // precise than newDriftPoints > 0 because the EWMA smooths burst noise.
+          drift_detected: ewma > driftThreshold,
+          // threshold_crossed: true on the exact tick where EWMA crossed the threshold.
+          // Use this to fire one-shot alerts rather than repeated alerts on every tick.
+          threshold_crossed: ewma > driftThreshold && previousEwma <= driftThreshold,
+          // window_index: monotonically increasing counter for this streaming session.
+          // Consumers can detect missed ticks if they receive non-consecutive indexes.
+          window_index: windowsProcessed - 1,
           ewma: parseFloat(ewma.toFixed(4)),
+          ewma_value: parseFloat(ewma.toFixed(4)),
           trend,
           drifts_detected: detected,
           window_size: windowSize,
@@ -489,6 +501,7 @@ export const driftWatch = defineCommand({
       currentNewDriftCount = newDriftCount;
 
       previousDriftCount = detected;
+      previousEwma = ewma; // Used for threshold_crossed detection on next tick
 
       // ── Enhanced ML anomaly detection (if --enhanced) ─────────────────────
       if (enhancedMode && distanceHistory.length >= 10) {

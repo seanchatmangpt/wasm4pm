@@ -19,11 +19,13 @@ describe('buildFeatureMatrix', () => {
       { case_id: 'c2', trace_length: 3, elapsed_time: 500 },
     ];
     const result = buildFeatureMatrix(features);
+    // GAP 3 FIX: Feature names and data are now sorted alphabetically for determinism
+    expect(result.featureNames).toEqual(['elapsed_time', 'trace_length']);
+    // Data is ordered to match sorted feature names: [elapsed_time, trace_length]
     expect(result.data).toEqual([
-      [5, 1000],
-      [3, 500],
+      [1000, 5],
+      [500, 3],
     ]);
-    expect(result.featureNames).toEqual(['trace_length', 'elapsed_time']);
     expect(result.caseIds).toEqual(['c1', 'c2']);
   });
 

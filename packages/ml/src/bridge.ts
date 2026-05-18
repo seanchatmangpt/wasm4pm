@@ -89,8 +89,13 @@ export function buildFeatureMatrix(
   }
 
   // Assemble feature names
-  const featureNames: string[] = [...numericCols];
-  for (const [col, values] of oneHotMap) {
+  // GAP 3 FIX: Sort numeric columns and categorical columns for deterministic ordering
+  const sortedNumericCols = [...numericCols].sort();
+  const featureNames: string[] = [...sortedNumericCols];
+  // Iterate over categorical columns in sorted order for consistency
+  const sortedCategoricalCols = Array.from(oneHotMap.keys()).sort();
+  for (const col of sortedCategoricalCols) {
+    const values = oneHotMap.get(col)!;
     for (const v of values) {
       featureNames.push(`${col}=${v}`);
     }
@@ -117,23 +122,22 @@ export function buildFeatureMatrix(
 
     // Numeric columns: coerce safely, guard against NaN, Infinity, and missing values
     // CRITICAL: Handle missing properties (undefined), NaN, Infinity all as 0
-    for (const col of numericCols) {
+    // GAP 1 FIX: Explicitly check Number.isFinite() which rejects NaN, Infinity, -Infinity
+    // GAP 3 FIX: Use sorted numeric columns to match feature name order
+    for (const col of sortedNumericCols) {
       const val = row[col];
-      if (
-        val !== undefined &&
-        val !== null &&
-        typeof val === 'number' &&
-        !Number.isNaN(val) &&
-        Number.isFinite(val)
-      ) {
+      if (typeof val === 'number' && Number.isFinite(val)) {
         numericRow.push(val);
       } else {
+        // Coerce to 0: missing, null, NaN, Infinity, -Infinity, non-numeric
         numericRow.push(0);
       }
     }
 
-    // One-hot encoded string columns
-    for (const [col, values] of oneHotMap) {
+    // One-hot encoded string columns (in sorted order for determinism)
+    // GAP 3 FIX: Use sortedCategoricalCols to ensure consistent column ordering
+    for (const col of sortedCategoricalCols) {
+      const values = oneHotMap.get(col)!;
       const rowVal = row[col] == null ? '' : String(row[col]);
       for (const v of values) {
         numericRow.push(rowVal === v ? 1 : 0);
@@ -144,9 +148,10 @@ export function buildFeatureMatrix(
 
     // Extract numeric target with NaN/Infinity guard
     // CRITICAL: Must handle NaN explicitly since typeof NaN === 'number'
+    // GAP 4 FIX: Use Number.isFinite() which rejects NaN, Infinity, -Infinity
     if (numericTargetKey) {
       const val = row[numericTargetKey];
-      if (typeof val === 'number' && Number.isFinite(val) && !Number.isNaN(val)) {
+      if (typeof val === 'number' && Number.isFinite(val)) {
         targets.push(val);
       } else {
         targets.push(0);
