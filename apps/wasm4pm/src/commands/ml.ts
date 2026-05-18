@@ -355,6 +355,10 @@ function formatMlHumanOutput(
         | undefined;
       const forecast = result.forecast as number[] | undefined;
       const seasonality = result.seasonality as { period?: number; strength?: number } | undefined;
+      const rSquared = result.rSquared as number | undefined;
+      const confidenceIntervals = result.confidenceIntervals as
+        | Array<[number, number]>
+        | undefined;
 
       // Compute percent-change summary over the forecast window
       let pctChangeSummary = '';
@@ -373,15 +377,24 @@ function formatMlHumanOutput(
       const trendStrength = trend?.strength ?? 0;
       let businessImplication = '';
       if (trendStrength >= 0.5) {
-        if (trendDir === 'decreasing' || trendDir === 'downward') {
+        if (trendDir === 'decreasing' || trendDir === 'downward' || trendDir === 'down') {
           businessImplication = `  Implication: throughput is declining${pctChangeSummary} — intervention may be needed.`;
-        } else if (trendDir === 'increasing' || trendDir === 'upward') {
+        } else if (trendDir === 'increasing' || trendDir === 'upward' || trendDir === 'up') {
           businessImplication = `  Implication: throughput is growing${pctChangeSummary} — monitor for capacity constraints.`;
         } else if (trendDir === 'stable' || trendDir === 'flat') {
           businessImplication = `  Implication: process is stable — no corrective action indicated.`;
         }
       } else {
         businessImplication = `  Implication: trend is weak (strength ${trendStrength.toFixed(2)}) — forecast is indicative only.`;
+      }
+
+      // R² interpretation label
+      function r2Label(r2: number): string {
+        if (r2 >= 0.9) return 'strong — trend is reliable';
+        if (r2 >= 0.7) return 'moderate — trend is a reasonable guide';
+        if (r2 >= 0.5) return 'weak — trend direction is meaningful but magnitude is uncertain';
+        if (r2 >= 0) return 'poor — use with caution, high variability';
+        return 'negative — model worse than constant baseline';
       }
 
       projection.log('');
@@ -393,11 +406,44 @@ function formatMlHumanOutput(
         projection.log(businessImplication);
       }
       projection.log(`  Window count: ${result.windowCount ?? 'n/a'}`);
+
+      // ── Forecast table with optional 95% CI column ──────────────────────────
       if (forecast && forecast.length > 0) {
+        const hasCi = confidenceIntervals && confidenceIntervals.length === forecast.length;
+        projection.log('');
+        if (hasCi) {
+          projection.log('  Period │ Forecast │       95% CI        │');
+          projection.log('  ────── │ ──────── │ ─────────────────── │');
+          forecast.forEach((v: number, i: number) => {
+            const period = String(i + 1).padStart(6);
+            const fitted = v.toFixed(3).padStart(8);
+            const ci = confidenceIntervals![i];
+            const lo = ci[0].toFixed(3);
+            const hi = ci[1].toFixed(3);
+            const ciStr = `[${lo}, ${hi}]`.padStart(19);
+            projection.log(`  ${period} │ ${fitted} │ ${ciStr} │`);
+          });
+        } else {
+          projection.log('  Period │ Forecast │');
+          projection.log('  ────── │ ──────── │');
+          forecast.forEach((v: number, i: number) => {
+            const period = String(i + 1).padStart(6);
+            const fitted = v.toFixed(3).padStart(8);
+            projection.log(`  ${period} │ ${fitted} │`);
+          });
+        }
+      }
+
+      // ── Model fit block ─────────────────────────────────────────────────────
+      projection.log('');
+      if (rSquared !== undefined) {
+        projection.log(`  Model fit:  R² = ${rSquared.toFixed(4)} (${r2Label(rSquared)})`);
+      } else {
         projection.log(
-          `  Forecast values (${forecast.length} periods): ${forecast.map((v: number) => v.toFixed(3)).join(', ')}`
+          '  Note: R² not available — run wpm quality for model fitness metrics'
         );
       }
+
       if (seasonality) {
         projection.log(
           `  Seasonality: period=${seasonality.period}, strength=${(seasonality.strength ?? 0).toFixed(2)}`

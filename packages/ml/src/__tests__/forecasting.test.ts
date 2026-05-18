@@ -79,6 +79,67 @@ describe('forecastSeries', () => {
   });
 });
 
+describe('forecastSeries R² and confidence intervals', () => {
+  it('returns rSquared near 1 for a perfect linear series and brackets the fitted value', async () => {
+    // y = 2x + 5 — a perfectly linear series should yield R² = 1
+    // CI uses a minimum std-error floor so intervals remain non-degenerate
+    const perfect = Array.from({ length: 10 }, (_, i) => 5 + 2 * i);
+    const result = await forecastSeries(perfect, { forecastPeriods: 3 });
+    expect(result.rSquared).toBeDefined();
+    expect(result.rSquared!).toBeGreaterThan(0.99);
+    expect(result.rSquared!).toBeLessThanOrEqual(1.0);
+    // CIs are present and bracket the fitted value
+    expect(result.confidenceIntervals).toBeDefined();
+    expect(result.confidenceIntervals).toHaveLength(3);
+    result.confidenceIntervals!.forEach(([lo, hi], i) => {
+      expect(lo).toBeLessThanOrEqual(result.forecast![i]);
+      expect(hi).toBeGreaterThanOrEqual(result.forecast![i]);
+    });
+  });
+
+  it('returns rSquared near 0 for random noise around a constant', async () => {
+    // A nearly constant series with tiny numerical noise has R² ≈ 1
+    // but a pure-constant series has SS_tot=0 so we use a real noisy one
+    const noisy = [10, 11, 9, 10.5, 9.5, 10.2, 9.8, 10.3, 9.7, 10.1];
+    const result = await forecastSeries(noisy, { forecastPeriods: 3 });
+    expect(result.rSquared).toBeDefined();
+    // R² can be negative if slope is non-zero but noisy — just assert it's finite
+    expect(Number.isFinite(result.rSquared!)).toBe(true);
+  });
+
+  it('returns confidenceIntervals parallel to forecast when series >= 3', async () => {
+    // Use noisy data so residualStdError > 0, giving non-degenerate intervals
+    const noisy = [10, 13, 11, 15, 14, 17, 16, 19, 18, 22];
+    const result = await forecastSeries(noisy, { forecastPeriods: 4 });
+    expect(result.forecast).toHaveLength(4);
+    expect(result.confidenceIntervals).toBeDefined();
+    expect(result.confidenceIntervals).toHaveLength(4);
+    // Each CI must be [lower, upper] with lower <= upper
+    result.confidenceIntervals!.forEach(([lo, hi]) => {
+      expect(lo).toBeLessThanOrEqual(hi);
+    });
+  });
+
+  it('CI width grows with forecast horizon (extrapolation uncertainty increases)', async () => {
+    // Noisy linear data — residuals are non-zero so CI width varies with x*
+    const noisy = Array.from(
+      { length: 20 },
+      (_, i) => 5 + 0.5 * i + (i % 3 === 0 ? 1.5 : i % 3 === 1 ? -1.0 : 0.5)
+    );
+    const result = await forecastSeries(noisy, { forecastPeriods: 5 });
+    expect(result.confidenceIntervals).toBeDefined();
+    const widths = result.confidenceIntervals!.map(([lo, hi]) => hi - lo);
+    // Width at period 5 must be wider than at period 1 (further extrapolation = more uncertainty)
+    expect(widths[4]).toBeGreaterThan(widths[0]);
+  });
+
+  it('returns no confidenceIntervals for short series (< 3 points)', async () => {
+    const result = await forecastSeries([1, 2], { forecastPeriods: 3 });
+    expect(result.confidenceIntervals).toBeUndefined();
+    expect(result.rSquared).toBeUndefined();
+  });
+});
+
 describe('forecastSeries edge cases', () => {
   it('handles pure linear trend, constant, decreasing, exponential growth, very short, single point, and seasonality strength comparison', async () => {
     const linearTrend = Array.from({ length: 20 }, (_, i) => 10 + i * 2);

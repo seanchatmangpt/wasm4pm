@@ -91,6 +91,19 @@ export interface SeriesForecastResult {
   seriesLength: number;
   trend: { direction: string; slope: number; strength: number };
   forecast?: number[];
+  /**
+   * R² goodness-of-fit for the linear trend model (fraction of variance explained).
+   * Ranges from -∞ (worse than constant baseline) to 1.0 (perfect fit).
+   * Present when series has ≥ 3 observations.
+   */
+  rSquared?: number;
+  /**
+   * 95% confidence intervals for each forecast period (parallel to `forecast`).
+   * Each entry is [lower, upper] at the 95% level, computed from residual
+   * standard error with n-2 degrees of freedom.
+   * Present when series has ≥ 3 observations and `forecast` is populated.
+   */
+  confidenceIntervals?: Array<[number, number]>;
   seasonality?: { period: number; strength: number };
   decomposition?: { trend: number[]; seasonal: number[]; residual: number[] };
   exponentialForecast?: number[];

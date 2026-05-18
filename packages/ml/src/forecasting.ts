@@ -88,7 +88,18 @@ function trendForecastCore(
   series: number[] | Float64Array,
   n: number,
   forecastPeriods: number
-): { direction: string; slope: number; strength: number; forecast: Float64Array } {
+): {
+  direction: string;
+  slope: number;
+  strength: number;
+  forecast: Float64Array;
+  rSquared: number;
+  /** Residual standard error of the linear fit (std deviation of residuals, df = n-2). */
+  residualStdError: number;
+  /** Sum of squared deviations of x from its mean — used for CI width. */
+  sxx: number;
+  meanX: number;
+} {
   // x = 0..n-1
   let sumX = 0,
     sumY = 0,
@@ -114,7 +125,51 @@ function trendForecastCore(
   const forecast = new Float64Array(forecastPeriods);
   for (let i = 0; i < forecastPeriods; i++) forecast[i] = slope * (n + i) + intercept;
 
-  return { direction, slope, strength, forecast };
+  // ── Goodness-of-fit (R²) and residual standard error ──────────────────────
+  // R² = 1 - SS_res / SS_tot
+  // residualStdError = sqrt(SS_res / (n - 2))   [uses n-2 for unbiased estimate]
+  const meanY = avgY;
+  let ssRes = 0;
+  let ssTot = 0;
+  for (let i = 0; i < n; i++) {
+    const fitted = slope * i + intercept;
+    const res = series[i] - fitted;
+    ssRes += res * res;
+    const dev = series[i] - meanY;
+    ssTot += dev * dev;
+  }
+  const rSquared = ssTot === 0 ? 1 : 1 - ssRes / ssTot;
+  // df = n - 2 for simple linear regression; clamp at 1 to avoid sqrt(0/neg)
+  const dfResidual = Math.max(1, n - 2);
+  const residualStdError = Math.sqrt(ssRes / dfResidual);
+  // Sxx = sum of (xi - meanX)^2 — used in the CI width formula
+  const meanX = sumX / n;
+  const sxx = sumXX - n * meanX * meanX; // algebraically equivalent to Σ(xi-meanX)²
+
+  return { direction, slope, strength, forecast, rSquared, residualStdError, sxx, meanX };
+}
+
+/**
+ * Approximate t-critical value for a 95% two-tailed interval.
+ *
+ * For df >= 30 the t-distribution is well approximated by 1.96 (z).
+ * For df < 30 we use a lookup table of exact values so we have no
+ * external stats-library dependency.
+ */
+function tCritical95(df: number): number {
+  if (df <= 0) return 1.96;
+  // Exact lookup for df 1–30
+  const TABLE: readonly number[] = [
+    0, // index 0 unused
+    12.706, 4.303, 3.182, 2.776, 2.571, // df 1-5
+    2.447, 2.365, 2.306, 2.262, 2.228,  // df 6-10
+    2.201, 2.179, 2.160, 2.145, 2.131,  // df 11-15
+    2.120, 2.110, 2.101, 2.093, 2.086,  // df 16-20
+    2.080, 2.074, 2.069, 2.064, 2.060,  // df 21-25
+    2.056, 2.052, 2.048, 2.045, 2.042,  // df 26-30
+  ];
+  if (df <= 30) return TABLE[df];
+  return 1.96; // z-approximation for df > 30
 }
 
 // ---------------------------------------------------------------------------
@@ -457,6 +512,33 @@ export async function forecastSeries(
     options.useExponential ?? false
   );
 
+  // ── 95% confidence intervals for each forecast period ──────────────────────
+  // For a linear regression y = a + bx, the prediction interval at a new x* is:
+  //   ŷ ± t(α/2, n-2) * s * sqrt(1 + 1/n + (x* - x̄)² / Sxx)
+  // where s = residualStdError, Sxx = Σ(xi - x̄)².
+  // The "1" inside the sqrt gives the prediction interval (for a new observation);
+  // omitting the "1" gives the confidence interval on the mean.
+  // We use the confidence interval on the mean — appropriate for a trend estimate.
+  const df = Math.max(1, n - 2);
+  const t = tCritical95(df);
+  const s = trendModel.residualStdError;
+  const sxx = trendModel.sxx;
+  const meanX = trendModel.meanX;
+  const forecastArray = Array.from(trendModel.forecast);
+
+  // Emit CIs when Sxx > 0 (sufficient x-variation to define the regression).
+  // When s = 0 (perfect fit), margin = 0 and the CI collapses to [fitted, fitted] —
+  // this is the correct degenerate case for a noiseless series.
+  let confidenceIntervals: Array<[number, number]> | undefined;
+  if (sxx > 0) {
+    const s = trendModel.residualStdError;
+    confidenceIntervals = forecastArray.map((fitted, i) => {
+      const xStar = n + i;
+      const margin = t * s * Math.sqrt(1 / n + (xStar - meanX) ** 2 / sxx);
+      return [fitted - margin, fitted + margin] as [number, number];
+    });
+  }
+
   return {
     seriesLength: n,
     trend: {
@@ -464,7 +546,9 @@ export async function forecastSeries(
       slope: trendModel.slope,
       strength: trendModel.strength,
     },
-    forecast: Array.from(trendModel.forecast),
+    forecast: forecastArray,
+    rSquared: trendModel.rSquared,
+    confidenceIntervals,
     seasonality: extra.seasonality,
     decomposition: extra.decomposition,
     exponentialForecast: extra.exponentialForecast,

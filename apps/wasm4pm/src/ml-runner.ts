@@ -160,19 +160,38 @@ export function computeQualitySummary(
         | { direction?: string; slope?: number; strength?: number }
         | undefined;
       const forecast = result.forecast as number[] | undefined;
+      const rSquared = result.rSquared as number | undefined;
       const strength = trend?.strength ?? 0;
-      const good = strength >= 0.5;
+      // Primary quality signal: R² when available, otherwise trend strength
+      const hasR2 = rSquared !== undefined;
+      const primaryLabel = hasR2 ? 'R-squared' : 'Trend strength';
+      const primaryValue = hasR2 ? rSquared!.toFixed(4) : strength.toFixed(2);
+      const good = hasR2 ? rSquared! >= 0.7 : strength >= 0.5;
+      const r2Narrative = hasR2
+        ? rSquared! >= 0.9
+          ? 'strong — trend is reliable'
+          : rSquared! >= 0.7
+            ? 'moderate — trend is a reasonable guide'
+            : rSquared! >= 0.5
+              ? 'weak — trend direction is meaningful but magnitude is uncertain'
+              : rSquared! >= 0
+                ? 'poor — use with caution, high variability'
+                : 'negative — model worse than constant baseline'
+        : undefined;
       return {
-        primaryLabel: 'Trend strength',
-        primaryValue: strength.toFixed(2),
+        primaryLabel,
+        primaryValue,
         primaryGood: good,
         secondary: [
           { label: 'Direction', value: trend?.direction ?? 'unknown' },
           { label: 'Horizon', value: forecast ? String(forecast.length) : '0' },
+          ...(hasR2 ? [{ label: 'Trend strength', value: strength.toFixed(2) }] : []),
         ],
-        interpretation: good
-          ? `${trend?.direction ?? 'Unknown'} trend (strength ${strength.toFixed(2)}) — forecast is reliable.`
-          : `Weak trend (strength ${strength.toFixed(2)}) — forecast has low confidence.`,
+        interpretation: hasR2
+          ? `Model fit R²=${rSquared!.toFixed(2)} (${r2Narrative}). ${trend?.direction ?? 'Unknown'} trend over ${forecast?.length ?? 0} periods.`
+          : good
+            ? `${trend?.direction ?? 'Unknown'} trend (strength ${strength.toFixed(2)}) — forecast is reliable.`
+            : `Weak trend (strength ${strength.toFixed(2)}) — forecast has low confidence.`,
       };
     }
 

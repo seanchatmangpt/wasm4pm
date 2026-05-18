@@ -562,6 +562,54 @@ export const autoprocess = defineCommand({
                     : `no drift detected — RL Q-table stable (reward ${rewardSign}${reward.toFixed(3)})`;
                 phaseLabel('Learn', learnSummary);
 
+                // ── Next Actions (cross-phase synthesis) ───────────────────────
+                // Synthesise actionable recommendations from each MAPE-K phase.
+                // These guide operators from the current cycle result to the next
+                // investigative step without requiring them to interpret raw scores.
+                const nextActions: string[] = [];
+
+                // From Monitor phase: health degraded (score > 0 = degraded in WASM)
+                const healthScoreNum =
+                  typeof perception.health_score === 'number' ? perception.health_score : 0;
+                if (healthScoreNum > 0) {
+                  nextActions.push(
+                    'Run `wpm doctor` — health degraded during this cycle (score ' +
+                      healthScoreNum +
+                      '/4)'
+                  );
+                }
+
+                // From Analyze phase: drift detected (any special causes)
+                if (specialCausesList.length > 0) {
+                  nextActions.push(
+                    'Run `wpm drift-watch -i <log>` — ' +
+                      driftLabel +
+                      ' drift detected (' +
+                      specialCausesList.length +
+                      ' special cause(s)), monitor for further shift'
+                  );
+                }
+
+                // From Plan phase: circuit breaker blocked execution
+                if (!circuitAllowed) {
+                  nextActions.push(
+                    'Inspect circuit breaker state with `wpm status` — execution was BLOCKED (' +
+                      circuitState +
+                      ')'
+                  );
+                }
+
+                // Always: conformance check after autonomic changes to verify model quality
+                nextActions.push(
+                  'Run `wpm conformance -i <log>` — verify process model quality after autonomic changes'
+                );
+
+                projection.log('');
+                projection.log('  Recommended next actions:');
+                nextActions.forEach((action, idx) => {
+                  projection.log(`    ${idx + 1}. ${action}`);
+                });
+
                 // ── Timing breakdown ──────────────────────────────────────────
                 projection.log('');
                 projection.log('  Timing:');
