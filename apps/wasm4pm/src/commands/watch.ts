@@ -1,6 +1,5 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
-import { watch as fsWatch } from 'fs';
 import * as path from 'path';
 import { randomBytes } from 'node:crypto';
 import chokidar from 'chokidar';
@@ -11,8 +10,7 @@ import { getTracer, WatchingSpans } from '@wasm4pm/observability';
 import { WasmBackend } from '@wasm4pm/kernel';
 import { plan } from '@wasm4pm/planner';
 import type { OtelSpan } from '@wasm4pm/cognition';
-import { StreamingOutput, ConsoleProjection } from '../output.js';
-import { EXIT_CODES } from '../exit-codes.js';
+import { StreamingOutput } from '../output.js';
 import { withSpanRaw } from './_otel.js';
 import { getGlobalSpanSink } from '../otel/sink.js';
 import { exitWithFlush } from '../otel/exit.js';

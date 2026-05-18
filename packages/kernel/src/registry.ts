@@ -1697,6 +1697,113 @@ export class AlgorithmRegistry {
       robustToNoise: true,
       scalesWell: true,
     });
+
+    // Prediction APIs
+    this.registerWithInferredProfiles({
+      id: 'predict_next_activity',
+      name: 'Next Activity Prediction',
+      description:
+        'Predict the most likely next activity in a process using n-gram (Markov chain) models. ' +
+        'Build model with build_ngram_predictor(), predict with predict_next_activity(). ' +
+        'Returns activity predictions with probabilities.',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 15,
+      qualityTier: 50,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'n',
+          type: 'number',
+          description: 'N-gram order (context window size)',
+          required: false,
+          default: 2,
+          min: 2,
+          max: 5,
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 5,
+      estimatedMemoryMB: 30,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'predict_remaining_time',
+      name: 'Remaining Time Prediction',
+      description:
+        'Predict remaining time to case completion using statistical bucket models and Weibull distribution. ' +
+        'Build model with build_remaining_time_model(), predict with predict_case_duration(). ' +
+        'Returns remaining milliseconds with confidence score.',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 20,
+      qualityTier: 55,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'timestamp_key',
+          type: 'string',
+          description: 'Event attribute key for timestamps',
+          required: true,
+          default: 'time:timestamp',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 10,
+      estimatedMemoryMB: 40,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'predict_outcome',
+      name: 'Outcome Prediction',
+      description:
+        'Predict case outcome (success/anomaly) using anomaly scoring against DFG model and boundary coverage analysis. ' +
+        'Build models with discover_dfg() and build_ngram_predictor(), score with score_anomaly() and compute_boundary_coverage(). ' +
+        'Returns anomaly score and coverage metrics.',
+      outputType: 'analytics',
+      complexity: 'O(n²)',
+      speedTier: 25,
+      qualityTier: 55,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'anomaly_threshold',
+          type: 'number',
+          description: 'Score threshold for anomaly detection (0-1)',
+          required: false,
+          default: 0.7,
+          min: 0,
+          max: 1,
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 15,
+      estimatedMemoryMB: 50,
+      robustToNoise: true,
+      scalesWell: true,
+    });
   }
 
   /**

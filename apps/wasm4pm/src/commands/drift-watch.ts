@@ -189,7 +189,6 @@ export const driftWatch = defineCommand({
     const refitTimestamps: number[] = []; // Ring buffer for last 3 refits
     const MAX_REFITS_PER_HOUR = 3;
     const HOUR_MS = 3600 * 1000;
-    let lastDiscoveredModel: string | null = null;
 
     if (!jsonMode) {
       console.log(`${BOLD}[drift-watch]${RESET} Streaming EWMA drift monitor started`);

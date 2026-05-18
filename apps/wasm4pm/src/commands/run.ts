@@ -836,6 +836,19 @@ export const run = defineCommand({
                 ...(estimatedMs > 0 && { estimatedMs }),
               };
 
+              // Step 9a: Build semantic payload for deterministic hashing (excludes timing metrics)
+              const semanticPayload = {
+                status: 'success',
+                algorithm: resolvedAlgoFinal,
+                activityKey,
+                input: inputPath,
+                model: resultData,
+                ...(logStats && { logStats }),
+                ...(Object.keys(mlResults).length > 0 && { ml: mlResults }),
+                ...(qualityMetrics && { quality: qualityMetrics }),
+                ...(preflightWarnings.length > 0 && { preflightWarnings }),
+              };
+
               // Step 9b: Auto-save result to .wasm4pm/results/ (unless --no-save)
               let savedPath: string | null = null;
               if (!ctx.args['no-save']) {
@@ -854,7 +867,7 @@ export const run = defineCommand({
                   const receipt: CommandReceipt = {
                     ...newReceipt('run'),
                     input_hash: blake3Hex(inputBytes),
-                    output_hash: blake3Hex(JSON.stringify(payload)),
+                    output_hash: blake3Hex(JSON.stringify(semanticPayload)),
                     status: 'success',
                     summary: {
                       algorithm: resolvedAlgoFinal,
@@ -1288,6 +1301,17 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
     ...(ocelStats && { ocelStats }),
   };
 
+  // Build semantic payload for deterministic hashing (excludes timing metrics)
+  const semanticPayload = {
+    status: 'success',
+    algorithm: discoveryAlgo,
+    activityKey: opts.activityKey,
+    input: inputPath,
+    inputFormat: 'ocel',
+    model: resultData,
+    ...(ocelStats && { ocelStats }),
+  };
+
   // Auto-save
   let savedPath: string | null = null;
   if (!ctx.args['no-save']) {
@@ -1303,7 +1327,7 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
       const receipt = {
         ...newReceipt('run'),
         input_hash: blake3Hex(inputBytes),
-        output_hash: blake3Hex(JSON.stringify(payload)),
+        output_hash: blake3Hex(JSON.stringify(semanticPayload)),
         status: 'success' as const,
         summary: {
           algorithm: discoveryAlgo,

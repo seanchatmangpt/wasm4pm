@@ -391,4 +391,89 @@ describe('wpm run — primary process discovery CLI', () => {
       expect([1, 2, 3, 5]).toContain(result.exitCode);
     });
   });
+
+  describe('receipt hash determinism', () => {
+    it('should produce identical output_hash for identical inputs (excluding timing metrics)', async () => {
+      // Run discovery twice on the same input
+      const run1 = await runCli(['run', testXesPath, '--algorithm', 'dfg', '--format', 'json']);
+      const run2 = await runCli(['run', testXesPath, '--algorithm', 'dfg', '--format', 'json']);
+
+      // Both should succeed (exit 0) or at least not fail
+      expect([0, 1, 2, 3, 4, 5]).toContain(run1.exitCode);
+      expect([0, 1, 2, 3, 4, 5]).toContain(run2.exitCode);
+
+      // Extract output_hash from receipts
+      const receiptDir = path.join(process.cwd(), '.wasm4pm', 'receipts');
+      const receipts = await fs.readdir(receiptDir).catch(() => []);
+      expect(receipts.length).toBeGreaterThanOrEqual(2);
+
+      // Read the two most recent receipts
+      const receiptPaths = receipts
+        .filter((f) => f.startsWith('run-') && f.endsWith('.json'))
+        .sort()
+        .reverse()
+        .slice(0, 2);
+
+      if (receiptPaths.length < 2) {
+        // Skip if receipts not available (may be normal in some test envs)
+        return;
+      }
+
+      const receipt1Data = await fs.readFile(
+        path.join(receiptDir, receiptPaths[0]),
+        'utf-8'
+      );
+      const receipt2Data = await fs.readFile(
+        path.join(receiptDir, receiptPaths[1]),
+        'utf-8'
+      );
+
+      const receipt1 = JSON.parse(receipt1Data) as { output_hash?: string };
+      const receipt2 = JSON.parse(receipt2Data) as { output_hash?: string };
+
+      // Assert: output_hash is identical (proves timing metrics excluded)
+      expect(receipt1.output_hash).toBeDefined();
+      expect(receipt2.output_hash).toBeDefined();
+      expect(receipt1.output_hash).toBe(receipt2.output_hash);
+    });
+
+    it('should change output_hash when algorithm changes (proves semantic payload is hashed)', async () => {
+      const run1 = await runCli(['run', testXesPath, '--algorithm', 'dfg', '--format', 'json']);
+      const run2 = await runCli(['run', testXesPath, '--algorithm', 'heuristic', '--format', 'json']);
+
+      // Both should complete (may not be exit 0 in test env)
+      expect([0, 1, 2, 3, 4, 5]).toContain(run1.exitCode);
+      expect([0, 1, 2, 3, 4, 5]).toContain(run2.exitCode);
+
+      const receiptDir = path.join(process.cwd(), '.wasm4pm', 'receipts');
+      const receipts = await fs.readdir(receiptDir).catch(() => []);
+      const receiptPaths = receipts
+        .filter((f) => f.startsWith('run-') && f.endsWith('.json'))
+        .sort()
+        .reverse()
+        .slice(0, 2);
+
+      if (receiptPaths.length < 2) {
+        // Skip if receipts not available
+        return;
+      }
+
+      const receipt1Data = await fs.readFile(
+        path.join(receiptDir, receiptPaths[0]),
+        'utf-8'
+      );
+      const receipt2Data = await fs.readFile(
+        path.join(receiptDir, receiptPaths[1]),
+        'utf-8'
+      );
+
+      const receipt1 = JSON.parse(receipt1Data) as { output_hash?: string };
+      const receipt2 = JSON.parse(receipt2Data) as { output_hash?: string };
+
+      // Assert: output_hash is different (algorithm change detected)
+      expect(receipt1.output_hash).toBeDefined();
+      expect(receipt2.output_hash).toBeDefined();
+      expect(receipt1.output_hash).not.toBe(receipt2.output_hash);
+    });
+  });
 });

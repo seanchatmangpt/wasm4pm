@@ -11,8 +11,8 @@ import type { AlgorithmMetadata, ExecutionProfile } from './registry.js';
 import { getRegistry, type AlgorithmRegistry } from './registry.js';
 import { KERNEL_VERSION, checkCompatibility, type CompatibilityResult } from './versioning.js';
 import { hashOutput, hashAlgorithmResult } from './hashing.js';
-import { KernelError, wrapKernelCall, classifyRustError } from './errors.js';
-import { validateKernelResult, ValidationError } from './validation.js';
+import { KernelError, wrapKernelCall } from './errors.js';
+import { validateKernelResult } from './validation.js';
 export { ValidationError } from './validation.js';
 export type { ViolationReport } from './validation.js';
 
@@ -800,6 +800,24 @@ export class Kernel {
       case 'ml_pca':
         throw new Error(
           `ML algorithm '${algorithmId}' requires the @wasm4pm/ml package. Run 'wpm ml pca ...' instead.`
+        );
+
+      case 'predict_next_activity':
+        throw new Error(
+          `Prediction algorithm '${algorithmId}' requires the @wasm4pm/predict package and multi-step model building. ` +
+          `Use the CLI command: wpm predict next-activity -i <log.xes> [--prefix "A,B"] [--ngram-order 2]`
+        );
+
+      case 'predict_remaining_time':
+        throw new Error(
+          `Prediction algorithm '${algorithmId}' requires the @wasm4pm/predict package and multi-step model building. ` +
+          `Use the CLI command: wpm predict remaining-time -i <log.xes> [--prefix "A,B,C"]`
+        );
+
+      case 'predict_outcome':
+        throw new Error(
+          `Prediction algorithm '${algorithmId}' requires the @wasm4pm/predict package and multi-step model building. ` +
+          `Use the CLI command: wpm predict outcome -i <log.xes> [--prefix "A,B"]`
         );
 
       default:
