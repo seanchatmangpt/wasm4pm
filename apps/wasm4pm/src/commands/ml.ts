@@ -78,6 +78,14 @@ export const ml = defineCommand({
     verbose: { type: 'boolean', alias: 'v' },
     quiet: { type: 'boolean', alias: 'q' },
     'no-save': { type: 'boolean' },
+    cv: {
+      type: 'boolean',
+      description: 'Enable k-fold cross-validation for classify task (reports cv_accuracy, cv_std_dev)',
+    },
+    'cv-folds': {
+      type: 'string',
+      description: 'Number of CV folds (default: 3, min: 2)',
+    },
   },
   async run(ctx) {
     const t0 = performance.now();
@@ -169,6 +177,8 @@ export const ml = defineCommand({
                 forecastPeriods: ctx.args['forecast-periods'] as string,
                 nComponents: ctx.args['n-components'] as string,
                 eps: ctx.args.eps as string,
+                crossValidate: Boolean(ctx.args.cv),
+                cvFolds: ctx.args['cv-folds'] as string | undefined,
               });
 
               if (!ctx.args['no-save']) {
