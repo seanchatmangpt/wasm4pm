@@ -5,7 +5,7 @@ import * as path from 'path';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
-import { withSpan } from './_otel.js';
+import { withSpan, withSpanRaw } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
 
@@ -77,7 +77,7 @@ async function loadState(wasm: Record<string, any>): Promise<void> {
     // before a second crash wipes the circuit breaker's Open state.
     console.warn(
       `[autoprocess] state file is malformed (truncated crash?): discarding and starting fresh. ` +
-      `Delete ${AUTOPROCESS_STATE_FILE} to suppress this warning.`
+        `Delete ${AUTOPROCESS_STATE_FILE} to suppress this warning.`
     );
     return;
   }
@@ -89,8 +89,8 @@ async function loadState(wasm: Record<string, any>): Promise<void> {
   if (savedVersion !== STATE_SCHEMA_VERSION) {
     console.warn(
       `[autoprocess] state file schema version ${savedVersion} !== expected ${STATE_SCHEMA_VERSION}: ` +
-      `discarding stale state and starting fresh. ` +
-      `Delete ${AUTOPROCESS_STATE_FILE} to suppress this warning.`
+        `discarding stale state and starting fresh. ` +
+        `Delete ${AUTOPROCESS_STATE_FILE} to suppress this warning.`
     );
     return;
   }
@@ -230,124 +230,290 @@ export const autoprocess = defineCommand({
         { input: inputPath, activity_key: String(ctx.args['activity-key'] ?? 'concept:name') },
         async () =>
           withLogSession(
-        { inputPath, commandName: 'autoprocess', emitOptions: { format, verbose, quiet } },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        async (wasmBase, logHandle) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const wasm = wasmBase as Record<string, any>;
+            { inputPath, commandName: 'autoprocess', emitOptions: { format, verbose, quiet } },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            async (wasmBase, logHandle) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const wasm = wasmBase as Record<string, any>;
 
-        const initial_state_hash = await hashStateFile(stateFilePath);
-        await loadState(wasm);
+              const initial_state_hash = await hashStateFile(stateFilePath);
+              await loadState(wasm);
 
-        // Run AutoProcess cycle(s) — bounded by --cycles (0 = unlimited)
-        const cycleConfig = (ctx.args.config as string) || '{}';
-        let cyclesRun = 0;
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        let cycleResult: Record<string, any> = {};
-        do {
-          const rawResult = wasm.autonomic_execute_cycle(logHandle, ctx.args['activity-key'], cycleConfig);
-          cycleResult = typeof rawResult === 'string' ? JSON.parse(rawResult) : rawResult;
-          cyclesRun++;
-        } while (unlimited || cyclesRun < maxCycles);
+              // Run AutoProcess cycle(s) — bounded by --cycles (0 = unlimited)
+              const cycleConfig = (ctx.args.config as string) || '{}';
+              let cyclesRun = 0;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              let cycleResult: Record<string, any> = {};
+              do {
+                // Execute cycle and parse raw WASM result
+                const rawResult = wasm.autonomic_execute_cycle(
+                  logHandle,
+                  ctx.args['activity-key'],
+                  cycleConfig
+                );
+                cycleResult = typeof rawResult === 'string' ? JSON.parse(rawResult) : rawResult;
+                cyclesRun++;
 
-        await saveState(wasm);
-        const final_state_hash = await hashStateFile(stateFilePath);
+                // Emit per-phase child spans so Jaeger shows the MAPE-K phases individually.
+                // These are fire-and-forget (best-effort); sink errors are already swallowed inside withSpanRaw.
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const cr = (cycleResult.cycle_result ?? cycleResult) as Record<string, any>;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const timing = (cycleResult.timing ?? {}) as Record<string, any>;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const percData = (cr.perception ?? {}) as Record<string, any>;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const decData = (cr.decision ?? {}) as Record<string, any>;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const protData = (cr.protection ?? {}) as Record<string, any>;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const optData = (cr.optimization ?? {}) as Record<string, any>;
 
-        if (!ctx.args['no-save']) {
-          try {
-            const inputBytes = await fsp.readFile(inputPath).catch(() => Buffer.from(inputPath));
-            saveCommandReceipt({
-              ...newReceipt('autoprocess'),
-              command: 'autoprocess',
-              input_hash: blake3Hex(inputBytes),
-              output_hash: blake3Hex(JSON.stringify(cycleResult)),
-              status: cycleResult.success ? 'success' : 'partial',
-              summary: {
+                // health_score here is the numeric 0-4 integer stored as health_score in Rust output
+                const healthLevel =
+                  typeof percData.health_score === 'number' ? percData.health_score : -1;
+                // event_rate = events / traces (0 when no traces)
+                const traceCount =
+                  typeof percData.trace_count === 'number' ? percData.trace_count : 0;
+                const eventCount =
+                  typeof percData.event_count === 'number' ? percData.event_count : 0;
+                const eventRate = traceCount > 0 ? eventCount / traceCount : 0;
+                const specialCauses = Array.isArray(protData.special_causes)
+                  ? protData.special_causes
+                  : [];
+                const anomalyDetected = specialCauses.length > 0;
+                // drift_status: 0=none, 1=low (1-2 causes), 2=high (3+ causes)
+                const driftStatus = anomalyDetected ? (specialCauses.length >= 3 ? 2 : 1) : 0;
+
+                await withSpanRaw(
+                  'wasm4pm.autoprocess.perception',
+                  {
+                    cycle: cyclesRun,
+                    health_level: healthLevel,
+                    health_state: String(percData.health_state ?? 'unknown'),
+                    event_count: eventCount,
+                    trace_count: traceCount,
+                    unique_activities:
+                      typeof percData.unique_activities === 'number'
+                        ? percData.unique_activities
+                        : 0,
+                    event_rate: Math.round(eventRate * 100) / 100,
+                    drift_status: driftStatus,
+                    anomaly_detected: anomalyDetected,
+                    duration_us:
+                      typeof timing.perception_us === 'number' ? timing.perception_us : 0,
+                  },
+                  async () => {
+                    /* synchronous — span wraps only the emit */
+                  }
+                );
+
+                await withSpanRaw(
+                  'wasm4pm.autoprocess.decision',
+                  {
+                    cycle: cyclesRun,
+                    guard_result: Boolean(decData.guard_result),
+                    pattern_result: String(decData.pattern_result ?? 'unknown'),
+                    pattern_ticks:
+                      typeof decData.pattern_ticks === 'number' ? decData.pattern_ticks : 0,
+                    duration_us: typeof timing.decision_us === 'number' ? timing.decision_us : 0,
+                  },
+                  async () => {
+                    /* synchronous */
+                  }
+                );
+
+                await withSpanRaw(
+                  'wasm4pm.autoprocess.protection',
+                  {
+                    cycle: cyclesRun,
+                    circuit_state: String(protData.circuit_state ?? 'unknown'),
+                    circuit_allowed: Boolean(protData.circuit_allowed),
+                    special_cause_count: specialCauses.length,
+                    anomaly_detected: anomalyDetected,
+                    duration_us:
+                      typeof timing.protection_us === 'number' ? timing.protection_us : 0,
+                  },
+                  async () => {
+                    /* synchronous */
+                  }
+                );
+
+                await withSpanRaw(
+                  'wasm4pm.autoprocess.optimization',
+                  {
+                    cycle: cyclesRun,
+                    rl_action: String(optData.rl_action ?? 'none'),
+                    rl_agent: String(optData.rl_agent ?? 'unknown'),
+                    reward:
+                      typeof optData.reward === 'number'
+                        ? Math.round(optData.reward * 1000) / 1000
+                        : 0,
+                    cumulative_reward:
+                      typeof optData.cumulative_reward === 'number'
+                        ? Math.round(optData.cumulative_reward * 1000) / 1000
+                        : 0,
+                    duration_us:
+                      typeof timing.optimization_us === 'number' ? timing.optimization_us : 0,
+                  },
+                  async () => {
+                    /* synchronous */
+                  }
+                );
+              } while (unlimited || cyclesRun < maxCycles);
+
+              await saveState(wasm);
+              const final_state_hash = await hashStateFile(stateFilePath);
+
+              if (!ctx.args['no-save']) {
+                try {
+                  const inputBytes = await fsp
+                    .readFile(inputPath)
+                    .catch(() => Buffer.from(inputPath));
+                  saveCommandReceipt({
+                    ...newReceipt('autoprocess'),
+                    command: 'autoprocess',
+                    input_hash: blake3Hex(inputBytes),
+                    output_hash: blake3Hex(JSON.stringify(cycleResult)),
+                    status: cycleResult.success ? 'success' : 'partial',
+                    summary: {
+                      cycles_run: cyclesRun,
+                      final_health_level:
+                        (cycleResult.perception?.health_state as string | undefined) ?? 'unknown',
+                      total_reward: (cycleResult.optimization?.reward as number | undefined) ?? 0,
+                      spc_alerts_fired:
+                        (cycleResult.protection?.special_causes as unknown[] | undefined)?.length ??
+                        0,
+                      initial_state_hash,
+                      final_state_hash,
+                    },
+                  });
+                } catch {
+                  /* receipt write must never break the command */
+                }
+              }
+
+              // Build rich lateAttrs for the top-level autoprocess span.
+              // Perception metrics: health_level (0-4 int), event_rate (events/trace),
+              // drift_status (0=none/1=low/2=high), anomaly_detected (bool from SPC causes).
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const finalCr = (cycleResult.cycle_result ?? cycleResult) as Record<string, any>;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const finalPerc = (finalCr.perception ?? {}) as Record<string, any>;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const finalProt = (finalCr.protection ?? {}) as Record<string, any>;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const finalOpt = (finalCr.optimization ?? {}) as Record<string, any>;
+              const finalSpecialCauses = Array.isArray(finalProt.special_causes)
+                ? finalProt.special_causes
+                : [];
+              const finalAnomalyDetected = finalSpecialCauses.length > 0;
+              const finalDriftStatus = finalAnomalyDetected
+                ? finalSpecialCauses.length >= 3
+                  ? 2
+                  : 1
+                : 0;
+              const finalTraceCount =
+                typeof finalPerc.trace_count === 'number' ? finalPerc.trace_count : 0;
+              const finalEventCount =
+                typeof finalPerc.event_count === 'number' ? finalPerc.event_count : 0;
+              const finalEventRate = finalTraceCount > 0 ? finalEventCount / finalTraceCount : 0;
+              lateAttrs = {
                 cycles_run: cyclesRun,
-                final_health_level: (cycleResult.perception?.health_state as string | undefined) ?? 'unknown',
-                total_reward: (cycleResult.optimization?.reward as number | undefined) ?? 0,
-                spc_alerts_fired: (cycleResult.protection?.special_causes as unknown[] | undefined)?.length ?? 0,
+                health_state: String(finalPerc.health_state ?? 'unknown'),
+                health_level:
+                  typeof finalPerc.health_score === 'number' ? finalPerc.health_score : -1,
+                event_rate: Math.round(finalEventRate * 100) / 100,
+                drift_status: finalDriftStatus,
+                anomaly_detected: finalAnomalyDetected,
+                rl_action: String(finalOpt.rl_action ?? 'none'),
+                circuit_state: String(finalProt.circuit_state ?? 'unknown'),
+                special_causes: finalSpecialCauses.length,
                 initial_state_hash,
                 final_state_hash,
-              },
-            });
-          } catch { /* receipt write must never break the command */ }
-        }
+              };
 
-        lateAttrs = {
-          cycles_run: cyclesRun,
-          health_state: (cycleResult.perception?.health_state as string | undefined) ?? 'unknown',
-          rl_action: (cycleResult.optimization?.rl_action as string | undefined) ?? 'none',
-          circuit_state: (cycleResult.protection?.circuit_state as string | undefined) ?? 'unknown',
-          special_causes: (cycleResult.protection?.special_causes as unknown[] | undefined)?.length ?? 0,
-          initial_state_hash,
-          final_state_hash,
-        };
-
-        const result = makeResult(
-          'autoprocess',
-          { ...cycleResult, cycles_run: cyclesRun },
-          performance.now() - t0,
-          EXIT_CODES.success
-        );
-        emitResult(result, { format, verbose, quiet }, (res, projection) => {
-          const data = res.payload as Record<string, unknown>;
-          const cycle = data.cycle_result as Record<string, unknown>;
-          const timing = data.timing as Record<string, unknown>;
-          projection.info('AutoProcess Results');
-          projection.log('');
-          const perception = cycle.perception as Record<string, unknown>;
-          projection.log('  Perception:');
-          projection.log(`    Events: ${perception.event_count}`);
-          projection.log(`    Activities: ${perception.unique_activities}`);
-          projection.log(`    Traces: ${perception.trace_count}`);
-          projection.log(`    Health: ${perception.health_state} (score ${perception.health_score})`);
-          projection.log('');
-          const decision = cycle.decision as Record<string, unknown>;
-          projection.log('  Decision:');
-          projection.log(`    Guard: ${decision.guard_result ? 'PASS' : 'FAIL'}`);
-          projection.log(`    Pattern: ${decision.pattern_result} (${decision.pattern_ticks} ticks)`);
-          projection.log('');
-          const protection = cycle.protection as Record<string, unknown>;
-          projection.log('  Protection:');
-          projection.log(`    Circuit: ${protection.circuit_state}`);
-          const spc = protection.spc_results as Record<string, unknown> | undefined;
-          if (spc) {
-            for (const [metric, status] of Object.entries(spc)) {
-              const icon = status === 'OK' ? '+' : status === 'ALERT' ? '!' : '-';
-              projection.log(`    SPC ${metric}: ${icon} ${status}`);
+              const result = makeResult(
+                'autoprocess',
+                { ...cycleResult, cycles_run: cyclesRun },
+                performance.now() - t0,
+                EXIT_CODES.success
+              );
+              emitResult(result, { format, verbose, quiet }, (res, projection) => {
+                const data = res.payload as Record<string, unknown>;
+                const cycle = data.cycle_result as Record<string, unknown>;
+                const timing = data.timing as Record<string, unknown>;
+                projection.info('AutoProcess Results');
+                projection.log('');
+                const perception = cycle.perception as Record<string, unknown>;
+                projection.log('  Perception:');
+                projection.log(`    Events: ${perception.event_count}`);
+                projection.log(`    Activities: ${perception.unique_activities}`);
+                projection.log(`    Traces: ${perception.trace_count}`);
+                projection.log(
+                  `    Health: ${perception.health_state} (score ${perception.health_score})`
+                );
+                projection.log('');
+                const decision = cycle.decision as Record<string, unknown>;
+                projection.log('  Decision:');
+                projection.log(`    Guard: ${decision.guard_result ? 'PASS' : 'FAIL'}`);
+                projection.log(
+                  `    Pattern: ${decision.pattern_result} (${decision.pattern_ticks} ticks)`
+                );
+                projection.log('');
+                const protection = cycle.protection as Record<string, unknown>;
+                projection.log('  Protection:');
+                projection.log(`    Circuit: ${protection.circuit_state}`);
+                const spc = protection.spc_results as Record<string, unknown> | undefined;
+                if (spc) {
+                  for (const [metric, status] of Object.entries(spc)) {
+                    const icon = status === 'OK' ? '+' : status === 'ALERT' ? '!' : '-';
+                    projection.log(`    SPC ${metric}: ${icon} ${status}`);
+                  }
+                }
+                projection.log(
+                  `    Special Causes: ${(protection.special_causes as unknown[]).length}`
+                );
+                projection.log('');
+                const optimization = cycle.optimization as Record<string, unknown>;
+                projection.log('  Optimization:');
+                projection.log(
+                  `    Agent:   ${optimization.rl_agent ?? 'QLearning'} (LinUCB-selected)`
+                );
+                projection.log(`    Action:  ${optimization.rl_action}`);
+                const reward = typeof optimization.reward === 'number' ? optimization.reward : 0;
+                const cumReward =
+                  typeof optimization.cumulative_reward === 'number'
+                    ? optimization.cumulative_reward
+                    : 0;
+                const rewardSign = reward >= 0 ? '+' : '';
+                projection.log(
+                  `    Reward:  ${rewardSign}${reward.toFixed(3)} (cumulative: ${cumReward >= 0 ? '+' : ''}${cumReward.toFixed(3)}, cycle #${optimization.cycle_count ?? '?'})`
+                );
+                if (optimization.dispatch_detail) {
+                  projection.log(`    Detail:  ${optimization.dispatch_detail}`);
+                }
+                projection.log('');
+                projection.log('  Timing:');
+                projection.log(`    Perception:  ${timing.perception_us ?? '?'} µs`);
+                projection.log(`    Decision:    ${timing.decision_us ?? '?'} µs`);
+                projection.log(`    Protection:  ${timing.protection_us ?? '?'} µs`);
+                projection.log(`    Total:       ${timing.total_us ?? '?'} µs`);
+                if (timing.cycle_latency_budget_exceeded) {
+                  projection.log(`    Warning: cycle exceeded latency budget`);
+                }
+                projection.log('');
+                if (cycle.success) {
+                  projection.log('  Result: Cycle completed successfully');
+                } else {
+                  projection.log('  Result: Cycle completed with warnings');
+                }
+              });
+              return await exitWithFlush(result.exit_code);
             }
-          }
-          projection.log(`    Special Causes: ${(protection.special_causes as unknown[]).length}`);
-          projection.log('');
-          const optimization = cycle.optimization as Record<string, unknown>;
-          projection.log('  Optimization:');
-          projection.log(`    Agent:   ${optimization.rl_agent ?? 'QLearning'} (LinUCB-selected)`);
-          projection.log(`    Action:  ${optimization.rl_action}`);
-          const reward = typeof optimization.reward === 'number' ? optimization.reward : 0;
-          const cumReward = typeof optimization.cumulative_reward === 'number' ? optimization.cumulative_reward : 0;
-          const rewardSign = reward >= 0 ? '+' : '';
-          projection.log(`    Reward:  ${rewardSign}${reward.toFixed(3)} (cumulative: ${cumReward >= 0 ? '+' : ''}${cumReward.toFixed(3)}, cycle #${optimization.cycle_count ?? '?'})`);
-          if (optimization.dispatch_detail) {
-            projection.log(`    Detail:  ${optimization.dispatch_detail}`);
-          }
-          projection.log('');
-          projection.log('  Timing:');
-          projection.log(`    Perception:  ${timing.perception_us ?? '?'} µs`);
-          projection.log(`    Decision:    ${timing.decision_us ?? '?'} µs`);
-          projection.log(`    Protection:  ${timing.protection_us ?? '?'} µs`);
-          projection.log(`    Total:       ${timing.total_us ?? '?'} µs`);
-          if (timing.cycle_latency_budget_exceeded) {
-            projection.log(`    Warning: cycle exceeded latency budget`);
-          }
-          projection.log('');
-          if (cycle.success) { projection.log('  Result: Cycle completed successfully'); }
-          else { projection.log('  Result: Cycle completed with warnings'); }
-        });
-        return await exitWithFlush(result.exit_code);
-      }),  // end withLogSession
-        () => lateAttrs,
-      );  // end withSpan
+          ), // end withLogSession
+        () => lateAttrs
+      ); // end withSpan
     } catch (error) {
       const result = makeErrorResult('autoprocess', error, EXIT_CODES.execution_error);
       emitResult(result, { format, verbose, quiet });

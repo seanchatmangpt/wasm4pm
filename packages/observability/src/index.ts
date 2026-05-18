@@ -35,6 +35,12 @@ export * from './observability.js';
 // LIVE-10 relay bridge: cross-enterprise A2A relay span emitters
 export * from './relay-bridge.js';
 
+// LIVE-07 AtomVM bridge: detection and silent skip span emitters
+export * from './atomvm-bridge.js';
+
+// LIVE-15/LIVE-16 healthcare bridge: privacy compliance + MedWatch filing spans
+export * from './healthcare-bridge.js';
+
 // Global singleton access
 import { ObservabilityWrapper } from './observability-wrapper.js';
 import { Tracer } from './spans.js';

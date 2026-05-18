@@ -370,6 +370,7 @@ fn tarjan_sccs(graph: &[Vec<usize>]) -> Vec<Vec<usize>> {
         }
     }
 
+    sccs.reverse();
     sccs
 }
 

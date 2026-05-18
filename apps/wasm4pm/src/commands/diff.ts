@@ -5,7 +5,12 @@ import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
 import { discriminate } from '../discriminator.js';
 import { withSpan } from './_otel.js';
-import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
+import {
+  saveCommandReceipt,
+  blake3Hex,
+  newReceipt,
+  type CommandReceipt,
+} from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
 
 interface DfgNode {
@@ -115,127 +120,132 @@ export const diff = defineCommand({
         format,
       },
       async () => {
-    try {
-      const log1Path = ctx.args.log1 as string;
-      const log2Path = ctx.args.log2 as string;
-      const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
-
-      // Validate both input files exist
-      for (const [label, filePath] of [
-        ['log1', log1Path],
-        ['log2', log2Path],
-      ] as const) {
         try {
-          await fs.access(filePath);
-        } catch {
+          const log1Path = ctx.args.log1 as string;
+          const log2Path = ctx.args.log2 as string;
+          const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
+
+          // Validate both input files exist
+          for (const [label, filePath] of [
+            ['log1', log1Path],
+            ['log2', log2Path],
+          ] as const) {
+            try {
+              await fs.access(filePath);
+            } catch {
+              const result = makeErrorResult(
+                'diff',
+                new Error(`Input file not found (${label}): ${filePath}`),
+                EXIT_CODES.source_error,
+                'SOURCE_ERROR'
+              );
+              emitResult(result, { format, verbose, quiet });
+              return await exitWithFlush(result.exit_code);
+            }
+          }
+
+          // Load WASM module
+          const loader = WasmLoader.getInstance();
+          await loader.init();
+          const wasm = loader.get();
+
+          // Read and parse both XES files
+          const [xes1, xes2] = await Promise.all([
+            fs.readFile(log1Path, 'utf-8'),
+            fs.readFile(log2Path, 'utf-8'),
+          ]);
+
+          const handle1: string = wasm.load_eventlog_from_xes(xes1);
+          const handle2: string = wasm.load_eventlog_from_xes(xes2);
+
+          // Discover DFGs for both logs
+          const dfg1Raw = wasm.discover_dfg(handle1, activityKey);
+          const dfg2Raw = wasm.discover_dfg(handle2, activityKey);
+
+          // Validate both outputs are DFGs (diff is DFG-only).
+          const shape1 = discriminate(dfg1Raw, 'dfg');
+          const shape2 = discriminate(dfg2Raw, 'dfg');
+          if (shape1.kind !== 'dfg' || shape2.kind !== 'dfg') {
+            const offending = shape1.kind !== 'dfg' ? shape1.kind : shape2.kind;
+            const result = makeErrorResult(
+              'diff',
+              new Error(`diff requires DFG output (got ${offending})`),
+              EXIT_CODES.execution_error,
+              'DIFF_REQUIRES_DFG'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
+
+          const dfg1: Dfg = shape1.raw as Dfg;
+          const dfg2: Dfg = shape2.raw as Dfg;
+
+          // Discover trace variants for both logs
+          const variants1Raw = wasm.analyze_trace_variants(handle1, activityKey);
+          const variants2Raw = wasm.analyze_trace_variants(handle2, activityKey);
+
+          const variants1: TraceVariant[] = normalizeVariants(
+            typeof variants1Raw === 'string' ? JSON.parse(variants1Raw) : variants1Raw
+          );
+          const variants2: TraceVariant[] = normalizeVariants(
+            typeof variants2Raw === 'string' ? JSON.parse(variants2Raw) : variants2Raw
+          );
+
+          // Compute diff
+          const diffResult = computeDiff(dfg1, dfg2, variants1, variants2);
+
+          // Free handles
+          wasm.delete_object(handle1);
+          wasm.delete_object(handle2);
+
+          const elapsedMs = Date.now() - t0;
+          const payload: DiffPayload = {
+            log1: log1Path,
+            log2: log2Path,
+            activityKey,
+            diff: diffResult,
+          };
+
+          const result = makeResult('diff', payload, elapsedMs, EXIT_CODES.success);
+          emitResult(result, { format, verbose, quiet }, (res, projection) => {
+            printHumanDiff(res.payload, log1Path, log2Path, projection);
+          });
+
+          // Persist BLAKE3 receipt for proof-of-execution
+          if (!ctx.args['no-save']) {
+            try {
+              const log1Bytes = await fs.readFile(log1Path);
+              const log2Bytes = await fs.readFile(log2Path);
+              const receipt: CommandReceipt = {
+                ...newReceipt('diff'),
+                input_hash: blake3Hex(Buffer.concat([log1Bytes, log2Bytes])),
+                output_hash: blake3Hex(JSON.stringify(payload)),
+                status: 'success',
+                summary: {
+                  log1: log1Path,
+                  log2: log2Path,
+                  activityKey,
+                  elapsedMs: Math.round(elapsedMs * 100) / 100,
+                },
+              };
+              saveCommandReceipt(receipt);
+            } catch {
+              /* receipt write must never break the command */
+            }
+          }
+
+          return await exitWithFlush(result.exit_code);
+        } catch (error) {
           const result = makeErrorResult(
             'diff',
-            new Error(`Input file not found (${label}): ${filePath}`),
-            EXIT_CODES.source_error,
-            'SOURCE_ERROR'
+            error,
+            EXIT_CODES.execution_error,
+            'EXECUTION_ERROR'
           );
           emitResult(result, { format, verbose, quiet });
           return await exitWithFlush(result.exit_code);
         }
       }
-
-      // Load WASM module
-      const loader = WasmLoader.getInstance();
-      await loader.init();
-      const wasm = loader.get();
-
-      // Read and parse both XES files
-      const [xes1, xes2] = await Promise.all([
-        fs.readFile(log1Path, 'utf-8'),
-        fs.readFile(log2Path, 'utf-8'),
-      ]);
-
-      const handle1: string = wasm.load_eventlog_from_xes(xes1);
-      const handle2: string = wasm.load_eventlog_from_xes(xes2);
-
-      // Discover DFGs for both logs
-      const dfg1Raw = wasm.discover_dfg(handle1, activityKey);
-      const dfg2Raw = wasm.discover_dfg(handle2, activityKey);
-
-      // Validate both outputs are DFGs (diff is DFG-only).
-      const shape1 = discriminate(dfg1Raw, 'dfg');
-      const shape2 = discriminate(dfg2Raw, 'dfg');
-      if (shape1.kind !== 'dfg' || shape2.kind !== 'dfg') {
-        const offending = shape1.kind !== 'dfg' ? shape1.kind : shape2.kind;
-        const result = makeErrorResult(
-          'diff',
-          new Error(`diff requires DFG output (got ${offending})`),
-          EXIT_CODES.execution_error,
-          'DIFF_REQUIRES_DFG'
-        );
-        emitResult(result, { format, verbose, quiet });
-        return await exitWithFlush(result.exit_code);
-      }
-
-      const dfg1: Dfg = shape1.raw as Dfg;
-      const dfg2: Dfg = shape2.raw as Dfg;
-
-      // Discover trace variants for both logs
-      const variants1Raw = wasm.analyze_trace_variants(handle1, activityKey);
-      const variants2Raw = wasm.analyze_trace_variants(handle2, activityKey);
-
-      const variants1: TraceVariant[] = normalizeVariants(
-        typeof variants1Raw === 'string' ? JSON.parse(variants1Raw) : variants1Raw
-      );
-      const variants2: TraceVariant[] = normalizeVariants(
-        typeof variants2Raw === 'string' ? JSON.parse(variants2Raw) : variants2Raw
-      );
-
-      // Compute diff
-      const diffResult = computeDiff(dfg1, dfg2, variants1, variants2);
-
-      // Free handles
-      wasm.delete_object(handle1);
-      wasm.delete_object(handle2);
-
-      const elapsedMs = Date.now() - t0;
-      const payload: DiffPayload = {
-        log1: log1Path,
-        log2: log2Path,
-        activityKey,
-        diff: diffResult,
-      };
-
-      const result = makeResult('diff', payload, elapsedMs, EXIT_CODES.success);
-      emitResult(result, { format, verbose, quiet }, (res, projection) => {
-        printHumanDiff(res.payload, log1Path, log2Path, projection);
-      });
-
-      // Persist BLAKE3 receipt for proof-of-execution
-      if (!ctx.args['no-save']) {
-        try {
-          const log1Bytes = await fs.readFile(log1Path);
-          const log2Bytes = await fs.readFile(log2Path);
-          const receipt: CommandReceipt = {
-            ...newReceipt('diff'),
-            input_hash: blake3Hex(Buffer.concat([log1Bytes, log2Bytes])),
-            output_hash: blake3Hex(JSON.stringify(payload)),
-            status: 'success',
-            summary: {
-              log1: log1Path,
-              log2: log2Path,
-              activityKey,
-              elapsedMs: Math.round(elapsedMs * 100) / 100,
-            },
-          };
-          saveCommandReceipt(receipt);
-        } catch {
-          /* receipt write must never break the command */
-        }
-      }
-
-      return await exitWithFlush(result.exit_code);
-    } catch (error) {
-      const result = makeErrorResult('diff', error, EXIT_CODES.execution_error, 'EXECUTION_ERROR');
-      emitResult(result, { format, verbose, quiet });
-      return await exitWithFlush(result.exit_code);
-    }
-      },
     );
   },
 });
@@ -405,9 +415,9 @@ function printHumanDiff(
     `  ${bold('Structural similarity:')} ${jaccardColor(result.jaccard.toFixed(3))}  ${jaccardBar}  ${result.summary}`
   );
 
-  // --- Activities section ---
+  // --- Activities section (control-flow perspective) ---
   line('');
-  line(bold('Activities:'));
+  line(bold('Activities  [control-flow perspective]:'));
   const { added: actAdded, removed: actRemoved, shared: actShared } = result.activities;
 
   if (actAdded.length > 0) {
@@ -431,9 +441,9 @@ function printHumanDiff(
     `  ${cyan('=')} Shared:  ${actShared.length} activit${actShared.length === 1 ? 'y' : 'ies'}`
   );
 
-  // --- Edges section ---
+  // --- Edges section (control-flow + frequency perspective) ---
   line('');
-  line(bold('Edges (directly-follows):'));
+  line(bold('Edges (directly-follows)  [control-flow perspective]:'));
   const { added: edgeAdded, removed: edgeRemoved, changed: edgeChanged } = result.edges;
 
   if (edgeAdded.length === 0 && edgeRemoved.length === 0 && edgeChanged.length === 0) {
@@ -463,16 +473,24 @@ function printHumanDiff(
     }
   }
 
-  // --- Variants section ---
+  // --- Variants section (variant/case perspective) ---
   line('');
-  line(bold('Traces:'));
+  line(bold('Traces  [variant perspective]:'));
   const v = result.variants;
   const variantDelta = v.totalLog2 - v.totalLog1;
   const variantDeltaStr = variantDelta >= 0 ? green(`+${variantDelta}`) : red(String(variantDelta));
 
   line(`  Unique variants  log1: ${v.totalLog1}  log2: ${v.totalLog2}  (${variantDeltaStr})`);
   line(`  Shared variants: ${v.shared}`);
-  line(`  Only in log1:    ${v.uniqueLog1}`);
-  line(`  Only in log2:    ${v.uniqueLog2}`);
+  line(`  Only in log1:    ${v.uniqueLog1}  (process paths abandoned in log2)`);
+  line(`  Only in log2:    ${v.uniqueLog2}  (new process paths that emerged in log2)`);
+  line('');
+  // Time perspective note: DFG comparison does not surface performance differences.
+  // Use `wpm temporal` to compare waiting times, processing times, and case durations.
+  line(
+    cyan(
+      `  [time perspective] Not shown here — use "wpm temporal" to compare performance profiles (waiting times, case durations).`
+    )
+  );
   line('');
 }

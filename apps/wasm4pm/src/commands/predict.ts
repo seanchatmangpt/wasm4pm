@@ -7,7 +7,12 @@ import { loadWasm4pmConfig, buildCliOverrides } from '../config-loader.js';
 import { savePredictionResult } from './results.js';
 import { VALID_PREDICT_CLI_TASKS } from '@wasm4pm/contracts';
 import { withSpan } from './_otel.js';
-import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
+import {
+  saveCommandReceipt,
+  blake3Hex,
+  newReceipt,
+  type CommandReceipt,
+} from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
 
 const VALID_TASKS = VALID_PREDICT_CLI_TASKS;
@@ -93,161 +98,176 @@ export const predict = defineCommand({
         format,
       },
       async () => {
-    try {
-      // Step 1: Validate task
-      const task = ctx.args.task as string;
-      if (!VALID_TASKS.includes(task as PredictTask)) {
-        const result = makeErrorResult(
-          'predict',
-          new Error(`Unknown task: "${task}". Valid tasks: ${VALID_TASKS.join(', ')}`),
-          EXIT_CODES.source_error,
-          'INVALID_TASK'
-        );
-        emitResult(result, { format, verbose, quiet });
-        return await exitWithFlush(result.exit_code);
-      }
-
-      // Step 2: Load config to get prediction defaults
-      const cliOverrides = buildCliOverrides({
-        config: ctx.args.config,
-        predictionActivityKey: ctx.args['activity-key'],
-        predictionNgramOrder: ctx.args['ngram-order'],
-        predictionDriftWindow: ctx.args['drift-window'],
-      });
-      const config = await loadWasm4pmConfig(cliOverrides);
-      const pred = config.prediction;
-
-      // Resolve parameters: CLI flag > config > hardcoded default
-      const activityKey =
-        (ctx.args['activity-key'] as string) || pred?.activityKey || 'concept:name';
-      const rawTopK = ctx.args['top-k'] as string | undefined;
-      const parsedTopK = rawTopK != null ? parseInt(rawTopK, 10) : undefined;
-      if (parsedTopK !== undefined && Number.isNaN(parsedTopK)) {
-        const result = makeErrorResult(
-          'predict',
-          new Error('Invalid --top-k value: must be a number'),
-          EXIT_CODES.config_error,
-          'INVALID_ARG'
-        );
-        emitResult(result, { format, verbose, quiet });
-        return await exitWithFlush(result.exit_code);
-      }
-      const topK = parsedTopK ?? 3;
-
-      const rawNgram = ctx.args['ngram-order'] as string | undefined;
-      const parsedNgram = rawNgram != null ? parseInt(rawNgram, 10) : undefined;
-      if (parsedNgram !== undefined && Number.isNaN(parsedNgram)) {
-        const result = makeErrorResult(
-          'predict',
-          new Error('Invalid --ngram-order value: must be a number'),
-          EXIT_CODES.config_error,
-          'INVALID_ARG'
-        );
-        emitResult(result, { format, verbose, quiet });
-        return await exitWithFlush(result.exit_code);
-      }
-      const ngramOrder = parsedNgram ?? pred?.ngramOrder ?? 2;
-
-      const rawDrift = ctx.args['drift-window'] as string | undefined;
-      const parsedDrift = rawDrift != null ? parseInt(rawDrift, 10) : undefined;
-      if (parsedDrift !== undefined && Number.isNaN(parsedDrift)) {
-        const result = makeErrorResult(
-          'predict',
-          new Error('Invalid --drift-window value: must be a number'),
-          EXIT_CODES.config_error,
-          'INVALID_ARG'
-        );
-        emitResult(result, { format, verbose, quiet });
-        return await exitWithFlush(result.exit_code);
-      }
-      const driftWindow = parsedDrift ?? pred?.driftWindowSize ?? 10;
-      const prefixActivities = ctx.args.prefix
-        ? (ctx.args.prefix as string).split(',').map((s) => s.trim())
-        : undefined;
-
-      // Step 3: Load session and execute
-      const inputPath = ctx.args.input as string;
-
-      await withLogSession(
-        { inputPath, activityKey, commandName: 'predict', emitOptions: { format, verbose, quiet } },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        async (wasmBase, logHandle) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const wasm = wasmBase as Record<string, any>;
-
-        // Step 4: Execute prediction task
-        const taskResult = await executePredictionTask(
-          wasm,
-          task as PredictTask,
-          logHandle,
-          activityKey,
-          topK,
-          ngramOrder,
-          driftWindow,
-          prefixActivities
-        );
-
-        // Step 5: Build result
-        const payload = {
-          task,
-          input: inputPath,
-          activityKey,
-          ...taskResult,
-        };
-
-        const result = makeResult('predict', payload, Date.now() - start);
-
-        // Step 6: Emit result
-        emitResult(result, { format, verbose, quiet }, (res, p) => {
-          p.success(`Prediction complete: ${res.payload.task}`);
-          formatHumanOutput(p, res.payload.task as PredictTask, res.payload);
-        });
-
-        // Step 7: Persist result (unless --no-save)
-        if (!ctx.args['no-save']) {
-          const savedPath = await savePredictionResult(task, inputPath, activityKey, taskResult);
-          if (savedPath && verbose) {
-            // debug already handled by projection.debug if needed
+        try {
+          // Step 1: Validate task
+          const task = ctx.args.task as string;
+          if (!VALID_TASKS.includes(task as PredictTask)) {
+            const result = makeErrorResult(
+              'predict',
+              new Error(`Unknown task: "${task}". Valid tasks: ${VALID_TASKS.join(', ')}`),
+              EXIT_CODES.source_error,
+              'INVALID_TASK'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
           }
-          try {
-            const inputBytes = await fs.readFile(inputPath).catch(() => Buffer.from(inputPath));
-            const predictionsCount = Array.isArray((taskResult as Record<string, unknown>).predictions)
-              ? ((taskResult as Record<string, unknown>).predictions as unknown[]).length
-              : 0;
-            const receipt: CommandReceipt = {
-              ...newReceipt('predict'),
-              command: 'predict',
-              input_hash: blake3Hex(inputBytes),
-              output_hash: blake3Hex(JSON.stringify(payload)),
-              status: 'success',
-              summary: {
+
+          // Step 2: Load config to get prediction defaults
+          const cliOverrides = buildCliOverrides({
+            config: ctx.args.config,
+            predictionActivityKey: ctx.args['activity-key'],
+            predictionNgramOrder: ctx.args['ngram-order'],
+            predictionDriftWindow: ctx.args['drift-window'],
+          });
+          const config = await loadWasm4pmConfig(cliOverrides);
+          const pred = config.prediction;
+
+          // Resolve parameters: CLI flag > config > hardcoded default
+          const activityKey =
+            (ctx.args['activity-key'] as string) || pred?.activityKey || 'concept:name';
+          const rawTopK = ctx.args['top-k'] as string | undefined;
+          const parsedTopK = rawTopK != null ? parseInt(rawTopK, 10) : undefined;
+          if (parsedTopK !== undefined && Number.isNaN(parsedTopK)) {
+            const result = makeErrorResult(
+              'predict',
+              new Error('Invalid --top-k value: must be a number'),
+              EXIT_CODES.config_error,
+              'INVALID_ARG'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
+          const topK = parsedTopK ?? 3;
+
+          const rawNgram = ctx.args['ngram-order'] as string | undefined;
+          const parsedNgram = rawNgram != null ? parseInt(rawNgram, 10) : undefined;
+          if (parsedNgram !== undefined && Number.isNaN(parsedNgram)) {
+            const result = makeErrorResult(
+              'predict',
+              new Error('Invalid --ngram-order value: must be a number'),
+              EXIT_CODES.config_error,
+              'INVALID_ARG'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
+          const ngramOrder = parsedNgram ?? pred?.ngramOrder ?? 2;
+
+          const rawDrift = ctx.args['drift-window'] as string | undefined;
+          const parsedDrift = rawDrift != null ? parseInt(rawDrift, 10) : undefined;
+          if (parsedDrift !== undefined && Number.isNaN(parsedDrift)) {
+            const result = makeErrorResult(
+              'predict',
+              new Error('Invalid --drift-window value: must be a number'),
+              EXIT_CODES.config_error,
+              'INVALID_ARG'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
+          const driftWindow = parsedDrift ?? pred?.driftWindowSize ?? 10;
+          const prefixActivities = ctx.args.prefix
+            ? (ctx.args.prefix as string).split(',').map((s) => s.trim())
+            : undefined;
+
+          // Step 3: Load session and execute
+          const inputPath = ctx.args.input as string;
+
+          await withLogSession(
+            {
+              inputPath,
+              activityKey,
+              commandName: 'predict',
+              emitOptions: { format, verbose, quiet },
+            },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            async (wasmBase, logHandle) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const wasm = wasmBase as Record<string, any>;
+
+              // Step 4: Execute prediction task
+              const taskResult = await executePredictionTask(
+                wasm,
+                task as PredictTask,
+                logHandle,
+                activityKey,
+                topK,
+                ngramOrder,
+                driftWindow,
+                prefixActivities
+              );
+
+              // Step 5: Build result
+              const payload = {
                 task,
-                activity_key: activityKey,
-                top_k: topK,
-                ngram_order: ngramOrder,
-                drift_window: driftWindow,
-                predictions_count: predictionsCount,
-              },
-            };
-            saveCommandReceipt(receipt);
-          } catch {
-            /* receipt write must never break the command */
-          }
-        }
+                input: inputPath,
+                activityKey,
+                ...taskResult,
+              };
 
-        return await exitWithFlush(result.exit_code);
-      });  // end withLogSession
-    } catch (error) {
-      const result = makeErrorResult(
-        'predict',
-        error,
-        EXIT_CODES.execution_error,
-        'PREDICTION_ERROR'
-      );
-      emitResult(result, { format, verbose, quiet });
-      return await exitWithFlush(result.exit_code);
-    }
-      },
+              const result = makeResult('predict', payload, Date.now() - start);
+
+              // Step 6: Emit result
+              emitResult(result, { format, verbose, quiet }, (res, p) => {
+                p.success(`Prediction complete: ${res.payload.task}`);
+                formatHumanOutput(p, res.payload.task as PredictTask, res.payload);
+              });
+
+              // Step 7: Persist result (unless --no-save)
+              if (!ctx.args['no-save']) {
+                const savedPath = await savePredictionResult(
+                  task,
+                  inputPath,
+                  activityKey,
+                  taskResult
+                );
+                if (savedPath && verbose) {
+                  // debug already handled by projection.debug if needed
+                }
+                try {
+                  const inputBytes = await fs
+                    .readFile(inputPath)
+                    .catch(() => Buffer.from(inputPath));
+                  const predictionsCount = Array.isArray(
+                    (taskResult as Record<string, unknown>).predictions
+                  )
+                    ? ((taskResult as Record<string, unknown>).predictions as unknown[]).length
+                    : 0;
+                  const receipt: CommandReceipt = {
+                    ...newReceipt('predict'),
+                    command: 'predict',
+                    input_hash: blake3Hex(inputBytes),
+                    output_hash: blake3Hex(JSON.stringify(payload)),
+                    status: 'success',
+                    summary: {
+                      task,
+                      activity_key: activityKey,
+                      top_k: topK,
+                      ngram_order: ngramOrder,
+                      drift_window: driftWindow,
+                      predictions_count: predictionsCount,
+                    },
+                  };
+                  saveCommandReceipt(receipt);
+                } catch {
+                  /* receipt write must never break the command */
+                }
+              }
+
+              return await exitWithFlush(result.exit_code);
+            }
+          ); // end withLogSession
+        } catch (error) {
+          const result = makeErrorResult(
+            'predict',
+            error,
+            EXIT_CODES.execution_error,
+            'PREDICTION_ERROR'
+          );
+          emitResult(result, { format, verbose, quiet });
+          return await exitWithFlush(result.exit_code);
+        }
+      }
     );
   },
 });
@@ -401,7 +421,8 @@ async function executePredictionTask(
       // This gives the analyst the same smoothed trend signal that drift-watch
       // provides in streaming mode — a single static snapshot of the series.
       const distances = driftResult.drifts.map((dp) => dp.distance);
-      let ewmaResult: { smoothed: number[]; trend: string; last_value: number | null } | null = null;
+      let ewmaResult: { smoothed: number[]; trend: string; last_value: number | null } | null =
+        null;
       if (distances.length > 0) {
         try {
           const ewmaRaw: string = wasm.compute_ewma(JSON.stringify(distances), 0.3);
@@ -551,6 +572,31 @@ function formatHumanOutput(
         p.log(`  ${rank}  ${act}  ${prob}`);
       });
       p.log('');
+      // Plain-English interpretation of the top prediction
+      if (preds.length > 0) {
+        const top = preds[0];
+        const pct = (top.probability * 100).toFixed(0);
+        const confidence =
+          top.probability >= 0.7 ? 'high' : top.probability >= 0.4 ? 'moderate' : 'low';
+        p.info(
+          `Top prediction: "${top.activity}" with ${pct}% probability (${confidence} confidence)`
+        );
+        if (top.probability < 0.4) {
+          p.info(
+            '  Low confidence — the process may have high variant diversity after this prefix.'
+          );
+          p.info('  Consider supplying a longer --prefix or increasing --ngram-order.');
+        }
+      }
+      p.log('');
+      p.log('Next steps:');
+      p.log(
+        '  wpm predict next-activity -i <log> --prefix "<A>,<B>,<C>"  -- narrow to a specific prefix'
+      );
+      p.log(
+        '  wpm predict remaining-time -i <log> --prefix "<A>,<B>"     -- estimate time to completion'
+      );
+      p.log('');
       break;
     }
 
@@ -570,7 +616,9 @@ function formatHumanOutput(
           p.log('');
           p.log('  Weibull survival model (fitted to historical case durations):');
           p.log(`    Shape (k):    ${(weibull['shape'] as number).toFixed(3)}`);
-          p.log(`    Scale (lambda): ${((weibull['scale_ms'] as number) / 3_600_000).toFixed(2)} hours`);
+          p.log(
+            `    Scale (lambda): ${((weibull['scale_ms'] as number) / 3_600_000).toFixed(2)} hours`
+          );
           p.log(`    Distribution: ${weibull['interpretation']}`);
         }
         p.log('');
@@ -579,7 +627,9 @@ function formatHumanOutput(
           p.log('');
           p.log('  Weibull survival model (fitted to historical case durations):');
           p.log(`    Shape (k):    ${(weibull['shape'] as number).toFixed(3)}`);
-          p.log(`    Scale (lambda): ${((weibull['scale_ms'] as number) / 3_600_000).toFixed(2)} hours`);
+          p.log(
+            `    Scale (lambda): ${((weibull['scale_ms'] as number) / 3_600_000).toFixed(2)} hours`
+          );
           p.log(`    Distribution: ${weibull['interpretation']}`);
           p.log('');
         }
@@ -640,7 +690,9 @@ function formatHumanOutput(
       for (const dp of drifts) {
         const pos = dp['position'] ?? '?';
         const dist =
-          typeof dp['distance'] === 'number' ? dp['distance'].toFixed(4) : String(dp['distance'] ?? '');
+          typeof dp['distance'] === 'number'
+            ? dp['distance'].toFixed(4)
+            : String(dp['distance'] ?? '');
         p.log(`    Position ${pos}  distance=${dist}  type=${dp['type'] ?? 'concept_drift'}`);
       }
 
@@ -652,7 +704,8 @@ function formatHumanOutput(
             : ewma['trend'] === 'falling'
               ? 'falling (drift is subsiding)'
               : 'stable';
-        const lastVal = typeof ewma['last_value'] === 'number' ? (ewma['last_value'] as number).toFixed(4) : '–';
+        const lastVal =
+          typeof ewma['last_value'] === 'number' ? (ewma['last_value'] as number).toFixed(4) : '–';
         p.log('');
         p.log(`  EWMA trend: ${trendLabel}  (smoothed last value: ${lastVal})`);
       }
@@ -661,11 +714,15 @@ function formatHumanOutput(
       if (disappeared.length > 0) {
         p.log('');
         p.log(`  Activities that disappeared across drift windows:`);
-        p.log(`    ${disappeared.slice(0, 8).join(', ')}${disappeared.length > 8 ? ` (+${disappeared.length - 8} more)` : ''}`);
+        p.log(
+          `    ${disappeared.slice(0, 8).join(', ')}${disappeared.length > 8 ? ` (+${disappeared.length - 8} more)` : ''}`
+        );
       }
       if (appeared.length > 0) {
         p.log(`  Activities that appeared across drift windows:`);
-        p.log(`    ${appeared.slice(0, 8).join(', ')}${appeared.length > 8 ? ` (+${appeared.length - 8} more)` : ''}`);
+        p.log(
+          `    ${appeared.slice(0, 8).join(', ')}${appeared.length > 8 ? ` (+${appeared.length - 8} more)` : ''}`
+        );
       }
       if (suggestions.length > 0) {
         p.log('');
@@ -680,7 +737,9 @@ function formatHumanOutput(
     case 'features': {
       const transitions = result['transitions'] as Record<string, unknown>;
       p.log('');
-      const edges = Array.isArray(transitions?.['edges']) ? (transitions['edges'] as unknown[]) : [];
+      const edges = Array.isArray(transitions?.['edges'])
+        ? (transitions['edges'] as unknown[])
+        : [];
       if (edges.length > 0) {
         p.log(`  Transition probabilities: ${edges.length} edge(s)`);
         for (const t of edges.slice(0, 5)) {
@@ -713,17 +772,23 @@ function formatHumanOutput(
       p.log('  M/M/1 Queue Model (rates derived from event log):');
       if (dr) {
         p.log(`    Arrival rate (lambda): ${(dr['arrivalRate'] as number).toFixed(4)} cases/event`);
-        p.log(`    Service rate (mu):     ${(dr['serviceRate'] as number).toFixed(4)} completions/event`);
+        p.log(
+          `    Service rate (mu):     ${(dr['serviceRate'] as number).toFixed(4)} completions/event`
+        );
         const rho = (dr['rho'] as number) ?? 0;
         const unstableFlag = rho >= 1.0 ? '  WARNING: UNSTABLE' : '';
         p.log(`    Utilisation (rho):     ${(rho * 100).toFixed(1)}%${unstableFlag}`);
-        p.log(`    Queue stable:          ${dr['stable'] ? 'yes' : 'no (rho >= 1 -- add capacity)'}`);
+        p.log(
+          `    Queue stable:          ${dr['stable'] ? 'yes' : 'no (rho >= 1 -- add capacity)'}`
+        );
         if (dr['warning']) {
           p.log(`    Warning:               ${dr['warning']}`);
         }
         p.log('');
       }
-      p.log(`    Est. wait time:        ${((qs?.['wait_time'] as number) ?? 0).toFixed(2)} event-units`);
+      p.log(
+        `    Est. wait time:        ${((qs?.['wait_time'] as number) ?? 0).toFixed(2)} event-units`
+      );
       p.log(`  Transitions in model: ${result['transitionCount']}`);
       p.log('');
       break;

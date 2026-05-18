@@ -675,14 +675,16 @@ describe('init: format and preset whitelist', () => {
 // ---------------------------------------------------------------------------
 
 describe('explain: missing-input error and graceful unknown-algo fallback', () => {
-  it('no args produces MISSING_INPUT naming all three valid flags', async () => {
+  it('no args shows the algorithm menu (exit 0, subject=algorithm-menu)', async () => {
     const r = await run(['explain', '--format', 'json']);
-    expect(r.exitCode).toBe(2);
-    const e = err(r);
-    expect(e.code).toBe('MISSING_INPUT');
-    expect(e.message).toContain('--model');
-    expect(e.message).toContain('--algorithm');
-    expect(e.message).toContain('--config');
+    expect(r.exitCode).toBe(0);
+    const j = json(r);
+    expect(j['status']).toBe('ok');
+    const p = j['payload'] as Record<string, unknown>;
+    // Zero-arg explain returns a curated algorithm menu, not an error
+    expect(p['subject']).toBe('algorithm-menu');
+    expect(typeof p['content']).toBe('string');
+    expect((p['content'] as string).length).toBeGreaterThan(100);
   });
 
   it('unknown --algorithm exits 0 — explain never errors for an unknown algo name', async () => {

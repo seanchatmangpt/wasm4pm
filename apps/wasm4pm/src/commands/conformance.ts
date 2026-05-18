@@ -4,7 +4,12 @@ import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
 import { withSpan } from './_otel.js';
-import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
+import {
+  saveCommandReceipt,
+  blake3Hex,
+  newReceipt,
+  type CommandReceipt,
+} from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
 
 interface TraceDeviation {
@@ -118,233 +123,235 @@ export const conformance = defineCommand({
         format,
       },
       async () => {
-    try {
-      // Resolve input path (positional OR --file/-i)
-      const inputPath: string | undefined =
-        (ctx.args.input as string | undefined) || (ctx.args.file as string | undefined);
-
-      if (!inputPath) {
-        const result = makeErrorResult(
-          'conformance',
-          new Error(
-            'Input file required.\n\nUsage:  wpm conformance <log.xes>\n        wpm conformance <log.xes> --model <model.json>\n\nRun "wpm conformance --help" for details.'
-          ),
-          EXIT_CODES.source_error,
-          'SOURCE_ERROR'
-        );
-        emitResult(result, { format, verbose, quiet });
-        return await exitWithFlush(result.exit_code);
-        return;
-      }
-
-      const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
-      const method = ctx.args.method as 'token-replay' | 'alignment';
-      const rawThreshold = ctx.args.threshold as string | undefined;
-      const parsedThreshold = rawThreshold != null ? parseFloat(rawThreshold) : undefined;
-      if (parsedThreshold !== undefined && Number.isNaN(parsedThreshold)) {
-        const result = makeErrorResult(
-          'conformance',
-          new Error('Invalid --threshold value: must be a number'),
-          EXIT_CODES.config_error,
-          'CONFIG_ERROR'
-        );
-        emitResult(result, { format, verbose, quiet });
-        return await exitWithFlush(result.exit_code);
-        return;
-      }
-      const threshold = parsedThreshold ?? 0.8;
-
-      await withLogSession(
-        { inputPath, activityKey, commandName: 'conformance', emitOptions: { format, verbose, quiet } },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        async (wasmBase, logHandle) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const wasm = wasmBase as Record<string, any>;
-
-      // First discover a Petri Net model if none provided
-      let petriNetHandle: string;
-      const modelPath = ctx.args.model as string | undefined;
-
-      if (modelPath) {
-        // Load provided model from file, store it, and get a handle
         try {
-          await fs.access(modelPath);
-          const modelContent = await fs.readFile(modelPath, 'utf-8');
-          JSON.parse(modelContent);
-          // Note: For now, we assume the model file is a Petri Net JSON
-          // In the future, we could store it via WASM API
-          petriNetHandle = `model_${Date.now()}`;
-        } catch {
-          const result = makeErrorResult(
-            'conformance',
-            new Error(`Model file not found or invalid: ${modelPath}`),
-            EXIT_CODES.source_error,
-            'SOURCE_ERROR'
-          );
-          emitResult(result, { format, verbose, quiet });
-          return await exitWithFlush(result.exit_code);
-          return;
-        }
-      } else {
-        // Auto-discover a Petri Net using Alpha++
-        const discoveryResult = wasm.discover_alpha_plus_plus(logHandle, activityKey, 0.1);
-        const resultData =
-          typeof discoveryResult === 'string' ? JSON.parse(discoveryResult) : discoveryResult;
-        petriNetHandle = (resultData as Record<string, unknown>).handle as string;
+          // Resolve input path (positional OR --file/-i)
+          const inputPath: string | undefined =
+            (ctx.args.input as string | undefined) || (ctx.args.file as string | undefined);
 
-        if (!petriNetHandle) {
+          if (!inputPath) {
+            const result = makeErrorResult(
+              'conformance',
+              new Error(
+                'Input file required.\n\nUsage:  wpm conformance <log.xes>\n        wpm conformance <log.xes> --model <model.json>\n\nRun "wpm conformance --help" for details.'
+              ),
+              EXIT_CODES.source_error,
+              'SOURCE_ERROR'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+            return;
+          }
+
+          const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
+          const method = ctx.args.method as 'token-replay' | 'alignment';
+          const rawThreshold = ctx.args.threshold as string | undefined;
+          const parsedThreshold = rawThreshold != null ? parseFloat(rawThreshold) : undefined;
+          if (parsedThreshold !== undefined && Number.isNaN(parsedThreshold)) {
+            const result = makeErrorResult(
+              'conformance',
+              new Error('Invalid --threshold value: must be a number'),
+              EXIT_CODES.config_error,
+              'CONFIG_ERROR'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+            return;
+          }
+          const threshold = parsedThreshold ?? 0.8;
+
+          await withLogSession(
+            {
+              inputPath,
+              activityKey,
+              commandName: 'conformance',
+              emitOptions: { format, verbose, quiet },
+            },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            async (wasmBase, logHandle) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const wasm = wasmBase as Record<string, any>;
+
+              // First discover a Petri Net model if none provided
+              let petriNetHandle: string;
+              const modelPath = ctx.args.model as string | undefined;
+
+              if (modelPath) {
+                // Load provided model from file, store it, and get a handle
+                try {
+                  await fs.access(modelPath);
+                  const modelContent = await fs.readFile(modelPath, 'utf-8');
+                  JSON.parse(modelContent);
+                  // Note: For now, we assume the model file is a Petri Net JSON
+                  // In the future, we could store it via WASM API
+                  petriNetHandle = `model_${Date.now()}`;
+                } catch {
+                  const result = makeErrorResult(
+                    'conformance',
+                    new Error(`Model file not found or invalid: ${modelPath}`),
+                    EXIT_CODES.source_error,
+                    'SOURCE_ERROR'
+                  );
+                  emitResult(result, { format, verbose, quiet });
+                  return await exitWithFlush(result.exit_code);
+                  return;
+                }
+              } else {
+                // Auto-discover a Petri Net using Alpha++
+                const discoveryResult = wasm.discover_alpha_plus_plus(logHandle, activityKey, 0.1);
+                const resultData =
+                  typeof discoveryResult === 'string'
+                    ? JSON.parse(discoveryResult)
+                    : discoveryResult;
+                petriNetHandle = (resultData as Record<string, unknown>).handle as string;
+
+                if (!petriNetHandle) {
+                  const result = makeErrorResult(
+                    'conformance',
+                    new Error('Failed to discover Petri Net model'),
+                    EXIT_CODES.execution_error,
+                    'EXECUTION_ERROR'
+                  );
+                  emitResult(result, { format, verbose, quiet });
+                  return await exitWithFlush(result.exit_code);
+                  return;
+                }
+              }
+
+              // Run conformance checking based on method
+              let conformanceResult: Record<string, unknown>;
+
+              if (method === 'alignment') {
+                const configJson = JSON.stringify({
+                  max_iterations: 100000,
+                  sync_cost: 0.0,
+                  log_move_cost: 1.0,
+                  model_move_cost: 1.0,
+                });
+                const raw = wasm.alignment_fitness(logHandle, petriNetHandle, configJson);
+                conformanceResult = typeof raw === 'string' ? JSON.parse(raw) : raw;
+              } else {
+                const raw = wasm.check_token_based_replay(logHandle, petriNetHandle, activityKey);
+                conformanceResult = typeof raw === 'string' ? JSON.parse(raw) : raw;
+              }
+
+              // Precision calculation not yet supported in current API
+              const precision = null;
+              const precision_available = false;
+
+              // The token-replay WASM function returns ConformanceResult with:
+              //   avg_fitness, conforming_cases, total_cases, case_fitness[]
+              // Each case_fitness entry has: case_id, is_conforming, trace_fitness,
+              //   tokens_missing, tokens_remaining, deviations[]
+              // alignment_fitness returns a different shape (fitness at top level).
+              const isTokenReplay = method !== 'alignment';
+              let fitnessValue: number;
+              let totalCases: number;
+              let conformingCases: number;
+              let caseFitness: TraceResult[] = [];
+
+              if (isTokenReplay) {
+                fitnessValue = (conformanceResult.avg_fitness as number) ?? 0.0;
+                totalCases = (conformanceResult.total_cases as number) ?? 0;
+                conformingCases = (conformanceResult.conforming_cases as number) ?? 0;
+                const rawCases = conformanceResult.case_fitness as TraceResult[] | undefined;
+                caseFitness = Array.isArray(rawCases) ? rawCases : [];
+              } else {
+                // alignment path — shape differs, fitness is at root
+                fitnessValue = (conformanceResult.fitness as number) ?? 0.0;
+                totalCases = 0;
+                conformingCases = 0;
+              }
+
+              const deviatingCases = isTokenReplay ? totalCases - conformingCases : 0;
+              const conformanceRate = totalCases > 0 ? conformingCases / totalCases : fitnessValue;
+
+              // Separate deviating traces for reporting (up to 20 to keep output manageable)
+              const deviatingTraces = caseFitness.filter((t) => !t.is_conforming).slice(0, 20);
+
+              // Aggregate token counts across all traces for diagnostics
+              let totalMissing = 0;
+              let totalRemaining = 0;
+              for (const t of caseFitness) {
+                totalMissing += t.tokens_missing ?? 0;
+                totalRemaining += t.tokens_remaining ?? 0;
+              }
+
+              const isFit = fitnessValue >= threshold;
+              const payload: ConformancePayload = {
+                schema: 'chatmangpt.wasm4pm.conformance.v1',
+                status: isFit ? 'success' : 'conformance_fail',
+                input: inputPath,
+                activityKey,
+                method,
+                threshold,
+                fitness: fitnessValue,
+                precision,
+                precision_available,
+                isFit,
+                summary: {
+                  total_cases: totalCases,
+                  conforming_cases: conformingCases,
+                  deviating_cases: deviatingCases,
+                  conformance_rate: conformanceRate,
+                },
+                diagnostics: {
+                  traced: totalCases,
+                  remaining: totalRemaining,
+                  missing: totalMissing,
+                  consumed: 0,
+                  produced: 0,
+                },
+                deviating_traces: deviatingTraces,
+                modelHandle: petriNetHandle,
+              };
+
+              const elapsedMs = Date.now() - t0;
+              // Exit non-zero when fitness is below threshold so bash -e pipelines
+              // and downstream tools can detect conformance failure.
+              const exitCode = isFit ? EXIT_CODES.success : EXIT_CODES.conformance_fail;
+              const result = makeResult('conformance', payload, elapsedMs, exitCode);
+
+              emitResult(result, { format, verbose, quiet }, (res, projection) => {
+                printHumanConformance(res.payload, projection);
+              });
+
+              // Persist BLAKE3 receipt for proof-of-execution
+              if (!ctx.args['no-save']) {
+                try {
+                  const inputBytes = await fs.readFile(inputPath);
+                  const receipt: CommandReceipt = {
+                    ...newReceipt('conformance'),
+                    input_hash: blake3Hex(inputBytes),
+                    output_hash: blake3Hex(JSON.stringify(payload)),
+                    status: isFit ? 'success' : 'partial',
+                    summary: {
+                      method: payload.method,
+                      fitness: payload.fitness,
+                      precision: payload.precision,
+                      threshold: payload.threshold,
+                      elapsedMs,
+                    },
+                  };
+                  saveCommandReceipt(receipt);
+                } catch {
+                  /* receipt write must never break the command */
+                }
+              }
+
+              return await exitWithFlush(result.exit_code);
+            }
+          ); // end withLogSession
+        } catch (error) {
           const result = makeErrorResult(
             'conformance',
-            new Error('Failed to discover Petri Net model'),
+            error,
             EXIT_CODES.execution_error,
             'EXECUTION_ERROR'
           );
           emitResult(result, { format, verbose, quiet });
           return await exitWithFlush(result.exit_code);
-          return;
         }
       }
-
-      // Run conformance checking based on method
-      let conformanceResult: Record<string, unknown>;
-
-      if (method === 'alignment') {
-        const configJson = JSON.stringify({
-          max_iterations: 100000,
-          sync_cost: 0.0,
-          log_move_cost: 1.0,
-          model_move_cost: 1.0,
-        });
-        const raw = wasm.alignment_fitness(logHandle, petriNetHandle, configJson);
-        conformanceResult = typeof raw === 'string' ? JSON.parse(raw) : raw;
-      } else {
-        const raw = wasm.check_token_based_replay(logHandle, petriNetHandle, activityKey);
-        conformanceResult = typeof raw === 'string' ? JSON.parse(raw) : raw;
-      }
-
-      // Precision calculation not yet supported in current API
-      const precision = null;
-      const precision_available = false;
-
-      // The token-replay WASM function returns ConformanceResult with:
-      //   avg_fitness, conforming_cases, total_cases, case_fitness[]
-      // Each case_fitness entry has: case_id, is_conforming, trace_fitness,
-      //   tokens_missing, tokens_remaining, deviations[]
-      // alignment_fitness returns a different shape (fitness at top level).
-      const isTokenReplay = method !== 'alignment';
-      let fitnessValue: number;
-      let totalCases: number;
-      let conformingCases: number;
-      let caseFitness: TraceResult[] = [];
-
-      if (isTokenReplay) {
-        fitnessValue = (conformanceResult.avg_fitness as number) ?? 0.0;
-        totalCases = (conformanceResult.total_cases as number) ?? 0;
-        conformingCases = (conformanceResult.conforming_cases as number) ?? 0;
-        const rawCases = conformanceResult.case_fitness as TraceResult[] | undefined;
-        caseFitness = Array.isArray(rawCases) ? rawCases : [];
-      } else {
-        // alignment path — shape differs, fitness is at root
-        fitnessValue = (conformanceResult.fitness as number) ?? 0.0;
-        totalCases = 0;
-        conformingCases = 0;
-      }
-
-      const deviatingCases = isTokenReplay
-        ? totalCases - conformingCases
-        : 0;
-      const conformanceRate = totalCases > 0
-        ? conformingCases / totalCases
-        : fitnessValue;
-
-      // Separate deviating traces for reporting (up to 20 to keep output manageable)
-      const deviatingTraces = caseFitness
-        .filter((t) => !t.is_conforming)
-        .slice(0, 20);
-
-      // Aggregate token counts across all traces for diagnostics
-      let totalMissing = 0;
-      let totalRemaining = 0;
-      for (const t of caseFitness) {
-        totalMissing += t.tokens_missing ?? 0;
-        totalRemaining += t.tokens_remaining ?? 0;
-      }
-
-      const isFit = fitnessValue >= threshold;
-      const payload: ConformancePayload = {
-        schema: 'chatmangpt.wasm4pm.conformance.v1',
-        status: isFit ? 'success' : 'conformance_fail',
-        input: inputPath,
-        activityKey,
-        method,
-        threshold,
-        fitness: fitnessValue,
-        precision,
-        precision_available,
-        isFit,
-        summary: {
-          total_cases: totalCases,
-          conforming_cases: conformingCases,
-          deviating_cases: deviatingCases,
-          conformance_rate: conformanceRate,
-        },
-        diagnostics: {
-          traced: totalCases,
-          remaining: totalRemaining,
-          missing: totalMissing,
-          consumed: 0,
-          produced: 0,
-        },
-        deviating_traces: deviatingTraces,
-        modelHandle: petriNetHandle,
-      };
-
-      const elapsedMs = Date.now() - t0;
-      // Exit non-zero when fitness is below threshold so bash -e pipelines
-      // and downstream tools can detect conformance failure.
-      const exitCode = isFit ? EXIT_CODES.success : EXIT_CODES.conformance_fail;
-      const result = makeResult('conformance', payload, elapsedMs, exitCode);
-
-      emitResult(result, { format, verbose, quiet }, (res, projection) => {
-        printHumanConformance(res.payload, projection);
-      });
-
-        // Persist BLAKE3 receipt for proof-of-execution
-        if (!ctx.args['no-save']) {
-          try {
-            const inputBytes = await fs.readFile(inputPath);
-            const receipt: CommandReceipt = {
-              ...newReceipt('conformance'),
-              input_hash: blake3Hex(inputBytes),
-              output_hash: blake3Hex(JSON.stringify(payload)),
-              status: isFit ? 'success' : 'partial',
-              summary: {
-                method: payload.method,
-                fitness: payload.fitness,
-                precision: payload.precision,
-                threshold: payload.threshold,
-                elapsedMs,
-              },
-            };
-            saveCommandReceipt(receipt);
-          } catch {
-            /* receipt write must never break the command */
-          }
-        }
-
-        return await exitWithFlush(result.exit_code);
-      });  // end withLogSession
-    } catch (error) {
-      const result = makeErrorResult(
-        'conformance',
-        error,
-        EXIT_CODES.execution_error,
-        'EXECUTION_ERROR'
-      );
-      emitResult(result, { format, verbose, quiet });
-      return await exitWithFlush(result.exit_code);
-    }
-      },
     );
   },
 });
@@ -367,10 +374,34 @@ function printHumanConformance(payload: ConformancePayload, projection: ConsoleP
   projection.log('');
 
   // Primary fitness score with Van der Aalst threshold context
-  const fitnessStatus = fitness >= 0.85 ? 'excellent' : fitness >= threshold ? 'acceptable' : 'below threshold';
+  const fitnessStatus =
+    fitness >= 0.85 ? 'excellent' : fitness >= threshold ? 'acceptable' : 'below threshold';
   projection.log(
     `  Fitness: ${fitness.toFixed(3)} ${isFit ? '✓' : '✗'}  [threshold: ${threshold.toFixed(2)}, Van der Aalst target: >=0.85 — ${fitnessStatus}]`
   );
+
+  // Concrete implication: translate the fitness score into practitioner language
+  if (summary.total_cases > 0) {
+    const conformPct = (summary.conformance_rate * 100).toFixed(1);
+    const deviatePct = (100 - summary.conformance_rate * 100).toFixed(1);
+    if (summary.deviating_cases === 0) {
+      projection.log(`  => All ${summary.total_cases} traces replay without deviation.`);
+    } else {
+      projection.log(
+        `  => ${summary.conforming_cases} of ${summary.total_cases} traces conform (${conformPct}%); ` +
+          `${summary.deviating_cases} deviate (${deviatePct}%) — each requires missing or extra tokens.`
+      );
+    }
+  } else if (fitness < 1.0) {
+    // Alignment path — no per-case breakdown; express as percentage
+    const nonConformPct = ((1 - fitness) * 100).toFixed(1);
+    projection.log(
+      `  => Alignment cost suggests approximately ${nonConformPct}% of trace moves are non-conforming.`
+    );
+  } else {
+    projection.log(`  => Perfect fitness — all trace moves align with the model.`);
+  }
+
   const precisionDisplay =
     precisionAvailable && precisionRaw !== null ? precisionRaw.toFixed(3) : 'N/A (not computed)';
   projection.log(`  Precision: ${precisionDisplay}`);
@@ -392,16 +423,21 @@ function printHumanConformance(payload: ConformancePayload, projection: ConsoleP
     const shown = deviatingTraces.length;
     const suffix = totalDeviating > shown ? ` (showing first ${shown} of ${totalDeviating})` : '';
     projection.log(`  Deviating Traces${suffix}:`);
+    projection.log(`    [missing_tokens = model expected activity but log skipped it]`);
+    projection.log(`    [remaining_tokens = log ended before model reached final marking]`);
 
     for (const trace of deviatingTraces) {
-      projection.log(`    Case ${trace.case_id}  fitness=${trace.trace_fitness.toFixed(3)}  missing_tokens=${trace.tokens_missing}  remaining_tokens=${trace.tokens_remaining}`);
+      projection.log(
+        `    Case ${trace.case_id}  fitness=${trace.trace_fitness.toFixed(3)}  missing_tokens=${trace.tokens_missing}  remaining_tokens=${trace.tokens_remaining}`
+      );
       if (trace.deviations.length > 0) {
         for (const dev of trace.deviations) {
-          const label = dev.deviation_type === 'missing_activity'
-            ? `activity "${dev.activity}" was expected by the model but not found in the log (log move)`
-            : dev.deviation_type === 'missing_tokens'
-            ? `activity "${dev.activity}" fired but required tokens were not available (model move)`
-            : `${dev.deviation_type} at "${dev.activity}"`;
+          const label =
+            dev.deviation_type === 'missing_activity'
+              ? `activity "${dev.activity}" was expected by the model but not found in the log (log move)`
+              : dev.deviation_type === 'missing_tokens'
+                ? `activity "${dev.activity}" fired but required tokens were not available (model move)`
+                : `${dev.deviation_type} at "${dev.activity}"`;
           projection.log(`      [event ${dev.event_index}] ${label}`);
         }
       } else {
@@ -409,13 +445,26 @@ function printHumanConformance(payload: ConformancePayload, projection: ConsoleP
       }
     }
     projection.log('');
+    // Always explain deviation types when deviating traces are present — even
+    // if fitness is above threshold, practitioners need to know what the
+    // deviating cases mean so they can decide whether to investigate.
+    projection.log('  How to interpret deviations:');
+    projection.log(
+      '    "log move"   — the log contains an activity the model does not expect; the model is too restrictive.'
+    );
+    projection.log(
+      '    "model move" — the model requires an activity that was skipped in the log; the log is missing steps.'
+    );
     if (!isFit) {
-      projection.log('  How to interpret deviations:');
-      projection.log('    "log move"   — the log contains an activity the model does not expect; the model is too restrictive.');
-      projection.log('    "model move" — the model requires an activity that was skipped in the log; the log is missing steps.');
-      projection.log('  To fix: either relax the model (add transitions) or investigate why steps are skipped in the log.');
-      projection.log('');
+      projection.log(
+        '  To fix: either relax the model (add transitions) or investigate why steps are skipped in the log.'
+      );
+    } else {
+      projection.log(
+        '  Fitness is above threshold, but deviating traces exist — investigate whether these represent exceptions or process variants.'
+      );
     }
+    projection.log('');
   }
 
   if (isFit) {

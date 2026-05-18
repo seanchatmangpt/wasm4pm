@@ -103,11 +103,28 @@ describe('Wasm4pmMCPServer', () => {
     expect(toolNames).toContain('check_backend_health');
   });
 
-  it('has at least 33 registered tools', async () => {
+  it('registers resource and enhancement perspective tools added in iter16', async () => {
     const server = new Wasm4pmMCPServer();
     const tools = (server as any).getAvailableTools() as Array<{ name: string }>;
-    // MCP server exposes 33+ tools after spec-059 additions
-    expect(tools.length).toBeGreaterThanOrEqual(33);
+    const toolNames = tools.map((t) => t.name);
+
+    // Resource perspective (van der Aalst 6th) — social network mining
+    expect(toolNames).toContain('discover_handover_network');
+    expect(toolNames).toContain('discover_working_together_network');
+    // Enhancement perspective — rework loop detection
+    expect(toolNames).toContain('detect_rework');
+    // LLM-readable text encodings — conversational natural-language output
+    expect(toolNames).toContain('encode_variants_as_text');
+    expect(toolNames).toContain('encode_statistics_as_text');
+    // Predictive perspective — beam-search full path prediction
+    expect(toolNames).toContain('predict_beam_paths');
+  });
+
+  it('has at least 39 registered tools', async () => {
+    const server = new Wasm4pmMCPServer();
+    const tools = (server as any).getAvailableTools() as Array<{ name: string }>;
+    // MCP server exposes 39+ tools after iter16 additions (was 33 after spec-059)
+    expect(tools.length).toBeGreaterThanOrEqual(39);
   });
 
   it('all tools have valid input schemas', async () => {

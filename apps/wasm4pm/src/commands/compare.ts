@@ -6,7 +6,12 @@ import { withLogSession } from '../with-log-session.js';
 import { discriminate, toUniformStats, DiscoveryShapeError } from '../discriminator.js';
 import * as fs from 'node:fs';
 import { withSpan } from './_otel.js';
-import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
+import {
+  saveCommandReceipt,
+  blake3Hex,
+  newReceipt,
+  type CommandReceipt,
+} from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
 
 /**
@@ -273,262 +278,311 @@ export const compare = defineCommand({
         format,
       },
       async () => {
-    try {
-      // Parse algorithms from the single positional (citty collects remaining args as string)
-      const rawAlgos = (ctx.args.algorithms as string)
-        .split(/[\s,]+/)
-        .map((s) => s.trim().toLowerCase())
-        .filter(Boolean);
-
-      // Resolve kernel IDs to CLI aliases, then validate
-      const resolved = rawAlgos.map((a) => ALGORITHM_CLI_ALIASES[a] ?? a);
-      const invalid = resolved.filter((a) => !ALGORITHMS.includes(a as Algorithm));
-      if (invalid.length > 0) {
-        const result = makeErrorResult(
-          'compare',
-          new Error(`Unknown algorithm(s): ${invalid.join(', ')}. Available: ${Object.keys(ALGORITHM_CLI_ALIASES).join(', ')}`),
-          EXIT_CODES.source_error,
-          'UNKNOWN_ALGORITHMS'
-        );
-        emitResult(result, emitOptions);
-        return await exitWithFlush(result.exit_code);
-      }
-
-      if (resolved.length < 2) {
-        const result = makeErrorResult(
-          'compare',
-          new Error('Please specify at least two algorithms to compare.'),
-          EXIT_CODES.source_error,
-          'TOO_FEW_ALGORITHMS'
-        );
-        emitResult(result, emitOptions);
-        return await exitWithFlush(result.exit_code);
-      }
-
-      const algos = resolved as Algorithm[];
-
-      const inputPath = ctx.args.input as string;
-      const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
-
-      await withLogSession(
-        { inputPath, activityKey, commandName: 'compare', emitOptions },
-        async (wasmBase, logHandle) => {
-        const wasm = wasmBase as Record<string, CallableFunction>;
-
-        // Get shared metrics (variants, density, complexity) once from the log.
-        // If metrics are unavailable (e.g. WASM version mismatch), fall back to
-        // sentinel values so the comparison still runs.
-        let sharedMetrics: { variants: number; density: number; complexity: number };
         try {
-          sharedMetrics = extractModelMetrics(wasm, logHandle, activityKey);
-        } catch {
-          sharedMetrics = { variants: -1, density: -1, complexity: -1 };
-        }
+          // Parse algorithms from the single positional (citty collects remaining args as string)
+          const rawAlgos = (ctx.args.algorithms as string)
+            .split(/[\s,]+/)
+            .map((s) => s.trim().toLowerCase())
+            .filter(Boolean);
 
-        // Run each algorithm individually. Errors are isolated per-algorithm so
-        // a single failure produces a sentinel row rather than aborting the batch.
-        const t0 = performance.now();
-        const stats: ModelStats[] = [];
-        const algorithmErrors: string[] = [];
-        for (const algo of algos) {
-          try {
-            const { raw, elapsedMs } = runDiscovery(wasm, algo, logHandle, activityKey);
-            const { nodes, edges } = toUniformStats(discriminate(raw, algo));
-            stats.push({
-              algorithm: algo,
-              nodes,
-              edges,
-              variants: sharedMetrics.variants,
-              density: sharedMetrics.density,
-              complexity: sharedMetrics.complexity,
-              elapsedMs,
-            });
-          } catch (err) {
-            // Record the failure; push a sentinel row so output is always complete
-            const msg = err instanceof Error ? err.message : String(err);
-            algorithmErrors.push(`${algo}: ${msg}`);
-            stats.push({
-              algorithm: algo,
-              nodes: -1,
-              edges: -1,
-              variants: sharedMetrics.variants,
-              density: sharedMetrics.density,
-              complexity: sharedMetrics.complexity,
-              elapsedMs: 0,
-            });
-          }
-        }
-        const totalElapsedMs = performance.now() - t0;
-
-        // Derive winner recommendations before building payload
-        const recommendation = deriveRecommendation(stats);
-
-        // Build canonical result payload. Include algorithm_errors only when some
-        // runs failed so consumers can distinguish partial from full success.
-        const payload: {
-          input: string;
-          activityKey: string;
-          algorithms: ModelStats[];
-          recommendation: AlgorithmRecommendation | null;
-          algorithm_errors?: string[];
-        } = {
-          input: inputPath,
-          activityKey,
-          algorithms: stats,
-          recommendation,
-        };
-        if (algorithmErrors.length > 0) {
-          payload.algorithm_errors = algorithmErrors;
-        }
-
-        // Handle --cache-stats (fetch before emitting)
-        let cacheStats: Record<string, unknown> | null = null;
-        if (ctx.args['cache-stats']) {
-          if (typeof wasm.get_cache_stats !== 'function') {
-            const errResult = makeErrorResult('compare', new Error('Cache statistics requested but not available in WASM module'), EXIT_CODES.execution_error, 'CACHE_STATS_UNAVAILABLE');
-            emitResult(errResult, emitOptions);
-            return await exitWithFlush(errResult.exit_code);
-          }
-          const statsRaw = wasm.get_cache_stats();
-          cacheStats = (typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw) as Record<string, unknown>;
-        }
-
-        // Partial failure (exit 4) when at least one algorithm produced a sentinel row;
-        // full success (exit 0) when all algorithms ran cleanly.
-        const resultExitCode =
-          algorithmErrors.length > 0 ? EXIT_CODES.partial_failure : EXIT_CODES.success;
-        const cmdResult = makeResult('compare', payload, totalElapsedMs, resultExitCode);
-
-        // Persist BLAKE3 receipt for proof-of-execution
-        if (!ctx.args['no-save']) {
-          try {
-            const inputBytes = fs.readFileSync(inputPath);
-            const receipt: CommandReceipt = {
-              ...newReceipt('compare'),
-              input_hash: blake3Hex(inputBytes),
-              output_hash: blake3Hex(JSON.stringify(payload)),
-              status: algorithmErrors.length > 0 ? 'partial' : 'success',
-              summary: {
-                algorithms: algos,
-                activityKey,
-                elapsedMs: Math.round(totalElapsedMs * 100) / 100,
-                ...(algorithmErrors.length > 0 ? { errors: algorithmErrors } : {}),
-              },
-            };
-            saveCommandReceipt(receipt);
-          } catch {
-            /* receipt write must never break the command */
-          }
-        }
-
-      emitResult(cmdResult, emitOptions, (res, projection) => {
-        const p = res.payload as typeof payload;
-        const s = p.algorithms;
-
-        projection.info(`Comparing algorithms: ${algos.join(', ')}`);
-        projection.log('');
-        projection.success(`Algorithm comparison — ${p.input}`);
-        projection.log(
-          `  Activity key: ${p.activityKey}  |  Log variants: ${sharedMetrics.variants}`
-        );
-        projection.log('');
-
-        // Compute ranges for sparklines
-        const validStats = s.filter((st) => st.nodes >= 0);
-        const minNodes = Math.min(...validStats.map((st) => st.nodes));
-        const maxNodes = Math.max(...validStats.map((st) => st.nodes));
-        const minEdges = Math.min(...validStats.map((st) => st.edges));
-        const maxEdges = Math.max(...validStats.map((st) => st.edges));
-        const minTime = Math.min(...validStats.map((st) => st.elapsedMs));
-        const maxTime = Math.max(...validStats.map((st) => st.elapsedMs));
-
-        // Table header
-        projection.log(
-          `  ${'Algorithm'.padEnd(20)}  ${'Nodes'.padStart(6)}  ${'Edges'.padStart(6)}  ${'Time(ms)'.padStart(9)}  ${'Nodes'.padEnd(10)}  ${'Edges'.padEnd(10)}  ${'Time'.padEnd(10)}`
-        );
-        projection.log(
-          `  ${'─'.repeat(20)}  ${'─'.repeat(6)}  ${'─'.repeat(6)}  ${'─'.repeat(9)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}`
-        );
-
-        for (const st of s) {
-          const algoCol = col(st.algorithm, 20);
-          if (st.nodes < 0) {
-            projection.log(
-              `  ${algoCol}  ${'ERROR'.padStart(6)}  ${'─'.padStart(6)}  ${'─'.padStart(9)}`
+          // Resolve kernel IDs to CLI aliases, then validate
+          const resolved = rawAlgos.map((a) => ALGORITHM_CLI_ALIASES[a] ?? a);
+          const invalid = resolved.filter((a) => !ALGORITHMS.includes(a as Algorithm));
+          if (invalid.length > 0) {
+            const result = makeErrorResult(
+              'compare',
+              new Error(
+                `Unknown algorithm(s): ${invalid.join(', ')}. Available: ${Object.keys(ALGORITHM_CLI_ALIASES).join(', ')}`
+              ),
+              EXIT_CODES.source_error,
+              'UNKNOWN_ALGORITHMS'
             );
-            continue;
+            emitResult(result, emitOptions);
+            return await exitWithFlush(result.exit_code);
           }
-          const nodesStr = numCol(st.nodes, 6);
-          const edgesStr = numCol(st.edges, 6);
-          const timeStr = numCol(st.elapsedMs, 9, 1);
-          const nodesBar = sparkBar(st.nodes, minNodes, maxNodes).padEnd(10);
-          const edgesBar = sparkBar(st.edges, minEdges, maxEdges).padEnd(10);
-          const timeBar = sparkBar(st.elapsedMs, minTime, maxTime).padEnd(10);
-          projection.log(
-            `  ${algoCol}  ${nodesStr}  ${edgesStr}  ${timeStr}  ${nodesBar}  ${edgesBar}  ${timeBar}`
-          );
-        }
 
-        projection.log('');
-        projection.log(
-          '  Legend: ▓▓▓▓▓▓▓▓ = max  ░░░░░░░░ = min   bars are relative within this comparison'
-        );
-        projection.log('');
-
-        // Partial failure notice
-        if (p.algorithm_errors && p.algorithm_errors.length > 0) {
-          projection.log('  Algorithm errors (partial results):');
-          for (const e of p.algorithm_errors) {
-            projection.warn(`    ${e}`);
+          if (resolved.length < 2) {
+            const result = makeErrorResult(
+              'compare',
+              new Error('Please specify at least two algorithms to compare.'),
+              EXIT_CODES.source_error,
+              'TOO_FEW_ALGORITHMS'
+            );
+            emitResult(result, emitOptions);
+            return await exitWithFlush(result.exit_code);
           }
-          projection.log('');
-        }
 
-        // Winner recommendation section
-        if (recommendation) {
-          projection.log('  Recommendations:');
-          projection.success(
-            `    Fastest      → ${recommendation.fastest.algorithm.padEnd(18)}  ${recommendation.fastest.rationale}`
-          );
-          projection.success(
-            `    Most detailed→ ${recommendation.mostDetailed.algorithm.padEnd(18)}  ${recommendation.mostDetailed.rationale}`
-          );
-          projection.success(
-            `    Best tradeoff→ ${recommendation.bestTradeoff.algorithm.padEnd(18)}  ${recommendation.bestTradeoff.rationale}`
-          );
-          projection.log('');
-        }
+          const algos = resolved as Algorithm[];
 
-        // Cache statistics (if fetched)
-        if (cacheStats) {
-          const hitRate =
-            (cacheStats.parse_hits as number) + (cacheStats.parse_misses as number) > 0
-              ? (((cacheStats.parse_hits as number) / ((cacheStats.parse_hits as number) + (cacheStats.parse_misses as number))) * 100).toFixed(1)
-              : 'N/A';
-          projection.info('Cache statistics:');
-          projection.info(`  Parse hits: ${cacheStats.parse_hits}`);
-          projection.info(`  Parse misses: ${cacheStats.parse_misses}`);
-          projection.info(`  Hit rate: ${hitRate}%`);
-          projection.info(`  Columnar entries: ${cacheStats.columnar_entries}`);
-          projection.info(`  Interner entries: ${cacheStats.interner_entries}`);
-        }
-      });
+          const inputPath = ctx.args.input as string;
+          const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
 
-        return await exitWithFlush(cmdResult.exit_code);
-      });  // end withLogSession
-    } catch (error) {
-      const code =
-        error instanceof DiscoveryShapeError ? 'DISCOVERY_SHAPE_MISMATCH' : 'COMPARISON_FAILED';
-      const result = makeErrorResult(
-        'compare',
-        error instanceof Error ? error : new Error(String(error)),
-        EXIT_CODES.execution_error,
-        code
-      );
-      emitResult(result, emitOptions);
-      return await exitWithFlush(result.exit_code);
-    }
-      },
+          await withLogSession(
+            { inputPath, activityKey, commandName: 'compare', emitOptions },
+            async (wasmBase, logHandle) => {
+              const wasm = wasmBase as Record<string, CallableFunction>;
+
+              // Get shared metrics (variants, density, complexity) once from the log.
+              // If metrics are unavailable (e.g. WASM version mismatch), fall back to
+              // sentinel values so the comparison still runs.
+              let sharedMetrics: { variants: number; density: number; complexity: number };
+              try {
+                sharedMetrics = extractModelMetrics(wasm, logHandle, activityKey);
+              } catch {
+                sharedMetrics = { variants: -1, density: -1, complexity: -1 };
+              }
+
+              // Run each algorithm individually. Errors are isolated per-algorithm so
+              // a single failure produces a sentinel row rather than aborting the batch.
+              const t0 = performance.now();
+              const stats: ModelStats[] = [];
+              const algorithmErrors: string[] = [];
+              for (const algo of algos) {
+                try {
+                  const { raw, elapsedMs } = runDiscovery(wasm, algo, logHandle, activityKey);
+                  const { nodes, edges } = toUniformStats(discriminate(raw, algo));
+                  stats.push({
+                    algorithm: algo,
+                    nodes,
+                    edges,
+                    variants: sharedMetrics.variants,
+                    density: sharedMetrics.density,
+                    complexity: sharedMetrics.complexity,
+                    elapsedMs,
+                  });
+                } catch (err) {
+                  // Record the failure; push a sentinel row so output is always complete
+                  const msg = err instanceof Error ? err.message : String(err);
+                  algorithmErrors.push(`${algo}: ${msg}`);
+                  stats.push({
+                    algorithm: algo,
+                    nodes: -1,
+                    edges: -1,
+                    variants: sharedMetrics.variants,
+                    density: sharedMetrics.density,
+                    complexity: sharedMetrics.complexity,
+                    elapsedMs: 0,
+                  });
+                }
+              }
+              const totalElapsedMs = performance.now() - t0;
+
+              // Derive winner recommendations before building payload
+              const recommendation = deriveRecommendation(stats);
+
+              // Build canonical result payload. Include algorithm_errors only when some
+              // runs failed so consumers can distinguish partial from full success.
+              const payload: {
+                input: string;
+                activityKey: string;
+                algorithms: ModelStats[];
+                recommendation: AlgorithmRecommendation | null;
+                algorithm_errors?: string[];
+              } = {
+                input: inputPath,
+                activityKey,
+                algorithms: stats,
+                recommendation,
+              };
+              if (algorithmErrors.length > 0) {
+                payload.algorithm_errors = algorithmErrors;
+              }
+
+              // Handle --cache-stats (fetch before emitting)
+              let cacheStats: Record<string, unknown> | null = null;
+              if (ctx.args['cache-stats']) {
+                if (typeof wasm.get_cache_stats !== 'function') {
+                  const errResult = makeErrorResult(
+                    'compare',
+                    new Error('Cache statistics requested but not available in WASM module'),
+                    EXIT_CODES.execution_error,
+                    'CACHE_STATS_UNAVAILABLE'
+                  );
+                  emitResult(errResult, emitOptions);
+                  return await exitWithFlush(errResult.exit_code);
+                }
+                const statsRaw = wasm.get_cache_stats();
+                cacheStats = (
+                  typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw
+                ) as Record<string, unknown>;
+              }
+
+              // Partial failure (exit 4) when at least one algorithm produced a sentinel row;
+              // full success (exit 0) when all algorithms ran cleanly.
+              const resultExitCode =
+                algorithmErrors.length > 0 ? EXIT_CODES.partial_failure : EXIT_CODES.success;
+              const cmdResult = makeResult('compare', payload, totalElapsedMs, resultExitCode);
+
+              // Persist BLAKE3 receipt for proof-of-execution
+              if (!ctx.args['no-save']) {
+                try {
+                  const inputBytes = fs.readFileSync(inputPath);
+                  const receipt: CommandReceipt = {
+                    ...newReceipt('compare'),
+                    input_hash: blake3Hex(inputBytes),
+                    output_hash: blake3Hex(JSON.stringify(payload)),
+                    status: algorithmErrors.length > 0 ? 'partial' : 'success',
+                    summary: {
+                      algorithms: algos,
+                      activityKey,
+                      elapsedMs: Math.round(totalElapsedMs * 100) / 100,
+                      ...(algorithmErrors.length > 0 ? { errors: algorithmErrors } : {}),
+                    },
+                  };
+                  saveCommandReceipt(receipt);
+                } catch {
+                  /* receipt write must never break the command */
+                }
+              }
+
+              emitResult(cmdResult, emitOptions, (res, projection) => {
+                const p = res.payload as typeof payload;
+                const s = p.algorithms;
+
+                projection.info(`Comparing algorithms: ${algos.join(', ')}`);
+                projection.log('');
+                projection.success(`Algorithm comparison — ${p.input}`);
+                projection.log(
+                  `  Activity key: ${p.activityKey}  |  Log variants: ${sharedMetrics.variants}`
+                );
+                projection.log('');
+
+                // Compute ranges for sparklines
+                const validStats = s.filter((st) => st.nodes >= 0);
+                const minNodes = Math.min(...validStats.map((st) => st.nodes));
+                const maxNodes = Math.max(...validStats.map((st) => st.nodes));
+                const minEdges = Math.min(...validStats.map((st) => st.edges));
+                const maxEdges = Math.max(...validStats.map((st) => st.edges));
+                const minTime = Math.min(...validStats.map((st) => st.elapsedMs));
+                const maxTime = Math.max(...validStats.map((st) => st.elapsedMs));
+
+                // Table header
+                projection.log(
+                  `  ${'Algorithm'.padEnd(20)}  ${'Nodes'.padStart(6)}  ${'Edges'.padStart(6)}  ${'Time(ms)'.padStart(9)}  ${'Nodes'.padEnd(10)}  ${'Edges'.padEnd(10)}  ${'Time'.padEnd(10)}`
+                );
+                projection.log(
+                  `  ${'─'.repeat(20)}  ${'─'.repeat(6)}  ${'─'.repeat(6)}  ${'─'.repeat(9)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}`
+                );
+
+                for (const st of s) {
+                  const algoCol = col(st.algorithm, 20);
+                  if (st.nodes < 0) {
+                    projection.log(
+                      `  ${algoCol}  ${'ERROR'.padStart(6)}  ${'─'.padStart(6)}  ${'─'.padStart(9)}`
+                    );
+                    continue;
+                  }
+                  const nodesStr = numCol(st.nodes, 6);
+                  const edgesStr = numCol(st.edges, 6);
+                  const timeStr = numCol(st.elapsedMs, 9, 1);
+                  const nodesBar = sparkBar(st.nodes, minNodes, maxNodes).padEnd(10);
+                  const edgesBar = sparkBar(st.edges, minEdges, maxEdges).padEnd(10);
+                  const timeBar = sparkBar(st.elapsedMs, minTime, maxTime).padEnd(10);
+                  projection.log(
+                    `  ${algoCol}  ${nodesStr}  ${edgesStr}  ${timeStr}  ${nodesBar}  ${edgesBar}  ${timeBar}`
+                  );
+                }
+
+                projection.log('');
+                projection.log(
+                  '  Legend: ▓▓▓▓▓▓▓▓ = max  ░░░░░░░░ = min   bars are relative within this comparison'
+                );
+                projection.log('');
+                projection.log('  Metric guide (process mining interpretation):');
+                projection.log(
+                  '    Nodes    — number of distinct activities + gateways in the model.'
+                );
+                projection.log(
+                  '               More nodes = finer-grained model; fewer = more abstract.'
+                );
+                projection.log('    Edges    — number of directly-follows relations captured.');
+                projection.log(
+                  '               More edges = higher structural detail; also higher complexity.'
+                );
+                projection.log(
+                  '               A flower model (every activity follows every other) has maximum edges'
+                );
+                projection.log(
+                  '               but zero precision. Use wpm quality to check fitness+precision together.'
+                );
+                projection.log(
+                  '    Time(ms) — wall-clock discovery time for this log. Lower = faster iteration.'
+                );
+                projection.log(
+                  '               For large logs (>100K events) this gap compounds significantly.'
+                );
+                projection.log('');
+
+                // Partial failure notice
+                if (p.algorithm_errors && p.algorithm_errors.length > 0) {
+                  projection.log('  Algorithm errors (partial results):');
+                  for (const e of p.algorithm_errors) {
+                    projection.warn(`    ${e}`);
+                  }
+                  projection.log('');
+                }
+
+                // Winner recommendation section
+                if (recommendation) {
+                  projection.log('  Recommendations:');
+                  projection.success(
+                    `    Fastest      → ${recommendation.fastest.algorithm.padEnd(18)}  ${recommendation.fastest.rationale}`
+                  );
+                  projection.success(
+                    `    Most detailed→ ${recommendation.mostDetailed.algorithm.padEnd(18)}  ${recommendation.mostDetailed.rationale}`
+                  );
+                  projection.success(
+                    `    Best tradeoff→ ${recommendation.bestTradeoff.algorithm.padEnd(18)}  ${recommendation.bestTradeoff.rationale}`
+                  );
+                  projection.log('');
+                  projection.log(
+                    '  Note: "Most detailed" (highest edge count) is not the same as highest quality.'
+                  );
+                  projection.log(
+                    '  A model with many edges may be overfit (low precision) or underfit (low fitness).'
+                  );
+                  projection.log(
+                    '  Validate with: wpm quality <log.xes>  to see fitness+precision+generalization.'
+                  );
+                  projection.log('');
+                }
+
+                // Cache statistics (if fetched)
+                if (cacheStats) {
+                  const hitRate =
+                    (cacheStats.parse_hits as number) + (cacheStats.parse_misses as number) > 0
+                      ? (
+                          ((cacheStats.parse_hits as number) /
+                            ((cacheStats.parse_hits as number) +
+                              (cacheStats.parse_misses as number))) *
+                          100
+                        ).toFixed(1)
+                      : 'N/A';
+                  projection.info('Cache statistics:');
+                  projection.info(`  Parse hits: ${cacheStats.parse_hits}`);
+                  projection.info(`  Parse misses: ${cacheStats.parse_misses}`);
+                  projection.info(`  Hit rate: ${hitRate}%`);
+                  projection.info(`  Columnar entries: ${cacheStats.columnar_entries}`);
+                  projection.info(`  Interner entries: ${cacheStats.interner_entries}`);
+                }
+              });
+
+              return await exitWithFlush(cmdResult.exit_code);
+            }
+          ); // end withLogSession
+        } catch (error) {
+          const code =
+            error instanceof DiscoveryShapeError ? 'DISCOVERY_SHAPE_MISMATCH' : 'COMPARISON_FAILED';
+          const result = makeErrorResult(
+            'compare',
+            error instanceof Error ? error : new Error(String(error)),
+            EXIT_CODES.execution_error,
+            code
+          );
+          emitResult(result, emitOptions);
+          return await exitWithFlush(result.exit_code);
+        }
+      }
     );
   },
 });
