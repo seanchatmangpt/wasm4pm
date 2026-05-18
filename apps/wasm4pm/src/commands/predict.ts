@@ -149,12 +149,31 @@ export const predict = defineCommand({
           // This ensures invalid values produce config_error (1), not execution_error (3)
           // from Zod schema rejection inside loadWasm4pmConfig.
 
+          // GAP-FIX-3: --top-k must be a positive integer (>= 1).
+          // Previously: NaN check only, so --top-k 0 and --top-k -1 silently succeeded
+          // (0 produced empty predictions without error; -1 incorrectly said "must be a number").
+          // Now: reject any value that is NaN or <= 0 with a clear, specific message.
           const rawTopK = ctx.args['top-k'] as string | undefined;
           const parsedTopK = rawTopK != null ? parseInt(rawTopK, 10) : undefined;
           if (parsedTopK !== undefined && Number.isNaN(parsedTopK)) {
             const result = makeErrorResult(
               'predict',
-              new Error('Invalid --top-k value: must be a number'),
+              new Error(
+                `Invalid --top-k value: "${rawTopK}" is not a number. Must be a positive integer (>= 1).`
+              ),
+              EXIT_CODES.config_error,
+              'INVALID_ARG'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
+          if (parsedTopK !== undefined && parsedTopK <= 0) {
+            const result = makeErrorResult(
+              'predict',
+              new Error(
+                `Invalid --top-k value: "${rawTopK}". Must be a positive integer (>= 1). ` +
+                  `--top-k 0 produces no predictions; --top-k negative is nonsensical.`
+              ),
               EXIT_CODES.config_error,
               'INVALID_ARG'
             );
@@ -162,12 +181,30 @@ export const predict = defineCommand({
             return await exitWithFlush(result.exit_code);
           }
 
+          // GAP-FIX-5: --ngram-order must be a positive integer >= 2 (bigram minimum).
+          // Previously: NaN check only; values 0 or 1 fell through to Zod schema validation
+          // inside loadWasm4pmConfig which threw exit_code 3 (execution_error) instead of 1.
           const rawNgram = ctx.args['ngram-order'] as string | undefined;
           const parsedNgram = rawNgram != null ? parseInt(rawNgram, 10) : undefined;
           if (parsedNgram !== undefined && Number.isNaN(parsedNgram)) {
             const result = makeErrorResult(
               'predict',
-              new Error('Invalid --ngram-order value: must be a number'),
+              new Error(
+                `Invalid --ngram-order value: "${rawNgram}" is not a number. Must be an integer >= 2.`
+              ),
+              EXIT_CODES.config_error,
+              'INVALID_ARG'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
+          if (parsedNgram !== undefined && parsedNgram < 2) {
+            const result = makeErrorResult(
+              'predict',
+              new Error(
+                `Invalid --ngram-order value: "${rawNgram}". Must be an integer >= 2 ` +
+                  `(a bigram model is the minimum meaningful n-gram; unigrams carry no sequential information).`
+              ),
               EXIT_CODES.config_error,
               'INVALID_ARG'
             );
@@ -180,7 +217,9 @@ export const predict = defineCommand({
           if (parsedDrift !== undefined && Number.isNaN(parsedDrift)) {
             const result = makeErrorResult(
               'predict',
-              new Error('Invalid --drift-window value: must be a number'),
+              new Error(
+                `Invalid --drift-window value: "${rawDrift}" is not a number. Must be a positive integer (>= 1).`
+              ),
               EXIT_CODES.config_error,
               'INVALID_ARG'
             );
@@ -199,6 +238,25 @@ export const predict = defineCommand({
               new Error(
                 `Invalid --drift-window value: "${rawDrift}". Must be a positive integer (>= 1). ` +
                   `A drift window of 0 or negative is meaningless for sliding-window analysis.`
+              ),
+              EXIT_CODES.config_error,
+              'INVALID_ARG'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
+
+          // GAP-FIX-6: --activity-key "" (empty string) must be rejected with config_error.
+          // Previously: the empty string passed validation and was silently replaced by the
+          // fallback chain (activityKey = "" || pred?.activityKey || 'concept:name'), which
+          // masked the user error. An empty activity key is always a misconfiguration.
+          const rawActivityKey = ctx.args['activity-key'] as string | undefined;
+          if (rawActivityKey !== undefined && rawActivityKey.trim() === '') {
+            const result = makeErrorResult(
+              'predict',
+              new Error(
+                `Invalid --activity-key value: empty string. ` +
+                  `Specify an XES attribute name, e.g. --activity-key concept:name`
               ),
               EXIT_CODES.config_error,
               'INVALID_ARG'
@@ -416,7 +474,13 @@ async function executePredictionTask(
         () => wasm.predict_next_activity(predictorHandle, JSON.stringify(prefix))
       );
       const allPredictions: Array<{ activity: string; probability: number }> = JSON.parse(raw);
-      const topPredictions = allPredictions.slice(0, topK);
+      // GAP-FIX-2: Add `rank` field (1-indexed) to each prediction so callers can
+      // sort or select by rank without having to infer it from array position.
+      const topPredictions = allPredictions.slice(0, topK).map((p, i) => ({
+        rank: i + 1,
+        activity: p.activity,
+        probability: p.probability,
+      }));
       // Gap 1: expose prefix echo, n-gram order, and whether the model had an exact match.
       // Empty allPredictions means the prefix was not seen in training (cold start / OOV).
       const coverage = allPredictions.length > 0 ? 'exact_match' : 'no_match';
@@ -491,8 +555,11 @@ async function executePredictionTask(
     }
 
     case 'outcome': {
-      // Use discover_dfg_handle (stores the DFG) so score_anomaly can access it
-      const dfgHandle: string = wasm.discover_dfg_handle(logHandle, activityKey);
+      // GAP-FIX-1: `wasm.discover_dfg_handle` does not exist in the WASM binary.
+      // The correct WASM export that returns an opaque DFG handle is
+      // `discover_dfg_simd_handle`. Using the wrong name caused all `outcome` calls
+      // to throw "wasm.discover_dfg_handle is not a function" → exit_code 3.
+      const dfgHandle: string = wasm.discover_dfg_simd_handle(logHandle, activityKey);
 
       if (prefixActivities && prefixActivities.length > 0) {
         // Score the given prefix as an anomaly
@@ -571,7 +638,12 @@ async function executePredictionTask(
         .map((dp) => dp.suggestion)
         .filter((s): s is string => Boolean(s));
 
+      // GAP-FIX-7: add top-level `drift_detected` boolean convenience field.
+      // Previously callers had to dig into driftResult.drifts_detected > 0 to answer
+      // the binary question "was drift detected?" — a common first question for any
+      // monitoring pipeline that needs to branch on drift vs. no drift.
       return {
+        drift_detected: driftResult.drifts_detected > 0,
         driftResult,
         ewma: ewmaResult
           ? {
@@ -638,8 +710,14 @@ async function executePredictionTask(
       const transRaw: string = wasm.build_transition_probabilities(logHandle, activityKey);
       const transitions = JSON.parse(transRaw) as Record<string, unknown>;
       const edges = Array.isArray(transitions['edges']) ? transitions['edges'] : [];
+      // GAP-FIX-9: add `utilization` (American spelling) as a top-level alias alongside
+      // `utilisation` (British spelling). The queueStats object from WASM already uses
+      // `utilization`; the CLI payload inconsistently used `utilisation`. Expose both so
+      // consumers do not need to guess the spelling. The canonical key going forward is
+      // `utilization` (matches the WASM queueStats field and common JSON conventions).
       return {
         queueStats,
+        utilization: utilisation,
         utilisation,
         derivedRates: {
           arrivalRate,

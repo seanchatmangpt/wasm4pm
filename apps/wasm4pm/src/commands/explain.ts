@@ -114,6 +114,7 @@ export const explain = defineCommand({
           if (!ctx.args.model && !ctx.args.algorithm && !ctx.args.config) {
             const menuContent = getAlgorithmMenu();
             const payload = {
+              algorithm: null,
               subject: 'algorithm-menu',
               level: 'brief' as const,
               content: menuContent,
@@ -175,19 +176,33 @@ export const explain = defineCommand({
 
           // Step 3: Build result and emit
           // Resolve algo meta for JSON output and the quality trade-offs section.
+          // Use exact-key lookup (no bidirectional substring match) to avoid false positives.
           const resolvedAlgo = ctx.args.algorithm as string | undefined;
-          const algoKey = resolvedAlgo
-            ? resolvedAlgo.toLowerCase().replace(/[+*-]/g, '')
+          const algoKeyNorm = resolvedAlgo
+            ? resolvedAlgo.toLowerCase().replace(/[+*-]/g, '').replace(/_/g, '')
             : undefined;
-          const metaKey = algoKey
-            ? Object.keys(ALGO_META).find((k) => algoKey.includes(k) || k.includes(algoKey))
-            : undefined;
+          // Build a map of normalised-key → original ALGO_META key for exact lookup.
+          const metaNormMap = Object.fromEntries(
+            Object.keys(ALGO_META).map((k) => [k.replace(/_/g, ''), k])
+          );
+          const metaKey = algoKeyNorm ? metaNormMap[algoKeyNorm] : undefined;
           const meta = metaKey ? ALGO_META[metaKey] : undefined;
 
           const payload = {
+            // Van der Aalst-contract fields — present in JSON output for all known algorithms.
+            algorithm: resolvedAlgo ?? null,
             subject: ctx.args.model || ctx.args.algorithm || 'execution plan',
             level,
             content: explanationContent,
+            description: meta
+              ? `${resolvedAlgo ?? ''} — speed: ${meta.speedScore}/100 quality: ${meta.qualityScore}/100 output: ${meta.outputType}`
+              : null,
+            // Structured metadata from ALGO_META — populated when explaining a known algorithm.
+            strengths: meta?.strengths ?? null,
+            weaknesses: meta?.weaknesses ?? null,
+            use_cases: meta?.use_cases ?? null,
+            complexity: meta?.complexity ?? null,
+            parameters: meta?.parameters ?? null,
             // Registry-sourced scores — populated when explaining a known algorithm.
             quality_score: meta?.qualityScore ?? null,
             speed_score: meta?.speedScore ?? null,
@@ -273,6 +288,7 @@ interface AlgoMeta {
   speedScore: number; // 1–100, lower = faster
   qualityScore: number; // 0–100, higher = better model quality
   outputType: string; // dfg | petrinet | declare | tree | ml_result
+  complexity?: string; // Big-O complexity string
   fitness: string; // High | Medium | Low
   precision: string; // High | Medium | Low
   generalization: string; // High | Medium | Low
@@ -280,6 +296,11 @@ interface AlgoMeta {
   deploymentProfiles: string[]; // fast | balanced | quality | stream
   whenToUse: string;
   alternatives: string;
+  // Structured JSON contract fields — present in payload for all known algorithms
+  strengths?: string[];
+  weaknesses?: string[];
+  use_cases?: string[];
+  parameters?: Array<{ name: string; type: string; description: string; required?: boolean; default?: string }>;
 }
 
 const ALGO_META: Record<string, AlgoMeta> = {
@@ -287,6 +308,7 @@ const ALGO_META: Record<string, AlgoMeta> = {
     speedScore: 5,
     qualityScore: 30,
     outputType: 'dfg',
+    complexity: 'O(|E|)',
     fitness: 'High (100% on training log by construction)',
     precision: 'Low (allows many unobserved paths)',
     generalization: 'Low (overfits to sample)',
@@ -295,11 +317,36 @@ const ALGO_META: Record<string, AlgoMeta> = {
     whenToUse: 'First look at a new log; real-time dashboards; logs with 1M+ events.',
     alternatives:
       'Use heuristic_miner when noise filtering matters; inductive_miner when you need a sound model.',
+    strengths: [
+      'Linear time complexity — extremely fast',
+      'Interpretable: every edge is a directly-observed succession',
+      'Handles logs with millions of events without memory issues',
+    ],
+    weaknesses: [
+      'Cannot model parallel activities, long-distance dependencies, or invisible tasks',
+      'Overfits to the sample: low generalization on unseen traces',
+      'Low precision — allows many paths never observed in the log',
+    ],
+    use_cases: [
+      'Initial exploratory analysis of a new event log',
+      'Real-time process dashboards requiring sub-second refresh',
+      'Structural comparison of two logs via wpm diff',
+    ],
+    parameters: [
+      {
+        name: 'activity_key',
+        type: 'string',
+        description: 'Event attribute used as the activity label (default: concept:name per XES standard)',
+        required: false,
+        default: 'concept:name',
+      },
+    ],
   },
   alpha: {
     speedScore: 20,
     qualityScore: 45,
     outputType: 'petrinet',
+    complexity: 'O(n² × |E|)',
     fitness: 'High (fits all non-looping traces)',
     precision: 'Medium (handles some concurrency)',
     generalization: 'Medium',
@@ -308,11 +355,35 @@ const ALGO_META: Record<string, AlgoMeta> = {
     whenToUse:
       'Processes with true parallelism (AND-splits); when a Petri net is required for downstream tools.',
     alternatives: 'Use inductive_miner for guaranteed soundness; heuristic_miner for noisy logs.',
+    strengths: [
+      'Discovers concurrent (parallel) activities that DFG cannot model',
+      'Produces a formal Petri net compatible with downstream verification tools',
+      'Classic algorithm — well understood in the process mining literature',
+    ],
+    weaknesses: [
+      'Cannot handle long-term loops or duplicate activities',
+      'Sensitive to noise: rare events corrupt the ordering relations',
+      'No soundness guarantee — may produce unsound Petri nets on real logs',
+    ],
+    use_cases: [
+      'Structured processes with known parallelism (e.g., procurement with parallel approvals)',
+      'When Petri net output is required for formal model checking or simulation',
+    ],
+    parameters: [
+      {
+        name: 'activity_key',
+        type: 'string',
+        description: 'Event attribute used as the activity label',
+        required: false,
+        default: 'concept:name',
+      },
+    ],
   },
   heuristic: {
     speedScore: 25,
     qualityScore: 50,
     outputType: 'dfg',
+    complexity: 'O(n² × |E|)',
     fitness: 'Medium (filters low-frequency traces)',
     precision: 'Medium',
     generalization: 'High (threshold removes outliers)',
@@ -320,11 +391,43 @@ const ALGO_META: Record<string, AlgoMeta> = {
     deploymentProfiles: ['balanced', 'quality'],
     whenToUse: 'Noisy logs (many rare variants); when you need a quick but noise-robust overview.',
     alternatives: 'Use dfg for maximum speed; inductive_miner for structurally sound models.',
+    strengths: [
+      'Robust to noise: threshold filters out infrequent, likely erroneous edges',
+      'Good generalization — rare exceptions are excluded, keeping the model lean',
+      'Dependency metric (0–1) gives transparent control over filtering',
+    ],
+    weaknesses: [
+      'Threshold requires manual tuning (0.2–0.8 range depending on log quality)',
+      'Output is a causal net, not a fully formal Petri net — limited verification support',
+      'May miss legitimate rare paths when threshold is set too high',
+    ],
+    use_cases: [
+      'Real-world noisy logs from ERP systems or ticketing systems',
+      'First model when you expect many exception/workaround variants',
+      'Preprocessing step before conformance checking on a cleaned model',
+    ],
+    parameters: [
+      {
+        name: 'dependency_threshold',
+        type: 'number',
+        description: 'Minimum dependency score [0–1] for an arc to be included. Lower = more edges, higher = fewer edges.',
+        required: false,
+        default: '0.5',
+      },
+      {
+        name: 'activity_key',
+        type: 'string',
+        description: 'Event attribute used as the activity label',
+        required: false,
+        default: 'concept:name',
+      },
+    ],
   },
   inductive: {
     speedScore: 30,
     qualityScore: 55,
     outputType: 'tree',
+    complexity: 'O(|L| × |A|)',
     fitness: 'High (complete by construction)',
     precision: 'Medium (may over-generalise on noisy logs)',
     generalization: 'High (block structure captures future behaviour)',
@@ -334,11 +437,36 @@ const ALGO_META: Record<string, AlgoMeta> = {
       'Structured workflows (BPMN-like); automated conformance checking; when soundness must be guaranteed.',
     alternatives:
       'Use heuristic_miner when logs are noisy; ilp when maximum fitness/precision is the goal.',
+    strengths: [
+      'Soundness guaranteed by construction — no deadlocks or livelocks possible',
+      'Produces a human-readable process tree (→, ×, ∧, ↻ operators)',
+      'Handles loops and exclusive choices natively',
+    ],
+    weaknesses: [
+      'May add "skip" arcs on noisy logs to force soundness, reducing precision',
+      'Block structure may not match the real concurrent structure of some processes',
+      'Slower than DFG or heuristic miner on very large logs',
+    ],
+    use_cases: [
+      'BPMN-like structured workflows (ERP, BPM system outputs)',
+      'Automated conformance checking pipelines that require sound models',
+      'Educational settings where a clear hierarchical process structure is needed',
+    ],
+    parameters: [
+      {
+        name: 'activity_key',
+        type: 'string',
+        description: 'Event attribute used as the activity label',
+        required: false,
+        default: 'concept:name',
+      },
+    ],
   },
   genetic: {
     speedScore: 75,
     qualityScore: 80,
     outputType: 'dfg',
+    complexity: 'O(G × P × |log| × |model|)',
     fitness: 'High',
     precision: 'High (evolves models that avoid spurious paths)',
     generalization: 'High (population diversity reduces overfitting)',
@@ -348,11 +476,50 @@ const ALGO_META: Record<string, AlgoMeta> = {
       'Best-quality model where runtime > 1 min is acceptable; complex processes with loops and concurrency.',
     alternatives:
       'Use ilp for provably optimal models; pso or aco for faster population-based search.',
+    strengths: [
+      'High model quality — evolutionary search explores a wide model space',
+      'Population diversity reduces risk of local optima',
+      'Flexible fitness function can encode domain-specific trade-offs',
+    ],
+    weaknesses: [
+      'Slowest of the practical algorithms — exponential worst-case',
+      'Results are non-deterministic without a fixed random seed',
+      'Impractical for logs with more than 5 000 events without a strong machine',
+    ],
+    use_cases: [
+      'Gold-standard benchmarking where maximum quality is required',
+      'Complex processes with loops, concurrency, and many exception paths',
+      'Offline batch analysis where runtime is not a constraint',
+    ],
+    parameters: [
+      {
+        name: 'population_size',
+        type: 'number',
+        description: 'Number of candidate models per generation',
+        required: false,
+        default: '20',
+      },
+      {
+        name: 'iterations',
+        type: 'number',
+        description: 'Number of evolutionary generations',
+        required: false,
+        default: '10',
+      },
+      {
+        name: 'activity_key',
+        type: 'string',
+        description: 'Event attribute used as the activity label',
+        required: false,
+        default: 'concept:name',
+      },
+    ],
   },
   ilp: {
     speedScore: 80,
     qualityScore: 90,
     outputType: 'petrinet',
+    complexity: 'NP-hard',
     fitness: 'High (optimal by formulation)',
     precision: 'High (ILP objective penalises spurious transitions)',
     generalization: 'Medium (can overfit small logs)',
@@ -362,11 +529,36 @@ const ALGO_META: Record<string, AlgoMeta> = {
       'Gold-standard benchmarking; regulatory compliance where optimal precision matters; small-to-medium logs.',
     alternatives:
       'Use genetic_algorithm for large logs; inductive_miner for a simpler sound model.',
+    strengths: [
+      'Provably optimal fitness/precision trade-off for the given log',
+      'Formal Petri net output supports downstream verification',
+      'Configurable λ weight lets you tune fitness vs simplicity',
+    ],
+    weaknesses: [
+      'Exponential worst-case — impractical beyond ~5 000 events',
+      'Can overfit small logs (high precision on training, poor generalization)',
+      'Produces larger Petri nets than inductive_miner',
+    ],
+    use_cases: [
+      'Regulatory compliance audits requiring a provably optimal model',
+      'Benchmarking other algorithms — ILP provides the quality ceiling',
+      'Small high-stakes processes where optimality justifies the runtime cost',
+    ],
+    parameters: [
+      {
+        name: 'activity_key',
+        type: 'string',
+        description: 'Event attribute used as the activity label',
+        required: false,
+        default: 'concept:name',
+      },
+    ],
   },
   astar: {
     speedScore: 60,
     qualityScore: 70,
     outputType: 'dfg',
+    complexity: 'O(b^d)',
     fitness: 'High (heuristic guides toward high-fitness models)',
     precision: 'Medium-High',
     generalization: 'Medium',
@@ -375,11 +567,42 @@ const ALGO_META: Record<string, AlgoMeta> = {
     whenToUse:
       'When you want near-optimal quality faster than ILP; medium-sized logs with defined budget.',
     alternatives: 'Use ilp for optimal result; aco/pso for swarm-based exploration.',
+    strengths: [
+      'Near-optimal quality with a fraction of ILP runtime when heuristic is good',
+      'Principled best-first search — avoids poor regions of the model space',
+      'Can be bounded by iteration limit for time-constrained runs',
+    ],
+    weaknesses: [
+      'Quality depends heavily on heuristic admissibility — poor heuristics give poor results',
+      'Memory-intensive: open/closed sets grow with search depth',
+      'Not as interpretable as inductive_miner output',
+    ],
+    use_cases: [
+      'Medium-complexity logs where ILP runtime is prohibitive but quality matters',
+      'Pipeline stages where you have a strict time budget but need better than heuristic_miner',
+    ],
+    parameters: [
+      {
+        name: 'max_iterations',
+        type: 'number',
+        description: 'Maximum search iterations before stopping',
+        required: false,
+        default: '1000',
+      },
+      {
+        name: 'activity_key',
+        type: 'string',
+        description: 'Event attribute used as the activity label',
+        required: false,
+        default: 'concept:name',
+      },
+    ],
   },
   hill: {
     speedScore: 40,
     qualityScore: 55,
     outputType: 'dfg',
+    complexity: 'O(K × |E| × |model|)',
     fitness: 'Medium (local optimum only)',
     precision: 'Medium',
     generalization: 'Medium',
@@ -388,11 +611,35 @@ const ALGO_META: Record<string, AlgoMeta> = {
     whenToUse:
       'Refining a model from a fast algorithm; quick improvement pass before deeper analysis.',
     alternatives: 'Use annealing to escape local optima; genetic_algorithm for global search.',
+    strengths: [
+      'Fast refinement — improves an existing model with minimal computation',
+      'Simple and predictable: deterministic given the same seed model',
+      'Good for post-processing a DFG or heuristic model',
+    ],
+    weaknesses: [
+      'Cannot escape local optima — results depend entirely on the starting model',
+      'No exploration of diverse model families',
+      'Quality ceiling lower than genetic or ILP',
+    ],
+    use_cases: [
+      'Quick quality improvement of a DFG result before presentation',
+      'Iterative refinement loop: fast algorithm → hill climbing → check conformance',
+    ],
+    parameters: [
+      {
+        name: 'activity_key',
+        type: 'string',
+        description: 'Event attribute used as the activity label',
+        required: false,
+        default: 'concept:name',
+      },
+    ],
   },
   annealing: {
     speedScore: 55,
     qualityScore: 65,
     outputType: 'dfg',
+    complexity: 'O(S × |model|)',
     fitness: 'Medium-High (escapes local optima)',
     precision: 'Medium',
     generalization: 'Medium-High',
@@ -402,11 +649,49 @@ const ALGO_META: Record<string, AlgoMeta> = {
       'Complex processes where hill climbing gets stuck; balancing exploration and exploitation.',
     alternatives:
       'Use genetic_algorithm for population-based search; aco for pheromone-guided exploration.',
+    strengths: [
+      'Escapes local optima via probabilistic acceptance of worse solutions at high temperature',
+      'Theoretically converges to global optimum with slow enough cooling schedule',
+      'More robust than hill climbing on complex fitness landscapes',
+    ],
+    weaknesses: [
+      'Cooling schedule requires tuning — poor schedule = poor result',
+      'Non-deterministic without fixed seed',
+      'Slower to converge than hill climbing on smooth landscapes',
+    ],
+    use_cases: [
+      'Complex processes with many local optima where hill climbing consistently gets stuck',
+      'Exploratory analysis before committing to the slower genetic algorithm',
+    ],
+    parameters: [
+      {
+        name: 'temperature',
+        type: 'number',
+        description: 'Initial temperature T₀ controlling exploration rate',
+        required: false,
+        default: '1.0',
+      },
+      {
+        name: 'cooling_rate',
+        type: 'number',
+        description: 'Geometric cooling factor α ∈ (0,1)',
+        required: false,
+        default: '0.95',
+      },
+      {
+        name: 'activity_key',
+        type: 'string',
+        description: 'Event attribute used as the activity label',
+        required: false,
+        default: 'concept:name',
+      },
+    ],
   },
   aco: {
     speedScore: 65,
     qualityScore: 75,
     outputType: 'dfg',
+    complexity: 'O(I × K × |E|)',
     fitness: 'High',
     precision: 'High (pheromone trails converge on frequent paths)',
     generalization: 'High',
@@ -416,11 +701,49 @@ const ALGO_META: Record<string, AlgoMeta> = {
       'Complex process structures with hidden patterns; when pheromone convergence is a good fit.',
     alternatives:
       'Use pso for faster convergence on smooth landscapes; genetic_algorithm for explicit fitness tuning.',
+    strengths: [
+      'Pheromone trails provide natural bias toward frequently used paths',
+      'Good at discovering hidden structures in complex logs',
+      'Parallelizable across ants for faster wall-clock time',
+    ],
+    weaknesses: [
+      'Multiple hyperparameters (α, β, ρ) require tuning',
+      'Pheromone convergence can cause premature stagnation on some landscapes',
+      'Slower than heuristic_miner for simple logs',
+    ],
+    use_cases: [
+      'Complex multi-path processes where pheromone dynamics model real traffic well',
+      'When swarm-style exploration is preferred over population crossover (vs genetic)',
+    ],
+    parameters: [
+      {
+        name: 'num_ants',
+        type: 'number',
+        description: 'Number of ants per iteration',
+        required: false,
+        default: '20',
+      },
+      {
+        name: 'iterations',
+        type: 'number',
+        description: 'Number of colony iterations',
+        required: false,
+        default: '10',
+      },
+      {
+        name: 'activity_key',
+        type: 'string',
+        description: 'Event attribute used as the activity label',
+        required: false,
+        default: 'concept:name',
+      },
+    ],
   },
   pso: {
     speedScore: 70,
     qualityScore: 75,
     outputType: 'dfg',
+    complexity: 'O(G × P × |E|)',
     fitness: 'High',
     precision: 'High',
     generalization: 'High',
@@ -430,11 +753,49 @@ const ALGO_META: Record<string, AlgoMeta> = {
       'Continuous model space; when global best sharing matters; parallelisable workloads.',
     alternatives:
       'Use aco for discrete process structures; genetic_algorithm for explicit crossover/mutation.',
+    strengths: [
+      'Fast convergence on smooth fitness landscapes compared to genetic algorithm',
+      'Global best sharing accelerates convergence across the swarm',
+      'Parallelizable — each particle is independent',
+    ],
+    weaknesses: [
+      'Velocity update requires careful tuning of inertia and cognitive/social coefficients',
+      'Can converge prematurely to sub-optimal global best on rugged landscapes',
+      'Not as effective as ACO on discrete graph-structured process spaces',
+    ],
+    use_cases: [
+      'Continuous optimisation of model parameters rather than discrete structure search',
+      'When parallel execution is available and fast convergence is preferred',
+    ],
+    parameters: [
+      {
+        name: 'population_size',
+        type: 'number',
+        description: 'Number of particles in the swarm',
+        required: false,
+        default: '30',
+      },
+      {
+        name: 'iterations',
+        type: 'number',
+        description: 'Number of swarm iterations',
+        required: false,
+        default: '20',
+      },
+      {
+        name: 'activity_key',
+        type: 'string',
+        description: 'Event attribute used as the activity label',
+        required: false,
+        default: 'concept:name',
+      },
+    ],
   },
   skeleton: {
     speedScore: 3,
     qualityScore: 25,
     outputType: 'dfg',
+    complexity: 'O(|E| + |V|·log|V|)',
     fitness: 'Medium (filters low-frequency edges)',
     precision: 'High (minimal model = high precision)',
     generalization: 'Low (loses rare but important paths)',
@@ -444,11 +805,36 @@ const ALGO_META: Record<string, AlgoMeta> = {
       'Executive overview; noise filtering before deeper analysis; mobile/IoT deployments.',
     alternatives:
       'Use dfg for the full picture; heuristic_miner for threshold-controlled filtering.',
+    strengths: [
+      'Fastest structural algorithm — near-linear time, minimal memory',
+      'High precision: only the most frequent paths are retained',
+      'Produces the most compact and readable model of any algorithm',
+    ],
+    weaknesses: [
+      'Low generalization: rare but important paths are discarded',
+      'Fixed frequency threshold — less configurable than heuristic_miner',
+      'May not capture the full process behavior for conformance checking',
+    ],
+    use_cases: [
+      'Executive-level process overview requiring a clean single-page view',
+      'Pre-processing step to identify the core happy path before deeper analysis',
+      'Mobile and IoT deployments where model size matters most',
+    ],
+    parameters: [
+      {
+        name: 'activity_key',
+        type: 'string',
+        description: 'Event attribute used as the activity label',
+        required: false,
+        default: 'concept:name',
+      },
+    ],
   },
   declare: {
     speedScore: 35,
     qualityScore: 50,
     outputType: 'declare',
+    complexity: 'O(|templates| × |A|² × |E|)',
     fitness: 'Medium (constraint-based, not replay-based)',
     precision: 'High (each constraint is individually verifiable)',
     generalization: 'High (constraints generalise naturally)',
@@ -458,6 +844,263 @@ const ALGO_META: Record<string, AlgoMeta> = {
       'Compliance checking; flexible processes (healthcare, research); regulatory monitoring.',
     alternatives:
       'Use inductive_miner for a procedural block model; heuristic_miner for DFG-based overview.',
+    strengths: [
+      'Business-readable constraint names (response, precedence, succession)',
+      'Naturally handles flexible processes with no fixed ordering',
+      'Each constraint is independently verifiable for compliance monitoring',
+    ],
+    weaknesses: [
+      'Fitness is not token-replay-based — cannot do standard conformance checking',
+      'Constraint explosion on complex logs: too many constraints reduces interpretability',
+      'Requires domain knowledge to interpret which constraints are meaningful',
+    ],
+    use_cases: [
+      'Regulatory compliance checking in healthcare, finance, or legal domains',
+      'Flexible knowledge-intensive processes where strict ordering is not enforced',
+      'Process monitoring dashboards where individual constraint violations must be tracked',
+    ],
+    parameters: [
+      {
+        name: 'activity_key',
+        type: 'string',
+        description: 'Event attribute used as the activity label',
+        required: false,
+        default: 'concept:name',
+      },
+    ],
+  },
+  ml_cluster: {
+    speedScore: 35,
+    qualityScore: 55,
+    outputType: 'ml_result',
+    complexity: 'O(n²)',
+    fitness: 'N/A (clustering, not process replay)',
+    precision: 'N/A',
+    generalization: 'High (distance-based grouping)',
+    simplicity: 'Medium',
+    deploymentProfiles: ['balanced', 'quality'],
+    whenToUse:
+      'Discovering trace variants automatically; segmenting cases by behavior; finding anomalous clusters.',
+    alternatives: 'Use ml_anomaly for outlier detection; dfg for a direct process overview.',
+    strengths: [
+      'Automatically groups similar traces without a prior model',
+      'Reveals hidden behavioral segments in a heterogeneous log',
+      'Silhouette score provides an objective measure of cluster quality',
+    ],
+    weaknesses: [
+      'Number of clusters k must be specified or estimated',
+      'Cluster assignments are not directly interpretable as process models',
+      'High-dimensional feature spaces may reduce cluster quality',
+    ],
+    use_cases: [
+      'Segmenting customers by process behavior in CRM logs',
+      'Identifying process variants before per-variant conformance checking',
+      'Detecting behavioral drift by clustering time windows',
+    ],
+    parameters: [
+      {
+        name: 'activity_key',
+        type: 'string',
+        description: 'Event attribute used as the activity label',
+        required: false,
+        default: 'concept:name',
+      },
+    ],
+  },
+  ml_anomaly: {
+    speedScore: 30,
+    qualityScore: 55,
+    outputType: 'ml_result',
+    complexity: 'O(n × |features|)',
+    fitness: 'N/A (anomaly scoring, not process replay)',
+    precision: 'N/A',
+    generalization: 'High',
+    simplicity: 'Medium',
+    deploymentProfiles: ['balanced', 'quality'],
+    whenToUse:
+      'Finding rare or suspicious cases; fraud detection; identifying process deviations without a reference model.',
+    alternatives:
+      'Use conformance checking when a normative model exists; ml_cluster for grouping rather than scoring.',
+    strengths: [
+      'Identifies outliers without requiring a reference process model',
+      'Returns per-case anomaly scores for risk prioritization',
+      'EMA smoothing reduces sensitivity to noise in the feature signal',
+    ],
+    weaknesses: [
+      'Anomaly score threshold requires domain knowledge to interpret',
+      'Cannot explain why a case is anomalous — only that it is',
+      'High false positive rate on logs with many legitimate rare variants',
+    ],
+    use_cases: [
+      'Fraud detection in financial process logs',
+      'Quality control: flagging production cases that deviate from typical behavior',
+      'Predictive monitoring: early warning on cases likely to become exceptions',
+    ],
+    parameters: [
+      {
+        name: 'activity_key',
+        type: 'string',
+        description: 'Event attribute used as the activity label',
+        required: false,
+        default: 'concept:name',
+      },
+    ],
+  },
+  ml_classify: {
+    speedScore: 35,
+    qualityScore: 55,
+    outputType: 'ml_result',
+    complexity: 'O(n × |features|)',
+    fitness: 'N/A (supervised classification, not process replay)',
+    precision: 'N/A',
+    generalization: 'High (cross-validated)',
+    simplicity: 'Medium',
+    deploymentProfiles: ['balanced', 'quality'],
+    whenToUse:
+      'Predicting case outcomes (on-time/delayed, compliant/non-compliant) from labeled historical data.',
+    alternatives:
+      'Use ml_regress for continuous outcomes; conformance checking when a normative model is available.',
+    strengths: [
+      'Supervised learning produces directly actionable outcome predictions',
+      'Works with any categorical label derived from case attributes',
+      'Cross-validation provides reliable accuracy and F1 estimates',
+    ],
+    weaknesses: [
+      'Requires labeled training data — manual labeling effort may be significant',
+      'Cannot explain why a case receives a label (black-box for k-NN)',
+      'Sensitive to class imbalance in training set',
+    ],
+    use_cases: [
+      'Predicting whether a case will meet its SLA deadline',
+      'Classifying customer cases by satisfaction outcome',
+      'Identifying non-compliant traces based on historical audit results',
+    ],
+    parameters: [
+      {
+        name: 'activity_key',
+        type: 'string',
+        description: 'Event attribute used as the activity label',
+        required: false,
+        default: 'concept:name',
+      },
+    ],
+  },
+  ml_forecast: {
+    speedScore: 30,
+    qualityScore: 55,
+    outputType: 'ml_result',
+    complexity: 'O(n × p)',
+    fitness: 'N/A (time-series regression, not process replay)',
+    precision: 'N/A',
+    generalization: 'Medium (extrapolation degrades outside training range)',
+    simplicity: 'High (linear model is interpretable)',
+    deploymentProfiles: ['balanced', 'quality'],
+    whenToUse:
+      'Capacity planning, SLA monitoring, throughput trend analysis — any KPI forecast from the event log.',
+    alternatives:
+      'Use predict remaining-time for individual case prediction; ml_regress for case-level continuous outcomes.',
+    strengths: [
+      'Produces interpretable trend forecasts with confidence intervals',
+      'Works on aggregate KPIs without per-case labels',
+      'Fast to fit and re-fit as new data arrives',
+    ],
+    weaknesses: [
+      'Extrapolation outside training range is unreliable',
+      'Assumes stationarity — concept drift will degrade accuracy',
+      'Time bucketing granularity (hourly/daily) requires domain knowledge',
+    ],
+    use_cases: [
+      'Monthly capacity planning from historical event log throughput',
+      'Forecasting SLA breach risk based on recent event rate trends',
+      'Detecting throughput decline before it becomes critical',
+    ],
+    parameters: [
+      {
+        name: 'activity_key',
+        type: 'string',
+        description: 'Event attribute used as the activity label',
+        required: false,
+        default: 'concept:name',
+      },
+    ],
+  },
+  ml_regress: {
+    speedScore: 30,
+    qualityScore: 55,
+    outputType: 'ml_result',
+    complexity: 'O(n × p²)',
+    fitness: 'N/A (regression, not process replay)',
+    precision: 'N/A',
+    generalization: 'Medium',
+    simplicity: 'High (linear coefficients are interpretable)',
+    deploymentProfiles: ['balanced', 'quality'],
+    whenToUse:
+      'Remaining-time prediction, cost estimation, any continuous outcome prediction from trace features.',
+    alternatives:
+      'Use ml_classify for categorical outcomes; predict remaining-time for Weibull-based estimation.',
+    strengths: [
+      'Coefficients directly show which activities most influence the outcome',
+      'Fast to fit and interpret — OLS has a closed-form solution',
+      'R² and MAE provide clear quality signals',
+    ],
+    weaknesses: [
+      'Assumes linear relationship between features and outcome',
+      'Sensitive to outliers — ridge regularization can help',
+      'Does not capture non-linear or interaction effects',
+    ],
+    use_cases: [
+      'Remaining cycle-time prediction from prefix activity counts',
+      'Cost estimation from process feature vectors',
+      'Identifying the activities most correlated with long or expensive cases',
+    ],
+    parameters: [
+      {
+        name: 'activity_key',
+        type: 'string',
+        description: 'Event attribute used as the activity label',
+        required: false,
+        default: 'concept:name',
+      },
+    ],
+  },
+  ml_pca: {
+    speedScore: 25,
+    qualityScore: 50,
+    outputType: 'ml_result',
+    complexity: 'O(n × p²)',
+    fitness: 'N/A (dimensionality reduction, not process replay)',
+    precision: 'N/A',
+    generalization: 'High (captures dominant variance directions)',
+    simplicity: 'Very High (reduces many features to a few components)',
+    deploymentProfiles: ['balanced', 'quality'],
+    whenToUse:
+      'Visualizing process behavior in 2D/3D; preprocessing before ml_cluster; identifying dominant variance sources.',
+    alternatives:
+      'Use ml_cluster directly if clustering is the goal; use ml_anomaly for outlier detection without dimensionality reduction.',
+    strengths: [
+      'Reduces noise and collinearity — improves downstream model quality',
+      'Variance-explained per component gives clear interpretability',
+      'Works on any high-dimensional feature matrix without labels',
+    ],
+    weaknesses: [
+      'Principal components are linear combinations — hard to interpret as activities',
+      'Loses information when variance-explained is below 80%',
+      'Does not preserve local neighborhood structure (use UMAP/t-SNE for that)',
+    ],
+    use_cases: [
+      'Visualizing trace clusters in 2D scatter plot before ml_cluster',
+      'Preprocessing step when feature matrix has many correlated activity counts',
+      'Identifying which activity dimensions drive process variability',
+    ],
+    parameters: [
+      {
+        name: 'activity_key',
+        type: 'string',
+        description: 'Event attribute used as the activity label',
+        required: false,
+        default: 'concept:name',
+      },
+    ],
   },
 };
 
@@ -999,6 +1642,210 @@ For each template T and activity pair (a, b):
 
 **References**: van der Aalst et al. (2009), "Supporting Interoperability through DECLARE"`,
     },
+    ml_cluster: {
+      brief: `**ML Clustering (ml_cluster)** — Unsupervised grouping of traces by behavioral similarity. Discovers natural process variants without a prior model.`,
+      detailed: `## ML Clustering (ml_cluster)
+
+**Overview**: Groups event traces into clusters based on behavioral similarity features extracted from the event log. Reveals hidden process variants and behavioral segments without requiring a reference model.
+
+**How it works**:
+1. Extract feature vectors from each case: activity frequencies, transition counts, timing statistics
+2. Normalise features to [0, 1] range for distance calculation
+3. Apply k-means or similar clustering algorithm
+4. Assign each case to its nearest cluster centroid
+5. Report cluster assignments and silhouette score
+
+**Output — how to read the result**:
+- Cluster assignments: each case ID → cluster index
+- Silhouette score [−1, 1]: higher = tighter, better-separated clusters
+- Centroid features: the "average trace" for each cluster
+- Cases near centroid boundaries are ambiguous variants
+
+**Parameters — what to set**:
+- \`activity_key\` (default: concept:name): event attribute used as activity label
+
+**When to use**:
+- Discovering behavioral segments in a heterogeneous log
+- Identifying process variants before per-variant conformance checking
+- Segmenting customers by process behavior in CRM or e-commerce logs
+- Avoid when: you have a normative model — use conformance checking instead
+
+**Advantages**:
+- No prior model required — discovers structure from data alone
+- Silhouette score gives an objective quality measure
+- Can reveal hidden sub-processes and exception clusters`,
+      academic: `## ML Clustering: Trace Behavioral Segmentation
+
+**Feature space**: f(t) = [freq(a₁), freq(a₂), ..., freq(aₙ), dur(t), rework(t)]
+
+**Silhouette coefficient**:
+s(i) = (b(i) − a(i)) / max(a(i), b(i))
+where a(i) = mean intra-cluster distance, b(i) = mean nearest-cluster distance
+
+**K-means objective**: Minimize Σᵢ Σₓ∈Cᵢ ||x − μᵢ||²
+
+**Complexity**: O(n²) per iteration where n = number of cases
+
+**References**: Van der Aalst et al., "Process Mining Manifesto" (2012); Leemans et al., trace clustering section`,
+    },
+    ml_anomaly: {
+      brief: `**ML Anomaly Detection (ml_anomaly)** — Scores each case by how much it deviates from the typical process behavior. No reference model required.`,
+      detailed: `## ML Anomaly Detection (ml_anomaly)
+
+**Overview**: Computes an anomaly score for each case based on how much it differs from the statistical baseline of the event log. Useful for fraud detection, quality control, and early warning on deviating cases.
+
+**How it works**:
+1. Extract behavioral features from each case
+2. Estimate the normal distribution using EMA (Exponential Moving Average) smoothing
+3. Compute information-theoretic or distance-based anomaly score per case
+4. Return sorted list: highest scores are the most anomalous cases
+
+**Output — how to read the result**:
+- Per-case anomaly score [0, ∞): higher = more anomalous
+- Threshold is domain-specific: start with the top 5–10% of scores
+- Cases with score > 2× median are typically worth investigating
+- Use with \`wpm predict outcome\` for combined risk signals
+
+**When to use**:
+- Fraud detection in financial process logs
+- Quality control: flagging production cases that deviate from typical behavior
+- No normative model available — use anomaly detection instead of conformance
+- Avoid when: a reference model exists (conformance checking is more precise)
+
+**Advantages**:
+- No prior model required — purely data-driven
+- Returns per-case scores for risk prioritization
+- EMA smoothing reduces sensitivity to noise`,
+      academic: `## ML Anomaly Detection: Information-Theoretic Scoring
+
+**Feature extraction**: f(t) = [freq(a), transition(a→b), timing stats]
+
+**EMA smoothing**: μ̂ₜ = α·xₜ + (1−α)·μ̂ₜ₋₁
+
+**Anomaly score**:
+s(t) = KL(P(t) || P̂_baseline) or Mahalanobis distance
+
+**Threshold**: Set at (μ + k·σ) for k ∈ {2, 3} under Gaussian assumption
+
+**Complexity**: O(n × |features|)
+
+**References**: Van der Aalst, "Data Science in Action" (2016), anomaly detection section`,
+    },
+    ml_classify: {
+      brief: `**ML Classification (ml_classify)** — Predicts a categorical outcome label for each trace using supervised learning on log features.`,
+      detailed: `## ML Classification (ml_classify)
+
+**Overview**: Trains a classifier on labeled event log traces to predict outcomes (e.g., "compliant" vs "non-compliant", "on-time" vs "delayed"). Requires a labeled training set.
+
+**How it works**:
+1. Extract feature vectors from labeled traces
+2. Train a classifier (k-NN, decision tree, or naive Bayes) on the labeled set
+3. Evaluate with cross-validation (accuracy, F1 score)
+4. Predict labels for unlabeled traces
+
+**When to use**:
+- Predicting case outcomes when labeled historical data is available
+- Building a process monitoring model from past cases
+- Classifying trace variants into named behavioral categories
+
+**Output**: Class assignments per case, accuracy/F1 score on validation set`,
+      academic: `## ML Classification: Supervised Trace Labeling
+
+**Feature space**: f(t) = activity frequency vectors + temporal statistics
+
+**Accuracy**: acc = |{t : ŷ(t) = y(t)}| / |T|
+
+**F1 score**: F1 = 2 · (precision · recall) / (precision + recall)
+
+**Complexity**: O(n × |features|) per prediction for k-NN; O(depth × |features|) for decision tree`,
+    },
+    ml_forecast: {
+      brief: `**ML Forecasting (ml_forecast)** — Time-series regression on process KPIs (throughput, event rate) to predict future values.`,
+      detailed: `## ML Forecasting (ml_forecast)
+
+**Overview**: Fits a time-series regression model to process KPI data derived from the event log. Forecasts future throughput, event rates, or activity frequencies over a user-specified horizon.
+
+**How it works**:
+1. Aggregate events into time-bucketed KPI series (hourly, daily, weekly)
+2. Fit regression model: linear, polynomial, or exponential
+3. Extrapolate the fitted curve to the forecast horizon
+4. Report forecast values with confidence intervals
+
+**When to use**:
+- Capacity planning: forecast expected case load next month
+- SLA monitoring: predict throughput to detect upcoming SLA breaches
+- Trend analysis: identify whether process throughput is growing or declining
+
+**Output**: Forecasted values per time bucket, MAE/RMSE on training period`,
+      academic: `## ML Forecasting: Time-Series Process KPI Prediction
+
+**Model**: ŷₜ = f(t; θ) for linear/polynomial/exponential family
+
+**Loss**: MAE = (1/n) Σ|yₜ − ŷₜ|, RMSE = √((1/n) Σ(yₜ − ŷₜ)²)
+
+**MAPE**: (1/n) Σ|yₜ − ŷₜ|/|yₜ| × 100%
+
+**Complexity**: O(n × p) for polynomial degree p regression`,
+    },
+    ml_regress: {
+      brief: `**ML Regression (ml_regress)** — Predicts a continuous outcome (e.g., remaining time, cost) from trace features using linear regression.`,
+      detailed: `## ML Regression (ml_regress)
+
+**Overview**: Predicts a continuous outcome variable for each case using linear regression on behavioral features extracted from the event log. Commonly used for remaining-time prediction and cost estimation.
+
+**How it works**:
+1. Extract feature vectors from cases (prefix activity counts, elapsed time, etc.)
+2. Fit a linear (or ridge) regression model on labeled training cases
+3. Report coefficients — which features most strongly predict the outcome
+4. Predict outcome for new cases
+
+**When to use**:
+- Remaining-time prediction on running cases
+- Cost estimation from process features
+- Identifying which activities most influence cycle time
+
+**Output**: Predicted continuous values, R², MAE per case`,
+      academic: `## ML Regression: Continuous Outcome Prediction from Trace Features
+
+**Model**: ŷ = β₀ + β₁x₁ + ... + βₚxₚ
+
+**OLS objective**: Minimize ||y − Xβ||²
+
+**R²**: 1 − Σ(yᵢ − ŷᵢ)² / Σ(yᵢ − ȳ)²
+
+**Complexity**: O(n × p²) for OLS; O(n × p) for stochastic gradient descent`,
+    },
+    ml_pca: {
+      brief: `**ML PCA (ml_pca)** — Dimensionality reduction via Principal Component Analysis. Projects high-dimensional trace feature vectors to a low-dimensional space for visualization and analysis.`,
+      detailed: `## ML PCA (ml_pca)
+
+**Overview**: Applies Principal Component Analysis to the trace feature matrix to reduce dimensionality. Useful for visualizing process behavior, identifying dominant variance sources, and preprocessing before clustering or classification.
+
+**How it works**:
+1. Extract high-dimensional feature vectors from all cases
+2. Center and scale features
+3. Compute the covariance matrix and its eigenvectors
+4. Project features onto the top k principal components
+5. Report variance explained per component
+
+**When to use**:
+- Visualizing process behavior in 2D/3D (plot first two components)
+- Identifying which features capture the most process variability
+- Preprocessing before ml_cluster to reduce high-dimensional noise
+
+**Output**: Reduced-dimension feature vectors, variance explained per component, loadings matrix`,
+      academic: `## PCA: Trace Feature Dimensionality Reduction
+
+**Covariance matrix**: C = (1/n) X^T X (after centering)
+
+**Eigen decomposition**: C = Q Λ Q^T
+
+**Projection**: Z = X Q_k (first k eigenvectors)
+
+**Variance explained**: VE(k) = Σᵢ₌₁ᵏ λᵢ / Σᵢ₌₁ⁿ λᵢ
+
+**Complexity**: O(n × p²) for covariance; O(p³) for eigen decomposition`,
+    },
     ilp: {
       brief: `**Integer Linear Programming (ILP)** - Finds the optimal process model by formulating discovery as a mathematical optimization problem. Highest quality but slower.`,
       detailed: `## Integer Linear Programming
@@ -1056,8 +1903,30 @@ Maximize: Σ yₜ - λ × Σ xₑ
     },
   };
 
-  const algoKey = algorithm.toLowerCase().replace(/[+*-]/g, '');
-  const algo = Object.keys(explanations).find((k) => algoKey.includes(k) || k.includes(algoKey));
+  const algoKey = algorithm.toLowerCase().replace(/[+*-]/g, '').replace(/_/g, '');
+
+  // Match priority:
+  // 1. Exact match on the normalised key (e.g. "dfg" → "dfg")
+  // 2. Exact match after normalising both sides (e.g. "ml_cluster" → "mlcluster" after stripping _)
+  // 3. Known alias expansions (e.g. "heuristic_miner" → "heuristic")
+  // We intentionally do NOT use bidirectional substring matching (includes) because it causes
+  // "simdstreamingdfg" to match "dfg".
+  const ALGO_ALIASES: Record<string, string> = {
+    heuristicminer: 'heuristic',
+    inductiveminer: 'inductive',
+    geneticalgorithm: 'genetic',
+    simulatedannealing: 'annealing',
+    antcolony: 'aco',
+    processskeleton: 'skeleton',
+    alphaplus: 'alpha',
+    alphaplusplus: 'alpha',
+  };
+  const normalizedKeys = Object.fromEntries(
+    Object.keys(explanations).map((k) => [k.replace(/_/g, ''), k])
+  );
+  const algo =
+    normalizedKeys[algoKey] ??
+    (ALGO_ALIASES[algoKey] ? explanations[ALGO_ALIASES[algoKey]] && ALGO_ALIASES[algoKey] : undefined);
 
   if (!algo || !explanations[algo]) {
     // Unknown algorithm — throw a typed error so the caller can emit config_error (exit 1).

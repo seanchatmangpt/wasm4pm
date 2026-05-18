@@ -307,25 +307,29 @@ describe('Gap 2 — Phase result fields in JSON payload (WASM-conditional)', () 
 // ═══════════════════════════════════════════════════════════════════════════════
 
 describe('Gap 3 — --cycles edge cases: NaN and negative values', () => {
-  it('--cycles abc (NaN) does not exit with config_error (1) — integer parse is lenient', async () => {
-    // parseInt('abc') === NaN. The command does `unlimited = NaN === 0` → false,
-    // and the loop condition `cyclesRun < NaN` is always false.
-    // The command will attempt to run the WASM cycle and either exit 0 or 3.
+  it('--cycles abc (NaN) exits config_error (1) — invalid integer is rejected early', async () => {
+    // parseInt('abc') === NaN. Previously this caused zero cycles + silent exit 0.
+    // After the fix: the command validates before entering the WASM path and exits 1.
     const r = await runCli(['autoprocess', xesPath, '--cycles', 'abc'], {
       cwd: tempDir,
       timeoutMs: 20_000,
     });
-    // Domain contract: citty accepts any --cycles string; NaN parse is not a config error.
-    // It must NOT be 1 (config_error — that would mean the flag was rejected).
-    expect(r.exitCode).not.toBe(1);
+    expect(r.exitCode).toBe(1);
+    // JSON output must have status:"error" and message mentioning --cycles
+    const parsed = tryParseJson(r.stdout);
+    if (parsed) {
+      expect(parsed.status).toBe('error');
+      const msg = ((parsed.error as Record<string, unknown>)?.message ?? '') as string;
+      expect(msg).toMatch(/--cycles/);
+    }
   }, 20_000);
 
-  it('--cycles -1 does not exit with config_error (1) — negative is not rejected at CLI level', async () => {
+  it('--cycles -1 exits config_error (1) — negative is rejected at CLI level', async () => {
     const r = await runCli(['autoprocess', xesPath, '--cycles', '-1'], {
       cwd: tempDir,
       timeoutMs: 20_000,
     });
-    expect(r.exitCode).not.toBe(1);
+    expect(r.exitCode).toBe(1);
   }, 20_000);
 
   it('--cycles 0 (unlimited mode) is accepted and runs at least 1 cycle before interruption', async () => {

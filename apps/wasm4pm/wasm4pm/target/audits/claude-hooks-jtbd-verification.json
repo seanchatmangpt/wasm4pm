@@ -1,5 +1,5 @@
 {
-  "audit_timestamp": "2026-05-18T14:52:41.919Z",
+  "audit_timestamp": "2026-05-18T16:10:36.691Z",
   "auditor": "wpm-doctor-hooks-jtbd",
   "probes": [
     {
@@ -68,7 +68,7 @@
     {
       "job": "Block stop when critical testing files are dirty and proof audit returns AndonPull",
       "scenario": "harness.rs modified (git dirty), fake wpm returns AndonPull(4_cargo_tests)",
-      "observed": "Probe setup failed: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/tmp/jtbd-stop-KKArNp/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n",
+      "observed": "Probe setup failed: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/tmp/jtbd-stop-cSTNXF/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n",
       "verdict": "inconclusive",
       "evidence": "probe-error"
     },
