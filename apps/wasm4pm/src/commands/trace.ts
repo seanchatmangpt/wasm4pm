@@ -728,17 +728,21 @@ export function checkPowl2Conformance(
   projectDir: string = process.cwd()
 ): ConformanceResult {
   const details: ConformanceResult['details'] = [];
-  const m = model.model;
-  const observed = ocelToObservedRoute(ocel);
+  // Guard: model.model may be undefined if caller passes a structurally incomplete model
+  const m = (model.model ?? {}) as Powl2Model['model'];
+  // Guard: ocel.ocel_events may be undefined/null if OCEL is structurally incomplete
+  const safeEvents: OcelLog['ocel_events'] = Array.isArray(ocel.ocel_events) ? ocel.ocel_events : [];
+  const safeOcel: OcelLog = safeEvents === ocel.ocel_events ? ocel : { ...ocel, ocel_events: safeEvents };
+  const observed = ocelToObservedRoute(safeOcel);
 
   // ── Object evidence check: activity-only fake route ─────────────────────────
-  const eventsWithObjects = ocel.ocel_events.filter((e) => e.objects.length > 0);
+  const eventsWithObjects = safeOcel.ocel_events.filter((e) => e.objects.length > 0);
   const objectEvidencePresent = eventsWithObjects.length > 0;
   details.push({
     dimension: 'object_evidence_present',
     ok: objectEvidencePresent,
     detail: objectEvidencePresent
-      ? `${eventsWithObjects.length}/${ocel.ocel_events.length} events have object evidence`
+      ? `${eventsWithObjects.length}/${safeOcel.ocel_events.length} events have object evidence`
       : 'all events have zero objects — activity-only fake route detected',
   });
 
@@ -876,8 +880,8 @@ export function checkPowl2Conformance(
   let lifecycleTerminateDetail = '';
   let cardinalityDetail = '';
   if (model.object_types && Object.keys(model.object_types).length > 0) {
-    const lcResult = measureObjectLifecycle(ocel, model.object_types);
-    const cardResult = measureCardinality(ocel, model.object_types);
+    const lcResult = measureObjectLifecycle(safeOcel, model.object_types);
+    const cardResult = measureCardinality(safeOcel, model.object_types);
     lifecycleCreateOk = lcResult.create_violations.length === 0;
     lifecycleTerminateOk = lcResult.terminate_violations.length === 0;
     cardinalityOk = cardResult.valid;
@@ -915,12 +919,12 @@ export function checkPowl2Conformance(
   let receiptCountDetail = '';
   let receiptSchemaDetail = '';
   if (model.receipt_required === true) {
-    const rcResult = measureReceiptCoverage(ocel);
+    const rcResult = measureReceiptCoverage(safeOcel);
     receiptCountOk = rcResult.coverage >= 1.0;
     receiptCountDetail = `${rcResult.activities_with_receipts}/${rcResult.total_activities} activities have receipts`;
     // Schema validation only if model.object_types declares Receipt types with schema
     if (model.object_types) {
-      const schemaResult = measureReceiptSchema(ocel, model.object_types, projectDir);
+      const schemaResult = measureReceiptSchema(safeOcel, model.object_types, projectDir);
       receiptSchemaOk = schemaResult.valid;
       receiptSchemaDetail = schemaResult.valid
         ? schemaResult.checked > 0
@@ -1457,6 +1461,18 @@ const conform = defineCommand({
           emitResult(r, { format, verbose, quiet });
           return exitWithFlush(EXIT_CODES.source_error);
         }
+      }
+
+      // Structural validation: ocel_events must be an array (presence check)
+      if (!Array.isArray((ocelLog as unknown as Record<string, unknown>).ocel_events)) {
+        const r = makeErrorResult(
+          'trace conform',
+          'Invalid OCEL: missing required "ocel_events" array',
+          EXIT_CODES.source_error,
+          'OCEL_INVALID_STRUCTURE'
+        );
+        emitResult(r, { format, verbose, quiet });
+        return exitWithFlush(EXIT_CODES.source_error);
       }
 
       let powlModel: Powl2Model;
