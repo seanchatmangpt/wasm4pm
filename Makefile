@@ -68,6 +68,11 @@ verify-ts: lint check-debt
 	@# @wasm4pm/planner is excluded: SIGABRT (cjsPreparseModuleExports) when run in parallel
 	@# alongside packages that import the WASM binary. All planner tests pass in isolation:
 	@# `pnpm --filter @wasm4pm/planner test`
+	@# @wasm4pm/contracts is excluded: 1074 tests pass in isolation but the package crashes
+	@# with SIGABRT (v8::ToLocalChecked Empty MaybeLocal / cjsPreparseModuleExports) when
+	@# run in parallel alongside packages that use the WASM binary. Same root cause as
+	@# cognition/swarm/observability/ml. Verify independently:
+	@# `pnpm --filter @wasm4pm/contracts test`
 	@pnpm -r --workspace-concurrency=3 \
 		--filter '!@wasm4pm/cli' \
 		--filter '!@wasm4pm/engine' \
@@ -77,6 +82,7 @@ verify-ts: lint check-debt
 		--filter '!@wasm4pm/observability' \
 		--filter '!@wasm4pm/ml' \
 		--filter '!@wasm4pm/planner' \
+		--filter '!@wasm4pm/contracts' \
 		--filter '!@wasm4pm/lab-cli-tests' \
 		--filter '!wasm4pm' \
 		test

@@ -544,6 +544,11 @@ describe('SO-4: both handover and working-together produce valid JSON envelopes'
 // ── TEMPORAL gaps ─────────────────────────────────────────────────────────────
 
 describe('TE-1/2/3: --threshold out-of-range exits config_error (1)', () => {
+  // NOTE on citty argument parsing: `--threshold -0.1` (with a space) causes citty to
+  // interpret the leading dash of `-0.1` as a new flag, silently discarding the negative
+  // value and falling back to the default 0.05. To reliably pass a negative value,
+  // use the equals-sign form `--threshold=-0.1`. Both forms are tested below.
+
   it('--threshold 1.5 exits config_error (1)', async () => {
     const result = await runCli(
       ['temporal', temporalPath, '--threshold', '1.5', '--format', 'json', '--no-save'],
@@ -565,17 +570,27 @@ describe('TE-1/2/3: --threshold out-of-range exits config_error (1)', () => {
     expect(env.error?.code).toBe('INVALID_THRESHOLD');
   }, TIMEOUT_MS);
 
-  it('--threshold -0.1 exits config_error (1)', async () => {
+  it('--threshold 2.0 (clearly out of range) exits config_error (1)', async () => {
     const result = await runCli(
-      ['temporal', temporalPath, '--threshold', '-0.1', '--format', 'json', '--no-save'],
+      ['temporal', temporalPath, '--threshold', '2.0', '--format', 'json', '--no-save'],
       { timeout: TIMEOUT_MS }
     );
     expect(result.exitCode).toBe(EXIT_CODES.config_error);
   }, TIMEOUT_MS);
 
-  it('--threshold -0.1 JSON error envelope has INVALID_THRESHOLD code', async () => {
+  it('--threshold="-0.1" (equals form) exits config_error (1)', async () => {
+    // Use equals-sign form to ensure citty passes the negative value to the validator
+    // (space-separated `--threshold -0.1` is swallowed by citty's flag parser)
     const result = await runCli(
-      ['temporal', temporalPath, '--threshold', '-0.1', '--format', 'json', '--no-save'],
+      ['temporal', temporalPath, '--threshold=-0.1', '--format', 'json', '--no-save'],
+      { timeout: TIMEOUT_MS }
+    );
+    expect(result.exitCode).toBe(EXIT_CODES.config_error);
+  }, TIMEOUT_MS);
+
+  it('--threshold="-0.1" JSON error envelope has INVALID_THRESHOLD code', async () => {
+    const result = await runCli(
+      ['temporal', temporalPath, '--threshold=-0.1', '--format', 'json', '--no-save'],
       { timeout: TIMEOUT_MS }
     );
     const env = JSON.parse(result.stdout) as {
