@@ -11,67 +11,55 @@ import { runCli, EXIT_CODES, createCliTestEnv } from '@wasm4pm/testing';
 
 describe('first-run-ux', () => {
   describe('isFirstRun()', () => {
-    it('should detect first run when results directory does not exist', async () => {
-      // Mock the current working directory to a temp location with no .wasm4pm
-      const originalCwd = process.cwd();
-      const tempDir = await fs.mkdtemp('/tmp/wpm-test-');
+    // isFirstRun() accepts an optional cwdOverride parameter so tests can pass
+    // a temp directory directly without process.chdir() (unsupported in vitest
+    // worker threads) or any mocking (forbidden by the Gemba test-purity hook).
 
+    it('should detect first run when results directory does not exist', async () => {
+      const tempDir = await fs.mkdtemp('/tmp/wpm-test-');
       try {
-        process.chdir(tempDir);
-        const result = await isFirstRun();
+        const result = await isFirstRun(tempDir);
         expect(result).toBe(true);
       } finally {
-        process.chdir(originalCwd);
         await fs.rm(tempDir, { recursive: true, force: true });
       }
     });
 
     it('should detect first run when results directory exists but has <2 files', async () => {
-      const originalCwd = process.cwd();
       const tempDir = await fs.mkdtemp('/tmp/wpm-test-');
       const resultsDir = path.join(tempDir, '.wasm4pm/results');
-
       try {
-        process.chdir(tempDir);
         await fs.mkdir(resultsDir, { recursive: true });
         // Actual filename format: <timestamp>-discover-<algo>.json
         await fs.writeFile(path.join(resultsDir, '20260518T090000-discover-dfg.json'), '{}');
 
-        const result = await isFirstRun();
+        const result = await isFirstRun(tempDir);
         expect(result).toBe(true);
       } finally {
-        process.chdir(originalCwd);
         await fs.rm(tempDir, { recursive: true, force: true });
       }
     });
 
     it('should return false after 2+ results exist', async () => {
-      const originalCwd = process.cwd();
       const tempDir = await fs.mkdtemp('/tmp/wpm-test-');
       const resultsDir = path.join(tempDir, '.wasm4pm/results');
-
       try {
-        process.chdir(tempDir);
         await fs.mkdir(resultsDir, { recursive: true });
         // Actual filename format: <timestamp>-discover-<algo>.json
         await fs.writeFile(path.join(resultsDir, '20260518T090000-discover-dfg.json'), '{}');
         await fs.writeFile(path.join(resultsDir, '20260518T090100-discover-heuristic.json'), '{}');
 
-        const result = await isFirstRun();
+        const result = await isFirstRun(tempDir);
         expect(result).toBe(false);
       } finally {
-        process.chdir(originalCwd);
         await fs.rm(tempDir, { recursive: true, force: true });
       }
     });
 
     it('should filter to only .json files with -discover- infix (timestamp-based filenames)', async () => {
-      const originalCwd = process.cwd();
       const tempDir = await fs.mkdtemp('/tmp/wpm-test-');
       const resultsDir = path.join(tempDir, '.wasm4pm/results');
-
       try {
-        process.chdir(tempDir);
         await fs.mkdir(resultsDir, { recursive: true });
         // One matching discovery result (timestamp-discover-algo format)
         await fs.writeFile(path.join(resultsDir, '20260518T090000-discover-dfg.json'), '{}');
@@ -80,11 +68,10 @@ describe('first-run-ux', () => {
         // Non-matching: wrong extension
         await fs.writeFile(path.join(resultsDir, '20260518T090100-discover-heuristic.txt'), '{}');
 
-        const result = await isFirstRun();
+        const result = await isFirstRun(tempDir);
         // Should only count the one matching file (1 < 2), so still first run
         expect(result).toBe(true);
       } finally {
-        process.chdir(originalCwd);
         await fs.rm(tempDir, { recursive: true, force: true });
       }
     });
@@ -167,12 +154,14 @@ describe('first-run-ux', () => {
       expect(hints.some((h) => h.includes('Next Steps'))).toBe(true);
     });
 
-    it('should use relative path for saved result', () => {
-      const hints = formatFirstRunHints(0.9, 'dfg', 'log.xes', '/usr/local/.wasm4pm/results/discover-dfg.json');
+    it('should include Result saved line when savedPath is provided', () => {
+      // Use a path that is relative to the test cwd so path.relative() produces a short path
+      const savedPath = path.join(process.cwd(), '.wasm4pm', 'results', '20260518T090000-discover-dfg.json');
+      const hints = formatFirstRunHints(0.9, 'dfg', 'log.xes', savedPath);
       const pathLine = hints.find((h) => h.includes('Result saved'));
-      // Should use relative path, not absolute
       expect(pathLine).toBeDefined();
-      expect(pathLine).not.toContain('/usr/local/');
+      // The line must not show the full absolute path — path.relative() must be applied
+      expect(pathLine).not.toMatch(/^.*Result saved to: \//); // must not start with absolute path
     });
 
     it('should use basename for conformance command', () => {

@@ -471,28 +471,34 @@ export async function executeMlTask(
       let suggestedMethod: ClassificationMethod | undefined;
       let method: ClassificationMethod;
       if (!options.method) {
-        // Build LogCharacteristics from features and WASM stats
-        let statsForSuggest: Record<string, unknown> = {};
+        // Build LogCharacteristics from features and WASM stats.
+        // Use analyze_event_statistics for event/trace counts (always available)
+        // and discover_dfg for activity count (node count = unique activities).
+        let eventStats: Record<string, unknown> = {};
+        let activityCount = 15; // conservative fallback
         try {
-          const sRaw = wasm.analyze_statistics(logHandle);
-          statsForSuggest = typeof sRaw === 'string' ? JSON.parse(sRaw) : sRaw;
-        } catch { /* ignore — use feature array length as fallback */ }
+          const sRaw = wasm.analyze_event_statistics(logHandle, activityKey);
+          eventStats = typeof sRaw === 'string' ? JSON.parse(sRaw) : (sRaw as Record<string, unknown>);
+        } catch { /* ignore */ }
+        try {
+          const dfgRaw = wasm.discover_dfg(logHandle, activityKey);
+          const dfg = typeof dfgRaw === 'string' ? JSON.parse(dfgRaw) : (dfgRaw as Record<string, unknown>);
+          const nodes = dfg?.nodes;
+          if (Array.isArray(nodes)) activityCount = nodes.length;
+          else if (nodes && typeof nodes === 'object') activityCount = Object.keys(nodes).length;
+        } catch { /* ignore */ }
 
         const traceCount = features.length;
-        const activityCount =
-          (statsForSuggest?.num_activities as number) ??
-          (statsForSuggest?.activity_count as number) ??
-          15;
-        const avgTraceLength =
-          (statsForSuggest?.avg_trace_length as number) ??
-          (statsForSuggest?.mean_trace_length as number) ??
-          (traceCount > 0
+        const avgTraceLengthFromFeatures =
+          traceCount > 0
             ? features.reduce((s: number, f: Record<string, unknown>) => s + (Number(f.trace_length ?? 0)), 0) / traceCount
-            : 5);
+            : 5;
+        const avgTraceLength =
+          ((eventStats?.avg_events_per_case as number) ?? 0) > 0
+            ? (eventStats.avg_events_per_case as number)
+            : avgTraceLengthFromFeatures || 5;
         const eventCount =
-          (statsForSuggest?.event_count as number) ??
-          (statsForSuggest?.num_events as number) ??
-          traceCount * avgTraceLength;
+          (eventStats?.total_events as number) ?? traceCount * avgTraceLength;
 
         const logChars: LogCharacteristics = {
           traceCount,

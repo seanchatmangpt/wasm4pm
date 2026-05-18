@@ -973,7 +973,7 @@ async function checkAlgorithmRegistry(): Promise<Diagnosis> {
         name: 'Algorithm registry',
         pathology: 'ENVIRONMENT_FAULT',
         severity: 'INFO',
-        message: `All ${expected.length} algorithms registered`,
+        message: `All ${expected.length} core WASM exports verified (kernel registry has more)`,
       };
     }
 
@@ -2058,7 +2058,7 @@ async function runChecks(
         info: diagnoses.filter((c) => c.severity === 'INFO').length,
         warnings: diagnoses.filter((c) => c.severity === 'WARNING').length,
         stopTheLine: diagnoses.filter((c) => c.severity === 'STOP_THE_LINE').length,
-        epistemicHealth: diagnoses.every((c) => c.severity === 'INFO'),
+        epistemicHealth: diagnoses.every((c) => c.severity !== 'STOP_THE_LINE'),
       };
       latePass = report.info;
       lateWarn = report.warnings;

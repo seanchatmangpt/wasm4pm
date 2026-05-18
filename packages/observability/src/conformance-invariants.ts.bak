@@ -381,7 +381,7 @@ export function validateConformanceResult(
     attributes: {
       'conformance.audit': 'full',
       'fitness': fitnessValue,
-      'precision': precisionValue ?? undefined,
+      'precision': precisionValue ?? null,
       'total_cases': totalCases,
       'case_results': caseFitness.length,
       'avg_fitness': avgFitness,

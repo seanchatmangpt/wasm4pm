@@ -12,10 +12,14 @@ const RESULTS_DIR = '.wasm4pm/results';
 /**
  * Detects if this is a first-run by checking if results directory
  * has fewer than 2 result files.
+ *
+ * @param cwdOverride - Optional directory to search instead of process.cwd().
+ *   Pass a temp path in tests to avoid process.chdir() which is unsupported
+ *   in vitest worker threads.
  */
-export async function isFirstRun(): Promise<boolean> {
+export async function isFirstRun(cwdOverride?: string): Promise<boolean> {
   try {
-    const cwd = process.cwd();
+    const cwd = cwdOverride ?? process.cwd();
     const resultsPath = path.join(cwd, RESULTS_DIR);
 
     try {
