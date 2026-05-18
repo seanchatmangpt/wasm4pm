@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { runSwarm, type SwarmConfig, type SwarmArtifact } from '../loop';
-import { ConvergenceMaxIterationsError, ConvergenceTimeoutError } from '../types';
+import { runSwarm, type SwarmConfig, type SwarmArtifact } from '../loop.js';
+import { ConvergenceMaxIterationsError, ConvergenceTimeoutError } from '../types.js';
 
 describe('SwarmLoop — orchestration loop lifecycle', () => {
   const minimalConfig: SwarmConfig = {

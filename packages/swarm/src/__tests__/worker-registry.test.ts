@@ -8,8 +8,8 @@ import {
   getWorker,
   storeResult,
   setWorkerStatus,
-} from '../worker-registry';
-import type { WorkerResult, WorkerStatus } from '../types';
+} from '../worker-registry.js';
+import type { WorkerResult, WorkerStatus } from '../types.js';
 
 describe('WorkerRegistry — worker lifecycle management', () => {
   beforeEach(() => {
