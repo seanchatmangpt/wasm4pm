@@ -144,15 +144,23 @@ function kmeansCore(
     // Assignment step (squared-distance, no sqrt)
     let changed = false;
     for (let i = 0; i < n; i++) {
+      // Seed bestDist with the distance to centroid 0 — avoids Infinity - Infinity = NaN
+      // in the branchless update when bestDist starts at Infinity.
       let bestC = 0;
-      let bestDist = Infinity;
-      for (let c = 0; c < k; c++) {
+      let bestDist = 0;
+      for (let j = 0; j < d; j++) {
+        const diff = cols[j][i] - centCols[j][0];
+        bestDist += diff * diff;
+      }
+      // Branchless argmin for centroids 1..k-1.
+      for (let c = 1; c < k; c++) {
         let ss = 0;
         for (let j = 0; j < d; j++) {
           const diff = cols[j][i] - centCols[j][c];
           ss += diff * diff;
         }
-        // Branchless argmin: +(ss < bestDist) is 1 when better, 0 otherwise.
+        // +(ss < bestDist) is 1 when strictly better, 0 otherwise.
+        // Both ss and bestDist are finite non-negative, so no NaN risk.
         const isBetter = +(ss < bestDist);
         bestDist = bestDist - isBetter * (bestDist - ss);
         bestC    = bestC    - isBetter * (bestC - c);
