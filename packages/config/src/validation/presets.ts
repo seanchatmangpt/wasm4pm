@@ -397,7 +397,7 @@ window_size = 10
 # LinUCB / GPU dispatch (advanced)
 gpu_enabled = false       # Enable GPU dispatch? (requires wgpu feature)
 linucb_lambda = 1.0       # LinUCB regularization coefficient
-ucb1_exploration = 1.4142 # √2 (standard LinUCB recommendation)
+ucb1_exploration = 1.4142 # sqrt(2) (standard LinUCB recommendation)
 `;
 }
 
@@ -425,7 +425,22 @@ export interface PresetConstraints {
   requiredFeatures?: string[];
 }
 
-const QUALITY_ALGORITHMS = new Set(['genetic_algorithm', 'ilp', 'a_star', 'aco', 'pso', 'simulated_annealing']);
+const QUALITY_ALGORITHMS = new Set([
+  'genetic_algorithm',
+  'ilp',
+  'a_star',
+  'aco',
+  'pso',
+  'simulated_annealing',
+]);
+
+/**
+ * Algorithms that indicate a streaming workload.
+ * When any of these appear in `requiredAlgorithms`, `generateOptimalConfig`
+ * will set `source.kind = 'stream'` so the pipeline opens a continuous ingest
+ * channel rather than reading a static file.
+ */
+const STREAMING_ALGORITHMS = new Set(['simd_streaming_dfg', 'streaming_log']);
 
 export function suggestPreset(constraints: PresetConstraints): PublicPreset {
   const { maxMemoryMb, maxLatencyMs, requiredAlgorithms = [] } = constraints;
@@ -464,7 +479,7 @@ export interface BenchmarkData {
  *  3. If requiredAlgorithms is set, at least one must survive filtering
  *  4. Score remaining: `quality_score * qualityWeight + (100 - speed_score) * speedWeight`
  *     where qualityWeight = 0.6 and speedWeight = 0.4 (balanced default)
- *  5. Map winner's speed_score to preset: ≤30 → fast, ≤55 → balanced, else → quality
+ *  5. Map winner's speed_score to preset: <=30 -> fast, <=55 -> balanced, else -> quality
  *  6. Fall back to suggestPreset() if no algorithms pass all filters
  */
 export function suggestPresetFromBenchmarks(
@@ -539,11 +554,51 @@ export function suggestPresetFromBenchmarks(
  * Returns a BaseConfig with additional metadata fields:
  *  - `_selectedAlgorithm`: the specific algorithm chosen
  *  - `_selectionReason`: human-readable explanation of the selection
+ *  - `_warning` (optional): a human-readable warning when constraints could not
+ *    be fully satisfied (unknown required algorithm, memory cascade, profile /
+ *    algorithm mismatch).
+ *
+ * Instinct behaviours:
+ *
+ * 1. Streaming source kind - if any algorithm in `requiredAlgorithms` is a
+ *    known streaming algorithm (`simd_streaming_dfg`, `streaming_log`), the
+ *    returned config has `source.kind = 'stream'`.
+ *
+ * 2. Unknown algorithm warning - if `requiredAlgorithms` contains a name
+ *    that does not appear in the benchmark catalogue (when benchmarks are
+ *    provided), `_warning` is set describing the unknown name(s).
+ *
+ * 3. Memory cascade fallback message - when `maxMemoryMb` forces the
+ *    preset down to `'fast'` through the hardcoded `suggestPreset` path,
+ *    `_selectionReason` explains the cascade explicitly.
+ *
+ * 4. Profile / algorithm mismatch - when a required algorithm is absent
+ *    from the requested deployment profile, `_warning` identifies the mismatch
+ *    and the system gracefully falls back to `suggestPreset`.
  */
 export function generateOptimalConfig(
   constraints: PresetConstraints & { deploymentProfile?: string; logSizeHint?: number },
   benchmarks?: BenchmarkData
-): BaseConfig & { _selectedAlgorithm: string; _selectionReason: string } {
+): BaseConfig & { _selectedAlgorithm: string; _selectionReason: string; _warning?: string } {
+  const {
+    maxMemoryMb,
+    requiredAlgorithms = [],
+    deploymentProfile = 'browser',
+    logSizeHint = 100,
+    maxLatencyMs,
+  } = constraints;
+
+  // --- Instinct: detect unknown algorithms before any scoring ---
+  let unknownWarning: string | undefined;
+  if (benchmarks && requiredAlgorithms.length > 0) {
+    const knownNames = new Set(Object.keys(benchmarks.algorithms));
+    const unknowns = requiredAlgorithms.filter((a) => !knownNames.has(a));
+    if (unknowns.length > 0) {
+      unknownWarning = `Unknown required algorithm(s): [${unknowns.join(', ')}] not present in benchmark catalogue; falling back to preset default`;
+    }
+  }
+
+  // --- Preset selection ---
   const preset = benchmarks
     ? suggestPresetFromBenchmarks(benchmarks, constraints)
     : suggestPreset(constraints);
@@ -552,19 +607,40 @@ export function generateOptimalConfig(
 
   let selectedAlgorithm = base.algorithm.name;
   let selectionReason = `Preset '${preset}' selected by hardcoded rules; default algorithm used`;
+  let warning: string | undefined = unknownWarning;
+
+  // --- Memory cascade explanation ---
+  // When maxMemoryMb drives the preset to 'fast' via suggestPreset, make the
+  // cascade visible in the selection reason so practitioners can diagnose it.
+  if (
+    maxMemoryMb !== undefined &&
+    maxMemoryMb < 1000 &&
+    preset === 'fast' &&
+    // Only emit cascade message when memory was the deciding factor, not when
+    // required quality algorithms overrode it (they take priority in suggestPreset).
+    !requiredAlgorithms.some((a) => QUALITY_ALGORITHMS.has(a))
+  ) {
+    selectionReason = `Memory constraint (${maxMemoryMb} MB < 1000 MB) cascaded preset selection to 'fast'; default algorithm used`;
+  }
 
   if (benchmarks && Object.keys(benchmarks.algorithms).length > 0) {
-    const {
-      maxLatencyMs,
-      requiredAlgorithms = [],
-      deploymentProfile = 'browser',
-      logSizeHint = 100,
-    } = constraints;
-
     const entries = Object.entries(benchmarks.algorithms);
 
     // Filter by profile
     let candidates = entries.filter(([, m]) => m.profile.includes(deploymentProfile));
+
+    // --- Instinct: detect profile/algorithm mismatch ---
+    if (requiredAlgorithms.length > 0) {
+      const inProfile = new Set(candidates.map(([name]) => name));
+      const missingFromProfile = requiredAlgorithms.filter(
+        (a) =>
+          !inProfile.has(a) && Object.prototype.hasOwnProperty.call(benchmarks.algorithms, a)
+      );
+      if (missingFromProfile.length > 0) {
+        const mismatchMsg = `Required algorithm(s) [${missingFromProfile.join(', ')}] not available in deployment profile '${deploymentProfile}'; falling back to preset default`;
+        warning = warning ? `${warning}; ${mismatchMsg}` : mismatchMsg;
+      }
+    }
 
     // Filter by latency
     if (maxLatencyMs !== undefined && maxLatencyMs > 0) {
@@ -605,12 +681,34 @@ export function generateOptimalConfig(
     }
   }
 
-  return {
+  // --- Instinct: streaming source kind ---
+  // If any required algorithm is a streaming algorithm, ensure source.kind = 'stream'
+  // so the pipeline can consume events as a continuous flow rather than a static file.
+  const needsStreamingSource = requiredAlgorithms.some((a) => STREAMING_ALGORITHMS.has(a));
+  const effectiveSource = needsStreamingSource
+    ? { ...base.source, kind: 'stream' as const }
+    : base.source;
+
+  const result: BaseConfig & {
+    _selectedAlgorithm: string;
+    _selectionReason: string;
+    _warning?: string;
+  } = {
     ...base,
-    algorithm: { ...base.algorithm, name: selectedAlgorithm as BaseConfig['algorithm']['name'] },
+    source: effectiveSource,
+    algorithm: {
+      ...base.algorithm,
+      name: selectedAlgorithm as BaseConfig['algorithm']['name'],
+    },
     _selectedAlgorithm: selectedAlgorithm,
     _selectionReason: selectionReason,
-  } as BaseConfig & { _selectedAlgorithm: string; _selectionReason: string };
+  };
+
+  if (warning !== undefined) {
+    result._warning = warning;
+  }
+
+  return result;
 }
 
 /**
