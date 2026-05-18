@@ -715,9 +715,11 @@ impl Default for SmartEngine {
 
 // SAFETY: WASM is single-threaded. RefCell is used instead of Mutex to avoid
 // deadlock risk on recursive algorithm calls. No concurrent access is possible
-// in a WASM runtime. This wrapper type asserts Sync safety for use in statics.
+// in a WASM runtime. Both Send and Sync are asserted so that once_cell::sync::Lazy
+// can hold this type in a static (Lazy<T> requires T: Send + Sync for Sync).
 struct WasmCell<T>(RefCell<T>);
 unsafe impl<T> Sync for WasmCell<T> {}
+unsafe impl<T> Send for WasmCell<T> {}
 
 impl<T> WasmCell<T> {
     fn new(val: T) -> Self {

@@ -52,6 +52,14 @@ pub fn discover_genetic_algorithm_from_log(
     population_size: usize,
     generations: usize,
 ) -> Option<(DirectlyFollowsGraph, f64)> {
+    // Parameter validation: prevent panics on index access at line 108
+    if population_size < 2 {
+        return None; // population_size must be >= 2 for genetic algorithm
+    }
+    if generations == 0 {
+        return None; // at least 1 generation required
+    }
+
     let col_owned = log.to_columnar_owned(activity_key);
     let col = ColumnarLog::from_owned(&col_owned);
 
@@ -152,6 +160,14 @@ pub fn discover_pso_algorithm_from_log(
     swarm_size: usize,
     iterations: usize,
 ) -> Option<(DirectlyFollowsGraph, f64)> {
+    // Parameter validation: prevent empty swarm or zero iterations
+    if swarm_size < 1 {
+        return None; // swarm_size must be >= 1
+    }
+    if iterations == 0 {
+        return None; // at least 1 iteration required
+    }
+
     let col_owned = log.to_columnar_owned(activity_key);
     let col = ColumnarLog::from_owned(&col_owned);
 
@@ -380,6 +396,14 @@ pub fn discover_aco_algorithm_from_log(
     ant_count: usize,
     iterations: usize,
 ) -> Option<(DirectlyFollowsGraph, f64)> {
+    // Parameter validation: prevent empty ant colony or zero iterations
+    if ant_count < 1 {
+        return None; // ant_count must be >= 1
+    }
+    if iterations == 0 {
+        return None; // at least 1 iteration required
+    }
+
     let col_owned = log.to_columnar_owned(activity_key);
     let col = ColumnarLog::from_owned(&col_owned);
 

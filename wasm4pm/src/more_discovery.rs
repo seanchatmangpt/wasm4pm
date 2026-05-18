@@ -348,6 +348,16 @@ pub fn discover_simulated_annealing_from_log(
     cooling_rate: f64,
 ) -> (DirectlyFollowsGraph, f64) {
     use std::collections::HashSet as HS;
+
+    // Parameter validation: ensure temperature and cooling_rate are in valid ranges
+    // Returns empty DFG if parameters invalid (fail-safe behavior)
+    if temperature <= 0.0 || !temperature.is_finite() {
+        return (DirectlyFollowsGraph::new(), 0.0); // invalid temperature
+    }
+    if cooling_rate <= 0.0 || cooling_rate >= 1.0 || !cooling_rate.is_finite() {
+        return (DirectlyFollowsGraph::new(), 0.0); // cooling_rate must be in (0, 1)
+    }
+
     let col_owned = log.to_columnar_owned(activity_key);
     let col = ColumnarLog::from_owned(&col_owned);
 

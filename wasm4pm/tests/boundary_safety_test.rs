@@ -637,12 +637,14 @@ fn test_heuristic_minimal_threshold() {
     );
 }
 
-/// Test 38: Genetic Algorithm with tiny population
+/// Test 38: Genetic Algorithm with minimal valid population (>= 2 required for crossover)
 #[test]
 fn test_genetic_minimal_population() {
     let log = build_log_with_activities(&[vec!["Task1", "Task2", "Task3"]]);
-    let (dfg, fitness) = discover_genetic_algorithm_from_log(&log, "concept:name", 1, 1)
-        .expect("GA must work with minimal population");
+    // population_size must be >= 2 (genetic algorithm requires at least 2 individuals for crossover)
+    // population_size = 1 returns None (guarded), population_size = 2 is the minimum that runs
+    let (dfg, fitness) = discover_genetic_algorithm_from_log(&log, "concept:name", 2, 1)
+        .expect("GA must work with minimal population of 2");
     assert!(
         dfg.nodes.len() > 0,
         "GA must produce result with minimal config"
@@ -717,4 +719,241 @@ fn test_vocabulary_consistency_across_algorithms() {
         let found = ilp.transitions.iter().any(|t| &t.label == activity);
         assert!(found, "ILP must include log vocabulary: {}", activity);
     }
+}
+
+// ---------------------------------------------------------------------------
+// Parameter Validation Tests (Prevent Panics on Invalid Inputs)
+// ---------------------------------------------------------------------------
+
+/// Test 41: Genetic Algorithm with population_size = 0 (should return None, not panic)
+#[test]
+fn test_genetic_algorithm_population_zero() {
+    let log = build_log_with_activities(&[vec!["A", "B", "C"]]);
+    let result = discover_genetic_algorithm_from_log(&log, "concept:name", 0, 10);
+    // Should return None gracefully, not panic
+    assert!(
+        result.is_none(),
+        "GA with population_size=0 must return None (not panic)"
+    );
+}
+
+/// Test 42: Genetic Algorithm with population_size = 1 (should return None, not panic)
+#[test]
+fn test_genetic_algorithm_population_one() {
+    let log = build_log_with_activities(&[vec!["A", "B", "C"]]);
+    let result = discover_genetic_algorithm_from_log(&log, "concept:name", 1, 10);
+    // Should return None (minimum population_size is 2), not panic
+    assert!(
+        result.is_none(),
+        "GA with population_size=1 must return None (not panic)"
+    );
+}
+
+/// Test 43: Genetic Algorithm with population_size = 2 (minimum valid)
+#[test]
+fn test_genetic_algorithm_population_minimum_valid() {
+    let log = build_log_with_activities(&[vec!["A", "B", "C"], vec!["A", "C", "B"]]);
+    let result = discover_genetic_algorithm_from_log(&log, "concept:name", 2, 1);
+    // Should succeed (population_size=2 is valid)
+    assert!(
+        result.is_some(),
+        "GA with population_size=2 and generations=1 must succeed"
+    );
+    if let Some((dfg, fitness)) = result {
+        assert!(dfg.nodes.len() > 0, "Result must have valid DFG nodes");
+        assert!((0.0..=1.0).contains(&fitness), "Fitness must be in valid range");
+    }
+}
+
+/// Test 44: Genetic Algorithm with generations = 0 (should return None)
+#[test]
+fn test_genetic_algorithm_generations_zero() {
+    let log = build_log_with_activities(&[vec!["A", "B", "C"]]);
+    let result = discover_genetic_algorithm_from_log(&log, "concept:name", 5, 0);
+    // Should return None (at least 1 generation required), not panic
+    assert!(
+        result.is_none(),
+        "GA with generations=0 must return None"
+    );
+}
+
+/// Test 45: PSO with swarm_size = 0 (should return None, not panic)
+#[test]
+fn test_pso_algorithm_swarm_zero() {
+    let log = build_log_with_activities(&[vec!["A", "B", "C"]]);
+    let result = wasm4pm::genetic_discovery::discover_pso_algorithm_from_log(
+        &log,
+        "concept:name",
+        0,
+        10,
+    );
+    // Should return None gracefully, not panic
+    assert!(
+        result.is_none(),
+        "PSO with swarm_size=0 must return None (not panic)"
+    );
+}
+
+/// Test 46: PSO with swarm_size = 1 (minimum valid)
+#[test]
+fn test_pso_algorithm_swarm_minimum_valid() {
+    let log = build_log_with_activities(&[vec!["A", "B", "C"], vec!["A", "C", "B"]]);
+    let result = wasm4pm::genetic_discovery::discover_pso_algorithm_from_log(
+        &log,
+        "concept:name",
+        1,
+        1,
+    );
+    // Should succeed (swarm_size=1 is valid)
+    assert!(
+        result.is_some(),
+        "PSO with swarm_size=1 and iterations=1 must succeed"
+    );
+    if let Some((dfg, fitness)) = result {
+        assert!(dfg.nodes.len() > 0, "Result must have valid DFG nodes");
+        assert!((0.0..=1.0).contains(&fitness), "Fitness must be in valid range");
+    }
+}
+
+/// Test 47: PSO with iterations = 0 (should return None)
+#[test]
+fn test_pso_algorithm_iterations_zero() {
+    let log = build_log_with_activities(&[vec!["A", "B", "C"]]);
+    let result = wasm4pm::genetic_discovery::discover_pso_algorithm_from_log(
+        &log,
+        "concept:name",
+        5,
+        0,
+    );
+    // Should return None (at least 1 iteration required), not panic
+    assert!(
+        result.is_none(),
+        "PSO with iterations=0 must return None"
+    );
+}
+
+/// Test 48: ACO with ant_count = 0 (should return None, not panic)
+#[test]
+fn test_aco_algorithm_ant_count_zero() {
+    let log = build_log_with_activities(&[vec!["A", "B", "C"]]);
+    let result = wasm4pm::genetic_discovery::discover_aco_algorithm_from_log(
+        &log,
+        "concept:name",
+        0,
+        10,
+    );
+    // Should return None gracefully, not panic
+    assert!(
+        result.is_none(),
+        "ACO with ant_count=0 must return None (not panic)"
+    );
+}
+
+/// Test 49: ACO with ant_count = 1 (minimum valid)
+#[test]
+fn test_aco_algorithm_ant_count_minimum_valid() {
+    let log = build_log_with_activities(&[vec!["A", "B", "C"], vec!["A", "C", "B"]]);
+    let result = wasm4pm::genetic_discovery::discover_aco_algorithm_from_log(
+        &log,
+        "concept:name",
+        1,
+        1,
+    );
+    // Should succeed (ant_count=1 is valid)
+    assert!(
+        result.is_some(),
+        "ACO with ant_count=1 and iterations=1 must succeed"
+    );
+    if let Some((dfg, fitness)) = result {
+        assert!(dfg.nodes.len() > 0, "Result must have valid DFG nodes");
+        assert!((0.0..=1.0).contains(&fitness), "Fitness must be in valid range");
+    }
+}
+
+/// Test 50: ACO with iterations = 0 (should return None)
+#[test]
+fn test_aco_algorithm_iterations_zero() {
+    let log = build_log_with_activities(&[vec!["A", "B", "C"]]);
+    let result = wasm4pm::genetic_discovery::discover_aco_algorithm_from_log(
+        &log,
+        "concept:name",
+        5,
+        0,
+    );
+    // Should return None (at least 1 iteration required), not panic
+    assert!(
+        result.is_none(),
+        "ACO with iterations=0 must return None"
+    );
+}
+
+/// Test 51: Simulated Annealing with invalid temperature (should return empty DFG)
+#[test]
+fn test_simulated_annealing_invalid_temperature() {
+    let log = build_log_with_activities(&[vec!["A", "B", "C"]]);
+    use wasm4pm::more_discovery::discover_simulated_annealing_from_log;
+
+    // Test with temperature = 0.0 (invalid)
+    let (dfg, fitness) = discover_simulated_annealing_from_log(&log, "concept:name", 0.0, 0.5);
+    assert!(
+        dfg.nodes.is_empty() && dfg.edges.is_empty(),
+        "SA with temperature=0.0 must return empty DFG"
+    );
+    assert_eq!(fitness, 0.0, "Fitness must be 0.0 for invalid input");
+
+    // Test with temperature = -1.0 (invalid)
+    let (dfg, fitness) = discover_simulated_annealing_from_log(&log, "concept:name", -1.0, 0.5);
+    assert!(
+        dfg.nodes.is_empty() && dfg.edges.is_empty(),
+        "SA with temperature=-1.0 must return empty DFG"
+    );
+    assert_eq!(fitness, 0.0, "Fitness must be 0.0 for invalid input");
+}
+
+/// Test 52: Simulated Annealing with invalid cooling_rate (should return empty DFG)
+#[test]
+fn test_simulated_annealing_invalid_cooling_rate() {
+    let log = build_log_with_activities(&[vec!["A", "B", "C"]]);
+    use wasm4pm::more_discovery::discover_simulated_annealing_from_log;
+
+    // Test with cooling_rate = 0.0 (invalid)
+    let (dfg, fitness) = discover_simulated_annealing_from_log(&log, "concept:name", 1.0, 0.0);
+    assert!(
+        dfg.nodes.is_empty() && dfg.edges.is_empty(),
+        "SA with cooling_rate=0.0 must return empty DFG"
+    );
+    assert_eq!(fitness, 0.0, "Fitness must be 0.0 for invalid input");
+
+    // Test with cooling_rate = 1.0 (invalid, must be < 1.0)
+    let (dfg, fitness) = discover_simulated_annealing_from_log(&log, "concept:name", 1.0, 1.0);
+    assert!(
+        dfg.nodes.is_empty() && dfg.edges.is_empty(),
+        "SA with cooling_rate=1.0 must return empty DFG"
+    );
+    assert_eq!(fitness, 0.0, "Fitness must be 0.0 for invalid input");
+
+    // Test with cooling_rate = 1.5 (invalid, must be < 1.0)
+    let (dfg, fitness) = discover_simulated_annealing_from_log(&log, "concept:name", 1.0, 1.5);
+    assert!(
+        dfg.nodes.is_empty() && dfg.edges.is_empty(),
+        "SA with cooling_rate=1.5 must return empty DFG"
+    );
+    assert_eq!(fitness, 0.0, "Fitness must be 0.0 for invalid input");
+}
+
+/// Test 53: Simulated Annealing with valid parameters
+#[test]
+fn test_simulated_annealing_valid_parameters() {
+    let log = build_log_with_activities(&[vec!["A", "B", "C"], vec!["A", "C", "B"]]);
+    use wasm4pm::more_discovery::discover_simulated_annealing_from_log;
+
+    let (dfg, fitness) = discover_simulated_annealing_from_log(&log, "concept:name", 1.0, 0.95);
+    assert!(
+        dfg.nodes.len() > 0,
+        "SA with valid parameters must produce non-empty DFG"
+    );
+    assert!(
+        (0.0..=1.0).contains(&fitness),
+        "Fitness must be in valid range"
+    );
 }
