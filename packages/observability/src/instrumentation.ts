@@ -137,7 +137,7 @@ export interface ErrorEventData {
   errorCode: string;
   errorMessage: string;
   severity: 'info' | 'warning' | 'error' | 'fatal';
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
   requiredAttrs: RequiredOtelAttributes;
 }
 
@@ -756,7 +756,7 @@ export class Instrumentation {
     requiredAttrs: RequiredOtelAttributes,
     options?: {
       severity?: 'info' | 'warning' | 'error' | 'fatal';
-      context?: Record<string, any>;
+      context?: Record<string, unknown>;
       parentSpanId?: string;
     }
   ): { event: ErrorEventData; otelEvent: OtelEvent; jsonEvent: JsonEvent } {

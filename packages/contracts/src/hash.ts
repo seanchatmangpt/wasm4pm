@@ -41,7 +41,7 @@ export function normalizeForHashing(data: unknown): string {
 /**
  * Compute BLAKE3 hash of a configuration object
  */
-export function hashConfig(config: Record<string, any>): string {
+export function hashConfig(config: Record<string, unknown>): string {
   const normalized = normalizeForHashing(config);
   const hashResult = hash(Buffer.from(normalized, 'utf-8'));
   return hashResult.toString('hex');

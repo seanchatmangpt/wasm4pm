@@ -216,10 +216,10 @@ interface McppAcceptedResponseLike {
  *   - conformance     ← r.conformance
  *   - source          ← 'mcpp'
  *
- * @param r - Any object shaped like an mcpp AcceptedResponse.  Typed as `any`
- *            to match the task spec; validated fields are accessed defensively.
+ * @param r - Any object shaped like an mcpp AcceptedResponse.  Validated fields
+ *            are accessed defensively via the McppAcceptedResponseLike cast.
  */
-export function fromMcppResponse(r: any): SharedReceiptV1 { // eslint-disable-line @typescript-eslint/no-explicit-any
+export function fromMcppResponse(r: unknown): SharedReceiptV1 {
   // Cast through our local interface for structured access.
   const resp = r as McppAcceptedResponseLike;
 

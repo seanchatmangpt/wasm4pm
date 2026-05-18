@@ -60,7 +60,7 @@ export class ReceiptBuilder {
    * @param config Configuration object
    * @returns This builder for chaining
    */
-  setConfig(config: Record<string, any>): this {
+  setConfig(config: Record<string, unknown>): this {
     this.configHash = hashData(config);
     return this;
   }
@@ -80,7 +80,7 @@ export class ReceiptBuilder {
    * @param plan Execution plan object
    * @returns This builder for chaining
    */
-  setPlan(plan: Record<string, any>): this {
+  setPlan(plan: Record<string, unknown>): this {
     this.planHash = hashData(plan);
     return this;
   }

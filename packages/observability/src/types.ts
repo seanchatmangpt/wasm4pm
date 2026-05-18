@@ -25,7 +25,7 @@ export interface JsonEvent {
   component: string; // e.g., "engine", "planner", "connector"
   event_type: string; // e.g., "execution_start", "trace_processed"
   run_id?: string; // UUID of the execution run
-  data: Record<string, any>; // Arbitrary structured data
+  data: Record<string, unknown>; // Arbitrary structured data
 }
 
 /**
@@ -44,11 +44,11 @@ export interface OtelEvent {
     code: 'UNSET' | 'OK' | 'ERROR';
     message?: string;
   };
-  attributes: Record<string, any>; // OTEL attributes - MUST include service.name
+  attributes: Record<string, unknown>; // OTEL attributes - MUST include service.name
   events?: Array<{
     name: string;
     timestamp: number;
-    attributes?: Record<string, any>;
+    attributes?: Record<string, unknown>;
   }>;
 }
 

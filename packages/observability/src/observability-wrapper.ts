@@ -273,7 +273,7 @@ export class ObservabilityWrapper {
               kind: span.kind,
               start_time: span.startTimeNs,
               end_time: span.endTimeNs,
-              status: span.status as any,
+              status: span.status ?? { code: 'UNSET' as const },
               attributes: span.attributes,
             });
           }

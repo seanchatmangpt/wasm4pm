@@ -87,7 +87,7 @@ export interface ErrorInfo {
     /** Human-readable error message */
     message: string;
     /** Additional context about the error */
-    context?: Record<string, any>;
+    context?: Record<string, unknown>;
     /** How to fix this error */
     remediation: string;
     /** Process exit code (per PRD §8) */
@@ -111,7 +111,7 @@ export interface ErrorInfo {
  * process.exit(error.exit_code);    // Proper exit code
  * ```
  */
-export declare function createError(code: ErrorCode, message: string, context?: Record<string, any>): ErrorInfo;
+export declare function createError(code: ErrorCode, message: string, context?: Record<string, unknown>): ErrorInfo;
 /**
  * Format error for human-readable console output with colors
  * Includes error code, message, context (if present), and remediation
@@ -150,7 +150,7 @@ export declare function formatError(error: ErrorInfo, colorize?: boolean): strin
  * // }
  * ```
  */
-export declare function formatErrorJSON(error: ErrorInfo): Record<string, any>;
+export declare function formatErrorJSON(error: ErrorInfo): Record<string, unknown>;
 /**
  * Log error with appropriate level based on severity
  * Handles both console and structured logging (JSON for observability)

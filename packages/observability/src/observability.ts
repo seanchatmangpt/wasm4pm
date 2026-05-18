@@ -153,7 +153,7 @@ export class ObservabilityLayer {
     traceId: string,
     name: string,
     requiredAttrs: RequiredOtelAttributes,
-    customAttrs?: Record<string, any>
+    customAttrs?: Record<string, unknown>
   ): string {
     const spanId = this.generateSpanId();
 

@@ -10,7 +10,7 @@ export declare function normalizeForHashing(data: unknown): string;
 /**
  * Compute BLAKE3 hash of a configuration object
  */
-export declare function hashConfig(config: Record<string, any>): string;
+export declare function hashConfig(config: Record<string, unknown>): string;
 /**
  * Compute BLAKE3 hash of arbitrary data
  * Deterministic: same data -> same hash always

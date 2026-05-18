@@ -37,7 +37,7 @@ export declare class ReceiptBuilder {
      * @param config Configuration object
      * @returns This builder for chaining
      */
-    setConfig(config: Record<string, any>): this;
+    setConfig(config: Record<string, unknown>): this;
     /**
      * Set input data and compute its hash
      * @param data Input data
@@ -49,7 +49,7 @@ export declare class ReceiptBuilder {
      * @param plan Execution plan object
      * @returns This builder for chaining
      */
-    setPlan(plan: Record<string, any>): this;
+    setPlan(plan: Record<string, unknown>): this;
     /**
      * Set output data and compute its hash
      * @param output Output data
