@@ -211,3 +211,128 @@ export function fromMcppJsonlStrict(ndjson: string): OcelEvent[] {
       return parsed;
     });
 }
+
+// ---------------------------------------------------------------------------
+// mcpp native format → OCEL 2.0 adapter
+// ---------------------------------------------------------------------------
+
+/**
+ * The wire shape mcpp emits from crates/mcpp-server/src/ocel.rs.
+ * Keys are flat (no `ocel:` prefix).
+ */
+type McppNativeEvent = {
+  id: string;
+  activity: string;
+  time: string;
+  outcome: string;
+  session_id: string;
+  part_name: string;
+  attrs: Record<string, unknown>;
+  objects?: Record<string, string[]>;
+};
+
+/**
+ * Returns true if the parsed value looks like an mcpp native event
+ * (has the flat `id`, `activity`, `time` keys).
+ */
+function isMcppNativeEvent(value: unknown): value is McppNativeEvent {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
+  const v = value as Record<string, unknown>;
+  return (
+    typeof v['id'] === 'string' &&
+    typeof v['activity'] === 'string' &&
+    typeof v['time'] === 'string'
+  );
+}
+
+/**
+ * Adapts a single mcpp native event to wasm4pm's OcelEvent format.
+ *
+ * Mapping:
+ *   `id`          → `ocel:eid`
+ *   `activity`    → `ocel:activity`
+ *   `time`        → `ocel:timestamp` (normalises `+00:00` → `Z`)
+ *   `objects`     → `ocel:omap` (flattens typed map to id array; type info is lossy)
+ *   `attrs`       → merged into `ocel:vmap`
+ *   `outcome`, `session_id`, `part_name` → merged into `ocel:vmap`
+ */
+function adaptMcppNativeEvent(ev: McppNativeEvent): OcelEvent {
+  const flatIds = ev.objects ? Object.values(ev.objects).flat() : [];
+  return {
+    'ocel:eid': ev.id,
+    'ocel:activity': ev.activity,
+    'ocel:timestamp': ev.time.replace('+00:00', 'Z'),
+    'ocel:omap': flatIds,
+    'ocel:vmap': {
+      ...ev.attrs,
+      outcome: ev.outcome,
+      session_id: ev.session_id,
+      part_name: ev.part_name,
+    },
+  };
+}
+
+/**
+ * Parses an NDJSON string produced by mcpp's native emitter (flat keys, no `ocel:` prefix)
+ * and adapts each event to wasm4pm's OCEL 2.0 format (`ocel:`-prefixed keys).
+ *
+ * Key mapping applied per event:
+ *   - `id` → `ocel:eid`
+ *   - `activity` → `ocel:activity`
+ *   - `time` → `ocel:timestamp` (timezone offset `+00:00` normalised to `Z`)
+ *   - `objects` (typed map) → `ocel:omap` (flattened to `string[]`; type info is lost)
+ *   - `attrs` + `outcome` + `session_id` + `part_name` → merged into `ocel:vmap`
+ *
+ * Blank lines are silently skipped.
+ *
+ * @param ndjson - Newline-delimited JSON as written by mcpp's ONTO-P09 native emitter
+ * @returns Array of adapted OcelEvent objects in wasm4pm OCEL 2.0 format
+ * @throws {SyntaxError} if any non-blank line is not valid JSON
+ */
+export function fromMcppNativeJsonl(ndjson: string): OcelEvent[] {
+  return ndjson
+    .split('\n')
+    .filter((line) => line.trim().length > 0)
+    .map((line) => {
+      const parsed = JSON.parse(line) as unknown;
+      if (isMcppNativeEvent(parsed)) {
+        return adaptMcppNativeEvent(parsed);
+      }
+      // If the line happens to already be in ocel: format, pass it through
+      return parsed as OcelEvent;
+    });
+}
+
+/**
+ * Parses and validates an NDJSON string produced by mcpp's native emitter, adapting
+ * each event from mcpp's flat format to wasm4pm's OCEL 2.0 format, then throwing a
+ * `TypeError` for any event that does not satisfy the OCEL 2.0 structure after adaptation.
+ *
+ * Stricter variant of `fromMcppNativeJsonl` for contexts where every adapted event must
+ * be structurally sound before being handed to the process miner.
+ *
+ * @param ndjson - Newline-delimited JSON as written by mcpp's ONTO-P09 native emitter
+ * @returns Validated array of adapted OcelEvent objects
+ * @throws {SyntaxError} if any non-blank line is not valid JSON
+ * @throws {TypeError} if an event cannot be adapted to a valid OCEL 2.0 structure
+ */
+export function fromMcppNativeJsonlStrict(ndjson: string): OcelEvent[] {
+  return ndjson
+    .split('\n')
+    .filter((line) => line.trim().length > 0)
+    .map((line, idx) => {
+      const parsed = JSON.parse(line) as unknown;
+      let adapted: unknown;
+      if (isMcppNativeEvent(parsed)) {
+        adapted = adaptMcppNativeEvent(parsed);
+      } else {
+        adapted = parsed;
+      }
+      if (!isValidOcelEvent(adapted)) {
+        throw new TypeError(
+          `OCEL event at line ${idx + 1} is missing required ocel: keys or has wrong types after adaptation`
+        );
+      }
+      return adapted;
+    });
+}

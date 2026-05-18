@@ -139,6 +139,8 @@ export {
   toOcelJsonl,
   fromMcppJsonl,
   fromMcppJsonlStrict,
+  fromMcppNativeJsonl,
+  fromMcppNativeJsonlStrict,
   isValidOcelEvent,
   type OcelEvent,
 } from './ocel-bridge.js';
