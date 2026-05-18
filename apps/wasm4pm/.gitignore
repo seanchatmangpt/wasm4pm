@@ -29,3 +29,7 @@ coverage/
 # OS
 Thumbs.db
 .DS_Store
+
+# Generated config artifacts (from wpm init)
+wasm4pm.json
+wasm4pm.toml
