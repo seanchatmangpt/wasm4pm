@@ -369,6 +369,41 @@ function stepTypeToAlgorithmId(stepType: PlanStepType): string {
 }
 
 /**
+ * Emit a non-blocking OTEL span for algorithm execution
+ */
+function emitAlgorithmSpan(
+  algorithmId: string,
+  status: 'OK' | 'ERROR',
+  executionTimeMs: number,
+  errorMessage?: string
+) {
+  try {
+    const span = {
+      trace_id: randomBytes(8).toString('hex'),
+      span_id: randomBytes(8).toString('hex'),
+      name: `kernel.algorithm.${algorithmId}`,
+      kind: 'INTERNAL',
+      start_time: (Date.now() - executionTimeMs) * 1_000_000,
+      end_time: Date.now() * 1_000_000,
+      status: errorMessage
+        ? { code: status, message: errorMessage }
+        : { code: status },
+      attributes: {
+        'service.name': 'wasm4pm',
+        'algorithm_id': algorithmId,
+        'execution_time_ms': executionTimeMs,
+        'status': status.toLowerCase(),
+      },
+    };
+    if (typeof (globalThis as any)._wasm4pm_span_sink === 'function') {
+      (globalThis as any)._wasm4pm_span_sink(span);
+    }
+  } catch {
+    /* never block on OTEL */
+  }
+}
+
+/**
  * Execute an algorithm step from an execution plan
  * Loads the WASM module, validates algorithm, and calls appropriate WASM function
  *
@@ -921,6 +956,9 @@ export async function implementAlgorithmStep(
 
     const executionTimeMs = Date.now() - startTime;
 
+    // GAP-FIX #1: Emit success span for observability (FM-5 proof, chicago-tdd Rank-1)
+    emitAlgorithmSpan(metadata.id, 'OK', executionTimeMs);
+
     return {
       modelHandle,
       algorithm: metadata.id,
@@ -939,6 +977,10 @@ export async function implementAlgorithmStep(
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    const executionTimeMs = Date.now() - startTime;
+
+    // GAP-FIX #1: Emit error span for observability (FM-5 proof, chicago-tdd Rank-1)
+    emitAlgorithmSpan(metadata?.id ?? algorithmId, 'ERROR', executionTimeMs, errorMessage);
 
     // Provide helpful error messages
     if (errorMessage.includes('not found')) {
