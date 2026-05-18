@@ -238,3 +238,322 @@ export function detectCrashes(events: OcelEvent[]): string[] {
 
   return [...crashed];
 }
+
+// ---------------------------------------------------------------------------
+// CrashDetail — structured crash report for outcome prediction
+// ---------------------------------------------------------------------------
+
+/**
+ * Structured crash report produced by `detectCrashDetails`.
+ * Carries the PID, crash reason, and (when available) the MFA string
+ * identifying the function where the crash occurred.
+ */
+export type CrashDetail = {
+  /** Erlang-style PID of the crashed process, e.g. "<0.5.0>" */
+  pid: string;
+  /** Crash reason string, e.g. "badarg", "noproc", "function_clause" */
+  crash_reason: string;
+  /**
+   * Module:function/arity string of the crash site, e.g. "lists:nth/2".
+   * Empty string when no MFA information is available in the event.
+   */
+  mfa: string;
+};
+
+/**
+ * Returns rich crash detail records — one per unique crashed PID —
+ * by scanning OCEL events for activities labelled `"atomvm_proc.crash"`.
+ *
+ * Unlike `detectCrashes` (which returns plain PID strings), this function
+ * extracts the crash reason and MFA from `ocel:vmap` and returns structured
+ * records suitable for downstream outcome prediction and root-cause analysis.
+ *
+ * When a PID has multiple crash events the first crash event's fields are used.
+ *
+ * @param events - OCEL events from `fromAtomVmJsonl` or `adaptAtomVmProcEvent`
+ * @returns One `CrashDetail` per unique crashed PID
+ */
+export function detectCrashDetails(events: OcelEvent[]): CrashDetail[] {
+  const seen = new Map<string, CrashDetail>();
+
+  for (const evt of events) {
+    if (evt['ocel:activity'] !== 'atomvm_proc.crash') continue;
+
+    const vmap = evt['ocel:vmap'] as Record<string, unknown>;
+    const reason = typeof vmap['reason'] === 'string' ? vmap['reason'] : '';
+    const mfa =
+      typeof vmap['mfa'] === 'string'
+        ? vmap['mfa']
+        : typeof vmap['reason'] === 'string' // crash event may have mfa field
+          ? ''
+          : '';
+
+    for (const pid of evt['ocel:omap']) {
+      if (!seen.has(pid)) {
+        seen.set(pid, { pid, crash_reason: reason, mfa });
+      }
+    }
+  }
+
+  return [...seen.values()];
+}
+
+// ---------------------------------------------------------------------------
+// toOcel2Json — serialize OcelEvent[] → OCEL 2.0 JSON document
+// ---------------------------------------------------------------------------
+
+/**
+ * Serializes an array of OCEL events produced by `fromAtomVmJsonl` into an
+ * OCEL 2.0 JSON document compatible with `wpm run <file>.ocel.json`.
+ *
+ * The wasm4pm WASM engine parses OCEL using a pm4py-style schema with camelCase
+ * top-level keys. This function produces that format:
+ *
+ * ```json
+ * {
+ *   "eventTypes": ["atomvm_proc.spawn", ...],
+ *   "objectTypes": ["atomvm_proc"],
+ *   "events":   [ { "id", "type", "time", "object_ids", "attributes" } ... ],
+ *   "objects":  [ { "id", "type", "attributes" } ... ]
+ * }
+ * ```
+ *
+ * Object deduplication: each unique PID produces exactly one object entry.
+ * Object type is always `"atomvm_proc"` for AtomVM process events.
+ *
+ * Note on OCEL 2.0 standard: The IEEE OCEL 2.0 standard uses `ocel:` prefixed
+ * keys (`ocel:events`, `ocel:objects`), but the wasm4pm WASM build parses the
+ * pm4py camelCase variant. Use `toOcel2JsonStandard()` if you need the IEEE format
+ * for interchange with other OCEL 2.0 tools.
+ *
+ * @param events - OCEL events from `fromAtomVmJsonl`
+ * @param _logName - Optional log name (preserved for API compat; not written to output)
+ * @returns Minified JSON string ready for `wpm run` or `wpm conformance`
+ */
+export function toOcel2Json(events: OcelEvent[], _logName = 'atomvm_proc_log'): string {
+  // Collect unique PIDs and activity types across all events
+  const pidSet = new Set<string>();
+  const activitySet = new Set<string>();
+  for (const evt of events) {
+    activitySet.add(evt['ocel:activity']);
+    for (const pid of evt['ocel:omap']) {
+      pidSet.add(pid);
+    }
+  }
+
+  const objects = [...pidSet].map((pid) => ({
+    id: pid,
+    type: 'atomvm_proc',
+    attributes: {},
+  }));
+
+  // Convert vmap to array of {name, value} objects so the WASM deserializer
+  // can use the lenient json_to_attr path (visit_seq) rather than the
+  // adjacently-tagged AttributeValue map path (visit_map) which rejects plain strings.
+  const vmapToAttributes = (vmap: unknown): Array<{ name: string; value: unknown }> => {
+    if (!vmap || typeof vmap !== 'object' || Array.isArray(vmap)) return [];
+    return Object.entries(vmap as Record<string, unknown>).map(([name, value]) => ({
+      name,
+      value,
+    }));
+  };
+
+  const ocelEvents = events.map((evt) => ({
+    id: evt['ocel:eid'],
+    type: evt['ocel:activity'],
+    time: evt['ocel:timestamp'],
+    object_ids: evt['ocel:omap'],
+    attributes: vmapToAttributes(evt['ocel:vmap']),
+  }));
+
+  const doc = {
+    eventTypes: [...activitySet],
+    objectTypes: ['atomvm_proc'],
+    events: ocelEvents,
+    objects,
+  };
+
+  return JSON.stringify(doc);
+}
+
+/**
+ * Serializes an array of OCEL events produced by `fromAtomVmJsonl` into an
+ * OCEL 2.0 JSON document using the IEEE standard `ocel:` prefixed key format.
+ *
+ * Use this format for interchange with pm4py, ProM, and other OCEL 2.0 compliant
+ * tools that follow the IEEE standard schema. The wasm4pm WASM engine does NOT
+ * parse this format — use `toOcel2Json()` for `wpm run` compatibility.
+ *
+ * @param events - OCEL events from `fromAtomVmJsonl`
+ * @param logName - Optional log name for the `ocel:name` header field
+ * @returns Minified JSON string in IEEE OCEL 2.0 format
+ */
+export function toOcel2JsonStandard(events: OcelEvent[], logName = 'atomvm_proc_log'): string {
+  const pidSet = new Set<string>();
+  for (const evt of events) {
+    for (const pid of evt['ocel:omap']) {
+      pidSet.add(pid);
+    }
+  }
+
+  const objects = [...pidSet].map((pid) => ({
+    'ocel:oid': pid,
+    'ocel:type': 'atomvm_proc',
+    'ocel:ovmap': {},
+  }));
+
+  const ocelEvents = events.map((evt) => ({
+    'ocel:eid': evt['ocel:eid'],
+    'ocel:activity': evt['ocel:activity'],
+    'ocel:timestamp': evt['ocel:timestamp'],
+    'ocel:omap': evt['ocel:omap'],
+    'ocel:vmap': evt['ocel:vmap'],
+  }));
+
+  const doc = {
+    'ocel:version': '2.0',
+    'ocel:name': logName,
+    'ocel:objects': objects,
+    'ocel:events': ocelEvents,
+  };
+
+  return JSON.stringify(doc);
+}
+
+// ---------------------------------------------------------------------------
+// OcelLogEvent / OcelLogObject — the trace.ts OcelLog shape
+// ---------------------------------------------------------------------------
+
+/**
+ * A single event in the `OcelLog` format expected by `wpm trace conform`.
+ * Uses underscore-delimited field names (distinct from both the WASM camelCase
+ * format used by `toOcel2Json` and the IEEE `ocel:` prefix format).
+ */
+export type OcelLogEvent = {
+  event_id: string;
+  activity: string;
+  timestamp: string;
+  objects: Array<{ id: string; type: string }>;
+  attributes: Record<string, unknown>;
+};
+
+/**
+ * A single object entry in the `OcelLog` format expected by `wpm trace conform`.
+ */
+export type OcelLogObject = {
+  id: string;
+  type: string;
+  attributes: Record<string, unknown>;
+};
+
+/**
+ * The OCEL log shape consumed by `wpm trace conform -m <model> -i <file>`.
+ *
+ * This is the third of three distinct OCEL formats in wasm4pm:
+ * - WASM camelCase   (`toOcel2Json`)          — for `wpm run`
+ * - IEEE `ocel:` prefix (`toOcel2JsonStandard`) — for interop with pm4py/ProM
+ * - trace.ts underscore (`toOcelLog`)           — for `wpm trace conform`
+ */
+export type OcelLog = {
+  ocel_version: string;
+  ocel_global_log: { ocel_attribute_names: string[] };
+  ocel_events: OcelLogEvent[];
+  ocel_objects: OcelLogObject[];
+};
+
+// ---------------------------------------------------------------------------
+// toIso8601 — normalise numeric POSIX timestamps (GAP-4c fix)
+// ---------------------------------------------------------------------------
+
+/**
+ * Converts a timestamp value to an ISO-8601 string.
+ *
+ * Handles two cases:
+ * - Already-ISO string (e.g. "2026-05-18T10:00:00Z") — returned unchanged.
+ * - Numeric POSIX milliseconds, either as a `number` or as a string of digits
+ *   (e.g. `1716026400000` or `"1716026400000"`) — converted via `new Date(ms).toISOString()`.
+ *
+ * This closes GAP-4c: AtomVM's `System.monotonic_time/0` returns POSIX millisecond
+ * integers, but the WASM kernel expects ISO-8601. Callers that use `toOcelLog`
+ * therefore get correct timestamps regardless of what AtomVM emitted.
+ *
+ * @param ts - The raw timestamp from the AtomVM event's `ocel:timestamp` field
+ * @returns ISO-8601 string
+ */
+function toIso8601(ts: string): string {
+  // If the string is entirely digits (POSIX ms integer), convert it
+  if (/^\d+$/.test(ts.trim())) {
+    return new Date(Number(ts.trim())).toISOString();
+  }
+  return ts;
+}
+
+// ---------------------------------------------------------------------------
+// toOcelLog — adapter: OcelEvent[] → OcelLog (wpm trace conform format)
+// ---------------------------------------------------------------------------
+
+/**
+ * Converts an array of OCEL events (produced by `fromAtomVmJsonl`) into the
+ * `OcelLog` format required by `wpm trace conform -m <model> -i <ocel>`.
+ *
+ * This closes **GAP-3** (AtomVM traces cannot be fed into `wpm trace conform`)
+ * and **GAP-4a** (the adapter was absent from the bridge).
+ *
+ * Mapping rules:
+ * - `ocel:eid`       → `event_id`
+ * - `ocel:activity`  → `activity`   (e.g. "atomvm_proc.spawn")
+ * - `ocel:timestamp` → `timestamp`  (ISO-8601; numeric POSIX ms converted — GAP-4c)
+ * - `ocel:omap`      → `objects`    (each PID → `{ id: pid, type: "atomvm_process" }`)
+ * - `ocel:vmap`      → `attributes` (plain object, no transformation)
+ *
+ * Object deduplication: each unique PID from `ocel:omap` produces exactly one
+ * entry in `ocel_objects`. The object type is always `"atomvm_process"`.
+ *
+ * The `ocel_global_log.ocel_attribute_names` list is derived from the union of
+ * all keys found in `ocel:vmap` across all events.
+ *
+ * @param events - OCEL events produced by `fromAtomVmJsonl` or `adaptAtomVmProcEvent`
+ * @returns An `OcelLog` object ready to be written to a file and passed to
+ *          `wpm trace conform -m <model.powl.json> -i <ocel.json>`
+ */
+export function toOcelLog(events: OcelEvent[]): OcelLog {
+  // Collect unique PIDs for object deduplication and attribute key names
+  const pidSet = new Set<string>();
+  const attributeNames = new Set<string>();
+
+  for (const evt of events) {
+    for (const pid of evt['ocel:omap']) {
+      pidSet.add(pid);
+    }
+    const vmap = evt['ocel:vmap'];
+    if (vmap && typeof vmap === 'object' && !Array.isArray(vmap)) {
+      for (const key of Object.keys(vmap as Record<string, unknown>)) {
+        attributeNames.add(key);
+      }
+    }
+  }
+
+  const ocel_events: OcelLogEvent[] = events.map((evt) => ({
+    event_id: evt['ocel:eid'],
+    activity: evt['ocel:activity'],
+    // GAP-4c: convert numeric POSIX ms timestamps to ISO-8601
+    timestamp: toIso8601(evt['ocel:timestamp']),
+    objects: evt['ocel:omap'].map((pid) => ({ id: pid, type: 'atomvm_process' })),
+    attributes: (evt['ocel:vmap'] as Record<string, unknown>) ?? {},
+  }));
+
+  const ocel_objects: OcelLogObject[] = [...pidSet].map((pid) => ({
+    id: pid,
+    type: 'atomvm_process',
+    attributes: {},
+  }));
+
+  return {
+    ocel_version: '2.0',
+    ocel_global_log: {
+      ocel_attribute_names: [...attributeNames].sort(),
+    },
+    ocel_events,
+    ocel_objects,
+  };
+}

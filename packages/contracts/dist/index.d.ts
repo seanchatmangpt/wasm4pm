@@ -44,5 +44,9 @@ export { evaluateConformance, isRefused, toSharedConformance, type ConformanceDi
 export { receiptToOcelEvents, toOcelJsonl, fromMcppJsonl, fromMcppJsonlStrict, fromMcppNativeJsonl, fromMcppNativeJsonlStrict, isValidOcelEvent, type OcelEvent, } from './ocel-bridge.js';
 export { emitReceiptEmit, type ReceiptEmitRecord, } from './receipt-emit-bridge.js';
 export { toSharedReceipt, fromMcppResponse, SHARED_RECEIPT_SCHEMA_V1, type SharedReceiptV1, } from './shared-schema/adapter.js';
+export { adaptMarketplaceEvent, fromMarketplaceJsonl, isMarketplaceEvent, extractObjectTypes, countUniqueIds, type MarketplaceEvent, } from './marketplace-bridge.js';
+export { buildMarketplaceReceipt, isMarketplaceReceipt, type MarketplaceReceipt, } from './marketplace-receipt.js';
+export { isAtomVmProcEvent, adaptAtomVmProcEvent, fromAtomVmJsonl, detectCrashes, detectCrashDetails, toOcel2Json, toOcel2JsonStandard, toOcelLog, type AtomVmProcEvent, type CrashDetail, type OcelLog, type OcelLogEvent, type OcelLogObject, } from './atomvm-bridge.js';
+export { parseCrashDump, parseSaslSupervisorReports, crashEventsToOcel, supervisorReportsToOcel, detectAbnormalExits, type ErlangFrame, type ErlangCrashEvent, type ErlangSupervisorReport, } from './erlang-bridge.js';
 export { internTerms, buildFact8, buildRule8, buildFactBlock, buildCatalog, buildQueryAtom, ARITY_CAP as PROLOG8_ARITY_CAP, BODY_CAP as PROLOG8_BODY_CAP, TERM_SENTINEL as PROLOG8_TERM_SENTINEL, FeatureBit as Prolog8FeatureBit, type TermInternTable, type Rule8Json, type Atom8Json, type FactBlockJson, type FactRowJson, type BodyAtomSpec, type PredicateDescriptor, type Prolog8Catalog, } from './prolog8-compiler.js';
 //# sourceMappingURL=index.d.ts.map

@@ -173,6 +173,35 @@ export {
   type MarketplaceReceipt,
 } from './marketplace-receipt.js';
 
+// AtomVM process lifecycle OCEL bridge — adapts Erlang/Elixir VM process events to OCEL 2.0
+export {
+  isAtomVmProcEvent,
+  adaptAtomVmProcEvent,
+  fromAtomVmJsonl,
+  detectCrashes,
+  detectCrashDetails,
+  toOcel2Json,
+  toOcel2JsonStandard,
+  toOcelLog,
+  type AtomVmProcEvent,
+  type CrashDetail,
+  type OcelLog,
+  type OcelLogEvent,
+  type OcelLogObject,
+} from './atomvm-bridge.js';
+
+// Erlang/OTP crash dump and SASL supervisor report OCEL bridge
+export {
+  parseCrashDump,
+  parseSaslSupervisorReports,
+  crashEventsToOcel,
+  supervisorReportsToOcel,
+  detectAbnormalExits,
+  type ErlangFrame,
+  type ErlangCrashEvent,
+  type ErlangSupervisorReport,
+} from './erlang-bridge.js';
+
 // Prolog8 Rule8/Fact8 compiler helpers — pre-compile Horn clauses for the WASM kernel
 export {
   internTerms,
