@@ -269,12 +269,12 @@ export function computeQualitySummary(
 // ─────────────────────────────────────────────────────────────────────────────
 
 const TASK_MINIMUM_TRACES: Record<MlTask, number> = {
-  classify: 4,   // kNN needs at least k+1 (default k=5), warn early at 4
-  cluster: 3,    // k-means default k=3 needs at least 3 points
-  forecast: 2,   // drift series needs at least 2 windows
-  anomaly: 3,    // peak detection needs at least 3 points
-  regress: 2,    // linear regression requires at least 2 points
-  pca: 2,        // PCA requires at least 2 observations and 2 features
+  classify: 4, // kNN needs at least k+1 (default k=5), warn early at 4
+  cluster: 3, // k-means default k=3 needs at least 3 points
+  forecast: 2, // drift series needs at least 2 windows
+  anomaly: 3, // peak detection needs at least 3 points
+  regress: 2, // linear regression requires at least 2 points
+  pca: 2, // PCA requires at least 2 observations and 2 features
 };
 
 /**
@@ -360,7 +360,10 @@ export async function executeMlTask(
       const statsRaw = wasm.analyze_statistics(logHandle);
       const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
       const traceCount: number =
-        (stats?.trace_count as number) ?? (stats?.traceCount as number) ?? (stats?.num_traces as number) ?? 0;
+        (stats?.trace_count as number) ??
+        (stats?.traceCount as number) ??
+        (stats?.num_traces as number) ??
+        0;
       const minimum = TASK_MINIMUM_TRACES[task];
       if (traceCount > 0 && traceCount < minimum) {
         const recs = TASK_RECOMMENDATIONS[task];
@@ -439,6 +442,8 @@ export async function executeMlTask(
         k,
         eps,
       })) as unknown as Record<string, unknown>;
+      // Gap 4: attach per-cluster process mining narratives
+      rawResult = attachClusterProfiles(rawResult, features);
       break;
     }
 
@@ -537,9 +542,164 @@ export async function executeMlTask(
 // table without traversing the raw predictions array twice.
 // ─────────────────────────────────────────────────────────────────────────────
 
-function attachClassDistribution(
-  result: Record<string, unknown>
+// ─────────────────────────────────────────────────────────────────────────────
+// Gap 4: Cluster profile narratives
+//
+// Derives per-cluster process mining characteristics from the raw feature
+// objects so the human formatter can render "Cluster 0: short traces with
+// low rework" instead of just a size count.
+//
+// Feature keys expected from extract_case_features (Rust):
+//   trace_length, elapsed_time, rework_count, unique_activities,
+//   activity_counts (object), avg_inter_event_time
+//
+// The narrative is built by comparing each cluster's mean values against the
+// global means — we label a dimension "high" if the cluster mean is >20%
+// above global mean, "low" if >20% below. This threshold is a domain contract
+// (Rank-2): small logs have high variance and a tighter threshold would produce
+// noise narratives.
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface ClusterProfile {
+  clusterId: number;
+  caseCount: number;
+  pct: number;
+  /** Human-readable process mining narrative for this cluster. */
+  narrative: string;
+  /** Mean values of key features for this cluster (rounded to 2dp). */
+  means: {
+    traceLength: number;
+    reworkCount: number;
+    uniqueActivities: number;
+    elapsedTime: number;
+  };
+}
+
+function attachClusterProfiles(
+  result: Record<string, unknown>,
+  features: Array<Record<string, unknown>>
 ): Record<string, unknown> {
+  const assignments = result.assignments as Array<{ caseId: string; cluster: number }> | undefined;
+  if (!assignments || assignments.length === 0 || features.length === 0) return result;
+
+  // Build a caseId → feature map for O(1) lookup.
+  const featureMap = new Map<string, Record<string, unknown>>();
+  for (const f of features) {
+    const id = String(f.caseId ?? f.case_id ?? f.id ?? '');
+    if (id) featureMap.set(id, f);
+  }
+
+  // Accumulate per-cluster sums.
+  interface Sums {
+    traceLength: number;
+    reworkCount: number;
+    uniqueActivities: number;
+    elapsedTime: number;
+    n: number;
+  }
+  const clusterSums = new Map<number, Sums>();
+  for (const a of assignments) {
+    if (a.cluster < 0) continue; // skip noise
+    const f = featureMap.get(a.caseId) ?? {};
+    const existing = clusterSums.get(a.cluster) ?? {
+      traceLength: 0,
+      reworkCount: 0,
+      uniqueActivities: 0,
+      elapsedTime: 0,
+      n: 0,
+    };
+    existing.traceLength += Number(f.trace_length ?? f.traceLength ?? 0);
+    existing.reworkCount += Number(f.rework_count ?? f.reworkCount ?? 0);
+    existing.uniqueActivities += Number(f.unique_activities ?? f.uniqueActivities ?? 0);
+    existing.elapsedTime += Number(f.elapsed_time ?? f.elapsedTime ?? 0);
+    existing.n++;
+    clusterSums.set(a.cluster, existing);
+  }
+
+  // Compute global means across all non-noise cases.
+  let globalN = 0;
+  let gTraceLength = 0;
+  let gReworkCount = 0;
+  let gUniqueActivities = 0;
+  let gElapsedTime = 0;
+  for (const s of clusterSums.values()) {
+    gTraceLength += s.traceLength;
+    gReworkCount += s.reworkCount;
+    gUniqueActivities += s.uniqueActivities;
+    gElapsedTime += s.elapsedTime;
+    globalN += s.n;
+  }
+  if (globalN === 0) return result;
+  const gMeans = {
+    traceLength: gTraceLength / globalN,
+    reworkCount: gReworkCount / globalN,
+    uniqueActivities: gUniqueActivities / globalN,
+    elapsedTime: gElapsedTime / globalN,
+  };
+
+  const total = assignments.length;
+  const profiles: ClusterProfile[] = [];
+
+  for (const [clusterId, s] of Array.from(clusterSums.entries()).sort((a, b) => a[0] - b[0])) {
+    const means = {
+      traceLength: s.n > 0 ? round2(s.traceLength / s.n) : 0,
+      reworkCount: s.n > 0 ? round2(s.reworkCount / s.n) : 0,
+      uniqueActivities: s.n > 0 ? round2(s.uniqueActivities / s.n) : 0,
+      elapsedTime: s.n > 0 ? round2(s.elapsedTime / s.n) : 0,
+    };
+
+    const tags: string[] = [];
+    const THRESHOLD = 0.2; // 20% deviation triggers a label
+
+    // Trace length
+    if (gMeans.traceLength > 0) {
+      const rel = (means.traceLength - gMeans.traceLength) / gMeans.traceLength;
+      if (rel > THRESHOLD) tags.push('long traces');
+      else if (rel < -THRESHOLD) tags.push('short traces');
+    }
+
+    // Rework
+    if (gMeans.reworkCount > 0) {
+      const rel = (means.reworkCount - gMeans.reworkCount) / gMeans.reworkCount;
+      if (rel > THRESHOLD) tags.push('high rework');
+      else if (rel < -THRESHOLD) tags.push('low rework');
+    } else if (means.reworkCount > 0.5) {
+      tags.push('some rework');
+    }
+
+    // Unique activities (process complexity)
+    if (gMeans.uniqueActivities > 0) {
+      const rel = (means.uniqueActivities - gMeans.uniqueActivities) / gMeans.uniqueActivities;
+      if (rel > THRESHOLD) tags.push('high activity variety');
+      else if (rel < -THRESHOLD) tags.push('narrow activity set');
+    }
+
+    // Elapsed time
+    if (gMeans.elapsedTime > 0) {
+      const rel = (means.elapsedTime - gMeans.elapsedTime) / gMeans.elapsedTime;
+      if (rel > THRESHOLD) tags.push('slow cases');
+      else if (rel < -THRESHOLD) tags.push('fast cases');
+    }
+
+    const narrative = tags.length > 0 ? tags.join(', ') : 'similar to global average';
+
+    profiles.push({
+      clusterId,
+      caseCount: s.n,
+      pct: s.n / total,
+      narrative,
+      means,
+    });
+  }
+
+  return { ...result, _clusterProfiles: profiles };
+}
+
+function round2(v: number): number {
+  return Math.round(v * 100) / 100;
+}
+
+function attachClassDistribution(result: Record<string, unknown>): Record<string, unknown> {
   const predictions = result.predictions as
     | Array<{ caseId: string; predicted: string; confidence: number }>
     | undefined;

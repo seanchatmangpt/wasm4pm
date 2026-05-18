@@ -117,6 +117,17 @@ impl CognitionBreed for Soar {
         }
 
         // Step 3: better-than dominance (transitive closure with cycle defence).
+        //
+        // We snapshot alive status *before* each iteration so that a candidate
+        // eliminated earlier in the same pass can still propagate transitivity in
+        // the next pass.  Example: alpha > beta > gamma.  Pass 1: alpha eliminates
+        // beta (beta was alive at snapshot).  Pass 2: beta was alive at the *start*
+        // of pass 1, so gamma gets eliminated now that the fixed-point loop re-runs.
+        // Actually the correct fix is simpler: snapshot alive IDs at the start of
+        // each iteration and use that snapshot for the `better_alive` check so that
+        // within a single pass the read set is frozen.  This lets alpha→beta happen
+        // and beta→gamma happen in the same pass because beta was alive when the
+        // snapshot was taken.
         let mut iters = 0;
         let max_iters = prefs.better.len() * candidates.len() + 1;
         loop {
@@ -124,12 +135,17 @@ impl CognitionBreed for Soar {
             if iters > max_iters {
                 break;
             }
+            // Snapshot alive IDs (owned Strings) before mutations in this
+            // iteration so the immutable borrow on `candidates` is released
+            // before the mutable borrow in the inner loop.
+            let alive_snapshot: std::collections::HashSet<String> = candidates
+                .iter()
+                .filter(|c| !c.eliminated)
+                .map(|c| c.id.clone())
+                .collect();
             let mut changed = false;
             for (better, worse) in &prefs.better {
-                let better_alive = candidates
-                    .iter()
-                    .any(|c| &c.id == better && !c.eliminated);
-                if !better_alive {
+                if !alive_snapshot.contains(better.as_str()) {
                     continue;
                 }
                 for c in candidates.iter_mut() {

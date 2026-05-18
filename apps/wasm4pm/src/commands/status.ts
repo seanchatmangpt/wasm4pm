@@ -71,11 +71,17 @@ export const status = defineCommand({
       description: 'Suppress non-error output',
       alias: 'q',
     },
+    'show-config': {
+      type: 'boolean',
+      description:
+        'Show resolved config values with per-key provenance (ENV / TOML / CLI / default)',
+    },
   },
   async run(ctx) {
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
+    const showConfig = Boolean(ctx.args['show-config']);
     const start = Date.now();
 
     let lateAlgorithmCount = 0;
@@ -103,9 +109,55 @@ export const status = defineCommand({
             wasmVersion = String(wasm.get_version());
           }
 
+          // Derive WASM deployment profile from feature flags returned by get_capabilities().
+          // Feature presence is a monotonically increasing set: mobile ⊂ iot ⊂ edge ⊂ fog ⊂ browser.
+          // We walk from broadest to narrowest to name the loaded profile.
+          let wasmDeploymentProfile = 'browser';
+          if (typeof wasm.get_capabilities === 'function') {
+            try {
+              const rawCaps = wasm.get_capabilities();
+              const caps: {
+                features?: {
+                  powl?: boolean;
+                  ocel?: boolean;
+                  ml?: boolean;
+                  streaming?: boolean;
+                  conformance?: boolean;
+                };
+              } = typeof rawCaps === 'string' ? JSON.parse(rawCaps) : rawCaps;
+              const f = caps.features ?? {};
+              // Heuristic: browser = powl+ocel+ml; fog = ml+ocel (no powl); edge = streaming (no ml);
+              // iot = conformance (no streaming); mobile = neither
+              if (f.powl && f.ocel && f.ml) {
+                wasmDeploymentProfile = 'browser';
+              } else if (f.ml && f.ocel) {
+                wasmDeploymentProfile = 'fog';
+              } else if (f.streaming) {
+                wasmDeploymentProfile = 'edge';
+              } else if (f.conformance) {
+                wasmDeploymentProfile = 'iot';
+              } else {
+                wasmDeploymentProfile = 'mobile';
+              }
+            } catch {
+              // Non-fatal — leave as 'browser' (the default/full build)
+            }
+          }
+
           // Step 3: Query algorithm registry count
           const registry = getRegistry();
-          const algorithmCount = registry.list().length;
+          const allAlgorithms = registry.list();
+          const algorithmCount = allAlgorithms.length;
+          // Break down by output type for the registry summary
+          const discoveryCount = allAlgorithms.filter(
+            (a) =>
+              a.outputType === 'dfg' ||
+              a.outputType === 'petrinet' ||
+              a.outputType === 'tree' ||
+              a.outputType === 'declare'
+          ).length;
+          const mlCount = allAlgorithms.filter((a) => a.outputType === 'ml_result').length;
+          const analyticsCount = allAlgorithms.filter((a) => a.outputType === 'analytics').length;
           lateAlgorithmCount = algorithmCount;
           lateWasmVersion = wasmVersion ?? '';
 
@@ -114,6 +166,10 @@ export const status = defineCommand({
           // This is the data behind "algorithm: dfg (from ENV)" diagnostics.
           let configProvenance: Record<string, { source: string; path?: string }> = {};
           let configHash: string | null = null;
+          let configFilePath: string | null = null;
+          let configFileSource: 'toml' | 'json' | null = null;
+          let configFileFound = false;
+          let fullConfig: Record<string, unknown> | null = null;
           let membraneStatus: {
             enabled: boolean;
             custody_actions: string[];
@@ -140,6 +196,33 @@ export const status = defineCommand({
                 configProvenance[key] = { source: entry.source, path: entry.path };
               }
             }
+
+            // Derive config file path from provenance: any key sourced from toml/json has the path
+            for (const entry of Object.values(prov)) {
+              if ((entry.source === 'toml' || entry.source === 'json') && entry.path) {
+                configFilePath = entry.path;
+                configFileSource = entry.source;
+                configFileFound = true;
+                break;
+              }
+            }
+
+            // Capture full config for --show-config rendering
+            if (showConfig) {
+              fullConfig = {
+                source: cfg.source,
+                sink: cfg.sink,
+                algorithm: cfg.algorithm,
+                execution: cfg.execution,
+                observability: cfg.observability,
+                watch: cfg.watch,
+                output: cfg.output,
+                prediction: (cfg as unknown as Record<string, unknown>).prediction,
+                ml: (cfg as unknown as Record<string, unknown>).ml,
+                rl: (cfg as unknown as Record<string, unknown>).rl,
+              };
+            }
+
             // Extract membrane section — present when enabled or explicitly configured
             type CfgWithMembrane = typeof cfg & {
               membrane?: {
@@ -191,7 +274,13 @@ export const status = defineCommand({
               wasmLoaded,
               kernelReady,
               version: wasmVersion,
+              deploymentProfile: wasmDeploymentProfile,
               algorithmCount,
+              algorithmBreakdown: {
+                discovery: discoveryCount,
+                ml: mlCount,
+                analytics: analyticsCount,
+              },
               health: {
                 // Summarises WASM + autonomic health in a single machine-readable field.
                 // ok: all subsystems nominal; degraded: autonomic circuit open or health >= Warning;
@@ -230,7 +319,9 @@ export const status = defineCommand({
             membrane: membraneStatus,
             config: {
               hash: configHash,
+              file: configFileFound ? { path: configFilePath, source: configFileSource } : null,
               provenance: configProvenance,
+              full: fullConfig,
             },
           };
 
@@ -247,8 +338,14 @@ export const status = defineCommand({
             if (r.engine.version) {
               p.log(`  WASM Version: ${r.engine.version}`);
             }
+            p.log(`  WASM Deployment Profile: ${r.engine.deploymentProfile}`);
             p.log(`  Kernel Ready: Yes`);
-            p.log(`  Algorithm Count: ${r.engine.algorithmCount}`);
+            p.log(
+              `  Algorithm Count: ${r.engine.algorithmCount}` +
+                ` (discovery: ${r.engine.algorithmBreakdown.discovery}, ` +
+                `ml: ${r.engine.algorithmBreakdown.ml}, ` +
+                `analytics: ${r.engine.algorithmBreakdown.analytics})`
+            );
 
             // System section
             p.log('');
@@ -322,14 +419,28 @@ export const status = defineCommand({
             // This closes the gap where a user setting WASM4PM_ALGORITHM=dfg had no feedback
             // that their ENV var was actually being picked up.
             p.log('');
-            p.log('Config Provenance:');
+            p.log('Config:');
             const cfg = r.config as {
               hash: string | null;
+              file: { path: string | null; source: string | null } | null;
               provenance: Record<string, { source: string; path?: string }>;
+              full: Record<string, unknown> | null;
             };
+
+            // Config file discovery status
+            if (cfg.file) {
+              p.log(`  File: ${cfg.file.path}  [${String(cfg.file.source).toUpperCase()}]`);
+            } else {
+              p.log('  File: not found — using defaults');
+              p.log('  Tip: run "wpm init" to scaffold wasm4pm.toml in the current directory');
+            }
+
             if (cfg.hash) {
               p.log(`  Hash: ${cfg.hash.slice(0, 16)}...`);
             }
+
+            p.log('');
+            p.log('Config Provenance:');
             const provEntries = Object.entries(cfg.provenance);
             if (provEntries.length === 0) {
               p.log('  All values from defaults (no config file or ENV overrides detected)');
@@ -365,6 +476,60 @@ export const status = defineCommand({
                   );
                 }
               }
+            }
+
+            // --show-config: render the full resolved config with per-key provenance.
+            // Answers "why is my algorithm set to dfg when I set genetic_algorithm in my toml?"
+            if (showConfig && cfg.full) {
+              p.log('');
+              p.log('Resolved Config (with provenance):');
+              p.log('  ' + '─'.repeat(76));
+
+              // Flatten the full config into dot-notation key-value pairs
+              function flattenObj(
+                obj: Record<string, unknown>,
+                prefix = ''
+              ): Array<[string, unknown]> {
+                const entries: Array<[string, unknown]> = [];
+                for (const [k, v] of Object.entries(obj)) {
+                  if (v === undefined || v === null) continue;
+                  const fullKey = prefix ? `${prefix}.${k}` : k;
+                  if (
+                    typeof v === 'object' &&
+                    !Array.isArray(v) &&
+                    Object.keys(v as object).length > 0
+                  ) {
+                    entries.push(...flattenObj(v as Record<string, unknown>, fullKey));
+                  } else {
+                    entries.push([fullKey, v]);
+                  }
+                }
+                return entries;
+              }
+
+              const flatEntries = flattenObj(cfg.full);
+              const maxKeyLen = Math.min(40, Math.max(...flatEntries.map(([k]) => k.length)));
+
+              for (const [key, value] of flatEntries) {
+                const prov = cfg.provenance[key];
+                const sourceTag = prov
+                  ? `[${prov.source.toUpperCase()}${prov.path ? ` ${prov.path}` : ''}]`
+                  : '[DEFAULT]';
+                const valStr = Array.isArray(value) ? JSON.stringify(value) : String(value);
+                p.log(`  ${key.padEnd(maxKeyLen)}  ${valStr.padEnd(20)}  ${sourceTag}`);
+              }
+
+              p.log('');
+              p.log('  Run "wpm config show --detailed" for ENV variable reference.');
+            } else if (showConfig) {
+              p.log('');
+              p.log('  Config could not be resolved — run "wpm config check" for errors.');
+            }
+
+            if (!showConfig) {
+              p.log('');
+              p.log('  Tip: use --show-config to see all resolved values with per-key provenance.');
+              p.log('  Tip: use "wpm config show" for a focused config view.');
             }
 
             p.log('');

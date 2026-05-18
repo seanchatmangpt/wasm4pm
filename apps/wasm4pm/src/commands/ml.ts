@@ -5,7 +5,7 @@ import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
 import { savePredictionResult } from './results.js';
 import { VALID_ML_TASKS, executeMlTask } from '../ml-runner.js';
-import type { MlTask, MlQualitySummary } from '../ml-runner.js';
+import type { MlTask, MlQualitySummary, ClusterProfile } from '../ml-runner.js';
 import { withSpan } from './_otel.js';
 import {
   saveCommandReceipt,
@@ -279,28 +279,54 @@ function formatMlHumanOutput(
       const k = result.clusterCount as number;
       const noise = result.noiseCount as number;
       const total = assignments.length;
+      const profiles = result._clusterProfiles as ClusterProfile[] | undefined;
 
-      // Build per-cluster size map
+      // Build per-cluster size map (used for noise row which has no profile entry)
       const clusterSizes = new Map<number, number>();
       for (const a of assignments) {
         clusterSizes.set(a.cluster, (clusterSizes.get(a.cluster) ?? 0) + 1);
       }
 
       projection.log('');
-      projection.log('  Cluster summary:');
-      projection.log('  ─────────────────────────────────────────────────────');
-      projection.log('  Cluster   Cases   Share    Notes');
-      projection.log('  ───────   ─────   ─────    ─────');
-      // Sort by cluster index; noise (-1) listed last
-      const sortedClusters = [...clusterSizes.entries()].sort((a, b) =>
-        a[0] === -1 ? 1 : b[0] === -1 ? -1 : a[0] - b[0]
-      );
-      for (const [clusterId, count] of sortedClusters) {
-        const label = clusterId === -1 ? 'noise' : `Cluster ${clusterId}`;
-        const share = `${((count / total) * 100).toFixed(1)}%`.padStart(6);
-        const bar = '▓'.repeat(Math.round((count / total) * 20)).padEnd(20, '░');
-        projection.log(`  ${label.padEnd(7)}   ${String(count).padStart(5)}   ${share}    ${bar}`);
+      projection.log('  Cluster profiles:');
+      projection.log('  ──────────────────────────────────────────────────────────────');
+      projection.log('  Cluster   Cases   Share    Process mining characteristics');
+      projection.log('  ───────   ─────   ─────    ────────────────────────────────');
+
+      // Render named clusters with narrative
+      if (profiles && profiles.length > 0) {
+        for (const p of profiles) {
+          const label = `Cluster ${p.clusterId}`;
+          const share = `${(p.pct * 100).toFixed(1)}%`.padStart(6);
+          const bar = '▓'.repeat(Math.round(p.pct * 20)).padEnd(20, '░');
+          projection.log(
+            `  ${label.padEnd(9)}   ${String(p.caseCount).padStart(5)}   ${share}    ${bar}`
+          );
+          projection.log(`             ${p.narrative}`);
+        }
+      } else {
+        // Fallback: size-only rows (no feature data available)
+        const sortedClusters = [...clusterSizes.entries()]
+          .filter(([id]) => id >= 0)
+          .sort((a, b) => a[0] - b[0]);
+        for (const [clusterId, count] of sortedClusters) {
+          const label = `Cluster ${clusterId}`;
+          const share = `${((count / total) * 100).toFixed(1)}%`.padStart(6);
+          const bar = '▓'.repeat(Math.round((count / total) * 20)).padEnd(20, '░');
+          projection.log(
+            `  ${label.padEnd(9)}   ${String(count).padStart(5)}   ${share}    ${bar}`
+          );
+        }
       }
+
+      // Noise row
+      if (noise > 0) {
+        const noiseShare = `${((noise / total) * 100).toFixed(1)}%`.padStart(6);
+        const noiseBar = '▓'.repeat(Math.round((noise / total) * 20)).padEnd(20, '░');
+        projection.log(`  noise     ${String(noise).padStart(5)}   ${noiseShare}    ${noiseBar}`);
+        projection.log(`             outlier cases — unusual activity sequences`);
+      }
+
       projection.log('');
       if (noise > 0) {
         projection.log(
@@ -342,11 +368,30 @@ function formatMlHumanOutput(
         }
       }
 
+      // Derive business implication from trend direction and strength
+      const trendDir = (trend?.direction ?? 'unknown').toLowerCase();
+      const trendStrength = trend?.strength ?? 0;
+      let businessImplication = '';
+      if (trendStrength >= 0.5) {
+        if (trendDir === 'decreasing' || trendDir === 'downward') {
+          businessImplication = `  Implication: throughput is declining${pctChangeSummary} — intervention may be needed.`;
+        } else if (trendDir === 'increasing' || trendDir === 'upward') {
+          businessImplication = `  Implication: throughput is growing${pctChangeSummary} — monitor for capacity constraints.`;
+        } else if (trendDir === 'stable' || trendDir === 'flat') {
+          businessImplication = `  Implication: process is stable — no corrective action indicated.`;
+        }
+      } else {
+        businessImplication = `  Implication: trend is weak (strength ${trendStrength.toFixed(2)}) — forecast is indicative only.`;
+      }
+
       projection.log('');
       projection.log(`  Trend: ${trend?.direction ?? 'unknown'}${pctChangeSummary}`);
       projection.log(
         `  Slope: ${(trend?.slope ?? 0).toFixed(4)}, Strength: ${(trend?.strength ?? 0).toFixed(2)} ${(trend?.strength ?? 0) >= 0.5 ? '[reliable]' : '[low confidence — treat as indicative only]'}`
       );
+      if (businessImplication) {
+        projection.log(businessImplication);
+      }
       projection.log(`  Window count: ${result.windowCount ?? 'n/a'}`);
       if (forecast && forecast.length > 0) {
         projection.log(
