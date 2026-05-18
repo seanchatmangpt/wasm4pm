@@ -48,6 +48,7 @@ const POWL_SUBCOMMANDS = [
   'discover',
   'get-children',
   'node-info',
+  'freq-analysis',
 ] as const;
 type PowlSubcommand = (typeof POWL_SUBCOMMANDS)[number];
 
@@ -70,7 +71,7 @@ export const powl = defineCommand({
   meta: {
     name: 'powl',
     description:
-      'POWL model analysis — parse, convert, simplify, diff, complexity, footprints, conformance, import, discover, get-children, node-info',
+      'POWL model analysis — parse, convert, simplify, diff, complexity, footprints, conformance, import, discover, get-children, node-info, freq-analysis',
   },
   args: {
     subcommand: {
@@ -508,6 +509,11 @@ async function executePowlCommand(
       return normalizeResult(raw);
     }
 
+    case 'freq-analysis': {
+      const raw: string = wasm.powl_freq_analysis(modelStr);
+      return JSON.parse(raw);
+    }
+
     default:
       throw new Error(`Unhandled subcommand: ${subcommand}`);
   }
@@ -867,6 +873,65 @@ function formatHumanOutput(
         projection.log(`    Activity key:     ${config.activity_key}`);
         projection.log(`    Min trace count:  ${config.min_trace_count}`);
         projection.log(`    Noise threshold: ${config.noise_threshold}`);
+      }
+      projection.log('');
+      break;
+    }
+
+    case 'freq-analysis': {
+      // Van der Aalst: frequency semantics are a first-class quality dimension
+      // for TaggedPOWL. Showing min/max together avoids the "skippable bool only"
+      // trap that hides the exact repetition contract.
+      const total = result.total_frequent_transitions as number;
+      const skippable = result.skippable_count as number;
+      const repeatable = result.repeatable_count as number;
+      const unbounded = result.unbounded_count as number;
+      const freqMinMin = result.freq_min_min;
+      const freqMaxMax = result.freq_max_max;
+      const nodes = (result.nodes as Array<Record<string, unknown>>) ?? [];
+
+      const fmtRange = (min: unknown, max: unknown): string => {
+        const maxStr = max === null || max === undefined ? '∞' : String(max);
+        return `[${min}, ${maxStr}]`;
+      };
+
+      projection.log('');
+      projection.log(`  Frequent transitions:  ${total}`);
+      if (total === 0) {
+        projection.log('  (No FrequentTransition nodes — all activities have fixed freq [1,1])');
+        projection.log('');
+        break;
+      }
+
+      // Summary bar: proportion glyph for skippable / repeatable / unbounded
+      const barW = 10;
+      const skipBar =
+        '▓'.repeat(Math.round((skippable / total) * barW)) +
+        '░'.repeat(barW - Math.round((skippable / total) * barW));
+      const repBar =
+        '▓'.repeat(Math.round((repeatable / total) * barW)) +
+        '░'.repeat(barW - Math.round((repeatable / total) * barW));
+
+      projection.log(`  Skippable (min=0):     ${skippable} / ${total}  [${skipBar}]`);
+      projection.log(`  Repeatable (max>1|∞):  ${repeatable} / ${total}  [${repBar}]`);
+      projection.log(`  Unbounded (max=∞):     ${unbounded} / ${total}`);
+      projection.log(
+        `  Overall freq range:    ${fmtRange(freqMinMin, freqMaxMax)}  (min of mins, max of maxes)`
+      );
+      projection.log('');
+
+      // Per-node table — reference: TaggedPOWL.pretty() format
+      projection.log(`  Per-node frequency ranges:`);
+      const colW = Math.max(...nodes.map((n) => String(n.activity).length), 8) + 2;
+      for (const node of nodes) {
+        const act = String(node.activity).padEnd(colW);
+        const range = fmtRange(node.min_freq, node.max_freq);
+        const flags: string[] = [];
+        if (node.is_skippable) flags.push('skippable');
+        if (node.is_repeatable) flags.push('repeatable');
+        if (node.is_unbounded) flags.push('unbounded');
+        const flagStr = flags.length > 0 ? `  (${flags.join(', ')})` : '';
+        projection.log(`    ${act}  freq=${range}${flagStr}`);
       }
       projection.log('');
       break;

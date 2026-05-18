@@ -159,6 +159,14 @@ pub fn node_info_json(s: &str, arena_idx: u32) -> Result<String, JsValue> {
             "type": "frequent_transition",
             "label": t.label,
             "activity": t.activity,
+            // Exact integer freq range — matches TaggedPOWL.min_freq / max_freq
+            "min_freq": t.min_freq,
+            "max_freq": t.max_freq,
+            // Derived boolean helpers — matches TaggedPOWL.is_skippable() / is_unbounded()
+            "is_skippable": t.is_skippable(),
+            "is_repeatable": t.is_repeatable(),
+            "is_unbounded": t.is_unbounded(),
+            // Legacy boolean fields kept for backward compat
             "skippable": t.skippable,
             "selfloop": t.selfloop,
             "id": t.id,
@@ -384,6 +392,130 @@ pub fn measure_complexity(s: &str) -> Result<String, JsValue> {
     let (arena, root) = parse_model(s)?;
     let report = measure(&arena, root);
     serde_json::to_string_pretty(&report).map_err(|e| wasm_err(&format!("json error: {}", e)))
+}
+
+/// Analyse frequency ranges of all FrequentTransition nodes in a POWL model.
+///
+/// Internally runs `simplify_using_frequent_transitions` first, so XOR/LOOP patterns
+/// that imply frequency semantics (e.g. `X(A, tau)` → skippable A) are recognised
+/// even when the input model has not been explicitly simplified.
+///
+/// Mirrors `TaggedPOWL.freq_range()` / `is_skippable()` / `is_repeatable()` / `is_unbounded()`
+/// from `vendors/POWL/powl/objects/tagged_powl/base.py`.
+///
+/// Returns JSON:
+/// ```json
+/// {
+///   "total_frequent_transitions": 3,
+///   "skippable_count": 1,
+///   "repeatable_count": 2,
+///   "unbounded_count": 1,
+///   "freq_min_min": 0,
+///   "freq_max_max": null,
+///   "nodes": [
+///     { "activity": "A", "min_freq": 0, "max_freq": 1,
+///       "is_skippable": true, "is_repeatable": false, "is_unbounded": false }
+///   ]
+/// }
+/// ```
+#[wasm_bindgen]
+pub fn powl_freq_analysis(s: &str) -> Result<String, JsValue> {
+    let (mut arena, root) = parse_model(s)?;
+    // Surface latent frequency semantics from XOR/LOOP patterns before collecting.
+    let root = crate::powl::simplify::simplify_using_frequent_transitions(&mut arena, root);
+
+    let mut nodes: Vec<serde_json::Value> = Vec::new();
+    collect_freq_nodes(&arena, root, &mut nodes);
+
+    let total = nodes.len();
+    let skippable_count = nodes
+        .iter()
+        .filter(|n| n["is_skippable"].as_bool().unwrap_or(false))
+        .count();
+    let repeatable_count = nodes
+        .iter()
+        .filter(|n| n["is_repeatable"].as_bool().unwrap_or(false))
+        .count();
+    let unbounded_count = nodes
+        .iter()
+        .filter(|n| n["is_unbounded"].as_bool().unwrap_or(false))
+        .count();
+
+    // Overall min of all min_freqs
+    let freq_min_min: Option<i64> = nodes.iter().filter_map(|n| n["min_freq"].as_i64()).min();
+    // Overall max of all max_freqs (null if any node is unbounded)
+    let freq_max_max: serde_json::Value =
+        if nodes.iter().any(|n| n["is_unbounded"].as_bool().unwrap_or(false)) {
+            serde_json::Value::Null
+        } else {
+            nodes
+                .iter()
+                .filter_map(|n| n["max_freq"].as_i64())
+                .max()
+                .map(serde_json::Value::from)
+                .unwrap_or(serde_json::Value::Null)
+        };
+
+    let result = serde_json::json!({
+        "total_frequent_transitions": total,
+        "skippable_count": skippable_count,
+        "repeatable_count": repeatable_count,
+        "unbounded_count": unbounded_count,
+        "freq_min_min": freq_min_min,
+        "freq_max_max": freq_max_max,
+        "nodes": nodes,
+    });
+
+    serde_json::to_string_pretty(&result).map_err(|e| wasm_err(&format!("json error: {}", e)))
+}
+
+/// Recursively collect all FrequentTransition nodes in the subtree into `out`.
+fn collect_freq_nodes(arena: &PowlArena, idx: u32, out: &mut Vec<serde_json::Value>) {
+    match arena.get(idx) {
+        None | Some(crate::powl_arena::PowlNode::Transition(_)) => {}
+        Some(crate::powl_arena::PowlNode::FrequentTransition(t)) => {
+            out.push(serde_json::json!({
+                "activity": t.activity,
+                "min_freq": t.min_freq,
+                "max_freq": t.max_freq,
+                "is_skippable": t.is_skippable(),
+                "is_repeatable": t.is_repeatable(),
+                "is_unbounded": t.is_unbounded(),
+            }));
+        }
+        Some(crate::powl_arena::PowlNode::OperatorPowl(op)) => {
+            let children = op.children.clone();
+            for c in children {
+                collect_freq_nodes(arena, c, out);
+            }
+        }
+        Some(crate::powl_arena::PowlNode::StrictPartialOrder(spo)) => {
+            let children = spo.children.clone();
+            for c in children {
+                collect_freq_nodes(arena, c, out);
+            }
+        }
+        Some(crate::powl_arena::PowlNode::DecisionGraph(dg)) => {
+            let children = dg.children.clone();
+            for c in children {
+                collect_freq_nodes(arena, c, out);
+            }
+        }
+        Some(crate::powl_arena::PowlNode::ChoiceGraph(cg)) => {
+            let sub_idxs: Vec<u32> = cg
+                .graph
+                .nodes
+                .iter()
+                .filter_map(|n| match n {
+                    wasm4pm_types::ChoiceGraphNode::SubModel(i) => Some(*i),
+                    _ => None,
+                })
+                .collect();
+            for c in sub_idxs {
+                collect_freq_nodes(arena, c, out);
+            }
+        }
+    }
 }
 
 /// Diff two POWL models (structural + behavioral comparison).

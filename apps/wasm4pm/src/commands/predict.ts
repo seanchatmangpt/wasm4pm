@@ -1,11 +1,11 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
-import { EXIT_CODES } from '../exit-codes.js';
+import { EXIT_CODES, translateContractExitCode } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
 import { loadWasm4pmConfig, buildCliOverrides } from '../config-loader.js';
 import { savePredictionResult } from './results.js';
-import { VALID_PREDICT_CLI_TASKS } from '@wasm4pm/contracts';
+import { VALID_PREDICT_CLI_TASKS, createError } from '@wasm4pm/contracts';
 import { withSpan } from './_otel.js';
 import {
   saveCommandReceipt,
@@ -186,16 +186,35 @@ export const predict = defineCommand({
               const wasm = wasmBase as Record<string, any>;
 
               // Step 4: Execute prediction task
-              const taskResult = await executePredictionTask(
-                wasm,
-                task as PredictTask,
-                logHandle,
-                activityKey,
-                topK,
-                ngramOrder,
-                driftWindow,
-                prefixActivities
-              );
+              let taskResult: Record<string, unknown>;
+              try {
+                taskResult = await executePredictionTask(
+                  wasm,
+                  task as PredictTask,
+                  logHandle,
+                  activityKey,
+                  topK,
+                  ngramOrder,
+                  driftWindow,
+                  prefixActivities
+                );
+              } catch (predictionErr: unknown) {
+                // PREDICTION_FAILED: create structured error with remediation
+                const errorInfo = createError(
+                  'PREDICTION_FAILED',
+                  predictionErr instanceof Error ? predictionErr.message : String(predictionErr),
+                  { task, activityKey, topK, ngramOrder, driftWindow }
+                );
+                const result = makeErrorResult(
+                  'predict',
+                  new Error(errorInfo.message),
+                  translateContractExitCode(errorInfo.exit_code),
+                  'PREDICTION_FAILED',
+                  errorInfo.remediation
+                );
+                emitResult(result, { format, verbose, quiet });
+                return await exitWithFlush(result.exit_code);
+              }
 
               // Step 5: Build result
               const payload = {
