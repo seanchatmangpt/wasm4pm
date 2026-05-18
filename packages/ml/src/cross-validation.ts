@@ -14,7 +14,6 @@
  * methods (kNN with small k, deep decision trees). Reported confidence is thus realistic.
  */
 
-import type { ClassificationMethod, RegressionMethod } from './types.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // CV result types
