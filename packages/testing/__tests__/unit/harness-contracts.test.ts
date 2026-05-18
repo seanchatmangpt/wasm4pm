@@ -257,3 +257,354 @@ describe('runCertification — evidence envelope', () => {
     expect(perfGate!.passed).toBe(true); // Skipped gates are counted as passing
   });
 });
+
+// ─── OtelCapture assertion return-type contracts ────────────────────────────
+//
+// Oracle hierarchy:
+//   Rank 1 (mathematical): Return type is string[] (never undefined/throws),
+//                          length semantics, mutual exclusion between violation
+//                          and clean paths.
+//   Rank 2 (domain contract): Violation messages name the missing field /
+//                             offending span.
+//   Rank 3 (metamorphic): Adding a compliant span cannot increase violation count.
+//
+// Key API notes (actual signatures):
+//   assertRequiredAttributes(requiredKeys: string[]) → string[]
+//     (operates on ALL captured spans)
+//   assertNonBlocking(maxDurationMs: number) → string[]
+//     (duration threshold in ms; span times are in nanoseconds)
+//   assertValidTraces() → string[]
+//     (validates parent-child spanId relationships)
+
+import { OtelCapture, createOtelCapture, type CapturedOtelSpan } from '../../src/harness/otel-capture.js';
+
+function makeTestSpan(overrides: Partial<CapturedOtelSpan> = {}): CapturedOtelSpan {
+  return {
+    traceId: 'trace-001',
+    spanId: 'span-001',
+    name: 'test.span',
+    startTime: Date.now() * 1_000_000, // nanoseconds
+    endTime: (Date.now() + 10) * 1_000_000, // 10ms later
+    attributes: {},
+    events: [],
+    ...overrides,
+  };
+}
+
+// ─── assertRequiredAttributes — Rank 1: Return-type is string[] ─────────────
+
+describe('OtelCapture.assertRequiredAttributes — Rank 1 (mathematical)', () => {
+  let capture: OtelCapture;
+
+  beforeEach(() => {
+    capture = createOtelCapture();
+  });
+
+  it('returns [] when capture has no spans (empty capture, any key list)', () => {
+    const result = capture.assertRequiredAttributes(['service.name', 'algorithm']);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result).toHaveLength(0);
+  });
+
+  it('returns [] with empty key list even when spans are present', () => {
+    capture.captureSpan(makeTestSpan({ attributes: {} }));
+    const result = capture.assertRequiredAttributes([]);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result).toHaveLength(0);
+  });
+
+  it('returns [] when span has ALL required attributes', () => {
+    capture.captureSpan(
+      makeTestSpan({
+        attributes: { 'service.name': 'wpm', algorithm: 'dfg', run_id: 'abc-123' },
+      })
+    );
+    const result = capture.assertRequiredAttributes(['service.name', 'algorithm', 'run_id']);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result).toHaveLength(0);
+  });
+
+  it('returns non-empty array when a required attribute is missing', () => {
+    capture.captureSpan(
+      makeTestSpan({
+        spanId: 'span-missing',
+        name: 'kernel.run',
+        attributes: { 'service.name': 'wpm' }, // 'algorithm' is absent
+      })
+    );
+    const violations = capture.assertRequiredAttributes(['service.name', 'algorithm']);
+    expect(Array.isArray(violations)).toBe(true);
+    expect(violations.length).toBeGreaterThan(0);
+  });
+
+  it('violation message names the missing attribute key', () => {
+    capture.captureSpan(makeTestSpan({ name: 'kernel.run', attributes: {} }));
+    const violations = capture.assertRequiredAttributes(['missing_field']);
+    expect(violations.some((v) => v.includes('missing_field'))).toBe(true);
+  });
+
+  it('violation message names the offending span', () => {
+    capture.captureSpan(makeTestSpan({ name: 'kernel.run', attributes: {} }));
+    const violations = capture.assertRequiredAttributes(['required_attr']);
+    expect(violations.some((v) => v.includes('kernel.run'))).toBe(true);
+  });
+
+  it('never throws — return type is always string[]', () => {
+    expect(() => {
+      const result = capture.assertRequiredAttributes(['any.key']);
+      expect(Array.isArray(result)).toBe(true);
+    }).not.toThrow();
+  });
+
+  it('one missing attribute on two spans → at least two violations', () => {
+    capture.captureSpan(makeTestSpan({ spanId: 'span-1', name: 'span.one', attributes: {} }));
+    capture.captureSpan(makeTestSpan({ spanId: 'span-2', name: 'span.two', attributes: {} }));
+    const violations = capture.assertRequiredAttributes(['required_key']);
+    expect(violations.length).toBeGreaterThanOrEqual(2);
+  });
+});
+
+// ─── assertRequiredAttributes — Rank 2: Domain Contract ─────────────────────
+
+describe('OtelCapture.assertRequiredAttributes — Rank 2 (domain contract)', () => {
+  it('a span fully satisfying requirements contributes zero violations', () => {
+    const capture = createOtelCapture();
+    capture.captureSpan(
+      makeTestSpan({
+        attributes: { 'wpm.algorithm': 'dfg', 'wpm.run_id': 'run-xyz' },
+      })
+    );
+    const violations = capture.assertRequiredAttributes(['wpm.algorithm', 'wpm.run_id']);
+    expect(violations).toHaveLength(0);
+  });
+
+  it('attribute present but set to undefined is treated as missing', () => {
+    const capture = createOtelCapture();
+    capture.captureSpan(
+      makeTestSpan({
+        attributes: { 'service.name': undefined as unknown as string },
+      })
+    );
+    const violations = capture.assertRequiredAttributes(['service.name']);
+    expect(violations.length).toBeGreaterThan(0);
+  });
+});
+
+// ─── assertRequiredAttributes — Rank 3: Metamorphic ─────────────────────────
+
+describe('OtelCapture.assertRequiredAttributes — Rank 3 (metamorphic)', () => {
+  it('adding a compliant span does not increase violation count', () => {
+    const captureA = createOtelCapture();
+    captureA.captureSpan(makeTestSpan({ name: 'bad.span', attributes: {} }));
+    const violationsA = captureA.assertRequiredAttributes(['req_key']);
+
+    const captureB = createOtelCapture();
+    captureB.captureSpan(makeTestSpan({ name: 'bad.span', attributes: {} }));
+    captureB.captureSpan(
+      makeTestSpan({ spanId: 'span-good', name: 'good.span', attributes: { req_key: 'value' } })
+    );
+    const violationsB = captureB.assertRequiredAttributes(['req_key']);
+
+    // same bad span + one good span → violation count unchanged (not increased)
+    expect(violationsB.length).toBe(violationsA.length);
+  });
+
+  it('fixing the missing attribute reduces violation count to zero', () => {
+    const captureBefore = createOtelCapture();
+    captureBefore.captureSpan(makeTestSpan({ name: 'span.a', attributes: {} }));
+    const violationsBefore = captureBefore.assertRequiredAttributes(['needed']);
+
+    const captureAfter = createOtelCapture();
+    captureAfter.captureSpan(makeTestSpan({ name: 'span.a', attributes: { needed: 'present' } }));
+    const violationsAfter = captureAfter.assertRequiredAttributes(['needed']);
+
+    expect(violationsAfter.length).toBeLessThan(violationsBefore.length);
+    expect(violationsAfter).toHaveLength(0);
+  });
+});
+
+// ─── assertNonBlocking — Rank 1: Return-type is string[] ────────────────────
+
+describe('OtelCapture.assertNonBlocking — Rank 1 (mathematical)', () => {
+  let capture: OtelCapture;
+
+  beforeEach(() => {
+    capture = createOtelCapture();
+  });
+
+  it('returns [] when capture has no spans', () => {
+    const result = capture.assertNonBlocking(100);
+    expect(Array.isArray(result)).toBe(true);
+    expect(result).toHaveLength(0);
+  });
+
+  it('returns [] when span duration is within the limit', () => {
+    const now = Date.now() * 1_000_000; // nanoseconds
+    capture.captureSpan(
+      makeTestSpan({
+        startTime: now,
+        endTime: now + 10 * 1_000_000, // 10ms in nanoseconds
+      })
+    );
+    const violations = capture.assertNonBlocking(50); // 50ms limit → no violation
+    expect(Array.isArray(violations)).toBe(true);
+    expect(violations).toHaveLength(0);
+  });
+
+  it('returns non-empty array when span duration exceeds the limit', () => {
+    const now = Date.now() * 1_000_000; // nanoseconds
+    capture.captureSpan(
+      makeTestSpan({
+        name: 'slow.span',
+        startTime: now,
+        endTime: now + 200 * 1_000_000, // 200ms in nanoseconds
+      })
+    );
+    const violations = capture.assertNonBlocking(100); // 100ms limit → violation
+    expect(Array.isArray(violations)).toBe(true);
+    expect(violations.length).toBeGreaterThan(0);
+  });
+
+  it('violation message names the offending span', () => {
+    const now = Date.now() * 1_000_000;
+    capture.captureSpan(
+      makeTestSpan({
+        name: 'blocking.operation',
+        startTime: now,
+        endTime: now + 500 * 1_000_000, // 500ms
+      })
+    );
+    const violations = capture.assertNonBlocking(100);
+    expect(violations.some((v) => v.includes('blocking.operation'))).toBe(true);
+  });
+
+  it('span with no endTime is not flagged (duration cannot be computed)', () => {
+    const now = Date.now() * 1_000_000;
+    capture.captureSpan(
+      makeTestSpan({
+        name: 'open.span',
+        startTime: now,
+        endTime: undefined,
+      })
+    );
+    const violations = capture.assertNonBlocking(1); // extremely tight limit
+    expect(violations).toHaveLength(0); // no endTime → cannot compute duration
+  });
+
+  it('never throws — return type is always string[]', () => {
+    expect(() => {
+      const result = capture.assertNonBlocking(0);
+      expect(Array.isArray(result)).toBe(true);
+    }).not.toThrow();
+  });
+});
+
+// ─── assertValidTraces — Rank 1: Return-type is string[] ────────────────────
+
+describe('OtelCapture.assertValidTraces — Rank 1 (mathematical)', () => {
+  let capture: OtelCapture;
+
+  beforeEach(() => {
+    capture = createOtelCapture();
+  });
+
+  it('returns [] when capture has no spans', () => {
+    const result = capture.assertValidTraces();
+    expect(Array.isArray(result)).toBe(true);
+    expect(result).toHaveLength(0);
+  });
+
+  it('returns [] when all spans are root spans (no parentSpanId)', () => {
+    capture.captureSpan(makeTestSpan({ spanId: 'root-1', parentSpanId: undefined }));
+    capture.captureSpan(makeTestSpan({ spanId: 'root-2', parentSpanId: undefined }));
+    const violations = capture.assertValidTraces();
+    expect(Array.isArray(violations)).toBe(true);
+    expect(violations).toHaveLength(0);
+  });
+
+  it('returns [] when parent-child relationships are valid', () => {
+    capture.captureSpan(makeTestSpan({ spanId: 'parent-span', parentSpanId: undefined }));
+    capture.captureSpan(
+      makeTestSpan({ spanId: 'child-span', parentSpanId: 'parent-span', name: 'child.op' })
+    );
+    const violations = capture.assertValidTraces();
+    expect(violations).toHaveLength(0);
+  });
+
+  it('returns non-empty array when a span references a missing parent', () => {
+    capture.captureSpan(
+      makeTestSpan({
+        spanId: 'orphan-span',
+        parentSpanId: 'nonexistent-parent',
+        name: 'orphan.op',
+      })
+    );
+    const violations = capture.assertValidTraces();
+    expect(Array.isArray(violations)).toBe(true);
+    expect(violations.length).toBeGreaterThan(0);
+  });
+
+  it('violation message names the orphaned span', () => {
+    capture.captureSpan(
+      makeTestSpan({
+        spanId: 'orphan-span',
+        parentSpanId: 'ghost-parent',
+        name: 'missing.parent',
+      })
+    );
+    const violations = capture.assertValidTraces();
+    expect(violations.some((v) => v.includes('missing.parent'))).toBe(true);
+  });
+
+  it('never throws — return type is always string[]', () => {
+    expect(() => {
+      const result = capture.assertValidTraces();
+      expect(Array.isArray(result)).toBe(true);
+    }).not.toThrow();
+  });
+});
+
+// ─── Cross-method compositional safety ──────────────────────────────────────
+
+describe('OtelCapture assertion methods — compositional safety (Rank 1)', () => {
+  it('all three assertion methods return string[] on the same capture instance', () => {
+    const capture = createOtelCapture();
+    const now = Date.now() * 1_000_000;
+    capture.captureSpan(
+      makeTestSpan({
+        spanId: 'span-001',
+        parentSpanId: undefined,
+        name: 'full.op',
+        startTime: now,
+        endTime: now + 5 * 1_000_000,
+        attributes: { 'service.name': 'wpm' },
+      })
+    );
+
+    const attrViolations = capture.assertRequiredAttributes(['service.name']);
+    const blockingViolations = capture.assertNonBlocking(100);
+    const traceViolations = capture.assertValidTraces();
+
+    expect(Array.isArray(attrViolations)).toBe(true);
+    expect(Array.isArray(blockingViolations)).toBe(true);
+    expect(Array.isArray(traceViolations)).toBe(true);
+
+    // Compliant span → zero violations from all three methods
+    expect(attrViolations).toHaveLength(0);
+    expect(blockingViolations).toHaveLength(0);
+    expect(traceViolations).toHaveLength(0);
+  });
+
+  it('calling assertion methods does not mutate the captured span list', () => {
+    const capture = createOtelCapture();
+    capture.captureSpan(makeTestSpan({ spanId: 'immutable-span' }));
+
+    const countBefore = capture.spans.length;
+    capture.assertRequiredAttributes(['some.key']);
+    capture.assertNonBlocking(100);
+    capture.assertValidTraces();
+    const countAfter = capture.spans.length;
+
+    expect(countAfter).toBe(countBefore);
+  });
+});
