@@ -345,7 +345,8 @@ browser = [
   "statrs",
   "ocel",
   "powl",
-  "console_error_panic_hook"
+  "console_error_panic_hook",
+  "import"
 ]
 
 # Cloud profile: deprecated alias for browser profile
@@ -416,5 +417,9 @@ poc_gate_validator = []
 # NEVER include in any deployment profile until real model is implemented
 automl_experimental = []
 
-# Optional wasm4pm-types XES import module (requires wasm4pm-types/import feature)
-import = []
+# Real XES parser via wasm4pm-types' in-tree port of the process_mining
+# crate's parser. Activates the #[cfg(feature = "import")] branch in
+# xes_format.rs, replacing the fallback line-walker that silently drops
+# anything it doesn't recognise (e.g. `<global>` blocks). Always on for the
+# default browser profile; opt-out via --no-default-features for size builds.
+import = ["wasm4pm-types/import"]

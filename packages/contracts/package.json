@@ -10,37 +10,121 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
-    "./receipt": {
-      "import": "./dist/receipt.js",
-      "types": "./dist/receipt.d.ts"
+    "./algorithm-registry": {
+      "import": "./dist/algorithm-registry.js",
+      "types": "./dist/algorithm-registry.d.ts"
     },
-    "./hash": {
-      "import": "./dist/hash.js",
-      "types": "./dist/hash.d.ts"
+    "./andon-bridge": {
+      "import": "./dist/andon-bridge.js",
+      "types": "./dist/andon-bridge.d.ts"
     },
-    "./receipt-builder": {
-      "import": "./dist/receipt-builder.js",
-      "types": "./dist/receipt-builder.d.ts"
+    "./atomvm-bridge": {
+      "import": "./dist/atomvm-bridge.js",
+      "types": "./dist/atomvm-bridge.d.ts"
     },
-    "./validation": {
-      "import": "./dist/validation.js",
-      "types": "./dist/validation.d.ts"
+    "./budget": {
+      "import": "./dist/budget.js",
+      "types": "./dist/budget.d.ts"
     },
-    "./plan": {
-      "import": "./dist/plan.js",
-      "types": "./dist/plan.d.ts"
+    "./compatibility": {
+      "import": "./dist/compatibility.js",
+      "types": "./dist/compatibility.d.ts"
     },
-    "./status": {
-      "import": "./dist/status.js",
-      "types": "./dist/status.d.ts"
+    "./conformance-bridge": {
+      "import": "./dist/conformance-bridge.js",
+      "types": "./dist/conformance-bridge.d.ts"
+    },
+    "./connectors": {
+      "import": "./dist/connectors.js",
+      "types": "./dist/connectors.d.ts"
+    },
+    "./erlang-bridge": {
+      "import": "./dist/erlang-bridge.js",
+      "types": "./dist/erlang-bridge.d.ts"
+    },
+    "./errors": {
+      "import": "./dist/errors.js",
+      "types": "./dist/errors.d.ts"
+    },
+    "./eventlog": {
+      "import": "./dist/eventlog.js",
+      "types": "./dist/eventlog.d.ts"
     },
     "./explain": {
       "import": "./dist/explain.js",
       "types": "./dist/explain.d.ts"
     },
-    "./errors": {
-      "import": "./dist/errors.js",
-      "types": "./dist/errors.d.ts"
+    "./hash": {
+      "import": "./dist/hash.js",
+      "types": "./dist/hash.d.ts"
+    },
+    "./marketplace-bridge": {
+      "import": "./dist/marketplace-bridge.js",
+      "types": "./dist/marketplace-bridge.d.ts"
+    },
+    "./marketplace-receipt": {
+      "import": "./dist/marketplace-receipt.js",
+      "types": "./dist/marketplace-receipt.d.ts"
+    },
+    "./membrane": {
+      "import": "./dist/membrane.js",
+      "types": "./dist/membrane.d.ts"
+    },
+    "./model": {
+      "import": "./dist/model.js",
+      "types": "./dist/model.d.ts"
+    },
+    "./ocel-bridge": {
+      "import": "./dist/ocel-bridge.js",
+      "types": "./dist/ocel-bridge.d.ts"
+    },
+    "./plan": {
+      "import": "./dist/plan.js",
+      "types": "./dist/plan.d.ts"
+    },
+    "./prolog8-compiler": {
+      "import": "./dist/prolog8-compiler.js",
+      "types": "./dist/prolog8-compiler.d.ts"
+    },
+    "./quality-thresholds": {
+      "import": "./dist/quality-thresholds.js",
+      "types": "./dist/quality-thresholds.d.ts"
+    },
+    "./receipt-builder": {
+      "import": "./dist/receipt-builder.js",
+      "types": "./dist/receipt-builder.d.ts"
+    },
+    "./receipt-emit-bridge": {
+      "import": "./dist/receipt-emit-bridge.js",
+      "types": "./dist/receipt-emit-bridge.d.ts"
+    },
+    "./receipt": {
+      "import": "./dist/receipt.js",
+      "types": "./dist/receipt.d.ts"
+    },
+    "./result": {
+      "import": "./dist/result.js",
+      "types": "./dist/result.d.ts"
+    },
+    "./sinks": {
+      "import": "./dist/sinks.js",
+      "types": "./dist/sinks.d.ts"
+    },
+    "./status": {
+      "import": "./dist/status.js",
+      "types": "./dist/status.d.ts"
+    },
+    "./steps": {
+      "import": "./dist/steps.js",
+      "types": "./dist/steps.d.ts"
+    },
+    "./types": {
+      "import": "./dist/types.js",
+      "types": "./dist/types.d.ts"
+    },
+    "./validation": {
+      "import": "./dist/validation.js",
+      "types": "./dist/validation.d.ts"
     }
   },
   "files": [

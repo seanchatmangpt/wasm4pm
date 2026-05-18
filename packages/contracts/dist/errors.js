@@ -98,15 +98,15 @@ const REMEDIATIONS = {
     SOURCE_INVALID: 'The source file format is not recognized. Ensure it is a valid XES, CSV, or JSON event log.',
     SOURCE_PERMISSION: 'Permission denied reading the source file. Check file permissions: chmod 644 <file>',
     // Algorithm errors
-    ALGORITHM_FAILED: 'The algorithm encountered an error during execution. Check the detailed error message and try with different parameters or a smaller dataset.',
-    ALGORITHM_NOT_FOUND: 'The requested algorithm is not available. Run: wpm list-algorithms to see available options.',
-    CONFORMANCE_FAILED: 'Conformance checking failed. Verify the process model matches the event log structure. Check activity names and case IDs match.',
+    ALGORITHM_FAILED: 'The algorithm encountered an error during execution. Check the detailed error message and try with different parameters or a smaller dataset. Run: wpm explain <algorithm> for parameter guidance. Use wpm compare to identify a more suitable algorithm for your log.',
+    ALGORITHM_NOT_FOUND: 'The requested algorithm is not available. Run: wpm algorithms to list all 36 registered algorithms. Use --tier fast|balanced|quality|stream to filter by speed.',
+    CONFORMANCE_FAILED: 'Conformance checking failed. Verify the process model matches the event log structure — activity names and case IDs must match. Run: wpm validate -i <log> to inspect the log schema, then wpm quality to diagnose which fitness/precision dimension is failing.',
     SIMULATION_FAILED: 'Process simulation failed. Verify the model is valid and simulation parameters are within acceptable ranges.',
     PREDICTION_FAILED: 'Predictive analysis failed. Ensure sufficient training data and valid feature configuration.',
     VALIDATION_FAILED: 'Model validation failed. Check that the model structure is valid and required attributes are present.',
     IMPORT_FAILED: 'Model import failed. Verify the import file is valid and the format is supported (PNML, BPMN).',
     // WASM runtime errors
-    WASM_INIT_FAILED: 'Failed to initialize the WASM module. Ensure Node.js/browser is compatible (Node 16+, modern browser). Try reinstalling the package: npm install @wasm4pm/engine',
+    WASM_INIT_FAILED: 'Failed to initialize the WASM module. Ensure Node.js/browser is compatible (Node 16+, modern browser). Try reinstalling: pnpm add @wasm4pm/engine. Run: wpm status to confirm WASM engine health.',
     WASM_MEMORY_EXCEEDED: 'Insufficient memory in WASM sandbox. Try processing your data in smaller batches or check available memory limits.',
     // Sink errors
     SINK_FAILED: 'Failed to write output to sink. Check the sink configuration and ensure the destination exists and is writable.',
