@@ -57,6 +57,9 @@ verify-ts: lint check-debt
 	@# build, tests throw "Cannot read properties of undefined (reading '__wbindgen_free')".
 	@# Same root cause as @wasm4pm/cli, @wasm4pm/engine, @wasm4pm/kernel above.
 	@# Run independently after `cd wasm4pm && npm run build:nodejs`: `pnpm --filter wasm4pm test`
+	@# @wasm4pm/planner is excluded: SIGABRT (cjsPreparseModuleExports) when run in parallel
+	@# alongside packages that import the WASM binary. All planner tests pass in isolation:
+	@# `pnpm --filter @wasm4pm/planner test`
 	@pnpm -r --workspace-concurrency=3 \
 		--filter '!@wasm4pm/cli' \
 		--filter '!@wasm4pm/engine' \
@@ -65,6 +68,7 @@ verify-ts: lint check-debt
 		--filter '!@wasm4pm/swarm' \
 		--filter '!@wasm4pm/observability' \
 		--filter '!@wasm4pm/ml' \
+		--filter '!@wasm4pm/planner' \
 		--filter '!@wasm4pm/lab-cli-tests' \
 		--filter '!wasm4pm' \
 		test
