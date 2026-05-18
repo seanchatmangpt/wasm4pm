@@ -39,3 +39,50 @@ export type {
 } from './types.js';
 
 export { ConvergenceMaxIterationsError, ConvergenceTimeoutError } from './types.js';
+
+// BEAM actor message bridge (A-P09 constraint enforcement)
+export {
+  assertNotAccept,
+  convergenceToBeam,
+  workerResultToBeam,
+  exhaustionToBeam,
+  type BeamMessage,
+} from './beam-bridge.js';
+
+// POWL gap lifecycle span event emitters (LIVE-09)
+export {
+  emitGapDetected,
+  emitGapClosed,
+  emitGapExhausted,
+  emitGapAlternateEvidence,
+  type GapDetectedEvent,
+  type GapClosedEvent,
+  type GapExhaustedEvent,
+  type GapAlternateEvidenceEvent,
+  type GapTraceRecord,
+} from './gap-events.js';
+
+// Route refinement policy (8-variant ladder)
+export {
+  ROUTE_REFINEMENT_ANDON,
+  createAttempt,
+  isLIVE09bViolation,
+  selectNextVariant,
+  shouldEscalate,
+  type DiscoveryVariant,
+  type RouteRefinementVariant,
+  type RefinementAttempt,
+} from './route-refinement.js';
+
+// Refinement orchestrator (stateful ladder runner)
+export {
+  initRefinementState,
+  stepRefinement,
+  serializeState,
+  deserializeState,
+  getGapEvents,
+  type RefinementState,
+  type RefinementContext,
+  type RefinementAction,
+  type StepResult,
+} from './refinement-orchestrator.js';
