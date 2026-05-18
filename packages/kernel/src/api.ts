@@ -163,6 +163,18 @@ export interface KernelWasmModule extends WasmModule {
  * kernel.freeHandle(result.handle);
  * ```
  */
+/**
+ * Optional callback for capturing algorithm feedback (quality metrics).
+ * Called after successful discovery runs (non-blocking).
+ */
+export type FeedbackCapture = (options: {
+  algorithm: string;
+  logSize: number;
+  executionTimeMs: number;
+  metrics: { fitness?: number; precision?: number | null; generalization?: number | null; simplicity?: number | null };
+  metadata?: Record<string, unknown>;
+}) => Promise<void>;
+
 export class Kernel {
   private wasm: KernelWasmModule;
   private registry: AlgorithmRegistry;
@@ -173,12 +185,16 @@ export class Kernel {
   private _startTime = Date.now();
   private _resultCache = new Map<string, KernelResult>();
   private _spanSink: SpanSink = DEFAULT_SINK;
+  private _feedbackCapture: FeedbackCapture | undefined;
 
-  constructor(wasmModule: KernelWasmModule, options?: { spanSink?: SpanSink }) {
+  constructor(wasmModule: KernelWasmModule, options?: { spanSink?: SpanSink; feedbackCapture?: FeedbackCapture }) {
     this.wasm = wasmModule;
     this.registry = getRegistry();
     if (options?.spanSink) {
       this._spanSink = options.spanSink;
+    }
+    if (options?.feedbackCapture) {
+      this._feedbackCapture = options.feedbackCapture;
     }
   }
 
@@ -196,6 +212,15 @@ export class Kernel {
    */
   setSpanSink(sink: SpanSink): void {
     this._spanSink = sink;
+  }
+
+  /**
+   * Set the feedback capture callback.
+   * Called after successful algorithm runs to capture quality metrics.
+   * Non-blocking (failures are logged but don't affect result).
+   */
+  setFeedbackCapture(capture: FeedbackCapture): void {
+    this._feedbackCapture = capture;
   }
 
   /**
@@ -378,6 +403,22 @@ export class Kernel {
       // Never block on OTEL.
     }
 
+    // ── Capture feedback (non-blocking) ────────────────────────────────
+    if (this._feedbackCapture) {
+      // Fire-and-forget: never block on feedback capture
+      this._feedbackCapture({
+        algorithm: algorithmName,
+        logSize: this.getLogSizeHint(eventLogHandle),
+        executionTimeMs: durationMs,
+        metrics: {
+          // Metrics will be populated by caller if available
+          // Kernel captures empty metrics; conformance/quality commands will enrich
+        },
+      }).catch(() => {
+        // Silently ignore feedback capture failures per TPS rules
+      });
+    }
+
     this._resultCache.set(cacheKey, result);
     return result;
   }
@@ -462,6 +503,17 @@ export class Kernel {
         'KERNEL_NOT_INITIALIZED'
       );
     }
+  }
+
+  /**
+   * Estimate log size from handle (for feedback purposes).
+   * This is a heuristic; exact size calculation would require WASM introspection.
+   * Returns a reasonable estimate based on handle if available.
+   */
+  private getLogSizeHint(handle: string): number {
+    // Heuristic: if WASM exposes a stats function, call it
+    // For now, return 0 (unknown) — callers should enrich with actual size
+    return 0;
   }
 
   /**

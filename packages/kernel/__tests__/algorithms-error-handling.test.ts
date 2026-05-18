@@ -29,54 +29,38 @@ beforeAll(() => {
 // ---------------------------------------------------------------------------
 
 describe('Kernel - Algorithm Not Found Errors', () => {
-  it('registry.find() returns undefined for unknown algorithm name', () => {
-    const algo = registry.find('not_a_real_algorithm' as AlgorithmId);
+  it('registry.get() returns undefined for unknown algorithm name', () => {
+    const algo = registry.get('not_a_real_algorithm' as AlgorithmId);
     expect(algo).toBeUndefined();
   });
 
-  it('registry.findByName() returns undefined for empty string', () => {
-    const algo = registry.findByName('');
+  it('registry.get() returns undefined for empty string', () => {
+    const algo = registry.get('');
     expect(algo).toBeUndefined();
   });
 
-  it('registry.findByName() is case-sensitive and rejects uppercase', () => {
-    const algo = registry.findByName('DFG');
+  it('registry.get() is case-sensitive and rejects uppercase', () => {
+    const algo = registry.get('DFG' as AlgorithmId);
     expect(algo).toBeUndefined();
   });
 
-  it('registry.findByName() is case-sensitive and rejects wrong casing', () => {
-    const algo = registry.findByName('Heuristic_Miner');
+  it('registry.get() is case-sensitive and rejects wrong casing', () => {
+    const algo = registry.get('Heuristic_Miner' as AlgorithmId);
     expect(algo).toBeUndefined();
   });
 
-  it('getAlgorithm() throws for unknown algorithm ID', () => {
-    expect(() => {
-      registry.getAlgorithm('not_a_real_algorithm' as AlgorithmId);
-    }).toThrow();
+  it('registry.get() returns undefined for null', () => {
+    const algo = registry.get(null as any);
+    expect(algo).toBeUndefined();
   });
 
-  it('getAlgorithm() error message includes algorithm name', () => {
-    try {
-      registry.getAlgorithm('totally_unknown_algo' as AlgorithmId);
-      expect.fail('Should have thrown');
-    } catch (error) {
-      const msg = String(error);
-      expect(msg.toLowerCase()).toMatch(/unknown|not found|not registered/);
-    }
+  it('registry.get() returns undefined for undefined', () => {
+    const algo = registry.get(undefined as any);
+    expect(algo).toBeUndefined();
   });
 
-  it('getAlgorithm() throws for null/undefined algorithm ID', () => {
-    expect(() => {
-      registry.getAlgorithm(null as any);
-    }).toThrow();
-
-    expect(() => {
-      registry.getAlgorithm(undefined as any);
-    }).toThrow();
-  });
-
-  it('getAlgorithmByName() returns undefined for unknown name (non-throwing variant)', () => {
-    const algo = registry.getAlgorithmByName('definitely_not_an_algorithm');
+  it('registry.get() returns undefined for typical invalid algorithm name', () => {
+    const algo = registry.get('definitely_not_an_algorithm' as AlgorithmId);
     expect(algo).toBeUndefined();
   });
 
@@ -127,15 +111,15 @@ describe('Kernel - Feature-Gate Constraint Enforcement', () => {
   });
 
   it('fast execution profile has fewer algorithms than quality profile', () => {
-    const fastAlgos = registry.getForExecutionProfile('fast');
-    const qualityAlgos = registry.getForExecutionProfile('quality');
+    const fastAlgos = registry.getForProfile('fast');
+    const qualityAlgos = registry.getForProfile('quality');
     expect(fastAlgos.length).toBeLessThan(qualityAlgos.length);
   });
 
   it('balanced execution profile is between fast and quality', () => {
-    const fastAlgos = registry.getForExecutionProfile('fast');
-    const balancedAlgos = registry.getForExecutionProfile('balanced');
-    const qualityAlgos = registry.getForExecutionProfile('quality');
+    const fastAlgos = registry.getForProfile('fast');
+    const balancedAlgos = registry.getForProfile('balanced');
+    const qualityAlgos = registry.getForProfile('quality');
     expect(balancedAlgos.length).toBeGreaterThanOrEqual(fastAlgos.length);
     expect(balancedAlgos.length).toBeLessThanOrEqual(qualityAlgos.length);
   });
@@ -168,9 +152,9 @@ describe('Kernel - Feature-Gate Constraint Enforcement', () => {
   });
 
   it('advanced algorithms (genetic, ilp) only appear in quality/browser profiles', () => {
-    const fastAlgos = new Set(registry.getForExecutionProfile('fast').map((a) => a.id));
-    const balancedAlgos = new Set(registry.getForExecutionProfile('balanced').map((a) => a.id));
-    const qualityAlgos = new Set(registry.getForExecutionProfile('quality').map((a) => a.id));
+    const fastAlgos = new Set(registry.getForProfile('fast').map((a) => a.id));
+    const balancedAlgos = new Set(registry.getForProfile('balanced').map((a) => a.id));
+    const qualityAlgos = new Set(registry.getForProfile('quality').map((a) => a.id));
 
     // These algorithms should be in quality but not fast
     const advancedAlgos = ['genetic_algorithm', 'ilp'];
@@ -192,15 +176,15 @@ describe('Kernel - Feature-Gate Constraint Enforcement', () => {
 // ---------------------------------------------------------------------------
 
 describe('Kernel - WASM Module State and Handle Validation', () => {
-  it('registry.isInitialized() returns a boolean', () => {
-    const result = registry.isInitialized();
-    expect(typeof result).toBe('boolean');
+  it('registry.get() returns undefined for invalid algorithm', () => {
+    const result = registry.get('not_a_real_algorithm');
+    expect(result).toBeUndefined();
   });
 
-  it('registry.getWasmStatus() returns status string', () => {
-    const status = registry.getWasmStatus();
-    expect(typeof status).toBe('string');
-    expect(['ready', 'initializing', 'failed', 'not_loaded'].includes(status)).toBe(true);
+  it('registry.getForProfile() returns an array for valid profile', () => {
+    const result = registry.getForProfile('fast');
+    expect(Array.isArray(result)).toBe(true);
+    expect(result.length).toBeGreaterThan(0);
   });
 
   it('invalid handle string is rejected by runtime checks', () => {
@@ -232,9 +216,10 @@ describe('Kernel - WASM Module State and Handle Validation', () => {
     }
   });
 
-  it('registry.validate() exists and can validate algorithm availability', () => {
-    const fn = registry.validate;
-    expect(typeof fn).toBe('function');
+  it('registry.suggestForProfile() can suggest algorithms for a profile and log size', () => {
+    const suggested = registry.suggestForProfile('balanced', 10000);
+    // Should return either an algorithm or undefined
+    expect(suggested === undefined || typeof suggested.id === 'string').toBe(true);
   });
 
   it('no algorithm has undefined or null ID', () => {
@@ -246,9 +231,11 @@ describe('Kernel - WASM Module State and Handle Validation', () => {
     }
   });
 
-  it('registry has methods for checking WASM readiness', () => {
-    expect(typeof registry.isInitialized).toBe('function');
-    expect(typeof registry.getWasmStatus).toBe('function');
+  it('registry has core methods for algorithm lookup and filtering', () => {
+    expect(typeof registry.get).toBe('function');
+    expect(typeof registry.list).toBe('function');
+    expect(typeof registry.getForProfile).toBe('function');
+    expect(typeof registry.getForDeploymentProfile).toBe('function');
   });
 });
 

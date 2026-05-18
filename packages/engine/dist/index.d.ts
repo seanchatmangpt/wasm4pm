@@ -3,7 +3,6 @@
  * Engine lifecycle and state machine for wasm4pm
  * Provides state management, error handling, and execution orchestration
  */
-export type { EngineState, EngineStatus, ExecutionPlan, ExecutionReceipt, EngineError, StatusUpdate, PlanStep, } from '@wasm4pm/contracts';
 /**
  * Engine — Orchestrates WASM kernel, planning, and execution with fault tolerance.
  * @description Manages state machine transitions, bootstrap, planning, runs, watch mode, and recovery.

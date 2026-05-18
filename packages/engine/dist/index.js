@@ -3,6 +3,7 @@
  * Engine lifecycle and state machine for wasm4pm
  * Provides state management, error handling, and execution orchestration
  */
+// Re-export types from @wasm4pm/contracts
 // Engine lifecycle and state machine
 /**
  * Engine — Orchestrates WASM kernel, planning, and execution with fault tolerance.

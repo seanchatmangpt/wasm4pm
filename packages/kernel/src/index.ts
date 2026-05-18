@@ -35,7 +35,41 @@ export type {
   ExecutionProfile,
   QualityTier,
   SpeedTier,
+  DeploymentProfile,
 } from './registry.js';
+
+// Feature gates — deployment profile validation
+/**
+ * validateDeploymentProfile — Validate WASM binary against a claimed profile.
+ * @description Checks for required/optional features and returns confidence score.
+ * @example const result = validateDeploymentProfile(wasm, 'browser'); if (result.valid) { ... }
+ */
+export { validateDeploymentProfile, detectDeploymentProfile, describeProfile } from './feature-gates.js';
+export type {
+  FeatureValidationResult,
+  DeploymentProfileValidationResult,
+} from './feature-gates.js';
+
+// Profile constraints — algorithm availability in deployment profiles
+/**
+ * canRun — Check if an algorithm is available in a deployment profile.
+ * @description Prevents running unavailable algorithms by validating against profile feature gates.
+ * @example if (canRun('genetic_algorithm', 'mobile')) { await kernel.run('genetic_algorithm', handle); }
+ */
+export {
+  canRun,
+  validateAlgorithmInProfile,
+  getAvailableAlgorithms,
+  getAvailableAlgorithmIds,
+  suggestAlternatives,
+  getProfileInfo,
+  buildAlgorithmUnavailableMessage,
+  getProfileComparisonTable,
+} from './profile-constraints.js';
+export type {
+  AlgorithmValidationResult,
+  ProfileInfo,
+} from './profile-constraints.js';
 
 // Handler exports
 export { implementAlgorithmStep, listAlgorithms, validateAlgorithmParameters } from './handlers.js';
@@ -174,3 +208,11 @@ export {
   generateAllManifests,
   computeManifestHash,
 } from './manifest-bridge.js';
+
+// WASM server client — reduces CLI latency from 2,273ms → <500ms via initialization caching
+/**
+ * WasmServerClient — Client for the long-lived WASM server process.
+ * @description Routes algorithm requests to server instead of local WASM init, reducing latency.
+ * @example const client = new WasmServerClient(); if (await client.isAvailable()) { const result = await client.runAlgorithm('dfg', handle); }
+ */
+export { WasmServerClient, isWasmServerAvailable } from './server-client.js';

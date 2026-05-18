@@ -5,15 +5,6 @@
  */
 
 // Re-export types from @wasm4pm/contracts
-export type {
-  EngineState,
-  EngineStatus,
-  ExecutionPlan,
-  ExecutionReceipt,
-  EngineError,
-  StatusUpdate,
-  PlanStep,
-} from '@wasm4pm/contracts';
 
 // Engine lifecycle and state machine
 /**
