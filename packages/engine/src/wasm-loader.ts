@@ -327,7 +327,7 @@ export class WasmLoader {
    * Throws WasmLoadError with a classified cause for actionable diagnostics.
    */
   private async loadWasmModule(): Promise<WasmModule> {
-    let wasmModule: any;
+    let wasmModule: Record<string, unknown>;
     let resolvedModulePath = this.config.modulePath;
 
     try {
@@ -428,7 +428,7 @@ export class WasmLoader {
    */
   private setupPanicHook(module: WasmModule): void {
     // Attempt to setup panic hook if available
-    const wasmBindgenPanicHook = (module as any).set_panic_hook;
+    const wasmBindgenPanicHook = (module as Partial<WasmModule>).set_panic_hook;
 
     if (typeof wasmBindgenPanicHook === 'function') {
       try {
@@ -523,7 +523,7 @@ export class WasmLoader {
    * Get getrandom polyfill if needed
    * For WASM32 targets, getrandom may need a polyfill
    */
-  private getGetrandomPolyfill(): any {
+  private getGetrandomPolyfill(): ((buffer: Uint8Array) => Uint8Array) | undefined {
     if (this.runtimeEnvironment === 'nodejs') {
       // Node.js has native crypto
       try {
@@ -550,7 +550,7 @@ export class WasmLoader {
   /**
    * Emit JSON event via observability layer
    */
-  private emitJson(event: any): void {
+  private emitJson(event: Record<string, unknown>): void {
     if ((this.observability as any).emitJson) {
       (this.observability as any).emitJson(event);
     }

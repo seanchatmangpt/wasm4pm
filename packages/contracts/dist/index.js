@@ -38,4 +38,10 @@ export { latencyTierLte, qualityTierLte, latencyExceedsBudget, qualityDeficientF
 export { getQualityThreshold, ALGORITHM_QUALITY_THRESHOLDS, DEFAULT_QUALITY_THRESHOLD } from './quality-thresholds.js';
 // Algorithm registry utilities
 export { levenshteinDistance, findClosestMatch } from './algorithm-registry.js';
+// mcpp/wasm4pm interop bridges
+export { andonToWasm4pmError, wasm4pmErrorToAndon, isMcppAndonCode, MCPP_ANDON_CODES, ANDON_TO_ERROR_CODE, } from './andon-bridge.js';
+export { evaluateConformance, isRefused, toSharedConformance, } from './conformance-bridge.js';
+export { receiptToOcelEvents, toOcelJsonl, fromMcppJsonl, } from './ocel-bridge.js';
+export { emitReceiptEmit, } from './receipt-emit-bridge.js';
+export { toSharedReceipt, fromMcppResponse, SHARED_RECEIPT_SCHEMA_V1, } from './shared-schema/adapter.js';
 //# sourceMappingURL=index.js.map

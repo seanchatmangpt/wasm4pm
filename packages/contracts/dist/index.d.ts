@@ -39,4 +39,9 @@ export { latencyTierLte, qualityTierLte, latencyExceedsBudget, qualityDeficientF
 export { getQualityThreshold, ALGORITHM_QUALITY_THRESHOLDS, DEFAULT_QUALITY_THRESHOLD } from './quality-thresholds.js';
 export type { QualityThresholdProfile } from './quality-thresholds.js';
 export { levenshteinDistance, findClosestMatch } from './algorithm-registry.js';
+export { andonToWasm4pmError, wasm4pmErrorToAndon, isMcppAndonCode, MCPP_ANDON_CODES, ANDON_TO_ERROR_CODE, type McppAndonReason, type McppAndonCode, } from './andon-bridge.js';
+export { evaluateConformance, isRefused, toSharedConformance, type ConformanceDimension, type ConformanceThresholds, type FitnessResult, type DimensionResult, type ConformanceEvaluation, type ConformanceExtras, } from './conformance-bridge.js';
+export { receiptToOcelEvents, toOcelJsonl, fromMcppJsonl, type OcelEvent, } from './ocel-bridge.js';
+export { emitReceiptEmit, type ReceiptEmitRecord, } from './receipt-emit-bridge.js';
+export { toSharedReceipt, fromMcppResponse, SHARED_RECEIPT_SCHEMA_V1, type SharedReceiptV1, } from './shared-schema/adapter.js';
 //# sourceMappingURL=index.d.ts.map
