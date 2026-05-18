@@ -8,7 +8,7 @@ import type { OtelSpan, SpanSink } from './observability-types.js';
 export function hexId(length: number): string {
   const len = Math.max(0, length | 0);
   const bytes = new Uint8Array(len);
-  const g: any = globalThis as any;
+  const g = globalThis as typeof globalThis & { crypto?: { getRandomValues?: (buf: Uint8Array) => void } };
   if (g.crypto && typeof g.crypto.getRandomValues === 'function') {
     g.crypto.getRandomValues(bytes);
   } else {

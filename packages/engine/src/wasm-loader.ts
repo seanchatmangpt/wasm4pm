@@ -6,6 +6,7 @@
  */
 
 import { ObservabilityLayer } from '@wasm4pm/observability';
+import type { JsonEvent } from '@wasm4pm/observability';
 
 /**
  * Runtime environment detection
@@ -468,7 +469,7 @@ export class WasmLoader {
     }
 
     // Additionally, setup a global panic handler for uncaught exceptions
-    if (typeof (globalThis as any).window === 'undefined') {
+    if (typeof (globalThis as typeof globalThis & { window?: unknown }).window === 'undefined') {
       // Node.js environment
       const originalWarning = console.error;
       this.panicHook = (message: string, stack?: string) => {
@@ -480,6 +481,7 @@ export class WasmLoader {
         // Log to observability system
         this.emitJson({
           timestamp: new Date().toISOString(),
+          level: 'error',
           component: 'wasm-loader',
           event_type: 'wasm_panic',
           data: {
@@ -501,6 +503,7 @@ export class WasmLoader {
 
         this.emitJson({
           timestamp: new Date().toISOString(),
+          level: 'error',
           component: 'wasm-loader',
           event_type: 'wasm_panic',
           data: {
@@ -563,11 +566,13 @@ export class WasmLoader {
   }
 
   /**
-   * Emit JSON event via observability layer
+   * Emit JSON event via observability layer.
+   * Accepts a JsonEvent; the runtime guard protects against subclasses that
+   * may not implement emitJson.
    */
-  private emitJson(event: Record<string, unknown>): void {
-    if ((this.observability as any).emitJson) {
-      (this.observability as any).emitJson(event);
+  private emitJson(event: JsonEvent): void {
+    if (typeof (this.observability as { emitJson?: unknown }).emitJson === 'function') {
+      this.observability.emitJson(event);
     }
   }
 }

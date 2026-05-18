@@ -12,7 +12,7 @@
  */
 
 import { randomUUID } from 'crypto';
-import type { ExecutionPlan, BudgetEnvelope } from '@wasm4pm/contracts';
+import type { ExecutionPlan, BudgetEnvelope, LatencyClass, QualityTier, ExecutionMode } from '@wasm4pm/contracts';
 import type {
   MiningBackend,
   EventLogIR,
@@ -427,14 +427,14 @@ export async function planFederationIntegration(
 
   // Construct BudgetEnvelope from plan metadata
   const budget: BudgetEnvelope = {
-    latencyBudget: (step.inputs?.latencyBudget as any) || 'high_ms',
-    memoryBudget: (step.inputs?.memoryBudget as number) || 0,
-    qualityFloor: (step.inputs?.qualityFloor as any) || 'balanced',
+    latencyBudget: (step.inputs?.latencyBudget as LatencyClass | undefined) ?? 'high_ms',
+    memoryBudget: (step.inputs?.memoryBudget as number | undefined) ?? 0,
+    qualityFloor: (step.inputs?.qualityFloor as QualityTier | undefined) ?? 'balanced',
     environment: {
       browserSafe: false,
       pythonAvailable: true,
     },
-    mode: (step.inputs?.mode as any) || 'online',
+    mode: (step.inputs?.mode as ExecutionMode | undefined) ?? 'online',
   };
 
   // Dispatch through FederationController

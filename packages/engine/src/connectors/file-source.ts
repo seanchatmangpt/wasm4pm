@@ -205,7 +205,7 @@ export class FileSourceAdapter implements SourceAdapter {
 
       return ok(undefined);
     } catch (e) {
-      if ((e as any).code === 'ENOENT') {
+      if ((e as { code?: string }).code === 'ENOENT') {
         return error(
           createError('SOURCE_NOT_FOUND', `File not found: ${this.config.filePath}`, {
             path: this.config.filePath,
@@ -213,7 +213,7 @@ export class FileSourceAdapter implements SourceAdapter {
         );
       }
 
-      if ((e as any).code === 'EACCES') {
+      if ((e as { code?: string }).code === 'EACCES') {
         return error(
           createError('SOURCE_PERMISSION', `Permission denied reading: ${this.config.filePath}`, {
             path: this.config.filePath,
@@ -277,7 +277,7 @@ export class FileSourceAdapter implements SourceAdapter {
     }
 
     // All retries exhausted
-    if ((lastError as any).code === 'ENOENT') {
+    if ((lastError as { code?: string } | null)?.code === 'ENOENT') {
       return error(
         createError(
           'SOURCE_NOT_FOUND',
@@ -287,7 +287,7 @@ export class FileSourceAdapter implements SourceAdapter {
       );
     }
 
-    if ((lastError as any).code === 'EACCES') {
+    if ((lastError as { code?: string } | null)?.code === 'EACCES') {
       return error(
         createError(
           'SOURCE_PERMISSION',
@@ -338,9 +338,9 @@ export class FileSourceAdapter implements SourceAdapter {
    * Determine if an error is transient (retryable)
    */
   private isTransientError(e: unknown): boolean {
-    const err = e as any;
-    const code = err.code || '';
-    const message = err.message || '';
+    const err = e as { code?: string; message?: string };
+    const code = err.code ?? '';
+    const message = err.message ?? '';
 
     // Transient: EAGAIN, EBUSY, ETIMEDOUT, etc.
     if (code.match(/^E(AGAIN|BUSY|TIMEDOUT|INTR|IO)$/)) {
