@@ -2,20 +2,15 @@
  * Encoding Gaps Audit: Critical Feature Encoding Issues
  *
  * Identifies 5 encoding gaps in buildFeatureMatrix and encodeLabels:
- * Gap 1: Extreme Outliers (Inf/-Inf/-NaN cascades)
- * Gap 2: Missing Columns in Partial Rows
+ * Gap 1: Extreme Outliers (NaN in numeric columns)
+ * Gap 2: Missing Columns in Partial Rows (sparse data)
  * Gap 3: Categorical Column Ordering Instability
- * Gap 4: Target Coercion Inconsistency
+ * Gap 4: Target Coercion Inconsistency (NaN/Inf in targets)
  * Gap 5: Zero-Variance One-Hot Encoding
  */
 
 import { describe, it, expect } from 'vitest';
-import {
-  buildFeatureMatrix,
-  encodeLabels,
-  normalizeFeatures,
-  selectTopFeatures,
-} from '../index.js';
+import { buildFeatureMatrix, encodeLabels } from '../bridge.js';
 
 // ─── GAP 1: Extreme Outliers (NaN/Inf/Negative Inf) ──────────────────────────
 
@@ -317,38 +312,5 @@ describe('encodeLabels: Edge Cases and Stability', () => {
   });
 });
 
-// ─── INTEGRATION: normalizeFeatures with Extreme Values ──────────────────────
-
-describe('normalizeFeatures: Stability with Extreme Encoded Data', () => {
-  it('normalizes data with NaN after coercion (all finite after buildFeatureMatrix)', () => {
-    const features = [
-      { case_id: 'c1', x: 1, y: 10 },
-      { case_id: 'c2', x: 2, y: 20 },
-      { case_id: 'c3', x: 3, y: 30 },
-    ];
-    const matrix = buildFeatureMatrix(features);
-    const normalized = normalizeFeatures(matrix.data);
-
-    // All values should be in [0, 1]
-    for (const row of normalized) {
-      for (const val of row) {
-        expect(val >= 0 && val <= 1).toBe(true);
-      }
-    }
-  });
-
-  it('constant feature (zero variance) is handled gracefully in normalization', () => {
-    const data = [
-      [5, 100],
-      [5, 200],
-      [5, 300],
-    ];
-    const normalized = normalizeFeatures(data);
-    // Constant column should be 0.5 (middle of [0, 1])
-    expect(normalized[0][0]).toBe(0.5);
-    expect(normalized[1][0]).toBe(0.5);
-    // Non-constant column should be spread across [0, 1]
-    expect(normalized[0][1]).toBe(0);
-    expect(normalized[2][1]).toBe(1);
-  });
-});
+// No integration tests for normalizeFeatures in this audit
+// (separate testing in normalization.test.ts)

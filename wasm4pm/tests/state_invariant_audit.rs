@@ -12,7 +12,7 @@
 //!
 //! Identifies 5 critical invalid state transition patterns that could occur due to bugs.
 
-use wasm4pm::{RlState, RlAction};
+use wasm4pm::RlState;
 use wasm4pm::self_healing::{CircuitBreaker, CircuitState, CircuitBreakerConfig};
 
 // ============================================================================
@@ -154,7 +154,7 @@ fn test_invalid_p4_health_exceeds_max_bound() {
         (4, 4, true),   // 4+1 capped at 4 = 4: valid (terminal)
     ];
 
-    for (before, expected_after, should_be_valid) in test_cases {
+    for (before, expected_after, _should_be_valid) in test_cases {
         // Simulate degradation with proper cap
         let after_proper = (before + 1).min(4);
         // Simulate degradation with buggy cap
@@ -476,7 +476,7 @@ fn test_spc_alert_bounds_never_exceeded() {
 #[test]
 fn test_no_invalid_health_jumps_possible() {
     // For each valid health state, verify that transitions are always ±1 or 0
-    for health in 0..=4 {
+    for health in 0u8..=4 {
         // Degradation (failure): health → (health + 1).min(4)
         let degraded = (health + 1).min(4);
         let degrade_delta = degraded as i8 - health as i8;

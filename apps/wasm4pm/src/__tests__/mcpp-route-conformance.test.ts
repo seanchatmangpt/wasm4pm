@@ -54,8 +54,9 @@ import { fromMcppNativeJsonl } from '@wasm4pm/contracts';
 // ─── Paths ────────────────────────────────────────────────────────────────────
 
 const CLI = path.resolve(import.meta.dirname, '../../dist/bin/wpm.js');
-const ROUTES_DIR = path.resolve(import.meta.dirname, '../../../../routes');
-const FIXTURES_DIR = path.resolve(import.meta.dirname, '../../../../fixtures/real');
+const REPO_ROOT = path.resolve(import.meta.dirname, '../../../..');
+const ROUTES_DIR = path.resolve(REPO_ROOT, 'routes');
+const FIXTURES_DIR = path.resolve(REPO_ROOT, 'fixtures', 'real');
 
 // ─── CLI helper ───────────────────────────────────────────────────────────────
 
@@ -251,7 +252,8 @@ describe('C1: Accepted — fully conforming OCEL admits with verdict Accepted', 
       { activity: 'close',   workId: 'work-1', receiptId: 'r-3' },
     ]);
 
-    const result = checkPowl2Conformance(ocel, model);
+    // Pass REPO_ROOT as projectDir so the schema path resolves correctly
+    const result = checkPowl2Conformance(ocel, model, REPO_ROOT);
 
     expect(result.verdict).toBe('Accepted');
     expect(result.fitness).toBe(1);
@@ -269,12 +271,10 @@ describe('C1: Accepted — fully conforming OCEL admits with verdict Accepted', 
       return; // Skip if fixture not present
     }
 
-    const result = await wpmAsync([
-      'trace', 'conform',
-      '-m', modelPath,
-      '-i', fixturePath,
-      '--format', 'json',
-    ]);
+    const result = await wpmAsync(
+      ['trace', 'conform', '-m', modelPath, '-i', fixturePath, '--format', 'json'],
+      { cwd: REPO_ROOT }, // schema path resolves relative to cwd
+    );
 
     expect(result.exitCode).toBe(0);
     const payload = parsePayload(result);

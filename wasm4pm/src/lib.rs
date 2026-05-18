@@ -314,6 +314,7 @@ pub mod conformance_guards;
 #[cfg(feature = "conformance_basic")]
 pub mod data_quality;
 pub mod discovery;
+pub mod discovery_determinism_guards;
 #[cfg(feature = "discovery_advanced")]
 pub mod ensemble;
 pub mod fast_discovery;

@@ -107,7 +107,7 @@ export function validateAlgorithm(algoName: string): AlgorithmValidationResult {
   // Try lowercase match
   const lowerAlgo = algoName.toLowerCase().replace(/[+_]/g, '-');
   const matched = algoIds.find(
-    (id) => id === lowerAlgo || id === lowerAlgo.replace(/-plus-plus/, '-')
+    (id: string) => id === lowerAlgo || id === lowerAlgo.replace(/-plus-plus/, '-')
   );
 
   if (matched) {

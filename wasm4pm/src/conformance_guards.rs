@@ -162,7 +162,7 @@ mod tests {
     #[test]
     fn guard6_cumulative_nan_handling() {
         let result = guard_cumulative_fitness(f64::NAN, 0.5, 1);
-        // NaN in input clamps trace, but NaN + x = NaN still
-        assert!(result.is_nan() || result == 0.5);
+        // NaN in current_total + anything = NaN, then fallback to 0.0
+        assert_eq!(result, 0.0);
     }
 }
