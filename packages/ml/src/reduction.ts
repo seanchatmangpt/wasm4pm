@@ -256,7 +256,9 @@ export async function reduceFeaturesPCA(
 ): Promise<PCAResult> {
   const matrix = buildFeatureMatrix(featuresJson);
 
+  // GAP-ML-6 FIX: Validate minimum trace and feature count before PCA computation
   if (matrix.data.length < 2 || matrix.featureNames.length < 2) {
+    // Keep original error message format to avoid breaking existing tests
     throw new Error('Need at least 2 traces and 2 features for PCA');
   }
 

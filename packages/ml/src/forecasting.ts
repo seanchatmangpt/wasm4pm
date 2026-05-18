@@ -75,8 +75,15 @@ function linearRegressionFit(
     sumXX += xi * xi;
   }
   const denom = n * sumXX - sumX * sumX;
-  const slope = denom === 0 ? 0 : (n * sumXY - sumX * sumY) / denom;
-  const intercept = (sumY - slope * sumX) / n;
+  // GAP-ML-9 FIX: Guard against NaN slope when denom is zero or very small
+  let slope = 0;
+  let intercept = sumY / n;
+  if (Math.abs(denom) > 1e-10) {
+    slope = (n * sumXY - sumX * sumY) / denom;
+    if (!Number.isFinite(slope)) slope = 0;
+    intercept = (sumY - slope * sumX) / n;
+    if (!Number.isFinite(intercept)) intercept = sumY / n;
+  }
   return { slope, intercept };
 }
 

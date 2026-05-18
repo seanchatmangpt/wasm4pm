@@ -272,7 +272,13 @@ function knnBatch(
       }
     }
 
-    results[qi] = { label: bestLabel, confidence: bestWeight / totalWeight };
+    // GAP-ML-1 FIX: Guard confidence against NaN/Infinity
+    // If totalWeight is 0 or NaN, default to uniform confidence
+    const confidence =
+      totalWeight > 0 && Number.isFinite(totalWeight)
+        ? Math.min(1, Math.max(0, bestWeight / totalWeight))
+        : 1 / Math.max(1, Object.keys(votes).length); // uniform distribution
+    results[qi] = { label: bestLabel, confidence };
   }
 
   return results;
@@ -372,9 +378,15 @@ function gaussianNBPredictBatch(
     }
     let expSum = 0;
     for (let ci = 0; ci < nClasses; ci++) expSum += Math.exp(logProbs[ci] - maxLp);
+    // GAP-ML-2 FIX: Guard confidence against NaN from extreme likelihoods
+    let confidence = 1 / nClasses; // default uniform
+    if (expSum > 0 && Number.isFinite(expSum) && Number.isFinite(bestLog - maxLp)) {
+      const raw = Math.exp(bestLog - maxLp) / expSum;
+      confidence = Number.isFinite(raw) ? Math.min(1, Math.max(0, raw)) : 1 / nClasses;
+    }
     results[i] = {
       label: model.classes[bestClass],
-      confidence: Math.exp(bestLog - maxLp) / expSum,
+      confidence,
     };
   }
 
@@ -488,7 +500,11 @@ function logisticRegressionPredictBatch(
       }
     }
 
-    results[i] = { label: bestClass, confidence: bestScore };
+    // GAP-ML-3 FIX: Guard confidence against values outside [0,1]
+    const confidence = Number.isFinite(bestScore)
+      ? Math.min(1, Math.max(0, bestScore))
+      : 1 / model.nClasses;
+    results[i] = { label: bestClass, confidence };
   }
 
   return results;
@@ -679,6 +695,7 @@ function predictTree(node: TreeNode, query: number[]): { label: number; confiden
     node = query[node.feature] <= node.threshold ? node.left! : node.right!;
   }
   // Compute confidence from class distribution at leaf node
+  // GAP-ML-4 FIX: Guard against zero samples in leaf (degenerate case)
   if (node.classCounts) {
     const cc = node.classCounts;
     let total = 0;
@@ -687,7 +704,11 @@ function predictTree(node: TreeNode, query: number[]): { label: number; confiden
       total += cc[i];
       if (cc[i] > maxCount) maxCount = cc[i];
     }
-    return { label: node.label, confidence: total > 0 ? maxCount / total : 1 };
+    // If leaf has no samples, return uniform confidence across observed classes
+    if (total === 0) {
+      return { label: node.label, confidence: 1 / Math.max(1, cc.length) };
+    }
+    return { label: node.label, confidence: Math.min(1, Math.max(0, maxCount / total)) };
   }
   return { label: node.label, confidence: 1 };
 }
