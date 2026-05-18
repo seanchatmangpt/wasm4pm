@@ -179,18 +179,14 @@ export const social = defineCommand({
 
               const network = typeof rawNetwork === 'string' ? JSON.parse(rawNetwork) : rawNetwork;
 
-              let centrality: Record<string, unknown> | null = null;
-              try {
-                const rawCentrality = wasm.compute_network_centrality(
-                  logHandle,
-                  activityKey,
-                  resourceKey
-                );
-                centrality =
-                  typeof rawCentrality === 'string' ? JSON.parse(rawCentrality) : rawCentrality;
-              } catch {
-                // Centrality not available
-              }
+              // centrality: future enhancement — compute_network_centrality is not yet
+              // exported from the WASM binary (social_network.rs only exports
+              // discover_handover_network and discover_working_together_network).
+              // Calling a non-existent wasm function throws a TypeError that was
+              // previously silently swallowed by a try/catch, making the field
+              // permanently null regardless. This explicit assignment is equivalent
+              // and honest about what the binary currently provides.
+              const centrality: Record<string, unknown> | null = null;
 
               // Normalise edge weight: Rust emits `handovers` (handover metric) or
               // `co_occurrences` (working-together metric) — map both to `weight`
