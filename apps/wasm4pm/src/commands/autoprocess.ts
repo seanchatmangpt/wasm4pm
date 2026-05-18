@@ -53,6 +53,22 @@ function wasmHas(wasm: Record<string, unknown>, fn: string): boolean {
 }
 
 /**
+ * Metrics snapshot captured at the end of each MAPE-K cycle.
+ * Used to compute cross-cycle trend recommendations in the Learn phase.
+ */
+export interface CycleMetrics {
+  healthScore: number;
+  /** Number of SPC special causes / violations detected */
+  violations: number;
+  /** Drift level: 0=none, 1=low, 2=high */
+  driftStatus: number;
+  /** Process fitness score (0–1); -1 = unknown */
+  fitness: number;
+  /** Rework ratio (0–1); -1 = unknown */
+  reworkRatio: number;
+}
+
+/**
  * Derive a one-line system-state narrative from the health scores of the last
  * (up to) 3 cycles.  Health score 0 = healthy, 4 = failed (matches WASM RL
  * state dimension `health_level`).
@@ -86,6 +102,134 @@ export function computeHealthNarrative(cycles: Array<{ healthScore: number }>): 
     return 'System degrading — consider running wpm doctor';
   }
   return 'System stable — operating within normal bounds';
+}
+
+/**
+ * Determine the trend over the last (up to) 3 cycles of detailed metrics.
+ *
+ * Returns 'improving' | 'degrading' | 'stable'.
+ * Same monotonicity contract as computeHealthNarrative().
+ */
+export function computeHealthTrend(
+  cycles: CycleMetrics[]
+): 'improving' | 'degrading' | 'stable' {
+  const window = cycles.slice(-3);
+  if (window.length < 2) return 'stable';
+  const first = window[0].healthScore;
+  const last = window[window.length - 1].healthScore;
+  const middle = window.length === 3 ? window[1].healthScore : undefined;
+  const improving =
+    last < first && (middle === undefined || (last < middle && middle <= first));
+  const degrading =
+    last > first && (middle === undefined || (last > middle && middle >= first));
+  if (improving) return 'improving';
+  if (degrading) return 'degrading';
+  return 'stable';
+}
+
+/**
+ * Build targeted Learn-phase recommendations based on the current cycle metrics
+ * and the multi-cycle health trend.
+ *
+ * When health is degrading: surface the worst metric and its specific remedy.
+ * When health is improving: report the metric that improved most.
+ * Persistence check: 3+ consecutive degrading cycles → higher-severity warning.
+ */
+export function buildLearnRecommendations(
+  current: CycleMetrics,
+  history: CycleMetrics[],
+  inputPath: string
+): { actions: string[]; persistenceDegrading: boolean } {
+  const trend = computeHealthTrend(history);
+  const actions: string[] = [];
+
+  // Persistence check — 3+ cycles all degrading (strictly monotone up)
+  const persistenceDegrading =
+    history.length >= 3 &&
+    (() => {
+      const w = history.slice(-3);
+      return w[2].healthScore > w[1].healthScore && w[1].healthScore > w[0].healthScore;
+    })();
+
+  if (trend === 'degrading') {
+    // Rank metrics by severity to surface the most critical recommendation first.
+    // Lower fitness = worse; higher violations/rework = worse; drift > 0 = bad.
+    const worstMetric = (() => {
+      if (current.violations > 2) return 'violations';
+      if (current.driftStatus > 0) return 'drift';
+      if (current.fitness >= 0 && current.fitness < 0.8) return 'fitness';
+      if (current.reworkRatio >= 0 && current.reworkRatio > 0.3) return 'rework';
+      return 'general';
+    })();
+
+    switch (worstMetric) {
+      case 'violations':
+        actions.push(
+          `Run \`wpm doctor --verbose\` — ${current.violations} SPC violation(s) detected (threshold: >2)`
+        );
+        break;
+      case 'drift':
+        actions.push(
+          `Run \`wpm drift-watch -i ${inputPath} --window 100\` — drift level ${current.driftStatus === 2 ? 'HIGH' : 'LOW'} detected, monitor for further shift`
+        );
+        break;
+      case 'fitness':
+        actions.push(
+          `Run \`wpm conformance -i ${inputPath}\` — process fitness ${current.fitness.toFixed(2)} is below threshold (0.80)`
+        );
+        break;
+      case 'rework':
+        actions.push(
+          `Run \`wpm temporal -i ${inputPath}\` — rework ratio ${current.reworkRatio.toFixed(2)} exceeds threshold (0.30)`
+        );
+        break;
+      default:
+        actions.push('Run `wpm doctor` — health degraded during this cycle');
+    }
+
+    // Secondary: circuit-breaker check when not already the primary
+    if (worstMetric !== 'violations' && current.violations > 0) {
+      actions.push(
+        `Run \`wpm doctor --verbose\` — ${current.violations} SPC violation(s) also active`
+      );
+    }
+  } else if (trend === 'improving') {
+    // Identify the metric that improved most between the first and last window entry.
+    const prev = history.length >= 2 ? history[history.length - 2] : null;
+    if (prev !== null) {
+      const healthDelta = prev.healthScore - current.healthScore; // positive = improvement
+      const violationDelta = prev.violations - current.violations;
+      const fitnessDelta =
+        prev.fitness >= 0 && current.fitness >= 0 ? current.fitness - prev.fitness : 0;
+
+      if (healthDelta > 0 && healthDelta >= violationDelta && healthDelta >= fitnessDelta) {
+        actions.push(
+          `Health improved by ${healthDelta} level(s) — autonomic agents converging (health now ${current.healthScore}/4)`
+        );
+      } else if (violationDelta > 0) {
+        actions.push(
+          `SPC violations reduced by ${violationDelta} — process stabilising (${current.violations} remaining)`
+        );
+      } else if (fitnessDelta > 0) {
+        actions.push(
+          `Process fitness improved by +${fitnessDelta.toFixed(2)} — conformance improving (now ${current.fitness.toFixed(2)})`
+        );
+      } else {
+        actions.push(
+          'System improving — autonomic agents converging on stable operating point'
+        );
+      }
+    } else {
+      actions.push('System improving — autonomic agents converging on stable operating point');
+    }
+  }
+
+  // Always: conformance check after autonomic changes
+  actions.push(
+    `Run \`wpm conformance -i ${inputPath}\` — verify process model quality after autonomic changes`
+  );
+
+  return { actions, persistenceDegrading };
 }
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -280,9 +424,9 @@ export const autoprocess = defineCommand({
               let cyclesRun = 0;
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               let cycleResult: Record<string, any> = {};
-              // Accumulates per-cycle health scores for the system-state narrative.
+              // Accumulates per-cycle metrics for the system-state narrative and Learn phase.
               // Only the last 3 are needed; we keep all and slice in computeHealthNarrative.
-              const cycleHealthScores: Array<{ healthScore: number }> = [];
+              const cycleHealthScores: CycleMetrics[] = [];
               do {
                 // Execute cycle and parse raw WASM result
                 const rawResult = wasm.autonomic_execute_cycle(
@@ -312,9 +456,6 @@ export const autoprocess = defineCommand({
                 // health_score here is the numeric 0-4 integer stored as health_score in Rust output
                 const healthLevel =
                   typeof percData.health_score === 'number' ? percData.health_score : -1;
-                // Record health score for multi-cycle system-state narrative.
-                // Use 0 as sentinel for unknown (-1) so it reads as healthy.
-                cycleHealthScores.push({ healthScore: healthLevel >= 0 ? healthLevel : 0 });
                 // event_rate = events / traces (0 when no traces)
                 const traceCount =
                   typeof percData.trace_count === 'number' ? percData.trace_count : 0;
@@ -327,6 +468,20 @@ export const autoprocess = defineCommand({
                 const anomalyDetected = specialCauses.length > 0;
                 // drift_status: 0=none, 1=low (1-2 causes), 2=high (3+ causes)
                 const driftStatus = anomalyDetected ? (specialCauses.length >= 3 ? 2 : 1) : 0;
+
+                // Record metrics for multi-cycle system-state narrative and Learn phase.
+                // Use 0 as sentinel for unknown (-1) health so it reads as healthy.
+                const fitnessVal =
+                  typeof percData.fitness === 'number' ? percData.fitness : -1;
+                const reworkVal =
+                  typeof percData.rework_ratio === 'number' ? percData.rework_ratio : -1;
+                cycleHealthScores.push({
+                  healthScore: healthLevel >= 0 ? healthLevel : 0,
+                  violations: specialCauses.length,
+                  driftStatus,
+                  fitness: fitnessVal,
+                  reworkRatio: reworkVal,
+                });
 
                 // ── MONITOR span (Perception surface: events, traces, health) ──
                 await withSpanRaw(
@@ -614,47 +769,38 @@ export const autoprocess = defineCommand({
                   );
                 }
 
-                // ── Next Actions (cross-phase synthesis) ───────────────────────
-                // Synthesise actionable recommendations from each MAPE-K phase.
-                // These guide operators from the current cycle result to the next
-                // investigative step without requiring them to interpret raw scores.
-                const nextActions: string[] = [];
+                // ── Persistence check — 3+ consecutive degrading cycles ────────
+                const currentMetrics: CycleMetrics = {
+                  healthScore:
+                    typeof perception.health_score === 'number' ? perception.health_score : 0,
+                  violations: specialCausesList.length,
+                  driftStatus: specialCausesList.length >= 3 ? 2 : specialCausesList.length > 0 ? 1 : 0,
+                  fitness: -1, // not available from cycle summary (requires separate conformance run)
+                  reworkRatio: -1,
+                };
+                const { actions: learnActions, persistenceDegrading } =
+                  buildLearnRecommendations(currentMetrics, cycleHealthScores, inputPath);
 
-                // From Monitor phase: health degraded (score > 0 = degraded in WASM)
-                const healthScoreNum =
-                  typeof perception.health_score === 'number' ? perception.health_score : 0;
-                if (healthScoreNum > 0) {
-                  nextActions.push(
-                    'Run `wpm doctor` — health degraded during this cycle (score ' +
-                      healthScoreNum +
-                      '/4)'
+                // Emit persistence warning before the actions list when warranted
+                if (persistenceDegrading) {
+                  projection.log('');
+                  projection.warn(
+                    '  WARNING: System has been degrading for 3+ consecutive cycles. ' +
+                      'Immediate operator attention required.'
                   );
                 }
 
-                // From Analyze phase: drift detected (any special causes)
-                if (specialCausesList.length > 0) {
-                  nextActions.push(
-                    'Run `wpm drift-watch -i <log>` — ' +
-                      driftLabel +
-                      ' drift detected (' +
-                      specialCausesList.length +
-                      ' special cause(s)), monitor for further shift'
-                  );
-                }
-
-                // From Plan phase: circuit breaker blocked execution
+                // Circuit breaker blocked: always surface (not covered by learnActions)
+                const circuitActions: string[] = [];
                 if (!circuitAllowed) {
-                  nextActions.push(
+                  circuitActions.push(
                     'Inspect circuit breaker state with `wpm status` — execution was BLOCKED (' +
                       circuitState +
                       ')'
                   );
                 }
 
-                // Always: conformance check after autonomic changes to verify model quality
-                nextActions.push(
-                  'Run `wpm conformance -i <log>` — verify process model quality after autonomic changes'
-                );
+                const nextActions = [...circuitActions, ...learnActions];
 
                 projection.log('');
                 projection.log('  Recommended next actions:');
