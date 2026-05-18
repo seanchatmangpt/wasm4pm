@@ -26,7 +26,7 @@ export default defineCommand({
       },
       args: {
         dir: {
-          type: 'string',
+          type: 'positional',
           description: 'Directory to scan for duplicate logs',
           required: true,
         },
@@ -124,8 +124,8 @@ export default defineCommand({
                 total_cached_entries: stats.total_entries,
                 deduplicated_runs: stats.deduplicated_count,
                 estimated_bytes_saved: stats.bytes_saved_estimate,
-                last_hit_timestamp: stats.last_hit,
-                last_clear_timestamp: stats.last_clear,
+                last_hit_timestamp: stats.last_hit ?? null,
+                last_clear_timestamp: stats.last_clear ?? null,
                 dedup_database: '.wasm4pm/deduplicate.jsonl',
               },
               elapsedMs,
