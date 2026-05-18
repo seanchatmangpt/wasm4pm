@@ -12,7 +12,7 @@ const _require = createRequire(import.meta.url);
 
 // ── shared types ──────────────────────────────────────────────────────────────
 
-type TraceLanguage = 'rust' | 'typescript' | 'python' | 'java' | 'js' | 'unknown';
+type TraceLanguage = 'rust' | 'typescript' | 'python' | 'java' | 'js' | 'erlang' | 'unknown';
 
 interface TraceFrame {
   index: number;
@@ -115,6 +115,11 @@ function frameToActivity(fn: string, lang: TraceLanguage): string {
     // anonymous lambdas → anonymous; keep dot form for member access
     if (!fn || fn === '<anonymous>') return 'anonymous';
     return fn.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._<>]/g, '_');
+  }
+  if (lang === 'erlang') {
+    // module:function/arity → module.function_N (dot-separated, arity suffix)
+    // E.g. "my_mod:handle_call/3" → "my_mod.handle_call_3"
+    return fn.replace(/:/g, '.').replace(/\//g, '_').replace(/[^a-zA-Z0-9._]/g, '_');
   }
   // TypeScript: ClassName.method or standalone fn
   return fn.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._<>]/g, '_');
@@ -275,6 +280,137 @@ function parseJsTrace(text: string): TraceFrame[] {
       });
     }
   }
+  return frames;
+}
+
+function parseErlangTrace(text: string): TraceFrame[] {
+  // Erlang/BEAM stack traces appear in two formats:
+  //
+  // Format 1 — OTP exception tuple (error_logger / logger / shell):
+  //   {error,{badarg,[{Module,Function,Arity,[{file,"path.erl"},{line,N}]}]}}
+  //   Multi-frame example:
+  //   {error,{function_clause,[
+  //     {mymod,my_fun,2,[{file,"src/mymod.erl"},{line,45}]},
+  //     {gen_server,handle_msg,6,[{file,"gen_server.erl"},{line,1128}]}
+  //   ]}}
+  //
+  // Format 2 — Crash dump style (flat lines):
+  //   my_module:function_name/2 (my_module.erl:45)
+  //   erl_eval:do_apply/6 (erl_eval.erl:689)
+  //
+  // Format 3 — Verbose exception style (shell / observer):
+  //   in function  lists:nth/2 (lists.erl, line 312)
+  //   in call from my_module:my_function/2 (my_module.erl, line 45)
+  //   called from supervisor:init/1 (supervisor.erl, line 267)
+  //
+  // All three formats are parsed to TraceFrame with:
+  //   function: "module:function/arity" (canonical MFA form)
+  //   file:     "path.erl"
+  //   line:     N
+  //   language: 'erlang'
+
+  const frames: TraceFrame[] = [];
+  const lines = text.split('\n');
+  let index = 0;
+
+  // We join the whole text for the OTP tuple regex (which can span multiple lines),
+  // then use line-by-line regexes for crash-dump and verbose formats.
+
+  // ── Format 1: OTP tuple pattern ──────────────────────────────────────────────
+  // Match each MFA entry within the stacktrace list:
+  //   {Module,Function,Arity,[{file,"path"},{line,N}]}
+  // We allow Arity to be an integer OR a list literal (when args are captured).
+  const otpPattern =
+    /\{(\w+),(\w+),(?:\d+|\[.*?\]),\[(?:[^\]]*\{file,"([^"]+)"\}[^\]]*\{line,(\d+)\}|[^\]]*\{line,(\d+)\}[^\]]*\{file,"([^"]+)"\})[^\]]*\]/g;
+
+  const flatText = text.replace(/\n\s*/g, ' ');
+  let m: RegExpExecArray | null;
+
+  // Track whether Format 1 matched anything so we don't double-parse.
+  const otpMatched = new Set<number>();
+
+  while ((m = otpPattern.exec(flatText)) !== null) {
+    const mod = m[1] ?? 'unknown';
+    const fn = m[2] ?? 'unknown';
+    // Arity is embedded in the text but not directly captured — derive from context.
+    // Extract it from the surrounding text by looking for the arity token.
+    const arityMatch = flatText
+      .slice(m.index, m.index + m[0].length)
+      .match(/^\{(\w+),(\w+),(\d+),/);
+    const arity = arityMatch ? arityMatch[3] : '';
+    // File/line: the two capture groups handle either ordering in the Erlang proplist.
+    const file = (m[3] ?? m[6] ?? '').trim();
+    const line = parseInt((m[4] ?? m[5] ?? '0'), 10);
+    const fnName = arity ? `${mod}:${fn}/${arity}` : `${mod}:${fn}`;
+    frames.push({ index: index++, function: fnName, file: file || undefined, line: line || undefined, language: 'erlang' });
+    // Record the approximate line numbers that produced this frame (best effort).
+    otpMatched.add(index - 1);
+  }
+
+  // If the OTP tuple parser found frames, return them — don't double-parse.
+  if (frames.length > 0) return frames;
+
+  // ── Format 2: crash dump style (flat lines) ──────────────────────────────────
+  // Pattern: "module:function/arity (file.erl:N)"
+  const crashDumpPattern = /^[\s*]*(\w+):(\w+)\/(\d+)\s+\(([^):]+\.erl):(\d+)\)/;
+
+  // ── Format 3: verbose exception lines ────────────────────────────────────────
+  // Pattern: "in function  module:function/arity (file.erl, line N)"
+  //          "in call from module:function/arity (file.erl, line N)"
+  //          "called from module:function/arity (file.erl, line N)"
+  // Also handle lines without module prefix: "function/arity (file.erl, line N)"
+  const verbosePattern =
+    /(?:in (?:function|call from)|called from)\s+(?:(\w+):)?(\w+)\/(\d+)\s+\(([^),]+\.erl),\s*line\s+(\d+)\)/;
+
+  // ── Format 4: generic "module:function/arity (file.erl, line N)" ─────────────
+  // Handles lines like:  lists:nth/2 (lists.erl, line 312)
+  const genericCommaPattern = /^[\s*]*(\w+):(\w+)\/(\d+)\s+\(([^),]+\.erl),\s*line\s+(\d+)\)/;
+
+  for (const line of lines) {
+    const stripped = line.trim();
+
+    // Skip exception header lines and empty lines.
+    if (!stripped || stripped.startsWith('**') || stripped.startsWith('{error') || stripped.startsWith('ERROR:') || stripped.startsWith('AtomVM')) {
+      continue;
+    }
+
+    // Try Format 3 (verbose) first — most specific.
+    const v = stripped.match(verbosePattern);
+    if (v) {
+      const mod = v[1] ?? '';
+      const fn = v[2] ?? 'unknown';
+      const arity = v[3] ?? '';
+      const file = (v[4] ?? '').trim();
+      const lineNum = parseInt(v[5] ?? '0', 10);
+      const fnName = mod ? `${mod}:${fn}/${arity}` : `${fn}/${arity}`;
+      frames.push({ index: index++, function: fnName, file: file || undefined, line: lineNum || undefined, language: 'erlang' });
+      continue;
+    }
+
+    // Try Format 4 (generic comma style).
+    const g = stripped.match(genericCommaPattern);
+    if (g) {
+      const mod = g[1] ?? 'unknown';
+      const fn = g[2] ?? 'unknown';
+      const arity = g[3] ?? '';
+      const file = (g[4] ?? '').trim();
+      const lineNum = parseInt(g[5] ?? '0', 10);
+      frames.push({ index: index++, function: `${mod}:${fn}/${arity}`, file: file || undefined, line: lineNum || undefined, language: 'erlang' });
+      continue;
+    }
+
+    // Try Format 2 (crash dump colon style).
+    const c = stripped.match(crashDumpPattern);
+    if (c) {
+      const mod = c[1] ?? 'unknown';
+      const fn = c[2] ?? 'unknown';
+      const arity = c[3] ?? '';
+      const file = (c[4] ?? '').trim();
+      const lineNum = parseInt(c[5] ?? '0', 10);
+      frames.push({ index: index++, function: `${mod}:${fn}/${arity}`, file: file || undefined, line: lineNum || undefined, language: 'erlang' });
+    }
+  }
+
   return frames;
 }
 
@@ -880,7 +1016,7 @@ const ingest = defineCommand({
     from: {
       type: 'string',
       default: 'typescript',
-      description: 'Language: rust | typescript | python | java | js',
+      description: 'Language: rust | typescript | python | java | js | erlang',
     },
     input: { type: 'string', alias: 'i', description: 'Input file (default: stdin)' },
     out: { type: 'string', alias: 'o', description: 'Output file (default: stdout)' },
@@ -936,10 +1072,13 @@ const ingest = defineCommand({
         case 'js':
           frames = parseJsTrace(text);
           break;
+        case 'erlang':
+          frames = parseErlangTrace(text);
+          break;
         default: {
           const r = makeErrorResult(
             'trace ingest',
-            `Unknown language '${lang}'. Accepted: rust, typescript, python, java, js`,
+            `Unknown language '${lang}'. Accepted: rust, typescript, python, java, js, erlang`,
             EXIT_CODES.config_error,
             'INVALID_LANGUAGE'
           );
