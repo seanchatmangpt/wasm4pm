@@ -4,6 +4,7 @@ import { configCheck } from './config/check.js';
 import { configVerify } from './config/verify.js';
 import { configExport } from './config/export.js';
 import { exitWithFlush } from '../otel/exit.js';
+import { withSpanRaw } from './_otel.js';
 
 export const config = defineCommand({
   meta: {
@@ -11,7 +12,8 @@ export const config = defineCommand({
     description: 'Inspect and manage wasm4pm configuration',
   },
   async run() {
-    process.stdout.write(`
+    return withSpanRaw('config.help', {}, async () => {
+      process.stdout.write(`
   wpm config — Configuration Management  (verb8 grammar)
 
   Subcommands:
@@ -22,11 +24,12 @@ export const config = defineCommand({
 
   Run "wpm config <subcommand> --help" for detailed usage.
 `);
-    return await exitWithFlush(0);
+      return await exitWithFlush(0);
+    });
   },
   subCommands: {
-    show:   configShow,
-    check:  configCheck,
+    show: configShow,
+    check: configCheck,
     verify: configVerify,
     export: configExport,
   },

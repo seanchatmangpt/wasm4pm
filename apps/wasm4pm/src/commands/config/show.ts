@@ -4,6 +4,7 @@ import { checkConfigWarnings } from '@wasm4pm/config';
 import { emitResult, makeResult, makeErrorResult, ConsoleProjection } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { exitWithFlush } from '../../otel/exit.js';
+import { withSpanRaw } from '../_otel.js';
 
 /**
  * Mapping of environment variable names to config path (dot notation)
@@ -84,7 +85,9 @@ function renderConfigShow(
     const sourceTag = `[${source.toUpperCase()}]`;
     const envVar = Object.entries(ENV_VAR_FIELD_MAP).find((e) => e[1] === field)?.[0];
     const envNote = envVar ? `  ${envVar}` : '';
-    lines.push(`  ${field.padEnd(maxFieldLen)}  ${String(value ?? 'undefined').padEnd(15)}  ${sourceTag}${envNote}`);
+    lines.push(
+      `  ${field.padEnd(maxFieldLen)}  ${String(value ?? 'undefined').padEnd(15)}  ${sourceTag}${envNote}`
+    );
   }
 
   if (payload.warnings.length > 0) {
@@ -131,38 +134,52 @@ export const configShow = defineCommand({
     const detailed = Boolean(ctx.args.detailed);
     const quiet = Boolean(ctx.args.quiet);
 
-    try {
-      const config = await resolveConfig({});
-      const warnings = checkConfigWarnings(config);
+    let warningCount = 0;
+    return withSpanRaw(
+      'config.show',
+      { 'config.format': format, 'config.detailed': detailed },
+      async () => {
+        try {
+          const config = await resolveConfig({});
+          const warnings = checkConfigWarnings(config);
+          warningCount = warnings.length;
 
-      const payload = {
-        config: {
-          source: config.source,
-          sink: config.sink,
-          algorithm: config.algorithm,
-          execution: config.execution,
-          observability: config.observability,
-          watch: config.watch,
-          output: config.output,
-          prediction: (config as any).prediction,
-          ml: (config as any).ml,
-          rl: (config as any).rl,
-        },
-        provenance: config.metadata.provenance,
-        warnings,
-      };
+          const payload = {
+            config: {
+              source: config.source,
+              sink: config.sink,
+              algorithm: config.algorithm,
+              execution: config.execution,
+              observability: config.observability,
+              watch: config.watch,
+              output: config.output,
+              prediction: (config as any).prediction,
+              ml: (config as any).ml,
+              rl: (config as any).rl,
+            },
+            provenance: config.metadata.provenance,
+            warnings,
+          };
 
-      const result = makeResult('config show', payload, performance.now() - t0);
+          const result = makeResult('config show', payload, performance.now() - t0);
 
-      emitResult(result, { format, quiet }, (res, projection) => {
-        renderConfigShow(res.payload, projection, detailed);
-      });
+          emitResult(result, { format, quiet }, (res, projection) => {
+            renderConfigShow(res.payload, projection, detailed);
+          });
 
-      return await exitWithFlush(EXIT_CODES.success);
-    } catch (error) {
-      const result = makeErrorResult('config show', error, EXIT_CODES.config_error, 'CONFIG_ERROR');
-      emitResult(result, { format, quiet });
-      return await exitWithFlush(EXIT_CODES.config_error);
-    }
+          return await exitWithFlush(EXIT_CODES.success);
+        } catch (error) {
+          const result = makeErrorResult(
+            'config show',
+            error,
+            EXIT_CODES.config_error,
+            'CONFIG_ERROR'
+          );
+          emitResult(result, { format, quiet });
+          return await exitWithFlush(EXIT_CODES.config_error);
+        }
+      },
+      () => ({ 'config.warning_count': warningCount })
+    );
   },
 });

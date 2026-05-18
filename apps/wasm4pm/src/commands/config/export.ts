@@ -3,6 +3,7 @@ import { resolveConfig, configToToml, configToEnv } from '@wasm4pm/config';
 import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { exitWithFlush } from '../../otel/exit.js';
+import { withSpanRaw } from '../_otel.js';
 
 export const configExport = defineCommand({
   meta: {
@@ -22,29 +23,40 @@ export const configExport = defineCommand({
     const fmt = (ctx.args.format ?? 'toml').toLowerCase();
     const quiet = ctx.args.quiet ?? false;
 
-    try {
-      let content: string;
-      const config = await resolveConfig();
-      if (fmt === 'toml') {
-        content = configToToml(config);
-      } else if (fmt === 'env') {
-        content = configToEnv(config);
-      } else if (fmt === 'json') {
-        content = JSON.stringify(config, null, 2);
-      } else {
-        const result = makeErrorResult('config export', `Unknown format: ${fmt}. Use toml, json, or env.`,
-          EXIT_CODES.config_error, 'CONFIG_ERROR');
-        emitResult(result, { format: 'human', quiet });
-        return await exitWithFlush(EXIT_CODES.config_error);
-      }
+    return withSpanRaw('config.export', { 'config.format': fmt }, async () => {
+      try {
+        let content: string;
+        const config = await resolveConfig();
+        if (fmt === 'toml') {
+          content = configToToml(config);
+        } else if (fmt === 'env') {
+          content = configToEnv(config);
+        } else if (fmt === 'json') {
+          content = JSON.stringify(config, null, 2);
+        } else {
+          const result = makeErrorResult(
+            'config export',
+            `Unknown format: ${fmt}. Use toml, json, or env.`,
+            EXIT_CODES.config_error,
+            'CONFIG_ERROR'
+          );
+          emitResult(result, { format: 'human', quiet });
+          return await exitWithFlush(EXIT_CODES.config_error);
+        }
 
-      // Export commands write artifact content directly to stdout — the content IS the machine output
-      process.stdout.write(content + '\n');
-      return await exitWithFlush(EXIT_CODES.success);
-    } catch (e) {
-      const result = makeErrorResult('config export', e, EXIT_CODES.execution_error, 'EXPORT_ERROR');
-      emitResult(result, { format: 'human', quiet });
-      return await exitWithFlush(EXIT_CODES.execution_error);
-    }
+        // Export commands write artifact content directly to stdout — the content IS the machine output
+        process.stdout.write(content + '\n');
+        return await exitWithFlush(EXIT_CODES.success);
+      } catch (e) {
+        const result = makeErrorResult(
+          'config export',
+          e,
+          EXIT_CODES.execution_error,
+          'EXPORT_ERROR'
+        );
+        emitResult(result, { format: 'human', quiet });
+        return await exitWithFlush(EXIT_CODES.execution_error);
+      }
+    });
   },
 });
