@@ -649,3 +649,83 @@ fn rank1_linucb_select_always_in_bounds() {
         orch.linucb_update(features, 0.5);
     }
 }
+
+// ---------------------------------------------------------------------------
+// Q-table serialization and restoration tests (Category A: Bellman correctness)
+// These tests require the `cloud` feature because export/restore_all_q_tables
+// depend on crate::rl_state_serialization which is gated behind #[cfg(feature = "cloud")].
+// ---------------------------------------------------------------------------
+
+#[cfg(feature = "cloud")]
+#[test]
+fn test_restore_all_q_tables_valid_agents() {
+    let orch = RlOrchestrator::new();
+
+    // Export current Q-tables to establish baseline
+    let tables = orch.export_all_q_tables();
+    assert_eq!(tables.len(), 5, "Should export Q-tables for all 5 agents");
+
+    // Restore the same Q-tables (no-op in terms of content)
+    let (restored, skipped) = orch.restore_all_q_tables(tables);
+
+    assert_eq!(restored, 5, "All 5 tables should be restored successfully");
+    assert_eq!(skipped, 0, "No tables should be skipped");
+}
+
+#[cfg(feature = "cloud")]
+#[test]
+fn test_restore_all_q_tables_rejects_invalid_agent_type() {
+    let orch = RlOrchestrator::new();
+
+    // Export and then manually corrupt agent_type to an invalid index
+    let mut tables = orch.export_all_q_tables();
+    assert!(!tables.is_empty(), "Should have exported at least one table");
+
+    // Corrupt the first table's agent_type to an out-of-bounds index
+    // (valid range: 0..5, so 5+ is invalid)
+    tables[0].agent_type = 5u8;
+    tables[1].agent_type = 99u8;
+
+    // Attempt to restore: should skip corrupted entries and log errors
+    let (restored, skipped) = orch.restore_all_q_tables(tables);
+
+    assert_eq!(
+        restored, 3,
+        "Only the 3 valid tables (indices 2, 3, 4) should be restored"
+    );
+    assert_eq!(skipped, 2, "The 2 invalid tables should be skipped and logged");
+}
+
+#[cfg(feature = "cloud")]
+#[test]
+fn test_restore_all_q_tables_empty_list() {
+    let orch = RlOrchestrator::new();
+
+    let (restored, skipped) = orch.restore_all_q_tables(vec![]);
+
+    assert_eq!(restored, 0, "No tables to restore");
+    assert_eq!(skipped, 0, "No tables to skip");
+}
+
+#[cfg(feature = "cloud")]
+#[test]
+fn test_restore_all_q_tables_all_invalid() {
+    let orch = RlOrchestrator::new();
+
+    // Create a list of tables with all invalid agent_type values
+    let invalid_tables = vec![
+        wasm4pm::rl_state_serialization::SerializedAgentQTable {
+            agent_type: 5u8,
+            state_values: Default::default(),
+        },
+        wasm4pm::rl_state_serialization::SerializedAgentQTable {
+            agent_type: 10u8,
+            state_values: Default::default(),
+        },
+    ];
+
+    let (restored, skipped) = orch.restore_all_q_tables(invalid_tables);
+
+    assert_eq!(restored, 0, "No valid tables to restore");
+    assert_eq!(skipped, 2, "Both invalid tables should be skipped");
+}

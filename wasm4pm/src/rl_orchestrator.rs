@@ -8,6 +8,7 @@ use crate::ml::LinUCBAgent;
 use crate::reinforcement::{
     Agent, AgentMeta, DoubleQLearning, ExpectedSARSAAgent, QLearning, ReinforceAgent, SARSAAgent,
 };
+use tracing::{error, warn, span, Level};
 
 // Re-export the RlState/RlAction types from lib.rs (they are pub(crate)).
 // We use the concrete types directly since this module is in the same crate.
@@ -230,6 +231,41 @@ pub fn compute_reward(
     reward
 }
 
+/// Compute decayed learning rate (alpha) for the current cycle.
+///
+/// Uses multiplicative decay schedule: alpha_t = alpha_0 * (0.9999 ^ cycle_count)
+///
+/// **Why decay is beneficial:**
+/// Learning rate decay implements an exploration→exploitation transition. Early cycles
+/// aggressively update Q-values to explore the state-action space (high alpha). As the
+/// agent converges on a good policy, lower alpha (smaller updates) stabilizes learned
+/// values, reducing the risk of policy oscillation. The base (0.9999) is gentle — after
+/// 10,000 cycles, alpha drops to ~0.37x its initial value, allowing long learning horizons.
+///
+/// # Parameters
+/// - `alpha_0`: Initial learning rate (typically 0.1)
+/// - `cycle_count`: Current cycle number (0-based)
+///
+/// # Returns
+/// Decayed alpha for the current cycle.
+///
+/// # Examples
+///
+/// ```
+/// use wasm4pm::rl_orchestrator::learning_rate_schedule;
+///
+/// let alpha_0 = 0.1;
+/// assert!((learning_rate_schedule(alpha_0, 0) - 0.1).abs() < 1e-6);   // cycle 0 → no decay
+/// assert!(learning_rate_schedule(alpha_0, 1000) < alpha_0);            // cycle 1000 → decayed
+/// assert!(learning_rate_schedule(alpha_0, 10000) < 0.04);              // cycle 10000 → ~37% decay
+/// ```
+pub fn learning_rate_schedule(alpha_0: f32, cycle_count: u64) -> f32 {
+    // alpha_t = alpha_0 * (0.9999 ^ cycle_count)
+    // Using f32::powf for clarity; compiler may inline/optimize.
+    alpha_0 * 0.9999_f32.powf(cycle_count as f32)
+}
+
+
 /// The RL Orchestrator — holds all agents, dispatches to active one.
 pub struct RlOrchestrator {
     // Indexed by AgentType discriminant (0–4); vtable dispatch replaces match blocks.
@@ -394,6 +430,18 @@ impl RlOrchestrator {
         circuit_allowed: bool,
         latency_budget_exceeded: bool,
     ) -> (String, f32) {
+        // OTEL span wrapper for autonomic run_cycle loop
+        let _cycle_span = tracing::info_span!(
+            "rl.run_cycle",
+            health_before = state.health_level,
+            health_after = next_state.health_level,
+            agent = self.telemetry.active_agent_name.as_str(),
+            agent_id = self.telemetry.active_agent_name.as_str(),
+            spc_alerts = spc_alert_count,
+            service_name = "wpm",
+        )
+        .entered();
+
         // LinUCB agent selection (if enabled)
         if self.use_linucb_for_selection {
             let recommended = self.linucb_select_agent(features);
@@ -425,6 +473,19 @@ impl RlOrchestrator {
             latency_budget_exceeded,
         );
 
+        // Emit state transition event
+        let health_changed = prev_health != curr_health;
+        tracing::info!(
+            health_degraded = curr_health > prev_health,
+            health_improved = curr_health < prev_health,
+            health_changed = health_changed,
+            reward = reward,
+            cycle = self.telemetry.cycle_count,
+            status = if curr_health < 4 { "ok" } else { "error" },
+            service_name = "wpm",
+            "rl.state_transition"
+        );
+
         // For SARSA: pre-select action for next_state so the update uses the
         // correct on-policy next action a' = π(s'). This must happen BEFORE
         // the update call because SARSA's update reads last_action to get a'.
@@ -447,6 +508,13 @@ impl RlOrchestrator {
         // (terminal-equivalent). Force done=true in this case so every agent
         // collapses to: target = r.
         let effective_done = done || (state == next_state);
+
+        // Learning rate decay (exploration → exploitation transition).
+        // Compute current alpha using the multiplicative schedule: alpha_t = alpha_0 * (0.9999 ^ cycle_count).
+        // Early cycles aggressively explore with high alpha; later cycles fine-tune with lower alpha,
+        // reducing policy oscillation while allowing convergence on an optimal policy.
+        let alpha_t = learning_rate_schedule(0.1, self.telemetry.cycle_count);
+        self.agents[self.active_agent as usize].set_learning_rate(alpha_t);
 
         // Update agent with proper state transition (state -> next_state)
         self.update(state, &action, reward, next_state, effective_done);
@@ -491,15 +559,51 @@ impl RlOrchestrator {
     }
 
     /// Restore all Q-tables to all 5 agents from serialized format.
+    ///
+    /// Returns (restored_count, skipped_count) to allow callers to detect silent failures.
+    /// If skipped_count > 0, an error is logged and a warning span is emitted.
+    ///
+    /// # Arguments
+    /// * `tables` - Serialized Q-tables from agents, indexed by agent_type (0..5)
+    ///
+    /// # Returns
+    /// Tuple of (successfully restored tables, silently skipped tables due to invalid agent_type)
     pub fn restore_all_q_tables(
         &self,
         tables: Vec<crate::rl_state_serialization::SerializedAgentQTable>,
-    ) {
+    ) -> (usize, usize) {
+        let span = span!(Level::DEBUG, "rl_orchestrator.restore_q_tables", agent_count = self.agents.len());
+        let _guard = span.enter();
+
+        let mut restored = 0;
+        let mut skipped = 0;
+        let table_count = tables.len();
+
         for table in tables {
-            if let Some(agent) = self.agents.get(table.agent_type as usize) {
+            let agent_idx = table.agent_type as usize;
+            if let Some(agent) = self.agents.get(agent_idx) {
                 agent.restore_q_table(table);
+                restored += 1;
+            } else {
+                skipped += 1;
+                error!(
+                    agent_type = agent_idx,
+                    total_agents = self.agents.len(),
+                    "Q-table restoration failed: invalid agent_type"
+                );
             }
         }
+
+        if skipped > 0 {
+            warn!(
+                skipped_count = skipped,
+                restored_count = restored,
+                total_count = table_count,
+                "Q-table restoration incomplete: policy divergence risk"
+            );
+        }
+
+        (restored, skipped)
     }
 }
 
@@ -643,5 +747,52 @@ mod tests {
         assert_eq!(t.cycle_count, 0);
         assert_eq!(t.cumulative_reward, 0.0);
         assert_eq!(t.active_agent_name, "QLearning");
+    }
+
+    // --- learning_rate_schedule: multiplicative decay -----
+
+    /// At cycle 0, no decay has occurred yet.
+    #[test]
+    fn learning_rate_schedule_zero_decay_at_cycle_zero() {
+        let alpha_0 = 0.1;
+        let alpha_t = learning_rate_schedule(alpha_0, 0);
+        assert!((alpha_t - alpha_0).abs() < 1e-6, "cycle 0 should have no decay");
+    }
+
+    /// Learning rate strictly decreases over time.
+    #[test]
+    fn learning_rate_schedule_monotonically_decreases() {
+        let alpha_0 = 0.1;
+        let alpha_1000 = learning_rate_schedule(alpha_0, 1000);
+        let alpha_2000 = learning_rate_schedule(alpha_0, 2000);
+        let alpha_10000 = learning_rate_schedule(alpha_0, 10000);
+
+        assert!(alpha_0 > alpha_1000, "alpha should decay from cycle 0 to 1000");
+        assert!(alpha_1000 > alpha_2000, "alpha should decay from cycle 1000 to 2000");
+        assert!(alpha_2000 > alpha_10000, "alpha should decay from cycle 2000 to 10000");
+    }
+
+    /// After 10,000 cycles, alpha drops to approximately 37% of its original value.
+    /// Empirical: 0.9999^10000 ≈ 0.3679
+    #[test]
+    fn learning_rate_schedule_reaches_37_percent_decay_at_ten_thousand() {
+        let alpha_0 = 0.1;
+        let alpha_10000 = learning_rate_schedule(alpha_0, 10000);
+        let expected = alpha_0 * 0.3679; // 0.9999^10000 ≈ 0.3679
+        assert!(
+            (alpha_10000 - expected).abs() < 0.001,
+            "alpha at 10k cycles should be ~37% of initial, got {}",
+            alpha_10000
+        );
+    }
+
+    /// Decay schedule remains positive (never becomes zero or negative).
+    #[test]
+    fn learning_rate_schedule_stays_positive() {
+        let alpha_0 = 0.1;
+        for cycle in [0, 100, 1000, 10000, 100000, 1_000_000] {
+            let alpha_t = learning_rate_schedule(alpha_0, cycle);
+            assert!(alpha_t > 0.0, "alpha at cycle {} must stay positive", cycle);
+        }
     }
 }

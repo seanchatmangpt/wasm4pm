@@ -20,6 +20,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use tracing::{span, Level};
 
 // ---------------------------------------------------------------------------
 // Monotonic clock
@@ -234,6 +235,9 @@ impl CircuitBreaker {
     /// Record a successful call.
     #[allow(dead_code)]
     pub fn record_success(&mut self) {
+        let prev_state = self.state;
+        let prev_success_count = self.success_count;
+
         match self.state {
             CircuitState::Closed => {
                 // Reset failure count on success.
@@ -249,11 +253,24 @@ impl CircuitBreaker {
                 // Should not happen — calls should be rejected in open state.
             }
         }
+
+        tracing::debug!(
+            prev_state = ?prev_state,
+            current_state = ?self.state,
+            prev_success_count = prev_success_count,
+            current_success_count = self.success_count,
+            status = "ok",
+            service_name = "wpm",
+            "circuit breaker recorded success"
+        );
     }
 
     /// Record a failed call.
     #[allow(dead_code)]
     pub fn record_failure(&mut self) {
+        let prev_state = self.state;
+        let prev_failure_count = self.failure_count;
+
         self.failure_count += 1;
 
         match self.state {
@@ -270,11 +287,33 @@ impl CircuitBreaker {
                 // Already open, just update failure count.
             }
         }
+
+        tracing::warn!(
+            prev_state = ?prev_state,
+            current_state = ?self.state,
+            prev_failure_count = prev_failure_count,
+            current_failure_count = self.failure_count,
+            failure_threshold = self.config.failure_threshold,
+            status = "error",
+            service_name = "wpm",
+            "circuit breaker recorded failure"
+        );
     }
 
     /// Check if a call should be allowed.
     #[allow(dead_code)]
     pub fn allow_request(&mut self) -> bool {
+        let span = span!(
+            Level::DEBUG,
+            "circuit_breaker.allow_request",
+            current_state = ?self.state,
+            failure_count = self.failure_count,
+            success_count = self.success_count,
+            service_name = "wpm",
+            status = if self.state as u8 != CircuitState::Open as u8 { "ok" } else { "error" }
+        );
+        let _enter = span.enter();
+
         let elapsed = now_ms().saturating_sub(self.last_state_change_ms);
         // Per-state timeout thresholds; Closed never times out.
         let timeouts: [u64; 3] = [u64::MAX, self.config.half_open_timeout_ms, self.config.open_timeout_ms];
@@ -288,6 +327,15 @@ impl CircuitBreaker {
         if next_state != self.state {
             self.transition_to(next_state);
         }
+
+        tracing::debug!(
+            is_allowed = allow,
+            next_state = ?next_state,
+            elapsed_ms = elapsed,
+            status = if allow { "ok" } else { "error" },
+            "circuit breaker decision"
+        );
+
         allow
     }
 
@@ -335,6 +383,8 @@ impl CircuitBreaker {
 
     /// Transition to new state.
     fn transition_to(&mut self, new_state: CircuitState) {
+        let prev_state = self.state;
+
         self.state = new_state;
         self.last_state_change_ms = now_ms();
 
@@ -351,6 +401,15 @@ impl CircuitBreaker {
                 self.success_count = 0;
             }
         }
+
+        tracing::info!(
+            prev_state = ?prev_state,
+            next_state = ?new_state,
+            timestamp_ms = self.last_state_change_ms,
+            status = "ok",
+            service_name = "wpm",
+            "circuit breaker state transition"
+        );
     }
 
     /// Convert circuit state to u8 (0=Closed, 1=HalfOpen, 2=Open)

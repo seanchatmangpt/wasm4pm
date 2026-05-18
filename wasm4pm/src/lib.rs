@@ -2292,13 +2292,19 @@ pub fn restore_rl_state(json: &str) -> Result<String, JsValue> {
 
             // Restore Q-tables for all agents
             let num_q_tables = state.agent_q_tables.len();
+            let mut restoration_status = String::new();
             if num_q_tables > 0 {
-                orch_ref.restore_all_q_tables(state.agent_q_tables);
+                let (restored, skipped) = orch_ref.restore_all_q_tables(state.agent_q_tables);
+                restoration_status = if skipped > 0 {
+                    format!("; {} Q-tables restored, {} skipped (policy divergence risk)", restored, skipped)
+                } else {
+                    format!("; all {} Q-tables restored successfully", restored)
+                };
             }
 
             Ok::<String, JsValue>(format!(
-                "Restored RL state from cycle {} (agent {}, linucb={}, {} Q-tables)",
-                state.telemetry.cycle_count, state.active_agent, state.linucb_enabled, num_q_tables
+                "Restored RL state from cycle {} (agent {}, linucb={}){}",
+                state.telemetry.cycle_count, state.active_agent, state.linucb_enabled, restoration_status
             ))
         })
         .map_err(|_e| crate::error::js_val("Failed to restore RL state"))
