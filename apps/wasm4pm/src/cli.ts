@@ -31,6 +31,7 @@ import { completions } from './commands/completions.js';
 import { claude } from './commands/claude.js';
 import { adversary } from './commands/adversary.js';
 import { trace } from './commands/trace.js';
+import { prolog8 } from './commands/prolog8.js';
 import { algorithms } from './commands/algorithms.js';
 import { repl } from './commands/repl.js';
 import pkg from '../package.json' with { type: 'json' };
@@ -149,6 +150,11 @@ ${BOLD}CLAUDE CODE INTEGRATION${RESET}  ${DIM}(session evidence, hook verificati
   ${GREEN}wpm claude hooks${RESET}                    JTBD verification of all hook jobs
   ${GREEN}wpm adversary${RESET}                       Adversarial proof lifecycle convergence test (18 probes)
 
+${BOLD}PROLOG8${RESET}  ${DIM}(byte-capped proof engine, BLAKE3 receipt chains)${RESET}
+  ${GREEN}wpm prolog8 show${RESET}                     Report engine version and capabilities
+  ${GREEN}wpm prolog8 query${RESET} -i <input.json>    Evaluate a query (Allow / Deny / Invalid + proof)
+  ${GREEN}wpm prolog8 replay${RESET} -i <input.json>   Verify a receipt (detect tampering)
+
 ${BOLD}SETUP${RESET}
   ${GREEN}wpm init${RESET}                            Scaffold wasm4pm.toml + .env.example in current dir
 
@@ -192,6 +198,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     claude,
     adversary,
     trace,
+    prolog8,
     algorithms,
     repl,
   },

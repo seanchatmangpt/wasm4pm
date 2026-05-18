@@ -25,7 +25,14 @@ export interface CliTestEnv {
   cleanup: () => Promise<void>;
 }
 
-/** Known exit codes — must match wpm exit-codes.ts */
+/**
+ * Known exit codes — must match wpm exit-codes.ts.
+ *
+ * Both UPPERCASE and lowercase aliases are exported. Older tests use SCREAMING_SNAKE
+ * style (`EXIT_CODES.SUCCESS`); newer tests use lowercase (`EXIT_CODES.success`).
+ * Both are valid; the lowercase form matches the contract names used in the JSON
+ * envelope's `error.code` field.
+ */
 export const EXIT_CODES = {
   SUCCESS: 0,
   CONFIG_ERROR: 1,
@@ -33,6 +40,13 @@ export const EXIT_CODES = {
   EXECUTION_ERROR: 3,
   PARTIAL_FAILURE: 4,
   SYSTEM_ERROR: 5,
+  success: 0,
+  config_error: 1,
+  source_error: 2,
+  execution_error: 3,
+  partial_failure: 4,
+  system_error: 5,
+  conformance_fail: 6,
 } as const;
 
 export type ExitCodeName = keyof typeof EXIT_CODES;

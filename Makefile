@@ -292,6 +292,17 @@ cognition-examples:
 cognition-smoke:
 	@bash scripts/cognition-smoke.sh
 
+# ── Prolog8 (byte-capped proof engine) ────────────────────────────────────
+prolog8-build:
+	@echo "=== Prolog8 Build ==="
+	cd crates/prolog8 && wasm-pack build --target nodejs --out-dir pkg --features wasm
+	@if [ -f apps/wasm4pm/package.json ]; then cd apps/wasm4pm && pnpm build; fi
+
+prolog8-test:
+	cd crates/prolog8 && cargo test
+	@if [ -f packages/contracts/package.json ]; then pnpm --filter @wasm4pm/contracts test -- prolog8-compiler; fi
+	@if [ -f packages/agents/package.json ]; then pnpm --filter @wasm4pm/agents test -- rule8-bridge; fi
+
 # ── Real-Data + Substrate Certificate Proxies ─────────────────────────────
 real-data:
 	@cd wasm4pm && $(MAKE) real-data
