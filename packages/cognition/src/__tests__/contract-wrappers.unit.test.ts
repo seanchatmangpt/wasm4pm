@@ -65,7 +65,7 @@ const BUILD_RESULT = JSON.stringify({
   pareto_front: [{ id: 'c1', family_id: 'f1', dimensions: {} }],
   dominated: [],
 });
-const SYSTEM_VERIFY_RESULT = JSON.stringify({ target: 'system-1', status: 'ok', findings: [] });
+const SYSTEM_VERIFY_RESULT = JSON.stringify({ target: 'system-1', status: 'verified', findings: [] });
 const REPLAY_RESULT = JSON.stringify({ run_id: 'r1', output_hash: 'abc', replay_pointer: 'ptr1' });
 
 // ── verifyContract ────────────────────────────────────────────────────────────
