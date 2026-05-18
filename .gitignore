@@ -1,5 +1,6 @@
 # Rust
-/target
+# Unanchored: matches workspace member target/ dirs at any depth.
+target/
 **/*.rs.bk
 
 # WASM build artifacts
@@ -9,8 +10,8 @@ wasm4pm/pkg/
 # Node
 node_modules/
 .pnpm-store/
-package-lock.json
-pnpm-lock.yaml
+# pnpm-lock.yaml is committed for reproducible workspace installs.
+# package-lock.json is blocked by .github/workflows/repo-hygiene.yml, not by ignore.
 
 # TypeScript build
 dist/

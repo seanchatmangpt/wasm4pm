@@ -1,0 +1,18 @@
+# Cross-platform line-ending normalization.
+* text=auto eol=lf
+
+# Binary — never diff or line-end-munge.
+*.wasm binary
+
+# Process-mining inputs are XML-ish text.
+*.xes text eol=lf
+
+# Lockfiles: huge, mechanical, generated. Collapse in PR review.
+Cargo.lock -diff
+pnpm-lock.yaml -diff
+
+# Test snapshots are generated, not human-authored.
+*.snap -diff linguist-generated
+
+# wasm-pack output, if ever surfaced in a diff.
+pkg/** linguist-generated
