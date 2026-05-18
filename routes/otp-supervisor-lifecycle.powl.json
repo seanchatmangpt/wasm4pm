@@ -1,0 +1,49 @@
+{
+  "route_id": "otp-supervisor-lifecycle",
+  "type": "powl2",
+  "required_stages": [
+    "start_link",
+    "init",
+    "handle_info_child_started"
+  ],
+  "receipt_required": true,
+  "object_types": {
+    "Supervisor": {
+      "created_by": ["start_link"]
+    },
+    "WorkerProcess": {
+      "created_by": ["handle_info_child_started"],
+      "terminated_by": ["handle_info_child_died", "terminate"]
+    },
+    "Receipt": {
+      "created_by": ["start_link", "init", "handle_info_child_started", "handle_info_child_died", "restart_child", "terminate"]
+    }
+  },
+  "model": {
+    "type": "choice_graph",
+    "choice_graph": {
+      "nodes": [
+        "▷",
+        "start_link",
+        "init",
+        "handle_info_child_started",
+        "handle_info_child_died",
+        "restart_child",
+        "terminate",
+        "□"
+      ],
+      "edges": [
+        ["▷", "start_link"],
+        ["start_link", "init"],
+        ["init", "handle_info_child_started"],
+        ["handle_info_child_started", "□"],
+        ["handle_info_child_started", "handle_info_child_died"],
+        ["handle_info_child_died", "restart_child"],
+        ["handle_info_child_died", "terminate"],
+        ["handle_info_child_died", "□"],
+        ["restart_child", "handle_info_child_started"],
+        ["terminate", "□"]
+      ]
+    }
+  }
+}

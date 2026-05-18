@@ -6,6 +6,7 @@ import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
 import { withSpan, withSpanRaw } from './_otel.js';
+import { parseSaslSupervisorReports, supervisorReportsToOcel } from '@wasm4pm/contracts';
 
 // Lazy-loaded require for CJS deps (ajv) — avoids module load cost on unrelated commands
 const _require = createRequire(import.meta.url);
@@ -355,12 +356,13 @@ function parseErlangTrace(text: string): TraceFrame[] {
   const crashDumpPattern = /^[\s*]*(\w+):(\w+)\/(\d+)\s+\(([^):]+\.erl):(\d+)\)/;
 
   // ── Format 3: verbose exception lines ────────────────────────────────────────
-  // Pattern: "in function  module:function/arity (file.erl, line N)"
+  // Pattern: "in function  module:function/arity (file.erl, line N)"   (comma-line style)
   //          "in call from module:function/arity (file.erl, line N)"
   //          "called from module:function/arity (file.erl, line N)"
+  //          "in function  module:function/arity (file.erl:N)"          (colon style)
   // Also handle lines without module prefix: "function/arity (file.erl, line N)"
   const verbosePattern =
-    /(?:in (?:function|call from)|called from)\s+(?:(\w+):)?(\w+)\/(\d+)\s+\(([^),]+\.erl),\s*line\s+(\d+)\)/;
+    /(?:in (?:function|call from)|called from)\s+(?:(\w+):)?(\w+)\/(\d+)\s+\(([^),]+\.erl)(?:,\s*line\s+|:)(\d+)\)/;
 
   // ── Format 4: generic "module:function/arity (file.erl, line N)" ─────────────
   // Handles lines like:  lists:nth/2 (lists.erl, line 312)
@@ -412,6 +414,68 @@ function parseErlangTrace(text: string): TraceFrame[] {
   }
 
   return frames;
+}
+
+// ── SASL supervisor report detection ─────────────────────────────────────────
+
+/**
+ * Returns true when `text` looks like OTP SASL supervisor report output.
+ * The canonical header is: `=SUPERVISOR REPORT==== <timestamp> ===`
+ * We also accept the less-decorated `supervisor: {local,...}` block opener
+ * used in some OTP versions.
+ */
+function isSaslSupervisorReport(text: string): boolean {
+  return /=SUPERVISOR REPORT====/.test(text) || /supervisor:\s*\{(?:local|global),/.test(text);
+}
+
+/**
+ * Convert SASL supervisor reports (parsed via @wasm4pm/contracts) to the local
+ * OcelLog format used by the trace conformance pipeline.
+ *
+ * The contracts `OcelEvent` uses OCEL 2.0 JSON-LD keys (`ocel:activity`, etc.).
+ * The local OcelLog uses plain-object keys (`activity`, `event_id`, etc.).
+ * This adapter bridges the two.
+ */
+function saslReportsToLocalOcel(text: string): OcelLog {
+  const reports = parseSaslSupervisorReports(text);
+  const contractEvents = supervisorReportsToOcel(reports);
+  const now = new Date().toISOString();
+
+  const objectMap = new Map<string, { id: string; type: string; attributes: Record<string, unknown> }>();
+
+  const events: OcelEvent[] = contractEvents.map((ev, i) => {
+    const pid = (ev['ocel:omap'] ?? [])[0] ?? `proc:${i}`;
+    const activity = ev['ocel:activity'] ?? 'erlang_proc.supervisor_unknown';
+    const vmap = (ev['ocel:vmap'] ?? {}) as Record<string, unknown>;
+
+    // Register the process object
+    if (!objectMap.has(pid)) {
+      objectMap.set(pid, { id: pid, type: 'WorkerProcess', attributes: {} });
+    }
+    // Register a Receipt object (so object evidence is present)
+    const receiptId = `Receipt:sasl:${i}`;
+    if (!objectMap.has(receiptId)) {
+      objectMap.set(receiptId, { id: receiptId, type: 'Receipt', attributes: {} });
+    }
+
+    return {
+      event_id: (ev['ocel:eid'] as string | undefined) ?? `sasl:e${i}`,
+      activity,
+      timestamp: (ev['ocel:timestamp'] as string | undefined) ?? now,
+      objects: [
+        { id: pid, type: 'WorkerProcess' },
+        { id: receiptId, type: 'Receipt' },
+      ],
+      attributes: { ...vmap, frame_index: i },
+    };
+  });
+
+  return {
+    ocel_version: '2.0',
+    ocel_global_log: { ocel_attribute_names: ['supervisor', 'reason', 'child_name', 'child_mfa', 'frame_index'] },
+    ocel_events: events,
+    ocel_objects: Array.from(objectMap.values()),
+  };
 }
 
 // ── projectors ────────────────────────────────────────────────────────────────
@@ -1077,6 +1141,50 @@ const ingest = defineCommand({
           frames = parseJsTrace(text);
           break;
         case 'erlang':
+          // SASL supervisor reports have a distinct header and richer lifecycle
+          // semantics than raw stack frames. Detect and dispatch separately,
+          // producing OCEL directly rather than going through TraceGraph.
+          if (isSaslSupervisorReport(text)) {
+            const saslOcel = saslReportsToLocalOcel(text);
+            const saslJson = JSON.stringify(saslOcel, null, 2);
+            const outPath = ctx.args.out as string | undefined;
+            if (outPath) {
+              writeFileSync(outPath, saslJson, 'utf8');
+            } else if (format === 'json') {
+              process.stdout.write(saslJson + '\n');
+              return exitWithFlush(EXIT_CODES.success);
+            }
+            const saslResult = makeResult(
+              'trace ingest',
+              {
+                run_id: runId,
+                language: 'erlang',
+                mode: 'sasl_supervisor_report',
+                events: saslOcel.ocel_events.length,
+                objects: saslOcel.ocel_objects.length,
+                out: outPath ?? 'stdout',
+              },
+              performance.now() - t0,
+              EXIT_CODES.success
+            );
+            emitResult(saslResult, { format, verbose, quiet }, (res, p) => {
+              const d = res.payload as {
+                run_id: string; language: string; mode: string;
+                events: number; objects: number; out: string;
+              };
+              p.log('');
+              p.log('wpm trace ingest — SASL Supervisor Report → OCEL');
+              p.log(`  Language:  ${d.language} (${d.mode})`);
+              p.log(`  Events:    ${d.events}`);
+              p.log(`  Objects:   ${d.objects}`);
+              p.log(`  Output:    ${d.out}`);
+              if (!outPath) {
+                p.log('');
+                p.log(saslJson);
+              }
+            });
+            return exitWithFlush(EXIT_CODES.success);
+          }
           frames = parseErlangTrace(text);
           break;
         default: {

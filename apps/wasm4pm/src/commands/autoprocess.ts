@@ -401,7 +401,78 @@ export const autoprocess = defineCommand({
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
-    const maxCycles = parseInt(String(ctx.args.cycles ?? '1'), 10);
+
+    // ── --format validation ────────────────────────────────────────────────────
+    // Guard before withSpan so invalid format exits config_error (1), not
+    // execution_error (3) from the WASM layer.  Rank-2 domain contract: the
+    // format flag must be 'json' or 'human'; anything else is a configuration
+    // error, not an execution error.
+    if (!['json', 'human'].includes(format as string)) {
+      const result = makeErrorResult(
+        'autoprocess',
+        new Error(`--format must be 'json' or 'human', got: '${format}'`),
+        EXIT_CODES.config_error,
+        'CONFIG_INVALID_FORMAT'
+      );
+      emitResult(result, { format: 'json', verbose, quiet });
+      return await exitWithFlush(EXIT_CODES.config_error);
+    }
+
+    // ── --cycles validation ────────────────────────────────────────────────────
+    // parseInt('abc', 10) returns NaN; parseInt('1.7', 10) returns 1 (truncates).
+    // NaN causes cyclesRun < NaN === false → zero cycles, silent exit 0.
+    // Negative values run zero cycles for the same reason.
+    // Guard here before entering any async WASM path.
+    const cyclesRaw = String(ctx.args.cycles ?? '1');
+
+    // Reject float strings explicitly — parseInt('1.7') silently truncates to 1,
+    // which is surprising and non-deterministic for the operator.  A whole-integer
+    // check is stricter and unambiguous.
+    if (cyclesRaw.includes('.')) {
+      const result = makeErrorResult(
+        'autoprocess',
+        new Error('--cycles must be a whole integer, got: ' + cyclesRaw),
+        EXIT_CODES.config_error,
+        'CONFIG_INVALID_CYCLES'
+      );
+      emitResult(result, { format: format as 'json' | 'human', verbose, quiet });
+      return await exitWithFlush(EXIT_CODES.config_error);
+    }
+
+    const maxCycles = parseInt(cyclesRaw, 10);
+    const CYCLES_MAX = 10_000;
+
+    if (Number.isNaN(maxCycles)) {
+      const result = makeErrorResult(
+        'autoprocess',
+        new Error('--cycles must be a positive integer'),
+        EXIT_CODES.config_error,
+        'CONFIG_INVALID_CYCLES'
+      );
+      emitResult(result, { format, verbose, quiet });
+      return await exitWithFlush(EXIT_CODES.config_error);
+    }
+    if (maxCycles < 0) {
+      const result = makeErrorResult(
+        'autoprocess',
+        new Error('--cycles must be a positive integer'),
+        EXIT_CODES.config_error,
+        'CONFIG_INVALID_CYCLES'
+      );
+      emitResult(result, { format, verbose, quiet });
+      return await exitWithFlush(EXIT_CODES.config_error);
+    }
+    if (maxCycles > CYCLES_MAX) {
+      const result = makeErrorResult(
+        'autoprocess',
+        new Error(`--cycles exceeds maximum (${CYCLES_MAX})`),
+        EXIT_CODES.config_error,
+        'CONFIG_INVALID_CYCLES'
+      );
+      emitResult(result, { format, verbose, quiet });
+      return await exitWithFlush(EXIT_CODES.config_error);
+    }
+    // maxCycles === 0 is the "unlimited" sentinel (run forever until interrupted)
     const unlimited = maxCycles === 0;
 
     try {
