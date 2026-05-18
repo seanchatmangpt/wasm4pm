@@ -451,6 +451,7 @@ export const results = defineCommand({
               : 'no_receipt';
 
           const verifyPayload = {
+            ref,
             result_file: path.basename(resultFilepath),
             recomputed_output_hash: recomputedOutputHash,
             stored_output_hash: storedHash,
@@ -458,6 +459,8 @@ export const results = defineCommand({
             receipt_file: matchedReceiptFile,
             receipt_output_hash: matchedReceipt?.output_hash ?? null,
             integrity,
+            verified: integrity === 'ok',
+            hash_match: !storedHashMismatch,
             run_id: matchedReceipt?.run_id ?? null,
             command: matchedReceipt?.command ?? null,
             timestamp: matchedReceipt?.timestamp ?? null,
@@ -740,6 +743,8 @@ export const results = defineCommand({
           directory: dir,
           count: files.length,
           showing: displayed.length,
+          oldest: files.length > 0 ? files[files.length - 1].mtime.toISOString() : null,
+          newest: files.length > 0 ? files[0].mtime.toISOString() : null,
           results: displayed.map((f, i) => {
             const s = summaries[i];
             return {

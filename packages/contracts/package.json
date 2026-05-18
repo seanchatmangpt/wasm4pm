@@ -45,6 +45,10 @@
     "./prolog8-compiler": {
       "import": "./dist/prolog8-compiler.js",
       "types": "./dist/prolog8-compiler.d.ts"
+    },
+    "./ocel-bridge": {
+      "import": "./dist/ocel-bridge.js",
+      "types": "./dist/ocel-bridge.d.ts"
     }
   },
   "files": [
