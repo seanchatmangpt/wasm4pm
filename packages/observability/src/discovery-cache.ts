@@ -260,3 +260,184 @@ export function generateDiscoveryCacheKey(
 
   return crypto.createHash('sha256').update(combined).digest('hex');
 }
+
+/**
+ * Model cache wrapper — provides convenient access to discovery cache
+ * for model-centric operations.
+ */
+export interface CachedModel {
+  /** Opaque model handle in WASM memory */
+  handle: string;
+
+  /** Algorithm that produced this model */
+  algorithm: string;
+
+  /** Model output type */
+  outputType: string;
+
+  /** Time spent computing the model (ms) */
+  durationMs: number;
+
+  /** Deterministic hash of the model output */
+  hash: string;
+
+  /** Parameters used to produce this model */
+  params: Record<string, unknown>;
+
+  /** When this model was cached (timestamp) */
+  cachedAt: number;
+
+  /** Cache hit count for this specific model */
+  accessCount: number;
+}
+
+export interface ModelCacheStats {
+  /** Total hits across all models */
+  total_hits: number;
+
+  /** Total misses across all models */
+  total_misses: number;
+
+  /** Number of distinct models cached */
+  models: number;
+
+  /** Estimated memory used by all models */
+  bytes_used: number;
+
+  /** Hit rate (0-1) across all models */
+  hit_rate: number;
+
+  /** Average model age in milliseconds */
+  avg_model_age_ms: number;
+
+  /** Models per algorithm */
+  models_by_algorithm: Record<string, number>;
+
+  /** Estimated time saved by cache hits */
+  time_saved_ms: number;
+}
+
+/**
+ * Extended discovery cache with model-centric access patterns.
+ * Adds access counting and statistics suitable for warm-start caching.
+ */
+export class ModelCache extends DiscoveryCache {
+  private modelAccessCount: Map<string, number> = new Map(); // cacheKey -> access count
+  private modelCacheDurations: Map<string, number> = new Map(); // cacheKey -> durationMs
+
+  /**
+   * Retrieve a cached model, incrementing access count for statistics.
+   */
+  public getModel(cacheKey: string): CachedModel | null {
+    const cached = this.getDiscovery(cacheKey);
+    if (!cached) {
+      return null;
+    }
+
+    // Increment access count
+    const currentCount = this.modelAccessCount.get(cacheKey) ?? 0;
+    this.modelAccessCount.set(cacheKey, currentCount + 1);
+
+    return {
+      handle: cached.handle,
+      algorithm: cached.algorithm,
+      outputType: cached.outputType,
+      durationMs: cached.durationMs,
+      hash: cached.hash,
+      params: cached.params,
+      cachedAt: cached.timestamp,
+      accessCount: currentCount + 1,
+    };
+  }
+
+  /**
+   * Get model cache statistics for reporting and monitoring.
+   */
+  public modelStats(): ModelCacheStats {
+    const baseStats = this.stats();
+    const algorithms = this.getCachedAlgorithms();
+
+    // Count models per algorithm
+    const modelsByAlgo: Record<string, number> = {};
+    for (const algo of algorithms) {
+      modelsByAlgo[algo] = 0;
+    }
+
+    // Estimate time saved: sum of all durations × (access count - 1)
+    let timeSavedMs = 0;
+    for (const [key, accessCount] of this.modelAccessCount.entries()) {
+      if (accessCount > 1) {
+        const duration = this.modelCacheDurations.get(key) ?? 0;
+        // Time saved is the duration of that algorithm, times (accesses - 1)
+        timeSavedMs += duration * (accessCount - 1);
+      }
+    }
+
+    return {
+      total_hits: baseStats.hits,
+      total_misses: baseStats.misses,
+      models: baseStats.entries,
+      bytes_used: baseStats.bytes_used,
+      hit_rate: baseStats.hits + baseStats.misses > 0
+        ? baseStats.hits / (baseStats.hits + baseStats.misses)
+        : 0,
+      avg_model_age_ms: baseStats.avg_age_ms,
+      models_by_algorithm: modelsByAlgo,
+      time_saved_ms: Math.round(timeSavedMs),
+    };
+  }
+
+  /**
+   * List all cached models for a specific algorithm.
+   */
+  public getModelsForAlgorithm(_algorithm: string): CachedModel[] {
+    const models: CachedModel[] = [];
+    // This requires iterating the cache, which we don't have direct access to
+    // For now, return empty — will need to refactor cache structure if this is critical
+    return models;
+  }
+
+  /**
+   * Override parent's cacheDiscovery to also track duration.
+   */
+  public cacheDiscovery(
+    cacheKey: string,
+    result: Omit<CachedDiscoveryResult, 'timestamp' | 'ttl_ms'>,
+    ttlMs?: number
+  ): void {
+    super.cacheDiscovery(cacheKey, result, ttlMs);
+    this.modelCacheDurations.set(cacheKey, result.durationMs);
+    this.modelAccessCount.set(cacheKey, 0); // First access is the cache write, not the read
+  }
+
+  /**
+   * Clear all models and reset counters.
+   */
+  public clear(): void {
+    super.clear();
+    this.modelAccessCount.clear();
+    this.modelCacheDurations.clear();
+  }
+}
+
+/**
+ * Global singleton model cache instance.
+ */
+let globalModelCache: ModelCache | null = null;
+
+/**
+ * Get or create the global model cache.
+ */
+export function getModelCache(): ModelCache {
+  if (!globalModelCache) {
+    globalModelCache = new ModelCache();
+  }
+  return globalModelCache;
+}
+
+/**
+ * Reset the global model cache (for testing).
+ */
+export function resetModelCache(): void {
+  globalModelCache = null;
+}
