@@ -54,7 +54,7 @@ verify-ts: lint check-debt
 	@# build, tests throw "Cannot read properties of undefined (reading '__wbindgen_free')".
 	@# Same root cause as @wasm4pm/cli, @wasm4pm/engine, @wasm4pm/kernel above.
 	@# Run independently after `cd wasm4pm && npm run build:nodejs`: `pnpm --filter wasm4pm test`
-	@pnpm -r --parallel --jobs 3 \
+	@pnpm -r --workspace-concurrency=3 \
 		--filter '!@wasm4pm/cli' \
 		--filter '!@wasm4pm/engine' \
 		--filter '!@wasm4pm/kernel' \
