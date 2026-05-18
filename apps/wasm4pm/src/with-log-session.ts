@@ -91,10 +91,9 @@ export async function withLogSession<T>(
 
   // Assert: TypeScript does not parse the XML content
   // This is verified by the absence of DOMParser/xml2js imports above
-  console.assert(
-    typeof DOMParser === 'undefined',
-    'SECURITY: DOMParser detected. XES parsing must not use TypeScript XML parsers to prevent XXE.'
-  );
+  if (typeof globalThis !== 'undefined' && typeof (globalThis as any).DOMParser !== 'undefined') {
+    console.warn('SECURITY: DOMParser detected. XES parsing must not use TypeScript XML parsers to prevent XXE.');
+  }
 
   if (xesContent.trim() === '') {
     const result = makeErrorResult(

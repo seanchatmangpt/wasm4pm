@@ -243,29 +243,29 @@ describe('Group 3 — Rank 2: worker registry error isolation', () => {
   it('setWorkerStatus does not throw for a valid registered worker ID', () => {
     spawnWorker('w-alpha', XES_STUB);
     expect(() => {
-      setWorkerStatus('w-alpha', 'failed');
+      setWorkerStatus('w-alpha', 'error');
     }).not.toThrow();
   });
 
   it('setWorkerStatus does not throw for an unknown worker ID (silently skips)', () => {
     // The implementation does registry.get(workerId) and only mutates if found
     expect(() => {
-      setWorkerStatus('ghost-worker', 'failed');
+      setWorkerStatus('ghost-worker', 'error');
     }).not.toThrow();
   });
 
-  it('setWorkerStatus("failed") is reflected in subsequent getWorker call', () => {
+  it('setWorkerStatus("error") is reflected in subsequent getWorker call', () => {
     spawnWorker('w-beta', XES_STUB);
-    setWorkerStatus('w-beta', 'failed');
+    setWorkerStatus('w-beta', 'error');
     const worker = getWorker('w-beta');
-    expect(worker?.status).toBe('failed');
+    expect(worker?.status).toBe('error');
   });
 
   it('failed worker status does not corrupt other workers in the registry', () => {
     spawnWorker('w-healthy', XES_STUB);
     spawnWorker('w-failing', XES_STUB);
 
-    setWorkerStatus('w-failing', 'failed');
+    setWorkerStatus('w-failing', 'error');
 
     // Healthy worker retains its status
     const healthy = getWorker('w-healthy');
@@ -273,7 +273,7 @@ describe('Group 3 — Rank 2: worker registry error isolation', () => {
 
     // Failing worker has its status updated
     const failing = getWorker('w-failing');
-    expect(failing?.status).toBe('failed');
+    expect(failing?.status).toBe('error');
   });
 
   it('storeResult with failed:true is stored without corrupting sibling workers', () => {

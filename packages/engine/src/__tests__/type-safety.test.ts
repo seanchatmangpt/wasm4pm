@@ -15,6 +15,7 @@ import * as fs from 'node:fs/promises';
 import { FileLogSinkAdapter } from '../sinks/file-log-sink.js';
 import { buildModelIR } from '../federation-provenance.js';
 import type { RawModelOutput } from '../federation-provenance.js';
+import type { ModelCapabilities } from '@wasm4pm/contracts';
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -206,11 +207,11 @@ describe('buildModelIR — node and edge narrowing', () => {
   const capabilities: ModelCapabilities = {
     online_safe: true,
     offline_only: false,
-    requires_python: false,
     replay_ready: true,
-    explainable: true,
-    streaming: false,
-    ml_based: false,
+    alignment_ready: true,
+    streaming_compatible: false,
+    exportable_to_pnml: true,
+    exportable_to_bpmn: true,
   };
 
   it('maps nodes with id, label, type fields correctly', () => {

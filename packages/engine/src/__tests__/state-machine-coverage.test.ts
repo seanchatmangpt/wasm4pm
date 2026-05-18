@@ -335,36 +335,9 @@ describe('WasmLoader — singleton lifecycle', () => {
     expect(status.initialized).toBe(false);
   });
 
-  // isInitialized() returns true after successful init() — tested by mocking
-  it.skip('isInitialized() returns true after a successful load (mock)', async () => {
-    const loader = WasmLoader.getInstance({ modulePath: 'mock-path' });
-
-    // Patch the private loadWasmModule method to return a fake module
-    const fakeModule = {
-      memory: { buffer: new ArrayBuffer(65536), maximum: 256 },
-      load_eventlog_from_xes: () => 'handle-1',
-    };
-
-    // Use vi.spyOn to intercept the dynamic import inside init()
-    // We do this by mocking the private method via Object.defineProperty trick
-    // The cleanest approach: override init() on the instance prototype temporarily
-    const originalInit = loader.init.bind(loader);
-    let initCalled = false;
-
-    // Stub init to directly mark the loader as initialized via softReset trick:
-    // We inject the module state by calling init() with a patched loadWasmModule.
-    // Since loadWasmModule is private, we use Object.assign on the instance.
-    vi.spyOn(loader as Parameters<typeof vi.spyOn>[0], 'init').mockImplementationOnce(async () => {
-      // Simulate the state that init() sets
-      (loader as Parameters<typeof Object.assign>[0])['module'] = fakeModule;
-      (loader as Parameters<typeof Object.assign>[0])['initialized'] = true;
-      initCalled = true;
-    });
-
-    await loader.init();
-    expect(initCalled).toBe(true);
-    expect(loader.isInitialized()).toBe(true);
-  });
+  // REMOVED: "isInitialized() returns true after a successful load (mock)"
+  // This test used complex vi.spyOn mocking with type-unsafe casts that don't
+  // align with modern vitest patterns. Re-implement using proper mocking fixtures.
 });
 
 // ── D. State classification helpers ──────────────────────────────────────────

@@ -395,3 +395,115 @@ describe('Domain contract — valid edge cases', () => {
     expect(() => validate({ ...MINIMAL, version: '26.4.31' })).not.toThrow();
   });
 });
+
+// ---------------------------------------------------------------------------
+// TASK 1: Config Validation Error Tests (Quick-Win Coverage)
+// ---------------------------------------------------------------------------
+describe('Config Validation - Type Validation Failures', () => {
+  it('rejects type mismatch: number field receives string', () => {
+    const badConfig = {
+      ...MINIMAL,
+      execution: { profile: 'fast', timeout: 'not_a_number' as any },
+    };
+    expect(() => validate(badConfig)).toThrow(/validation failed/i);
+  });
+
+  it('rejects type mismatch: boolean field receives string', () => {
+    const badConfig = {
+      ...MINIMAL,
+      watch: { enabled: 'true' as any, poll_interval: 60 },
+    };
+    expect(() => validate(badConfig)).toThrow(/validation failed/i);
+  });
+
+  it('rejects type mismatch: object field receives string', () => {
+    const badConfig = {
+      ...MINIMAL,
+      algorithm: { name: 'dfg', parameters: 'not_an_object' as any },
+    };
+    expect(() => validate(badConfig)).toThrow(/validation failed/i);
+  });
+
+  it('rejects type mismatch: array field receives scalar', () => {
+    const badConfig = {
+      ...MINIMAL,
+      prediction: { enabled: true, tasks: 'drift' as any },
+    };
+    expect(() => validate(badConfig)).toThrow(/validation failed/i);
+  });
+});
+
+describe('Config Validation - Missing Required Fields', () => {
+  it('rejects config with algorithm.name as empty string', () => {
+    const badConfig = {
+      ...MINIMAL,
+      algorithm: { name: '' as any, parameters: {} },
+    };
+    expect(() => validate(badConfig)).toThrow(/validation failed|algorithm/i);
+  });
+
+  it('rejects config missing source.kind field', () => {
+    const badConfig = {
+      ...MINIMAL,
+      source: { path: '/some/path' },
+    };
+    expect(() => validate(badConfig)).toThrow(/validation failed|kind/i);
+  });
+
+  it('rejects config missing version field', () => {
+    const badConfig = {
+      source: { kind: 'file' as const },
+    };
+    expect(() => validate(badConfig as any)).toThrow(/validation failed|version/i);
+  });
+
+  it('rejects config with null algorithm.name', () => {
+    const badConfig = {
+      ...MINIMAL,
+      algorithm: { name: null as any },
+    };
+    expect(() => validate(badConfig)).toThrow(/validation failed|algorithm/i);
+  });
+});
+
+describe('Config Validation - Invalid Enum Values', () => {
+  it('rejects invalid execution profile: "turbo"', () => {
+    const badConfig = {
+      ...MINIMAL,
+      execution: { profile: 'turbo' as any },
+    };
+    expect(() => validate(badConfig)).toThrow(/validation failed|profile/i);
+  });
+
+  it('rejects invalid source kind: "ftp"', () => {
+    const badConfig = {
+      ...MINIMAL,
+      source: { kind: 'ftp' as any },
+    };
+    expect(() => validate(badConfig)).toThrow(/validation failed|kind/i);
+  });
+
+  it('rejects invalid sink kind: "memory"', () => {
+    const badConfig = {
+      ...MINIMAL,
+      sink: { kind: 'memory' as any },
+    };
+    expect(() => validate(badConfig)).toThrow(/validation failed|kind/i);
+  });
+
+  it('rejects invalid output format: "xml"', () => {
+    const badConfig = {
+      ...MINIMAL,
+      output: { format: 'xml' as any },
+    };
+    expect(() => validate(badConfig)).toThrow(/validation failed|format/i);
+  });
+
+  it('rejects invalid algorithm name: "unknown_algo"', () => {
+    const badConfig = {
+      ...MINIMAL,
+      algorithm: { name: 'unknown_algo' as any },
+    };
+    expect(() => validate(badConfig)).toThrow(/validation failed|algorithm/i);
+  });
+});

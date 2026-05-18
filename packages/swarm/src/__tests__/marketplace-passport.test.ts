@@ -351,21 +351,21 @@ describe('cross-runtime probe format X01–X10 (Rank 2 — domain contracts)', (
   });
 
   it('X01 fails when run_id is missing', () => {
-    const r = makeReceipt() as Record<string, unknown>;
+    const r = makeReceipt() as unknown as Record<string, unknown>;
     delete r['run_id'];
     const { failed } = validateProbes(r);
     expect(failed).toContain('X01');
   });
 
   it('X01 fails when schema_version is missing', () => {
-    const r = makeReceipt() as Record<string, unknown>;
+    const r = makeReceipt() as unknown as Record<string, unknown>;
     delete r['schema_version'];
     const { failed } = validateProbes(r);
     expect(failed).toContain('X01');
   });
 
   it('X01 fails when status is missing', () => {
-    const r = makeReceipt() as Record<string, unknown>;
+    const r = makeReceipt() as unknown as Record<string, unknown>;
     delete r['status'];
     const { failed } = validateProbes(r);
     expect(failed).toContain('X01');
@@ -426,7 +426,7 @@ describe('cross-runtime probe format X01–X10 (Rank 2 — domain contracts)', (
   });
 
   it('X05 fails when algorithm field is missing', () => {
-    const r = makeReceipt() as Record<string, unknown>;
+    const r = makeReceipt() as unknown as Record<string, unknown>;
     delete r['algorithm'];
     const { failed } = validateProbes(r);
     expect(failed).toContain('X05');
@@ -457,7 +457,7 @@ describe('cross-runtime probe format X01–X10 (Rank 2 — domain contracts)', (
   });
 
   it('X07 fails when status is an unrecognised value', () => {
-    const r = makeReceipt() as Record<string, unknown>;
+    const r = makeReceipt() as unknown as Record<string, unknown>;
     r['status'] = 'unknown';
     const { failed } = validateProbes(r);
     expect(failed).toContain('X07');
@@ -477,7 +477,7 @@ describe('cross-runtime probe format X01–X10 (Rank 2 — domain contracts)', (
   });
 
   it('X08 fails when schema_version is missing', () => {
-    const r = makeReceipt() as Record<string, unknown>;
+    const r = makeReceipt() as unknown as Record<string, unknown>;
     delete r['schema_version'];
     const { failed } = validateProbes(r);
     expect(failed).toContain('X08');
@@ -490,7 +490,7 @@ describe('cross-runtime probe format X01–X10 (Rank 2 — domain contracts)', (
   });
 
   it('X09 fails when model field is absent', () => {
-    const r = makeReceipt() as Record<string, unknown>;
+    const r = makeReceipt() as unknown as Record<string, unknown>;
     delete r['model'];
     const { failed } = validateProbes(r);
     expect(failed).toContain('X09');
