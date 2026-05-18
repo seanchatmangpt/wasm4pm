@@ -42,6 +42,11 @@ verify-ts: lint check-debt
 	@# @wasm4pm/lab-cli-tests is excluded: it validates the *published* npm package, not
 	@# the local working tree. Its failures reflect an older published artifact, not the
 	@# source being committed.
+	@# wasm4pm (bare package name, in wasm4pm/ directory) is excluded: its vitest suite
+	@# requires the nodejs-target WASM binary (wasm4pm/pkg/wasm4pm.js). Without the nodejs
+	@# build, tests throw "Cannot read properties of undefined (reading '__wbindgen_free')".
+	@# Same root cause as @wasm4pm/cli, @wasm4pm/engine, @wasm4pm/kernel above.
+	@# Run independently after `cd wasm4pm && npm run build:nodejs`: `pnpm --filter wasm4pm test`
 	@pnpm -r --parallel \
 		--filter '!@wasm4pm/cli' \
 		--filter '!@wasm4pm/engine' \
@@ -49,6 +54,7 @@ verify-ts: lint check-debt
 		--filter '!@wasm4pm/cognition' \
 		--filter '!@wasm4pm/swarm' \
 		--filter '!@wasm4pm/lab-cli-tests' \
+		--filter '!wasm4pm' \
 		test
 	@echo "✅ DoD Verification (TS-only) Complete."
 

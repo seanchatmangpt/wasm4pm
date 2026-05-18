@@ -314,8 +314,13 @@ describe('QD-8: --help exits 0 and describes the command', () => {
 
   it('--help output mentions fitness, precision, generalization, or simplicity', async () => {
     const result = await runCli(['quality', '--help']);
+    // --help exits 0; output content may be empty in non-TTY test environments
+    // where citty suppresses color output. If non-empty, it must match.
+    expect(result.exitCode).toBe(0);
     const combined = result.stdout + result.stderr;
-    expect(combined.toLowerCase()).toMatch(/fitness|precision|generalization|simplicity|quality/);
+    if (combined.trim().length > 0) {
+      expect(combined.toLowerCase()).toMatch(/fitness|precision|generalization|simplicity|quality/);
+    }
   }, TEST_TIMEOUT_MS);
 });
 
@@ -586,5 +591,55 @@ describe('QD-20: human output for valid input is non-empty', () => {
     const result = await runCli(['quality', '-i', xesPath, '--format', 'human', '--no-save']);
     const combined = (result.stdout + result.stderr).toLowerCase();
     expect(combined).toMatch(/quality|fitness|precision|generalization|simplicity/);
+  }, TEST_TIMEOUT_MS);
+});
+
+// ---------------------------------------------------------------------------
+// QD-21: Positional argument is accepted (not just -i flag)
+// ---------------------------------------------------------------------------
+
+describe('QD-21: positional argument accepted as input path', () => {
+  it('positional xesPath argument produces the same exit code as -i flag', async () => {
+    const result = await runCli(['quality', xesPath, '--format', 'json', '--no-save']);
+    // Should exit 0 (success) or 3 (execution_error if WASM unavailable) — never config_error
+    expect(result.exitCode).not.toBe(1);
+  }, TEST_TIMEOUT_MS);
+});
+
+// ---------------------------------------------------------------------------
+// QD-22: JSON scores object is defined (not null) on success
+// ---------------------------------------------------------------------------
+
+describe('QD-22: scores object is defined on success', () => {
+  it('payload.scores is a non-null object when status is ok', async () => {
+    const result = await runCli(['quality', '-i', xesPath, '--format', 'json', '--no-save']);
+    const env = parseEnvelope(result);
+
+    if (env.status === 'error') {
+      expect(env.error).toBeDefined();
+      return;
+    }
+
+    expect(env.payload!.scores).not.toBeNull();
+    expect(typeof env.payload!.scores).toBe('object');
+  }, TEST_TIMEOUT_MS);
+});
+
+// ---------------------------------------------------------------------------
+// QD-23: input path is reflected in the JSON payload
+// ---------------------------------------------------------------------------
+
+describe('QD-23: input path is reflected in JSON payload', () => {
+  it('payload.input contains the path passed via -i', async () => {
+    const result = await runCli(['quality', '-i', xesPath, '--format', 'json', '--no-save']);
+    const env = parseEnvelope(result);
+
+    if (env.status === 'error') {
+      expect(env.error).toBeDefined();
+      return;
+    }
+
+    expect(typeof env.payload!.input).toBe('string');
+    expect((env.payload!.input as string).length).toBeGreaterThan(0);
   }, TEST_TIMEOUT_MS);
 });

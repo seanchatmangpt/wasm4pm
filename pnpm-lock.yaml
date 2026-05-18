@@ -72,6 +72,9 @@ importers:
       '@types/node':
         specifier: ^20.10.0
         version: 20.19.39
+      '@wasm4pm/testing':
+        specifier: workspace:*
+        version: link:../../packages/testing
       typescript:
         specifier: ^5.3.3
         version: 5.9.3

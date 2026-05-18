@@ -271,3 +271,104 @@ describe('classifyTraces edge cases', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// Rank 1-2 Oracle Tests — Statistical & Domain-Theoretic Validation
+// ---------------------------------------------------------------------------
+
+describe('classifyTraces oracle tests (Rank 1-2)', () => {
+  // Rank 2 Oracle: Accuracy Threshold on Well-Separated Data
+  // For clear class separation, classifiers should exceed minimum accuracy threshold.
+  it('knn achieves >= 80% accuracy on well-separated 2-class dataset', async () => {
+    // Create synthetic data: clearly separated classes (fast vs slow traces)
+    const wellSeparated = [
+      // Fast class (trace_length <= 3, elapsed_time <= 1000)
+      { case_id: 'fast1', trace_length: 1, elapsed_time: 100, rework_count: 0, outcome: 'Fast' },
+      { case_id: 'fast2', trace_length: 2, elapsed_time: 200, rework_count: 0, outcome: 'Fast' },
+      { case_id: 'fast3', trace_length: 3, elapsed_time: 300, rework_count: 0, outcome: 'Fast' },
+      { case_id: 'fast4', trace_length: 2, elapsed_time: 150, rework_count: 0, outcome: 'Fast' },
+      // Slow class (trace_length >= 8, elapsed_time >= 4000)
+      { case_id: 'slow1', trace_length: 8, elapsed_time: 4000, rework_count: 2, outcome: 'Slow' },
+      { case_id: 'slow2', trace_length: 9, elapsed_time: 4500, rework_count: 3, outcome: 'Slow' },
+      { case_id: 'slow3', trace_length: 10, elapsed_time: 5000, rework_count: 4, outcome: 'Slow' },
+      { case_id: 'slow4', trace_length: 9, elapsed_time: 4200, rework_count: 2, outcome: 'Slow' },
+    ];
+
+    const result = await classifyTraces(wellSeparated, { method: 'knn', k: 3 });
+    const correct = result.predictions.filter((p) => {
+      const label = wellSeparated.find((f) => f.case_id === p.caseId)?.outcome;
+      return p.predicted === label;
+    }).length;
+    const accuracy = correct / wellSeparated.length;
+    expect(accuracy).toBeGreaterThanOrEqual(0.8);
+  });
+
+  // Rank 1 Oracle: Decision Tree Perfection on Well-Separated Data
+  // Decision trees with unlimited depth should achieve 100% accuracy on separable data.
+  it('decision_tree achieves 100% accuracy on perfectly separable 2-class dataset', async () => {
+    const perfectlySeparable = [
+      // Class A: trace_length < 4
+      { case_id: 'a1', trace_length: 1, elapsed_time: 100, rework_count: 0, outcome: 'ClassA' },
+      { case_id: 'a2', trace_length: 2, elapsed_time: 200, rework_count: 0, outcome: 'ClassA' },
+      { case_id: 'a3', trace_length: 3, elapsed_time: 300, rework_count: 0, outcome: 'ClassA' },
+      // Class B: trace_length >= 4
+      { case_id: 'b1', trace_length: 4, elapsed_time: 1000, rework_count: 1, outcome: 'ClassB' },
+      { case_id: 'b2', trace_length: 5, elapsed_time: 1500, rework_count: 2, outcome: 'ClassB' },
+      { case_id: 'b3', trace_length: 6, elapsed_time: 2000, rework_count: 3, outcome: 'ClassB' },
+    ];
+
+    const result = await classifyTraces(perfectlySeparable, { method: 'decision_tree' });
+    const correct = result.predictions.filter((p) => {
+      const label = perfectlySeparable.find((f) => f.case_id === p.caseId)?.outcome;
+      return p.predicted === label;
+    }).length;
+    expect(correct).toBe(perfectlySeparable.length);
+  });
+
+  // Rank 2 Oracle: Naive Bayes Accuracy on Well-Separated Data
+  // Naive Bayes should achieve >= 75% accuracy on well-separated classes.
+  it('naive_bayes achieves >= 75% accuracy on well-separated 2-class dataset', async () => {
+    const wellSeparated = [
+      // High-priority (rework_count <= 1, elapsed_time <= 2000)
+      { case_id: 'hp1', trace_length: 2, elapsed_time: 500, rework_count: 0, outcome: 'HighPriority' },
+      { case_id: 'hp2', trace_length: 3, elapsed_time: 1000, rework_count: 0, outcome: 'HighPriority' },
+      { case_id: 'hp3', trace_length: 2, elapsed_time: 1500, rework_count: 1, outcome: 'HighPriority' },
+      { case_id: 'hp4', trace_length: 3, elapsed_time: 800, rework_count: 0, outcome: 'HighPriority' },
+      // Low-priority (rework_count >= 2, elapsed_time >= 4000)
+      { case_id: 'lp1', trace_length: 10, elapsed_time: 4500, rework_count: 3, outcome: 'LowPriority' },
+      { case_id: 'lp2', trace_length: 11, elapsed_time: 5000, rework_count: 4, outcome: 'LowPriority' },
+      { case_id: 'lp3', trace_length: 9, elapsed_time: 4200, rework_count: 2, outcome: 'LowPriority' },
+      { case_id: 'lp4', trace_length: 10, elapsed_time: 5500, rework_count: 3, outcome: 'LowPriority' },
+    ];
+
+    const result = await classifyTraces(wellSeparated, { method: 'naive_bayes' });
+    const correct = result.predictions.filter((p) => {
+      const label = wellSeparated.find((f) => f.case_id === p.caseId)?.outcome;
+      return p.predicted === label;
+    }).length;
+    const accuracy = correct / wellSeparated.length;
+    expect(accuracy).toBeGreaterThanOrEqual(0.75);
+  });
+
+  // Rank 2 Oracle: Train/Test Split Parity
+  // Train on 50% of data, predict on same 50% → should achieve high accuracy (data leakage).
+  it('knn train-on-train split achieves high accuracy (data leakage oracle)', async () => {
+    const allData = [
+      { case_id: 'c1', trace_length: 1, elapsed_time: 100, rework_count: 0, outcome: 'X' },
+      { case_id: 'c2', trace_length: 2, elapsed_time: 200, rework_count: 0, outcome: 'X' },
+      { case_id: 'c3', trace_length: 8, elapsed_time: 4000, rework_count: 2, outcome: 'Y' },
+      { case_id: 'c4', trace_length: 9, elapsed_time: 4500, rework_count: 3, outcome: 'Y' },
+      { case_id: 'c5', trace_length: 3, elapsed_time: 300, rework_count: 0, outcome: 'X' },
+      { case_id: 'c6', trace_length: 10, elapsed_time: 5000, rework_count: 4, outcome: 'Y' },
+    ];
+
+    // With same train/test (no held-out set), accuracy should be high
+    const result = await classifyTraces(allData, { method: 'knn', k: 1 });
+    const correct = result.predictions.filter((p) => {
+      const label = allData.find((f) => f.case_id === p.caseId)?.outcome;
+      return p.predicted === label;
+    }).length;
+    const accuracy = correct / allData.length;
+    expect(accuracy).toBeGreaterThanOrEqual(0.8);
+  });
+});
