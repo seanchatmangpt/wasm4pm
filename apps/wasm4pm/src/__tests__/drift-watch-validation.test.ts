@@ -141,11 +141,12 @@ describe('drift-watch --threshold validation (Gap 2)', () => {
 // ---------------------------------------------------------------------------
 
 describe('drift-watch --alpha validation (Gap 3)', () => {
-  it('--alpha 0 exits with config_error (1) — zero is outside (0,1]', async () => {
+  it('--alpha 0 exits with config_error (1) — zero is outside valid range (minimum is 0.001)', async () => {
     const r = await run(['drift-watch', '-i', MISSING_INPUT, '--alpha', '0']);
     expect(r.exitCode).toBe(1);
     expect(r.stderr).toMatch(/--alpha|alpha/i);
-    expect(r.stderr).toMatch(/\(0.*1\]|\(0, 1\]/i);
+    // Validator uses min=0.001; error message reports "[0.001, 1]" not "(0, 1]"
+    expect(r.stderr).toMatch(/0\.001|range/i);
   });
 
   it('--alpha -0.1 exits with config_error (1)', async () => {

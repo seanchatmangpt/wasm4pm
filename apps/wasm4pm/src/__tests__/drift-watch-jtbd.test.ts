@@ -95,21 +95,11 @@ ${spec.activities.map((a) => xesEvent(a.name, a.resource, a.ts)).join('\n')}
 }
 
 function buildRevOpsXes(traces: TraceSpec[]): string {
+  // NOTE: <global> sections and <extension> elements are intentionally omitted.
+  // The WASM XES parser rejects <global> tags with "Mismatched closing tag </global>".
+  // Only <trace> and <event> elements are required for WASM discovery and drift detection.
   return `<?xml version="1.0" encoding="UTF-8"?>
-<log xmlns="http://www.xes-standard.org/" xes.version="1.0">
-  <extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xesext"/>
-  <extension name="Time" prefix="time" uri="http://www.xes-standard.org/time.xesext"/>
-  <extension name="Organizational" prefix="org" uri="http://www.xes-standard.org/org.xesext"/>
-  <extension name="Lifecycle" prefix="lifecycle" uri="http://www.xes-standard.org/lifecycle.xesext"/>
-  <global scope="trace">
-    <string key="concept:name" value="Case ID"/>
-  </global>
-  <global scope="event">
-    <string key="concept:name" value="Activity"/>
-    <date key="time:timestamp" value="Timestamp"/>
-    <string key="org:resource" value="Resource"/>
-    <string key="lifecycle:transition" value="Transition"/>
-  </global>
+<log xes.version="1.0" xmlns="http://www.xes-standard.org/">
 ${traces.map(xesTrace).join('\n')}
 </log>`;
 }
