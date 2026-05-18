@@ -163,6 +163,23 @@ export declare class Engine {
      */
     getTransitionHistory(): LifecycleEvent[];
     /**
+     * Get Mean Time To Recovery (MTTR) in milliseconds.
+     *
+     * Measured from actual recordRecovery() calls in recover() and
+     * fastRecoverFromFailed() — NOT hardcoded. Per CLAUDE.md the MTTR
+     * target is < 1000 ms; callers should assert against this value
+     * rather than against wall-clock duration of an individual recover().
+     *
+     * @returns Mean recovery duration in milliseconds, or 0 if no
+     *          recoveries have been recorded yet.
+     */
+    getMTTR(): number;
+    /**
+     * Number of completed recoveries since engine creation.
+     * Useful for soak tests that need to assert "recovery happened at least N times".
+     */
+    getRecoveryCount(): number;
+    /**
      * Gets the initialized WASM module
      * Throws if module is not initialized (bootstrap() must be called first)
      */

@@ -3,7 +3,7 @@ export { checkDeterminism, stableReceiptHash, receiptsMatch } from './determinis
 export { createCliTestEnv, runCli, assertExitCode, assertJsonOutput, assertErrorCode, writeTestConfig, readReceipt, EXIT_CODES, } from './cli.js';
 export { OtelCapture, createOtelCapture } from './otel-capture.js';
 export { OcelHarvester } from './ocel-harvester.js';
-export { AlgorithmDiscovery } from './algorithm-discovery.js';
+export { AlgorithmDiscovery, ALGORITHM_PROFILES } from './algorithm-discovery.js';
 export { ConformanceChecker } from './conformance-checker.js';
 export { SoundnessVerifier } from './soundness-verifier.js';
 //# sourceMappingURL=index.js.map

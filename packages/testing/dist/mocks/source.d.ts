@@ -13,6 +13,14 @@ export interface Result<T> {
     value?: T;
     error?: string;
 }
+/**
+ * SENTINEL_FINGERPRINT is used when no fingerprint is supplied to MockSourceAdapter.
+ * It is intentionally not a valid BLAKE3 hex string (wrong length, wrong prefix) so
+ * that any receipt that carries this value is immediately visible as a mock artifact
+ * rather than a real content hash.  Tests that need a stable but fake fingerprint
+ * should pass one explicitly via MockSourceOptions.fingerprint.
+ */
+export declare const SENTINEL_FINGERPRINT = "mock-source-no-fingerprint-provided";
 export interface MockSourceOptions {
     kind?: SourceAdapterKind;
     data?: string;

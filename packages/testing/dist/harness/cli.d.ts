@@ -41,6 +41,10 @@ export declare function runCli(args: string[], options?: {
 }): Promise<CliResult>;
 /**
  * Assert that a CLI result matches expected exit code.
+ *
+ * When the assertion fails, output is truncated at 500 chars with an explicit
+ * "[... N chars truncated]" trailer so the practitioner knows there is more
+ * context available rather than seeing a cliff-edge mid-word.
  */
 export declare function assertExitCode(result: CliResult, expected: number): void;
 /**

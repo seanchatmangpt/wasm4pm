@@ -20,7 +20,14 @@ export interface BootstrapResult {
     durationMs: number;
 }
 /**
- * Bootstraps the engine by loading WASM and initializing the kernel
+ * Bootstraps the engine by loading WASM and initializing the kernel.
+ *
+ * Failure semantics: if kernel.init() fails or the kernel does not become
+ * ready, the WASM loader is rolled back via softReset() so a subsequent
+ * recovery does not observe a "half-initialized" engine where WASM looks
+ * ready but kernel state is broken. This guarantees bootstrap is atomic
+ * from the engine's perspective.
+ *
  * @throws Error if WASM loading or kernel initialization fails
  */
 export declare function bootstrapEngine(kernel: BootstrapKernel, wasmLoader: WasmLoader): Promise<BootstrapResult>;

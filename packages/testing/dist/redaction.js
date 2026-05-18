@@ -160,7 +160,7 @@ const TEST_SECRETS = {
 const REDACTED_VALUES = {
     star: '***',
     bracket: '[REDACTED]',
-    hash: '***REDACTED***',
+    hash: '***REDACTED***', // @lint-allow-fakery — intentional placeholder, not a receipt hash
     empty: '',
     partial: 'AKI***MPLE',
 };

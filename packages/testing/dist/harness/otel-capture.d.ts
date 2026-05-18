@@ -65,7 +65,15 @@ export declare class OtelCapture {
     findSpansByAttribute(key: string, value?: unknown): CapturedOtelSpan[];
     /** Find JSON events by component */
     findJsonEvents(component: string): CapturedJsonEvent[];
-    /** Assert that required OTEL attributes are present on all spans */
+    /** Assert that required OTEL attributes are present on all spans.
+     *
+     * Each violation string includes what span, which attribute, and what to do next.
+     * The practitioner receives actionable output, not just an ID and a field name.
+     *
+     * Example violation:
+     *   "Span 'algorithm.dfg' (a3f8b2c1): missing 'plan.hash'
+     *    → set requiredAttrs['plan.hash'] before calling createAlgorithmStartedEvent()"
+     */
     assertRequiredAttributes(requiredKeys: string[]): string[];
     /** Assert that OTEL is non-blocking: no span exceeds the given duration */
     assertNonBlocking(maxDurationMs: number): string[];
