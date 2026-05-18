@@ -366,6 +366,27 @@ export const run = defineCommand({
                 ? 'dfg'
                 : 'heuristic');
 
+          // Guard: empty or whitespace-only --algorithm is a config error (not source error).
+          // An empty string cannot be resolved and gives a confusing fallthrough message.
+          if (!shortcutAlgo && ctx.args.algorithm !== undefined) {
+            const trimmed = (ctx.args.algorithm as string).trim();
+            if (trimmed.length === 0) {
+              const cliAliases = Object.values(ALGORITHM_CLI_ALIASES);
+              const emptyResult = makeErrorResult(
+                'run',
+                new Error(
+                  `--algorithm must not be empty.\n\n` +
+                    `  Common algorithms: ${cliAliases.slice(0, 8).join(', ')}\n` +
+                    `  Run 'wpm algorithms' to list all ${cliAliases.length} available algorithms.`
+                ),
+                EXIT_CODES.config_error,
+                'ALGORITHM_EMPTY'
+              );
+              emitResult(emptyResult, emitOptions);
+              return await exitWithFlush(emptyResult.exit_code);
+            }
+          }
+
           // Accept kernel registry IDs (heuristic_miner) or CLI aliases (heuristic)
           const resolvedAlgo: Algorithm | undefined =
             (ALGORITHM_CLI_ALIASES[rawAlgo] as Algorithm | undefined) ??
@@ -377,8 +398,9 @@ export const run = defineCommand({
             })();
 
           if (!resolvedAlgo) {
-            // Search against CLI alias values (e.g. 'heuristic', 'dfg') not registry IDs
-            // so that typos like 'heurisic' correctly suggest 'heuristic'.
+            // An unknown algorithm name is a config_error (1): the user specified an
+            // invalid value via --algorithm.  source_error (2) is reserved for I/O
+            // failures (file not found, unreadable log), not user typos in flag values.
             const cliAliases = Object.values(ALGORITHM_CLI_ALIASES);
             const suggestion = findClosestMatch(rawAlgo.toLowerCase(), cliAliases, 3);
             const didYouMean = suggestion ? `\nDid you mean: '${suggestion}'?` : '';
@@ -391,7 +413,7 @@ export const run = defineCommand({
                   `Common algorithms: ${discoveryAliases}\n` +
                   `Run 'wpm algorithms' to list all ${cliAliases.length} available algorithms.`
               ),
-              EXIT_CODES.source_error,
+              EXIT_CODES.config_error,
               'ALGORITHM_NOT_FOUND'
             );
             emitResult(result, emitOptions);

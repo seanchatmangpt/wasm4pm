@@ -388,7 +388,11 @@ export const results = defineCommand({
 
           // Recompute the blake3 hash of the current result payload.
           // If the file was tampered with, this will differ from the stored output_hash.
-          const recomputedOutputHash = blake3Hex(JSON.stringify(savedResult.result));
+          // Guard: if the result field is missing (malformed file), hash null so verify
+          // can still run and report no_receipt rather than crashing with a TypeError.
+          const resultPayloadStr =
+            savedResult.result !== undefined ? JSON.stringify(savedResult.result) : JSON.stringify(null);
+          const recomputedOutputHash = blake3Hex(resultPayloadStr);
 
           // Primary tamper detection: if the SavedResult carries its own output_hash
           // (written at save time), compare immediately without scanning receipts.
