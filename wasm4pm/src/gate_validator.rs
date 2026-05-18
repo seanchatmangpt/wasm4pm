@@ -1,48 +1,51 @@
 /// PROOF-OF-CONCEPT ONLY — gated by `poc_gate_validator` feature.
 ///
-/// Uses an in-memory `Mutex<HashSet<ProofGate>>` as a fake gate store.
+/// Uses an in-memory `RefCell<HashSet<ProofGate>>` as a fake gate store.
+/// WASM single-threaded safety: RefCell instead of Mutex to avoid deadlock risk.
 /// NOT connected to the SPARQL receipt store and MUST NOT be used on any
 /// production proof-admission path.
 ///
 /// For production gate checks, use `proof_gate_registry`.
 use crate::proof_gate_registry::ProofGate;
-use std::sync::Mutex;
+use std::cell::RefCell;
 use std::collections::HashSet;
 
-/// Thread-safe gate state for tracking passed proof gates
-static PASSED_GATES: Mutex<Option<HashSet<ProofGate>>> = Mutex::new(None);
+/// Gate state for tracking passed proof gates (single-threaded WASM safety)
+static PASSED_GATES: std::sync::OnceLock<RefCell<Option<HashSet<ProofGate>>>> = std::sync::OnceLock::new();
+
+fn gates() -> &'static RefCell<Option<HashSet<ProofGate>>> {
+    PASSED_GATES.get_or_init(|| RefCell::new(None))
+}
 
 /// Initialize gate state for a test run
 pub fn init_gates() {
-    if let Ok(mut gates) = PASSED_GATES.lock() {
-        *gates = Some(HashSet::new());
-    }
+    let mut g = gates().borrow_mut();
+    *g = Some(HashSet::new());
 }
 
 /// Mark a gate as passed
 pub fn mark_gate_passed(gate: ProofGate) {
-    if let Ok(mut gates_opt) = PASSED_GATES.lock() {
-        if let Some(ref mut gates) = *gates_opt {
-            gates.insert(gate);
-        }
+    let mut gates_opt = gates().borrow_mut();
+    if let Some(ref mut gates) = *gates_opt {
+        gates.insert(gate);
     }
 }
 
 /// Check if a gate has passed
 pub fn gate_passed(gate: ProofGate) -> bool {
-    PASSED_GATES
-        .lock()
-        .ok()
-        .and_then(|gates_opt| gates_opt.as_ref().map(|gates| gates.contains(&gate)))
+    let gates_opt = gates().borrow();
+    gates_opt
+        .as_ref()
+        .map(|gates| gates.contains(&gate))
         .unwrap_or(false)
 }
 
 /// Returns list of all passed gates
 pub fn passed_gates() -> Vec<ProofGate> {
-    PASSED_GATES
-        .lock()
-        .ok()
-        .and_then(|gates_opt| gates_opt.as_ref().map(|gates| gates.iter().copied().collect()))
+    let gates_opt = gates().borrow();
+    gates_opt
+        .as_ref()
+        .map(|gates| gates.iter().copied().collect())
         .unwrap_or_default()
 }
 
