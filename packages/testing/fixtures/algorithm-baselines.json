@@ -1,0 +1,92 @@
+{
+  "dfg": {
+    "fitness": 0.65,
+    "precision": 0.4,
+    "generalization": 0.5,
+    "description": "Speed tier: fast DFG baseline"
+  },
+  "process_skeleton": {
+    "fitness": 0.62,
+    "precision": 0.38,
+    "generalization": 0.48,
+    "description": "Speed tier: skeleton baseline"
+  },
+  "simd_streaming_dfg": {
+    "fitness": 0.64,
+    "precision": 0.39,
+    "generalization": 0.49,
+    "description": "Speed tier: streaming DFG baseline"
+  },
+  "alpha_plus_plus": {
+    "fitness": 0.75,
+    "precision": 0.6,
+    "generalization": 0.65,
+    "description": "Balanced tier: Petri net via Alpha++"
+  },
+  "heuristic_miner": {
+    "fitness": 0.72,
+    "precision": 0.58,
+    "generalization": 0.62,
+    "description": "Balanced tier: DFG via heuristic"
+  },
+  "inductive_miner": {
+    "fitness": 0.78,
+    "precision": 0.65,
+    "generalization": 0.68,
+    "description": "Balanced tier: process tree"
+  },
+  "hill_climbing": {
+    "fitness": 0.76,
+    "precision": 0.62,
+    "generalization": 0.66,
+    "description": "Balanced tier: Petri net via local search"
+  },
+  "declare": {
+    "fitness": 0.7,
+    "precision": 0.55,
+    "generalization": 0.6,
+    "description": "Balanced tier: constraint-based"
+  },
+  "simulated_annealing": {
+    "fitness": 0.8,
+    "precision": 0.68,
+    "generalization": 0.72,
+    "description": "Quality tier: metaheuristic"
+  },
+  "a_star": {
+    "fitness": 0.82,
+    "precision": 0.7,
+    "generalization": 0.74,
+    "description": "Quality tier: A* search"
+  },
+  "aco": {
+    "fitness": 0.81,
+    "precision": 0.69,
+    "generalization": 0.73,
+    "description": "Quality tier: ant colony optimization"
+  },
+  "pso": {
+    "fitness": 0.81,
+    "precision": 0.69,
+    "generalization": 0.73,
+    "description": "Quality tier: particle swarm optimization"
+  },
+  "genetic_algorithm": {
+    "fitness": 0.85,
+    "precision": 0.75,
+    "generalization": 0.78,
+    "description": "Quality tier: genetic programming"
+  },
+  "optimized_dfg": {
+    "fitness": 0.78,
+    "precision": 0.64,
+    "generalization": 0.7,
+    "description": "Quality tier: optimized DFG"
+  },
+  "ilp": {
+    "fitness": 0.88,
+    "precision": 0.8,
+    "generalization": 0.82,
+    "description": "Quality tier: integer linear programming"
+  }
+}

@@ -164,12 +164,13 @@ ${Array.from({ length: 100 })
       );
       expect(result.exitCode).toBe(EXIT_CODES.success);
 
-      const parsed = JSON.parse(result.stdout);
-      const data = parsed.data || parsed;
-      expect(typeof data.timeout_ms).toBe('number');
-      expect(typeof data.timeout_seconds).toBe('number');
-      expect(data.timeout_ms).toBeGreaterThan(0);
-      expect(data.timeout_seconds).toBeGreaterThan(0);
+      const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
+      // CommandResult envelope: { status, exit_code, payload: { timeout_ms, ... }, meta }
+      const payload = (parsed.payload ?? parsed.data ?? parsed) as Record<string, unknown>;
+      expect(typeof payload.timeout_ms).toBe('number');
+      expect(typeof payload.timeout_seconds).toBe('number');
+      expect(payload.timeout_ms as number).toBeGreaterThan(0);
+      expect(payload.timeout_seconds as number).toBeGreaterThan(0);
     });
 
     it('TC-10: JSON output includes timeout computation details', async () => {

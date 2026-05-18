@@ -8,6 +8,7 @@ use crate::ml::LinUCBAgent;
 use crate::reinforcement::{
     Agent, AgentMeta, DoubleQLearning, ExpectedSARSAAgent, QLearning, ReinforceAgent, SARSAAgent,
 };
+use std::collections::{HashSet, VecDeque};
 use tracing::{error, warn, span, Level};
 
 // Re-export the RlState/RlAction types from lib.rs (they are pub(crate)).
@@ -265,6 +266,37 @@ pub fn learning_rate_schedule(alpha_0: f32, cycle_count: u64) -> f32 {
     alpha_0 * 0.9999_f32.powf(cycle_count as f32)
 }
 
+/// Action history entry — tracks healing decision outcome per cycle.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ActionHistory {
+    pub action: String,     // e.g., "Continue", "Scale", "Restart"
+    pub reward_before: f32, // Cumulative reward before cycle
+    pub reward_after: f32,  // Cumulative reward after cycle
+    pub successful: bool,   // true if reward improved (reward_after > reward_before)
+    pub timestamp: u64,     // Cycle count when action was taken
+}
+
+/// State space coverage metrics — tracks which 8D bins have been visited.
+/// Total possible bins: 5 × 8 × 8 × 4 × 3 × 8 × 3 × 4 = 368,640 states.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct StateCoverage {
+    /// Total unique states visited across all cycles.
+    pub states_visited: usize,
+    /// Per-dimension visit counts: [health_level, event_rate_q, activity_count_q, spc_alert_level, drift_status, rework_ratio_q, circuit_state, cycle_phase]
+    pub dimension_coverage: [usize; 8],
+    /// Coverage percentage (0-100).
+    pub coverage_percentage: f32,
+}
+
+impl Default for StateCoverage {
+    fn default() -> Self {
+        Self {
+            states_visited: 0,
+            dimension_coverage: [0; 8],
+            coverage_percentage: 0.0,
+        }
+    }
+}
 
 /// The RL Orchestrator — holds all agents, dispatches to active one.
 pub struct RlOrchestrator {
@@ -274,6 +306,10 @@ pub struct RlOrchestrator {
     linucb: LinUCBAgent,
     telemetry: CycleTelemetry,
     use_linucb_for_selection: bool,
+    /// Tracks which 8D state bins have been visited for reachability analysis.
+    visited_states: HashSet<u32>,
+    /// Rolling window of healing actions (max 100 entries).
+    action_history: VecDeque<ActionHistory>,
 }
 
 impl Default for RlOrchestrator {
@@ -296,6 +332,8 @@ impl RlOrchestrator {
             linucb: LinUCBAgent::new(),
             telemetry: CycleTelemetry::default(),
             use_linucb_for_selection: false,
+            visited_states: HashSet::new(),
+            action_history: VecDeque::with_capacity(100),
         }
     }
 
@@ -315,6 +353,8 @@ impl RlOrchestrator {
             linucb: LinUCBAgent::new(),
             telemetry: CycleTelemetry::default(),
             use_linucb_for_selection: false,
+            visited_states: HashSet::new(),
+            action_history: VecDeque::with_capacity(100),
         }
     }
 
@@ -332,6 +372,59 @@ impl RlOrchestrator {
     /// Get telemetry snapshot.
     pub fn telemetry(&self) -> &CycleTelemetry {
         &self.telemetry
+    }
+
+    /// Convert an RlState into a single u32 hash for state space binning.
+    pub fn state_to_bin(state: &RlState) -> u32 {
+        let h = state.health_level as u32;
+        let e = state.event_rate_q as u32;
+        let a = state.activity_count_q as u32;
+        let s = state.spc_alert_level as u32;
+        let d = state.drift_status as u32;
+        let r = state.rework_ratio_q as u32;
+        let c = state.circuit_state as u32;
+        let p = state.cycle_phase as u32;
+
+        h * 61440 + e * 7680 + a * 960 + s * 240 + d * 80 + r * 10 + c * 3 + p
+    }
+
+    /// Get state space coverage metrics.
+    pub fn get_state_coverage(&self) -> StateCoverage {
+        let total_bins = 368_640_u32;
+        let states_visited = self.visited_states.len();
+        let coverage_percentage = (states_visited as f32 / total_bins as f32) * 100.0;
+
+        let mut dimension_coverage = [0usize; 8];
+        let mut dim_seen: [std::collections::HashSet<u32>; 8] = Default::default();
+        for &bin in &self.visited_states {
+            let h = bin / 61440;
+            let e = (bin % 61440) / 7680;
+            let a = (bin % 7680) / 960;
+            let s = (bin % 960) / 240;
+            let d = (bin % 240) / 80;
+            let r = (bin % 80) / 10;
+            let c = (bin % 10) / 3;
+            let p = bin % 3;
+
+            dim_seen[0].insert(h);
+            dim_seen[1].insert(e);
+            dim_seen[2].insert(a);
+            dim_seen[3].insert(s);
+            dim_seen[4].insert(d);
+            dim_seen[5].insert(r);
+            dim_seen[6].insert(c);
+            dim_seen[7].insert(p);
+        }
+
+        for i in 0..8 {
+            dimension_coverage[i] = dim_seen[i].len();
+        }
+
+        StateCoverage {
+            states_visited,
+            dimension_coverage,
+            coverage_percentage,
+        }
     }
 
     /// Select action using the active RL agent.
@@ -454,6 +547,37 @@ impl RlOrchestrator {
         self.use_linucb_for_selection
     }
 
+    /// Get action statistics (success rates per action type).
+    ///
+    /// Returns a map with action name as key and (total_count, successful_count, success_rate).
+    /// Success is defined as: reward_after > reward_before.
+    pub fn get_action_stats(&self) -> std::collections::HashMap<String, (u32, u32, f32)> {
+        use std::collections::HashMap;
+        let mut stats: HashMap<String, (u32, u32)> = HashMap::new();
+
+        // Count totals and successes per action
+        for entry in &self.action_history {
+            let (total, successes) = stats.entry(entry.action.clone()).or_insert((0, 0));
+            *total += 1;
+            if entry.successful {
+                *successes += 1;
+            }
+        }
+
+        // Convert to (total, successful, success_rate)
+        stats
+            .into_iter()
+            .map(|(action, (total, successful))| {
+                let rate = if total > 0 {
+                    successful as f32 / total as f32
+                } else {
+                    0.0
+                };
+                (action, (total, successful, rate))
+            })
+            .collect()
+    }
+
     /// Restore telemetry from a serialized snapshot.
     ///
     /// Used by `restore_rl_state` to resume learning progress across sessions.
@@ -503,6 +627,29 @@ impl RlOrchestrator {
             service_name = "wpm",
         )
         .entered();
+
+        // Track state space coverage (record visited bin)
+        let current_bin = Self::state_to_bin(state);
+        self.visited_states.insert(current_bin);
+
+        // Emit state coverage diagnostics every 100 cycles
+        if self.telemetry.cycle_count % 100 == 0 && self.telemetry.cycle_count > 0 {
+            let coverage = self.get_state_coverage();
+            tracing::info!(
+                rl_state_coverage = coverage.coverage_percentage,
+                rl_states_visited = coverage.states_visited,
+                rl_health_level_coverage = coverage.dimension_coverage[0],
+                rl_event_rate_coverage = coverage.dimension_coverage[1],
+                rl_activity_count_coverage = coverage.dimension_coverage[2],
+                rl_spc_alert_coverage = coverage.dimension_coverage[3],
+                rl_drift_status_coverage = coverage.dimension_coverage[4],
+                rl_rework_ratio_coverage = coverage.dimension_coverage[5],
+                rl_circuit_state_coverage = coverage.dimension_coverage[6],
+                rl_cycle_phase_coverage = coverage.dimension_coverage[7],
+                service_name = "wpm",
+                "state coverage diagnostics"
+            );
+        }
 
         // LinUCB agent selection (if enabled)
         if self.use_linucb_for_selection {
@@ -607,6 +754,46 @@ impl RlOrchestrator {
         } else {
             self.telemetry.consecutive_successes = 0; // Reset on failure
         }
+
+        // Track healing action outcome (success = reward_after > reward_before)
+        let reward_before = self.telemetry.cumulative_reward - reward;
+        let action_entry = ActionHistory {
+            action: action_label_str.to_string(),
+            reward_before,
+            reward_after: self.telemetry.cumulative_reward,
+            successful: self.telemetry.cumulative_reward > reward_before,
+            timestamp: self.telemetry.cycle_count,
+        };
+
+        // Maintain rolling window (max 100 entries)
+        if self.action_history.len() >= 100 {
+            self.action_history.pop_front();
+        }
+        self.action_history.push_back(action_entry.clone());
+
+        // Emit OTEL span with action distribution snapshot
+        let stats = self.get_action_stats();
+        let mut action_histogram = String::from(r#"{"actions":{"#);
+        for (action, (total, successful, rate)) in &stats {
+            if action_histogram.len() > r#"{"actions":{"#.len() {
+                action_histogram.push(',');
+            }
+            action_histogram.push_str(&format!(
+                r#""{}": {{"total":{},"successful":{},"success_rate":{:.3}}}"#,
+                action, total, successful, rate
+            ));
+        }
+        action_histogram.push_str("}}");
+
+        tracing::info!(
+            action = action_label_str,
+            successful = action_entry.successful,
+            reward_delta = reward,
+            action_distribution = action_histogram.as_str(),
+            status = if action_entry.successful { "ok" } else { "error" },
+            service_name = "wpm",
+            "rl.action_tracked"
+        );
 
         (action_label_str.to_string(), reward)
     }

@@ -183,7 +183,11 @@ export function runDiscovery(
       break;
     default: {
       const _never: never = algo;
-      throw new Error(`Unknown algorithm: ${_never}`);
+      const validList = ALGORITHMS.join(', ');
+      throw new Error(
+        `Unknown algorithm: "${_never}". Valid algorithms: ${validList}.\n` +
+        `Run 'wpm algorithms' for full list with descriptions.`
+      );
     }
   }
 

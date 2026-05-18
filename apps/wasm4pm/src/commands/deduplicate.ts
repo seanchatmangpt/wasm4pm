@@ -32,22 +32,20 @@ export default defineCommand({
         },
         format: formatArg,
       },
-      async run(args) {
+      async run(ctx) {
         const t0 = Date.now();
-        const scanDir = (args as Record<string, unknown>).dir as string;
-        const format = ((args as Record<string, unknown>).format as string ?? 'human') as
-          | 'human'
-          | 'json';
+        const scanDir = ctx.args.dir as string;
+        const format = (ctx.args.format as string ?? 'human') as 'human' | 'json';
 
         return await withSpan(
           'deduplicate.scan',
           { directory: scanDir },
           async () => {
             // Validate the directory exists before attempting scan
-            if (!fs.existsSync(scanDir) || !fs.statSync(scanDir).isDirectory()) {
+            if (!scanDir || !fs.existsSync(scanDir) || !fs.statSync(scanDir).isDirectory()) {
               const errResult = makeErrorResult(
                 'deduplicate.scan',
-                new Error(`Directory not found: ${scanDir}`),
+                new Error(`Directory not found: ${scanDir ?? '(none provided)'}`),
                 EXIT_CODES.source_error,
                 'SOURCE_ERROR'
               );
@@ -108,11 +106,9 @@ export default defineCommand({
       args: {
         format: formatArg,
       },
-      async run(args) {
+      async run(ctx) {
         const t0 = Date.now();
-        const format = ((args as Record<string, unknown>).format as string ?? 'human') as
-          | 'human'
-          | 'json';
+        const format = (ctx.args.format as string ?? 'human') as 'human' | 'json';
 
         return await withSpan(
           'deduplicate.report',
@@ -160,13 +156,11 @@ export default defineCommand({
         },
         format: formatArg,
       },
-      async run(args) {
+      async run(ctx) {
         const t0 = Date.now();
-        const clearMemoryOnly = (args as Record<string, unknown>).memory === true;
-        const force = (args as Record<string, unknown>).force === true;
-        const format = ((args as Record<string, unknown>).format as string ?? 'human') as
-          | 'human'
-          | 'json';
+        const clearMemoryOnly = ctx.args.memory === true;
+        const force = ctx.args.force === true;
+        const format = (ctx.args.format as string ?? 'human') as 'human' | 'json';
 
         return await withSpan(
           'deduplicate.clear',
@@ -225,11 +219,9 @@ export default defineCommand({
       args: {
         format: formatArg,
       },
-      async run(args) {
+      async run(ctx) {
         const t0 = Date.now();
-        const format = ((args as Record<string, unknown>).format as string ?? 'human') as
-          | 'human'
-          | 'json';
+        const format = (ctx.args.format as string ?? 'human') as 'human' | 'json';
 
         return await withSpan(
           'deduplicate.load',

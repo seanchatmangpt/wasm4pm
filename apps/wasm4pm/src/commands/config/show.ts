@@ -114,7 +114,9 @@ function renderConfigShow(
 export const configShow = defineCommand({
   meta: {
     name: 'show',
-    description: 'Display current configuration with sources and warnings',
+    description:
+      'Display resolved configuration with sources (CLI args > TOML > JSON > ENV vars > defaults).\n' +
+      'Examples: wpm config show  |  wpm config show --detailed  |  WASM4PM_ALGORITHM=dfg wpm config show',
   },
   args: {
     detailed: {

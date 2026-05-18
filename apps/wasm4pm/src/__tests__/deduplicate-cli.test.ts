@@ -78,7 +78,7 @@ describe('wpm deduplicate — result deduplication CLI', () => {
       fs.writeFileSync(file2, content2);
       fs.writeFileSync(file3, content3);
 
-      const result = await runCli(['deduplicate', 'scan', testDir], { env: env.env });
+      const result = await runCli(['deduplicate', 'scan', testDir, '--format', 'json'], { env: env.env });
       expect(result.exitCode).toBe(EXIT_CODES.success);
 
       // Parse JSON output
@@ -96,7 +96,7 @@ describe('wpm deduplicate — result deduplication CLI', () => {
       fs.writeFileSync(file1, identical);
       fs.writeFileSync(file2, identical);
 
-      const result = await runCli(['deduplicate', 'scan', testDir], { env: env.env });
+      const result = await runCli(['deduplicate', 'scan', testDir, '--format', 'json'], { env: env.env });
       const output = extractJsonFromOutput(result.stdout);
 
       expect(output.payload.duplicate_groups).toBeGreaterThanOrEqual(0);
@@ -108,7 +108,7 @@ describe('wpm deduplicate — result deduplication CLI', () => {
       const emptyDir = path.join(testDir, 'empty');
       fs.mkdirSync(emptyDir, { recursive: true });
 
-      const result = await runCli(['deduplicate', 'scan', emptyDir], { env: env.env });
+      const result = await runCli(['deduplicate', 'scan', emptyDir, '--format', 'json'], { env: env.env });
       expect(result.exitCode).toBe(EXIT_CODES.success);
 
       const output = extractJsonFromOutput(result.stdout);
@@ -119,7 +119,7 @@ describe('wpm deduplicate — result deduplication CLI', () => {
       const file1 = path.join(testDir, 'file1.json');
       fs.writeFileSync(file1, JSON.stringify({ test: true }));
 
-      const result = await runCli(['deduplicate', 'scan', testDir], { env: env.env });
+      const result = await runCli(['deduplicate', 'scan', testDir, '--format', 'json'], { env: env.env });
       const output = extractJsonFromOutput(result.stdout);
 
       expect(output.payload.groups).toBeDefined();
@@ -130,7 +130,7 @@ describe('wpm deduplicate — result deduplication CLI', () => {
     });
 
     it('should measure scan duration', async () => {
-      const result = await runCli(['deduplicate', 'scan', testDir], { env: env.env });
+      const result = await runCli(['deduplicate', 'scan', testDir, '--format', 'json'], { env: env.env });
       const output = extractJsonFromOutput(result.stdout);
 
       expect(output.meta?.duration_ms ?? output.duration_ms).toBeGreaterThanOrEqual(0);
@@ -145,7 +145,7 @@ describe('wpm deduplicate — result deduplication CLI', () => {
 
   describe('deduplicate report', () => {
     it('should show deduplication statistics', async () => {
-      const result = await runCli(['deduplicate', 'report'], { env: env.env });
+      const result = await runCli(['deduplicate', 'report', '--format', 'json'], { env: env.env });
       expect(result.exitCode).toBe(EXIT_CODES.success);
 
       const output = extractJsonFromOutput(result.stdout);
@@ -156,14 +156,14 @@ describe('wpm deduplicate — result deduplication CLI', () => {
     });
 
     it('should report deduplication database location', async () => {
-      const result = await runCli(['deduplicate', 'report'], { env: env.env });
+      const result = await runCli(['deduplicate', 'report', '--format', 'json'], { env: env.env });
       const output = extractJsonFromOutput(result.stdout);
 
       expect(output.payload.dedup_database).toBe('.wasm4pm/deduplicate.jsonl');
     });
 
     it('should include timestamp metadata', async () => {
-      const result = await runCli(['deduplicate', 'report'], { env: env.env });
+      const result = await runCli(['deduplicate', 'report', '--format', 'json'], { env: env.env });
       const output = extractJsonFromOutput(result.stdout);
 
       expect(output.payload.last_hit_timestamp).toBeDefined();
@@ -171,7 +171,7 @@ describe('wpm deduplicate — result deduplication CLI', () => {
     });
 
     it('should measure report generation time', async () => {
-      const result = await runCli(['deduplicate', 'report'], { env: env.env });
+      const result = await runCli(['deduplicate', 'report', '--format', 'json'], { env: env.env });
       const output = extractJsonFromOutput(result.stdout);
 
       expect(output.meta?.duration_ms ?? output.duration_ms).toBeGreaterThanOrEqual(0);
@@ -180,7 +180,7 @@ describe('wpm deduplicate — result deduplication CLI', () => {
 
   describe('deduplicate clear', () => {
     it('should clear deduplication data', async () => {
-      const result = await runCli(['deduplicate', 'clear'], { env: env.env });
+      const result = await runCli(['deduplicate', 'clear', '--force', '--format', 'json'], { env: env.env });
       expect(result.exitCode).toBe(EXIT_CODES.success);
 
       const output = extractJsonFromOutput(result.stdout);
@@ -188,7 +188,7 @@ describe('wpm deduplicate — result deduplication CLI', () => {
     });
 
     it('should clear only memory with --memory flag', async () => {
-      const result = await runCli(['deduplicate', 'clear', '--memory'], { env: env.env });
+      const result = await runCli(['deduplicate', 'clear', '--memory', '--format', 'json'], { env: env.env });
       expect(result.exitCode).toBe(EXIT_CODES.success);
 
       const output = extractJsonFromOutput(result.stdout);
@@ -198,7 +198,7 @@ describe('wpm deduplicate — result deduplication CLI', () => {
     });
 
     it('should clear both memory and disk by default', async () => {
-      const result = await runCli(['deduplicate', 'clear'], { env: env.env });
+      const result = await runCli(['deduplicate', 'clear', '--force', '--format', 'json'], { env: env.env });
       const output = extractJsonFromOutput(result.stdout);
 
       expect(output.payload.target).toBe('all');
@@ -206,7 +206,7 @@ describe('wpm deduplicate — result deduplication CLI', () => {
     });
 
     it('should report entries cleared', async () => {
-      const result = await runCli(['deduplicate', 'clear'], { env: env.env });
+      const result = await runCli(['deduplicate', 'clear', '--force', '--format', 'json'], { env: env.env });
       const output = extractJsonFromOutput(result.stdout);
 
       expect(output.payload.entries_cleared).toBeGreaterThanOrEqual(0);
@@ -215,7 +215,7 @@ describe('wpm deduplicate — result deduplication CLI', () => {
 
   describe('deduplicate load', () => {
     it('should load persisted deduplication database', async () => {
-      const result = await runCli(['deduplicate', 'load'], { env: env.env });
+      const result = await runCli(['deduplicate', 'load', '--format', 'json'], { env: env.env });
       expect(result.exitCode).toBe(EXIT_CODES.success);
 
       const output = extractJsonFromOutput(result.stdout);
@@ -223,14 +223,14 @@ describe('wpm deduplicate — result deduplication CLI', () => {
     });
 
     it('should report database path', async () => {
-      const result = await runCli(['deduplicate', 'load'], { env: env.env });
+      const result = await runCli(['deduplicate', 'load', '--format', 'json'], { env: env.env });
       const output = extractJsonFromOutput(result.stdout);
 
       expect(output.payload.database_path).toBe('.wasm4pm/deduplicate.jsonl');
     });
 
     it('should measure load duration', async () => {
-      const result = await runCli(['deduplicate', 'load'], { env: env.env });
+      const result = await runCli(['deduplicate', 'load', '--format', 'json'], { env: env.env });
       const output = extractJsonFromOutput(result.stdout);
 
       expect(output.meta?.duration_ms ?? output.duration_ms).toBeGreaterThanOrEqual(0);
@@ -239,7 +239,7 @@ describe('wpm deduplicate — result deduplication CLI', () => {
 
   describe('deduplicate exit codes', () => {
     it('should return success for valid operations', async () => {
-      const result = await runCli(['deduplicate', 'report'], { env: env.env });
+      const result = await runCli(['deduplicate', 'report', '--format', 'json'], { env: env.env });
       expect([EXIT_CODES.success, 0]).toContain(result.exitCode);
     });
 
@@ -255,10 +255,10 @@ describe('wpm deduplicate — result deduplication CLI', () => {
   describe('deduplicate JSON output', () => {
     it('all subcommands should output valid JSON', async () => {
       const commands = [
-        ['deduplicate', 'report'],
-        ['deduplicate', 'scan', testDir],
-        ['deduplicate', 'clear'],
-        ['deduplicate', 'load'],
+        ['deduplicate', 'report', '--format', 'json'],
+        ['deduplicate', 'scan', testDir, '--format', 'json'],
+        ['deduplicate', 'clear', '--force', '--format', 'json'],
+        ['deduplicate', 'load', '--format', 'json'],
       ];
 
       for (const cmd of commands) {
@@ -270,7 +270,7 @@ describe('wpm deduplicate — result deduplication CLI', () => {
     });
 
     it('should include status field in output', async () => {
-      const result = await runCli(['deduplicate', 'report'], { env: env.env });
+      const result = await runCli(['deduplicate', 'report', '--format', 'json'], { env: env.env });
       const output = extractJsonFromOutput(result.stdout);
 
       expect(output.status).toBeDefined();
@@ -278,7 +278,7 @@ describe('wpm deduplicate — result deduplication CLI', () => {
     });
 
     it('should include payload in output', async () => {
-      const result = await runCli(['deduplicate', 'report'], { env: env.env });
+      const result = await runCli(['deduplicate', 'report', '--format', 'json'], { env: env.env });
       const output = extractJsonFromOutput(result.stdout);
 
       expect(output.payload).toBeDefined();

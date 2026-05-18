@@ -551,6 +551,8 @@ pub mod reinforcement;
 // RL Orchestrator — persistent state hub for all RL agents
 #[cfg(feature = "cloud")]
 pub mod rl_orchestrator;
+#[cfg(feature = "cloud")]
+pub use rl_orchestrator::{RlOrchestrator, StateCoverage};
 
 // Action Dispatch Layer — converts RL action labels to executable operations
 #[cfg(feature = "cloud")]
