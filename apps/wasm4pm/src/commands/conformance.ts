@@ -149,7 +149,11 @@ export const conformance = defineCommand({
           if (parsedThreshold !== undefined && Number.isNaN(parsedThreshold)) {
             const result = makeErrorResult(
               'conformance',
-              new Error('Invalid --threshold value: must be a number'),
+              new Error(
+                `Invalid --threshold value '${rawThreshold}': must be a number between 0.0 and 1.0.\n\n` +
+                  `  --threshold sets the minimum accepted fitness score (default: 0.80).\n` +
+                  `  Example: wpm conformance log.xes --threshold 0.85`
+              ),
               EXIT_CODES.config_error,
               'CONFIG_ERROR'
             );

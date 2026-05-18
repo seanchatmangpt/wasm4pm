@@ -489,7 +489,13 @@ export const compare = defineCommand({
           if (resolved.length < 2) {
             const result = makeErrorResult(
               'compare',
-              new Error('Please specify at least two algorithms to compare.'),
+              new Error(
+                `At least two algorithms are required for comparison (got ${resolved.length}).\n\n` +
+                  `Usage:  wpm compare dfg,heuristic -i log.xes\n` +
+                  `        wpm compare dfg heuristic inductive -i log.xes\n\n` +
+                  `Quick picks: dfg, heuristic, inductive, ilp, genetic\n` +
+                  `Run 'wpm algorithms' to list all available algorithms.`
+              ),
               EXIT_CODES.source_error,
               'TOO_FEW_ALGORITHMS'
             );

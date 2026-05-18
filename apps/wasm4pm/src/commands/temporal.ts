@@ -97,7 +97,21 @@ export const temporal = defineCommand({
 
           const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
           const timestampKey = (ctx.args['timestamp-key'] as string) || 'time:timestamp';
-          const threshold = parseFloat((ctx.args.threshold as string) || '0.05');
+          const rawThreshold = ctx.args.threshold as string | undefined;
+          const threshold = parseFloat(rawThreshold || '0.05');
+          if (rawThreshold !== undefined && rawThreshold !== '' && Number.isNaN(threshold)) {
+            const result = makeErrorResult(
+              'temporal',
+              `Invalid --threshold value '${rawThreshold}': must be a number between 0.0 and 1.0.\n\n` +
+                `  --threshold sets the significance threshold for temporal violations (default: 0.05).\n` +
+                `  Lower values flag more violations; higher values flag only severe deviations.\n` +
+                `  Example: wpm temporal log.xes --threshold 0.01`,
+              EXIT_CODES.config_error,
+              'INVALID_THRESHOLD'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
 
           await withLogSession(
             {
