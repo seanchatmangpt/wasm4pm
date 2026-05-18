@@ -9,7 +9,14 @@
  * 5. Log quality context warnings
  */
 
-import { tracing } from '@opentelemetry/api';
+// Optional OTEL integration for observability
+let getActiveSpan: (() => any) | null = null;
+try {
+  const otel = require('@opentelemetry/api');
+  getActiveSpan = otel.tracing?.getActiveSpan;
+} catch {
+  // OTEL not available in test environment
+}
 
 // ─── Gap 1: Enriched Error Messages ────────────────────────────────────────
 
@@ -35,7 +42,7 @@ export function enrichWasmMemoryError(
   cause: 'empty' | 'corrupted' | 'readonly' | 'allocation-failed',
   details?: { offset?: number; bytesNeeded?: number; nodeVersion?: string }
 ): EnrichedErrorContext {
-  const span = tracing.getActiveSpan();
+  const span = getActiveSpan?.();
 
   const baseMessage = {
     empty: 'WASM memory buffer not initialized',
@@ -103,7 +110,7 @@ export function enrichModuleLoadError(
   module: 'kernel' | 'cognition' | 'ml' | 'ml-classifier',
   context?: { state?: string; lastError?: string }
 ): EnrichedErrorContext {
-  const span = tracing.getActiveSpan();
+  const span = getActiveSpan?.();
 
   const moduleDescriptions: Record<typeof module, string> = {
     kernel: 'Core WASM discovery engine',
@@ -162,7 +169,7 @@ export function enrichTaskValidationError(
   invalidTask: string,
   validOptions: string[]
 ): EnrichedErrorContext {
-  const span = tracing.getActiveSpan();
+  const span = getActiveSpan?.();
   const closest = findClosestMatch(invalidTask, validOptions);
 
   span?.addEvent('ux_gap_1_task_validation_error', {
@@ -221,7 +228,7 @@ export class WarningCollector {
     level: WarningLevel = 'warn',
     context?: Partial<StructuredWarning>
   ): void {
-    const span = tracing.getActiveSpan();
+    const span = getActiveSpan?.();
 
     this.warnings.push({
       code,
@@ -285,7 +292,7 @@ export class WarningCollector {
       });
     }
 
-    if (stats.avgTraceDuration > 3600 * 24) {
+    if (stats.avgTraceDuration > 3600) {
       warnings.push({
         code: 'LONG_TRACES',
         level: 'warn',
@@ -382,7 +389,7 @@ export function formatLogQualityContext(stats: {
   avgTraceDuration: number;
   minTraceDuration: number;
   maxTraceDuration: number;
-  variant count: number;
+  'variant count': number;
 }): string {
   const lines: string[] = [
     '📊 Log Quality Context:',
@@ -391,7 +398,7 @@ export function formatLogQualityContext(stats: {
     `   Activities: ${stats.uniqueActivities} (${stats.uniqueActivities < 10 ? '⚠️ simple' : '✓ realistic'})`,
     `   Duration: ${stats.minTraceDuration.toFixed(1)}s–${stats.maxTraceDuration.toFixed(1)}s ` +
       `(avg ${stats.avgTraceDuration.toFixed(1)}s)`,
-    `   Variants: ${stats.variant count} (${stats.variant count > stats.traceCount * 0.8 ? '⚠️ highly variable' : '✓ repeating patterns'})`,
+    `   Variants: ${stats['variant count']} (${stats['variant count'] > stats.traceCount * 0.8 ? '⚠️ highly variable' : '✓ repeating patterns'})`,
   ];
 
   if (stats.traceCount < 50) {
@@ -400,8 +407,11 @@ export function formatLogQualityContext(stats: {
   if (stats.uniqueActivities > 100) {
     lines.push('   ⚠️ TIP: Complex processes may need advanced algorithms (ILP, Genetic)');
   }
-  if (stats.variant count / stats.traceCount > 0.8) {
+  if (stats['variant count'] / stats.traceCount > 0.8) {
     lines.push('   ⚠️ TIP: High variant count suggests process drift; try `wpm drift-watch`');
+  }
+  if (stats.uniqueActivities < 10 && stats.traceCount < 100) {
+    lines.push('   ⚠️ TIP: Small logs with simple processes benefit from simpler algorithms (DFG, Heuristic)');
   }
 
   return lines.join('\n');
