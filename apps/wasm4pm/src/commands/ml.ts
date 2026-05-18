@@ -7,7 +7,12 @@ import { savePredictionResult } from './results.js';
 import { VALID_ML_TASKS, executeMlTask } from '../ml-runner.js';
 import type { MlTask, MlQualitySummary } from '../ml-runner.js';
 import { withSpan } from './_otel.js';
-import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
+import {
+  saveCommandReceipt,
+  blake3Hex,
+  newReceipt,
+  type CommandReceipt,
+} from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
 
 export const ml = defineCommand({
@@ -80,97 +85,104 @@ export const ml = defineCommand({
         format,
       },
       async () => {
-    try {
-      const task = ctx.args.task as string;
-      if (!VALID_ML_TASKS.includes(task as MlTask)) {
-        const result = makeErrorResult(
-          'ml',
-          `Unknown ML task: "${task}". Valid: ${VALID_ML_TASKS.join(', ')}`,
-          EXIT_CODES.source_error,
-          'INVALID_TASK'
-        );
-        emitResult(result, { format, verbose, quiet });
-        return await exitWithFlush(result.exit_code);
+        try {
+          const task = ctx.args.task as string;
+          if (!VALID_ML_TASKS.includes(task as MlTask)) {
+            const result = makeErrorResult(
+              'ml',
+              `Unknown ML task: "${task}". Valid: ${VALID_ML_TASKS.join(', ')}`,
+              EXIT_CODES.source_error,
+              'INVALID_TASK'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
+
+          const inputPath = ctx.args.input as string;
+          const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
+
+          await withLogSession(
+            { inputPath, activityKey, commandName: 'ml', emitOptions: { format, verbose, quiet } },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            async (wasmBase, logHandle) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const wasm = wasmBase as Record<string, any>;
+
+              const mlResult = await executeMlTask(wasm, task as MlTask, logHandle, activityKey, {
+                method: ctx.args.method as string,
+                k: ctx.args.k as string,
+                targetKey: ctx.args['target-key'] as string,
+                forecastPeriods: ctx.args['forecast-periods'] as string,
+                nComponents: ctx.args['n-components'] as string,
+                eps: ctx.args.eps as string,
+              });
+
+              if (!ctx.args['no-save']) {
+                const savedPath = await savePredictionResult(
+                  `ml-${task}`,
+                  inputPath,
+                  activityKey,
+                  mlResult
+                );
+                if (savedPath && format === 'human' && verbose) {
+                  // savedPath info surfaced via verbose in human renderer
+                  (mlResult as Record<string, unknown>)['_savedPath'] = savedPath;
+                }
+              }
+
+              const payload = { task, input: inputPath, ...mlResult };
+              const result = makeResult('ml', payload, performance.now() - t0, EXIT_CODES.success);
+              emitResult(result, { format, verbose, quiet }, (res, projection) => {
+                const data = res.payload as typeof payload;
+                projection.success(`ML complete: ${data.task}`);
+                formatMlHumanOutput(projection, data.task as MlTask, data);
+                if (verbose && (data as Record<string, unknown>)['_savedPath']) {
+                  projection.debug(
+                    `Result saved: ${(data as Record<string, unknown>)['_savedPath']}`
+                  );
+                }
+              });
+
+              if (!ctx.args['no-save']) {
+                try {
+                  const inputBytes = await fs
+                    .readFile(inputPath)
+                    .catch(() => Buffer.from(inputPath));
+                  const sampleSize = Array.isArray(
+                    (mlResult as Record<string, unknown>).predictions
+                  )
+                    ? ((mlResult as Record<string, unknown>).predictions as unknown[]).length
+                    : Array.isArray((mlResult as Record<string, unknown>).assignments)
+                      ? ((mlResult as Record<string, unknown>).assignments as unknown[]).length
+                      : 0;
+                  const receipt: CommandReceipt = {
+                    ...newReceipt('ml'),
+                    command: 'ml',
+                    input_hash: blake3Hex(inputBytes),
+                    output_hash: blake3Hex(JSON.stringify(payload)),
+                    status: 'success',
+                    summary: {
+                      task,
+                      method: String(ctx.args.method ?? ''),
+                      activity_key: activityKey,
+                      sample_size: sampleSize,
+                    },
+                  };
+                  saveCommandReceipt(receipt);
+                } catch {
+                  /* receipt write must never break the command */
+                }
+              }
+
+              return await exitWithFlush(result.exit_code);
+            }
+          ); // end withLogSession
+        } catch (error) {
+          const result = makeErrorResult('ml', error, EXIT_CODES.execution_error);
+          emitResult(result, { format, verbose, quiet });
+          return await exitWithFlush(result.exit_code);
+        }
       }
-
-      const inputPath = ctx.args.input as string;
-      const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
-
-      await withLogSession(
-        { inputPath, activityKey, commandName: 'ml', emitOptions: { format, verbose, quiet } },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        async (wasmBase, logHandle) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const wasm = wasmBase as Record<string, any>;
-
-        const mlResult = await executeMlTask(wasm, task as MlTask, logHandle, activityKey, {
-          method: ctx.args.method as string,
-          k: ctx.args.k as string,
-          targetKey: ctx.args['target-key'] as string,
-          forecastPeriods: ctx.args['forecast-periods'] as string,
-          nComponents: ctx.args['n-components'] as string,
-          eps: ctx.args.eps as string,
-        });
-
-        if (!ctx.args['no-save']) {
-          const savedPath = await savePredictionResult(
-            `ml-${task}`,
-            inputPath,
-            activityKey,
-            mlResult
-          );
-          if (savedPath && format === 'human' && verbose) {
-            // savedPath info surfaced via verbose in human renderer
-            (mlResult as Record<string, unknown>)['_savedPath'] = savedPath;
-          }
-        }
-
-        const payload = { task, input: inputPath, ...mlResult };
-        const result = makeResult('ml', payload, performance.now() - t0, EXIT_CODES.success);
-        emitResult(result, { format, verbose, quiet }, (res, projection) => {
-          const data = res.payload as typeof payload;
-          projection.success(`ML complete: ${data.task}`);
-          formatMlHumanOutput(projection, data.task as MlTask, data);
-          if (verbose && (data as Record<string, unknown>)['_savedPath']) {
-            projection.debug(`Result saved: ${(data as Record<string, unknown>)['_savedPath']}`);
-          }
-        });
-
-        if (!ctx.args['no-save']) {
-          try {
-            const inputBytes = await fs.readFile(inputPath).catch(() => Buffer.from(inputPath));
-            const sampleSize = Array.isArray((mlResult as Record<string, unknown>).predictions)
-              ? ((mlResult as Record<string, unknown>).predictions as unknown[]).length
-              : Array.isArray((mlResult as Record<string, unknown>).assignments)
-                ? ((mlResult as Record<string, unknown>).assignments as unknown[]).length
-                : 0;
-            const receipt: CommandReceipt = {
-              ...newReceipt('ml'),
-              command: 'ml',
-              input_hash: blake3Hex(inputBytes),
-              output_hash: blake3Hex(JSON.stringify(payload)),
-              status: 'success',
-              summary: {
-                task,
-                method: String(ctx.args.method ?? ''),
-                activity_key: activityKey,
-                sample_size: sampleSize,
-              },
-            };
-            saveCommandReceipt(receipt);
-          } catch {
-            /* receipt write must never break the command */
-          }
-        }
-
-        return await exitWithFlush(result.exit_code);
-      });  // end withLogSession
-    } catch (error) {
-      const result = makeErrorResult('ml', error, EXIT_CODES.execution_error);
-      emitResult(result, { format, verbose, quiet });
-      return await exitWithFlush(result.exit_code);
-    }
-      },
     );
   },
 });
@@ -246,6 +258,14 @@ function formatMlHumanOutput(
         `  Method: ${result.method}, Traces: ${info?.traceCount}, Features: ${info?.featureCount}`
       );
       projection.log('');
+      projection.log('  Next steps:');
+      projection.log(
+        `    wpm conformance -i <log>  verify whether low-confidence cases deviate from the reference model`
+      );
+      projection.log(
+        `    wpm cluster -i <log>      discover whether the classified groups correspond to natural clusters`
+      );
+      projection.log('');
       break;
     }
 
@@ -255,19 +275,50 @@ function formatMlHumanOutput(
         projection.info('No cluster assignments.');
         return;
       }
-      projection.log('');
-      projection.log('  Case ID              Cluster');
-      projection.log('  ───────────────────  ───────');
-      for (const a of assignments.slice(0, 10)) {
-        const id = (a.caseId ?? '?').padEnd(19);
-        projection.log(`  ${id}  ${String(a.cluster).padStart(6)}`);
-      }
-      if (assignments.length > 10) projection.log(`  ... (${assignments.length - 10} more)`);
       const info = result.modelInfo as Record<string, unknown>;
-      projection.log(
-        `  Method: ${result.method}, Clusters: ${result.clusterCount}, Noise: ${result.noiseCount}`
+      const k = result.clusterCount as number;
+      const noise = result.noiseCount as number;
+      const total = assignments.length;
+
+      // Build per-cluster size map
+      const clusterSizes = new Map<number, number>();
+      for (const a of assignments) {
+        clusterSizes.set(a.cluster, (clusterSizes.get(a.cluster) ?? 0) + 1);
+      }
+
+      projection.log('');
+      projection.log('  Cluster summary:');
+      projection.log('  ─────────────────────────────────────────────────────');
+      projection.log('  Cluster   Cases   Share    Notes');
+      projection.log('  ───────   ─────   ─────    ─────');
+      // Sort by cluster index; noise (-1) listed last
+      const sortedClusters = [...clusterSizes.entries()].sort((a, b) =>
+        a[0] === -1 ? 1 : b[0] === -1 ? -1 : a[0] - b[0]
       );
-      if (info?.inertia !== undefined) projection.log(`  Inertia: ${info.inertia}`);
+      for (const [clusterId, count] of sortedClusters) {
+        const label = clusterId === -1 ? 'noise' : `Cluster ${clusterId}`;
+        const share = `${((count / total) * 100).toFixed(1)}%`.padStart(6);
+        const bar = '▓'.repeat(Math.round((count / total) * 20)).padEnd(20, '░');
+        projection.log(`  ${label.padEnd(7)}   ${String(count).padStart(5)}   ${share}    ${bar}`);
+      }
+      projection.log('');
+      if (noise > 0) {
+        projection.log(
+          `  ${noise} case(s) classified as noise — consider increasing eps or reducing k.`
+        );
+      }
+      if (info?.inertia !== undefined) {
+        projection.log(`  Inertia: ${Number(info.inertia).toFixed(2)} (lower = tighter clusters)`);
+      }
+      projection.log(`  Method: ${result.method}, Clusters: ${k}, Total cases: ${total}`);
+      projection.log('');
+      projection.log('  Next steps:');
+      projection.log(
+        `    wpm temporal -i <log>     investigate performance differences between clusters`
+      );
+      projection.log(
+        `    wpm social -i <log>       check if clusters reflect different resource groups`
+      );
       projection.log('');
       break;
     }
@@ -278,14 +329,28 @@ function formatMlHumanOutput(
         | undefined;
       const forecast = result.forecast as number[] | undefined;
       const seasonality = result.seasonality as { period?: number; strength?: number } | undefined;
+
+      // Compute percent-change summary over the forecast window
+      let pctChangeSummary = '';
+      if (forecast && forecast.length >= 2) {
+        const first = forecast[0];
+        const last = forecast[forecast.length - 1];
+        if (first !== 0 && Number.isFinite(first) && Number.isFinite(last)) {
+          const pct = ((last - first) / Math.abs(first)) * 100;
+          const sign = pct >= 0 ? '+' : '';
+          pctChangeSummary = ` (${sign}${pct.toFixed(1)}% over ${forecast.length}-period window)`;
+        }
+      }
+
       projection.log('');
+      projection.log(`  Trend: ${trend?.direction ?? 'unknown'}${pctChangeSummary}`);
       projection.log(
-        `  Trend: ${trend?.direction} (slope: ${(trend?.slope ?? 0).toFixed(4)}, strength: ${(trend?.strength ?? 0).toFixed(2)})`
+        `  Slope: ${(trend?.slope ?? 0).toFixed(4)}, Strength: ${(trend?.strength ?? 0).toFixed(2)} ${(trend?.strength ?? 0) >= 0.5 ? '[reliable]' : '[low confidence — treat as indicative only]'}`
       );
-      projection.log(`  Window count: ${result.windowCount}`);
-      if (forecast) {
+      projection.log(`  Window count: ${result.windowCount ?? 'n/a'}`);
+      if (forecast && forecast.length > 0) {
         projection.log(
-          `  Forecast (${forecast.length} periods): ${forecast.map((v: number) => v.toFixed(1)).join(', ')}`
+          `  Forecast values (${forecast.length} periods): ${forecast.map((v: number) => v.toFixed(3)).join(', ')}`
         );
       }
       if (seasonality) {
@@ -294,6 +359,14 @@ function formatMlHumanOutput(
         );
       }
       projection.log('');
+      projection.log('  Next steps:');
+      projection.log(
+        `    wpm drift-watch -i <log>  monitor drift in real-time as new cases arrive`
+      );
+      projection.log(
+        `    wpm temporal -i <log>     analyze actual throughput and wait-time distributions`
+      );
+      projection.log('');
       break;
     }
 
@@ -301,30 +374,88 @@ function formatMlHumanOutput(
       const peakIndices = result.peakIndices as number[] | undefined;
       const peakValues = result.peakValues as number[] | undefined;
       const residualPeaks = result.residualPeaks as number[] | undefined;
+      const totalWindows = (result.originalLength as number) ?? 0;
+      const peakCount = peakIndices?.length ?? 0;
+
       projection.log('');
-      projection.log(`  Peaks detected: ${peakIndices?.length ?? 0}`);
-      if (peakIndices && peakValues) {
-        for (let i = 0; i < Math.min(peakIndices.length, 10); i++) {
-          projection.log(`    Window ${peakIndices[i]}: drift=${peakValues[i]?.toFixed(4)}`);
+
+      if (peakCount === 0) {
+        projection.log(
+          `  No anomalous drift windows detected in ${totalWindows} windows — process appears stable.`
+        );
+      } else {
+        const rate = totalWindows > 0 ? (peakCount / totalWindows) * 100 : 0;
+        projection.log(
+          `  ${peakCount} anomalous drift window(s) flagged (${rate.toFixed(1)}% of ${totalWindows} windows):`
+        );
+        projection.log('');
+        projection.log('  Window   Drift score   Severity');
+        projection.log('  ──────   ───────────   ────────');
+        // Rank peaks by drift value descending for the display list
+        const ranked: Array<{ idx: number; val: number }> = [];
+        if (peakIndices && peakValues) {
+          for (let i = 0; i < peakIndices.length; i++) {
+            ranked.push({ idx: peakIndices[i], val: peakValues[i] ?? 0 });
+          }
+          ranked.sort((a, b) => b.val - a.val);
         }
+        const maxVal = ranked.length > 0 ? ranked[0].val : 1;
+        for (const { idx, val } of ranked.slice(0, 10)) {
+          const bar = '▓'.repeat(Math.round((val / maxVal) * 12)).padEnd(12, '░');
+          const severity = val > maxVal * 0.8 ? 'HIGH  ' : val > maxVal * 0.5 ? 'MEDIUM' : 'low   ';
+          projection.log(
+            `  ${String(idx).padStart(6)}   ${val.toFixed(4).padStart(11)}   ${severity}  ${bar}`
+          );
+        }
+        if (peakCount > 10)
+          projection.log(`  ... (${peakCount - 10} more — run with --verbose to see all)`);
       }
+
       if (residualPeaks && residualPeaks.length > 0) {
-        projection.log(`  Residual anomalies: ${residualPeaks.length}`);
+        projection.log('');
+        projection.log(`  Residual anomalies (secondary signal): ${residualPeaks.length}`);
       }
-      projection.log(`  Original length: ${result.originalLength}`);
+
+      projection.log('');
+      projection.log(
+        '  Note: drift windows map to time slices in the log, not individual case IDs.'
+      );
+      projection.log('  To identify which cases drive the anomalous windows:');
+      projection.log('');
+      projection.log('  Next steps:');
+      projection.log(
+        `    wpm conformance -i <log>  check fitness of the anomalous period against your reference model`
+      );
+      projection.log(
+        `    wpm temporal -i <log>     locate the time windows with the highest wait times`
+      );
+      projection.log(
+        `    wpm drift-watch -i <log>  monitor drift continuously as new cases arrive`
+      );
       projection.log('');
       break;
     }
 
     case 'regress': {
+      const r2 = Number(result.rSquared ?? 0);
       projection.log('');
       projection.log(`  Method: ${result.method}`);
-      projection.log(`  R-squared: ${Number(result.rSquared ?? 0).toFixed(4)}`);
+      projection.log(
+        `  R-squared: ${r2.toFixed(4)} ${r2 >= 0.6 ? '[good fit]' : '[weak fit — consider non-linear method or more features]'}`
+      );
       projection.log(
         `  Slope: ${Number(result.slope ?? 0).toFixed(4)}, Intercept: ${Number(result.intercept ?? 0).toFixed(4)}`
       );
       projection.log(
         `  RMSE: ${Number(result.rmse ?? 0).toFixed(2)}, MAE: ${Number(result.mae ?? 0).toFixed(2)}`
+      );
+      projection.log('');
+      projection.log('  Next steps:');
+      projection.log(
+        `    wpm temporal -i <log>     verify the highest-RMSE traces against actual wait-time distributions`
+      );
+      projection.log(
+        `    wpm predict remaining-time -i <log>  apply Weibull regression for per-case remaining-time estimates`
       );
       projection.log('');
       break;
@@ -333,16 +464,35 @@ function formatMlHumanOutput(
     case 'pca': {
       const explainedVariance = result.explainedVariance as number[] | undefined;
       const transformedData = result.transformedData as number[][] | undefined;
+      const totalVariance = explainedVariance
+        ? explainedVariance.reduce((s, v) => s + v, 0)
+        : undefined;
       projection.log('');
       projection.log(
         `  Components: ${result.nComponents} (from ${result.originalFeatureCount} features)`
       );
-      if (explainedVariance) {
-        projection.log(
-          `  Explained variance: ${explainedVariance.map((v: number) => v.toFixed(4)).join(', ')}`
-        );
+      if (explainedVariance && explainedVariance.length > 0) {
+        projection.log('  Variance per component:');
+        for (let i = 0; i < explainedVariance.length; i++) {
+          const v = explainedVariance[i];
+          const bar = '▓'.repeat(Math.round(v * 40)).padEnd(40, '░');
+          projection.log(`    PC${i + 1}  ${(v * 100).toFixed(1).padStart(5)}%  ${bar}`);
+        }
+        if (totalVariance !== undefined) {
+          projection.log(
+            `  Total variance explained: ${(totalVariance * 100).toFixed(1)}% ${totalVariance >= 0.7 ? '[good reduction]' : '[consider more components]'}`
+          );
+        }
       }
       projection.log(`  Transformed data: ${transformedData?.length ?? 0} rows`);
+      projection.log('');
+      projection.log('  Next steps:');
+      projection.log(
+        `    wpm cluster -i <log>      run clustering on the PCA-reduced feature space`
+      );
+      projection.log(
+        `    wpm ml classify -i <log>  use PCA components as input features for classification`
+      );
       projection.log('');
       break;
     }

@@ -302,6 +302,7 @@ pub mod gate_validator;
 pub mod algorithms;
 #[cfg(feature = "conformance_basic")]
 pub mod analysis;
+pub mod testing;
 pub mod binary_format;
 pub mod branchless;
 pub mod cache;

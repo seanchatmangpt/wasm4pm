@@ -34,13 +34,25 @@ function selectAutopilotAlgorithm(stats: LogStats): { algo: Algorithm; rationale
   const activities = stats.unique_activities ?? 0;
 
   if (traces > 50_000)
-    return { algo: 'dfg', rationale: `log too large for conformance-checking (${traces.toLocaleString()} traces)` };
+    return {
+      algo: 'dfg',
+      rationale: `log too large for conformance-checking (${traces.toLocaleString()} traces)`,
+    };
   if (variants < 20 && traces < 5_000)
-    return { algo: 'inductive', rationale: `low-variant log (${variants} variants) — inductive produces clean process tree` };
+    return {
+      algo: 'inductive',
+      rationale: `low-variant log (${variants} variants) — inductive produces clean process tree`,
+    };
   if (activities > 100)
-    return { algo: 'heuristic', rationale: `high activity count (${activities}) — heuristic handles noise well` };
+    return {
+      algo: 'heuristic',
+      rationale: `high activity count (${activities}) — heuristic handles noise well`,
+    };
   if (traces > 10_000)
-    return { algo: 'heuristic', rationale: `medium-large log (${traces.toLocaleString()} traces) — heuristic balances speed and quality` };
+    return {
+      algo: 'heuristic',
+      rationale: `medium-large log (${traces.toLocaleString()} traces) — heuristic balances speed and quality`,
+    };
 
   return { algo: 'dfg', rationale: 'default — fast, always produces a result' };
 }
@@ -213,9 +225,22 @@ export const watch = defineCommand({
       ignoreInitial: true,
     });
 
+    // Count watched paths for the startup status line.
+    // chokidar resolves globs lazily — use a small delay so the watcher has time to
+    // enumerate the initial file set before we report the count.
+    let watchedCount = 1; // at minimum the root path itself
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      const watched = watcher.getWatched();
+      watchedCount = Object.values(watched).reduce((sum, files) => sum + files.length, 0) || 1;
+    } catch {
+      /* getWatched() failure is non-fatal */
+    }
+
     streaming.emitEvent('watching', {
       path: watchPath,
-      message: 'Waiting for file changes...',
+      files_count: watchedCount,
+      message: `Watching ${watchedCount} file(s) in ${watchPath} — press Ctrl+C to stop`,
     });
 
     // Per-file debouncers prevent editor-save bursts from flooding spans.
@@ -232,6 +257,18 @@ export const watch = defineCommand({
           const idx = cyclesObserved;
           cyclesObserved += 1;
           const span = tracer.startSpan(WatchingSpans.heartbeat());
+
+          // Capture modification time before entering the async span so the
+          // practitioner sees exactly when the file was written, not when
+          // Node.js scheduled the debounced callback.
+          let mtime: string | null = null;
+          try {
+            const stat = await fs.stat(filePath);
+            mtime = stat.mtime.toISOString();
+          } catch {
+            /* stat failure is non-fatal — mtime stays null */
+          }
+
           try {
             await withSpanRaw(
               'wasm4pm.watch.cycle',
@@ -239,9 +276,14 @@ export const watch = defineCommand({
                 event_kind: 'change',
                 cycle_index: idx,
                 file_path: filePath,
+                mtime: mtime ?? 'unknown',
               },
               async () => {
-                streaming.emitEvent('change_detected', { file: filePath });
+                streaming.emitEvent('change_detected', {
+                  file: filePath,
+                  mtime: mtime ?? 'unknown',
+                  cycle: idx + 1,
+                });
 
                 // Reload config
                 const config = await loadConfig({ configSearchPaths: [configPath] });
@@ -282,17 +324,21 @@ export const watch = defineCommand({
                 // and the changed file is an XES log (not a config file).
                 if (ctx.args.autopilot && filePath.endsWith('.xes')) {
                   try {
-                    const wasm = wasmLoader.get() as Record<string, (...args: unknown[]) => unknown>;
-                    const activityKey = (ctx.args['activity-key'] as string | undefined) ?? 'concept:name';
+                    const wasm = wasmLoader.get() as Record<
+                      string,
+                      (...args: unknown[]) => unknown
+                    >;
+                    const activityKey =
+                      (ctx.args['activity-key'] as string | undefined) ?? 'concept:name';
                     const xesContent = await fs.readFile(filePath, 'utf8');
                     const t0 = Date.now();
                     const handle = wasm.load_eventlog_from_xes(xesContent) as string;
 
                     // Get log characteristics to select algorithm
                     const statsRaw = wasm.analyze_event_statistics(handle, activityKey);
-                    const stats = (typeof statsRaw === 'string'
-                      ? JSON.parse(statsRaw)
-                      : statsRaw) as LogStats;
+                    const stats = (
+                      typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw
+                    ) as LogStats;
                     const { algo, rationale } = selectAutopilotAlgorithm(stats);
 
                     streaming.emitEvent('autopilot_selected', {
@@ -322,11 +368,13 @@ export const watch = defineCommand({
                     streaming.emitEvent('autopilot_completed', {
                       algorithm: algo,
                       elapsedMs,
-                      modelKeys: typeof model === 'object' && model ? Object.keys(model as object) : [],
+                      modelKeys:
+                        typeof model === 'object' && model ? Object.keys(model as object) : [],
                     });
                   } catch (autopilotErr) {
                     streaming.emitEvent('autopilot_error', {
-                      message: autopilotErr instanceof Error ? autopilotErr.message : String(autopilotErr),
+                      message:
+                        autopilotErr instanceof Error ? autopilotErr.message : String(autopilotErr),
                     });
                   }
                 }
@@ -336,7 +384,7 @@ export const watch = defineCommand({
                   status: 'success',
                   timestamp: new Date().toISOString(),
                 });
-              },
+              }
             );
           } catch (error) {
             parentStatus = 'ERROR';
@@ -348,7 +396,7 @@ export const watch = defineCommand({
           } finally {
             span.end();
           }
-        }, DEBOUNCE_MS),
+        }, DEBOUNCE_MS)
       );
     });
 

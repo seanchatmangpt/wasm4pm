@@ -61,11 +61,11 @@ interface OcelLog {
 }
 
 interface ObjectTypeDeclaration {
-  created_by: string[];       // activities that create objects of this type
-  terminated_by?: string[];   // activities that terminate objects of this type
-  schema?: string;            // path to JSON Schema file (relative to projectDir)
-  min_count?: number;         // minimum distinct instances required
-  max_count?: number;         // maximum distinct instances allowed
+  created_by: string[]; // activities that create objects of this type
+  terminated_by?: string[]; // activities that terminate objects of this type
+  schema?: string; // path to JSON Schema file (relative to projectDir)
+  min_count?: number; // minimum distinct instances required
+  max_count?: number; // maximum distinct instances allowed
 }
 
 interface Powl2Model {
@@ -279,7 +279,12 @@ function parseJsTrace(text: string): TraceFrame[] {
 
 // ── projectors ────────────────────────────────────────────────────────────────
 
-function framesToTraceGraph(frames: TraceFrame[], runId: string, lang: string, source: string): TraceGraph {
+function framesToTraceGraph(
+  frames: TraceFrame[],
+  runId: string,
+  lang: string,
+  source: string
+): TraceGraph {
   const ctx = {
     prov: 'http://www.w3.org/ns/prov#',
     ocel: 'https://www.ocel-standard.org/ns#',
@@ -332,7 +337,10 @@ function framesToTraceGraph(frames: TraceFrame[], runId: string, lang: string, s
 
 function traceGraphToOcel(graph: TraceGraph): OcelLog {
   const now = new Date().toISOString();
-  const objectSet = new Map<string, { id: string; type: string; attributes: Record<string, unknown> }>();
+  const objectSet = new Map<
+    string,
+    { id: string; type: string; attributes: Record<string, unknown> }
+  >();
 
   for (const obj of graph['trace:objects']) {
     const id = obj['@id'].replace('trace:', '');
@@ -353,7 +361,10 @@ function traceGraphToOcel(graph: TraceGraph): OcelLog {
       activity: ev['ocel:activity'],
       timestamp: now,
       objects,
-      attributes: { frame_index: i, ...(ev['trace:frame']['trace:file'] && { file: ev['trace:frame']['trace:file'] }) },
+      attributes: {
+        frame_index: i,
+        ...(ev['trace:frame']['trace:file'] && { file: ev['trace:frame']['trace:file'] }),
+      },
     };
   });
 
@@ -373,7 +384,7 @@ function ocelToObservedRoute(ocel: OcelLog): string[] {
 
 function measureObjectLifecycle(
   ocel: OcelLog,
-  objectTypes: Record<string, ObjectTypeDeclaration>,
+  objectTypes: Record<string, ObjectTypeDeclaration>
 ): {
   valid: boolean;
   coverage: number;
@@ -392,11 +403,15 @@ function measureObjectLifecycle(
       const firstActivity = objEvents[0]!.activity;
       const lastActivity = objEvents[objEvents.length - 1]!.activity;
       if (!typeDecl.created_by.includes(firstActivity)) {
-        create_violations.push(`${typeName}:${objId} first seen in "${firstActivity}" (not a create activity: [${typeDecl.created_by.join(', ')}])`);
+        create_violations.push(
+          `${typeName}:${objId} first seen in "${firstActivity}" (not a create activity: [${typeDecl.created_by.join(', ')}])`
+        );
       }
       if (typeDecl.terminated_by && typeDecl.terminated_by.length > 0) {
         if (!typeDecl.terminated_by.includes(lastActivity)) {
-          terminate_violations.push(`${typeName}:${objId} last seen in "${lastActivity}" (not a terminate activity: [${typeDecl.terminated_by.join(', ')}])`);
+          terminate_violations.push(
+            `${typeName}:${objId} last seen in "${lastActivity}" (not a terminate activity: [${typeDecl.terminated_by.join(', ')}])`
+          );
         }
       }
     }
@@ -408,7 +423,7 @@ function measureObjectLifecycle(
 
 function measureCardinality(
   ocel: OcelLog,
-  objectTypes: Record<string, ObjectTypeDeclaration>,
+  objectTypes: Record<string, ObjectTypeDeclaration>
 ): { valid: boolean; violations: string[] } {
   const violations: string[] = [];
   for (const [typeName, typeDecl] of Object.entries(objectTypes)) {
@@ -427,18 +442,24 @@ function measureCardinality(
 function measureReceiptSchema(
   ocel: OcelLog,
   objectTypes: Record<string, ObjectTypeDeclaration>,
-  projectDir: string,
+  projectDir: string
 ): { valid: boolean; violations: string[]; checked: number } {
   const violations: string[] = [];
   let checked = 0;
 
-  const typesWithSchema = Object.entries(objectTypes).filter(([, d]) => typeof d.schema === 'string');
+  const typesWithSchema = Object.entries(objectTypes).filter(
+    ([, d]) => typeof d.schema === 'string'
+  );
   if (typesWithSchema.length === 0) {
     return { valid: true, violations: [], checked: 0 };
   }
 
   let AjvCtor: new (opts?: Record<string, unknown>) => {
-    compile: (schema: unknown) => ((data: unknown) => boolean) & { errors?: Array<{ instancePath?: string; message?: string }> };
+    compile: (
+      schema: unknown
+    ) => ((data: unknown) => boolean) & {
+      errors?: Array<{ instancePath?: string; message?: string }>;
+    };
   };
   try {
     const mod = _require('ajv');
@@ -479,8 +500,13 @@ function measureReceiptSchema(
     for (const obj of objectsOfType) {
       checked++;
       if (!validate(obj.attributes)) {
-        const errs = (validate as unknown as { errors?: Array<{ instancePath?: string; message?: string }> }).errors ?? [];
-        const reasons = errs.slice(0, 3).map((e) => `${e.instancePath ?? '/'} ${e.message ?? ''}`.trim()).join('; ');
+        const errs =
+          (validate as unknown as { errors?: Array<{ instancePath?: string; message?: string }> })
+            .errors ?? [];
+        const reasons = errs
+          .slice(0, 3)
+          .map((e) => `${e.instancePath ?? '/'} ${e.message ?? ''}`.trim())
+          .join('; ');
         violations.push(`${typeName}:${obj.id} schema violation: ${reasons}`);
       }
     }
@@ -489,7 +515,11 @@ function measureReceiptSchema(
   return { valid: violations.length === 0, violations, checked };
 }
 
-function measureReceiptCoverage(ocel: OcelLog): { coverage: number; activities_with_receipts: number; total_activities: number } {
+function measureReceiptCoverage(ocel: OcelLog): {
+  coverage: number;
+  activities_with_receipts: number;
+  total_activities: number;
+} {
   const activitiesWithReceipts = new Set<string>();
   for (const ev of ocel.ocel_events) {
     if (ev.objects.some((o) => o.type === 'Receipt' || o.type.toLowerCase().includes('receipt'))) {
@@ -497,17 +527,25 @@ function measureReceiptCoverage(ocel: OcelLog): { coverage: number; activities_w
     }
   }
   const uniqueActivities = new Set(ocel.ocel_events.map((e) => e.activity));
-  const coverage = uniqueActivities.size > 0 ? activitiesWithReceipts.size / uniqueActivities.size : 0;
-  return { coverage, activities_with_receipts: activitiesWithReceipts.size, total_activities: uniqueActivities.size };
+  const coverage =
+    uniqueActivities.size > 0 ? activitiesWithReceipts.size / uniqueActivities.size : 0;
+  return {
+    coverage,
+    activities_with_receipts: activitiesWithReceipts.size,
+    total_activities: uniqueActivities.size,
+  };
 }
 
 function checkPartialOrderConstraints(
   observed: string[],
-  constraints: [string, string][],
+  constraints: [string, string][]
 ): { valid: boolean; violations: string[] } {
   const violations: string[] = [];
   const positions = new Map<string, number[]>();
-  observed.forEach((a, i) => { if (!positions.has(a)) positions.set(a, []); positions.get(a)!.push(i); });
+  observed.forEach((a, i) => {
+    if (!positions.has(a)) positions.set(a, []);
+    positions.get(a)!.push(i);
+  });
 
   for (const [before, after] of constraints) {
     const bPos = positions.get(before);
@@ -516,7 +554,9 @@ function checkPartialOrderConstraints(
       const minBefore = Math.min(...bPos);
       const minAfter = Math.min(...aPos);
       if (minBefore >= minAfter) {
-        violations.push(`"${after}" (pos ${minAfter}) precedes "${before}" (pos ${minBefore}) — order constraint violated`);
+        violations.push(
+          `"${after}" (pos ${minAfter}) precedes "${before}" (pos ${minBefore}) — order constraint violated`
+        );
       }
     }
   }
@@ -525,7 +565,7 @@ function checkPartialOrderConstraints(
 
 function checkChoiceGraphEdges(
   observed: string[],
-  edges: [string, string][],
+  edges: [string, string][]
 ): { valid: boolean; invalid_transitions: string[] } {
   const edgeSet = new Set(edges.map(([a, b]) => `${a}→${b}`));
   const invalid: string[] = [];
@@ -548,7 +588,7 @@ function checkChoiceGraphEdges(
 export function checkPowl2Conformance(
   ocel: OcelLog,
   model: Powl2Model,
-  projectDir: string = process.cwd(),
+  projectDir: string = process.cwd()
 ): ConformanceResult {
   const details: ConformanceResult['details'] = [];
   const m = model.model;
@@ -575,11 +615,18 @@ export function checkPowl2Conformance(
     choiceEdges = edges;
     admissibleActivities = new Set(nodes.filter((n) => n !== '▷' && n !== '□'));
     const adj = new Map<string, string[]>();
-    for (const [from, to] of edges) { if (!adj.has(from)) adj.set(from, []); adj.get(from)!.push(to); }
+    for (const [from, to] of edges) {
+      if (!adj.has(from)) adj.set(from, []);
+      adj.get(from)!.push(to);
+    }
     const findPaths = (current: string, path: string[], depth: number): void => {
       if (depth > nodes.length + 2) return;
-      if (current === '□') { validPaths.push([...path]); return; }
-      for (const next of (adj.get(current) ?? [])) findPaths(next, next !== '□' ? [...path, next] : path, depth + 1);
+      if (current === '□') {
+        validPaths.push([...path]);
+        return;
+      }
+      for (const next of adj.get(current) ?? [])
+        findPaths(next, next !== '□' ? [...path, next] : path, depth + 1);
     };
     findPaths('▷', [], 0);
   } else if (m.sequence) {
@@ -606,8 +653,11 @@ export function checkPowl2Conformance(
   });
 
   // ── Precision ────────────────────────────────────────────────────────────────
-  const modelActivitiesInObserved = [...admissibleActivities].filter((a) => observedSet.has(a)).length;
-  const precision = admissibleActivities.size > 0 ? modelActivitiesInObserved / admissibleActivities.size : 1.0;
+  const modelActivitiesInObserved = [...admissibleActivities].filter((a) =>
+    observedSet.has(a)
+  ).length;
+  const precision =
+    admissibleActivities.size > 0 ? modelActivitiesInObserved / admissibleActivities.size : 1.0;
   details.push({
     dimension: 'precision',
     ok: precision <= 1.0,
@@ -617,15 +667,17 @@ export function checkPowl2Conformance(
   // ── Required stage coverage ──────────────────────────────────────────────────
   const requiredStages = model.required_stages ?? [];
   const missingStages = requiredStages.filter((s) => !observedSet.has(s));
-  const stageCoverage = requiredStages.length > 0
-    ? (requiredStages.length - missingStages.length) / requiredStages.length
-    : 1.0;
+  const stageCoverage =
+    requiredStages.length > 0
+      ? (requiredStages.length - missingStages.length) / requiredStages.length
+      : 1.0;
   details.push({
     dimension: 'required_stage_coverage',
     ok: missingStages.length === 0,
-    detail: missingStages.length === 0
-      ? `all ${requiredStages.length} required stages present`
-      : `missing: ${missingStages.join(', ')}`,
+    detail:
+      missingStages.length === 0
+        ? `all ${requiredStages.length} required stages present`
+        : `missing: ${missingStages.join(', ')}`,
   });
 
   // ── Route sequence + choice graph edge validity ───────────────────────────
@@ -635,8 +687,13 @@ export function checkPowl2Conformance(
   } else {
     for (const path of validPaths) {
       let pi = 0;
-      for (const act of observed) { if (pi < path.length && path[pi] === act) pi++; }
-      if (pi === path.length) { routeValid = true; break; }
+      for (const act of observed) {
+        if (pi < path.length && path[pi] === act) pi++;
+      }
+      if (pi === path.length) {
+        routeValid = true;
+        break;
+      }
     }
   }
   details.push({
@@ -701,7 +758,9 @@ export function checkPowl2Conformance(
             !lifecycleCreateOk && `create violation: ${lifecycleCreateDetail}`,
             !lifecycleTerminateOk && `terminate violation: ${lifecycleTerminateDetail}`,
             !cardinalityOk && `cardinality violation: ${cardinalityDetail}`,
-          ].filter(Boolean).join(' | '),
+          ]
+            .filter(Boolean)
+            .join(' | '),
     });
   } else {
     objectLifecycleValidity = -1; // sentinel: NotMeasured
@@ -743,7 +802,9 @@ export function checkPowl2Conformance(
         : [
             !receiptCountOk && `count violation: ${receiptCountDetail}`,
             !receiptSchemaOk && `schema violation: ${receiptSchemaDetail}`,
-          ].filter(Boolean).join(' | '),
+          ]
+            .filter(Boolean)
+            .join(' | '),
     });
   } else {
     receiptCoverage = -1; // sentinel: NotMeasured
@@ -758,9 +819,11 @@ export function checkPowl2Conformance(
   const fitnessOk = fitness >= 1.0;
   const stagesOk = missingStages.length === 0;
   const seqOk = routeValid || validPaths.length === 0;
-  const edgesOk = choiceEdges.length === 0 ||
+  const edgesOk =
+    choiceEdges.length === 0 ||
     details.find((d) => d.dimension === 'choice_graph_edges_valid')?.ok !== false;
-  const poOk = !m.partial_order?.order ||
+  const poOk =
+    !m.partial_order?.order ||
     details.find((d) => d.dimension === 'partial_order_constraints')?.ok !== false;
   const objEvOk = objectEvidencePresent;
 
@@ -813,7 +876,11 @@ export function checkPowl2Conformance(
 const ingest = defineCommand({
   meta: { name: 'ingest', description: 'Parse a stack trace into TraceGraph JSON-LD' },
   args: {
-    from: { type: 'string', default: 'typescript', description: 'Language: rust | typescript | python | java | js' },
+    from: {
+      type: 'string',
+      default: 'typescript',
+      description: 'Language: rust | typescript | python | java | js',
+    },
     input: { type: 'string', alias: 'i', description: 'Input file (default: stdin)' },
     out: { type: 'string', alias: 'o', description: 'Output file (default: stdout)' },
     runId: { type: 'string', description: 'Run ID for trace graph identity' },
@@ -833,7 +900,12 @@ const ingest = defineCommand({
     const inputPath = ctx.args.input as string | undefined;
     if (inputPath) {
       if (!existsSync(inputPath)) {
-        const r = makeErrorResult('trace ingest', `Input file not found: ${inputPath}`, EXIT_CODES.source_error, 'FILE_NOT_FOUND');
+        const r = makeErrorResult(
+          'trace ingest',
+          `Input file not found: ${inputPath}`,
+          EXIT_CODES.source_error,
+          'FILE_NOT_FOUND'
+        );
         emitResult(r, { format, verbose, quiet });
         return exitWithFlush(EXIT_CODES.source_error);
       }
@@ -847,17 +919,27 @@ const ingest = defineCommand({
 
     let frames: TraceFrame[];
     switch (lang) {
-      case 'rust':       frames = parseRustTrace(text); break;
-      case 'typescript': frames = parseTypeScriptTrace(text); break;
-      case 'python':     frames = parsePythonTrace(text); break;
-      case 'java':       frames = parseJavaTrace(text); break;
-      case 'js':         frames = parseJsTrace(text); break;
+      case 'rust':
+        frames = parseRustTrace(text);
+        break;
+      case 'typescript':
+        frames = parseTypeScriptTrace(text);
+        break;
+      case 'python':
+        frames = parsePythonTrace(text);
+        break;
+      case 'java':
+        frames = parseJavaTrace(text);
+        break;
+      case 'js':
+        frames = parseJsTrace(text);
+        break;
       default: {
         const r = makeErrorResult(
           'trace ingest',
           `Unknown language '${lang}'. Accepted: rust, typescript, python, java, js`,
           EXIT_CODES.config_error,
-          'INVALID_LANGUAGE',
+          'INVALID_LANGUAGE'
         );
         emitResult(r, { format, verbose, quiet });
         return exitWithFlush(EXIT_CODES.config_error);
@@ -888,18 +970,30 @@ const ingest = defineCommand({
       return exitWithFlush(EXIT_CODES.success);
     }
 
-    const result = makeResult('trace ingest', {
-      run_id: runId,
-      language: lang,
-      frames: frames.length,
-      events: graph['trace:events'].length,
-      objects: graph['trace:objects'].length,
-      out: outPath ?? 'stdout',
-      ...(zeroFramesWarning && { warning: zeroFramesWarning }),
-    }, performance.now() - t0, EXIT_CODES.success);
+    const result = makeResult(
+      'trace ingest',
+      {
+        run_id: runId,
+        language: lang,
+        frames: frames.length,
+        events: graph['trace:events'].length,
+        objects: graph['trace:objects'].length,
+        out: outPath ?? 'stdout',
+        ...(zeroFramesWarning && { warning: zeroFramesWarning }),
+      },
+      performance.now() - t0,
+      EXIT_CODES.success
+    );
 
     emitResult(result, { format, verbose, quiet }, (res, p) => {
-      const d = res.payload as { run_id: string; language: string; frames: number; events: number; out: string; warning?: string };
+      const d = res.payload as {
+        run_id: string;
+        language: string;
+        frames: number;
+        events: number;
+        out: string;
+        warning?: string;
+      };
       p.log('');
       p.log(`wpm trace ingest — TraceGraph projection`);
       p.log(`  Language:  ${d.language}`);
@@ -912,7 +1006,8 @@ const ingest = defineCommand({
       if (verbose && outPath && existsSync(outPath)) {
         p.log('  TraceGraph written to: ' + outPath);
       } else if (!outPath) {
-        p.log(''); p.log(graphJson);
+        p.log('');
+        p.log(graphJson);
       }
     });
 
@@ -923,7 +1018,10 @@ const ingest = defineCommand({
 // ── ocel subcommand ───────────────────────────────────────────────────────────
 
 const ocel = defineCommand({
-  meta: { name: 'ocel', description: 'Project TraceGraph JSON-LD to OCEL object-centric event log' },
+  meta: {
+    name: 'ocel',
+    description: 'Project TraceGraph JSON-LD to OCEL object-centric event log',
+  },
   args: {
     input: { type: 'string', alias: 'i', description: 'TraceGraph JSON-LD file (default: stdin)' },
     out: { type: 'string', alias: 'o', description: 'Output OCEL JSON file (default: stdout)' },
@@ -941,7 +1039,12 @@ const ocel = defineCommand({
     const inputPath = ctx.args.input as string | undefined;
     if (inputPath) {
       if (!existsSync(inputPath)) {
-        const r = makeErrorResult('trace ocel', `Input file not found: ${inputPath}`, EXIT_CODES.source_error, 'FILE_NOT_FOUND');
+        const r = makeErrorResult(
+          'trace ocel',
+          `Input file not found: ${inputPath}`,
+          EXIT_CODES.source_error,
+          'FILE_NOT_FOUND'
+        );
         emitResult(r, { format, verbose, quiet });
         return exitWithFlush(EXIT_CODES.source_error);
       }
@@ -953,9 +1056,15 @@ const ocel = defineCommand({
     }
 
     let graph: TraceGraph;
-    try { graph = JSON.parse(text) as TraceGraph; }
-    catch {
-      const r = makeErrorResult('trace ocel', 'Invalid TraceGraph JSON', EXIT_CODES.source_error, 'PARSE_ERROR');
+    try {
+      graph = JSON.parse(text) as TraceGraph;
+    } catch {
+      const r = makeErrorResult(
+        'trace ocel',
+        'Invalid TraceGraph JSON',
+        EXIT_CODES.source_error,
+        'PARSE_ERROR'
+      );
       emitResult(r, { format, verbose, quiet });
       return exitWithFlush(EXIT_CODES.source_error);
     }
@@ -971,22 +1080,37 @@ const ocel = defineCommand({
       return exitWithFlush(EXIT_CODES.success);
     }
 
-    const result = makeResult('trace ocel', {
-      events: log.ocel_events.length,
-      objects: log.ocel_objects.length,
-      activities: [...new Set(log.ocel_events.map((e) => e.activity))],
-      out: outPath ?? 'stdout',
-    }, performance.now() - t0, EXIT_CODES.success);
+    const result = makeResult(
+      'trace ocel',
+      {
+        events: log.ocel_events.length,
+        objects: log.ocel_objects.length,
+        activities: [...new Set(log.ocel_events.map((e) => e.activity))],
+        out: outPath ?? 'stdout',
+      },
+      performance.now() - t0,
+      EXIT_CODES.success
+    );
 
     emitResult(result, { format, verbose, quiet }, (res, p) => {
-      const d = res.payload as { events: number; objects: number; activities: string[]; out: string };
+      const d = res.payload as {
+        events: number;
+        objects: number;
+        activities: string[];
+        out: string;
+      };
       p.log('');
       p.log('wpm trace ocel — OCEL projection');
       p.log(`  Events:     ${d.events}`);
       p.log(`  Objects:    ${d.objects}`);
-      p.log(`  Activities: ${d.activities.slice(0, 5).join(', ')}${d.activities.length > 5 ? ` +${d.activities.length - 5} more` : ''}`);
+      p.log(
+        `  Activities: ${d.activities.slice(0, 5).join(', ')}${d.activities.length > 5 ? ` +${d.activities.length - 5} more` : ''}`
+      );
       p.log(`  Output:     ${d.out}`);
-      if (!outPath) { p.log(''); p.log(logJson); }
+      if (!outPath) {
+        p.log('');
+        p.log(logJson);
+      }
     });
 
     return exitWithFlush(EXIT_CODES.success);
@@ -999,7 +1123,11 @@ const powlRoute = defineCommand({
   meta: { name: 'powl', description: 'Derive observed POWL route from OCEL event log' },
   args: {
     input: { type: 'string', alias: 'i', description: 'OCEL JSON file (default: stdin)' },
-    out: { type: 'string', alias: 'o', description: 'Output observed route JSON (default: stdout)' },
+    out: {
+      type: 'string',
+      alias: 'o',
+      description: 'Output observed route JSON (default: stdout)',
+    },
     format: { type: 'string', default: 'human' },
     verbose: { type: 'boolean', alias: 'v' },
     quiet: { type: 'boolean', alias: 'q' },
@@ -1014,7 +1142,12 @@ const powlRoute = defineCommand({
     const inputPath = ctx.args.input as string | undefined;
     if (inputPath) {
       if (!existsSync(inputPath)) {
-        const r = makeErrorResult('trace powl', `Input file not found: ${inputPath}`, EXIT_CODES.source_error, 'FILE_NOT_FOUND');
+        const r = makeErrorResult(
+          'trace powl',
+          `Input file not found: ${inputPath}`,
+          EXIT_CODES.source_error,
+          'FILE_NOT_FOUND'
+        );
         emitResult(r, { format, verbose, quiet });
         return exitWithFlush(EXIT_CODES.source_error);
       }
@@ -1026,9 +1159,15 @@ const powlRoute = defineCommand({
     }
 
     let log: OcelLog;
-    try { log = JSON.parse(text) as OcelLog; }
-    catch {
-      const r = makeErrorResult('trace powl', 'Invalid OCEL JSON', EXIT_CODES.source_error, 'PARSE_ERROR');
+    try {
+      log = JSON.parse(text) as OcelLog;
+    } catch {
+      const r = makeErrorResult(
+        'trace powl',
+        'Invalid OCEL JSON',
+        EXIT_CODES.source_error,
+        'PARSE_ERROR'
+      );
       emitResult(r, { format, verbose, quiet });
       return exitWithFlush(EXIT_CODES.source_error);
     }
@@ -1057,17 +1196,24 @@ const powlRoute = defineCommand({
     if (outPath) writeFileSync(outPath, outJson, 'utf8');
     else if (format === 'json') process.stdout.write(outJson + '\n');
 
-    const result = makeResult('trace powl', {
-      ...observedRoute,
-      out: outPath ?? 'stdout',
-    }, performance.now() - t0, EXIT_CODES.success);
+    const result = makeResult(
+      'trace powl',
+      {
+        ...observedRoute,
+        out: outPath ?? 'stdout',
+      },
+      performance.now() - t0,
+      EXIT_CODES.success
+    );
 
     emitResult(result, { format, verbose, quiet }, (res, p) => {
       const d = res.payload as { activity_count: number; unique_activities: string[]; out: string };
       p.log('');
       p.log('wpm trace powl — Observed POWL route');
       p.log(`  Activities:   ${d.activity_count} total, ${d.unique_activities.length} unique`);
-      p.log(`  Route:        ${d.unique_activities.slice(0, 6).join(' → ')}${d.unique_activities.length > 6 ? ' → ...' : ''}`);
+      p.log(
+        `  Route:        ${d.unique_activities.slice(0, 6).join(' → ')}${d.unique_activities.length > 6 ? ' → ...' : ''}`
+      );
       p.log(`  Output:       ${d.out}`);
       if (verbose) {
         p.log('');
@@ -1083,7 +1229,10 @@ const powlRoute = defineCommand({
 // ── conform subcommand ────────────────────────────────────────────────────────
 
 const conform = defineCommand({
-  meta: { name: 'conform', description: 'Check observed POWL route against a declared POWL v2 model' },
+  meta: {
+    name: 'conform',
+    description: 'Check observed POWL route against a declared POWL v2 model',
+  },
   args: {
     input: { type: 'string', alias: 'i', description: 'OCEL JSON file (default: stdin)' },
     model: { type: 'string', alias: 'm', required: true, description: 'POWL v2 model JSON file' },
@@ -1100,7 +1249,12 @@ const conform = defineCommand({
     const modelPath = ctx.args.model as string;
 
     if (!existsSync(modelPath)) {
-      const r = makeErrorResult('trace conform', `POWL v2 model not found: ${modelPath}`, EXIT_CODES.source_error, 'MODEL_NOT_FOUND');
+      const r = makeErrorResult(
+        'trace conform',
+        `POWL v2 model not found: ${modelPath}`,
+        EXIT_CODES.source_error,
+        'MODEL_NOT_FOUND'
+      );
       emitResult(r, { format, verbose, quiet });
       return exitWithFlush(EXIT_CODES.source_error);
     }
@@ -1109,30 +1263,56 @@ const conform = defineCommand({
     const inputPath = ctx.args.input as string | undefined;
     if (inputPath) {
       if (!existsSync(inputPath)) {
-        const r = makeErrorResult('trace conform', `Input file not found: ${inputPath}`, EXIT_CODES.source_error, 'FILE_NOT_FOUND');
+        const r = makeErrorResult(
+          'trace conform',
+          `Input file not found: ${inputPath}`,
+          EXIT_CODES.source_error,
+          'FILE_NOT_FOUND'
+        );
         emitResult(r, { format, verbose, quiet });
         return exitWithFlush(EXIT_CODES.source_error);
       }
-      try { ocelLog = JSON.parse(readFileSync(inputPath, 'utf8')) as OcelLog; }
-      catch {
-        const r = makeErrorResult('trace conform', 'Invalid OCEL JSON', EXIT_CODES.source_error, 'PARSE_ERROR');
-        emitResult(r, { format, verbose, quiet }); return exitWithFlush(EXIT_CODES.source_error);
+      try {
+        ocelLog = JSON.parse(readFileSync(inputPath, 'utf8')) as OcelLog;
+      } catch {
+        const r = makeErrorResult(
+          'trace conform',
+          'Invalid OCEL JSON',
+          EXIT_CODES.source_error,
+          'PARSE_ERROR'
+        );
+        emitResult(r, { format, verbose, quiet });
+        return exitWithFlush(EXIT_CODES.source_error);
       }
     } else {
       const chunks: Buffer[] = [];
       for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
-      try { ocelLog = JSON.parse(Buffer.concat(chunks).toString('utf8')) as OcelLog; }
-      catch {
-        const r = makeErrorResult('trace conform', 'Invalid OCEL JSON from stdin', EXIT_CODES.source_error, 'PARSE_ERROR');
-        emitResult(r, { format, verbose, quiet }); return exitWithFlush(EXIT_CODES.source_error);
+      try {
+        ocelLog = JSON.parse(Buffer.concat(chunks).toString('utf8')) as OcelLog;
+      } catch {
+        const r = makeErrorResult(
+          'trace conform',
+          'Invalid OCEL JSON from stdin',
+          EXIT_CODES.source_error,
+          'PARSE_ERROR'
+        );
+        emitResult(r, { format, verbose, quiet });
+        return exitWithFlush(EXIT_CODES.source_error);
       }
     }
 
     let powlModel: Powl2Model;
-    try { powlModel = JSON.parse(readFileSync(modelPath, 'utf8')) as Powl2Model; }
-    catch {
-      const r = makeErrorResult('trace conform', `Invalid POWL v2 model JSON: ${modelPath}`, EXIT_CODES.source_error, 'MODEL_PARSE_ERROR');
-      emitResult(r, { format, verbose, quiet }); return exitWithFlush(EXIT_CODES.source_error);
+    try {
+      powlModel = JSON.parse(readFileSync(modelPath, 'utf8')) as Powl2Model;
+    } catch {
+      const r = makeErrorResult(
+        'trace conform',
+        `Invalid POWL v2 model JSON: ${modelPath}`,
+        EXIT_CODES.source_error,
+        'MODEL_PARSE_ERROR'
+      );
+      emitResult(r, { format, verbose, quiet });
+      return exitWithFlush(EXIT_CODES.source_error);
     }
 
     const projectDir = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
@@ -1144,12 +1324,18 @@ const conform = defineCommand({
       const fixDir = join(projectDir, 'fixtures', 'real', label);
       try {
         mkdirSync(fixDir, { recursive: true });
-        const stack = (new Error('capture-stack')).stack ?? '';
+        const stack = new Error('capture-stack').stack ?? '';
         writeFileSync(join(fixDir, 'stack.ts.txt'), stack, 'utf8');
         writeFileSync(join(fixDir, 'expected-ocel.json'), JSON.stringify(ocelLog, null, 2), 'utf8');
-        writeFileSync(join(fixDir, 'expected-conform.json'), JSON.stringify(conformance, null, 2), 'utf8');
+        writeFileSync(
+          join(fixDir, 'expected-conform.json'),
+          JSON.stringify(conformance, null, 2),
+          'utf8'
+        );
         writeFileSync(join(fixDir, 'model.powl.json'), JSON.stringify(powlModel, null, 2), 'utf8');
-      } catch { /* capture is best-effort */ }
+      } catch {
+        /* capture is best-effort */
+      }
     }
 
     const outPath = ctx.args.out as string | undefined;
@@ -1159,12 +1345,18 @@ const conform = defineCommand({
       writeFileSync(outPath, JSON.stringify(conformance, null, 2), 'utf8');
     }
 
-    const exitCode = conformance.verdict === 'Accepted' ? EXIT_CODES.success : EXIT_CODES.execution_error;
-    const result = makeResult('trace conform', {
-      ...conformance,
-      observed_count: ocelLog.ocel_events.length,
-      out: outPath ?? 'none',
-    }, performance.now() - t0, exitCode);
+    const exitCode =
+      conformance.verdict === 'Accepted' ? EXIT_CODES.success : EXIT_CODES.execution_error;
+    const result = makeResult(
+      'trace conform',
+      {
+        ...conformance,
+        observed_count: ocelLog.ocel_events.length,
+        out: outPath ?? 'none',
+      },
+      performance.now() - t0,
+      exitCode
+    );
 
     emitResult(result, { format, verbose, quiet }, (res, p) => {
       const d = res.payload as typeof conformance & { observed_count: number; out: string };
@@ -1183,8 +1375,44 @@ const conform = defineCommand({
       p.log('');
       if (d.verdict === 'Accepted') {
         p.success(`Accepted — route conforms to ${d.route_id}`);
+        p.log('');
+        p.log('  All declared stages are present, all observed activities are in the');
+        p.log('  model, and all object lifecycle + receipt constraints are satisfied.');
+        p.log('  This route is admissible per MCPP doctrine.');
       } else {
         p.error(`AndonPull(${d.andon_reason}) — ${d.route_id}`);
+        p.log('');
+        if (d.fitness < 1.0) {
+          const missingPct = ((1.0 - d.fitness) * 100).toFixed(1);
+          p.log(
+            `  Route conformance is ${(d.fitness * 100).toFixed(1)}% (below the required 1.0).`
+          );
+          p.log(`  ${missingPct}% of observed activities are not declared in the POWL model.`);
+          p.log('  This raises an AndonPull — the route cannot be admitted until conformance');
+          p.log('  reaches 1.0. Per MCPP doctrine: 0.999 is still a defect.');
+          p.log('');
+          p.log('  Recommended actions:');
+          p.log('    1. Run `wpm proof audit` to identify which activities lack BLAKE3 receipts.');
+          p.log('    2. Compare observed activities above against the declared model edges.');
+          p.log('    3. Either add the missing activities to the POWL model, or remove them');
+          p.log('       from the execution path if they represent rework or illegal steps.');
+        } else if (d.andon_reason === 'MissingRequiredStages') {
+          p.log('  One or more required stages were not observed in the event log.');
+          p.log('  These stages are mandatory checkpoints in the manufacturing route.');
+          p.log('  Run `wpm proof audit` to check receipt coverage for missing stages.');
+        } else if (d.andon_reason === 'TestRouteIncomplete') {
+          p.log('  The POWL model is missing `object_types` or `receipt_required` declarations.');
+          p.log('  Without these, object lifecycle and receipt coverage cannot be measured,');
+          p.log('  and the route is rejected as incomplete. Add both fields to the model.');
+        } else if (d.andon_reason === 'ActivityOnlyFakeRoute') {
+          p.log('  All events in the log have zero related objects — this is an activity-only');
+          p.log('  fake route. Real manufacturing routes must have object evidence (receipts,');
+          p.log('  artifacts) attached to events. Re-run with a real OCEL log.');
+        } else {
+          p.log(`  Andon reason: ${d.andon_reason ?? 'unknown'}`);
+          p.log('  Review the dimension details above to identify the failing constraint.');
+          p.log('  Run `wpm proof audit` to check receipt coverage.');
+        }
       }
       if (d.out !== 'none') p.log(`  Report:       ${d.out}`);
     });

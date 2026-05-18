@@ -22,6 +22,7 @@ import { fileURLToPath } from 'node:url';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
+import { withSpan } from './_otel.js';
 
 // ── WASM resolution ───────────────────────────────────────────────────────────
 
@@ -50,8 +51,8 @@ function loadProlog8(): Prolog8Module {
   if (!pkgPath) {
     throw new Error(
       'Prolog8 WASM package not found. Build it first:\n' +
-      '  cd crates/prolog8\n' +
-      '  wasm-pack build --target nodejs --out-dir pkg'
+        '  cd crates/prolog8\n' +
+        '  wasm-pack build --target nodejs --out-dir pkg'
     );
   }
   // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -60,7 +61,11 @@ function loadProlog8(): Prolog8Module {
 
 function parseResult(raw: unknown): unknown {
   if (typeof raw === 'string') {
-    try { return JSON.parse(raw); } catch { return raw; }
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return raw;
+    }
   }
   return raw;
 }
@@ -77,41 +82,48 @@ const showCmd = defineCommand({
   },
   async run(ctx) {
     const fmt = (ctx.args.format as 'json' | 'human') ?? 'human';
-    let caps: unknown;
-    try {
-      const wasm = loadProlog8();
-      caps = parseResult(wasm.prolog8_show());
-    } catch (err) {
-      const result = makeErrorResult('prolog8 show', String(err), EXIT_CODES.source_error, 'source_error');
-      emitResult(result, { format: fmt });
-      return exitWithFlush(EXIT_CODES.source_error);
-    }
-
-    const result = makeResult('prolog8 show', { capabilities: caps }, 0, EXIT_CODES.success);
-    emitResult(result, { format: fmt }, (_res, p) => {
-      const c = caps as Record<string, unknown>;
-      p.log('');
-      p.log('Prolog8 — Byte-Capped Proof Engine');
-      p.log('');
-      if (c && typeof c === 'object') {
-        p.log(`  Engine:   ${c['engine'] ?? 'prolog8'}`);
-        p.log(`  Version:  ${c['version'] ?? 'unknown'}`);
-        const caps2 = c['caps'] as Record<string, unknown> | undefined;
-        if (caps2) {
-          p.log('');
-          p.log('  Byte caps:');
-          p.log(`    arity          : ${caps2['arity']} (args per predicate)`);
-          p.log(`    body           : ${caps2['body']} (atoms per rule body)`);
-          p.log(`    vars           : ${caps2['vars']} (variables per rule)`);
-          p.log(`    binding_patterns: ${caps2['binding_patterns']} (2^arity)`);
-          p.log(`    max_answers    : ${caps2['max_answers']} (query result cap)`);
-        }
+    return withSpan('prolog8.show', {}, async () => {
+      let caps: unknown;
+      try {
+        const wasm = loadProlog8();
+        caps = parseResult(wasm.prolog8_show());
+      } catch (err) {
+        const result = makeErrorResult(
+          'prolog8 show',
+          String(err),
+          EXIT_CODES.source_error,
+          'source_error'
+        );
+        emitResult(result, { format: fmt });
+        return exitWithFlush(EXIT_CODES.source_error);
       }
-      p.log('');
-      p.log('Build: cd crates/prolog8 && wasm-pack build --target nodejs --out-dir pkg');
-      p.log('');
+
+      const result = makeResult('prolog8 show', { capabilities: caps }, 0, EXIT_CODES.success);
+      emitResult(result, { format: fmt }, (_res, p) => {
+        const c = caps as Record<string, unknown>;
+        p.log('');
+        p.log('Prolog8 — Byte-Capped Proof Engine');
+        p.log('');
+        if (c && typeof c === 'object') {
+          p.log(`  Engine:   ${c['engine'] ?? 'prolog8'}`);
+          p.log(`  Version:  ${c['version'] ?? 'unknown'}`);
+          const caps2 = c['caps'] as Record<string, unknown> | undefined;
+          if (caps2) {
+            p.log('');
+            p.log('  Byte caps:');
+            p.log(`    arity          : ${caps2['arity']} (args per predicate)`);
+            p.log(`    body           : ${caps2['body']} (atoms per rule body)`);
+            p.log(`    vars           : ${caps2['vars']} (variables per rule)`);
+            p.log(`    binding_patterns: ${caps2['binding_patterns']} (2^arity)`);
+            p.log(`    max_answers    : ${caps2['max_answers']} (query result cap)`);
+          }
+        }
+        p.log('');
+        p.log('Build: cd crates/prolog8 && wasm-pack build --target nodejs --out-dir pkg');
+        p.log('');
+      });
+      return exitWithFlush(EXIT_CODES.success);
     });
-    return exitWithFlush(EXIT_CODES.success);
   },
 });
 
@@ -135,70 +147,116 @@ const queryCmd = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const inputPath = ctx.args.input as string;
 
-    let inputJson: string;
-    try {
-      inputJson = fs.readFileSync(inputPath, 'utf-8');
-    } catch (err) {
-      const result = makeErrorResult('prolog8 query', `cannot read ${inputPath}: ${err}`, EXIT_CODES.source_error, 'source_error');
-      emitResult(result, { format: fmt });
-      return exitWithFlush(EXIT_CODES.source_error);
-    }
+    let decision = 'unknown';
+    let answerCount = 0;
 
-    let queryResult: unknown;
-    try {
-      const wasm = loadProlog8();
-      queryResult = parseResult(wasm.prolog8_query(inputJson));
-    } catch (err) {
-      const result = makeErrorResult('prolog8 query', String(err), EXIT_CODES.source_error, 'source_error');
-      emitResult(result, { format: fmt });
-      return exitWithFlush(EXIT_CODES.source_error);
-    }
+    return withSpan(
+      'prolog8.query',
+      { input: inputPath },
+      async () => {
+        let inputJson: string;
+        try {
+          inputJson = fs.readFileSync(inputPath, 'utf-8');
+        } catch (err) {
+          const result = makeErrorResult(
+            'prolog8 query',
+            `cannot read ${inputPath}: ${err}`,
+            EXIT_CODES.source_error,
+            'source_error'
+          );
+          emitResult(result, { format: fmt });
+          return exitWithFlush(EXIT_CODES.source_error);
+        }
 
-    const r = queryResult as Record<string, unknown>;
-    const isAnswered = 'Answered' in r || 'TruncatedAnswers' in r;
-    const isDenied = 'Denied' in r;
-    const isInvalid = 'Invalid' in r;
-    const exitCode = isAnswered || isDenied ? EXIT_CODES.success : EXIT_CODES.execution_error;
+        let queryResult: unknown;
+        try {
+          const wasm = loadProlog8();
+          queryResult = parseResult(wasm.prolog8_query(inputJson));
+        } catch (err) {
+          const result = makeErrorResult(
+            'prolog8 query',
+            String(err),
+            EXIT_CODES.source_error,
+            'source_error'
+          );
+          emitResult(result, { format: fmt });
+          return exitWithFlush(EXIT_CODES.source_error);
+        }
 
-    const result = makeResult('prolog8 query', { result: queryResult }, 0, exitCode);
-    emitResult(result, { format: fmt, verbose }, (_res, p) => {
-      p.log('');
-      if (isAnswered) {
-        const key = 'Answered' in r ? 'Answered' : 'TruncatedAnswers';
-        const answers = r[key] as unknown[];
-        const truncated = key === 'TruncatedAnswers';
-        p.log(`  Decision : Allow (${answers.length} answer${answers.length !== 1 ? 's' : ''}${truncated ? ', truncated' : ''})`);
-        for (let i = 0; i < answers.length; i++) {
-          const ans = answers[i] as Record<string, unknown>;
-          const receipt = ans['receipt'] as Record<string, unknown> | undefined;
-          if (receipt) {
-            p.log(`  Answer ${i + 1}:`);
-            p.log(`    receipt_hash : ${String(receipt['receipt_hash']).slice(0, 16)}...`);
-            if (verbose) {
-              p.log(`    proof nodes  : ${(ans['proof'] as unknown[] | undefined)?.length ?? 0}`);
-              p.log(`    bindings     : ${JSON.stringify(ans['bindings'] ?? [])}`);
+        const r = queryResult as Record<string, unknown>;
+        const isAnswered = 'Answered' in r || 'TruncatedAnswers' in r;
+        const isDenied = 'Denied' in r;
+        const isInvalid = 'Invalid' in r;
+        const exitCode = isAnswered || isDenied ? EXIT_CODES.success : EXIT_CODES.execution_error;
+
+        decision = isAnswered ? 'Allow' : isDenied ? 'Deny' : 'Invalid';
+
+        const result = makeResult('prolog8 query', { result: queryResult }, 0, exitCode);
+        emitResult(result, { format: fmt, verbose }, (_res, p) => {
+          p.log('');
+          if (isAnswered) {
+            const key = 'Answered' in r ? 'Answered' : 'TruncatedAnswers';
+            const answers = r[key] as unknown[];
+            const truncated = key === 'TruncatedAnswers';
+            answerCount = answers.length;
+            p.log(
+              `  Decision : Allow (${answers.length} answer${answers.length !== 1 ? 's' : ''}${truncated ? ', truncated' : ''})`
+            );
+            p.log('');
+            p.log('  Interpretation: Query satisfied — the process trace is consistent');
+            p.log('  with all stated Horn-clause rules. Each answer below represents one');
+            p.log('  binding of rule variables that satisfies the query goal.');
+            if (truncated) {
+              p.log('');
+              p.log('  Note: result set was truncated at the engine byte cap (128 answers).');
+              p.log('  Narrow the query goal to retrieve the full binding set.');
             }
+            for (let i = 0; i < answers.length; i++) {
+              const ans = answers[i] as Record<string, unknown>;
+              const receipt = ans['receipt'] as Record<string, unknown> | undefined;
+              if (receipt) {
+                p.log('');
+                p.log(`  Answer ${i + 1}:`);
+                p.log(`    receipt_hash : ${String(receipt['receipt_hash']).slice(0, 16)}...`);
+                if (verbose) {
+                  p.log(
+                    `    proof nodes  : ${(ans['proof'] as unknown[] | undefined)?.length ?? 0}`
+                  );
+                  p.log(`    bindings     : ${JSON.stringify(ans['bindings'] ?? [])}`);
+                }
+              }
+            }
+          } else if (isDenied) {
+            const d = r['Denied'] as Record<string, unknown> | undefined;
+            const receipt = d?.['receipt'] as Record<string, unknown> | undefined;
+            p.log(`  Decision : Deny`);
+            p.log('');
+            p.log('  Interpretation: Query failed — the process trace violates at least one');
+            p.log('  stated Horn-clause rule. No variable binding satisfies the query goal.');
+            p.log('  Check the trace against the declared Horn clauses; a required activity');
+            p.log('  may be missing, out of order, or its preconditions are unmet.');
+            if (receipt) {
+              p.log('');
+              p.log(`    receipt_hash : ${String(receipt['receipt_hash']).slice(0, 16)}...`);
+            }
+            if (verbose && d) {
+              p.log(`    proof nodes  : ${(d['proof'] as unknown[] | undefined)?.length ?? 0}`);
+            }
+          } else if (isInvalid) {
+            p.log(`  Decision : Invalid — ${r['Invalid']}`);
+            p.log('');
+            p.log('  Interpretation: The query input did not parse into a valid Prolog8');
+            p.log('  goal. Check the input JSON against the schema in WASM_API.md.');
+          } else {
+            p.log(`  Result   : ${JSON.stringify(queryResult)}`);
           }
-        }
-      } else if (isDenied) {
-        const d = r['Denied'] as Record<string, unknown> | undefined;
-        const receipt = d?.['receipt'] as Record<string, unknown> | undefined;
-        p.log(`  Decision : Deny`);
-        if (receipt) {
-          p.log(`    receipt_hash : ${String(receipt['receipt_hash']).slice(0, 16)}...`);
-        }
-        if (verbose && d) {
-          p.log(`    proof nodes  : ${(d['proof'] as unknown[] | undefined)?.length ?? 0}`);
-        }
-      } else if (isInvalid) {
-        p.log(`  Decision : Invalid — ${r['Invalid']}`);
-      } else {
-        p.log(`  Result   : ${JSON.stringify(queryResult)}`);
-      }
-      p.log('');
-    });
+          p.log('');
+        });
 
-    return exitWithFlush(exitCode);
+        return exitWithFlush(exitCode);
+      },
+      () => ({ decision, answer_count: answerCount })
+    );
   },
 });
 
@@ -219,47 +277,76 @@ const replayCmd = defineCommand({
   async run(ctx) {
     const fmt = (ctx.args.format as 'json' | 'human') ?? 'human';
     const inputPath = ctx.args.input as string;
+    let replayStatus = 'unknown';
 
-    let inputJson: string;
-    try {
-      inputJson = fs.readFileSync(inputPath, 'utf-8');
-    } catch (err) {
-      const result = makeErrorResult('prolog8 replay', `cannot read ${inputPath}: ${err}`, EXIT_CODES.source_error, 'source_error');
-      emitResult(result, { format: fmt });
-      return exitWithFlush(EXIT_CODES.source_error);
-    }
+    return withSpan(
+      'prolog8.replay',
+      { input: inputPath },
+      async () => {
+        let inputJson: string;
+        try {
+          inputJson = fs.readFileSync(inputPath, 'utf-8');
+        } catch (err) {
+          const result = makeErrorResult(
+            'prolog8 replay',
+            `cannot read ${inputPath}: ${err}`,
+            EXIT_CODES.source_error,
+            'source_error'
+          );
+          emitResult(result, { format: fmt });
+          return exitWithFlush(EXIT_CODES.source_error);
+        }
 
-    let replayResult: unknown;
-    try {
-      const wasm = loadProlog8();
-      replayResult = parseResult(wasm.prolog8_replay(inputJson));
-    } catch (err) {
-      const result = makeErrorResult('prolog8 replay', String(err), EXIT_CODES.source_error, 'source_error');
-      emitResult(result, { format: fmt });
-      return exitWithFlush(EXIT_CODES.source_error);
-    }
+        let replayResult: unknown;
+        try {
+          const wasm = loadProlog8();
+          replayResult = parseResult(wasm.prolog8_replay(inputJson));
+        } catch (err) {
+          const result = makeErrorResult(
+            'prolog8 replay',
+            String(err),
+            EXIT_CODES.source_error,
+            'source_error'
+          );
+          emitResult(result, { format: fmt });
+          return exitWithFlush(EXIT_CODES.source_error);
+        }
 
-    const verified = replayResult === 'Verified';
-    const exitCode = verified ? EXIT_CODES.success : EXIT_CODES.conformance_fail;
+        const verified = replayResult === 'Verified';
+        replayStatus = String(replayResult);
+        const exitCode = verified ? EXIT_CODES.success : EXIT_CODES.conformance_fail;
 
-    const result = makeResult('prolog8 replay', { status: replayResult }, 0, exitCode);
-    emitResult(result, { format: fmt }, (_res, p) => {
-      p.log('');
-      if (verified) {
-        p.log('  Status : Verified — receipt intact, proof replays correctly');
-      } else {
-        p.log(`  Status : ${replayResult} — receipt verification failed`);
-        p.log('');
-        p.log('  Mismatch codes:');
-        p.log('    ReceiptInvalid     — receipt_hash tampering detected');
-        p.log('    Mismatch           — proof/catalog/rule/fact root tampering');
-        p.log('    VersionIncompatible — engine version mismatch');
-        p.log('    MissingArtifact    — required fact or rule not present');
-      }
-      p.log('');
-    });
+        const result = makeResult('prolog8 replay', { status: replayResult }, 0, exitCode);
+        emitResult(result, { format: fmt }, (_res, p) => {
+          p.log('');
+          if (verified) {
+            p.log('  Status : Verified — receipt intact, proof replays correctly');
+            p.log('');
+            p.log('  Interpretation: The BLAKE3 proof chain is intact. Every rule, fact,');
+            p.log('  catalog, and inference step matches the originally recorded receipt.');
+            p.log('  This manufacturing route can be considered cryptographically proven.');
+          } else {
+            p.log(`  Status : ${replayResult} — receipt verification failed`);
+            p.log('');
+            p.log('  Interpretation: The proof chain has been broken. This means the receipt');
+            p.log('  or its referenced artifacts were modified after the original proof was');
+            p.log('  recorded. This route cannot be admitted — raise an AndonPull.');
+            p.log('');
+            p.log('  Mismatch codes:');
+            p.log('    ReceiptInvalid      — receipt_hash tampering detected');
+            p.log('    Mismatch            — proof/catalog/rule/fact root tampering');
+            p.log(
+              '    VersionIncompatible — engine version mismatch (re-prove with current engine)'
+            );
+            p.log('    MissingArtifact     — required fact or rule not present in catalog');
+          }
+          p.log('');
+        });
 
-    return exitWithFlush(exitCode);
+        return exitWithFlush(exitCode);
+      },
+      () => ({ replay_status: replayStatus })
+    );
   },
 });
 
@@ -268,8 +355,7 @@ const replayCmd = defineCommand({
 export const prolog8 = defineCommand({
   meta: {
     name: 'prolog8',
-    description:
-      'Byte-capped proof engine: fact admission, Horn rule chaining, BLAKE3 receipts',
+    description: 'Byte-capped proof engine: fact admission, Horn rule chaining, BLAKE3 receipts',
   },
   async run() {
     process.stdout.write(`

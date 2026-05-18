@@ -122,14 +122,21 @@ For more information on wasm4pm, see:
  * Tagged write-file errors — map to specific exit codes in the caller.
  */
 export class InitFileSystemError extends Error {
-  constructor(public exitCode: number, public filepath: string, public cause: NodeJS.ErrnoException) {
+  constructor(
+    public exitCode: number,
+    public filepath: string,
+    public cause: NodeJS.ErrnoException
+  ) {
     super(`Failed to write ${filepath}: ${cause.code ?? 'UNKNOWN'} ${cause.message}`);
     this.name = 'InitFileSystemError';
   }
 }
 
 export class InitTomlSerializeError extends Error {
-  constructor(public filepath: string, public cause: Error) {
+  constructor(
+    public filepath: string,
+    public cause: Error
+  ) {
     super(`TOML serialization error for ${filepath}: ${cause.message}`);
     this.name = 'InitTomlSerializeError';
   }
@@ -259,166 +266,226 @@ export const init = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
 
-    const configFormat = ((ctx.args.configFormat as string) || (ctx.args['config-format'] as string) || 'toml').toLowerCase();
+    const configFormat = (
+      (ctx.args.configFormat as string) ||
+      (ctx.args['config-format'] as string) ||
+      'toml'
+    ).toLowerCase();
     const preset = ctx.args.preset as string | undefined;
     const force = Boolean(ctx.args.force);
 
-    return withSpan('init', { config_format: configFormat, preset: preset ?? '', force, format }, async () => {
-    // Use a temporary projection for early validation warnings before the result is built
-    const earlyProjection = new ConsoleProjection({ verbose, quiet });
+    return withSpan(
+      'init',
+      { config_format: configFormat, preset: preset ?? '', force, format },
+      async () => {
+        // Use a temporary projection for early validation warnings before the result is built
+        const earlyProjection = new ConsoleProjection({ verbose, quiet });
 
-    try {
-      const cwd = process.cwd();
+        try {
+          const cwd = process.cwd();
 
-      if (configFormat !== 'toml' && configFormat !== 'json') {
-        const result = makeErrorResult(
-          'init',
-          new Error(`Invalid format: ${configFormat}. Must be 'toml' or 'json'`),
-          EXIT_CODES.config_error,
-          'INVALID_FORMAT'
-        );
-        emitResult(result, { format, verbose, quiet });
-        return await exitWithFlush(result.exit_code);
-      }
+          if (configFormat !== 'toml' && configFormat !== 'json') {
+            const result = makeErrorResult(
+              'init',
+              new Error(`Invalid format: ${configFormat}. Must be 'toml' or 'json'`),
+              EXIT_CODES.config_error,
+              'INVALID_FORMAT'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
 
-      if (preset && !VALID_PRESETS.includes(preset)) {
-        const result = makeErrorResult(
-          'init',
-          new Error(`Invalid preset: ${preset}. Must be one of: ${VALID_PRESETS.join(', ')}`),
-          EXIT_CODES.config_error,
-          'INVALID_PRESET'
-        );
-        emitResult(result, { format, verbose, quiet });
-        return await exitWithFlush(result.exit_code);
-      }
+          if (preset && !VALID_PRESETS.includes(preset)) {
+            const result = makeErrorResult(
+              'init',
+              new Error(`Invalid preset: ${preset}. Must be one of: ${VALID_PRESETS.join(', ')}`),
+              EXIT_CODES.config_error,
+              'INVALID_PRESET'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
 
-      // Create config file.
-      // conformance and streaming presets are workflow-specific templates — they only have a
-      // TOML representation and do not map to a full BaseConfig object. When those presets are
-      // requested with --config-format json, we silently fall back to TOML so the generated
-      // file is valid and human-readable.
-      const tomlOnlyPreset = preset !== undefined && !PUBLIC_PRESETS_WITH_JSON.includes(preset);
-      const effectiveFormat = tomlOnlyPreset ? 'toml' : configFormat;
-      const configFilename = effectiveFormat === 'toml' ? 'wasm4pm.toml' : 'wasm4pm.json';
-      const configPath = path.join(cwd, configFilename);
+          // Create config file.
+          // conformance and streaming presets are workflow-specific templates — they only have a
+          // TOML representation and do not map to a full BaseConfig object. When those presets are
+          // requested with --config-format json, we silently fall back to TOML so the generated
+          // file is valid and human-readable.
+          const tomlOnlyPreset = preset !== undefined && !PUBLIC_PRESETS_WITH_JSON.includes(preset);
+          const effectiveFormat = tomlOnlyPreset ? 'toml' : configFormat;
+          const configFilename = effectiveFormat === 'toml' ? 'wasm4pm.toml' : 'wasm4pm.json';
+          const configPath = path.join(cwd, configFilename);
 
-      let configContent: string;
-      try {
-        if (preset) {
-          if (tomlOnlyPreset && configFormat === 'json') {
-            earlyProjection.warn(
-              `The "${preset}" preset is a workflow template and only supports TOML format. Generating wasm4pm.toml instead of wasm4pm.json.`
+          let configContent: string;
+          try {
+            if (preset) {
+              if (tomlOnlyPreset && configFormat === 'json') {
+                earlyProjection.warn(
+                  `The "${preset}" preset is a workflow template and only supports TOML format. Generating wasm4pm.toml instead of wasm4pm.json.`
+                );
+              }
+              if (effectiveFormat === 'toml') {
+                configContent = getExamplePresetConfig(preset as AllPresets);
+              } else {
+                // JSON format: only reachable for fast / balanced / quality
+                configContent = JSON.stringify(
+                  getPublicPresetConfig(preset as PublicPreset),
+                  null,
+                  2
+                );
+              }
+            } else {
+              configContent =
+                configFormat === 'toml' ? getExampleTomlConfig() : getExampleJsonConfig();
+            }
+          } catch (serErr) {
+            throw new InitTomlSerializeError(
+              configPath,
+              serErr instanceof Error ? serErr : new Error(String(serErr))
             );
           }
-          if (effectiveFormat === 'toml') {
-            configContent = getExamplePresetConfig(preset as AllPresets);
-          } else {
-            // JSON format: only reachable for fast / balanced / quality
-            configContent = JSON.stringify(getPublicPresetConfig(preset as PublicPreset), null, 2);
+
+          const configCreated = await safeWriteFile(
+            configPath,
+            configContent,
+            force,
+            earlyProjection
+          );
+
+          // .env.example: use getExampleEnvFile() from @wasm4pm/config so every WASM4PM_* variable
+          // that the resolver understands is listed with a description.
+          const envPath = path.join(cwd, '.env.example');
+          const envCreated = await safeWriteFile(
+            envPath,
+            getExampleEnvFile(),
+            force,
+            earlyProjection
+          );
+
+          const gitignorePath = path.join(cwd, '.gitignore');
+          const gitignoreCreated = !existsSync(gitignorePath)
+            ? await safeWriteFile(gitignorePath, getGitignoreContent(), force, earlyProjection)
+            : false;
+
+          const readmePath = path.join(cwd, 'README.md');
+          const readmeCreated = !existsSync(readmePath)
+            ? await safeWriteFile(readmePath, getReadmeContent(), force, earlyProjection)
+            : false;
+
+          const isValid = await validateConfigFiles(cwd);
+
+          const filesCreated: string[] = [];
+          if (configCreated) filesCreated.push(configFilename);
+          if (envCreated) filesCreated.push('.env.example');
+          if (gitignoreCreated) filesCreated.push('.gitignore');
+          if (readmeCreated) filesCreated.push('README.md');
+
+          // Algorithm guidance tailored to the chosen preset.
+          const algorithmHint = (() => {
+            if (preset === 'conformance')
+              return 'etconformance_precision (fast) or alignments (exact)';
+            if (preset === 'streaming') return 'simd_streaming_dfg (fastest) or dfg (default)';
+            if (preset === 'quality')
+              return 'ilp (highest quality) or genetic_algorithm (flexible)';
+            if (preset === 'balanced')
+              return 'heuristic_miner (default) or inductive_miner (structured)';
+            return 'dfg (fastest) → heuristic_miner (balanced) → ilp (highest quality)';
+          })();
+
+          // Practical description of what the chosen preset actually does.
+          const presetDescription = (() => {
+            if (preset === 'fast')
+              return 'Directly-Follows Graph only — sub-second discovery, no ML or prediction. Start here.';
+            if (preset === 'balanced')
+              return 'Heuristic miner + ML classification + next-activity prediction. Good all-round choice.';
+            if (preset === 'quality')
+              return 'ILP Petri-net discovery + full ML suite + RL orchestration. Highest accuracy, slower.';
+            if (preset === 'conformance')
+              return 'Alignment-based fitness check against a normative model. Use when you have a target process.';
+            if (preset === 'streaming')
+              return 'SIMD-accelerated DFG + EWMA drift detection. Use for high-throughput or live log feeds.';
+            return null;
+          })();
+
+          const payload = {
+            format: effectiveFormat,
+            preset: preset ?? null,
+            preset_description: presetDescription,
+            files_created: filesCreated,
+            valid: isValid,
+            log_file_needed: true,
+            instructions: [
+              '1. Get a log file  — you need a real .xes or .ocel event log to run discovery.',
+              '   Example: cp /path/to/your/process.xes ./data/process.xes',
+              `2. Run: wpm run <log.xes>       — discover a process model (algorithm: ${algorithmHint})`,
+              `3. Edit ${configFilename}: set [source] path to persist log location across runs`,
+              '4. Run: wpm explain             — compare algorithms and choose one for your situation',
+              '5. Run: wpm doctor              — verify your environment is correctly configured',
+              '6. Copy .env.example to .env — it lists ALL WASM4PM_* env vars with descriptions',
+            ],
+          };
+
+          if (!isValid) {
+            const result = makeErrorResult(
+              'init',
+              new Error('Configuration validation failed. Please review your config file.'),
+              EXIT_CODES.execution_error,
+              'CONFIG_INVALID'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
           }
-        } else {
-          configContent = configFormat === 'toml' ? getExampleTomlConfig() : getExampleJsonConfig();
-        }
-      } catch (serErr) {
-        throw new InitTomlSerializeError(
-          configPath,
-          serErr instanceof Error ? serErr : new Error(String(serErr))
-        );
-      }
 
-      const configCreated = await safeWriteFile(configPath, configContent, force, earlyProjection);
+          const result = makeResult('init', payload, performance.now() - t0, EXIT_CODES.success);
+          emitResult(result, { format, verbose, quiet }, (res, projection) => {
+            const p = res.payload as typeof payload;
+            if (p.files_created.length > 0) {
+              const presetLabel = p.preset ? ` with ${p.preset} preset` : '';
+              projection.success(`Configuration initialized successfully${presetLabel}`);
 
-      // .env.example: use getExampleEnvFile() from @wasm4pm/config so every WASM4PM_* variable
-      // that the resolver understands is listed with a description.
-      const envPath = path.join(cwd, '.env.example');
-      const envCreated = await safeWriteFile(envPath, getExampleEnvFile(), force, earlyProjection);
+              // Surface the practical meaning of the chosen preset so a first-time user
+              // understands what they opted into without reading docs.
+              if (p.preset_description) {
+                projection.info(`Preset "${p.preset}": ${p.preset_description}`);
+              }
 
-      const gitignorePath = path.join(cwd, '.gitignore');
-      const gitignoreCreated = !existsSync(gitignorePath)
-        ? await safeWriteFile(gitignorePath, getGitignoreContent(), force, earlyProjection)
-        : false;
+              projection.log('\nCreated files:');
+              p.files_created.forEach((file) => {
+                projection.log(`  ✓ ${file}`);
+              });
 
-      const readmePath = path.join(cwd, 'README.md');
-      const readmeCreated = !existsSync(readmePath)
-        ? await safeWriteFile(readmePath, getReadmeContent(), force, earlyProjection)
-        : false;
+              // Warn clearly that a log file is a prerequisite before any discovery can run.
+              projection.log(
+                '\n  NOTE: You need a real .xes or .ocel event log file to run discovery.'
+              );
+              projection.log(
+                '        wasm4pm does not bundle sample logs — point it at your own data.'
+              );
 
-      const isValid = await validateConfigFiles(cwd);
-
-      const filesCreated: string[] = [];
-      if (configCreated) filesCreated.push(configFilename);
-      if (envCreated) filesCreated.push('.env.example');
-      if (gitignoreCreated) filesCreated.push('.gitignore');
-      if (readmeCreated) filesCreated.push('README.md');
-
-      // Algorithm guidance tailored to the chosen preset.
-      const algorithmHint = (() => {
-        if (preset === 'conformance') return 'etconformance_precision (fast) or alignments (exact)';
-        if (preset === 'streaming')   return 'simd_streaming_dfg (fastest) or dfg (default)';
-        if (preset === 'quality')     return 'ilp (highest quality) or genetic_algorithm (flexible)';
-        if (preset === 'balanced')    return 'heuristic_miner (default) or inductive_miner (structured)';
-        return 'dfg (fastest) → heuristic_miner (balanced) → ilp (highest quality)';
-      })();
-
-      const payload = {
-        format: effectiveFormat,
-        preset: preset ?? null,
-        files_created: filesCreated,
-        valid: isValid,
-        instructions: [
-          `1. Edit ${configFilename}: set [source] path to your .xes log file`,
-          `2. Algorithm guidance for this preset: ${algorithmHint}`,
-          '3. Run: wpm explain             — compare algorithms and choose one for your situation',
-          '4. Run: wpm run <log.xes>       — discover a process model (uses config defaults)',
-          '5. Run: wpm doctor              — verify your environment is correctly configured',
-          '6. Copy .env.example to .env — it lists ALL WASM4PM_* env vars with descriptions',
-        ],
-      };
-
-      if (!isValid) {
-        const result = makeErrorResult(
-          'init',
-          new Error('Configuration validation failed. Please review your config file.'),
-          EXIT_CODES.execution_error,
-          'CONFIG_INVALID'
-        );
-        emitResult(result, { format, verbose, quiet });
-        return await exitWithFlush(result.exit_code);
-      }
-
-      const result = makeResult('init', payload, performance.now() - t0, EXIT_CODES.success);
-      emitResult(result, { format, verbose, quiet }, (res, projection) => {
-        const p = res.payload as typeof payload;
-        if (p.files_created.length > 0) {
-          const presetLabel = p.preset ? ` with ${p.preset} preset` : '';
-          projection.success(`Configuration initialized successfully${presetLabel}`);
-          projection.log('\nCreated files:');
-          p.files_created.forEach((file) => {
-            projection.log(`  ✓ ${file}`);
+              projection.log('\nNext steps:');
+              p.instructions.forEach((instruction) => {
+                projection.log(`  ${instruction}`);
+              });
+            } else {
+              projection.info('All files already exist (use --force to overwrite)');
+            }
           });
-          projection.log('\nNext steps:');
-          p.instructions.forEach((instruction) => {
-            projection.log(`  ${instruction}`);
-          });
-        } else {
-          projection.info('All files already exist (use --force to overwrite)');
+          return await exitWithFlush(result.exit_code);
+        } catch (error) {
+          let exitCode: number = EXIT_CODES.execution_error;
+          let code = 'INIT_ERROR';
+          if (error instanceof InitFileSystemError) {
+            exitCode = EXIT_CODES.system_error;
+            code = 'INIT_FILESYSTEM_ERROR';
+          } else if (error instanceof InitTomlSerializeError) {
+            exitCode = EXIT_CODES.config_error;
+            code = 'INIT_CONFIG_SERIALIZE_ERROR';
+          }
+          const result = makeErrorResult('init', error, exitCode, code);
+          emitResult(result, { format, verbose, quiet });
+          return await exitWithFlush(result.exit_code);
         }
-      });
-      return await exitWithFlush(result.exit_code);
-    } catch (error) {
-      let exitCode: number = EXIT_CODES.execution_error;
-      let code = 'INIT_ERROR';
-      if (error instanceof InitFileSystemError) {
-        exitCode = EXIT_CODES.system_error;
-        code = 'INIT_FILESYSTEM_ERROR';
-      } else if (error instanceof InitTomlSerializeError) {
-        exitCode = EXIT_CODES.config_error;
-        code = 'INIT_CONFIG_SERIALIZE_ERROR';
       }
-      const result = makeErrorResult('init', error, exitCode, code);
-      emitResult(result, { format, verbose, quiet });
-      return await exitWithFlush(result.exit_code);
-    }
-    }); // end withSpan
+    ); // end withSpan
   },
 });

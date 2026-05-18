@@ -9,18 +9,18 @@ import pkg from '../package.json' with { type: 'json' };
 
 /** Canonical result — every command builds this before any output */
 export interface CommandResult<T = unknown> {
-  readonly command: string;        // e.g. 'run', 'benchmark verify'
+  readonly command: string; // e.g. 'run', 'benchmark verify'
   readonly status: 'ok' | 'error';
-  readonly exit_code: number;      // EXIT_CODES value
+  readonly exit_code: number; // EXIT_CODES value
   readonly payload: T;
   readonly error?: {
-    readonly code: string;         // machine-readable
+    readonly code: string; // machine-readable
     readonly message: string;
     readonly remediation?: string;
   };
   readonly meta: {
-    readonly run_id: string;       // UUID v4
-    readonly timestamp: string;    // ISO-8601
+    readonly run_id: string; // UUID v4
+    readonly timestamp: string; // ISO-8601
     readonly duration_ms: number;
     readonly version: string;
   };
@@ -96,15 +96,16 @@ function buildMinimalSarif<T>(result: CommandResult<T>): string {
       runs: [
         {
           tool: { driver: { name: 'wpm', version: result.meta.version } },
-          results: result.status === 'error'
-            ? [
-                {
-                  ruleId: 'WPM001',
-                  level,
-                  message: { text: result.error?.message ?? 'command failed' },
-                },
-              ]
-            : [],
+          results:
+            result.status === 'error'
+              ? [
+                  {
+                    ruleId: 'WPM001',
+                    level,
+                    message: { text: result.error?.message ?? 'command failed' },
+                  },
+                ]
+              : [],
         },
       ],
     },
@@ -119,9 +120,7 @@ function defaultConsoleRenderer<T>(
   options: EmitOptions
 ): void {
   if (result.status === 'ok') {
-    projection.success(
-      `${result.command} completed in ${result.meta.duration_ms.toFixed(0)}ms`
-    );
+    projection.success(`${result.command} completed in ${result.meta.duration_ms.toFixed(0)}ms`);
     if (options.verbose && result.payload !== null && result.payload !== undefined) {
       projection.info(JSON.stringify(result.payload, null, 2));
     }
@@ -269,8 +268,7 @@ export class JSONFormatter {
     this.output({
       status: 'error',
       message,
-      error:
-        error instanceof Error ? { message: error.message, stack: error.stack } : error,
+      error: error instanceof Error ? { message: error.message, stack: error.stack } : error,
     });
   }
 
@@ -290,6 +288,61 @@ export function getFormatter(options: OutputOptions = {}): HumanFormatter | JSON
     return new JSONFormatter(options);
   }
   return new HumanFormatter(options);
+}
+
+/**
+ * Render a watch event as a human-readable string.
+ *
+ * For machine pipelines, callers should use --format json which bypasses this
+ * function entirely (raw JSON line per event). In human mode the practitioner
+ * should never have to parse JSON from the terminal.
+ */
+function renderWatchEvent(eventType: string, data: Record<string, unknown>): string {
+  const ts = new Date().toISOString().slice(11, 19); // HH:MM:SS
+  switch (eventType) {
+    case 'watching': {
+      const count = data['files_count'] ?? 1;
+      const p = data['path'] ?? data['message'] ?? '';
+      return `[${ts}] Watching ${count} file(s) in ${p} — press Ctrl+C to stop`;
+    }
+    case 'change_detected': {
+      const file = data['file'] ?? '';
+      const mtime = data['mtime'] ?? '';
+      const cycle = data['cycle'] != null ? ` (cycle #${data['cycle']})` : '';
+      return `[${ts}] Change detected${cycle}: ${file}  (modified ${mtime})`;
+    }
+    case 'config_changed': {
+      const changes = data['changes'];
+      if (Array.isArray(changes) && changes.length > 0) {
+        const lines = (changes as Array<{ summary?: string }>)
+          .map((c) => `        ${c.summary ?? JSON.stringify(c)}`)
+          .join('\n');
+        return `[${ts}] Config changed — re-running discovery:\n${lines}`;
+      }
+      return `[${ts}] Config changed — re-running discovery`;
+    }
+    case 'config_unchanged':
+      return `[${ts}] File saved but effective config unchanged — re-running anyway`;
+    case 'processing_started':
+      return `[${ts}] Discovery started (plan ${data['planId'] ?? ''}, ${data['steps'] ?? 0} step(s))`;
+    case 'processing_completed':
+      return `[${ts}] Discovery completed`;
+    case 'autopilot_selected':
+      return `[${ts}] Autopilot selected: ${data['algorithm']}  — ${data['rationale']}`;
+    case 'autopilot_completed':
+      return `[${ts}] Autopilot discovery done in ${data['elapsedMs']}ms`;
+    case 'autopilot_error':
+      return `[${ts}] Autopilot error: ${data['message']}`;
+    case 'stopped':
+      return `[${ts}] Watch stopped`;
+    case 'error':
+      return `[${ts}] Error (${data['code'] ?? 'WATCH_ERROR'}): ${data['message']}`;
+    default:
+      // Unknown event: render compactly but not as full JSON
+      return `[${ts}] ${eventType}: ${Object.entries(data)
+        .map(([k, v]) => `${k}=${JSON.stringify(v)}`)
+        .join(' ')}`;
+  }
 }
 
 /** Streaming output handler for watch/drift-watch mode (jsonl format) */
@@ -313,9 +366,11 @@ export class StreamingOutput {
   emitEvent(eventType: string, data: Record<string, unknown>): void {
     if (this.quiet) return;
     if (this.format === 'json') {
-      console.log(JSON.stringify({ type: eventType, timestamp: new Date().toISOString(), ...data }));
+      console.log(
+        JSON.stringify({ type: eventType, timestamp: new Date().toISOString(), ...data })
+      );
     } else {
-      this.projection.log(`[${eventType}] ${JSON.stringify(data)}`);
+      this.projection.log(renderWatchEvent(eventType, data));
     }
   }
 

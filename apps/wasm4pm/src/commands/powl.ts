@@ -491,9 +491,7 @@ async function executePowlCommand(
       // Note: citsy always populates all declared args (they are never absent from
       // Object.keys(args)), so we test actual *values* rather than key presence.
       const useConfig =
-        activityKey !== 'concept:name' ||
-        minTraceCount !== 1 ||
-        noiseThreshold !== 0.0;
+        activityKey !== 'concept:name' || minTraceCount !== 1 || noiseThreshold !== 0.0;
       let raw;
       if (useConfig) {
         raw = wasm.discover_powl_from_log_config(
@@ -664,6 +662,22 @@ function formatHumanOutput(
       projection.log(
         `  Cyclomatic:      ${cyc.toString().padStart(3)}  ${cycBar}  ${cycBand}  (simple<5, moderate<=10, complex>10)`
       );
+      // Process-mining interpretation: cyclomatic complexity N means there are
+      // N independent control-flow paths through the model. Each additional
+      // independent path is a potential new trace variant in the event log.
+      // High cyclomatic complexity is a leading indicator of variant explosion —
+      // a log with many variants is harder to replay conformantly and harder
+      // for stakeholders to understand (Van der Aalst, 2016, §6.2).
+      if (cyc > 1) {
+        const variantRisk = cyc < 5 ? 'low' : cyc <= 10 ? 'moderate' : 'high';
+        projection.log(
+          `    ^ ${cyc} independent control-flow path${cyc === 1 ? '' : 's'} — ${variantRisk} variant-explosion risk.` +
+            (cyc > 10
+              ? ` With ${cyc} paths, conformance checking cost grows exponentially;` +
+                ` consider simplifying before running token replay.`
+              : '')
+        );
+      }
       projection.log(`  CFC:             ${cfc.toString().padStart(3)}`);
       projection.log(
         `  Cognitive:       ${cog.toString().padStart(3)}  ${cogBand}  (simple<10, moderate<=25, complex>25)`
@@ -759,33 +773,54 @@ function formatHumanOutput(
           : 'n/a';
       // ASCII proportion glyph: ▓ = fitted, ░ = missing
       const barWidth = 20;
-      const fitFilled = Math.round(((result.percentage as number) * barWidth));
+      const fitFilled = Math.round((result.percentage as number) * barWidth);
       const fitBar = '▓'.repeat(fitFilled) + '░'.repeat(barWidth - fitFilled);
-      const precVal = typeof result.avg_trace_precision === 'number'
-        ? (result.avg_trace_precision as number) : 0;
+      const precVal =
+        typeof result.avg_trace_precision === 'number' ? (result.avg_trace_precision as number) : 0;
       const precFilled = Math.round(precVal * barWidth);
       const precBar = '▓'.repeat(precFilled) + '░'.repeat(barWidth - precFilled);
       projection.log('');
       projection.log(`  Fitness:             ${fitPct.padStart(6)}%  [${fitBar}]  (token replay)`);
-      projection.log(`  Precision:           ${precPct.padStart(6)}%  [${precBar}]  (token replay)`);
+      projection.log(
+        `  Precision:           ${precPct.padStart(6)}%  [${precBar}]  (token replay)`
+      );
       projection.log(
         `  Avg trace fitness:   ${((result.avg_trace_fitness as number) * 100).toFixed(1).padStart(6)}%`
       );
       projection.log(
         `  Perfectly fitting:   ${result.perfectly_fitting_traces} / ${result.total_traces} traces`
       );
-      if (
-        result.trace_results &&
-        (result.trace_results as Array<Record<string, unknown>>).length > 0
-      ) {
+      // Deviation summary — show count before the per-trace list so the
+      // practitioner immediately sees scope without scrolling through all rows.
+      const traceResults = (result.trace_results as Array<Record<string, unknown>>) ?? [];
+      if (traceResults.length > 0) {
+        const deviatingTraces = traceResults.filter(
+          (tr) => tr.missing_tokens !== 0 || tr.remaining_tokens !== 0
+        );
+        const deviatingCount = deviatingTraces.length;
+        const totalCount = traceResults.length;
+        if (deviatingCount === 0) {
+          projection.log(
+            '  Deviation summary:   all traces conform — no missing or remaining tokens.'
+          );
+        } else {
+          const pct = ((deviatingCount / totalCount) * 100).toFixed(0);
+          projection.log(
+            `  Deviation summary:   ${deviatingCount} / ${totalCount} traces deviate (${pct}%).` +
+              (deviatingCount === totalCount
+                ? ' All traces deviate — model may be too restrictive or log has systematic rework.'
+                : deviatingCount / totalCount > 0.5
+                  ? ' Majority deviating — check for missing activities or model under-fit.'
+                  : '')
+          );
+        }
+        projection.log('');
         projection.log('  Per-trace results:');
-        for (const tr of result.trace_results as Array<Record<string, unknown>>) {
+        for (const tr of traceResults) {
           const caseId = String(tr.case_id ?? '?');
           const fit = ((tr.fitness as number) * 100).toFixed(1);
           const prec =
-            typeof tr.precision === 'number'
-              ? ((tr.precision as number) * 100).toFixed(1)
-              : 'n/a';
+            typeof tr.precision === 'number' ? ((tr.precision as number) * 100).toFixed(1) : 'n/a';
           const missing = tr.missing_tokens ?? 0;
           const remaining = tr.remaining_tokens ?? 0;
           const marker = tr.missing_tokens === 0 && tr.remaining_tokens === 0 ? '✓' : '✗';
