@@ -29,6 +29,10 @@ export {
   suggestClusteringK,
   suggestPCAComponents,
   suggestAnomalyThreshold,
+  suggestKnnK,
+  suggestDecisionTreeDepth,
+  suggestPolynomialDegree,
+  suggestForecastHorizon,
   detectLogCharacteristics,
   type LogCharacteristicsDetection,
 } from './parameter-suggestions.js';

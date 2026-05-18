@@ -235,3 +235,152 @@ export function suggestAnomalyThreshold(
   // Clamp to practical bounds [0.5, 0.85]
   return Math.max(0.5, Math.min(0.85, base));
 }
+
+/**
+ * Suggest k-NN parameter k based on sample size and characteristics.
+ *
+ * Default k=5 is reasonable for general use but can be optimized:
+ * - Small logs (<20 samples): k = 3 (reduce overfitting)
+ * - Medium logs (20-100): k = 5 (default, balanced)
+ * - Large logs (>100): k = sqrt(n) capped at 10 (more neighbors for stability)
+ * - Noisy logs: reduce k by 1 (fewer neighbors reduce noise influence)
+ *
+ * Final k is clamped to [1, n-1] to ensure validity.
+ *
+ * @param traceCount Number of traces (samples) in the log
+ * @param characteristics (optional) Detected log characteristics for refinement
+ * @returns Suggested k value for k-NN
+ *
+ * @example
+ *   suggestKnnK(10) // Returns 3 (small log)
+ *   suggestKnnK(50) // Returns 5 (medium, default)
+ *   suggestKnnK(200) // Returns 10 (large: sqrt(200)≈14, capped at 10)
+ *   suggestKnnK(100, { isNoisy: true }) // Returns 4 (5 - 1 for noise)
+ */
+export function suggestKnnK(
+  traceCount: number,
+  characteristics?: Partial<LogCharacteristicsDetection>,
+): number {
+  if (traceCount <= 1) return 1;
+
+  let suggested: number;
+  if (traceCount < 20) {
+    suggested = 3; // Small: conservative to avoid overfitting
+  } else if (traceCount < 100) {
+    suggested = 5; // Medium: default
+  } else {
+    // Large: use sqrt(n), capped at 10
+    suggested = Math.min(10, Math.ceil(Math.sqrt(traceCount)));
+  }
+
+  // Refine by characteristics
+  if (characteristics?.isNoisy) {
+    suggested = Math.max(1, suggested - 1); // Fewer neighbors reduce noise influence
+  }
+
+  // Clamp to valid range [1, n-1]
+  const maxK = Math.max(1, traceCount - 1);
+  return Math.max(1, Math.min(maxK, Math.round(suggested)));
+}
+
+/**
+ * Suggest max depth for decision trees based on sample size and feature count.
+ *
+ * Deeper trees risk overfitting; shallower trees risk underfitting.
+ * Rule: max_depth = min(log2(n), 0.5 * feature_count), clamped to [2, 10].
+ *
+ * Refinement:
+ * - Noisy logs: reduce by 1 (simpler trees resist noise better)
+ * - High-variance logs: increase by 1 (more patterns to capture)
+ *
+ * @param traceCount Number of traces (samples)
+ * @param featureCount Number of features after one-hot encoding
+ * @param characteristics (optional) Detected log characteristics for refinement
+ * @returns Suggested max depth for decision tree
+ *
+ * @example
+ *   suggestDecisionTreeDepth(100, 10) // Returns 5 (log2(100)≈6.6, capped)
+ *   suggestDecisionTreeDepth(1000, 20) // Returns 10 (min(10, 10) = 10)
+ *   suggestDecisionTreeDepth(100, 10, { isNoisy: true }) // Returns 4 (5 - 1)
+ */
+export function suggestDecisionTreeDepth(
+  traceCount: number,
+  featureCount: number,
+  characteristics?: Partial<LogCharacteristicsDetection>,
+): number {
+  if (traceCount <= 0 || featureCount <= 0) return 2;
+
+  // Max depth = min(log2(n), 0.5 * d)
+  const depthFromSamples = Math.log2(Math.max(1, traceCount));
+  const depthFromFeatures = 0.5 * featureCount;
+  let suggested = Math.min(depthFromSamples, depthFromFeatures);
+
+  // Refine by characteristics
+  if (characteristics?.isNoisy) {
+    suggested -= 1; // Simpler trees resist noise
+  }
+  if (characteristics?.isHighVariance) {
+    suggested += 1; // Allow more splits for variance
+  }
+
+  // Clamp to [2, 10]
+  return Math.max(2, Math.min(10, Math.round(suggested)));
+}
+
+/**
+ * Suggest polynomial degree based on feature count and sample size.
+ *
+ * Higher degree risks overfitting (curse of dimensionality).
+ * Rule: degree = min(3, max(1, 0.1 * feature_count)), adjusted for sample size.
+ *
+ * Guard: degree <= n - 1 (more parameters than observations = underdetermined).
+ *
+ * @param featureCount Number of input features
+ * @param traceCount Number of samples for regression
+ * @returns Suggested polynomial degree (clamped to [1, 3])
+ *
+ * @example
+ *   suggestPolynomialDegree(5, 20) // Returns 1 (0.1*5=0.5, min(3,1)=1)
+ *   suggestPolynomialDegree(20, 100) // Returns 2 (0.1*20=2, min(3,2)=2)
+ *   suggestPolynomialDegree(50, 100) // Returns 3 (0.1*50=5, capped at 3)
+ */
+export function suggestPolynomialDegree(
+  featureCount: number,
+  traceCount: number,
+): number {
+  if (featureCount <= 0 || traceCount <= 0) return 1;
+
+  // Base: 0.1 * feature_count, capped at 3
+  let suggested = Math.min(3, Math.max(1, Math.ceil(0.1 * featureCount)));
+
+  // Guard: degree <= traceCount - 1 (avoid underdetermined system)
+  suggested = Math.min(suggested, Math.max(1, traceCount - 1));
+
+  return Math.round(suggested);
+}
+
+/**
+ * Suggest forecast horizon based on the number of windows available.
+ *
+ * Forecast horizon should not exceed 50% of training window count.
+ * Default: ceil(0.2 * windowCount), clamped to [1, ceil(0.5 * windowCount)].
+ *
+ * @param windowCount Number of drift/forecast windows in the series
+ * @returns Suggested forecast periods
+ *
+ * @example
+ *   suggestForecastHorizon(10) // Returns 2 (0.2*10=2)
+ *   suggestForecastHorizon(50) // Returns 10 (0.2*50=10)
+ *   suggestForecastHorizon(5) // Returns 1 (min is 1)
+ */
+export function suggestForecastHorizon(windowCount: number): number {
+  if (windowCount <= 0) return 1;
+
+  // Default: 20% of window count
+  const suggested = Math.max(1, Math.ceil(0.2 * windowCount));
+
+  // Cap at 50% of window count
+  const maxHorizon = Math.max(1, Math.ceil(0.5 * windowCount));
+
+  return Math.min(suggested, maxHorizon);
+}
