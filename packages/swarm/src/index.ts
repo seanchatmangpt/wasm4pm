@@ -95,3 +95,6 @@ export {
   type RefinementAction,
   type StepResult,
 } from './refinement-orchestrator.js';
+
+// OCEL 2.0 serialiser — closes GAP-2 (mcpp offline POWL discovery)
+export { swarmArtifactToOcel, swarmResultToOcelJsonl } from './ocel-export.js';
