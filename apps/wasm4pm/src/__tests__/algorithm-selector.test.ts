@@ -11,16 +11,16 @@ const smallLog = {
   traceCount: 10,
   eventCount: 50,
   activityCount: 5,
-  avgTraceLengthevents: 5,
-  maxTraceLengthevents: 10,
+  avgTraceLength: 5,
+  maxTraceLength: 10,
 };
 
 const largeLog = {
   traceCount: 1000,
   eventCount: 10000,
   activityCount: 50,
-  avgTraceLengthevents: 10,
-  maxTraceLengthevents: 100,
+  avgTraceLength: 10,
+  maxTraceLength: 100,
 };
 
 describe('algorithm-selector', () => {
@@ -33,6 +33,7 @@ describe('algorithm-selector', () => {
     it('prefers decision_tree for high-cardinality logs', () => {
       const result = suggestClassificationMethod({
         ...smallLog,
+        traceCount: 100, // Must be >= 20 to pass first check
         activityCount: 50,
       });
       expect(result).toBe('decision_tree');
@@ -58,12 +59,13 @@ describe('algorithm-selector', () => {
   });
 
   describe('suggestClusteringMethod', () => {
-    it('prefers hierarchical for very small logs', () => {
+    it('returns kmeans for small logs (hierarchical removed)', () => {
       const result = suggestClusteringMethod({
         ...smallLog,
         traceCount: 8,
       });
-      expect(result).toBe('hierarchical');
+      // Updated: hierarchical no longer in valid list
+      expect(result).toBe('kmeans');
     });
 
     it('prefers dbscan for sparse high-dimensional data', () => {
@@ -71,8 +73,8 @@ describe('algorithm-selector', () => {
         traceCount: 50,
         eventCount: 200,
         activityCount: 60,
-        avgTraceLengthevents: 4,
-        maxTraceLengthevents: 20,
+        avgTraceLength: 4,
+        maxTraceLength: 20,
       });
       expect(result).toBe('dbscan');
     });
@@ -82,9 +84,9 @@ describe('algorithm-selector', () => {
       expect(result).toBe('kmeans');
     });
 
-    it('respects user choice', () => {
-      const result = suggestClusteringMethod(smallLog, 'hierarchical');
-      expect(result).toBe('hierarchical');
+    it('respects user choice if valid', () => {
+      const result = suggestClusteringMethod(smallLog, 'dbscan');
+      expect(result).toBe('dbscan');
     });
   });
 
