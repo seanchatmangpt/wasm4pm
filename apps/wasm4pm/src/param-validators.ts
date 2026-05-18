@@ -109,6 +109,44 @@ export function validateChoice(
 }
 
 /**
+ * Validate timeout parameter (in seconds), with clamping to valid range [1, 3600].
+ * Returns the clamped value and a boolean indicating if clamping occurred.
+ */
+export function validateTimeout(
+  raw: string | undefined,
+  defaultValue: number = 300
+): { valid: boolean; value: number; wasClamped: boolean; error?: string } {
+  const MIN_TIMEOUT_SECS = 1;
+  const MAX_TIMEOUT_SECS = 3600; // 1 hour
+
+  if (raw === undefined) {
+    return { valid: true, value: defaultValue, wasClamped: false };
+  }
+
+  const parsed = parseInt(raw, 10);
+  if (Number.isNaN(parsed)) {
+    return {
+      valid: false,
+      value: defaultValue,
+      wasClamped: false,
+      error: `Invalid --timeout value: must be an integer (got "${raw}")`,
+    };
+  }
+
+  if (parsed < MIN_TIMEOUT_SECS || parsed > MAX_TIMEOUT_SECS) {
+    const clamped = Math.max(MIN_TIMEOUT_SECS, Math.min(MAX_TIMEOUT_SECS, parsed));
+    return {
+      valid: true,
+      value: clamped,
+      wasClamped: true,
+      error: `Timeout ${parsed}s is outside valid range [${MIN_TIMEOUT_SECS}, ${MAX_TIMEOUT_SECS}]s. Clamped to ${clamped}s.`,
+    };
+  }
+
+  return { valid: true, value: parsed, wasClamped: false };
+}
+
+/**
  * Format a validation error for CLI output.
  */
 export function formatValidationError(error: string, hint?: string): string {

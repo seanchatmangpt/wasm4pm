@@ -27,6 +27,9 @@ export * from './secret-redaction.js';
 // Instrumentation helpers
 export * from './instrumentation.js';
 
+// OTEL span timing verification and remediation
+export * from './timing-verification.js';
+
 // Streaming bridge: wasm4pm StreamingLog → mcpp LIVE correlation events
 export * from './streaming-bridge.js';
 
@@ -64,6 +67,9 @@ export * from './result-dedup.js';
 
 // Algorithm ranking: multi-algorithm performance comparison
 export * from './algorithm-ranking.js';
+
+// Error span capture: robust error detection, stack trace capture, OTEL emission
+export * from './error-span-capture.js';
 
 // Global singleton access
 import { ObservabilityWrapper } from './observability-wrapper.js';

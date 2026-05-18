@@ -115,10 +115,17 @@ export function buildFeatureMatrix(
 
     const numericRow: number[] = [];
 
-    // Numeric columns: coerce safely, guard against NaN
+    // Numeric columns: coerce safely, guard against NaN, Infinity, and missing values
+    // CRITICAL: Handle missing properties (undefined), NaN, Infinity all as 0
     for (const col of numericCols) {
       const val = row[col];
-      if (typeof val === 'number' && !Number.isNaN(val) && Number.isFinite(val)) {
+      if (
+        val !== undefined &&
+        val !== null &&
+        typeof val === 'number' &&
+        !Number.isNaN(val) &&
+        Number.isFinite(val)
+      ) {
         numericRow.push(val);
       } else {
         numericRow.push(0);
@@ -136,9 +143,10 @@ export function buildFeatureMatrix(
     data.push(numericRow);
 
     // Extract numeric target with NaN/Infinity guard
+    // CRITICAL: Must handle NaN explicitly since typeof NaN === 'number'
     if (numericTargetKey) {
       const val = row[numericTargetKey];
-      if (typeof val === 'number' && Number.isFinite(val)) {
+      if (typeof val === 'number' && Number.isFinite(val) && !Number.isNaN(val)) {
         targets.push(val);
       } else {
         targets.push(0);

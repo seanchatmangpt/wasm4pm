@@ -15,11 +15,14 @@ import {
   type CommandReceipt,
 } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
+import { STANDARD_EXIT_CODE_DOCS } from '../help-standards.js';
 
 export const ml = defineCommand({
   meta: {
     name: 'ml',
-    description: 'Run ML analysis (classify, cluster, forecast, anomaly, regress, pca). Ex: wpm ml cluster -i log.xes',
+    description:
+      'Run ML analysis (classify, cluster, forecast, anomaly, regress, pca). Ex: wpm ml cluster -i log.xes\n\n' +
+      STANDARD_EXIT_CODE_DOCS,
   },
   args: {
     task: {

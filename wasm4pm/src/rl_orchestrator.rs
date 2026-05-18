@@ -266,7 +266,11 @@ pub fn compute_reward_with_momentum(
     reward += HEALTH_DELTA[improved | stable];
 
     // SPC penalty: each special cause signal is a -0.3 penalty (bounded by -1.5)
-    reward -= (spc_alert_count as f32 * 0.3).min(1.5);
+    // **GUARD: SPC penalty is explicitly capped at 1.5 to prevent overflow**
+    // This ensures even pathological cases (1000+ SPC alerts) don't exceed bounds.
+    let spc_penalty_magnitude = (spc_alert_count as f32 * 0.3).min(1.5);
+    debug_assert!(spc_penalty_magnitude >= 0.0 && spc_penalty_magnitude <= 1.5, "spc penalty magnitude must be in [0, 1.5], got {}", spc_penalty_magnitude);
+    reward -= spc_penalty_magnitude;
 
     // Guard/circuit bonus/penalty — branchless 2D LUT
     const GUARD_CIRCUIT: [[f32; 2]; 2] = [[-0.5, -0.5], [-0.5, 0.1]];
@@ -277,14 +281,22 @@ pub fn compute_reward_with_momentum(
 
     // Rework penalty (NEW): scales from 0 at ratio_q=0 to -0.2 at ratio_q=7
     // Encourages policies that reduce repeated activities and cycle inefficiency
-    let rework_penalty = -(rework_ratio_q as f32 / 7.0) * 0.2;
+    // **GUARD: rework_ratio_q must be in [0, 7]; clamp to prevent out-of-range**
+    let clamped_rework_q = (rework_ratio_q as f32).min(7.0).max(0.0) as f32;
+    let rework_penalty = -(clamped_rework_q / 7.0) * 0.2;
+    debug_assert!(rework_penalty >= -0.2 && rework_penalty <= 0.0, "rework penalty must be in [-0.2, 0], got {}", rework_penalty);
     reward += rework_penalty;
 
     // Momentum bonus (NEW): reward persistent improvement
     // Only applies when guard_pass && circuit_allowed (successful cycle)
     // Scales from 0 to +0.5 over 10-cycle window
+    // **GUARD: momentum bonus caps at 10-cycle window (0.05 * min(consecutive_successes, 10))**
+    // This prevents unbounded accumulation and keeps reward magnitude bounded.
     if guard_pass && circuit_allowed {
-        let momentum_bonus = 0.05 * (consecutive_successes as f32).min(10.0);
+        // Verified: consecutive_successes is capped via saturating_add; here we add additional cap
+        let capped_successes = (consecutive_successes as f32).min(10.0);
+        let momentum_bonus = 0.05_f32 * capped_successes;
+        debug_assert!(momentum_bonus >= 0.0 && momentum_bonus <= 0.5, "momentum bonus must be in [0, 0.5], got {}", momentum_bonus);
         reward += momentum_bonus;
     }
 
@@ -626,10 +638,23 @@ impl RlOrchestrator {
         self.use_linucb_for_selection
     }
 
+    /// Get LinUCB action bounds (GUARD: ensure action in [0, 4]).
+    ///
+    /// Returns the 0-based action index from LinUCB selection.
+    /// Bounds check is performed; if out of range, clamps to valid [0, 4].
+    pub fn linucb_bounded_select(&self, features: &[f32; 8]) -> u32 {
+        let (action_idx, _) = self.linucb.select(features);
+        // GUARD: clamp to valid action range [0, 4]
+        action_idx.min(4)
+    }
+
     /// Get action statistics (success rates per action type).
     ///
     /// Returns a map with action name as key and (total_count, successful_count, success_rate).
     /// Success is defined as: reward_after > reward_before.
+    ///
+    /// **GUARD: Division-by-zero protection** — If total is 0, rate defaults to 0.0 (not NaN).
+    /// This prevents propagation of NaN through telemetry and OTEL spans.
     pub fn get_action_stats(&self) -> std::collections::HashMap<String, (u32, u32, f32)> {
         use std::collections::HashMap;
         let mut stats: HashMap<String, (u32, u32)> = HashMap::new();
@@ -644,14 +669,19 @@ impl RlOrchestrator {
         }
 
         // Convert to (total, successful, success_rate)
+        // GUARD: if total == 0, rate = 0.0 (preventing NaN from division by zero)
         stats
             .into_iter()
             .map(|(action, (total, successful))| {
                 let rate = if total > 0 {
-                    successful as f32 / total as f32
+                    // Verified: successful <= total, so rate in [0.0, 1.0]
+                    (successful as f32) / (total as f32)
                 } else {
-                    0.0
+                    // No division by zero: guard ensures rate is exactly 0.0
+                    0.0_f32
                 };
+                // Verify rate is finite (sanity check)
+                debug_assert!(rate.is_finite(), "rate must be finite, got {}", rate);
                 (action, (total, successful, rate))
             })
             .collect()

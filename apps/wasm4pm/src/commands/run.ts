@@ -21,6 +21,7 @@ import {
 } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
 import { isFirstRun, formatFirstRunHints } from '../first-run-ux.js';
+import { STANDARD_EXIT_CODE_DOCS } from '../help-standards.js';
 
 export interface RunOptions {
   config?: string;
@@ -199,7 +200,8 @@ export const run = defineCommand({
   meta: {
     name: 'run',
     description:
-      'Discover a process model from an XES event log. Ex: wpm run process.xes  |  wpm run log.xes --algorithm genetic --with-quality',
+      'Discover a process model from an XES event log. Ex: wpm run process.xes  |  wpm run log.xes --algorithm genetic --with-quality\n\n' +
+      STANDARD_EXIT_CODE_DOCS,
   },
   args: {
     input: {
@@ -248,9 +250,10 @@ export const run = defineCommand({
       type: 'string',
       description: 'XES activity attribute key (default: concept:name)',
     },
-    'no-save': {
+    save: {
       type: 'boolean',
-      description: 'Do not auto-save the result to .wasm4pm/results/',
+      description: 'Auto-save the result to .wasm4pm/results/ (pass --no-save to disable)',
+      default: true,
     },
     simd: {
       type: 'boolean',
@@ -980,9 +983,11 @@ export const run = defineCommand({
                 ...(preflightWarnings.length > 0 && { preflightWarnings }),
               };
 
-              // Step 9b: Auto-save result to .wasm4pm/results/ (unless --no-save)
+              // Step 9b: Auto-save result to .wasm4pm/results/ (unless --no-save).
+              // citty maps --no-save → ctx.args.save === false (strips the 'no-' prefix).
+              // Checking ctx.args.save !== false (i.e. the default true case) means we save.
               let savedPath: string | null = null;
-              if (!ctx.args['no-save']) {
+              if (ctx.args['save'] !== false) {
                 savedPath = await savePredictionResult(
                   `discover-${resolvedAlgoFinal}`,
                   inputPath,
@@ -1465,9 +1470,9 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
     ...(ocelStats && { ocelStats }),
   };
 
-  // Auto-save
+  // Auto-save (citty maps --no-save → ctx.args.save === false)
   let savedPath: string | null = null;
-  if (!ctx.args['no-save']) {
+  if (ctx.args['save'] !== false) {
     savedPath = await savePredictionResult(
       `discover-${discoveryAlgo}`,
       inputPath,

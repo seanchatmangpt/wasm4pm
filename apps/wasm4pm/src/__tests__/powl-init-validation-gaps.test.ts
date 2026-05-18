@@ -29,11 +29,15 @@
  *   - Error.code is machine-readable (SCREAMING_SNAKE_CASE), non-empty string
  */
 
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll, afterAll, vi } from 'vitest';
 import { execFile } from 'child_process';
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+
+// CLI tests make child process calls that take 0.5–2s each.
+// Override vitest's default 5s test timeout to 30s for this file.
+vi.setConfig({ testTimeout: 30_000 });
 
 // ─── CLI runner ───────────────────────────────────────────────────────────────
 

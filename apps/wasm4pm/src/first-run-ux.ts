@@ -20,8 +20,10 @@ export async function isFirstRun(): Promise<boolean> {
 
     try {
       const files = await fs.readdir(resultsPath);
-      // Filter to JSON result files
-      const resultFiles = files.filter((f) => f.endsWith('.json') && f.startsWith('discover-'));
+      // Filter to discovery result JSON files.
+      // Filenames use format: <timestamp>-discover-<algo>.json (e.g. 20260518T110410-discover-heuristic.json)
+      // The original filter used startsWith('discover-') which never matched; now uses includes('-discover-').
+      const resultFiles = files.filter((f) => f.endsWith('.json') && f.includes('-discover-'));
       return resultFiles.length < 2;
     } catch (err) {
       // Directory doesn't exist yet - definitely first run

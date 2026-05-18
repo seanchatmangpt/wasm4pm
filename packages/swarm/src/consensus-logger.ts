@@ -41,7 +41,11 @@ export class ConsensusLogger {
   async init(): Promise<void> {
     const tracer = getTracer();
     const span = tracer.startSpan('consensus.logger.init', {
-      attributes: { 'logger.path': this.logPath },
+      attributes: {
+        'service.name': 'wasm4pm',
+        'logger.path': this.logPath,
+        'logger.flush_interval_ms': this.flushInterval,
+      },
     });
 
     try {
@@ -114,7 +118,11 @@ export class ConsensusLogger {
 
     const tracer = getTracer();
     const span = tracer.startSpan('consensus.logger.flush', {
-      attributes: { 'logger.entries_count': this.buffer.length },
+      attributes: {
+        'service.name': 'wasm4pm',
+        'logger.entries_count': this.buffer.length,
+        'logger.operation': 'write_jsonl',
+      },
     });
 
     try {
@@ -137,7 +145,11 @@ export class ConsensusLogger {
   async cleanup(): Promise<void> {
     const tracer = getTracer();
     const span = tracer.startSpan('consensus.logger.cleanup', {
-      attributes: { 'logger.buffered_entries': this.buffer.length },
+      attributes: {
+        'service.name': 'wasm4pm',
+        'logger.buffered_entries': this.buffer.length,
+        'logger.operation': 'final_flush_and_close',
+      },
     });
 
     try {

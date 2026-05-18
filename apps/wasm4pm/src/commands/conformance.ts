@@ -16,6 +16,7 @@ import {
   diagnose,
   type LogStats,
 } from '@wasm4pm/observability';
+import { STANDARD_EXIT_CODE_DOCS } from '../help-standards.js';
 
 interface TraceDeviation {
   event_index: number;
@@ -83,7 +84,8 @@ export const conformance = defineCommand({
   meta: {
     name: 'conformance',
     description:
-      'Measure log-to-model fitness and precision. Ex: wpm conformance -i process.xes',
+      'Measure log-to-model fitness and precision. Ex: wpm conformance -i process.xes\n\n' +
+      STANDARD_EXIT_CODE_DOCS,
   },
   args: {
     input: {

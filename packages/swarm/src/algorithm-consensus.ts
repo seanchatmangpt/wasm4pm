@@ -101,9 +101,11 @@ export class AlgorithmConsensus {
     const tracer = getTracer();
     const span = tracer.startSpan('swarm.algorithm_consensus.select', {
       attributes: {
+        'service.name': 'wasm4pm',
         'consensus.event_count': logStats.eventCount,
         'consensus.trace_count': logStats.traceCount,
         'consensus.complexity': logStats.complexity,
+        'consensus.selection_phase': 'select_algorithm',
       },
     });
 
@@ -163,6 +165,7 @@ export class AlgorithmConsensus {
       span.setAttribute('consensus.selected_algorithm', decision.selectedAlgorithm);
       span.setAttribute('consensus.confidence', decision.confidence);
       span.setAttribute('consensus.exploration_rate', decision.explorationRate);
+      span.setAttribute('consensus.linucb_reason', reason);
 
       return decision;
     } finally {
@@ -186,8 +189,11 @@ export class AlgorithmConsensus {
     const tracer = getTracer();
     const span = tracer.startSpan('swarm.algorithm_consensus.update', {
       attributes: {
+        'service.name': 'wasm4pm',
         'consensus.algorithm': algorithmId,
         'consensus.quality': qualityScore,
+        'consensus.selection_phase': 'update_performance',
+        'consensus.worker_status': workerResult.failed ? 'failed' : 'success',
       },
     });
 
@@ -210,6 +216,7 @@ export class AlgorithmConsensus {
 
       span.setAttribute('consensus.run_count', perf.runCount);
       span.setAttribute('consensus.mean_quality', perf.meanQuality);
+      span.setAttribute('consensus.std_dev', perf.standardDeviation);
     } finally {
       span.end();
     }

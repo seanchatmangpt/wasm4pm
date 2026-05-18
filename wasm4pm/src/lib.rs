@@ -310,6 +310,8 @@ pub mod capability_registry;
 #[cfg(feature = "conformance_basic")]
 pub mod conformance;
 #[cfg(feature = "conformance_basic")]
+pub mod conformance_guards;
+#[cfg(feature = "conformance_basic")]
 pub mod data_quality;
 pub mod discovery;
 #[cfg(feature = "discovery_advanced")]
@@ -553,6 +555,12 @@ pub mod reinforcement;
 pub mod rl_orchestrator;
 #[cfg(feature = "cloud")]
 pub use rl_orchestrator::{RlOrchestrator, StateCoverage};
+
+// RL Stability Monitor — detects learning instability (TD error, Q-divergence, reward scaling)
+#[cfg(feature = "cloud")]
+pub mod rl_stability_monitor;
+#[cfg(feature = "cloud")]
+pub use rl_stability_monitor::RlStabilityMonitor;
 
 // Action Dispatch Layer — converts RL action labels to executable operations
 #[cfg(feature = "cloud")]

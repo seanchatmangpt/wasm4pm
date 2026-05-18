@@ -82,6 +82,11 @@ ${BOLD}wpm${RESET} (wasm4pm) v26.5.13  —  Process Mining CLI  ${DIM}(wasm4pm)$
 
 ${DIM}Configuration precedence: CLI args > wasm4pm.toml > wasm4pm.json > env vars > defaults${RESET}
 
+${BOLD}QUICK START${RESET}
+  ${CYAN}wpm run log.xes${RESET}                                     Discover a model from an event log (try this first!)
+  ${CYAN}wpm run --help${RESET}                                      Show full documentation for any command
+  ${CYAN}wpm doctor${RESET}                                          Diagnose environment, WASM, and config issues
+
 ${BOLD}DISCOVERY${RESET}
   ${GREEN}wpm run${RESET} <log.xes>                   Discover a process model (default: heuristic miner)
   ${GREEN}wpm run${RESET} <log.xes> --algorithm dfg   Use a specific algorithm

@@ -351,13 +351,20 @@ describe('wpm explain — algorithm explanations and process model documentation
   describe('explain error handling', () => {
     it('should handle invalid algorithm gracefully', async () => {
       const result = await runCli(['explain', 'not_a_real_algorithm'], { env: env.env });
-      expect([EXIT_CODES.success, EXIT_CODES.execution_error]).toContain(result.exitCode);
-      expect(result.stdout).toMatch(/no explanation|unknown algorithm|available/i);
+      // Unknown algorithm now exits with config_error (1) — structured error path
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+      // Error message goes to stderr (consola ERROR output)
+      const combined = result.stderr + result.stdout;
+      expect(combined).toMatch(/unknown algorithm|algorithms with explanations|available/i);
     });
 
     it('should suggest available algorithms when unknown', async () => {
       const result = await runCli(['explain', 'xyz123'], { env: env.env });
-      expect(result.stdout).toMatch(/dfg|heuristic|alpha|ilp/i);
+      // Exit 1 (config_error) — unknown algorithm is a config error
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
+      // Algorithm list goes to stderr
+      const combined = result.stderr + result.stdout;
+      expect(combined).toMatch(/dfg|heuristic|alpha|ilp/i);
     });
 
     it('should reject invalid --level with config_error (1)', async () => {
@@ -427,12 +434,14 @@ describe('wpm explain — algorithm explanations and process model documentation
   describe('explain ml algorithms', () => {
     it('should explain ml_cluster algorithm', async () => {
       const result = await runCli(['explain', 'ml_cluster'], { env: env.env });
-      expect([EXIT_CODES.success, EXIT_CODES.execution_error]).toContain(result.exitCode);
+      // ml_cluster has no dedicated explanation entry — exits config_error (1)
+      expect([EXIT_CODES.success, EXIT_CODES.config_error]).toContain(result.exitCode);
     });
 
     it('should explain ml_anomaly algorithm', async () => {
       const result = await runCli(['explain', 'ml_anomaly'], { env: env.env });
-      expect([EXIT_CODES.success, EXIT_CODES.execution_error]).toContain(result.exitCode);
+      // ml_anomaly has no dedicated explanation entry — exits config_error (1)
+      expect([EXIT_CODES.success, EXIT_CODES.config_error]).toContain(result.exitCode);
     });
   });
 
@@ -447,9 +456,10 @@ describe('wpm explain — algorithm explanations and process model documentation
       expect(result.exitCode).toBe(EXIT_CODES.success);
     });
 
-    it('should exit 3 (EXECUTION_ERROR) or 0 on invalid algorithm', async () => {
+    it('should exit 1 (CONFIG_ERROR) on invalid algorithm', async () => {
       const result = await runCli(['explain', 'fake_algorithm_xyz'], { env: env.env });
-      expect([EXIT_CODES.execution_error, EXIT_CODES.success]).toContain(result.exitCode);
+      // Unknown algorithm is a configuration error — the user asked for a non-existent algorithm
+      expect(result.exitCode).toBe(EXIT_CODES.config_error);
     });
   });
 

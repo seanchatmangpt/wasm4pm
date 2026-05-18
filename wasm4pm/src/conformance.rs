@@ -21,6 +21,7 @@
 use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js_str;
+use crate::conformance_guards;
 use hashbrown::{HashMap, HashSet};
 use serde_json::json;
 use wasm_bindgen::prelude::*;
@@ -516,11 +517,8 @@ fn replay_log(
         });
     }
 
-    result.avg_fitness = if result.total_cases > 0 {
-        total_fitness / result.total_cases as f64
-    } else {
-        0.0
-    };
+    // Guard 1: Empty log returns 1.0 (vacuous truth), not 0.0
+    result.avg_fitness = conformance_guards::guard_empty_log(result.total_cases, total_fitness);
 
     result
 }

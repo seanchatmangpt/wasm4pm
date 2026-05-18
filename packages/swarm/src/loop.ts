@@ -40,9 +40,12 @@ export async function runSwarm(config: SwarmConfig): Promise<SwarmArtifact> {
   const tracer = getTracer();
   const swarmSpan = tracer.startSpan(RunningSpans.runStart(), {
     attributes: {
+      'service.name': 'wasm4pm',
+      'swarm.coordination': 'multi_worker_convergence',
       'swarm.max_episodes': config.maxEpisodes ?? 5,
       'swarm.convergence_runs': config.convergenceRuns ?? 2,
       'swarm.worker_model': config.workerModel ?? 'default',
+      'swarm.worker_count': config.algorithmIds?.length ?? config.logPaths?.length ?? 0,
     },
   });
 
@@ -238,8 +241,11 @@ async function runWorker(spec: WorkerSpec, config: SwarmConfig): Promise<WorkerR
   const tracer = getTracer();
   const workerSpan = tracer.startSpan(RunningSpans.algorithmExec(spec.algorithmId), {
     attributes: {
+      'service.name': 'wasm4pm',
       'worker.id': spec.workerId,
       'worker.log_id': spec.logId,
+      'worker.algorithm': spec.algorithmId,
+      'worker.result_type': spec.algorithmId.startsWith('ml_') ? 'ml' : 'discovery',
       'agent.role': 'worker',
       'agent.task_id': spec.workerId,
     },
@@ -314,11 +320,13 @@ Goal: Discover the process model or analyze statistics as requested.`,
 
     workerSpan.setAttribute('worker.duration_ms', result.durationMs);
     workerSpan.setAttribute('worker.result_type', result.resultType);
+    workerSpan.setAttribute('worker.result_hash', resultHash);
 
     return result;
   } catch (error) {
     workerSpan.setStatus('ERROR', String(error));
     workerSpan.setAttribute('agent.failure_code', 'WORKER_FAILURE');
+    workerSpan.setAttribute('worker.error_message', String(error));
     throw error;
   } finally {
     workerSpan.end();

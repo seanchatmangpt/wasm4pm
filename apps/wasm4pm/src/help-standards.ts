@@ -43,7 +43,7 @@ export const STANDARD_HELP = {
 
   /** Execution control */
   timeout:
-    'Execution timeout in seconds (default: 300)',
+    'Execution timeout in seconds, range 1-3600 (default: 300s). Values outside this range are clamped.',
   workers:
     'Number of parallel workers for batch/distributed operations (default: CPU count)',
   profile:
@@ -89,6 +89,14 @@ export const STANDARD_ALIASES = {
   model: 'm',
   config: 'c',
 };
+
+/**
+ * Standard exit code documentation for command help.
+ * Use this constant in meta.description of commands that want to document exit codes.
+ * Example: `description: 'Run discovery...\n\n' + STANDARD_EXIT_CODE_DOCS`
+ */
+export const STANDARD_EXIT_CODE_DOCS =
+  'Exit codes: 0=success, 1=config error, 2=source/file error, 3=execution error, 4=partial failure, 5=system error';
 
 /**
  * Validate that all positional arguments have descriptions.

@@ -41,6 +41,26 @@ export {
 // Feature quality assessment
 export { assessFeatureQuality, type QualityReport } from './feature-quality.js';
 
+// Overfitting detection
+export {
+  analyzeOverfitting,
+  hasOverfittingConcerns,
+  getOverfittingSeverity,
+  type OverfittingIndicator,
+  type OverfittingAnalysis,
+} from './overfitting-detector.js';
+
+// Preprocessing guards (5 critical checks)
+export {
+  filterZeroVarianceColumns,
+  imputeMissingValues,
+  capOutliers,
+  scaleFeatures,
+  validateSampleFeatureRatio,
+  preprocessFeatures,
+  type PreprocessingReport,
+} from './preprocessing.js';
+
 // Types
 export type {
   FeatureMatrix,
