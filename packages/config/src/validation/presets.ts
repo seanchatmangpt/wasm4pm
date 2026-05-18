@@ -771,12 +771,19 @@ export function generateOptimalConfig(
 
       const winner = scored[0];
       selectedAlgorithm = winner.name as BaseConfig['algorithm']['name'];
-      // Build the base reason from benchmark data, then append the memory cascade
-      // suffix when active so that information is not silently discarded.
-      const benchmarkReason = `Algorithm '${winner.name}' selected from benchmarks (score=${winner.score.toFixed(1)}, quality=${winner.measurement.quality_score}, speed=${winner.measurement.speed_score}) for preset '${preset}'`;
-      selectionReason = memoryCascadeActive
-        ? `${benchmarkReason}; memory constraint (${maxMemoryMb} MB < 1000 MB) forced preset to 'fast'`
-        : benchmarkReason;
+      // Build the base reason from benchmark data, then compose with the user-override
+      // prefix (when active) or memory cascade suffix (when active).
+      // The user-override prefix takes absolute precedence as the first phrase so that
+      // downstream consumers can always detect the override source.
+      const benchmarkDetail = `Algorithm '${winner.name}' selected from benchmarks (score=${winner.score.toFixed(1)}, quality=${winner.measurement.quality_score}, speed=${winner.measurement.speed_score}) for preset '${preset}'`;
+      if (instinctSource === 'user') {
+        // User override: lead with override marker, then append algorithm detail.
+        selectionReason = `Preset '${preset}' supplied by caller (user override); ${benchmarkDetail}`;
+      } else if (memoryCascadeActive) {
+        selectionReason = `${benchmarkDetail}; memory constraint (${maxMemoryMb} MB < 1000 MB) forced preset to 'fast'`;
+      } else {
+        selectionReason = benchmarkDetail;
+      }
     }
   }
 
@@ -788,8 +795,9 @@ export function generateOptimalConfig(
     ? { ...base.source, kind: 'stream' as const }
     : base.source;
 
-  // Append log characteristics to benchmark-derived selection reason when available
-  if (logCharacteristics && instinctSource === 'auto') {
+  // Append log characteristics to the selection reason when available.
+  // Works for both auto and user-override paths.
+  if (logCharacteristics) {
     const { eventCount, traceCount, activityCount } = logCharacteristics;
     const parts: string[] = [];
     if (eventCount !== undefined) parts.push(`${eventCount} events`);
