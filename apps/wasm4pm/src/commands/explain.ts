@@ -23,7 +23,8 @@ export const explain = defineCommand({
   args: {
     target: {
       type: 'positional',
-      description: 'Algorithm name to explain (dfg, alpha, heuristic, etc.). Equivalent to --algorithm.',
+      description:
+        'Algorithm name to explain (dfg, alpha, heuristic, etc.). Equivalent to --algorithm.',
       required: false,
     },
     config: {
@@ -68,102 +69,377 @@ export const explain = defineCommand({
     const quiet = Boolean(ctx.args.quiet);
 
     // Determine algorithm early (positional may override --algorithm)
-    const earlyAlgo = (ctx.args.algorithm as string | undefined)
-      ?? (typeof ctx.args.target === 'string' && ctx.args.target.length > 0
+    const earlyAlgo =
+      (ctx.args.algorithm as string | undefined) ??
+      (typeof ctx.args.target === 'string' && ctx.args.target.length > 0
         ? ctx.args.target
         : undefined);
     const level = (ctx.args.level || 'detailed') as string;
 
-    return withSpan('explain', {
-      algorithm: earlyAlgo ?? '',
-      level,
-      has_model: Boolean(ctx.args.model),
-      has_config: Boolean(ctx.args.config),
-      format,
-    }, async () => {
-    try {
-      // Accept positional <algorithm> as alias for --algorithm
-      if (!ctx.args.algorithm && typeof ctx.args.target === 'string' && ctx.args.target.length > 0) {
-        ctx.args.algorithm = ctx.args.target;
-      }
-
-      // Step 1: Zero-arg mode — show algorithm menu instead of a bare error
-      if (!ctx.args.model && !ctx.args.algorithm && !ctx.args.config) {
-        const menuContent = getAlgorithmMenu();
-        const payload = {
-          subject: 'algorithm-menu',
-          level: 'brief' as const,
-          content: menuContent,
-        };
-        const result = makeResult('explain', payload, performance.now() - t0, EXIT_CODES.success);
-        emitResult(result, { format, verbose, quiet }, (res, projection) => {
-          const p = res.payload as typeof payload;
-          projection.log(p.content);
-          projection.log('');
-          projection.log('  Run "wpm explain <algorithm>"   — detailed explanation of one algorithm');
-          projection.log('  Run "wpm explain <algorithm> --level academic" — formal definitions');
-          projection.log('  Run "wpm algorithms"            — full list with speed/quality scores');
-        });
-        return await exitWithFlush(result.exit_code);
-      }
-
-      // Step 2: Generate explanation content
-      let explanationContent = '';
-      const level = (ctx.args.level || 'detailed') as 'brief' | 'detailed' | 'academic';
-
-      if (ctx.args.model) {
-        explanationContent = `Model explanation for: ${ctx.args.model}\n\nPlaceholder content (awaiting planner integration)`;
-      } else if (ctx.args.config) {
-        try {
-          const configPath = ctx.args.config || process.cwd();
-          const config = await loadConfig({
-            configSearchPaths: [configPath],
-          });
-
-          explanationContent = `Configuration explanation:\n\n`;
-          explanationContent += `Profile: ${config.execution.profile}\n`;
-          explanationContent += `Timeout: ${config.execution.timeout}ms\n`;
-          explanationContent += `Max Memory: ${config.execution.maxMemory} bytes\n`;
-          explanationContent += `Watch Enabled: ${config.watch?.enabled ?? false}\n`;
-          explanationContent += `Output Format: ${config.output?.format ?? 'human'}\n`;
-        } catch (error) {
-          throw new Error(
-            `Failed to explain config: ${error instanceof Error ? error.message : String(error)}`
-          );
-        }
-      } else if (ctx.args.algorithm) {
-        explanationContent = getAlgorithmExplanation(ctx.args.algorithm, level);
-      }
-
-      // Step 3: Build result and emit
-      const payload = {
-        subject: ctx.args.model || ctx.args.algorithm || 'execution plan',
+    return withSpan(
+      'explain',
+      {
+        algorithm: earlyAlgo ?? '',
         level,
-        content: explanationContent,
-      };
+        has_model: Boolean(ctx.args.model),
+        has_config: Boolean(ctx.args.config),
+        format,
+      },
+      async () => {
+        try {
+          // Accept positional <algorithm> as alias for --algorithm
+          if (
+            !ctx.args.algorithm &&
+            typeof ctx.args.target === 'string' &&
+            ctx.args.target.length > 0
+          ) {
+            ctx.args.algorithm = ctx.args.target;
+          }
 
-      const result = makeResult('explain', payload, performance.now() - t0, EXIT_CODES.success);
-      emitResult(result, { format, verbose, quiet }, (res, projection) => {
-        const p = res.payload as typeof payload;
-        projection.info(`Explanation: ${p.subject}`);
-        projection.log('');
-        projection.log(p.content);
-        projection.log('');
-      });
-      return await exitWithFlush(result.exit_code);
-    } catch (error) {
-      const result = makeErrorResult(
-        'explain',
-        error,
-        EXIT_CODES.execution_error,
-        'EXPLAIN_ERROR'
-      );
-      emitResult(result, { format, verbose, quiet });
-      return await exitWithFlush(result.exit_code);
-    }
-    }); // end withSpan
+          // Step 1: Zero-arg mode — show algorithm menu instead of a bare error
+          if (!ctx.args.model && !ctx.args.algorithm && !ctx.args.config) {
+            const menuContent = getAlgorithmMenu();
+            const payload = {
+              subject: 'algorithm-menu',
+              level: 'brief' as const,
+              content: menuContent,
+            };
+            const result = makeResult(
+              'explain',
+              payload,
+              performance.now() - t0,
+              EXIT_CODES.success
+            );
+            emitResult(result, { format, verbose, quiet }, (res, projection) => {
+              const p = res.payload as typeof payload;
+              projection.log(p.content);
+              projection.log('');
+              projection.log(
+                '  Run "wpm explain <algorithm>"   — detailed explanation of one algorithm'
+              );
+              projection.log(
+                '  Run "wpm explain <algorithm> --level academic" — formal definitions'
+              );
+              projection.log(
+                '  Run "wpm algorithms"            — full list with speed/quality scores'
+              );
+            });
+            return await exitWithFlush(result.exit_code);
+          }
+
+          // Step 2: Generate explanation content
+          let explanationContent = '';
+          const level = (ctx.args.level || 'detailed') as 'brief' | 'detailed' | 'academic';
+
+          if (ctx.args.model) {
+            explanationContent = `Model explanation for: ${ctx.args.model}\n\nPlaceholder content (awaiting planner integration)`;
+          } else if (ctx.args.config) {
+            try {
+              const configPath = ctx.args.config || process.cwd();
+              const config = await loadConfig({
+                configSearchPaths: [configPath],
+              });
+
+              explanationContent = `Configuration explanation:\n\n`;
+              explanationContent += `Profile: ${config.execution.profile}\n`;
+              explanationContent += `Timeout: ${config.execution.timeout}ms\n`;
+              explanationContent += `Max Memory: ${config.execution.maxMemory} bytes\n`;
+              explanationContent += `Watch Enabled: ${config.watch?.enabled ?? false}\n`;
+              explanationContent += `Output Format: ${config.output?.format ?? 'human'}\n`;
+            } catch (error) {
+              throw new Error(
+                `Failed to explain config: ${error instanceof Error ? error.message : String(error)}`
+              );
+            }
+          } else if (ctx.args.algorithm) {
+            explanationContent = getAlgorithmExplanation(ctx.args.algorithm, level);
+          }
+
+          // Step 3: Build result and emit
+          // Resolve algo meta for JSON output and the quality trade-offs section.
+          const resolvedAlgo = ctx.args.algorithm as string | undefined;
+          const algoKey = resolvedAlgo
+            ? resolvedAlgo.toLowerCase().replace(/[+*-]/g, '')
+            : undefined;
+          const metaKey = algoKey
+            ? Object.keys(ALGO_META).find((k) => algoKey.includes(k) || k.includes(algoKey))
+            : undefined;
+          const meta = metaKey ? ALGO_META[metaKey] : undefined;
+
+          const payload = {
+            subject: ctx.args.model || ctx.args.algorithm || 'execution plan',
+            level,
+            content: explanationContent,
+            // Registry-sourced scores — populated when explaining a known algorithm.
+            quality_score: meta?.qualityScore ?? null,
+            speed_score: meta?.speedScore ?? null,
+            output_type: meta?.outputType ?? null,
+            quality_dimensions: meta
+              ? {
+                  fitness: meta.fitness,
+                  precision: meta.precision,
+                  generalization: meta.generalization,
+                  simplicity: meta.simplicity,
+                }
+              : null,
+            deployment_profiles: meta?.deploymentProfiles ?? null,
+            when_to_use: meta?.whenToUse ?? null,
+            alternatives: meta?.alternatives ?? null,
+          };
+
+          const result = makeResult('explain', payload, performance.now() - t0, EXIT_CODES.success);
+          emitResult(result, { format, verbose, quiet }, (res, projection) => {
+            const p = res.payload as typeof payload;
+            projection.info(`Explanation: ${p.subject}`);
+            projection.log('');
+            projection.log(p.content);
+
+            // Quality trade-offs section — only when we have metadata for the algorithm.
+            if (p.quality_dimensions && p.quality_score !== null && p.speed_score !== null) {
+              projection.log('');
+              projection.log('Quality trade-offs (Van der Aalst 4 dimensions):');
+              projection.log(`  Fitness        — ${p.quality_dimensions.fitness}`);
+              projection.log(`  Precision      — ${p.quality_dimensions.precision}`);
+              projection.log(`  Generalization — ${p.quality_dimensions.generalization}`);
+              projection.log(`  Simplicity     — ${p.quality_dimensions.simplicity}`);
+              projection.log('');
+              projection.log(
+                `Registry scores  — speed: ${p.speed_score}/100 (lower=faster)  quality: ${p.quality_score}/100  output: ${p.output_type}`
+              );
+            }
+
+            if (p.deployment_profiles && p.deployment_profiles.length > 0) {
+              projection.log('');
+              projection.log(`Deployment profiles — ${p.deployment_profiles.join(', ')}`);
+              projection.log(
+                '  (Use wpm init --preset <profile> to scaffold a matching config file)'
+              );
+            }
+
+            if (p.when_to_use) {
+              projection.log('');
+              projection.log(`When to use — ${p.when_to_use}`);
+            }
+
+            if (p.alternatives) {
+              projection.log(`Alternatives — ${p.alternatives}`);
+            }
+
+            projection.log('');
+          });
+          return await exitWithFlush(result.exit_code);
+        } catch (error) {
+          const result = makeErrorResult(
+            'explain',
+            error,
+            EXIT_CODES.execution_error,
+            'EXPLAIN_ERROR'
+          );
+          emitResult(result, { format, verbose, quiet });
+          return await exitWithFlush(result.exit_code);
+        }
+      }
+    ); // end withSpan
   },
 });
+
+/**
+ * Static metadata for each algorithm: quality dimensions, deployment profiles, scores.
+ * These values mirror the kernel registry (packages/kernel/src/registry.ts) and are
+ * used to populate the "Quality trade-offs" section without importing the registry at
+ * CLI runtime (avoids the heavy WASM bootstrap path for a pure explain invocation).
+ */
+interface AlgoMeta {
+  speedScore: number; // 1–100, lower = faster
+  qualityScore: number; // 0–100, higher = better model quality
+  outputType: string; // dfg | petrinet | declare | tree | ml_result
+  fitness: string; // High | Medium | Low
+  precision: string; // High | Medium | Low
+  generalization: string; // High | Medium | Low
+  simplicity: string; // High | Medium | Low
+  deploymentProfiles: string[]; // fast | balanced | quality | stream
+  whenToUse: string;
+  alternatives: string;
+}
+
+const ALGO_META: Record<string, AlgoMeta> = {
+  dfg: {
+    speedScore: 5,
+    qualityScore: 30,
+    outputType: 'dfg',
+    fitness: 'High (100% on training log by construction)',
+    precision: 'Low (allows many unobserved paths)',
+    generalization: 'Low (overfits to sample)',
+    simplicity: 'High (one node per activity)',
+    deploymentProfiles: ['fast', 'balanced', 'quality', 'stream'],
+    whenToUse: 'First look at a new log; real-time dashboards; logs with 1M+ events.',
+    alternatives:
+      'Use heuristic_miner when noise filtering matters; inductive_miner when you need a sound model.',
+  },
+  alpha: {
+    speedScore: 20,
+    qualityScore: 45,
+    outputType: 'petrinet',
+    fitness: 'High (fits all non-looping traces)',
+    precision: 'Medium (handles some concurrency)',
+    generalization: 'Medium',
+    simplicity: 'Medium (Petri net, more structure than DFG)',
+    deploymentProfiles: ['balanced', 'quality'],
+    whenToUse:
+      'Processes with true parallelism (AND-splits); when a Petri net is required for downstream tools.',
+    alternatives: 'Use inductive_miner for guaranteed soundness; heuristic_miner for noisy logs.',
+  },
+  heuristic: {
+    speedScore: 25,
+    qualityScore: 50,
+    outputType: 'dfg',
+    fitness: 'Medium (filters low-frequency traces)',
+    precision: 'Medium',
+    generalization: 'High (threshold removes outliers)',
+    simplicity: 'Medium',
+    deploymentProfiles: ['balanced', 'quality'],
+    whenToUse: 'Noisy logs (many rare variants); when you need a quick but noise-robust overview.',
+    alternatives: 'Use dfg for maximum speed; inductive_miner for structurally sound models.',
+  },
+  inductive: {
+    speedScore: 30,
+    qualityScore: 55,
+    outputType: 'tree',
+    fitness: 'High (complete by construction)',
+    precision: 'Medium (may over-generalise on noisy logs)',
+    generalization: 'High (block structure captures future behaviour)',
+    simplicity: 'High (process tree is the most readable output)',
+    deploymentProfiles: ['balanced', 'quality'],
+    whenToUse:
+      'Structured workflows (BPMN-like); automated conformance checking; when soundness must be guaranteed.',
+    alternatives:
+      'Use heuristic_miner when logs are noisy; ilp when maximum fitness/precision is the goal.',
+  },
+  genetic: {
+    speedScore: 75,
+    qualityScore: 80,
+    outputType: 'dfg',
+    fitness: 'High',
+    precision: 'High (evolves models that avoid spurious paths)',
+    generalization: 'High (population diversity reduces overfitting)',
+    simplicity: 'Low (larger search space → more complex models)',
+    deploymentProfiles: ['quality'],
+    whenToUse:
+      'Best-quality model where runtime > 1 min is acceptable; complex processes with loops and concurrency.',
+    alternatives:
+      'Use ilp for provably optimal models; pso or aco for faster population-based search.',
+  },
+  ilp: {
+    speedScore: 80,
+    qualityScore: 90,
+    outputType: 'petrinet',
+    fitness: 'High (optimal by formulation)',
+    precision: 'High (ILP objective penalises spurious transitions)',
+    generalization: 'Medium (can overfit small logs)',
+    simplicity: 'Low (ILP can produce large Petri nets)',
+    deploymentProfiles: ['quality'],
+    whenToUse:
+      'Gold-standard benchmarking; regulatory compliance where optimal precision matters; small-to-medium logs.',
+    alternatives:
+      'Use genetic_algorithm for large logs; inductive_miner for a simpler sound model.',
+  },
+  astar: {
+    speedScore: 60,
+    qualityScore: 70,
+    outputType: 'dfg',
+    fitness: 'High (heuristic guides toward high-fitness models)',
+    precision: 'Medium-High',
+    generalization: 'Medium',
+    simplicity: 'Medium',
+    deploymentProfiles: ['quality'],
+    whenToUse:
+      'When you want near-optimal quality faster than ILP; medium-sized logs with defined budget.',
+    alternatives: 'Use ilp for optimal result; aco/pso for swarm-based exploration.',
+  },
+  hill: {
+    speedScore: 40,
+    qualityScore: 55,
+    outputType: 'dfg',
+    fitness: 'Medium (local optimum only)',
+    precision: 'Medium',
+    generalization: 'Medium',
+    simplicity: 'High (starts from a simple seed)',
+    deploymentProfiles: ['balanced', 'quality'],
+    whenToUse:
+      'Refining a model from a fast algorithm; quick improvement pass before deeper analysis.',
+    alternatives: 'Use annealing to escape local optima; genetic_algorithm for global search.',
+  },
+  annealing: {
+    speedScore: 55,
+    qualityScore: 65,
+    outputType: 'dfg',
+    fitness: 'Medium-High (escapes local optima)',
+    precision: 'Medium',
+    generalization: 'Medium-High',
+    simplicity: 'Medium',
+    deploymentProfiles: ['quality'],
+    whenToUse:
+      'Complex processes where hill climbing gets stuck; balancing exploration and exploitation.',
+    alternatives:
+      'Use genetic_algorithm for population-based search; aco for pheromone-guided exploration.',
+  },
+  aco: {
+    speedScore: 65,
+    qualityScore: 75,
+    outputType: 'dfg',
+    fitness: 'High',
+    precision: 'High (pheromone trails converge on frequent paths)',
+    generalization: 'High',
+    simplicity: 'Low',
+    deploymentProfiles: ['quality'],
+    whenToUse:
+      'Complex process structures with hidden patterns; when pheromone convergence is a good fit.',
+    alternatives:
+      'Use pso for faster convergence on smooth landscapes; genetic_algorithm for explicit fitness tuning.',
+  },
+  pso: {
+    speedScore: 70,
+    qualityScore: 75,
+    outputType: 'dfg',
+    fitness: 'High',
+    precision: 'High',
+    generalization: 'High',
+    simplicity: 'Low',
+    deploymentProfiles: ['quality'],
+    whenToUse:
+      'Continuous model space; when global best sharing matters; parallelisable workloads.',
+    alternatives:
+      'Use aco for discrete process structures; genetic_algorithm for explicit crossover/mutation.',
+  },
+  skeleton: {
+    speedScore: 3,
+    qualityScore: 25,
+    outputType: 'dfg',
+    fitness: 'Medium (filters low-frequency edges)',
+    precision: 'High (minimal model = high precision)',
+    generalization: 'Low (loses rare but important paths)',
+    simplicity: 'Very High (skeleton is the most compact output)',
+    deploymentProfiles: ['fast', 'balanced', 'quality', 'stream'],
+    whenToUse:
+      'Executive overview; noise filtering before deeper analysis; mobile/IoT deployments.',
+    alternatives:
+      'Use dfg for the full picture; heuristic_miner for threshold-controlled filtering.',
+  },
+  declare: {
+    speedScore: 35,
+    qualityScore: 50,
+    outputType: 'declare',
+    fitness: 'Medium (constraint-based, not replay-based)',
+    precision: 'High (each constraint is individually verifiable)',
+    generalization: 'High (constraints generalise naturally)',
+    simplicity: 'Very High (business-friendly constraint names)',
+    deploymentProfiles: ['balanced', 'quality'],
+    whenToUse:
+      'Compliance checking; flexible processes (healthcare, research); regulatory monitoring.',
+    alternatives:
+      'Use inductive_miner for a procedural block model; heuristic_miner for DFG-based overview.',
+  },
+};
 
 /**
  * Generates algorithm explanation at specified level
