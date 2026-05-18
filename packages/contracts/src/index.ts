@@ -138,6 +138,8 @@ export {
   receiptToOcelEvents,
   toOcelJsonl,
   fromMcppJsonl,
+  fromMcppJsonlStrict,
+  isValidOcelEvent,
   type OcelEvent,
 } from './ocel-bridge.js';
 

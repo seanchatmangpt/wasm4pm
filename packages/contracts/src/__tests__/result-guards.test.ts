@@ -9,7 +9,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { ok, err, error, isOk, isErr, isError, type Result } from '../result.js';
+import { ok, err, error, isOk, isErr, isError, isFailure, unwrapOr, type Result } from '../result.js';
 import { createError } from '../errors.js';
 
 // ---------------------------------------------------------------------------
@@ -234,5 +234,95 @@ describe('Group 4 — Rank 3: Metamorphic symmetry (guards compose correctly)', 
   it('applying isError twice to the same value yields the same result (idempotent)', () => {
     const r: Result<number> = error(makeError());
     expect(isError(r)).toBe(isError(r));
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Group 5 — Rank 2: isFailure() combined guard
+// ---------------------------------------------------------------------------
+
+describe('Group 5 — Rank 2: isFailure() combined guard (Err | ErrorResult)', () => {
+  it('isFailure(ok(x)) === false — success is not a failure', () => {
+    expect(isFailure(ok(42))).toBe(false);
+    expect(isFailure(ok(''))).toBe(false);
+    expect(isFailure(ok(null))).toBe(false);
+  });
+
+  it('isFailure(err(msg)) === true — simple string errors are failures', () => {
+    expect(isFailure(err('timeout'))).toBe(true);
+    expect(isFailure(err(''))).toBe(true);
+  });
+
+  it('isFailure(error(info)) === true — structured errors are failures', () => {
+    expect(isFailure(error(makeError()))).toBe(true);
+  });
+
+  it('isFailure(r) === isErr(r) || isError(r) for all three variants (algebraic identity)', () => {
+    const variants: Result<unknown>[] = [ok(1), err('e'), error(makeError())];
+    for (const r of variants) {
+      expect(isFailure(r), `type=${r.type}`).toBe(isErr(r) || isError(r));
+    }
+  });
+
+  it('!isOk(r) === isFailure(r) for all three variants (complement identity)', () => {
+    const variants: Result<unknown>[] = [ok(1), err('e'), error(makeError())];
+    for (const r of variants) {
+      expect(!isOk(r), `type=${r.type}`).toBe(isFailure(r));
+    }
+  });
+
+  it('isFailure is useful as a single predicate in Array.filter()', () => {
+    const results: Result<number>[] = [ok(1), err('bad'), ok(2), error(makeError()), ok(3)];
+    const failures = results.filter(isFailure);
+    expect(failures).toHaveLength(2);
+    // ok results are excluded
+    const successes = results.filter(isOk);
+    expect(successes).toHaveLength(3);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Group 6 — Rank 2: unwrapOr() safe extraction
+// ---------------------------------------------------------------------------
+
+describe('Group 6 — Rank 2: unwrapOr() — safe value extraction with fallback', () => {
+  it('unwrapOr(ok(x), fallback) returns x, not the fallback', () => {
+    expect(unwrapOr(ok(42), 0)).toBe(42);
+    expect(unwrapOr(ok('real'), 'fallback')).toBe('real');
+  });
+
+  it('unwrapOr(err(msg), fallback) returns the fallback', () => {
+    expect(unwrapOr(err('fail'), 99)).toBe(99);
+  });
+
+  it('unwrapOr(error(info), fallback) returns the fallback', () => {
+    expect(unwrapOr(error(makeError()), 'default')).toBe('default');
+  });
+
+  it('unwrapOr with ok(undefined) returns undefined, not the fallback', () => {
+    // ok(undefined) is a legitimate success; fallback must not override it
+    expect(unwrapOr(ok(undefined), 'should-not-appear')).toBeUndefined();
+  });
+
+  it('unwrapOr with ok(null) returns null, not the fallback', () => {
+    expect(unwrapOr(ok(null), 'should-not-appear')).toBeNull();
+  });
+
+  it('unwrapOr with ok(0) returns 0, not the fallback', () => {
+    // 0 is falsy in JS but is a valid Ok value
+    expect(unwrapOr(ok(0), -1)).toBe(0);
+  });
+
+  it('unwrapOr with ok(false) returns false, not the fallback', () => {
+    expect(unwrapOr(ok(false), true)).toBe(false);
+  });
+
+  it('unwrapOr with ok(empty string) returns empty string, not the fallback', () => {
+    expect(unwrapOr(ok(''), 'non-empty')).toBe('');
+  });
+
+  it('unwrapOr is idempotent — calling it multiple times on the same result returns the same value', () => {
+    const r: Result<number> = ok(7);
+    expect(unwrapOr(r, 0)).toBe(unwrapOr(r, 0));
   });
 });

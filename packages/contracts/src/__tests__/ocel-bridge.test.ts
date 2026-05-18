@@ -12,6 +12,8 @@ import {
   receiptToOcelEvents,
   toOcelJsonl,
   fromMcppJsonl,
+  fromMcppJsonlStrict,
+  isValidOcelEvent,
 } from '../ocel-bridge';
 import { emitReceiptEmit } from '../receipt-emit-bridge';
 
@@ -394,5 +396,147 @@ describe('emitReceiptEmit', () => {
   it('run.id matches receipt run_id', () => {
     const rec = emitReceiptEmit(makeReceipt());
     expect(rec.fields['run.id']).toBe(RUN_ID);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// isValidOcelEvent — OCEL event structure validation (gap closure)
+// ---------------------------------------------------------------------------
+
+describe('isValidOcelEvent — structural guard', () => {
+  it('returns true for a well-formed OcelEvent produced by receiptToOcelEvents', () => {
+    const [start] = receiptToOcelEvents(makeReceipt());
+    expect(isValidOcelEvent(start)).toBe(true);
+  });
+
+  it('returns true for all three events from receiptToOcelEvents', () => {
+    const events = receiptToOcelEvents(makeReceipt());
+    for (const ev of events) {
+      expect(isValidOcelEvent(ev)).toBe(true);
+    }
+  });
+
+  it('returns false for null', () => {
+    expect(isValidOcelEvent(null)).toBe(false);
+  });
+
+  it('returns false for a plain string', () => {
+    expect(isValidOcelEvent('{"ocel:eid":"x"}')).toBe(false);
+  });
+
+  it('returns false for an array', () => {
+    expect(isValidOcelEvent([])).toBe(false);
+  });
+
+  it('returns false when ocel:eid is missing', () => {
+    const ev = { 'ocel:activity': 'act', 'ocel:timestamp': 'ts', 'ocel:omap': [], 'ocel:vmap': {} };
+    expect(isValidOcelEvent(ev)).toBe(false);
+  });
+
+  it('returns false when ocel:activity is missing', () => {
+    const ev = { 'ocel:eid': 'x', 'ocel:timestamp': 'ts', 'ocel:omap': [], 'ocel:vmap': {} };
+    expect(isValidOcelEvent(ev)).toBe(false);
+  });
+
+  it('returns false when ocel:timestamp is missing', () => {
+    const ev = { 'ocel:eid': 'x', 'ocel:activity': 'act', 'ocel:omap': [], 'ocel:vmap': {} };
+    expect(isValidOcelEvent(ev)).toBe(false);
+  });
+
+  it('returns false when ocel:omap is missing', () => {
+    const ev = { 'ocel:eid': 'x', 'ocel:activity': 'act', 'ocel:timestamp': 'ts', 'ocel:vmap': {} };
+    expect(isValidOcelEvent(ev)).toBe(false);
+  });
+
+  it('returns false when ocel:vmap is missing', () => {
+    const ev = { 'ocel:eid': 'x', 'ocel:activity': 'act', 'ocel:timestamp': 'ts', 'ocel:omap': [] };
+    expect(isValidOcelEvent(ev)).toBe(false);
+  });
+
+  it('returns false when ocel:eid is an empty string', () => {
+    const ev = { 'ocel:eid': '', 'ocel:activity': 'act', 'ocel:timestamp': 'ts', 'ocel:omap': [], 'ocel:vmap': {} };
+    expect(isValidOcelEvent(ev)).toBe(false);
+  });
+
+  it('returns false when ocel:omap is not an array (is an object)', () => {
+    const ev = { 'ocel:eid': 'x', 'ocel:activity': 'act', 'ocel:timestamp': 'ts', 'ocel:omap': {}, 'ocel:vmap': {} };
+    expect(isValidOcelEvent(ev)).toBe(false);
+  });
+
+  it('returns false when ocel:vmap is null', () => {
+    const ev = { 'ocel:eid': 'x', 'ocel:activity': 'act', 'ocel:timestamp': 'ts', 'ocel:omap': [], 'ocel:vmap': null };
+    expect(isValidOcelEvent(ev)).toBe(false);
+  });
+
+  it('returns false when ocel:vmap is an array (wrong type)', () => {
+    const ev = { 'ocel:eid': 'x', 'ocel:activity': 'act', 'ocel:timestamp': 'ts', 'ocel:omap': [], 'ocel:vmap': [] };
+    expect(isValidOcelEvent(ev)).toBe(false);
+  });
+
+  it('allows empty ocel:omap array (events can reference zero objects)', () => {
+    const ev = { 'ocel:eid': 'x', 'ocel:activity': 'act', 'ocel:timestamp': 'ts', 'ocel:omap': [], 'ocel:vmap': {} };
+    expect(isValidOcelEvent(ev)).toBe(true);
+  });
+
+  it('allows empty ocel:vmap object (no extra attributes is valid)', () => {
+    const ev = { 'ocel:eid': 'x', 'ocel:activity': 'act', 'ocel:timestamp': 'ts', 'ocel:omap': [], 'ocel:vmap': {} };
+    expect(isValidOcelEvent(ev)).toBe(true);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// fromMcppJsonlStrict — strict validated parsing (gap closure)
+// ---------------------------------------------------------------------------
+
+describe('fromMcppJsonlStrict — validated NDJSON parsing', () => {
+  it('parses well-formed NDJSON the same as fromMcppJsonl', () => {
+    const events = receiptToOcelEvents(makeReceipt());
+    const ndjson = toOcelJsonl(events);
+    const strict = fromMcppJsonlStrict(ndjson);
+    const lenient = fromMcppJsonl(ndjson);
+    expect(strict).toHaveLength(lenient.length);
+    for (let i = 0; i < strict.length; i++) {
+      expect(strict[i]['ocel:eid']).toBe(lenient[i]['ocel:eid']);
+    }
+  });
+
+  it('returns empty array for empty string', () => {
+    expect(fromMcppJsonlStrict('')).toHaveLength(0);
+  });
+
+  it('throws TypeError when a line parses to JSON but is missing ocel:eid', () => {
+    const badLine = JSON.stringify({ 'ocel:activity': 'act', 'ocel:timestamp': 'ts', 'ocel:omap': [], 'ocel:vmap': {} });
+    expect(() => fromMcppJsonlStrict(badLine)).toThrow(TypeError);
+  });
+
+  it('throws TypeError when a line parses to JSON but ocel:vmap is null', () => {
+    const badLine = JSON.stringify({ 'ocel:eid': 'x', 'ocel:activity': 'act', 'ocel:timestamp': 'ts', 'ocel:omap': [], 'ocel:vmap': null });
+    expect(() => fromMcppJsonlStrict(badLine)).toThrow(TypeError);
+  });
+
+  it('throws SyntaxError when a line is not valid JSON (inherited from JSON.parse)', () => {
+    expect(() => fromMcppJsonlStrict('not-valid-json')).toThrow(SyntaxError);
+  });
+
+  it('skips blank lines (consistent with fromMcppJsonl behavior)', () => {
+    const events = receiptToOcelEvents(makeReceipt());
+    const ndjsonWithBlanks = '\n' + toOcelJsonl(events) + '\n';
+    const result = fromMcppJsonlStrict(ndjsonWithBlanks);
+    expect(result).toHaveLength(3);
+  });
+
+  it('error message for invalid event names the line number', () => {
+    // First line is valid, second line is invalid
+    const validLine = toOcelJsonl([receiptToOcelEvents(makeReceipt())[0]]);
+    const invalidLine = JSON.stringify({ not_ocel: true });
+    const ndjson = validLine + '\n' + invalidLine;
+    let thrown: unknown;
+    try {
+      fromMcppJsonlStrict(ndjson);
+    } catch (e) {
+      thrown = e;
+    }
+    expect(thrown).toBeInstanceOf(TypeError);
+    expect((thrown as TypeError).message).toContain('2'); // line 2
   });
 });

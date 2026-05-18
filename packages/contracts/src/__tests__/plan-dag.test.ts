@@ -568,3 +568,155 @@ describe('Group 5 — Rank 2: Error messages are non-empty and informative', () 
     expect(dupError!.trim().length).toBeGreaterThan(0);
   });
 });
+
+// ── Group 6 — Rank 2 (domain contract): Sink outgoing-edge violations ─────────
+
+describe('Group 6 — Rank 2: Sink nodes must not have outgoing edges', () => {
+  it('sink node with an outgoing edge to an algorithm node is rejected', () => {
+    // sink → algo is semantically invalid: sinks only receive, never emit
+    const plan = makePlan(
+      [
+        makeNode('src', 'source'),
+        makeNode('algo', 'algorithm'),
+        makeNode('snk', 'sink'),
+      ],
+      [
+        makeEdge('src', 'algo'),
+        makeEdge('algo', 'snk'),
+        makeEdge('snk', 'algo'), // sink emitting back — invalid
+      ]
+    );
+    const errors = validatePlanDAG(plan);
+    expect(errors.length).toBeGreaterThan(0);
+    // Should also detect cycle (sink → algo → snk → algo)
+    const hasSinkViolation = errors.some(
+      (e) => e.toLowerCase().includes('sink') && (e.includes('→') || e.toLowerCase().includes('outgoing'))
+    );
+    expect(hasSinkViolation).toBe(true);
+  });
+
+  it('sink node with an outgoing edge to a source node is rejected', () => {
+    // sink → source creates a cycle of length 2 via back-edge from terminal node
+    const plan = makePlan(
+      [makeNode('src', 'source'), makeNode('snk', 'sink')],
+      [makeEdge('src', 'snk'), makeEdge('snk', 'src')]
+    );
+    const errors = validatePlanDAG(plan);
+    expect(errors.length).toBeGreaterThan(0);
+    // Sink outgoing-edge check fires
+    const hasSinkViolation = errors.some((e) => e.includes('snk') && (e.includes('→') || e.toLowerCase().includes('outgoing')));
+    expect(hasSinkViolation).toBe(true);
+  });
+
+  it('error message names the sink node that has the outgoing edge', () => {
+    const plan = makePlan(
+      [
+        makeNode('src', 'source'),
+        makeNode('algo', 'algorithm'),
+        makeNode('the_sink', 'sink'),
+      ],
+      [
+        makeEdge('src', 'algo'),
+        makeEdge('algo', 'the_sink'),
+        makeEdge('the_sink', 'algo'), // outgoing from sink
+      ]
+    );
+    const errors = validatePlanDAG(plan);
+    expect(errors.some((e) => e.includes('the_sink'))).toBe(true);
+  });
+
+  it('sink with no outgoing edges passes the check', () => {
+    // Only incoming edges are allowed for sink nodes
+    const plan = makePlan(
+      [makeNode('src', 'source'), makeNode('algo', 'algorithm'), makeNode('snk', 'sink')],
+      [makeEdge('src', 'algo'), makeEdge('algo', 'snk')]
+    );
+    expect(validatePlanDAG(plan)).toHaveLength(0);
+  });
+
+  it('multiple sinks each with no outgoing edges are all valid', () => {
+    const plan = makePlan(
+      [
+        makeNode('src', 'source'),
+        makeNode('algo', 'algorithm'),
+        makeNode('snk1', 'sink'),
+        makeNode('snk2', 'sink'),
+      ],
+      [makeEdge('src', 'algo'), makeEdge('algo', 'snk1'), makeEdge('algo', 'snk2')]
+    );
+    expect(validatePlanDAG(plan)).toHaveLength(0);
+  });
+});
+
+// ── Group 7 — Rank 1 (mathematical): Disconnected (island) node detection ────
+
+describe('Group 7 — Rank 1: Disconnected node detection', () => {
+  it('a node with no edges when other nodes have edges is an island', () => {
+    // src → snk is valid, but 'orphan' has no edges at all
+    const plan = makePlan(
+      [
+        makeNode('src', 'source'),
+        makeNode('snk', 'sink'),
+        makeNode('orphan', 'algorithm'), // island
+      ],
+      [makeEdge('src', 'snk')]
+    );
+    const errors = validatePlanDAG(plan);
+    expect(errors.length).toBeGreaterThan(0);
+    expect(errors.some((e) => e.includes('orphan'))).toBe(true);
+  });
+
+  it('disconnected error message mentions the island node id', () => {
+    const plan = makePlan(
+      [
+        makeNode('src', 'source'),
+        makeNode('snk', 'sink'),
+        makeNode('FLOATING_NODE', 'algorithm'),
+      ],
+      [makeEdge('src', 'snk')]
+    );
+    const errors = validatePlanDAG(plan);
+    expect(errors.some((e) => e.includes('FLOATING_NODE'))).toBe(true);
+  });
+
+  it('a plan with NO edges and exactly source+sink is valid (both connected via absence of edges)', () => {
+    // Edge-free plans are not subject to disconnected-node check
+    // because we can't determine reachability without edges
+    const plan = makePlan(
+      [makeNode('src', 'source'), makeNode('snk', 'sink')],
+      []
+    );
+    // No edges → disconnected check is skipped; only source+sink kind checks apply
+    const errors = validatePlanDAG(plan);
+    // No error about disconnected nodes (the check only applies when edges > 0)
+    expect(errors.every((e) => !e.toLowerCase().includes('disconnected'))).toBe(true);
+  });
+
+  it('all nodes connected to the main flow are not flagged as islands', () => {
+    const plan = makePlan(
+      [
+        makeNode('src', 'source'),
+        makeNode('a', 'algorithm'),
+        makeNode('b', 'algorithm'),
+        makeNode('snk', 'sink'),
+      ],
+      [makeEdge('src', 'a'), makeEdge('a', 'b'), makeEdge('b', 'snk')]
+    );
+    expect(validatePlanDAG(plan)).toHaveLength(0);
+  });
+
+  it('two disconnected islands both appear in error messages', () => {
+    const plan = makePlan(
+      [
+        makeNode('src', 'source'),
+        makeNode('snk', 'sink'),
+        makeNode('island1', 'algorithm'),
+        makeNode('island2', 'algorithm'),
+      ],
+      [makeEdge('src', 'snk')]
+    );
+    const errors = validatePlanDAG(plan);
+    expect(errors.some((e) => e.includes('island1'))).toBe(true);
+    expect(errors.some((e) => e.includes('island2'))).toBe(true);
+  });
+});
