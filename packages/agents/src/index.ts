@@ -49,3 +49,7 @@ export type { AuditQuery, AuditSummary } from './audit.js';
 export { AuditQuery as AuditQueryFilter } from './audit.js';
 export { AgentOrchestrator } from './orchestration.js';
 export type { AgentExecutionContext } from './orchestration.js';
+
+// Rule8 / Prolog8 bridge
+export { auditEntriesToCatalog, AUDIT_PRED_ID, AUDIT_PRED_LABEL } from './rule8-bridge.js';
+export type { AuditRule8Bundle } from './rule8-bridge.js';

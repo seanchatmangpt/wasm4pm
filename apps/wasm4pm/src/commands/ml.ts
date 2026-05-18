@@ -160,6 +160,25 @@ export const ml = defineCommand({
             }
           }
 
+          // Validate --forecast-periods when provided (forecast task)
+          const rawForecastPeriods = ctx.args['forecast-periods'] as string | undefined;
+          if (rawForecastPeriods !== undefined) {
+            const parsedFp = parseInt(rawForecastPeriods, 10);
+            if (Number.isNaN(parsedFp) || parsedFp <= 0) {
+              const result = makeErrorResult(
+                'ml',
+                new Error(
+                  `Invalid --forecast-periods value: "${rawForecastPeriods}". Must be a positive integer.\n` +
+                    `Example:  wpm ml forecast -i log.xes --forecast-periods 5`
+                ),
+                EXIT_CODES.config_error,
+                'INVALID_FORECAST_PERIODS'
+              );
+              emitResult(result, { format, verbose, quiet });
+              return await exitWithFlush(result.exit_code);
+            }
+          }
+
           const inputPath = ctx.args.input as string;
           const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
 

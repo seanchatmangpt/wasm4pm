@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import {
+  suggestAlgorithm,
   suggestClassificationMethod,
   suggestClusteringMethod,
   suggestRegressionMethod,
@@ -24,6 +25,76 @@ const largeLog = {
 };
 
 describe('algorithm-selector', () => {
+  describe('suggestAlgorithm (unified interface)', () => {
+    it('dispatches classify task correctly', () => {
+      const rec = suggestAlgorithm('classify', smallLog);
+      expect(rec.algorithm).toBe('naive_bayes');
+      expect(rec.confidence).toBeGreaterThan(0);
+      expect(rec.confidence).toBeLessThanOrEqual(1);
+      expect(rec.rationale).toBeTruthy();
+    });
+
+    it('dispatches cluster task correctly', () => {
+      const rec = suggestAlgorithm('cluster', smallLog);
+      expect(rec.algorithm).toBe('kmeans');
+      expect(rec.confidence).toBeGreaterThan(0);
+    });
+
+    it('dispatches forecast task correctly', () => {
+      const rec = suggestAlgorithm('forecast', smallLog);
+      expect(rec.algorithm).toBe('linear');
+      expect(rec.confidence).toBeGreaterThan(0);
+    });
+
+    it('dispatches regress task correctly', () => {
+      const rec = suggestAlgorithm('regress', smallLog);
+      expect(rec.algorithm).toBe('linear_regression');
+      expect(rec.confidence).toBeGreaterThan(0);
+    });
+
+    it('dispatches pca task correctly', () => {
+      const rec = suggestAlgorithm('pca', smallLog);
+      expect(rec.algorithm).toBe('svd');
+      expect(rec.confidence).toBeGreaterThan(0);
+    });
+
+    it('respects user choice via suggestAlgorithm', () => {
+      const rec = suggestAlgorithm('classify', smallLog, 'decision_tree');
+      expect(rec.algorithm).toBe('decision_tree');
+      expect(rec.confidence).toBe(1.0);
+    });
+
+    it('includes confidence score in [0, 1]', () => {
+      const tasks: Array<'classify' | 'cluster' | 'forecast' | 'regress' | 'pca'> = [
+        'classify',
+        'cluster',
+        'forecast',
+        'regress',
+        'pca',
+      ];
+      tasks.forEach((task) => {
+        const rec = suggestAlgorithm(task, smallLog);
+        expect(rec.confidence).toBeGreaterThanOrEqual(0);
+        expect(rec.confidence).toBeLessThanOrEqual(1);
+      });
+    });
+
+    it('includes rationale for every recommendation', () => {
+      const tasks: Array<'classify' | 'cluster' | 'forecast' | 'regress' | 'pca'> = [
+        'classify',
+        'cluster',
+        'forecast',
+        'regress',
+        'pca',
+      ];
+      tasks.forEach((task) => {
+        const rec = suggestAlgorithm(task, smallLog);
+        expect(rec.rationale).toBeTruthy();
+        expect(rec.rationale.length).toBeGreaterThan(0);
+      });
+    });
+  });
+
   describe('suggestClassificationMethod', () => {
     it('prefers naive_bayes for small logs', () => {
       const result = suggestClassificationMethod(smallLog);
@@ -33,7 +104,7 @@ describe('algorithm-selector', () => {
     it('prefers decision_tree for high-cardinality logs', () => {
       const result = suggestClassificationMethod({
         ...smallLog,
-        traceCount: 100, // Must be >= 20 to pass first check
+        traceCount: 50, // Must be >= 20 and have activityCount > 30
         activityCount: 50,
       });
       expect(result).toBe('decision_tree');

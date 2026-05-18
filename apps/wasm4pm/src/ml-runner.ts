@@ -591,10 +591,17 @@ export async function executeMlTask(
       const forecastPeriods = parseInt(String(options.forecastPeriods ?? '5'), 10);
       if (Number.isNaN(forecastPeriods) || forecastPeriods <= 0)
         throw new Error('Forecast parameter forecastPeriods must be a positive number');
+      const useExponential = options.useExponential ?? false;
+      // Determine the method used for transparency in output
+      const forecastMethodUsed = useExponential ? 'exponential' : 'linear';
       rawResult = (await forecastSeries(distances, {
         forecastPeriods,
-        useExponential: options.useExponential,
+        useExponential,
       })) as unknown as Record<string, unknown>;
+      // Attach method_used so JSON consumers can see which model was applied.
+      // This closes the forecast transparency gap: practitioners can confirm
+      // whether exponential overlay was active or the linear baseline was used.
+      (rawResult as Record<string, unknown>).method_used = forecastMethodUsed;
       break;
     }
 
@@ -606,9 +613,19 @@ export async function executeMlTask(
       const distances = (driftResult?.drifts ?? []).map(
         (d: WasmDriftWindow) => d.distance ?? 0
       );
+      const anomalySmoothingMethod = options.smoothingMethod ?? 'sma';
       rawResult = (await detectEnhancedAnomalies(distances, {
-        smoothingMethod: options.smoothingMethod,
+        smoothingMethod: anomalySmoothingMethod,
       })) as unknown as Record<string, unknown>;
+      // ── Enrich anomaly output with practitioner-facing fields ──────────────
+      // anomaly_count: derived from peakIndices so consumers don't have to count
+      const peakIndices = rawResult.peakIndices as number[] | undefined;
+      const anomalyCount = peakIndices?.length ?? 0;
+      (rawResult as Record<string, unknown>).anomaly_count = anomalyCount;
+      // threshold_used: the EWMA window size / smoothing config that produced this result
+      (rawResult as Record<string, unknown>).threshold_used = anomalySmoothingMethod;
+      // suggested_method: which smoothing algorithm produced the output (parallel to classify's suggested_method)
+      (rawResult as Record<string, unknown>).suggested_method = anomalySmoothingMethod;
       break;
     }
 

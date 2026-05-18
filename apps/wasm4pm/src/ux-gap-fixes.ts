@@ -29,6 +29,7 @@ export interface EnrichedErrorContext {
     identifier?: string;      // e.g., offset, filename, log name
     expected?: string | number;
     actual?: string | number;
+    bytesNeeded?: number;     // e.g., bytes required for allocation
   };
   suggestedActions: string[]; // Ordered list of concrete steps (run X, check Y, try Z)
   docsUrl?: string;
@@ -43,13 +44,6 @@ export function enrichWasmMemoryError(
   details?: { offset?: number; bytesNeeded?: number; nodeVersion?: string }
 ): EnrichedErrorContext {
   const span = getActiveSpan?.();
-
-  const baseMessage = {
-    empty: 'WASM memory buffer not initialized',
-    corrupted: 'WASM memory buffer inaccessible',
-    readonly: 'WASM memory buffer is read-only',
-    'allocation-failed': 'WASM memory allocation failed',
-  };
 
   const rootCauses: Record<typeof cause, string> = {
     empty: 'No memory buffer allocated. WasmLoader.init() may not have completed.',
@@ -320,7 +314,6 @@ export class WarningCollector {
  * Guides users to run `wpm completions install bash` when they get stuck
  */
 export function getCompletionHint(
-  command: string,
   shell = process.env.SHELL || ''
 ): string | undefined {
   const isInteractiveShell = shell.includes('bash') || shell.includes('zsh') || shell.includes('fish');

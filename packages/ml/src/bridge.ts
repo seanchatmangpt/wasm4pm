@@ -208,7 +208,6 @@ export function selectTopFeatures(
   }
 
   const numCols = data[0].length;
-  const numRows = data.length;
 
   // Transpose to get columns
   const columns: number[][] = Array(numCols)

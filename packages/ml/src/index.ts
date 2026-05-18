@@ -12,6 +12,22 @@ export { buildFeatureMatrix, encodeLabels, selectTopFeatures, normalizeFeatures 
 // Classification & regression (includes runCrossValidation for advanced usage)
 export { classifyTraces, regressRemainingTime, runCrossValidation } from './classifiers.js';
 
+// Cross-validation framework
+export {
+  stratifiedKFold,
+  holdoutSplit,
+  computeAccuracy,
+  computeRMSE,
+  computeMAE,
+  computeRSquared,
+  kFoldCrossValidation,
+  holdoutValidation,
+  holdoutRegressionValidation,
+  type KFoldResult,
+  type HoldoutResult,
+  type RegressionCVResult,
+} from './cross-validation.js';
+
 // Clustering
 export { clusterTraces } from './clustering.js';
 
