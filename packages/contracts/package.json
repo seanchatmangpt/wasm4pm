@@ -41,6 +41,10 @@
     "./errors": {
       "import": "./dist/errors.js",
       "types": "./dist/errors.d.ts"
+    },
+    "./prolog8-compiler": {
+      "import": "./dist/prolog8-compiler.js",
+      "types": "./dist/prolog8-compiler.d.ts"
     }
   },
   "files": [
