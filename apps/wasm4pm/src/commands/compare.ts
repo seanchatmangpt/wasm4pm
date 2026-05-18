@@ -209,6 +209,12 @@ interface ModelStats {
   qualityTier: number;
   /** Speed tier from ALGO_PROFILES (0-100, lower = faster) */
   speedTier: number;
+  /**
+   * Always true — signals that qualityTier is a design-time registry proxy,
+   * not a live fitness/precision score computed from the log.
+   * For authoritative Van der Aalst scores run `wpm quality <log.xes>`.
+   */
+  quality_tier_is_proxy: true;
 }
 
 /**
@@ -600,6 +606,7 @@ export const compare = defineCommand({
                         elapsedMs,
                         qualityTier: profile.qualityTier,
                         speedTier: profile.speedTier,
+                        quality_tier_is_proxy: true,
                       });
                     } catch (err) {
                       // Record the failure; push a sentinel row so output is always complete
@@ -616,6 +623,7 @@ export const compare = defineCommand({
                         elapsedMs: 0,
                         qualityTier: profile.qualityTier,
                         speedTier: profile.speedTier,
+                        quality_tier_is_proxy: true,
                       });
                     }
                   }
@@ -721,27 +729,28 @@ export const compare = defineCommand({
                 const minQuality = Math.min(...validStats.map((st) => st.qualityTier));
                 const maxQuality = Math.max(...validStats.map((st) => st.qualityTier));
 
-                // Table header — includes Quality column so all four Van der Aalst
+                // Table header — includes Quality* column so all four Van der Aalst
                 // proxies are visible at a glance alongside structural metrics.
+                // The * signals that Quality* is a design-time proxy, not a live score.
                 projection.log(
-                  `  ${'Algorithm'.padEnd(20)}  ${'Nodes'.padStart(6)}  ${'Edges'.padStart(6)}  ${'Time(ms)'.padStart(9)}  ${'Quality'.padStart(7)}  ${'Nodes'.padEnd(10)}  ${'Edges'.padEnd(10)}  ${'Time'.padEnd(10)}  ${'Quality'.padEnd(10)}`
+                  `  ${'Algorithm'.padEnd(20)}  ${'Nodes'.padStart(6)}  ${'Edges'.padStart(6)}  ${'Time(ms)'.padStart(9)}  ${'Quality*'.padStart(8)}  ${'Nodes'.padEnd(10)}  ${'Edges'.padEnd(10)}  ${'Time'.padEnd(10)}  ${'Quality*'.padEnd(10)}`
                 );
                 projection.log(
-                  `  ${'─'.repeat(20)}  ${'─'.repeat(6)}  ${'─'.repeat(6)}  ${'─'.repeat(9)}  ${'─'.repeat(7)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}`
+                  `  ${'─'.repeat(20)}  ${'─'.repeat(6)}  ${'─'.repeat(6)}  ${'─'.repeat(9)}  ${'─'.repeat(8)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}`
                 );
 
                 for (const st of s) {
                   const algoCol = col(st.algorithm, 20);
                   if (st.nodes < 0) {
                     projection.log(
-                      `  ${algoCol}  ${'ERROR'.padStart(6)}  ${'─'.padStart(6)}  ${'─'.padStart(9)}  ${'─'.padStart(7)}`
+                      `  ${algoCol}  ${'ERROR'.padStart(6)}  ${'─'.padStart(6)}  ${'─'.padStart(9)}  ${'─'.padStart(8)}`
                     );
                     continue;
                   }
                   const nodesStr = numCol(st.nodes, 6);
                   const edgesStr = numCol(st.edges, 6);
                   const timeStr = numCol(st.elapsedMs, 9, 1);
-                  const qualStr = numCol(st.qualityTier, 7);
+                  const qualStr = numCol(st.qualityTier, 8);
                   const nodesBar = sparkBar(st.nodes, minNodes, maxNodes).padEnd(10);
                   const edgesBar = sparkBar(st.edges, minEdges, maxEdges).padEnd(10);
                   const timeBar = sparkBar(st.elapsedMs, minTime, maxTime).padEnd(10);
@@ -780,13 +789,16 @@ export const compare = defineCommand({
                   '               For large logs (>100K events) this gap compounds significantly.'
                 );
                 projection.log(
-                  '    Quality  — Van der Aalst quality tier (0-100). Registry proxy for the'
+                  '    Quality* — Van der Aalst quality tier (0-100). * = design-time registry proxy,'
                 );
                 projection.log(
-                  '               fitness+precision balance. Higher = better model quality.'
+                  '               not a live fitness/precision score computed from this log.'
                 );
                 projection.log(
-                  '               This is a design-time estimate. For live scores: wpm quality <log.xes>.'
+                  '               Higher = better expected fitness+precision balance.'
+                );
+                projection.log(
+                  '               For authoritative scores: wpm quality <log.xes>.'
                 );
                 projection.log('');
 
@@ -854,10 +866,10 @@ export const compare = defineCommand({
                   projection.log('');
 
                   projection.log(
-                    '  Note: Quality tier is a design-time proxy, not a live fitness/precision score.'
+                    '  Note: Quality* is a design-time registry proxy (quality_tier_is_proxy: true),'
                   );
                   projection.log(
-                    '  For authoritative Van der Aalst metrics: wpm quality <log.xes>'
+                    '  not a live fitness/precision score. For authoritative Van der Aalst metrics: wpm quality <log.xes>'
                   );
                   projection.log('');
                 }

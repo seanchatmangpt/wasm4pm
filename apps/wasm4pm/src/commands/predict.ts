@@ -1,6 +1,7 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
+import { resolveInputPath } from '../input-validation.js';
 import { EXIT_CODES, translateContractExitCode } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
 import { loadWasm4pmConfig, buildCliOverrides } from '../config-loader.js';
@@ -43,10 +44,15 @@ export const predict = defineCommand({
         'Prediction task (next-activity, remaining-time, outcome, drift, features, resource)',
       required: true,
     },
+    log: {
+      type: 'positional',
+      description: 'Path to XES event log file (positional alternative to -i/--input)',
+      required: false,
+    },
     input: {
       type: 'string',
       description: 'Path to XES event log file (required)',
-      required: true,
+      required: false,
       alias: 'i',
     },
     'activity-key': {
@@ -107,7 +113,7 @@ export const predict = defineCommand({
       'predict',
       {
         task: String(ctx.args.task ?? ''),
-        input: String(ctx.args.input ?? ''),
+        input: String(ctx.args.input ?? ctx.args.log ?? ''),
         'activity.key': String(ctx.args['activity-key'] ?? ''),
         'prediction.top_k': Number(ctx.args['top-k'] ?? 0),
         'prediction.ngram_order': Number(ctx.args['ngram-order'] ?? 0),
@@ -225,7 +231,22 @@ export const predict = defineCommand({
             : undefined;
 
           // Step 3: Load session and execute
-          const inputPath = ctx.args.input as string;
+          const inputPath = resolveInputPath(
+            ctx.args.log as string | undefined,
+            ctx.args.input as string | undefined
+          );
+          if (!inputPath) {
+            const result = makeErrorResult(
+              'predict',
+              new Error(
+                'Input file required.\n\nUsage:  wpm predict <task> <log.xes>\n        wpm predict <task> -i <log.xes>\n\nRun "wpm predict --help" for details.'
+              ),
+              EXIT_CODES.source_error,
+              'MISSING_INPUT'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
 
           await withLogSession(
             {

@@ -272,7 +272,6 @@ export const social = defineCommand({
                 outboundDegree[e.from] = (outboundDegree[e.from] ?? 0) + 1;
                 inboundDegree[e.to] = (inboundDegree[e.to] ?? 0) + 1;
               }
-              const totalResources = rawNodes.length;
               for (const node of rawNodes) {
                 const outDegree = outboundDegree[node.id] ?? 0;
                 const inDegree = inboundDegree[node.id] ?? 0;

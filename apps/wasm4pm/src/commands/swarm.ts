@@ -394,7 +394,7 @@ export const swarm = defineCommand({
 
           return await exitWithFlush(result.exit_code);
         } catch (error) {
-          const result = makeErrorResult('swarm', error, EXIT_CODES.execution_error);
+          const result = makeErrorResult('swarm', error, EXIT_CODES.execution_error, 'EXECUTION_ERROR');
           emitResult(result, { format, verbose, quiet });
           return await exitWithFlush(result.exit_code);
         }

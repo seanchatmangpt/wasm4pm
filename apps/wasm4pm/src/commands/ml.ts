@@ -16,6 +16,7 @@ import {
 } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
 import { STANDARD_EXIT_CODE_DOCS } from '../help-standards.js';
+import { resolveInputPath } from '../input-validation.js';
 
 export const ml = defineCommand({
   meta: {
@@ -36,10 +37,15 @@ export const ml = defineCommand({
   pca        - PCA dimensionality reduction (variance explained per component)`,
       required: true,
     },
+    log: {
+      type: 'positional',
+      description: 'Path to XES event log file (positional alternative to -i/--input)',
+      required: false,
+    },
     input: {
       type: 'string',
       description: 'Path to XES event log file',
-      required: true,
+      required: false,
       alias: 'i',
     },
     'activity-key': {
@@ -97,7 +103,7 @@ export const ml = defineCommand({
       'ml',
       {
         task: String(ctx.args.task ?? ''),
-        input: String(ctx.args.input ?? ''),
+        input: String(ctx.args.input ?? ctx.args.log ?? ''),
         activity_key: String(ctx.args['activity-key'] ?? ''),
         method: String(ctx.args.method ?? ''),
         format,
@@ -179,7 +185,22 @@ export const ml = defineCommand({
             }
           }
 
-          const inputPath = ctx.args.input as string;
+          const inputPath = resolveInputPath(
+            ctx.args.log as string | undefined,
+            ctx.args.input as string | undefined
+          );
+          if (!inputPath) {
+            const result = makeErrorResult(
+              'ml',
+              new Error(
+                'Input file required.\n\nUsage:  wpm ml <task> <log.xes>\n        wpm ml <task> -i <log.xes>\n\nRun "wpm ml --help" for details.'
+              ),
+              EXIT_CODES.source_error,
+              'MISSING_INPUT'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
           const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
 
           await withLogSession(

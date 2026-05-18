@@ -196,6 +196,15 @@ ${BOLD}PROLOG8${RESET}  ${DIM}(byte-capped proof engine, BLAKE3 receipt chains)$
   ${GREEN}wpm prolog8 query${RESET} -i <input.json>    Evaluate a query (Allow / Deny / Invalid + proof)
   ${GREEN}wpm prolog8 replay${RESET} -i <input.json>   Verify a receipt (detect tampering)
 
+${BOLD}UTILITY${RESET}
+  ${GREEN}wpm batch${RESET} <dir/>                    Process all XES/OCEL files in a directory, write results to --output-dir
+  ${GREEN}wpm swarm${RESET} <log.xes>                 Multi-worker swarm: parallel algorithm runs, convergence voting
+  ${GREEN}wpm config show${RESET}                     Print the resolved config (all 5 layers merged), provenance included
+  ${GREEN}wpm config validate${RESET}                 Validate wasm4pm.toml / wasm4pm.json against Zod schema
+  ${GREEN}wpm explain${RESET} <algorithm>             Plain-English explanation + academic reference for any algorithm
+  ${GREEN}wpm verify${RESET} <receipt.json>           Re-hash and validate a saved receipt for tamper detection
+  ${GREEN}wpm repl${RESET}                            Interactive REPL: run commands without re-loading WASM each time
+
 ${BOLD}SETUP${RESET}
   ${GREEN}wpm init${RESET}                            Scaffold wasm4pm.toml + .env.example in current dir
 

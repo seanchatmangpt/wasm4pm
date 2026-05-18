@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { resolveConfig as loadConfig } from '@wasm4pm/config';
 import { plan as makePlan } from '@wasm4pm/planner';
-import { ALGORITHM_CLI_ALIASES, findClosestMatch } from '@wasm4pm/contracts';
+import { ALGORITHM_CLI_ALIASES, findClosestMatch, getProfileAlgorithms } from '@wasm4pm/contracts';
 import { getRegistry } from '@wasm4pm/kernel';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { withLogSession } from '../with-log-session.js';
@@ -373,11 +373,15 @@ export const run = defineCommand({
           const rawAlgo: string =
             shortcutAlgo ??
             (ctx.args.algorithm as string | undefined) ??
-            (config?.execution?.profile === 'quality'
-              ? 'heuristic'
-              : config?.execution?.profile === 'fast'
-                ? 'dfg'
-                : 'heuristic');
+            (() => {
+              const profile = config?.execution?.profile ?? 'balanced';
+              // fast profile: always dfg (O(n), no overhead)
+              if (profile === 'fast') return 'dfg';
+              // all other profiles: first algorithm from the canonical profile registry
+              // quality → simulated_annealing (index 0), balanced → alpha_plus_plus, stream → simd_streaming_dfg
+              const profileAlgos = getProfileAlgorithms(profile);
+              return profileAlgos[0] ?? 'heuristic';
+            })();
 
           // Guard: empty or whitespace-only --algorithm is a config error (not source error).
           // An empty string cannot be resolved and gives a confusing fallthrough message.

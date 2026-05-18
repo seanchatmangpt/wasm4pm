@@ -305,7 +305,7 @@ export const simulate = defineCommand({
           ); // end withLogSession
         } catch (error) {
           lateStatus = 'error';
-          const result = makeErrorResult('simulate', error, EXIT_CODES.execution_error);
+          const result = makeErrorResult('simulate', error, EXIT_CODES.execution_error, 'EXECUTION_ERROR');
           emitResult(result, { format, verbose, quiet });
           return await exitWithFlush(result.exit_code);
         }

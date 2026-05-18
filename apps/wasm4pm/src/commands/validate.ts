@@ -382,13 +382,18 @@ export const validate = defineCommand({
             }
           }
 
-          const result = makeResult('validate', payload, performance.now() - t0, exitCode);
+          // When schema/attribute errors are present the command exits source_error (2).
+          // makeResult() always sets status:'ok', but the top-level envelope status
+          // must reflect the validation outcome: 'error' when there are hard failures,
+          // 'ok' when validation passes (even with warnings).
+          const _baseResult = makeResult('validate', payload, performance.now() - t0, exitCode);
+          const result = hasErrors ? { ..._baseResult, status: 'error' as const } : _baseResult;
           emitResult(result, { format, verbose, quiet }, (res, projection) => {
             printHumanValidation(projection, res.payload as typeof payload);
           });
           return await exitWithFlush(result.exit_code);
         } catch (error) {
-          const result = makeErrorResult('validate', error, EXIT_CODES.execution_error);
+          const result = makeErrorResult('validate', error, EXIT_CODES.execution_error, 'EXECUTION_ERROR');
           emitResult(result, { format, verbose, quiet });
           return await exitWithFlush(result.exit_code);
         }
@@ -679,7 +684,8 @@ async function validateOcel(opts: {
     },
   };
 
-  const result = makeResult('validate', payload, performance.now() - t0, exitCode);
+  const _baseResult = makeResult('validate', payload, performance.now() - t0, exitCode);
+  const result = hasErrors ? { ..._baseResult, status: 'error' as const } : _baseResult;
   emitResult(result, { format, verbose, quiet }, (_res, projection) => {
     printOcelValidation(projection, payload);
   });

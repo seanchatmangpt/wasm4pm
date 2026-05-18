@@ -26,7 +26,7 @@ import {
   detectLogCharacteristics,
   assessFeatureQuality,
 } from '@wasm4pm/ml';
-import type { ClassificationMethod, ClusteringMethod, RegressionMethod, QualityReport } from '@wasm4pm/ml';
+import type { ClassificationMethod, ClusteringMethod, RegressionMethod } from '@wasm4pm/ml';
 import { Instrumentation } from '@wasm4pm/observability';
 import type { OtelEvent, RequiredOtelAttributes } from '@wasm4pm/observability';
 import { suggestClassificationMethod } from './algorithm-selector.js';
