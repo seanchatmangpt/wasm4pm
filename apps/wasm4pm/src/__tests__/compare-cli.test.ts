@@ -774,4 +774,52 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
       expect([EXIT_CODES.config_error, EXIT_CODES.source_error]).toContain(result.exitCode);
     });
   });
+
+  describe('compare — gap fixes (DX/QoL)', () => {
+    it('Gap-1: duplicate algorithm (dfg,dfg) exits config_error (1)', async () => {
+      const result = await runCli(['compare', 'dfg,dfg', '--input', 'test.xes']);
+      expect(result.exitCode).toEqual(EXIT_CODES.config_error);
+      expect(result.stderr || result.stdout).toMatch(/duplicate|distinct/i);
+    });
+
+    it('Gap-1: comma-separated three-way duplicate (dfg,heuristic,dfg) exits config_error (1)', async () => {
+      // citty takes the first positional only for space-separated; comma-separated allows multi-algo in one arg
+      const result = await runCli(['compare', 'dfg,heuristic,dfg', '--input', 'test.xes']);
+      expect(result.exitCode).toEqual(EXIT_CODES.config_error);
+      expect(result.stderr || result.stdout).toMatch(/duplicate|distinct/i);
+    });
+
+    it('Gap-1: duplicate among multiple (dfg,heuristic,dfg) exits config_error (1)', async () => {
+      const result = await runCli(['compare', 'dfg,heuristic,dfg', '--input', 'test.xes']);
+      expect(result.exitCode).toEqual(EXIT_CODES.config_error);
+      expect(result.stderr || result.stdout).toMatch(/duplicate|distinct/i);
+    });
+
+    it('Gap-2: separator-only algorithms (,) exits config_error (1)', async () => {
+      const result = await runCli(['compare', ',', '--input', 'test.xes']);
+      expect(result.exitCode).toEqual(EXIT_CODES.config_error);
+    });
+
+    it('Gap-3: unknown algorithm exits config_error (1), not source_error (2)', async () => {
+      const result = await runCli(['compare', 'dfg', 'totally-unknown', '--input', 'test.xes']);
+      expect(result.exitCode).toEqual(EXIT_CODES.config_error);
+      expect(result.stderr || result.stdout).toMatch(/unknown|algorithm/i);
+    });
+
+    it('Gap-3: invalid algorithm JSON output has config_error code', async () => {
+      const result = await runCli([
+        'compare', 'dfg', 'bad-algo', '--input', 'test.xes', '--format', 'json',
+      ]);
+      expect(result.exitCode).toEqual(EXIT_CODES.config_error);
+      const json = JSON.parse(result.stdout);
+      expect(json.status).toBe('error');
+      expect(json.exit_code).toEqual(EXIT_CODES.config_error);
+    });
+
+    it('Gap-4: --no-save flag is recognized (does not cause unknown flag error)', async () => {
+      const result = await runCli(['compare', 'dfg', 'heuristic', '--no-save', '--help']);
+      // --help should still succeed — flag must be declared
+      expect(result.exitCode).toEqual(EXIT_CODES.success);
+    });
+  });
 });

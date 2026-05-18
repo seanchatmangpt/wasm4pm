@@ -447,7 +447,7 @@ export const compare = defineCommand({
     },
     'no-save': {
       type: 'boolean',
-      description: 'Do not auto-save the receipt to .wasm4pm/results/',
+      description: 'Do not auto-save the receipt to .wasm4pm/receipts/',
     },
   },
   async run(ctx) {
@@ -471,6 +471,24 @@ export const compare = defineCommand({
             .map((s) => s.trim().toLowerCase())
             .filter(Boolean);
 
+          // Empty or separator-only input (e.g. "" or ",") — config error
+          if (rawAlgos.length === 0) {
+            const result = makeErrorResult(
+              'compare',
+              new Error(
+                `No algorithms specified.\n\n` +
+                  `Usage:  wpm compare dfg,heuristic -i log.xes\n` +
+                  `        wpm compare dfg heuristic inductive -i log.xes\n\n` +
+                  `Quick picks: dfg, heuristic, inductive, ilp, genetic\n` +
+                  `Run 'wpm algorithms' to list all available algorithms.`
+              ),
+              EXIT_CODES.config_error,
+              'NO_ALGORITHMS'
+            );
+            emitResult(result, emitOptions);
+            return await exitWithFlush(result.exit_code);
+          }
+
           // Resolve kernel IDs to CLI aliases, then validate
           const resolved = rawAlgos.map((a) => ALGORITHM_CLI_ALIASES[a] ?? a);
           const invalid = resolved.filter((a) => !ALGORITHMS.includes(a as Algorithm));
@@ -488,8 +506,34 @@ export const compare = defineCommand({
                   `  Usage:  wpm compare dfg,heuristic,genetic -i log.xes\n` +
                   `  Run 'wpm algorithms' to list all available algorithms with descriptions.`
               ),
-              EXIT_CODES.source_error,
+              EXIT_CODES.config_error,
               'UNKNOWN_ALGORITHMS'
+            );
+            emitResult(result, emitOptions);
+            return await exitWithFlush(result.exit_code);
+          }
+
+          // Deduplicate algorithms — dfg,dfg is a config error: a comparison needs distinct algorithms
+          const seen = new Set<string>();
+          const duplicates: string[] = [];
+          for (const a of resolved) {
+            if (seen.has(a)) {
+              duplicates.push(a);
+            } else {
+              seen.add(a);
+            }
+          }
+          if (duplicates.length > 0) {
+            const result = makeErrorResult(
+              'compare',
+              new Error(
+                `Duplicate algorithm(s) specified: ${duplicates.join(', ')}.\n\n` +
+                  `Each algorithm must appear at most once — a comparison needs distinct algorithms.\n\n` +
+                  `Usage:  wpm compare dfg,heuristic -i log.xes\n` +
+                  `Run 'wpm algorithms' to list all available algorithms.`
+              ),
+              EXIT_CODES.config_error,
+              'DUPLICATE_ALGORITHMS'
             );
             emitResult(result, emitOptions);
             return await exitWithFlush(result.exit_code);
@@ -505,7 +549,7 @@ export const compare = defineCommand({
                   `Quick picks: dfg, heuristic, inductive, ilp, genetic\n` +
                   `Run 'wpm algorithms' to list all available algorithms.`
               ),
-              EXIT_CODES.source_error,
+              EXIT_CODES.config_error,
               'TOO_FEW_ALGORITHMS'
             );
             emitResult(result, emitOptions);

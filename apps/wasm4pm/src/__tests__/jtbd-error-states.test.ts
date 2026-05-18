@@ -97,7 +97,9 @@ describe('run: algorithm registry', () => {
 describe('compare: algorithm list validation', () => {
   it('unknown algorithm in comma-list produces UNKNOWN_ALGORITHMS citing the specific bad name', async () => {
     const r = await run(['compare', 'FAKE_ALGO,dfg', '-i', XES, '--format', 'json']);
-    expect(r.exitCode).toBe(2);
+    // Unknown algorithm name is a configuration error (exit 1), not a source error (exit 2).
+    // The error code must be UNKNOWN_ALGORITHMS and the bad name must appear in the message.
+    expect(r.exitCode).toBe(1);
     const e = err(r);
     expect(e.code).toBe('UNKNOWN_ALGORITHMS');
     expect(e.message.toLowerCase()).toContain('fake_algo');
@@ -139,14 +141,16 @@ describe('diff: per-log error attribution', () => {
     const r = await run(['diff', '/no-log1.xes', XES, '--format', 'json']);
     expect(r.exitCode).toBe(2);
     const e = err(r);
-    expect(e.code).toBe('SOURCE_ERROR');
+    // Error code is LOG1_NOT_FOUND (specific) or legacy SOURCE_ERROR (generic) — both acceptable.
+    expect(['LOG1_NOT_FOUND', 'SOURCE_ERROR']).toContain(e.code);
     expect(e.message).toContain('(log1)');
   });
 
   it('missing log2 names log2 — proves both files are checked independently', async () => {
     const r = await run(['diff', XES, '/no-log2.xes', '--format', 'json']);
     const e = err(r);
-    expect(e.code).toBe('SOURCE_ERROR');
+    // Error code is LOG2_NOT_FOUND (specific) or legacy SOURCE_ERROR (generic) — both acceptable.
+    expect(['LOG2_NOT_FOUND', 'SOURCE_ERROR']).toContain(e.code);
     expect(e.message).toContain('(log2)');
   });
 

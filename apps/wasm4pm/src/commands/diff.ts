@@ -69,6 +69,8 @@ interface DiffPayload {
   log2: string;
   activityKey: string;
   diff: DiffResult;
+  /** True when log1 and log2 resolve to the same file (jaccard is always 1.0 in this case). */
+  same_file?: boolean;
 }
 
 export const diff = defineCommand({
@@ -133,7 +135,7 @@ export const diff = defineCommand({
           const log2Path = ctx.args.log2 as string;
           const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
 
-          // Validate both input files exist
+          // Validate both input files exist; use distinct error codes per argument
           for (const [label, filePath] of [
             ['log1', log1Path],
             ['log2', log2Path],
@@ -141,6 +143,7 @@ export const diff = defineCommand({
             try {
               await fs.access(filePath);
             } catch {
+              const errorCode = label === 'log1' ? 'LOG1_NOT_FOUND' : 'LOG2_NOT_FOUND';
               const result = makeErrorResult(
                 'diff',
                 new Error(
@@ -150,12 +153,22 @@ export const diff = defineCommand({
                     `  Check that the file path is correct and the file is readable.`
                 ),
                 EXIT_CODES.source_error,
-                'SOURCE_ERROR'
+                errorCode
               );
               emitResult(result, { format, verbose, quiet });
               return await exitWithFlush(result.exit_code);
             }
           }
+
+          // Detect when both paths resolve to the same file — the diff is trivially
+          // identical (jaccard=1.0).  We do NOT block execution because this is valid
+          // usage (e.g. baseline testing), but we surface a `same_file: true` flag in
+          // the JSON payload so callers can detect it without parsing the summary string.
+          const [realPath1, realPath2] = await Promise.all([
+            fs.realpath(log1Path).catch(() => log1Path),
+            fs.realpath(log2Path).catch(() => log2Path),
+          ]);
+          const isSameFile = log1Path === log2Path || realPath1 === realPath2;
 
           // Load WASM module
           const loader = WasmLoader.getInstance();
@@ -232,6 +245,7 @@ export const diff = defineCommand({
             log2: log2Path,
             activityKey,
             diff: diffResult,
+            ...(isSameFile ? { same_file: true } : {}),
           };
 
           const result = makeResult('diff', payload, elapsedMs, EXIT_CODES.success);
