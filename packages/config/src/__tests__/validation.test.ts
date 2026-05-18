@@ -21,6 +21,14 @@ import { checkConfigWarnings } from '../resolver.js';
 import { validate } from '../schema.js';
 import type { Config } from '../types.js';
 
+// ---------------------------------------------------------------------------
+// Shared minimal base for constructing invalid configs
+// ---------------------------------------------------------------------------
+const MINIMAL = { version: '26.4.5', source: { kind: 'file' as const } };
+
+// ---------------------------------------------------------------------------
+// Validation - Detailed Errors
+// ---------------------------------------------------------------------------
 describe('Validation - Detailed Errors', () => {
   it('validates algorithm in profile, warns on suspicious ML/RL/prediction config', () => {
     expect(validateAlgorithmProfile('dfg', 'fast')).toEqual({ compatible: true });
@@ -81,6 +89,9 @@ describe('Validation - Detailed Errors', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Validation - Profiles
+// ---------------------------------------------------------------------------
 describe('Validation - Profiles', () => {
   it('gets capabilities, makes suggestions, validates algorithms, and generates comparison table', () => {
     const fastCaps = getProfileCapabilities('fast');
@@ -110,6 +121,9 @@ describe('Validation - Profiles', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Validation - Presets
+// ---------------------------------------------------------------------------
 describe('Validation - Presets', () => {
   it('creates presets, validates against schema, generates TOML, and describes presets', () => {
     const quickTest = getPresetConfig('quick-test');
@@ -151,6 +165,9 @@ describe('Validation - Presets', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Config - Warnings
+// ---------------------------------------------------------------------------
 describe('Config - Warnings', () => {
   it('collects warnings from multiple sources and returns empty warnings for valid config', () => {
     const configWithIssues: Partial<Config> = {
@@ -184,6 +201,9 @@ describe('Config - Warnings', () => {
   });
 });
 
+// ---------------------------------------------------------------------------
+// Error Formatting
+// ---------------------------------------------------------------------------
 describe('Error Formatting', () => {
   it('formats validation errors with paths for single and multiple issues', () => {
     const config = { version: '1.0', source: { kind: 'invalid' } };
@@ -203,5 +223,175 @@ describe('Error Formatting', () => {
       expect(message).toContain('version');
       expect(message).toContain('source');
     }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Domain-contract: invalid algorithm name → validation error
+// ---------------------------------------------------------------------------
+describe('Domain contract — invalid algorithm name', () => {
+  it('rejects an unknown algorithm name', () => {
+    expect(() =>
+      validate({ ...MINIMAL, algorithm: { name: 'not_a_real_algo' } })
+    ).toThrow(/validation failed/i);
+  });
+
+  it('rejects an empty algorithm name string', () => {
+    expect(() =>
+      validate({ ...MINIMAL, algorithm: { name: '' } })
+    ).toThrow();
+  });
+
+  it('rejects algorithm name with wrong casing', () => {
+    expect(() =>
+      validate({ ...MINIMAL, algorithm: { name: 'DFG' } })
+    ).toThrow();
+  });
+
+  it('accepts every valid algorithm id without throwing', () => {
+    // Spot-check a representative set from each tier
+    for (const name of ['dfg', 'heuristic_miner', 'ilp', 'genetic_algorithm', 'inductive_miner'] as const) {
+      expect(() => validate({ ...MINIMAL, algorithm: { name } })).not.toThrow();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Domain-contract: negative / zero timeout → validation error
+// ---------------------------------------------------------------------------
+describe('Domain contract — execution constraints', () => {
+  it('rejects negative timeout', () => {
+    expect(() => validate({ ...MINIMAL, execution: { profile: 'fast', timeout: -1 } })).toThrow();
+  });
+
+  it('rejects zero timeout', () => {
+    expect(() => validate({ ...MINIMAL, execution: { profile: 'fast', timeout: 0 } })).toThrow();
+  });
+
+  it('rejects zero maxMemory', () => {
+    expect(() => validate({ ...MINIMAL, execution: { profile: 'fast', maxMemory: 0 } })).toThrow();
+  });
+
+  it('rejects negative maxMemory', () => {
+    expect(() => validate({ ...MINIMAL, execution: { profile: 'fast', maxMemory: -1024 } })).toThrow();
+  });
+
+  it('accepts positive timeout and maxMemory', () => {
+    expect(() => validate({ ...MINIMAL, execution: { profile: 'fast', timeout: 1, maxMemory: 1 } })).not.toThrow();
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Domain-contract: invalid profile name → validation error
+// ---------------------------------------------------------------------------
+describe('Domain contract — invalid profile name', () => {
+  it('rejects an unknown profile name', () => {
+    expect(() =>
+      validate({ ...MINIMAL, execution: { profile: 'turbo' } })
+    ).toThrow();
+  });
+
+  it('rejects profile name with wrong casing', () => {
+    expect(() =>
+      validate({ ...MINIMAL, execution: { profile: 'FAST' } })
+    ).toThrow();
+  });
+
+  it('accepts all four valid profile names', () => {
+    for (const profile of ['fast', 'balanced', 'quality', 'stream'] as const) {
+      expect(() => validate({ ...MINIMAL, execution: { profile } })).not.toThrow();
+    }
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Domain-contract: missing required source fields
+// ---------------------------------------------------------------------------
+describe('Domain contract — missing required source fields', () => {
+  it('rejects http source without url', () => {
+    expect(() =>
+      validate({ ...MINIMAL, source: { kind: 'http' } })
+    ).toThrow(/url/i);
+  });
+
+  it('rejects source with invalid kind', () => {
+    expect(() =>
+      validate({ ...MINIMAL, source: { kind: 'ftp' } })
+    ).toThrow();
+  });
+
+  it('rejects sink kind=http without url', () => {
+    expect(() =>
+      validate({ ...MINIMAL, sink: { kind: 'http' } })
+    ).toThrow(/url/i);
+  });
+
+  it('rejects sink kind=file without path', () => {
+    expect(() =>
+      validate({ ...MINIMAL, sink: { kind: 'file' } })
+    ).toThrow(/path/i);
+  });
+
+  it('rejects source=file with url field set (url is not applicable for file sources)', () => {
+    expect(() =>
+      validate({ ...MINIMAL, source: { kind: 'file', url: 'http://localhost/events' } })
+    ).toThrow(/url/i);
+  });
+
+  it('rejects sink=stdout with path field set', () => {
+    expect(() =>
+      validate({ ...MINIMAL, sink: { kind: 'stdout', path: './out.pnml' } })
+    ).toThrow(/path/i);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Domain-contract: valid edge cases
+// ---------------------------------------------------------------------------
+describe('Domain contract — valid edge cases', () => {
+  it('accepts stream source without path or url', () => {
+    expect(() => validate({ ...MINIMAL, source: { kind: 'stream' } })).not.toThrow();
+  });
+
+  it('accepts watch with poll_interval = 1 (minimum positive integer)', () => {
+    expect(() =>
+      validate({ ...MINIMAL, watch: { enabled: true, poll_interval: 1 } })
+    ).not.toThrow();
+  });
+
+  it('rejects watch with poll_interval = 0', () => {
+    expect(() =>
+      validate({ ...MINIMAL, watch: { enabled: true, poll_interval: 0 } })
+    ).toThrow();
+  });
+
+  it('accepts prediction with enabled=false and empty tasks array', () => {
+    expect(() =>
+      validate({ ...MINIMAL, prediction: { enabled: false, tasks: [] } })
+    ).not.toThrow();
+  });
+
+  it('rejects prediction enabled=true with empty tasks array', () => {
+    expect(() =>
+      validate({ ...MINIMAL, prediction: { enabled: true, tasks: [] } })
+    ).toThrow(/tasks/i);
+  });
+
+  it('accepts prediction enabled=true with at least one task', () => {
+    expect(() =>
+      validate({ ...MINIMAL, prediction: { enabled: true, tasks: ['drift'] } })
+    ).not.toThrow();
+  });
+
+  it('rejects version without minor component (e.g. "1.0")', () => {
+    expect(() => validate({ ...MINIMAL, version: '1.0' })).toThrow();
+  });
+
+  it('rejects version with leading v prefix', () => {
+    expect(() => validate({ ...MINIMAL, version: 'v26.4.5' })).toThrow();
+  });
+
+  it('accepts version with large numbers (day = 31)', () => {
+    expect(() => validate({ ...MINIMAL, version: '26.4.31' })).not.toThrow();
   });
 });
