@@ -363,12 +363,12 @@ describe('BeamMessage discriminated union (type narrowing)', () => {
   it('tag "beam_msg" narrows to BeamMsg with from/to/payload/sent_at fields', () => {
     const result: BeamMessage | null = parseBeamMessage(JSON.stringify(VALID_BEAM_MSG));
     expect(result).not.toBeNull();
-    if (result!.tag === 'beam_msg') {
+    if (result !== null && result.tag === 'beam_msg') {
       // TypeScript should narrow here; these properties must exist at runtime too.
-      expect(typeof result.from).toBe('string');
-      expect(typeof result.to).toBe('string');
-      expect(typeof result.sent_at).toBe('string');
-      expect(isObject(result.payload)).toBe(true);
+      expect(typeof result!.from).toBe('string');
+      expect(typeof result!.to).toBe('string');
+      expect(typeof result!.sent_at).toBe('string');
+      expect(isObject(result!.payload)).toBe(true);
     } else {
       // Force failure if tag was not beam_msg
       expect(result!.tag).toBe('beam_msg');
@@ -378,12 +378,12 @@ describe('BeamMessage discriminated union (type narrowing)', () => {
   it('tag "beam_monitor" narrows to BeamMonitor with ref/event/reason/pid/at fields', () => {
     const result: BeamMessage | null = parseBeamMessage(JSON.stringify(VALID_BEAM_MONITOR));
     expect(result).not.toBeNull();
-    if (result!.tag === 'beam_monitor') {
-      expect(typeof result.ref).toBe('string');
+    if (result !== null && result.tag === 'beam_monitor') {
+      expect(typeof result!.ref).toBe('string');
       expect(['DOWN', 'UP', 'EXIT']).toContain(result.event);
-      expect(typeof result.reason).toBe('string');
-      expect(typeof result.pid).toBe('string');
-      expect(typeof result.at).toBe('string');
+      expect(typeof result!.reason).toBe('string');
+      expect(typeof result!.pid).toBe('string');
+      expect(typeof result!.at).toBe('string');
     } else {
       expect(result!.tag).toBe('beam_monitor');
     }

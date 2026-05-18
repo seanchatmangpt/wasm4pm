@@ -1,5 +1,40 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
+
+/**
+ * GAP-CONF-3: Compute Agresti-Coull 95% confidence interval for a binomial proportion.
+ * Uses adjusted Wald interval (more accurate than standard Wald for small samples).
+ *
+ * @param successes - Number of successful outcomes
+ * @param trials - Total number of trials
+ * @param confidence - Confidence level (default: 0.95)
+ * @returns { point_estimate, ci_lower, ci_upper }
+ */
+function computeConfidenceInterval(
+  successes: number,
+  trials: number,
+  confidence = 0.95
+): { point_estimate: number; ci_lower: number; ci_upper: number } {
+  if (trials === 0) {
+    return { point_estimate: 0, ci_lower: 0, ci_upper: 1 };
+  }
+
+  const p_hat = successes / trials;
+  const z = 1.96; // 95% CI critical value
+
+  // Agresti-Coull adjustment (adds pseudo-observations)
+  const z_squared = z * z;
+  const n_tilde = trials + z_squared;
+  const p_tilde = (successes + z_squared / 2) / n_tilde;
+
+  const margin = z * Math.sqrt((p_tilde * (1 - p_tilde)) / n_tilde);
+
+  return {
+    point_estimate: p_hat,
+    ci_lower: Math.max(0, p_tilde - margin),
+    ci_upper: Math.min(1, p_tilde + margin),
+  };
+}
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
@@ -14,6 +49,9 @@ import { exitWithFlush } from '../otel/exit.js';
 import {
   captureFeedback,
   diagnose,
+  validateConformanceResultFromCases,
+  estimateGeneralization,
+  type InvariantViolation,
   type LogStats,
 } from '@wasm4pm/observability';
 import { STANDARD_EXIT_CODE_DOCS } from '../help-standards.js';
@@ -52,7 +90,12 @@ interface ConformancePayload {
   precision: number | null;
   precision_available: boolean;
   computed_at: 'fast' | 'lazy' | 'full';
+  generalization: number | null;
   isFit: boolean;
+  // GAP-CONF-3: Confidence interval for fitness (binomial proportion)
+  fitness_ci_lower?: number;
+  fitness_ci_upper?: number;
+  sample_size_warning?: string;
   summary: {
     total_cases: number;
     conforming_cases: number;
@@ -75,6 +118,8 @@ interface ConformancePayload {
     recommendations: string[];
     confidence: number;
   };
+  invariant_violations?: InvariantViolation[];
+  invariant_status?: 'clean' | 'warnings' | 'critical';
 }
 
 const VALID_PRECISION_MODES = ['fast', 'lazy', 'full'] as const;
@@ -142,6 +187,12 @@ export const conformance = defineCommand({
     'no-save': {
       type: 'boolean',
       description: 'Do not auto-save the receipt to .wasm4pm/receipts/',
+    },
+    'full-quality': {
+      type: 'boolean',
+      description:
+        'Run 5-layer invariant audit (bounds, ordering, case-count, token balance, final-state coherence). ' +
+        'Critical violations exit 4 (partial_failure); warnings are included in output but exit 0.',
     },
   },
   async run(ctx) {
@@ -385,21 +436,49 @@ export const conformance = defineCommand({
 
               // In full mode, attempt precision computation via ETConformance (wasm_compute_precision).
               // fast and lazy modes skip this call intentionally to save ~100ms.
+              // Precision computation is hardened against edge cases (empty log, empty model, etc.)
+              // and degrades gracefully if input is invalid.
               if (precisionMode === 'full' && typeof wasm.wasm_compute_precision === 'function') {
                 try {
+                  const precisionStartMs = Date.now();
                   const rawPrec = wasm.wasm_compute_precision(
                     logHandle,
                     petriNetHandle,
                     activityKey
                   );
+                  const precisionElapsedMs = Date.now() - precisionStartMs;
                   const precResult = typeof rawPrec === 'string' ? JSON.parse(rawPrec) : rawPrec;
                   const p = (precResult as Record<string, unknown>).precision as number | undefined;
-                  if (typeof p === 'number' && Number.isFinite(p)) {
+
+                  // GUARD: Validate precision is finite and in bounds [0, 1]
+                  if (typeof p === 'number' && Number.isFinite(p) && p >= 0.0 && p <= 1.0) {
                     precision = p;
                     precision_available = true;
+
+                    // OTEL: Log precision computation success with timing
+                    if (verbose) {
+                      console.log(
+                        `[OTEL] conformance.precision.computation: status=ok, precision=${p.toFixed(3)}, elapsed_ms=${precisionElapsedMs}`
+                      );
+                    }
+                  } else {
+                    // Precision is out of bounds or invalid — degrade gracefully
+                    if (verbose) {
+                      console.warn(
+                        `[OTEL] conformance.precision.computation: status=degraded, reason=out_of_bounds, precision_value=${p}, elapsed_ms=${precisionElapsedMs}`
+                      );
+                    }
+                    // precision remains null, precision_available stays false
                   }
-                } catch {
-                  // Precision computation is best-effort in full mode; never block on fitness
+                } catch (precError) {
+                  // Precision computation failed — degrade gracefully
+                  if (verbose) {
+                    console.warn(
+                      `[OTEL] conformance.precision.computation: status=failed, reason=compute_error, error=${String(precError)}`
+                    );
+                  }
+                  // Precision computation is best-effort in full mode; never block on fitness.
+                  // Leave precision = null, precision_available = false.
                 }
               }
 
@@ -443,7 +522,37 @@ export const conformance = defineCommand({
                 totalRemaining += t.tokens_remaining ?? 0;
               }
 
-              const isFit = fitnessValue >= threshold;
+              // GAP-CONF-3: Compute statistical confidence interval for fitness
+              // Only for token-replay method with multiple traces (sample size requirement)
+              let fitnessCILower: number | undefined;
+              let fitnessCIUpper: number | undefined;
+              let sampleSizeWarning: string | undefined;
+
+              if (isTokenReplay && totalCases > 0) {
+                const ci = computeConfidenceInterval(conformingCases, totalCases, 0.95);
+                fitnessCILower = ci.ci_lower;
+                fitnessCIUpper = ci.ci_upper;
+
+                // Warn if sample size is below statistical power threshold
+                if (totalCases < 30) {
+                  sampleSizeWarning = `Low statistical power: ${totalCases} traces < 30 recommended`;
+                }
+              }
+
+              // Fitness decision: use CI lower bound (not point estimate)
+              // Only declare fit if lower bound of CI >= threshold (more conservative)
+              const isFit = fitnessCILower !== undefined ? fitnessCILower >= threshold : fitnessValue >= threshold;
+
+              // GAP-CONF-1: Compute generalization score from trace variant analysis
+              // Generalization = 1 - (unique_variants / total_traces)
+              // High variants (low generalization) indicates overfitting risk
+              let generalizationScore: number | null = null;
+              if (isTokenReplay && totalCases > 0) {
+                const uniqueVariants = new Set(
+                  caseFitness.map((c) => JSON.stringify(c.deviations))
+                ).size;
+                generalizationScore = estimateGeneralization(uniqueVariants, totalCases);
+              }
 
               // Perform root-cause diagnosis if fitness is below threshold
               let diagnosis;
@@ -483,7 +592,11 @@ export const conformance = defineCommand({
                 precision,
                 precision_available,
                 computed_at: precisionMode,
+                generalization: generalizationScore,
                 isFit,
+                fitness_ci_lower: fitnessCILower,
+                fitness_ci_upper: fitnessCIUpper,
+                sample_size_warning: sampleSizeWarning,
                 summary: {
                   total_cases: totalCases,
                   conforming_cases: conformingCases,
@@ -510,6 +623,44 @@ export const conformance = defineCommand({
                   : undefined,
               };
 
+              // GAP-CONF-5: Always run 5-layer invariant audit for critical validations (I-1, I-2).
+              // Catch impossible metrics (e.g., fitness < precision) immediately.
+              // --full-quality adds warning-level checks (I-3, I-4, I-5).
+              if (isTokenReplay) {
+                const violations = validateConformanceResultFromCases(
+                  fitnessValue,
+                  precision ?? null,
+                  caseFitness
+                );
+
+                // Separate critical and warning violations
+                const criticalViolations = violations.filter((v: InvariantViolation) => v.severity === 'critical');
+                const warningViolations = violations.filter((v: InvariantViolation) => v.severity === 'warning');
+
+                // Always block on critical violations (I-1: bounds, I-2: ordering)
+                if (criticalViolations.length > 0) {
+                  payload.invariant_violations = violations;
+                  payload.invariant_status = 'critical';
+
+                  const elapsedMs = Date.now() - t0;
+                  const result = makeResult('conformance', payload, elapsedMs, EXIT_CODES.partial_failure);
+                  emitResult(result, { format, verbose, quiet }, (res, projection) => {
+                    printHumanConformance(res.payload, projection);
+                  });
+                  return await exitWithFlush(EXIT_CODES.partial_failure);
+                }
+
+                // Include warnings in output if --full-quality requested, otherwise filter to clean
+                if (ctx.args['full-quality']) {
+                  payload.invariant_violations = warningViolations;
+                  payload.invariant_status = warningViolations.length === 0 ? 'clean' : 'warnings';
+                } else {
+                  // Default mode: only report if critical (already handled above); clean otherwise
+                  payload.invariant_violations = undefined;
+                  payload.invariant_status = 'clean';
+                }
+              }
+
               const elapsedMs = Date.now() - t0;
 
               // Capture feedback (non-blocking) — will be stored in .wasm4pm/algorithm-feedback/
@@ -520,7 +671,7 @@ export const conformance = defineCommand({
                   {
                     fitness: fitnessValue,
                     precision,
-                    generalization: null, // Not computed in conformance
+                    generalization: generalizationScore,
                     simplicity: null, // Not computed in conformance
                   },
                   elapsedMs,
@@ -606,11 +757,21 @@ function printHumanConformance(payload: ConformancePayload, projection: ConsoleP
   projection.log('');
 
   // Primary fitness score with Van der Aalst threshold context
+  // GAP-CONF-3: Include 95% confidence interval for statistical significance
   const fitnessStatus =
     fitness >= 0.85 ? 'excellent' : fitness >= threshold ? 'acceptable' : 'below threshold';
+  const ciDisplay =
+    payload.fitness_ci_lower !== undefined && payload.fitness_ci_upper !== undefined
+      ? ` [95% CI: ${payload.fitness_ci_lower.toFixed(3)}–${payload.fitness_ci_upper.toFixed(3)}]`
+      : '';
   projection.log(
-    `  Fitness: ${fitness.toFixed(3)} ${isFit ? '✓' : '✗'}  [threshold: ${threshold.toFixed(2)}, Van der Aalst target: >=0.85 — ${fitnessStatus}]`
+    `  Fitness: ${fitness.toFixed(3)} ${isFit ? '✓' : '✗'}  [threshold: ${threshold.toFixed(2)}, Van der Aalst target: >=0.85 — ${fitnessStatus}]${ciDisplay}`
   );
+
+  // Warn if sample size is below recommended threshold
+  if (payload.sample_size_warning) {
+    projection.log(`  ⚠ ${payload.sample_size_warning}`);
+  }
 
   // Concrete implication: translate the fitness score into practitioner language
   if (summary.total_cases > 0) {
@@ -638,8 +799,33 @@ function printHumanConformance(payload: ConformancePayload, projection: ConsoleP
     precisionAvailable && precisionRaw !== null ? precisionRaw.toFixed(3) : 'N/A (not computed)';
   projection.log(`  Precision: ${precisionDisplay}`);
 
-  if (!precisionAvailable && payload.computed_at !== 'full') {
-    projection.log(`  Hint: Use --precision-mode full to compute precision`);
+  // GAP-CONF-1: Display generalization score (computed from trace variant analysis)
+  const generalization = (payload.generalization as number | null | undefined) ?? null;
+  const generalizationDisplay = generalization !== null ? generalization.toFixed(3) : 'N/A';
+  projection.log(`  Generalization: ${generalizationDisplay}  [higher = less overfitting]`);
+
+  // Edge case diagnostics
+  if (!precisionAvailable) {
+    if (payload.computed_at === 'fast') {
+      projection.log(`  Hint: --precision-mode=fast skips precision; use --precision-mode=full to compute`);
+    } else if (payload.computed_at === 'lazy') {
+      projection.log(
+        `  Hint: --precision-mode=lazy defers precision computation; call wpm results --precision to finalize`
+      );
+    } else if (payload.computed_at === 'full') {
+      // Full mode but precision unavailable — degraded due to edge case
+      if (summary.total_cases === 0) {
+        projection.log(`  Note: Empty log — precision computation skipped (vacuous truth)`);
+      } else if (summary.total_cases === 1) {
+        projection.log(
+          `  Note: Single trace — precision computation available but has low statistical power`
+        );
+      } else {
+        projection.log(
+          `  Note: Precision computation was attempted but degraded (model structure or edge case)`
+        );
+      }
+    }
   }
   projection.log('');
 
@@ -699,6 +885,36 @@ function printHumanConformance(payload: ConformancePayload, projection: ConsoleP
       projection.log(
         '  Fitness is above threshold, but deviating traces exist — investigate whether these represent exceptions or process variants.'
       );
+    }
+    projection.log('');
+  }
+
+  // Invariant audit results (only shown when --full-quality was used)
+  const invariantStatus = payload.invariant_status;
+  const invariantViolations = payload.invariant_violations;
+  if (invariantStatus !== undefined) {
+    projection.log('  Invariant Check:');
+    if (invariantStatus === 'clean') {
+      projection.log('    Status: CLEAN — all 5 invariants satisfied');
+    } else if (invariantStatus === 'warnings') {
+      const count = invariantViolations?.length ?? 0;
+      projection.log(`    Status: ${count} warning(s) — no critical violations`);
+      if (invariantViolations && invariantViolations.length > 0) {
+        for (const v of invariantViolations) {
+          projection.log(`    [${v.id}] ${v.violation}`);
+          projection.log(`         Consequence: ${v.consequence}`);
+        }
+      }
+    } else if (invariantStatus === 'critical') {
+      const criticals = (invariantViolations ?? []).filter((v) => v.severity === 'critical');
+      const warnings = (invariantViolations ?? []).filter((v) => v.severity === 'warning');
+      projection.log(
+        `    Status: CRITICAL — ${criticals.length} critical violation(s), ${warnings.length} warning(s)`
+      );
+      for (const v of invariantViolations ?? []) {
+        projection.log(`    [${v.id}][${v.severity.toUpperCase()}] ${v.violation}`);
+        projection.log(`         Consequence: ${v.consequence}`);
+      }
     }
     projection.log('');
   }

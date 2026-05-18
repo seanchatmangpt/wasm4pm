@@ -248,7 +248,7 @@ describe('mcppEventToAuditEntry — valid agent events', () => {
 
 describe('mcppEventToAuditEntry — non-agent and invalid events return null', () => {
   it('returns null for a manufacturing stage event (activity does not start with "agent.")', () => {
-    const stageEvent: OcelEvent = {
+    const stageEvent: OcelEventLike = {
       'ocel:eid': 'ev-stage',
       'ocel:activity': 'seed-ontology',
       'ocel:timestamp': '2026-05-18T10:00:00Z',
@@ -260,7 +260,7 @@ describe('mcppEventToAuditEntry — non-agent and invalid events return null', (
   });
 
   it('returns null for an "algorithm.complete" event (activity does not start with "agent.")', () => {
-    const algoEvent: OcelEvent = {
+    const algoEvent: OcelEventLike = {
       'ocel:eid': 'ev-algo',
       'ocel:activity': 'algorithm.complete',
       'ocel:timestamp': '2026-05-18T10:00:00Z',
@@ -298,7 +298,7 @@ describe('mcppEventToAuditEntry — non-agent and invalid events return null', (
   });
 
   it('returns null for an "admitted" verdict event (activity does not start with "agent.")', () => {
-    const verdictEvent: OcelEvent = {
+    const verdictEvent: OcelEventLike = {
       'ocel:eid': 'ev-admitted',
       'ocel:activity': 'admitted',
       'ocel:timestamp': '2026-05-18T10:00:00Z',
