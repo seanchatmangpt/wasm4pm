@@ -319,16 +319,18 @@ export const results = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
 
-    // Determine operation early so the span attribute is always set
-    const operation = ctx.args.verify
+    // Determine operation early so the span attribute is always set.
+    // Use explicit undefined checks for string args so that empty-string
+    // values (--diff "") are still recognised as that operation.
+    const operation = ctx.args.verify !== undefined
       ? 'verify'
-      : ctx.args.path
+      : ctx.args.path !== undefined
         ? 'path'
         : ctx.args.last
           ? 'last'
-          : ctx.args.cat
+          : ctx.args.cat !== undefined
             ? 'cat'
-            : ctx.args.diff
+            : ctx.args.diff !== undefined
               ? 'diff'
               : 'list';
 
@@ -455,6 +457,10 @@ export const results = defineCommand({
             result_file: path.basename(resultFilepath),
             recomputed_output_hash: recomputedOutputHash,
             stored_output_hash: storedHash,
+            // Contract aliases: expected_hash = what was stored at save time,
+            // actual_hash = what the current payload hashes to.
+            expected_hash: storedHash,
+            actual_hash: recomputedOutputHash,
             receipt_found: matchedReceipt !== null,
             receipt_file: matchedReceiptFile,
             receipt_output_hash: matchedReceipt?.output_hash ?? null,
@@ -466,8 +472,11 @@ export const results = defineCommand({
             timestamp: matchedReceipt?.timestamp ?? null,
           };
 
+          // exit 3 (execution_error) when hash mismatch is detected — the
+          // stored receipt proof does not match the current payload, indicating
+          // tampering or corruption.  exit 0 for ok or no_receipt (no breach).
           const verifyExitCode =
-            integrity === 'mismatch' ? EXIT_CODES.partial_failure : EXIT_CODES.success;
+            integrity === 'mismatch' ? EXIT_CODES.execution_error : EXIT_CODES.success;
 
           const verifyResult = makeResult(
             'results',
@@ -660,8 +669,11 @@ export const results = defineCommand({
         }
 
         // --diff <ref1,ref2>: compare two saved results side-by-side
-        if (ctx.args.diff) {
-          const parts = (ctx.args.diff as string).split(',').map((s) => s.trim());
+        // Note: check for ctx.args.diff !== undefined rather than truthiness so
+        // that --diff "" (empty string) is also caught as a config_error.
+        if (ctx.args.diff !== undefined) {
+          const rawDiff = ctx.args.diff as string;
+          const parts = rawDiff.split(',').map((s) => s.trim()).filter((s) => s.length > 0);
           if (parts.length !== 2) {
             const errResult = makeErrorResult(
               'results',
@@ -715,7 +727,35 @@ export const results = defineCommand({
             emitResult(errResult, { format, verbose, quiet });
             return await exitWithFlush(errResult.exit_code);
           }
-          const diffPayload = { left: diffParsed1, right: diffParsed2, leftPath: fp1, rightPath: fp2 };
+          // Build a compact diff summary for the JSON contract.
+          const diffSummary1 = extractSummary(diffParsed1);
+          const diffSummary2 = extractSummary(diffParsed2);
+          const diffEdges1 = extractEdgeSet(diffParsed1);
+          const diffEdges2 = extractEdgeSet(diffParsed2);
+          const diffJaccard = jaccardSimilarity(diffEdges1, diffEdges2);
+          const diffPayload = {
+            ref1,
+            ref2,
+            diff: {
+              fitness_a: diffSummary1.fitness ?? null,
+              fitness_b: diffSummary2.fitness ?? null,
+              fitness_delta:
+                diffSummary1.fitness !== undefined && diffSummary2.fitness !== undefined
+                  ? diffSummary2.fitness - diffSummary1.fitness
+                  : null,
+              elapsed_ms_a: diffSummary1.elapsedMs ?? null,
+              elapsed_ms_b: diffSummary2.elapsedMs ?? null,
+              algorithm_a: diffSummary1.algorithm ?? null,
+              algorithm_b: diffSummary2.algorithm ?? null,
+              jaccard_similarity: diffJaccard,
+              edge_count_a: diffEdges1.size,
+              edge_count_b: diffEdges2.size,
+            },
+            left: diffParsed1,
+            right: diffParsed2,
+            leftPath: fp1,
+            rightPath: fp2,
+          };
           const result = makeResult('results', diffPayload, performance.now() - t0);
           emitResult(result, { format, verbose, quiet }, (_res, projection) => {
             printDiffResult(fp1, diffParsed1, fp2, diffParsed2, projection);
@@ -747,12 +787,22 @@ export const results = defineCommand({
           newest: files.length > 0 ? files[0].mtime.toISOString() : null,
           results: displayed.map((f, i) => {
             const s = summaries[i];
+            const taskName = s?.saved.task ?? f.name.replace(/^\d{8}T\d{6}-/, '').replace(/\.json$/, '');
             return {
+              // index and id are the same value (1-based); id is the
+              // canonical contract field name for machine consumers.
+              id: i + 1,
               index: i + 1,
-              name: f.name,
+              // path is the canonical contract field; filepath is kept for
+              // backward compatibility with existing consumers.
+              path: f.filepath,
               filepath: f.filepath,
+              name: f.name,
+              // timestamp is the canonical contract field; savedAt is kept for
+              // backward compatibility.
+              timestamp: f.mtime.toISOString(),
               savedAt: f.mtime.toISOString(),
-              task: s?.saved.task ?? f.name.replace(/^\d{8}T\d{6}-/, '').replace(/\.json$/, ''),
+              task: taskName,
               input: s?.saved.input,
               activityKey: s?.saved.activityKey,
               algorithm: s?.summary.algorithm,
