@@ -176,6 +176,24 @@ export const driftWatch = defineCommand({
       console.log(
         `  file=${inputPath}  activity-key=${activityKey}  window=${windowSize}  interval=${intervalMs}ms  α=${ewmaAlpha}  threshold=${driftThreshold}`
       );
+      console.log('');
+      console.log('  EWMA score interpretation:');
+      console.log(
+        `    score < ${(driftThreshold / 2).toFixed(2)}           — no drift (Jaccard distance low and stable)`
+      );
+      console.log(
+        `    ${(driftThreshold / 2).toFixed(2)} – ${driftThreshold.toFixed(2)}        — approaching threshold (rising trend may indicate emerging drift)`
+      );
+      console.log(
+        `    score > ${driftThreshold.toFixed(2)}           — DRIFT ALERT (behaviour has changed significantly)`
+      );
+      console.log('');
+      console.log('  When drift is detected, inspect the "disappeared/appeared" activity lists');
+      console.log('  to understand what changed, then re-discover the process with:');
+      console.log('    wpm run <log> --algorithm inductive_miner');
+      console.log('  and compare pre-drift vs post-drift sub-logs with:');
+      console.log('    wpm diff <log_before> <log_after>');
+      console.log('');
       console.log('  Press Ctrl+C to stop.\n');
     }
 
@@ -287,7 +305,8 @@ export const driftWatch = defineCommand({
       // ── Output ────────────────────────────────────────────────────────────
       // Compute derived thresholds for early-warning logic
       const preAlertThreshold = driftThreshold / 2;
-      const approachingThreshold = ewma > preAlertThreshold && ewma <= driftThreshold && trend === 'rising';
+      const approachingThreshold =
+        ewma > preAlertThreshold && ewma <= driftThreshold && trend === 'rising';
 
       if (jsonMode) {
         const newPoints = newDriftCount > 0 ? drifts.slice(previousDriftCount) : [];
@@ -312,12 +331,19 @@ export const driftWatch = defineCommand({
         };
         process.stdout.write(JSON.stringify(line) + '\n');
       } else {
-        // One-line status
+        // One-line status with plain-English EWMA interpretation
         const driftColor = ewma > driftThreshold ? RED : ewma > preAlertThreshold ? YELLOW : GREEN;
+        const driftInterpretation =
+          ewma > driftThreshold
+            ? `${RED}above threshold ${driftThreshold} — DRIFT CONFIRMED${RESET}`
+            : ewma > preAlertThreshold
+              ? `${YELLOW}approaching threshold ${driftThreshold}${RESET}`
+              : `${GREEN}below threshold ${driftThreshold} (no drift)${RESET}`;
         const statusLine =
           `${CYAN}[${ts}]${RESET} ` +
-          `drift=${driftColor}${ewma.toFixed(4)}${RESET} (${trendArrow(trend)}) | ` +
-          `${detected} drift point${detected !== 1 ? 's' : ''} detected | ` +
+          `EWMA=${driftColor}${ewma.toFixed(4)}${RESET} — ${driftInterpretation} | ` +
+          `trend: ${trendArrow(trend)} | ` +
+          `${detected} drift point${detected !== 1 ? 's' : ''} | ` +
           `window=${windowSize}`;
         console.log(statusLine);
 
@@ -325,10 +351,11 @@ export const driftWatch = defineCommand({
         // This fires BEFORE a threshold crossing so analysts can investigate early.
         if (approachingThreshold && newDriftCount === 0) {
           console.log(
-            `${YELLOW}  ~ PRE-ALERT${RESET} — EWMA rising toward threshold ` +
-            `(${ewma.toFixed(4)} of ${driftThreshold}). ` +
-            `Consider inspecting recent windows before a full alert fires.`
+            `${YELLOW}  ~ PRE-ALERT${RESET} — EWMA ${ewma.toFixed(4)} is rising toward threshold ${driftThreshold}. ` +
+              `Process behaviour may be shifting. Consider running:`
           );
+          console.log(`    wpm run <log> --algorithm inductive_miner`);
+          console.log(`    wpm diff <log_before> <log_now>`);
         }
 
         // Alert on new drift points — show structural changes for EVERY point in the burst,
@@ -341,11 +368,17 @@ export const driftWatch = defineCommand({
             `${BOLD}${RED}  ⚠  ALERT${RESET} — ${newDriftCount} new drift point${newDriftCount !== 1 ? 's' : ''} ` +
             `at position ${latest?.position ?? '?'}, distance=${(latest?.distance ?? 0).toFixed(4)}`;
           console.log(alertLine);
+          console.log(`${YELLOW}     Recommended actions:${RESET}`);
+          console.log(
+            `       1. Review appeared/disappeared activities below for structural clues.`
+          );
+          console.log(`       2. Re-discover model: wpm run <log> --algorithm inductive_miner`);
+          console.log(
+            `       3. Compare pre/post-drift sub-logs: wpm diff <log_before> <log_after>`
+          );
 
           // Aggregate appeared/disappeared across ALL new points in this burst
-          const burstAppeared = Array.from(
-            new Set(newPoints.flatMap((dp) => dp.appeared ?? []))
-          );
+          const burstAppeared = Array.from(new Set(newPoints.flatMap((dp) => dp.appeared ?? [])));
           const burstDisappeared = Array.from(
             new Set(newPoints.flatMap((dp) => dp.disappeared ?? []))
           );
@@ -356,13 +389,13 @@ export const driftWatch = defineCommand({
           if (burstDisappeared.length > 0) {
             console.log(
               `${RED}     disappeared:${RESET} ${burstDisappeared.slice(0, 5).join(', ')}` +
-              (burstDisappeared.length > 5 ? ` (+${burstDisappeared.length - 5} more)` : '')
+                (burstDisappeared.length > 5 ? ` (+${burstDisappeared.length - 5} more)` : '')
             );
           }
           if (burstAppeared.length > 0) {
             console.log(
               `${GREEN}     appeared:${RESET}    ${burstAppeared.slice(0, 5).join(', ')}` +
-              (burstAppeared.length > 5 ? ` (+${burstAppeared.length - 5} more)` : '')
+                (burstAppeared.length > 5 ? ` (+${burstAppeared.length - 5} more)` : '')
             );
           }
           // Show unique suggestions across the burst (deduped)
@@ -416,11 +449,13 @@ export const driftWatch = defineCommand({
       await withSpanRaw(
         'wasm4pm.drift-watch.window',
         { window_index: idx },
-        async () => { await tickInner(); },
+        async () => {
+          await tickInner();
+        },
         () => ({
           drift_score: currentEwma,
           alert_fired: currentNewDriftCount > 0,
-        }),
+        })
       );
     };
 
@@ -466,9 +501,12 @@ export const driftWatch = defineCommand({
             saveCommandReceipt({
               ...newReceipt('drift-watch'),
               command: 'drift-watch',
-              input_hash: await fs.readFile(inputPath).then((b) => blake3Hex(b)).catch(() => blake3Hex(inputPath)),
+              input_hash: await fs
+                .readFile(inputPath)
+                .then((b) => blake3Hex(b))
+                .catch(() => blake3Hex(inputPath)),
               output_hash: blake3Hex(
-                JSON.stringify({ windowsProcessed, alertsFired, totalDriftPoints }),
+                JSON.stringify({ windowsProcessed, alertsFired, totalDriftPoints })
               ),
               status: 'success',
               summary: {
@@ -488,7 +526,7 @@ export const driftWatch = defineCommand({
         alerts_fired: alertsFired,
         total_drift_points: totalDriftPoints,
         duration_ms: Date.now() - startedAtMs,
-      }),
+      })
     );
   },
 });

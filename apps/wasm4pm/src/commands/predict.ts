@@ -540,12 +540,12 @@ async function executePredictionTask(
  * understand which aspect of the process they are inspecting.
  */
 const PERSPECTIVE_LABELS: Record<PredictTask, string> = {
-  'next-activity':    'Control-flow perspective — predicting the next activity in a trace',
-  'remaining-time':  'Time perspective — estimating remaining case duration',
-  'outcome':         'Outcome perspective — scoring trace anomalies against observed behaviour',
-  'drift':           'Concept-drift perspective — detecting behaviour change over time',
-  'features':        'Control-flow / data perspective — extracting transition probabilities',
-  'resource':        'Resource perspective — M/M/1 queue model of workload',
+  'next-activity': 'Control-flow perspective — predicting the next activity in a trace',
+  'remaining-time': 'Time perspective — estimating remaining case duration',
+  outcome: 'Outcome perspective — scoring trace anomalies against observed behaviour',
+  drift: 'Concept-drift perspective — detecting behaviour change over time',
+  features: 'Control-flow / data perspective — extracting transition probabilities',
+  resource: 'Resource perspective — M/M/1 queue model of workload',
 };
 
 /**
@@ -701,7 +701,13 @@ function formatHumanOutput(
       const suggestions = (sc?.['suggestions'] as string[]) ?? [];
 
       if (drifts.length === 0) {
-        p.info('No concept drift detected.');
+        p.info('No concept drift detected in this log window.');
+        p.log('');
+        p.log('  What this means: The Jaccard similarity between consecutive trace windows');
+        p.log('  remained stable — the process behaviour did not change significantly.');
+        p.log('');
+        p.log('  What to do: Run again on a longer log or with a smaller --drift-window to');
+        p.log('  increase sensitivity. Use "wpm drift-watch" for continuous monitoring.');
         return;
       }
       p.log('');
@@ -717,18 +723,41 @@ function formatHumanOutput(
         p.log(`    Position ${pos}  distance=${dist}  type=${dp['type'] ?? 'concept_drift'}`);
       }
 
-      // EWMA trend summary
+      // EWMA trend summary with plain-English threshold interpretation
       if (ewma) {
+        const lastVal =
+          typeof ewma['last_value'] === 'number' ? (ewma['last_value'] as number) : null;
         const trendLabel =
           ewma['trend'] === 'rising'
             ? 'RISING (drift is accelerating)'
             : ewma['trend'] === 'falling'
               ? 'falling (drift is subsiding)'
               : 'stable';
-        const lastVal =
-          typeof ewma['last_value'] === 'number' ? (ewma['last_value'] as number).toFixed(4) : '–';
         p.log('');
-        p.log(`  EWMA trend: ${trendLabel}  (smoothed last value: ${lastVal})`);
+        p.log(
+          `  EWMA trend: ${trendLabel}  (smoothed last value: ${lastVal !== null ? lastVal.toFixed(4) : '–'})`
+        );
+        if (lastVal !== null) {
+          // Interpret the EWMA value relative to a typical Jaccard threshold of 0.3
+          const TYPICAL_THRESHOLD = 0.3;
+          const ratio = lastVal / TYPICAL_THRESHOLD;
+          if (ratio >= 1.0) {
+            p.log(
+              `  Interpretation: EWMA ${lastVal.toFixed(4)} exceeds threshold ${TYPICAL_THRESHOLD.toFixed(1)} — drift is confirmed.`
+            );
+            p.log('  What to do:');
+            p.log('    1. Inspect the drift points above to find where behaviour changed.');
+            p.log('    2. Check appeared/disappeared activities below for structural clues.');
+            p.log('    3. Re-discover the process model from the pre-drift and post-drift');
+            p.log('       sub-logs separately: wpm run <log> --algorithm inductive_miner');
+            p.log('    4. Compare the two models: wpm diff <log1> <log2>');
+          } else {
+            p.log(
+              `  Interpretation: EWMA ${lastVal.toFixed(4)} is below typical threshold ${TYPICAL_THRESHOLD.toFixed(1)} — drift points detected but signal is low.`
+            );
+            p.log('  Consider: Increase --drift-window or wait for more event data before acting.');
+          }
+        }
       }
 
       // Structural changes aggregated across all drift points
@@ -782,6 +811,16 @@ function formatHumanOutput(
         p.log(`  Prefix features: ${JSON.stringify(result['prefixFeatures'])}`);
       }
       p.log('');
+      p.log('  What this means:');
+      p.log('  Transition probabilities capture the likelihood of moving from one activity');
+      p.log('  to the next. High-probability edges are the process backbone; low-probability');
+      p.log('  edges indicate rare variants, rework loops, or exceptions.');
+      p.log('');
+      p.log('  What to do next:');
+      p.log('  - Use these features as inputs to an ML classifier (wpm ml classify -i <log>)');
+      p.log('  - Feed --prefix "A,B,C" to narrow features to a specific case prefix');
+      p.log('  - Use with wpm compare to see how transition structure differs across algorithms');
+      p.log('');
       break;
     }
 
@@ -811,6 +850,17 @@ function formatHumanOutput(
         `    Est. wait time:        ${((qs?.['wait_time'] as number) ?? 0).toFixed(2)} event-units`
       );
       p.log(`  Transitions in model: ${result['transitionCount']}`);
+      p.log('');
+      p.log('  What this means:');
+      p.log('  Utilisation (rho) measures how close the process is to capacity.');
+      p.log('  rho < 0.7  — comfortable headroom; queue wait times are short.');
+      p.log('  rho 0.7–1.0 — approaching saturation; wait times grow non-linearly.');
+      p.log('  rho >= 1.0  — queue is unstable; cases accumulate without bound.');
+      p.log('');
+      p.log('  What to do next:');
+      p.log('  - If rho >= 1: use wpm social -i <log> to identify overloaded resources');
+      p.log('  - If rho < 1: use wpm temporal -i <log> to find bottleneck activities');
+      p.log('  - Compare resource profiles across algorithm tiers: wpm compare -i <log>');
       p.log('');
       break;
     }
