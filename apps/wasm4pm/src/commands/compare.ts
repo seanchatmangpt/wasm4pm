@@ -37,6 +37,165 @@ const ALGORITHMS = [
 
 type Algorithm = (typeof ALGORITHMS)[number];
 
+/**
+ * Static registry of Van der Aalst quality dimensions per algorithm.
+ *
+ * speedTier  — 0-100, lower = faster (from kernel registry)
+ * qualityTier — 0-100, higher = better model quality (from kernel registry)
+ *
+ * These are design-time proxies derived from the kernel registry.
+ * For live fitness/precision scores run `wpm quality <log.xes>`.
+ *
+ * Use-case guidance follows van der Aalst's four-quadrant model:
+ *   exploration  — quick first look, no publication intent
+ *   daily        — routine operational analysis
+ *   conformance  — model-to-log compliance checking
+ *   publication  — final model for academic/executive reporting
+ */
+interface AlgorithmProfile {
+  speedTier: number; // 0-100, lower is faster
+  qualityTier: number; // 0-100, higher is better
+  /** Van der Aalst precision tendency: how tightly the model constrains behaviour */
+  precisionProxy: 'low' | 'medium' | 'high';
+  /** Van der Aalst fitness tendency: how well the model replays the log */
+  fitnessProxy: 'low' | 'medium' | 'high';
+  /** Van der Aalst generalization tendency */
+  generalizationProxy: 'low' | 'medium' | 'high';
+  /** Van der Aalst simplicity tendency */
+  simplicityProxy: 'low' | 'medium' | 'high';
+  /** Recommended use cases, ordered from most to least appropriate */
+  useCases: string[];
+}
+
+const ALGO_PROFILES: Record<Algorithm, AlgorithmProfile> = {
+  dfg: {
+    speedTier: 5,
+    qualityTier: 30,
+    precisionProxy: 'low',
+    fitnessProxy: 'high',
+    generalizationProxy: 'high',
+    simplicityProxy: 'high',
+    useCases: ['exploration / quick first look', 'streaming / large logs'],
+  },
+  skeleton: {
+    speedTier: 3,
+    qualityTier: 25,
+    precisionProxy: 'low',
+    fitnessProxy: 'medium',
+    generalizationProxy: 'high',
+    simplicityProxy: 'high',
+    useCases: ['exploration / quick first look', 'backbone extraction'],
+  },
+  alpha: {
+    speedTier: 20,
+    qualityTier: 45,
+    precisionProxy: 'medium',
+    fitnessProxy: 'medium',
+    generalizationProxy: 'medium',
+    simplicityProxy: 'medium',
+    useCases: ['academic baseline', 'simple sequential processes'],
+  },
+  heuristic: {
+    speedTier: 25,
+    qualityTier: 50,
+    precisionProxy: 'medium',
+    fitnessProxy: 'high',
+    generalizationProxy: 'medium',
+    simplicityProxy: 'medium',
+    useCases: ['daily operational analysis', 'noisy real-world logs'],
+  },
+  inductive: {
+    speedTier: 30,
+    qualityTier: 55,
+    precisionProxy: 'medium',
+    fitnessProxy: 'high',
+    generalizationProxy: 'high',
+    simplicityProxy: 'medium',
+    useCases: ['daily operational analysis', 'conformance checking', 'sound model required'],
+  },
+  'hill-climbing': {
+    speedTier: 40,
+    qualityTier: 55,
+    precisionProxy: 'medium',
+    fitnessProxy: 'medium',
+    generalizationProxy: 'medium',
+    simplicityProxy: 'medium',
+    useCases: ['balanced analysis', 'medium-complexity logs'],
+  },
+  declare: {
+    speedTier: 35,
+    qualityTier: 50,
+    precisionProxy: 'medium',
+    fitnessProxy: 'medium',
+    generalizationProxy: 'high',
+    simplicityProxy: 'low',
+    useCases: ['flexible/unstructured processes', 'constraint mining'],
+  },
+  'simulated-annealing': {
+    speedTier: 55,
+    qualityTier: 65,
+    precisionProxy: 'medium',
+    fitnessProxy: 'high',
+    generalizationProxy: 'medium',
+    simplicityProxy: 'medium',
+    useCases: ['quality analysis', 'iterative improvement'],
+  },
+  astar: {
+    speedTier: 60,
+    qualityTier: 70,
+    precisionProxy: 'high',
+    fitnessProxy: 'high',
+    generalizationProxy: 'medium',
+    simplicityProxy: 'medium',
+    useCases: ['conformance checking', 'quality analysis'],
+  },
+  'ant-colony': {
+    speedTier: 65,
+    qualityTier: 75,
+    precisionProxy: 'high',
+    fitnessProxy: 'high',
+    generalizationProxy: 'medium',
+    simplicityProxy: 'low',
+    useCases: ['quality analysis', 'publication / final model'],
+  },
+  pso: {
+    speedTier: 70,
+    qualityTier: 75,
+    precisionProxy: 'high',
+    fitnessProxy: 'high',
+    generalizationProxy: 'medium',
+    simplicityProxy: 'low',
+    useCases: ['quality analysis', 'publication / final model'],
+  },
+  genetic: {
+    speedTier: 75,
+    qualityTier: 80,
+    precisionProxy: 'high',
+    fitnessProxy: 'high',
+    generalizationProxy: 'medium',
+    simplicityProxy: 'low',
+    useCases: ['publication / final model', 'quality-over-speed scenarios'],
+  },
+  'dfg-optimized': {
+    speedTier: 70,
+    qualityTier: 85,
+    precisionProxy: 'high',
+    fitnessProxy: 'high',
+    generalizationProxy: 'medium',
+    simplicityProxy: 'medium',
+    useCases: ['publication / final model', 'optimized DFG with best fitness'],
+  },
+  ilp: {
+    speedTier: 80,
+    qualityTier: 90,
+    precisionProxy: 'high',
+    fitnessProxy: 'high',
+    generalizationProxy: 'low',
+    simplicityProxy: 'low',
+    useCases: ['publication / final model', 'maximum quality required'],
+  },
+};
+
 interface ModelStats {
   algorithm: Algorithm;
   nodes: number;
@@ -45,56 +204,81 @@ interface ModelStats {
   density: number;
   complexity: number;
   elapsedMs: number;
+  /** Quality tier from ALGO_PROFILES (0-100) */
+  qualityTier: number;
+  /** Speed tier from ALGO_PROFILES (0-100, lower = faster) */
+  speedTier: number;
 }
 
 /**
  * A recommendation of which algorithm to use, derived from the comparison results.
- * Three recommendations are produced, one per criterion.
+ * Recommendations are grounded in Van der Aalst's four quality dimensions.
  */
 interface AlgorithmRecommendation {
   /** Fastest algorithm (lowest elapsedMs among successful runs). */
   fastest: { algorithm: Algorithm; elapsedMs: number; rationale: string };
-  /** Most detailed algorithm (highest edge count among successful runs). */
-  mostDetailed: { algorithm: Algorithm; edges: number; rationale: string };
-  /** Best quality/speed tradeoff — highest edges-per-ms ratio. */
-  bestTradeoff: { algorithm: Algorithm; edgesPerMs: number; rationale: string };
+  /** Highest quality algorithm (highest qualityTier among successful runs). */
+  highestQuality: { algorithm: Algorithm; qualityTier: number; rationale: string };
+  /** Best quality/speed tradeoff — highest qualityTier-per-ms ratio. */
+  bestTradeoff: { algorithm: Algorithm; qualityPerMs: number; rationale: string };
+  /** Plain-language speed-vs-quality narrative for the practitioner. */
+  tradeoffNarrative: string;
 }
 
 /**
  * Derive a winner recommendation from a set of model stats.
  * Only considers successful runs (nodes >= 0).
  * Returns null if there are fewer than 2 successful runs.
+ *
+ * Quality is measured by qualityTier (Van der Aalst proxy: higher = better
+ * fitness+precision balance). Edge count alone is NOT a quality proxy — a
+ * flower model has maximum edges but zero precision.
  */
 function deriveRecommendation(stats: ModelStats[]): AlgorithmRecommendation | null {
   const valid = stats.filter((s) => s.nodes >= 0 && s.elapsedMs > 0);
   if (valid.length < 2) return null;
 
-  // Fastest
+  // Fastest by wall-clock time
   const fastest = valid.reduce((a, b) => (a.elapsedMs <= b.elapsedMs ? a : b));
 
-  // Most detailed (most edges — richer structural model)
-  const mostDetailed = valid.reduce((a, b) => (a.edges >= b.edges ? a : b));
+  // Highest quality by registry quality tier
+  const highestQuality = valid.reduce((a, b) => (a.qualityTier >= b.qualityTier ? a : b));
 
-  // Best tradeoff: edges-per-ms (normalised quality per unit time)
-  const withRatio = valid.map((s) => ({ ...s, edgesPerMs: s.edges / s.elapsedMs }));
-  const bestTradeoff = withRatio.reduce((a, b) => (a.edgesPerMs >= b.edgesPerMs ? a : b));
+  // Best tradeoff: qualityTier per ms (quality gained per unit time)
+  const withRatio = valid.map((s) => ({ ...s, qualityPerMs: s.qualityTier / s.elapsedMs }));
+  const bestTradeoff = withRatio.reduce((a, b) => (a.qualityPerMs >= b.qualityPerMs ? a : b));
+
+  // Speed-vs-quality narrative: compare fastest vs highest quality
+  let tradeoffNarrative: string;
+  if (fastest.algorithm === highestQuality.algorithm) {
+    tradeoffNarrative = `${fastest.algorithm} is both the fastest and highest quality in this comparison.`;
+  } else {
+    const speedup = highestQuality.elapsedMs / fastest.elapsedMs;
+    const qualityGain = highestQuality.qualityTier - fastest.qualityTier;
+    const pct = Math.round((qualityGain / Math.max(fastest.qualityTier, 1)) * 100);
+    tradeoffNarrative =
+      `Fastest: ${fastest.algorithm} (${fastest.elapsedMs.toFixed(1)} ms, quality tier ${fastest.qualityTier}/100). ` +
+      `Highest quality: ${highestQuality.algorithm} (${highestQuality.elapsedMs.toFixed(1)} ms, quality tier ${highestQuality.qualityTier}/100). ` +
+      `${highestQuality.algorithm} is ${speedup.toFixed(1)}x slower but scores ${pct}% higher on the Van der Aalst quality scale.`;
+  }
 
   return {
     fastest: {
       algorithm: fastest.algorithm,
       elapsedMs: fastest.elapsedMs,
-      rationale: `Lowest wall-clock time (${fastest.elapsedMs.toFixed(1)} ms) — use when throughput matters`,
+      rationale: `Lowest wall-clock time (${fastest.elapsedMs.toFixed(1)} ms, quality tier ${fastest.qualityTier}/100) — use for exploration and quick-look analysis`,
     },
-    mostDetailed: {
-      algorithm: mostDetailed.algorithm,
-      edges: mostDetailed.edges,
-      rationale: `Highest edge count (${mostDetailed.edges} edges) — use when model fidelity matters`,
+    highestQuality: {
+      algorithm: highestQuality.algorithm,
+      qualityTier: highestQuality.qualityTier,
+      rationale: `Highest quality tier (${highestQuality.qualityTier}/100, ${highestQuality.elapsedMs.toFixed(1)} ms) — use for publication and conformance checking`,
     },
     bestTradeoff: {
       algorithm: bestTradeoff.algorithm,
-      edgesPerMs: Math.round(bestTradeoff.edgesPerMs * 100) / 100,
-      rationale: `Best edges-per-ms ratio (${bestTradeoff.edgesPerMs.toFixed(2)}) — use for balanced analysis`,
+      qualityPerMs: Math.round(bestTradeoff.qualityPerMs * 100) / 100,
+      rationale: `Best quality/time ratio (${bestTradeoff.qualityTier}/100 quality in ${bestTradeoff.elapsedMs.toFixed(1)} ms) — use for daily operational analysis`,
     },
+    tradeoffNarrative,
   };
 }
 
@@ -341,6 +525,7 @@ export const compare = defineCommand({
                 try {
                   const { raw, elapsedMs } = runDiscovery(wasm, algo, logHandle, activityKey);
                   const { nodes, edges } = toUniformStats(discriminate(raw, algo));
+                  const profile = ALGO_PROFILES[algo];
                   stats.push({
                     algorithm: algo,
                     nodes,
@@ -349,11 +534,14 @@ export const compare = defineCommand({
                     density: sharedMetrics.density,
                     complexity: sharedMetrics.complexity,
                     elapsedMs,
+                    qualityTier: profile.qualityTier,
+                    speedTier: profile.speedTier,
                   });
                 } catch (err) {
                   // Record the failure; push a sentinel row so output is always complete
                   const msg = err instanceof Error ? err.message : String(err);
                   algorithmErrors.push(`${algo}: ${msg}`);
+                  const profile = ALGO_PROFILES[algo];
                   stats.push({
                     algorithm: algo,
                     nodes: -1,
@@ -362,6 +550,8 @@ export const compare = defineCommand({
                     density: sharedMetrics.density,
                     complexity: sharedMetrics.complexity,
                     elapsedMs: 0,
+                    qualityTier: profile.qualityTier,
+                    speedTier: profile.speedTier,
                   });
                 }
               }
@@ -455,31 +645,36 @@ export const compare = defineCommand({
                 const maxEdges = Math.max(...validStats.map((st) => st.edges));
                 const minTime = Math.min(...validStats.map((st) => st.elapsedMs));
                 const maxTime = Math.max(...validStats.map((st) => st.elapsedMs));
+                const minQuality = Math.min(...validStats.map((st) => st.qualityTier));
+                const maxQuality = Math.max(...validStats.map((st) => st.qualityTier));
 
-                // Table header
+                // Table header — includes Quality column so all four Van der Aalst
+                // proxies are visible at a glance alongside structural metrics.
                 projection.log(
-                  `  ${'Algorithm'.padEnd(20)}  ${'Nodes'.padStart(6)}  ${'Edges'.padStart(6)}  ${'Time(ms)'.padStart(9)}  ${'Nodes'.padEnd(10)}  ${'Edges'.padEnd(10)}  ${'Time'.padEnd(10)}`
+                  `  ${'Algorithm'.padEnd(20)}  ${'Nodes'.padStart(6)}  ${'Edges'.padStart(6)}  ${'Time(ms)'.padStart(9)}  ${'Quality'.padStart(7)}  ${'Nodes'.padEnd(10)}  ${'Edges'.padEnd(10)}  ${'Time'.padEnd(10)}  ${'Quality'.padEnd(10)}`
                 );
                 projection.log(
-                  `  ${'─'.repeat(20)}  ${'─'.repeat(6)}  ${'─'.repeat(6)}  ${'─'.repeat(9)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}`
+                  `  ${'─'.repeat(20)}  ${'─'.repeat(6)}  ${'─'.repeat(6)}  ${'─'.repeat(9)}  ${'─'.repeat(7)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}`
                 );
 
                 for (const st of s) {
                   const algoCol = col(st.algorithm, 20);
                   if (st.nodes < 0) {
                     projection.log(
-                      `  ${algoCol}  ${'ERROR'.padStart(6)}  ${'─'.padStart(6)}  ${'─'.padStart(9)}`
+                      `  ${algoCol}  ${'ERROR'.padStart(6)}  ${'─'.padStart(6)}  ${'─'.padStart(9)}  ${'─'.padStart(7)}`
                     );
                     continue;
                   }
                   const nodesStr = numCol(st.nodes, 6);
                   const edgesStr = numCol(st.edges, 6);
                   const timeStr = numCol(st.elapsedMs, 9, 1);
+                  const qualStr = numCol(st.qualityTier, 7);
                   const nodesBar = sparkBar(st.nodes, minNodes, maxNodes).padEnd(10);
                   const edgesBar = sparkBar(st.edges, minEdges, maxEdges).padEnd(10);
                   const timeBar = sparkBar(st.elapsedMs, minTime, maxTime).padEnd(10);
+                  const qualBar = sparkBar(st.qualityTier, minQuality, maxQuality).padEnd(10);
                   projection.log(
-                    `  ${algoCol}  ${nodesStr}  ${edgesStr}  ${timeStr}  ${nodesBar}  ${edgesBar}  ${timeBar}`
+                    `  ${algoCol}  ${nodesStr}  ${edgesStr}  ${timeStr}  ${qualStr}  ${nodesBar}  ${edgesBar}  ${timeBar}  ${qualBar}`
                   );
                 }
 
@@ -511,6 +706,15 @@ export const compare = defineCommand({
                 projection.log(
                   '               For large logs (>100K events) this gap compounds significantly.'
                 );
+                projection.log(
+                  '    Quality  — Van der Aalst quality tier (0-100). Registry proxy for the'
+                );
+                projection.log(
+                  '               fitness+precision balance. Higher = better model quality.'
+                );
+                projection.log(
+                  '               This is a design-time estimate. For live scores: wpm quality <log.xes>.'
+                );
                 projection.log('');
 
                 // Partial failure notice
@@ -522,27 +726,65 @@ export const compare = defineCommand({
                   projection.log('');
                 }
 
-                // Winner recommendation section
+                // Winner recommendation section — Van der Aalst grounded
                 if (recommendation) {
-                  projection.log('  Recommendations:');
+                  projection.log('  ─── Winner ───────────────────────────────────────────────');
+                  projection.log('');
+                  projection.log(`  Trade-off: ${recommendation.tradeoffNarrative}`);
+                  projection.log('');
+                  projection.log('  Recommendations by criterion:');
                   projection.success(
-                    `    Fastest      → ${recommendation.fastest.algorithm.padEnd(18)}  ${recommendation.fastest.rationale}`
+                    `    Fastest        → ${recommendation.fastest.algorithm.padEnd(20)}  ${recommendation.fastest.rationale}`
                   );
                   projection.success(
-                    `    Most detailed→ ${recommendation.mostDetailed.algorithm.padEnd(18)}  ${recommendation.mostDetailed.rationale}`
+                    `    Highest quality→ ${recommendation.highestQuality.algorithm.padEnd(20)}  ${recommendation.highestQuality.rationale}`
                   );
                   projection.success(
-                    `    Best tradeoff→ ${recommendation.bestTradeoff.algorithm.padEnd(18)}  ${recommendation.bestTradeoff.rationale}`
+                    `    Best tradeoff  → ${recommendation.bestTradeoff.algorithm.padEnd(20)}  ${recommendation.bestTradeoff.rationale}`
                   );
                   projection.log('');
+
+                  // Van der Aalst 4-dimension breakdown for top 2 algorithms
+                  // (fastest and highest quality — the practitioner's core choice)
+                  const top2 = [
+                    recommendation.fastest.algorithm,
+                    recommendation.highestQuality.algorithm,
+                  ].filter((v, i, arr) => arr.indexOf(v) === i);
+                  if (top2.length >= 1) {
+                    projection.log('  Van der Aalst 4-dimension profile (top algorithm(s)):');
+                    projection.log('');
+                    projection.log(
+                      `  ${'Algorithm'.padEnd(20)}  ${'Fitness'.padEnd(10)}  ${'Precision'.padEnd(10)}  ${'Generalize'.padEnd(12)}  ${'Simplicity'.padEnd(12)}  Recommended for`
+                    );
+                    projection.log(
+                      `  ${'─'.repeat(20)}  ${'─'.repeat(10)}  ${'─'.repeat(10)}  ${'─'.repeat(12)}  ${'─'.repeat(12)}  ${'─'.repeat(30)}`
+                    );
+                    for (const algoName of top2) {
+                      const profile = ALGO_PROFILES[algoName as Algorithm];
+                      if (!profile) continue;
+                      const useCaseLabel = profile.useCases[0] ?? 'general analysis';
+                      projection.log(
+                        `  ${col(algoName, 20)}  ${profile.fitnessProxy.padEnd(10)}  ${profile.precisionProxy.padEnd(10)}  ${profile.generalizationProxy.padEnd(12)}  ${profile.simplicityProxy.padEnd(12)}  ${useCaseLabel}`
+                      );
+                    }
+                    projection.log('');
+                  }
+
+                  // Per-algorithm use-case labels for all compared algorithms
+                  projection.log('  Recommended for (all compared algorithms):');
+                  for (const st of s) {
+                    if (st.nodes < 0) continue; // skip failed runs
+                    const profile = ALGO_PROFILES[st.algorithm];
+                    const label = profile.useCases.join(' | ');
+                    projection.log(`    ${col(st.algorithm, 20)}  ${label}`);
+                  }
+                  projection.log('');
+
                   projection.log(
-                    '  Note: "Most detailed" (highest edge count) is not the same as highest quality.'
+                    '  Note: Quality tier is a design-time proxy, not a live fitness/precision score.'
                   );
                   projection.log(
-                    '  A model with many edges may be overfit (low precision) or underfit (low fitness).'
-                  );
-                  projection.log(
-                    '  Validate with: wpm quality <log.xes>  to see fitness+precision+generalization.'
+                    '  For authoritative Van der Aalst metrics: wpm quality <log.xes>'
                   );
                   projection.log('');
                 }
