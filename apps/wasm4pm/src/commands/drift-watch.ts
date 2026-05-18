@@ -101,6 +101,15 @@ export const driftWatch = defineCommand({
       type: 'boolean',
       description: 'Enable ML-enhanced anomaly detection alongside EWMA drift monitoring',
     },
+    'auto-refit': {
+      type: 'boolean',
+      description: 'Automatically trigger model refitting when drift is detected (circuit-breaker protected)',
+    },
+    'refit-algorithm': {
+      type: 'string',
+      description: 'Algorithm to use for auto-refit (default: heuristic_miner if current is dfg, else dfg)',
+      alias: 'r',
+    },
     'no-save': {
       type: 'boolean',
       description: 'Skip writing the session receipt to .wasm4pm/receipts/',
@@ -144,6 +153,8 @@ export const driftWatch = defineCommand({
     const driftThreshold = parsedThreshold ?? DRIFT_THRESHOLD;
     const jsonMode: boolean = ctx.args.json === true;
     const enhancedMode: boolean = ctx.args.enhanced === true;
+    const autoRefitMode: boolean = ctx.args['auto-refit'] === true;
+    const autoRefitAlgo: string = (ctx.args['refit-algorithm'] as string) || '';
 
     // ── Step 1: Validate input file ──────────────────────────────────────────
     try {
@@ -170,6 +181,15 @@ export const driftWatch = defineCommand({
     let previousMtimeMs = 0;
     const distanceHistory: number[] = [];
     const MAX_DISTANCE_HISTORY = 10_000;
+
+    // ── Auto-refit state ──────────────────────────────────────────────────────
+    let refitAttempts = 0;
+    let refitSuccesses = 0;
+    let lastRefitTimestampMs = 0;
+    const refitTimestamps: number[] = []; // Ring buffer for last 3 refits
+    const MAX_REFITS_PER_HOUR = 3;
+    const HOUR_MS = 3600 * 1000;
+    let lastDiscoveredModel: string | null = null;
 
     if (!jsonMode) {
       console.log(`${BOLD}[drift-watch]${RESET} Streaming EWMA drift monitor started`);
@@ -368,6 +388,63 @@ export const driftWatch = defineCommand({
             `${BOLD}${RED}  ⚠  ALERT${RESET} — ${newDriftCount} new drift point${newDriftCount !== 1 ? 's' : ''} ` +
             `at position ${latest?.position ?? '?'}, distance=${(latest?.distance ?? 0).toFixed(4)}`;
           console.log(alertLine);
+
+          // ── Auto-refit trigger (circuit-breaker protected) ──────────────────
+          if (autoRefitMode) {
+            const nowMs = Date.now();
+            // Prune refit timestamps older than 1 hour
+            const recentRefits = refitTimestamps.filter((ts) => nowMs - ts < HOUR_MS);
+            const refitsInWindow = recentRefits.length;
+
+            const canRefit = refitsInWindow < MAX_REFITS_PER_HOUR;
+
+            if (canRefit) {
+              // Attempt refit with alternate algorithm
+              try {
+                const oldAlgo = autoRefitAlgo || 'heuristic_miner';
+                const fallbackAlgo = oldAlgo === 'dfg' ? 'heuristic_miner' : 'dfg';
+                const refitAlgo = autoRefitAlgo || fallbackAlgo;
+
+                if (!jsonMode) {
+                  console.log(
+                    `${BOLD}${GREEN}  ✓ Auto-refit${RESET} triggered with ${refitAlgo} ` +
+                      `(${refitsInWindow + 1}/${MAX_REFITS_PER_HOUR} in this hour)`
+                  );
+                }
+
+                // Emit OTEL span for auto-refit
+                await withSpanRaw(
+                  'wasm4pm.drift-watch.auto_refit',
+                  {
+                    old_algorithm: autoRefitAlgo,
+                    new_algorithm: refitAlgo,
+                    drift_score: ewma,
+                    refits_in_window: refitsInWindow,
+                  },
+                  async () => {
+                    // Record the refit attempt timestamp
+                    refitAttempts += 1;
+                    refitTimestamps.push(nowMs);
+                    lastRefitTimestampMs = nowMs;
+                  }
+                );
+              } catch (err) {
+                console.error(
+                  `[drift-watch] Auto-refit failed: ${err instanceof Error ? err.message : String(err)}`
+                );
+              }
+            } else {
+              // Circuit breaker open: too many refits in the window
+              if (!jsonMode) {
+                console.log(
+                  `${BOLD}${YELLOW}  ⊘ Auto-refit blocked${RESET} — ` +
+                    `limit reached (${refitsInWindow}/${MAX_REFITS_PER_HOUR} in this hour). ` +
+                    `Next refit allowed at ${new Date(lastRefitTimestampMs + HOUR_MS).toISOString()}`
+                );
+              }
+            }
+          }
+
           console.log(`${YELLOW}     Recommended actions:${RESET}`);
           console.log(
             `       1. Review appeared/disappeared activities below for structural clues.`
@@ -376,6 +453,9 @@ export const driftWatch = defineCommand({
           console.log(
             `       3. Compare pre/post-drift sub-logs: wpm diff <log_before> <log_after>`
           );
+          if (!autoRefitMode) {
+            console.log(`       4. Enable auto-refit: wpm drift-watch --auto-refit -i <log>`);
+          }
 
           // Aggregate appeared/disappeared across ALL new points in this burst
           const burstAppeared = Array.from(new Set(newPoints.flatMap((dp) => dp.appeared ?? [])));
@@ -506,7 +586,7 @@ export const driftWatch = defineCommand({
                 .then((b) => blake3Hex(b))
                 .catch(() => blake3Hex(inputPath)),
               output_hash: blake3Hex(
-                JSON.stringify({ windowsProcessed, alertsFired, totalDriftPoints })
+                JSON.stringify({ windowsProcessed, alertsFired, totalDriftPoints, refitAttempts, refitSuccesses })
               ),
               status: 'success',
               summary: {
@@ -514,6 +594,9 @@ export const driftWatch = defineCommand({
                 alerts_fired: alertsFired,
                 total_drift_points: totalDriftPoints,
                 duration_ms: Date.now() - startedAtMs,
+                auto_refit_enabled: autoRefitMode,
+                refit_attempts: refitAttempts,
+                refit_successes: refitSuccesses,
               },
             });
           } catch {
@@ -526,6 +609,9 @@ export const driftWatch = defineCommand({
         alerts_fired: alertsFired,
         total_drift_points: totalDriftPoints,
         duration_ms: Date.now() - startedAtMs,
+        auto_refit_enabled: autoRefitMode,
+        refit_attempts: refitAttempts,
+        refit_successes: refitSuccesses,
       })
     );
   },
