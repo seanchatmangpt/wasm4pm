@@ -650,15 +650,16 @@ export const conformance = defineCommand({
                   return await exitWithFlush(EXIT_CODES.partial_failure);
                 }
 
-                // Include warnings in output if --full-quality requested, otherwise filter to clean
+                // Include warnings in output if --full-quality requested.
+                // Without --full-quality: leave invariant_violations and invariant_status
+                // absent from the payload (backward-compatible — consumers that do not
+                // request the audit never see these fields).
                 if (ctx.args['full-quality']) {
                   payload.invariant_violations = warningViolations;
                   payload.invariant_status = warningViolations.length === 0 ? 'clean' : 'warnings';
-                } else {
-                  // Default mode: only report if critical (already handled above); clean otherwise
-                  payload.invariant_violations = undefined;
-                  payload.invariant_status = 'clean';
                 }
+                // else: payload.invariant_violations and payload.invariant_status remain
+                // undefined (not set), so they are absent from the JSON envelope.
               }
 
               const elapsedMs = Date.now() - t0;
