@@ -153,19 +153,65 @@ async function catResult(filepath: string): Promise<SavedResult> {
 }
 
 /**
+ * Safely normalize a path to prevent directory traversal attacks (../../../etc/passwd).
+ * Ensures the normalized path is within the target directory.
+ *
+ * @param targetDir - The allowed directory (e.g., .wasm4pm/results)
+ * @param requestedPath - The requested file path (potentially malicious)
+ * @returns The safe absolute path, or undefined if traversal is attempted
+ */
+function safeNormalizePath(targetDir: string, requestedPath: string): string | undefined {
+  try {
+    // Resolve both paths to absolute, canonical form
+    const resolvedTarget = path.resolve(targetDir);
+    const resolvedRequested = path.resolve(targetDir, requestedPath);
+
+    // Ensure resolved path is within target directory
+    // Use path.relative() to check: if it starts with .., it's outside
+    const relative = path.relative(resolvedTarget, resolvedRequested);
+    if (relative.startsWith('..')) {
+      return undefined; // Path traversal attempt detected
+    }
+
+    return resolvedRequested;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
  * Resolve a result reference (1-based index or filename) to a filepath.
- * Returns undefined if the reference does not match any file.
+ * Returns undefined if the reference does not match any file or attempts path traversal.
  */
 function resolveRef(
   ref: string,
-  files: Array<{ name: string; filepath: string }>
+  files: Array<{ name: string; filepath: string }>,
+  resultsDir: string
 ): string | undefined {
   const idx = parseInt(ref, 10);
   if (!isNaN(idx) && idx >= 1 && idx <= files.length) {
-    return files[idx - 1].filepath;
+    const candidate = files[idx - 1];
+    // Security: verify indexed filepath is within results directory
+    const safePath = safeNormalizePath(resultsDir, candidate.name);
+    return safePath ? candidate.filepath : undefined;
   }
+
+  // Construct filename and validate against path traversal
   const name = ref.endsWith('.json') ? ref : `${ref}.json`;
-  return files.find((f) => f.name === name)?.filepath;
+
+  // Security: reject any path traversal attempts in the reference itself
+  if (name.includes('..') || name.includes('/') || name.includes('\\')) {
+    return undefined;
+  }
+
+  const candidate = files.find((f) => f.name === name);
+  if (!candidate) {
+    return undefined;
+  }
+
+  // Security: verify the candidate filepath is safe (not traversing)
+  const safePath = safeNormalizePath(resultsDir, candidate.name);
+  return safePath ? candidate.filepath : undefined;
 }
 
 /**
@@ -282,7 +328,7 @@ export const results = defineCommand({
           const ref = ctx.args.verify as string;
           const receiptsDir = path.resolve(process.cwd(), '.wasm4pm', 'receipts');
 
-          const resultFilepath = resolveRef(ref, files);
+          const resultFilepath = resolveRef(ref, files, dir);
           if (!resultFilepath) {
             const hint =
               files.length > 0
@@ -530,7 +576,7 @@ export const results = defineCommand({
         // --cat <name|index>: print a specific result
         if (ctx.args.cat) {
           const ref = ctx.args.cat as string;
-          const filepath = resolveRef(ref, files);
+          const filepath = resolveRef(ref, files, dir);
 
           if (!filepath) {
             const hint =
@@ -576,8 +622,8 @@ export const results = defineCommand({
           }
 
           const [ref1, ref2] = parts;
-          const fp1 = resolveRef(ref1, files);
-          const fp2 = resolveRef(ref2, files);
+          const fp1 = resolveRef(ref1, files, dir);
+          const fp2 = resolveRef(ref2, files, dir);
 
           if (!fp1 || !fp2) {
             const missing = !fp1 ? ref1 : ref2;

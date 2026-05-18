@@ -202,13 +202,13 @@ describe('configToMcppExtensions', () => {
           observability: {
             logLevel: 'info',
             metricsEnabled: false,
-            otel: { enabled: true, exporter: 'otlp', endpoint: 'http://localhost:4317', required: false },
+            otel: { enabled: true, exporter: 'otlp', endpoint: 'https://example.com:4317', required: false },
           },
         })
       );
       expect(ext['wasm4pm.observability.otel.enabled']).toBe(true);
       expect(ext['wasm4pm.observability.otel.exporter']).toBe('otlp');
-      expect(ext['wasm4pm.observability.otel.endpoint']).toBe('http://localhost:4317');
+      expect(ext['wasm4pm.observability.otel.endpoint']).toBe('https://example.com:4317');
     });
 
     it('otel sub-keys are absent when otel config is not provided', () => {

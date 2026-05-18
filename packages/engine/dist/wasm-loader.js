@@ -347,6 +347,7 @@ export class WasmLoader {
                 // Log to observability system
                 this.emitJson({
                     timestamp: new Date().toISOString(),
+                    level: 'error',
                     component: 'wasm-loader',
                     event_type: 'wasm_panic',
                     data: {
@@ -367,6 +368,7 @@ export class WasmLoader {
                 });
                 this.emitJson({
                     timestamp: new Date().toISOString(),
+                    level: 'error',
                     component: 'wasm-loader',
                     event_type: 'wasm_panic',
                     data: {
@@ -422,10 +424,12 @@ export class WasmLoader {
         return undefined;
     }
     /**
-     * Emit JSON event via observability layer
+     * Emit JSON event via observability layer.
+     * Accepts a JsonEvent; the runtime guard protects against subclasses that
+     * may not implement emitJson.
      */
     emitJson(event) {
-        if (this.observability.emitJson) {
+        if (typeof this.observability.emitJson === 'function') {
             this.observability.emitJson(event);
         }
     }

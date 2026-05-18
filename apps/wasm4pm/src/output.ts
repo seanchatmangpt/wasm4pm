@@ -153,6 +153,34 @@ export function makeResult<T>(
   };
 }
 
+/**
+ * Redact sensitive filesystem paths from error messages.
+ * Replaces absolute paths with generic descriptions to prevent information leakage.
+ *
+ * @param message - The error message potentially containing paths
+ * @returns Sanitized message with paths redacted
+ */
+function redactPathsFromError(message: string): string {
+  // Replace common absolute paths with generic descriptions
+  // /home/user/* → "<home>"
+  // /Users/* → "<home>"
+  // /root/* → "<home>"
+  const redacted = message
+    .replace(/\/home\/[^/]+\//g, '<home>/')
+    .replace(/\/Users\/[^/]+\//g, '<home>/')
+    .replace(/\/root\//g, '<home>/')
+    // Also redact explicit filesystem paths at boundaries
+    .replace(/\/home\/[^/\s]+/g, '<home>')
+    .replace(/\/Users\/[^/\s]+/g, '<home>')
+    .replace(/\/root[^\s]*/g, '<home>')
+    // Redact .wasm4pm directory paths (show only relative)
+    .replace(/\.wasm4pm\/[a-zA-Z0-9\-_.]+\//g, '.wasm4pm/<file>/')
+    // Redact /etc paths
+    .replace(/\/etc\/[^\s]+/g, '<system-file>');
+
+  return redacted;
+}
+
 /** Build an error CommandResult */
 export function makeErrorResult(
   command: string,
@@ -161,7 +189,11 @@ export function makeErrorResult(
   code = 'COMMAND_ERROR',
   remediation?: string
 ): CommandResult<null> {
-  const message = err instanceof Error ? err.message : String(err);
+  let message = err instanceof Error ? err.message : String(err);
+
+  // Security: redact filesystem paths from error messages
+  message = redactPathsFromError(message);
+
   return {
     command,
     status: 'error',

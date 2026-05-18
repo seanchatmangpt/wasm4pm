@@ -406,7 +406,8 @@ export const compare = defineCommand({
   meta: {
     name: 'compare',
     description:
-      'Run two or more algorithms on the same XES log and print a side-by-side comparison table',
+      'Run two or more algorithms on the same XES log and print a side-by-side comparison table. ' +
+      'Example: wpm compare dfg,heuristic,genetic -i process.xes',
   },
   args: {
     algorithms: {

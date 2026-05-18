@@ -25,7 +25,7 @@ export const validate = defineCommand({
   meta: {
     name: 'validate',
     description:
-      'Validate event log schema, required attributes, and data quality (XES, CSV, and OCEL)',
+      'Validate event log schema and data quality. Ex: wpm validate process.xes',
   },
   args: {
     input: {

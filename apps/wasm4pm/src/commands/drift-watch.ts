@@ -61,7 +61,7 @@ export const driftWatch = defineCommand({
   meta: {
     name: 'drift-watch',
     description:
-      'Stream EWMA drift monitoring — watches an XES file for concept drift in real-time',
+      'Real-time EWMA concept drift monitoring. Ex: wpm drift-watch -i process.xes (press Ctrl+C to stop)',
   },
   args: {
     input: {

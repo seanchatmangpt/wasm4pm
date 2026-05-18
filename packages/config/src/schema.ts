@@ -76,6 +76,70 @@ export const sourceConfigSchema = z
   })
   .describe('Source configuration');
 
+/**
+ * Validate HTTP sink URL against SSRF attacks
+ * Rejects:
+ * - localhost/127.0.0.1/::1/0.0.0.0 (local services)
+ * - 169.254.169.254 (AWS metadata endpoint)
+ * - 169.254.x.x (AWS link-local range)
+ * - 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 (private ranges)
+ * - http:// (plaintext — https only)
+ * - Relative URLs (must be absolute)
+ */
+function validateSinkUrl(url: string): string | undefined {
+  try {
+    const parsed = new URL(url);
+
+    // Require HTTPS (check first to avoid accepting plaintext)
+    if (parsed.protocol !== 'https:') {
+      return 'sink.url must use https:// scheme. Plaintext HTTP is not allowed.';
+    }
+
+    const hostname = parsed.hostname;
+    if (!hostname) {
+      return 'sink.url must contain a valid hostname.';
+    }
+
+    // SSRF Prevention: Reject localhost/loopback addresses
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '::1' ||
+      hostname === '0.0.0.0' ||
+      hostname === '[::1]'
+    ) {
+      return 'sink.url must not target localhost. Use a remote server with proper TLS validation.';
+    }
+
+    // SSRF Prevention: Reject AWS metadata endpoint
+    if (hostname === '169.254.169.254' || hostname === '[::ffff:169.254.169.254]') {
+      return 'sink.url must not target AWS metadata endpoint (169.254.169.254).';
+    }
+
+    // SSRF Prevention: Reject AWS link-local range (169.254.0.0/16)
+    if (hostname.startsWith('169.254.')) {
+      return 'sink.url must not target link-local range (169.254.x.x). This range is reserved for cloud provider metadata.';
+    }
+
+    // SSRF Prevention: Reject private IP ranges
+    const privateRangePatterns = [
+      /^10\./,                    // 10.0.0.0/8
+      /^172\.(1[6-9]|2[0-9]|3[01])\./, // 172.16.0.0/12
+      /^192\.168\./,              // 192.168.0.0/16
+    ];
+
+    for (const pattern of privateRangePatterns) {
+      if (pattern.test(hostname)) {
+        return 'sink.url must not target private IP ranges (10.x.x.x, 172.16-31.x.x, 192.168.x.x). Use a public, routable address.';
+      }
+    }
+
+    return undefined;
+  } catch {
+    return 'sink.url must be a valid absolute URL (e.g., https://example.com/path).';
+  }
+}
+
 export const sinkConfigSchema = z
   .object({
     kind: sinkKindSchema,
@@ -89,8 +153,18 @@ export const sinkConfigSchema = z
         path: ['url'],
         message:
           'sink.url is required when sink.kind is "http". ' +
-          'Provide a valid URL (e.g. http://localhost:9200/results).',
+          'Provide a valid URL (e.g. https://example.com/results).',
       });
+    }
+    if (val.kind === 'http' && val.url) {
+      const urlError = validateSinkUrl(val.url);
+      if (urlError) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['url'],
+          message: urlError,
+        });
+      }
     }
     if (val.kind === 'file' && !val.path) {
       ctx.addIssue({

@@ -334,7 +334,7 @@ describe('Domain contract — missing required source fields', () => {
 
   it('rejects source=file with url field set (url is not applicable for file sources)', () => {
     expect(() =>
-      validate({ ...MINIMAL, source: { kind: 'file', url: 'http://localhost/events' } })
+      validate({ ...MINIMAL, source: { kind: 'file', url: 'https://example.com/events' } })
     ).toThrow(/url/i);
   });
 

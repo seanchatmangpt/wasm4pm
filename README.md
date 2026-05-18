@@ -4,28 +4,126 @@ A process mining platform with a real Rust cognition kernel. 41 discovery algori
 
 The doctrine: **Old AI is the factory. LLMs are the brochure.**
 
-## In 60 seconds
+## Installation
+
+### Prerequisites
+
+- **Node.js** 18+ and **pnpm** 8+
+- **Rust** 1.70+ (only if contributing to the WASM kernel)
+- Supported on macOS, Linux, Windows (WSL2)
+
+### Quick Install
 
 ```bash
 npm install -g @wasm4pm/cli
-
-# Discover a process model from an event log
-wpm run examples/loan-application.xes
-
-# Predict next activity for a partial trace
-wpm predict next-activity -i examples/loan-application.xes
-
-# Run a cognition contract (MYCIN forward-chain + receipt)
-wpm cognition run --contract mycin --input examples/cognition/mycin/symptoms.json
-
-# Verify the receipt is cryptographically sound
-wpm cognition verify --receipt-id <id-from-above>
-
-# Replay to prove byte-identical determinism
-wpm cognition replay --receipt-id <id-from-above>
+wpm --version
 ```
 
-Every output carries a **BLAKE3 receipt chain**. The receipt proves the run happened, which algorithm ran, what the inputs were, and what the outputs were. It can be replayed to verify determinism.
+For detailed installation, troubleshooting, and post-install verification, see [docs/INSTALL.md](docs/INSTALL.md).
+
+## Quick Start (3 minutes)
+
+### 1. Download a sample event log
+
+```bash
+# Use any XES file from bench_data/
+wget https://raw.githubusercontent.com/sac/wasm4pm/main/bench_data/sepsis.xes
+
+# Or use a file from your local copy
+cp bench_data/sepsis.xes ./sample.xes
+```
+
+### 2. Run process discovery
+
+```bash
+wpm run sample.xes
+```
+
+Results save to `.wasm4pm/results/` automatically.
+
+### 3. View the results
+
+```bash
+# Show all saved results
+wpm results
+
+# Inspect a specific result (with receipt hash validation)
+wpm results --verify <result-id>
+```
+
+See [docs/QUICK_START.md](docs/QUICK_START.md) for more examples and next steps.
+
+### Example: Full workflow (60 seconds)
+
+```bash
+# Process discovery
+wpm run sample.xes
+
+# Compare algorithms side-by-side
+wpm compare dfg,heuristic_miner,ilp -i sample.xes
+
+# Check conformance with a model
+wpm conformance -i sample.xes
+
+# Predict next activity
+wpm predict next-activity -i sample.xes
+
+# Run a cognition contract (MYCIN forward-chain + BLAKE3 receipt)
+wpm cognition run --contract mycin --input examples/cognition/mycin/symptoms.json
+
+# Verify adversarial gates
+wpm cognition verify --receipt-id <id-from-above>
+```
+
+Every output carries a **BLAKE3 receipt chain** proving the run happened, which algorithm ran, what the inputs were, and what the outputs were. See [docs/QUICK_START.md](docs/QUICK_START.md) for details.
+
+## Configuration
+
+wasm4pm is configured via:
+1. CLI arguments (highest priority)
+2. `wasm4pm.toml` or `wasm4pm.json` in the current directory
+3. Environment variables (`WASM4PM_*` prefix)
+4. Default values (lowest priority)
+
+### Example: TOML config
+
+```toml
+[source]
+kind = "file"
+path = "./sample.xes"
+
+[algorithm]
+name = "heuristic_miner"
+
+[execution]
+profile = "balanced"    # fast | balanced | quality | stream
+
+[output]
+format = "json"         # human | json
+colorize = true
+```
+
+### Example: JSON config
+
+```json
+{
+  "source": { "kind": "file", "path": "./sample.xes" },
+  "algorithm": { "name": "heuristic_miner" },
+  "execution": { "profile": "balanced" },
+  "output": { "format": "json", "colorize": true }
+}
+```
+
+### Environment variables
+
+```bash
+export WASM4PM_ALGORITHM=ilp
+export WASM4PM_PROFILE=quality
+export WASM4PM_OUTPUT_FORMAT=json
+wpm run sample.xes
+```
+
+For the complete configuration schema, supported algorithms, and all available options, see [docs/CONFIG.md](docs/CONFIG.md).
 
 ## What this is
 
@@ -103,6 +201,41 @@ wpm cognition inspect     Inspect a cognition artifact
 ```
 
 See [docs/cognition-overview.md](docs/cognition-overview.md) for a full primer and [docs/cognition-doctrine.md](docs/cognition-doctrine.md) for the architecture manifesto with inline diagrams.
+
+## Process Mining vs. Cognition Layer
+
+wasm4pm provides **two distinct modes of operation**:
+
+### Process Mining (End-User Facing)
+Commands for extracting process models, predicting outcomes, and analyzing event logs.
+
+| Command | Purpose |
+|---------|---------|
+| `wpm run` | Discover a process model from an event log |
+| `wpm compare` | Side-by-side quality comparison of algorithms |
+| `wpm conformance` | Measure log-to-model fitness and precision |
+| `wpm predict` | Predictive process monitoring (next activity, remaining time, drift, etc.) |
+| `wpm temporal` | Bottleneck analysis and performance patterns |
+| `wpm social` | Mine social networks from handovers |
+| `wpm ml` | ML-powered analysis (clustering, classification, anomaly detection) |
+| `wpm validate` | Event log schema and quality validation |
+| `wpm explain` | Human-readable algorithm descriptions |
+
+**User-facing entry point:** `wpm run`, `wpm predict`, `wpm ml`, etc.
+
+### Cognition Layer (Internal Framework Use)
+Commands for running classical AI engines (ELIZA, MYCIN, STRIPS, etc.) with cryptographic proof.
+
+| Command | Purpose |
+|---------|---------|
+| `wpm cognition run` | Execute a cognition contract (breed + cost law) |
+| `wpm cognition verify` | Verify all adversarial gates passed |
+| `wpm cognition replay` | Replay a receipt to prove byte-identical determinism |
+| `wpm cognition receipt` | Inspect a receipt by ID |
+
+**Internal use:** Invoked by framework components, not end-users. Used for automated decision-making and proof generation.
+
+See [docs/cognition-overview.md](docs/cognition-overview.md) for the full cognition layer architecture.
 
 ## Process mining commands (20 total)
 
@@ -206,6 +339,31 @@ pnpm test                                    # all TS packages
 cd apps/wasm4pm && npm test                  # CLI tests
 cargo test --test <name>                     # specific Rust integration test
 ```
+
+## Documentation & References
+
+### Getting Started
+- **[docs/INSTALL.md](docs/INSTALL.md)** — Detailed installation guide and troubleshooting
+- **[docs/QUICK_START.md](docs/QUICK_START.md)** — 3-5 minute walkthrough with examples
+- **[docs/CONFIG.md](docs/CONFIG.md)** — Complete configuration schema and options
+
+### Learning & Reference
+- **[WASM_API.md](WASM_API.md)** — Complete WASM algorithm catalog (70+ functions, 11 modules)
+- **[docs/API.md](docs/API.md)** — TypeScript API reference
+- **[docs/reference/cli-commands.md](docs/reference/cli-commands.md)** — CLI command reference
+- **[TESTING.md](TESTING.md)** — Testing layers, harnesses, and best practices
+- **[docs/cognition-overview.md](docs/cognition-overview.md)** — Cognition layer primer
+
+### Deep Dives
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** — System architecture with diagrams
+- **[docs/cognition-doctrine.md](docs/cognition-doctrine.md)** — Cognition manifesto and design
+- **[ADVERSARIAL_TEST_PLAN.md](ADVERSARIAL_TEST_PLAN.md)** — RL/ML testing strategy
+- **[docs/FAQ.md](docs/FAQ.md)** — Troubleshooting and common questions
+- **[Van der Aalst References](https://cicero.xyz/v3/remark/github/sac/wasm4pm/feat/iter16-miniml-prolog8/docs/explanation/van-der-aalst-perspectives.md/)** — Process mining theory foundations
+
+### Contributing
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** — Contribution guidelines and standards
+- **[CLAUDE.md](CLAUDE.md)** — Project memory and context for developers
 
 ## Contributing
 

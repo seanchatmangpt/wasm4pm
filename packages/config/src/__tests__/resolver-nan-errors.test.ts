@@ -288,3 +288,69 @@ describe('resolver NaN errors — message quality', () => {
     expect(err!.message).toMatch(/BADVAL/);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Security: ENV variable validation (Fix 4)
+// Null bytes, length limits, control characters
+// ---------------------------------------------------------------------------
+describe('Security: ENV variable validation — null bytes, length, control chars', () => {
+  let tmp: string;
+  beforeEach(async () => { tmp = await makeTmp(); });
+  afterEach(async () => { await cleanTmp(tmp); });
+
+  it('rejects WASM4PM_* variables containing null bytes', async () => {
+    await expect(
+      resolveConfig({
+        configSearchPaths: [tmp],
+        env: { WASM4PM_PROFILE: 'balanced\x00malicious' },
+      })
+    ).rejects.toThrow(/null byte/);
+  });
+
+  it('rejects WASM4PM_* variables exceeding 1KB', async () => {
+    const longValue = 'a'.repeat(1025);
+    await expect(
+      resolveConfig({
+        configSearchPaths: [tmp],
+        env: { WASM4PM_ALGORITHM: longValue },
+      })
+    ).rejects.toThrow(/exceeds 1KB limit/);
+  });
+
+  it('rejects WASM4PM_* variables with suspicious control characters', async () => {
+    await expect(
+      resolveConfig({
+        configSearchPaths: [tmp],
+        env: { WASM4PM_PROFILE: 'balanced\x01evil' },
+      })
+    ).rejects.toThrow(/control characters/);
+  });
+
+  it('accepts valid WASM4PM_PROFILE with ASCII alphanumeric', async () => {
+    const cfg = await resolveConfig({
+      configSearchPaths: [tmp],
+      env: { WASM4PM_PROFILE: 'quality' },
+    });
+    expect(cfg.execution.profile).toBe('quality');
+  });
+
+  it('accepts WASM4PM_* variables with spaces and allowed punctuation', async () => {
+    const cfg = await resolveConfig({
+      configSearchPaths: [tmp],
+      env: { WASM4PM_OUTPUT_DESTINATION: './my-output-file.json' },
+    });
+    expect(cfg.output.destination).toBe('./my-output-file.json');
+  });
+
+  it('accepts WASM4PM_* variables at exactly 1KB boundary', async () => {
+    const value = 'a'.repeat(1024);
+    // At exactly 1024 bytes, this should pass pre-validation (no length error)
+    // But will fail Zod validation since "a...a" is not a valid algorithm name
+    await expect(
+      resolveConfig({
+        configSearchPaths: [tmp],
+        env: { WASM4PM_ALGORITHM: value },
+      })
+    ).rejects.toThrow(); // Zod rejects (invalid enum), not pre-validation (length OK)
+  });
+});

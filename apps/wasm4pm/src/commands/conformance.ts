@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
-import { withSpan } from './_otel.js';
+import { withSpan, withWasmSpan } from './_otel.js';
 import {
   saveCommandReceipt,
   blake3Hex,
@@ -59,7 +59,7 @@ export const conformance = defineCommand({
   meta: {
     name: 'conformance',
     description:
-      'Measure how well an event log conforms to a process model (fitness, precision, diagnostics)',
+      'Measure log-to-model fitness and precision. Ex: wpm conformance -i process.xes',
   },
   args: {
     input: {
@@ -201,7 +201,11 @@ export const conformance = defineCommand({
                 }
               } else {
                 // Auto-discover a Petri Net using Alpha++
-                const discoveryResult = wasm.discover_alpha_plus_plus(logHandle, activityKey, 0.1);
+                const discoveryResult = withWasmSpan(
+                  'discover_alpha_plus_plus',
+                  { algorithm: 'alpha', activity_key: activityKey },
+                  () => wasm.discover_alpha_plus_plus(logHandle, activityKey, 0.1)
+                );
                 const resultData =
                   typeof discoveryResult === 'string'
                     ? JSON.parse(discoveryResult)
@@ -231,10 +235,18 @@ export const conformance = defineCommand({
                   log_move_cost: 1.0,
                   model_move_cost: 1.0,
                 });
-                const raw = wasm.alignment_fitness(logHandle, petriNetHandle, configJson);
+                const raw = withWasmSpan(
+                  'alignment_fitness',
+                  { method: 'alignment', activity_key: activityKey },
+                  () => wasm.alignment_fitness(logHandle, petriNetHandle, configJson)
+                );
                 conformanceResult = typeof raw === 'string' ? JSON.parse(raw) : raw;
               } else {
-                const raw = wasm.check_token_based_replay(logHandle, petriNetHandle, activityKey);
+                const raw = withWasmSpan(
+                  'check_token_based_replay',
+                  { method: 'token_replay', activity_key: activityKey },
+                  () => wasm.check_token_based_replay(logHandle, petriNetHandle, activityKey)
+                );
                 conformanceResult = typeof raw === 'string' ? JSON.parse(raw) : raw;
               }
 

@@ -159,7 +159,9 @@ export declare class WasmLoader {
      */
     private getGetrandomPolyfill;
     /**
-     * Emit JSON event via observability layer
+     * Emit JSON event via observability layer.
+     * Accepts a JsonEvent; the runtime guard protects against subclasses that
+     * may not implement emitJson.
      */
     private emitJson;
 }

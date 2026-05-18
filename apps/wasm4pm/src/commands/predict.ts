@@ -6,7 +6,7 @@ import { withLogSession } from '../with-log-session.js';
 import { loadWasm4pmConfig, buildCliOverrides } from '../config-loader.js';
 import { savePredictionResult } from './results.js';
 import { VALID_PREDICT_CLI_TASKS, createError, findClosestMatch } from '@wasm4pm/contracts';
-import { withSpan } from './_otel.js';
+import { withSpan, withWasmSpan } from './_otel.js';
 import {
   saveCommandReceipt,
   blake3Hex,
@@ -21,7 +21,8 @@ type PredictTask = (typeof VALID_TASKS)[number];
 export const predict = defineCommand({
   meta: {
     name: 'predict',
-    description: 'Run predictive process mining on an event log',
+    description:
+      'Run predictive process mining (6 tasks: next-activity, remaining-time, outcome, drift, features, resource). Ex: wpm predict next-activity -i log.xes --prefix "Submit,Approve"',
   },
   args: {
     task: {
@@ -325,13 +326,17 @@ async function executePredictionTask(
 ): Promise<Record<string, unknown>> {
   switch (task) {
     case 'next-activity': {
-      const predictorHandle: string = wasm.build_ngram_predictor(
-        logHandle,
-        activityKey,
-        ngramOrder
+      const predictorHandle: string = withWasmSpan(
+        'build_ngram_predictor',
+        { activity_key: activityKey, ngram_order: ngramOrder },
+        () => wasm.build_ngram_predictor(logHandle, activityKey, ngramOrder)
       );
       const prefix = prefixActivities ?? [];
-      const raw: string = wasm.predict_next_activity(predictorHandle, JSON.stringify(prefix));
+      const raw: string = withWasmSpan(
+        'predict_next_activity',
+        { ngram_order: ngramOrder, prefix_length: prefix.length },
+        () => wasm.predict_next_activity(predictorHandle, JSON.stringify(prefix))
+      );
       const allPredictions: Array<{ activity: string; probability: number }> = JSON.parse(raw);
       const topPredictions = allPredictions.slice(0, topK);
       // Gap 1: expose prefix echo, n-gram order, and whether the model had an exact match.
@@ -355,17 +360,21 @@ async function executePredictionTask(
     }
 
     case 'remaining-time': {
-      const modelHandle: string = wasm.build_remaining_time_model(
-        logHandle,
-        activityKey,
-        'time:timestamp'
+      const modelHandle: string = withWasmSpan(
+        'build_remaining_time_model',
+        { activity_key: activityKey, timestamp_key: 'time:timestamp' },
+        () => wasm.build_remaining_time_model(logHandle, activityKey, 'time:timestamp')
       );
 
       // Gap 2: always surface Weibull distribution parameters so the analyst
       // understands the uncertainty shape — not just a point estimate.
       let weibull: Record<string, unknown> | null = null;
       try {
-        const hazardRaw: string = wasm.predict_hazard_rate(modelHandle, 0);
+        const hazardRaw: string = withWasmSpan(
+          'predict_hazard_rate',
+          { case_index: 0 },
+          () => wasm.predict_hazard_rate(modelHandle, 0)
+        );
         const hazardResult = JSON.parse(hazardRaw) as {
           shape: number;
           scale: number;
@@ -387,9 +396,10 @@ async function executePredictionTask(
       }
 
       if (prefixActivities && prefixActivities.length > 0) {
-        const raw: string = wasm.predict_case_duration(
-          modelHandle,
-          JSON.stringify(prefixActivities)
+        const raw: string = withWasmSpan(
+          'predict_case_duration',
+          { prefix_length: prefixActivities.length },
+          () => wasm.predict_case_duration(modelHandle, JSON.stringify(prefixActivities))
         );
         const prediction = JSON.parse(raw);
         wasm.delete_object(modelHandle);
@@ -431,7 +441,11 @@ async function executePredictionTask(
     }
 
     case 'drift': {
-      const raw: string = wasm.detect_drift(logHandle, activityKey, driftWindow);
+      const raw: string = withWasmSpan(
+        'detect_drift',
+        { activity_key: activityKey, window_size: driftWindow },
+        () => wasm.detect_drift(logHandle, activityKey, driftWindow)
+      );
       const driftResult = JSON.parse(raw) as {
         drifts_detected: number;
         drifts: Array<{
@@ -454,7 +468,11 @@ async function executePredictionTask(
         null;
       if (distances.length > 0) {
         try {
-          const ewmaRaw: string = wasm.compute_ewma(JSON.stringify(distances), 0.3);
+          const ewmaRaw: string = withWasmSpan(
+            'compute_ewma',
+            { series_length: distances.length, alpha: 0.3 },
+            () => wasm.compute_ewma(JSON.stringify(distances), 0.3)
+          );
           ewmaResult = JSON.parse(ewmaRaw) as {
             smoothed: number[];
             trend: string;
@@ -495,7 +513,11 @@ async function executePredictionTask(
     }
 
     case 'features': {
-      const raw: string = wasm.build_transition_probabilities(logHandle, activityKey);
+      const raw: string = withWasmSpan(
+        'build_transition_probabilities',
+        { activity_key: activityKey },
+        () => wasm.build_transition_probabilities(logHandle, activityKey)
+      );
       const transitions = JSON.parse(raw);
       // Also extract prefix features if prefix given
       if (prefixActivities && prefixActivities.length > 0) {
@@ -519,7 +541,11 @@ async function executePredictionTask(
       let serviceRate = 1.0;
       let logStats: Record<string, unknown> = {};
       try {
-        const statsRaw: string = wasm.analyze_event_statistics(logHandle);
+        const statsRaw: string = withWasmSpan(
+          'analyze_event_statistics',
+          {},
+          () => wasm.analyze_event_statistics(logHandle)
+        );
         logStats = JSON.parse(statsRaw) as Record<string, unknown>;
         const totalCases = (logStats['total_cases'] as number) ?? 0;
         const totalEvents = (logStats['total_events'] as number) ?? 0;

@@ -1,7 +1,7 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import * as path from 'path';
-import { resolveConfig as loadConfig, checkConfigWarnings } from '@wasm4pm/config';
+import { resolveConfig as loadConfig } from '@wasm4pm/config';
 import { plan as makePlan } from '@wasm4pm/planner';
 import { ALGORITHM_CLI_ALIASES, findClosestMatch } from '@wasm4pm/contracts';
 import { getRegistry } from '@wasm4pm/kernel';
@@ -12,7 +12,7 @@ import { savePredictionResult } from './results.js';
 import { executeMlTask } from '../ml-runner.js';
 import type { MlTask } from '../ml-runner.js';
 import { discriminate, DiscoveryShapeError } from '../discriminator.js';
-import { withSpan } from './_otel.js';
+import { withSpan, withWasmSpan } from './_otel.js';
 import {
   saveCommandReceipt,
   blake3Hex,
@@ -57,7 +57,7 @@ export type Algorithm = (typeof ALGORITHMS)[number];
 
 /**
  * Invoke the appropriate WASM discovery function for the given algorithm.
- * Reuses the dispatch table pattern from compare.ts.
+ * Wraps each discovery call in an OTEL span for observability.
  */
 export function runDiscovery(
   wasm: Record<string, any>,
@@ -70,55 +70,115 @@ export function runDiscovery(
 
   switch (algo) {
     case 'dfg':
-      raw = wasm.discover_dfg(logHandle, activityKey);
+      raw = withWasmSpan('discover_dfg', { algorithm: algo, activity_key: activityKey }, () =>
+        wasm.discover_dfg(logHandle, activityKey)
+      );
       break;
     case 'alpha':
-      raw = wasm.discover_alpha_plus_plus(logHandle, activityKey, 0.0);
+      raw = withWasmSpan(
+        'discover_alpha_plus_plus',
+        { algorithm: algo, activity_key: activityKey },
+        () => wasm.discover_alpha_plus_plus(logHandle, activityKey, 0.0)
+      );
       break;
     case 'heuristic':
-      raw = wasm.discover_heuristic_miner(logHandle, activityKey, 0.5);
+      raw = withWasmSpan(
+        'discover_heuristic_miner',
+        { algorithm: algo, activity_key: activityKey, dependency_threshold: 0.5 },
+        () => wasm.discover_heuristic_miner(logHandle, activityKey, 0.5)
+      );
       break;
     case 'inductive':
-      raw = wasm.discover_inductive_miner(logHandle, activityKey);
+      raw = withWasmSpan(
+        'discover_inductive_miner',
+        { algorithm: algo, activity_key: activityKey },
+        () => wasm.discover_inductive_miner(logHandle, activityKey)
+      );
       break;
     case 'ilp':
-      raw = wasm.discover_ilp_petri_net(logHandle, activityKey);
+      raw = withWasmSpan('discover_ilp_petri_net', { algorithm: algo, activity_key: activityKey }, () =>
+        wasm.discover_ilp_petri_net(logHandle, activityKey)
+      );
       break;
     case 'genetic':
-      raw = wasm.discover_genetic_algorithm(logHandle, activityKey, 20, 20);
+      raw = withWasmSpan(
+        'discover_genetic_algorithm',
+        { algorithm: algo, activity_key: activityKey, population_size: 20, generations: 20 },
+        () => wasm.discover_genetic_algorithm(logHandle, activityKey, 20, 20)
+      );
       break;
     case 'pso':
-      raw = wasm.discover_pso_algorithm(logHandle, activityKey, 20, 20);
+      raw = withWasmSpan(
+        'discover_pso_algorithm',
+        { algorithm: algo, activity_key: activityKey, population_size: 20, iterations: 20 },
+        () => wasm.discover_pso_algorithm(logHandle, activityKey, 20, 20)
+      );
       break;
     case 'astar':
-      raw = wasm.discover_astar(logHandle, activityKey, 500);
+      raw = withWasmSpan(
+        'discover_astar',
+        { algorithm: algo, activity_key: activityKey, max_iterations: 500 },
+        () => wasm.discover_astar(logHandle, activityKey, 500)
+      );
       break;
     case 'hill-climbing':
-      raw = wasm.discover_hill_climbing(logHandle, activityKey);
+      raw = withWasmSpan(
+        'discover_hill_climbing',
+        { algorithm: algo, activity_key: activityKey },
+        () => wasm.discover_hill_climbing(logHandle, activityKey)
+      );
       break;
     case 'simulated-annealing':
-      raw = wasm.discover_simulated_annealing(logHandle, activityKey, 1.0, 0.95);
+      raw = withWasmSpan(
+        'discover_simulated_annealing',
+        { algorithm: algo, activity_key: activityKey, temperature: 1.0, cooling_rate: 0.95 },
+        () => wasm.discover_simulated_annealing(logHandle, activityKey, 1.0, 0.95)
+      );
       break;
     case 'ant-colony':
-      raw = wasm.discover_ant_colony(logHandle, activityKey, 20, 20);
+      raw = withWasmSpan(
+        'discover_ant_colony',
+        { algorithm: algo, activity_key: activityKey, num_ants: 20, iterations: 20 },
+        () => wasm.discover_ant_colony(logHandle, activityKey, 20, 20)
+      );
       break;
     case 'declare':
-      raw = wasm.discover_declare(logHandle, activityKey);
+      raw = withWasmSpan('discover_declare', { algorithm: algo, activity_key: activityKey }, () =>
+        wasm.discover_declare(logHandle, activityKey)
+      );
       break;
     case 'skeleton':
-      raw = wasm.extract_process_skeleton(logHandle, activityKey);
+      raw = withWasmSpan(
+        'extract_process_skeleton',
+        { algorithm: algo, activity_key: activityKey },
+        () => wasm.extract_process_skeleton(logHandle, activityKey)
+      );
       break;
     case 'dfg-optimized':
-      raw = wasm.discover_dfg(logHandle, activityKey);
+      raw = withWasmSpan('discover_dfg', { algorithm: algo, activity_key: activityKey }, () =>
+        wasm.discover_dfg(logHandle, activityKey)
+      );
       break;
     case 'simd-dfg':
-      raw = wasm.discover_dfg_simd(logHandle, activityKey, 0.0);
+      raw = withWasmSpan(
+        'discover_dfg_simd',
+        { algorithm: algo, activity_key: activityKey, threshold: 0.0 },
+        () => wasm.discover_dfg_simd(logHandle, activityKey, 0.0)
+      );
       break;
     case 'hierarchical-dfg':
-      raw = wasm.discover_dfg_hierarchical(logHandle, activityKey, 3);
+      raw = withWasmSpan(
+        'discover_dfg_hierarchical',
+        { algorithm: algo, activity_key: activityKey, max_depth: 3 },
+        () => wasm.discover_dfg_hierarchical(logHandle, activityKey, 3)
+      );
       break;
     case 'smart-engine':
-      raw = wasm.smart_engine_run(logHandle, activityKey, 'auto', '');
+      raw = withWasmSpan(
+        'smart_engine_run',
+        { algorithm: algo, activity_key: activityKey, mode: 'auto' },
+        () => wasm.smart_engine_run(logHandle, activityKey, 'auto', '')
+      );
       break;
     default: {
       const _never: never = algo;
@@ -133,7 +193,8 @@ export function runDiscovery(
 export const run = defineCommand({
   meta: {
     name: 'run',
-    description: 'Discover a process model from an XES event log',
+    description:
+      'Discover a process model from an XES event log. Ex: wpm run process.xes  |  wpm run log.xes --algorithm genetic --with-quality',
   },
   args: {
     input: {
@@ -430,7 +491,9 @@ export const run = defineCommand({
               try {
                 const schemaResult =
                   typeof wasm.validate_log_schema === 'function'
-                    ? wasm.validate_log_schema(logHandle, 'xes')
+                    ? withWasmSpan('validate_log_schema', { format: 'xes' }, () =>
+                        wasm.validate_log_schema(logHandle, 'xes')
+                      )
                     : null;
                 if (schemaResult) {
                   const schema =
@@ -446,12 +509,17 @@ export const run = defineCommand({
               try {
                 const attrsResult =
                   typeof wasm.validate_required_attributes === 'function'
-                    ? wasm.validate_required_attributes(
-                        logHandle,
-                        activityKey,
-                        'case:concept:name',
-                        'time:timestamp',
-                        'org:resource'
+                    ? withWasmSpan(
+                        'validate_required_attributes',
+                        { activity_key: activityKey, attributes: 3 },
+                        () =>
+                          wasm.validate_required_attributes(
+                            logHandle,
+                            activityKey,
+                            'case:concept:name',
+                            'time:timestamp',
+                            'org:resource'
+                          )
                       )
                     : null;
                 if (attrsResult) {
@@ -485,7 +553,9 @@ export const run = defineCommand({
                 try {
                   const qualityResult =
                     typeof wasm.validate_data_quality === 'function'
-                      ? wasm.validate_data_quality(logHandle)
+                      ? withWasmSpan('validate_data_quality', {}, () =>
+                          wasm.validate_data_quality(logHandle)
+                        )
                       : null;
                   if (qualityResult) {
                     const quality =
@@ -649,7 +719,11 @@ export const run = defineCommand({
                     // Fitness via SIMD token replay
                     let fitness = 1.0;
                     if (typeof wasm.simd_token_replay === 'function') {
-                      const replayRaw = wasm.simd_token_replay(logHandle, activityKey);
+                      const replayRaw = withWasmSpan(
+                        'simd_token_replay',
+                        { activity_key: activityKey },
+                        () => wasm.simd_token_replay(logHandle, activityKey)
+                      );
                       const replay =
                         typeof replayRaw === 'string' ? JSON.parse(replayRaw) : replayRaw;
                       if (replay.overall_fitness !== undefined && !replay.error) {
@@ -661,10 +735,15 @@ export const run = defineCommand({
                     let precision = 1.0;
                     if (typeof wasm.wasm_compute_precision === 'function' && modelHandle) {
                       try {
-                        const precRaw = wasm.wasm_compute_precision(
-                          logHandle,
-                          modelHandle,
-                          activityKey
+                        const precRaw = withWasmSpan(
+                          'wasm_compute_precision',
+                          { activity_key: activityKey, model_type: 'petri_net' },
+                          () =>
+                            wasm.wasm_compute_precision(
+                              logHandle,
+                              modelHandle,
+                              activityKey
+                            )
                         );
                         const prec = typeof precRaw === 'string' ? JSON.parse(precRaw) : precRaw;
                         if (prec.precision !== undefined) {
@@ -693,7 +772,11 @@ export const run = defineCommand({
                       typeof wasm.wasm_compute_simplicity === 'function' &&
                       numPlaces + numTransitions + numArcs > 0
                     ) {
-                      simplicity = wasm.wasm_compute_simplicity(numPlaces, numTransitions, numArcs);
+                      simplicity = withWasmSpan(
+                        'wasm_compute_simplicity',
+                        { places: numPlaces, transitions: numTransitions, arcs: numArcs },
+                        () => wasm.wasm_compute_simplicity(numPlaces, numTransitions, numArcs)
+                      );
                     } else {
                       // Fallback heuristic when WASM function unavailable or model lacks Petri net structure
                       const numEdges = Array.isArray(resultDataEarly?.edges)
@@ -809,7 +892,11 @@ export const run = defineCommand({
               } | null = null;
               try {
                 if (typeof wasm.analyze_event_statistics === 'function') {
-                  const statsRaw = wasm.analyze_event_statistics(logHandle);
+                  const statsRaw = withWasmSpan(
+                    'analyze_event_statistics',
+                    {},
+                    () => wasm.analyze_event_statistics(logHandle)
+                  );
                   const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
                   logStats = {
                     total_cases: (stats.total_cases as number) ?? undefined,

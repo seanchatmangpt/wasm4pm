@@ -91,3 +91,55 @@ export async function withSpanRaw<T>(
     }
   }
 }
+
+/**
+ * Wrap a synchronous WASM function call in an OTEL span.
+ *
+ * Used for direct WASM discovery calls (e.g., `wasm.discover_dfg(...)`) that
+ * happen outside the kernel.run() path. Emits a non-blocking span with timing.
+ *
+ * @param name - Span name (becomes `wasm.<name>`, e.g., `wasm.discover_dfg`)
+ * @param attrs - OTEL span attributes (algorithm, log_size, etc.)
+ * @param fn - Function that returns the WASM result synchronously
+ * @param getLateAttrs - Optional function to compute attributes from the result
+ * @returns The result from `fn()`
+ */
+export function withWasmSpan<T>(
+  name: string,
+  attrs: SpanAttrs,
+  fn: () => T,
+  getLateAttrs?: (result: T) => SpanAttrs,
+): T {
+  const sink = getGlobalSpanSink();
+  const startNs = Date.now() * 1_000_000;
+  let status: 'OK' | 'ERROR' = 'OK';
+  let errMsg: string | undefined;
+  let result: T;
+
+  try {
+    result = fn();
+  } catch (e) {
+    status = 'ERROR';
+    errMsg = e instanceof Error ? e.message : String(e);
+    throw e;
+  } finally {
+    try {
+      const lateAttrs = getLateAttrs ? getLateAttrs(result!) : {};
+      const span: OtelSpan = {
+        trace_id: randomBytes(16).toString('hex'),
+        span_id: randomBytes(8).toString('hex'),
+        name: `wasm.${name}`,
+        kind: 'INTERNAL',
+        start_time: startNs,
+        end_time: Date.now() * 1_000_000,
+        status: errMsg !== undefined ? { code: status, message: errMsg } : { code: status },
+        attributes: { 'service.name': 'wasm4pm', ...attrs, ...lateAttrs },
+      };
+      sink(span);
+    } catch {
+      /* never block on OTEL */
+    }
+  }
+
+  return result;
+}

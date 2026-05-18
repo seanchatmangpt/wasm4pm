@@ -73,7 +73,7 @@ interface DiffPayload {
 export const diff = defineCommand({
   meta: {
     name: 'diff',
-    description: 'Compare two event logs and report process model differences',
+    description: 'Compare two logs via Jaccard similarity. Ex: wpm diff log1.xes log2.xes',
   },
   args: {
     log1: {

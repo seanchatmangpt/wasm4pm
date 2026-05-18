@@ -164,8 +164,53 @@ function getDefaults(): Record<string, unknown> {
   };
 }
 
+/**
+ * Validate an environment variable value before processing.
+ * Rejects:
+ * - Values containing null bytes (\x00)
+ * - Values exceeding 1KB (prevents buffer exhaustion)
+ * - Values with suspicious control characters
+ *
+ * @param varName - The environment variable name (for error reporting)
+ * @param value - The value to validate
+ * @throws Error if validation fails
+ */
+function validateEnvValue(varName: string, value: string): void {
+  // Reject null bytes (string terminator injection)
+  if (value.includes('\x00')) {
+    throw new Error(
+      `Invalid environment variable ${varName}: contains null byte (potential injection).`
+    );
+  }
+
+  // Reject excessively long values (DOS prevention)
+  if (value.length > 1024) {
+    throw new Error(
+      `Invalid environment variable ${varName}: exceeds 1KB limit (${value.length} bytes). ` +
+        `Possible buffer exhaustion attack.`
+    );
+  }
+
+  // Reject suspicious control characters (aside from whitespace)
+  const suspiciousChars = /[\x01-\x08\x0B-\x0C\x0E-\x1F\x7F]/;
+  if (suspiciousChars.test(value)) {
+    throw new Error(
+      `Invalid environment variable ${varName}: contains unexpected control characters. ` +
+        `Possible injection attempt.`
+    );
+  }
+}
+
 function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
   const config: Record<string, unknown> = {};
+
+  // Pre-validate all WASM4PM_* variables
+  const wasm4pmVars = Object.entries(env).filter(([k]) => k.startsWith('WASM4PM_'));
+  for (const [varName, value] of wasm4pmVars) {
+    if (value !== undefined) {
+      validateEnvValue(varName, value);
+    }
+  }
 
   if (env.WASM4PM_PROFILE) {
     config.execution = { profile: env.WASM4PM_PROFILE };

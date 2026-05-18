@@ -32,6 +32,7 @@ import { claude } from './commands/claude.js';
 import { adversary } from './commands/adversary.js';
 import { trace } from './commands/trace.js';
 import { algorithms } from './commands/algorithms.js';
+import { examples } from './commands/examples.js';
 import { repl } from './commands/repl.js';
 import { prolog8 } from './commands/prolog8.js';
 import pkg from '../package.json' with { type: 'json' };
@@ -199,6 +200,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     adversary,
     trace,
     algorithms,
+    examples,
     repl,
     prolog8,
   },
@@ -234,4 +236,5 @@ export {
   config,
   verify,
   claude,
+  examples,
 };

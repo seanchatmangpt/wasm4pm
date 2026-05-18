@@ -36,7 +36,7 @@ describe('Gap 1: source/sink kind vs url/path cross-field requirements', () => {
 
   it('accepts source.kind="http" when a valid url is provided', () => {
     expect(() =>
-      validate({ ...minimal, source: { kind: 'http', url: 'http://localhost:8080/events.xes' } })
+      validate({ ...minimal, source: { kind: 'http', url: 'https://example.com:8080/events.xes' } })
     ).not.toThrow();
   });
 
@@ -67,7 +67,7 @@ describe('Gap 1: source/sink kind vs url/path cross-field requirements', () => {
 
   it('accepts sink.kind="http" when a valid url is provided', () => {
     expect(() =>
-      validate({ ...minimal, sink: { kind: 'http', url: 'http://localhost:9200/results' } })
+      validate({ ...minimal, sink: { kind: 'http', url: 'https://example.com:9200/results' } })
     ).not.toThrow();
   });
 

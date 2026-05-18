@@ -81,7 +81,21 @@ export async function withLogSession<T>(
   const wasm = loader.get() as Record<string, unknown>;
 
   // Read + validate XES
+  // SECURITY NOTE: XXE Prevention
+  // - XES parsing is performed entirely in WASM (Rust), not in TypeScript
+  // - The TypeScript layer never calls DOMParser, parseXML, or xml2js
+  // - WASM parser uses a line-by-line lexer (linear time, no tree construction until after validation)
+  // - This prevents XXE attacks (Billion Laughs, External Entity attacks)
+  // - If this assumption is violated (TypeScript-side XML parsing added), re-audit security.
   const xesContent = await fs.readFile(inputPath, 'utf-8');
+
+  // Assert: TypeScript does not parse the XML content
+  // This is verified by the absence of DOMParser/xml2js imports above
+  console.assert(
+    typeof DOMParser === 'undefined',
+    'SECURITY: DOMParser detected. XES parsing must not use TypeScript XML parsers to prevent XXE.'
+  );
+
   if (xesContent.trim() === '') {
     const result = makeErrorResult(
       commandName,

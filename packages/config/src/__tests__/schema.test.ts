@@ -31,7 +31,7 @@ describe('Schema', () => {
       const full = {
         schemaVersion: 1,
         version: '1.0.0',
-        source: { kind: 'http', url: 'http://localhost:8080/events' },
+        source: { kind: 'http', url: 'https://example.com/events' },
         sink: { kind: 'file', path: './output.pnml' },
         algorithm: { name: 'heuristic_miner', parameters: { threshold: 0.8 } },
         execution: { profile: 'quality', timeout: 600000, maxMemory: 2147483648 },
@@ -41,7 +41,7 @@ describe('Schema', () => {
           otel: {
             enabled: true,
             exporter: 'otlp',
-            endpoint: 'http://localhost:4318',
+            endpoint: 'https://otel-collector.example.com:4318',
             required: true,
             headers: { Authorization: 'Bearer tok' },
           },
@@ -64,7 +64,7 @@ describe('Schema', () => {
         expect(() => validate({ ...minimal, source: { kind } })).not.toThrow();
       }
       expect(() =>
-        validate({ ...minimal, source: { kind: 'http', url: 'http://localhost:8080/events.xes' } })
+        validate({ ...minimal, source: { kind: 'http', url: 'https://example.com/events.xes' } })
       ).not.toThrow();
       // sink kinds: 'stdout' needs no extra field; 'file' requires path; 'http' requires url
       expect(() => validate({ ...minimal, sink: { kind: 'stdout' } })).not.toThrow();
@@ -72,7 +72,7 @@ describe('Schema', () => {
         validate({ ...minimal, sink: { kind: 'file', path: './output.pnml' } })
       ).not.toThrow();
       expect(() =>
-        validate({ ...minimal, sink: { kind: 'http', url: 'http://localhost:9200/results' } })
+        validate({ ...minimal, sink: { kind: 'http', url: 'https://example.com/results' } })
       ).not.toThrow();
       for (const profile of ['fast', 'balanced', 'quality', 'stream'] as const) {
         expect(() => validate({ ...minimal, execution: { profile } })).not.toThrow();
@@ -116,7 +116,7 @@ describe('Schema', () => {
       // fires even in partial validation because the constraint is on the object itself.
       expect(() => validatePartial({ sink: { kind: 'http' } })).toThrow(/sink\.url is required/);
       expect(() =>
-        validatePartial({ sink: { kind: 'http', url: 'http://localhost:9200/results' } })
+        validatePartial({ sink: { kind: 'http', url: 'https://example.com/results' } })
       ).not.toThrow();
       expect(() => validatePartial({ execution: { profile: 'turbo' } })).toThrow();
     });
@@ -396,6 +396,53 @@ describe('configToEnv', () => {
     const envStr = configToEnv(cfg);
     expect(envStr).toContain('WASM4PM_ALGORITHM="ilp"');
     expect(envStr).toContain('WASM4PM_PROFILE="quality"');
+  });
+});
+
+// ---------------------------------------------------------------------------
+// Security: HTTP SSRF Prevention (Fix 1)
+// ---------------------------------------------------------------------------
+describe('Security: HTTP SSRF Prevention', () => {
+  it('rejects sink.url targeting localhost', () => {
+    expect(() =>
+      validate({ ...minimal, sink: { kind: 'http', url: 'https://localhost:8080/results' } })
+    ).toThrow(/localhost/);
+  });
+
+  it('rejects sink.url targeting 127.0.0.1', () => {
+    expect(() =>
+      validate({ ...minimal, sink: { kind: 'http', url: 'https://127.0.0.1:8080/results' } })
+    ).toThrow(/localhost|must not target/);
+  });
+
+  it('rejects sink.url using plaintext http:// on remote server', () => {
+    expect(() =>
+      validate({ ...minimal, sink: { kind: 'http', url: 'http://api.example.com/results' } })
+    ).toThrow(/https/);
+  });
+
+  it('rejects sink.url targeting 169.254.169.254 (AWS metadata)', () => {
+    expect(() =>
+      validate({ ...minimal, sink: { kind: 'http', url: 'https://169.254.169.254/results' } })
+    ).toThrow(/169.254.169.254/);
+  });
+
+  it('rejects sink.url using plaintext http://', () => {
+    expect(() =>
+      validate({ ...minimal, sink: { kind: 'http', url: 'http://example.com/results' } })
+    ).toThrow(/https/);
+  });
+
+  it('accepts sink.url using https:// to remote server', () => {
+    expect(() =>
+      validate({ ...minimal, sink: { kind: 'http', url: 'https://example.com/results' } })
+    ).not.toThrow();
+  });
+
+  it('accepts sink.url using https:// with custom port', () => {
+    expect(() =>
+      validate({ ...minimal, sink: { kind: 'http', url: 'https://example.com:9443/results' } })
+    ).not.toThrow();
   });
 });
 

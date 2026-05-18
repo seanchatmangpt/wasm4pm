@@ -60,10 +60,10 @@ describe('Resolution', () => {
   describe('source, sink, algorithm', () => {
     it('loads source, sink, and algorithm config from TOML, CLI, and env overrides', async () => {
       await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'),
-        `version = "1.0.0"\n[source]\nkind = "http"\nurl = "http://localhost:9000/events"`);
+        `version = "1.0.0"\n[source]\nkind = "http"\nurl = "https://example.com:9000/events"`);
       const cfgSrc = await resolveConfig({ configSearchPaths: [tmpDir] });
       expect(cfgSrc.source.kind).toBe('http');
-      expect(cfgSrc.source.url).toBe('http://localhost:9000/events');
+      expect(cfgSrc.source.url).toBe('https://example.com:9000/events');
 
       await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'),
         `version = "1.0.0"\n[source]\nkind = "file"\n[sink]\nkind = "file"\npath = "./out.pnml"`);
@@ -87,11 +87,11 @@ describe('Resolution', () => {
       expect(cfgAlgoCli.algorithm.parameters).toEqual({ generations: 100 });
 
       const cfgSinkCli = await resolveConfig({
-        cliOverrides: { sinkKind: 'http', sinkUrl: 'http://localhost:3000/ingest' },
+        cliOverrides: { sinkKind: 'http', sinkUrl: 'https://example.com:3000/ingest' },
         configSearchPaths: [tmpDir],
       });
       expect(cfgSinkCli.sink.kind).toBe('http');
-      expect(cfgSinkCli.sink.url).toBe('http://localhost:3000/ingest');
+      expect(cfgSinkCli.sink.url).toBe('https://example.com:3000/ingest');
 
       await fs.rm(path.join(tmpDir, 'wasm4pm.toml'), { force: true });
       const cfgSrcEnv = await resolveConfig({ configSearchPaths: [tmpDir], env: { WASM4PM_SOURCE_KIND: 'stream' } });
@@ -109,11 +109,11 @@ describe('Resolution', () => {
   describe('observability and watch config', () => {
     it('loads otel and watch config from TOML, env, and CLI', async () => {
       await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'),
-        `version = "1.0.0"\n[source]\nkind = "file"\n[observability.otel]\nenabled = true\nexporter = "console"\nendpoint = "http://localhost:4318"\nrequired = true`);
+        `version = "1.0.0"\n[source]\nkind = "file"\n[observability.otel]\nenabled = true\nexporter = "console"\nendpoint = "https://example.com:4318"\nrequired = true`);
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
       expect(cfg.observability.otel?.enabled).toBe(true);
       expect(cfg.observability.otel?.exporter).toBe('console');
-      expect(cfg.observability.otel?.endpoint).toBe('http://localhost:4318');
+      expect(cfg.observability.otel?.endpoint).toBe('https://example.com:4318');
       expect(cfg.observability.otel?.required).toBe(true);
 
       await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'),

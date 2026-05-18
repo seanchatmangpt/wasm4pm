@@ -513,7 +513,7 @@ describe('Edge cases — Cross-Field Validation', () => {
     expect(() =>
       validate({
         ...MINIMAL,
-        source: { kind: 'http', url: 'http://localhost:8080/events.xes' },
+        source: { kind: 'http', url: 'https://example.com:8080/events.xes' },
       })
     ).not.toThrow();
   });
@@ -549,7 +549,7 @@ describe('Edge cases — Cross-Field Validation', () => {
     expect(() =>
       validate({
         ...MINIMAL,
-        sink: { kind: 'http', url: 'http://localhost:9200/results' },
+        sink: { kind: 'http', url: 'https://example.com:9200/results' },
       })
     ).not.toThrow();
   });
@@ -558,7 +558,7 @@ describe('Edge cases — Cross-Field Validation', () => {
     expect(() =>
       validate({
         ...MINIMAL,
-        source: { kind: 'file', url: 'http://localhost/events' },
+        source: { kind: 'file', url: 'https://example.com/events' },
       })
     ).toThrow(/url/i);
   });

@@ -1991,7 +1991,6 @@ export class AlgorithmRegistry {
     // For very small logs, prefer speed
     // For medium logs, balance speed and quality
     // For large logs, prefer algorithms that scale well
-    const isSmallLog = logSize < 1000;
     const isLargeLog = logSize > 100000;
 
     let candidates = algorithms;

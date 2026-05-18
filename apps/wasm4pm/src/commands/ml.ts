@@ -19,7 +19,7 @@ import { exitWithFlush } from '../otel/exit.js';
 export const ml = defineCommand({
   meta: {
     name: 'ml',
-    description: 'Run ML-powered process mining analysis',
+    description: 'Run ML analysis (classify, cluster, forecast, anomaly, regress, pca). Ex: wpm ml cluster -i log.xes',
   },
   args: {
     task: {

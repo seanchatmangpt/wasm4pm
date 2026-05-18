@@ -15,6 +15,7 @@ import { withSpanRaw } from './_otel.js';
 import { getGlobalSpanSink } from '../otel/sink.js';
 import { exitWithFlush } from '../otel/exit.js';
 import { runDiscovery, type Algorithm } from './run.js';
+import { WasmInstrumentation } from './_wasm-instrumentation.js';
 
 // ---------------------------------------------------------------------------
 // Autopilot: select algorithm from log characteristics
@@ -108,7 +109,7 @@ export interface WatchOptions {
 export const watch = defineCommand({
   meta: {
     name: 'watch',
-    description: 'Watch for changes and re-run discovery automatically',
+    description: 'Watch config file for changes, auto-discover. Ex: wpm watch',
   },
   args: {
     config: {
@@ -331,10 +332,11 @@ export const watch = defineCommand({
                       (ctx.args['activity-key'] as string | undefined) ?? 'concept:name';
                     const xesContent = await fs.readFile(filePath, 'utf8');
                     const t0 = Date.now();
-                    const handle = wasm.load_eventlog_from_xes(xesContent) as string;
+                    // INSTRUMENTED: load_eventlog_from_xes — one of the top 10 most-called WASM exports
+                    const handle = WasmInstrumentation.load_eventlog_from_xes(wasm, xesContent);
 
-                    // Get log characteristics to select algorithm
-                    const statsRaw = wasm.analyze_event_statistics(handle, activityKey);
+                    // INSTRUMENTED: analyze_event_statistics — bonus instrumentation related to load
+                    const statsRaw = WasmInstrumentation.analyze_event_statistics(wasm, handle, activityKey);
                     const stats = (
                       typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw
                     ) as LogStats;
