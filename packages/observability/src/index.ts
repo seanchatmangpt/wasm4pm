@@ -44,6 +44,12 @@ export * from './atomvm-bridge.js';
 // LIVE-15/LIVE-16 healthcare bridge: privacy compliance + MedWatch filing spans
 export * from './healthcare-bridge.js';
 
+// Algorithm feedback loop: capture quality metrics per algorithm per log size
+export * from './feedback-loop.js';
+
+// Root cause diagnosis: classify conformance failures into categories
+export * from './root-cause.js';
+
 // Global singleton access
 import { ObservabilityWrapper } from './observability-wrapper.js';
 import { Tracer } from './spans.js';

@@ -418,7 +418,7 @@ describe('Event Factory - Conformance Check Events', () => {
 
     expect(result.status.code).toBe('ERROR');
     expect(result.status.message).toBe('Model has invalid structure');
-    expect(result.attributes['conformance.error_code']).toBe('INVALID_MODEL');
+    expect(result.attributes['error.code']).toBe('INVALID_MODEL');
   });
 
   it('createConformanceCheckCompletedEvent() span name is correct', () => {
