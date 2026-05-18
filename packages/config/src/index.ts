@@ -155,6 +155,21 @@ export type {
  */
 export { hashConfig } from './hash.js';
 
+// mcpp bridge — map ResolvedConfig to McpplusRequest fields
+export type {
+  ObjectRef,
+  ConformanceThresholds,
+  PolicyOnNonconformance,
+  Policy,
+  McpplusRequest,
+} from './mcpp-bridge.js';
+export {
+  MCPP_VERSION,
+  configToMcppExtensions,
+  configToConformanceThresholds,
+  buildMcppRequest,
+} from './mcpp-bridge.js';
+
 // Validation & Profiles
 export {
   formatDetailedZodError,

@@ -143,3 +143,34 @@ export * as introspection from './introspection/index.js';
 // Enterprise KPI computation
 export { computeCaseKpis, summarizeKpis } from './kpi.js';
 export type { CaseKpi, LogKpiSummary } from './kpi.js';
+
+// POWL discovery variant bridge — maps wasm4pm variants to mcpp algorithm selection
+export {
+  DiscoveryVariant,
+  VARIANT_COST_ORDER,
+  variantToMcppAlgorithmId,
+  nextVariant,
+  variantMetadata,
+  parseDiscoveryVariant,
+} from './discovery-variant-bridge.js';
+export type { VariantMetadata } from './discovery-variant-bridge.js';
+
+// Manifest bridge — auto-generate mcpp PartManifest entries from the kernel registry
+export type {
+  McppContext,
+  RouteBinding,
+  HostFit,
+  RefusalProfile,
+  Fixture,
+  WasmBinding,
+  PartManifest,
+  ManifestBridgeGaps,
+  GapOverrideMap,
+  ManifestBundle,
+} from './manifest-bridge.js';
+export {
+  DEFAULT_MCPP_CONTEXT,
+  algorithmToPartManifest,
+  generateAllManifests,
+  computeManifestHash,
+} from './manifest-bridge.js';

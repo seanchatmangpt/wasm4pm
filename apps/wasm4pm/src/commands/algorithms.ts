@@ -14,6 +14,29 @@ const TIER_SPEED_RANGES: Record<Tier, [number, number]> = {
   stream: [0, 10],
 };
 
+type VdaLevel = 'high' | 'med' | 'low';
+
+interface VdaRating {
+  fitness: VdaLevel;
+  precision: VdaLevel;
+  generalization: VdaLevel;
+  simplicity: VdaLevel;
+  notes: string;
+}
+
+const ALGO_VDA_RATINGS: Record<string, VdaRating> = {
+  dfg: { fitness: 'high', precision: 'low', generalization: 'high', simplicity: 'high', notes: 'Best for exploration; under-fits complex processes' },
+  heuristic_miner: { fitness: 'high', precision: 'med', generalization: 'high', simplicity: 'med', notes: 'Noise-tolerant; good balanced first choice' },
+  inductive_miner: { fitness: 'high', precision: 'high', generalization: 'med', simplicity: 'med', notes: 'Guarantees sound model; best for clean logs' },
+  alpha_plus_plus: { fitness: 'med', precision: 'high', generalization: 'low', simplicity: 'high', notes: 'Precise but misses loops and skips' },
+  genetic_algorithm: { fitness: 'high', precision: 'high', generalization: 'high', simplicity: 'low', notes: 'Best overall quality; slow for large logs' },
+  ilp: { fitness: 'high', precision: 'high', generalization: 'med', simplicity: 'low', notes: 'Exact Petri net; best conformance accuracy' },
+  simulated_annealing: { fitness: 'high', precision: 'med', generalization: 'high', simplicity: 'med', notes: 'Escapes local optima; good for complex processes' },
+  aco: { fitness: 'high', precision: 'high', generalization: 'high', simplicity: 'low', notes: 'Ant colony; competitive with genetic for quality' },
+  declare: { fitness: 'med', precision: 'high', generalization: 'med', simplicity: 'high', notes: 'Declarative rules; best when ordering is flexible' },
+  simd_streaming_dfg: { fitness: 'high', precision: 'low', generalization: 'high', simplicity: 'high', notes: 'SIMD-accelerated; streaming use cases only' },
+};
+
 function classifyTier(speed: number): Tier {
   if (speed <= 10) return 'stream';
   if (speed <= 30) return 'fast';
@@ -42,18 +65,24 @@ export const algorithms = defineCommand({
       alias: 'q',
       description: 'Suppress headers',
     },
+    'show-ratings': {
+      type: 'boolean',
+      description: 'Show Van der Aalst quality dimension ratings (fitness/precision/generalization/simplicity)',
+      default: false,
+    },
   },
   async run(ctx) {
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const quiet = Boolean(ctx.args.quiet);
     const tierFilter = ctx.args.tier as Tier | undefined;
+    const showRatings = Boolean(ctx.args['show-ratings']);
 
     let lateTotal = 0;
     let lateFiltered = 0;
 
     return withSpan(
       'algorithms',
-      { tier_filter: tierFilter ?? 'all', format },
+      { tier_filter: tierFilter ?? 'all', format, show_ratings: showRatings },
       async () => {
     const registry = getRegistry();
     let all = registry.list();
@@ -86,14 +115,18 @@ export const algorithms = defineCommand({
     const payload = {
       total: all.length,
       tiers: grouped,
-      algorithms: all.map((a) => ({
-        id: a.id,
-        name: a.name,
-        speed: a.speedTier,
-        quality: a.qualityTier,
-        outputType: a.outputType,
-        tier: classifyTier(a.speedTier),
-      })),
+      algorithms: all.map((a) => {
+        const vda = ALGO_VDA_RATINGS[a.id];
+        return {
+          id: a.id,
+          name: a.name,
+          speed: a.speedTier,
+          quality: a.qualityTier,
+          outputType: a.outputType,
+          tier: classifyTier(a.speedTier),
+          ...(vda ? { vda } : {}),
+        };
+      }),
     };
 
     const result = makeResult('algorithms', payload, 0, EXIT_CODES.success);
@@ -132,6 +165,30 @@ export const algorithms = defineCommand({
       p.log(`Run: wpm run <log.xes> --algorithm <id>`);
       p.log(`     wpm compare <id,id,...> -i <log.xes>`);
       p.log('');
+
+      if (showRatings) {
+        const ratedAlgos = all.filter((a) => ALGO_VDA_RATINGS[a.id]);
+        if (ratedAlgos.length > 0) {
+          p.log('Quality Dimensions (Van der Aalst):');
+          p.log('─'.repeat(85));
+          p.log(
+            `${'Algorithm'.padEnd(22)} ${'Fitness'.padEnd(11)} ${'Precision'.padEnd(11)} ${'General.'.padEnd(11)} ${'Simplicity'.padEnd(12)} Notes`
+          );
+          p.log('─'.repeat(85));
+          for (const a of ratedAlgos) {
+            const r = ALGO_VDA_RATINGS[a.id]!;
+            p.log(
+              `${a.id.padEnd(22)} ${r.fitness.padEnd(11)} ${r.precision.padEnd(11)} ${r.generalization.padEnd(11)} ${r.simplicity.padEnd(12)} ${r.notes}`
+            );
+          }
+          p.log('─'.repeat(85));
+          p.log('Legend: high=★★★  med=★★☆  low=★☆☆');
+          p.log('');
+          p.log('Tip: For high-quality process models, prefer algorithms with high fitness AND high precision.');
+          p.log('     Use wpm compare -i <log> --algorithms genetic_algorithm,ilp to benchmark on your data.');
+          p.log('');
+        }
+      }
     });
 
     return await exitWithFlush(EXIT_CODES.success);

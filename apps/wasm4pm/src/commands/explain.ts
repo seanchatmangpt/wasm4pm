@@ -463,16 +463,26 @@ function getAlgorithmExplanation(
 1. Scans the event log chronologically
 2. For each trace, records which activities directly follow each other
 3. Creates weighted edges where edge weight = frequency of succession
-4. Outputs the graph as a Petri net or process model
+4. Outputs a directed graph
+
+**Output — how to read the result**:
+- Each node is an activity (e.g., "Register Order", "Ship Item")
+- Each directed edge A → B means A was directly followed by B at least once
+- Edge weight = how many times that succession occurred
+- High-weight edges are the main process flow; low-weight edges are exceptions
+
+**When to use**:
+- You have a large event log (>10 000 traces) and need a fast first look
+- You want to compare two logs structurally (use with \`wpm diff\`)
+- You need a process overview in under a second
+- Avoid when: you need to model parallel activities, loops, or formal verification
 
 **Characteristics**:
 - **Speed**: Very fast (linear time complexity)
 - **Memory**: Minimal memory usage
 - **Accuracy**: Best for simple processes, poor for complex control flows
 - **Advantages**: Fast, interpretable, handles large logs
-- **Disadvantages**: Cannot discover implicit dependencies, loops, or concurrent activities
-
-**Best for**: Quick process overview, real-time analysis, large event logs`,
+- **Disadvantages**: Cannot discover implicit dependencies, loops, or concurrent activities`,
       academic: `## Directly-Follows Graph Discovery Algorithm
 
 **Definition**: Let E be an event log with traces T. The DFG is constructed as follows:
@@ -546,6 +556,24 @@ Transitions correspond to activities
 4. Construct causal net
 5. Optionally convert to Petri net
 
+**Output — how to read the result**:
+- A causal net: nodes are activities, arcs have dependency scores in [0,1]
+- Arcs close to 1.0 are strong causal dependencies (keep these)
+- Arcs close to 0 are weak/coincidental (filtered out by threshold)
+- Start and end activities are marked explicitly
+
+**Parameters — what to set**:
+- \`dependency_threshold\` (0.0–1.0, default 0.5): higher = stricter, fewer edges
+  - Try 0.2–0.4 for noisy real-world logs; 0.6–0.8 for clean lab logs
+  - If the model looks too sparse (missing paths), lower the threshold
+  - If the model looks like a spaghetti mess, raise the threshold
+
+**When to use**:
+- Your log contains noise, recording errors, or exceptional cases
+- You want a quick model without spending time on parameter tuning
+- Your log has 1 000–100 000 events
+- Avoid when: you need formal soundness guarantees (use Inductive Miner instead)
+
 **Advantages**:
 - Robust to noise and errors
 - Discovers main process flow without outliers
@@ -577,10 +605,30 @@ Include edge (a, b) if dep(a,b) > θ
 4. Apply genetic operations: crossover, mutation
 5. Repeat until convergence
 
+**Output — how to read the result**:
+- A Petri net: places (circles), transitions (rectangles), and directed arcs
+- A token fired at the start place flows through transitions matching events
+- Places between transitions represent intermediate states
+- Final fitness score tells you what fraction of the log the model can replay
+
+**Parameters — what to set**:
+- \`population_size\` (default 20): number of candidate models per generation
+  - Start with 20; increase to 50–100 for better quality at the cost of time
+  - Larger populations explore more of the model space
+- \`iterations\` / generations (default 10–20): how long to evolve
+  - Use 20–50 for production; 5–10 for quick exploration
+  - Watch for fitness plateau — more iterations won't help past that point
+
 **Fitness evaluation**:
 - Traces replayed through model
 - Count: correctly executed, partially executed, failed traces
 - Fitness = (correct + 0.5×partial) / total
+
+**When to use**:
+- You need the highest quality Petri net and have time (minutes, not seconds)
+- Your log has fewer than 5 000 events (otherwise runtime becomes impractical)
+- You want to benchmark other algorithms — genetic is often the quality ceiling
+- Avoid when: you need results in under 10 seconds (use DFG or Heuristic instead)
 
 **Optimization**:
 - Minimize tokens needed to replay log
@@ -613,19 +661,30 @@ f(M) = fitness(log, M) - penalty × |P ∪ T|
 4. Recursively apply to each partition
 5. Build a process tree from the cuts
 
+**Output — how to read the result**:
+- A process tree: a hierarchy of operators and leaf activities
+- Operators: → (sequence), × (exclusive choice), ∧ (parallel), ↻ (loop)
+- Example: → ( A, × ( B, C ), D ) means "do A, then choose B or C, then do D"
+- No deadlocks or livelocks possible — the tree structure guarantees this
+- Can be converted to a Petri net for token replay conformance checking
+
 **Cut types**:
 - **Sequential cut**: Activities in traces follow a fixed order
 - **Parallel cut**: Activities occur in any order (concurrent)
 - **Exclusive cut**: Traces contain different subsets of activities (choice)
 - **Loop cut**: A block of activities repeats
 
+**When to use**:
+- You need formal soundness guarantees (no deadlocks) — Inductive Miner is the only algorithm that guarantees this by construction
+- You will run conformance checking after discovery
+- Your log comes from a well-structured process (ERP, BPM, workflow engine)
+- Avoid when: your log is very noisy — Inductive Miner may add "skip" or "redo" arcs to force soundness, reducing precision
+
 **Characteristics**:
 - **Speed**: Linear time complexity O(n)
 - **Soundness**: Guaranteed — model is always sound
 - **Quality**: Excellent on well-structured logs
-- **Limitations**: May over-split on noisy logs (non-local choices)
-
-**Best for**: Production workflows, compliance checking, automated process analysis`,
+- **Limitations**: May over-split on noisy logs (non-local choices)`,
       academic: `## Inductive Miner: Process Tree Discovery
 
 **Definition**: Let L be an event log. The Inductive Miner recursively applies:
@@ -938,12 +997,30 @@ For each template T and activity pair (a, b):
 5. Add structural and feasibility constraints
 6. Solve with ILP solver (branch-and-bound)
 
+**Output — how to read the result**:
+- A Petri net: the provably optimal balance of fitness and simplicity
+- Fitness score will be the highest achievable for this log/model trade-off
+- Fewer arcs than genetic algorithm (ILP optimises both simultaneously)
+- Use this output as the benchmark when evaluating other algorithms
+
+**Parameters — what to set**:
+- The λ (lambda) penalty weight balances fitness vs simplicity:
+  - Low λ (e.g., 0.1): prioritise fitness, allow a more complex model
+  - High λ (e.g., 1.0): prioritise simplicity, accept lower fitness
+  - Default λ = 0.5 is a reasonable starting point
+- ILP runtime scales with log size — budget 30–120 seconds for logs >1 000 events
+
+**When to use**:
+- You need the provably optimal Petri net and have time to wait
+- Your log has fewer than 5 000 events (ILP becomes impractical beyond this)
+- You are benchmarking other algorithms and need a quality ceiling reference
+- You require formal verification of the discovered model (Petri nets support this)
+- Avoid when: you need results quickly or your log is large (use Heuristic or DFG)
+
 **Characteristics**:
 - **Quality**: Optimal — provably best fitness/precision trade-off
 - **Speed**: Slowest — exponential in worst case
-- **Interpretability**: Standard Petri net output
-
-**Best for**: Small-to-medium logs where optimality matters, benchmarking`,
+- **Interpretability**: Standard Petri net output`,
       academic: `## ILP Process Mining
 
 **Decision variables**:

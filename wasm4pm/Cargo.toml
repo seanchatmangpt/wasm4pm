@@ -414,6 +414,9 @@ montecarlo = []
 statrs = ["dep:statrs"]
 miniml = ["dep:miniml"]
 gpu = []
+# rayon — no-op flag (rayon crate not yet added as dep; flag exists so feature-rayon
+# can be declared without cargo errors; parallel_executor.rs guards rayon use internally)
+rayon = []
 powl = []
 ocel = []
 
