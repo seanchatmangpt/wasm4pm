@@ -488,6 +488,7 @@ export function suggestPresetFromBenchmarks(
 ): PublicPreset {
   const {
     maxLatencyMs,
+    maxMemoryMb,
     requiredAlgorithms = [],
     deploymentProfile = 'browser',
     logSizeHint = 100,
@@ -495,6 +496,19 @@ export function suggestPresetFromBenchmarks(
 
   const entries = Object.entries(benchmarks.algorithms);
   if (entries.length === 0) {
+    return suggestPreset(constraints);
+  }
+
+  // 0. Memory hard-cap: if maxMemoryMb < 1000 and no quality algorithm is
+  //    required, memory is the binding constraint and forces 'fast' regardless
+  //    of what the benchmark scoring would suggest.  Benchmark-level entries
+  //    carry no per-algorithm memory annotation, so we cannot refine further —
+  //    delegate to the hardcoded suggestPreset path which owns this logic.
+  if (
+    maxMemoryMb !== undefined &&
+    maxMemoryMb < 1000 &&
+    !requiredAlgorithms.some((a) => QUALITY_ALGORITHMS.has(a))
+  ) {
     return suggestPreset(constraints);
   }
 
@@ -606,21 +620,27 @@ export function generateOptimalConfig(
   const base = getPublicPresetConfig(preset);
 
   let selectedAlgorithm = base.algorithm.name;
-  let selectionReason = `Preset '${preset}' selected by hardcoded rules; default algorithm used`;
+  let selectionReason = `Preset '${preset}' selected by hardcoded rules; default algorithm '${base.algorithm.name}' used`;
   let warning: string | undefined = unknownWarning;
 
   // --- Memory cascade explanation ---
-  // When maxMemoryMb drives the preset to 'fast' via suggestPreset, make the
-  // cascade visible in the selection reason so practitioners can diagnose it.
-  if (
+  // When maxMemoryMb drives the preset to 'fast' via suggestPreset (or the new
+  // suggestPresetFromBenchmarks memory gate), make the cascade visible in the
+  // selection reason so practitioners can diagnose it.
+  //
+  // The cascade flag is set here and later appended to the benchmark-derived
+  // reason (if benchmarks are available) so the information is never silently
+  // lost when the benchmark scoring block overwrites selectionReason.
+  const memoryCascadeActive =
     maxMemoryMb !== undefined &&
     maxMemoryMb < 1000 &&
     preset === 'fast' &&
     // Only emit cascade message when memory was the deciding factor, not when
     // required quality algorithms overrode it (they take priority in suggestPreset).
-    !requiredAlgorithms.some((a) => QUALITY_ALGORITHMS.has(a))
-  ) {
-    selectionReason = `Memory constraint (${maxMemoryMb} MB < 1000 MB) cascaded preset selection to 'fast'; default algorithm used`;
+    !requiredAlgorithms.some((a) => QUALITY_ALGORITHMS.has(a));
+
+  if (memoryCascadeActive) {
+    selectionReason = `Memory constraint (${maxMemoryMb} MB < 1000 MB) cascaded preset selection to 'fast'; default algorithm '${base.algorithm.name}' used`;
   }
 
   if (benchmarks && Object.keys(benchmarks.algorithms).length > 0) {
@@ -677,7 +697,12 @@ export function generateOptimalConfig(
 
       const winner = scored[0];
       selectedAlgorithm = winner.name as BaseConfig['algorithm']['name'];
-      selectionReason = `Algorithm '${winner.name}' selected from benchmarks (score=${winner.score.toFixed(1)}, quality=${winner.measurement.quality_score}, speed=${winner.measurement.speed_score}) for preset '${preset}'`;
+      // Build the base reason from benchmark data, then append the memory cascade
+      // suffix when active so that information is not silently discarded.
+      const benchmarkReason = `Algorithm '${winner.name}' selected from benchmarks (score=${winner.score.toFixed(1)}, quality=${winner.measurement.quality_score}, speed=${winner.measurement.speed_score}) for preset '${preset}'`;
+      selectionReason = memoryCascadeActive
+        ? `${benchmarkReason}; memory constraint (${maxMemoryMb} MB < 1000 MB) forced preset to 'fast'`
+        : benchmarkReason;
     }
   }
 

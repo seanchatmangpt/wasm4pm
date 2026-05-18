@@ -313,3 +313,118 @@ describe('AutoML instinct — multi-constraint intersection', () => {
     }
   });
 });
+
+// --- 6. _selectionReason always names the selected algorithm (Rank 1 structural invariant) ---
+// Gap A: previously, the no-benchmark memory-cascade path set _selectionReason to
+// "default algorithm used" without embedding the algorithm name, violating the
+// invariant established in automl.test.ts that _selectionReason must contain the
+// algorithm name.  This section pins the invariant across all constraint paths.
+
+describe('AutoML instinct — _selectionReason always names the selected algorithm', () => {
+  it('names the algorithm in _selectionReason when no benchmarks and no constraints', () => {
+    const config = generateOptimalConfig({});
+    expect(config._selectionReason.toLowerCase()).toContain(
+      config._selectedAlgorithm.toLowerCase()
+    );
+  });
+
+  it('names the algorithm in _selectionReason under no-benchmark memory cascade', () => {
+    // Gap A: memory cascade path (no benchmarks) previously said "default algorithm used"
+    // without naming the algorithm — violated the structural invariant.
+    const config = generateOptimalConfig({ maxMemoryMb: 200 });
+    expect(config._selectionReason.toLowerCase()).toContain(
+      config._selectedAlgorithm.toLowerCase()
+    );
+    expect(config._selectionReason.toLowerCase()).toMatch(/memory|cascade/);
+  });
+
+  it('names the algorithm in _selectionReason under benchmark-based memory cascade', () => {
+    // Gap C: the benchmark scoring block previously silently overwrote the cascade
+    // message, dropping the memory-constraint diagnostic.  Now both are present.
+    const config = generateOptimalConfig({ maxMemoryMb: 200, logSizeHint: 100 }, FULL_BENCHMARKS);
+    expect(config._selectionReason.toLowerCase()).toContain(
+      config._selectedAlgorithm.toLowerCase()
+    );
+    expect(config._selectionReason.toLowerCase()).toMatch(/memory/);
+  });
+
+  it('names the algorithm in _selectionReason without memory cascade (normal benchmark path)', () => {
+    const config = generateOptimalConfig({ logSizeHint: 100 }, FULL_BENCHMARKS);
+    expect(config._selectionReason.toLowerCase()).toContain(
+      config._selectedAlgorithm.toLowerCase()
+    );
+  });
+
+  it('_selectionReason contains algorithm name across all constraint variants (Rank 1 sweep)', () => {
+    const variants: Parameters<typeof generateOptimalConfig>[0][] = [
+      { maxLatencyMs: 1, maxMemoryMb: 512, requiredAlgorithms: ['dfg'], logSizeHint: 100 },
+      { maxMemoryMb: 256 },
+      { maxMemoryMb: 999 },
+      { maxMemoryMb: 1000 },
+      { requiredAlgorithms: ['simd_streaming_dfg'], logSizeHint: 100 },
+      { requiredAlgorithms: ['fake_algo'] },
+      { maxLatencyMs: 0.001, maxMemoryMb: 100, logSizeHint: 100000 },
+    ];
+    for (const constraints of variants) {
+      const config = generateOptimalConfig(constraints, FULL_BENCHMARKS);
+      expect(config._selectionReason.toLowerCase()).toContain(
+        config._selectedAlgorithm.toLowerCase(),
+        `_selectionReason for constraints ${JSON.stringify(constraints)} must name the selected algorithm '${config._selectedAlgorithm}'`
+      );
+    }
+  });
+});
+
+// --- 7. suggestPresetFromBenchmarks respects maxMemoryMb (Rank 2 domain contract) ---
+// Gap B: suggestPresetFromBenchmarks previously ignored maxMemoryMb entirely —
+// it only checked latency and profile, then delegated to suggestPreset only when
+// the candidate list was empty.  A memory-constrained call with a populated
+// benchmark catalogue would score all algorithms and potentially return 'quality',
+// violating the domain contract that maxMemoryMb < 1000 forces 'fast'.
+
+describe('AutoML instinct — suggestPresetFromBenchmarks respects maxMemoryMb', () => {
+  it('returns fast when maxMemoryMb=512 even with quality-tier algorithms available', () => {
+    // Gap B: previously would score all algorithms and might return 'quality' (ilp wins).
+    // Now: memory constraint is a hard gate applied before benchmark scoring.
+    const result = suggestPresetFromBenchmarks(FULL_BENCHMARKS, { maxMemoryMb: 512 });
+    expect(result).toBe('fast');
+  });
+
+  it('returns fast for maxMemoryMb=999 (boundary — strictly < 1000)', () => {
+    const result = suggestPresetFromBenchmarks(FULL_BENCHMARKS, { maxMemoryMb: 999 });
+    expect(result).toBe('fast');
+  });
+
+  it('does NOT force fast for maxMemoryMb=1000 (threshold is exclusive)', () => {
+    // Rank 1: threshold is strictly < 1000, so 1000 does not trigger the memory gate.
+    const result = suggestPresetFromBenchmarks(FULL_BENCHMARKS, { maxMemoryMb: 1000 });
+    expect(result).not.toBe('fast');
+  });
+
+  it('quality algorithm requirement overrides memory constraint in suggestPresetFromBenchmarks', () => {
+    // Domain contract: requiredAlgorithms wins over maxMemoryMb, even in benchmark path.
+    // ilp is a quality algorithm → no memory gate applied → scoring proceeds normally.
+    const result = suggestPresetFromBenchmarks(FULL_BENCHMARKS, {
+      maxMemoryMb: 100,
+      requiredAlgorithms: ['ilp'],
+      logSizeHint: 100,
+    });
+    expect(result).toBe('quality');
+  });
+
+  it('suggestPresetFromBenchmarks and suggestPreset agree on maxMemoryMb=512', () => {
+    // Rank 1 consistency: both selectors must return the same preset for the same
+    // memory constraint when no other constraints are present.
+    const fromBench = suggestPresetFromBenchmarks(FULL_BENCHMARKS, { maxMemoryMb: 512 });
+    const fromHardcoded = suggestPreset({ maxMemoryMb: 512 });
+    expect(fromBench).toBe(fromHardcoded);
+  });
+
+  it('generateOptimalConfig memory cascade fires when benchmarks provided', () => {
+    // End-to-end: generateOptimalConfig calls suggestPresetFromBenchmarks which
+    // now gates on memory, so the cascade is properly reflected in the result.
+    const config = generateOptimalConfig({ maxMemoryMb: 300, logSizeHint: 100 }, FULL_BENCHMARKS);
+    expect(config.execution.profile).toBe('fast');
+    expect(config._selectionReason.toLowerCase()).toMatch(/memory/);
+  });
+});
