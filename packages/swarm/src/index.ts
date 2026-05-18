@@ -113,3 +113,18 @@ export {
   REFINEMENT_SPEC,
   type ValidationResult,
 } from './route-refinement-validator.js';
+
+// BEAM message format shared schema and validator — closes GAP-1
+// (typed schema for Erlang/AtomVM ↔ wasm4pm swarm protocol messages)
+export {
+  BEAM_PID_PATTERN,
+  BEAM_REF_PATTERN,
+  validateBeamMsg,
+  validateBeamMonitor,
+  parseBeamMessage,
+  type BeamMsg,
+  type BeamMonitor,
+  type BeamMessage as BeamMessageSchema,
+  type BeamMsgPayload,
+  type BeamMonitorEvent,
+} from './beam-message-validator.js';
