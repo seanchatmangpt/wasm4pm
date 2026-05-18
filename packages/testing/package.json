@@ -9,6 +9,10 @@
     ".": {
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
+    },
+    "./harness/cli": {
+      "import": "./dist/harness/cli.js",
+      "types": "./dist/harness/cli.d.ts"
     }
   },
   "files": [
