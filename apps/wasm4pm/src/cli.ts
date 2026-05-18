@@ -80,6 +80,8 @@ export const main = defineCommand({
     process.stdout.write(`
 ${BOLD}wpm${RESET} (wasm4pm) v26.5.13  —  Process Mining CLI  ${DIM}(wasm4pm)${RESET}
 
+${DIM}Configuration precedence: CLI args > wasm4pm.toml > wasm4pm.json > env vars > defaults${RESET}
+
 ${BOLD}DISCOVERY${RESET}
   ${GREEN}wpm run${RESET} <log.xes>                   Discover a process model (default: heuristic miner)
   ${GREEN}wpm run${RESET} <log.xes> --algorithm dfg   Use a specific algorithm
