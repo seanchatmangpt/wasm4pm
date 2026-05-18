@@ -34,6 +34,8 @@ import { adversary } from './commands/adversary.js';
 import { trace } from './commands/trace.js';
 import { algorithms } from './commands/algorithms.js';
 import { examples } from './commands/examples.js';
+import { interpret } from './commands/interpret.js';
+import { exitCodes } from './commands/exit-codes.js';
 import { repl } from './commands/repl.js';
 import { prolog8 } from './commands/prolog8.js';
 import { feedback } from './commands/feedback.js';
@@ -58,6 +60,14 @@ export const main = defineCommand({
     config: {
       type: 'string',
       description: 'Path to config file (wasm4pm.toml, wasm4pm.json, or PMC_CONFIG_PATH)',
+    },
+    'no-color': {
+      type: 'boolean',
+      description: 'Disable ANSI colors in output (also set NO_COLOR env var)',
+    },
+    'no-emoji': {
+      type: 'boolean',
+      description: 'Disable emoji in output for terminal compatibility',
     },
   },
   async run() {
@@ -182,6 +192,20 @@ ${BOLD}PROLOG8${RESET}  ${DIM}(byte-capped proof engine, BLAKE3 receipt chains)$
 ${BOLD}SETUP${RESET}
   ${GREEN}wpm init${RESET}                            Scaffold wasm4pm.toml + .env.example in current dir
 
+${BOLD}UNDERSTANDING & HELP${RESET}
+  ${GREEN}wpm interpret${RESET} <metric> <value>      Understand quality metrics (fitness, precision, etc.)
+  ${GREEN}wpm exit-codes${RESET}                       Show exit code reference with examples
+  ${GREEN}wpm examples${RESET}                         Browse command examples by category
+  ${GREEN}wpm algorithms${RESET}                       List all available algorithms with speed/quality ratings
+
+${BOLD}COMMON FLAGS${RESET}
+  ${GREEN}-i, --input${RESET} <file>         Event log file (XES, JSON, OCEL)
+  ${GREEN}-v, --verbose${RESET}              Show detailed output (can be repeated: -vv, -vvv)
+  ${GREEN}-q, --quiet${RESET}                Suppress non-error output
+  ${GREEN}-o, --output${RESET} <path>        Write result to file
+  ${GREEN}--format${RESET} {human|json}      Output format (default: human)
+  ${GREEN}--no-color${RESET}                 Disable ANSI colors
+
 ${DIM}Run ${BOLD}wpm <command> --help${RESET}${DIM} for detailed usage and all flags.${RESET}
 ${DIM}Algorithms: dfg, alpha, heuristic, inductive, ilp, genetic, pso, astar, hill-climbing, ant-colony, declare${RESET}
 ${CYAN}
@@ -225,6 +249,8 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     trace,
     algorithms,
     examples,
+    interpret,
+    'exit-codes': exitCodes,
     repl,
     prolog8,
     feedback,
@@ -268,4 +294,6 @@ export {
   verify,
   claude,
   examples,
+  interpret,
+  exitCodes,
 };

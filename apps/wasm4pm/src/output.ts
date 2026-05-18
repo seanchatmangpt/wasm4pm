@@ -61,6 +61,8 @@ export interface EmitOptions {
   verbose?: boolean | number; // true = 1, can be 1, 2, 3 for -v, -vv, -vvv
   verboseLevel?: 0 | 1 | 2 | 3; // Explicit level (0=default, 1=debug, 2=decision, 3=spans)
   quiet?: boolean;
+  noColor?: boolean; // Disable ANSI colors
+  noEmoji?: boolean; // Disable emoji in output
 }
 
 /** Console renderer — commands with rich human output provide this */
@@ -106,7 +108,7 @@ export function emitResult<T>(
     case 'human':
     default:
       if (!options.quiet) {
-        const projection = new ConsoleProjection(options);
+        const projection = new ConsoleProjection(options as unknown as EmitOptions);
         if (consoleRenderer) {
           consoleRenderer(result, projection);
         } else {
@@ -359,7 +361,7 @@ export interface OutputOptions {
 /** @deprecated Use ConsoleProjection instead */
 export class HumanFormatter extends ConsoleProjection {
   constructor(options: OutputOptions = {}) {
-    super(options);
+    super(options as unknown as EmitOptions);
   }
 }
 
@@ -473,7 +475,7 @@ export class StreamingOutput {
 
   constructor(options: OutputOptions = {}) {
     this.format = options.format ?? 'human';
-    this.projection = new ConsoleProjection(options);
+    this.projection = new ConsoleProjection(options as unknown as EmitOptions);
     this.quiet = options.quiet ?? false;
   }
 

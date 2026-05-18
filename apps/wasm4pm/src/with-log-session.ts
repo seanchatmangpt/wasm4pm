@@ -27,9 +27,22 @@ export async function withLogSession<T>(
   try {
     await fs.access(inputPath);
   } catch {
+    // Suggest files in current directory if the given path doesn't exist
+    let suggestion = '';
+    try {
+      const cwd = process.cwd();
+      const files = await fs.readdir(cwd);
+      const xesFiles = files.filter(f => f.endsWith('.xes') || f.endsWith('.xes.gz') || f.endsWith('.ocel.json'));
+      if (xesFiles.length > 0) {
+        suggestion = `\n\nAvailable log files in ${cwd}:\n  ${xesFiles.slice(0, 5).join('\n  ')}${xesFiles.length > 5 ? '\n  ...' : ''}`;
+      }
+    } catch {
+      // Silently skip suggestion if readdir fails
+    }
+
     const result = makeErrorResult(
       commandName,
-      new Error(`Input file not found: ${inputPath}\n\nCheck that the path is correct and the file is readable.`),
+      new Error(`Input file not found: ${inputPath}\n\nCheck that the path is correct and the file is readable.${suggestion}`),
       EXIT_CODES.source_error,
       'INPUT_NOT_FOUND'
     );
