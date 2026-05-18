@@ -609,7 +609,7 @@ function zodToJsonSchema(schema: z.ZodTypeAny): Record<string, unknown> {
 
   switch (typeName) {
     case 'ZodObject': {
-      const shape = (schema as z.ZodObject<any>).shape;
+      const shape = (schema as z.ZodObject<z.ZodRawShape>).shape;
       const properties: Record<string, unknown> = {};
       const required: string[] = [];
       for (const [key, val] of Object.entries(shape)) {

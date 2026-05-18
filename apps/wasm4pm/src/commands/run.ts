@@ -1414,27 +1414,28 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
 /**
  * Extract a brief summary from a discovery result.
  */
-function extractModelSummary(data: any): Record<string, string> | null {
+function extractModelSummary(data: unknown): Record<string, string> | null {
   if (!data || typeof data !== 'object') return null;
 
+  const d = data as Record<string, unknown>;
   const summary: Record<string, string> = {};
 
   // DFG / social-network shape
-  if (Array.isArray(data.nodes)) {
-    summary['Nodes'] = String(data.nodes.length);
+  if (Array.isArray(d['nodes'])) {
+    summary['Nodes'] = String(d['nodes'].length);
   }
-  if (Array.isArray(data.edges)) {
-    summary['Edges'] = String(data.edges.length);
+  if (Array.isArray(d['edges'])) {
+    summary['Edges'] = String(d['edges'].length);
   }
   // Petri Net shape
-  if (Array.isArray(data.places)) {
-    summary['Places'] = String(data.places.length);
+  if (Array.isArray(d['places'])) {
+    summary['Places'] = String(d['places'].length);
   }
-  if (Array.isArray(data.transitions)) {
-    summary['Transitions'] = String(data.transitions.length);
+  if (Array.isArray(d['transitions'])) {
+    summary['Transitions'] = String(d['transitions'].length);
   }
-  if (Array.isArray(data.arcs)) {
-    summary['Arcs'] = String(data.arcs.length);
+  if (Array.isArray(d['arcs'])) {
+    summary['Arcs'] = String(d['arcs'].length);
   }
 
   return Object.keys(summary).length > 0 ? summary : null;
