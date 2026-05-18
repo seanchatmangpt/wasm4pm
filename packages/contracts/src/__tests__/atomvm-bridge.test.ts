@@ -321,66 +321,66 @@ describe('ocel:activity prefix invariant', () => {
 
 describe('fromAtomVmJsonl', () => {
   it('parses all four lifecycle events from sample NDJSON', () => {
-    const events = fromAtomVmJsonl(SAMPLE_NDJSON);
+    const events = fromAtomVmJsonl(SAMPLE_NDJSON).events;
     expect(events).toHaveLength(4);
   });
 
   it('returns an empty array for an empty string', () => {
-    expect(fromAtomVmJsonl('')).toHaveLength(0);
+    expect(fromAtomVmJsonl('').events).toHaveLength(0);
   });
 
   it('skips blank lines silently', () => {
     const withBlanks = '\n' + SAMPLE_NDJSON + '\n\n';
-    expect(fromAtomVmJsonl(withBlanks)).toHaveLength(4);
+    expect(fromAtomVmJsonl(withBlanks).events).toHaveLength(4);
   });
 
   it('skips whitespace-only lines silently', () => {
     const withSpaces = '   \n' + SAMPLE_NDJSON;
-    expect(fromAtomVmJsonl(withSpaces)).toHaveLength(4);
+    expect(fromAtomVmJsonl(withSpaces).events).toHaveLength(4);
   });
 
   it('skips invalid JSON lines without throwing', () => {
     const withBad = 'not-json\n' + SAMPLE_NDJSON;
-    expect(fromAtomVmJsonl(withBad)).toHaveLength(4);
+    expect(fromAtomVmJsonl(withBad).events).toHaveLength(4);
   });
 
   it('skips lines missing the "atomvm_proc" tag', () => {
     const wrongTag = JSON.stringify({ tag: 'other_system', pid: '<0.5.0>', event: 'spawn', ts: '2026-05-18T10:00:00Z' });
     const ndjson = wrongTag + '\n' + JSON.stringify(SPAWN_EVT);
-    const events = fromAtomVmJsonl(ndjson);
+    const events = fromAtomVmJsonl(ndjson).events;
     expect(events).toHaveLength(1);
   });
 
   it('skips lines missing pid without throwing', () => {
     const noPid = JSON.stringify({ tag: 'atomvm_proc', event: 'spawn', ts: '2026-05-18T10:00:00Z' });
     const ndjson = noPid + '\n' + JSON.stringify(RUNNING_EVT);
-    const events = fromAtomVmJsonl(ndjson);
+    const events = fromAtomVmJsonl(ndjson).events;
     expect(events).toHaveLength(1);
   });
 
   it('skips lines missing event without throwing', () => {
     const noEvent = JSON.stringify({ tag: 'atomvm_proc', pid: '<0.5.0>', ts: '2026-05-18T10:00:00Z' });
     const ndjson = noEvent + '\n' + JSON.stringify(WAITING_EVT);
-    const events = fromAtomVmJsonl(ndjson);
+    const events = fromAtomVmJsonl(ndjson).events;
     expect(events).toHaveLength(1);
   });
 
   it('skips lines missing ts without throwing', () => {
     const noTs = JSON.stringify({ tag: 'atomvm_proc', pid: '<0.5.0>', event: 'spawn' });
     const ndjson = noTs + '\n' + JSON.stringify(EXIT_EVT);
-    const events = fromAtomVmJsonl(ndjson);
+    const events = fromAtomVmJsonl(ndjson).events;
     expect(events).toHaveLength(1);
   });
 
   it('all returned events pass isValidOcelEvent', () => {
-    const events = fromAtomVmJsonl(SAMPLE_NDJSON);
+    const events = fromAtomVmJsonl(SAMPLE_NDJSON).events;
     for (const ev of events) {
       expect(isValidOcelEvent(ev)).toBe(true);
     }
   });
 
   it('activities match the event field with "atomvm_proc." prefix', () => {
-    const events = fromAtomVmJsonl(SAMPLE_NDJSON);
+    const events = fromAtomVmJsonl(SAMPLE_NDJSON).events;
     const activities = events.map((e) => e['ocel:activity']);
     expect(activities).toContain('atomvm_proc.spawn');
     expect(activities).toContain('atomvm_proc.running');
@@ -397,7 +397,7 @@ describe('fromAtomVmJsonl', () => {
       '',
       JSON.stringify({ event_type: 'listing.created', ts: '2026-05-18T10:00:00Z' }),
     ].join('\n');
-    const events = fromAtomVmJsonl(mixed);
+    const events = fromAtomVmJsonl(mixed).events;
     // Only SPAWN_EVT and CRASH_EVT are valid atomvm_proc events
     expect(events).toHaveLength(2);
     expect(events[0]['ocel:activity']).toBe('atomvm_proc.spawn');
@@ -406,7 +406,7 @@ describe('fromAtomVmJsonl', () => {
 
   it('handles a single-event NDJSON string', () => {
     const single = JSON.stringify(EXIT_EVT);
-    const events = fromAtomVmJsonl(single);
+    const events = fromAtomVmJsonl(single).events;
     expect(events).toHaveLength(1);
     expect(events[0]['ocel:activity']).toBe('atomvm_proc.exit');
   });
@@ -418,14 +418,14 @@ describe('fromAtomVmJsonl', () => {
 
 describe('detectCrashes', () => {
   it('returns empty array when no crash events are present', () => {
-    const events = fromAtomVmJsonl(SAMPLE_NDJSON); // spawn/running/waiting/exit, no crash
+    const events = fromAtomVmJsonl(SAMPLE_NDJSON).events; // spawn/running/waiting/exit, no crash
     expect(detectCrashes(events)).toHaveLength(0);
   });
 
   it('identifies a single crashed PID', () => {
     const events = fromAtomVmJsonl(
       [SPAWN_EVT, CRASH_EVT].map((e) => JSON.stringify(e)).join('\n')
-    );
+    ).events;
     const crashed = detectCrashes(events);
     expect(crashed).toContain('<0.5.0>');
     expect(crashed).toHaveLength(1);
@@ -441,7 +441,7 @@ describe('detectCrashes', () => {
     };
     const events = fromAtomVmJsonl(
       [CRASH_EVT, crash2].map((e) => JSON.stringify(e)).join('\n')
-    );
+    ).events;
     const crashed = detectCrashes(events);
     expect(crashed).toHaveLength(1); // deduplicated
     expect(crashed).toContain('<0.5.0>');
@@ -457,7 +457,7 @@ describe('detectCrashes', () => {
     };
     const events = fromAtomVmJsonl(
       [CRASH_EVT, otherCrash].map((e) => JSON.stringify(e)).join('\n')
-    );
+    ).events;
     const crashed = detectCrashes(events);
     expect(crashed).toHaveLength(2);
     expect(crashed).toContain('<0.5.0>');
@@ -469,7 +469,7 @@ describe('detectCrashes', () => {
   });
 
   it('ignores exit events — only crash events count', () => {
-    const events = fromAtomVmJsonl(JSON.stringify(EXIT_EVT));
+    const events = fromAtomVmJsonl(JSON.stringify(EXIT_EVT)).events;
     expect(detectCrashes(events)).toHaveLength(0);
   });
 });

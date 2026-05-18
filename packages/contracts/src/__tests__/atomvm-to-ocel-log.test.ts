@@ -39,7 +39,7 @@ const THREE_PID_NDJSON = [
 
 describe('toOcelLog(): round-trip — fromAtomVmJsonl → toOcelLog → OcelLog shape', () => {
   it('produces a valid OcelLog with all required top-level keys', () => {
-    const events = fromAtomVmJsonl(THREE_PID_NDJSON);
+    const events = fromAtomVmJsonl(THREE_PID_NDJSON).events;
     const log: OcelLog = toOcelLog(events);
 
     expect(log).toHaveProperty('ocel_version', '2.0');
@@ -53,7 +53,7 @@ describe('toOcelLog(): round-trip — fromAtomVmJsonl → toOcelLog → OcelLog 
   });
 
   it('each ocel_event has the fields expected by wpm trace conform', () => {
-    const events = fromAtomVmJsonl(THREE_PID_NDJSON);
+    const events = fromAtomVmJsonl(THREE_PID_NDJSON).events;
     const log = toOcelLog(events);
 
     for (const ev of log.ocel_events) {
@@ -69,13 +69,13 @@ describe('toOcelLog(): round-trip — fromAtomVmJsonl → toOcelLog → OcelLog 
   });
 
   it('event count matches the number of input OcelEvents', () => {
-    const events = fromAtomVmJsonl(THREE_PID_NDJSON);
+    const events = fromAtomVmJsonl(THREE_PID_NDJSON).events;
     const log = toOcelLog(events);
     expect(log.ocel_events).toHaveLength(events.length);
   });
 
   it('activity names are preserved as atomvm_proc.<event>', () => {
-    const events = fromAtomVmJsonl(THREE_PID_NDJSON);
+    const events = fromAtomVmJsonl(THREE_PID_NDJSON).events;
     const log = toOcelLog(events);
     const activities = log.ocel_events.map((e) => e.activity);
     expect(activities).toContain('atomvm_proc.spawn');
@@ -129,7 +129,7 @@ describe('toOcelLog(): object deduplication — 3 events from same PID → 1 obj
       JSON.stringify({ tag: 'atomvm_proc', pid: '<0.5.0>', event: 'exit', reason: 'normal', ts: '2026-05-18T10:00:02Z' }),
     ].join('\n');
 
-    const events = fromAtomVmJsonl(ndjson);
+    const events = fromAtomVmJsonl(ndjson).events;
     const log = toOcelLog(events);
 
     // 3 events from 1 PID → 1 object
@@ -139,7 +139,7 @@ describe('toOcelLog(): object deduplication — 3 events from same PID → 1 obj
   });
 
   it('3 distinct PIDs produce 3 object entries', () => {
-    const events = fromAtomVmJsonl(THREE_PID_NDJSON);
+    const events = fromAtomVmJsonl(THREE_PID_NDJSON).events;
     const log = toOcelLog(events);
     // THREE_PID_NDJSON has PIDs: <0.1.0>, <0.2.0>, <0.3.0>
     expect(log.ocel_objects).toHaveLength(3);
@@ -150,7 +150,7 @@ describe('toOcelLog(): object deduplication — 3 events from same PID → 1 obj
   });
 
   it('all objects have type "atomvm_process"', () => {
-    const events = fromAtomVmJsonl(THREE_PID_NDJSON);
+    const events = fromAtomVmJsonl(THREE_PID_NDJSON).events;
     const log = toOcelLog(events);
     for (const obj of log.ocel_objects) {
       expect(obj.type).toBe('atomvm_process');
@@ -199,7 +199,7 @@ describe('toOcelLog(): crash events appear in ocel_events with correct type', ()
       JSON.stringify({ tag: 'atomvm_proc', pid: '<0.9.0>', event: 'crash', reason: 'noproc', mfa: 'gen_server:call/2', ts: '2026-05-18T10:00:01Z' }),
     ].join('\n');
 
-    const events = fromAtomVmJsonl(ndjson);
+    const events = fromAtomVmJsonl(ndjson).events;
     const log = toOcelLog(events);
 
     const crashEvents = log.ocel_events.filter((e) => e.activity === 'atomvm_proc.crash');
@@ -225,7 +225,7 @@ describe('toOcelLog(): wpm trace conform integration', () => {
       JSON.stringify({ tag: 'atomvm_proc', pid: '<0.10.0>', event: 'exit', reason: 'normal', ts: '2026-05-18T10:00:02Z' }),
     ].join('\n');
 
-    const events = fromAtomVmJsonl(ndjson);
+    const events = fromAtomVmJsonl(ndjson).events;
     const log = toOcelLog(events);
 
     // Write OCEL log to a temp file
@@ -257,7 +257,7 @@ describe('toOcelLog(): wpm trace conform integration', () => {
 
   it('toOcelLog JSON output has the correct structure for wpm trace conform', () => {
     // Verify the JSON we write to disk is parseable as OcelLog by checking field names
-    const events = fromAtomVmJsonl(THREE_PID_NDJSON);
+    const events = fromAtomVmJsonl(THREE_PID_NDJSON).events;
     const log = toOcelLog(events);
     const json = JSON.stringify(log);
     const parsed = JSON.parse(json) as Record<string, unknown>;
@@ -284,7 +284,7 @@ describe('toOcelLog(): ocel_global_log.ocel_attribute_names collects vmap keys',
       JSON.stringify({ tag: 'atomvm_proc', pid: '<0.1.0>', event: 'exit', reason: 'normal', duration_ms: 500, ts: '2026-05-18T10:00:01Z' }),
     ].join('\n');
 
-    const events = fromAtomVmJsonl(ndjson);
+    const events = fromAtomVmJsonl(ndjson).events;
     const log = toOcelLog(events);
 
     // spawn puts 'mfa' in vmap; exit puts 'reason', 'duration_ms'

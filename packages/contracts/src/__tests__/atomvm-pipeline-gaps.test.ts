@@ -198,7 +198,7 @@ describe('GAP 1: Supported AtomVM event types', () => {
       const ndjson = JSON.stringify({
         tag: 'atomvm_proc', pid: '<0.1.0>', event, ts: '2026-05-18T10:00:00Z',
       });
-      const result = fromAtomVmJsonl(ndjson);
+      const result = fromAtomVmJsonl(ndjson).events;
       expect(result).toHaveLength(1);
       expect(result[0]['ocel:activity']).toBe(`atomvm_proc.${event}`);
     }
@@ -213,7 +213,7 @@ describe('GAP 1: Supported AtomVM event types', () => {
       const ndjson = JSON.stringify({
         tag: 'atomvm_proc', pid: '<0.1.0>', event, ts: '2026-05-18T10:00:00Z',
       });
-      const result = fromAtomVmJsonl(ndjson);
+      const result = fromAtomVmJsonl(ndjson).events;
       // Current behavior: accepts unknown event types (no whitelist)
       expect(result).toHaveLength(1);
       expect(result[0]['ocel:activity']).toBe(`atomvm_proc.${event}`);
@@ -282,7 +282,7 @@ describe('GAP 2: toOcel2Json produces WASM-compatible format', () => {
     JSON.stringify({ tag: 'atomvm_proc', pid: '<0.1.0>', event: 'spawn', module: 'app', function: 'start', arity: 0, ts: '2026-05-18T10:00:00Z' }),
     JSON.stringify({ tag: 'atomvm_proc', pid: '<0.1.0>', event: 'running', scheduler: 0, ts: '2026-05-18T10:00:01Z' }),
     JSON.stringify({ tag: 'atomvm_proc', pid: '<0.1.0>', event: 'exit', reason: 'normal', ts: '2026-05-18T10:00:02Z' }),
-  ].join('\n'));
+  ].join('\n')).events;
 
   it('top-level keys are camelCase (WASM format, not IEEE ocel: prefix)', () => {
     const doc = JSON.parse(toOcel2Json(events));
@@ -364,7 +364,7 @@ describe('GAP 3: wpm conformance does not accept OCEL directly', () => {
   const events = fromAtomVmJsonl([
     JSON.stringify({ tag: 'atomvm_proc', pid: '<0.1.0>', event: 'spawn', ts: '2026-05-18T10:00:00Z' }),
     JSON.stringify({ tag: 'atomvm_proc', pid: '<0.1.0>', event: 'exit', reason: 'normal', ts: '2026-05-18T10:00:01Z' }),
-  ].join('\n'));
+  ].join('\n')).events;
 
   it('toOcel2Json does not produce trace.ts OcelLog format (ocel_events key missing)', () => {
     const doc = JSON.parse(toOcel2Json(events));
@@ -419,10 +419,10 @@ describe('GAP 4a: toOcelLog() adapter — CLOSED (wpm trace conform is now reach
 
     // Smoke-test the function with a minimal event set
     const events = await (async () => {
-      const { fromAtomVmJsonl } = mod as { fromAtomVmJsonl: (s: string) => unknown[] };
+      const { fromAtomVmJsonl } = mod as { fromAtomVmJsonl: (s: string) => { events: unknown[] } };
       return fromAtomVmJsonl(
         JSON.stringify({ tag: 'atomvm_proc', pid: '<0.1.0>', event: 'spawn', ts: '2026-05-18T10:00:00Z' })
-      );
+      ).events;
     })();
 
     const log = (toOcelLog as (e: unknown[]) => Record<string, unknown>)(events);
@@ -432,27 +432,34 @@ describe('GAP 4a: toOcelLog() adapter — CLOSED (wpm trace conform is now reach
   });
 });
 
-describe('GAP 4b: fromAtomVmJsonl silently skips errors (no strict mode)', () => {
-  it('invalid JSON lines are dropped without error reporting', () => {
+describe('GAP 4b: fromAtomVmJsonl returns parseErrors — CLOSED (strict mode now available)', () => {
+  it('result.parseErrors is populated for invalid JSON lines (GAP-4b closed)', () => {
     const ndjson = [
       JSON.stringify({ tag: 'atomvm_proc', pid: '<0.1.0>', event: 'spawn', ts: '2026-05-18T10:00:00Z' }),
       'not-valid-json',
       '{incomplete',
     ].join('\n');
-    // Lenient: returns 1 event; 2 errors are silently swallowed
     const result = fromAtomVmJsonl(ndjson);
-    expect(result).toHaveLength(1);
-    // GAP: No way to know HOW MANY lines were skipped or WHY
+    // Lenient: still returns 1 valid event
+    expect(result.events).toHaveLength(1);
+    // GAP CLOSED: parse errors are now visible — 2 corrupt lines reported
+    expect(result.parseErrors).toHaveLength(2);
+    expect(result.parseErrors[0]).toHaveProperty('line');
+    expect(result.parseErrors[0]).toHaveProperty('raw');
+    expect(result.parseErrors[0]).toHaveProperty('error');
   });
 
-  it('non-atomvm JSON objects are dropped without error reporting', () => {
+  it('non-atomvm JSON objects do not appear in parseErrors (type-guard skip is not an error)', () => {
+    // Lines with wrong "tag" are intentionally filtered by isAtomVmProcEvent — they are
+    // structurally valid JSON, just not AtomVM events.  They should NOT appear in parseErrors.
     const ndjson = [
       JSON.stringify({ tag: 'atomvm_proc', pid: '<0.1.0>', event: 'spawn', ts: '2026-05-18T10:00:00Z' }),
       JSON.stringify({ tag: 'other_system', data: 'unrelated event' }),
     ].join('\n');
     const result = fromAtomVmJsonl(ndjson);
-    expect(result).toHaveLength(1);
-    // GAP: fromAtomVmJsonl returns no error count/details
+    expect(result.events).toHaveLength(1);
+    // Wrong-tag lines are silently skipped (type-guard) but are NOT parse errors
+    expect(result.parseErrors).toHaveLength(0);
   });
 });
 
@@ -462,7 +469,7 @@ describe('GAP 4c/4d: send/receive/link/monitor events are not modelled', () => {
     const ndjson = [
       JSON.stringify({ tag: 'atomvm_proc', pid: '<0.1.0>', event: 'send', to: '<0.2.0>', message: 'ping', ts: '2026-05-18T10:00:00Z' }),
     ].join('\n');
-    const events = fromAtomVmJsonl(ndjson);
+    const events = fromAtomVmJsonl(ndjson).events;
     // send is accepted (no whitelist) but produces "atomvm_proc.send" activity
     // detectCrashDetails only scans for atomvm_proc.crash
     const crashes = detectCrashDetails(events);
@@ -475,7 +482,7 @@ describe('GAP 4c/4d: send/receive/link/monitor events are not modelled', () => {
       tag: 'atomvm_proc', pid: '<0.1.0>', event: 'link',
       linked_pid: '<0.2.0>', ts: '2026-05-18T10:00:00Z',
     });
-    const events = fromAtomVmJsonl(ndjson);
+    const events = fromAtomVmJsonl(ndjson).events;
     // link is accepted and produces "atomvm_proc.link" activity
     expect(events[0]['ocel:activity']).toBe('atomvm_proc.link');
     // But no detectSupervisorLinks() or handover-of-work social network exists
@@ -512,7 +519,7 @@ describe('GAP 4f: multi-node AtomVM — node_id not extracted from PID', () => {
       JSON.stringify({ tag: 'atomvm_proc', pid: remotePid, event: 'spawn', ts: '2026-05-18T10:00:01Z' }),
     ].join('\n');
 
-    const events = fromAtomVmJsonl(ndjson);
+    const events = fromAtomVmJsonl(ndjson).events;
     // Both PIDs are accepted and produce separate objects
     expect(events).toHaveLength(2);
 
@@ -571,9 +578,9 @@ describe('Gap summary: 6 documented gaps with closure status', () => {
       {
         id: 'GAP-4a',
         severity: 'medium',
-        hasWorkaround: false,
-        closed: false,
-        description: 'No strict mode for fromAtomVmJsonl — silent error swallowing hides pipeline issues',
+        hasWorkaround: true,
+        closed: true,
+        description: 'fromAtomVmJsonl now returns parseErrors array; fromAtomVmJsonlStrict throws on first error — GAP-4b closed',
       },
       {
         id: 'GAP-4b',
@@ -587,13 +594,17 @@ describe('Gap summary: 6 documented gaps with closure status', () => {
 
     // All gaps are documented
     expect(gaps).toHaveLength(6);
-    // Two gaps are now closed (GAP-3 and GAP-4b/4c)
+    // Three gaps are now closed (GAP-3, GAP-4a/4b strict mode, GAP-4b/4c timestamp)
     const closedGaps = gaps.filter((g) => g.closed);
-    expect(closedGaps).toHaveLength(2);
+    expect(closedGaps).toHaveLength(3);
     // GAP-3 (conformance routing) is now closed
     const conformanceGap = gaps.find((g) => g.id === 'GAP-3');
     expect(conformanceGap?.closed).toBe(true);
     expect(conformanceGap?.hasWorkaround).toBe(true);
+    // GAP-4a (parse error visibility) is now closed via parseErrors array + strict mode
+    const parseErrorGap = gaps.find((g) => g.id === 'GAP-4a');
+    expect(parseErrorGap?.closed).toBe(true);
+    expect(parseErrorGap?.hasWorkaround).toBe(true);
     // GAP-4b (numeric timestamp) is closed via toOcelLog()
     const timestampGap = gaps.find((g) => g.id === 'GAP-4b');
     expect(timestampGap?.closed).toBe(true);

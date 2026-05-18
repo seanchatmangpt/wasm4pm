@@ -163,7 +163,46 @@ export function adaptAtomVmProcEvent(evt: AtomVmProcEvent): OcelEvent {
 }
 
 // ---------------------------------------------------------------------------
-// fromAtomVmJsonl — lenient NDJSON parser
+// AtomVmParseResult — richer return type for fromAtomVmJsonl
+// ---------------------------------------------------------------------------
+
+/**
+ * Structured parse result returned by `fromAtomVmJsonl`.
+ *
+ * Carries the successfully converted OCEL events alongside a detailed record
+ * of every line that failed JSON parsing.  Lines that are valid JSON but do not
+ * satisfy `isAtomVmProcEvent` (wrong tag, unrelated telemetry from the same
+ * NDJSON stream) are silently skipped — they are NOT recorded in `parseErrors`
+ * because heterogeneous NDJSON streams are normal in real deployments.
+ *
+ * Only structurally corrupt lines (JSON parse failures) are recorded in
+ * `parseErrors`, making data corruption visible without rejecting valid
+ * mixed-source streams.
+ */
+export interface AtomVmParseResult {
+  /** Successfully converted OCEL events, in input order. */
+  events: OcelEvent[];
+  /**
+   * One entry per line that failed `JSON.parse`.  Blank/whitespace-only lines
+   * are NOT recorded here (they are considered structural NDJSON separators,
+   * not errors).  Lines that are valid JSON but do not satisfy
+   * `isAtomVmProcEvent` (e.g. wrong tag) are also NOT recorded — those are
+   * silently skipped as unrelated telemetry.
+   */
+  parseErrors: Array<{
+    /** 1-based line number in the input string. */
+    line: number;
+    /** The raw string content of the offending line. */
+    raw: string;
+    /** Human-readable description of why the line was rejected. */
+    error: string;
+  }>;
+  /** Total number of non-blank lines examined (successful + skipped + errored). */
+  totalLines: number;
+}
+
+// ---------------------------------------------------------------------------
+// fromAtomVmJsonl — lenient NDJSON parser (returns AtomVmParseResult)
 // ---------------------------------------------------------------------------
 
 /**
@@ -171,37 +210,91 @@ export function adaptAtomVmProcEvent(evt: AtomVmProcEvent): OcelEvent {
  * process event, and converts each valid AtomVM event to an OCEL 2.0 event.
  *
  * Lenient parsing rules:
- * - Blank lines (whitespace-only) are silently skipped.
- * - Lines that are not valid JSON are silently skipped.
- * - Lines whose parsed value fails `isAtomVmProcEvent` are silently skipped
- *   (missing `tag`, `pid`, `event`, or `ts`; or tag !== "atomvm_proc").
+ * - Blank lines (whitespace-only) are silently skipped (not counted as errors).
+ * - Lines that fail `JSON.parse` are recorded in `parseErrors` and skipped.
+ * - Lines that are valid JSON but do not satisfy `isAtomVmProcEvent` (e.g.
+ *   wrong tag, unrelated telemetry) are silently skipped without recording an
+ *   error — heterogeneous NDJSON streams are normal in real deployments.
  *
  * This lenient mode is suitable for consuming mixed NDJSON streams that may
- * contain non-AtomVM events alongside AtomVM process events.
+ * contain non-AtomVM events alongside AtomVM process events.  Unlike the
+ * previous silent-swallow behaviour, callers can now inspect `parseErrors` to
+ * detect structurally corrupt lines in the pipeline.
+ *
+ * For a strict alternative that throws on the first parse error, use
+ * `fromAtomVmJsonlStrict`.
  *
  * @param ndjson - Newline-delimited JSON with one AtomVM event per line
- * @returns Array of OCEL events in input order (invalid/non-atomvm lines excluded)
+ * @returns `AtomVmParseResult` with `events`, `parseErrors`, and `totalLines`
  */
-export function fromAtomVmJsonl(ndjson: string): OcelEvent[] {
-  const result: OcelEvent[] = [];
+export function fromAtomVmJsonl(ndjson: string): AtomVmParseResult {
+  const events: OcelEvent[] = [];
+  const parseErrors: AtomVmParseResult['parseErrors'] = [];
+  let totalLines = 0;
 
-  for (const line of ndjson.split('\n')) {
-    if (line.trim().length === 0) continue;
+  const rawLines = ndjson.split('\n');
+
+  for (let i = 0; i < rawLines.length; i++) {
+    const raw = rawLines[i];
+    if (raw.trim().length === 0) continue;
+
+    // Count every non-blank line regardless of outcome
+    totalLines++;
+    const lineNumber = i + 1;
 
     let parsed: unknown;
     try {
-      parsed = JSON.parse(line);
-    } catch {
-      // Silently skip invalid JSON
+      parsed = JSON.parse(raw);
+    } catch (err) {
+      // Record JSON parse failures — these are corrupt data
+      parseErrors.push({
+        line: lineNumber,
+        raw,
+        error: err instanceof Error ? err.message : String(err),
+      });
       continue;
     }
 
-    if (!isAtomVmProcEvent(parsed)) continue;
+    // Valid JSON that doesn't match the AtomVM schema is silently skipped —
+    // heterogeneous NDJSON streams (mixed telemetry sources) are expected.
+    if (!isAtomVmProcEvent(parsed)) {
+      continue;
+    }
 
-    result.push(adaptAtomVmProcEvent(parsed));
+    events.push(adaptAtomVmProcEvent(parsed));
   }
 
-  return result;
+  return { events, parseErrors, totalLines };
+}
+
+// ---------------------------------------------------------------------------
+// fromAtomVmJsonlStrict — strict NDJSON parser (throws on first error)
+// ---------------------------------------------------------------------------
+
+/**
+ * Strict variant of `fromAtomVmJsonl` that throws on the first parse error.
+ *
+ * Use this when the input stream is expected to contain only well-formed
+ * AtomVM events and any deviation should be treated as a hard failure.
+ *
+ * Throws an `Error` whose message includes the 1-based line number and a
+ * description of the failure.  Blank lines are still silently skipped.
+ *
+ * @param ndjson - Newline-delimited JSON with one AtomVM event per line
+ * @returns Array of OCEL events in input order
+ * @throws `Error` if any non-blank line fails JSON parsing (structural corruption)
+ */
+export function fromAtomVmJsonlStrict(ndjson: string): OcelEvent[] {
+  const result = fromAtomVmJsonl(ndjson);
+
+  if (result.parseErrors.length > 0) {
+    const first = result.parseErrors[0];
+    throw new Error(
+      `fromAtomVmJsonlStrict: parse error on line ${first.line}: ${first.error} (raw: ${JSON.stringify(first.raw)})`
+    );
+  }
+
+  return result.events;
 }
 
 // ---------------------------------------------------------------------------

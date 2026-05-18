@@ -7,7 +7,7 @@ import { withSpan, withSpanRaw } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
 import { WasmInstrumentation } from './_wasm-instrumentation.js';
-import { validatePositiveInt, validateFloatInRange, exitValidationError } from '../_cli-validator.js';
+import { validatePositiveInt, validateFloatInRange, validateEnum, exitValidationError } from '../_cli-validator.js';
 
 const EWMA_ALPHA = 0.3;
 const DRIFT_THRESHOLD = 0.3;
@@ -97,7 +97,12 @@ export const driftWatch = defineCommand({
     },
     json: {
       type: 'boolean',
-      description: 'Emit newline-delimited JSON instead of human-readable output',
+      description: 'Emit newline-delimited JSON instead of human-readable output (alias for --format json)',
+    },
+    format: {
+      type: 'string',
+      description: 'Output format: human (default) or json. Invalid values exit with config_error (1).',
+      alias: 'f',
     },
     enhanced: {
       type: 'boolean',
@@ -146,7 +151,20 @@ export const driftWatch = defineCommand({
       exitValidationError(thresholdResult.error!, EXIT_CODES.config_error);
     }
     const driftThreshold = thresholdResult.value!;
-    const jsonMode: boolean = ctx.args.json === true;
+    // ── Validate --format flag ────────────────────────────────────────────────
+    const formatArg = ctx.args.format as string | undefined;
+    const formatResult = validateEnum(
+      formatArg,
+      'format',
+      'human',
+      ['human', 'json'] as const
+    );
+    if (!formatResult.success) {
+      exitValidationError(formatResult.error!, EXIT_CODES.config_error);
+    }
+    const resolvedFormat = formatResult.value!;
+
+    const jsonMode: boolean = ctx.args.json === true || resolvedFormat === 'json';
     const enhancedMode: boolean = ctx.args.enhanced === true;
     const autoRefitMode: boolean = ctx.args['auto-refit'] === true;
     const autoRefitAlgo: string = (ctx.args['refit-algorithm'] as string) || '';
@@ -314,6 +332,17 @@ export const driftWatch = defineCommand({
         return;
       }
 
+      // ── Collect total_events for JSON payload ─────────────────────────────
+      let totalEvents: number | null = null;
+      try {
+        const statsRaw: string = wasm.analyze_event_statistics(logHandle) as string;
+        const stats = JSON.parse(typeof statsRaw === 'string' ? statsRaw : JSON.stringify(statsRaw)) as { total_events?: number };
+        totalEvents = typeof stats.total_events === 'number' ? stats.total_events : null;
+      } catch {
+        // gap: analyze_event_statistics may be unavailable or fail — leave null
+        totalEvents = null;
+      }
+
       // ── Free WASM handle ──────────────────────────────────────────────────
       // INSTRUMENTED: delete_object — top 3 most-called WASM export (20 calls)
       WasmInstrumentation.delete_object(wasm, logHandle);
@@ -346,7 +375,14 @@ export const driftWatch = defineCommand({
           ewma_value: parseFloat(ewma.toFixed(4)),
           trend,
           drifts_detected: detected,
+          // window_size: sliding window size in traces (reflects --window parameter).
           window_size: windowSize,
+          // metric: the activity attribute key used for drift detection.
+          metric: activityKey,
+          // threshold: the Jaccard distance alert threshold (reflects --threshold parameter).
+          threshold: driftThreshold,
+          // total_events: total event count in the loaded log (from analyze_event_statistics).
+          total_events: totalEvents,
           new_drift_points: Math.max(0, newDriftCount),
           distances: ewmaResult.smoothed,
           // Early-warning flag: EWMA is rising toward threshold but has not yet crossed it
