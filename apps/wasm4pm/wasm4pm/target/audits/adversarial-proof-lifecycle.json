@@ -1,13 +1,13 @@
 {
-  "audit_timestamp": "2026-05-18T10:48:31.385Z",
+  "audit_timestamp": "2026-05-18T10:49:13.538Z",
   "auditor": "wpm-adversary",
   "verdict": "AndonPull(AdversarialEscape)",
   "defense_posture": "WEAK",
-  "total_adversarial_probes": 9,
-  "blocked": 0,
-  "escaped": 9,
-  "inconclusive": 0,
-  "coverage_pct": 0,
+  "total_adversarial_probes": 24,
+  "blocked": 11,
+  "escaped": 11,
+  "inconclusive": 2,
+  "coverage_pct": 46,
   "escaped_probes": [
     {
       "job": "Block double-slash path normalization bypass",
@@ -44,9 +44,26 @@
     {
       "job": "Base64-encoded path bypass rejected at verifier layer",
       "observed": "Hook NOT blocked AND verifier accepted fake pack (wpm binary not found — build first) — CRITICAL GAP"
+    },
+    {
+      "job": "Unauthorized producer rejected by proof verifier",
+      "observed": "Verifier accepted unauthorized producer — CRITICAL GAP (wpm binary not found — build first)"
+    },
+    {
+      "job": "Hooks JTBD audit JSON must exist on disk with Accepted verdict",
+      "observed": "Audit exists but verdict=AndonPull(RefutedJobs) (not Accepted)"
     }
   ],
-  "inconclusive_probes": [],
+  "inconclusive_probes": [
+    {
+      "job": "Block stop when verifier (wpm) is unavailable and critical files are dirty",
+      "observed": "Probe error: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/tmp/adv-stop-novpm-XdI6yg/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n"
+    },
+    {
+      "job": "Block stop when audit exits 0 but does not contain Accepted verdict",
+      "observed": "Probe error: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/tmp/adv-stop-0-V12xQ6/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n"
+    }
+  ],
   "probes": [
     {
       "job": "Block double-slash path normalization bypass",
@@ -110,6 +127,111 @@
       "observed": "Hook NOT blocked AND verifier accepted fake pack (wpm binary not found — build first) — CRITICAL GAP",
       "verdict": "refuted",
       "evidence": "hook_blocked=false; verifier_blocked=false; wpm binary not found — build first"
+    },
+    {
+      "job": "Unauthorized producer rejected by proof verifier",
+      "scenario": "Fake pack with PRODUCER_RECEIPT.producer=\"evil-agent\" (not in approved list)",
+      "observed": "Verifier accepted unauthorized producer — CRITICAL GAP (wpm binary not found — build first)",
+      "verdict": "refuted",
+      "evidence": "verifier_blocked=false; wpm binary not found — build first"
+    },
+    {
+      "job": "Block stop when verifier (wpm) is unavailable and critical files are dirty",
+      "scenario": "harness.rs modified, apps/wasm4pm/dist/bin/wpm.js does not exist",
+      "observed": "Probe error: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/tmp/adv-stop-novpm-XdI6yg/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n",
+      "verdict": "inconclusive",
+      "evidence": "probe-error"
+    },
+    {
+      "job": "Block stop when audit exits 0 but does not contain Accepted verdict",
+      "scenario": "harness.rs dirty, fake wpm exits 0 with JSON missing final_verdict=Accepted",
+      "observed": "Probe error: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/tmp/adv-stop-0-V12xQ6/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n",
+      "verdict": "inconclusive",
+      "evidence": "probe-error"
+    },
+    {
+      "job": "Detect deleted middle event in hash chain",
+      "scenario": "Synthetic 5-event chain; remove event[2]; verify chain integrity",
+      "observed": "Chain break detected at entry 2: chain_hash break at entry 2",
+      "verdict": "verified",
+      "evidence": "chain_valid=false; break_at=2"
+    },
+    {
+      "job": "Detect modified event content via event_hash check",
+      "scenario": "Synthetic 3-event chain; change tool field in event[1]; verify",
+      "observed": "event_hash mismatch detected: event_hash mismatch at entry 1",
+      "verdict": "verified",
+      "evidence": "chain_valid=false; break_at=1"
+    },
+    {
+      "job": "Detect reordered events via chain_hash linkage",
+      "scenario": "Synthetic 4-event chain; swap event[0] and event[1]; verify",
+      "observed": "Chain break detected at entry 0: chain_hash break at entry 0",
+      "verdict": "verified",
+      "evidence": "chain_valid=false; break_at=0"
+    },
+    {
+      "job": "Full chain rewrite detected via CHAIN_HEAD external anchor",
+      "scenario": "Original CHAIN_HEAD=H1; attacker replaces log with fresh consistent chain (H2); H2≠H1",
+      "observed": "Attacker chain passes internal check but CHAIN_HEAD mismatch: orig=0925af52... new=d0f17085... — rewrite detected",
+      "verdict": "verified",
+      "evidence": "inner_valid=true; head1=0925af52a046e4b5; head2=d0f170852744476b; mismatch=true"
+    },
+    {
+      "job": "Inconclusive probe prevents Accepted verdict in doctor hooks",
+      "scenario": "Simulated doctor hooks run with 0 refuted, 1 inconclusive",
+      "observed": "healthy=false when inconclusive>0 — Accepted requires all probes verified",
+      "verdict": "verified",
+      "evidence": "simulated: refuted=0; inconclusive=1; healthy=false"
+    },
+    {
+      "job": "Hooks JTBD audit JSON must exist on disk with Accepted verdict",
+      "scenario": "Check wasm4pm/target/audits/claude-hooks-jtbd-verification.json",
+      "observed": "Audit exists but verdict=AndonPull(RefutedJobs) (not Accepted)",
+      "verdict": "refuted",
+      "evidence": "exists=true; verdict=AndonPull(RefutedJobs)"
+    },
+    {
+      "job": "Activity-only fake route rejected with AndonPull(ActivityOnlyFakeRoute)",
+      "scenario": "OCEL log with 3 events but zero objects — no object evidence; model has required_stages and object_types",
+      "observed": "AndonPull(ActivityOnlyFakeRoute) — activity-only fake route correctly blocked",
+      "verdict": "verified",
+      "evidence": "verdict=AndonPull; andon_reason=ActivityOnlyFakeRoute; fitness=1.000"
+    },
+    {
+      "job": "Object lifecycle violation rejected with AndonPull(ObjectLifecycleViolation)",
+      "scenario": "Receipt object appears in \"use_receipt\" (pos 0) before \"emit_receipt\" (pos 1) creation event",
+      "observed": "AndonPull(ObjectLifecycleViolation) — lifecycle violation correctly detected",
+      "verdict": "verified",
+      "evidence": "verdict=AndonPull; andon_reason=ObjectLifecycleViolation; obj_lifecycle=0.000"
+    },
+    {
+      "job": "Conformance below 1.0 (missing required stage) pulls Andon — never Accepted",
+      "scenario": "Route declares 3 required stages; trace covers only stage_a + stage_b; stage_c absent",
+      "observed": "AndonPull(MissingRequiredStages) — incomplete conformance correctly blocked (stage_coverage=66.7%)",
+      "verdict": "verified",
+      "evidence": "verdict=AndonPull; andon_reason=MissingRequiredStages; stage_coverage=0.667; fitness=1.000"
+    },
+    {
+      "job": "Receipt with malformed BLAKE3 hash rejected with AndonPull(ReceiptSchemaViolation)",
+      "scenario": "Receipt.attributes.config_hash = \"not-hex\" — fails proof-receipt.schema.json pattern check",
+      "observed": "AndonPull(ReceiptSchemaViolation) — Ajv caught malformed config_hash",
+      "verdict": "verified",
+      "evidence": "verdict=AndonPull; andon_reason=ReceiptSchemaViolation; receipt_coverage=0.333"
+    },
+    {
+      "job": "3 ProofPacks (max_count=1) rejected with AndonPull(CardinalityViolation)",
+      "scenario": "OCEL emits 3 distinct ProofPack objects; model declares ProofPack.max_count = 1",
+      "observed": "AndonPull(CardinalityViolation) — max_count breach correctly detected",
+      "verdict": "verified",
+      "evidence": "verdict=AndonPull; andon_reason=CardinalityViolation; obj_lifecycle=0.000"
+    },
+    {
+      "job": "ProofPack created but never re-referenced by terminate activity → AndonPull(LifecycleNotTerminated)",
+      "scenario": "OCEL: ProofPack last seen in verify_evidence; model declares ProofPack.terminated_by=[emit_receipt]",
+      "observed": "AndonPull(LifecycleNotTerminated) — orphan lifecycle correctly detected",
+      "verdict": "verified",
+      "evidence": "verdict=AndonPull; andon_reason=LifecycleNotTerminated; obj_lifecycle=0.000"
     }
   ]
 }

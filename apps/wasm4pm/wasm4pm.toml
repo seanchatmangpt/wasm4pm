@@ -1,31 +1,28 @@
-# wasm4pm — "conformance" preset
-# Purpose: measure how well a real event log conforms to a normative process model.
-# Uses token-based replay for fitness and ET-conformance for precision.
-# Run: wpm conformance -i event_log.xes -m normative_model.pnml
+# wasm4pm — "streaming" preset
+# Purpose: real-time process monitoring on high-volume event streams.
+# Uses SIMD-accelerated streaming DFG + EWMA drift detection.
+# Run: wpm run --config wasm4pm.toml --watch
 schema_version = 1
 version = "26.4.5"
 
 [source]
-kind = "file"
-# path = "./event_log.xes"
+kind = "stream"   # stream = read from stdin or a message queue
 
 [sink]
 kind = "stdout"
 
-# Conformance checking uses ETConformance + alignments for exact fitness/precision.
-# For large logs, start with etconformance_precision (fast).
-# For gold-standard results, use alignments (more expensive).
-# Typical healthy range: fitness > 0.85, precision > 0.70.
+# simd_streaming_dfg is the fastest discovery algorithm (speed score: 2).
+# For slightly higher quality at acceptable latency: heuristic_miner (speed: 25).
 [algorithm]
-name = "etconformance_precision"  # etconformance_precision | alignments | heuristic_miner
+name = "simd_streaming_dfg"   # simd_streaming_dfg | dfg | heuristic_miner
 
 [execution]
-profile = "quality"    # quality profile makes all conformance algorithms available
-timeout = 600000       # 10 minutes — alignments can be expensive for large logs
+profile = "stream"    # enables streaming-full feature set + SIMD acceleration
+timeout = 0           # 0 = unlimited (streaming never stops voluntarily)
 
 [observability]
-logLevel = "info"
-metricsEnabled = true  # Emit fitness/precision metrics
+logLevel = "warn"     # reduce log noise in high-throughput scenarios
+metricsEnabled = true # emit throughput metrics
 
 [observability.otel]
 enabled = false
@@ -33,21 +30,31 @@ exporter = "otlp"
 required = false
 
 [watch]
-enabled = false
-poll_interval = 1000
+enabled = true         # re-run model update when config changes
+poll_interval = 500    # poll every 500ms (aggressive for streaming scenarios)
+# checkpoint_dir = "./.wasm4pm/checkpoints"
 
 [output]
-format = "human"
+format = "json"        # machine-parseable — useful for downstream consumers
 destination = "stdout"
-pretty = true
-colorize = true
+pretty = false
+colorize = false
 
+# Drift detection: EWMA on the activity distribution of sliding trace windows.
+# Fire a drift event when the Jaccard distance exceeds the threshold.
 [prediction]
-enabled = false
-tasks = []
+enabled = true
+activityKey = "concept:name"
+ngramOrder = 2
+driftWindowSize = 20   # traces per window — larger = more stable, slower response
+tasks = ["drift", "next_activity"]
+
+[prediction.drift]
+ewma_alpha = 0.3       # more reactive (higher α) for streaming use cases
+threshold = 0.25
 
 [ml]
-enabled = false
+enabled = false        # ML is disabled in stream profile for latency reasons
 
 [rl]
 enabled = false
