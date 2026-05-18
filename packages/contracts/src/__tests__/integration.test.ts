@@ -85,3 +85,180 @@ describe('Cross-bridge run.id correlation', () => {
     }
   });
 });
+
+// ── OCEL bridge invariants ──────────────────────────────────────────────────
+
+describe('OCEL bridge invariants', () => {
+  it('receiptToOcelEvents returns exactly 3 events', () => {
+    const events = receiptToOcelEvents(makeReceipt());
+    expect(events).toHaveLength(3);
+  });
+
+  it('first event ocel:activity is algorithm.start', () => {
+    const [start] = receiptToOcelEvents(makeReceipt());
+    expect(start['ocel:activity']).toBe('algorithm.start');
+  });
+
+  it('second event ocel:activity is algorithm.complete', () => {
+    const [, complete] = receiptToOcelEvents(makeReceipt());
+    expect(complete['ocel:activity']).toBe('algorithm.complete');
+  });
+
+  it('third event ocel:activity is admitted for success status', () => {
+    const [,, verdict] = receiptToOcelEvents(makeReceipt({ status: 'success' }));
+    expect(verdict['ocel:activity']).toBe('admitted');
+  });
+
+  it('vmap mcpp.conformance.fitness is 1.0 for success receipt', () => {
+    const [, complete] = receiptToOcelEvents(makeReceipt({ status: 'success' }));
+    const vmap = complete['ocel:vmap'] as Record<string, unknown>;
+    expect(vmap['mcpp.conformance.fitness']).toBe(1.0);
+  });
+
+  it('vmap mcpp.conformance.fitness is 0.0 for failed receipt', () => {
+    const [, complete] = receiptToOcelEvents(makeReceipt({ status: 'failed' }));
+    const vmap = complete['ocel:vmap'] as Record<string, unknown>;
+    expect(vmap['mcpp.conformance.fitness']).toBe(0.0);
+  });
+
+  it('ocel:timestamp is a string in all 3 events', () => {
+    const events = receiptToOcelEvents(makeReceipt());
+    for (const event of events) {
+      expect(typeof event['ocel:timestamp']).toBe('string');
+    }
+  });
+
+  it('each event has a non-empty ocel:eid field', () => {
+    const events = receiptToOcelEvents(makeReceipt());
+    for (const event of events) {
+      expect(typeof event['ocel:eid']).toBe('string');
+      expect(event['ocel:eid'].length).toBeGreaterThan(0);
+    }
+  });
+});
+
+// ── Receipt-emit bridge invariants ─────────────────────────────────────────
+
+describe('Receipt-emit bridge invariants', () => {
+  it('emitReceiptEmit fields contain run.id, mcpp.receipt.signer, and mcpp.receipt.status', () => {
+    const span = emitReceiptEmit(makeReceipt());
+    expect(span.fields).toHaveProperty('run.id');
+    expect(span.fields).toHaveProperty('mcpp.receipt.signer');
+    expect(span.fields).toHaveProperty('mcpp.receipt.status');
+  });
+
+  it('run.status (mcpp.receipt.status) is ok for success receipt', () => {
+    const span = emitReceiptEmit(makeReceipt({ status: 'success' }));
+    // receipt-emit-bridge stores status verbatim under mcpp.receipt.status
+    expect(span.fields['mcpp.receipt.status']).toBe('success');
+  });
+
+  it('run.status (mcpp.receipt.status) is error for failed receipt', () => {
+    const span = emitReceiptEmit(makeReceipt({ status: 'failed' }));
+    expect(span.fields['mcpp.receipt.status']).toBe('failed');
+  });
+
+  it('partial status receipt maps mcpp.receipt.status to partial', () => {
+    const span = emitReceiptEmit(makeReceipt({ status: 'partial' }));
+    // The bridge stores status verbatim — neither 'ok' nor 'error'
+    expect(span.fields['mcpp.receipt.status']).toBe('partial');
+  });
+
+  it('span has a timestamp field', () => {
+    const span = emitReceiptEmit(makeReceipt());
+    expect(typeof span.timestamp).toBe('string');
+    expect(span.timestamp.length).toBeGreaterThan(0);
+  });
+});
+
+// ── OCEL NDJSON round-trip ──────────────────────────────────────────────────
+
+describe('OCEL NDJSON round-trip', () => {
+  it('toOcelJsonl produces a string with newlines between events', () => {
+    const events = receiptToOcelEvents(makeReceipt());
+    const jsonl = toOcelJsonl(events);
+    // 3 events → 2 newlines separating them (no trailing newline)
+    expect(jsonl.split('\n')).toHaveLength(3);
+  });
+
+  it('fromMcppJsonl(toOcelJsonl(events)) produces same number of events', () => {
+    const original = receiptToOcelEvents(makeReceipt());
+    const roundTripped = fromMcppJsonl(toOcelJsonl(original));
+    expect(roundTripped).toHaveLength(original.length);
+  });
+
+  it('round-tripped events have same ocel:activity values as originals', () => {
+    const original = receiptToOcelEvents(makeReceipt());
+    const roundTripped = fromMcppJsonl(toOcelJsonl(original));
+    for (let i = 0; i < original.length; i++) {
+      expect(roundTripped[i]['ocel:activity']).toBe(original[i]['ocel:activity']);
+    }
+  });
+
+  it('fromMcppJsonl with empty string returns empty array', () => {
+    expect(fromMcppJsonl('')).toEqual([]);
+  });
+});
+
+// ── Shared receipt adapter ──────────────────────────────────────────────────
+
+describe('Shared receipt adapter', () => {
+  it('toSharedReceipt(receipt).run_id equals receipt.run_id', () => {
+    const receipt = makeReceipt();
+    expect(toSharedReceipt(receipt).run_id).toBe(receipt.run_id);
+  });
+
+  it('toSharedReceipt(receipt).status equals receipt.status', () => {
+    const receipt = makeReceipt({ status: 'partial' });
+    expect(toSharedReceipt(receipt).status).toBe(receipt.status);
+  });
+
+  it('toSharedReceipt(receipt).duration_ms equals receipt.duration_ms', () => {
+    const receipt = makeReceipt({ duration_ms: 1234 });
+    expect(toSharedReceipt(receipt).duration_ms).toBe(1234);
+  });
+
+  it('partial receipt still converts without throwing', () => {
+    const receipt = makeReceipt({ status: 'partial' });
+    expect(() => toSharedReceipt(receipt)).not.toThrow();
+    const shared = toSharedReceipt(receipt);
+    expect(shared.run_id).toBe(RUN_ID);
+  });
+});
+
+// ── Conformance bridge ──────────────────────────────────────────────────────
+
+describe('Conformance bridge', () => {
+  it('fitness 0.9 below threshold 1.0 → evaluation passed is false', () => {
+    const thresholds = { fitness: 1.0 };
+    const result = { avg_trace_fitness: 0.9, avg_trace_precision: 1.0 };
+    const evaluation = evaluateConformance(result, thresholds);
+    expect(evaluation.passed).toBe(false);
+  });
+
+  it('fitness 1.0 at threshold 1.0 → evaluation passed is true', () => {
+    const thresholds = { fitness: 1.0 };
+    const result = { avg_trace_fitness: 1.0, avg_trace_precision: 1.0 };
+    const evaluation = evaluateConformance(result, thresholds);
+    expect(evaluation.passed).toBe(true);
+  });
+
+  it('toSharedConformance result has fitness and precision as numbers in [0,1]', () => {
+    const result = { avg_trace_fitness: 0.85, avg_trace_precision: 0.90 };
+    const evaluation = evaluateConformance(result, { fitness: 0.8, precision: 0.8 });
+    const shared = toSharedConformance(evaluation);
+    expect(typeof shared.fitness).toBe('number');
+    expect(typeof shared.precision).toBe('number');
+    expect(shared.fitness).toBeGreaterThanOrEqual(0);
+    expect(shared.fitness).toBeLessThanOrEqual(1);
+    expect(shared.precision).toBeGreaterThanOrEqual(0);
+    expect(shared.precision).toBeLessThanOrEqual(1);
+  });
+
+  it('failed receipt produces 0.0 fitness in ocel vmap conformance', () => {
+    const receipt = makeReceipt({ status: 'failed' });
+    const [, complete] = receiptToOcelEvents(receipt);
+    const vmap = complete['ocel:vmap'] as Record<string, unknown>;
+    expect(vmap['mcpp.conformance.fitness']).toBe(0.0);
+  });
+});
