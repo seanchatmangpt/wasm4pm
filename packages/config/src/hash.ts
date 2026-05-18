@@ -71,29 +71,11 @@ export function hashConfig(config: BaseConfig): string {
 }
 
 /**
- * Verify configuration hash for determinism checking.
- * @internal
- */
-function verifyConfigHash(config: BaseConfig, expectedHash: string): boolean {
-  return hashConfig(config) === expectedHash;
-}
-
-/**
  * Short 8-char fingerprint suitable for logging/UI.
  * @internal
  */
 export function fingerprintConfig(config: BaseConfig): string {
   return hashConfig(config).slice(0, 8);
-}
-
-/**
- * Hash an arbitrary config section.
- * @internal
- */
-function hashConfigSection(section: unknown): string {
-  const normalized = stableStringify(section);
-  const digest = blake3(normalized);
-  return digest.toString('hex');
 }
 
 /**

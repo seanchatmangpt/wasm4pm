@@ -59,6 +59,9 @@ export * from './discovery-cache.js';
 // Cache invalidation: smart parameter-aware cache invalidation
 export * from './cache-invalidation.js';
 
+// Result deduplication: content-based detection of duplicate logs across batch runs
+export * from './result-dedup.js';
+
 // Algorithm ranking: multi-algorithm performance comparison
 export * from './algorithm-ranking.js';
 

@@ -134,16 +134,7 @@ export async function rankAlgorithms(
     const feedback = feedbackMap.get(algo)!;
 
     if (stats.count === 0) {
-      // No feedback yet
-      results.push({
-        algorithm: algo,
-        rank: 0,
-        score: 0,
-        fitness: null,
-        precision: null,
-        speed_ms: null,
-        sample_count: 0,
-      });
+      // No feedback yet — skip this algorithm
       continue;
     }
 

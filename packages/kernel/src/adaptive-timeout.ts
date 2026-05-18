@@ -54,44 +54,44 @@ export interface TimeoutResult {
 
 const BASE_TIMEOUT_MS = 30_000; // 30 seconds — reasonable for most algorithms
 
-// Event factor: 100ms per 10K events
-// Example: 100K events → +1000ms additional
-const EVENT_FACTOR_MS_PER_10K = 100;
+// Event factor: 50ms per 10K events
+// Example: 100K events → +500ms additional
+const EVENT_FACTOR_MS_PER_10K = 50;
 
-// Complexity multiplier: 2.0× for complex logs (high variance, many variants)
+// Complexity multiplier: 1.5× for complex logs (high variance, many variants)
 const COMPLEXITY_MULTIPLIER = {
   simple: 1.0,
-  complex: 2.0,
+  complex: 1.5,
 };
 
 // Algorithm multiplier: tier-based scaling
-// Fast (dfg/skeleton): 1× (no additional overhead)
-// Balanced (heuristic/inductive): 1.5× (moderate overhead)
-// Quality (genetic/ilp): 3× (significant overhead)
+// Fast (dfg/skeleton): 0.8× (fast baseline)
+// Balanced (heuristic/inductive): 1.0× (moderate overhead)
+// Quality (genetic/ilp): 2.0× (significant overhead)
 const ALGORITHM_MULTIPLIER = {
-  fast: 1.0,
-  balanced: 1.5,
-  quality: 3.0,
+  fast: 0.8,
+  balanced: 1.0,
+  quality: 2.0,
 };
 
 // Per-algorithm overrides (name-based)
 // These are consulted first; if a match exists, other factors are applied on top.
 const ALGORITHM_OVERRIDES: Record<string, number> = {
-  dfg: 0.5, // Fast algorithm, minimal overhead
-  simd_streaming_dfg: 0.5,
-  process_skeleton: 0.5,
-  alpha_plus_plus: 1.0,
-  heuristic_miner: 1.5,
-  inductive_miner: 1.5,
-  hill_climbing: 2.0,
-  declare: 1.5,
-  simulated_annealing: 2.5,
-  a_star: 3.0,
-  aco: 3.0,
-  pso: 3.0,
-  genetic_algorithm: 4.0,
-  optimized_dfg: 1.5,
-  ilp: 5.0,
+  dfg: 0.7, // Fast algorithm, minimal overhead
+  simd_streaming_dfg: 0.7,
+  process_skeleton: 0.7,
+  alpha_plus_plus: 0.9,
+  heuristic_miner: 1.0,
+  inductive_miner: 1.0,
+  hill_climbing: 1.3,
+  declare: 1.0,
+  simulated_annealing: 1.5,
+  a_star: 2.0,
+  aco: 2.0,
+  pso: 2.0,
+  genetic_algorithm: 2.5,
+  optimized_dfg: 1.0,
+  ilp: 3.0,
 };
 
 // Bounds for all computed timeouts
@@ -168,9 +168,9 @@ export function computeTimeout(factors: TimeoutFactors): TimeoutResult {
  * @returns 'simple' or 'complex'
  *
  * Heuristic thresholds:
- *   - Variance ratio (traces / activities) > 5 → complex
- *   - Distinct activities > 100 → complex
- *   - Event density (events / traces) > 50 → complex
+ *   - Distinct activities > 150 → complex
+ *   - Variance ratio (traces / activities) > 10 → complex
+ *   - Event density (events / traces) > 100 → complex
  */
 export function classifyComplexity(
   eventCount: number,
@@ -183,19 +183,19 @@ export function classifyComplexity(
   }
 
   // Heuristic 1: High activity cardinality
-  if (distinctActivities > 100) {
+  if (distinctActivities > 150) {
     return 'complex';
   }
 
   // Heuristic 2: High trace variance (many variants per activity)
   const varianceRatio = numTraces / distinctActivities;
-  if (varianceRatio > 5) {
+  if (varianceRatio > 10) {
     return 'complex';
   }
 
   // Heuristic 3: High event density per trace
   const eventDensity = eventCount / numTraces;
-  if (eventDensity > 50) {
+  if (eventDensity > 100) {
     return 'complex';
   }
 

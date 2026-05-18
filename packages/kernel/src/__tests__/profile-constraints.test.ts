@@ -35,7 +35,7 @@ describe('Feature Gate Enforcement (Rank 1 — Mathematical)', () => {
       for (const profile of profiles) {
         const result = canRun(algo.id, profile);
         const expected = algo.deploymentProfiles.includes(profile);
-        expect(result).toBe(expected, `${algo.id} in ${profile}: expected ${expected}, got ${result}`);
+        expect(result, `${algo.id} in ${profile}: expected ${expected}, got ${result}`).toBe(expected);
       }
     }
   });

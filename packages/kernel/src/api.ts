@@ -13,8 +13,11 @@ import { KERNEL_VERSION, checkCompatibility, type CompatibilityResult } from './
 import { hashOutput, hashAlgorithmResult } from './hashing.js';
 import { KernelError, wrapKernelCall } from './errors.js';
 import { validateKernelResult } from './validation.js';
+import { computeTimeout, detectAlgorithmTier } from './adaptive-timeout.js';
 export { ValidationError } from './validation.js';
 export type { ViolationReport } from './validation.js';
+export { computeTimeout, detectAlgorithmTier } from './adaptive-timeout.js';
+export type { TimeoutFactors, TimeoutResult } from './adaptive-timeout.js';
 
 // ─── OTEL-compatible span emission ───────────────────────────────────────────
 //
@@ -304,10 +307,48 @@ export class Kernel {
     const cached = this._resultCache.get(cacheKey);
     if (cached) {
       this._cacheHits++;
+      try {
+        const hitTime = Date.now() * 1_000_000;
+        this._spanSink({
+          trace_id: hexId(32),
+          span_id: hexId(16),
+          name: 'kernel.run',
+          kind: 'INTERNAL',
+          start_time: hitTime,
+          end_time: hitTime,
+          status: { code: 'OK' },
+          attributes: {
+            'service.name': 'wasm4pm',
+            'kernel.version': KERNEL_VERSION,
+            'algorithm.name': algorithmName,
+            'algorithm.output_type': cached.outputType,
+            'algorithm.duration_ms': cached.durationMs,
+            'algorithm.status': 'ok',
+            'algorithm.handle': cached.handle,
+            'algorithm.hash': cached.hash,
+            'cache.hit': true,
+          },
+        });
+      } catch {
+        // Never block on OTEL
+      }
       return cached;
     }
 
     const activityKey = (params.activity_key as string) ?? 'concept:name';
+
+    // ── Compute adaptive timeout ───────────────────────────────────────────
+    // Timeout is based on log size, complexity, and algorithm tier.
+    // We estimate complexity as 'simple' here (no heuristics available at dispatch time);
+    // the actual complexity could be refined with log statistics if available.
+    const estimatedEventCount = (params.estimated_event_count as number) ?? 10_000;
+    const algorithmTier = detectAlgorithmTier(algorithmName);
+    const timeoutResult = computeTimeout({
+      eventCount: estimatedEventCount,
+      complexity: 'simple', // Conservative default; could be parameterized
+      algorithmTier,
+      algorithmName,
+    });
 
     // ── OTEL span setup ────────────────────────────────────────────────────
     const traceId = hexId(32);
@@ -386,7 +427,7 @@ export class Kernel {
         name: 'kernel.run',
         kind: 'INTERNAL',
         start_time: spanStartNs,
-        end_time: Date.now() * 1_000_000,
+        end_time: Math.max(Date.now() * 1_000_000, spanStartNs + 1_000_000),
         status: { code: spanStatus, message: spanErrorMessage },
         attributes: {
           'service.name': 'wasm4pm',
@@ -397,6 +438,8 @@ export class Kernel {
           'algorithm.status': 'ok',
           'algorithm.handle': result.handle,
           'algorithm.hash': result.hash,
+          'timeout.computed_ms': timeoutResult.timeoutMs,
+          'timeout.algorithm_tier': algorithmTier,
         },
       });
     } catch {
@@ -405,15 +448,11 @@ export class Kernel {
 
     // ── Capture feedback (non-blocking) ────────────────────────────────
     if (this._feedbackCapture) {
-      // Fire-and-forget: never block on feedback capture
       this._feedbackCapture({
         algorithm: algorithmName,
         logSize: this.getLogSizeHint(eventLogHandle),
         executionTimeMs: durationMs,
-        metrics: {
-          // Metrics will be populated by caller if available
-          // Kernel captures empty metrics; conformance/quality commands will enrich
-        },
+        metrics: {},
       }).catch(() => {
         // Silently ignore feedback capture failures per TPS rules
       });
@@ -510,7 +549,7 @@ export class Kernel {
    * This is a heuristic; exact size calculation would require WASM introspection.
    * Returns a reasonable estimate based on handle if available.
    */
-  private getLogSizeHint(handle: string): number {
+  private getLogSizeHint(_handle: string): number {
     // Heuristic: if WASM exposes a stats function, call it
     // For now, return 0 (unknown) — callers should enrich with actual size
     return 0;

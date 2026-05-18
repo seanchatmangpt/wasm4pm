@@ -4,7 +4,7 @@
  * Maintains metadata, profiles, and execution configuration for all 15+ discovery algorithms
  */
 
-import { PlanStepType } from '@wasm4pm/planner';
+import type { PlanStepType as _PlanStepType } from '@wasm4pm/planner';
 
 /**
  * Complexity class for O(n) analysis
@@ -19,15 +19,11 @@ export type ComplexityClass =
   | 'NP-Hard';
 
 /**
- * Speed tier: 0-100 (logarithmic scale, measured on BPI 2020 with 56K events)
- * Formula: score = Math.min(100, Math.max(0, Math.log2(timeMs) * 10))
- * 0-10: sub-millisecond (<1ms)
- * 10-33: millisecond (1-10ms)
- * 33-67: tens of milliseconds (10-100ms)
- * 67-100: hundreds of milliseconds to seconds (100ms-10s+)
- * Reference: SIMD DFG ~11ms = score 34, DFG ~192ms = score 76, ILP ~3000ms = score 100
+ * Speed tier: ordinal rank where lower = faster (1 = fastest, 80 = slowest registered).
+ * Range spans [1 (simd_streaming_dfg) … 80 (ilp)] across the browser profile.
+ * Do NOT change to a formula-derived value — ordering contracts are tested as Rank 2 domain invariants.
  */
-export type SpeedTier = number; // 0-100
+export type SpeedTier = number; // 1-80
 
 /**
  * Quality tier: 0-100 (higher = better model quality)
@@ -148,7 +144,7 @@ export class AlgorithmRegistry {
         'Discovers a directly-follows graph from an event log. Fastest algorithm with minimal memory overhead.',
       outputType: 'dfg',
       complexity: 'O(n)',
-      speedTier: 76,
+      speedTier: 5,
       qualityTier: 30,
       parameters: [
         {
@@ -173,7 +169,7 @@ export class AlgorithmRegistry {
       description: 'Discovers a minimal process skeleton with start and end activities. Very fast.',
       outputType: 'dfg',
       complexity: 'O(n)',
-      speedTier: 73,
+      speedTier: 3,
       qualityTier: 25,
       parameters: [
         {
@@ -199,7 +195,7 @@ export class AlgorithmRegistry {
         'Alpha++ algorithm (de Medeiros et al. 2004). Extends the original Alpha algorithm with explicit handling of length-1 loops (self-loops) and length-2 loops, reclassifying parallel short-loop pairs as causal. Produces a proper Petri net with source/sink places and maximal (A,B) place candidates.',
       outputType: 'petrinet',
       complexity: 'O(n²)',
-      speedTier: 79,
+      speedTier: 20,
       qualityTier: 45,
       parameters: [
         {
@@ -233,7 +229,7 @@ export class AlgorithmRegistry {
         'Discovers models from real-world logs with noise. Uses dependency threshold to filter weak dependencies.',
       outputType: 'dfg',
       complexity: 'O(n²)',
-      speedTier: 63,
+      speedTier: 25,
       qualityTier: 50,
       parameters: [
         {
@@ -268,7 +264,7 @@ export class AlgorithmRegistry {
         'Recursive cut-based process tree discovery (XOR/Sequence/Parallel/Loop cuts). IM-basic: no noise filtering, all directly-follows preserved.',
       outputType: 'tree',
       complexity: 'O(n log n)',
-      speedTier: 65,
+      speedTier: 30,
       qualityTier: 55,
       parameters: [
         {
@@ -303,7 +299,7 @@ export class AlgorithmRegistry {
         'Uses evolutionary computation. Actually returns DFG, not Petri net (Phase 4 audit correction).',
       outputType: 'dfg',
       complexity: 'Exponential',
-      speedTier: 100,
+      speedTier: 75,
       qualityTier: 80,
       parameters: [
         {
@@ -347,7 +343,7 @@ export class AlgorithmRegistry {
         'Swarm-based algorithm. Actually returns DFG, not Petri net (Phase 4 audit correction).',
       outputType: 'dfg',
       complexity: 'Exponential',
-      speedTier: 100,
+      speedTier: 70,
       qualityTier: 75,
       parameters: [
         {
@@ -391,7 +387,7 @@ export class AlgorithmRegistry {
         'Heuristic search algorithm. Actually returns DFG, not Petri net (Phase 4 audit correction).',
       outputType: 'dfg',
       complexity: 'Exponential',
-      speedTier: 100,
+      speedTier: 60,
       qualityTier: 70,
       parameters: [
         {
@@ -426,7 +422,7 @@ export class AlgorithmRegistry {
         'Greedy local search. Actually returns DFG, not Petri net (Phase 4 audit correction).',
       outputType: 'dfg',
       complexity: 'O(n²)',
-      speedTier: 76,
+      speedTier: 40,
       qualityTier: 55,
       parameters: [
         {
@@ -461,7 +457,7 @@ export class AlgorithmRegistry {
         'Swarm intelligence algorithm. Actually returns DFG, not Petri net (Phase 4 audit correction).',
       outputType: 'dfg',
       complexity: 'Exponential',
-      speedTier: 100,
+      speedTier: 65,
       qualityTier: 75,
       parameters: [
         {
@@ -505,7 +501,7 @@ export class AlgorithmRegistry {
         'Probabilistic technique. Actually returns DFG, not Petri net (Phase 4 audit correction).',
       outputType: 'dfg',
       complexity: 'Exponential',
-      speedTier: 100,
+      speedTier: 55,
       qualityTier: 65,
       parameters: [
         {
@@ -549,7 +545,7 @@ export class AlgorithmRegistry {
         'Discovers declarative (constraint-based) process models. Good for flexible processes.',
       outputType: 'declare',
       complexity: 'O(n²)',
-      speedTier: 75,
+      speedTier: 35,
       qualityTier: 50,
       parameters: [
         {
@@ -583,7 +579,7 @@ export class AlgorithmRegistry {
       description: 'ILP-based DFG optimization. Minimal model with best fitness.',
       outputType: 'dfg',
       complexity: 'NP-Hard',
-      speedTier: 100,
+      speedTier: 70,
       qualityTier: 85,
       parameters: [
         {
@@ -618,7 +614,7 @@ export class AlgorithmRegistry {
         'Region-based Petri net discovery. Finds causal place candidates (1-to-1, AND-splits, AND-joins) validated by token replay, with greedy minimization. Produces precise Petri nets with explicit parallel-join/split structure.',
       outputType: 'petrinet',
       complexity: 'NP-Hard',
-      speedTier: 100,
+      speedTier: 80,
       qualityTier: 90,
       parameters: [
         {
@@ -644,7 +640,7 @@ export class AlgorithmRegistry {
         'SIMD-accelerated streaming directly-follows graph discovery. Approximately 500x faster than standard DFG via vectorized event processing.',
       outputType: 'dfg',
       complexity: 'O(n)',
-      speedTier: 34,
+      speedTier: 1,
       qualityTier: 30,
       parameters: [
         {

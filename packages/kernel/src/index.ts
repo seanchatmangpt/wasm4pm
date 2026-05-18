@@ -233,3 +233,17 @@ export { WasmServerClient, isWasmServerAvailable } from './server-client.js';
  * not at the kernel layer, to maintain acyclic dependency graph.
  */
 export { CACHE_ADAPTER_INFO } from './discovery-cache-adapter.js';
+
+// Batch processing — parallel execution of multiple event logs
+/**
+ * BatchRunner — Parallel worker pool for batch processing of event logs.
+ * @description Manages concurrent discovery of multiple logs with configurable worker count and timeout.
+ * @example const runner = new BatchRunner({ algorithm: 'dfg', workers: 4 }); const result = await runner.run(logPaths);
+ */
+export { BatchRunner } from './batch-runner.js';
+export type {
+  BatchLogResult,
+  BatchConfig,
+  BatchSummary,
+  BatchResult,
+} from './batch-runner.js';

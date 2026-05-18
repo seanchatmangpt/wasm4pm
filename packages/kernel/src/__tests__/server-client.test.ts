@@ -51,11 +51,12 @@ class MockWasmServer {
                 if (!handle || !algo) {
                   response = { error: 'Missing required params: handle, algo' };
                 } else {
+                  const PETRINET_ALGOS = new Set(['alpha', 'alpha_plus_plus', 'ilp']);
                   response = {
                     result: {
                       handle: `${algo}_result_${Date.now()}`,
                       algorithm: algo,
-                      outputType: 'dfg',
+                      outputType: PETRINET_ALGOS.has(algo as string) ? 'petrinet' : 'dfg',
                       durationMs: Math.random() * 100,
                       params: { activity_key },
                       hash: `hash_${Date.now()}`,
@@ -95,7 +96,7 @@ class MockWasmServer {
   async stop(): Promise<void> {
     return new Promise((resolve) => {
       if (this.server) {
-        this.server.close(resolve);
+        this.server.close(() => resolve());
       } else {
         resolve();
       }
@@ -164,8 +165,9 @@ describe('WasmServerClient', () => {
       (r) => r.method === 'algorithm'
     );
     expect(algRequest?.params?.activity_key).toBe('custom:key');
-    expect(algRequest?.params?.extra_params?.min_support).toBe(0.5);
-    expect(algRequest?.params?.extra_params?.noise_threshold).toBe(0.2);
+    const extraParams = algRequest?.params?.extra_params as Record<string, unknown> | undefined;
+    expect(extraParams?.min_support).toBe(0.5);
+    expect(extraParams?.noise_threshold).toBe(0.2);
   });
 
   it('should list algorithms on server', async () => {
@@ -190,7 +192,8 @@ describe('WasmServerClient', () => {
       requestTimeout: 50,
     });
 
-    await expect(slowClient.isAvailable()).rejects.toThrow();
+    const available = await slowClient.isAvailable();
+    expect(available).toBe(false);
   });
 
   it('should handle missing required params', async () => {

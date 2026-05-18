@@ -19,6 +19,7 @@ import * as os from 'os';
 /**
  * JSON-RPC request to server
  */
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 interface JsonRpcRequest {
   method: 'algorithm' | 'list' | 'ping' | 'shutdown';
   params?: Record<string, unknown>;
@@ -117,7 +118,9 @@ export class WasmServerClient {
       throw new Error(response.error);
     }
 
-    return (response.result?.algorithms ?? []) as any;
+    const resultObj = response.result as Record<string, unknown> | undefined;
+    const result = resultObj?.algorithms ?? [];
+    return result as any;
   }
 
   // ─── Private ──────────────────────────────────────────────────────────
