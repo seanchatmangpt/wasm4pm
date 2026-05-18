@@ -18,6 +18,7 @@ import { swarmTools } from './tools.js';
 import { getWorker, storeResult, setWorkerStatus } from './worker-registry.js';
 import { getTracer, RunningSpans, LawfulDispatchSpans } from '@wasm4pm/observability';
 import { ConvergenceMaxIterationsError, ConvergenceTimeoutError } from './types.js';
+import { AlgorithmConsensus, computeQualityScore, type ConsensusDecision } from './algorithm-consensus.js';
 import type {
   SwarmConfig,
   WorkerSpec,
@@ -54,13 +55,18 @@ export async function runSwarm(config: SwarmConfig): Promise<SwarmArtifact> {
     const episodes: SwarmEpisode[] = [];
 
     // Build initial worker specs from config
-    const workerSpecs: WorkerSpec[] = buildWorkerSpecs(config);
+    let workerSpecs: WorkerSpec[] = buildWorkerSpecs(config);
 
     if (workerSpecs.length === 0) {
       throw new Error(
         'runSwarm: no workers could be built from config. Provide algorithmIds or logPaths.'
       );
     }
+
+    // Initialize consensus tracker with discovered algorithms
+    const algorithmIds = Array.from(new Set(workerSpecs.map((s) => s.algorithmId)));
+    const consensus = new AlgorithmConsensus(algorithmIds);
+    let consensusDecision: ConsensusDecision | null = null;
 
     let totalIterations = 0;
 
@@ -72,6 +78,23 @@ export async function runSwarm(config: SwarmConfig): Promise<SwarmArtifact> {
       });
 
       try {
+        // Extract log stats from first available worker for consensus decision
+        const firstWorker = getWorker(workerSpecs[0]?.workerId);
+        const logStats = firstWorker ? extractLogStats(firstWorker.xesContent) : null;
+
+        // Run consensus to select primary algorithm (if we have context)
+        if (logStats) {
+          consensusDecision = consensus.selectAlgorithm(logStats);
+          epSpan.setAttribute('consensus.selected_algorithm', consensusDecision.selectedAlgorithm);
+          epSpan.setAttribute('consensus.confidence', consensusDecision.confidence);
+
+          // Update worker specs to use consensus algorithm
+          workerSpecs = workerSpecs.map((spec) => ({
+            ...spec,
+            algorithmId: consensusDecision!.selectedAlgorithm,
+          }));
+        }
+
         // Fan-out: run all workers in parallel.
         // Individual worker failures are isolated — a failed worker produces a
         // degraded WorkerResult (failed=true, error=message) rather than
@@ -97,6 +120,12 @@ export async function runSwarm(config: SwarmConfig): Promise<SwarmArtifact> {
           )
         );
 
+        // Update consensus with results
+        for (const result of workerResults) {
+          const qualityScore = computeQualityScore(result);
+          consensus.updatePerformance(result.algorithmId, result, qualityScore);
+        }
+
         // Enforce hard iteration cap before any further processing
         totalIterations += workerSpecs.length;
         if (maxIterations !== undefined && totalIterations > maxIterations) {
@@ -119,7 +148,7 @@ export async function runSwarm(config: SwarmConfig): Promise<SwarmArtifact> {
           checkSwarmConvergence(workerResults, hashHistory, convergenceRuns);
 
         const convergenceReport = {
-          algorithm: workerSpecs[0]?.algorithmId ?? 'unknown',
+          algorithm: consensusDecision?.selectedAlgorithm ?? workerSpecs[0]?.algorithmId ?? 'unknown',
           converged,
           consensusRatio: agreementRate,
           dominantHash: workerResults[0]?.resultHash ?? null,
@@ -288,4 +317,55 @@ function buildArtifact(episodes: SwarmEpisode[]): unknown {
     final_consensus_ratio: lastEpisode?.convergenceReport.consensusRatio ?? 0,
     dominant_hash: lastEpisode?.convergenceReport.dominantHash,
   };
+}
+
+/**
+ * Extract log statistics from XES/OCEL content for consensus decision-making.
+ */
+function extractLogStats(xesContent: string): import('./algorithm-consensus.js').LogStats | null {
+  try {
+    // Count traces (lines with <trace> tags)
+    const traceMatches = xesContent.match(/<trace>/g);
+    const traceCount = traceMatches?.length ?? 0;
+
+    // Count events (lines with <event> tags)
+    const eventMatches = xesContent.match(/<event>/g);
+    const eventCount = eventMatches?.length ?? 0;
+
+    // Count unique activities (concept:name attributes)
+    const activityMatches = xesContent.match(/concept:name="([^"]+)"/g);
+    const activities = new Set(
+      (activityMatches ?? []).map((m) => m.match(/"([^"]+)"/)?.at(1)).filter(Boolean)
+    );
+    const activityCount = activities.size;
+
+    if (traceCount === 0 || eventCount === 0) {
+      return null;
+    }
+
+    const eventRate = eventCount / traceCount;
+    const avgTraceLength = eventRate;
+    const maxTraceLength = Math.max(
+      1,
+      Math.ceil(avgTraceLength * 1.5) // Estimate max as 1.5x average
+    );
+
+    // Classify complexity based on event/activity ratio
+    const diversityRatio = eventCount / Math.max(1, activityCount);
+    let complexity: 'simple' | 'moderate' | 'complex' = 'moderate';
+    if (diversityRatio > 50) complexity = 'simple'; // Few activities, many events = repetitive
+    if (diversityRatio < 10) complexity = 'complex'; // Many activities, few events = complex
+
+    return {
+      eventCount,
+      traceCount,
+      activityCount,
+      eventRate,
+      avgTraceLength,
+      maxTraceLength,
+      complexity,
+    };
+  } catch {
+    return null; // Parse error, skip consensus decision
+  }
 }
