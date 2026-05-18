@@ -157,6 +157,22 @@ export {
   type SharedReceiptV1,
 } from './shared-schema/adapter.js';
 
+// Marketplace domain OCEL bridge — adapts commerce events to OCEL 2.0 format
+export {
+  adaptMarketplaceEvent,
+  fromMarketplaceJsonl,
+  isMarketplaceEvent,
+  extractObjectTypes,
+  countUniqueIds,
+  type MarketplaceEvent,
+} from './marketplace-bridge.js';
+
+export {
+  buildMarketplaceReceipt,
+  isMarketplaceReceipt,
+  type MarketplaceReceipt,
+} from './marketplace-receipt.js';
+
 // Prolog8 Rule8/Fact8 compiler helpers — pre-compile Horn clauses for the WASM kernel
 export {
   internTerms,
