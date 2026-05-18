@@ -382,10 +382,8 @@ async function executePredictionTask(
       // understands the uncertainty shape — not just a point estimate.
       let weibull: Record<string, unknown> | null = null;
       try {
-        const hazardRaw: string = withWasmSpan(
-          'predict_hazard_rate',
-          { case_index: 0 },
-          () => wasm.predict_hazard_rate(modelHandle, 0)
+        const hazardRaw: string = withWasmSpan('predict_hazard_rate', { case_index: 0 }, () =>
+          wasm.predict_hazard_rate(modelHandle, 0)
         );
         const hazardResult = JSON.parse(hazardRaw) as {
           shape: number;
@@ -553,10 +551,8 @@ async function executePredictionTask(
       let serviceRate = 1.0;
       let logStats: Record<string, unknown> = {};
       try {
-        const statsRaw: string = withWasmSpan(
-          'analyze_event_statistics',
-          {},
-          () => wasm.analyze_event_statistics(logHandle)
+        const statsRaw: string = withWasmSpan('analyze_event_statistics', {}, () =>
+          wasm.analyze_event_statistics(logHandle)
         );
         logStats = JSON.parse(statsRaw) as Record<string, unknown>;
         const totalCases = (logStats['total_cases'] as number) ?? 0;
@@ -720,12 +716,8 @@ function formatHumanOutput(
       }
       p.log('');
       p.log('  Next actions:');
-      p.log(
-        '    • Narrow to a prefix:  wpm predict next-activity -i <log> --prefix "<A>,<B>,<C>"'
-      );
-      p.log(
-        '    • Estimate completion: wpm predict remaining-time -i <log> --prefix "<A>,<B>"'
-      );
+      p.log('    • Narrow to a prefix:  wpm predict next-activity -i <log> --prefix "<A>,<B>,<C>"');
+      p.log('    • Estimate completion: wpm predict remaining-time -i <log> --prefix "<A>,<B>"');
       p.log('    • Check conformance:   wpm conformance -i <log>');
       p.log('    • Discover full model: wpm run -i <log> --algorithm inductive_miner');
       p.log('');

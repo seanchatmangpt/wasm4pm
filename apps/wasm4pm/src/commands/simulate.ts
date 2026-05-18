@@ -165,8 +165,7 @@ export const simulate = defineCommand({
             emitResult(result, { format, verbose, quiet });
             return await exitWithFlush(result.exit_code);
           }
-          const seed =
-            parsedSeed != null ? parsedSeed : Math.floor(Math.random() * 2_147_483_647);
+          const seed = parsedSeed != null ? parsedSeed : Math.floor(Math.random() * 2_147_483_647);
 
           await withLogSession(
             {
