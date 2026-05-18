@@ -13,6 +13,7 @@ import {
   type CommandReceipt,
 } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
+import { WasmInstrumentation } from './_wasm-instrumentation.js';
 
 interface DfgNode {
   id: string;
@@ -156,17 +157,18 @@ export const diff = defineCommand({
             fs.readFile(log2Path, 'utf-8'),
           ]);
 
-          const handle1: string = wasm.load_eventlog_from_xes(xes1);
-          const handle2: string = wasm.load_eventlog_from_xes(xes2);
+          // INSTRUMENTED: load_eventlog_from_xes — top 1 most-called WASM export (70 calls)
+          const handle1: string = WasmInstrumentation.load_eventlog_from_xes(wasm, xes1);
+          const handle2: string = WasmInstrumentation.load_eventlog_from_xes(wasm, xes2);
 
           let diffResult!: DiffResult;
           await withSpanRaw(
             `wasm4pm.${AnalysisSpans.diffCompute()}`,
             { activityKey, log1: log1Path, log2: log2Path },
             async () => {
-              // Discover DFGs for both logs
-              const dfg1Raw = wasm.discover_dfg(handle1, activityKey);
-              const dfg2Raw = wasm.discover_dfg(handle2, activityKey);
+              // INSTRUMENTED: discover_dfg — top 2 most-called WASM export (25 calls)
+              const dfg1Raw = WasmInstrumentation.discover_dfg(wasm, handle1, activityKey);
+              const dfg2Raw = WasmInstrumentation.discover_dfg(wasm, handle2, activityKey);
 
               // Validate both outputs are DFGs (diff is DFG-only).
               const shape1 = discriminate(dfg1Raw, 'dfg');
@@ -209,9 +211,9 @@ export const diff = defineCommand({
             })
           );
 
-          // Free handles
-          wasm.delete_object(handle1);
-          wasm.delete_object(handle2);
+          // INSTRUMENTED: delete_object — top 3 most-called WASM export (20 calls)
+          WasmInstrumentation.delete_object(wasm, handle1);
+          WasmInstrumentation.delete_object(wasm, handle2);
 
           const elapsedMs = Date.now() - t0;
           const payload: DiffPayload = {

@@ -6,6 +6,7 @@ import { EXIT_CODES } from '../exit-codes.js';
 import { withSpan, withSpanRaw } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
+import { WasmInstrumentation } from './_wasm-instrumentation.js';
 
 const EWMA_ALPHA = 0.3;
 const DRIFT_THRESHOLD = 0.3;
@@ -256,7 +257,8 @@ export const driftWatch = defineCommand({
 
       let logHandle: string;
       try {
-        logHandle = wasm.load_eventlog_from_xes(xesContent) as string;
+        // INSTRUMENTED: load_eventlog_from_xes — top 1 most-called WASM export (70 calls)
+        logHandle = WasmInstrumentation.load_eventlog_from_xes(wasm, xesContent);
       } catch (err) {
         console.error(
           `[drift-watch] XES parse error: ${err instanceof Error ? err.message : String(err)}`
@@ -267,13 +269,15 @@ export const driftWatch = defineCommand({
       // ── detect_drift ────────────────────────────────────────────────────────
       let driftResult: DriftResult;
       try {
-        const raw: string = wasm.detect_drift(logHandle, activityKey, windowSize) as string;
+        // INSTRUMENTED: detect_drift — top 7 most-called WASM export (12 calls)
+        const raw: string = WasmInstrumentation.detect_drift(wasm, logHandle, activityKey);
         driftResult = JSON.parse(raw) as DriftResult;
       } catch (err) {
         console.error(
           `[drift-watch] detect_drift failed: ${err instanceof Error ? err.message : String(err)}`
         );
-        wasm.delete_object(logHandle);
+        // INSTRUMENTED: delete_object — top 3 most-called WASM export (20 calls)
+        WasmInstrumentation.delete_object(wasm, logHandle);
         return;
       }
 
@@ -310,12 +314,14 @@ export const driftWatch = defineCommand({
         console.error(
           `[drift-watch] compute_ewma failed: ${err instanceof Error ? err.message : String(err)}`
         );
-        wasm.delete_object(logHandle);
+        // INSTRUMENTED: delete_object — top 3 most-called WASM export (20 calls)
+        WasmInstrumentation.delete_object(wasm, logHandle);
         return;
       }
 
       // ── Free WASM handle ──────────────────────────────────────────────────
-      wasm.delete_object(logHandle);
+      // INSTRUMENTED: delete_object — top 3 most-called WASM export (20 calls)
+      WasmInstrumentation.delete_object(wasm, logHandle);
 
       const ewma = ewmaResult.last_value ?? 0;
       const trend = ewmaResult.trend;

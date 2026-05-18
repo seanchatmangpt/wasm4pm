@@ -113,7 +113,7 @@ export function instrumentDiscoverDfg(
   activityKey: string
 ): string {
   const t0 = performance.now();
-  let resultHandle: string;
+  let resultHandle: string = '';
   let error: Error | undefined;
 
   try {
@@ -476,7 +476,7 @@ export function instrumentAnalyzeEventStatistics(
   activityKey?: string
 ): string {
   const t0 = performance.now();
-  let result: string;
+  let result: string = '';
   let error: Error | undefined;
 
   try {

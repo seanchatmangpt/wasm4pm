@@ -1,6 +1,7 @@
 import { consola } from 'consola';
 import { randomUUID } from 'node:crypto';
 import pkg from '../package.json' with { type: 'json' };
+import { getQuickRecoverySuggestion } from './error-recovery.js';
 
 // ─── Canonical output types ───────────────────────────────────────────────────
 // Every command builds CommandResult<T> first.
@@ -181,7 +182,10 @@ function redactPathsFromError(message: string): string {
   return redacted;
 }
 
-/** Build an error CommandResult */
+/**
+ * Build an error CommandResult.
+ * Automatically generates recovery suggestions if not provided.
+ */
 export function makeErrorResult(
   command: string,
   err: unknown,
@@ -194,12 +198,25 @@ export function makeErrorResult(
   // Security: redact filesystem paths from error messages
   message = redactPathsFromError(message);
 
+  // Auto-generate recovery suggestion if not provided
+  let finalRemediation = remediation;
+  if (!finalRemediation) {
+    try {
+      const errorType = codeToErrorType(code);
+      if (errorType) {
+        finalRemediation = getQuickRecoverySuggestion(message, errorType);
+      }
+    } catch {
+      // If recovery hint generation fails, use no remediation
+    }
+  }
+
   return {
     command,
     status: 'error',
     exit_code: exitCode,
     payload: null,
-    error: { code, message, remediation },
+    error: { code, message, remediation: finalRemediation },
     meta: {
       run_id: randomUUID(),
       timestamp: new Date().toISOString(),
@@ -207,6 +224,17 @@ export function makeErrorResult(
       version: pkg.version ?? '0.0.0',
     },
   };
+}
+
+/**
+ * Map error code string to error type for recovery hint generation.
+ */
+function codeToErrorType(code: string): 'config' | 'source' | 'execution' | 'system' | undefined {
+  if (code.includes('CONFIG')) return 'config';
+  if (code.includes('SOURCE')) return 'source';
+  if (code.includes('EXECUTION') || code.includes('WASM')) return 'execution';
+  if (code.includes('SYSTEM')) return 'system';
+  return undefined;
 }
 
 // ─── ConsoleProjection ────────────────────────────────────────────────────────

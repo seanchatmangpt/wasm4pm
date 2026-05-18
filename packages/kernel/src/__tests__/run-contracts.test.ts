@@ -82,6 +82,8 @@ function buildStub(): KernelWasmModule & { callCounts: Record<string, number> } 
     async discover_ocel_dfg_per_type(_h) { return handle('ocel_per', _h); },
     async discover_handover_network(h, _k) { return handle('handover', h); },
     async discover_working_together_network(h, _k) { return handle('wt', h); },
+    async discover_powl_from_log(_j, _v) { inc('powl_log'); return { handle: 'powl_result' }; },
+    async discover_powl_from_log_config(_j, _c) { inc('powl_config'); return { handle: 'powl_result' }; },
     delete_object(_h) { inc('delete'); },
     clear_all_objects() { inc('clear'); },
   };

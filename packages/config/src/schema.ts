@@ -638,6 +638,9 @@ export function validatePartial(config: unknown): Partial<z.infer<typeof configS
  * Promote legacy flat `ml.method` / `ml.k` / `ml.eps` / `ml.forecastPeriods`
  * / `ml.nComponents` fields into their nested counterparts. Idempotent: if the
  * caller already supplied nested sub-sections, those win.
+ *
+ * These fields remain in the schema for backward compatibility with legacy configs.
+ * The @deprecated markers encourage users to migrate to the nested forms.
  */
 function migrateLegacyMl(cfg: z.infer<typeof configSchema>): z.infer<typeof configSchema> {
   if (!cfg.ml) return cfg;

@@ -174,16 +174,16 @@ describe('Schema', () => {
         ...minimal,
         ml: { enabled: true, tasks: ['classify', 'cluster'], method: 'knn', k: 5 },
       });
-      expect(full.ml.enabled).toBe(true);
-      expect(full.ml.tasks).toEqual(['classify', 'cluster']);
-      expect(full.ml.method).toBe('knn');
-      expect(full.ml.k).toBe(5);
+      expect(full.ml?.enabled).toBe(true);
+      expect(full.ml?.tasks).toEqual(['classify', 'cluster']);
+      expect(full.ml?.method).toBe('knn');
+      expect(full.ml?.k).toBe(5);
 
       const allTasks = validate({
         ...minimal,
         ml: { enabled: true, tasks: ['classify', 'cluster', 'forecast', 'anomaly', 'regress', 'pca'] },
       });
-      expect(allTasks.ml.tasks).toHaveLength(6);
+      expect(allTasks.ml?.tasks).toHaveLength(6);
 
       const withParams = validate({
         ...minimal,
@@ -198,26 +198,26 @@ describe('Schema', () => {
           eps: 2.5,
         },
       });
-      expect(withParams.ml.method).toBe('knn');
-      expect(withParams.ml.k).toBe(10);
-      expect(withParams.ml.targetKey).toBe('result');
-      expect(withParams.ml.forecastPeriods).toBe(12);
-      expect(withParams.ml.nComponents).toBe(5);
-      expect(withParams.ml.eps).toBe(2.5);
+      expect(withParams.ml?.method).toBe('knn');
+      expect(withParams.ml?.k).toBe(10);
+      expect(withParams.ml?.targetKey).toBe('result');
+      expect(withParams.ml?.forecastPeriods).toBe(12);
+      expect(withParams.ml?.nComponents).toBe(5);
+      expect(withParams.ml?.eps).toBe(2.5);
 
       const minimal_ml = validate({ ...minimal, ml: { enabled: true } });
-      expect(minimal_ml.ml.enabled).toBe(true);
-      expect(minimal_ml.ml.tasks).toEqual([]);
-      expect(minimal_ml.ml.targetKey).toBe('outcome');
-      expect(minimal_ml.ml.forecastPeriods).toBe(5);
-      expect(minimal_ml.ml.nComponents).toBe(2);
-      expect(minimal_ml.ml.eps).toBe(1.0);
+      expect(minimal_ml.ml?.enabled).toBe(true);
+      expect(minimal_ml.ml?.tasks).toEqual([]);
+      expect(minimal_ml.ml?.targetKey).toBe('outcome');
+      expect(minimal_ml.ml?.forecastPeriods).toBe(5);
+      expect(minimal_ml.ml?.nComponents).toBe(2);
+      expect(minimal_ml.ml?.eps).toBe(1.0);
 
       expect(validate(minimal).ml).toBeUndefined();
 
       const noEnabled = validate({ ...minimal, ml: { tasks: ['classify'] } });
-      expect(noEnabled.ml.enabled).toBe(false);
-      expect(noEnabled.ml.tasks).toEqual(['classify']);
+      expect(noEnabled.ml?.enabled).toBe(false);
+      expect(noEnabled.ml?.tasks).toEqual(['classify']);
     });
 
     it('rejects invalid ML tasks, non-positive numerics, and wrong types', () => {
