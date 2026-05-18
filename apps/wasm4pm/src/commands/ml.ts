@@ -23,7 +23,13 @@ export const ml = defineCommand({
   args: {
     task: {
       type: 'positional',
-      description: 'ML task: classify, cluster, forecast, anomaly, regress, pca',
+      description: `ML task:
+  classify   - Classify traces into categories using knn or logistic regression
+  cluster    - Cluster variants using k-means or dbscan (with silhouette quality scores)
+  forecast   - Forecast drift trends with linear/polynomial/exponential models (accuracy: MAPE, MAE, RMSE)
+  anomaly    - Detect anomalies in drift signal using EMA smoothing (recall, precision, FPR metrics)
+  regress    - Regress remaining time prediction using linear regression (R², MAE, RMSE)
+  pca        - PCA dimensionality reduction (variance explained per component)`,
       required: true,
     },
     input: {

@@ -14,7 +14,7 @@ describe('wpm agent — RL/autonomic agent control CLI', () => {
 
   describe('agent list', () => {
     it('should list available agents', async () => {
-      const result = await runCli(['agent', 'list'], { env: env.env });
+      const result = await runCli(['agent', 'list']);
       expect(result.exitCode).toBe(EXIT_CODES.success);
       expect(result.stdout).toMatch(/agent|rl|autonomic/i);
     });
@@ -22,21 +22,21 @@ describe('wpm agent — RL/autonomic agent control CLI', () => {
 
   describe('agent status', () => {
     it('should report agent status', async () => {
-      const result = await runCli(['agent', 'status'], { env: env.env });
+      const result = await runCli(['agent', 'status']);
       expect([EXIT_CODES.success, 1]).toContain(result.exitCode);
     });
   });
 
   describe('agent switch', () => {
     it('should switch active agent', async () => {
-      const result = await runCli(['agent', 'switch', '--agent', 'agent-1'], { env: env.env });
+      const result = await runCli(['agent', 'switch', '--agent', 'agent-1']);
       expect([EXIT_CODES.success, 1]).toContain(result.exitCode);
     });
   });
 
   describe('agent reset', () => {
     it('should reset agent state', async () => {
-      const result = await runCli(['agent', 'reset'], { env: env.env });
+      const result = await runCli(['agent', 'reset']);
       expect([EXIT_CODES.success, 1]).toContain(result.exitCode);
     });
   });

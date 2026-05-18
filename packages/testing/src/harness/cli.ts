@@ -105,12 +105,14 @@ export function runCli(
 
   return new Promise((resolve) => {
     const start = Date.now();
+    // Build minimal env to avoid vitest's process.env interference with child process stdout
+    const env = { PATH: process.env.PATH || '', HOME: process.env.HOME || '', ...(options?.env || {}) };
     const child = execFile(
       exec,
       fullArgs,
       {
         cwd: options?.cwd,
-        env: { ...process.env, ...options?.env },
+        env,
         timeout,
         maxBuffer: 10 * 1024 * 1024,
       },

@@ -11,7 +11,7 @@ import { hash } from 'blake3';
  * @param obj Any JSON-serializable value
  * @returns Sorted object or primitive value
  */
-function sortKeys(obj: any): any {
+function sortKeys(obj: unknown): unknown {
   if (obj === null || typeof obj !== 'object') {
     return obj;
   }
@@ -20,11 +20,11 @@ function sortKeys(obj: any): any {
     return obj.map(sortKeys);
   }
 
-  const sorted: Record<string, any> = {};
-  const keys = Object.keys(obj).sort();
+  const sorted: Record<string, unknown> = {};
+  const keys = Object.keys(obj as Record<string, unknown>).sort();
 
   for (const key of keys) {
-    sorted[key] = sortKeys(obj[key]);
+    sorted[key] = sortKeys((obj as Record<string, unknown>)[key]);
   }
 
   return sorted;
@@ -33,7 +33,7 @@ function sortKeys(obj: any): any {
 /**
  * Normalize a value for hashing: sort keys and serialize to JSON
  */
-export function normalizeForHashing(data: any): string {
+export function normalizeForHashing(data: unknown): string {
   const sorted = sortKeys(data);
   return JSON.stringify(sorted);
 }
@@ -53,7 +53,7 @@ export function hashConfig(config: Record<string, any>): string {
  * @param data Any value to hash
  * @returns Hex-encoded BLAKE3 hash
  */
-export function hashData(data: any): string {
+export function hashData(data: unknown): string {
   const normalized = normalizeForHashing(data);
   const hashResult = hash(Buffer.from(normalized, 'utf-8'));
   return hashResult.toString('hex');
@@ -74,7 +74,7 @@ export function hashJsonString(jsonString: string): string {
  * @param expectedHash Expected hex-encoded BLAKE3 hash
  * @returns True if hash matches, false otherwise
  */
-export function verifyHash(content: any, expectedHash: string): boolean {
+export function verifyHash(content: unknown, expectedHash: string): boolean {
   const computedHash = hashData(content);
   return computedHash === expectedHash;
 }
