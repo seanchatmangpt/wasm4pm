@@ -12,7 +12,7 @@
 //! - Rank 2 properties (domain contracts)
 
 use std::collections::HashMap;
-use wasm4pm::hierarchical::{discover_hierarchical, DfgChunker, DfgChunkResult, HierarchicalConfig, TraceInfo};
+use wasm4pm::hierarchical::{discover_hierarchical, DfgChunker, DfgChunkResult, HierarchicalConfig};
 use wasm4pm::ml::pca::pca_internal;
 use wasm4pm::ml::regression::regression_internal;
 use wasm4pm::models::{AttributeValue, Event, EventLog, Trace};
@@ -71,22 +71,6 @@ fn standard_log() -> EventLog {
 // ---------------------------------------------------------------------------
 // hierarchical_dfg Tests
 // ---------------------------------------------------------------------------
-
-/// Helper: convert EventLog to traces and columnar representation for testing
-fn log_to_traces(log: &EventLog, activity_key: &str) -> Vec<TraceInfo> {
-    let col = log.to_columnar(activity_key);
-    let total_traces = col.trace_offsets.len().saturating_sub(1);
-    (0..total_traces)
-        .filter_map(|t| {
-            let start = col.trace_offsets[t];
-            let end = col.trace_offsets[t + 1];
-            if start >= end {
-                return None;
-            }
-            TraceInfo::from_ids(&col.events[start..end])
-        })
-        .collect()
-}
 
 #[test]
 fn hierarchical_dfg_rank1_output_valid() {

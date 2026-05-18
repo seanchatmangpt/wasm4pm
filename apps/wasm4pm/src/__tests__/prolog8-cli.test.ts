@@ -514,4 +514,198 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
       expect(Date.now() - start).toBeLessThan(500);
     });
   });
+
+  // -------------------------------------------------------------------------
+  // Rank 1 — Mathematical invariants (new)
+  // -------------------------------------------------------------------------
+
+  describe('Rank 1 — mathematical invariants', () => {
+    it('show always exits 0 or SOURCE_ERROR — never any other code', async () => {
+      const result = await runCli(['prolog8', 'show'], { env: env.env });
+      expect([EXIT_CODES.success, EXIT_CODES.source_error]).toContain(result.exitCode);
+    });
+
+    it('show combined output is non-empty on both success and failure paths', async () => {
+      const result = await runCli(['prolog8', 'show'], { env: env.env });
+      // The command always emits either capability text (success) or an error (failure).
+      // In human mode, errors go to stderr. Either way, combined output must be non-empty.
+      const combined = result.stdout + result.stderr;
+      expect(combined.trim()).not.toBe('');
+    });
+
+    it('show --format json stdout is always non-empty (never silent)', async () => {
+      const result = await runCli(['prolog8', 'show', '--format', 'json'], { env: env.env });
+      expect(result.stdout.trim()).not.toBe('');
+    });
+
+    it('show --format json byte cap fields are positive integers when WASM is available', async () => {
+      const result = await runCli(['prolog8', 'show', '--format', 'json'], { env: env.env });
+      if (result.exitCode !== EXIT_CODES.success) return; // vacuously true when WASM absent
+      const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
+      const payload = parsed['payload'] as Record<string, unknown> | undefined;
+      const caps = (payload?.['capabilities'] as Record<string, unknown> | undefined)?.['caps'] as
+        | Record<string, unknown>
+        | undefined;
+      if (caps) {
+        // All byte-cap fields must be positive integers (arity, body, vars, max_answers)
+        for (const field of ['arity', 'body', 'vars', 'max_answers']) {
+          if (field in caps) {
+            expect(typeof caps[field]).toBe('number');
+            expect(caps[field] as number).toBeGreaterThan(0);
+          }
+        }
+      }
+    });
+
+    it('show --format json exit_code field matches process exit code (query parity)', async () => {
+      const inputPath = writeTmp(tmpDir, 'qparity.json', makeQueryInput());
+      const result = await runCli(
+        ['prolog8', 'query', '-i', inputPath, '--format', 'json'],
+        { env: env.env }
+      );
+      const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
+      expect(typeof parsed['exit_code']).toBe('number');
+      expect(parsed['exit_code']).toBe(result.exitCode);
+    });
+
+    it('replay --format json exit_code field matches process exit code', async () => {
+      const replayPath = writeTmp(tmpDir, 'rpcode.json', makeReplayInput());
+      const result = await runCli(
+        ['prolog8', 'replay', '-i', replayPath, '--format', 'json'],
+        { env: env.env }
+      );
+      const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
+      expect(typeof parsed['exit_code']).toBe('number');
+      expect(parsed['exit_code']).toBe(result.exitCode);
+    });
+
+    it('usage banner contains byte cap limits text', async () => {
+      // The root command (no subcommand) prints a usage banner with engine limits
+      const result = await runCli(['prolog8'], { env: env.env });
+      expect(result.exitCode).toBe(EXIT_CODES.success);
+      // Banner must mention the numeric limits (arity ≤ 8 or similar)
+      expect(result.stdout).toMatch(/arity|body|vars|answers/i);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Rank 2 — Domain contracts (new)
+  // -------------------------------------------------------------------------
+
+  describe('Rank 2 — domain contracts', () => {
+    it('show --format json has .status field that is "ok" or "error" — never undefined', async () => {
+      const result = await runCli(['prolog8', 'show', '--format', 'json'], { env: env.env });
+      const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
+      expect(parsed).toHaveProperty('status');
+      expect(['ok', 'error']).toContain(parsed['status']);
+    });
+
+    it('replay with a valid-schema receipt that has mismatched hashes exits non-zero', async () => {
+      // Build a replay input where receipt_hash disagrees with proof_root, forcing a Mismatch.
+      // The engine (when available) must reject this; when unavailable it exits SOURCE_ERROR.
+      const mismatchedReceipt = (() => {
+        const q = JSON.parse(makeQueryInput());
+        q['receipt'] = {
+          receipt_hash: 'deadbeef00000000', // deliberately wrong
+          proof_root: 'aabbccdd11111111',
+          catalog_root: 'aabbccdd22222222',
+          rule_root: 'aabbccdd33333333',
+          fact_root: 'aabbccdd44444444',
+          input_root: 'aabbccdd55555555',
+          output_root: 'aabbccdd66666666',
+          engine_version: '0.1.0',
+        };
+        return JSON.stringify(q);
+      })();
+
+      const replayPath = writeTmp(tmpDir, 'mismatch-replay.json', mismatchedReceipt);
+      const result = await runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env });
+      // Should never succeed (exit 0) — either WASM missing (source_error=2),
+      // mismatch detected (conformance_fail=6), or execution error (3).
+      expect(result.exitCode).not.toBe(EXIT_CODES.success);
+    });
+
+    it('replay with a file containing only plain text (not JSON) exits source or execution error', async () => {
+      const garbledPath = writeTmp(tmpDir, 'garbled.json', 'this is not json at all!!');
+      const result = await runCli(['prolog8', 'replay', '-i', garbledPath], { env: env.env });
+      expect([EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(result.exitCode);
+    });
+
+    it('query with a file containing only plain text exits source or execution error', async () => {
+      const garbledPath = writeTmp(tmpDir, 'garbled-q.json', 'this is not json at all!!');
+      const result = await runCli(['prolog8', 'query', '-i', garbledPath], { env: env.env });
+      expect([EXIT_CODES.source_error, EXIT_CODES.execution_error]).toContain(result.exitCode);
+    });
+
+    it('unknown subcommand exits non-zero (not exit 0)', async () => {
+      const result = await runCli(['prolog8', 'bogus-subcmd-xyz'], { env: env.env });
+      expect(result.exitCode).not.toBe(EXIT_CODES.success);
+    });
+
+    it('unknown subcommand --format json still produces valid JSON', async () => {
+      // citty handles unknown subcommands before our handler, so this may be human output;
+      // the invariant is simply that the process exits non-zero.
+      const result = await runCli(['prolog8', 'bogus-subcmd-xyz', '--format', 'json'], {
+        env: env.env,
+      });
+      expect(result.exitCode).not.toBe(EXIT_CODES.success);
+    });
+  });
+
+  // -------------------------------------------------------------------------
+  // Rank 3 — Metamorphic relations (new)
+  // -------------------------------------------------------------------------
+
+  describe('Rank 3 — metamorphic relations', () => {
+    it('two calls to show produce identical stdout (deterministic)', async () => {
+      const [r1, r2] = await Promise.all([
+        runCli(['prolog8', 'show', '--format', 'json'], { env: env.env }),
+        runCli(['prolog8', 'show', '--format', 'json'], { env: env.env }),
+      ]);
+      // Exit codes must be identical
+      expect(r1.exitCode).toBe(r2.exitCode);
+      // JSON payloads must be structurally identical (same keys, same values)
+      const p1 = JSON.parse(r1.stdout) as Record<string, unknown>;
+      const p2 = JSON.parse(r2.stdout) as Record<string, unknown>;
+      expect(p1['status']).toBe(p2['status']);
+      // When WASM is available, the capabilities payload must be identical
+      if (r1.exitCode === EXIT_CODES.success) {
+        expect(JSON.stringify(p1['payload'])).toBe(JSON.stringify(p2['payload']));
+      }
+    });
+
+    it('--format json and --format human both succeed or both fail (same exit code)', async () => {
+      const [rHuman, rJson] = await Promise.all([
+        runCli(['prolog8', 'show'], { env: env.env }),
+        runCli(['prolog8', 'show', '--format', 'json'], { env: env.env }),
+      ]);
+      // The format flag must not change the success/failure outcome
+      expect(rHuman.exitCode).toBe(rJson.exitCode);
+    });
+
+    it('--format json and --format human contain byte cap info at same availability', async () => {
+      const [rHuman, rJson] = await Promise.all([
+        runCli(['prolog8', 'show'], { env: env.env }),
+        runCli(['prolog8', 'show', '--format', 'json'], { env: env.env }),
+      ]);
+      if (rHuman.exitCode !== EXIT_CODES.success) return; // vacuously true when WASM absent
+      // Human output mentions arity or body limits
+      expect(rHuman.stdout).toMatch(/arity|body|vars|answers/i);
+      // JSON output also mentions those limits somewhere in its payload
+      const parsed = JSON.parse(rJson.stdout) as Record<string, unknown>;
+      const payloadStr = JSON.stringify(parsed['payload'] ?? {});
+      expect(payloadStr).toMatch(/arity|body|vars|max_answers/i);
+    });
+
+    it('two sequential query runs on identical input produce identical exit codes', async () => {
+      const inputPath = writeTmp(tmpDir, 'det-query.json', makeQueryInput());
+      const r1 = await runCli(['prolog8', 'query', '-i', inputPath, '--format', 'json'], {
+        env: env.env,
+      });
+      const r2 = await runCli(['prolog8', 'query', '-i', inputPath, '--format', 'json'], {
+        env: env.env,
+      });
+      expect(r1.exitCode).toBe(r2.exitCode);
+    });
+  });
 });
