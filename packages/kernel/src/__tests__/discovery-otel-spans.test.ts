@@ -547,11 +547,10 @@ describe('Discovery Algorithm OTEL Span Emission (Cycle 51 Agent 3)', () => {
         captures = [];
         await kernel.run(id, `log_${id}`, { activity_key: 'concept:name' });
 
-        expect(captures.length).toBe(1, `No span emitted for ${id}`);
+        expect(captures.length, `No span emitted for ${id}`).toBe(1);
         const span = captures[0];
-        expect(span.attributes['algorithm.output_type']).toBe(
-          expectedType,
-          `${id} output type mismatch`
+        expect(span.attributes['algorithm.output_type'], `${id} output type mismatch`).toBe(
+          expectedType
         );
       }
     });
