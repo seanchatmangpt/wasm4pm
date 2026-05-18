@@ -411,6 +411,7 @@ impl RlOrchestrator {
     }
 
     /// Update LinUCB with reward for the current agent selection.
+    /// Update LinUCB with reward for the current agent selection.
     /// Emits OTEL span with convergence metrics (TD error, weight norms).
     pub fn linucb_update(&mut self, features: &[f32; 8], reward: f32) {
         let action_idx = self.active_agent as u32;
@@ -422,6 +423,13 @@ impl RlOrchestrator {
         // Update agent
         self.linucb.update(features, action_idx, reward);
 
+        // Compute weight norms for convergence tracking
+        let norms = self.linucb.weight_norms();
+        let weight_norms_json = format!(
+            r#"{{"q_learning":{},"sarsa":{},"double_q":{},"expected_sarsa":{},"reinforce":{}}}"#,
+            norms[0], norms[1], norms[2], norms[3], norms[4]
+        );
+
         // Emit OTEL span with convergence signal
         let _span = tracing::info_span!(
             "rl.linucb_update",
@@ -429,6 +437,7 @@ impl RlOrchestrator {
             linucb_reward = reward,
             linucb_ucb_before = ucb_score_before,
             linucb_agent_id = self.telemetry.active_agent_name.as_str(),
+            linucb_weight_norms = weight_norms_json.as_str(),
             learning_rate = self.linucb.alpha_lr,
             service_name = "wpm",
         );

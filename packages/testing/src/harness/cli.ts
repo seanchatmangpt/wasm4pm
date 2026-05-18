@@ -59,9 +59,16 @@ export async function createCliTestEnv(configContent?: string): Promise<CliTestE
     env: {},
     cleanup: async () => {
       try {
+        // Remove test temp directory
         await fs.rm(tempDir, { recursive: true, force: true });
       } catch {
         // best effort
+      }
+      try {
+        // Remove global .wasm4pm/ artifacts (results, receipts, cache) to prevent cross-test pollution
+        await fs.rm('.wasm4pm', { recursive: true, force: true });
+      } catch {
+        // best effort — .wasm4pm may not exist
       }
     },
   };
