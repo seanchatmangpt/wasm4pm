@@ -457,15 +457,29 @@ export async function executeMlTask(
         qualityReport.recommendations.forEach((rec) => console.warn(`  → ${rec}`));
       }
 
+      // Gap 1: Suggest algorithm based on feature quality and dataset size (ADAPTIVE)
+      let method: ClassificationMethod = 'knn';
+      if (!options.method) {
+        const traceCount = features.length;
+        if (traceCount > 50 && qualityReport.qualityScore >= 0.6) {
+          method = 'logistic_regression'; // Large dataset with good features → logistic
+        }
+        // else: default kNN (stable, no assumptions)
+      } else {
+        method = options.method as ClassificationMethod;
+      }
+
       const k = parseInt(String(options.k ?? '5'), 10);
       if (Number.isNaN(k) || k <= 0)
         throw new Error('Classification parameter k must be a positive number');
       rawResult = (await classifyTraces(features, {
-        method: (options.method as ClassificationMethod) || 'knn',
+        method,
         k,
       })) as unknown as Record<string, unknown>;
       // Gap 3: attach class distribution so formatter can render a signal-check table
       rawResult = attachClassDistribution(rawResult);
+      // Gap 2a: Attach feature quality report to output for CLI rendering
+      (rawResult as Record<string, unknown>)._featureQualityReport = qualityReport;
       break;
     }
 
