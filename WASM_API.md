@@ -218,6 +218,35 @@ const hazardResult = JSON.parse(wasm.predict_hazard_rate(modelHandle, 1800000.0)
 // }
 ```
 
+**ML-Based Regression Alternative**
+
+For large event logs (>1000 traces), remaining-time prediction can use linear regression on extracted features instead of Weibull survival models. The CLI supports method selection:
+
+```bash
+# Weibull model (default for small logs)
+wpm predict remaining-time -i log.xes --prefix "Register,Approve"
+
+# Linear regression on trace features (better for large logs)
+wpm predict remaining-time -i log.xes --method regress
+
+# Auto-detection based on log size
+wpm predict remaining-time -i log.xes --method auto
+
+# Ensemble (average both methods)
+wpm predict remaining-time -i log.xes --method hybrid
+```
+
+**Regress Method Features**
+
+When `--method regress` is used, the following trace features are extracted:
+- `trace_length`: Number of activities completed
+- `elapsed_time`: Duration since case start (milliseconds)
+- `activity_frequencies`: One-hot encoded activity occurrence counts
+- `avg_inter_event_time`: Mean time between consecutive events (milliseconds)
+- `cycle_count`: Number of rework instances (repeated activities)
+
+These features are normalized to [0,1] and used for linear regression to predict remaining case duration.
+
 **Input/Output Shapes**
 
 - `build_remaining_time_model(handle: string, activity_key: string, timestamp_key: string)` → `{ handle: string }` (JSON, wrapped in Result)

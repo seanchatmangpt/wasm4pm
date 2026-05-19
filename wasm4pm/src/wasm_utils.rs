@@ -216,7 +216,9 @@ pub fn identify_high_variance_activities(
             high_variance.sort_by(|a, b| {
                 let var_a = a.get("variance").and_then(|v| v.as_f64()).unwrap_or(0.0);
                 let var_b = b.get("variance").and_then(|v| v.as_f64()).unwrap_or(0.0);
-                var_b.partial_cmp(&var_a).unwrap_or(std::cmp::Ordering::Equal)
+                var_b
+                    .partial_cmp(&var_a)
+                    .unwrap_or(std::cmp::Ordering::Equal)
             });
 
             to_js_str(&json!({
@@ -261,14 +263,8 @@ mod tests {
 
     #[test]
     fn test_jaccard_distance_disjoint_sets() {
-        let set1: HashSet<String> = vec!["A", "B"]
-            .into_iter()
-            .map(|s| s.to_string())
-            .collect();
-        let set2: HashSet<String> = vec!["C", "D"]
-            .into_iter()
-            .map(|s| s.to_string())
-            .collect();
+        let set1: HashSet<String> = vec!["A", "B"].into_iter().map(|s| s.to_string()).collect();
+        let set2: HashSet<String> = vec!["C", "D"].into_iter().map(|s| s.to_string()).collect();
         let dist = internal_jaccard_distance(&set1, &set2);
         assert_eq!(dist, 1.0, "Disjoint sets have distance 1");
     }
@@ -325,6 +321,9 @@ mod tests {
         let dist = internal_jaccard_distance(&set1, &set2);
         // Union: {A, B, C, D} = 4, Intersection: {B, C} = 2
         // Distance = 1 - (2/4) = 0.5
-        assert!((dist - 0.5).abs() < 1e-10, "Partial overlap distance calculation");
+        assert!(
+            (dist - 0.5).abs() < 1e-10,
+            "Partial overlap distance calculation"
+        );
     }
 }

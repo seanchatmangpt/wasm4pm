@@ -239,4 +239,208 @@ describe('Resolution', () => {
       expect(diff.differences.some((d) => d.path.includes('profile'))).toBe(true);
     });
   });
+
+  // --- CRITICAL BUG FIX #1: Algorithm-Profile Mismatch Enforcement ---
+  describe('CRITICAL FIX #1: Algorithm-Profile Mismatch Validation', () => {
+    it('rejects algorithm not available in selected profile with exit code 1', async () => {
+      // genetic_algorithm is NOT available in mobile profile
+      await expect(
+        resolveConfig({
+          cliOverrides: { algorithm: 'genetic_algorithm', profile: 'mobile' },
+          configSearchPaths: [tmpDir],
+        })
+      ).rejects.toThrow(/Algorithm "genetic_algorithm" is not available in profile "mobile"/);
+    });
+
+    it('suggests upgrade to browser profile when algorithm only available there', async () => {
+      // powl_to_process_tree is only in browser profile
+      await expect(
+        resolveConfig({
+          cliOverrides: { algorithm: 'powl_to_process_tree', profile: 'fog' },
+          configSearchPaths: [tmpDir],
+        })
+      ).rejects.toThrow(/Upgrade to "browser" profile to use it/);
+    });
+
+    it('allows algorithm that is available in the selected profile', async () => {
+      // dfg is available in all profiles
+      const cfgDfg = await resolveConfig({
+        cliOverrides: { algorithm: 'dfg', profile: 'mobile' },
+        configSearchPaths: [tmpDir],
+      });
+      expect(cfgDfg.algorithm.name).toBe('dfg');
+      expect(cfgDfg.execution.profile).toBe('mobile');
+
+      // heuristic_miner is available in balanced and above
+      const cfgHeur = await resolveConfig({
+        cliOverrides: { algorithm: 'heuristic_miner', profile: 'balanced' },
+        configSearchPaths: [tmpDir],
+      });
+      expect(cfgHeur.algorithm.name).toBe('heuristic_miner');
+    });
+
+    it('validates algorithm from TOML against profile from CLI', async () => {
+      // Write TOML with algorithm
+      await fs.writeFile(
+        path.join(tmpDir, 'wasm4pm.toml'),
+        '[algorithm]\nname = "ilp"\n[source]\nkind = "file"'
+      );
+      // ilp is NOT available in fast profile
+      await expect(
+        resolveConfig({
+          cliOverrides: { profile: 'fast' },
+          configSearchPaths: [tmpDir],
+        })
+      ).rejects.toThrow(/Algorithm "ilp" is not available in profile "fast"/);
+    });
+
+    it('rejects non-existent algorithm with clear error', async () => {
+      await expect(
+        resolveConfig({
+          cliOverrides: { algorithm: 'non_existent_algo', profile: 'balanced' },
+          configSearchPaths: [tmpDir],
+        })
+      ).rejects.toThrow();
+    });
+  });
+
+  // --- CRITICAL BUG FIX #2: ENV Nested Object Merge ---
+  describe('CRITICAL FIX #2: ENV Nested Object Deep Merge', () => {
+    it('preserves sibling fields when merging nested ENV variables', async () => {
+      // Set both LOG_LEVEL and OTEL fields; both should be present
+      const cfg = await resolveConfig({
+        configSearchPaths: [tmpDir],
+        env: {
+          WASM4PM_LOG_LEVEL: 'debug',
+          WASM4PM_OTEL_ENABLED: 'true',
+          WASM4PM_OTEL_ENDPOINT: 'http://collector:4318',
+        },
+      });
+
+      // Both observability fields should be present
+      expect(cfg.observability.logLevel).toBe('debug');
+      expect(cfg.observability.otel?.enabled).toBe(true);
+      expect(cfg.observability.otel?.endpoint).toBe('http://collector:4318');
+    });
+
+    it('merges ML nested config without losing sibling fields', async () => {
+      const cfg = await resolveConfig({
+        configSearchPaths: [tmpDir],
+        env: {
+          WASM4PM_ML_ENABLED: 'true',
+          WASM4PM_ML_ALGORITHMS: 'classify,cluster',
+        },
+      });
+
+      expect(cfg.ml?.enabled).toBe(true);
+      expect(cfg.ml?.tasks).toEqual(['classify', 'cluster']);
+    });
+
+    it('merges RL nested config without losing sibling fields', async () => {
+      const cfg = await resolveConfig({
+        configSearchPaths: [tmpDir],
+        env: {
+          WASM4PM_RL_ENABLED: 'true',
+          WASM4PM_RL_LEARNING_RATE: '0.05',
+          WASM4PM_RL_DISCOUNT_FACTOR: '0.95',
+          WASM4PM_RL_EPSILON: '0.1',
+        },
+      });
+
+      expect(cfg.rl?.enabled).toBe(true);
+      expect(cfg.rl?.learning_rate).toBe(0.05);
+      expect(cfg.rl?.discount_factor).toBe(0.95);
+      expect(cfg.rl?.epsilon).toBe(0.1);
+    });
+
+    it('merges prediction drift nested config without losing sibling fields', async () => {
+      const cfg = await resolveConfig({
+        configSearchPaths: [tmpDir],
+        env: {
+          WASM4PM_PREDICTION_ENABLED: 'true',
+          WASM4PM_PREDICTION_DRIFT_THRESHOLD: '0.25',
+          WASM4PM_PREDICTION_DRIFT_EWMA_ALPHA: '0.15',
+          WASM4PM_PREDICTION_ACTIVITY_KEY: 'custom:activity',
+        },
+      });
+
+      expect(cfg.prediction?.enabled).toBe(true);
+      expect(cfg.prediction?.drift?.threshold).toBe(0.25);
+      expect(cfg.prediction?.drift?.ewma_alpha).toBe(0.15);
+      expect(cfg.prediction?.activityKey).toBe('custom:activity');
+    });
+
+    it('merges membrane nested config without losing sibling fields', async () => {
+      const cfg = await resolveConfig({
+        configSearchPaths: [tmpDir],
+        env: {
+          WASM4PM_MEMBRANE_ENABLED: 'true',
+          WASM4PM_MEMBRANE_CUSTODY_ACTIONS: 'approve,release',
+          WASM4PM_MEMBRANE_PERSIST: 'true',
+          WASM4PM_MEMBRANE_PATH: '.wasm4pm/custom',
+        },
+      });
+
+      expect(cfg.membrane?.enabled).toBe(true);
+      expect(cfg.membrane?.custody_actions).toEqual(['approve', 'release']);
+      expect(cfg.membrane?.envelopes?.persist).toBe(true);
+      expect(cfg.membrane?.envelopes?.path).toBe('.wasm4pm/custom');
+    });
+
+    it('correctly merges multiple ENV variables into same nested object sequentially', async () => {
+      // Simulate setting WASM4PM_OUTPUT_FORMAT then WASM4PM_OUTPUT_DESTINATION
+      // Both should be present in the final config
+      const cfg = await resolveConfig({
+        configSearchPaths: [tmpDir],
+        env: {
+          WASM4PM_OUTPUT_FORMAT: 'json',
+          WASM4PM_OUTPUT_DESTINATION: 'file',
+        },
+      });
+
+      expect(cfg.output.format).toBe('json');
+      expect(cfg.output.destination).toBe('file');
+      // Other output fields should still have defaults
+      expect(cfg.output.pretty).toBe(true);
+      expect(cfg.output.colorize).toBe(true);
+    });
+
+    it('merges TOML config with ENV config correctly (TOML wins over ENV per precedence)', async () => {
+      await fs.writeFile(
+        path.join(tmpDir, 'wasm4pm.toml'),
+        `[observability]\nlogLevel = "info"\n[observability.otel]\nenabled = false\nexporter = "otlp"\n[source]\nkind = "file"`
+      );
+
+      const cfg = await resolveConfig({
+        configSearchPaths: [tmpDir],
+        env: {
+          WASM4PM_LOG_LEVEL: 'debug', // ENV (lower precedence) will be overridden by TOML
+          WASM4PM_OTEL_ENABLED: 'true', // ENV (lower precedence) will be overridden by TOML
+        },
+      });
+
+      // TOML should override ENV per resolution order: defaults ← env ← file ← cli
+      expect(cfg.observability.logLevel).toBe('info'); // TOML wins
+      expect(cfg.observability.otel?.enabled).toBe(false); // TOML wins
+      // TOML value for exporter should be preserved
+      expect(cfg.observability.otel?.exporter).toBe('otlp');
+    });
+
+    it('merges ENV config with CLI config correctly (CLI wins over ENV per precedence)', async () => {
+      const cfg = await resolveConfig({
+        configSearchPaths: [tmpDir],
+        env: {
+          WASM4PM_LOG_LEVEL: 'debug',
+          WASM4PM_OUTPUT_FORMAT: 'json',
+        },
+        cliOverrides: {
+          outputFormat: 'human', // CLI overrides ENV
+        },
+      });
+
+      // CLI should override ENV per resolution order: defaults ← env ← file ← cli
+      expect(cfg.observability.logLevel).toBe('debug'); // ENV (no CLI override)
+      expect(cfg.output.format).toBe('human'); // CLI wins over ENV
+    });
+  });
 });

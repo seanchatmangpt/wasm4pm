@@ -332,8 +332,14 @@ fn greedy_lifo_avg(ai: &[i64], aj: &[i64], thr: i64) -> f64 {
     let mut k = ai.len() as isize - 1;
     for z in (0..aj.len()).rev() {
         while k >= 0 {
-            if ai[k as usize] < aj[z] {
-                let d = aj[z] - ai[k as usize];
+            // Bounds check: ensure k is a valid index for ai
+            let k_usize = k as usize;
+            if k_usize >= ai.len() {
+                k -= 1;
+                continue;
+            }
+            if ai[k_usize] < aj[z] {
+                let d = aj[z] - ai[k_usize];
                 if d <= thr {
                     matches.push(d);
                 }

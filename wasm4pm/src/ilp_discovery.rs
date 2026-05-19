@@ -291,25 +291,34 @@ fn build_ilp_petri_net(
     // Self-loop places for L1L activities (matching Alpha++ naming convention).
     for &a in loop1_acts {
         if let Some(t) = act_to_trans.get(&a) {
-            let name = col.vocab[a as usize];
-            let pid = format!("p_loop_{}", name);
-            petri_net.places.push(PetriNetPlace {
-                id: pid.clone(),
-                label: format!("loop_{}", name),
-                marking: Some(0),
-            });
-            petri_net.arcs.push(PetriNetArc { from: t.clone(), to: pid.clone(), weight: Some(1) });
-            petri_net.arcs.push(PetriNetArc { from: pid, to: t.clone(), weight: Some(1) });
+            // Bounds check: ensure activity index is valid
+            if let Some(name) = col.vocab.get(a as usize) {
+                let pid = format!("p_loop_{}", name);
+                petri_net.places.push(PetriNetPlace {
+                    id: pid.clone(),
+                    label: format!("loop_{}", name),
+                    marking: Some(0),
+                });
+                petri_net.arcs.push(PetriNetArc { from: t.clone(), to: pid.clone(), weight: Some(1) });
+                petri_net.arcs.push(PetriNetArc { from: pid, to: t.clone(), weight: Some(1) });
+            }
         }
     }
 
     // Selected region places.
     for (idx, place) in selected.iter().enumerate() {
         let pid = format!("p{}", idx);
+        // Bounds check: filter activities that have valid vocab entries
+        let input_labels: Vec<String> = place.input_acts.iter()
+            .filter_map(|&a| col.vocab.get(a as usize).map(|s| s.to_string()))
+            .collect();
+        let output_labels: Vec<String> = place.output_acts.iter()
+            .filter_map(|&a| col.vocab.get(a as usize).map(|s| s.to_string()))
+            .collect();
         let label = format!(
             "{}->{}",
-            place.input_acts.iter().map(|&a| col.vocab[a as usize]).collect::<Vec<_>>().join(","),
-            place.output_acts.iter().map(|&a| col.vocab[a as usize]).collect::<Vec<_>>().join(",")
+            input_labels.join(","),
+            output_labels.join(",")
         );
         petri_net.places.push(PetriNetPlace { id: pid.clone(), label, marking: Some(0) });
         for &in_act in &place.input_acts {

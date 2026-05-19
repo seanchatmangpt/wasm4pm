@@ -429,6 +429,9 @@ pub mod duration_utils;
 // Trace embeddings (gated internally by #![cfg(feature = "miniml")])
 pub mod trace_embeddings;
 
+// WASM testing and introspection utilities
+pub mod wasm_testing_utils;
+
 // Streaming algorithms (gated by streaming_basic or streaming_full features)
 #[cfg(feature = "streaming_basic")]
 pub mod simd_streaming_dfg;

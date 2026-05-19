@@ -51,14 +51,16 @@ export function formatDetailedZodError(error: z.ZodError, config: unknown): stri
 }
 
 /**
- * Validate algorithm compatibility with the selected deployment profile.
+ * Validate algorithm compatibility with the selected execution profile.
  * Returns warnings if algorithm is not available in the profile.
  */
 export function validateAlgorithmProfile(
   algorithm: string,
-  profile: 'mobile' | 'iot' | 'edge' | 'fog' | 'browser'
+  profile: 'fast' | 'balanced' | 'quality' | 'stream'
 ): { compatible: boolean; warning?: string } {
-  const profileAlgos = getAlgorithmsForProfile(profile);
+  // Import getProfileCapabilities to get the correct algorithms for the execution profile
+  // This is a workaround to avoid circular imports; the function is defined below
+  const profileAlgos = getExecutionProfileAlgorithms(profile);
 
   if (!ALGORITHM_IDS.includes(algorithm as any)) {
     return {
@@ -68,16 +70,74 @@ export function validateAlgorithmProfile(
   }
 
   if (!profileAlgos.includes(algorithm as any)) {
-    const availableInBrowser = getAlgorithmsForProfile('browser').includes(algorithm as any);
+    // Check if available in the highest profile (quality)
+    const availableInQuality = getExecutionProfileAlgorithms('quality').includes(algorithm as any);
     return {
       compatible: false,
-      warning: availableInBrowser
-        ? `Algorithm "${algorithm}" is not available in profile "${profile}". Upgrade to "browser" profile to use it.`
+      warning: availableInQuality
+        ? `Algorithm "${algorithm}" is not available in profile "${profile}". Upgrade to "quality" profile to use it.`
         : `Algorithm "${algorithm}" is not available in any profile.`,
     };
   }
 
   return { compatible: true };
+}
+
+/**
+ * Get algorithms available in an execution profile.
+ * Maps execution profiles (fast, balanced, quality, stream) to their algorithm lists.
+ */
+function getExecutionProfileAlgorithms(
+  profile: 'fast' | 'balanced' | 'quality' | 'stream'
+): string[] {
+  // These are the execution profile algorithm lists
+  // Keep in sync with profile-management.ts getProfileCapabilities
+  if (profile === 'quality') {
+    return [...ALGORITHM_IDS];
+  }
+  if (profile === 'balanced') {
+    return [
+      'dfg',
+      'process_skeleton',
+      'alpha_plus_plus',
+      'heuristic_miner',
+      'inductive_miner',
+      'hill_climbing',
+      'declare',
+      'optimized_dfg',
+      'hierarchical_dfg',
+      'ml_classify',
+      'ml_cluster',
+      'ml_forecast',
+      'ml_anomaly',
+      'ml_regress',
+      'ml_pca',
+      'transition_system',
+      'log_to_trie',
+      'causal_graph',
+      'performance_spectrum',
+      'batches',
+      'correlation_miner',
+      'generalization',
+      'etconformance_precision',
+      'complexity_metrics',
+    ];
+  }
+  if (profile === 'stream') {
+    return [
+      'dfg',
+      'simd_streaming_dfg',
+      'streaming_log',
+      'hierarchical_dfg',
+      'etconformance_precision',
+      'performance_spectrum',
+    ];
+  }
+  if (profile === 'fast') {
+    return ['dfg', 'process_skeleton', 'simd_streaming_dfg'];
+  }
+
+  return [...ALGORITHM_IDS];
 }
 
 /**
@@ -396,51 +456,3 @@ function levenshteinDistance(a: string, b: string): number {
   return dp[m][n];
 }
 
-function getAlgorithmsForProfile(
-  profile: 'mobile' | 'iot' | 'edge' | 'fog' | 'browser'
-): string[] {
-  // Simplified profiles; in production, this would be derived from feature flags
-  const allAlgos = ALGORITHM_IDS;
-  const advanced = [
-    'genetic_algorithm',
-    'ilp',
-    'aco',
-    'pso',
-    'a_star',
-    'ml_classify',
-    'ml_cluster',
-    'ml_forecast',
-    'ml_anomaly',
-    'ml_regress',
-    'ml_pca',
-  ];
-  const ocel = ['log_to_ocel'];
-  const powl = ['powl_to_process_tree'];
-
-  if (profile === 'browser') return [...allAlgos];
-  if (profile === 'fog') return allAlgos.filter((a) => !powl.includes(a as any));
-  if (profile === 'edge')
-    return allAlgos.filter((a) => !advanced.includes(a as any) && !ocel.includes(a as any));
-  if (profile === 'iot')
-    return allAlgos.filter(
-      (a) =>
-        ![...advanced, ...ocel, 'simulated_annealing', 'hill_climbing', 'declare'].includes(
-          a as any
-        )
-    );
-  if (profile === 'mobile')
-    return allAlgos.filter(
-      (a) =>
-        ![
-          ...advanced,
-          ...ocel,
-          'simulated_annealing',
-          'hill_climbing',
-          'declare',
-          'heuristic_miner',
-          'inductive_miner',
-        ].includes(a as any)
-    );
-
-  return [...allAlgos];
-}

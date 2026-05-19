@@ -25,6 +25,14 @@ export { detectEnhancedAnomalies } from './anomaly.js';
 // Dimensionality reduction
 export { reduceFeaturesPCA } from './reduction.js';
 
+// Remaining-time feature extraction
+export {
+  extractRemainingTimeFeatures,
+  normalizeRemainingTimeFeatures,
+  assessRemainingTimeFeatureQuality,
+} from './features-remaining-time.js';
+export type { RemainingTimeFeatures, FeatureQualityMetric } from './features-remaining-time.js';
+
 // Feature quality assessment
 export { assessFeatureQuality } from './feature-quality.js';
 export type { FeatureQualityReport, FeatureQualityIssue } from './feature-quality.js';

@@ -9,6 +9,10 @@ import { VALID_PREDICT_CLI_TASKS } from '@wasm4pm/contracts';
 import { withSpan } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
+import {
+  extractRemainingTimeFeatures,
+  regressRemainingTime,
+} from '@wasm4pm/ml';
 
 const VALID_TASKS = VALID_PREDICT_CLI_TASKS;
 type PredictTask = (typeof VALID_TASKS)[number];
@@ -50,6 +54,10 @@ export const predict = defineCommand({
     'drift-window': {
       type: 'string',
       description: 'Window size for drift detection (default: from config or 10)',
+    },
+    method: {
+      type: 'string',
+      description: 'Prediction method for remaining-time task (auto, weibull, regress, hybrid)',
     },
     config: {
       type: 'string',
@@ -219,6 +227,7 @@ export const predict = defineCommand({
         const wasm = wasmBase as Record<string, any>;
 
         // Step 4: Execute prediction task
+        const method = (ctx.args.method as string) || 'auto';
         const taskResult = await executePredictionTask(
           wasm,
           task as PredictTask,
@@ -227,7 +236,8 @@ export const predict = defineCommand({
           topK,
           ngramOrder,
           driftWindow,
-          prefixActivities
+          prefixActivities,
+          method
         );
 
         // Step 5: Build result
@@ -297,6 +307,7 @@ export const predict = defineCommand({
 
 /**
  * Dispatch to the appropriate WASM prediction function based on the task.
+ * @param method - For remaining-time task: 'auto', 'weibull', 'regress', or 'hybrid'
  */
 async function executePredictionTask(
   wasm: Record<string, any>,
@@ -306,7 +317,8 @@ async function executePredictionTask(
   topK: number,
   ngramOrder: number,
   driftWindow: number,
-  prefixActivities?: string[]
+  prefixActivities?: string[],
+  method?: string
 ): Promise<Record<string, unknown>> {
   switch (task) {
     case 'next-activity': {
@@ -324,33 +336,155 @@ async function executePredictionTask(
     }
 
     case 'remaining-time': {
-      const modelHandle: string = wasm.build_remaining_time_model(
+      // Resolve method: CLI > config > auto-detect
+      const resolvedMethod = method === 'auto' || !method ? 'auto' : method;
+
+      // Extract features for ML-based regression
+      const configJson = JSON.stringify({
+        features: [
+          'trace_length',
+          'elapsed_time',
+          'activity_counts',
+          'rework_count',
+          'unique_activities',
+          'avg_inter_event_time',
+        ],
+        target: 'remaining_time',
+      });
+      const rawFeatures = wasm.extract_case_features(
         logHandle,
         activityKey,
-        'time:timestamp'
+        'time:timestamp',
+        configJson
       );
-      if (prefixActivities && prefixActivities.length > 0) {
-        const raw: string = wasm.predict_case_duration(
-          modelHandle,
-          JSON.stringify(prefixActivities)
+      const featuresArray = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+      const featureMatrix = extractRemainingTimeFeatures(Array.isArray(featuresArray) ? featuresArray : []);
+
+      // If no ML features or empty log, fall back to WASM Weibull model
+      if (featureMatrix.data.length === 0) {
+        const modelHandle: string = wasm.build_remaining_time_model(
+          logHandle,
+          activityKey,
+          'time:timestamp'
         );
-        const prediction = JSON.parse(raw);
+        if (prefixActivities && prefixActivities.length > 0) {
+          const raw: string = wasm.predict_case_duration(
+            modelHandle,
+            JSON.stringify(prefixActivities)
+          );
+          const prediction = JSON.parse(raw);
+          wasm.delete_object(modelHandle);
+          return { prediction };
+        } else {
+          wasm.delete_object(modelHandle);
+          process.stderr.write(
+            'wpm predict remaining-time: no --prefix given — model built but no prediction made.\n' +
+            'To get a duration estimate, provide a prefix:\n' +
+            '  wpm predict remaining-time -i <log.xes> --prefix "Register,Approve"\n'
+          );
+          return {
+            predicted: false,
+            message:
+              'Remaining-time model built. Use --prefix "Activity1,Activity2" to predict case duration.',
+          };
+        }
+      }
+
+      // Route to appropriate method
+      if (resolvedMethod === 'weibull') {
+        // Use WASM Weibull model
+        const modelHandle: string = wasm.build_remaining_time_model(
+          logHandle,
+          activityKey,
+          'time:timestamp'
+        );
+        if (prefixActivities && prefixActivities.length > 0) {
+          const raw: string = wasm.predict_case_duration(
+            modelHandle,
+            JSON.stringify(prefixActivities)
+          );
+          const prediction = JSON.parse(raw);
+          wasm.delete_object(modelHandle);
+          return { prediction, method: 'weibull' };
+        } else {
+          wasm.delete_object(modelHandle);
+          return { predicted: false, message: 'Use --prefix to predict case duration.' };
+        }
+      } else if (resolvedMethod === 'regress') {
+        // Use ML regression
+        const regressionResult = await regressRemainingTime(featureMatrix.data.map((row, i) => ({
+          case_id: featureMatrix.caseIds[i],
+          ...Object.fromEntries(featureMatrix.featureNames.map((name, j) => [name, row[j]])),
+          remaining_time: featureMatrix.targets[i],
+        })), { method: 'linear_regression' });
+        return { ...regressionResult, method: 'regress' };
+      } else if (resolvedMethod === 'hybrid') {
+        // Ensemble: Weibull + Regress, average predictions
+        const modelHandle: string = wasm.build_remaining_time_model(
+          logHandle,
+          activityKey,
+          'time:timestamp'
+        );
+        const weibullPrediction = prefixActivities && prefixActivities.length > 0
+          ? JSON.parse(wasm.predict_case_duration(modelHandle, JSON.stringify(prefixActivities)))
+          : null;
         wasm.delete_object(modelHandle);
-        return { prediction };
+
+        const regressionResult = await regressRemainingTime(featureMatrix.data.map((row, i) => ({
+          case_id: featureMatrix.caseIds[i],
+          ...Object.fromEntries(featureMatrix.featureNames.map((name, j) => [name, row[j]])),
+          remaining_time: featureMatrix.targets[i],
+        })), { method: 'linear_regression' });
+
+        if (weibullPrediction && prefixActivities && prefixActivities.length > 0) {
+          const avgRemaining = weibullPrediction.remaining_ms && regressionResult.predictions?.[0]?.predicted
+            ? (weibullPrediction.remaining_ms + regressionResult.predictions[0].predicted) / 2
+            : weibullPrediction.remaining_ms || regressionResult.predictions?.[0]?.predicted;
+          return {
+            prediction: {
+              remaining_ms: avgRemaining,
+              confidence: (weibullPrediction.confidence || 0.5) * 0.5 + 0.25,
+              method: 'hybrid',
+              weibull: weibullPrediction,
+              regress: regressionResult.predictions?.[0],
+            },
+            method: 'hybrid',
+          };
+        } else {
+          return { ...regressionResult, method: 'hybrid' };
+        }
       } else {
-        wasm.delete_object(modelHandle);
-        // No prefix given: emit a clear hint to stderr so pipelines can detect
-        // that no actual prediction was produced (model was built but not queried).
-        process.stderr.write(
-          'wpm predict remaining-time: no --prefix given — model built but no prediction made.\n' +
-          'To get a duration estimate, provide a prefix:\n' +
-          '  wpm predict remaining-time -i <log.xes> --prefix "Register,Approve"\n'
-        );
-        return {
-          predicted: false,
-          message:
-            'Remaining-time model built. Use --prefix "Activity1,Activity2" to predict case duration.',
-        };
+        // Default: auto-detect based on log size
+        // Large logs (>1000 traces): prefer regress
+        // Small logs: prefer weibull
+        const useRegress = featureMatrix.data.length > 1000;
+
+        if (useRegress) {
+          const regressionResult = await regressRemainingTime(featureMatrix.data.map((row, i) => ({
+            case_id: featureMatrix.caseIds[i],
+            ...Object.fromEntries(featureMatrix.featureNames.map((name, j) => [name, row[j]])),
+            remaining_time: featureMatrix.targets[i],
+          })), { method: 'linear_regression' });
+          return { ...regressionResult, method: 'regress' };
+        } else {
+          const modelHandle: string = wasm.build_remaining_time_model(
+            logHandle,
+            activityKey,
+            'time:timestamp'
+          );
+          if (prefixActivities && prefixActivities.length > 0) {
+            const raw: string = wasm.predict_case_duration(
+              modelHandle,
+              JSON.stringify(prefixActivities)
+            );
+            const prediction = JSON.parse(raw);
+            wasm.delete_object(modelHandle);
+            return { prediction, method: 'weibull' };
+          } else {
+            wasm.delete_object(modelHandle);
+            return { predicted: false, message: 'Use --prefix to predict case duration.' };
+          }
+        }
       }
     }
 

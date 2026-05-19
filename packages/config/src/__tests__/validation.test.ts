@@ -22,6 +22,42 @@ import { validate } from '../schema.js';
 import type { Config } from '../types.js';
 
 describe('Validation - Detailed Errors', () => {
+  // --- CRITICAL FIX #1: Algorithm-Profile Mismatch Tests ---
+  describe('Algorithm-Profile Compatibility (CRITICAL FIX #1)', () => {
+    it('allows algorithms available in the profile', () => {
+      expect(validateAlgorithmProfile('dfg', 'mobile')).toEqual({ compatible: true });
+      expect(validateAlgorithmProfile('dfg', 'fast')).toEqual({ compatible: true });
+      expect(validateAlgorithmProfile('dfg', 'browser')).toEqual({ compatible: true });
+      expect(validateAlgorithmProfile('heuristic_miner', 'balanced')).toEqual({
+        compatible: true,
+      });
+      expect(validateAlgorithmProfile('ilp', 'browser')).toEqual({ compatible: true });
+    });
+
+    it('rejects algorithms NOT available in the profile', () => {
+      const result1 = validateAlgorithmProfile('genetic_algorithm', 'mobile');
+      expect(result1.compatible).toBe(false);
+      expect(result1.warning).toMatch(/not available in profile "mobile"/);
+      expect(result1.warning).toMatch(/Upgrade to "browser" profile/);
+
+      const result2 = validateAlgorithmProfile('ilp', 'mobile');
+      expect(result2.compatible).toBe(false);
+      expect(result2.warning).toMatch(/not available in profile "mobile"/);
+    });
+
+    it('rejects non-existent algorithms', () => {
+      const result = validateAlgorithmProfile('non_existent_algo', 'balanced');
+      expect(result.compatible).toBe(false);
+      expect(result.warning).toMatch(/not registered/);
+    });
+
+    it('suggests browser profile when algorithm only available there', () => {
+      const result = validateAlgorithmProfile('powl_to_process_tree', 'fog');
+      expect(result.compatible).toBe(false);
+      expect(result.warning).toMatch(/Upgrade to "browser" profile/);
+    });
+  });
+
   it('validates algorithm in profile, warns on suspicious ML/RL/prediction config', () => {
     expect(validateAlgorithmProfile('dfg', 'fast')).toEqual({ compatible: true });
     expect(validateAlgorithmProfile('dfg', 'browser')).toEqual({ compatible: true });

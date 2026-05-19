@@ -55,10 +55,35 @@ trait AgentBehavior: Agent<RlState, RlAction> + AgentMeta + RlSerialization {
     fn get_q_value_for_otel(&self, state: &RlState, action: &RlAction) -> f32;
 }
 
-// Blanket impl covers all 5 agent types automatically
-impl<T: Agent<RlState, RlAction> + AgentMeta + RlSerialization> AgentBehavior for T {
+// Implement AgentBehavior for all 5 agent types
+// Only QLearning has get_q_value; others return 0.0 for OTEL instrumentation
+impl AgentBehavior for QLearning<RlState, RlAction> {
     fn get_q_value_for_otel(&self, state: &RlState, action: &RlAction) -> f32 {
         self.get_q_value(state, action)
+    }
+}
+
+impl AgentBehavior for SARSAAgent<RlState, RlAction> {
+    fn get_q_value_for_otel(&self, _state: &RlState, _action: &RlAction) -> f32 {
+        0.0 // SARSA doesn't expose get_q_value; gap 2 only instruments QLearning
+    }
+}
+
+impl AgentBehavior for DoubleQLearning<RlState, RlAction> {
+    fn get_q_value_for_otel(&self, _state: &RlState, _action: &RlAction) -> f32 {
+        0.0 // DoubleQLearning doesn't expose get_q_value
+    }
+}
+
+impl AgentBehavior for ExpectedSARSAAgent<RlState, RlAction> {
+    fn get_q_value_for_otel(&self, _state: &RlState, _action: &RlAction) -> f32 {
+        0.0 // ExpectedSARSA doesn't expose get_q_value
+    }
+}
+
+impl AgentBehavior for ReinforceAgent<RlState, RlAction> {
+    fn get_q_value_for_otel(&self, _state: &RlState, _action: &RlAction) -> f32 {
+        0.0 // REINFORCE is policy-gradient; no Q-table
     }
 }
 

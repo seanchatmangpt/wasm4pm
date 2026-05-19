@@ -95,6 +95,17 @@ export async function resolveConfig(options?: LoadConfigOptions): Promise<Config
   // Validate the merged config
   const validated = validate(merged) as BaseConfig;
 
+  // CRITICAL FIX #1: Validate algorithm-profile compatibility
+  if (validated.algorithm?.name && validated.execution?.profile) {
+    const compatResult = validateAlgorithmProfile(
+      validated.algorithm.name,
+      validated.execution.profile as 'fast' | 'balanced' | 'quality' | 'stream'
+    );
+    if (!compatResult.compatible) {
+      throw new Error(compatResult.warning || 'Algorithm not compatible with profile');
+    }
+  }
+
   // Compute hash
   const hash = hashConfig(validated);
 
@@ -158,71 +169,82 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
     config.execution = { profile: env.WASM4PM_PROFILE };
   }
   if (env.WASM4PM_LOG_LEVEL) {
-    config.observability = {
-      ...(config.observability as Record<string, unknown>),
-      logLevel: env.WASM4PM_LOG_LEVEL,
-    };
+    // CRITICAL FIX #2: Deep merge nested observability object
+    const existing = (config.observability as Record<string, unknown>) || {};
+    config.observability = { ...existing, logLevel: env.WASM4PM_LOG_LEVEL };
   }
   if (env.WASM4PM_WATCH) {
     config.watch = { enabled: env.WASM4PM_WATCH === 'true' || env.WASM4PM_WATCH === '1' };
   }
   if (env.WASM4PM_OUTPUT_FORMAT) {
-    config.output = {
-      ...(config.output as Record<string, unknown>),
-      format: env.WASM4PM_OUTPUT_FORMAT,
-    };
+    // CRITICAL FIX #2: Deep merge nested output object
+    const existing = (config.output as Record<string, unknown>) || {};
+    config.output = { ...existing, format: env.WASM4PM_OUTPUT_FORMAT };
   }
   if (env.WASM4PM_OUTPUT_DESTINATION) {
-    config.output = {
-      ...(config.output as Record<string, unknown>),
-      destination: env.WASM4PM_OUTPUT_DESTINATION,
-    };
+    // CRITICAL FIX #2: Deep merge nested output object
+    const existing = (config.output as Record<string, unknown>) || {};
+    config.output = { ...existing, destination: env.WASM4PM_OUTPUT_DESTINATION };
   }
   if (env.WASM4PM_ALGORITHM) {
-    config.algorithm = {
-      ...(config.algorithm as Record<string, unknown>),
-      name: env.WASM4PM_ALGORITHM,
-    };
+    // CRITICAL FIX #2: Deep merge nested algorithm object
+    const existing = (config.algorithm as Record<string, unknown>) || {};
+    config.algorithm = { ...existing, name: env.WASM4PM_ALGORITHM };
   }
   if (env.WASM4PM_SINK_KIND) {
-    config.sink = { ...(config.sink as Record<string, unknown>), kind: env.WASM4PM_SINK_KIND };
+    // CRITICAL FIX #2: Deep merge nested sink object
+    const existing = (config.sink as Record<string, unknown>) || {};
+    config.sink = { ...existing, kind: env.WASM4PM_SINK_KIND };
   }
   if (env.WASM4PM_SOURCE_KIND) {
-    config.source = {
-      ...(config.source as Record<string, unknown>),
-      kind: env.WASM4PM_SOURCE_KIND,
-    };
+    // CRITICAL FIX #2: Deep merge nested source object
+    const existing = (config.source as Record<string, unknown>) || {};
+    config.source = { ...existing, kind: env.WASM4PM_SOURCE_KIND };
   }
   if (env.WASM4PM_OTEL_ENABLED) {
     const otel = {
       enabled: env.WASM4PM_OTEL_ENABLED === 'true' || env.WASM4PM_OTEL_ENABLED === '1',
     };
-    config.observability = { ...(config.observability as Record<string, unknown>), otel };
+    // CRITICAL FIX #2: Deep merge nested otel object within observability
+    const existingObs = (config.observability as Record<string, unknown>) || {};
+    const existingOtel = (existingObs.otel as Record<string, unknown>) || {};
+    config.observability = {
+      ...existingObs,
+      otel: { ...existingOtel, ...otel },
+    };
   }
   if (env.WASM4PM_OTEL_ENDPOINT) {
-    const existingOtel = (config.observability as Record<string, unknown>)?.otel ?? {};
+    // CRITICAL FIX #2: Deep merge nested otel object within observability
+    const existingObs = (config.observability as Record<string, unknown>) || {};
+    const existingOtel = (existingObs.otel as Record<string, unknown>) || {};
     config.observability = {
-      ...(config.observability as Record<string, unknown>),
-      otel: { ...(existingOtel as Record<string, unknown>), endpoint: env.WASM4PM_OTEL_ENDPOINT },
+      ...existingObs,
+      otel: { ...existingOtel, endpoint: env.WASM4PM_OTEL_ENDPOINT },
     };
   }
   if (env.WASM4PM_PREDICTION_ENABLED) {
+    // CRITICAL FIX #2: Deep merge nested prediction object
+    const existing = (config.prediction as Record<string, unknown>) || {};
     config.prediction = {
-      ...(config.prediction as Record<string, unknown>),
+      ...existing,
       enabled: env.WASM4PM_PREDICTION_ENABLED === 'true' || env.WASM4PM_PREDICTION_ENABLED === '1',
     };
   }
   if (env.WASM4PM_PREDICTION_TASKS) {
+    // CRITICAL FIX #2: Deep merge nested prediction object
+    const existing = (config.prediction as Record<string, unknown>) || {};
     config.prediction = {
-      ...(config.prediction as Record<string, unknown>),
+      ...existing,
       tasks: env.WASM4PM_PREDICTION_TASKS.split(',')
         .map((t) => t.trim())
         .filter(Boolean),
     };
   }
   if (env.WASM4PM_PREDICTION_ACTIVITY_KEY) {
+    // CRITICAL FIX #2: Deep merge nested prediction object
+    const existing = (config.prediction as Record<string, unknown>) || {};
     config.prediction = {
-      ...(config.prediction as Record<string, unknown>),
+      ...existing,
       activityKey: env.WASM4PM_PREDICTION_ACTIVITY_KEY,
     };
   }
@@ -238,18 +260,24 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
     if (n < 2 || n > 5) {
       throw new Error(`Invalid WASM4PM_PREDICTION_NGRAM_ORDER: ${n} is out of range [2, 5]`);
     }
-    config.prediction = { ...(config.prediction as Record<string, unknown>), ngramOrder: n };
+    // CRITICAL FIX #2: Deep merge nested prediction object
+    const existing = (config.prediction as Record<string, unknown>) || {};
+    config.prediction = { ...existing, ngramOrder: n };
   }
   // --- ML environment variables ---
   if (env.WASM4PM_ML_ENABLED) {
+    // CRITICAL FIX #2: Deep merge nested ml object
+    const existing = (config.ml as Record<string, unknown>) || {};
     config.ml = {
-      ...(config.ml as Record<string, unknown>),
+      ...existing,
       enabled: env.WASM4PM_ML_ENABLED === 'true' || env.WASM4PM_ML_ENABLED === '1',
     };
   }
   if (env.WASM4PM_ML_ALGORITHMS) {
+    // CRITICAL FIX #2: Deep merge nested ml object
+    const existing = (config.ml as Record<string, unknown>) || {};
     config.ml = {
-      ...(config.ml as Record<string, unknown>),
+      ...existing,
       tasks: env.WASM4PM_ML_ALGORITHMS.split(',')
         .map((t) => t.trim())
         .filter(Boolean),
@@ -258,14 +286,18 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
 
   // --- RL environment variables ---
   if (env.WASM4PM_RL_ENABLED) {
+    // CRITICAL FIX #2: Deep merge nested rl object
+    const existing = (config.rl as Record<string, unknown>) || {};
     config.rl = {
-      ...(config.rl as Record<string, unknown>),
+      ...existing,
       enabled: env.WASM4PM_RL_ENABLED === 'true' || env.WASM4PM_RL_ENABLED === '1',
     };
   }
   if (env.WASM4PM_RL_AGENTS) {
+    // CRITICAL FIX #2: Deep merge nested rl object
+    const existing = (config.rl as Record<string, unknown>) || {};
     config.rl = {
-      ...(config.rl as Record<string, unknown>),
+      ...existing,
       agents: env.WASM4PM_RL_AGENTS.split(',')
         .map((t) => t.trim())
         .filter(Boolean),
@@ -281,7 +313,9 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
     if (v <= 0 || v > 1) {
       throw new Error(`Invalid WASM4PM_RL_LEARNING_RATE: ${v} must be in (0, 1]`);
     }
-    config.rl = { ...(config.rl as Record<string, unknown>), learning_rate: v };
+    // CRITICAL FIX #2: Deep merge nested rl object
+    const existing = (config.rl as Record<string, unknown>) || {};
+    config.rl = { ...existing, learning_rate: v };
   }
   if (env.WASM4PM_RL_DISCOUNT_FACTOR) {
     const v = parseFloat(env.WASM4PM_RL_DISCOUNT_FACTOR);
@@ -290,7 +324,9 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
         `Invalid WASM4PM_RL_DISCOUNT_FACTOR: "${env.WASM4PM_RL_DISCOUNT_FACTOR}" must be a number in [0, 1]`
       );
     }
-    config.rl = { ...(config.rl as Record<string, unknown>), discount_factor: v };
+    // CRITICAL FIX #2: Deep merge nested rl object
+    const existing = (config.rl as Record<string, unknown>) || {};
+    config.rl = { ...existing, discount_factor: v };
   }
   if (env.WASM4PM_RL_EPSILON) {
     const v = parseFloat(env.WASM4PM_RL_EPSILON);
@@ -299,39 +335,76 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
         `Invalid WASM4PM_RL_EPSILON: "${env.WASM4PM_RL_EPSILON}" must be a number in [0, 1]`
       );
     }
-    config.rl = { ...(config.rl as Record<string, unknown>), epsilon: v };
+    // CRITICAL FIX #2: Deep merge nested rl object
+    const existing = (config.rl as Record<string, unknown>) || {};
+    config.rl = { ...existing, epsilon: v };
   }
 
   // --- Membrane environment variables ---
   if (env.WASM4PM_MEMBRANE_ENABLED) {
-    config.membrane = { ...(config.membrane as Record<string, unknown> ?? {}), enabled: env.WASM4PM_MEMBRANE_ENABLED === 'true' || env.WASM4PM_MEMBRANE_ENABLED === '1' };
+    // CRITICAL FIX #2: Deep merge nested membrane object
+    const existing = (config.membrane as Record<string, unknown>) || {};
+    config.membrane = {
+      ...existing,
+      enabled:
+        env.WASM4PM_MEMBRANE_ENABLED === 'true' || env.WASM4PM_MEMBRANE_ENABLED === '1',
+    };
   }
   if (env.WASM4PM_MEMBRANE_CUSTODY_ACTIONS) {
-    config.membrane = { ...(config.membrane as Record<string, unknown> ?? {}), custody_actions: env.WASM4PM_MEMBRANE_CUSTODY_ACTIONS.split(',').map((a: string) => a.trim()).filter(Boolean) };
+    // CRITICAL FIX #2: Deep merge nested membrane object
+    const existing = (config.membrane as Record<string, unknown>) || {};
+    config.membrane = {
+      ...existing,
+      custody_actions: env.WASM4PM_MEMBRANE_CUSTODY_ACTIONS.split(',')
+        .map((a: string) => a.trim())
+        .filter(Boolean),
+    };
   }
   if (env.WASM4PM_MEMBRANE_PERSIST) {
-    const existing = (config.membrane as Record<string, unknown>) ?? {};
-    const envelopes = (existing.envelopes as Record<string, unknown>) ?? {};
-    config.membrane = { ...existing, envelopes: { ...envelopes, persist: env.WASM4PM_MEMBRANE_PERSIST === 'true' } };
+    // CRITICAL FIX #2: Deep merge nested membrane → envelopes object
+    const existingMembrane = (config.membrane as Record<string, unknown>) || {};
+    const existingEnvelopes = (existingMembrane.envelopes as Record<string, unknown>) || {};
+    config.membrane = {
+      ...existingMembrane,
+      envelopes: { ...existingEnvelopes, persist: env.WASM4PM_MEMBRANE_PERSIST === 'true' },
+    };
   }
   if (env.WASM4PM_MEMBRANE_PATH) {
-    const existing = (config.membrane as Record<string, unknown>) ?? {};
-    const envelopes = (existing.envelopes as Record<string, unknown>) ?? {};
-    config.membrane = { ...existing, envelopes: { ...envelopes, path: env.WASM4PM_MEMBRANE_PATH } };
+    // CRITICAL FIX #2: Deep merge nested membrane → envelopes object
+    const existingMembrane = (config.membrane as Record<string, unknown>) || {};
+    const existingEnvelopes = (existingMembrane.envelopes as Record<string, unknown>) || {};
+    config.membrane = {
+      ...existingMembrane,
+      envelopes: { ...existingEnvelopes, path: env.WASM4PM_MEMBRANE_PATH },
+    };
   }
   if (env.WASM4PM_MEMBRANE_ACTOR_ESCALATE) {
     const v = parseFloat(env.WASM4PM_MEMBRANE_ACTOR_ESCALATE);
-    if (Number.isNaN(v) || v < 0 || v > 1) throw new Error(`Invalid WASM4PM_MEMBRANE_ACTOR_ESCALATE: "${env.WASM4PM_MEMBRANE_ACTOR_ESCALATE}" must be a number in [0, 1]`);
-    const existing = (config.membrane as Record<string, unknown>) ?? {};
-    const thresholds = (existing.thresholds as Record<string, unknown>) ?? {};
-    config.membrane = { ...existing, thresholds: { ...thresholds, actor_anomaly_escalate: v } };
+    if (Number.isNaN(v) || v < 0 || v > 1)
+      throw new Error(
+        `Invalid WASM4PM_MEMBRANE_ACTOR_ESCALATE: "${env.WASM4PM_MEMBRANE_ACTOR_ESCALATE}" must be a number in [0, 1]`
+      );
+    // CRITICAL FIX #2: Deep merge nested membrane → thresholds object
+    const existingMembrane = (config.membrane as Record<string, unknown>) || {};
+    const existingThresholds = (existingMembrane.thresholds as Record<string, unknown>) || {};
+    config.membrane = {
+      ...existingMembrane,
+      thresholds: { ...existingThresholds, actor_anomaly_escalate: v },
+    };
   }
   if (env.WASM4PM_MEMBRANE_AUTOML_ESCALATE) {
     const v = parseFloat(env.WASM4PM_MEMBRANE_AUTOML_ESCALATE);
-    if (Number.isNaN(v) || v < 0 || v > 1) throw new Error(`Invalid WASM4PM_MEMBRANE_AUTOML_ESCALATE: "${env.WASM4PM_MEMBRANE_AUTOML_ESCALATE}" must be a number in [0, 1]`);
-    const existing = (config.membrane as Record<string, unknown>) ?? {};
-    const thresholds = (existing.thresholds as Record<string, unknown>) ?? {};
-    config.membrane = { ...existing, thresholds: { ...thresholds, automl_escalate: v } };
+    if (Number.isNaN(v) || v < 0 || v > 1)
+      throw new Error(
+        `Invalid WASM4PM_MEMBRANE_AUTOML_ESCALATE: "${env.WASM4PM_MEMBRANE_AUTOML_ESCALATE}" must be a number in [0, 1]`
+      );
+    // CRITICAL FIX #2: Deep merge nested membrane → thresholds object
+    const existingMembrane = (config.membrane as Record<string, unknown>) || {};
+    const existingThresholds = (existingMembrane.thresholds as Record<string, unknown>) || {};
+    config.membrane = {
+      ...existingMembrane,
+      thresholds: { ...existingThresholds, automl_escalate: v },
+    };
   }
 
   // --- Prediction drift environment variables ---
@@ -342,9 +415,13 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
         `Invalid WASM4PM_PREDICTION_DRIFT_THRESHOLD: "${env.WASM4PM_PREDICTION_DRIFT_THRESHOLD}" must be a number in (0, 1]`
       );
     }
-    const existing = (config.prediction as Record<string, unknown>) ?? {};
-    const drift = (existing.drift as Record<string, unknown>) ?? {};
-    config.prediction = { ...existing, drift: { ...drift, threshold: v } };
+    // CRITICAL FIX #2: Deep merge nested prediction → drift object
+    const existingPred = (config.prediction as Record<string, unknown>) || {};
+    const existingDrift = (existingPred.drift as Record<string, unknown>) || {};
+    config.prediction = {
+      ...existingPred,
+      drift: { ...existingDrift, threshold: v },
+    };
   }
   if (env.WASM4PM_PREDICTION_DRIFT_EWMA_ALPHA) {
     const v = parseFloat(env.WASM4PM_PREDICTION_DRIFT_EWMA_ALPHA);
@@ -353,9 +430,13 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
         `Invalid WASM4PM_PREDICTION_DRIFT_EWMA_ALPHA: "${env.WASM4PM_PREDICTION_DRIFT_EWMA_ALPHA}" must be a number in (0, 1]`
       );
     }
-    const existing = (config.prediction as Record<string, unknown>) ?? {};
-    const drift = (existing.drift as Record<string, unknown>) ?? {};
-    config.prediction = { ...existing, drift: { ...drift, ewma_alpha: v } };
+    // CRITICAL FIX #2: Deep merge nested prediction → drift object
+    const existingPred = (config.prediction as Record<string, unknown>) || {};
+    const existingDrift = (existingPred.drift as Record<string, unknown>) || {};
+    config.prediction = {
+      ...existingPred,
+      drift: { ...existingDrift, ewma_alpha: v },
+    };
   }
 
   if (env.WASM4PM_PREDICTION_DRIFT_WINDOW) {
@@ -370,7 +451,9 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
     if (w <= 0) {
       throw new Error(`Invalid WASM4PM_PREDICTION_DRIFT_WINDOW: ${w} must be greater than 0`);
     }
-    config.prediction = { ...(config.prediction as Record<string, unknown>), driftWindowSize: w };
+    // CRITICAL FIX #2: Deep merge nested prediction object
+    const existing = (config.prediction as Record<string, unknown>) || {};
+    config.prediction = { ...existing, driftWindowSize: w };
   }
 
   return config;
