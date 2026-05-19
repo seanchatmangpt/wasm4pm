@@ -809,6 +809,303 @@ function expFit(
 }
 
 // ---------------------------------------------------------------------------
+// Gradient Boosting Classification (Residual Fitting)
+// ---------------------------------------------------------------------------
+
+/**
+ * Gradient Boosting model: ensemble of weak learners (decision stumps).
+ * Each iteration fits a new weak learner to the residuals of the previous ensemble.
+ */
+interface GradientBoostingModel {
+  trees: TreeNode[];
+  learningRate: number;
+  classMap: Map<number, number>; // class_id → tree_index
+  classes: number[];
+  nClasses: number;
+}
+
+/**
+ * Build a single decision stump (depth=1) for regression on residuals.
+ */
+function buildStump(
+  data: number[][],
+  targets: number[],
+  d: number
+): TreeNode {
+  const n = data.length;
+  const indices = new Int32Array(n);
+  for (let i = 0; i < n; i++) indices[i] = i;
+
+  // For regression stumps, we use a single-level tree
+  // Split on one feature only
+  let bestFeature = 0;
+  let bestThreshold = 0;
+  let bestMSE = Infinity;
+
+  const leftValues: number[] = [];
+  const rightValues: number[] = [];
+
+  for (let f = 0; f < d; f++) {
+    // Collect unique sorted thresholds
+    const thresholds = new Float64Array(n);
+    for (let i = 0; i < n; i++) thresholds[i] = data[i][f];
+    thresholds.sort();
+
+    // Sample thresholds (at most 10)
+    const step = Math.max(1, Math.floor(n / 10));
+    for (let t = 0; t < n; t += step) {
+      const thr = thresholds[t];
+      leftValues.length = 0;
+      rightValues.length = 0;
+
+      for (let i = 0; i < n; i++) {
+        if (data[i][f] <= thr) {
+          leftValues.push(targets[i]);
+        } else {
+          rightValues.push(targets[i]);
+        }
+      }
+
+      if (leftValues.length === 0 || rightValues.length === 0) continue;
+
+      // Compute MSE reduction
+      const leftMean = leftValues.reduce((s, v) => s + v, 0) / leftValues.length;
+      const rightMean = rightValues.reduce((s, v) => s + v, 0) / rightValues.length;
+
+      let leftMSE = 0;
+      for (const v of leftValues) {
+        const d = v - leftMean;
+        leftMSE += d * d;
+      }
+      let rightMSE = 0;
+      for (const v of rightValues) {
+        const d = v - rightMean;
+        rightMSE += d * d;
+      }
+
+      const mse = (leftMSE + rightMSE) / n;
+      if (mse < bestMSE) {
+        bestMSE = mse;
+        bestFeature = f;
+        bestThreshold = thr;
+      }
+    }
+  }
+
+  // Create a stump with left and right leaf nodes predicting mean values
+  const leftIndices: Int32Array[] = [];
+  const rightIndices: Int32Array[] = [];
+  let leftLen = 0;
+  let rightLen = 0;
+
+  for (let i = 0; i < n; i++) {
+    if (data[i][bestFeature] <= bestThreshold) {
+      leftLen++;
+    } else {
+      rightLen++;
+    }
+  }
+
+  const leftIdx = new Int32Array(leftLen);
+  const rightIdx = new Int32Array(rightLen);
+  leftLen = 0;
+  rightLen = 0;
+
+  for (let i = 0; i < n; i++) {
+    if (data[i][bestFeature] <= bestThreshold) {
+      leftIdx[leftLen++] = i;
+    } else {
+      rightIdx[rightLen++] = i;
+    }
+  }
+
+  // Compute mean target values for each leaf
+  let leftMean = 0;
+  for (let i = 0; i < leftLen; i++) leftMean += targets[leftIdx[i]];
+  leftMean = leftLen > 0 ? leftMean / leftLen : 0;
+
+  let rightMean = 0;
+  for (let i = 0; i < rightLen; i++) rightMean += targets[rightIdx[i]];
+  rightMean = rightLen > 0 ? rightMean / rightLen : 0;
+
+  // Create leaf nodes
+  const leftLeaf: TreeNode = {
+    feature: 0,
+    threshold: leftMean, // Store prediction value in threshold field
+    left: null,
+    right: null,
+    label: 1, // Leaf node marker for stumps
+    depth: 1,
+    classCounts: null,
+  };
+
+  const rightLeaf: TreeNode = {
+    feature: 0,
+    threshold: rightMean,
+    left: null,
+    right: null,
+    label: 1,
+    depth: 1,
+    classCounts: null,
+  };
+
+  return {
+    feature: bestFeature,
+    threshold: bestThreshold,
+    left: leftLeaf,
+    right: rightLeaf,
+    label: -1, // Internal node
+    depth: 0,
+    classCounts: null,
+  };
+}
+
+/**
+ * Predict regression value from a stump (for residual fitting).
+ */
+function predictStump(node: TreeNode, query: number[]): number {
+  if (node.label !== -1) {
+    // Leaf node: threshold field stores the prediction
+    return node.threshold;
+  }
+  const child = query[node.feature] <= node.threshold ? node.left : node.right;
+  return child ? predictStump(child, query) : 0;
+}
+
+/**
+ * Train gradient boosting classifier via residual fitting.
+ * Uses decision stumps as weak learners.
+ */
+function gradientBoostingTrain(
+  data: number[][],
+  labels: number[],
+  numIterations: number = 100,
+  learningRate: number = 0.1
+): GradientBoostingModel {
+  const classes = [...new Set(labels)].sort((a, b) => a - b);
+  const nClasses = classes.length;
+  const n = data.length;
+  const d = data[0]?.length ?? 0;
+
+  // Initialize: one tree ensemble per class (One-vs-Rest)
+  const classMap = new Map<number, number>();
+  const trees: TreeNode[] = [];
+
+  // For each class, train a binary classifier (class vs rest)
+  for (let ci = 0; ci < nClasses; ci++) {
+    const classId = classes[ci];
+    classMap.set(classId, ci);
+
+    // Convert to binary target: 1 if class_i, 0 otherwise
+    const targets = new Float64Array(n);
+    for (let i = 0; i < n; i++) {
+      targets[i] = labels[i] === classId ? 1 : 0;
+    }
+
+    // Gradient boosting: iteratively fit to residuals
+    const predictions = new Float64Array(n); // Start with 0 predictions
+    const residuals = new Float64Array(n);
+
+    for (let iter = 0; iter < numIterations; iter++) {
+      // Compute residuals (target - prediction)
+      for (let i = 0; i < n; i++) {
+        residuals[i] = targets[i] - predictions[i];
+      }
+
+      // Fit stump to residuals
+      const residualArray = Array.from(residuals);
+      const stump = buildStump(data, residualArray, d);
+      trees.push(stump);
+
+      // Update predictions: add scaled stump output
+      for (let i = 0; i < n; i++) {
+        const stumpPred = predictStump(stump, data[i]);
+        predictions[i] += learningRate * stumpPred;
+      }
+
+      // Early stopping if residuals are very small
+      let maxResidual = 0;
+      for (let i = 0; i < n; i++) {
+        maxResidual = Math.max(maxResidual, Math.abs(residuals[i]));
+      }
+      if (maxResidual < 1e-6) break;
+    }
+  }
+
+  return {
+    trees,
+    learningRate,
+    classMap,
+    classes,
+    nClasses,
+  };
+}
+
+/**
+ * Predict with gradient boosting model.
+ */
+function gradientBoostingPredictBatch(
+  model: GradientBoostingModel,
+  data: number[][]
+): { label: number; confidence: number }[] {
+  const n = data.length;
+  const nClasses = model.nClasses;
+  const results = new Array<{ label: number; confidence: number }>(n);
+
+  for (let i = 0; i < n; i++) {
+    const scores = new Float64Array(nClasses);
+    let treeIdx = 0;
+
+    // Accumulate predictions from all trees (organized per-class)
+    for (let ci = 0; ci < nClasses; ci++) {
+      let score = 0;
+      // Each class has multiple trees (iterations)
+      // We need to aggregate them by class
+      // For simplicity: assume trees are registered sequentially per class
+      // Count trees needed to identify per-class bounds
+      const treesPerClass = Math.floor((model.trees.length / nClasses) * 1.0) || 1;
+      for (let t = 0; t < treesPerClass && treeIdx < model.trees.length; t++) {
+        const pred = predictStump(model.trees[treeIdx], data[i]);
+        score += model.learningRate * pred;
+        treeIdx++;
+      }
+      scores[ci] = score;
+    }
+
+    // Softmax over scores
+    let maxScore = scores[0];
+    for (let ci = 1; ci < nClasses; ci++) {
+      if (scores[ci] > maxScore) maxScore = scores[ci];
+    }
+    let sumExp = 0;
+    for (let ci = 0; ci < nClasses; ci++) {
+      scores[ci] = Math.exp(scores[ci] - maxScore);
+      sumExp += scores[ci];
+    }
+    for (let ci = 0; ci < nClasses; ci++) {
+      scores[ci] /= sumExp;
+    }
+
+    // Select best class
+    let bestClass = 0;
+    let bestScore = scores[0];
+    for (let ci = 1; ci < nClasses; ci++) {
+      if (scores[ci] > bestScore) {
+        bestScore = scores[ci];
+        bestClass = ci;
+      }
+    }
+
+    results[i] = {
+      label: model.classes[bestClass],
+      confidence: bestScore,
+    };
+  }
+
+  return results;
+}
+
+// ---------------------------------------------------------------------------
 // Public API
 // ---------------------------------------------------------------------------
 
@@ -967,6 +1264,9 @@ async function crossValidateClassifier(
       for (let i = 0; i < n; i++) indices[i] = i;
       const tree = buildTree(trainData, trainLabels, indices, 0, maxDepth, d, classCount);
       predictions = testData.map((row) => predictTree(tree, row));
+    } else if (method === 'gradient_boosting') {
+      const model = gradientBoostingTrain(trainData, trainLabels, 100, 0.1);
+      predictions = gradientBoostingPredictBatch(model, testData);
     } else {
       const model = gaussianNBTrain(trainData, trainLabels);
       predictions = gaussianNBPredictBatch(model, testData);
@@ -1062,6 +1362,8 @@ export async function classifyTraces(
     k?: number;
     maxDepth?: number;
     useCrossValidation?: boolean;
+    numIterations?: number;
+    learningRate?: number;
   } = {}
 ): Promise<ClassificationResult> {
   const targetKey = options.targetKey ?? 'outcome';
@@ -1107,6 +1409,22 @@ export async function classifyTraces(
       reverseMap,
       matrix.caseIds
     );
+
+    // Emit OTEL event with CV metrics if emitter is provided
+    if (options.otelEmit && cvMetrics) {
+      options.otelEmit({
+        type: 'MlCrossValidation',
+        method,
+        meanAccuracy: cvMetrics.meanAccuracy,
+        stdAccuracy: cvMetrics.stdAccuracy,
+        foldCount: cvMetrics.foldAccuracies.length,
+        foldAccuracies: cvMetrics.foldAccuracies,
+        confidenceCalibration: cvMetrics.confidenceCalibration,
+        sampleCount: matrix.data.length,
+        classCount: reverseMap.size,
+        status: 'OK',
+      });
+    }
   }
 
   if (method === 'knn') {
@@ -1175,6 +1493,29 @@ export async function classifyTraces(
         nNodes: treeNodes(tree),
         featureCount: d,
         traceCount: n,
+        classCount: reverseMap.size,
+        ...(cvMetrics && { cvMetrics }),
+      },
+    };
+  }
+
+  if (method === 'gradient_boosting') {
+    const numIterations = options.numIterations ?? 100;
+    const learningRate = options.learningRate ?? 0.1;
+    const model = gradientBoostingTrain(matrix.data, encoded, numIterations, learningRate);
+    const batch = gradientBoostingPredictBatch(model, matrix.data);
+    return {
+      method: 'gradient_boosting',
+      predictions: matrix.caseIds.map((caseId, i) => ({
+        caseId,
+        predicted: reverseMap.get(batch[i].label) ?? 'unknown',
+        confidence: Math.max(0, Math.min(1, batch[i].confidence)),
+      })),
+      modelInfo: {
+        numIterations,
+        learningRate,
+        featureCount: matrix.featureNames.length,
+        traceCount: matrix.data.length,
         classCount: reverseMap.size,
         ...(cvMetrics && { cvMetrics }),
       },

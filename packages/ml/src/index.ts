@@ -33,6 +33,10 @@ export type { FeatureQualityReport, FeatureQualityIssue } from './feature-qualit
 export { suggestParameters, pickBestAlgorithm } from './parameter-suggestions.js';
 export type { ParameterSuggestions, AlgorithmSuggestion } from './parameter-suggestions.js';
 
+// Grid search and hyperparameter tuning
+export { GridSearch, suggestSearchSpace, evaluateModel, findBestParams } from './hyperparameter-search.js';
+export type { SearchSpace, EvaluationMetrics, ParameterEvaluation, GridSearchResult } from './hyperparameter-search.js';
+
 // Types
 export type {
   EmptyInputWarning,
