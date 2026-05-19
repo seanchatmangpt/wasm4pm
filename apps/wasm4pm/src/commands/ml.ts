@@ -7,6 +7,7 @@ import { savePredictionResult } from './results.js';
 import { VALID_ML_TASKS, executeMlTask } from '../ml-runner.js';
 import type { MlTask } from '../ml-runner.js';
 import { withSpan } from './_otel.js';
+
 import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
 

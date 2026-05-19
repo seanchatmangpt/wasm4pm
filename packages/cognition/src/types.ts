@@ -45,6 +45,13 @@ export interface StateAtom {
   predicate: string;
   value: string;
 }
+export interface TraceStep {
+  step: number;
+  kind: string;
+  detail: string;
+  depth: number;
+}
+
 
 // =============================================================================
 // Breed catalogue (returned by cognition_show)
@@ -80,6 +87,7 @@ export interface BreedOutput {
   facts: Fact[];
   selected?: string;
   explanation: string;
+  inference_trace?: TraceStep[];
 }
 
 export interface Receipt {

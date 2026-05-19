@@ -76,11 +76,11 @@ export function assertSystemBuildResult(raw: unknown): SystemBuildResult {
   return raw as unknown as SystemBuildResult;
 }
 
-/** `system_verify` output per `wasm.rs:331-336`. Legacy 'ok' tolerated. */
+/** `system_verify` output per `wasm.rs:331-336`. Rust emits only 'verified' or 'has_findings'. */
 export function assertSystemVerifyResult(raw: unknown): SystemVerifyResult {
   if (!isObj(raw)) reject('system_verify', `expected object`);
   if (!isStr(raw.target)) reject('system_verify', `target must be string`);
-  if (raw.status !== 'verified' && raw.status !== 'has_findings' && raw.status !== 'ok')
+  if (raw.status !== 'verified' && raw.status !== 'has_findings')
     reject(
       'system_verify',
       `status must be 'verified' | 'has_findings', got ${JSON.stringify(raw.status)}`,
