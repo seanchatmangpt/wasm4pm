@@ -14,6 +14,7 @@ export interface CliTestEnv {
     tempDir: string;
     configPath: string;
     outputDir: string;
+    env?: Record<string, string>;
     cleanup: () => Promise<void>;
 }
 /**
