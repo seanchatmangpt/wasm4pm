@@ -302,6 +302,141 @@ impl ActionHistory {
     }
 }
 
+/// State space coverage tracking for observability.
+/// Tracks unique states visited and per-dimension bin occupancy across cycles.
+///
+/// 8-dimensional state space:
+///   - health_level: 5 bins (0-4)
+///   - event_rate_q: 8 bins (0-7)
+///   - activity_count_q: 8 bins (0-7)
+///   - spc_alert_level: 4 bins (0-3)
+///   - drift_status: 3 bins (0-2)
+///   - rework_ratio_q: 8 bins (0-7)
+///   - circuit_state: 3 bins (0-2)
+///   - cycle_phase: 4 bins (0-3)
+/// Total: 5*8*8*4*3*8*3*4 = 368,640 possible states
+#[derive(Debug, Clone)]
+pub struct StateCoverage {
+    /// Set of unique state IDs visited (encoded 8D → u32)
+    visited_states: std::collections::HashSet<u32>,
+    /// Per-dimension bin occupancy counters
+    /// Bins: [5(health) + 8(event_rate) + 8(activity) + 4(spc) + 3(drift) + 8(rework) + 3(circuit) + 4(phase)] = 43 total
+    dimension_bins: [u32; 43],
+}
+
+impl StateCoverage {
+    pub fn new() -> Self {
+        Self {
+            visited_states: std::collections::HashSet::new(),
+            dimension_bins: [0; 43],
+        }
+    }
+
+    /// Encode 8-dimensional state to u32 via Cantor-like pairing.
+    /// Maps (h, e, a, s, d, r, c, p) → unique u32 in [0, 368640)
+    fn state_to_id(state: &RlState) -> u32 {
+        // Use a factoradic encoding: state_id = h + e*5 + a*5*8 + s*5*8*8 + ...
+        let h = state.health_level as u32;       // 0-4
+        let e = state.event_rate_q as u32;       // 0-7
+        let a = state.activity_count_q as u32;   // 0-7
+        let s = state.spc_alert_level as u32;    // 0-3
+        let d = state.drift_status as u32;       // 0-2
+        let r = state.rework_ratio_q as u32;     // 0-7
+        let c = state.circuit_state as u32;      // 0-2
+        let p = state.cycle_phase as u32;        // 0-3
+
+        h + e * 5 + a * 5 * 8 + s * 5 * 8 * 8 + d * 5 * 8 * 8 * 4
+            + r * 5 * 8 * 8 * 4 * 3 + c * 5 * 8 * 8 * 4 * 3 * 8
+            + p * 5 * 8 * 8 * 4 * 3 * 8 * 3
+    }
+
+    /// Track a state visit: increment visited set and dimension bins.
+    pub fn track_state(&mut self, state: &RlState) {
+        let state_id = Self::state_to_id(state);
+        self.visited_states.insert(state_id);
+
+        // Increment bins for each dimension
+        // health_level: bins 0-4
+        if (state.health_level as usize) < 5 {
+            self.dimension_bins[state.health_level as usize] += 1;
+        }
+
+        // event_rate_q: bins 5-12
+        if (state.event_rate_q as usize) < 8 {
+            self.dimension_bins[5 + state.event_rate_q as usize] += 1;
+        }
+
+        // activity_count_q: bins 13-20
+        if (state.activity_count_q as usize) < 8 {
+            self.dimension_bins[13 + state.activity_count_q as usize] += 1;
+        }
+
+        // spc_alert_level: bins 21-24
+        if (state.spc_alert_level as usize) < 4 {
+            self.dimension_bins[21 + state.spc_alert_level as usize] += 1;
+        }
+
+        // drift_status: bins 25-27
+        if (state.drift_status as usize) < 3 {
+            self.dimension_bins[25 + state.drift_status as usize] += 1;
+        }
+
+        // rework_ratio_q: bins 28-35
+        if (state.rework_ratio_q as usize) < 8 {
+            self.dimension_bins[28 + state.rework_ratio_q as usize] += 1;
+        }
+
+        // circuit_state: bins 36-38
+        if (state.circuit_state as usize) < 3 {
+            self.dimension_bins[36 + state.circuit_state as usize] += 1;
+        }
+
+        // cycle_phase: bins 39-42 (4 bins)
+        if (state.cycle_phase as usize) < 4 {
+            self.dimension_bins[39 + state.cycle_phase as usize] += 1;
+        }
+    }
+
+    /// Compute coverage percentage (unique states visited / total possible).
+    pub fn coverage_percentage(&self) -> f32 {
+        (self.visited_states.len() as f32) / 368_640.0 * 100.0
+    }
+
+    /// Get per-dimension coverage breakdown.
+    /// Returns array of 8 coverage percentages (one per dimension).
+    pub fn get_dimension_coverage(&self) -> [f32; 8] {
+        [
+            // health_level: bins 0-4 (5 bins)
+            self.dimension_bins[0..5].iter().filter(|&&b| b > 0).count() as f32 / 5.0 * 100.0,
+            // event_rate_q: bins 5-12 (8 bins)
+            self.dimension_bins[5..13].iter().filter(|&&b| b > 0).count() as f32 / 8.0 * 100.0,
+            // activity_count_q: bins 13-20 (8 bins)
+            self.dimension_bins[13..21].iter().filter(|&&b| b > 0).count() as f32 / 8.0 * 100.0,
+            // spc_alert_level: bins 21-24 (4 bins)
+            self.dimension_bins[21..25].iter().filter(|&&b| b > 0).count() as f32 / 4.0 * 100.0,
+            // drift_status: bins 25-27 (3 bins)
+            self.dimension_bins[25..28].iter().filter(|&&b| b > 0).count() as f32 / 3.0 * 100.0,
+            // rework_ratio_q: bins 28-35 (8 bins)
+            self.dimension_bins[28..36].iter().filter(|&&b| b > 0).count() as f32 / 8.0 * 100.0,
+            // circuit_state: bins 36-38 (3 bins)
+            self.dimension_bins[36..39].iter().filter(|&&b| b > 0).count() as f32 / 3.0 * 100.0,
+            // cycle_phase: bins 39-42 (4 bins)
+            self.dimension_bins[39..43].iter().filter(|&&b| b > 0).count() as f32 / 4.0 * 100.0,
+        ]
+    }
+
+    /// Get the count of unique states visited.
+    pub fn unique_states_visited(&self) -> usize {
+        self.visited_states.len()
+    }
+}
+
+impl Default for StateCoverage {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 /// The RL Orchestrator — holds all agents, dispatches to active one.
 pub struct RlOrchestrator {
     // Indexed by AgentType discriminant (0–4); vtable dispatch replaces match blocks.
@@ -310,6 +445,7 @@ pub struct RlOrchestrator {
     linucb: LinUCBAgent,
     telemetry: CycleTelemetry,
     action_history: ActionHistory,
+    state_coverage: StateCoverage,
     use_linucb_for_selection: bool,
 }
 
@@ -333,6 +469,7 @@ impl RlOrchestrator {
             linucb: LinUCBAgent::new(),
             telemetry: CycleTelemetry::default(),
             action_history: ActionHistory::new(),
+            state_coverage: StateCoverage::new(),
             use_linucb_for_selection: false,
         }
     }
@@ -353,6 +490,7 @@ impl RlOrchestrator {
             linucb: LinUCBAgent::new(),
             telemetry: CycleTelemetry::default(),
             action_history: ActionHistory::new(),
+            state_coverage: StateCoverage::new(),
             use_linucb_for_selection: false,
         }
     }
