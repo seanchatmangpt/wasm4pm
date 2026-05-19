@@ -12,6 +12,8 @@ import { exitWithFlush } from '../otel/exit.js';
 import {
   extractRemainingTimeFeatures,
   regressRemainingTime,
+  recommendAlgorithm,
+  type AlgorithmRecommendation,
 } from '@wasm4pm/ml';
 
 const VALID_TASKS = VALID_PREDICT_CLI_TASKS;
@@ -58,6 +60,10 @@ export const predict = defineCommand({
     method: {
       type: 'string',
       description: 'Prediction method for remaining-time task (auto, weibull, regress, hybrid)',
+    },
+    'auto-select': {
+      type: 'boolean',
+      description: 'Automatically select best algorithm based on log characteristics',
     },
     config: {
       type: 'string',
@@ -228,6 +234,7 @@ export const predict = defineCommand({
 
         // Step 4: Execute prediction task
         const method = (ctx.args.method as string) || 'auto';
+        const autoSelect = Boolean(ctx.args['auto-select']);
         const taskResult = await executePredictionTask(
           wasm,
           task as PredictTask,
@@ -237,7 +244,8 @@ export const predict = defineCommand({
           ngramOrder,
           driftWindow,
           prefixActivities,
-          method
+          method,
+          autoSelect
         );
 
         // Step 5: Build result
@@ -308,6 +316,7 @@ export const predict = defineCommand({
 /**
  * Dispatch to the appropriate WASM prediction function based on the task.
  * @param method - For remaining-time task: 'auto', 'weibull', 'regress', or 'hybrid'
+ * @param autoSelect - When true, use log characteristics to recommend best algorithm
  */
 async function executePredictionTask(
   wasm: Record<string, any>,
@@ -318,7 +327,8 @@ async function executePredictionTask(
   ngramOrder: number,
   driftWindow: number,
   prefixActivities?: string[],
-  method?: string
+  method?: string,
+  autoSelect?: boolean
 ): Promise<Record<string, unknown>> {
   switch (task) {
     case 'next-activity': {
@@ -336,9 +346,6 @@ async function executePredictionTask(
     }
 
     case 'remaining-time': {
-      // Resolve method: CLI > config > auto-detect
-      const resolvedMethod = method === 'auto' || !method ? 'auto' : method;
-
       // Extract features for ML-based regression
       const configJson = JSON.stringify({
         features: [
@@ -359,6 +366,27 @@ async function executePredictionTask(
       );
       const featuresArray = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
       const featureMatrix = extractRemainingTimeFeatures(Array.isArray(featuresArray) ? featuresArray : []);
+
+      // Auto-select best algorithm if --auto-select is set
+      let resolvedMethod = method === 'auto' || !method ? 'auto' : method;
+      if (autoSelect && resolvedMethod === 'auto' && Array.isArray(featuresArray)) {
+        try {
+          const recommendation = recommendAlgorithm('remaining-time', featuresArray);
+          if (recommendation.algorithm === 'regress') {
+            resolvedMethod = 'regress';
+          } else if (recommendation.algorithm === 'weibull') {
+            resolvedMethod = 'weibull';
+          } else if (recommendation.algorithm === 'hybrid') {
+            resolvedMethod = 'hybrid';
+          }
+          // Log recommendation to stderr for visibility
+          console.error(`[Algorithm Selection] Recommended: ${recommendation.algorithm} (confidence: ${recommendation.confidence.toFixed(2)})`);
+          console.error(`  Reason: ${recommendation.reason}`);
+        } catch {
+          // Fall back to auto-detect if selector fails
+          resolvedMethod = 'auto';
+        }
+      }
 
       // If no ML features or empty log, fall back to WASM Weibull model
       if (featureMatrix.data.length === 0) {
