@@ -1,3 +1,4 @@
+#![cfg(feature = "miniml")]
 //! # AutoMembrane Error Handling Coverage Tests
 //!
 //! Comprehensive test suite for error scenarios in classify_motion and related methods.

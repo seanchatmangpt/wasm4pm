@@ -1,4 +1,4 @@
-//! Substrate certificate tests for wasm4pm v26.5.15.
+//! Substrate certificate tests for wasm4pm v26.5.19.
 //!
 //! These tests validate the JSON artifacts produced by `make substrate-cert`.
 //! If the files do not exist, tests skip gracefully with a clear message.
@@ -8,12 +8,12 @@ use std::path::Path;
 
 const SUBSTRATE_CERT_PATH: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/target/wasm4pm-v26.5.15/substrate-certificate.json"
+    "/target/wasm4pm-v26.5.19/substrate-certificate.json"
 );
 
 const CAPABILITY_MATRIX_PATH: &str = concat!(
     env!("CARGO_MANIFEST_DIR"),
-    "/target/wasm4pm-v26.5.15/capability-matrix.json"
+    "/target/wasm4pm-v26.5.19/capability-matrix.json"
 );
 
 fn load_json_or_skip(path: &str) -> Option<serde_json::Value> {

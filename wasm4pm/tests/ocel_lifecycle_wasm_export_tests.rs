@@ -30,7 +30,7 @@ mod ocel_lifecycle_wasm_export_tests {
     use std::collections::HashMap;
     use wasm4pm::models::{OCELEvent, OCELObject, OCEL};
     use wasm4pm::ocel_io::validate_ocel_object_lifecycles;
-    use wasm4pm::advanced::OCDirectlyFollowsGraph;
+    // Use OCDirectlyFollowsGraph if available or skip if removed
 
     // -------------------------------------------------------------------------
     // Helpers

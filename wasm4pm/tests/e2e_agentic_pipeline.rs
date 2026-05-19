@@ -397,7 +397,7 @@ fn e2e_autonomic_state_machine_escalation_path() {
     assert_eq!(m_unchanged.p1, 0);
 
     // LEARN: negative reward for drift
-    let reward = compute_reward(1, 3, 3, false, false, false);
+    let reward = compute_reward(1, 3, 3, false, false, false, 0);
     assert!(reward < 0.0, "Penalty for escalation scenario");
 }
 
@@ -1726,7 +1726,7 @@ fn e2e_challenge_llm_replacement_bounded_decision_budget() {
 fn e2e_challenge_adversarial_reward_distribution() {
     // Adversarial: maximum degradation + maximum SPC alerts + all guards failed
     let rewards: Vec<f32> = (0..=4)
-        .flat_map(|from| (0..=4).map(move |to| compute_reward(from, to, 100, false, false, false)))
+        .flat_map(|from| (0..=4).map(move |to| compute_reward(from, to, 100, false, false, false, 0)))
         .collect();
 
     for r in &rewards {

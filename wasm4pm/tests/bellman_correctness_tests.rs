@@ -417,7 +417,7 @@ fn test_metamorphic_circuit_breaker_impact() {
     let guard = true;
 
     let reward_circuit_ok = compute_reward(prev, curr, spc, guard, true, false);
-    let reward_circuit_fail = compute_reward(prev, curr, spc, guard, false, false);
+    let reward_circuit_fail = compute_reward(prev, curr, spc, guard, false, false, 0);
 
     assert!(
         reward_circuit_ok > reward_circuit_fail,
@@ -733,4 +733,4 @@ fn test_a5_learning_rate_scales_q_update_magnitude() {
         expected_small,
         delta_small
     );
-}
+
