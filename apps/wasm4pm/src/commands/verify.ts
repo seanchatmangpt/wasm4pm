@@ -58,7 +58,7 @@ async function saveCertificationReceipt(
 export const verify = defineCommand({
   meta: {
     name: 'verify',
-    description: 'Run definition-of-done certification gates',
+    description: 'Run definition-of-done certification gates. Example: wpm verify --fast',
   },
   args: {
     fast: {

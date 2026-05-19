@@ -8,7 +8,7 @@ import { register } from './agent/register.js';
 export const agent = defineCommand({
   meta: {
     name: 'agent',
-    description: 'Manage and execute Van der Aalst process mining agents',
+    description: 'Manage and execute Van der Aalst process mining agents. Example: wpm agent list',
   },
   subCommands: {
     execute,

@@ -243,7 +243,7 @@ export const wasmServer = defineCommand({
   meta: {
     name: 'wasm-server',
     description:
-      'Manage the long-lived WASM server (reduces CLI latency from 2,273ms → <500ms)',
+      'Manage the long-lived WASM server (reduces CLI latency from 2,273ms → <500ms). Example: wpm wasm-server start',
   },
   subCommands: {
     start: wasmServerStart,

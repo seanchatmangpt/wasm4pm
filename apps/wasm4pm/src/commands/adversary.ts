@@ -1522,7 +1522,7 @@ export const adversary = defineCommand({
   meta: {
     name: 'adversary',
     description:
-      'Adversarial proof lifecycle convergence test — can a motivated agent still fake done?',
+      'Adversarial proof lifecycle convergence test — can a motivated agent still fake done? Example: wpm adversary run',
   },
   subCommands: {
     run: adversaryRun,
