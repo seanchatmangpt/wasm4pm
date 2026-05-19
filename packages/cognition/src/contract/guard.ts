@@ -22,7 +22,7 @@ const isObj = (v: unknown): v is Record<string, unknown> =>
 function reject(op: string, reason: string): never {
   throw new CognitionError(
     `${op}: WASM output rejected by field-contract guard: ${reason}`,
-    'OUTPUT_PARSE_FAILED',
+    'OUTPUT_SHAPE_INVALID',
   );
 }
 

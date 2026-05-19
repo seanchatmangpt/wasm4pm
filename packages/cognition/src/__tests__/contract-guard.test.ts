@@ -62,12 +62,12 @@ describe('assertContractResult', () => {
       /options_profile/,
     );
   });
-  it('error code is OUTPUT_PARSE_FAILED', () => {
+  it('error code is OUTPUT_SHAPE_INVALID', () => {
     try {
       assertContractResult({ status: 'ok' });
       expect.fail('should have thrown');
     } catch (e) {
-      expect((e as CognitionError).code).toBe('OUTPUT_PARSE_FAILED');
+      expect((e as CognitionError).code).toBe('OUTPUT_SHAPE_INVALID');
     }
   });
 });
