@@ -26,6 +26,8 @@ export interface CertificationReport {
   gates: GateResult[];
   passed: boolean;
   summary: string;
+  /** Names of all gates that did not pass, in execution order. Empty when all gates pass. */
+  failedGates: string[];
   evidence?: {
     corpus_hash: string;
     generator_seed?: number;
@@ -93,6 +95,7 @@ export async function runCertification(
   const passed = gates.every((g) => g.passed);
   const passCount = gates.filter((g) => g.passed).length;
   const summary = `${passCount}/${gates.length} gates passed`;
+  const failedGates = gates.filter((g) => !g.passed).map((g) => g.gate);
 
   // Compute a stable corpus hash from the gate names so a later run can
   // detect if the gate set has changed (gate added/removed = different corpus).
@@ -110,6 +113,7 @@ export async function runCertification(
     gates,
     passed,
     summary,
+    failedGates,
     evidence: {
       corpus_hash: corpusHash,
       feature_flags: options?.featureFlags ?? [],

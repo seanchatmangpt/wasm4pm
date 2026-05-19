@@ -37,25 +37,25 @@ export declare class ReceiptBuilder {
      * @param config Configuration object
      * @returns This builder for chaining
      */
-    setConfig(config: Record<string, any>): this;
+    setConfig(config: Record<string, unknown>): this;
     /**
      * Set input data and compute its hash
      * @param data Input data
      * @returns This builder for chaining
      */
-    setInput(data: any): this;
+    setInput(data: unknown): this;
     /**
      * Set execution plan and compute its hash
      * @param plan Execution plan object
      * @returns This builder for chaining
      */
-    setPlan(plan: Record<string, any>): this;
+    setPlan(plan: Record<string, unknown>): this;
     /**
      * Set output data and compute its hash
      * @param output Output data
      * @returns This builder for chaining
      */
-    setOutput(output: any): this;
+    setOutput(output: unknown): this;
     /**
      * Set execution timeline
      * @param startTime ISO 8601 start time

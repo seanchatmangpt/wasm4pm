@@ -109,12 +109,23 @@ mod tests {
 
     #[test]
     fn test_transform() {
-        let data = vec![
-            1.0, 30.0,  // [1,2,3] -> 0, [10,20,30] -> 2
-            2.0, 20.0,  // [1,2,3] -> 1, [10,20,30] -> 1
+        // Training data must include all categories that appear during transform.
+        // Feature 0 has values [1,2,3] → sorted categories [1,2,3]
+        // Feature 1 has values [10,20,30] → sorted categories [10,20,30]
+        let fit_data = vec![
+            1.0, 10.0,
+            2.0, 20.0,
+            3.0, 30.0,
         ];
         let mut encoder = ordinal_encoder(2);
-        let transformed = encoder.fit_transform(&data).unwrap();
+        encoder.fit(&fit_data).unwrap();
+
+        // Transform rows [1, 30] and [2, 20]
+        let transform_data = vec![
+            1.0, 30.0,  // feat0: 1→0, feat1: 30→2
+            2.0, 20.0,  // feat0: 2→1, feat1: 20→1
+        ];
+        let transformed = encoder.transform(&transform_data).unwrap();
 
         // First row: 1 -> 0, 30 -> 2
         assert_eq!(transformed[0], 0.0);
@@ -134,6 +145,9 @@ mod tests {
         assert_eq!(transformed, vec![2.0, 0.0, 1.0]);
     }
 
+    // transform() returns Result<Vec<f64>, JsError>. On native targets, constructing
+    // JsError panics, so we skip this test outside wasm32. On wasm32, wasm-pack test runs it.
+    #[cfg(target_arch = "wasm32")]
     #[test]
     fn test_unseen_value() {
         let data = vec![1.0, 2.0];

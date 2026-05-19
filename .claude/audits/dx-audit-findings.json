@@ -1,0 +1,240 @@
+{
+  "domain": "DX",
+  "timestamp": "2026-05-18T14:30:00Z",
+  "audit_scope": "CLI consistency, WASM API usability, onboarding friction, convenience commands, documentation gaps",
+  "summary": "Identified 8 developer experience gaps ranging from CLI flag inconsistency (input/file/log aliasing) to missing WASM parameter documentation and lack of discovery helpers. Most gaps are LOW-MEDIUM effort with cumulative HIGH impact on productivity.",
+  "gaps": [
+    {
+      "id": "DX-001",
+      "title": "Inconsistent input file flag naming across CLI commands",
+      "severity": "MEDIUM",
+      "effort_hours": 2,
+      "root_cause": "Different commands use different flag names (--input, --file, --log) for the same semantic concept, forcing users to remember which flag works for which command.",
+      "evidence": {
+        "files": [
+          "apps/wasm4pm/src/commands/run.ts",
+          "apps/wasm4pm/src/commands/predict.ts",
+          "apps/wasm4pm/src/commands/validate.ts",
+          "apps/wasm4pm/src/commands/simulate.ts"
+        ],
+        "pattern": "ctx.args.input ?? ctx.args.file ?? ctx.args.log",
+        "detail": "run.ts and conformance.ts accept both --input and --file; predict.ts uses --input or --log; simulate.ts uses --input or --file. No consistent primary flag."
+      },
+      "impact": "Users must check help text for each command to remember which flag is supported. Error messages don't suggest correct flags.",
+      "recommendation": "Normalize all commands to accept --input as primary flag, with --file and --log as secondary aliases. Update help-standards.ts to enforce consistency.",
+      "example_fix": "All commands should accept: --input (primary), --file (alias), -i (short). Error message: 'Expected --input <file.xes> (or -i, or use stdin)'"
+    },
+    {
+      "id": "DX-002",
+      "title": "Missing algorithm recommendation/suggestion feature",
+      "severity": "MEDIUM",
+      "effort_hours": 3,
+      "root_cause": "When users provide invalid algorithm names, error messages don't suggest similar valid algorithms. Exception: compare.ts does provide suggestions.",
+      "evidence": {
+        "files": [
+          "apps/wasm4pm/src/commands/run.ts:line ~285",
+          "apps/wasm4pm/src/commands/explain.ts:line ~89",
+          "apps/wasm4pm/src/commands/predict.ts"
+        ],
+        "error_message": "Unknown algorithm: 'genetc'. Valid algorithms: dfg, alpha_plus_plus, ...",
+        "missing": "Did you mean 'genetic_algorithm'?"
+      },
+      "impact": "Users who mistype algorithm names must re-run command after consulting help text (two-step friction).",
+      "recommendation": "Implement fuzzy matching for algorithm names. Use edit-distance or similar-string package to suggest corrections. Already imported in compare.ts via `findClosestMatch`.",
+      "example_fix": "import { findClosestMatch } from '@wasm4pm/contracts'; then in error: const suggestion = findClosestMatch('genetc', ALGORITHMS); if (suggestion) message += `\\n\\nDid you mean: ${suggestion}?`"
+    },
+    {
+      "id": "DX-003",
+      "title": "WASM API discovery functions missing parameter documentation in WASM_API.md",
+      "severity": "MEDIUM",
+      "effort_hours": 2,
+      "root_cause": "Functions like discover_genetic_algorithm, discover_simulated_annealing list parameters in table but don't document what values are valid or expected ranges.",
+      "evidence": {
+        "file": "WASM_API.md",
+        "issue": "Table lists `discover_genetic_algorithm(handle, activity_key, generations, population)` but no description of valid ranges for generations/population. Same for discover_simulated_annealing(temperature, cooling_rate).",
+        "gotchas_documented": "In CLAUDE.md gotchas section: 'discover_heuristic_miner needs dependency_threshold: f64 (use 0.2–0.4)', 'discover_astar needs max_iterations: usize', etc.",
+        "problem": "Gotchas are in CLAUDE.md, not WASM_API.md. User looking at WASM_API.md has no clue what parameters to pass."
+      },
+      "impact": "WASM API is harder to use than CLI. Developers resort to trial-and-error or grep through CLI code to find default values.",
+      "recommendation": "Move all parameter descriptions from CLAUDE.md gotchas section into WASM_API.md. Add 'Parameters' subsection to each function table with ranges and defaults.",
+      "example_fix": "In WASM_API.md under genetic_discovery: '`discover_genetic_algorithm(handle, activity_key, generations, population)` — generations: u32, typical 50-200; population: u32, typical 20-100. If omitted, defaults to 100 generations, 50 population.'"
+    },
+    {
+      "id": "DX-004",
+      "title": "wpm doctor verbosity too high for quick health checks",
+      "severity": "LOW",
+      "effort_hours": 1.5,
+      "root_cause": "wpm doctor runs 24 checks and reports even INFO-level diagnostics. Users typically want only STOP_THE_LINE or WARNING, not INFO messages.",
+      "evidence": {
+        "file": "apps/wasm4pm/src/commands/doctor.ts",
+        "checks": "24 diagnoses returned in DoctorReport, including INFO severities like 'Node.js version OK', 'pnpm installed OK'",
+        "output": "Verbose report mixes critical issues with routine status. Users must scroll to find actual problems."
+      },
+      "impact": "Quick problem diagnosis requires scanning verbose output. Common use: 'wpm doctor' to find and fix one issue, but output is 40+ lines.",
+      "recommendation": "Add --summary flag (or -s) that shows only WARNING and STOP_THE_LINE diagnoses. Alternatively, default to summary mode and add --verbose to show all.",
+      "example_fix": "doctor.ts: export interface DoctorOptions { fix?: boolean; summary?: boolean; }. Then filter diagnoses: if (summary) diagnoses = diagnoses.filter(d => d.severity !== 'INFO')"
+    },
+    {
+      "id": "DX-005",
+      "title": "Missing convenience command for algorithm selection guidance",
+      "severity": "LOW",
+      "effort_hours": 2,
+      "root_cause": "wpm algorithms lists all 36+ algorithms with tiers, but doesn't help users choose which one. No command like 'wpm suggest-algorithm' or 'wpm pick'.",
+      "evidence": {
+        "file": "apps/wasm4pm/src/commands/algorithms.ts",
+        "provides": "List of algorithms with tier, speed, quality, and van der Aalst ratings (fitness, precision, generalization, simplicity)",
+        "missing": "No 'recommend based on my scenario' feature. User must read full list and decide.",
+        "pattern": "Similar to `npm init --yes` auto-guessing vs manual entry"
+      },
+      "impact": "New users don't know whether to choose dfg (fast), heuristic (balanced), or genetic (quality). Leads to choosing wrong algorithm on first attempt.",
+      "recommendation": "Add 'wpm suggest' command (or enhance 'wpm init' to prompt for algorithm). Ask: log size, need speed/quality trade-off, are there loops expected? Then suggest algorithm.",
+      "example_fix": "New command wpm suggest: 'How many events? (<5k, 5-50k, >50k)' -> 'Do you need quality or speed? (fast/balanced/quality)' -> 'Suggested: genetic_algorithm (high-quality) or heuristic_miner (balanced)'"
+    },
+    {
+      "id": "DX-006",
+      "title": "No quick filter for WASM_API.md by deployment profile",
+      "severity": "LOW",
+      "effort_hours": 1,
+      "root_cause": "WASM_API.md documents all 70+ functions but doesn't indicate which are available in each deployment profile (mobile, iot, edge, fog, browser).",
+      "evidence": {
+        "file": "WASM_API.md",
+        "issue": "No section like 'Functions by Profile'. A mobile developer using 500KB profile can't tell which functions they have access to without reading deployment profile docs.",
+        "feature_flags": "Described in CLAUDE.md and Cargo.toml, but WASM_API.md doesn't cross-reference."
+      },
+      "impact": "Mobile/IoT developers may try to call functions not available in their profile, leading to runtime errors.",
+      "recommendation": "Add 'Feature Availability' column to function tables, or include 'Available in: browser, fog, edge' note on each function.",
+      "example_fix": "In WASM_API.md function table: | `discover_genetic_algorithm` | browser, fog | High-quality genetic search Petri net | (browser/fog profiles only; mobile/iot/edge use dfg instead)"
+    },
+    {
+      "id": "DX-007",
+      "title": "Config error messages don't suggest next steps",
+      "severity": "LOW",
+      "effort_hours": 2,
+      "root_cause": "When config resolution fails (missing file, invalid TOML, unknown field), error messages state the problem but don't suggest how to fix it.",
+      "evidence": {
+        "file": "apps/wasm4pm/src/commands/run.ts",
+        "pattern": "makeErrorResult('CONFIG_ERROR', 'Unable to load wasm4pm.toml: field \"unknown_field\" is not recognized')",
+        "missing": "Next step: 'Run `wpm init` to scaffold a valid config' or 'Valid fields: algorithm, execution, watch, ...'"
+      },
+      "impact": "Users unfamiliar with config schema must manually hunt through docs to find valid field names.",
+      "recommendation": "Add 'suggestions' field to error messages. For unknown fields, list valid field names. For TOML parse errors, suggest checking syntax.",
+      "example_fix": "Unknown field error: 'Field \"unknown_field\" not recognized. Valid fields: algorithm, execution, watch, source, sink, output. Run `wpm config show` to see current config.'"
+    },
+    {
+      "id": "DX-008",
+      "title": "WASM error patterns inconsistent: some use JSON.parse() required, others don't",
+      "severity": "MEDIUM",
+      "effort_hours": 3,
+      "root_cause": "In WASM, some exports return serde_json::to_string() (JS must JSON.parse), others use serde_wasm_bindgen::to_value (direct JS object). Utilities.rs documents split but CLI code sometimes forgets.",
+      "evidence": {
+        "file": "wasm4pm/src/utilities.rs:lines 8-11",
+        "documentation": "to_js() for strongly-typed structs (safe); to_js_str() for json!({}) values (requires JSON.parse in JS)",
+        "problem": "Some WASM exports inconsistently apply this. Developers don't know whether to expect string or object without reading source.",
+        "example": "discover_dfg returns JSON string (must parse); kernel.run returns result object directly"
+      },
+      "impact": "TypeScript code at wasm boundary must handle both patterns. Leads to bugs when wrong parse strategy applied.",
+      "recommendation": "Standardize all WASM exports to return serde_wasm_bindgen::to_value (direct objects) for consistency, OR document in WASM_API.md which functions return strings vs objects.",
+      "example_fix": "Add column to WASM_API.md: 'Returns' = 'JsValue (object)' vs 'String (requires JSON.parse)'. Or add comment block to each export: '// Returns: JsValue object (no parse needed)' vs '// Returns: JSON string (caller must JSON.parse)'"
+    },
+    {
+      "id": "DX-009",
+      "title": "No 'wpm convert' command for format translation (XES ↔ OCEL ↔ JSON)",
+      "severity": "LOW",
+      "effort_hours": 2,
+      "root_cause": "Users often need to convert event logs between formats. Currently requires writing custom code or using separate tools.",
+      "evidence": {
+        "capabilities": "WASM has load_eventlog_from_xes, load_eventlog_from_json, load_ocel_from_json, export_eventlog_to_json, export_ocel_to_json",
+        "missing": "No CLI command wrapping these. Users must go to TypeScript/Rust to convert.",
+        "patterns": "Common use: 'I have XES, need OCEL' or 'I have OCEL, need JSON for my dashboard'"
+      },
+      "impact": "Format conversion requires workaround. Not a blocker, but friction point.",
+      "recommendation": "Add 'wpm convert' command: `wpm convert log.xes --to ocel > log.ocel.json` or `wpm convert --from xes --to json log.xes`",
+      "example_fix": "apps/wasm4pm/src/commands/convert.ts: reads input file, detects format (or uses --from flag), calls appropriate WASM export, outputs result"
+    }
+  ],
+  "priority_by_impact": [
+    {
+      "rank": 1,
+      "id": "DX-001",
+      "title": "Inconsistent input file flag naming",
+      "roi": "HIGH - affects every user running multiple commands"
+    },
+    {
+      "rank": 2,
+      "id": "DX-003",
+      "title": "WASM API parameter documentation missing",
+      "roi": "HIGH - blocks library users (non-CLI developers)"
+    },
+    {
+      "rank": 3,
+      "id": "DX-002",
+      "title": "Missing algorithm suggestion/fuzzy match",
+      "roi": "MEDIUM - improves UX for 'typo recovery', already done in compare.ts"
+    },
+    {
+      "rank": 4,
+      "id": "DX-008",
+      "title": "WASM return value patterns inconsistent",
+      "roi": "MEDIUM - causes integration bugs at boundary"
+    },
+    {
+      "rank": 5,
+      "id": "DX-004",
+      "title": "wpm doctor verbosity too high",
+      "roi": "LOW - quality-of-life improvement"
+    },
+    {
+      "rank": 6,
+      "id": "DX-005",
+      "title": "Missing algorithm recommendation command",
+      "roi": "LOW - helpful for onboarding, not essential"
+    },
+    {
+      "rank": 7,
+      "id": "DX-007",
+      "title": "Config error messages lack next steps",
+      "roi": "LOW - nice-to-have documentation"
+    },
+    {
+      "rank": 8,
+      "id": "DX-006",
+      "title": "No deployment profile filter in WASM_API.md",
+      "roi": "LOW - mobile/IoT niche audience"
+    },
+    {
+      "rank": 9,
+      "id": "DX-009",
+      "title": "Missing 'wpm convert' command",
+      "roi": "VERY LOW - workaround exists, not common use case"
+    }
+  ],
+  "quick_wins": [
+    {
+      "gap": "DX-002",
+      "effort_hours": 1,
+      "implementation": "Import findClosestMatch from @wasm4pm/contracts (already imported in compare.ts). Use in run.ts, explain.ts error messages."
+    },
+    {
+      "gap": "DX-004",
+      "effort_hours": 1,
+      "implementation": "Add --summary flag to doctor.ts. Filter diagnoses to exclude INFO level if flag set."
+    },
+    {
+      "gap": "DX-006",
+      "effort_hours": 1,
+      "implementation": "Grep WASM_API.md for each function, append comment '(browser, fog)' or '(all profiles)' based on feature flags in Cargo.toml"
+    }
+  ],
+  "effort_summary": {
+    "total_effort_hours": 17.5,
+    "high_impact_effort": 5,
+    "low_friction_wins": 3
+  },
+  "notes": {
+    "cli_consistency": "Flag naming and error messages show good discipline overall (help-standards.ts exists), but gaps remain in edge commands.",
+    "wasm_api_usability": "Strongest gaps here: parameter docs missing, return type patterns undocumented. Developers relying on WASM library rather than CLI face steeper learning curve.",
+    "onboarding": "init.ts is solid (scaffolds config, README, .gitignore). Doctor is comprehensive but verbose. Missing: algorithm picker.",
+    "documentation": "CLAUDE.md is thorough but contains WASM gotchas that belong in WASM_API.md. Cross-references needed.",
+    "testing_gaps": "No integration tests for flag aliasing (input/file/log). No tests for error message quality (suggestions, next steps)."
+  }
+}

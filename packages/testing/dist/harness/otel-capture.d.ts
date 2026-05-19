@@ -79,6 +79,14 @@ export declare class OtelCapture {
     assertNonBlocking(maxDurationMs: number): string[];
     /** Assert span parent-child relationships form valid trees */
     assertValidTraces(): string[];
+    /**
+     * Assert that all completed spans have valid chronological timestamps:
+     * - endTime must be >= startTime (no negative durations from clock skew)
+     * - a child span's startTime must not precede its parent's startTime
+     *
+     * Returns a list of violation strings (empty = no violations).
+     */
+    assertChronological(): string[];
     clear(): void;
 }
 export declare function createOtelCapture(): OtelCapture;

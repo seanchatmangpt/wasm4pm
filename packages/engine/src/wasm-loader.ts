@@ -6,6 +6,7 @@
  */
 
 import { ObservabilityLayer } from '@wasm4pm/observability';
+import type { JsonEvent } from '@wasm4pm/observability';
 
 /**
  * Runtime environment detection
@@ -13,13 +14,28 @@ import { ObservabilityLayer } from '@wasm4pm/observability';
 type RuntimeEnvironment = 'browser' | 'nodejs' | 'wasi';
 
 /**
+ * Minimal structural type for WebAssembly.Memory (avoids requiring the DOM lib).
+ * Captures the two fields we actually access in this module.
+ */
+export interface WasmMemory {
+  /** Backing ArrayBuffer for the WASM linear memory. */
+  buffer: ArrayBuffer;
+  /** Maximum number of 64 KiB pages (undefined when no maximum was declared). */
+  maximum?: number;
+}
+
+/**
  * WASM module type - minimal interface covering common operations
+ * The index signature uses `unknown` to preserve type safety; callers that
+ * access arbitrary WASM exports cast the module to a narrower type (e.g.
+ * `Record<string, (...args: unknown[]) => unknown>`) after `loader.get()`.
  */
 export interface WasmModule {
-  memory: any; // WebAssembly.Memory - typed as any for compatibility
+  /** WebAssembly linear memory — may be absent for bundler targets */
+  memory: WasmMemory;
   version?: () => string;
   init?: () => void;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 /**
@@ -29,6 +45,27 @@ export enum WasmErrorCode {
   WASM_INIT_FAILED = 5,
   WASM_MEMORY_EXCEEDED = 5,
   WASM_VERSION_MISMATCH = 5,
+}
+
+/**
+ * Classified WASM load failure — carries a machine-readable cause code and the
+ * resolved module path so callers (and the bootstrap timeout handler) can emit
+ * specific, actionable error messages rather than generic "BOOTSTRAP_FAILED".
+ */
+export class WasmLoadError extends Error {
+  public readonly loadCause: 'FILE_NOT_FOUND' | 'CORRUPT_BINARY' | 'MISSING_EXPORTS' | 'LOAD_FAILED';
+  public readonly modulePath: string | undefined;
+
+  constructor(
+    loadCause: 'FILE_NOT_FOUND' | 'CORRUPT_BINARY' | 'MISSING_EXPORTS' | 'LOAD_FAILED',
+    message: string,
+    modulePath?: string
+  ) {
+    super(message);
+    this.loadCause = loadCause;
+    this.modulePath = modulePath;
+    this.name = 'WasmLoadError';
+  }
 }
 
 /**
@@ -123,9 +160,21 @@ export class WasmLoader {
         message: 'Initializing WASM module',
       });
 
-      // Load WASM module
-      const module = await this.loadWasmModule();
-      this.module = module;
+      // If a module is already loaded (e.g. after softReset()), reuse it
+      // without the expensive dynamic import() + WebAssembly.compile() step.
+      // This is the fast-path that makes softReset() actually fast.
+      let module: WasmModule;
+      if (this.module) {
+        module = this.module;
+        this.observability.emitCli({
+          level: 'debug',
+          message: 'Reusing already-loaded WASM module (fast reinit after softReset)',
+        });
+      } else {
+        // Cold path: load WASM module from disk / network
+        module = await this.loadWasmModule();
+        this.module = module;
+      }
 
       // Setup panic hook for readable error messages
       if (this.config.enablePanicHook !== false) {
@@ -301,19 +350,16 @@ export class WasmLoader {
   }
 
   /**
-   * Load WASM module from wasm4pm/pkg directory
-   * Validates that the module exports required discovery functions (load_eventlog_from_xes)
-   * Ignore: memory field is bundler-specific and may not be present on all targets
+   * Load WASM module from wasm4pm/pkg directory.
+   * Validates that the module exports required discovery functions.
+   * Throws WasmLoadError with a classified cause for actionable diagnostics.
    */
   private async loadWasmModule(): Promise<WasmModule> {
-    // Dynamically import based on runtime environment
-    let wasmModule: any;
+    let wasmModule: Record<string, unknown>;
+    let resolvedModulePath = this.config.modulePath;
 
     try {
-      // Import from the built wasm4pm WASM package
-      let modulePath = this.config.modulePath;
-
-      if (!modulePath) {
+      if (!resolvedModulePath) {
         // Compute workspace root from import.meta.url
         // In src: wasm-loader.ts at packages/engine/src/
         // In dist: wasm-loader.js at packages/engine/dist/
@@ -327,20 +373,77 @@ export class WasmLoader {
           throw new Error('Cannot determine workspace root: "packages/engine" not found in path');
         }
         const workspaceRoot = currentPath.substring(0, engineIndex);
-        modulePath = workspaceRoot + 'wasm4pm/pkg/wasm4pm.js';
+        resolvedModulePath = workspaceRoot + 'wasm4pm/pkg/wasm4pm.js';
+      }
+
+      // Verify the file exists before attempting dynamic import (Node.js only).
+      // This produces a precise "file not found" error rather than a cryptic
+      // "ERR_MODULE_NOT_FOUND" / "Cannot find module" message.
+      if (typeof process !== 'undefined' && process.versions?.node) {
+        const { existsSync } = await import('fs');
+        if (!existsSync(resolvedModulePath)) {
+          throw new WasmLoadError(
+            'FILE_NOT_FOUND',
+            `WASM binary not found at: ${resolvedModulePath}. ` +
+              `Run "npm run build" inside the wasm4pm/ directory to compile the WASM binary, ` +
+              `or set the modulePath config option to the correct wasm4pm.js path.`,
+            resolvedModulePath
+          );
+        }
       }
 
       // Use dynamic import for flexibility
-      wasmModule = await import(modulePath);
+      wasmModule = await import(resolvedModulePath);
     } catch (err) {
+      // Re-throw WasmLoadError instances as-is (already classified)
+      if (err instanceof WasmLoadError) throw err;
+
       const message = err instanceof Error ? err.message : String(err);
-      throw new Error(`Failed to load WASM module: ${message}`);
+
+      // Classify the error by its message pattern for actionable diagnostics
+      if (
+        message.includes('ERR_MODULE_NOT_FOUND') ||
+        message.includes('Cannot find module') ||
+        message.includes('MODULE_NOT_FOUND')
+      ) {
+        throw new WasmLoadError(
+          'FILE_NOT_FOUND',
+          `WASM module not found at "${resolvedModulePath}". ` +
+            `Run "npm run build" in the wasm4pm/ directory to compile the WASM binary.`,
+          resolvedModulePath
+        );
+      }
+
+      if (
+        message.includes('SyntaxError') ||
+        message.includes('Unexpected token') ||
+        message.includes('invalid wasm') ||
+        message.includes('WebAssembly.compile')
+      ) {
+        throw new WasmLoadError(
+          'CORRUPT_BINARY',
+          `WASM binary at "${resolvedModulePath}" appears corrupt or incomplete. ` +
+            `Delete wasm4pm/pkg/ and re-run "npm run build" to regenerate the binary.`,
+          resolvedModulePath
+        );
+      }
+
+      throw new WasmLoadError(
+        'LOAD_FAILED',
+        `Failed to load WASM module from "${resolvedModulePath}": ${message}`,
+        resolvedModulePath
+      );
     }
 
     // Validate that the module exports required functions
     // memory field may not be present depending on bundler target (nodejs vs bundler vs browser)
     if (!wasmModule || typeof wasmModule.load_eventlog_from_xes !== 'function') {
-      throw new Error('Invalid WASM module: missing required exports (load_eventlog_from_xes)');
+      throw new WasmLoadError(
+        'MISSING_EXPORTS',
+        `WASM module at "${resolvedModulePath}" is missing required export "load_eventlog_from_xes". ` +
+          `The binary may be from an incompatible version. Re-run "npm run build" to regenerate.`,
+        resolvedModulePath
+      );
     }
 
     return wasmModule as WasmModule;
@@ -353,7 +456,7 @@ export class WasmLoader {
    */
   private setupPanicHook(module: WasmModule): void {
     // Attempt to setup panic hook if available
-    const wasmBindgenPanicHook = (module as any).set_panic_hook;
+    const wasmBindgenPanicHook = (module as Partial<WasmModule>).set_panic_hook;
 
     if (typeof wasmBindgenPanicHook === 'function') {
       try {
@@ -378,7 +481,7 @@ export class WasmLoader {
     }
 
     // Additionally, setup a global panic handler for uncaught exceptions
-    if (typeof (globalThis as any).window === 'undefined') {
+    if (typeof (globalThis as typeof globalThis & { window?: unknown }).window === 'undefined') {
       // Node.js environment
       const originalWarning = console.error;
       this.panicHook = (message: string, stack?: string) => {
@@ -390,6 +493,7 @@ export class WasmLoader {
         // Log to observability system
         this.emitJson({
           timestamp: new Date().toISOString(),
+          level: 'error',
           component: 'wasm-loader',
           event_type: 'wasm_panic',
           data: {
@@ -411,6 +515,7 @@ export class WasmLoader {
 
         this.emitJson({
           timestamp: new Date().toISOString(),
+          level: 'error',
           component: 'wasm-loader',
           event_type: 'wasm_panic',
           data: {
@@ -448,7 +553,7 @@ export class WasmLoader {
    * Get getrandom polyfill if needed
    * For WASM32 targets, getrandom may need a polyfill
    */
-  private getGetrandomPolyfill(): any {
+  private getGetrandomPolyfill(): ((buffer: Uint8Array) => Uint8Array) | undefined {
     if (this.runtimeEnvironment === 'nodejs') {
       // Node.js has native crypto
       try {
@@ -473,11 +578,13 @@ export class WasmLoader {
   }
 
   /**
-   * Emit JSON event via observability layer
+   * Emit JSON event via observability layer.
+   * Accepts a JsonEvent; the runtime guard protects against subclasses that
+   * may not implement emitJson.
    */
-  private emitJson(event: any): void {
-    if ((this.observability as any).emitJson) {
-      (this.observability as any).emitJson(event);
+  private emitJson(event: JsonEvent): void {
+    if (typeof (this.observability as { emitJson?: unknown }).emitJson === 'function') {
+      this.observability.emitJson(event);
     }
   }
 }

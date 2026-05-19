@@ -54,13 +54,136 @@ export const sourceConfigSchema = z
     path: z.string().optional(),
     url: z.string().url().optional(),
   })
+  .superRefine((val, ctx) => {
+    if (val.kind === 'http' && !val.url) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['url'],
+        message:
+          'source.url is required when source.kind is "http". ' +
+          'Provide a valid URL (e.g. http://localhost:8080/events.xes).',
+      });
+    }
+    if (val.kind === 'file' && val.url) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['url'],
+        message:
+          'source.url is not applicable when source.kind is "file". ' +
+          'Use source.path instead.',
+      });
+    }
+  })
   .describe('Source configuration');
+
+/**
+ * Validate HTTP sink URL against SSRF attacks
+ * Rejects:
+ * - localhost/127.0.0.1/::1/0.0.0.0 (local services)
+ * - 169.254.169.254 (AWS metadata endpoint)
+ * - 169.254.x.x (AWS link-local range)
+ * - 10.0.0.0/8, 172.16.0.0/12, 192.168.0.0/16 (private ranges)
+ * - http:// (plaintext — https only)
+ * - Relative URLs (must be absolute)
+ */
+function validateSinkUrl(url: string): string | undefined {
+  try {
+    const parsed = new URL(url);
+
+    // Require HTTPS (check first to avoid accepting plaintext)
+    if (parsed.protocol !== 'https:') {
+      return 'sink.url must use https:// scheme. Plaintext HTTP is not allowed.';
+    }
+
+    const hostname = parsed.hostname;
+    if (!hostname) {
+      return 'sink.url must contain a valid hostname.';
+    }
+
+    // SSRF Prevention: Reject localhost/loopback addresses
+    if (
+      hostname === 'localhost' ||
+      hostname === '127.0.0.1' ||
+      hostname === '::1' ||
+      hostname === '0.0.0.0' ||
+      hostname === '[::1]'
+    ) {
+      return 'sink.url must not target localhost. Use a remote server with proper TLS validation.';
+    }
+
+    // SSRF Prevention: Reject AWS metadata endpoint
+    if (hostname === '169.254.169.254' || hostname === '[::ffff:169.254.169.254]') {
+      return 'sink.url must not target AWS metadata endpoint (169.254.169.254).';
+    }
+
+    // SSRF Prevention: Reject AWS link-local range (169.254.0.0/16)
+    if (hostname.startsWith('169.254.')) {
+      return 'sink.url must not target link-local range (169.254.x.x). This range is reserved for cloud provider metadata.';
+    }
+
+    // SSRF Prevention: Reject private IP ranges
+    const privateRangePatterns = [
+      /^10\./,                    // 10.0.0.0/8
+      /^172\.(1[6-9]|2[0-9]|3[01])\./, // 172.16.0.0/12
+      /^192\.168\./,              // 192.168.0.0/16
+    ];
+
+    for (const pattern of privateRangePatterns) {
+      if (pattern.test(hostname)) {
+        return 'sink.url must not target private IP ranges (10.x.x.x, 172.16-31.x.x, 192.168.x.x). Use a public, routable address.';
+      }
+    }
+
+    return undefined;
+  } catch {
+    return 'sink.url must be a valid absolute URL (e.g., https://example.com/path).';
+  }
+}
 
 export const sinkConfigSchema = z
   .object({
     kind: sinkKindSchema,
     path: z.string().optional(),
     url: z.string().url().optional(),
+  })
+  .superRefine((val, ctx) => {
+    if (val.kind === 'http' && !val.url) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['url'],
+        message:
+          'sink.url is required when sink.kind is "http". ' +
+          'Provide a valid URL (e.g. https://example.com/results).',
+      });
+    }
+    if (val.kind === 'http' && val.url) {
+      const urlError = validateSinkUrl(val.url);
+      if (urlError) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          path: ['url'],
+          message: urlError,
+        });
+      }
+    }
+    if (val.kind === 'file' && !val.path) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['path'],
+        message:
+          'sink.path is required when sink.kind is "file". ' +
+          'Provide a file path (e.g. ./output.pnml).',
+      });
+    }
+    if (val.kind === 'stdout' && val.path) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['path'],
+        message:
+          'sink.path is not applicable when sink.kind is "stdout". ' +
+          'Remove the path field or change sink.kind to "file".',
+      });
+    }
   })
   .describe('Sink configuration');
 
@@ -146,6 +269,17 @@ export const predictionConfigSchema = z
     tasks: z.array(z.enum(PREDICTION_TASKS)).default([]),
     /** Nested drift parameters (Van der Aalst time/concept-drift perspective). */
     drift: driftConfigSchema.default({}),
+  })
+  .superRefine((val, ctx) => {
+    if (val.enabled && val.tasks.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ['tasks'],
+        message:
+          'prediction.tasks must not be empty when prediction.enabled is true. ' +
+          'Add at least one task: next_activity | remaining_time | outcome | drift | features | resource.',
+      });
+    }
   })
   .describe('Prediction configuration — which prediction tasks to run');
 
@@ -245,6 +379,8 @@ export const mlConfigSchema = z
   .object({
     enabled: z.boolean().default(false),
     tasks: z.array(mlTaskSchema).default([]),
+    // Note: ML tasks can be empty when enabled=false; when enabled=true, it's OK to have no tasks
+    // (unlike prediction which enforces non-empty tasks). This is intentional: ML is optional.
 
     // --- Nested per-task sub-sections (preferred) ---
     classify: classifyConfigSchema.default({}),
@@ -318,7 +454,7 @@ export const rlConfigSchema = z
     enabled: z.boolean().default(false),
 
     /** Active agents (one or more). All five must be valid identifiers. */
-    agents: z.array(rlAgentSchema).default(['QLearning']),
+    agents: z.array(rlAgentSchema).min(1).default(['QLearning']),
 
     /** TD learning rate α in (0, 1]. */
     learning_rate: z.number().positive().max(1).default(0.1),
@@ -347,6 +483,46 @@ export const rlConfigSchema = z
   })
   .describe(
     'RL system configuration — agents, hyperparameters, convergence criteria, LinUCB selection'
+  );
+
+// =============================================================================
+// Swarm configuration — multi-worker convergence orchestration
+// =============================================================================
+
+/**
+ * Swarm orchestration — controls how many parallel workers run, how many
+ * identical consecutive rounds are required to declare convergence, and what
+ * quorum fraction constitutes "consensus" when using checkConvergence().
+ *
+ * Example wasm4pm.toml section:
+ *
+ *   [swarm]
+ *   max_episodes = 5
+ *   convergence_runs = 3
+ *   convergence_threshold = 0.8
+ *   worker_model = "llama-3.1-70b-versatile"
+ *   algorithm_ids = ["dfg", "heuristic_miner"]
+ */
+export const swarmConfigSchema = z
+  .object({
+    /** Maximum number of swarm episodes before giving up. */
+    max_episodes: z.number().int().positive().default(5),
+    /** Number of consecutive identical rounds a worker must produce before
+     *  it is counted as "stable" (feeds into inter-episode ring buffer). */
+    convergence_runs: z.number().int().min(2).default(2),
+    /**
+     * Fraction of workers that must agree on the dominant hash before the
+     * swarm declares convergence (passed to checkConvergence as `threshold`).
+     * 1.0 = unanimous, 0.8 = 80 % quorum.
+     */
+    convergence_threshold: z.number().positive().max(1).default(1.0),
+    /** Groq model ID used for each worker generateText call. */
+    worker_model: z.string().min(1).default('llama-3.1-70b-versatile'),
+    /** Algorithm IDs to run in parallel across workers. Defaults to ["dfg"]. Must have at least one. */
+    algorithm_ids: z.array(algorithmIdSchema).min(1).default(['dfg']),
+  })
+  .describe(
+    'Swarm orchestration — multi-worker convergence: episodes, quorum threshold, worker model'
   );
 
 // =============================================================================
@@ -398,6 +574,7 @@ export const configSchema = z
     ml: mlConfigSchema.optional(),
     rl: rlConfigSchema.optional(),
     membrane: membraneConfigSchema.optional(),
+    swarm: swarmConfigSchema.optional(),
   })
   .describe('wasm4pm configuration');
 
@@ -461,6 +638,9 @@ export function validatePartial(config: unknown): Partial<z.infer<typeof configS
  * Promote legacy flat `ml.method` / `ml.k` / `ml.eps` / `ml.forecastPeriods`
  * / `ml.nComponents` fields into their nested counterparts. Idempotent: if the
  * caller already supplied nested sub-sections, those win.
+ *
+ * These fields remain in the schema for backward compatibility with legacy configs.
+ * The @deprecated markers encourage users to migrate to the nested forms.
  */
 function migrateLegacyMl(cfg: z.infer<typeof configSchema>): z.infer<typeof configSchema> {
   if (!cfg.ml) return cfg;
@@ -508,7 +688,7 @@ function zodToJsonSchema(schema: z.ZodTypeAny): Record<string, unknown> {
 
   switch (typeName) {
     case 'ZodObject': {
-      const shape = (schema as z.ZodObject<any>).shape;
+      const shape = (schema as z.ZodObject<z.ZodRawShape>).shape;
       const properties: Record<string, unknown> = {};
       const required: string[] = [];
       for (const [key, val] of Object.entries(shape)) {
@@ -576,6 +756,9 @@ function zodToJsonSchema(schema: z.ZodTypeAny): Record<string, unknown> {
       if (def.description) result.description = def.description;
       return result;
     }
+    case 'ZodEffects':
+      // superRefine / refine / transform — delegate to the inner schema
+      return zodToJsonSchema(def.schema ?? def.innerType);
     case 'ZodUnknown':
       return {};
     default:

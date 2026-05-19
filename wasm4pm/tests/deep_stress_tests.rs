@@ -7,6 +7,10 @@ use proptest::prelude::*;
 mod deep_adversarial {
     use super::*;
 
+    fn to_internal(log: &EventLog) -> wasm4pm::models::EventLog {
+        serde_json::from_str(&serde_json::to_string(log).unwrap()).unwrap()
+    }
+
     /// Contract: The RL Agent must not access out-of-bounds memory even if given corrupted state IDs.
     #[test]
     fn test_adversarial_rl_bounds() {
@@ -74,7 +78,7 @@ mod deep_adversarial {
         let state = get_or_init_state();
         let log = EventLog::new(vec![], Vec::new());
         let initial_count = state.object_count().unwrap();
-        let handle = state.store_object(StoredObject::EventLog(log.into())).unwrap();
+        let handle = state.store_object(StoredObject::EventLog(to_internal(&log))).unwrap();
         
         assert_eq!(state.object_count().unwrap(), initial_count + 1);
         

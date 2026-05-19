@@ -3,6 +3,7 @@ import { resolveConfig, checkConfigWarnings } from '@wasm4pm/config';
 import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { exitWithFlush } from '../../otel/exit.js';
+import { withSpanRaw } from '../_otel.js';
 
 export const configCheck = defineCommand({
   meta: {
@@ -18,29 +19,47 @@ export const configCheck = defineCommand({
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const quiet = ctx.args.quiet ?? false;
 
-    try {
-      const config = await resolveConfig();
-      const warnings = checkConfigWarnings(config);
-      const all_clear = warnings.length === 0;
+    let warningCount = 0;
+    return withSpanRaw(
+      'config.check',
+      {},
+      async () => {
+        try {
+          const config = await resolveConfig();
+          const warnings = checkConfigWarnings(config);
+          warningCount = warnings.length;
+          const all_clear = warnings.length === 0;
 
-      const result = makeResult('config check', { warnings, all_clear }, performance.now() - t0,
-        all_clear ? EXIT_CODES.success : EXIT_CODES.execution_error);
+          const result = makeResult(
+            'config check',
+            { warnings, all_clear },
+            performance.now() - t0,
+            all_clear ? EXIT_CODES.success : EXIT_CODES.execution_error
+          );
 
-      emitResult(result, { format, quiet }, (res, projection) => {
-        if (res.payload.all_clear) {
-          projection.success('Config check passed — no warnings.');
-        } else {
-          for (const w of res.payload.warnings) {
-            projection.warn(`${(w as any).field}: ${(w as any).warning}`);
-          }
+          emitResult(result, { format, quiet }, (res, projection) => {
+            if (res.payload.all_clear) {
+              projection.success('Config check passed — no warnings.');
+            } else {
+              for (const w of res.payload.warnings) {
+                projection.warn(`${(w as any).field}: ${(w as any).warning}`);
+              }
+            }
+          });
+
+          return await exitWithFlush(result.exit_code);
+        } catch (e) {
+          const result = makeErrorResult(
+            'config check',
+            e,
+            EXIT_CODES.config_error,
+            'CONFIG_ERROR'
+          );
+          emitResult(result, { format, quiet });
+          return await exitWithFlush(EXIT_CODES.config_error);
         }
-      });
-
-      return await exitWithFlush(result.exit_code);
-    } catch (e) {
-      const result = makeErrorResult('config check', e, EXIT_CODES.config_error, 'CONFIG_ERROR');
-      emitResult(result, { format, quiet });
-      return await exitWithFlush(EXIT_CODES.config_error);
-    }
+      },
+      () => ({ 'config.warning_count': warningCount })
+    );
   },
 });

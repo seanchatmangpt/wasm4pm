@@ -571,7 +571,9 @@ pub fn compute_bootstrap_result(
         .map_err(|e| JsError::new(&format!("Serialization failed: {}", e)))
 }
 
-#[cfg(test)]
+// These tests call js_sys::Array and serde_wasm_bindgen::to_value which are wasm32-only.
+// They run correctly under `wasm-pack test` but panic on native cargo test targets.
+#[cfg(all(test, target_arch = "wasm32"))]
 mod tests {
     use super::*;
 

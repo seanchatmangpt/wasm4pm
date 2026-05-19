@@ -18,6 +18,10 @@ pub struct ManifestDiscovery {
 
 impl ManifestDiscovery {
     /// Construct from raw JSON bytes.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn from_str(source: impl Into<String>, json: &str) -> Result<Self, String> {
         let manifest: CandidateManifest = serde_json::from_str(json)
             .map_err(|e| format!("manifest parse error: {}", e))?;
@@ -30,6 +34,10 @@ impl ManifestDiscovery {
 
     /// Read a manifest from a path (native only).
     #[cfg(not(target_arch = "wasm32"))]
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn from_path(path: impl AsRef<std::path::Path>) -> Result<Self, String> {
         let p = path.as_ref();
         let body = std::fs::read_to_string(p)

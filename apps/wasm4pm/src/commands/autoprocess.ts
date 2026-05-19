@@ -5,11 +5,21 @@ import * as path from 'path';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
-import { withSpan } from './_otel.js';
+import { withSpan, withSpanRaw } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
 
 const AUTOPROCESS_STATE_FILE = '.wasm4pm/autoprocess-state.json';
+
+/**
+ * Current schema version for autoprocess-state.json.
+ *
+ * Increment this constant whenever the persisted shape changes in a
+ * backward-incompatible way.  On load, a version mismatch causes a
+ * deliberate warning + fresh-start rather than silently feeding stale
+ * data into the WASM layer.
+ */
+const STATE_SCHEMA_VERSION = 2;
 
 async function ensureStateDir() {
   try {
@@ -28,54 +38,321 @@ async function hashStateFile(stateFilePath: string): Promise<string> {
   }
 }
 
-async function loadState(wasm: any): Promise<void> {
+/**
+ * Return true when `fn` is exported by the current WASM build.
+ *
+ * Several persistence functions are compiled only with the `cloud` feature
+ * flag (serialize_rl_state, restore_rl_state, get_spc_history,
+ * set_spc_history, circuit_breaker_get_state, circuit_breaker_set_state).
+ * Calling an absent export throws "X is not a function"; this guard lets the
+ * caller decide how to handle unavailability explicitly rather than letting the
+ * error propagate into the outer catch block that also swallows ENOENT.
+ */
+function wasmHas(wasm: Record<string, unknown>, fn: string): boolean {
+  return typeof wasm[fn] === 'function';
+}
+
+/**
+ * Metrics snapshot captured at the end of each MAPE-K cycle.
+ * Used to compute cross-cycle trend recommendations in the Learn phase.
+ */
+export interface CycleMetrics {
+  healthScore: number;
+  /** Number of SPC special causes / violations detected */
+  violations: number;
+  /** Drift level: 0=none, 1=low, 2=high */
+  driftStatus: number;
+  /** Process fitness score (0–1); -1 = unknown */
+  fitness: number;
+  /** Rework ratio (0–1); -1 = unknown */
+  reworkRatio: number;
+}
+
+/**
+ * Derive a one-line system-state narrative from the health scores of the last
+ * (up to) 3 cycles.  Health score 0 = healthy, 4 = failed (matches WASM RL
+ * state dimension `health_level`).
+ *
+ * Decision rules (domain contract, Rank-2):
+ *  - Consistently improving: last score strictly lower than first score
+ *    AND last score lower than middle score (monotone down over the window)
+ *  - Degrading: last score strictly higher than first score
+ *    AND last score higher than middle score (monotone up over the window)
+ *  - Stable otherwise
+ *
+ * With fewer than 2 data points the trend is indeterminate → stable message.
+ */
+export function computeHealthNarrative(cycles: Array<{ healthScore: number }>): string {
+  const window = cycles.slice(-3);
+  if (window.length < 2) {
+    return 'System stable — operating within normal bounds';
+  }
+  const first = window[0].healthScore;
+  const last = window[window.length - 1].healthScore;
+  // For a 3-point window check strict monotonicity; for 2 points just compare endpoints.
+  const middle = window.length === 3 ? window[1].healthScore : undefined;
+  const improving =
+    last < first && (middle === undefined || (last < middle && middle <= first));
+  const degrading =
+    last > first && (middle === undefined || (last > middle && middle >= first));
+  if (improving) {
+    return 'System improving — autonomic agents converging on stable operating point';
+  }
+  if (degrading) {
+    return 'System degrading — consider running wpm doctor';
+  }
+  return 'System stable — operating within normal bounds';
+}
+
+/**
+ * Determine the trend over the last (up to) 3 cycles of detailed metrics.
+ *
+ * Returns 'improving' | 'degrading' | 'stable'.
+ * Same monotonicity contract as computeHealthNarrative().
+ */
+export function computeHealthTrend(
+  cycles: CycleMetrics[]
+): 'improving' | 'degrading' | 'stable' {
+  const window = cycles.slice(-3);
+  if (window.length < 2) return 'stable';
+  const first = window[0].healthScore;
+  const last = window[window.length - 1].healthScore;
+  const middle = window.length === 3 ? window[1].healthScore : undefined;
+  const improving =
+    last < first && (middle === undefined || (last < middle && middle <= first));
+  const degrading =
+    last > first && (middle === undefined || (last > middle && middle >= first));
+  if (improving) return 'improving';
+  if (degrading) return 'degrading';
+  return 'stable';
+}
+
+/**
+ * Build targeted Learn-phase recommendations based on the current cycle metrics
+ * and the multi-cycle health trend.
+ *
+ * When health is degrading: surface the worst metric and its specific remedy.
+ * When health is improving: report the metric that improved most.
+ * Persistence check: 3+ consecutive degrading cycles → higher-severity warning.
+ */
+export function buildLearnRecommendations(
+  current: CycleMetrics,
+  history: CycleMetrics[],
+  inputPath: string
+): { actions: string[]; persistenceDegrading: boolean } {
+  const trend = computeHealthTrend(history);
+  const actions: string[] = [];
+
+  // Persistence check — 3+ cycles all degrading (strictly monotone up)
+  const persistenceDegrading =
+    history.length >= 3 &&
+    (() => {
+      const w = history.slice(-3);
+      return w[2].healthScore > w[1].healthScore && w[1].healthScore > w[0].healthScore;
+    })();
+
+  if (trend === 'degrading') {
+    // Rank metrics by severity to surface the most critical recommendation first.
+    // Lower fitness = worse; higher violations/rework = worse; drift > 0 = bad.
+    const worstMetric = (() => {
+      if (current.violations > 2) return 'violations';
+      if (current.driftStatus > 0) return 'drift';
+      if (current.fitness >= 0 && current.fitness < 0.8) return 'fitness';
+      if (current.reworkRatio >= 0 && current.reworkRatio > 0.3) return 'rework';
+      return 'general';
+    })();
+
+    switch (worstMetric) {
+      case 'violations':
+        actions.push(
+          `Run \`wpm doctor --verbose\` — ${current.violations} SPC violation(s) detected (threshold: >2)`
+        );
+        break;
+      case 'drift':
+        actions.push(
+          `Run \`wpm drift-watch -i ${inputPath} --window 100\` — drift level ${current.driftStatus === 2 ? 'HIGH' : 'LOW'} detected, monitor for further shift`
+        );
+        break;
+      case 'fitness':
+        actions.push(
+          `Run \`wpm conformance -i ${inputPath}\` — process fitness ${current.fitness.toFixed(2)} is below threshold (0.80)`
+        );
+        break;
+      case 'rework':
+        actions.push(
+          `Run \`wpm temporal -i ${inputPath}\` — rework ratio ${current.reworkRatio.toFixed(2)} exceeds threshold (0.30)`
+        );
+        break;
+      default:
+        actions.push('Run `wpm doctor` — health degraded during this cycle');
+    }
+
+    // Secondary: circuit-breaker check when not already the primary
+    if (worstMetric !== 'violations' && current.violations > 0) {
+      actions.push(
+        `Run \`wpm doctor --verbose\` — ${current.violations} SPC violation(s) also active`
+      );
+    }
+  } else if (trend === 'improving') {
+    // Identify the metric that improved most between the first and last window entry.
+    const prev = history.length >= 2 ? history[history.length - 2] : null;
+    if (prev !== null) {
+      const healthDelta = prev.healthScore - current.healthScore; // positive = improvement
+      const violationDelta = prev.violations - current.violations;
+      const fitnessDelta =
+        prev.fitness >= 0 && current.fitness >= 0 ? current.fitness - prev.fitness : 0;
+
+      if (healthDelta > 0 && healthDelta >= violationDelta && healthDelta >= fitnessDelta) {
+        actions.push(
+          `Health improved by ${healthDelta} level(s) — autonomic agents converging (health now ${current.healthScore}/4)`
+        );
+      } else if (violationDelta > 0) {
+        actions.push(
+          `SPC violations reduced by ${violationDelta} — process stabilising (${current.violations} remaining)`
+        );
+      } else if (fitnessDelta > 0) {
+        actions.push(
+          `Process fitness improved by +${fitnessDelta.toFixed(2)} — conformance improving (now ${current.fitness.toFixed(2)})`
+        );
+      } else {
+        actions.push(
+          'System improving — autonomic agents converging on stable operating point'
+        );
+      }
+    } else {
+      actions.push('System improving — autonomic agents converging on stable operating point');
+    }
+  }
+
+  // Always: conformance check after autonomic changes
+  actions.push(
+    `Run \`wpm conformance -i ${inputPath}\` — verify process model quality after autonomic changes`
+  );
+
+  return { actions, persistenceDegrading };
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function loadState(wasm: Record<string, any>): Promise<void> {
+  let rawContent: string;
   try {
-    const content = await fs.readFile(AUTOPROCESS_STATE_FILE, 'utf-8');
-    const state = JSON.parse(content);
+    rawContent = await fs.readFile(AUTOPROCESS_STATE_FILE, 'utf-8');
+  } catch (err: unknown) {
+    // ENOENT — state file does not yet exist.  This is the expected cold-start
+    // path; start fresh without any warning.
+    const code = (err as NodeJS.ErrnoException).code;
+    if (code === 'ENOENT') return;
+    // Any other I/O error (permissions, device failure) is surfaced.
+    console.warn(`[autoprocess] state file read error (${code ?? 'unknown'}): starting fresh`);
+    return;
+  }
 
-    // Restore RL state
-    if (state.rl_state) {
-      wasm.restore_rl_state(JSON.stringify(state.rl_state));
-    }
-
-    // Restore SPC history
-    if (state.spc_history) {
-      wasm.set_spc_history(JSON.stringify(state.spc_history));
-    }
-
-    // Restore circuit breaker state
-    if (state.circuit_breaker_state) {
-      wasm.circuit_breaker_set_state(JSON.stringify(state.circuit_breaker_state));
-    }
+  let state: Record<string, unknown>;
+  try {
+    state = JSON.parse(rawContent) as Record<string, unknown>;
   } catch {
-    // File doesn't exist or is invalid - start fresh
+    // The file exists but is not valid JSON — most likely a crash-truncated
+    // write.  Warn the user so they know state was discarded, then start fresh.
+    // DO NOT silently reset: an operator who sees this message can investigate
+    // before a second crash wipes the circuit breaker's Open state.
+    console.warn(
+      `[autoprocess] state file is malformed (truncated crash?): discarding and starting fresh. ` +
+        `Delete ${AUTOPROCESS_STATE_FILE} to suppress this warning.`
+    );
+    return;
+  }
+
+  // Schema version guard — reject states written by an incompatible version.
+  // Missing version means the file was written before versioning was introduced
+  // (pre-v2 schema had different top-level keys); treat as stale.
+  const savedVersion = typeof state['version'] === 'number' ? state['version'] : 0;
+  if (savedVersion !== STATE_SCHEMA_VERSION) {
+    console.warn(
+      `[autoprocess] state file schema version ${savedVersion} !== expected ${STATE_SCHEMA_VERSION}: ` +
+        `discarding stale state and starting fresh. ` +
+        `Delete ${AUTOPROCESS_STATE_FILE} to suppress this warning.`
+    );
+    return;
+  }
+
+  // Restore each component only when the corresponding WASM export exists.
+  // The persistence functions are guarded by the `cloud` feature flag and are
+  // absent in the default browser build — calling them would throw, and that
+  // error must NOT fall through to the outer execution-error handler.
+  if (state['rl_state'] && wasmHas(wasm, 'restore_rl_state')) {
+    try {
+      wasm['restore_rl_state'](JSON.stringify(state['rl_state']));
+    } catch (e) {
+      console.warn(`[autoprocess] restore_rl_state failed: ${(e as Error).message ?? e}`);
+    }
+  }
+
+  if (state['spc_history'] && wasmHas(wasm, 'set_spc_history')) {
+    try {
+      wasm['set_spc_history'](JSON.stringify(state['spc_history']));
+    } catch (e) {
+      console.warn(`[autoprocess] set_spc_history failed: ${(e as Error).message ?? e}`);
+    }
+  }
+
+  if (state['circuit_breaker_state'] && wasmHas(wasm, 'circuit_breaker_set_state')) {
+    try {
+      wasm['circuit_breaker_set_state'](JSON.stringify(state['circuit_breaker_state']));
+    } catch (e) {
+      console.warn(`[autoprocess] circuit_breaker_set_state failed: ${(e as Error).message ?? e}`);
+    }
   }
 }
 
-async function saveState(wasm: any): Promise<void> {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+async function saveState(wasm: Record<string, any>): Promise<void> {
+  // Collect only the components whose WASM exports are available in this build.
+  // If none are available (e.g., non-cloud build) we still write the file with
+  // the version sentinel so that future cloud builds see a consistent schema.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const partial: Record<string, any> = {
+    version: STATE_SCHEMA_VERSION,
+    saved_at: new Date().toISOString(),
+  };
+
+  if (wasmHas(wasm, 'serialize_rl_state')) {
+    try {
+      partial['rl_state'] = JSON.parse(wasm['serialize_rl_state']());
+    } catch (e) {
+      console.warn(`[autoprocess] serialize_rl_state failed: ${(e as Error).message ?? e}`);
+    }
+  }
+
+  if (wasmHas(wasm, 'get_spc_history')) {
+    try {
+      partial['spc_history'] = JSON.parse(wasm['get_spc_history']());
+    } catch (e) {
+      console.warn(`[autoprocess] get_spc_history failed: ${(e as Error).message ?? e}`);
+    }
+  }
+
+  if (wasmHas(wasm, 'circuit_breaker_get_state')) {
+    try {
+      partial['circuit_breaker_state'] = JSON.parse(wasm['circuit_breaker_get_state']());
+    } catch (e) {
+      console.warn(`[autoprocess] circuit_breaker_get_state failed: ${(e as Error).message ?? e}`);
+    }
+  }
+
   try {
-    const rl_state = JSON.parse(wasm.serialize_rl_state());
-    const spc_history = JSON.parse(wasm.get_spc_history());
-    const circuit_breaker_state = JSON.parse(wasm.circuit_breaker_get_state());
-
-    const fullState = {
-      rl_state,
-      spc_history,
-      circuit_breaker_state,
-      saved_at: new Date().toISOString(),
-    };
-
     await ensureStateDir();
-    await fs.writeFile(AUTOPROCESS_STATE_FILE, JSON.stringify(fullState, null, 2));
-  } catch {
-    // Silently fail on save - don't block execution
+    await fs.writeFile(AUTOPROCESS_STATE_FILE, JSON.stringify(partial, null, 2));
+  } catch (e) {
+    // File-write failures (disk full, permissions) must warn — silently
+    // dropping the save would leave a stale state file on the next run.
+    console.warn(`[autoprocess] state file write failed: ${(e as Error).message ?? e}`);
   }
 }
 
 export const autoprocess = defineCommand({
   meta: {
     name: 'autoprocess',
-    description: 'Run AutoProcess: Perception → Decision → Protection → Optimization',
+    description: 'Run AutoProcess: Perception → Decision → Protection → Optimization. Example: wpm autoprocess log.xes --algorithm genetic',
   },
   args: {
     input: {
@@ -92,6 +369,12 @@ export const autoprocess = defineCommand({
     config: {
       type: 'string',
       description: 'AutoProcess configuration (JSON)',
+    },
+    cycles: {
+      type: 'string',
+      description: 'Number of AutoProcess cycles to run (default: 1). Use 0 for unlimited.',
+      default: '1',
+      alias: 'n',
     },
     format: {
       type: 'string',
@@ -110,11 +393,7 @@ export const autoprocess = defineCommand({
     },
     'no-save': {
       type: 'boolean',
-      description: 'Skip auto-save of BLAKE3 receipt',
-    },
-    cycles: {
-      type: 'string',
-      description: 'Number of control-loop cycles to run (positive integer, default 1)',
+      description: 'Skip auto-save and BLAKE3 receipt emission',
     },
   },
   async run(ctx) {
@@ -123,24 +402,78 @@ export const autoprocess = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
 
-    // Validate --cycles BEFORE entering the WASM path. parseInt('abc') is NaN;
-    // negative values are nonsensical. 0 is a sentinel meaning "unlimited mode".
-    const cyclesArg = ctx.args.cycles;
-    if (cyclesArg !== undefined) {
-      const n = parseInt(String(cyclesArg), 10);
-      if (!Number.isFinite(n) || n < 0) {
-        emitResult(
-          makeErrorResult(
-            'autoprocess',
-            `Invalid --cycles value '${String(cyclesArg)}': must be a non-negative integer (0 = unlimited)`,
-            EXIT_CODES.config_error,
-            'config_error'
-          ),
-          { format }
-        );
-        return exitWithFlush(EXIT_CODES.config_error);
-      }
+    // ── --format validation ────────────────────────────────────────────────────
+    // Guard before withSpan so invalid format exits config_error (1), not
+    // execution_error (3) from the WASM layer.  Rank-2 domain contract: the
+    // format flag must be 'json' or 'human'; anything else is a configuration
+    // error, not an execution error.
+    if (!['json', 'human'].includes(format as string)) {
+      const result = makeErrorResult(
+        'autoprocess',
+        new Error(`--format must be 'json' or 'human', got: '${format}'`),
+        EXIT_CODES.config_error,
+        'CONFIG_INVALID_FORMAT'
+      );
+      emitResult(result, { format: 'json', verbose, quiet });
+      return await exitWithFlush(EXIT_CODES.config_error);
     }
+
+    // ── --cycles validation ────────────────────────────────────────────────────
+    // parseInt('abc', 10) returns NaN; parseInt('1.7', 10) returns 1 (truncates).
+    // NaN causes cyclesRun < NaN === false → zero cycles, silent exit 0.
+    // Negative values run zero cycles for the same reason.
+    // Guard here before entering any async WASM path.
+    const cyclesRaw = String(ctx.args.cycles ?? '1');
+
+    // Reject float strings explicitly — parseInt('1.7') silently truncates to 1,
+    // which is surprising and non-deterministic for the operator.  A whole-integer
+    // check is stricter and unambiguous.
+    if (cyclesRaw.includes('.')) {
+      const result = makeErrorResult(
+        'autoprocess',
+        new Error('--cycles must be a whole integer, got: ' + cyclesRaw),
+        EXIT_CODES.config_error,
+        'CONFIG_INVALID_CYCLES'
+      );
+      emitResult(result, { format: format as 'json' | 'human', verbose, quiet });
+      return await exitWithFlush(EXIT_CODES.config_error);
+    }
+
+    const maxCycles = parseInt(cyclesRaw, 10);
+    const CYCLES_MAX = 10_000;
+
+    if (Number.isNaN(maxCycles)) {
+      const result = makeErrorResult(
+        'autoprocess',
+        new Error('--cycles must be a positive integer'),
+        EXIT_CODES.config_error,
+        'CONFIG_INVALID_CYCLES'
+      );
+      emitResult(result, { format, verbose, quiet });
+      return await exitWithFlush(EXIT_CODES.config_error);
+    }
+    if (maxCycles < 0) {
+      const result = makeErrorResult(
+        'autoprocess',
+        new Error('--cycles must be a positive integer'),
+        EXIT_CODES.config_error,
+        'CONFIG_INVALID_CYCLES'
+      );
+      emitResult(result, { format, verbose, quiet });
+      return await exitWithFlush(EXIT_CODES.config_error);
+    }
+    if (maxCycles > CYCLES_MAX) {
+      const result = makeErrorResult(
+        'autoprocess',
+        new Error(`--cycles exceeds maximum (${CYCLES_MAX})`),
+        EXIT_CODES.config_error,
+        'CONFIG_INVALID_CYCLES'
+      );
+      emitResult(result, { format, verbose, quiet });
+      return await exitWithFlush(EXIT_CODES.config_error);
+    }
+    // maxCycles === 0 is the "unlimited" sentinel (run forever until interrupted)
+    const unlimited = maxCycles === 0;
 
     try {
       const inputPath = ctx.args.input as string;
@@ -149,163 +482,444 @@ export const autoprocess = defineCommand({
 
       await withSpan(
         'autoprocess',
-        {
-          input: inputPath,
-          activity_key: String(ctx.args['activity-key'] ?? 'concept:name'),
-        },
+        { input: inputPath, activity_key: String(ctx.args['activity-key'] ?? 'concept:name') },
         async () =>
           withLogSession(
-        { inputPath, commandName: 'autoprocess', emitOptions: { format, verbose, quiet } },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        async (wasmBase, logHandle) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const wasm = wasmBase as Record<string, any>;
+            { inputPath, commandName: 'autoprocess', emitOptions: { format, verbose, quiet } },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            async (wasmBase, logHandle) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const wasm = wasmBase as Record<string, any>;
 
-        // Capture state-file hash BEFORE load (cold-start sentinel if absent).
-        const initial_state_hash = await hashStateFile(stateFilePath);
+              const initial_state_hash = await hashStateFile(stateFilePath);
+              await loadState(wasm);
 
-        // 1. Load persisted state (RL, SPC, circuit breaker)
-        await loadState(wasm);
+              // Run AutoProcess cycle(s) — bounded by --cycles (0 = unlimited)
+              const cycleConfig = (ctx.args.config as string) || '{}';
+              let cyclesRun = 0;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              let cycleResult: Record<string, any> = {};
+              // Accumulates per-cycle metrics for the system-state narrative and Learn phase.
+              // Only the last 3 are needed; we keep all and slice in computeHealthNarrative.
+              const cycleHealthScores: CycleMetrics[] = [];
+              do {
+                // Execute cycle and parse raw WASM result
+                const rawResult = wasm.autonomic_execute_cycle(
+                  logHandle,
+                  ctx.args['activity-key'],
+                  cycleConfig
+                );
+                cycleResult = typeof rawResult === 'string' ? JSON.parse(rawResult) : rawResult;
+                cyclesRun++;
 
-        // 2. Run AutoProcess cycle
-        const cycleConfig = (ctx.args.config as string) || '{}';
-        const rawResult = wasm.autonomic_execute_cycle(
-          logHandle,
-          ctx.args['activity-key'],
-          cycleConfig
-        );
-        const cycleResult = typeof rawResult === 'string' ? JSON.parse(rawResult) : rawResult;
+                // Emit per-phase MAPE-K child spans so Jaeger shows each phase individually.
+                // Span names follow the MAPE-K vocabulary: monitor/analyze/plan/execute/learn.
+                // These are fire-and-forget (best-effort); sink errors are swallowed inside withSpanRaw.
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const cr = (cycleResult.cycle_result ?? cycleResult) as Record<string, any>;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const timing = (cycleResult.timing ?? {}) as Record<string, any>;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const percData = (cr.perception ?? {}) as Record<string, any>;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const decData = (cr.decision ?? {}) as Record<string, any>;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const protData = (cr.protection ?? {}) as Record<string, any>;
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const optData = (cr.optimization ?? {}) as Record<string, any>;
 
-        // 3. Save persisted state (RL, SPC, circuit breaker)
-        await saveState(wasm);
+                // health_score here is the numeric 0-4 integer stored as health_score in Rust output
+                const healthLevel =
+                  typeof percData.health_score === 'number' ? percData.health_score : -1;
+                // event_rate = events / traces (0 when no traces)
+                const traceCount =
+                  typeof percData.trace_count === 'number' ? percData.trace_count : 0;
+                const eventCount =
+                  typeof percData.event_count === 'number' ? percData.event_count : 0;
+                const eventRate = traceCount > 0 ? eventCount / traceCount : 0;
+                const specialCauses = Array.isArray(protData.special_causes)
+                  ? protData.special_causes
+                  : [];
+                const anomalyDetected = specialCauses.length > 0;
+                // drift_status: 0=none, 1=low (1-2 causes), 2=high (3+ causes)
+                const driftStatus = anomalyDetected ? (specialCauses.length >= 3 ? 2 : 1) : 0;
 
-        // Capture state-file hash AFTER save — chains across invocations.
-        const final_state_hash = await hashStateFile(stateFilePath);
+                // Record metrics for multi-cycle system-state narrative and Learn phase.
+                // Use 0 as sentinel for unknown (-1) health so it reads as healthy.
+                const fitnessVal =
+                  typeof percData.fitness === 'number' ? percData.fitness : -1;
+                const reworkVal =
+                  typeof percData.rework_ratio === 'number' ? percData.rework_ratio : -1;
+                cycleHealthScores.push({
+                  healthScore: healthLevel >= 0 ? healthLevel : 0,
+                  violations: specialCauses.length,
+                  driftStatus,
+                  fitness: fitnessVal,
+                  reworkRatio: reworkVal,
+                });
 
-        // Emit single session receipt for this cycle, with state-hash chain.
-        if (!ctx.args['no-save']) {
-          try {
-            const inputBytes = await fsp.readFile(inputPath).catch(() => Buffer.from(inputPath));
-            saveCommandReceipt({
-              ...newReceipt('autoprocess'),
-              command: 'autoprocess',
-              input_hash: blake3Hex(inputBytes),
-              output_hash: blake3Hex(JSON.stringify(cycleResult)),
-              status: cycleResult.success ? 'success' : 'partial',
-              summary: {
-                cycles_run: 1,
-                final_health_level:
-                  (cycleResult.perception?.health_state as string | undefined) ?? 'unknown',
-                total_reward:
-                  (cycleResult.optimization?.reward as number | undefined) ?? 0,
-                spc_alerts_fired:
-                  (cycleResult.protection?.special_causes as unknown[] | undefined)?.length ?? 0,
+                // ── MONITOR span (Perception surface: events, traces, health) ──
+                await withSpanRaw(
+                  'wasm4pm.autoprocess.monitor',
+                  {
+                    cycle: cyclesRun,
+                    health_level: healthLevel,
+                    health_state: String(percData.health_state ?? 'unknown'),
+                    event_count: eventCount,
+                    trace_count: traceCount,
+                    unique_activities:
+                      typeof percData.unique_activities === 'number'
+                        ? percData.unique_activities
+                        : 0,
+                    event_rate: Math.round(eventRate * 100) / 100,
+                    drift_status: driftStatus,
+                    anomaly_detected: anomalyDetected,
+                    duration_us:
+                      typeof timing.perception_us === 'number' ? timing.perception_us : 0,
+                  },
+                  async () => {
+                    /* synchronous — span wraps only the emit */
+                  }
+                );
+
+                // ── ANALYZE span (Decision surface: guard, pattern, anomalies) ──
+                await withSpanRaw(
+                  'wasm4pm.autoprocess.analyze',
+                  {
+                    cycle: cyclesRun,
+                    guard_result: Boolean(decData.guard_result),
+                    pattern_result: String(decData.pattern_result ?? 'unknown'),
+                    pattern_ticks:
+                      typeof decData.pattern_ticks === 'number' ? decData.pattern_ticks : 0,
+                    special_cause_count: specialCauses.length,
+                    anomaly_detected: anomalyDetected,
+                    duration_us: typeof timing.decision_us === 'number' ? timing.decision_us : 0,
+                  },
+                  async () => {
+                    /* synchronous */
+                  }
+                );
+
+                // ── PLAN span (Protection surface: circuit breaker, SPC state) ──
+                await withSpanRaw(
+                  'wasm4pm.autoprocess.plan',
+                  {
+                    cycle: cyclesRun,
+                    circuit_state: String(protData.circuit_state ?? 'unknown'),
+                    circuit_allowed: Boolean(protData.circuit_allowed),
+                    special_cause_count: specialCauses.length,
+                    anomaly_detected: anomalyDetected,
+                    duration_us:
+                      typeof timing.protection_us === 'number' ? timing.protection_us : 0,
+                  },
+                  async () => {
+                    /* synchronous */
+                  }
+                );
+
+                // ── EXECUTE span (Optimization surface: RL action, reward) ──
+                await withSpanRaw(
+                  'wasm4pm.autoprocess.execute',
+                  {
+                    cycle: cyclesRun,
+                    rl_action: String(optData.rl_action ?? 'none'),
+                    rl_agent: String(optData.rl_agent ?? 'unknown'),
+                    reward:
+                      typeof optData.reward === 'number'
+                        ? Math.round(optData.reward * 1000) / 1000
+                        : 0,
+                    cumulative_reward:
+                      typeof optData.cumulative_reward === 'number'
+                        ? Math.round(optData.cumulative_reward * 1000) / 1000
+                        : 0,
+                    duration_us:
+                      typeof timing.optimization_us === 'number' ? timing.optimization_us : 0,
+                  },
+                  async () => {
+                    /* synchronous */
+                  }
+                );
+
+                // ── LEARN span (feedback: reward delta, SPC alerts consumed) ──
+                // The WASM cycle does not have a separate learn phase; we synthesise the
+                // key feedback signal — reward change relative to the previous cycle — so
+                // Jaeger operators can see whether the autonomic loop is converging.
+                const rewardVal = typeof optData.reward === 'number' ? optData.reward : 0;
+                const cumRewardVal =
+                  typeof optData.cumulative_reward === 'number' ? optData.cumulative_reward : 0;
+                await withSpanRaw(
+                  'wasm4pm.autoprocess.learn',
+                  {
+                    cycle: cyclesRun,
+                    reward: Math.round(rewardVal * 1000) / 1000,
+                    cumulative_reward: Math.round(cumRewardVal * 1000) / 1000,
+                    spc_causes_consumed: specialCauses.length,
+                    knowledge_updated: anomalyDetected || rewardVal !== 0,
+                    drift_status: driftStatus,
+                  },
+                  async () => {
+                    /* synchronous */
+                  }
+                );
+              } while (unlimited || cyclesRun < maxCycles);
+
+              await saveState(wasm);
+              const final_state_hash = await hashStateFile(stateFilePath);
+
+              if (!ctx.args['no-save']) {
+                try {
+                  const inputBytes = await fsp
+                    .readFile(inputPath)
+                    .catch(() => Buffer.from(inputPath));
+                  saveCommandReceipt({
+                    ...newReceipt('autoprocess'),
+                    command: 'autoprocess',
+                    input_hash: blake3Hex(inputBytes),
+                    output_hash: blake3Hex(JSON.stringify(cycleResult)),
+                    status: cycleResult.success ? 'success' : 'partial',
+                    summary: {
+                      cycles_run: cyclesRun,
+                      final_health_level:
+                        (cycleResult.perception?.health_state as string | undefined) ?? 'unknown',
+                      total_reward: (cycleResult.optimization?.reward as number | undefined) ?? 0,
+                      spc_alerts_fired:
+                        (cycleResult.protection?.special_causes as unknown[] | undefined)?.length ??
+                        0,
+                      initial_state_hash,
+                      final_state_hash,
+                    },
+                  });
+                } catch {
+                  /* receipt write must never break the command */
+                }
+              }
+
+              // Build rich lateAttrs for the top-level autoprocess span.
+              // Perception metrics: health_level (0-4 int), event_rate (events/trace),
+              // drift_status (0=none/1=low/2=high), anomaly_detected (bool from SPC causes).
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const finalCr = (cycleResult.cycle_result ?? cycleResult) as Record<string, any>;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const finalPerc = (finalCr.perception ?? {}) as Record<string, any>;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const finalProt = (finalCr.protection ?? {}) as Record<string, any>;
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const finalOpt = (finalCr.optimization ?? {}) as Record<string, any>;
+              const finalSpecialCauses = Array.isArray(finalProt.special_causes)
+                ? finalProt.special_causes
+                : [];
+              const finalAnomalyDetected = finalSpecialCauses.length > 0;
+              const finalDriftStatus = finalAnomalyDetected
+                ? finalSpecialCauses.length >= 3
+                  ? 2
+                  : 1
+                : 0;
+              const finalTraceCount =
+                typeof finalPerc.trace_count === 'number' ? finalPerc.trace_count : 0;
+              const finalEventCount =
+                typeof finalPerc.event_count === 'number' ? finalPerc.event_count : 0;
+              const finalEventRate = finalTraceCount > 0 ? finalEventCount / finalTraceCount : 0;
+              lateAttrs = {
+                cycles_run: cyclesRun,
+                health_state: String(finalPerc.health_state ?? 'unknown'),
+                health_level:
+                  typeof finalPerc.health_score === 'number' ? finalPerc.health_score : -1,
+                event_rate: Math.round(finalEventRate * 100) / 100,
+                drift_status: finalDriftStatus,
+                anomaly_detected: finalAnomalyDetected,
+                rl_action: String(finalOpt.rl_action ?? 'none'),
+                circuit_state: String(finalProt.circuit_state ?? 'unknown'),
+                special_causes: finalSpecialCauses.length,
                 initial_state_hash,
                 final_state_hash,
-              },
-            });
-          } catch {
-            /* receipt write must never break the command */
-          }
-        }
+              };
 
-        lateAttrs = {
-          health_state:
-            (cycleResult.perception?.health_state as string | undefined) ?? 'unknown',
-          rl_action:
-            (cycleResult.optimization?.rl_action as string | undefined) ?? 'none',
-          circuit_state:
-            (cycleResult.protection?.circuit_state as string | undefined) ?? 'unknown',
-          special_causes:
-            (cycleResult.protection?.special_causes as unknown[] | undefined)?.length ?? 0,
-          initial_state_hash,
-          final_state_hash,
-        };
+              const result = makeResult(
+                'autoprocess',
+                { ...cycleResult, cycles_run: cyclesRun },
+                performance.now() - t0,
+                EXIT_CODES.success
+              );
+              emitResult(result, { format, verbose, quiet }, (res, projection) => {
+                const data = res.payload as Record<string, unknown>;
+                const cycle = (data.cycle_result ?? data) as Record<string, unknown>;
+                const timing = (data.timing ?? {}) as Record<string, unknown>;
 
-        const result = makeResult('autoprocess', cycleResult, performance.now() - t0, EXIT_CODES.success);
-        emitResult(result, { format, verbose, quiet }, (res, projection) => {
-        const data = res.payload as Record<string, unknown>;
-        const cycle = data.cycle_result as Record<string, unknown>;
-        const timing = data.timing as Record<string, unknown>;
+                projection.info('AutoProcess — MAPE-K Cycle Summary');
+                projection.log('');
 
-        projection.info('AutoProcess Results');
-        projection.log('');
+                // ── Helper to format a labelled phase line ─────────────────────
+                const phaseLabel = (label: string, summary: string) => {
+                  const pad = label.padEnd(10);
+                  projection.log(`  ${pad}${summary}`);
+                };
 
-        // Perception
-        const perception = cycle.perception as Record<string, unknown>;
-        projection.log('  Perception:');
-        projection.log(`    Events: ${perception.event_count}`);
-        projection.log(`    Activities: ${perception.unique_activities}`);
-        projection.log(`    Traces: ${perception.trace_count}`);
-        projection.log(`    Health: ${perception.health_state} (score ${perception.health_score})`);
-        projection.log('');
+                // ── MONITOR ───────────────────────────────────────────────────
+                const perception = (cycle.perception ?? {}) as Record<string, unknown>;
+                const evCount = perception.event_count ?? '?';
+                const trCount = perception.trace_count ?? '?';
+                const actCount = perception.unique_activities ?? '?';
+                const healthState = String(perception.health_state ?? 'unknown');
+                const healthScore =
+                  typeof perception.health_score === 'number' ? perception.health_score : '?';
+                phaseLabel(
+                  'Monitor',
+                  `${evCount} events, ${trCount} traces, ${actCount} activities — health: ${healthState} (${healthScore}/4)`
+                );
 
-        // Decision
-        const decision = cycle.decision as Record<string, unknown>;
-        projection.log('  Decision:');
-        projection.log(`    Guard: ${decision.guard_result ? 'PASS' : 'FAIL'}`);
-        projection.log(`    Pattern: ${decision.pattern_result} (${decision.pattern_ticks} ticks)`);
-        projection.log('');
+                // ── ANALYZE ───────────────────────────────────────────────────
+                const decision = (cycle.decision ?? {}) as Record<string, unknown>;
+                const protection = (cycle.protection ?? {}) as Record<string, unknown>;
+                const spcResults = (protection.spc_results ?? {}) as Record<string, unknown>;
+                const specialCausesList = Array.isArray(protection.special_causes)
+                  ? (protection.special_causes as unknown[])
+                  : [];
+                const spcAlertCount = Object.values(spcResults).filter((v) => v === 'ALERT').length;
+                const guardOutcome = decision.guard_result ? 'guard PASS' : 'guard FAIL';
+                const patternSummary = decision.pattern_result
+                  ? `pattern: ${decision.pattern_result}`
+                  : 'no pattern';
+                const analyzeSummary =
+                  specialCausesList.length > 0
+                    ? `${specialCausesList.length} anomaly(ies) detected, ${spcAlertCount} SPC alert(s) — ${guardOutcome}, ${patternSummary}`
+                    : `no anomalies — ${guardOutcome}, ${patternSummary}`;
+                phaseLabel('Analyze', analyzeSummary);
 
-        // Protection
-        const protection = cycle.protection as Record<string, unknown>;
-        projection.log('  Protection:');
-        projection.log(`    Circuit: ${protection.circuit_state}`);
-        const spc = protection.spc_results as Record<string, unknown> | undefined;
-        if (spc) {
-          for (const [metric, status] of Object.entries(spc)) {
-            const icon = status === 'OK' ? '+' : status === 'ALERT' ? '!' : '-';
-            projection.log(`    SPC ${metric}: ${icon} ${status}`);
-          }
-        }
-        projection.log(`    Special Causes: ${(protection.special_causes as unknown[]).length}`);
-        projection.log('');
+                // ── PLAN ──────────────────────────────────────────────────────
+                const circuitState = String(protection.circuit_state ?? 'unknown');
+                const circuitAllowed = Boolean(protection.circuit_allowed);
+                const circuitSummary = circuitAllowed
+                  ? `circuit ${circuitState} (allowed)`
+                  : `circuit ${circuitState} (BLOCKED)`;
+                const spcMetricList = Object.entries(spcResults)
+                  .map(([m, s]) => `${m}:${s}`)
+                  .join(', ');
+                const planSummary = spcMetricList
+                  ? `${circuitSummary} | SPC: ${spcMetricList}`
+                  : circuitSummary;
+                phaseLabel('Plan', planSummary);
 
-        // Optimization
-        const optimization = cycle.optimization as Record<string, unknown>;
-        const rlAction = optimization.rl_action as string | undefined ?? 'unknown';
-        const totalReward = optimization.reward as number | undefined;
-        const rlActionLabel: Record<string, string> = {
-          monitor:     'Monitor — process is healthy, no intervention needed',
-          scale_up:    'Scale Up — increase processing capacity',
-          scale_down:  'Scale Down — reduce resource consumption',
-          alert:       'Alert — anomaly detected, review recommended',
-          heal:        'Heal — autonomous recovery attempted',
-          checkpoint:  'Checkpoint — state saved for rollback',
-        };
-        projection.log('  Optimization:');
-        projection.log(`    Action: ${rlAction}${rlActionLabel[rlAction] ? ' — ' + rlActionLabel[rlAction].split(' — ')[1] : ''}`);
-        if (totalReward !== undefined) {
-          const rewardBar = totalReward >= 0
-            ? '▓'.repeat(Math.min(10, Math.round(totalReward * 10))) + '░'.repeat(Math.max(0, 10 - Math.round(totalReward * 10)))
-            : '░'.repeat(10);
-          projection.log(`    Reward: ${totalReward >= 0 ? '+' : ''}${totalReward.toFixed(2)} [${rewardBar}]`);
-        }
-        projection.log('');
+                // ── EXECUTE ───────────────────────────────────────────────────
+                const optimization = (cycle.optimization ?? {}) as Record<string, unknown>;
+                const rlAgent = String(optimization.rl_agent ?? 'QLearning');
+                const rlAction = String(optimization.rl_action ?? 'none');
+                const reward = typeof optimization.reward === 'number' ? optimization.reward : 0;
+                const cumReward =
+                  typeof optimization.cumulative_reward === 'number'
+                    ? optimization.cumulative_reward
+                    : 0;
+                const rewardSign = reward >= 0 ? '+' : '';
+                const cycleNum = optimization.cycle_count ?? cyclesRun;
+                const dispatchDetail = optimization.dispatch_detail
+                  ? ` — ${optimization.dispatch_detail}`
+                  : '';
+                phaseLabel(
+                  'Execute',
+                  `${rlAgent} (LinUCB) → action: ${rlAction}${dispatchDetail} | reward: ${rewardSign}${reward.toFixed(3)} (cumulative: ${cumReward >= 0 ? '+' : ''}${cumReward.toFixed(3)}, cycle #${cycleNum})`
+                );
 
-        // Timing
-        const totalNs = timing.total_ns as number | undefined ?? 0;
-        const totalMs = totalNs / 1_000_000;
-        const timingHuman = totalMs >= 1
-          ? `${totalMs.toFixed(1)} ms`
-          : totalNs >= 1_000
-            ? `${(totalNs / 1_000).toFixed(1)} µs`
-            : `${totalNs.toFixed(0)} ns`;
-        projection.log('  Timing:');
-        projection.log(`    Total: ${timingHuman}`);
-        projection.log('');
+                // ── LEARN ─────────────────────────────────────────────────────
+                // The WASM autonomic cycle feeds the reward signal back to the RL
+                // agent automatically. We surface the drift classification so the
+                // operator knows whether the feedback loop triggered any update.
+                const driftLabel =
+                  specialCausesList.length === 0
+                    ? 'none'
+                    : specialCausesList.length >= 3
+                      ? 'high'
+                      : 'low';
+                const learnSummary =
+                  specialCausesList.length > 0
+                    ? `drift classified as ${driftLabel} (${specialCausesList.length} special cause(s)) — RL Q-table updated via reward ${rewardSign}${reward.toFixed(3)}`
+                    : `no drift detected — RL Q-table stable (reward ${rewardSign}${reward.toFixed(3)})`;
+                phaseLabel('Learn', learnSummary);
 
-        // Result
-        if (cycle.success) {
-          projection.log('  Result: Cycle completed successfully');
-        } else {
-          projection.log('  Result: Cycle completed with warnings');
-        }
-      });
-        return await exitWithFlush(result.exit_code);
-      }),  // end withLogSession
-        () => lateAttrs,
-      );  // end withSpan
+                // ── System State narrative (multi-cycle health trend) ──────────
+                // Only meaningful when more than one cycle has run; with a single
+                // cycle there is no trend to report.
+                if (cycleHealthScores.length > 1) {
+                  projection.log('');
+                  projection.log(
+                    `  System State: ${computeHealthNarrative(cycleHealthScores)}`
+                  );
+                }
+
+                // ── Persistence check — 3+ consecutive degrading cycles ────────
+                const currentMetrics: CycleMetrics = {
+                  healthScore:
+                    typeof perception.health_score === 'number' ? perception.health_score : 0,
+                  violations: specialCausesList.length,
+                  driftStatus: specialCausesList.length >= 3 ? 2 : specialCausesList.length > 0 ? 1 : 0,
+                  fitness: -1, // not available from cycle summary (requires separate conformance run)
+                  reworkRatio: -1,
+                };
+                const { actions: learnActions, persistenceDegrading } =
+                  buildLearnRecommendations(currentMetrics, cycleHealthScores, inputPath);
+
+                // Emit persistence warning before the actions list when warranted
+                if (persistenceDegrading) {
+                  projection.log('');
+                  projection.warn(
+                    '  WARNING: System has been degrading for 3+ consecutive cycles. ' +
+                      'Immediate operator attention required.'
+                  );
+                }
+
+                // Circuit breaker blocked: always surface (not covered by learnActions)
+                const circuitActions: string[] = [];
+                if (!circuitAllowed) {
+                  circuitActions.push(
+                    'Inspect circuit breaker state with `wpm status` — execution was BLOCKED (' +
+                      circuitState +
+                      ')'
+                  );
+                }
+
+                const nextActions = [...circuitActions, ...learnActions];
+
+                projection.log('');
+                projection.log('  Recommended next actions:');
+                nextActions.forEach((action, idx) => {
+                  projection.log(`    ${idx + 1}. ${action}`);
+                });
+
+                // ── Timing breakdown ──────────────────────────────────────────
+                projection.log('');
+                projection.log('  Timing:');
+                projection.log(`    Monitor (perception): ${timing.perception_us ?? '?'} µs`);
+                projection.log(`    Analyze (decision):   ${timing.decision_us ?? '?'} µs`);
+                projection.log(`    Plan    (protection): ${timing.protection_us ?? '?'} µs`);
+                projection.log(`    Total:                ${timing.total_us ?? '?'} µs`);
+                if (timing.cycle_latency_budget_exceeded) {
+                  projection.warn('    Cycle exceeded latency budget');
+                }
+
+                // ── Verbose: full SPC + per-metric details ─────────────────────
+                if (verbose && Object.keys(spcResults).length > 0) {
+                  projection.log('');
+                  projection.log('  SPC detail:');
+                  for (const [metric, status] of Object.entries(spcResults)) {
+                    const icon = status === 'OK' ? '+' : status === 'ALERT' ? '!' : '-';
+                    projection.log(`    [${icon}] ${metric}: ${status}`);
+                  }
+                }
+
+                projection.log('');
+                if (cycle.success) {
+                  projection.success(
+                    `Cycle #${cycleNum} completed successfully in ${(performance.now() - t0).toFixed(0)}ms`
+                  );
+                } else {
+                  projection.warn(
+                    `Cycle #${cycleNum} completed with warnings in ${(performance.now() - t0).toFixed(0)}ms`
+                  );
+                }
+              });
+              return await exitWithFlush(result.exit_code);
+            }
+          ), // end withLogSession
+        () => lateAttrs
+      ); // end withSpan
     } catch (error) {
       const result = makeErrorResult('autoprocess', error, EXIT_CODES.execution_error);
       emitResult(result, { format, verbose, quiet });

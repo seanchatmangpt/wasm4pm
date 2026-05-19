@@ -278,14 +278,15 @@ impl LinUCBAgent {
         self.a_inv
     }
 
-    /// Compute L2 norm of weight vectors across all actions.
-    /// Returns array of per-action norms for convergence tracking.
-    pub fn weight_l2_norms(&self) -> [f32; N_ACTIONS] {
+    /// Compute L2 norms of all weight vectors (convergence metric).
+    /// Returns array of 5 norms, one per action.
+    /// Can be used to track learning progress (larger norms = more adapted agents).
+    pub fn weight_norms(&self) -> [f32; N_ACTIONS] {
         let mut norms = [0.0_f32; N_ACTIONS];
         for a in 0..N_ACTIONS {
             let mut norm_sq = 0.0_f32;
-            for i in 0..N_FEATURES {
-                norm_sq += self.w[a][i] * self.w[a][i];
+            for &w in &self.w[a] {
+                norm_sq += w * w;
             }
             norms[a] = norm_sq.sqrt();
         }

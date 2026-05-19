@@ -57,6 +57,7 @@ export function checkConvergence(
       dominantHash: null,
       dissentingWorkers: [],
       totalChecked: 0,
+      convergenceReason: `no workers produced results for algorithm ${algorithm}`,
     };
   }
 
@@ -83,6 +84,24 @@ export function checkConvergence(
     ? relevant.filter((r) => r.resultHash !== dominantHash).map((r) => r.workerId)
     : relevant.map((r) => r.workerId);
 
+  // Build human-readable reason
+  const shortHash = dominantHash ? dominantHash.slice(0, 8) + '...' : 'n/a';
+  const needed = Math.ceil(threshold * relevant.length);
+  let convergenceReason: string;
+  if (converged) {
+    if (maxCount === relevant.length) {
+      convergenceReason = `${maxCount}/${relevant.length} workers agree on hash ${shortHash} (unanimous)`;
+    } else {
+      convergenceReason =
+        `${maxCount}/${relevant.length} workers agree on hash ${shortHash} ` +
+        `(threshold ${threshold.toFixed(2)} met)`;
+    }
+  } else {
+    convergenceReason =
+      `${maxCount}/${relevant.length} workers agree on hash ${shortHash} ` +
+      `(threshold ${threshold.toFixed(2)} not met — need ${needed}/${relevant.length})`;
+  }
+
   return {
     algorithm,
     converged,
@@ -90,6 +109,7 @@ export function checkConvergence(
     dominantHash,
     dissentingWorkers,
     totalChecked: relevant.length,
+    convergenceReason,
   };
 }
 
@@ -110,6 +130,7 @@ export function checkSwarmConvergence(
   stableWorkers: string[];
   unstableWorkers: string[];
   agreementRate: number;
+  convergenceReason: string;
 } {
   const workerAlgoPairs = results.map((r) => `${r.workerId}/${r.algorithmId}`);
   const stableWorkers: string[] = [];
@@ -131,7 +152,19 @@ export function checkSwarmConvergence(
   const agreementRate = total > 0 ? stableWorkers.length / total : 0;
   const converged = unstableWorkers.length === 0 && stableWorkers.length === total && total > 0;
 
-  return { converged, stableWorkers, unstableWorkers, agreementRate };
+  // Build human-readable reason
+  let convergenceReason: string;
+  if (total === 0) {
+    convergenceReason = 'no workers ran in this episode';
+  } else if (converged) {
+    convergenceReason = `all ${total} worker(s) stable for ${convergenceRuns} consecutive rounds`;
+  } else {
+    convergenceReason =
+      `${stableWorkers.length}/${total} stable after ${convergenceRuns} rounds ` +
+      `(need all ${total})`;
+  }
+
+  return { converged, stableWorkers, unstableWorkers, agreementRate, convergenceReason };
 }
 
 /**
@@ -164,6 +197,7 @@ export function checkMlConvergence(
       dominantHash: null,
       dissentingWorkers: [],
       totalChecked: 0,
+      convergenceReason: `no workers produced ML results for algorithm ${algorithm}`,
     };
   }
 
@@ -202,6 +236,24 @@ export function checkMlConvergence(
         .map((i) => relevant[i].workerId)
     : relevant.map((r) => r.workerId);
 
+  // Build human-readable reason (ML uses epsilon-equivalence, not hash equality)
+  const shortHash = dominantHash ? dominantHash.slice(0, 8) + '...' : 'n/a';
+  const needed = Math.ceil(threshold * relevant.length);
+  let convergenceReason: string;
+  if (converged) {
+    if (maxGroupSize === relevant.length) {
+      convergenceReason = `${maxGroupSize}/${relevant.length} ML results equivalent within ε=${epsilon} (unanimous)`;
+    } else {
+      convergenceReason =
+        `${maxGroupSize}/${relevant.length} ML results equivalent within ε=${epsilon} ` +
+        `(threshold ${threshold.toFixed(2)} met, dominant hash ${shortHash})`;
+    }
+  } else {
+    convergenceReason =
+      `${maxGroupSize}/${relevant.length} ML results equivalent within ε=${epsilon} ` +
+      `(threshold ${threshold.toFixed(2)} not met — need ${needed}/${relevant.length})`;
+  }
+
   return {
     algorithm,
     converged,
@@ -209,6 +261,7 @@ export function checkMlConvergence(
     dominantHash,
     dissentingWorkers,
     totalChecked: relevant.length,
+    convergenceReason,
   };
 }
 

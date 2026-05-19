@@ -14,4 +14,6 @@ export * from './validators/index.js';
 export { verifySoundness, computeQualityMetrics, validateVerifierDFG, formatSoundnessResult, formatQualityMetrics, } from './verifiers/index.js';
 export { tokenReplayConformance, createTestPetriNet, createTestEventLog, getExpectedTestResult, expectCloseTo, assertTokenReplayResult, computeAlignment, formatTokenReplayResult, formatAlignment, } from './conformance/token-replay.js';
 export * from './utils/index.js';
+// Performance Baseline Measurement
+export { generateTestEventLogs, measureAlgorithm, formatMeasurement, generateSummaryTable, colorCodeLatency, getMemorySnapshot, } from './perf-baseline.js';
 //# sourceMappingURL=index.js.map

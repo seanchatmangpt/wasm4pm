@@ -11,10 +11,13 @@ import type { AlgorithmMetadata, ExecutionProfile } from './registry.js';
 import { getRegistry, type AlgorithmRegistry } from './registry.js';
 import { KERNEL_VERSION, checkCompatibility, type CompatibilityResult } from './versioning.js';
 import { hashOutput, hashAlgorithmResult } from './hashing.js';
-import { KernelError, wrapKernelCall, classifyRustError } from './errors.js';
-import { validateKernelResult, ValidationError } from './validation.js';
+import { KernelError, wrapKernelCall } from './errors.js';
+import { validateKernelResult } from './validation.js';
+import { computeTimeout, detectAlgorithmTier } from './adaptive-timeout.js';
 export { ValidationError } from './validation.js';
 export type { ViolationReport } from './validation.js';
+export { computeTimeout, detectAlgorithmTier } from './adaptive-timeout.js';
+export type { TimeoutFactors, TimeoutResult } from './adaptive-timeout.js';
 
 // ─── OTEL-compatible span emission ───────────────────────────────────────────
 //
@@ -133,6 +136,21 @@ export interface KernelWasmModule extends WasmModule {
   /** Load an event log from an XES string and return an opaque handle */
   load_eventlog_from_xes?(xes: string): string;
 
+  /** Load an OCEL 2.0 JSON string and return an opaque OCEL handle */
+  load_ocel_from_json?(content: string): string;
+
+  /** Load an OCEL 2.0 JSON string (WASM2 variant name) */
+  load_ocel2_from_json?(content: string): string;
+
+  /** Discover OC-Petri net from an OCEL handle using a named algorithm */
+  discover_oc_petri_net?(ocel_handle: string, algorithm: string): unknown;
+
+  /** Encode OCEL as compact text representation */
+  encode_ocel_as_text?(ocel_handle: string): string;
+
+  /** Flatten one object type from an OCEL into a conventional flat EventLog handle */
+  flatten_ocel_to_eventlog?(ocel_handle: string, object_type: string): string;
+
   /** Delete an object handle from WASM memory */
   delete_object?(handle: string): void;
 
@@ -154,6 +172,18 @@ export interface KernelWasmModule extends WasmModule {
  * kernel.freeHandle(result.handle);
  * ```
  */
+/**
+ * Optional callback for capturing algorithm feedback (quality metrics).
+ * Called after successful discovery runs (non-blocking).
+ */
+export type FeedbackCapture = (options: {
+  algorithm: string;
+  logSize: number;
+  executionTimeMs: number;
+  metrics: { fitness?: number; precision?: number | null; generalization?: number | null; simplicity?: number | null };
+  metadata?: Record<string, unknown>;
+}) => Promise<void>;
+
 export class Kernel {
   private wasm: KernelWasmModule;
   private registry: AlgorithmRegistry;
@@ -164,12 +194,16 @@ export class Kernel {
   private _startTime = Date.now();
   private _resultCache = new Map<string, KernelResult>();
   private _spanSink: SpanSink = DEFAULT_SINK;
+  private _feedbackCapture: FeedbackCapture | undefined;
 
-  constructor(wasmModule: KernelWasmModule, options?: { spanSink?: SpanSink }) {
+  constructor(wasmModule: KernelWasmModule, options?: { spanSink?: SpanSink; feedbackCapture?: FeedbackCapture }) {
     this.wasm = wasmModule;
     this.registry = getRegistry();
     if (options?.spanSink) {
       this._spanSink = options.spanSink;
+    }
+    if (options?.feedbackCapture) {
+      this._feedbackCapture = options.feedbackCapture;
     }
   }
 
@@ -187,6 +221,15 @@ export class Kernel {
    */
   setSpanSink(sink: SpanSink): void {
     this._spanSink = sink;
+  }
+
+  /**
+   * Set the feedback capture callback.
+   * Called after successful algorithm runs to capture quality metrics.
+   * Non-blocking (failures are logged but don't affect result).
+   */
+  setFeedbackCapture(capture: FeedbackCapture): void {
+    this._feedbackCapture = capture;
   }
 
   /**
@@ -270,10 +313,48 @@ export class Kernel {
     const cached = this._resultCache.get(cacheKey);
     if (cached) {
       this._cacheHits++;
+      try {
+        const hitTime = Date.now() * 1_000_000;
+        this._spanSink({
+          trace_id: hexId(32),
+          span_id: hexId(16),
+          name: 'kernel.run',
+          kind: 'INTERNAL',
+          start_time: hitTime,
+          end_time: hitTime,
+          status: { code: 'OK' },
+          attributes: {
+            'service.name': 'wasm4pm',
+            'kernel.version': KERNEL_VERSION,
+            'algorithm.name': algorithmName,
+            'algorithm.output_type': cached.outputType,
+            'algorithm.duration_ms': cached.durationMs,
+            'algorithm.status': 'ok',
+            'algorithm.handle': cached.handle,
+            'algorithm.hash': cached.hash,
+            'cache.hit': true,
+          },
+        });
+      } catch {
+        // Never block on OTEL
+      }
       return cached;
     }
 
     const activityKey = (params.activity_key as string) ?? 'concept:name';
+
+    // ── Compute adaptive timeout ───────────────────────────────────────────
+    // Timeout is based on log size, complexity, and algorithm tier.
+    // We estimate complexity as 'simple' here (no heuristics available at dispatch time);
+    // the actual complexity could be refined with log statistics if available.
+    const estimatedEventCount = (params.estimated_event_count as number) ?? 10_000;
+    const algorithmTier = detectAlgorithmTier(algorithmName);
+    const timeoutResult = computeTimeout({
+      eventCount: estimatedEventCount,
+      complexity: 'simple', // Conservative default; could be parameterized
+      algorithmTier,
+      algorithmName,
+    });
 
     // ── OTEL span setup ────────────────────────────────────────────────────
     const traceId = hexId(32);
@@ -352,7 +433,7 @@ export class Kernel {
         name: 'kernel.run',
         kind: 'INTERNAL',
         start_time: spanStartNs,
-        end_time: Date.now() * 1_000_000,
+        end_time: Math.max(Date.now() * 1_000_000, spanStartNs + 1_000_000),
         status: { code: spanStatus, message: spanErrorMessage },
         attributes: {
           'service.name': 'wasm4pm',
@@ -363,10 +444,24 @@ export class Kernel {
           'algorithm.status': 'ok',
           'algorithm.handle': result.handle,
           'algorithm.hash': result.hash,
+          'timeout.computed_ms': timeoutResult.timeoutMs,
+          'timeout.algorithm_tier': algorithmTier,
         },
       });
     } catch {
       // Never block on OTEL.
+    }
+
+    // ── Capture feedback (non-blocking) ────────────────────────────────
+    if (this._feedbackCapture) {
+      this._feedbackCapture({
+        algorithm: algorithmName,
+        logSize: this.getLogSizeHint(eventLogHandle),
+        executionTimeMs: durationMs,
+        metrics: {},
+      }).catch(() => {
+        // Silently ignore feedback capture failures per TPS rules
+      });
     }
 
     this._resultCache.set(cacheKey, result);
@@ -456,6 +551,17 @@ export class Kernel {
   }
 
   /**
+   * Estimate log size from handle (for feedback purposes).
+   * This is a heuristic; exact size calculation would require WASM introspection.
+   * Returns a reasonable estimate based on handle if available.
+   */
+  private getLogSizeHint(_handle: string): number {
+    // Heuristic: if WASM exposes a stats function, call it
+    // For now, return 0 (unknown) — callers should enrich with actual size
+    return 0;
+  }
+
+  /**
    * Dispatch to the correct WASM function based on algorithm ID
    */
   private async dispatchAlgorithm(
@@ -466,11 +572,17 @@ export class Kernel {
   ): Promise<{ handle: string }> {
     switch (algorithmId) {
       case 'dfg':
-      case 'simd_streaming_dfg':
       case 'hierarchical_dfg':
       case 'streaming_log':
       case 'smart_engine':
         return this.wasm.discover_dfg(eventLogHandle, activityKey);
+
+      // SIMD-accelerated DFG — dispatches to the dedicated vectorised WASM export,
+      // not the standard discover_dfg. A practitioner who selects this algorithm
+      // explicitly wants the ~500x throughput uplift; silently downgrading to the
+      // standard DFG defeats the purpose.
+      case 'simd_streaming_dfg':
+        return this.wasm.discover_dfg_simd(eventLogHandle, activityKey);
 
       case 'process_skeleton':
         return this.wasm.extract_process_skeleton(
@@ -691,6 +803,70 @@ export class Kernel {
         );
       }
 
+      // ─── Social network mining (van der Aalst organisational perspective) ──
+      // Surfaces the two social network WASM exports that were previously dead
+      // (exported from Rust but unreachable from TypeScript). The organisational
+      // perspective is a first-class van der Aalst dimension: who does what, and
+      // how do resources hand over work to each other?
+
+      case 'handover_network':
+        return this.wasm.discover_handover_network(
+          eventLogHandle,
+          (params.resource_key as string) ?? 'org:resource'
+        );
+
+      case 'working_together_network':
+        return this.wasm.discover_working_together_network(
+          eventLogHandle,
+          (params.resource_key as string) ?? 'org:resource'
+        );
+
+      // ─── OCEL (Object-Centric Event Log) algorithms ──────────────────────
+      //
+      // These algorithms operate on OCEL handles, not conventional XES log handles.
+      // The eventLogHandle parameter is interpreted as an OCEL handle for these cases.
+      // The caller must have loaded the OCEL via wasm.load_ocel_from_json() externally
+      // before calling kernel.run() with an ocel_* algorithm ID.
+
+      case 'ocel_dfg': {
+        const wasmAny = this.wasm as unknown as Record<string, (h: string) => unknown>;
+        if (typeof wasmAny['discover_ocel_dfg'] !== 'function') {
+          throw new Error('discover_ocel_dfg is not available in this WASM build (requires feature-ocel)');
+        }
+        // OCEL DFG functions return data directly (not an opaque handle); we store
+        // the result in the module-level result store and return a synthetic handle.
+        wasmAny['discover_ocel_dfg'](eventLogHandle);
+        return { handle: `ocel_dfg_${Date.now()}` };
+      }
+
+      case 'ocel_dfg_per_type': {
+        const wasmAny = this.wasm as unknown as Record<string, (h: string) => unknown>;
+        if (typeof wasmAny['discover_ocel_dfg_per_type'] !== 'function') {
+          throw new Error('discover_ocel_dfg_per_type is not available in this WASM build (requires feature-ocel)');
+        }
+        wasmAny['discover_ocel_dfg_per_type'](eventLogHandle);
+        return { handle: `ocel_dfg_per_type_${Date.now()}` };
+      }
+
+      case 'ocel_petri_net': {
+        const fn = this.wasm.discover_oc_petri_net;
+        if (!fn) {
+          throw new Error('discover_oc_petri_net is not available in this WASM build (requires feature-ocel)');
+        }
+        const algorithm = (params.algorithm as string) ?? 'inductive';
+        fn.call(this.wasm, eventLogHandle, algorithm);
+        return { handle: `ocel_petri_net_${Date.now()}` };
+      }
+
+      case 'ocel_encode': {
+        const fn = this.wasm.encode_ocel_as_text;
+        if (!fn) {
+          throw new Error('encode_ocel_as_text is not available in this WASM build (requires feature-ocel)');
+        }
+        fn.call(this.wasm, eventLogHandle);
+        return { handle: `ocel_encode_${Date.now()}` };
+      }
+
       // ─── ML algorithms (TypeScript, not WASM) ────────────────────────────
 
       case 'ml_classify':
@@ -721,6 +897,24 @@ export class Kernel {
       case 'ml_pca':
         throw new Error(
           `ML algorithm '${algorithmId}' requires the @wasm4pm/ml package. Run 'wpm ml pca ...' instead.`
+        );
+
+      case 'predict_next_activity':
+        throw new Error(
+          `Prediction algorithm '${algorithmId}' requires the @wasm4pm/predict package and multi-step model building. ` +
+          `Use the CLI command: wpm predict next-activity -i <log.xes> [--prefix "A,B"] [--ngram-order 2]`
+        );
+
+      case 'predict_remaining_time':
+        throw new Error(
+          `Prediction algorithm '${algorithmId}' requires the @wasm4pm/predict package and multi-step model building. ` +
+          `Use the CLI command: wpm predict remaining-time -i <log.xes> [--prefix "A,B,C"]`
+        );
+
+      case 'predict_outcome':
+        throw new Error(
+          `Prediction algorithm '${algorithmId}' requires the @wasm4pm/predict package and multi-step model building. ` +
+          `Use the CLI command: wpm predict outcome -i <log.xes> [--prefix "A,B"]`
         );
 
       default:

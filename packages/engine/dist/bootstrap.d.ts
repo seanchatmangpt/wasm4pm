@@ -32,7 +32,10 @@ export interface BootstrapResult {
  */
 export declare function bootstrapEngine(kernel: BootstrapKernel, wasmLoader: WasmLoader): Promise<BootstrapResult>;
 /**
- * Creates a structured error for bootstrap failures
+ * Creates a structured error for bootstrap failures.
+ * When the underlying cause is a WasmLoadError, the code and suggestion are
+ * derived from the classified cause so callers see actionable diagnostics
+ * rather than the generic "BOOTSTRAP_FAILED / check WASM availability" pair.
  */
 export declare function createBootstrapError(err: unknown): EngineError;
 //# sourceMappingURL=bootstrap.d.ts.map

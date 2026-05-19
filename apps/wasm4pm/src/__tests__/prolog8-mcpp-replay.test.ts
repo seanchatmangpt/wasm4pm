@@ -477,16 +477,9 @@ describe('Prolog8 — mcpp Receipt Replay Integration', () => {
       const input = buildReplayInput(buildFullAdmissionFacts());
       const replayPath = writeTmp(tmpDir, 'mcpp-replay-placeholder.json', input);
       const result = await runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env });
-      // Rejection paths (any one is a valid "not Verified" outcome):
-      //   conformance_fail (6) — WASM present, hash mismatch
-      //   execution_error  (3) — WASM present, struct deserialization rejected
-      //   source_error     (2) — WASM unavailable
+      // ReceiptInvalid → conformance_fail (6) when WASM present; source_error (2) when absent
       expect(result.exitCode).not.toBe(EXIT_CODES.success);
-      expect([
-        EXIT_CODES.source_error,
-        EXIT_CODES.execution_error,
-        EXIT_CODES.conformance_fail,
-      ]).toContain(result.exitCode);
+      expect([EXIT_CODES.source_error, EXIT_CODES.conformance_fail]).toContain(result.exitCode);
     });
 
     it('replay --format json always has status and exit_code fields', async () => {

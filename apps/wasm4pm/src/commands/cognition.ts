@@ -12,12 +12,15 @@ import { plan } from './cognition/plan.js';
 import { inspect } from './cognition/inspect.js';
 import { doctor } from './cognition/doctor.js';
 import { watch } from './cognition/watch.js';
+import { STANDARD_EXIT_CODE_DOCS } from '../help-standards.js';
 
 export const cognition = defineCommand({
   meta: {
     name: 'cognition',
     description:
-      'Old-AI cognition kernel: contracts, breed selection, receipt chains, adversarial gates',
+      `Breed selection, contract verification, and receipt chain validation. Run cognitive tasks (run), explain selections (explain), or audit chain integrity (verify). Example: wpm cognition run --help
+
+${STANDARD_EXIT_CODE_DOCS}`,
   },
   subCommands: {
     run,

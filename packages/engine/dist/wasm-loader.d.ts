@@ -10,13 +10,27 @@ import { ObservabilityLayer } from '@wasm4pm/observability';
  */
 type RuntimeEnvironment = 'browser' | 'nodejs' | 'wasi';
 /**
+ * Minimal structural type for WebAssembly.Memory (avoids requiring the DOM lib).
+ * Captures the two fields we actually access in this module.
+ */
+export interface WasmMemory {
+    /** Backing ArrayBuffer for the WASM linear memory. */
+    buffer: ArrayBuffer;
+    /** Maximum number of 64 KiB pages (undefined when no maximum was declared). */
+    maximum?: number;
+}
+/**
  * WASM module type - minimal interface covering common operations
+ * The index signature uses `unknown` to preserve type safety; callers that
+ * access arbitrary WASM exports cast the module to a narrower type (e.g.
+ * `Record<string, (...args: unknown[]) => unknown>`) after `loader.get()`.
  */
 export interface WasmModule {
-    memory: any;
+    /** WebAssembly linear memory — may be absent for bundler targets */
+    memory: WasmMemory;
     version?: () => string;
     init?: () => void;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 /**
  * WASM initialization error codes
@@ -25,6 +39,16 @@ export declare enum WasmErrorCode {
     WASM_INIT_FAILED = 5,
     WASM_MEMORY_EXCEEDED = 5,
     WASM_VERSION_MISMATCH = 5
+}
+/**
+ * Classified WASM load failure — carries a machine-readable cause code and the
+ * resolved module path so callers (and the bootstrap timeout handler) can emit
+ * specific, actionable error messages rather than generic "BOOTSTRAP_FAILED".
+ */
+export declare class WasmLoadError extends Error {
+    readonly loadCause: 'FILE_NOT_FOUND' | 'CORRUPT_BINARY' | 'MISSING_EXPORTS' | 'LOAD_FAILED';
+    readonly modulePath: string | undefined;
+    constructor(loadCause: 'FILE_NOT_FOUND' | 'CORRUPT_BINARY' | 'MISSING_EXPORTS' | 'LOAD_FAILED', message: string, modulePath?: string);
 }
 /**
  * WASM initialization status
@@ -114,9 +138,9 @@ export declare class WasmLoader {
      */
     private validateMemory;
     /**
-     * Load WASM module from wasm4pm/pkg directory
-     * Validates that the module exports required discovery functions (load_eventlog_from_xes)
-     * Ignore: memory field is bundler-specific and may not be present on all targets
+     * Load WASM module from wasm4pm/pkg directory.
+     * Validates that the module exports required discovery functions.
+     * Throws WasmLoadError with a classified cause for actionable diagnostics.
      */
     private loadWasmModule;
     /**
@@ -135,7 +159,9 @@ export declare class WasmLoader {
      */
     private getGetrandomPolyfill;
     /**
-     * Emit JSON event via observability layer
+     * Emit JSON event via observability layer.
+     * Accepts a JsonEvent; the runtime guard protects against subclasses that
+     * may not implement emitJson.
      */
     private emitJson;
 }

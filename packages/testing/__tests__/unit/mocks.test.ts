@@ -249,7 +249,8 @@ describe('MockEngine', () => {
     await engine.bootstrap();
     const plan = await engine.plan({});
     expect(plan.id).toContain('plan-');
-    expect(plan.hash).toContain('mock-hash-');
+    expect(plan.hash).toMatch(/^mock[0-9a-f]{4}0+$/); // mock + 4-digit counter + padded zeros
+    expect(plan.hash.length).toBe(64); // BLAKE3 hex length
     expect(plan.steps.length).toBeGreaterThan(0);
     expect(engine.state()).toBe('ready');
   });

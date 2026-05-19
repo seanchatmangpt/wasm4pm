@@ -92,7 +92,7 @@ export class SecretRedaction {
    * Redact sensitive fields from an object
    * Recursively processes nested objects and arrays
    */
-  static redactObject(obj: any, maxDepth = 10): any {
+  static redactObject(obj: unknown, maxDepth = 10): unknown {
     if (maxDepth <= 0) {
       return obj;
     }
@@ -113,14 +113,10 @@ export class SecretRedaction {
       return obj.map((item) => this.redactObject(item, maxDepth - 1));
     }
 
-    const redacted: Record<string, any> = {};
+    const redacted: Record<string, unknown> = {};
 
-    for (const [key, value] of Object.entries(obj)) {
-      // Receipt/OTEL hash fields are audit-trail identifiers — never redact them.
-      // They match the generic hex-length heuristic but are not secrets.
-      if (RECEIPT_HASH_FIELDS.has(key)) {
-        redacted[key] = value;
-      } else if (this.isSensitiveField(key)) {
+    for (const [key, value] of Object.entries(obj as Record<string, unknown>)) {
+      if (this.isSensitiveField(key)) {
         if (value === null || value === undefined) {
           redacted[key] = value;
         } else if (typeof value === 'object' && !(value instanceof Date)) {
@@ -146,7 +142,7 @@ export class SecretRedaction {
    * Redact sensitive fields from configuration
    * Handles both standard config objects and nested values
    */
-  static redactConfig(config: any): any {
+  static redactConfig(config: unknown): unknown {
     return this.redactObject(config);
   }
 
@@ -217,8 +213,8 @@ export class SecretRedaction {
    * Create a redaction report showing what was redacted
    */
   static createRedactionReport(
-    original: any,
-    redacted: any,
+    original: unknown,
+    redacted: unknown,
     path = ''
   ): { path: string; reason: string }[] {
     const report: { path: string; reason: string }[] = [];
@@ -228,13 +224,19 @@ export class SecretRedaction {
     }
 
     if (Array.isArray(original)) {
+      const redactedArr = Array.isArray(redacted) ? redacted : [];
       for (let i = 0; i < original.length; i++) {
-        report.push(...this.createRedactionReport(original[i], redacted[i], `${path}[${i}]`));
+        report.push(...this.createRedactionReport(original[i], redactedArr[i], `${path}[${i}]`));
       }
       return report;
     }
 
-    for (const [key, value] of Object.entries(original)) {
+    const originalObj = original as Record<string, unknown>;
+    const redactedObj = (typeof redacted === 'object' && redacted !== null)
+      ? redacted as Record<string, unknown>
+      : {};
+
+    for (const [key, value] of Object.entries(originalObj)) {
       const currentPath = path ? `${path}.${key}` : key;
 
       if (typeof value === 'string' && this.isSensitiveContent(value)) {
@@ -253,7 +255,7 @@ export class SecretRedaction {
         !Array.isArray(value) &&
         !(value instanceof Date)
       ) {
-        report.push(...this.createRedactionReport(value, redacted[key], currentPath));
+        report.push(...this.createRedactionReport(value, redactedObj[key], currentPath));
       }
     }
 

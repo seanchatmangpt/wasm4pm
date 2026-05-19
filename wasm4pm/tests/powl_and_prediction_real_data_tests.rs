@@ -112,6 +112,7 @@ fn powl_config(variant: DiscoveryVariant) -> DiscoveryConfig {
         min_trace_count: 1,
         noise_threshold: 0.0,
         from_dfg: false,
+        fall_through_fired: false,
     }
 }
 

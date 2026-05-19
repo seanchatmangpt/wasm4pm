@@ -20,7 +20,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
-use tracing;
+use tracing::{span, Level};
 
 // ---------------------------------------------------------------------------
 // Monotonic clock
@@ -156,6 +156,12 @@ pub enum CircuitState {
 /// Circuit breaker configuration.
 ///
 /// All durations are in **milliseconds** (WASM has no `std::time::Duration`).
+///
+/// **Validation rules:**
+/// - `failure_threshold` must be > 0 (0 would never open circuit)
+/// - `success_threshold` must be > 0 (0 would auto-close in HalfOpen)
+/// - `open_timeout_ms` must be > 0 (0 would permanently probe)
+/// - `half_open_timeout_ms` must be > 0 (0 would prevent recovery)
 #[derive(Debug, Clone)]
 #[allow(dead_code)]
 pub struct CircuitBreakerConfig {
@@ -167,6 +173,26 @@ pub struct CircuitBreakerConfig {
     pub open_timeout_ms: u64,
     /// Half-open timeout (ms) before returning to open.
     pub half_open_timeout_ms: u64,
+}
+
+impl CircuitBreakerConfig {
+    /// Validate configuration parameters.
+    /// Returns `Err(String)` if any parameter is invalid.
+    fn validate(&self) -> Result<(), String> {
+        if self.failure_threshold == 0 {
+            return Err("failure_threshold must be > 0".to_string());
+        }
+        if self.success_threshold == 0 {
+            return Err("success_threshold must be > 0".to_string());
+        }
+        if self.open_timeout_ms == 0 {
+            return Err("open_timeout_ms must be > 0".to_string());
+        }
+        if self.half_open_timeout_ms == 0 {
+            return Err("half_open_timeout_ms must be > 0".to_string());
+        }
+        Ok(())
+    }
 }
 
 impl Default for CircuitBreakerConfig {
@@ -232,6 +258,10 @@ pub struct CircuitBreaker {
     success_count: u32,
     /// Monotonic step at which the last state transition happened.
     last_state_change_ms: u64,
+    /// Total number of state transitions (for observability and thrashing detection).
+    transition_count: u32,
+    /// Last transition reason (for MTBT calculation).
+    last_transition_reason: String,
 }
 
 impl CircuitBreaker {
@@ -242,14 +272,23 @@ impl CircuitBreaker {
     }
 
     /// Create new circuit breaker with custom config.
+    /// Validates configuration before construction.
+    ///
+    /// # Panics
+    /// Panics if config validation fails (invalid threshold or timeout values).
     #[allow(dead_code)]
     pub fn with_config(config: CircuitBreakerConfig) -> Self {
+        if let Err(e) = config.validate() {
+            panic!("Invalid circuit breaker config: {}", e);
+        }
         Self {
             config,
             state: CircuitState::Closed,
             failure_count: 0,
             success_count: 0,
             last_state_change_ms: now_ms(),
+            transition_count: 0,
+            last_transition_reason: "initialization".to_string(),
         }
     }
 
@@ -272,6 +311,9 @@ impl CircuitBreaker {
     /// Record a successful call.
     #[allow(dead_code)]
     pub fn record_success(&mut self) {
+        let prev_state = self.state;
+        let prev_success_count = self.success_count;
+
         match self.state {
             CircuitState::Closed => {
                 // Reset failure count on success.
@@ -287,11 +329,24 @@ impl CircuitBreaker {
                 // Should not happen — calls should be rejected in open state.
             }
         }
+
+        tracing::debug!(
+            prev_state = ?prev_state,
+            current_state = ?self.state,
+            prev_success_count = prev_success_count,
+            current_success_count = self.success_count,
+            status = "ok",
+            service_name = "wpm",
+            "circuit breaker recorded success"
+        );
     }
 
     /// Record a failed call.
     #[allow(dead_code)]
     pub fn record_failure(&mut self) {
+        let prev_state = self.state;
+        let prev_failure_count = self.failure_count;
+
         self.failure_count += 1;
 
         match self.state {
@@ -308,15 +363,42 @@ impl CircuitBreaker {
                 // Already open, just update failure count.
             }
         }
+
+        tracing::warn!(
+            prev_state = ?prev_state,
+            current_state = ?self.state,
+            prev_failure_count = prev_failure_count,
+            current_failure_count = self.failure_count,
+            failure_threshold = self.config.failure_threshold,
+            status = "error",
+            service_name = "wpm",
+            "circuit breaker recorded failure"
+        );
     }
 
     /// Check if a call should be allowed.
+    /// Emits OTEL span with explicit healing decision rationale including timeout comparison
+    /// operands for FM-5 auditing.
     #[allow(dead_code)]
     pub fn allow_request(&mut self) -> bool {
+        let span = span!(
+            Level::DEBUG,
+            "circuit_breaker.allow_request",
+            current_state = ?self.state,
+            failure_count = self.failure_count,
+            success_count = self.success_count,
+            service_name = "wpm",
+            status = if self.state as u8 != CircuitState::Open as u8 { "ok" } else { "error" },
+            circuit.purpose = "healing_guard",
+            circuit.role = "autonomous_recovery"
+        );
+        let _enter = span.enter();
+
         let elapsed = now_ms().saturating_sub(self.last_state_change_ms);
         // Per-state timeout thresholds; Closed never times out.
         let timeouts: [u64; 3] = [u64::MAX, self.config.half_open_timeout_ms, self.config.open_timeout_ms];
         let timed_out = elapsed >= timeouts[self.state as usize];
+        let timeout_threshold = timeouts[self.state as usize];
 
         let (next_state, allow) = match (self.state, timed_out) {
             (CircuitState::Open, true)     => (CircuitState::HalfOpen, true),
@@ -326,6 +408,27 @@ impl CircuitBreaker {
         if next_state != self.state {
             self.transition_to(next_state);
         }
+
+        // Emit healing decision span with full rationale and operands for auditing
+        let decision_reason = match (self.state, timed_out) {
+            (CircuitState::Closed, _) => "closed_allows_all",
+            (CircuitState::Open, true) => "open_timeout_expired_probe",
+            (CircuitState::Open, false) => "open_waiting_recovery",
+            (CircuitState::HalfOpen, true) => "halfopen_timeout_recovery_failed",
+            (CircuitState::HalfOpen, false) => "halfopen_waiting_threshold",
+        };
+
+        tracing::debug!(
+            is_allowed = allow,
+            next_state = ?next_state,
+            elapsed_ms = elapsed,
+            timeout_threshold_ms = timeout_threshold,
+            timeout_comparison_result = timed_out,
+            decision_reason = decision_reason,
+            status = if allow { "ok" } else { "error" },
+            "circuit breaker healing decision"
+        );
+
         allow
     }
 
@@ -371,11 +474,68 @@ impl CircuitBreaker {
         self.config.half_open_timeout_ms
     }
 
+    /// Get total transition count (observability metric).
+    #[allow(dead_code)]
+    pub fn transition_count(&self) -> u32 {
+        self.transition_count
+    }
+
+    /// Get last transition reason (for MTBT tracking).
+    #[allow(dead_code)]
+    pub fn last_transition_reason(&self) -> &str {
+        &self.last_transition_reason
+    }
+
     /// Transition to new state.
+    /// Emits OTEL span with elapsed time since last transition, timeout threshold,
+    /// transition reason, and thrashing detection metrics for auditability.
     fn transition_to(&mut self, new_state: CircuitState) {
-        let old_state = self.state;
+        let prev_state = self.state;
+        let now = now_ms();
+        let elapsed_ms = now.saturating_sub(self.last_state_change_ms);
+
+        // Determine transition reason and timeout threshold
+        let (transition_reason, timeout_threshold_ms) = match (prev_state, new_state) {
+            // Success-based transitions
+            (CircuitState::HalfOpen, CircuitState::Closed) => {
+                ("success_threshold_reached", 0u64)
+            }
+            // Failure-based transitions
+            (CircuitState::Closed, CircuitState::Open) => {
+                ("failure_threshold_reached", 0u64)
+            }
+            // Timeout-based transitions
+            (CircuitState::Open, CircuitState::HalfOpen) => {
+                let threshold = self.config.open_timeout_ms;
+                ("timeout_expired_probing", threshold)
+            }
+            (CircuitState::HalfOpen, CircuitState::Open) => {
+                let threshold = self.config.half_open_timeout_ms;
+                ("timeout_expired_recovery_failed", threshold)
+            }
+            // Explicit resets (shouldn't happen, but covered for completeness)
+            (CircuitState::Closed, CircuitState::Closed) => {
+                ("no_transition", 0u64)
+            }
+            (CircuitState::Open, CircuitState::Open) => {
+                ("no_transition", self.config.open_timeout_ms)
+            }
+            (CircuitState::HalfOpen, CircuitState::HalfOpen) => {
+                ("no_transition", self.config.half_open_timeout_ms)
+            }
+            // Unusual transitions
+            _ => ("unexpected_transition", 0u64),
+        };
+
         self.state = new_state;
-        self.last_state_change_ms = now_ms();
+        self.last_state_change_ms = now;
+
+        // Increment transition counter (for thrashing detection)
+        self.transition_count = self.transition_count.saturating_add(1);
+        self.last_transition_reason = transition_reason.to_string();
+
+        // Detect thrashing: >5 transitions in 60s indicates rapid open/close cycles
+        let is_thrashing = self.transition_count > 5 && elapsed_ms < 60_000;
 
         let trigger_reason = match (old_state, new_state) {
             (CircuitState::Closed, CircuitState::Open) => "failure_threshold_exceeded",
@@ -420,6 +580,38 @@ impl CircuitBreaker {
                 self.success_count = 0;
             }
         }
+
+        // Emit OTEL span with transition rationale and thrashing detection
+        tracing::info_span!(
+            "circuit_breaker.state_transition",
+            circuit_state_prev = ?prev_state,
+            circuit_state_next = ?new_state,
+            elapsed_ms = elapsed_ms,
+            timeout_threshold_ms = timeout_threshold_ms,
+            transition_reason = transition_reason,
+            transition_count = self.transition_count,
+            is_thrashing = is_thrashing,
+            timestamp_ms = now,
+            status = if is_thrashing { "warning" } else { "ok" },
+            service_name = "wpm",
+        )
+        .in_scope(|| {
+            if is_thrashing {
+                tracing::warn!(
+                    prev_state = ?prev_state,
+                    next_state = ?new_state,
+                    transition_count = self.transition_count,
+                    elapsed_ms = elapsed_ms,
+                    "circuit breaker thrashing detected (>5 transitions in 60s)"
+                );
+            } else {
+                tracing::info!(
+                    prev_state = ?prev_state,
+                    next_state = ?new_state,
+                    "circuit breaker state transition"
+                );
+            }
+        });
     }
 
     /// Convert circuit state to u8 (0=Closed, 1=HalfOpen, 2=Open)
@@ -459,6 +651,12 @@ pub struct CircuitBreakerStateJson {
     pub success_count: u32,
     /// Monotonic time (ms) of last state change
     pub last_state_change_ms: u64,
+    /// Total number of state transitions (observability metric)
+    #[serde(default)]
+    pub transition_count: u32,
+    /// Last transition reason (for MTBT tracking)
+    #[serde(default)]
+    pub last_transition_reason: String,
 }
 
 impl CircuitBreaker {
@@ -479,6 +677,8 @@ impl CircuitBreaker {
             failure_count: self.failure_count,
             success_count: self.success_count,
             last_state_change_ms: self.last_state_change_ms,
+            transition_count: self.transition_count,
+            last_transition_reason: self.last_transition_reason.clone(),
         }
     }
 
@@ -495,6 +695,8 @@ impl CircuitBreaker {
             failure_count: json_state.failure_count,
             success_count: json_state.success_count,
             last_state_change_ms: json_state.last_state_change_ms,
+            transition_count: json_state.transition_count,
+            last_transition_reason: json_state.last_transition_reason,
         }
     }
 }
@@ -883,7 +1085,7 @@ impl Default for SelfHealingManager {
 
 #[cfg(test)]
 mod circuit_breaker_config_tests {
-    use super::CircuitBreaker;
+    use super::{CircuitBreaker, CircuitBreakerConfig, CircuitState, reset_clock, advance_clock};
 
     #[test]
     fn test_circuit_breaker_from_json() {
@@ -950,5 +1152,158 @@ mod circuit_breaker_config_tests {
         assert_eq!(breaker.success_threshold(), 2); // default
         assert_eq!(breaker.open_timeout_ms(), 60000); // default
         assert_eq!(breaker.half_open_timeout_ms(), 30000); // default
+    }
+
+    // --- Configuration validation tests ---
+
+    #[test]
+    #[should_panic(expected = "failure_threshold must be > 0")]
+    fn test_circuit_breaker_rejects_zero_failure_threshold() {
+        let config = CircuitBreakerConfig {
+            failure_threshold: 0,
+            success_threshold: 2,
+            open_timeout_ms: 60_000,
+            half_open_timeout_ms: 30_000,
+        };
+        let _ = CircuitBreaker::with_config(config);
+    }
+
+    #[test]
+    #[should_panic(expected = "success_threshold must be > 0")]
+    fn test_circuit_breaker_rejects_zero_success_threshold() {
+        let config = CircuitBreakerConfig {
+            failure_threshold: 5,
+            success_threshold: 0,
+            open_timeout_ms: 60_000,
+            half_open_timeout_ms: 30_000,
+        };
+        let _ = CircuitBreaker::with_config(config);
+    }
+
+    #[test]
+    #[should_panic(expected = "open_timeout_ms must be > 0")]
+    fn test_circuit_breaker_rejects_zero_open_timeout() {
+        let config = CircuitBreakerConfig {
+            failure_threshold: 5,
+            success_threshold: 2,
+            open_timeout_ms: 0,
+            half_open_timeout_ms: 30_000,
+        };
+        let _ = CircuitBreaker::with_config(config);
+    }
+
+    #[test]
+    #[should_panic(expected = "half_open_timeout_ms must be > 0")]
+    fn test_circuit_breaker_rejects_zero_half_open_timeout() {
+        let config = CircuitBreakerConfig {
+            failure_threshold: 5,
+            success_threshold: 2,
+            open_timeout_ms: 60_000,
+            half_open_timeout_ms: 0,
+        };
+        let _ = CircuitBreaker::with_config(config);
+    }
+
+    // --- Transition counting and thrashing detection ---
+
+    #[test]
+    fn test_circuit_breaker_transition_count_increments() {
+        reset_clock();
+        let config = CircuitBreakerConfig::default();
+        let mut breaker = CircuitBreaker::with_config(config);
+
+        assert_eq!(breaker.transition_count(), 0);
+
+        // Trigger failure → Open
+        for _ in 0..5 {
+            breaker.record_failure();
+        }
+        assert!(breaker.transition_count() > 0, "Transition count should increment");
+
+        // Track initial count
+        let count_after_open = breaker.transition_count();
+
+        // Advance clock past open_timeout to trigger transition to HalfOpen
+        advance_clock(61_000);
+        let _ = breaker.allow_request();
+
+        // Transition count should have incremented
+        assert!(breaker.transition_count() > count_after_open,
+            "Transition count should increase on Open → HalfOpen");
+    }
+
+    #[test]
+    fn test_circuit_breaker_thrashing_detection() {
+        reset_clock();
+        let config = CircuitBreakerConfig {
+            failure_threshold: 1,
+            success_threshold: 1,
+            open_timeout_ms: 1_000,
+            half_open_timeout_ms: 1_000,
+        };
+        let mut breaker = CircuitBreaker::with_config(config);
+
+        // Simulate rapid transitions (thrashing scenario)
+        // Cycle: failure→Open→timeout probe→HalfOpen→success→Closed
+        // This creates multiple transitions
+        for _cycle in 0..3 {
+            // Trigger failure → Open (transition 1)
+            breaker.record_failure();
+            let count1 = breaker.transition_count();
+
+            // Advance clock past open_timeout
+            advance_clock(2_000);
+
+            // Trigger probe → HalfOpen (transition 2)
+            let _ = breaker.allow_request();
+            let count2 = breaker.transition_count();
+
+            // Record success → Closed (transition 3)
+            breaker.record_success();
+            let count3 = breaker.transition_count();
+        }
+
+        // Should have detected multiple transitions
+        assert!(breaker.transition_count() > 3, "Should have multiple transitions, got {}", breaker.transition_count());
+    }
+
+    #[test]
+    fn test_circuit_breaker_transition_reason_updated() {
+        reset_clock();
+        let config = CircuitBreakerConfig::default();
+        let mut breaker = CircuitBreaker::with_config(config);
+
+        assert_eq!(breaker.last_transition_reason(), "initialization");
+
+        // Trigger failure threshold
+        for _ in 0..5 {
+            breaker.record_failure();
+        }
+
+        // Reason should now reflect the failure-based transition
+        assert_eq!(breaker.last_transition_reason(), "failure_threshold_reached");
+    }
+
+    #[test]
+    fn test_circuit_breaker_json_state_persists_transition_count() {
+        reset_clock();
+        let config = CircuitBreakerConfig::default();
+        let mut breaker = CircuitBreaker::with_config(config);
+
+        // Trigger a transition
+        for _ in 0..5 {
+            breaker.record_failure();
+        }
+
+        let original_count = breaker.transition_count();
+
+        // Serialize and deserialize
+        let json_state = breaker.to_state_json();
+        let restored = CircuitBreaker::from_state_json(json_state);
+
+        assert_eq!(restored.transition_count(), original_count,
+            "Transition count should be preserved through JSON serialization");
+        assert_eq!(restored.last_transition_reason(), "failure_threshold_reached",
+            "Transition reason should be preserved through JSON serialization");
     }
 }

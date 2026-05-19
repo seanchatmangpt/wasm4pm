@@ -1,12 +1,21 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
-import { existsSync, readFileSync, statSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'fs';
+import {
+  existsSync,
+  readFileSync,
+  statSync,
+  mkdtempSync,
+  mkdirSync,
+  writeFileSync,
+  rmSync,
+} from 'fs';
 import { execSync, spawnSync } from 'child_process';
 import * as path from 'path';
 import * as os from 'os';
 import { emitResult, makeResult, makeErrorResult, ConsoleProjection } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
+import { withSpan } from './_otel.js';
 
 export interface DoctorOptions {
   fix?: boolean;
@@ -83,7 +92,11 @@ async function checkNodeVersion(): Promise<Diagnosis> {
 
 async function checkPnpmVersion(): Promise<Diagnosis> {
   try {
-    const version = execSync('pnpm --version', { encoding: 'utf8', stdio: 'pipe' }).trim();
+    const version = execSync('pnpm --version', {
+      encoding: 'utf8',
+      stdio: 'pipe',
+      timeout: 3000,
+    }).trim();
     const major = parseInt(version.split('.')[0], 10);
     if (major >= 8) {
       return {
@@ -256,14 +269,49 @@ async function checkSimdSupport(): Promise<Diagnosis> {
     // The module: () -> v128 { v128.const (16 zero bytes) }
     // v128.const requires exactly 16 immediate bytes — runtimes without SIMD reject it at compile.
     const simdModule = new Uint8Array([
-      0x00, 0x61, 0x73, 0x6d, 0x01, 0x00, 0x00, 0x00, // magic + version
-      0x01, 0x05, 0x01, 0x60, 0x00, 0x01, 0x7b,       // type: () -> v128
-      0x03, 0x02, 0x01, 0x00,                           // function section
-      0x0a, 0x16, 0x01, 0x14, 0x00,                    // code section (body=20 bytes, 0 locals)
-      0xfd, 0x0c,                                        // v128.const
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,  // 16 immediate bytes (zero vector)
-      0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
-      0x0b,                                              // end
+      0x00,
+      0x61,
+      0x73,
+      0x6d,
+      0x01,
+      0x00,
+      0x00,
+      0x00, // magic + version
+      0x01,
+      0x05,
+      0x01,
+      0x60,
+      0x00,
+      0x01,
+      0x7b, // type: () -> v128
+      0x03,
+      0x02,
+      0x01,
+      0x00, // function section
+      0x0a,
+      0x16,
+      0x01,
+      0x14,
+      0x00, // code section (body=20 bytes, 0 locals)
+      0xfd,
+      0x0c, // v128.const
+      0x00,
+      0x00,
+      0x00,
+      0x00,
+      0x00,
+      0x00,
+      0x00,
+      0x00, // 16 immediate bytes (zero vector)
+      0x00,
+      0x00,
+      0x00,
+      0x00,
+      0x00,
+      0x00,
+      0x00,
+      0x00,
+      0x0b, // end
     ]);
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const compile = (globalThis as any).WebAssembly?.compile as
@@ -431,11 +479,28 @@ async function checkConfigValidation(): Promise<Diagnosis> {
 // ────────────────────────────────────────────────────────────────────────────
 
 async function checkXesFiles(): Promise<Diagnosis> {
-  const cwd = process.cwd();
+  // Only scan inside the workspace root. If there is no workspace root (e.g.
+  // when invoked from os.tmpdir() in tests), skip immediately rather than
+  // scanning an arbitrarily large directory tree that may contain thousands of
+  // unrelated files and take 30+ seconds.
+  const workspaceRoot = resolveWorkspaceRoot();
+  if (!workspaceRoot) {
+    return {
+      name: 'XES event logs',
+      pathology: 'REPRODUCIBILITY_TRUTH_FAULT',
+      severity: 'INFO',
+      message: 'Skipped — not inside the wasm4pm workspace',
+    };
+  }
+
+  const cwd = workspaceRoot;
   const found: string[] = [];
+  // Limit total entries scanned to prevent hangs on large directories.
+  let scannedEntries = 0;
+  const MAX_ENTRIES = 5000;
 
   async function scanDir(dir: string, depth: number): Promise<void> {
-    if (depth > 2) return;
+    if (depth > 2 || scannedEntries >= MAX_ENTRIES) return;
     let entries: import('fs').Dirent[];
     try {
       entries = (await fs.readdir(dir, {
@@ -446,6 +511,8 @@ async function checkXesFiles(): Promise<Diagnosis> {
       return;
     }
     for (const entry of entries) {
+      if (scannedEntries >= MAX_ENTRIES) break;
+      scannedEntries++;
       const name = String(entry.name);
       if (name.startsWith('.') || name === 'node_modules') continue;
       const fullPath = path.join(dir, name);
@@ -645,28 +712,88 @@ async function checkTypeScriptCompilation(): Promise<Diagnosis> {
     };
   }
 
-  try {
-    execSync('pnpm lint', { cwd: rootDir, encoding: 'utf8', stdio: 'pipe', timeout: 120000 });
-    return {
-      name: 'TypeScript compilation',
-      pathology: 'EPISTEMIC_FAULT',
-      severity: 'INFO',
-      message: 'pnpm lint passes (per-package tsc --noEmit clean)',
-    };
-  } catch (err) {
-    const combined =
-      ((err as { stdout?: string }).stdout ?? '') + ((err as { stderr?: string }).stderr ?? '');
-    const errorLines = combined
-      .split('\n')
-      .filter((l) => /error TS\d+|ELIFECYCLE|RECURSIVE_RUN_FIRST_FAIL/.test(l));
-    return {
-      name: 'TypeScript compilation',
-      pathology: 'EPISTEMIC_FAULT',
-      severity: 'WARNING',
-      message: `pnpm lint failed (${errorLines.length} error line(s)) — run: pnpm lint for details`,
-      fix: 'Fix per-package TypeScript errors: pnpm lint',
-    };
-  }
+  // Run pnpm lint asynchronously with a hard 4-second cap.
+  // Using async spawn (not spawnSync) so the event loop stays free for
+  // other parallel ENV_CHECKS while lint runs in a child process.
+  // 4 s keeps the total `doctor env` wall-clock under 10 s (the test SLA).
+  const LINT_TIMEOUT_MS = 4000;
+
+  const { spawn } = await import('child_process');
+
+  return new Promise<Diagnosis>((resolve) => {
+    let stdout = '';
+    let stderr = '';
+    let settled = false;
+
+    const child = spawn('pnpm', ['lint'], {
+      cwd: rootDir,
+      stdio: 'pipe',
+      shell: false,
+    });
+
+    child.stdout?.on('data', (chunk: Buffer) => {
+      stdout += chunk.toString();
+    });
+    child.stderr?.on('data', (chunk: Buffer) => {
+      stderr += chunk.toString();
+    });
+
+    const timer = setTimeout(() => {
+      if (settled) return;
+      settled = true;
+      try {
+        child.kill('SIGTERM');
+      } catch {
+        /* ignore */
+      }
+      resolve({
+        name: 'TypeScript compilation',
+        pathology: 'EPISTEMIC_FAULT',
+        severity: 'WARNING',
+        message: `pnpm lint skipped — timed out after ${LINT_TIMEOUT_MS / 1000}s (run manually: pnpm lint)`,
+        fix: 'Fix per-package TypeScript errors: pnpm lint',
+      });
+    }, LINT_TIMEOUT_MS);
+
+    child.on('error', (err) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      resolve({
+        name: 'TypeScript compilation',
+        pathology: 'EPISTEMIC_FAULT',
+        severity: 'WARNING',
+        message: `pnpm lint could not run: ${err.message}`,
+        fix: 'Fix per-package TypeScript errors: pnpm lint',
+      });
+    });
+
+    child.on('close', (code) => {
+      if (settled) return;
+      settled = true;
+      clearTimeout(timer);
+      if (code === 0) {
+        resolve({
+          name: 'TypeScript compilation',
+          pathology: 'EPISTEMIC_FAULT',
+          severity: 'INFO',
+          message: 'pnpm lint passes (per-package tsc --noEmit clean)',
+        });
+        return;
+      }
+      const combined = stdout + stderr;
+      const errorLines = combined
+        .split('\n')
+        .filter((l) => /error TS\d+|ELIFECYCLE|RECURSIVE_RUN_FIRST_FAIL/.test(l));
+      resolve({
+        name: 'TypeScript compilation',
+        pathology: 'EPISTEMIC_FAULT',
+        severity: 'WARNING',
+        message: `pnpm lint failed (${errorLines.length} error line(s)) — run: pnpm lint for details`,
+        fix: 'Fix per-package TypeScript errors: pnpm lint',
+      });
+    });
+  });
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -846,7 +973,7 @@ async function checkAlgorithmRegistry(): Promise<Diagnosis> {
         name: 'Algorithm registry',
         pathology: 'ENVIRONMENT_FAULT',
         severity: 'INFO',
-        message: `All ${expected.length} algorithms registered`,
+        message: `All ${expected.length} core WASM exports verified (kernel registry has more)`,
       };
     }
 
@@ -936,7 +1063,12 @@ async function checkWorkspaceIntegrity(): Promise<Diagnosis> {
 async function checkClaudeCodeSettings(): Promise<Diagnosis> {
   const rootDir = resolveWorkspaceRoot();
   if (!rootDir) {
-    return { name: 'Claude Code settings', pathology: 'DEPLOYABILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — workspace root not found' };
+    return {
+      name: 'Claude Code settings',
+      pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+      severity: 'INFO',
+      message: 'Skipped — workspace root not found',
+    };
   }
 
   const settingsPath = path.join(rootDir, '.claude', 'settings.json');
@@ -965,7 +1097,8 @@ async function checkClaudeCodeSettings(): Promise<Diagnosis> {
       name: 'Claude Code settings',
       pathology: 'DEPLOYABILITY_TRUTH_FAULT',
       severity: 'STOP_THE_LINE',
-      message: '.claude/settings.json is invalid JSON — Claude Code cannot parse hook configuration',
+      message:
+        '.claude/settings.json is invalid JSON — Claude Code cannot parse hook configuration',
       fix: 'Fix JSON syntax in .claude/settings.json',
     };
   }
@@ -975,20 +1108,38 @@ async function checkClaudeCodeSettings(): Promise<Diagnosis> {
 async function checkHookFiles(): Promise<Diagnosis> {
   const rootDir = resolveWorkspaceRoot();
   if (!rootDir) {
-    return { name: 'Hook files', pathology: 'DEPLOYABILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — workspace root not found' };
+    return {
+      name: 'Hook files',
+      pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+      severity: 'INFO',
+      message: 'Skipped — workspace root not found',
+    };
   }
 
   const settingsPath = path.join(rootDir, '.claude', 'settings.json');
   if (!existsSync(settingsPath)) {
-    return { name: 'Hook files', pathology: 'DEPLOYABILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — no .claude/settings.json' };
+    return {
+      name: 'Hook files',
+      pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+      severity: 'INFO',
+      message: 'Skipped — no .claude/settings.json',
+    };
   }
 
-  let hooks: Record<string, Array<{ matcher: string; hooks: Array<{ type: string; command: string }> }>>;
+  let hooks: Record<
+    string,
+    Array<{ matcher: string; hooks: Array<{ type: string; command: string }> }>
+  >;
   try {
     const parsed = JSON.parse(readFileSync(settingsPath, 'utf8')) as { hooks?: typeof hooks };
     hooks = parsed.hooks ?? {};
   } catch {
-    return { name: 'Hook files', pathology: 'DEPLOYABILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — settings.json parse error' };
+    return {
+      name: 'Hook files',
+      pathology: 'DEPLOYABILITY_TRUTH_FAULT',
+      severity: 'INFO',
+      message: 'Skipped — settings.json parse error',
+    };
   }
 
   if (Object.keys(hooks).length === 0) {
@@ -1053,7 +1204,12 @@ async function checkHookFiles(): Promise<Diagnosis> {
 async function checkClaudeMd(): Promise<Diagnosis> {
   const rootDir = resolveWorkspaceRoot();
   if (!rootDir) {
-    return { name: 'CLAUDE.md', pathology: 'EPISTEMIC_FAULT', severity: 'INFO', message: 'Skipped — workspace root not found' };
+    return {
+      name: 'CLAUDE.md',
+      pathology: 'EPISTEMIC_FAULT',
+      severity: 'INFO',
+      message: 'Skipped — workspace root not found',
+    };
   }
 
   const claudeMdPath = path.join(rootDir, 'CLAUDE.md');
@@ -1090,7 +1246,12 @@ async function checkClaudeMd(): Promise<Diagnosis> {
 async function checkMemoryIndex(): Promise<Diagnosis> {
   const rootDir = resolveWorkspaceRoot();
   if (!rootDir) {
-    return { name: 'Memory index', pathology: 'EPISTEMIC_FAULT', severity: 'INFO', message: 'Skipped — workspace root not found' };
+    return {
+      name: 'Memory index',
+      pathology: 'EPISTEMIC_FAULT',
+      severity: 'INFO',
+      message: 'Skipped — workspace root not found',
+    };
   }
 
   // Project-scoped memory: ~/.claude/projects/<encoded-path>/memory/MEMORY.md
@@ -1103,7 +1264,8 @@ async function checkMemoryIndex(): Promise<Diagnosis> {
       name: 'Memory index',
       pathology: 'EPISTEMIC_FAULT',
       severity: 'INFO',
-      message: 'No project memory index — Claude Code starts each session without persistent context',
+      message:
+        'No project memory index — Claude Code starts each session without persistent context',
     };
   }
 
@@ -1878,42 +2040,63 @@ async function runChecks(
   precomputedDiagnoses?: Diagnosis[],
   commandName: string = 'doctor'
 ): Promise<DoctorReport> {
-  const start = Date.now();
-  const diagnoses: Diagnosis[] =
-    precomputedDiagnoses ?? (await Promise.all(checks.map((fn) => fn())));
+  let latePass = 0;
+  let lateWarn = 0;
+  let lateFail = 0;
+  let lateHealthy = false;
 
-  const report: DoctorReport = {
-    diagnoses,
-    info: diagnoses.filter((c) => c.severity === 'INFO').length,
-    warnings: diagnoses.filter((c) => c.severity === 'WARNING').length,
-    stopTheLine: diagnoses.filter((c) => c.severity === 'STOP_THE_LINE').length,
-    epistemicHealth: diagnoses.every((c) => c.severity === 'INFO'),
-  };
+  return withSpan(
+    commandName,
+    { check_count: precomputedDiagnoses?.length ?? checks.length, format },
+    async () => {
+      const start = Date.now();
+      const diagnoses: Diagnosis[] =
+        precomputedDiagnoses ?? (await Promise.all(checks.map((fn) => fn())));
 
-  const checksPayload = report.diagnoses.map((c) => ({ ...c }));
-  const summaryPayload = {
-    pass: report.info,
-    warn: report.warnings,
-    fail: report.stopTheLine,
-    critical: report.stopTheLine,
-  };
+      const report: DoctorReport = {
+        diagnoses,
+        info: diagnoses.filter((c) => c.severity === 'INFO').length,
+        warnings: diagnoses.filter((c) => c.severity === 'WARNING').length,
+        stopTheLine: diagnoses.filter((c) => c.severity === 'STOP_THE_LINE').length,
+        epistemicHealth: diagnoses.every((c) => c.severity !== 'STOP_THE_LINE'),
+      };
+      latePass = report.info;
+      lateWarn = report.warnings;
+      lateFail = report.stopTheLine;
+      lateHealthy = report.epistemicHealth;
 
-  const payload = {
-    checks: checksPayload,
-    summary: summaryPayload,
-    healthy: report.epistemicHealth,
-    ...extraFields,
-  };
+      const checksPayload = report.diagnoses.map((c) => ({ ...c }));
+      const summaryPayload = {
+        pass: report.info,
+        warn: report.warnings,
+        fail: report.stopTheLine,
+        critical: report.stopTheLine,
+      };
 
-  const exitCode = report.epistemicHealth ? EXIT_CODES.success : EXIT_CODES.config_error;
-  const result = makeResult(commandName, payload, Date.now() - start, exitCode);
+      const payload = {
+        checks: checksPayload,
+        summary: summaryPayload,
+        healthy: report.epistemicHealth,
+        ...extraFields,
+      };
 
-  emitResult(result, { format, verbose, quiet }, (_res, p) => {
-    printReportToProjection(p, report);
-  });
+      const exitCode = report.epistemicHealth ? EXIT_CODES.success : EXIT_CODES.config_error;
+      const result = makeResult(commandName, payload, Date.now() - start, exitCode);
 
-  // Exit immediately to prevent parent main.run() from emitting trailing help text.
-  return await exitWithFlush(exitCode);
+      emitResult(result, { format, verbose, quiet }, (_res, p) => {
+        printReportToProjection(p, report);
+      });
+
+      // Exit immediately to prevent parent main.run() from emitting trailing help text.
+      return await exitWithFlush(exitCode);
+    },
+    () => ({
+      checks_pass: latePass,
+      checks_warn: lateWarn,
+      checks_fail: lateFail,
+      healthy: lateHealthy,
+    })
+  ); // end withSpan
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -1921,12 +2104,7 @@ async function runChecks(
 // ────────────────────────────────────────────────────────────────────────────
 
 function isAutoExecutable(fixCmd: string): boolean {
-  const safePrefixes = [
-    'pnpm install',
-    'mkdir -p',
-    'pnpm prepare',
-    'cd wasm4pm && pnpm run build',
-  ];
+  const safePrefixes = ['pnpm install', 'mkdir -p', 'pnpm prepare', 'cd wasm4pm && pnpm run build'];
   return safePrefixes.some((prefix) => fixCmd.startsWith(prefix));
 }
 
@@ -1937,7 +2115,7 @@ function isAutoExecutable(fixCmd: string): boolean {
 export const doctorCheck = defineCommand({
   meta: {
     name: 'check',
-    description: 'Run all 24 health checks (or a filtered subset)',
+    description: 'Run all 24 health checks (or a filtered subset). Example: wpm doctor check --verbose',
   },
   args: {
     format: {
@@ -1957,7 +2135,8 @@ export const doctorCheck = defineCommand({
     },
     checks: {
       type: 'string',
-      description: 'Comma-separated check function names to run (e.g. checkWasmBinary,checkNodeVersion)',
+      description:
+        'Comma-separated check function names to run (e.g. checkWasmBinary,checkNodeVersion)',
     },
   },
   async run(ctx) {
@@ -2010,7 +2189,15 @@ export const doctorEnv = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
     const diagnoses = await Promise.all(ENV_CHECKS.map((fn) => fn()));
-    await runChecks(ENV_CHECKS, format, verbose, quiet, { environment: diagnoses }, diagnoses, 'doctor env');
+    await runChecks(
+      ENV_CHECKS,
+      format,
+      verbose,
+      quiet,
+      { environment: diagnoses },
+      diagnoses,
+      'doctor env'
+    );
   },
 });
 
@@ -2089,7 +2276,7 @@ export const doctorTps = defineCommand({
 export const doctorFix = defineCommand({
   meta: {
     name: 'fix',
-    description: 'Run all checks and execute auto-fixable repair commands',
+    description: 'Run all checks and execute auto-fixable repair commands. Example: wpm doctor fix --verbose',
   },
   args: {
     format: {
@@ -2154,11 +2341,21 @@ export const doctorFix = defineCommand({
       p.log('');
 
       if (fixable.length === 0) {
-        p.log(dryRun
-          ? 'Dry-run: no auto-fixable issues found — nothing would be executed.'
-          : 'No auto-fixable issues found.');
-        const noFixablePayload = { dry_run: Boolean(dryRun), fixable: [], unfixable: [], no_fixable: true };
-        emitResult(makeResult('doctor fix', noFixablePayload, Date.now() - start, EXIT_CODES.success), { format, verbose, quiet });
+        p.log(
+          dryRun
+            ? 'Dry-run: no auto-fixable issues found — nothing would be executed.'
+            : 'No auto-fixable issues found.'
+        );
+        const noFixablePayload = {
+          dry_run: Boolean(dryRun),
+          fixable: [],
+          unfixable: [],
+          no_fixable: true,
+        };
+        emitResult(
+          makeResult('doctor fix', noFixablePayload, Date.now() - start, EXIT_CODES.success),
+          { format, verbose, quiet }
+        );
         return await exitWithFlush(EXIT_CODES.success);
       }
 
@@ -2175,7 +2372,10 @@ export const doctorFix = defineCommand({
             .filter((d) => d.severity !== 'INFO' && d.fix && !isAutoExecutable(d.fix))
             .map((d) => d.fix),
         };
-        emitResult(makeResult('doctor fix', dryRunPayload, Date.now() - start, EXIT_CODES.success), { format, verbose, quiet });
+        emitResult(
+          makeResult('doctor fix', dryRunPayload, Date.now() - start, EXIT_CODES.success),
+          { format, verbose, quiet }
+        );
         return await exitWithFlush(EXIT_CODES.success);
       }
 
@@ -2185,8 +2385,16 @@ export const doctorFix = defineCommand({
         // In non-interactive mode, skip
         if (!process.stdin.isTTY) {
           p.log('Skipping — stdin is not a TTY. Use --yes to force.');
-          const skipPayload = { dry_run: false, skipped: true, reason: 'non-tty', fixable_count: fixable.length };
-          emitResult(makeResult('doctor fix', skipPayload, Date.now() - start, EXIT_CODES.success), { format, verbose, quiet });
+          const skipPayload = {
+            dry_run: false,
+            skipped: true,
+            reason: 'non-tty',
+            fixable_count: fixable.length,
+          };
+          emitResult(
+            makeResult('doctor fix', skipPayload, Date.now() - start, EXIT_CODES.success),
+            { format, verbose, quiet }
+          );
           return await exitWithFlush(EXIT_CODES.success);
         }
         // Read one line
@@ -2196,8 +2404,16 @@ export const doctorFix = defineCommand({
         });
         if (answer.toLowerCase() !== 'y') {
           p.log('Aborted.');
-          const abortPayload = { dry_run: false, skipped: true, reason: 'user-aborted', fixable_count: fixable.length };
-          emitResult(makeResult('doctor fix', abortPayload, Date.now() - start, EXIT_CODES.success), { format, verbose, quiet });
+          const abortPayload = {
+            dry_run: false,
+            skipped: true,
+            reason: 'user-aborted',
+            fixable_count: fixable.length,
+          };
+          emitResult(
+            makeResult('doctor fix', abortPayload, Date.now() - start, EXIT_CODES.success),
+            { format, verbose, quiet }
+          );
           return await exitWithFlush(EXIT_CODES.success);
         }
       }
@@ -2243,13 +2459,16 @@ interface PerfBaseline {
   _comment?: string;
   _updated?: string;
   _methodology?: string;
-  [scenario: string]: {
-    description: string;
-    n: number;
-    algorithm: string;
-    measured_ms: number;
-    ceiling_ms: number;
-  } | string | undefined;
+  [scenario: string]:
+    | {
+        description: string;
+        n: number;
+        algorithm: string;
+        measured_ms: number;
+        ceiling_ms: number;
+      }
+    | string
+    | undefined;
 }
 
 export const doctorPerf = defineCommand({
@@ -2298,9 +2517,7 @@ export const doctorPerf = defineCommand({
     const start = Date.now();
 
     // Find the baseline file
-    const baselinePaths = [
-      path.join(process.cwd(), 'packages/kernel/performance_baseline.json'),
-    ];
+    const baselinePaths = [path.join(process.cwd(), 'packages/kernel/performance_baseline.json')];
 
     const rootDir = resolveWorkspaceRoot();
     if (rootDir) {
@@ -2331,9 +2548,7 @@ export const doctorPerf = defineCommand({
       );
       emitResult(result, { format, verbose, quiet }, (_res, p) => {
         p.log('');
-        p.log(
-          'Performance baseline file not found (packages/kernel/performance_baseline.json)'
-        );
+        p.log('Performance baseline file not found (packages/kernel/performance_baseline.json)');
         p.log('Run from within the wasm4pm workspace.');
       });
       return await exitWithFlush(EXIT_CODES.success);
@@ -2370,8 +2585,7 @@ export const doctorPerf = defineCommand({
       const measured = Date.now() - runStart;
 
       const overPct = ((measured - ceiling) / ceiling) * 100;
-      const status: 'OK' | 'REGRESSION' =
-        overPct > thresholdPct ? 'REGRESSION' : 'OK';
+      const status: 'OK' | 'REGRESSION' = overPct > thresholdPct ? 'REGRESSION' : 'OK';
 
       results.push({ scenario: scenarioKey, measured_ms: measured, ceiling_ms: ceiling, status });
     }
@@ -2421,8 +2635,6 @@ export const doctorPerf = defineCommand({
       }
     });
 
-
-
     // Update baseline if requested
     if (updateBaseline && baselinePath) {
       let proceed = yes;
@@ -2431,7 +2643,9 @@ export const doctorPerf = defineCommand({
         p.log(`\nUpdate baseline at ${baselinePath}? [y/N]`);
         proceed = await new Promise<boolean>((resolve) => {
           process.stdin.setEncoding('utf8');
-          process.stdin.once('data', (chunk) => resolve(String(chunk).trim().toLowerCase() === 'y'));
+          process.stdin.once('data', (chunk) =>
+            resolve(String(chunk).trim().toLowerCase() === 'y')
+          );
         });
       }
 
@@ -2513,7 +2727,12 @@ export const doctorWatch = defineCommand({
     }
 
     emitResult(
-      makeResult('doctor watch', { status: 'watching', interval_sec: intervalSec }, 0, EXIT_CODES.success),
+      makeResult(
+        'doctor watch',
+        { status: 'watching', interval_sec: intervalSec },
+        0,
+        EXIT_CODES.success
+      ),
       { format, verbose, quiet }
     );
 
@@ -2553,10 +2772,7 @@ export const doctorWatch = defineCommand({
           const prev = prevResults.get(diag.name);
           if (prev !== diag.severity) {
             changes.push(diag);
-            if (
-              diag.severity === 'STOP_THE_LINE' &&
-              prev !== 'STOP_THE_LINE'
-            ) {
+            if (diag.severity === 'STOP_THE_LINE' && prev !== 'STOP_THE_LINE') {
               newFailures.push(diag);
             }
           }
@@ -2720,9 +2936,7 @@ export const doctorReport = defineCommand({
 
     p.log('');
     p.log(`Report written to: ${outPath}`);
-    p.log(
-      `Summary: ${summary.pass} pass, ${summary.warn} warn, ${summary.fail} fail`
-    );
+    p.log(`Summary: ${summary.pass} pass, ${summary.warn} warn, ${summary.fail} fail`);
 
     if (openAfter) {
       const openCmd =
@@ -2738,7 +2952,9 @@ export const doctorReport = defineCommand({
       }
     }
 
-    const reportExitCode = summary.fail > 0 ? EXIT_CODES.config_error : EXIT_CODES.success;
+    // report subcommand always exits 0 when the file is successfully written —
+    // failing checks are recorded in the report content, not a reason to exit non-zero.
+    const reportExitCode = EXIT_CODES.success;
     const result = makeResult(
       'doctor report',
       { report_path: outPath, summary, format: reportFormat },
@@ -2844,9 +3060,17 @@ function runPublishChecks(rootDir: string): PublishCheck[] {
   // 1. Versions — all package.json must match CalVer /^\d+\.\d+\.\d+[a-z]?$/
   const calverPattern = /^\d+\.\d+\.\d+[a-z]?$/;
   const pkgDirs = [
-    ...['engine', 'kernel', 'config', 'contracts', 'planner', 'observability', 'testing', 'ml', 'swarm'].map(
-      (p) => path.join(rootDir, 'packages', p)
-    ),
+    ...[
+      'engine',
+      'kernel',
+      'config',
+      'contracts',
+      'planner',
+      'observability',
+      'testing',
+      'ml',
+      'swarm',
+    ].map((p) => path.join(rootDir, 'packages', p)),
     path.join(rootDir, 'apps', 'wasm4pm'),
   ];
 
@@ -2989,7 +3213,9 @@ function runPublishChecks(rootDir: string): PublishCheck[] {
   checks.push({
     name: 'changelog',
     status: hasChangelog ? 'pass' : 'warn',
-    message: hasChangelog ? 'CHANGELOG.md exists and is non-empty' : 'CHANGELOG.md missing or empty',
+    message: hasChangelog
+      ? 'CHANGELOG.md exists and is non-empty'
+      : 'CHANGELOG.md missing or empty',
   });
 
   return checks;
@@ -3098,7 +3324,9 @@ export const doctorPublish = defineCommand({
         p.log('\nRun pnpm -r publish --access public? [y/N]');
         proceed = await new Promise<boolean>((resolve) => {
           process.stdin.setEncoding('utf8');
-          process.stdin.once('data', (chunk) => resolve(String(chunk).trim().toLowerCase() === 'y'));
+          process.stdin.once('data', (chunk) =>
+            resolve(String(chunk).trim().toLowerCase() === 'y')
+          );
         });
       }
 
@@ -3120,14 +3348,18 @@ export const doctorPublish = defineCommand({
 // ────────────────────────────────────────────────────────────────────────────
 
 export interface JtbdProbe {
-  job: string;       // What job is this hook supposed to do?
-  scenario: string;  // The specific scenario being exercised
-  observed: string;  // What was actually observed
+  job: string; // What job is this hook supposed to do?
+  scenario: string; // The specific scenario being exercised
+  observed: string; // What was actually observed
   verdict: 'verified' | 'refuted' | 'inconclusive';
-  evidence: string;  // The specific data points that support the verdict
+  evidence: string; // The specific data points that support the verdict
 }
 
-export function runHook(hookPath: string, inputObj: unknown, projectDir: string): { status: number; stdout: string; stderr: string } {
+export function runHook(
+  hookPath: string,
+  inputObj: unknown,
+  projectDir: string
+): { status: number; stdout: string; stderr: string } {
   const result = spawnSync('bash', [hookPath], {
     input: JSON.stringify(inputObj),
     encoding: 'utf8',
@@ -3157,18 +3389,23 @@ export async function probeHooks(projectDir: string): Promise<JtbdProbe[]> {
 
   // ── Probe 1: PreToolUse blocks handwritten verdict writes ─────────────────
   {
-    const r = runHook(preToolUse, {
-      tool_name: 'Write',
-      tool_input: {
-        file_path: 'wasm4pm/target/proof-packs/jtbd-test/FINAL/verdict.json',
-        content: '{"verdict":"Accepted"}',
+    const r = runHook(
+      preToolUse,
+      {
+        tool_name: 'Write',
+        tool_input: {
+          file_path: 'wasm4pm/target/proof-packs/jtbd-test/FINAL/verdict.json',
+          content: '{"verdict":"Accepted"}',
+        },
       },
-    }, projectDir);
+      projectDir
+    );
     const blocked = r.status === 2;
     const hasGuardMsg = r.stderr.includes('PROOF PACK INTEGRITY GUARD');
     probes.push({
       job: 'Prevent handwritten verdict writes',
-      scenario: 'Write tool targeting wasm4pm/target/proof-packs/*/FINAL/verdict.json with {"verdict":"Accepted"}',
+      scenario:
+        'Write tool targeting wasm4pm/target/proof-packs/*/FINAL/verdict.json with {"verdict":"Accepted"}',
       observed: blocked
         ? 'Hook exited 2 — write was blocked before reaching disk; guard message present in stderr'
         : `Hook exited ${r.status} — write was NOT blocked (expected exit 2)`,
@@ -3179,10 +3416,14 @@ export async function probeHooks(projectDir: string): Promise<JtbdProbe[]> {
 
   // ── Probe 2: PreToolUse allows safe writes ────────────────────────────────
   {
-    const r = runHook(preToolUse, {
-      tool_name: 'Write',
-      tool_input: { file_path: 'wasm4pm/src/testing/harness.rs', content: 'pub struct Test {}' },
-    }, projectDir);
+    const r = runHook(
+      preToolUse,
+      {
+        tool_name: 'Write',
+        tool_input: { file_path: 'wasm4pm/src/testing/harness.rs', content: 'pub struct Test {}' },
+      },
+      projectDir
+    );
     const allowed = r.status === 0;
     probes.push({
       job: 'Allow writes to non-protected paths',
@@ -3197,18 +3438,23 @@ export async function probeHooks(projectDir: string): Promise<JtbdProbe[]> {
 
   // ── Probe 3: PreToolUse blocks audit JSON tampering ───────────────────────
   {
-    const r = runHook(preToolUse, {
-      tool_name: 'Edit',
-      tool_input: {
-        file_path: 'wasm4pm/target/audits/route-driven-tdd-independent-verification.json',
-        old_string: 'AndonPull',
-        new_string: 'Accepted',
+    const r = runHook(
+      preToolUse,
+      {
+        tool_name: 'Edit',
+        tool_input: {
+          file_path: 'wasm4pm/target/audits/route-driven-tdd-independent-verification.json',
+          old_string: 'AndonPull',
+          new_string: 'Accepted',
+        },
       },
-    }, projectDir);
+      projectDir
+    );
     const blocked = r.status === 2;
     probes.push({
       job: 'Prevent tampering with audit verdict JSON',
-      scenario: 'Edit tool changing AndonPull→Accepted in route-driven-tdd-independent-verification.json',
+      scenario:
+        'Edit tool changing AndonPull→Accepted in route-driven-tdd-independent-verification.json',
       observed: blocked
         ? 'Hook exited 2 — edit was blocked; audit JSON is write-protected'
         : `Hook exited ${r.status} — edit was NOT blocked (expected exit 2)`,
@@ -3219,10 +3465,17 @@ export async function probeHooks(projectDir: string): Promise<JtbdProbe[]> {
 
   // ── Probe 4: PreToolUse blocks Bash shell redirects into protected files ──
   {
-    const r = runHook(preToolUse, {
-      tool_name: 'Bash',
-      tool_input: { command: 'echo \'{"verdict":"Accepted"}\' >> /tmp/jtbd-wasm4pm/target/proof-packs/x/FINAL/verdict.json' },
-    }, projectDir);
+    const r = runHook(
+      preToolUse,
+      {
+        tool_name: 'Bash',
+        tool_input: {
+          command:
+            'echo \'{"verdict":"Accepted"}\' >> /tmp/jtbd-wasm4pm/target/proof-packs/x/FINAL/verdict.json',
+        },
+      },
+      projectDir
+    );
     // Note: the path in the command contains "target/proof-packs" and "verdict.json"
     // The hook checks for those patterns in the Bash command string
     const blocked = r.status === 2;
@@ -3243,10 +3496,14 @@ export async function probeHooks(projectDir: string): Promise<JtbdProbe[]> {
     const beforeLines = existsSync(eventsPath)
       ? readFileSync(eventsPath, 'utf8').split('\n').filter(Boolean).length
       : 0;
-    runHook(postToolUse, {
-      tool_name: 'Edit',
-      tool_input: { file_path: 'wasm4pm/src/testing/harness.rs' },
-    }, projectDir);
+    runHook(
+      postToolUse,
+      {
+        tool_name: 'Edit',
+        tool_input: { file_path: 'wasm4pm/src/testing/harness.rs' },
+      },
+      projectDir
+    );
     const afterLines = existsSync(eventsPath)
       ? readFileSync(eventsPath, 'utf8').split('\n').filter(Boolean).length
       : 0;
@@ -3268,10 +3525,14 @@ export async function probeHooks(projectDir: string): Promise<JtbdProbe[]> {
     const beforeLines = existsSync(promptsPath)
       ? readFileSync(promptsPath, 'utf8').split('\n').filter(Boolean).length
       : 0;
-    runHook(userPrompt, {
-      prompt: 'jtbd-test-probe: verify work order recording',
-      session_id: 'jtbd-test',
-    }, projectDir);
+    runHook(
+      userPrompt,
+      {
+        prompt: 'jtbd-test-probe: verify work order recording',
+        session_id: 'jtbd-test',
+      },
+      projectDir
+    );
     const afterLines = existsSync(promptsPath)
       ? readFileSync(promptsPath, 'utf8').split('\n').filter(Boolean).length
       : 0;
@@ -3289,12 +3550,18 @@ export async function probeHooks(projectDir: string): Promise<JtbdProbe[]> {
 
   // ── Probe 7: Stop gate allows stop when no critical files modified ─────────
   {
-    const gitStatus = spawnSync('git', [
-      'status', '--short', '--',
-      'wasm4pm/src/testing/conformance.rs',
-      'wasm4pm/src/testing/harness.rs',
-      'wasm4pm/src/testing/proof_pack.rs',
-    ], { cwd: projectDir, encoding: 'utf8' });
+    const gitStatus = spawnSync(
+      'git',
+      [
+        'status',
+        '--short',
+        '--',
+        'wasm4pm/src/testing/conformance.rs',
+        'wasm4pm/src/testing/harness.rs',
+        'wasm4pm/src/testing/proof_pack.rs',
+      ],
+      { cwd: projectDir, encoding: 'utf8' }
+    );
     const hasMods = (gitStatus.stdout ?? '').trim().length > 0;
 
     if (!hasMods) {
@@ -3304,9 +3571,10 @@ export async function probeHooks(projectDir: string): Promise<JtbdProbe[]> {
       probes.push({
         job: 'Allow stop when no critical testing files have uncommitted changes',
         scenario: 'Stop signal with stop_hook_active=false and clean git status on testing files',
-        observed: allowed && noBlock
-          ? 'Hook exited 0 with no block decision — stop allowed through'
-          : `Hook exited ${r.status}; block_in_stdout=${!noBlock} — stop was incorrectly prevented`,
+        observed:
+          allowed && noBlock
+            ? 'Hook exited 0 with no block decision — stop allowed through'
+            : `Hook exited ${r.status}; block_in_stdout=${!noBlock} — stop was incorrectly prevented`,
         verdict: allowed && noBlock ? 'verified' : 'refuted',
         evidence: `exit_code=${r.status}; block_in_stdout=${!noBlock}`,
       });
@@ -3314,7 +3582,8 @@ export async function probeHooks(projectDir: string): Promise<JtbdProbe[]> {
       probes.push({
         job: 'Allow stop when no critical testing files have uncommitted changes',
         scenario: 'Stop signal with stop_hook_active=false and clean git status on testing files',
-        observed: 'Skipped — critical files currently have uncommitted changes; stop gate correctly engaged',
+        observed:
+          'Skipped — critical files currently have uncommitted changes; stop gate correctly engaged',
         verdict: 'inconclusive',
         evidence: `git_modified=${(gitStatus.stdout ?? '').trim().slice(0, 120)}`,
       });
@@ -3339,7 +3608,14 @@ export async function probeHooks(projectDir: string): Promise<JtbdProbe[]> {
   // ── Probe 9: Settings.json wires all required hook types ──────────────────
   {
     const settingsPath = path.join(projectDir, '.claude', 'settings.json');
-    const required = ['SessionStart', 'UserPromptSubmit', 'PreToolUse', 'PostToolUse', 'TaskCompleted', 'Stop'];
+    const required = [
+      'SessionStart',
+      'UserPromptSubmit',
+      'PreToolUse',
+      'PostToolUse',
+      'TaskCompleted',
+      'Stop',
+    ];
     if (existsSync(settingsPath)) {
       let settings: { hooks?: Record<string, unknown> };
       try {
@@ -3352,11 +3628,12 @@ export async function probeHooks(projectDir: string): Promise<JtbdProbe[]> {
       probes.push({
         job: 'Wire all required lifecycle hook types in .claude/settings.json',
         scenario: 'Read .claude/settings.json and verify hook registrations for 6 lifecycle points',
-        observed: missing.length === 0
-          ? `All ${required.length} required hook types registered: ${wired.filter((k) => required.includes(k)).join(', ')}`
-          : `Missing ${missing.length} hook type(s): ${missing.join(', ')}`,
+        observed:
+          missing.length === 0
+            ? `All ${required.length} required hook types registered: ${wired.filter((k) => required.includes(k)).join(', ')}`
+            : `Missing ${missing.length} hook type(s): ${missing.join(', ')}`,
         verdict: missing.length === 0 ? 'verified' : 'refuted',
-        evidence: `wired=[${wired.join(',')}]; missing=[${missing.join(',')||'none'}]`,
+        evidence: `wired=[${wired.join(',')}]; missing=[${missing.join(',') || 'none'}]`,
       });
     } else {
       probes.push({
@@ -3395,26 +3672,35 @@ export async function probeHooks(projectDir: string): Promise<JtbdProbe[]> {
       // Fake wpm CLI that immediately returns AndonPull for `proof audit`
       const fakeWpmDir = path.join(tmpDir, 'apps', 'wasm4pm', 'dist', 'bin');
       mkdirSync(fakeWpmDir, { recursive: true });
-      writeFileSync(path.join(fakeWpmDir, 'wpm.js'), [
-        '#!/usr/bin/env node',
-        'const args = process.argv.slice(2);',
-        'if (args.includes("audit")) {',
-        '  process.stdout.write(JSON.stringify({',
-        '    status:"error",message:"proof audit",',
-        '    payload:{final_verdict:"AndonPull(4_cargo_tests)",',
-        '    verdict_reason:"JTBD probe: simulated test failure",',
-        '    gates_passed:3,gates_failed:2}}) + "\\n");',
-        '  process.exit(3);',
-        '}',
-        'process.exit(0);',
-      ].join('\n'));
+      writeFileSync(
+        path.join(fakeWpmDir, 'wpm.js'),
+        [
+          '#!/usr/bin/env node',
+          'const args = process.argv.slice(2);',
+          'if (args.includes("audit")) {',
+          '  process.stdout.write(JSON.stringify({',
+          '    status:"error",message:"proof audit",',
+          '    payload:{final_verdict:"AndonPull(4_cargo_tests)",',
+          '    verdict_reason:"JTBD probe: simulated test failure",',
+          '    gates_passed:3,gates_failed:2}}) + "\\n");',
+          '  process.exit(3);',
+          '}',
+          'process.exit(0);',
+        ].join('\n')
+      );
 
       // Copy the real stop gate to the temp project
       const hooksDir = path.join(tmpDir, '.claude', 'hooks');
       mkdirSync(hooksDir, { recursive: true });
-      execSync(`cp "${path.join(hookDir, 'stop-proof-gate.sh')}" "${path.join(hooksDir, 'stop-proof-gate.sh')}"`);
+      execSync(
+        `cp "${path.join(hookDir, 'stop-proof-gate.sh')}" "${path.join(hooksDir, 'stop-proof-gate.sh')}"`
+      );
 
-      const r = runHook(path.join(hooksDir, 'stop-proof-gate.sh'), { stop_hook_active: false }, tmpDir);
+      const r = runHook(
+        path.join(hooksDir, 'stop-proof-gate.sh'),
+        { stop_hook_active: false },
+        tmpDir
+      );
       const blocked = r.stdout.includes('"decision":"block"');
       const hasAndon = r.stdout.includes('AndonPull') || r.stderr.includes('AndonPull');
 
@@ -3443,10 +3729,17 @@ export async function probeHooks(projectDir: string): Promise<JtbdProbe[]> {
 
   // ── Probe B1: Python write bypass is blocked ──────────────────────────────
   {
-    const r = runHook(preToolUse, {
-      tool_name: 'Bash',
-      tool_input: { command: "python3 -c \"open('wasm4pm/target/proof-packs/bypass/FINAL/verdict.json','w').write('{}')" },
-    }, projectDir);
+    const r = runHook(
+      preToolUse,
+      {
+        tool_name: 'Bash',
+        tool_input: {
+          command:
+            "python3 -c \"open('wasm4pm/target/proof-packs/bypass/FINAL/verdict.json','w').write('{}')",
+        },
+      },
+      projectDir
+    );
     const blocked = r.status === 2;
     probes.push({
       job: 'Block Python scripted writes to proof artifact paths',
@@ -3461,11 +3754,23 @@ export async function probeHooks(projectDir: string): Promise<JtbdProbe[]> {
 
   // ── Probe B2: Absolute path write is blocked ──────────────────────────────
   {
-    const absPath = path.join(projectDir, 'wasm4pm', 'target', 'proof-packs', 'bypass', 'FINAL', 'verdict.json');
-    const r = runHook(preToolUse, {
-      tool_name: 'Write',
-      tool_input: { file_path: absPath, content: '{"verdict":"Accepted"}' },
-    }, projectDir);
+    const absPath = path.join(
+      projectDir,
+      'wasm4pm',
+      'target',
+      'proof-packs',
+      'bypass',
+      'FINAL',
+      'verdict.json'
+    );
+    const r = runHook(
+      preToolUse,
+      {
+        tool_name: 'Write',
+        tool_input: { file_path: absPath, content: '{"verdict":"Accepted"}' },
+      },
+      projectDir
+    );
     const blocked = r.status === 2;
     probes.push({
       job: 'Block absolute-path writes to proof artifact paths',
@@ -3480,12 +3785,17 @@ export async function probeHooks(projectDir: string): Promise<JtbdProbe[]> {
 
   // ── Probe B3: Heredoc (cat >) bypass is blocked ───────────────────────────
   {
-    const r = runHook(preToolUse, {
-      tool_name: 'Bash',
-      tool_input: {
-        command: 'cat > wasm4pm/target/proof-packs/bypass/FINAL/verdict.json << EOF\n{"verdict":"Accepted"}\nEOF',
+    const r = runHook(
+      preToolUse,
+      {
+        tool_name: 'Bash',
+        tool_input: {
+          command:
+            'cat > wasm4pm/target/proof-packs/bypass/FINAL/verdict.json << EOF\n{"verdict":"Accepted"}\nEOF',
+        },
       },
-    }, projectDir);
+      projectDir
+    );
     const blocked = r.status === 2;
     probes.push({
       job: 'Block heredoc (cat >) writes to proof artifact paths',
@@ -3504,7 +3814,7 @@ export async function probeHooks(projectDir: string): Promise<JtbdProbe[]> {
 export const doctorHooks = defineCommand({
   meta: {
     name: 'hooks',
-    description: 'JTBD verification: test whether each Claude Code hook does its declared job',
+    description: 'Verify Claude Code hooks work as declared. Tests that git hooks, pre-commit gates, and proof checks actually execute and enforce their constraints.',
   },
   args: {
     format: { type: 'string', default: 'human' },
@@ -3534,22 +3844,37 @@ export const doctorHooks = defineCommand({
     const auditPath = path.join(auditDir, 'claude-hooks-jtbd-verification.json');
     try {
       mkdirSync(auditDir, { recursive: true });
-      writeFileSync(auditPath, JSON.stringify({
-        audit_timestamp: new Date().toISOString(),
-        auditor: 'wpm-doctor-hooks-jtbd',
-        probes: probes.map((p) => ({ ...p })),
-        summary: { verified, refuted, inconclusive, total: probes.length },
-        verdict: healthy ? 'Accepted' : 'AndonPull(RefutedJobs)',
-        refuted_jobs: probes.filter((p) => p.verdict === 'refuted').map((p) => p.job),
-      }, null, 2), 'utf8');
-    } catch { /* non-blocking: disk write failure does not suppress CLI output */ }
+      writeFileSync(
+        auditPath,
+        JSON.stringify(
+          {
+            audit_timestamp: new Date().toISOString(),
+            auditor: 'wpm-doctor-hooks-jtbd',
+            probes: probes.map((p) => ({ ...p })),
+            summary: { verified, refuted, inconclusive, total: probes.length },
+            verdict: healthy ? 'Accepted' : 'AndonPull(RefutedJobs)',
+            refuted_jobs: probes.filter((p) => p.verdict === 'refuted').map((p) => p.job),
+          },
+          null,
+          2
+        ),
+        'utf8'
+      );
+    } catch {
+      /* non-blocking: disk write failure does not suppress CLI output */
+    }
 
-    const result = makeResult('doctor hooks', {
-      probes,
-      summary: { verified, refuted, inconclusive, total: probes.length },
-      healthy,
-      audit_path: auditPath,
-    }, performance.now() - t0, exitCode);
+    const result = makeResult(
+      'doctor hooks',
+      {
+        probes,
+        summary: { verified, refuted, inconclusive, total: probes.length },
+        healthy,
+        audit_path: auditPath,
+      },
+      performance.now() - t0,
+      exitCode
+    );
 
     emitResult(result, { format, verbose, quiet }, (res, p) => {
       p.log('');

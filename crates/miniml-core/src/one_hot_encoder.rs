@@ -120,7 +120,8 @@ mod tests {
 
     #[test]
     fn test_one_hot_multi_feature() {
-        // 2 features: feature 0 has [0,1], feature 1 has [10,20,30]
+        // 2 features: feature 0 has categories [0,1] (2 values), feature 1 has [10,20,30] (3 values).
+        // Each sample encodes to 2+3 = 5 values.
         let data = vec![
             0.0, 10.0,
             1.0, 20.0,
@@ -129,10 +130,15 @@ mod tests {
         let mut encoder = one_hot_encoder(2);
         let transformed = encoder.fit_transform(&data).unwrap();
 
-        // First row: [0, 10] -> [1,0, 1,0,0]
-        assert_eq!(transformed[0..6].to_vec(), vec![1.0, 0.0, 1.0, 0.0, 0.0]);
-        // Second row: [1, 20] -> [0,1, 0,1,0]
-        assert_eq!(transformed[6..12].to_vec(), vec![0.0, 1.0, 0.0, 1.0, 0.0]);
+        // 3 samples × 5 encoded values = 15 elements total.
+        assert_eq!(transformed.len(), 15);
+
+        // First row: [0, 10] -> feat0=[1,0], feat1=[1,0,0] → [1,0,1,0,0]
+        assert_eq!(&transformed[0..5], &[1.0, 0.0, 1.0, 0.0, 0.0]);
+        // Second row: [1, 20] -> feat0=[0,1], feat1=[0,1,0] → [0,1,0,1,0]
+        assert_eq!(&transformed[5..10], &[0.0, 1.0, 0.0, 1.0, 0.0]);
+        // Third row: [0, 30] -> feat0=[1,0], feat1=[0,0,1] → [1,0,0,0,1]
+        assert_eq!(&transformed[10..15], &[1.0, 0.0, 0.0, 0.0, 1.0]);
     }
 
     #[test]

@@ -1,5 +1,6 @@
 import { defineCommand } from 'citty';
 import { run } from './commands/run.js';
+import { batch } from './commands/batch.js';
 import { watch } from './commands/watch.js';
 import { status } from './commands/status.js';
 import { explain } from './commands/explain.js';
@@ -33,7 +34,17 @@ import { adversary } from './commands/adversary.js';
 import { trace } from './commands/trace.js';
 import { prolog8 } from './commands/prolog8.js';
 import { algorithms } from './commands/algorithms.js';
+import { examples } from './commands/examples.js';
+import { interpret } from './commands/interpret.js';
+import { exitCodes } from './commands/exit-codes.js';
 import { repl } from './commands/repl.js';
+import { prolog8 } from './commands/prolog8.js';
+import { feedback } from './commands/feedback.js';
+import { wasmServer } from './commands/wasm-server.js';
+import { timeout } from './commands/timeout.js';
+import cache from './commands/cache.js';
+import deduplicate from './commands/deduplicate.js';
+import models from './commands/models.js';
 import pkg from '../package.json' with { type: 'json' };
 
 export const main = defineCommand({
@@ -51,6 +62,14 @@ export const main = defineCommand({
       type: 'string',
       description: 'Path to config file (wasm4pm.toml, wasm4pm.json, or PMC_CONFIG_PATH)',
     },
+    'no-color': {
+      type: 'boolean',
+      description: 'Disable ANSI colors in output (also set NO_COLOR env var)',
+    },
+    'no-emoji': {
+      type: 'boolean',
+      description: 'Disable emoji in output for terminal compatibility',
+    },
   },
   async run() {
     const BOLD = '\x1b[1m';
@@ -61,6 +80,13 @@ export const main = defineCommand({
 
     process.stdout.write(`
 ${BOLD}wpm${RESET} (wasm4pm) v${pkg.version}  —  Process Mining CLI  ${DIM}(wasm4pm)${RESET}
+
+${DIM}Configuration precedence: CLI args > wasm4pm.toml > wasm4pm.json > env vars > defaults${RESET}
+
+${BOLD}QUICK START${RESET}
+  ${CYAN}wpm run log.xes${RESET}                                     Discover a model from an event log (try this first!)
+  ${CYAN}wpm run --help${RESET}                                      Show full documentation for any command
+  ${CYAN}wpm doctor${RESET}                                          Diagnose environment, WASM, and config issues
 
 ${BOLD}DISCOVERY${RESET}
   ${GREEN}wpm run${RESET} <log.xes>                   Discover a process model (default: heuristic miner)
@@ -133,9 +159,25 @@ ${BOLD}VAN DER AALST AGENTS${RESET}  ${DIM}(8 autonomous adversarial validators)
 ${BOLD}RESULTS & HEALTH${RESET}
   ${GREEN}wpm results${RESET}                         View all saved discovery & prediction results
   ${GREEN}wpm results${RESET} --last                  Print the most recent result
+  ${GREEN}wpm cache stats${RESET}                     Show discovery cache hit rate, entry count, memory usage
+  ${GREEN}wpm cache clear${RESET} [--algorithm algo]  Clear cache entries (all or by algorithm)
+  ${GREEN}wpm models list${RESET}                     List cached process models from warm-start cache
+  ${GREEN}wpm models stats${RESET}                    Show model cache statistics and performance metrics
+  ${GREEN}wpm models clear${RESET}                    Clear cached models (all or by algorithm)
+  ${GREEN}wpm models warm${RESET}                     Show warm-start caching status and recommendations
+  ${GREEN}wpm deduplicate scan${RESET} <dir>          Identify duplicate logs by content hash
+  ${GREEN}wpm deduplicate report${RESET}              Show deduplication statistics
+  ${GREEN}wpm deduplicate clear${RESET}               Clear deduplication data
+  ${GREEN}wpm deduplicate load${RESET}                Load persisted deduplication database
   ${GREEN}wpm doctor${RESET}                          Check environment health + pipeline integrity (24 checks)
   ${GREEN}wpm doctor hooks${RESET}                    JTBD verification: test whether each Claude Code hook does its job
   ${GREEN}wpm status${RESET}                          WASM module status and memory usage
+
+${BOLD}WASM SERVER${RESET}  ${DIM}(reduce latency from 2,273ms → <500ms)${RESET}
+  ${GREEN}wpm wasm-server start${RESET}               Start the long-lived WASM server (one-time 1,872ms init)
+  ${GREEN}wpm wasm-server stop${RESET}                Stop the running WASM server
+  ${GREEN}wpm wasm-server status${RESET}              Check server status and statistics
+  ${GREEN}wpm wasm-server reset${RESET}               Kill and restart the server
 
 ${BOLD}TRACE-TO-POWL v2 PIPELINE${RESET}  ${DIM}(stack traces → object evidence → conformance)${RESET}
   ${GREEN}wpm trace ingest${RESET} --from rust|ts [-i f]  Parse stack trace → TraceGraph JSON-LD
@@ -155,8 +197,31 @@ ${BOLD}PROLOG8${RESET}  ${DIM}(byte-capped proof engine, BLAKE3 receipt chains)$
   ${GREEN}wpm prolog8 query${RESET} -i <input.json>    Evaluate a query (Allow / Deny / Invalid + proof)
   ${GREEN}wpm prolog8 replay${RESET} -i <input.json>   Verify a receipt (detect tampering)
 
+${BOLD}UTILITY${RESET}
+  ${GREEN}wpm batch${RESET} <dir/>                    Process all XES/OCEL files in a directory, write results to --output-dir
+  ${GREEN}wpm swarm${RESET} <log.xes>                 Multi-worker swarm: parallel algorithm runs, convergence voting
+  ${GREEN}wpm config show${RESET}                     Print the resolved config (all 5 layers merged), provenance included
+  ${GREEN}wpm config validate${RESET}                 Validate wasm4pm.toml / wasm4pm.json against Zod schema
+  ${GREEN}wpm explain${RESET} <algorithm>             Plain-English explanation + academic reference for any algorithm
+  ${GREEN}wpm verify${RESET} <receipt.json>           Re-hash and validate a saved receipt for tamper detection
+  ${GREEN}wpm repl${RESET}                            Interactive REPL: run commands without re-loading WASM each time
+
 ${BOLD}SETUP${RESET}
   ${GREEN}wpm init${RESET}                            Scaffold wasm4pm.toml + .env.example in current dir
+
+${BOLD}UNDERSTANDING & HELP${RESET}
+  ${GREEN}wpm interpret${RESET} <metric> <value>      Understand quality metrics (fitness, precision, etc.)
+  ${GREEN}wpm exit-codes${RESET}                       Show exit code reference with examples
+  ${GREEN}wpm examples${RESET}                         Browse command examples by category
+  ${GREEN}wpm algorithms${RESET}                       List all available algorithms with speed/quality ratings
+
+${BOLD}COMMON FLAGS${RESET}
+  ${GREEN}-i, --input${RESET} <file>         Event log file (XES, JSON, OCEL)
+  ${GREEN}-v, --verbose${RESET}              Show detailed output (can be repeated: -vv, -vvv)
+  ${GREEN}-q, --quiet${RESET}                Suppress non-error output
+  ${GREEN}-o, --output${RESET} <path>        Write result to file
+  ${GREEN}--format${RESET} {human|json}      Output format (default: human)
+  ${GREEN}--no-color${RESET}                 Disable ANSI colors
 
 ${DIM}Run ${BOLD}wpm <command> --help${RESET}${DIM} for detailed usage and all flags.${RESET}
 ${DIM}Algorithms: dfg, alpha, heuristic, inductive, ilp, genetic, pso, astar, hill-climbing, ant-colony, declare${RESET}
@@ -167,6 +232,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
   },
   subCommands: {
     run,
+    batch,
     watch,
     status,
     explain,
@@ -200,7 +266,17 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     trace,
     prolog8,
     algorithms,
+    examples,
+    interpret,
+    'exit-codes': exitCodes,
     repl,
+    prolog8,
+    feedback,
+    timeout,
+    'wasm-server': wasmServer,
+    cache,
+    deduplicate,
+    models,
   },
 });
 
@@ -209,6 +285,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
  */
 export {
   run,
+  batch,
   watch,
   status,
   explain,
@@ -234,4 +311,7 @@ export {
   config,
   verify,
   claude,
+  examples,
+  interpret,
+  exitCodes,
 };

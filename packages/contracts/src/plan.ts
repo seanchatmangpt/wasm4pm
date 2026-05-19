@@ -156,15 +156,23 @@ export function validatePlanDAG(plan: Plan): string[] {
     }
   }
 
-  // Cycle detection via topological sort (Kahn's algorithm)
-  if (errors.length === 0) {
+  // Cycle detection via Kahn's algorithm (topological sort).
+  //
+  // Run unconditionally — a plan that has BOTH dangling edge references AND
+  // a cycle is doubly defective and both defects must be reported.  We filter
+  // out dangling edges (both endpoints must be known nodes) before building
+  // the in-degree map so the Kahn traversal is not corrupted by ghost nodes.
+  {
+    const validEdges = plan.edges.filter(
+      (edge) => nodeIds.has(edge.from) && nodeIds.has(edge.to)
+    );
     const inDegree = new Map<string, number>();
     const adj = new Map<string, string[]>();
     for (const id of nodeIds) {
       inDegree.set(id, 0);
       adj.set(id, []);
     }
-    for (const edge of plan.edges) {
+    for (const edge of validEdges) {
       adj.get(edge.from)!.push(edge.to);
       inDegree.set(edge.to, (inDegree.get(edge.to) ?? 0) + 1);
     }
@@ -201,6 +209,35 @@ export function validatePlanDAG(plan: Plan): string[] {
   }
   if (!kinds.has('sink')) {
     errors.push('Plan must contain at least one sink node');
+  }
+
+  // Validate sink nodes: a sink must not have outgoing edges.
+  // A sink node that emits to another node is semantically invalid — sinks only receive.
+  const sinkIds = new Set(plan.nodes.filter((n) => n.kind === 'sink').map((n) => n.id));
+  for (const edge of plan.edges) {
+    if (sinkIds.has(edge.from)) {
+      errors.push(`Sink node must not have outgoing edges: ${edge.from} → ${edge.to}`);
+    }
+  }
+
+  // Detect disconnected (island) nodes: nodes with no valid edges touching them.
+  // Such nodes are unreachable from source and can never contribute to a result.
+  // Only applies when the plan has edges — an edge-free plan with one source + one sink
+  // is not erroneous (no flow is a degenerate but structurally valid graph).
+  if (plan.edges.length > 0) {
+    const validEdges = plan.edges.filter(
+      (edge) => nodeIds.has(edge.from) && nodeIds.has(edge.to) && edge.from !== edge.to
+    );
+    const connectedIds = new Set<string>();
+    for (const edge of validEdges) {
+      connectedIds.add(edge.from);
+      connectedIds.add(edge.to);
+    }
+    for (const node of plan.nodes) {
+      if (!connectedIds.has(node.id)) {
+        errors.push(`Disconnected node has no edges: ${node.id} (${node.kind})`);
+      }
+    }
   }
 
   return errors;

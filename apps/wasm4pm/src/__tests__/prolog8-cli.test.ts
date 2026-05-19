@@ -102,16 +102,10 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
       expect(result.stdout).toMatch(/prolog8/i);
     });
 
-    // TODO(vitest-pipe-capture): vitest's execFile-based runCli loses tiny
-    // (<1KB) child stdout writes that arrive before child exit. The wpm bin
-    // now wraps process.exit to drain stdio first (verified manually: 522
-    // bytes captured by a direct execFile call), but vitest's worker still
-    // sees empty stdout/stderr. Tracked as a vitest 1.6 quirk; revisit when
-    // upgrading vitest or switching to a tty-emulating test harness.
-    it.skip('--help exits 0 and shows subcommand names', async () => {
+    it('--help exits 0 and shows subcommand names', async () => {
       const result = await runCli(['prolog8', '--help'], { env: env.env });
       expect(result.exitCode).toBe(EXIT_CODES.success);
-      expect(`${result.stdout}${result.stderr}`).toMatch(/show|query|replay/i);
+      expect(result.stdout).toMatch(/show|query|replay/i);
     });
 
     it('invalid subcommand exits non-zero', async () => {
@@ -168,11 +162,10 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
       expect(['ok', 'error']).toContain(parsed['status']);
     });
 
-    // TODO(citty-pipe-drain): see prolog8 root --help test above.
-    it.skip('--help exits 0 and lists --format option', async () => {
+    it('--help exits 0 and lists --format option', async () => {
       const result = await runCli(['prolog8', 'show', '--help'], { env: env.env });
       expect(result.exitCode).toBe(EXIT_CODES.success);
-      expect(`${result.stdout}${result.stderr}`).toMatch(/format/i);
+      expect(result.stdout).toMatch(/format/i);
     });
 
     it('completes within 3000ms', async () => {
@@ -217,11 +210,10 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
   // -------------------------------------------------------------------------
 
   describe('prolog8 query', () => {
-    // TODO(citty-pipe-drain): see prolog8 root --help test.
-    it.skip('--help exits 0 and shows -i / --input option', async () => {
+    it('--help exits 0 and shows -i / --input option', async () => {
       const result = await runCli(['prolog8', 'query', '--help'], { env: env.env });
       expect(result.exitCode).toBe(EXIT_CODES.success);
-      expect(`${result.stdout}${result.stderr}`).toMatch(/-i|--input/i);
+      expect(result.stdout).toMatch(/-i|--input/i);
     });
 
     it('with no arguments exits CONFIG_ERROR (missing --input)', async () => {
@@ -319,10 +311,9 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
       expect(result.exitCode).toBe(EXIT_CODES.success);
     });
 
-    // TODO(citty-pipe-drain): see prolog8 root --help test.
-    it.skip('--help output mentions replay/verify/receipt terminology', async () => {
+    it('--help output mentions replay/verify/receipt terminology', async () => {
       const result = await runCli(['prolog8', 'replay', '--help'], { env: env.env });
-      expect(`${result.stdout}${result.stderr}`).toMatch(/replay|verify|receipt/i);
+      expect(result.stdout).toMatch(/replay|verify|receipt/i);
     });
 
     it('with no arguments exits CONFIG_ERROR (missing --input)', async () => {
@@ -474,10 +465,9 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
       ]).toContain(result.exitCode);
     });
 
-    // TODO(citty-pipe-drain): see prolog8 root --help test.
-    it.skip('replay --help mentions replay/verify/ocel concepts', async () => {
+    it('replay --help mentions replay/verify/ocel concepts', async () => {
       const result = await runCli(['prolog8', 'replay', '--help'], { env: env.env });
-      expect(`${result.stdout}${result.stderr}`).toMatch(/replay|verify|ocel|receipt/i);
+      expect(result.stdout).toMatch(/replay|verify|ocel|receipt/i);
     });
 
     it('replay --generate-proof flag is tolerated or fails gracefully', async () => {

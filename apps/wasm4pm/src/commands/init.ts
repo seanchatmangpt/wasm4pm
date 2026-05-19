@@ -4,31 +4,19 @@ import * as path from 'path';
 import { existsSync } from 'fs';
 import { emitResult, makeResult, makeErrorResult, ConsoleProjection } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
-import { getExampleTomlConfig, getExampleJsonConfig, getPublicPresetConfig, getExamplePresetConfig, type PublicPreset } from '@wasm4pm/config';
-import { withSpan } from './_otel.js';
+import {
+  getExampleTomlConfig,
+  getExampleJsonConfig,
+  getPublicPresetConfig,
+  getExamplePresetConfig,
+  getExampleEnvFile,
+  type PublicPreset,
+} from '@wasm4pm/config';
 import { exitWithFlush } from '../otel/exit.js';
+import { withSpan, withSpanRaw } from './_otel.js';
 
-// Template content generators
-function getEnvExampleContent(): string {
-  return `# Environment variables for wasm4pm
-# Copy to .env and adjust as needed
-
-# Execution profile: fast, balanced, quality, stream
-WASM4PM_PROFILE=balanced
-
-# Logging level: debug, info, warn, error
-WASM4PM_LOG_LEVEL=info
-
-# Enable watch mode
-WASM4PM_WATCH=false
-
-# Output format: human, json
-WASM4PM_OUTPUT_FORMAT=human
-
-# Output destination: stdout, stderr, or file path
-WASM4PM_OUTPUT_DESTINATION=stdout
-`;
-}
+// getEnvExampleContent is sourced from @wasm4pm/config (getExampleEnvFile) so it always
+// stays in sync with the full set of WASM4PM_* variables the resolver actually handles.
 
 function getGitignoreContent(): string {
   return `# Node modules
@@ -134,14 +122,21 @@ For more information on wasm4pm, see:
  * Tagged write-file errors — map to specific exit codes in the caller.
  */
 export class InitFileSystemError extends Error {
-  constructor(public exitCode: number, public filepath: string, public cause: NodeJS.ErrnoException) {
+  constructor(
+    public exitCode: number,
+    public filepath: string,
+    public cause: NodeJS.ErrnoException
+  ) {
     super(`Failed to write ${filepath}: ${cause.code ?? 'UNKNOWN'} ${cause.message}`);
     this.name = 'InitFileSystemError';
   }
 }
 
 export class InitTomlSerializeError extends Error {
-  constructor(public filepath: string, public cause: Error) {
+  constructor(
+    public filepath: string,
+    public cause: Error
+  ) {
     super(`TOML serialization error for ${filepath}: ${cause.message}`);
     this.name = 'InitTomlSerializeError';
   }
@@ -212,6 +207,20 @@ async function validateConfigFiles(dirpath: string): Promise<boolean> {
   return true;
 }
 
+// Presets that have both TOML templates and a full BaseConfig object (JSON serialisable).
+const PUBLIC_PRESETS_WITH_JSON: ReadonlyArray<string> = ['fast', 'balanced', 'quality'];
+
+// All supported init preset names.
+const VALID_PRESETS: ReadonlyArray<string> = [
+  'fast',
+  'balanced',
+  'quality',
+  'conformance',
+  'streaming',
+];
+
+type AllPresets = 'fast' | 'balanced' | 'quality' | 'conformance' | 'streaming';
+
 export const init = defineCommand({
   meta: {
     name: 'init',
@@ -246,8 +255,13 @@ export const init = defineCommand({
     },
     preset: {
       type: 'string',
-      description: 'Initialize with a preset (fast, balanced, quality)',
+      description:
+        'Initialize with a preset: fast (DFG, no ML/prediction), balanced (heuristic+ML+prediction), quality (ILP+full ML+RL), conformance (alignment-based fitness check), streaming (SIMD DFG + drift detection)',
       alias: 'p',
+    },
+    'profile-guide': {
+      type: 'boolean',
+      description: 'Run interactive profile guide to recommend deployment profile',
     },
   },
   async run(ctx) {
@@ -255,148 +269,290 @@ export const init = defineCommand({
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
+    const profileGuide = Boolean(ctx.args['profile-guide']);
 
-    // Use a temporary projection for early validation warnings before the result is built
-    const earlyProjection = new ConsoleProjection({ verbose, quiet });
+    // If --profile-guide requested, run the interactive questionnaire and exit
+    if (profileGuide) {
+      const { profileGuideQuestionnaire, recommendProfile, formatRecommendation } = await import(
+        '../profile-guide.js'
+      );
+      const response = await profileGuideQuestionnaire();
+      const recommendation = recommendProfile(response);
+      const formatted = formatRecommendation(recommendation);
+
+      if (format === 'json') {
+        // JSON output for scripting
+        const jsonOutput = {
+          status: 'profile_guide_recommendation',
+          profile: recommendation.profile,
+          reasoning: recommendation.reasoning,
+          size_estimate: recommendation.sizeEstimate,
+          features: recommendation.features,
+          tradeoffs: recommendation.tradeoffs,
+          next_steps: recommendation.nextSteps,
+        };
+        console.log(JSON.stringify(jsonOutput, null, 2));
+      } else {
+        // Human output with formatting
+        console.log(formatted);
+      }
+
+      return await exitWithFlush(EXIT_CODES.success);
+    }
+
+    const configFormat = (
+      (ctx.args.configFormat as string) ||
+      (ctx.args['config-format'] as string) ||
+      'toml'
+    ).toLowerCase();
+    const preset = ctx.args.preset as string | undefined;
+    const force = Boolean(ctx.args.force);
 
     return withSpan(
       'init',
-      {
-        format,
-        config_format: (ctx.args['config-format'] as string) ?? 'toml',
-        preset: (ctx.args.preset as string) ?? '',
-        force: Boolean(ctx.args.force),
-      },
+      { config_format: configFormat, preset: preset ?? '', force, format },
       async () => {
-    try {
-      const cwd = process.cwd();
-      // Accept both camelCase (--configFormat) and kebab-case (--config-format).
-      const configFormat = ((ctx.args.configFormat as string) || (ctx.args['config-format'] as string) || 'toml').toLowerCase();
-      const force = ctx.args.force ?? false;
-      const preset = ctx.args.preset as string | undefined;
+        // Use a temporary projection for early validation warnings before the result is built
+        const earlyProjection = new ConsoleProjection({ verbose, quiet });
 
-      if (configFormat !== 'toml' && configFormat !== 'json') {
-        const result = makeErrorResult(
-          'init',
-          new Error(`Invalid format: ${configFormat}. Must be 'toml' or 'json'`),
-          EXIT_CODES.config_error,
-          'INVALID_FORMAT'
-        );
-        emitResult(result, { format, verbose, quiet });
-        return await exitWithFlush(result.exit_code);
-      }
+        try {
+          const cwd = process.cwd();
 
-      const VALID_PRESETS = ['fast', 'balanced', 'quality'];
-      if (preset && !VALID_PRESETS.includes(preset)) {
-        const result = makeErrorResult(
-          'init',
-          new Error(`Invalid preset: ${preset}. Must be one of: ${VALID_PRESETS.join(', ')}`),
-          EXIT_CODES.config_error,
-          'INVALID_PRESET'
-        );
-        emitResult(result, { format, verbose, quiet });
-        return await exitWithFlush(result.exit_code);
-      }
+          if (configFormat !== 'toml' && configFormat !== 'json') {
+            const result = makeErrorResult(
+              'init',
+              new Error(`Invalid format: ${configFormat}. Must be 'toml' or 'json'`),
+              EXIT_CODES.config_error,
+              'INVALID_FORMAT'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
 
-      // Create config file
-      const configFilename = configFormat === 'toml' ? 'wasm4pm.toml' : 'wasm4pm.json';
-      const configPath = path.join(cwd, configFilename);
-      let configContent: string;
-      try {
-        if (preset) {
-          configContent = configFormat === 'toml'
-            ? getExamplePresetConfig(preset as PublicPreset)
-            : JSON.stringify(getPublicPresetConfig(preset as PublicPreset), null, 2);
-        } else {
-          configContent = configFormat === 'toml' ? getExampleTomlConfig() : getExampleJsonConfig();
-        }
-      } catch (serErr) {
-        throw new InitTomlSerializeError(
-          configPath,
-          serErr instanceof Error ? serErr : new Error(String(serErr))
-        );
-      }
+          if (preset && !VALID_PRESETS.includes(preset)) {
+            const result = makeErrorResult(
+              'init',
+              new Error(`Invalid preset: ${preset}. Must be one of: ${VALID_PRESETS.join(', ')}`),
+              EXIT_CODES.config_error,
+              'INVALID_PRESET'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
 
-      const configCreated = await safeWriteFile(configPath, configContent, force, earlyProjection);
+          // Create config file.
+          // conformance and streaming presets are workflow-specific templates — they only have a
+          // TOML representation and do not map to a full BaseConfig object. When those presets are
+          // requested with --config-format json, we silently fall back to TOML so the generated
+          // file is valid and human-readable.
+          const tomlOnlyPreset = preset !== undefined && !PUBLIC_PRESETS_WITH_JSON.includes(preset);
+          const effectiveFormat = tomlOnlyPreset ? 'toml' : configFormat;
+          const configFilename = effectiveFormat === 'toml' ? 'wasm4pm.toml' : 'wasm4pm.json';
+          const configPath = path.join(cwd, configFilename);
 
-      const envPath = path.join(cwd, '.env.example');
-      const envCreated = await safeWriteFile(envPath, getEnvExampleContent(), force, earlyProjection);
+          let configContent: string;
+          try {
+            if (preset) {
+              if (tomlOnlyPreset && configFormat === 'json') {
+                earlyProjection.warn(
+                  `The "${preset}" preset is a workflow template and only supports TOML format. Generating wasm4pm.toml instead of wasm4pm.json.`
+                );
+              }
+              if (effectiveFormat === 'toml') {
+                configContent = getExamplePresetConfig(preset as AllPresets);
+              } else {
+                // JSON format: only reachable for fast / balanced / quality
+                configContent = JSON.stringify(
+                  getPublicPresetConfig(preset as PublicPreset),
+                  null,
+                  2
+                );
+              }
+            } else {
+              configContent =
+                configFormat === 'toml' ? getExampleTomlConfig() : getExampleJsonConfig();
+            }
+          } catch (serErr) {
+            throw new InitTomlSerializeError(
+              configPath,
+              serErr instanceof Error ? serErr : new Error(String(serErr))
+            );
+          }
 
-      const gitignorePath = path.join(cwd, '.gitignore');
-      const gitignoreCreated = !existsSync(gitignorePath)
-        ? await safeWriteFile(gitignorePath, getGitignoreContent(), force, earlyProjection)
-        : false;
+          const { filesCreated, isValid, wasm4pmDirCreated } = await withSpanRaw(
+            'init.scaffold',
+            { 'init.preset': preset ?? '', 'init.format': effectiveFormat, 'init.force': force },
+            async () => {
+              const configCreated = await safeWriteFile(
+                configPath,
+                configContent,
+                force,
+                earlyProjection
+              );
 
-      const readmePath = path.join(cwd, 'README.md');
-      const readmeCreated = !existsSync(readmePath)
-        ? await safeWriteFile(readmePath, getReadmeContent(), force, earlyProjection)
-        : false;
+              // .env.example: use getExampleEnvFile() from @wasm4pm/config so every WASM4PM_* variable
+              // that the resolver understands is listed with a description.
+              const envPath = path.join(cwd, '.env.example');
+              const envCreated = await safeWriteFile(
+                envPath,
+                getExampleEnvFile(),
+                force,
+                earlyProjection
+              );
 
-      const isValid = await validateConfigFiles(cwd);
+              const gitignorePath = path.join(cwd, '.gitignore');
+              const gitignoreCreated = !existsSync(gitignorePath)
+                ? await safeWriteFile(gitignorePath, getGitignoreContent(), force, earlyProjection)
+                : false;
 
-      const filesCreated: string[] = [];
-      if (configCreated) filesCreated.push(configFilename);
-      if (envCreated) filesCreated.push('.env.example');
-      if (gitignoreCreated) filesCreated.push('.gitignore');
-      if (readmeCreated) filesCreated.push('README.md');
+              const readmePath = path.join(cwd, 'README.md');
+              const readmeCreated = !existsSync(readmePath)
+                ? await safeWriteFile(readmePath, getReadmeContent(), force, earlyProjection)
+                : false;
 
-      const payload = {
-        format: configFormat,
-        preset: preset ?? null,
-        files_created: filesCreated,
-        valid: isValid,
-        instructions: [
-          `1. Review and edit ${configFilename} to customize your configuration`,
-          '2. Copy .env.example to .env and add any secret values',
-          '3. Use "wpm run --help" to see available options',
-        ],
-      };
+              // Ensure .wasm4pm/ directory exists — wpm run and other commands auto-save
+              // results here. Creating it during init avoids surprise ENOENT errors on first run.
+              const wasm4pmDir = path.join(cwd, '.wasm4pm');
+              let wasm4pmDirCreated = false;
+              if (!existsSync(wasm4pmDir)) {
+                try {
+                  await fs.mkdir(wasm4pmDir, { recursive: true });
+                  wasm4pmDirCreated = true;
+                } catch (dirErr) {
+                  const dirErrTyped = dirErr as NodeJS.ErrnoException;
+                  if (
+                    dirErrTyped &&
+                    (dirErrTyped.code === 'EACCES' || dirErrTyped.code === 'ENOSPC')
+                  ) {
+                    throw new InitFileSystemError(EXIT_CODES.system_error, wasm4pmDir, dirErrTyped);
+                  }
+                  // Non-fatal: log a warning but do not abort init
+                  earlyProjection.warn(
+                    `Could not create .wasm4pm/ directory: ${dirErrTyped.message ?? String(dirErr)}`
+                  );
+                }
+              }
 
-      if (!isValid) {
-        const result = makeErrorResult(
-          'init',
-          new Error('Configuration validation failed. Please review your config file.'),
-          EXIT_CODES.execution_error,
-          'CONFIG_INVALID'
-        );
-        emitResult(result, { format, verbose, quiet });
-        return await exitWithFlush(result.exit_code);
-      }
+              const valid = await validateConfigFiles(cwd);
 
-      const result = makeResult('init', payload, performance.now() - t0, EXIT_CODES.success);
-      emitResult(result, { format, verbose, quiet }, (res, projection) => {
-        const p = res.payload as typeof payload;
-        if (p.files_created.length > 0) {
-          const presetLabel = p.preset ? ` with ${p.preset} preset` : '';
-          projection.success(`Configuration initialized successfully${presetLabel}`);
-          projection.log('\nCreated files:');
-          p.files_created.forEach((file) => {
-            projection.log(`  ✓ ${file}`);
+              const created: string[] = [];
+              if (configCreated) created.push(configFilename);
+              if (envCreated) created.push('.env.example');
+              if (gitignoreCreated) created.push('.gitignore');
+              if (readmeCreated) created.push('README.md');
+              if (wasm4pmDirCreated) created.push('.wasm4pm/');
+
+              return { filesCreated: created, isValid: valid, wasm4pmDirCreated };
+            }
+          );
+
+          // Algorithm guidance tailored to the chosen preset.
+          const algorithmHint = (() => {
+            if (preset === 'conformance')
+              return 'etconformance_precision (fast) or alignments (exact)';
+            if (preset === 'streaming') return 'simd_streaming_dfg (fastest) or dfg (default)';
+            if (preset === 'quality')
+              return 'ilp (highest quality) or genetic_algorithm (flexible)';
+            if (preset === 'balanced')
+              return 'heuristic_miner (default) or inductive_miner (structured)';
+            return 'dfg (fastest) → heuristic_miner (balanced) → ilp (highest quality)';
+          })();
+
+          // Practical description of what the chosen preset actually does.
+          const presetDescription = (() => {
+            if (preset === 'fast')
+              return 'Directly-Follows Graph only — sub-second discovery, no ML or prediction. Start here.';
+            if (preset === 'balanced')
+              return 'Heuristic miner + ML classification + next-activity prediction. Good all-round choice.';
+            if (preset === 'quality')
+              return 'ILP Petri-net discovery + full ML suite + RL orchestration. Highest accuracy, slower.';
+            if (preset === 'conformance')
+              return 'Alignment-based fitness check against a normative model. Use when you have a target process.';
+            if (preset === 'streaming')
+              return 'SIMD-accelerated DFG + EWMA drift detection. Use for high-throughput or live log feeds.';
+            return null;
+          })();
+
+          const payload = {
+            format: effectiveFormat,
+            preset: preset ?? null,
+            preset_description: presetDescription,
+            files_created: filesCreated,
+            wasm4pm_dir_created: wasm4pmDirCreated,
+            valid: isValid,
+            log_file_needed: true,
+            instructions: [
+              '1. Get a log file  — you need a real .xes or .ocel event log to run discovery.',
+              '   Example: cp /path/to/your/process.xes ./data/process.xes',
+              `2. Run: wpm run <log.xes>       — discover a process model (algorithm: ${algorithmHint})`,
+              `3. Edit ${configFilename}: set [source] path to persist log location across runs`,
+              '4. Run: wpm explain             — compare algorithms and choose one for your situation',
+              '5. Run: wpm doctor              — verify your environment is correctly configured',
+              '6. Copy .env.example to .env — it lists ALL WASM4PM_* env vars with descriptions',
+            ],
+          };
+
+          if (!isValid) {
+            const result = makeErrorResult(
+              'init',
+              new Error('Configuration validation failed. Please review your config file.'),
+              EXIT_CODES.execution_error,
+              'CONFIG_INVALID'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
+
+          const result = makeResult('init', payload, performance.now() - t0, EXIT_CODES.success);
+          emitResult(result, { format, verbose, quiet }, (res, projection) => {
+            const p = res.payload as typeof payload;
+            if (p.files_created.length > 0) {
+              const presetLabel = p.preset ? ` with ${p.preset} preset` : '';
+              projection.success(`Configuration initialized successfully${presetLabel}`);
+
+              // Surface the practical meaning of the chosen preset so a first-time user
+              // understands what they opted into without reading docs.
+              if (p.preset_description) {
+                projection.info(`Preset "${p.preset}": ${p.preset_description}`);
+              }
+
+              projection.log('\nCreated files:');
+              p.files_created.forEach((file) => {
+                projection.log(`  ✓ ${file}`);
+              });
+
+              // Warn clearly that a log file is a prerequisite before any discovery can run.
+              projection.log(
+                '\n  NOTE: You need a real .xes or .ocel event log file to run discovery.'
+              );
+              projection.log(
+                '        wasm4pm does not bundle sample logs — point it at your own data.'
+              );
+
+              projection.log('\nNext steps:');
+              p.instructions.forEach((instruction) => {
+                projection.log(`  ${instruction}`);
+              });
+            } else {
+              projection.info('All files already exist (use --force to overwrite)');
+            }
           });
-          projection.log('\nNext steps:');
-          p.instructions.forEach((instruction) => {
-            projection.log(`  ${instruction}`);
-          });
-        } else {
-          projection.info('All files already exist (use --force to overwrite)');
+          return await exitWithFlush(result.exit_code);
+        } catch (error) {
+          let exitCode: number = EXIT_CODES.execution_error;
+          let code = 'INIT_ERROR';
+          if (error instanceof InitFileSystemError) {
+            exitCode = EXIT_CODES.system_error;
+            code = 'INIT_FILESYSTEM_ERROR';
+          } else if (error instanceof InitTomlSerializeError) {
+            exitCode = EXIT_CODES.config_error;
+            code = 'INIT_CONFIG_SERIALIZE_ERROR';
+          }
+          const result = makeErrorResult('init', error, exitCode, code);
+          emitResult(result, { format, verbose, quiet });
+          return await exitWithFlush(result.exit_code);
         }
-      });
-      return await exitWithFlush(result.exit_code);
-    } catch (error) {
-      let exitCode: number = EXIT_CODES.execution_error;
-      let code = 'INIT_ERROR';
-      if (error instanceof InitFileSystemError) {
-        exitCode = EXIT_CODES.system_error;
-        code = 'INIT_FILESYSTEM_ERROR';
-      } else if (error instanceof InitTomlSerializeError) {
-        exitCode = EXIT_CODES.config_error;
-        code = 'INIT_CONFIG_SERIALIZE_ERROR';
       }
-      const result = makeErrorResult('init', error, exitCode, code);
-      emitResult(result, { format, verbose, quiet });
-      return await exitWithFlush(result.exit_code);
-    }
-      },
-    );
+    ); // end withSpan
   },
 });

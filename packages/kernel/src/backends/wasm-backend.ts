@@ -44,13 +44,8 @@ const SUPPORTED_ALGORITHM_IDS = [
   'hierarchical_dfg',
   'smart_engine',
 
-  // ML Analysis
-  'ml_classify',
-  'ml_cluster',
-  'ml_forecast',
-  'ml_anomaly',
-  'ml_regress',
-  'ml_pca',
+  // ML Analysis algorithms are handled by MlBackend, not WasmBackend.
+  // They are listed separately in ml-backend.ts's SUPPORTED_ALGORITHM_IDS.
 
   // Analysis & Utilities
   'transition_system',
@@ -131,9 +126,9 @@ export class WasmBackend implements MiningBackend {
   private initialized = false;
 
   async init(): Promise<void> {
-    const loader = wasm as any;
-    if (loader && typeof loader.init === 'function') {
-      await loader.init();
+    const loader = wasm as unknown as Record<string, unknown>;
+    if (loader && typeof loader['init'] === 'function') {
+      await (loader['init'] as () => Promise<void>)();
     }
     this.initialized = true;
   }
@@ -179,7 +174,7 @@ export class WasmBackend implements MiningBackend {
       const logJson = JSON.stringify(log);
       const logHandle = wasm.load_eventlog_from_json(logJson);
 
-      let resultRaw: any;
+      let resultRaw: unknown;
       switch (algorithmId) {
         case 'dfg':
         case 'optimized_dfg':
@@ -272,7 +267,7 @@ export class WasmBackend implements MiningBackend {
         stale: false,
       };
     } catch (error) {
-      return this.createFailedResult(algorithmId, startMs, String(error));
+      return this.createFailedResult(algorithmId, startMs, String(error)) as unknown as ResultEnvelope<ModelIR>;
     }
   }
 
@@ -320,7 +315,7 @@ export class WasmBackend implements MiningBackend {
         stale: false,
       };
     } catch (error) {
-      return this.createFailedResult('conformance', startMs, String(error)) as any;
+      return this.createFailedResult('conformance', startMs, String(error)) as unknown as ResultEnvelope<ConformanceResult>;
     }
   }
 
@@ -335,7 +330,7 @@ export class WasmBackend implements MiningBackend {
       const logJson = JSON.stringify(log);
       const logHandle = wasm.load_eventlog_from_json(logJson);
 
-      let resultRaw: any;
+      let resultRaw: unknown;
       switch (task.task_type) {
         case 'analyze_statistics':
           resultRaw = wasm.analyze_event_statistics(logHandle);
@@ -375,7 +370,7 @@ export class WasmBackend implements MiningBackend {
         stale: false,
       };
     } catch (error) {
-      return this.createFailedResult(task.task_type, startMs, String(error)) as any;
+      return this.createFailedResult(task.task_type, startMs, String(error));
     }
   }
 
@@ -422,7 +417,7 @@ export class WasmBackend implements MiningBackend {
     algorithmId: string,
     startMs: number,
     errorMessage: string
-  ): ResultEnvelope<any> {
+  ): ResultEnvelope<null> {
     const latency_ms = Date.now() - startMs;
     return {
       run_id: this.generateUuid(),

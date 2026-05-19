@@ -271,3 +271,340 @@ describe('classifyTraces edge cases', () => {
     );
   });
 });
+
+// ---------------------------------------------------------------------------
+// Rank 1-2 Oracle Tests — Statistical & Domain-Theoretic Validation
+// ---------------------------------------------------------------------------
+
+describe('classifyTraces oracle tests (Rank 1-2)', () => {
+  // Rank 2 Oracle: Accuracy Threshold on Well-Separated Data
+  // For clear class separation, classifiers should exceed minimum accuracy threshold.
+  it('knn achieves >= 80% accuracy on well-separated 2-class dataset', async () => {
+    // Create synthetic data: clearly separated classes (fast vs slow traces)
+    const wellSeparated = [
+      // Fast class (trace_length <= 3, elapsed_time <= 1000)
+      { case_id: 'fast1', trace_length: 1, elapsed_time: 100, rework_count: 0, outcome: 'Fast' },
+      { case_id: 'fast2', trace_length: 2, elapsed_time: 200, rework_count: 0, outcome: 'Fast' },
+      { case_id: 'fast3', trace_length: 3, elapsed_time: 300, rework_count: 0, outcome: 'Fast' },
+      { case_id: 'fast4', trace_length: 2, elapsed_time: 150, rework_count: 0, outcome: 'Fast' },
+      // Slow class (trace_length >= 8, elapsed_time >= 4000)
+      { case_id: 'slow1', trace_length: 8, elapsed_time: 4000, rework_count: 2, outcome: 'Slow' },
+      { case_id: 'slow2', trace_length: 9, elapsed_time: 4500, rework_count: 3, outcome: 'Slow' },
+      { case_id: 'slow3', trace_length: 10, elapsed_time: 5000, rework_count: 4, outcome: 'Slow' },
+      { case_id: 'slow4', trace_length: 9, elapsed_time: 4200, rework_count: 2, outcome: 'Slow' },
+    ];
+
+    const result = await classifyTraces(wellSeparated, { method: 'knn', k: 3 });
+    const correct = result.predictions.filter((p) => {
+      const label = wellSeparated.find((f) => f.case_id === p.caseId)?.outcome;
+      return p.predicted === label;
+    }).length;
+    const accuracy = correct / wellSeparated.length;
+    expect(accuracy).toBeGreaterThanOrEqual(0.8);
+  });
+
+  // Rank 1 Oracle: Decision Tree Perfection on Well-Separated Data
+  // Decision trees with unlimited depth should achieve 100% accuracy on separable data.
+  it('decision_tree achieves 100% accuracy on perfectly separable 2-class dataset', async () => {
+    const perfectlySeparable = [
+      // Class A: trace_length < 4
+      { case_id: 'a1', trace_length: 1, elapsed_time: 100, rework_count: 0, outcome: 'ClassA' },
+      { case_id: 'a2', trace_length: 2, elapsed_time: 200, rework_count: 0, outcome: 'ClassA' },
+      { case_id: 'a3', trace_length: 3, elapsed_time: 300, rework_count: 0, outcome: 'ClassA' },
+      // Class B: trace_length >= 4
+      { case_id: 'b1', trace_length: 4, elapsed_time: 1000, rework_count: 1, outcome: 'ClassB' },
+      { case_id: 'b2', trace_length: 5, elapsed_time: 1500, rework_count: 2, outcome: 'ClassB' },
+      { case_id: 'b3', trace_length: 6, elapsed_time: 2000, rework_count: 3, outcome: 'ClassB' },
+    ];
+
+    const result = await classifyTraces(perfectlySeparable, { method: 'decision_tree' });
+    const correct = result.predictions.filter((p) => {
+      const label = perfectlySeparable.find((f) => f.case_id === p.caseId)?.outcome;
+      return p.predicted === label;
+    }).length;
+    expect(correct).toBe(perfectlySeparable.length);
+  });
+
+  // Rank 2 Oracle: Naive Bayes Accuracy on Well-Separated Data
+  // Naive Bayes should achieve >= 75% accuracy on well-separated classes.
+  it('naive_bayes achieves >= 75% accuracy on well-separated 2-class dataset', async () => {
+    const wellSeparated = [
+      // High-priority (rework_count <= 1, elapsed_time <= 2000)
+      { case_id: 'hp1', trace_length: 2, elapsed_time: 500, rework_count: 0, outcome: 'HighPriority' },
+      { case_id: 'hp2', trace_length: 3, elapsed_time: 1000, rework_count: 0, outcome: 'HighPriority' },
+      { case_id: 'hp3', trace_length: 2, elapsed_time: 1500, rework_count: 1, outcome: 'HighPriority' },
+      { case_id: 'hp4', trace_length: 3, elapsed_time: 800, rework_count: 0, outcome: 'HighPriority' },
+      // Low-priority (rework_count >= 2, elapsed_time >= 4000)
+      { case_id: 'lp1', trace_length: 10, elapsed_time: 4500, rework_count: 3, outcome: 'LowPriority' },
+      { case_id: 'lp2', trace_length: 11, elapsed_time: 5000, rework_count: 4, outcome: 'LowPriority' },
+      { case_id: 'lp3', trace_length: 9, elapsed_time: 4200, rework_count: 2, outcome: 'LowPriority' },
+      { case_id: 'lp4', trace_length: 10, elapsed_time: 5500, rework_count: 3, outcome: 'LowPriority' },
+    ];
+
+    const result = await classifyTraces(wellSeparated, { method: 'naive_bayes' });
+    const correct = result.predictions.filter((p) => {
+      const label = wellSeparated.find((f) => f.case_id === p.caseId)?.outcome;
+      return p.predicted === label;
+    }).length;
+    const accuracy = correct / wellSeparated.length;
+    expect(accuracy).toBeGreaterThanOrEqual(0.75);
+  });
+
+  // Rank 2 Oracle: Train/Test Split Parity
+  // Train on 50% of data, predict on same 50% → should achieve high accuracy (data leakage).
+  it('knn train-on-train split achieves high accuracy (data leakage oracle)', async () => {
+    const allData = [
+      { case_id: 'c1', trace_length: 1, elapsed_time: 100, rework_count: 0, outcome: 'X' },
+      { case_id: 'c2', trace_length: 2, elapsed_time: 200, rework_count: 0, outcome: 'X' },
+      { case_id: 'c3', trace_length: 8, elapsed_time: 4000, rework_count: 2, outcome: 'Y' },
+      { case_id: 'c4', trace_length: 9, elapsed_time: 4500, rework_count: 3, outcome: 'Y' },
+      { case_id: 'c5', trace_length: 3, elapsed_time: 300, rework_count: 0, outcome: 'X' },
+      { case_id: 'c6', trace_length: 10, elapsed_time: 5000, rework_count: 4, outcome: 'Y' },
+    ];
+
+    // With same train/test (no held-out set), accuracy should be high
+    const result = await classifyTraces(allData, { method: 'knn', k: 1 });
+    const correct = result.predictions.filter((p) => {
+      const label = allData.find((f) => f.case_id === p.caseId)?.outcome;
+      return p.predicted === label;
+    }).length;
+    const accuracy = correct / allData.length;
+    expect(accuracy).toBeGreaterThanOrEqual(0.8);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// HIGH-DIMENSIONAL CLASSIFICATION (>10 features)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('classifyTraces — high-dimensional (>10 features)', () => {
+  /**
+   * Generate 20 synthetic traces with 15 random features each.
+   * Classes are separated by a simple rule:
+   * If sum of features > 75, outcome='Pass', else 'Fail'
+   */
+  const generateHighDimensionalData = () => {
+    const traces = [];
+    for (let i = 1; i <= 20; i++) {
+      const f1 = Math.random() * 10;
+      const f2 = Math.random() * 10;
+      const f3 = Math.random() * 10;
+      const f4 = Math.random() * 10;
+      const f5 = Math.random() * 10;
+      const f6 = Math.random() * 10;
+      const f7 = Math.random() * 10;
+      const f8 = Math.random() * 10;
+      const f9 = Math.random() * 10;
+      const f10 = Math.random() * 10;
+      const f11 = Math.random() * 10;
+      const f12 = Math.random() * 10;
+      const f13 = Math.random() * 10;
+      const f14 = Math.random() * 10;
+      const f15 = Math.random() * 10;
+
+      const sum = f1 + f2 + f3 + f4 + f5 + f6 + f7 + f8 + f9 + f10 + f11 + f12 + f13 + f14 + f15;
+      const outcome = sum > 75 ? 'Pass' : 'Fail';
+
+      traces.push({
+        case_id: `hd${i}`,
+        f1,
+        f2,
+        f3,
+        f4,
+        f5,
+        f6,
+        f7,
+        f8,
+        f9,
+        f10,
+        f11,
+        f12,
+        f13,
+        f14,
+        f15,
+        outcome,
+      });
+    }
+    return traces;
+  };
+
+  it('knn should handle 15 features without NaN/Inf', async () => {
+    const data = generateHighDimensionalData();
+    const result = await classifyTraces(data, { method: 'knn', k: 3 });
+
+    expect(result.predictions).toHaveLength(20);
+    for (const p of result.predictions) {
+      expect(['Pass', 'Fail']).toContain(p.predicted);
+      expect(Number.isFinite(p.confidence)).toBe(true);
+      expect(p.confidence).toBeGreaterThanOrEqual(0);
+      expect(p.confidence).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('decision_tree should handle 15 features without NaN/Inf', async () => {
+    const data = generateHighDimensionalData();
+    const result = await classifyTraces(data, { method: 'decision_tree' });
+
+    expect(result.predictions).toHaveLength(20);
+    for (const p of result.predictions) {
+      expect(['Pass', 'Fail']).toContain(p.predicted);
+      expect(Number.isFinite(p.confidence)).toBe(true);
+      expect(p.confidence).toBeGreaterThan(0);
+      expect(p.confidence).toBeLessThanOrEqual(1);
+    }
+    // Check that tree has reasonable depth/nodes for 15 features
+    expect(result.modelInfo.depth).toBeGreaterThan(0);
+    expect(result.modelInfo.nNodes).toBeGreaterThan(0);
+  });
+
+  it('logistic_regression should handle 15 features without NaN/Inf', async () => {
+    const data = generateHighDimensionalData();
+    const result = await classifyTraces(data, { method: 'logistic_regression' });
+
+    expect(result.predictions).toHaveLength(20);
+    for (const p of result.predictions) {
+      expect(['Pass', 'Fail']).toContain(p.predicted);
+      expect(Number.isFinite(p.confidence)).toBe(true);
+      expect(p.confidence).toBeGreaterThanOrEqual(0);
+      expect(p.confidence).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('all three methods should produce consistent predictions on high-dimensional data', async () => {
+    const data = generateHighDimensionalData();
+    const knnResult = await classifyTraces(data, { method: 'knn', k: 3 });
+    const dtResult = await classifyTraces(data, { method: 'decision_tree' });
+    const lrResult = await classifyTraces(data, { method: 'logistic_regression' });
+
+    // Verify all methods produce predictions (non-determinism okay, just verify structure)
+    expect(knnResult.predictions).toHaveLength(20);
+    expect(dtResult.predictions).toHaveLength(20);
+    expect(lrResult.predictions).toHaveLength(20);
+
+    // Check agreement rate (should be reasonably high on a clean separation)
+    const knnPreds = new Set(knnResult.predictions.map((p) => p.predicted));
+    const dtPreds = new Set(dtResult.predictions.map((p) => p.predicted));
+    expect(knnPreds.size).toBeGreaterThan(0);
+    expect(dtPreds.size).toBeGreaterThan(0);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// IMBALANCED CLASSIFICATION (class skew: 90/10 split)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('classifyTraces — imbalanced data (90/10 split)', () => {
+  /**
+   * Create 100 traces: 90 "conforming", 10 "anomalous"
+   * Conforming: rework_count <= 1, trace_length <= 5
+   * Anomalous: rework_count >= 3, trace_length >= 8
+   */
+  const generateImbalancedData = () => {
+    const traces = [];
+
+    // 90 conforming traces (majority class)
+    for (let i = 1; i <= 90; i++) {
+      traces.push({
+        case_id: `conf${i}`,
+        trace_length: Math.floor(Math.random() * 5) + 1, // 1-5
+        elapsed_time: Math.random() * 3000 + 100, // 100-3100
+        rework_count: Math.floor(Math.random() * 2), // 0-1
+        outcome: 'Conforming',
+      });
+    }
+
+    // 10 anomalous traces (minority class)
+    for (let i = 1; i <= 10; i++) {
+      traces.push({
+        case_id: `anom${i}`,
+        trace_length: Math.floor(Math.random() * 5) + 8, // 8-12
+        elapsed_time: Math.random() * 3000 + 5000, // 5000-8000
+        rework_count: Math.floor(Math.random() * 3) + 3, // 3-5
+        outcome: 'Anomalous',
+      });
+    }
+
+    return traces;
+  };
+
+  it('knn should handle imbalanced data without crashing', async () => {
+    const data = generateImbalancedData();
+    const result = await classifyTraces(data, { method: 'knn', k: 3 });
+
+    expect(result.predictions).toHaveLength(100);
+    for (const p of result.predictions) {
+      expect(['Conforming', 'Anomalous']).toContain(p.predicted);
+      expect(Number.isFinite(p.confidence)).toBe(true);
+      expect(p.confidence).toBeGreaterThanOrEqual(0);
+      expect(p.confidence).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('decision_tree should handle imbalanced data without crashing', async () => {
+    const data = generateImbalancedData();
+    const result = await classifyTraces(data, { method: 'decision_tree' });
+
+    expect(result.predictions).toHaveLength(100);
+    for (const p of result.predictions) {
+      expect(['Conforming', 'Anomalous']).toContain(p.predicted);
+      expect(Number.isFinite(p.confidence)).toBe(true);
+      expect(p.confidence).toBeGreaterThan(0);
+      expect(p.confidence).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('logistic_regression should handle imbalanced data without crashing', async () => {
+    const data = generateImbalancedData();
+    const result = await classifyTraces(data, { method: 'logistic_regression' });
+
+    expect(result.predictions).toHaveLength(100);
+    for (const p of result.predictions) {
+      expect(['Conforming', 'Anomalous']).toContain(p.predicted);
+      expect(Number.isFinite(p.confidence)).toBe(true);
+      expect(p.confidence).toBeGreaterThanOrEqual(0);
+      expect(p.confidence).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('naive_bayes should handle imbalanced data without crashing', async () => {
+    const data = generateImbalancedData();
+    const result = await classifyTraces(data, { method: 'naive_bayes' });
+
+    expect(result.predictions).toHaveLength(100);
+    for (const p of result.predictions) {
+      expect(['Conforming', 'Anomalous']).toContain(p.predicted);
+      expect(Number.isFinite(p.confidence)).toBe(true);
+      expect(p.confidence).toBeGreaterThanOrEqual(0);
+      expect(p.confidence).toBeLessThanOrEqual(1);
+    }
+  });
+
+  it('imbalanced dataset: classifiers should recognize at least some anomalies', async () => {
+    const data = generateImbalancedData();
+    const result = await classifyTraces(data, { method: 'knn', k: 5 });
+
+    // Count actual anomalies in the data
+    const anomalyCount = data.filter((t) => t.outcome === 'Anomalous').length;
+    expect(anomalyCount).toBe(10);
+
+    // Count predicted anomalies
+    const predictedAnomalies = result.predictions.filter((p) => p.predicted === 'Anomalous').length;
+    // With k=5 and clear separation, classifier should detect at least 1 anomaly
+    expect(predictedAnomalies).toBeGreaterThan(0);
+  });
+
+  it('imbalanced dataset: knn accuracy should be reported', async () => {
+    const data = generateImbalancedData();
+    const result = await classifyTraces(data, { method: 'knn', k: 3 });
+
+    // Calculate accuracy
+    const correct = result.predictions.filter((p) => {
+      const label = data.find((t) => t.case_id === p.caseId)?.outcome;
+      return p.predicted === label;
+    }).length;
+    const accuracy = correct / data.length;
+
+    // Accuracy should be >= 50% (better than random on 90/10 split)
+    expect(accuracy).toBeGreaterThanOrEqual(0.5);
+  });
+});

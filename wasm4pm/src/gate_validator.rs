@@ -1,49 +1,58 @@
 /// PROOF-OF-CONCEPT ONLY — gated by `poc_gate_validator` feature.
 ///
-/// Uses an in-memory `Mutex<HashSet<ProofGate>>` as a fake gate store.
+/// Uses an in-memory `RefCell<HashSet<ProofGate>>` as a fake gate store.
+/// WASM single-threaded safety: RefCell instead of Mutex to avoid deadlock risk.
 /// NOT connected to the SPARQL receipt store and MUST NOT be used on any
 /// production proof-admission path.
 ///
 /// For production gate checks, use `proof_gate_registry`.
 use crate::proof_gate_registry::ProofGate;
-use std::sync::Mutex;
+use std::cell::RefCell;
 use std::collections::HashSet;
 
-/// Thread-safe gate state for tracking passed proof gates
-static PASSED_GATES: Mutex<Option<HashSet<ProofGate>>> = Mutex::new(None);
+/// Gate state for tracking passed proof gates (single-threaded WASM safety)
+thread_local! {
+    static PASSED_GATES: RefCell<Option<HashSet<ProofGate>>> = const { RefCell::new(None) };
+}
+
+fn gates<R>(f: impl FnOnce(&RefCell<Option<HashSet<ProofGate>>>) -> R) -> R {
+    PASSED_GATES.with(f)
+}
 
 /// Initialize gate state for a test run
 pub fn init_gates() {
-    if let Ok(mut gates) = PASSED_GATES.lock() {
-        *gates = Some(HashSet::new());
-    }
+    gates(|g| {
+        *g.borrow_mut() = Some(HashSet::new());
+    });
 }
 
 /// Mark a gate as passed
 pub fn mark_gate_passed(gate: ProofGate) {
-    if let Ok(mut gates_opt) = PASSED_GATES.lock() {
-        if let Some(ref mut gates) = *gates_opt {
+    gates(|g| {
+        if let Some(ref mut gates) = *g.borrow_mut() {
             gates.insert(gate);
         }
-    }
+    });
 }
 
 /// Check if a gate has passed
 pub fn gate_passed(gate: ProofGate) -> bool {
-    PASSED_GATES
-        .lock()
-        .ok()
-        .and_then(|gates_opt| gates_opt.as_ref().map(|gates| gates.contains(&gate)))
-        .unwrap_or(false)
+    gates(|g| {
+        g.borrow()
+            .as_ref()
+            .map(|gates| gates.contains(&gate))
+            .unwrap_or(false)
+    })
 }
 
 /// Returns list of all passed gates
 pub fn passed_gates() -> Vec<ProofGate> {
-    PASSED_GATES
-        .lock()
-        .ok()
-        .and_then(|gates_opt| gates_opt.as_ref().map(|gates| gates.iter().copied().collect()))
-        .unwrap_or_default()
+    gates(|g| {
+        g.borrow()
+            .as_ref()
+            .map(|gates| gates.iter().copied().collect())
+            .unwrap_or_default()
+    })
 }
 
 /// Verify that test_suite_passes gate has been reached before export

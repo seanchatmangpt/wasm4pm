@@ -72,6 +72,10 @@ fake = { workspace = true }
 proptest = { workspace = true }
 insta = { version = "1", features = ["json"] }
 wasm-bindgen-test = "0.3"
+tempfile = { workspace = true }
+regex = "1"
+naga = { version = "0.19", features = ["wgsl-in"] }
+wasm4pm-macros = { path = "../crates/wasm4pm-macros" }
 
 [[bench]]
 name = "fast_algorithms"
@@ -246,7 +250,7 @@ name = "scalability_report"
 
 # Conformance checking (fitness, precision, generalization)
 feature-conformance-basic = ["conformance_basic"]
-feature-conformance-full = ["conformance_full", "alignment_fitness", "align_etconformance"]
+feature-conformance-full = ["feature-conformance-basic", "conformance_full", "alignment_fitness", "align_etconformance"]
 
 # Discovery algorithms (advanced = genetic, ILP, ACO, PSO)
 feature-discovery-advanced = ["discovery_advanced", "genetic", "ilp", "a_star", "aco", "pso", "simulated_annealing"]
@@ -264,13 +268,27 @@ feature-powl = ["powl"]
 feature-streaming-basic = ["streaming_basic", "streaming_dfg"]
 
 # Streaming algorithms (full = SIMD-accelerated)
-feature-streaming-full = ["streaming_full", "streaming_basic", "simd"]
+feature-streaming-full = ["feature-streaming-basic", "streaming_full", "streaming_basic", "simd"]
 
 # Hand-rolled statistics (size optimization)
 feature-hand-rolled-stats = ["hand_rolled_stats"]
 
 # Full-precision statistics (full statrs library)
 feature-statrs = ["statrs", "dep:statrs"]
+
+# GPU-accelerated LinUCB contextual bandit (NOT for wasm32 — targets native GPU: Vulkan/Metal/DX12)
+# PREREQUISITE: add `wgpu = { version = "0.19", optional = true }` and
+#               `pollster = { version = "0.3", optional = true }` to [dependencies],
+#               then change this to feature-gpu = ["gpu", "dep:wgpu", "dep:pollster"].
+# Until those deps are added the internal "gpu" flag is NOT activated to prevent
+# compile errors from missing wgpu/pollster crates.
+feature-gpu = []
+
+# Parallel processing via rayon (NOT for wasm32 — WASM is single-threaded)
+# PREREQUISITE: add `rayon = { version = "1", optional = true }` to [dependencies],
+#               then change this to feature-rayon = ["rayon", "dep:rayon"].
+# Until that dep is added the internal "rayon" flag is NOT activated.
+feature-rayon = []
 
 # Branchless algorithms (bcinr integration)
 bcinr = ["dep:bcinr"]
@@ -405,6 +423,9 @@ montecarlo = []
 statrs = ["dep:statrs"]
 miniml = ["dep:miniml"]
 gpu = []
+# rayon — no-op flag (rayon crate not yet added as dep; flag exists so feature-rayon
+# can be declared without cargo errors; parallel_executor.rs guards rayon use internally)
+rayon = []
 powl = []
 ocel = []
 
@@ -421,9 +442,5 @@ poc_gate_validator = []
 # NEVER include in any deployment profile until real model is implemented
 automl_experimental = []
 
-# Real XES parser via wasm4pm-types' in-tree port of the process_mining
-# crate's parser. Activates the #[cfg(feature = "import")] branch in
-# xes_format.rs, replacing the fallback line-walker that silently drops
-# anything it doesn't recognise (e.g. `<global>` blocks). Always on for the
-# default browser profile; opt-out via --no-default-features for size builds.
+# Optional wasm4pm-types XES import module (requires wasm4pm-types/import feature)
 import = ["wasm4pm-types/import"]

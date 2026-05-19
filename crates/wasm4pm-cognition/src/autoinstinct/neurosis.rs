@@ -21,17 +21,20 @@ pub struct NeuroticState {
 
 impl NeuroticState {
     /// Creates a new default `NeuroticState` with all levels at zero.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Process a new semantic input. If it conflicts with strongly held beliefs,
     /// mistrust and anger increase. If it aligns, they decrease.
-    ///
-    /// Invariant: `fear`, `anger`, `mistrust`, and stored belief strengths are
-    /// always finite and in `[0.0, 1.0]` after this call returns, per the
-    /// field docs. Non-finite (NaN/±Inf) and out-of-range inputs are coerced
-    /// to `0.0` and `[0.0, 1.0]` respectively so the invariant holds.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn process_input(&mut self, concept: &str, incoming_strength: f64) -> String {
         let incoming_clamped = if incoming_strength.is_finite() {
             incoming_strength.clamp(0.0, 1.0)

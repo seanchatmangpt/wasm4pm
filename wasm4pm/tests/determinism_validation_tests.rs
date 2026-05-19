@@ -327,7 +327,7 @@ fn test_compute_reward_is_pure_function() {
 
     // More specific: health improvement (3->2) vs stability (2->2)
     let improvement = compute_reward(3, 2, 0, true, true, false);
-    let stability = compute_reward(2, 2, 0, true, true, false);
+    let stability = compute_reward(2, 2, 0, true, true, false, 0);
     assert!(
         improvement > stability,
         "health improvement reward ({:.2}) should exceed stability reward ({:.2})",

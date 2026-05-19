@@ -1,0 +1,15 @@
+{
+  "version": "1.0",
+  "description": "Shared source-of-truth for the 8-variant route refinement ladder. Both TypeScript (packages/swarm/src/route-refinement.ts) and Rust (mcpp/crates/mcpp-automl/src/route_refinement.rs) MUST match this spec exactly. Drift is a defect.",
+  "ladder": [
+    { "variant": "KeepCurrent",    "ordinal": 0, "escalates": false },
+    { "variant": "RelaxThreshold", "ordinal": 1, "escalates": false },
+    { "variant": "ExtendWindow",   "ordinal": 2, "escalates": false },
+    { "variant": "SwitchVariant",  "ordinal": 3, "escalates": false },
+    { "variant": "AddConstraint",  "ordinal": 4, "escalates": false },
+    { "variant": "PruneActivities","ordinal": 5, "escalates": false },
+    { "variant": "ReDiscoverFull", "ordinal": 6, "escalates": false },
+    { "variant": "Escalate",       "ordinal": 7, "escalates": true  }
+  ],
+  "andon_signal": "extension/automl:RouteModelInvalid"
+}

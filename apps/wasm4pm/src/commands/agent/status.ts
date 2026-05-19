@@ -24,7 +24,7 @@ export const status = defineCommand({
   async run(ctx) {
     return withSpanRaw('wasm4pm.command.agent.status', {
       command: 'agent', subcommand: 'status',
-      agent: String(ctx.args.agent ?? ''),
+      agent_id: String(ctx.args.agent ?? ''),
     }, async () => {
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';

@@ -111,7 +111,29 @@ export type { QualityThresholdProfile } from './quality-thresholds.js';
 // Algorithm registry utilities
 export { levenshteinDistance, findClosestMatch } from './algorithm-registry.js';
 
-// OCEL 2.0 event bridge — receipt → OCEL event conversion
+// mcpp/wasm4pm interop bridges
+export {
+  andonToWasm4pmError,
+  wasm4pmErrorToAndon,
+  isMcppAndonCode,
+  MCPP_ANDON_CODES,
+  ANDON_TO_ERROR_CODE,
+  type McppAndonReason,
+  type McppAndonCode,
+} from './andon-bridge.js';
+
+export {
+  evaluateConformance,
+  isRefused,
+  toSharedConformance,
+  type ConformanceDimension,
+  type ConformanceThresholds,
+  type FitnessResult,
+  type DimensionResult,
+  type ConformanceEvaluation,
+  type ConformanceExtras,
+} from './conformance-bridge.js';
+
 export {
   receiptToOcelEvents,
   toOcelJsonl,
@@ -122,6 +144,34 @@ export {
   isValidOcelEvent,
   type OcelEvent,
 } from './ocel-bridge.js';
+
+export {
+  emitReceiptEmit,
+  type ReceiptEmitRecord,
+} from './receipt-emit-bridge.js';
+
+export {
+  toSharedReceipt,
+  fromMcppResponse,
+  SHARED_RECEIPT_SCHEMA_V1,
+  type SharedReceiptV1,
+} from './shared-schema/adapter.js';
+
+// Marketplace domain OCEL bridge — adapts commerce events to OCEL 2.0 format
+export {
+  adaptMarketplaceEvent,
+  fromMarketplaceJsonl,
+  isMarketplaceEvent,
+  extractObjectTypes,
+  countUniqueIds,
+  type MarketplaceEvent,
+} from './marketplace-bridge.js';
+
+export {
+  buildMarketplaceReceipt,
+  isMarketplaceReceipt,
+  type MarketplaceReceipt,
+} from './marketplace-receipt.js';
 
 // AtomVM process lifecycle OCEL bridge — adapts Erlang/Elixir VM process events to OCEL 2.0
 export {
@@ -142,9 +192,7 @@ export {
   type OcelLogObject,
 } from './atomvm-bridge.js';
 
-// Erlang/OTP crash dump and SASL supervisor report OCEL bridge — closes the
-// AtomVM → wpm trace conform pipeline by turning Erlang text traces into
-// admissible OCEL 2.0 logs.
+// Erlang/OTP crash dump and SASL supervisor report OCEL bridge
 export {
   parseCrashDump,
   parseSaslSupervisorReports,

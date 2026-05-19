@@ -26,6 +26,7 @@ import type {
   membraneThresholdsSchema,
   membraneDriftSchema,
   membraneEnvelopesSchema,
+  swarmConfigSchema,
 } from './schema.js';
 import type { ProvenanceMap } from './provenance.js';
 
@@ -57,6 +58,7 @@ export type MembraneConfig     = z.infer<typeof membraneConfigSchema>;
 export type MembraneThresholds = z.infer<typeof membraneThresholdsSchema>;
 export type MembraneDrift      = z.infer<typeof membraneDriftSchema>;
 export type MembraneEnvelopes  = z.infer<typeof membraneEnvelopesSchema>;
+export type SwarmConfig        = z.infer<typeof swarmConfigSchema>;
 
 export type SourceKind = SourceConfig['kind'];
 export type SinkKind = SinkConfig['kind'];

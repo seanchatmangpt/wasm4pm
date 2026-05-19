@@ -29,7 +29,7 @@ describe('Provenance', () => {
 
     it('tracks deeply nested keys', () => {
       const map = trackProvenance(
-        { observability: { otel: { enabled: true, endpoint: 'http://localhost:4318' } } },
+        { observability: { otel: { enabled: true, endpoint: 'https://example.com:4318' } } },
         'json',
         './config.json'
       );
@@ -39,14 +39,15 @@ describe('Provenance', () => {
         path: './config.json',
       });
       expect(map['observability.otel.endpoint']).toEqual({
-        value: 'http://localhost:4318',
+        value: 'https://example.com:4318',
         source: 'json',
         path: './config.json',
       });
     });
 
     it('skips undefined and null values', () => {
-      const map = trackProvenance({ a: undefined, b: null, c: 'ok' } as any, 'env');
+      const input: Record<string, unknown> = { a: undefined, b: null, c: 'ok' };
+      const map = trackProvenance(input, 'env');
       expect(map['a']).toBeUndefined();
       expect(map['b']).toBeUndefined();
       expect(map['c']).toEqual({ value: 'ok', source: 'env' });

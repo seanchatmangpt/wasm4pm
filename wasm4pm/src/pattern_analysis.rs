@@ -12,6 +12,7 @@ use std::collections::{HashMap, HashSet};
 #[derive(Debug, Clone)]
 pub struct TraceStructureAnalysis {
     /// Primary pattern type detected
+    #[cfg(feature = "discovery_advanced")]
     pub primary_pattern: PatternType,
     /// Confidence score [0, 1] for pattern selection
     pub confidence: f64,

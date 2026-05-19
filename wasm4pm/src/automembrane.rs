@@ -42,6 +42,9 @@ use crate::models::AttributeValue;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js_str;
 
+// OTEL instrumentation
+use std::time::Instant;
+
 // ---------------------------------------------------------------------------
 // Core domain types
 // ---------------------------------------------------------------------------
@@ -373,7 +376,7 @@ pub fn evaluate_custody_layer(motion: &RequestMotion) -> LayerVerdict {
         .iter()
         .any(|kw| action_lower.contains(kw));
 
-    if is_high_stakes && motion.claimed_evidence.is_empty() {
+    let verdict = if is_high_stakes && motion.claimed_evidence.is_empty() {
         LayerVerdict {
             layer: "custody".to_string(),
             verdict: Verdict::RequireEvidence,
@@ -405,7 +408,39 @@ pub fn evaluate_custody_layer(motion: &RequestMotion) -> LayerVerdict {
             evidence_used: motion.claimed_evidence.clone(),
             missing_evidence: vec![],
         }
+    };
+
+    // OTEL: Emit custody layer evaluation span for high-stakes actions
+    // GAP-2: Enhanced custody diagnostics with evidence analysis
+    if is_high_stakes {
+        let evidence_count = motion.claimed_evidence.len();
+        let missing_count = verdict.missing_evidence.len();
+        let decision_quality = if evidence_count == 0 && missing_count > 0 {
+            "insufficient_evidence"
+        } else if evidence_count > 0 {
+            "sufficient_evidence"
+        } else {
+            "neutral"
+        };
+
+        tracing::info_span!(
+            "autonomic.membrane_custody_evaluation",
+            request_id = motion.request_id.as_str(),
+            actor = motion.actor.as_str(),
+            action = motion.requested_action.as_str(),
+            is_high_stakes = is_high_stakes,
+            evidence_provided = evidence_count as u32,
+            evidence_missing = missing_count as u32,
+            evidence_quality = decision_quality,
+            verdict = verdict.verdict.to_string().as_str(),
+            confidence = verdict.confidence,
+            decision_rationale = verdict.reason.as_str(),
+            service_name = "wpm",
+            status = if matches!(verdict.verdict, Verdict::RequireEvidence) { "error" } else { "ok" },
+        );
     }
+
+    verdict
 }
 
 // ---------------------------------------------------------------------------
@@ -480,6 +515,16 @@ fn evaluate_actor_layer_with_envelope(motion: &RequestMotion, handle: Option<&st
         };
         let envelope: crate::actor_envelope::ActorEnvelope =
             serde_json::from_str(json_str).map_err(|e| {
+                // GAP-1: Emit error span for envelope deserialization failure
+                tracing::warn!(
+                    envelope_type = "actor",
+                    error_type = "deserialization_failed",
+                    error_message = e.to_string(),
+                    handle = h,
+                    service_name = "wpm",
+                    status = "error",
+                    "Actor envelope deserialization failed; falling back to stateless layer"
+                );
                 crate::error::wasm_err(crate::error::codes::INTERNAL_ERROR, e.to_string())
             })?;
         Ok(crate::actor_envelope::score_actor_motion_from_envelope(&envelope, motion))
@@ -487,7 +532,16 @@ fn evaluate_actor_layer_with_envelope(motion: &RequestMotion, handle: Option<&st
 
     match result {
         Ok(verdict) => verdict,
-        Err(_) => evaluate_actor_layer(motion),
+        Err(e) => {
+            tracing::warn!(
+                envelope_type = "actor",
+                error_code = format!("{:?}", &e),
+                service_name = "wpm",
+                status = "error",
+                "Actor envelope evaluation failed; falling back to stateless evaluation"
+            );
+            evaluate_actor_layer(motion)
+        }
     }
 }
 
@@ -507,6 +561,16 @@ fn evaluate_route_layer_with_envelope(motion: &RequestMotion, handle: Option<&st
         };
         let envelope: crate::route_envelope::RouteEnvelope =
             serde_json::from_str(json_str).map_err(|e| {
+                // GAP-1: Emit error span for envelope deserialization failure
+                tracing::warn!(
+                    envelope_type = "route",
+                    error_type = "deserialization_failed",
+                    error_message = e.to_string(),
+                    handle = h,
+                    service_name = "wpm",
+                    status = "error",
+                    "Route envelope deserialization failed; falling back to stateless layer"
+                );
                 crate::error::wasm_err(crate::error::codes::INTERNAL_ERROR, e.to_string())
             })?;
         Ok(crate::route_envelope::score_route_motion_from_envelope(&envelope, motion))
@@ -514,7 +578,16 @@ fn evaluate_route_layer_with_envelope(motion: &RequestMotion, handle: Option<&st
 
     match result {
         Ok(verdict) => verdict,
-        Err(_) => evaluate_route_layer(motion),
+        Err(e) => {
+            tracing::warn!(
+                envelope_type = "route",
+                error_code = format!("{:?}", &e),
+                service_name = "wpm",
+                status = "error",
+                "Route envelope evaluation failed; falling back to stateless evaluation"
+            );
+            evaluate_route_layer(motion)
+        }
     }
 }
 
@@ -535,6 +608,16 @@ fn evaluate_automl_layer_with_envelope(motion: &RequestMotion, handle: Option<&s
         };
         let model: crate::automl_envelope::AutomlEnvelopeModel =
             serde_json::from_str(json_str).map_err(|e| {
+                // GAP-1: Emit error span for envelope deserialization failure
+                tracing::warn!(
+                    envelope_type = "automl",
+                    error_type = "deserialization_failed",
+                    error_message = e.to_string(),
+                    handle = h,
+                    service_name = "wpm",
+                    status = "error",
+                    "AutoML envelope deserialization failed; falling back to stateless layer"
+                );
                 crate::error::wasm_err(crate::error::codes::INTERNAL_ERROR, e.to_string())
             })?;
         Ok(crate::automl_envelope::score_motion_automl_from_envelope(&model, motion))
@@ -542,7 +625,16 @@ fn evaluate_automl_layer_with_envelope(motion: &RequestMotion, handle: Option<&s
 
     match result {
         Ok(verdict) => verdict,
-        Err(_) => evaluate_automl_layer(motion),
+        Err(e) => {
+            tracing::warn!(
+                envelope_type = "automl",
+                error_code = format!("{:?}", &e),
+                service_name = "wpm",
+                status = "error",
+                "AutoML envelope evaluation failed; falling back to stateless evaluation"
+            );
+            evaluate_automl_layer(motion)
+        }
     }
 }
 
@@ -601,6 +693,7 @@ fn evaluate_time_layer_with_envelope(motion: &RequestMotion, handle: Option<&str
 /// and any other crate-internal caller that already holds a `RequestMotion`
 /// struct reference.
 pub fn classify_motion_internal(motion: &RequestMotion) -> VerdictReceipt {
+    let t0 = Instant::now();
     let timestamp_ms = motion.timestamp_ms.unwrap_or(0.0);
 
     let layer_verdicts = vec![
@@ -625,8 +718,8 @@ pub fn classify_motion_internal(motion: &RequestMotion) -> VerdictReceipt {
 
     let mut receipt = VerdictReceipt {
         request_id: motion.request_id.clone(),
-        final_verdict,
-        decisive_layer,
+        final_verdict: final_verdict.clone(),
+        decisive_layer: decisive_layer.clone(),
         layer_verdicts,
         missing_evidence,
         model_version: "automembrane-v1".to_string(),
@@ -637,6 +730,25 @@ pub fn classify_motion_internal(motion: &RequestMotion) -> VerdictReceipt {
     };
 
     receipt.explanation = render_explanation(&receipt);
+
+    // OTEL: Emit membrane classification span
+    let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+    tracing::info_span!(
+        "autonomic.membrane_classify_motion",
+        request_id = motion.request_id.as_str(),
+        actor = motion.actor.as_str(),
+        action = motion.requested_action.as_str(),
+        final_verdict = final_verdict.to_string().as_str(),
+        decisive_layer = decisive_layer.as_str(),
+        confidence = receipt.layer_verdicts.iter().map(|lv| lv.confidence).sum::<f64>() / receipt.layer_verdicts.len() as f64,
+        layer_count = receipt.layer_verdicts.len() as u32,
+        downstream_admitted = downstream_admitted,
+        has_missing_evidence = !receipt.missing_evidence.is_empty(),
+        duration_ms = elapsed_ms,
+        service_name = "wpm",
+        status = if matches!(final_verdict, Verdict::Allow | Verdict::AllowWithReceipt | Verdict::Warn) { "ok" } else { "error" },
+    );
+
     receipt
 }
 
@@ -655,6 +767,7 @@ pub fn classify_motion_internal_with_envelopes(
     motion: &RequestMotion,
     envelopes: &EnvelopeHandles,
 ) -> VerdictReceipt {
+    let t0 = Instant::now();
     let timestamp_ms = motion.timestamp_ms.unwrap_or(0.0);
 
     let layer_verdicts = vec![
@@ -678,10 +791,21 @@ pub fn classify_motion_internal_with_envelopes(
     let downstream_admitted = is_downstream_admitted(&final_verdict);
     let state_snapshot = snapshot_hash(&motion.request_id, timestamp_ms);
 
+    // Count envelope layers that were actually used
+    let envelopes_used = [
+        envelopes.actor.is_some(),
+        envelopes.route.is_some(),
+        envelopes.automl.is_some(),
+        envelopes.time.is_some(),
+    ]
+    .iter()
+    .filter(|&&x| x)
+    .count();
+
     let mut receipt = VerdictReceipt {
         request_id: motion.request_id.clone(),
-        final_verdict,
-        decisive_layer,
+        final_verdict: final_verdict.clone(),
+        decisive_layer: decisive_layer.clone(),
         layer_verdicts,
         missing_evidence,
         model_version: "automembrane-v2-envelopes".to_string(),
@@ -692,6 +816,26 @@ pub fn classify_motion_internal_with_envelopes(
     };
 
     receipt.explanation = render_explanation(&receipt);
+
+    // OTEL: Emit envelope-based membrane classification span
+    let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+    tracing::info_span!(
+        "autonomic.membrane_classify_with_envelopes",
+        request_id = motion.request_id.as_str(),
+        actor = motion.actor.as_str(),
+        action = motion.requested_action.as_str(),
+        final_verdict = final_verdict.to_string().as_str(),
+        decisive_layer = decisive_layer.as_str(),
+        confidence = receipt.layer_verdicts.iter().map(|lv| lv.confidence).sum::<f64>() / receipt.layer_verdicts.len() as f64,
+        layer_count = receipt.layer_verdicts.len() as u32,
+        envelopes_used = envelopes_used as u32,
+        downstream_admitted = downstream_admitted,
+        has_missing_evidence = !receipt.missing_evidence.is_empty(),
+        duration_ms = elapsed_ms,
+        service_name = "wpm",
+        status = if matches!(final_verdict, Verdict::Allow | Verdict::AllowWithReceipt | Verdict::Warn) { "ok" } else { "error" },
+    );
+
     receipt
 }
 
@@ -713,7 +857,17 @@ pub fn classify_motion_internal_with_envelopes(
 /// not conform to the `RequestMotion` schema.
 #[wasm_bindgen]
 pub fn classify_motion(motion_json: &str) -> Result<JsValue, JsValue> {
+    let t0 = Instant::now();
     let motion: RequestMotion = serde_json::from_str(motion_json).map_err(|e| {
+        let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+        tracing::warn!(
+            event = "wasm_motion_parse_error",
+            error = format!("classify_motion: invalid RequestMotion JSON: {e}").as_str(),
+            duration_ms = elapsed_ms,
+            service_name = "wpm",
+            status = "error",
+            "WASM motion JSON parsing failed"
+        );
         wasm_err(
             codes::INVALID_JSON,
             format!("classify_motion: invalid RequestMotion JSON: {e}"),
@@ -733,6 +887,20 @@ pub fn classify_motion(motion_json: &str) -> Result<JsValue, JsValue> {
     motion_with_ts.timestamp_ms = Some(ts_resolved);
 
     let receipt = classify_motion_internal(&motion_with_ts);
+    let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+
+    // OTEL: Emit WASM entry point span
+    tracing::info_span!(
+        "autonomic.wasm_classify_motion",
+        request_id = receipt.request_id.as_str(),
+        actor = motion_with_ts.actor.as_str(),
+        final_verdict = receipt.final_verdict.to_string().as_str(),
+        downstream_admitted = receipt.downstream_admitted,
+        duration_ms = elapsed_ms,
+        service_name = "wpm",
+        status = if receipt.downstream_admitted { "ok" } else { "error" },
+    );
+
     to_js_str(&receipt)
 }
 
@@ -781,16 +949,35 @@ pub fn build_motion_from_log_trace(
     activity_key: &str,
     actor_key: &str,
 ) -> Result<JsValue, JsValue> {
+    let t0 = Instant::now();
     get_or_init_state().with_object(log_handle, |obj| {
         let log = match obj {
             Some(StoredObject::EventLog(log)) => log,
             Some(_) => {
+                let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+                tracing::warn!(
+                    event = "membrane_motion_build_invalid_handle",
+                    log_handle = log_handle,
+                    trace_index = trace_index as u32,
+                    error = "Object is not an EventLog",
+                    duration_ms = elapsed_ms,
+                    service_name = "wpm",
+                    status = "error",
+                );
                 return Err(wasm_err(
                     codes::INVALID_INPUT,
                     format!("Object at '{log_handle}' is not an EventLog"),
                 ))
             }
             None => {
+                let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+                tracing::warn!(
+                    event = "membrane_motion_build_missing_log",
+                    log_handle = log_handle,
+                    duration_ms = elapsed_ms,
+                    service_name = "wpm",
+                    status = "error",
+                );
                 return Err(wasm_err(
                     codes::INVALID_HANDLE,
                     format!("No object at handle '{log_handle}'"),
@@ -799,6 +986,16 @@ pub fn build_motion_from_log_trace(
         };
 
         let trace = log.traces.get(trace_index).ok_or_else(|| {
+            let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+            tracing::warn!(
+                event = "membrane_motion_build_trace_index_oor",
+                log_handle = log_handle,
+                trace_index = trace_index as u32,
+                total_traces = log.traces.len() as u32,
+                duration_ms = elapsed_ms,
+                service_name = "wpm",
+                status = "error",
+            );
             wasm_err(
                 codes::INVALID_INPUT,
                 format!(
@@ -810,6 +1007,15 @@ pub fn build_motion_from_log_trace(
 
         // Use the last event as the "current motion" in the running case
         let last_event = trace.events.last().ok_or_else(|| {
+            let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+            tracing::warn!(
+                event = "membrane_motion_build_empty_trace",
+                log_handle = log_handle,
+                trace_index = trace_index as u32,
+                duration_ms = elapsed_ms,
+                service_name = "wpm",
+                status = "error",
+            );
             wasm_err(
                 codes::INVALID_INPUT,
                 format!("Trace at index {trace_index} contains no events"),
@@ -862,19 +1068,35 @@ pub fn build_motion_from_log_trace(
         let request_id = format!("{log_handle}-{trace_index}");
 
         let motion = RequestMotion {
-            request_id,
-            actor,
+            request_id: request_id.clone(),
+            actor: actor.clone(),
             role: None,
             origin_system: None,
             target_system: None,
-            object_ids,
+            object_ids: object_ids.clone(),
             object_types: vec![],
-            requested_action,
+            requested_action: requested_action.clone(),
             claimed_evidence: vec![],
             timestamp_ms,
             route_context: None,
             deployment_profile: None,
         };
+
+        let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+
+        // OTEL: Emit motion building span
+        tracing::info_span!(
+            "autonomic.membrane_build_motion_from_trace",
+            log_handle = log_handle,
+            trace_index = trace_index as u32,
+            request_id = request_id.as_str(),
+            actor = actor.as_str(),
+            action = requested_action.as_str(),
+            object_count = object_ids.len() as u32,
+            duration_ms = elapsed_ms,
+            service_name = "wpm",
+            status = "ok",
+        );
 
         to_js_str(&motion)
     })
@@ -899,7 +1121,16 @@ pub fn classify_motion_with_envelopes(
     motion_json: &str,
     envelope_handles_json: &str,
 ) -> Result<JsValue, JsValue> {
+    let t0 = Instant::now();
     let motion: RequestMotion = serde_json::from_str(motion_json).map_err(|e| {
+        let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+        tracing::warn!(
+            event = "wasm_motion_parse_error_with_envelopes",
+            error = format!("classify_motion_with_envelopes: invalid RequestMotion JSON: {e}").as_str(),
+            duration_ms = elapsed_ms,
+            service_name = "wpm",
+            status = "error",
+        );
         wasm_err(
             codes::INVALID_JSON,
             format!("classify_motion_with_envelopes: invalid RequestMotion JSON: {e}"),
@@ -908,6 +1139,14 @@ pub fn classify_motion_with_envelopes(
 
     let envelopes: EnvelopeHandles =
         serde_json::from_str(envelope_handles_json).map_err(|e| {
+            let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+            tracing::warn!(
+                event = "wasm_envelope_parse_error",
+                error = format!("classify_motion_with_envelopes: invalid EnvelopeHandles JSON: {e}").as_str(),
+                duration_ms = elapsed_ms,
+                service_name = "wpm",
+                status = "error",
+            );
             wasm_err(
                 codes::INVALID_JSON,
                 format!("classify_motion_with_envelopes: invalid EnvelopeHandles JSON: {e}"),
@@ -926,6 +1165,21 @@ pub fn classify_motion_with_envelopes(
     motion_with_ts.timestamp_ms = Some(ts_resolved);
 
     let receipt = classify_motion_internal_with_envelopes(&motion_with_ts, &envelopes);
+    let elapsed_ms = t0.elapsed().as_secs_f64() * 1000.0;
+
+    // OTEL: Emit WASM entry point span with envelopes
+    tracing::info_span!(
+        "autonomic.wasm_classify_with_envelopes",
+        request_id = receipt.request_id.as_str(),
+        actor = motion_with_ts.actor.as_str(),
+        final_verdict = receipt.final_verdict.to_string().as_str(),
+        downstream_admitted = receipt.downstream_admitted,
+        layer_count = receipt.layer_verdicts.len() as u32,
+        duration_ms = elapsed_ms,
+        service_name = "wpm",
+        status = if receipt.downstream_admitted { "ok" } else { "error" },
+    );
+
     to_js_str(&receipt)
 }
 

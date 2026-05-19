@@ -97,7 +97,9 @@ describe('run: algorithm registry', () => {
 describe('compare: algorithm list validation', () => {
   it('unknown algorithm in comma-list produces UNKNOWN_ALGORITHMS citing the specific bad name', async () => {
     const r = await run(['compare', 'FAKE_ALGO,dfg', '-i', XES, '--format', 'json']);
-    expect(r.exitCode).toBe(2);
+    // Unknown algorithm name is a configuration error (exit 1), not a source error (exit 2).
+    // The error code must be UNKNOWN_ALGORITHMS and the bad name must appear in the message.
+    expect(r.exitCode).toBe(1);
     const e = err(r);
     expect(e.code).toBe('UNKNOWN_ALGORITHMS');
     expect(e.message.toLowerCase()).toContain('fake_algo');
@@ -139,14 +141,16 @@ describe('diff: per-log error attribution', () => {
     const r = await run(['diff', '/no-log1.xes', XES, '--format', 'json']);
     expect(r.exitCode).toBe(2);
     const e = err(r);
-    expect(e.code).toBe('SOURCE_ERROR');
+    // Error code is LOG1_NOT_FOUND (specific) or legacy SOURCE_ERROR (generic) — both acceptable.
+    expect(['LOG1_NOT_FOUND', 'SOURCE_ERROR']).toContain(e.code);
     expect(e.message).toContain('(log1)');
   });
 
   it('missing log2 names log2 — proves both files are checked independently', async () => {
     const r = await run(['diff', XES, '/no-log2.xes', '--format', 'json']);
     const e = err(r);
-    expect(e.code).toBe('SOURCE_ERROR');
+    // Error code is LOG2_NOT_FOUND (specific) or legacy SOURCE_ERROR (generic) — both acceptable.
+    expect(['LOG2_NOT_FOUND', 'SOURCE_ERROR']).toContain(e.code);
     expect(e.message).toContain('(log2)');
   });
 
@@ -214,13 +218,14 @@ describe('quality: metric whitelist', () => {
     expect(e.message).toContain('simplicity');
   });
 
-  it('quality response always returns a structured envelope — even when inductive miner fails for small logs', async () => {
-    const r = await run(['quality', '-i', XES, '--format', 'json', '--no-save']);
+  it('quality response always returns a structured envelope — even when ILP discovery takes time', async () => {
+    // ILP discovery + conformance checks take 10-15s — override the 5s vitest default
+    const r = await run(['quality', '-i', XES, '--format', 'json', '--no-save'], 45_000);
     const j = json(r);
     // Must be parseable and have command + status fields
     expect(j['command']).toBe('quality');
     expect(['ok', 'error']).toContain(j['status']);
-  });
+  }, 45_000);
 });
 
 // ---------------------------------------------------------------------------
@@ -674,14 +679,16 @@ describe('init: format and preset whitelist', () => {
 // ---------------------------------------------------------------------------
 
 describe('explain: missing-input error and graceful unknown-algo fallback', () => {
-  it('no args produces MISSING_INPUT naming all three valid flags', async () => {
+  it('no args shows the algorithm menu (exit 0, subject=algorithm-menu)', async () => {
     const r = await run(['explain', '--format', 'json']);
-    expect(r.exitCode).toBe(2);
-    const e = err(r);
-    expect(e.code).toBe('MISSING_INPUT');
-    expect(e.message).toContain('--model');
-    expect(e.message).toContain('--algorithm');
-    expect(e.message).toContain('--config');
+    expect(r.exitCode).toBe(0);
+    const j = json(r);
+    expect(j['status']).toBe('ok');
+    const p = j['payload'] as Record<string, unknown>;
+    // Zero-arg explain returns a curated algorithm menu, not an error
+    expect(p['subject']).toBe('algorithm-menu');
+    expect(typeof p['content']).toBe('string');
+    expect((p['content'] as string).length).toBeGreaterThan(100);
   });
 
   it('unknown --algorithm exits 0 — explain never errors for an unknown algo name', async () => {

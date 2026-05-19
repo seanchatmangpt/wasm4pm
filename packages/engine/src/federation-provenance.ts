@@ -202,15 +202,15 @@ export function buildModelIR(
 
   // Extract nodes and edges (structure varies by model type)
   const nodes = Array.isArray(model.nodes)
-    ? (model.nodes as any[]).map((n) => ({
+    ? (model.nodes as { id?: unknown; label?: unknown; type?: unknown }[]).map((n) => ({
         id: String(n.id),
         label: String(n.label),
-        type: String(n.type || 'activity'),
+        type: String(n.type ?? 'activity'),
       }))
     : [];
 
   const edges = Array.isArray(model.edges)
-    ? (model.edges as any[]).map((e) => ({
+    ? (model.edges as { from?: unknown; to?: unknown; weight?: unknown }[]).map((e) => ({
         from: String(e.from),
         to: String(e.to),
         weight: typeof e.weight === 'number' ? e.weight : undefined,

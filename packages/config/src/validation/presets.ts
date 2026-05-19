@@ -95,7 +95,7 @@ export function getPresetConfig(scenario: PresetScenario): BaseConfig {
         schemaVersion: SCHEMA_VERSION,
         version: '26.4.5',
         source: { kind: 'file' },
-        sink: { kind: 'file' },
+        sink: { kind: 'file', path: './wasm4pm-results.pnml' },
         algorithm: { name: 'ilp', parameters: {} },
         execution: {
           profile: 'quality',
@@ -397,7 +397,7 @@ window_size = 10
 # LinUCB / GPU dispatch (advanced)
 gpu_enabled = false       # Enable GPU dispatch? (requires wgpu feature)
 linucb_lambda = 1.0       # LinUCB regularization coefficient
-ucb1_exploration = 1.4142 # √2 (standard LinUCB recommendation)
+ucb1_exploration = 1.4142 # sqrt(2) (standard LinUCB recommendation)
 `;
 }
 
@@ -425,7 +425,36 @@ export interface PresetConstraints {
   requiredFeatures?: string[];
 }
 
-const QUALITY_ALGORITHMS = new Set(['genetic_algorithm', 'ilp', 'a_star', 'aco', 'pso', 'simulated_annealing']);
+/**
+ * Observed characteristics of the event log being analysed.
+ * When provided to `generateOptimalConfig`, these influence the
+ * selection reason and can surface additional instinct signals.
+ */
+export interface LogCharacteristics {
+  /** Total number of events in the log (sum across all traces). */
+  eventCount?: number;
+  /** Number of distinct cases / traces in the log. */
+  traceCount?: number;
+  /** Number of unique activity labels observed. */
+  activityCount?: number;
+}
+
+const QUALITY_ALGORITHMS = new Set([
+  'genetic_algorithm',
+  'ilp',
+  'a_star',
+  'aco',
+  'pso',
+  'simulated_annealing',
+]);
+
+/**
+ * Algorithms that indicate a streaming workload.
+ * When any of these appear in `requiredAlgorithms`, `generateOptimalConfig`
+ * will set `source.kind = 'stream'` so the pipeline opens a continuous ingest
+ * channel rather than reading a static file.
+ */
+const STREAMING_ALGORITHMS = new Set(['simd_streaming_dfg', 'streaming_log']);
 
 export function suggestPreset(constraints: PresetConstraints): PublicPreset {
   const { maxMemoryMb, maxLatencyMs, requiredAlgorithms = [] } = constraints;
@@ -464,7 +493,7 @@ export interface BenchmarkData {
  *  3. If requiredAlgorithms is set, at least one must survive filtering
  *  4. Score remaining: `quality_score * qualityWeight + (100 - speed_score) * speedWeight`
  *     where qualityWeight = 0.6 and speedWeight = 0.4 (balanced default)
- *  5. Map winner's speed_score to preset: ≤30 → fast, ≤55 → balanced, else → quality
+ *  5. Map winner's speed_score to preset: <=30 -> fast, <=55 -> balanced, else -> quality
  *  6. Fall back to suggestPreset() if no algorithms pass all filters
  */
 export function suggestPresetFromBenchmarks(
@@ -473,6 +502,7 @@ export function suggestPresetFromBenchmarks(
 ): PublicPreset {
   const {
     maxLatencyMs,
+    maxMemoryMb,
     requiredAlgorithms = [],
     deploymentProfile = 'browser',
     logSizeHint = 100,
@@ -480,6 +510,19 @@ export function suggestPresetFromBenchmarks(
 
   const entries = Object.entries(benchmarks.algorithms);
   if (entries.length === 0) {
+    return suggestPreset(constraints);
+  }
+
+  // 0. Memory hard-cap: if maxMemoryMb < 1000 and no quality algorithm is
+  //    required, memory is the binding constraint and forces 'fast' regardless
+  //    of what the benchmark scoring would suggest.  Benchmark-level entries
+  //    carry no per-algorithm memory annotation, so we cannot refine further —
+  //    delegate to the hardcoded suggestPreset path which owns this logic.
+  if (
+    maxMemoryMb !== undefined &&
+    maxMemoryMb < 1000 &&
+    !requiredAlgorithms.some((a) => QUALITY_ALGORITHMS.has(a))
+  ) {
     return suggestPreset(constraints);
   }
 
@@ -539,38 +582,165 @@ export function suggestPresetFromBenchmarks(
  * Returns a BaseConfig with additional metadata fields:
  *  - `_selectedAlgorithm`: the specific algorithm chosen
  *  - `_selectionReason`: human-readable explanation of the selection
+ *  - `_warning` (optional): a human-readable warning when constraints could not
+ *    be fully satisfied (unknown required algorithm, memory cascade, profile /
+ *    algorithm mismatch).
+ *
+ * Instinct behaviours:
+ *
+ * 1. Streaming source kind - if any algorithm in `requiredAlgorithms` is a
+ *    known streaming algorithm (`simd_streaming_dfg`, `streaming_log`), the
+ *    returned config has `source.kind = 'stream'`.
+ *
+ * 2. Unknown algorithm warning - if `requiredAlgorithms` contains a name
+ *    that does not appear in the benchmark catalogue (when benchmarks are
+ *    provided), `_warning` is set describing the unknown name(s).
+ *
+ * 3. Memory cascade fallback message - when `maxMemoryMb` forces the
+ *    preset down to `'fast'` through the hardcoded `suggestPreset` path,
+ *    `_selectionReason` explains the cascade explicitly.
+ *
+ * 4. Profile / algorithm mismatch - when a required algorithm is absent
+ *    from the requested deployment profile, `_warning` identifies the mismatch
+ *    and the system gracefully falls back to `suggestPreset`.
+ *
+ * 5. User preset override - when `userPreset` is provided, the instinct
+ *    selection logic is skipped and the caller's explicit choice is used
+ *    as the preset.  `_instinctSource` is set to `'user'` to make this
+ *    visible to downstream consumers.
+ *
+ * 6. Degenerate log guard - when `logSizeHint` is 0 the latency filter
+ *    would pass every algorithm (0ms estimated latency).  The guard
+ *    detects this, skips latency filtering, and appends a `_warning`.
  */
 export function generateOptimalConfig(
-  constraints: PresetConstraints & { deploymentProfile?: string; logSizeHint?: number },
+  constraints: PresetConstraints & {
+    deploymentProfile?: string;
+    logSizeHint?: number;
+    /** When provided, bypass instinct preset selection and use this preset directly. */
+    userPreset?: PublicPreset;
+    /** Observed log characteristics for richer selection reasons. */
+    logCharacteristics?: LogCharacteristics;
+  },
   benchmarks?: BenchmarkData
-): BaseConfig & { _selectedAlgorithm: string; _selectionReason: string } {
-  const preset = benchmarks
-    ? suggestPresetFromBenchmarks(benchmarks, constraints)
-    : suggestPreset(constraints);
+): BaseConfig & {
+  _selectedAlgorithm: string;
+  _selectionReason: string;
+  _warning?: string;
+  /** 'auto' = derived by instinct logic; 'user' = caller supplied userPreset */
+  _instinctSource: 'auto' | 'user';
+  /** Echo of logCharacteristics when provided, undefined otherwise. */
+  _logCharacteristics?: LogCharacteristics;
+} {
+  const {
+    maxMemoryMb,
+    requiredAlgorithms = [],
+    deploymentProfile = 'browser',
+    logSizeHint = 100,
+    maxLatencyMs,
+    userPreset,
+    logCharacteristics,
+  } = constraints;
+
+  // --- G6: User preset override — skip instinct selection entirely ---
+  // When the caller explicitly specifies a preset (e.g., from a CLI --profile flag),
+  // the AutoInstincts selection logic must not overrule that choice.
+  const instinctSource: 'auto' | 'user' = userPreset !== undefined ? 'user' : 'auto';
+
+  // --- Instinct: detect unknown algorithms before any scoring ---
+  let unknownWarning: string | undefined;
+  if (benchmarks && requiredAlgorithms.length > 0) {
+    const knownNames = new Set(Object.keys(benchmarks.algorithms));
+    const unknowns = requiredAlgorithms.filter((a) => !knownNames.has(a));
+    if (unknowns.length > 0) {
+      unknownWarning = `Unknown required algorithm(s): [${unknowns.join(', ')}] not present in benchmark catalogue; falling back to preset default`;
+    }
+  }
+
+  // --- G1: Degenerate log guard (logSizeHint === 0) ---
+  // A zero-size logSizeHint makes every latency estimate 0ms, which would pass
+  // all latency filters regardless of maxLatencyMs. Surface this as a warning
+  // and treat it as if no logSizeHint was supplied (use defaults).
+  const effectiveLogSizeHint = logSizeHint === 0 ? 100 : logSizeHint;
+  const degenerateLogWarning: string | undefined =
+    logSizeHint === 0
+      ? 'logSizeHint=0 (degenerate log): latency estimation skipped; defaulting to 100-event baseline'
+      : undefined;
+
+  // --- Preset selection ---
+  // When userPreset is provided, use it directly without running instinct logic.
+  const preset: PublicPreset =
+    userPreset ??
+    (benchmarks
+      ? suggestPresetFromBenchmarks(benchmarks, { ...constraints, logSizeHint: effectiveLogSizeHint })
+      : suggestPreset(constraints));
 
   const base = getPublicPresetConfig(preset);
 
   let selectedAlgorithm = base.algorithm.name;
-  let selectionReason = `Preset '${preset}' selected by hardcoded rules; default algorithm used`;
+  let selectionReason: string;
+  if (instinctSource === 'user') {
+    selectionReason = `Preset '${preset}' supplied by caller (user override); default algorithm '${base.algorithm.name}' used`;
+    // Optionally append log characteristics for context
+    if (logCharacteristics) {
+      const { eventCount, traceCount, activityCount } = logCharacteristics;
+      const parts: string[] = [];
+      if (eventCount !== undefined) parts.push(`${eventCount} events`);
+      if (traceCount !== undefined) parts.push(`${traceCount} traces`);
+      if (activityCount !== undefined) parts.push(`${activityCount} activities`);
+      if (parts.length > 0) {
+        selectionReason += `; log: ${parts.join(', ')}`;
+      }
+    }
+  } else {
+    selectionReason = `Preset '${preset}' selected by hardcoded rules; default algorithm '${base.algorithm.name}' used`;
+  }
+  let warning: string | undefined = unknownWarning ?? degenerateLogWarning;
+
+  // --- Memory cascade explanation ---
+  // When maxMemoryMb drives the preset to 'fast' via suggestPreset (or the new
+  // suggestPresetFromBenchmarks memory gate), make the cascade visible in the
+  // selection reason so practitioners can diagnose it.
+  //
+  // The cascade flag is set here and later appended to the benchmark-derived
+  // reason (if benchmarks are available) so the information is never silently
+  // lost when the benchmark scoring block overwrites selectionReason.
+  const memoryCascadeActive =
+    maxMemoryMb !== undefined &&
+    maxMemoryMb < 1000 &&
+    preset === 'fast' &&
+    // Only emit cascade message when memory was the deciding factor, not when
+    // required quality algorithms overrode it (they take priority in suggestPreset).
+    !requiredAlgorithms.some((a) => QUALITY_ALGORITHMS.has(a));
+
+  if (memoryCascadeActive) {
+    selectionReason = `Memory constraint (${maxMemoryMb} MB < 1000 MB) cascaded preset selection to 'fast'; default algorithm '${base.algorithm.name}' used`;
+  }
 
   if (benchmarks && Object.keys(benchmarks.algorithms).length > 0) {
-    const {
-      maxLatencyMs,
-      requiredAlgorithms = [],
-      deploymentProfile = 'browser',
-      logSizeHint = 100,
-    } = constraints;
-
     const entries = Object.entries(benchmarks.algorithms);
 
     // Filter by profile
     let candidates = entries.filter(([, m]) => m.profile.includes(deploymentProfile));
 
-    // Filter by latency
+    // --- Instinct: detect profile/algorithm mismatch ---
+    if (requiredAlgorithms.length > 0) {
+      const inProfile = new Set(candidates.map(([name]) => name));
+      const missingFromProfile = requiredAlgorithms.filter(
+        (a) =>
+          !inProfile.has(a) && Object.prototype.hasOwnProperty.call(benchmarks.algorithms, a)
+      );
+      if (missingFromProfile.length > 0) {
+        const mismatchMsg = `Required algorithm(s) [${missingFromProfile.join(', ')}] not available in deployment profile '${deploymentProfile}'; falling back to preset default`;
+        warning = warning ? `${warning}; ${mismatchMsg}` : mismatchMsg;
+      }
+    }
+
+    // Filter by latency (use effectiveLogSizeHint — guards against the degenerate 0-event case)
     if (maxLatencyMs !== undefined && maxLatencyMs > 0) {
       candidates = candidates.filter(([, m]) => {
         if (m.median_ms_per_100_events === null) return false;
-        return m.median_ms_per_100_events * (logSizeHint / 100) <= maxLatencyMs;
+        return m.median_ms_per_100_events * (effectiveLogSizeHint / 100) <= maxLatencyMs;
       });
     }
 
@@ -601,16 +771,70 @@ export function generateOptimalConfig(
 
       const winner = scored[0];
       selectedAlgorithm = winner.name as BaseConfig['algorithm']['name'];
-      selectionReason = `Algorithm '${winner.name}' selected from benchmarks (score=${winner.score.toFixed(1)}, quality=${winner.measurement.quality_score}, speed=${winner.measurement.speed_score}) for preset '${preset}'`;
+      // Build the base reason from benchmark data, then compose with the user-override
+      // prefix (when active) or memory cascade suffix (when active).
+      // The user-override prefix takes absolute precedence as the first phrase so that
+      // downstream consumers can always detect the override source.
+      const benchmarkDetail = `Algorithm '${winner.name}' selected from benchmarks (score=${winner.score.toFixed(1)}, quality=${winner.measurement.quality_score}, speed=${winner.measurement.speed_score}) for preset '${preset}'`;
+      if (instinctSource === 'user') {
+        // User override: lead with override marker, then append algorithm detail.
+        selectionReason = `Preset '${preset}' supplied by caller (user override); ${benchmarkDetail}`;
+      } else if (memoryCascadeActive) {
+        selectionReason = `${benchmarkDetail}; memory constraint (${maxMemoryMb} MB < 1000 MB) forced preset to 'fast'`;
+      } else {
+        selectionReason = benchmarkDetail;
+      }
     }
   }
 
-  return {
+  // --- Instinct: streaming source kind ---
+  // If any required algorithm is a streaming algorithm, ensure source.kind = 'stream'
+  // so the pipeline can consume events as a continuous flow rather than a static file.
+  const needsStreamingSource = requiredAlgorithms.some((a) => STREAMING_ALGORITHMS.has(a));
+  const effectiveSource = needsStreamingSource
+    ? { ...base.source, kind: 'stream' as const }
+    : base.source;
+
+  // Append log characteristics to the selection reason when available.
+  // Works for both auto and user-override paths.
+  if (logCharacteristics) {
+    const { eventCount, traceCount, activityCount } = logCharacteristics;
+    const parts: string[] = [];
+    if (eventCount !== undefined) parts.push(`${eventCount} events`);
+    if (traceCount !== undefined) parts.push(`${traceCount} traces`);
+    if (activityCount !== undefined) parts.push(`${activityCount} activities`);
+    if (parts.length > 0) {
+      selectionReason += `; log characteristics: ${parts.join(', ')}`;
+    }
+  }
+
+  const result: BaseConfig & {
+    _selectedAlgorithm: string;
+    _selectionReason: string;
+    _warning?: string;
+    _instinctSource: 'auto' | 'user';
+    _logCharacteristics?: LogCharacteristics;
+  } = {
     ...base,
-    algorithm: { ...base.algorithm, name: selectedAlgorithm as BaseConfig['algorithm']['name'] },
+    source: effectiveSource,
+    algorithm: {
+      ...base.algorithm,
+      name: selectedAlgorithm as BaseConfig['algorithm']['name'],
+    },
     _selectedAlgorithm: selectedAlgorithm,
     _selectionReason: selectionReason,
-  } as BaseConfig & { _selectedAlgorithm: string; _selectionReason: string };
+    _instinctSource: instinctSource,
+  };
+
+  if (warning !== undefined) {
+    result._warning = warning;
+  }
+
+  if (logCharacteristics !== undefined) {
+    result._logCharacteristics = logCharacteristics;
+  }
+
+  return result;
 }
 
 /**

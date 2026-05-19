@@ -28,7 +28,7 @@ export const EXIT_CODES = {
 export type ExitCode = (typeof EXIT_CODES)[keyof typeof EXIT_CODES];
 
 /**
- * Translate contract error codes (200-700) to CLI exit codes (0-5).
+ * Translate contract error codes (200-700) to CLI exit codes (0-6).
  *
  * Contract error code ranges:
  * - 200-299: Configuration errors → CLI exit code 1 (config_error)
@@ -38,37 +38,35 @@ export type ExitCode = (typeof EXIT_CODES)[keyof typeof EXIT_CODES];
  * - 600-699: Sink/Output errors → CLI exit code 4 (partial_failure)
  * - 700-799: Observability errors → CLI exit code 5 (system_error)
  *
+ * Direct exit codes (not translated):
+ * - 6: conformance_fail (log-to-model fitness below threshold; 'conformance' command only)
+ *
  * @param contractExitCode - Exit code from contracts package (200-799)
  * @returns Corresponding CLI exit code (0-5), or 5 for unknown codes
  */
 export function translateContractExitCode(contractExitCode: number): ExitCode {
+  // category is always a multiple of 100 (e.g. 250 → 200, 450 → 400)
   const category = Math.floor(contractExitCode / 100) * 100;
 
   switch (category) {
-    case 200: // Configuration errors
-    case 201:
+    case 200: // Configuration errors (200-299)
       return EXIT_CODES.config_error;
 
-    case 300: // Source/Input errors
-    case 301:
-    case 302:
+    case 300: // Source/Input errors (300-399)
       return EXIT_CODES.source_error;
 
-    case 400: // Algorithm errors
-    case 401:
-    case 500: // WASM Runtime errors
-    case 501:
+    case 400: // Algorithm errors (400-499)
+    case 500: // WASM Runtime errors (500-599)
       return EXIT_CODES.execution_error;
 
-    case 600: // Sink/Output errors
-    case 601:
+    case 600: // Sink/Output errors (600-699)
       return EXIT_CODES.partial_failure;
 
-    case 700: // Observability errors (non-fatal, but treat as system error)
+    case 700: // Observability errors (700-799, non-fatal)
       return EXIT_CODES.system_error;
 
     default:
-      // Unknown error codes default to system error
+      // Unknown or out-of-range codes default to system error
       return EXIT_CODES.system_error;
   }
 }

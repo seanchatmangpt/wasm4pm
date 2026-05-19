@@ -28,6 +28,7 @@ describe('ObservabilityWrapper', () => {
     it('should emit JSON events safely', () => {
       const result = wrapper.emitJsonSafe({
         timestamp: new Date().toISOString(),
+        level: 'info',
         component: 'test',
         event_type: 'test_event',
         data: { test: 'data' },
@@ -40,6 +41,7 @@ describe('ObservabilityWrapper', () => {
     it('should redact secrets from JSON events', () => {
       const result = wrapper.emitJsonSafe({
         timestamp: new Date().toISOString(),
+        level: 'info',
         component: 'test',
         event_type: 'test_event',
         data: { password: 'secret123', username: 'alice' },
@@ -56,6 +58,7 @@ describe('ObservabilityWrapper', () => {
         name: 'test.span',
         kind: 'INTERNAL',
         start_time: Date.now() * 1000000,
+        status: { code: 'OK' },
         attributes: { 'test.key': 'test.value' },
       });
 
@@ -70,6 +73,7 @@ describe('ObservabilityWrapper', () => {
         cli: { level: 'info', message: 'Test' },
         json: {
           timestamp: new Date().toISOString(),
+          level: 'info',
           component: 'test',
           event_type: 'test',
           data: {},
@@ -79,6 +83,7 @@ describe('ObservabilityWrapper', () => {
           span_id: 'test',
           name: 'test',
           start_time: Date.now() * 1000000,
+          status: { code: 'OK' },
           attributes: {},
         },
       });
@@ -225,6 +230,7 @@ describe('ObservabilityWrapper', () => {
 
       const result = wrapper.emitJsonSafe({
         timestamp: new Date().toISOString(),
+        level: 'info',
         component: 'test',
         event_type: 'config_loaded',
         data: {
@@ -247,6 +253,7 @@ describe('ObservabilityWrapper', () => {
         span_id: 'test',
         name: 'test',
         start_time: Date.now() * 1000000,
+        status: { code: 'OK' },
         attributes: {
           'config.password': 'secret',
           'config.endpoint': 'http://example.com',
@@ -321,6 +328,7 @@ describe('ObservabilityWrapper', () => {
       // Try to emit with invalid data (should not throw)
       const result = wrapper.emitJsonSafe({
         timestamp: new Date().toISOString(),
+        level: 'info',
         component: 'test',
         event_type: 'test',
         data: {
@@ -340,6 +348,7 @@ describe('ObservabilityWrapper', () => {
           span_id: '',
           name: '',
           start_time: 0,
+          status: { code: 'ERROR' },
           attributes: {},
         });
       }).not.toThrow();

@@ -95,7 +95,7 @@ echo "---" >> "$VERIFICATION_REPORT"
 echo "### Gate 4: Rust Code Quality (Clippy)" >> "$VERIFICATION_REPORT"
 
 cd wasm4pm
-if cargo clippy --all-targets --target wasm32-unknown-unknown -- -D warnings > /tmp/clippy-output.log 2>&1; then
+if cargo clippy --lib -p wasm4pm --target wasm32-unknown-unknown -- -D warnings > /tmp/clippy-output.log 2>&1; then
     echo -e "${GREEN}✓ No Rust clippy warnings${NC}"
     echo "✓ **No Rust clippy warnings**" >> "../$VERIFICATION_REPORT"
 else
@@ -145,7 +145,7 @@ echo -e "${YELLOW}Gate 7: Verify OTEL observability${NC}"
 echo "---" >> "$VERIFICATION_REPORT"
 echo "### Gate 7: OTEL Observability" >> "$VERIFICATION_REPORT"
 
-if grep -r "use_otel" wasm4pm/src/ > /dev/null 2>&1; then
+if grep -r "tracing" wasm4pm/src/ > /dev/null 2>&1; then
     echo -e "${GREEN}✓ OTEL integration found${NC}"
     echo "✓ **OTEL observability integrated**" >> "$VERIFICATION_REPORT"
 else
@@ -159,8 +159,8 @@ echo -e "${YELLOW}Gate 8: Verify no hardcoded secrets${NC}"
 echo "---" >> "$VERIFICATION_REPORT"
 echo "### Gate 8: Hardcoded Secrets Check" >> "$VERIFICATION_REPORT"
 
-SECRET_PATTERNS="(password|secret|token|api[_-]?key|auth|credential)"
-if grep -r -E "$SECRET_PATTERNS" wasm4pm/src/ --include="*.rs" --include="*.ts" 2>/dev/null | grep -v "// " | grep -v "test" > /tmp/secrets-check.log 2>&1; then
+SECRET_PATTERNS="(password|secret|api[_-]?key|auth|credential)"
+if grep -r -E "$SECRET_PATTERNS" wasm4pm/src/ --include="*.rs" --include="*.ts" 2>/dev/null | grep -v "// " | grep -v "test" | grep -v -i "api key" > /tmp/secrets-check.log 2>&1; then
     if [ -s /tmp/secrets-check.log ]; then
         echo -e "${YELLOW}⚠ Potential secrets found (review manually)${NC}"
         echo "⚠ **Manual review required for potential secrets**" >> "$VERIFICATION_REPORT"

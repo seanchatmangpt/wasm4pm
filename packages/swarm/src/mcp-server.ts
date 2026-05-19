@@ -134,7 +134,7 @@ async function runAlgorithmOnWorker(
   setWorkerStatus(workerId, 'running');
   const startTime = Date.now();
 
-  let resultData: any;
+  let resultData: unknown;
 
   switch (algorithm) {
     case 'dfg': {

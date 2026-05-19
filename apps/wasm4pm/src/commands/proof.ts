@@ -39,7 +39,7 @@ function blake3File(absPath: string): string {
   const result = spawnSync('b3sum', ['--no-names', absPath], { encoding: 'utf8' });
   if (result.error) {
     throw new Error(
-      `b3sum not available — cannot verify BLAKE3 hashes. Install b3sum or add a BLAKE3 npm dependency. Error: ${result.error.message}`,
+      `b3sum not available — cannot verify BLAKE3 hashes. Install b3sum or add a BLAKE3 npm dependency. Error: ${result.error.message}`
     );
   }
   if (result.status !== 0) {
@@ -84,16 +84,19 @@ const collect = defineCommand({
     // 1. cargo test --features browser
     const testResult = tryExec(
       'cargo test --test route_driven_tdd_tests --test self_conformance_tests --test anti_fake_tests --test proof_pack_tests --features browser',
-      'wasm4pm',
+      'wasm4pm'
     );
     steps.push({ label: 'cargo test', result: testResult });
 
     // 2. cargo clippy
     const clippyResult = tryExec(
       'cargo clippy --features browser -- -D warnings 2>&1 | grep "^error" | head -5',
-      'wasm4pm',
+      'wasm4pm'
     );
-    steps.push({ label: 'cargo clippy', result: { ...clippyResult, ok: clippyResult.output.trim() === '' } });
+    steps.push({
+      label: 'cargo clippy',
+      result: { ...clippyResult, ok: clippyResult.output.trim() === '' },
+    });
 
     // 3. cargo fmt --check
     const fmtResult = tryExec('cargo fmt --check', 'wasm4pm');
@@ -104,13 +107,13 @@ const collect = defineCommand({
     const auditFindings: Record<string, string[]> = {};
     for (const pattern of auditPatterns) {
       const grep = tryExec(
-        `grep -rn "${pattern}" wasm4pm/src/testing/ --include="*.rs" | head -20`,
+        `grep -rn "${pattern}" wasm4pm/src/testing/ --include="*.rs" | head -20`
       );
       auditFindings[pattern] = grep.output.trim().split('\n').filter(Boolean);
     }
     writeFileSync(
       join(packDir, 'SOURCE_AUDIT', 'patterns.json'),
-      JSON.stringify({ patterns: auditPatterns, findings: auditFindings }, null, 2),
+      JSON.stringify({ patterns: auditPatterns, findings: auditFindings }, null, 2)
     );
 
     // 5. Determine overall verdict
@@ -135,20 +138,34 @@ const collect = defineCommand({
       verdict,
       git_head: tryExec('git rev-parse --short HEAD').output.trim() || 'unknown',
     };
-    writeFileSync(join(packDir, 'FINAL', 'PRODUCER_RECEIPT.json'), JSON.stringify(producerReceipt, null, 2));
+    writeFileSync(
+      join(packDir, 'FINAL', 'PRODUCER_RECEIPT.json'),
+      JSON.stringify(producerReceipt, null, 2)
+    );
 
     // 6c. Write ARTIFACT_PROOF/file-hashes.json — BLAKE3 of all pack files
     mkdirSync(join(packDir, 'ARTIFACT_PROOF'), { recursive: true });
-    const filesToHash = ['FINAL/verdict.json', 'FINAL/PRODUCER_RECEIPT.json', 'SOURCE_AUDIT/patterns.json'];
+    const filesToHash = [
+      'FINAL/verdict.json',
+      'FINAL/PRODUCER_RECEIPT.json',
+      'SOURCE_AUDIT/patterns.json',
+    ];
     const fileHashes: Record<string, string> = {};
     for (const relPath of filesToHash) {
       const absPath = join(packDir, relPath);
       if (existsSync(absPath)) {
-        try { fileHashes[relPath] = blake3File(absPath); } catch { /* b3sum unavailable */ }
+        try {
+          fileHashes[relPath] = blake3File(absPath);
+        } catch {
+          /* b3sum unavailable */
+        }
       }
     }
     if (Object.keys(fileHashes).length > 0) {
-      writeFileSync(join(packDir, 'ARTIFACT_PROOF', 'file-hashes.json'), JSON.stringify(fileHashes, null, 2));
+      writeFileSync(
+        join(packDir, 'ARTIFACT_PROOF', 'file-hashes.json'),
+        JSON.stringify(fileHashes, null, 2)
+      );
     }
 
     // 7. Write MANIFEST.json
@@ -164,14 +181,19 @@ const collect = defineCommand({
     writeFileSync(join(packDir, 'MANIFEST.json'), JSON.stringify(manifest, null, 2));
 
     const exitCode = allPassed ? EXIT_CODES.success : EXIT_CODES.execution_error;
-    const result = makeResult('proof collect', {
-      run_id: runId,
-      pack_dir: packDir,
-      verdict,
-      verifier: `wpm proof verify ${packDir}`,
-      steps: steps.map((s) => ({ label: s.label, ok: s.result.ok })),
-      not_measured_dims: ['receipt_coverage', 'object_lifecycle_validity'],
-    }, performance.now() - t0, exitCode);
+    const result = makeResult(
+      'proof collect',
+      {
+        run_id: runId,
+        pack_dir: packDir,
+        verdict,
+        verifier: `wpm proof verify ${packDir}`,
+        steps: steps.map((s) => ({ label: s.label, ok: s.result.ok })),
+        not_measured_dims: ['receipt_coverage', 'object_lifecycle_validity'],
+      },
+      performance.now() - t0,
+      exitCode
+    );
 
     emitResult(result, { format, verbose, quiet }, (res, projection) => {
       projection.info('');
@@ -233,7 +255,7 @@ const verifyCmd = defineCommand({
         'proof verify',
         `MANIFEST.json not found at ${manifestPath}`,
         EXIT_CODES.source_error,
-        'MISSING_MANIFEST',
+        'MISSING_MANIFEST'
       );
       emitResult(result, { format, verbose, quiet });
       return exitWithFlush(EXIT_CODES.source_error);
@@ -257,7 +279,11 @@ const verifyCmd = defineCommand({
     // 2b. FINAL/PRODUCER_RECEIPT.json must exist with an approved producer
     const receiptPath = join(packDir, 'FINAL', 'PRODUCER_RECEIPT.json');
     if (!existsSync(receiptPath)) {
-      checks.push({ check: 'FINAL/PRODUCER_RECEIPT.json exists', ok: false, detail: 'missing — pack not produced by approved verifier command' });
+      checks.push({
+        check: 'FINAL/PRODUCER_RECEIPT.json exists',
+        ok: false,
+        detail: 'missing — pack not produced by approved verifier command',
+      });
     } else {
       try {
         const receipt = JSON.parse(readFileSync(receiptPath, 'utf8')) as Record<string, unknown>;
@@ -270,7 +296,11 @@ const verifyCmd = defineCommand({
           detail: ok ? producer : `unapproved: ${producer ?? 'missing'}`,
         });
       } catch {
-        checks.push({ check: 'FINAL/PRODUCER_RECEIPT.json parseable', ok: false, detail: 'parse error' });
+        checks.push({
+          check: 'FINAL/PRODUCER_RECEIPT.json parseable',
+          ok: false,
+          detail: 'parse error',
+        });
       }
     }
 
@@ -289,7 +319,11 @@ const verifyCmd = defineCommand({
           actualHash = blake3File(absPath);
         } catch (err) {
           const msg = err instanceof Error ? err.message : String(err);
-          checks.push({ check: `hash check: ${relPath}`, ok: false, detail: `b3sum error: ${msg}` });
+          checks.push({
+            check: `hash check: ${relPath}`,
+            ok: false,
+            detail: `b3sum error: ${msg}`,
+          });
           continue;
         }
         const hashMatch = actualHash === expectedHash;
@@ -330,17 +364,22 @@ const verifyCmd = defineCommand({
     const allOk = checks.every((c) => c.ok);
     // Force AndonPull if any required dim is NotMeasured
     const hasNotMeasuredRequired = notMeasured.some((d) => REQUIRED_DIMS.includes(d));
-    const verdict = (allOk && !hasNotMeasuredRequired) ? 'Accepted' : 'AndonPull';
+    const verdict = allOk && !hasNotMeasuredRequired ? 'Accepted' : 'AndonPull';
     const andonReason = hasNotMeasuredRequired ? 'TestRouteIncomplete' : 'TamperOrMissingArtifact';
     const exitCode = verdict === 'Accepted' ? EXIT_CODES.success : EXIT_CODES.execution_error;
 
-    const result = makeResult('proof verify', {
-      pack_dir: packDir,
-      verdict,
-      andon_reason: verdict !== 'Accepted' ? andonReason : undefined,
-      checks,
-      not_measured_dims: notMeasured,
-    }, performance.now() - t0, exitCode);
+    const result = makeResult(
+      'proof verify',
+      {
+        pack_dir: packDir,
+        verdict,
+        andon_reason: verdict !== 'Accepted' ? andonReason : undefined,
+        checks,
+        not_measured_dims: notMeasured,
+      },
+      performance.now() - t0,
+      exitCode
+    );
 
     emitResult(result, { format, verbose, quiet }, (res, projection) => {
       projection.info('');
@@ -357,7 +396,9 @@ const verifyCmd = defineCommand({
         }
       }
       projection.info('');
-      projection.info(`Verdict: ${res.payload.verdict}${res.payload.andon_reason ? `(${res.payload.andon_reason})` : ''}`);
+      projection.info(
+        `Verdict: ${res.payload.verdict}${res.payload.andon_reason ? `(${res.payload.andon_reason})` : ''}`
+      );
     });
 
     await exitWithFlush(exitCode);
@@ -396,16 +437,22 @@ const show = defineCommand({
         'proof show',
         `FINAL/verdict.json not found in ${packDir}`,
         EXIT_CODES.source_error,
-        'NOT_FOUND',
+        'NOT_FOUND'
       );
       emitResult(result, { format, verbose, quiet });
       return exitWithFlush(EXIT_CODES.source_error);
     }
 
     const verdict = JSON.parse(readFileSync(verdictPath, 'utf8'));
-    const exitCode = verdict.verdict === 'Accepted' ? EXIT_CODES.success : EXIT_CODES.execution_error;
+    const exitCode =
+      verdict.verdict === 'Accepted' ? EXIT_CODES.success : EXIT_CODES.execution_error;
 
-    const result = makeResult('proof show', { pack_dir: packDir, ...verdict }, performance.now() - t0, exitCode);
+    const result = makeResult(
+      'proof show',
+      { pack_dir: packDir, ...verdict },
+      performance.now() - t0,
+      exitCode
+    );
     emitResult(result, { format, verbose, quiet }, (res, projection) => {
       projection.info('');
       projection.info(`Pack:    ${res.payload.pack_dir}`);
@@ -441,7 +488,8 @@ const audit = defineCommand({
   args: {
     out: {
       type: 'string',
-      description: 'Output path (default: .wasm4pm/audits/route-driven-tdd-independent-verification.json)',
+      description:
+        'Output path (default: target/audits/route-driven-tdd-independent-verification.json)',
     },
     packDir: {
       type: 'string',
@@ -459,219 +507,278 @@ const audit = defineCommand({
     const quiet = ctx.args.quiet ?? false;
     // Rust test outputs (proof-packs, test-proof-packs) live under wasm4pm/target/.
     const RUST_TARGET = 'wasm4pm/target';
-    // Audit reports are runtime artifacts, not Rust build output. Write under
-    // .wasm4pm/audits/ (already gitignored as part of .wasm4pm/) regardless of
-    // which cwd the CLI is invoked from; the previous wasm4pm/target/audits/
-    // path doubly-nested to apps/wasm4pm/wasm4pm/target/ when run from apps/wasm4pm/.
-    const outPath = (ctx.args.out as string | undefined)
-      ?? join('.wasm4pm', 'audits', 'route-driven-tdd-independent-verification.json');
-
-    const gates: Record<string, unknown> = {};
-
-    // ── Gate 1: git status ──────────────────────────────────────────────────
-    const gitStatusRaw = tryExec(`git status --short -- ${CRITICAL_FILES.join(' ')}`);
-    const modifiedFiles = gitStatusRaw.output.trim().split('\n').filter(Boolean);
-    const gate1Ok = modifiedFiles.length === 0;
-    gates['1_git_status'] = {
-      ok: gate1Ok,
-      detail: gate1Ok
-        ? 'All critical files committed and unmodified'
-        : `AndonPull(UncommittedCriticalMaterial): ${modifiedFiles.length} file(s) modified or untracked`,
-      modified_or_untracked: modifiedFiles,
-    };
-
-    // ── Gate 2: source audit ────────────────────────────────────────────────
-    // Check harness.rs specifically for the fabricated literal pattern.
-    // ExpectedConformance::exact() legitimately uses 1.0 (f64 thresholds) —
-    // those are not fabrications. ReplayReport uses ProofDimension, so any
-    // bare `receipt_coverage: 1.0` there is a compile error. We audit harness.rs
-    // only, checking it has NOT reverted to the old fake assignment.
-    const auditHarness = tryExec(
-      "grep -n 'receipt_coverage: 1\\.0\\|object_lifecycle_validity: 1\\.0' wasm4pm/src/testing/harness.rs",
-    );
-    // Also check for todo!() / unimplemented!() in the testing module
-    const auditTodos = tryExec(
-      'grep -rn "todo!()\\|unimplemented!()" wasm4pm/src/testing/ --include="*.rs"',
-    );
-    // grep exits 1 when no matches found — that is the PASS case for a fabrication audit
-    const fabricationHits = auditHarness.ok
-      ? auditHarness.output.trim().split('\n').filter(Boolean)
-      : [];
-    const todoHits = auditTodos.ok
-      ? auditTodos.output.trim().split('\n').filter(Boolean)
-      : [];
-    const gate2Ok = fabricationHits.length === 0;
-    gates['2_source_audit'] = {
-      ok: gate2Ok,
-      detail: gate2Ok
-        ? 'harness.rs: no bare 1.0 literals for receipt_coverage or object_lifecycle_validity'
-        : `AndonPull(SourceAuditFailed): ${fabricationHits.length} fabricated literal(s) in harness.rs`,
-      fabrication_hits_in_harness: fabricationHits,
-      todo_hits_in_testing: todoHits,
-      command: "grep -n 'receipt_coverage: 1.0|object_lifecycle_validity: 1.0' wasm4pm/src/testing/harness.rs",
-    };
-
-    // ── Gate 3: type invariant ──────────────────────────────────────────────
-    // Verify both proof dimensions are now Measured in replay_against_model().
-    // The implementation must return ProofDimension::Measured(...) — not NotMeasured —
-    // for receipt_coverage and object_lifecycle_validity.
-    let gate3Ok = false;
-    let gate3Detail = '';
-    try {
-      const harnessContent = readFileSync('wasm4pm/src/testing/harness.rs', 'utf8');
-      const hasMeasuredReceipt = /receipt_coverage:\s*ProofDimension::Measured/.test(harnessContent);
-      const hasMeasuredLifecycle = /object_lifecycle_validity:\s*ProofDimension::Measured/.test(harnessContent);
-      gate3Ok = hasMeasuredReceipt && hasMeasuredLifecycle;
-      gate3Detail = gate3Ok
-        ? 'harness.rs: receipt_coverage=Measured, object_lifecycle_validity=Measured — all 5 proof dimensions implemented'
-        : `Dimensions not yet Measured: receipt=${hasMeasuredReceipt} lifecycle=${hasMeasuredLifecycle}`;
-    } catch (err) {
-      gate3Detail = `Cannot read harness.rs: ${err instanceof Error ? err.message : String(err)}`;
-    }
-    gates['3_type_invariant'] = { ok: gate3Ok, detail: gate3Detail };
-
-    // ── Gate 4: cargo tests ─────────────────────────────────────────────────
-    const cargoTest = tryExec(
-      'cargo test --test route_driven_tdd_tests --test self_conformance_tests --test anti_fake_tests --test proof_pack_tests --features browser 2>&1',
-      'wasm4pm',
-    );
-    const testLines = cargoTest.output;
-    const passMatches = [...testLines.matchAll(/test result: ok\. (\d+) passed/g)];
-    const failMatches = [...testLines.matchAll(/(\d+) failed/g)];
-    const totalPassed = passMatches.reduce((sum, m) => sum + parseInt(m[1] ?? '0', 10), 0);
-    const totalFailed = failMatches.reduce((sum, m) => sum + parseInt(m[1] ?? '0', 10), 0);
-    const gate4Ok = cargoTest.ok && totalFailed === 0;
-    gates['4_cargo_tests'] = {
-      ok: gate4Ok,
-      detail: gate4Ok
-        ? `${totalPassed} tests passed, 0 failed`
-        : `${totalFailed} test(s) failed`,
-      total_passed: totalPassed,
-      total_failed: totalFailed,
-      command: 'cargo test --test route_driven_tdd_tests --test self_conformance_tests --test anti_fake_tests --test proof_pack_tests --features browser',
-    };
-
-    // ── Gate 5: tamper detection ────────────────────────────────────────────
-    // Rust tests write to wasm4pm/target/test-proof-packs/ (under the Rust workspace root).
-    const tamperPackDir = join(RUST_TARGET, 'test-proof-packs', 'test-anti-fake-verdict-08');
-    let gate5Ok = false;
-    let gate5Detail = '';
-    const tamperHashesPath = join(tamperPackDir, 'ARTIFACT_PROOF', 'file-hashes.json');
-    const tamperVerdictPath = join(tamperPackDir, 'FINAL', 'verdict.json');
-    if (existsSync(tamperHashesPath) && existsSync(tamperVerdictPath)) {
-      try {
-        const recorded = JSON.parse(readFileSync(tamperHashesPath, 'utf8'));
-        const recordedHash = recorded['FINAL/verdict.json'] as string;
-        const actualHash = blake3File(tamperVerdictPath);
-        gate5Ok = recordedHash !== actualHash;
-        gate5Detail = gate5Ok
-          ? `Tamper detected: recorded=${recordedHash.slice(0, 12)}... actual=${actualHash.slice(0, 12)}... — BLAKE3 chain is load-bearing`
-          : `TAMPER NOT DETECTED — recorded hash matches tampered content: ${recordedHash.slice(0, 12)}...`;
-      } catch (err) {
-        gate5Detail = `Error computing hash: ${err instanceof Error ? err.message : String(err)}`;
-      }
-    } else {
-      gate5Detail = 'Run cargo test --test proof_pack_tests first to generate tamper test pack';
-    }
-    gates['5_tamper_detection'] = { ok: gate5Ok, detail: gate5Detail };
-
-    // ── Proof dimensions ─────────────────────────────────────────────────────
-    const proofDimensions: Record<string, string> = {
-      fitness: 'measured',
-      precision: 'measured',
-      receipt_coverage: 'measured',
-      required_stage_coverage: 'measured',
-      object_lifecycle_validity: 'measured',
-    };
-    const notMeasuredDims = Object.entries(proofDimensions)
-      .filter(([, v]) => v === 'not_measured')
-      .map(([k]) => k);
-
-    // ── Scan real proof-packs for fraudulent Accepted verdicts ───────────────
-    const realPacksDir = join(RUST_TARGET, 'proof-packs');
+    const outPath =
+      (ctx.args.out as string | undefined) ??
+      join(RUST_TARGET, 'audits', 'route-driven-tdd-independent-verification.json');
+    let auditVerdict = 'unknown';
+    let gatesPassedCount = 0;
+    let gatesFailedCount = 0;
     const fraudulentPacks: string[] = [];
-    if (existsSync(realPacksDir)) {
-      for (const entry of readdirSync(realPacksDir)) {
-        const vp = join(realPacksDir, entry, 'FINAL', 'verdict.json');
-        if (existsSync(vp)) {
+
+    return withSpan(
+      'proof.audit',
+      { out: outPath },
+      async () => {
+        const gates: Record<string, unknown> = {};
+
+        // ── Gate 1: git status ──────────────────────────────────────────────────
+        const gitStatusRaw = tryExec(`git status --short -- ${CRITICAL_FILES.join(' ')}`);
+        const modifiedFiles = gitStatusRaw.output.trim().split('\n').filter(Boolean);
+        const gate1Ok = modifiedFiles.length === 0;
+        gates['1_git_status'] = {
+          ok: gate1Ok,
+          detail: gate1Ok
+            ? 'All critical files committed and unmodified'
+            : `AndonPull(UncommittedCriticalMaterial): ${modifiedFiles.length} file(s) modified or untracked`,
+          modified_or_untracked: modifiedFiles,
+        };
+
+        // ── Gate 2: source audit ────────────────────────────────────────────────
+        // Check harness.rs specifically for the fabricated literal pattern.
+        // ExpectedConformance::exact() legitimately uses 1.0 (f64 thresholds) —
+        // those are not fabrications. ReplayReport uses ProofDimension, so any
+        // bare `receipt_coverage: 1.0` there is a compile error. We audit harness.rs
+        // only, checking it has NOT reverted to the old fake assignment.
+        const auditHarness = tryExec(
+          "grep -n 'receipt_coverage: 1\\.0\\|object_lifecycle_validity: 1\\.0' wasm4pm/src/testing/harness.rs"
+        );
+        // Also check for todo!() / unimplemented!() in the testing module
+        const auditTodos = tryExec(
+          'grep -rn "todo!()\\|unimplemented!()" wasm4pm/src/testing/ --include="*.rs"'
+        );
+        // grep exits 1 when no matches found — that is the PASS case for a fabrication audit
+        const fabricationHits = auditHarness.ok
+          ? auditHarness.output.trim().split('\n').filter(Boolean)
+          : [];
+        const todoHits = auditTodos.ok ? auditTodos.output.trim().split('\n').filter(Boolean) : [];
+        const gate2Ok = fabricationHits.length === 0;
+        gates['2_source_audit'] = {
+          ok: gate2Ok,
+          detail: gate2Ok
+            ? 'harness.rs: no bare 1.0 literals for receipt_coverage or object_lifecycle_validity'
+            : `AndonPull(SourceAuditFailed): ${fabricationHits.length} fabricated literal(s) in harness.rs`,
+          fabrication_hits_in_harness: fabricationHits,
+          todo_hits_in_testing: todoHits,
+          command:
+            "grep -n 'receipt_coverage: 1.0|object_lifecycle_validity: 1.0' wasm4pm/src/testing/harness.rs",
+        };
+
+        // ── Gate 3: type invariant ──────────────────────────────────────────────
+        // Verify both proof dimensions are now Measured in replay_against_model().
+        // The implementation must return ProofDimension::Measured(...) — not NotMeasured —
+        // for receipt_coverage and object_lifecycle_validity.
+        let gate3Ok = false;
+        let gate3Detail = '';
+        try {
+          const harnessContent = readFileSync('wasm4pm/src/testing/harness.rs', 'utf8');
+          const hasMeasuredReceipt = /receipt_coverage:\s*ProofDimension::Measured/.test(
+            harnessContent
+          );
+          const hasMeasuredLifecycle = /object_lifecycle_validity:\s*ProofDimension::Measured/.test(
+            harnessContent
+          );
+          gate3Ok = hasMeasuredReceipt && hasMeasuredLifecycle;
+          gate3Detail = gate3Ok
+            ? 'harness.rs: receipt_coverage=Measured, object_lifecycle_validity=Measured — all 5 proof dimensions implemented'
+            : `Dimensions not yet Measured: receipt=${hasMeasuredReceipt} lifecycle=${hasMeasuredLifecycle}`;
+        } catch (err) {
+          gate3Detail = `Cannot read harness.rs: ${err instanceof Error ? err.message : String(err)}`;
+        }
+        gates['3_type_invariant'] = { ok: gate3Ok, detail: gate3Detail };
+
+        // ── Gate 4: cargo tests ─────────────────────────────────────────────────
+        const cargoTest = tryExec(
+          'cargo test --test route_driven_tdd_tests --test self_conformance_tests --test anti_fake_tests --test proof_pack_tests --features browser 2>&1',
+          'wasm4pm'
+        );
+        const testLines = cargoTest.output;
+        const passMatches = [...testLines.matchAll(/test result: ok\. (\d+) passed/g)];
+        const failMatches = [...testLines.matchAll(/(\d+) failed/g)];
+        const totalPassed = passMatches.reduce((sum, m) => sum + parseInt(m[1] ?? '0', 10), 0);
+        const totalFailed = failMatches.reduce((sum, m) => sum + parseInt(m[1] ?? '0', 10), 0);
+        const gate4Ok = cargoTest.ok && totalFailed === 0;
+        gates['4_cargo_tests'] = {
+          ok: gate4Ok,
+          detail: gate4Ok
+            ? `${totalPassed} tests passed, 0 failed`
+            : `${totalFailed} test(s) failed`,
+          total_passed: totalPassed,
+          total_failed: totalFailed,
+          command:
+            'cargo test --test route_driven_tdd_tests --test self_conformance_tests --test anti_fake_tests --test proof_pack_tests --features browser',
+        };
+
+        // ── Gate 5: tamper detection ────────────────────────────────────────────
+        // Rust tests write to wasm4pm/target/test-proof-packs/ (under the Rust workspace root).
+        const tamperPackDir = join(RUST_TARGET, 'test-proof-packs', 'test-anti-fake-verdict-08');
+        let gate5Ok = false;
+        let gate5Detail = '';
+        const tamperHashesPath = join(tamperPackDir, 'ARTIFACT_PROOF', 'file-hashes.json');
+        const tamperVerdictPath = join(tamperPackDir, 'FINAL', 'verdict.json');
+        if (existsSync(tamperHashesPath) && existsSync(tamperVerdictPath)) {
           try {
-            const v = JSON.parse(readFileSync(vp, 'utf8'));
-            if (v.verdict === 'Accepted') fraudulentPacks.push(entry);
-          } catch { /* ignore parse errors */ }
+            const recorded = JSON.parse(readFileSync(tamperHashesPath, 'utf8'));
+            const recordedHash = recorded['FINAL/verdict.json'] as string;
+            const actualHash = blake3File(tamperVerdictPath);
+            gate5Ok = recordedHash !== actualHash;
+            gate5Detail = gate5Ok
+              ? `Tamper detected: recorded=${recordedHash.slice(0, 12)}... actual=${actualHash.slice(0, 12)}... — BLAKE3 chain is load-bearing`
+              : `TAMPER NOT DETECTED — recorded hash matches tampered content: ${recordedHash.slice(0, 12)}...`;
+          } catch (err) {
+            gate5Detail = `Error computing hash: ${err instanceof Error ? err.message : String(err)}`;
+          }
+        } else {
+          gate5Detail = 'Run cargo test --test proof_pack_tests first to generate tamper test pack';
         }
-      }
-    }
+        gates['5_tamper_detection'] = { ok: gate5Ok, detail: gate5Detail };
 
-    // ── Final verdict ─────────────────────────────────────────────────────────
-    const allGatesOk = Object.values(gates).every((g) => (g as { ok: boolean }).ok);
-    const hasNotMeasured = notMeasuredDims.length > 0;
-    const hasFraudulent = fraudulentPacks.length > 0;
+        // ── Proof dimensions ─────────────────────────────────────────────────────
+        const proofDimensions: Record<string, string> = {
+          fitness: 'measured',
+          precision: 'measured',
+          receipt_coverage: 'measured',
+          required_stage_coverage: 'measured',
+          object_lifecycle_validity: 'measured',
+        };
+        const notMeasuredDims = Object.entries(proofDimensions)
+          .filter(([, v]) => v === 'not_measured')
+          .map(([k]) => k);
 
-    let finalVerdict: string;
-    let verdictReason: string;
-    if (hasFraudulent) {
-      finalVerdict = 'AndonPull(FraudulentAcceptedPack)';
-      verdictReason = `Accepted verdict found in real proof-packs without all dims measured: ${fraudulentPacks.join(', ')}`;
-    } else if (!allGatesOk) {
-      const failedGate = Object.entries(gates).find(([, g]) => !(g as { ok: boolean }).ok)?.[0];
-      finalVerdict = `AndonPull(${failedGate ?? 'GateFailed'})`;
-      verdictReason = `Gate failed: ${failedGate}`;
-    } else if (hasNotMeasured) {
-      finalVerdict = 'AndonPull(TestRouteIncomplete)';
-      verdictReason = `NotMeasured dimensions: ${notMeasuredDims.join(', ')}`;
-    } else {
-      finalVerdict = 'Accepted';
-      verdictReason = 'All gates passed and all proof dimensions measured';
-    }
-
-    const auditDoc = {
-      audit_timestamp: new Date().toISOString(),
-      auditor: 'wpm-proof-audit-command',
-      doctrine: 'Agent narration has no authority. Disk proof is authority. This JSON was generated by verifier code from observed command results.',
-      gates,
-      proof_dimensions: proofDimensions,
-      not_measured_dims: notMeasuredDims,
-      fraudulent_accepted_packs_in_real_proof_packs: fraudulentPacks,
-      final_verdict: finalVerdict,
-      verdict_reason: verdictReason,
-      verdict_authority: 'wpm proof audit command — disk observation only',
-    };
-
-    mkdirSync(join(outPath, '..'), { recursive: true });
-    writeFileSync(outPath, JSON.stringify(auditDoc, null, 2));
-
-    const exitCode = finalVerdict === 'Accepted' ? EXIT_CODES.success : EXIT_CODES.execution_error;
-    const result = makeResult('proof audit', {
-      audit_path: outPath,
-      final_verdict: finalVerdict,
-      verdict_reason: verdictReason,
-      gates_passed: Object.values(gates).filter((g) => (g as { ok: boolean }).ok).length,
-      gates_failed: Object.values(gates).filter((g) => !(g as { ok: boolean }).ok).length,
-      not_measured_dims: notMeasuredDims,
-    }, performance.now() - t0, exitCode);
-
-    emitResult(result, { format, verbose, quiet }, (res, projection) => {
-      projection.info('');
-      projection.info(`Audit written: ${res.payload.audit_path}`);
-      projection.info('');
-      for (const [gate, gd] of Object.entries(gates)) {
-        const g = gd as { ok: boolean; detail?: string };
-        projection.log(`  ${g.ok ? '[PASS]' : '[FAIL]'} ${gate}: ${g.detail ?? ''}`);
-      }
-      if (res.payload.not_measured_dims.length > 0) {
-        projection.info('');
-        projection.info('NotMeasured proof dimensions:');
-        for (const dim of res.payload.not_measured_dims) {
-          projection.log(`  [UNMEASURED] ${dim}`);
+        // ── Scan real proof-packs for fraudulent Accepted verdicts ───────────────
+        const realPacksDir = join(RUST_TARGET, 'proof-packs');
+        if (existsSync(realPacksDir)) {
+          for (const entry of readdirSync(realPacksDir)) {
+            const vp = join(realPacksDir, entry, 'FINAL', 'verdict.json');
+            if (existsSync(vp)) {
+              try {
+                const v = JSON.parse(readFileSync(vp, 'utf8'));
+                if (v.verdict === 'Accepted') fraudulentPacks.push(entry);
+              } catch {
+                /* ignore parse errors */
+              }
+            }
+          }
         }
-      }
-      projection.info('');
-      projection.info(`Final verdict: ${res.payload.final_verdict}`);
-      projection.info(`Reason:        ${res.payload.verdict_reason}`);
-    });
 
-    await exitWithFlush(exitCode);
-    }); // end withSpan proof.audit
+        // ── Final verdict ─────────────────────────────────────────────────────────
+        const allGatesOk = Object.values(gates).every((g) => (g as { ok: boolean }).ok);
+        const hasNotMeasured = notMeasuredDims.length > 0;
+        const hasFraudulent = fraudulentPacks.length > 0;
+
+        let finalVerdict: string;
+        let verdictReason: string;
+        if (hasFraudulent) {
+          finalVerdict = 'AndonPull(FraudulentAcceptedPack)';
+          verdictReason = `Accepted verdict found in real proof-packs without all dims measured: ${fraudulentPacks.join(', ')}`;
+        } else if (!allGatesOk) {
+          const failedGate = Object.entries(gates).find(([, g]) => !(g as { ok: boolean }).ok)?.[0];
+          finalVerdict = `AndonPull(${failedGate ?? 'GateFailed'})`;
+          verdictReason = `Gate failed: ${failedGate}`;
+        } else if (hasNotMeasured) {
+          finalVerdict = 'AndonPull(TestRouteIncomplete)';
+          verdictReason = `NotMeasured dimensions: ${notMeasuredDims.join(', ')}`;
+        } else {
+          finalVerdict = 'Accepted';
+          verdictReason = 'All gates passed and all proof dimensions measured';
+        }
+
+        const auditDoc = {
+          audit_timestamp: new Date().toISOString(),
+          auditor: 'wpm-proof-audit-command',
+          doctrine:
+            'Agent narration has no authority. Disk proof is authority. This JSON was generated by verifier code from observed command results.',
+          gates,
+          proof_dimensions: proofDimensions,
+          not_measured_dims: notMeasuredDims,
+          fraudulent_accepted_packs_in_real_proof_packs: fraudulentPacks,
+          final_verdict: finalVerdict,
+          verdict_reason: verdictReason,
+          verdict_authority: 'wpm proof audit command — disk observation only',
+        };
+
+        mkdirSync(join(outPath, '..'), { recursive: true });
+        writeFileSync(outPath, JSON.stringify(auditDoc, null, 2));
+
+        gatesPassedCount = Object.values(gates).filter((g) => (g as { ok: boolean }).ok).length;
+        gatesFailedCount = Object.values(gates).filter((g) => !(g as { ok: boolean }).ok).length;
+        auditVerdict = finalVerdict;
+
+        const exitCode =
+          finalVerdict === 'Accepted' ? EXIT_CODES.success : EXIT_CODES.execution_error;
+        const result = makeResult(
+          'proof audit',
+          {
+            audit_path: outPath,
+            final_verdict: finalVerdict,
+            verdict_reason: verdictReason,
+            gates_passed: gatesPassedCount,
+            gates_failed: gatesFailedCount,
+            not_measured_dims: notMeasuredDims,
+          },
+          performance.now() - t0,
+          exitCode
+        );
+
+        emitResult(result, { format, verbose, quiet }, (res, projection) => {
+          projection.info('');
+          projection.info(`Audit written: ${res.payload.audit_path}`);
+          projection.info('');
+          for (const [gate, gd] of Object.entries(gates)) {
+            const g = gd as { ok: boolean; detail?: string };
+            projection.log(`  ${g.ok ? '[PASS]' : '[FAIL]'} ${gate}: ${g.detail ?? ''}`);
+          }
+          if (res.payload.not_measured_dims.length > 0) {
+            projection.info('');
+            projection.info('NotMeasured proof dimensions:');
+            for (const dim of res.payload.not_measured_dims) {
+              projection.log(`  [UNMEASURED] ${dim}`);
+            }
+            projection.info('');
+            projection.info('What this means:');
+            projection.info(
+              `  ${res.payload.not_measured_dims.length} proof dimension(s) in this manufacturing route`
+            );
+            projection.info(
+              '  have no associated BLAKE3 receipt or observed measurement. These are'
+            );
+            projection.info(
+              '  activities or quality checks that were declared but never executed and'
+            );
+            projection.info('  recorded. The route cannot be considered fully verified until all');
+            projection.info(
+              '  dimensions have receipts. This is an AndonPull(TestRouteIncomplete).'
+            );
+            projection.info('');
+            projection.info('  Next step: Run `wpm proof collect` to generate receipts, then');
+            projection.info('  re-run `wpm proof audit` to confirm all dimensions are Measured.');
+          }
+          if (fraudulentPacks.length > 0) {
+            projection.info('');
+            projection.info(`Fraudulent Accepted packs detected (${fraudulentPacks.length}):`);
+            projection.info(
+              '  These proof packs carry an Accepted verdict but were produced before'
+            );
+            projection.info(
+              '  all proof dimensions were implemented. They are manufacturing receipts'
+            );
+            projection.info('  that do not reflect real evidence — treat them as forgeries.');
+            for (const pack of fraudulentPacks) {
+              projection.log(`  [FRAUDULENT] ${pack}`);
+            }
+          }
+          projection.info('');
+          projection.info(`Final verdict: ${res.payload.final_verdict}`);
+          projection.info(`Reason:        ${res.payload.verdict_reason}`);
+        });
+
+        await exitWithFlush(exitCode);
+      },
+      () => ({
+        verdict: auditVerdict,
+        gates_passed: gatesPassedCount,
+        gates_failed: gatesFailedCount,
+      })
+    );
   },
 });
 
@@ -755,14 +862,21 @@ function verifyPackSync(packDir: string): {
         detail: ok ? producer : `unapproved: ${producer ?? 'missing'}`,
       });
     } catch {
-      checks.push({ check: 'FINAL/PRODUCER_RECEIPT.json parseable', ok: false, detail: 'parse error' });
+      checks.push({
+        check: 'FINAL/PRODUCER_RECEIPT.json parseable',
+        ok: false,
+        detail: 'parse error',
+      });
     }
   }
 
   // 3. ARTIFACT_PROOF/file-hashes.json — BLAKE3 recompute
   const hashesPath = join(packDir, 'ARTIFACT_PROOF', 'file-hashes.json');
   if (existsSync(hashesPath)) {
-    const recorded: Record<string, string> = JSON.parse(readFileSync(hashesPath, 'utf8')) as Record<string, string>;
+    const recorded: Record<string, string> = JSON.parse(readFileSync(hashesPath, 'utf8')) as Record<
+      string,
+      string
+    >;
     for (const [relPath, expectedHash] of Object.entries(recorded)) {
       const absPath = join(packDir, relPath);
       if (!existsSync(absPath)) {
@@ -792,7 +906,9 @@ function verifyPackSync(packDir: string): {
   const dimsPath = join(packDir, 'VERIFIED_PROOF', 'proof-dimensions.json');
   const notMeasured: string[] = [];
   if (existsSync(dimsPath)) {
-    const dims = JSON.parse(readFileSync(dimsPath, 'utf8')) as { dimensions?: Record<string, string> };
+    const dims = JSON.parse(readFileSync(dimsPath, 'utf8')) as {
+      dimensions?: Record<string, string>;
+    };
     const dimensions = dims.dimensions ?? {};
     for (const [name, status] of Object.entries(dimensions)) {
       if (status === 'not_measured') notMeasured.push(name);
@@ -857,7 +973,7 @@ const promote = defineCommand({
           ? `Pack directory not found: ${packPath}`
           : 'No pack path specified and no packs found in target/proof-work/',
         EXIT_CODES.config_error,
-        'PACK_NOT_FOUND',
+        'PACK_NOT_FOUND'
       );
       emitResult(result, { format, verbose, quiet });
       return exitWithFlush(EXIT_CODES.config_error);
@@ -870,7 +986,7 @@ const promote = defineCommand({
         'proof promote',
         `Promotion refused: pack verification failed (verdict=${verifyResult.verdict})`,
         EXIT_CODES.execution_error,
-        'VERIFY_FAILED',
+        'VERIFY_FAILED'
       );
       emitResult(result, { format, verbose, quiet }, (_res, projection) => {
         projection.info('');
@@ -899,7 +1015,7 @@ const promote = defineCommand({
     mkdirSync(join(packPath, 'FINAL'), { recursive: true });
     writeFileSync(
       join(packPath, 'FINAL', 'PRODUCER_RECEIPT.json'),
-      JSON.stringify(producerReceipt, null, 2),
+      JSON.stringify(producerReceipt, null, 2)
     );
 
     // 4. Copy the entire pack to target/proof-packs/<pack-id>/
@@ -934,7 +1050,7 @@ const promote = defineCommand({
         source_deleted: ctx.args.deleteSource ?? false,
       },
       performance.now() - t0,
-      EXIT_CODES.success,
+      EXIT_CODES.success
     );
 
     emitResult(result, { format, verbose, quiet }, (res, projection) => {
@@ -958,7 +1074,7 @@ const promote = defineCommand({
 export const proof = defineCommand({
   meta: {
     name: 'proof',
-    description: 'Proof pack gate: collect, verify, audit, show, or promote evidence',
+    description: 'Proof pack gate: collect, verify, audit, show, or promote evidence. Example: wpm proof show',
   },
   subCommands: { collect, verify: verifyCmd, show, audit, promote },
 });

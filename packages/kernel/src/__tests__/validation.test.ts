@@ -13,7 +13,7 @@ const dfgMeta: AlgorithmMetadata = {
   qualityTier: 30,
   parameters: [],
   supportedProfiles: ['fast', 'balanced', 'quality', 'stream'],
-  deploymentProfiles: ['browser', 'edge', 'fog', 'iot'],
+  deploymentProfiles: ['mobile', 'browser', 'edge', 'fog', 'iot'],
   estimatedDurationMs: 0.5,
   estimatedMemoryMB: 10,
   robustToNoise: true,

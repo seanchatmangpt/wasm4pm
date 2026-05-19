@@ -5,6 +5,7 @@
 
 import type { ExecutionProfile } from '../types.js';
 import { ALGORITHM_IDS } from '../schema.js';
+import type { AlgorithmId } from '../schema.js';
 
 export interface ProfileCapabilities {
   name: ExecutionProfile;
@@ -12,7 +13,7 @@ export interface ProfileCapabilities {
   target: string;
   sizeTarget: string;
   description: string;
-  algorithms: typeof ALGORITHM_IDS;
+  algorithms: readonly AlgorithmId[];
   features: string[];
   recommendedFor: string[];
 }
@@ -28,7 +29,7 @@ export function getProfileCapabilities(profile: ExecutionProfile): ProfileCapabi
       target: 'Mobile devices, edge workers',
       sizeTarget: '~500KB',
       description: 'Minimal algorithms, single-threaded, no ML/RL',
-      algorithms: ['dfg', 'process_skeleton', 'simd_streaming_dfg'] as any,
+      algorithms: ['dfg', 'process_skeleton', 'simd_streaming_dfg'] as AlgorithmId[],
       features: ['feature-conformance-basic', 'feature-streaming-basic'],
       recommendedFor: ['quick-test', 'edge-computing', 'CI/CD pipelines'],
     },
@@ -53,7 +54,7 @@ export function getProfileCapabilities(profile: ExecutionProfile): ProfileCapabi
         'ml_regress',
         'ml_pca',
         // ... and utility algorithms
-      ] as any,
+      ] as AlgorithmId[],
       features: [
         'feature-conformance-basic',
         'feature-streaming-basic',
@@ -91,7 +92,7 @@ export function getProfileCapabilities(profile: ExecutionProfile): ProfileCapabi
         'streaming_log',
         'hierarchical_dfg',
         // ... streaming-specific
-      ] as any,
+      ] as AlgorithmId[],
       features: ['feature-streaming-full', 'feature-conformance-basic'],
       recommendedFor: ['streaming-logs', 'real-time-monitoring', 'drift-detection'],
     },
@@ -155,7 +156,8 @@ export function suggestProfile(constraints: ProfileSuggestionConstraints): {
   if (requiredAlgorithms && requiredAlgorithms.length > 0) {
     for (const c of candidates) {
       const caps = getProfileCapabilities(c.profile);
-      const missing = requiredAlgorithms.filter((a) => !caps.algorithms.includes(a as any));
+      const algosStr = caps.algorithms as readonly string[];
+      const missing = requiredAlgorithms.filter((a) => !algosStr.includes(a));
       if (missing.length > 0) {
         c.score -= 100;
         c.reason.push(`Missing algorithms: ${missing.join(', ')}`);
@@ -208,9 +210,9 @@ export function validateAlgorithmInProfile(
 ): { valid: boolean; error?: string } {
   const caps = getProfileCapabilities(profile);
 
-  if (!caps.algorithms.includes(algorithm as any)) {
+  if (!(caps.algorithms as readonly string[]).includes(algorithm)) {
     const browserCaps = getProfileCapabilities('quality');
-    const inBrowser = browserCaps.algorithms.includes(algorithm as any);
+    const inBrowser = (browserCaps.algorithms as readonly string[]).includes(algorithm);
 
     if (inBrowser) {
       return {

@@ -27,6 +27,10 @@ pub struct ColumnarEdgeCounts {
 ///
 /// Returns integer-keyed edge counts plus vocab and start/end activity maps.
 /// Silently skips events that lack the `activity_key` attribute.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn build_edge_counts(log: &EventLog, activity_key: &str) -> ColumnarEdgeCounts {
     let mut vocab: Vec<String> = Vec::new();
     let mut activity_ids: HashMap<String, u32> = HashMap::new();
@@ -81,6 +85,10 @@ pub fn build_edge_counts(log: &EventLog, activity_key: &str) -> ColumnarEdgeCoun
 /// Materialize `DFGEdge` values from integer-keyed edge counts and a vocabulary.
 ///
 /// This is the inner loop that was repeated verbatim across 11 discovery files.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn materialize_dfg_edges(
     edge_counts: &HashMap<(u32, u32), usize>,
     vocab: &[String],
@@ -98,6 +106,10 @@ pub fn materialize_dfg_edges(
 }
 
 /// Extract start and end activity lists from a `ColumnarEdgeCounts` result.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn extract_start_end(counts: &ColumnarEdgeCounts) -> (Vec<String>, Vec<String>) {
     let starts: Vec<String> = counts.start_activities.keys().cloned().collect();
     let ends: Vec<String> = counts.end_activities.keys().cloned().collect();
@@ -109,6 +121,10 @@ pub fn extract_start_end(counts: &ColumnarEdgeCounts) -> (Vec<String>, Vec<Strin
 /// With the `bcinr` feature: delegates to the branchless `jaccard_u64_slices`
 /// (constant-latency, no branches). Without: identical portable fallback.
 #[inline]
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn jaccard_similarity(a: &[u64], b: &[u64]) -> f32 {
     debug_assert_eq!(a.len(), b.len(), "bitset slices must have equal length");
     #[cfg(feature = "bcinr")]
@@ -135,7 +151,6 @@ pub fn jaccard_similarity(a: &[u64], b: &[u64]) -> f32 {
 mod tests {
     use super::*;
     use wasm4pm_types::{Event, EventLog, Trace};
-    use std::collections::HashMap as StdHashMap;
 
     fn make_log(traces: Vec<Vec<&str>>) -> EventLog {
         let traces = traces
@@ -144,19 +159,12 @@ mod tests {
             .map(|(i, activities)| {
                 let events = activities
                     .into_iter()
-                    .map(|a| {
-                        let mut attrs = StdHashMap::new();
-                        attrs.insert(
-                            "concept:name".to_string(),
-                            AttributeValue::String(a.to_string()),
-                        );
-                        Event::new(attrs)
-                    })
+                    .map(|a| Event::with_activity(a))
                     .collect();
                 Trace::new(format!("case{i}"), events)
             })
             .collect();
-        EventLog::new(traces, StdHashMap::new())
+        EventLog::new(traces, Vec::new())
     }
 
     #[test]

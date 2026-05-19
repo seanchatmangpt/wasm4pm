@@ -5,7 +5,7 @@
  */
 
 import { EngineError } from '@wasm4pm/contracts';
-import { WasmLoader, WasmModule } from './wasm-loader.js';
+import { WasmLoader, WasmModule, WasmLoadError } from './wasm-loader.js';
 
 /**
  * Kernel interface for bootstrap (subset of full Kernel)
@@ -72,9 +72,28 @@ export async function bootstrapEngine(
 }
 
 /**
- * Creates a structured error for bootstrap failures
+ * Creates a structured error for bootstrap failures.
+ * When the underlying cause is a WasmLoadError, the code and suggestion are
+ * derived from the classified cause so callers see actionable diagnostics
+ * rather than the generic "BOOTSTRAP_FAILED / check WASM availability" pair.
  */
 export function createBootstrapError(err: unknown): EngineError {
+  if (err instanceof WasmLoadError) {
+    const codeMap: Record<WasmLoadError['loadCause'], string> = {
+      FILE_NOT_FOUND: 'WASM_FILE_NOT_FOUND',
+      CORRUPT_BINARY: 'WASM_CORRUPT_BINARY',
+      MISSING_EXPORTS: 'WASM_MISSING_EXPORTS',
+      LOAD_FAILED: 'WASM_LOAD_FAILED',
+    };
+    return {
+      code: codeMap[err.loadCause],
+      message: err.message,
+      severity: 'fatal',
+      recoverable: err.loadCause !== 'CORRUPT_BINARY',
+      suggestion: err.message,
+    };
+  }
+
   return {
     code: 'BOOTSTRAP_FAILED',
     message: err instanceof Error ? err.message : String(err),

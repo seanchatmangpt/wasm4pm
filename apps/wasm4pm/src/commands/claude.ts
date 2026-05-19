@@ -7,6 +7,7 @@ import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
 import { probeHooks, type JtbdProbe } from './doctor.js';
+import { withSpanRaw } from './_otel.js';
 
 // ── shared chain helpers ───────────────────────────────────────────────────────
 
@@ -50,7 +51,7 @@ export function verifyEventChain(events: Record<string, unknown>[]): {
 const sessionVerify = defineCommand({
   meta: {
     name: 'verify',
-    description: 'Verify session evidence chain integrity — detects tampered, deleted, or reordered events',
+    description: 'Verify session evidence chain integrity — detects tampered, deleted, or reordered events. Example: wpm claude verify --verbose',
   },
   args: {
     date: { type: 'string', description: 'Date to verify (YYYYMMDD, default: today)' },
@@ -66,71 +67,83 @@ const sessionVerify = defineCommand({
 
     const projectDir = process.env['CLAUDE_PROJECT_DIR'] ?? process.cwd();
     const dateKey = (ctx.args.date as string | undefined) ?? new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const runDir = join(projectDir, 'wasm4pm', 'target', 'agent-runs', dateKey);
-    const chainFile = join(runDir, 'tool-events.jsonl');
-    const chainHeadFile = join(runDir, 'CHAIN_HEAD');
 
-    const checks: Array<{ check: string; ok: boolean; detail?: string }> = [];
+    let checkCount = 0;
+    let chainValid = false;
+    return withSpanRaw(
+      'wasm4pm.command.claude.session.verify',
+      { 'claude.subcommand': 'session.verify', 'claude.date': dateKey },
+      async () => {
+        const runDir = join(projectDir, 'wasm4pm', 'target', 'agent-runs', dateKey);
+        const chainFile = join(runDir, 'tool-events.jsonl');
+        const chainHeadFile = join(runDir, 'CHAIN_HEAD');
 
-    if (!existsSync(chainFile)) {
-      checks.push({ check: 'tool-events.jsonl exists', ok: false, detail: 'no session evidence for this date' });
-    } else {
-      const raw = readFileSync(chainFile, 'utf8').split('\n').filter(Boolean);
-      checks.push({ check: 'tool-events.jsonl parseable', ok: true, detail: `${raw.length} lines` });
+        const checks: Array<{ check: string; ok: boolean; detail?: string }> = [];
 
-      const events: Record<string, unknown>[] = [];
-      let parseErrors = 0;
-      for (const line of raw) {
-        try { events.push(JSON.parse(line) as Record<string, unknown>); }
-        catch { parseErrors++; }
-      }
-      if (parseErrors > 0) checks.push({ check: 'JSONL integrity', ok: false, detail: `${parseErrors} parse errors` });
-      else checks.push({ check: 'JSONL integrity', ok: true, detail: 'all lines parse' });
+        if (!existsSync(chainFile)) {
+          checks.push({ check: 'tool-events.jsonl exists', ok: false, detail: 'no session evidence for this date' });
+        } else {
+          const raw = readFileSync(chainFile, 'utf8').split('\n').filter(Boolean);
+          checks.push({ check: 'tool-events.jsonl parseable', ok: true, detail: `${raw.length} lines` });
 
-      const chainResult = verifyEventChain(events);
-      checks.push({
-        check: 'chain integrity',
-        ok: chainResult.valid,
-        detail: chainResult.valid
-          ? `${events.length} events; head=${chainResult.chain_head?.slice(0, 12)}...`
-          : `break at entry ${chainResult.break_at}: ${chainResult.reason}`,
-      });
+          const events: Record<string, unknown>[] = [];
+          let parseErrors = 0;
+          for (const line of raw) {
+            try { events.push(JSON.parse(line) as Record<string, unknown>); }
+            catch { parseErrors++; }
+          }
+          if (parseErrors > 0) checks.push({ check: 'JSONL integrity', ok: false, detail: `${parseErrors} parse errors` });
+          else checks.push({ check: 'JSONL integrity', ok: true, detail: 'all lines parse' });
 
-      if (existsSync(chainHeadFile)) {
-        const storedHead = readFileSync(chainHeadFile, 'utf8').trim();
-        const computedHead = chainResult.chain_head ?? '';
-        const anchored = storedHead === computedHead;
-        checks.push({
-          check: 'CHAIN_HEAD anchor matches',
-          ok: anchored,
-          detail: anchored
-            ? `${storedHead.slice(0, 16)}...`
-            : `stored=${storedHead.slice(0, 12)}... computed=${computedHead.slice(0, 12)}... MISMATCH — log may be rewritten`,
+          const chainResult = verifyEventChain(events);
+          checks.push({
+            check: 'chain integrity',
+            ok: chainResult.valid,
+            detail: chainResult.valid
+              ? `${events.length} events; head=${chainResult.chain_head?.slice(0, 12)}...`
+              : `break at entry ${chainResult.break_at}: ${chainResult.reason}`,
+          });
+
+          if (existsSync(chainHeadFile)) {
+            const storedHead = readFileSync(chainHeadFile, 'utf8').trim();
+            const computedHead = chainResult.chain_head ?? '';
+            const anchored = storedHead === computedHead;
+            checks.push({
+              check: 'CHAIN_HEAD anchor matches',
+              ok: anchored,
+              detail: anchored
+                ? `${storedHead.slice(0, 16)}...`
+                : `stored=${storedHead.slice(0, 12)}... computed=${computedHead.slice(0, 12)}... MISMATCH — log may be rewritten`,
+            });
+          } else {
+            checks.push({ check: 'CHAIN_HEAD anchor exists', ok: false, detail: 'not yet written (post-tool-use.sh updated)' });
+          }
+        }
+
+        checkCount = checks.length;
+        const allOk = checks.every((c) => c.ok);
+        chainValid = allOk;
+        const exitCode = allOk ? EXIT_CODES.success : EXIT_CODES.execution_error;
+        const result = makeResult('claude session verify', { date: dateKey, checks, valid: allOk }, performance.now() - t0, exitCode);
+
+        emitResult(result, { format, verbose, quiet }, (res, p) => {
+          const d = res.payload as { date: string; checks: typeof checks; valid: boolean };
+          p.log('');
+          p.log(`wpm claude session verify — ${d.date}`);
+          p.log('─'.repeat(52));
+          for (const c of d.checks) {
+            const icon = c.ok ? '✓' : '✗';
+            p.log(`  ${icon} ${c.check}${c.detail ? `: ${c.detail}` : ''}`);
+          }
+          p.log('');
+          if (d.valid) p.success('Session chain is intact.');
+          else p.error('Session chain is TAMPERED or incomplete.');
         });
-      } else {
-        checks.push({ check: 'CHAIN_HEAD anchor exists', ok: false, detail: 'not yet written (post-tool-use.sh updated)' });
-      }
-    }
 
-    const allOk = checks.every((c) => c.ok);
-    const exitCode = allOk ? EXIT_CODES.success : EXIT_CODES.execution_error;
-    const result = makeResult('claude session verify', { date: dateKey, checks, valid: allOk }, performance.now() - t0, exitCode);
-
-    emitResult(result, { format, verbose, quiet }, (res, p) => {
-      const d = res.payload as { date: string; checks: typeof checks; valid: boolean };
-      p.log('');
-      p.log(`wpm claude session verify — ${d.date}`);
-      p.log('─'.repeat(52));
-      for (const c of d.checks) {
-        const icon = c.ok ? '✓' : '✗';
-        p.log(`  ${icon} ${c.check}${c.detail ? `: ${c.detail}` : ''}`);
-      }
-      p.log('');
-      if (d.valid) p.success('Session chain is intact.');
-      else p.error('Session chain is TAMPERED or incomplete.');
-    });
-
-    return exitWithFlush(exitCode);
+        return exitWithFlush(exitCode);
+      },
+      () => ({ 'claude.check_count': checkCount, 'claude.chain_valid': chainValid }),
+    );
   },
 });
 
@@ -160,85 +173,91 @@ const session = defineCommand({
     const projectDir = process.env['CLAUDE_PROJECT_DIR'] ?? process.cwd();
     const dateKey = (ctx.args.date as string | undefined)
       ?? new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const runDir = join(projectDir, 'wasm4pm', 'target', 'agent-runs', dateKey);
 
-    if (!existsSync(runDir)) {
-      // No session evidence is a valid first-run state — not a data error.
-      // Hooks write evidence only when Claude Code tools fire, so an empty
-      // session directory means no activity yet, not a missing source.
-      const result = makeResult(
-        'claude session',
-        { date: dateKey, run_dir: runDir, tool_events: { count: 0, by_tool: {}, recent: [] }, work_orders: { count: 0, recent: [] }, no_session: true },
-        performance.now() - t0,
-        EXIT_CODES.success,
-      );
-      emitResult(result, { format, verbose, quiet }, (_res, p) => {
-        p.log('');
-        p.log(`Claude Code session evidence — ${dateKey}`);
-        p.log(`  No session evidence yet. Hooks write to ${runDir} when Claude Code tools fire.`);
-      });
-      return exitWithFlush(EXIT_CODES.success);
-    }
+    let toolEventCount = 0;
+    let workOrderCount = 0;
+    return withSpanRaw(
+      'wasm4pm.command.claude.session',
+      { 'claude.subcommand': 'session', 'claude.date': dateKey },
+      async () => {
+        const runDir = join(projectDir, 'wasm4pm', 'target', 'agent-runs', dateKey);
 
-    const toolEventsPath = join(runDir, 'tool-events.jsonl');
-    const promptsPath = join(runDir, 'prompts.jsonl');
-
-    const toolEvents = existsSync(toolEventsPath)
-      ? readFileSync(toolEventsPath, 'utf8').split('\n').filter(Boolean).map((l) => {
-          try { return JSON.parse(l) as Record<string, unknown>; } catch { return null; }
-        }).filter(Boolean)
-      : [];
-
-    const workOrders = existsSync(promptsPath)
-      ? readFileSync(promptsPath, 'utf8').split('\n').filter(Boolean).map((l) => {
-          try { return JSON.parse(l) as Record<string, unknown>; } catch { return null; }
-        }).filter(Boolean)
-      : [];
-
-    const toolCounts: Record<string, number> = {};
-    for (const e of toolEvents) {
-      const t = (e as { tool?: string }).tool ?? 'unknown';
-      toolCounts[t] = (toolCounts[t] ?? 0) + 1;
-    }
-
-    const payload = {
-      date: dateKey,
-      run_dir: runDir,
-      tool_events: { count: toolEvents.length, by_tool: toolCounts, recent: toolEvents.slice(-5) },
-      work_orders: { count: workOrders.length, recent: workOrders.slice(-3) },
-    };
-
-    const result = makeResult('claude session', payload, performance.now() - t0, EXIT_CODES.success);
-    emitResult(result, { format, verbose, quiet }, (res, p) => {
-      const d = res.payload as typeof payload;
-      p.log('');
-      p.log(`Claude Code session evidence — ${d.date}`);
-      p.log(`  Session dir: ${d.run_dir}`);
-      p.log('');
-      p.log(`  Tool uses recorded: ${d.tool_events.count}`);
-      for (const [tool, count] of Object.entries(d.tool_events.by_tool)) {
-        p.log(`    ${tool}: ${count}`);
-      }
-      p.log('');
-      p.log(`  Work orders recorded: ${d.work_orders.count}`);
-      if (verbose && d.work_orders.recent.length > 0) {
-        for (const wo of d.work_orders.recent) {
-          const w = wo as { timestamp?: string; prompt?: string };
-          p.log(`    [${w.timestamp ?? '?'}] ${String(w.prompt ?? '').slice(0, 80)}`);
+        if (!existsSync(runDir)) {
+          const result = makeErrorResult(
+            'claude session',
+            `No session evidence for ${dateKey} at ${runDir}. Hooks write evidence when Claude Code tools fire.`,
+            EXIT_CODES.source_error,
+            'NO_SESSION',
+          );
+          emitResult(result, { format, verbose, quiet });
+          return exitWithFlush(EXIT_CODES.source_error);
         }
-      }
-      p.log('');
-      if (verbose && d.tool_events.recent.length > 0) {
-        p.log('  Recent tool uses:');
-        for (const te of d.tool_events.recent) {
-          const e = te as { timestamp?: string; tool?: string; file_path?: string; command?: string };
-          const detail = e.file_path ?? String(e.command ?? '').slice(0, 60);
-          p.log(`    [${e.timestamp ?? '?'}] ${e.tool ?? '?'} ${detail}`);
-        }
-      }
-    });
 
-    return exitWithFlush(EXIT_CODES.success);
+        const toolEventsPath = join(runDir, 'tool-events.jsonl');
+        const promptsPath = join(runDir, 'prompts.jsonl');
+
+        const toolEvents = existsSync(toolEventsPath)
+          ? readFileSync(toolEventsPath, 'utf8').split('\n').filter(Boolean).map((l) => {
+              try { return JSON.parse(l) as Record<string, unknown>; } catch { return null; }
+            }).filter(Boolean)
+          : [];
+
+        const workOrders = existsSync(promptsPath)
+          ? readFileSync(promptsPath, 'utf8').split('\n').filter(Boolean).map((l) => {
+              try { return JSON.parse(l) as Record<string, unknown>; } catch { return null; }
+            }).filter(Boolean)
+          : [];
+
+        toolEventCount = toolEvents.length;
+        workOrderCount = workOrders.length;
+
+        const toolCounts: Record<string, number> = {};
+        for (const e of toolEvents) {
+          const t = (e as { tool?: string }).tool ?? 'unknown';
+          toolCounts[t] = (toolCounts[t] ?? 0) + 1;
+        }
+
+        const payload = {
+          date: dateKey,
+          run_dir: runDir,
+          tool_events: { count: toolEvents.length, by_tool: toolCounts, recent: toolEvents.slice(-5) },
+          work_orders: { count: workOrders.length, recent: workOrders.slice(-3) },
+        };
+
+        const result = makeResult('claude session', payload, performance.now() - t0, EXIT_CODES.success);
+        emitResult(result, { format, verbose, quiet }, (res, p) => {
+          const d = res.payload as typeof payload;
+          p.log('');
+          p.log(`Claude Code session evidence — ${d.date}`);
+          p.log(`  Session dir: ${d.run_dir}`);
+          p.log('');
+          p.log(`  Tool uses recorded: ${d.tool_events.count}`);
+          for (const [tool, count] of Object.entries(d.tool_events.by_tool)) {
+            p.log(`    ${tool}: ${count}`);
+          }
+          p.log('');
+          p.log(`  Work orders recorded: ${d.work_orders.count}`);
+          if (verbose && d.work_orders.recent.length > 0) {
+            for (const wo of d.work_orders.recent) {
+              const w = wo as { timestamp?: string; prompt?: string };
+              p.log(`    [${w.timestamp ?? '?'}] ${String(w.prompt ?? '').slice(0, 80)}`);
+            }
+          }
+          p.log('');
+          if (verbose && d.tool_events.recent.length > 0) {
+            p.log('  Recent tool uses:');
+            for (const te of d.tool_events.recent) {
+              const e = te as { timestamp?: string; tool?: string; file_path?: string; command?: string };
+              const detail = e.file_path ?? String(e.command ?? '').slice(0, 60);
+              p.log(`    [${e.timestamp ?? '?'}] ${e.tool ?? '?'} ${detail}`);
+            }
+          }
+        });
+
+        return exitWithFlush(EXIT_CODES.success);
+      },
+      () => ({ 'claude.tool_event_count': toolEventCount, 'claude.work_order_count': workOrderCount }),
+    );
   },
 });
 
@@ -261,54 +280,62 @@ const hooks = defineCommand({
     const quiet = Boolean(ctx.args.quiet);
 
     const projectDir = process.env['CLAUDE_PROJECT_DIR'] ?? process.cwd();
-    const probes = await probeHooks(projectDir);
 
-    const verified = probes.filter((p) => p.verdict === 'verified').length;
-    const refuted = probes.filter((p) => p.verdict === 'refuted').length;
-    const inconclusive = probes.filter((p) => p.verdict === 'inconclusive').length;
-    const healthy = refuted === 0 && inconclusive === 0;
+    let verifiedCount = 0;
+    let refutedCount = 0;
+    let inconclusiveCount = 0;
+    return withSpanRaw(
+      'wasm4pm.command.claude.hooks',
+      { 'claude.subcommand': 'hooks' },
+      async () => {
+        const probes = await probeHooks(projectDir);
 
-    // Hook job failures are execution failures (the hook infrastructure failed to
-    // do its declared job), not configuration errors. Use execution_error (3) when
-    // hooks are refuted, partial_failure (4) when only inconclusive probes remain.
-    const exitCode = healthy
-      ? EXIT_CODES.success
-      : refuted > 0
-        ? EXIT_CODES.execution_error
-        : EXIT_CODES.partial_failure;
-    const result = makeResult('claude hooks', {
-      probes,
-      summary: { verified, refuted, inconclusive, total: probes.length },
-      healthy,
-    }, performance.now() - t0, exitCode);
+        verifiedCount = probes.filter((p) => p.verdict === 'verified').length;
+        refutedCount = probes.filter((p) => p.verdict === 'refuted').length;
+        inconclusiveCount = probes.filter((p) => p.verdict === 'inconclusive').length;
+        const healthy = refutedCount === 0 && inconclusiveCount === 0;
 
-    emitResult(result, { format, verbose, quiet }, (res, p) => {
-      p.log('');
-      p.log('wpm claude hooks — JTBD (Jobs-To-Be-Done) verification');
-      p.log('Each probe exercises a hook\'s declared job, not just its existence.');
-      p.log('─'.repeat(72));
+        const exitCode = healthy ? EXIT_CODES.success : EXIT_CODES.config_error;
+        const result = makeResult('claude hooks', {
+          probes,
+          summary: { verified: verifiedCount, refuted: refutedCount, inconclusive: inconclusiveCount, total: probes.length },
+          healthy,
+        }, performance.now() - t0, exitCode);
 
-      for (const probe of res.payload.probes as JtbdProbe[]) {
-        const icon = probe.verdict === 'verified' ? '✓' : probe.verdict === 'refuted' ? '✗' : '~';
-        p.log('');
-        p.log(`JOB: ${probe.job}`);
-        p.log(`  Scenario: ${probe.scenario}`);
-        p.log(`  Observed: ${probe.observed}`);
-        if (verbose) p.log(`  Evidence: ${probe.evidence}`);
-        p.log(`  ${icon} ${probe.verdict.toUpperCase()}`);
-      }
+        emitResult(result, { format, verbose, quiet }, (res, p) => {
+          p.log('');
+          p.log('wpm claude hooks — JTBD (Jobs-To-Be-Done) verification');
+          p.log('Each probe exercises a hook\'s declared job, not just its existence.');
+          p.log('─'.repeat(72));
 
-      p.log('');
-      p.log('─'.repeat(72));
-      p.log(`Summary: ${verified} verified, ${refuted} refuted, ${inconclusive} inconclusive`);
-      if (healthy) {
-        p.success('All hooks are doing their declared jobs.');
-      } else {
-        p.error(`${refuted} hook job(s) refuted — hooks are not enforcing the proof contract.`);
-      }
-    });
+          for (const probe of res.payload.probes as JtbdProbe[]) {
+            const icon = probe.verdict === 'verified' ? '✓' : probe.verdict === 'refuted' ? '✗' : '~';
+            p.log('');
+            p.log(`JOB: ${probe.job}`);
+            p.log(`  Scenario: ${probe.scenario}`);
+            p.log(`  Observed: ${probe.observed}`);
+            if (verbose) p.log(`  Evidence: ${probe.evidence}`);
+            p.log(`  ${icon} ${probe.verdict.toUpperCase()}`);
+          }
 
-    await exitWithFlush(exitCode);
+          p.log('');
+          p.log('─'.repeat(72));
+          p.log(`Summary: ${verifiedCount} verified, ${refutedCount} refuted, ${inconclusiveCount} inconclusive`);
+          if (healthy) {
+            p.success('All hooks are doing their declared jobs.');
+          } else {
+            p.error(`${refutedCount} hook job(s) refuted — hooks are not enforcing the proof contract.`);
+          }
+        });
+
+        return exitWithFlush(exitCode);
+      },
+      () => ({
+        'claude.hooks.verified': verifiedCount,
+        'claude.hooks.refuted': refutedCount,
+        'claude.hooks.inconclusive': inconclusiveCount,
+      }),
+    );
   },
 });
 
@@ -333,52 +360,68 @@ export const claude = defineCommand({
 
     const projectDir = process.env['CLAUDE_PROJECT_DIR'] ?? process.cwd();
 
-    // Quick status: count session evidence + check settings.json
-    const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-    const agentRunsDir = join(projectDir, 'wasm4pm', 'target', 'agent-runs');
-    const sessionDirs = existsSync(agentRunsDir) ? readdirSync(agentRunsDir) : [];
-    const todayEventsPath = join(agentRunsDir, today, 'tool-events.jsonl');
-    const todayEventCount = existsSync(todayEventsPath)
-      ? readFileSync(todayEventsPath, 'utf8').split('\n').filter(Boolean).length
-      : 0;
+    let todayEventCount = 0;
+    let hookTypeCount = 0;
+    let sessionDateCount = 0;
+    return withSpanRaw(
+      'wasm4pm.command.claude',
+      { 'claude.subcommand': 'status' },
+      async () => {
+        // Quick status: count session evidence + check settings.json
+        const today = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+        const agentRunsDir = join(projectDir, 'wasm4pm', 'target', 'agent-runs');
+        const sessionDirs = existsSync(agentRunsDir) ? readdirSync(agentRunsDir) : [];
+        sessionDateCount = sessionDirs.length;
+        const todayEventsPath = join(agentRunsDir, today, 'tool-events.jsonl');
+        todayEventCount = existsSync(todayEventsPath)
+          ? readFileSync(todayEventsPath, 'utf8').split('\n').filter(Boolean).length
+          : 0;
 
-    const settingsPath = join(projectDir, '.claude', 'settings.json');
-    const settingsOk = existsSync(settingsPath);
-    const hookTypes = settingsOk
-      ? Object.keys((JSON.parse(readFileSync(settingsPath, 'utf8')) as { hooks?: Record<string, unknown> }).hooks ?? {})
-      : [];
+        const settingsPath = join(projectDir, '.claude', 'settings.json');
+        const settingsOk = existsSync(settingsPath);
+        const hookTypes = settingsOk
+          ? Object.keys((JSON.parse(readFileSync(settingsPath, 'utf8')) as { hooks?: Record<string, unknown> }).hooks ?? {})
+          : [];
+        hookTypeCount = hookTypes.length;
 
-    const auditPath = join(projectDir, 'wasm4pm', 'target', 'audits', 'route-driven-tdd-independent-verification.json');
-    const lastAuditVerdict = existsSync(auditPath)
-      ? (JSON.parse(readFileSync(auditPath, 'utf8')) as { final_verdict?: string }).final_verdict ?? 'unknown'
-      : 'no audit yet';
+        const auditPath = join(projectDir, 'wasm4pm', 'target', 'audits', 'route-driven-tdd-independent-verification.json');
+        const lastAuditVerdict = existsSync(auditPath)
+          ? (JSON.parse(readFileSync(auditPath, 'utf8')) as { final_verdict?: string }).final_verdict ?? 'unknown'
+          : 'no audit yet';
 
-    const payload = {
-      session_dates: sessionDirs,
-      today_tool_events: todayEventCount,
-      hook_types_wired: hookTypes,
-      settings_ok: settingsOk,
-      last_audit_verdict: lastAuditVerdict,
-    };
+        const payload = {
+          session_dates: sessionDirs,
+          today_tool_events: todayEventCount,
+          hook_types_wired: hookTypes,
+          settings_ok: settingsOk,
+          last_audit_verdict: lastAuditVerdict,
+        };
 
-    const result = makeResult('claude', payload, performance.now() - t0, EXIT_CODES.success);
-    emitResult(result, { format, verbose, quiet }, (res, p) => {
-      const d = res.payload as typeof payload;
-      p.log('');
-      p.log('wpm claude — Claude Code integration layer');
-      p.log('─'.repeat(52));
-      p.log(`  Settings:           ${d.settings_ok ? 'configured' : 'MISSING .claude/settings.json'}`);
-      p.log(`  Hook types wired:   ${d.hook_types_wired.length} (${d.hook_types_wired.join(', ')})`);
-      p.log(`  Today tool events:  ${d.today_tool_events}`);
-      p.log(`  Session dates:      ${d.session_dates.length} (${d.session_dates.slice(-3).join(', ')})`);
-      p.log(`  Last proof audit:   ${d.last_audit_verdict}`);
-      p.log('');
-      p.log('Subcommands:');
-      p.log('  wpm claude session       Show today\'s tool evidence + work orders');
-      p.log('  wpm claude hooks         JTBD verification of all hook jobs');
-      p.log('');
-    });
+        const result = makeResult('claude', payload, performance.now() - t0, EXIT_CODES.success);
+        emitResult(result, { format, verbose, quiet }, (res, p) => {
+          const d = res.payload as typeof payload;
+          p.log('');
+          p.log('wpm claude — Claude Code integration layer');
+          p.log('─'.repeat(52));
+          p.log(`  Settings:           ${d.settings_ok ? 'configured' : 'MISSING .claude/settings.json'}`);
+          p.log(`  Hook types wired:   ${d.hook_types_wired.length} (${d.hook_types_wired.join(', ')})`);
+          p.log(`  Today tool events:  ${d.today_tool_events}`);
+          p.log(`  Session dates:      ${d.session_dates.length} (${d.session_dates.slice(-3).join(', ')})`);
+          p.log(`  Last proof audit:   ${d.last_audit_verdict}`);
+          p.log('');
+          p.log('Subcommands:');
+          p.log('  wpm claude session       Show today\'s tool evidence + work orders');
+          p.log('  wpm claude hooks         JTBD verification of all hook jobs');
+          p.log('');
+        });
 
-    return exitWithFlush(EXIT_CODES.success);
+        return exitWithFlush(EXIT_CODES.success);
+      },
+      () => ({
+        'claude.today_event_count': todayEventCount,
+        'claude.hook_type_count': hookTypeCount,
+        'claude.session_date_count': sessionDateCount,
+      }),
+    );
   },
 });

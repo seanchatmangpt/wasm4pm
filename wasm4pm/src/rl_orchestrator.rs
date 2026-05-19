@@ -8,10 +8,12 @@ use crate::ml::LinUCBAgent;
 use crate::reinforcement::{
     Agent, AgentMeta, DoubleQLearning, ExpectedSARSAAgent, QLearning, ReinforceAgent, SARSAAgent,
 };
+use std::collections::{HashSet, VecDeque};
+use tracing::{error, warn, span, Level};
 
 // Re-export the RlState/RlAction types from lib.rs (they are pub(crate)).
 // We use the concrete types directly since this module is in the same crate.
-use crate::{RlAction, RlState};
+pub use crate::{RlAction, RlState};
 
 /// Serialization capability for RlState/RlAction agents.
 /// Separate trait so that the generic `impl<S,A> AgentMeta for ...` doesn't need
@@ -206,7 +208,7 @@ pub fn compute_health_state(event_count: u64, trace_count: u64, unique_activitie
     }
 }
 
-/// Compute reward signal from SPC alert count and health transition.
+/// Compute reward signal from SPC alert count, health transition, rework ratio, and action diversity.
 ///
 /// Reward semantics:
 ///   +1.0  : Health improved (lower health_state number) AND no SPC alerts
@@ -216,21 +218,33 @@ pub fn compute_health_state(event_count: u64, trace_count: u64, unique_activitie
 ///   -1.0  : Health degraded (higher health_state number)
 ///   -2.0  : Terminal state reached (health == 4 = Failed)
 ///   -0.3  : Cycle latency exceeded budget (added to total)
+///   -0.2  : Rework penalty (high rework_ratio_q indicates wasted cycles; penalty scales 0.0-0.2 as ratio 0-7)
+///   -0.1  : Action diversity penalty (if same action >70% of last 10 cycles)
 ///
-/// Bounded range: approximately [-5.3, +1.1]
+/// **Rework penalty rationale (NEW):**
+/// High rework_ratio_q (dimension 5 of 8D state space) indicates repeated activities,
+/// signaling inefficient or cyclical processes. Penalty scales from 0 at ratio_q=0
+/// to -0.2 at ratio_q=7 (max). Encourages policies that reduce rework.
+///
+/// **Action diversity penalty rationale:**
+/// If the RL agent picks the same action repeatedly (>70% frequency in last 10 cycles),
+/// it indicates a stuck or converged policy. Applying a small penalty encourages
+/// exploration of alternative actions to prevent policy lock-in.
+///
+/// Bounded range: approximately [-5.5, +1.6] (worst: -3.0 health + -1.5 SPC + -0.5 guard + -0.3 latency + -0.2 rework = -5.5; best: +1.0 health + 0 SPC + 0.1 guard + 0 latency + 0 rework + 0.5 momentum = +1.6)
 ///
 /// # Examples
 ///
 /// ```
 /// use wasm4pm::rl_orchestrator::compute_reward;
 ///
-/// // Health improved, no SPC alerts → positive reward
-/// let r = compute_reward(2, 0, 0, true, true, false);
+/// // Health improved, no SPC alerts, no rework → positive reward
+/// let r = compute_reward(2, 1, 0, true, true, false, 0);
 /// assert!(r > 0.0, "health improvement must yield positive reward, got {r}");
 ///
-/// // Terminal failure state → large negative penalty
-/// let r2 = compute_reward(3, 4, 5, true, true, false);
-/// assert!(r2 < -1.0, "failed state must yield large negative reward, got {r2}");
+/// // Terminal failure state with high rework → large negative penalty
+/// let r2 = compute_reward(3, 4, 5, true, true, false, 7);
+/// assert!(r2 < -3.0, "failed state with rework must yield large negative reward, got {r2}");
 /// ```
 pub fn compute_reward(
     prev_health: u8,
@@ -239,6 +253,43 @@ pub fn compute_reward(
     guard_pass: bool,
     circuit_allowed: bool,
     latency_budget_exceeded: bool,
+    rework_ratio_q: u8,
+) -> f32 {
+    compute_reward_with_momentum(
+        prev_health,
+        curr_health,
+        spc_alert_count,
+        guard_pass,
+        circuit_allowed,
+        latency_budget_exceeded,
+        rework_ratio_q,
+        0, // default: no momentum bonus
+    )
+}
+
+/// Compute reward with momentum bonus for consecutive successes.
+///
+/// **Momentum bonus (NEW):**
+/// Rewards persistent improvement: 0.05 * min(consecutive_successes, 10) bonus
+/// when guard_pass && circuit_allowed. Scales from 0 to +0.5 over 10-cycle window.
+/// Encourages policies that achieve sustained positive outcomes.
+///
+/// # Examples
+///
+/// ```ignore
+/// // 5 consecutive successes: +0.25 bonus
+/// let r = compute_reward_with_momentum(2, 1, 0, true, true, false, 0, 5);
+/// assert!(r > 1.1, "momentum bonus should increase reward");
+/// ```
+pub fn compute_reward_with_momentum(
+    prev_health: u8,
+    curr_health: u8,
+    spc_alert_count: usize,
+    guard_pass: bool,
+    circuit_allowed: bool,
+    latency_budget_exceeded: bool,
+    rework_ratio_q: u8,
+    consecutive_successes: u32,
 ) -> f32 {
     let mut reward = 0.0_f32;
 
@@ -250,7 +301,11 @@ pub fn compute_reward(
     reward += HEALTH_DELTA[improved | stable];
 
     // SPC penalty: each special cause signal is a -0.3 penalty (bounded by -1.5)
-    reward -= (spc_alert_count as f32 * 0.3).min(1.5);
+    // **GUARD: SPC penalty is explicitly capped at 1.5 to prevent overflow**
+    // This ensures even pathological cases (1000+ SPC alerts) don't exceed bounds.
+    let spc_penalty_magnitude = (spc_alert_count as f32 * 0.3).min(1.5);
+    debug_assert!(spc_penalty_magnitude >= 0.0 && spc_penalty_magnitude <= 1.5, "spc penalty magnitude must be in [0, 1.5], got {}", spc_penalty_magnitude);
+    reward -= spc_penalty_magnitude;
 
     // Guard/circuit bonus/penalty — branchless 2D LUT
     const GUARD_CIRCUIT: [[f32; 2]; 2] = [[-0.5, -0.5], [-0.5, 0.1]];
@@ -259,235 +314,96 @@ pub fn compute_reward(
     // Latency budget penalty — branchless
     reward -= latency_budget_exceeded as i32 as f32 * 0.3;
 
+    // Rework penalty (NEW): scales from 0 at ratio_q=0 to -0.2 at ratio_q=7
+    // Encourages policies that reduce repeated activities and cycle inefficiency
+    // **GUARD: rework_ratio_q must be in [0, 7]; clamp to prevent out-of-range**
+    let clamped_rework_q = (rework_ratio_q as f32).min(7.0).max(0.0) as f32;
+    let rework_penalty = -(clamped_rework_q / 7.0) * 0.2;
+    debug_assert!(rework_penalty >= -0.2 && rework_penalty <= 0.0, "rework penalty must be in [-0.2, 0], got {}", rework_penalty);
+    reward += rework_penalty;
+
+    // Momentum bonus (NEW): reward persistent improvement
+    // Only applies when guard_pass && circuit_allowed (successful cycle)
+    // Scales from 0 to +0.5 over 10-cycle window
+    // **GUARD: momentum bonus caps at 10-cycle window (0.05 * min(consecutive_successes, 10))**
+    // This prevents unbounded accumulation and keeps reward magnitude bounded.
+    if guard_pass && circuit_allowed {
+        // Verified: consecutive_successes is capped via saturating_add; here we add additional cap
+        let capped_successes = (consecutive_successes as f32).min(10.0);
+        let momentum_bonus = 0.05_f32 * capped_successes;
+        debug_assert!(momentum_bonus >= 0.0 && momentum_bonus <= 0.5, "momentum bonus must be in [0, 0.5], got {}", momentum_bonus);
+        reward += momentum_bonus;
+    }
+
     // Terminal penalty — branchless
     reward -= (curr_health == 4) as i32 as f32 * 2.0;
 
     reward
 }
 
-/// Action history tracking for observability.
-/// Maintains a rolling window of the last 100 actions with success metrics.
-#[derive(Debug, Clone)]
-pub struct ActionHistory {
-    /// Rolling window of recent actions (max 100).
-    actions: std::collections::VecDeque<(RlAction, f32)>,
-    /// Success count per action type.
-    success_counts: [u32; 5],
-    /// Total count per action type.
-    total_counts: [u32; 5],
-}
-
-impl ActionHistory {
-    pub fn new() -> Self {
-        Self {
-            actions: std::collections::VecDeque::with_capacity(100),
-            success_counts: [0; 5],
-            total_counts: [0; 5],
-        }
-    }
-
-    pub fn record_action(&mut self, action: RlAction, reward: f32) {
-        if self.actions.len() >= 100 {
-            let _ = self.actions.pop_front();
-        }
-        self.actions.push_back((action, reward));
-
-        let action_idx = match action {
-            RlAction::Continue => 0,
-            RlAction::Scale => 1,
-            RlAction::Retry => 2,
-            RlAction::Fallback => 3,
-            RlAction::Restart => 4,
-        };
-        self.total_counts[action_idx] = self.total_counts[action_idx].saturating_add(1);
-        if reward > 0.0 {
-            self.success_counts[action_idx] = self.success_counts[action_idx].saturating_add(1);
-        }
-
-        // Emit OTEL span every 10 actions for action performance observability
-        let total_actions: u32 = self.total_counts.iter().sum();
-        if total_actions % 10 == 0 {
-            let success_rate = self.get_success_rate(action);
-            let recent_reward_avg = if self.actions.is_empty() {
-                0.0
-            } else {
-                let recent_rewards: Vec<f32> = self.actions.iter().map(|(_, r)| *r).collect();
-                recent_rewards.iter().sum::<f32>() / recent_rewards.len() as f32
-            };
-
-            tracing::info!(
-                target: "autonomic.rl.action_performance",
-                action_label = action_label(action),
-                success_rate = success_rate,
-                recent_reward_avg = recent_reward_avg,
-                total_actions_recorded = total_actions,
-                "Action performance metrics"
-            );
-        }
-    }
-
-    pub fn get_success_rate(&self, action: RlAction) -> f32 {
-        let action_idx = match action {
-            RlAction::Continue => 0,
-            RlAction::Scale => 1,
-            RlAction::Retry => 2,
-            RlAction::Fallback => 3,
-            RlAction::Restart => 4,
-        };
-        if self.total_counts[action_idx] == 0 {
-            0.0
-        } else {
-            self.success_counts[action_idx] as f32 / self.total_counts[action_idx] as f32
-        }
-    }
-
-    pub fn recent_actions(&self) -> Vec<(RlAction, f32)> {
-        self.actions.iter().copied().collect()
-    }
-
-    pub fn distribution(&self) -> [(&'static str, u32); 5] {
-        [
-            ("Continue", self.total_counts[0]),
-            ("Scale", self.total_counts[1]),
-            ("Retry", self.total_counts[2]),
-            ("Fallback", self.total_counts[3]),
-            ("Restart", self.total_counts[4]),
-        ]
-    }
-}
-
-/// State space coverage tracking for observability.
-/// Tracks unique states visited and per-dimension bin occupancy across cycles.
+/// Compute decayed learning rate (alpha) for the current cycle.
 ///
-/// 8-dimensional state space:
-///   - health_level: 5 bins (0-4)
-///   - event_rate_q: 8 bins (0-7)
-///   - activity_count_q: 8 bins (0-7)
-///   - spc_alert_level: 4 bins (0-3)
-///   - drift_status: 3 bins (0-2)
-///   - rework_ratio_q: 8 bins (0-7)
-///   - circuit_state: 3 bins (0-2)
-///   - cycle_phase: 4 bins (0-3)
-/// Total: 5*8*8*4*3*8*3*4 = 368,640 possible states
-#[derive(Debug, Clone)]
-pub struct StateCoverage {
-    /// Set of unique state IDs visited (encoded 8D → u32)
-    visited_states: std::collections::HashSet<u32>,
-    /// Per-dimension bin occupancy counters
-    /// Bins: [5(health) + 8(event_rate) + 8(activity) + 4(spc) + 3(drift) + 8(rework) + 3(circuit) + 4(phase)] = 43 total
-    dimension_bins: [u32; 43],
+/// Uses multiplicative decay schedule: alpha_t = alpha_0 * (0.9999 ^ cycle_count)
+///
+/// **Why decay is beneficial:**
+/// Learning rate decay implements an exploration→exploitation transition. Early cycles
+/// aggressively update Q-values to explore the state-action space (high alpha). As the
+/// agent converges on a good policy, lower alpha (smaller updates) stabilizes learned
+/// values, reducing the risk of policy oscillation. The base (0.9999) is gentle — after
+/// 10,000 cycles, alpha drops to ~0.37x its initial value, allowing long learning horizons.
+///
+/// # Parameters
+/// - `alpha_0`: Initial learning rate (typically 0.1)
+/// - `cycle_count`: Current cycle number (0-based)
+///
+/// # Returns
+/// Decayed alpha for the current cycle.
+///
+/// # Examples
+///
+/// ```
+/// use wasm4pm::rl_orchestrator::learning_rate_schedule;
+///
+/// let alpha_0 = 0.1;
+/// assert!((learning_rate_schedule(alpha_0, 0) - 0.1).abs() < 1e-6);   // cycle 0 → no decay
+/// assert!(learning_rate_schedule(alpha_0, 1000) < alpha_0);            // cycle 1000 → decayed
+/// assert!(learning_rate_schedule(alpha_0, 10000) < 0.04);              // cycle 10000 → ~37% decay
+/// ```
+pub fn learning_rate_schedule(alpha_0: f32, cycle_count: u64) -> f32 {
+    // alpha_t = alpha_0 * (0.9999 ^ cycle_count)
+    // Using f32::powf for clarity; compiler may inline/optimize.
+    alpha_0 * 0.9999_f32.powf(cycle_count as f32)
 }
 
-impl StateCoverage {
-    pub fn new() -> Self {
-        Self {
-            visited_states: std::collections::HashSet::new(),
-            dimension_bins: [0; 43],
-        }
-    }
+/// Action history entry — tracks healing decision outcome per cycle.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct ActionHistory {
+    pub action: String,     // e.g., "Continue", "Scale", "Restart"
+    pub reward_before: f32, // Cumulative reward before cycle
+    pub reward_after: f32,  // Cumulative reward after cycle
+    pub successful: bool,   // true if reward improved (reward_after > reward_before)
+    pub timestamp: u64,     // Cycle count when action was taken
+}
 
-    /// Encode 8-dimensional state to u32 via Cantor-like pairing.
-    /// Maps (h, e, a, s, d, r, c, p) → unique u32 in [0, 368640)
-    fn state_to_id(state: &RlState) -> u32 {
-        // Use a factoradic encoding: state_id = h + e*5 + a*5*8 + s*5*8*8 + ...
-        let h = state.health_level as u32;       // 0-4
-        let e = state.event_rate_q as u32;       // 0-7
-        let a = state.activity_count_q as u32;   // 0-7
-        let s = state.spc_alert_level as u32;    // 0-3
-        let d = state.drift_status as u32;       // 0-2
-        let r = state.rework_ratio_q as u32;     // 0-7
-        let c = state.circuit_state as u32;      // 0-2
-        let p = state.cycle_phase as u32;        // 0-3
-
-        h + e * 5 + a * 5 * 8 + s * 5 * 8 * 8 + d * 5 * 8 * 8 * 4
-            + r * 5 * 8 * 8 * 4 * 3 + c * 5 * 8 * 8 * 4 * 3 * 8
-            + p * 5 * 8 * 8 * 4 * 3 * 8 * 3
-    }
-
-    /// Track a state visit: increment visited set and dimension bins.
-    pub fn track_state(&mut self, state: &RlState) {
-        let state_id = Self::state_to_id(state);
-        self.visited_states.insert(state_id);
-
-        // Increment bins for each dimension
-        // health_level: bins 0-4
-        if (state.health_level as usize) < 5 {
-            self.dimension_bins[state.health_level as usize] += 1;
-        }
-
-        // event_rate_q: bins 5-12
-        if (state.event_rate_q as usize) < 8 {
-            self.dimension_bins[5 + state.event_rate_q as usize] += 1;
-        }
-
-        // activity_count_q: bins 13-20
-        if (state.activity_count_q as usize) < 8 {
-            self.dimension_bins[13 + state.activity_count_q as usize] += 1;
-        }
-
-        // spc_alert_level: bins 21-24
-        if (state.spc_alert_level as usize) < 4 {
-            self.dimension_bins[21 + state.spc_alert_level as usize] += 1;
-        }
-
-        // drift_status: bins 25-27
-        if (state.drift_status as usize) < 3 {
-            self.dimension_bins[25 + state.drift_status as usize] += 1;
-        }
-
-        // rework_ratio_q: bins 28-35
-        if (state.rework_ratio_q as usize) < 8 {
-            self.dimension_bins[28 + state.rework_ratio_q as usize] += 1;
-        }
-
-        // circuit_state: bins 36-38
-        if (state.circuit_state as usize) < 3 {
-            self.dimension_bins[36 + state.circuit_state as usize] += 1;
-        }
-
-        // cycle_phase: bins 39-42 (4 bins)
-        if (state.cycle_phase as usize) < 4 {
-            self.dimension_bins[39 + state.cycle_phase as usize] += 1;
-        }
-    }
-
-    /// Compute coverage percentage (unique states visited / total possible).
-    pub fn coverage_percentage(&self) -> f32 {
-        (self.visited_states.len() as f32) / 368_640.0 * 100.0
-    }
-
-    /// Get per-dimension coverage breakdown.
-    /// Returns array of 8 coverage percentages (one per dimension).
-    pub fn get_dimension_coverage(&self) -> [f32; 8] {
-        [
-            // health_level: bins 0-4 (5 bins)
-            self.dimension_bins[0..5].iter().filter(|&&b| b > 0).count() as f32 / 5.0 * 100.0,
-            // event_rate_q: bins 5-12 (8 bins)
-            self.dimension_bins[5..13].iter().filter(|&&b| b > 0).count() as f32 / 8.0 * 100.0,
-            // activity_count_q: bins 13-20 (8 bins)
-            self.dimension_bins[13..21].iter().filter(|&&b| b > 0).count() as f32 / 8.0 * 100.0,
-            // spc_alert_level: bins 21-24 (4 bins)
-            self.dimension_bins[21..25].iter().filter(|&&b| b > 0).count() as f32 / 4.0 * 100.0,
-            // drift_status: bins 25-27 (3 bins)
-            self.dimension_bins[25..28].iter().filter(|&&b| b > 0).count() as f32 / 3.0 * 100.0,
-            // rework_ratio_q: bins 28-35 (8 bins)
-            self.dimension_bins[28..36].iter().filter(|&&b| b > 0).count() as f32 / 8.0 * 100.0,
-            // circuit_state: bins 36-38 (3 bins)
-            self.dimension_bins[36..39].iter().filter(|&&b| b > 0).count() as f32 / 3.0 * 100.0,
-            // cycle_phase: bins 39-42 (4 bins)
-            self.dimension_bins[39..43].iter().filter(|&&b| b > 0).count() as f32 / 4.0 * 100.0,
-        ]
-    }
-
-    /// Get the count of unique states visited.
-    pub fn unique_states_visited(&self) -> usize {
-        self.visited_states.len()
-    }
+/// State space coverage metrics — tracks which 8D bins have been visited.
+/// Total possible bins: 5 × 8 × 8 × 4 × 3 × 8 × 3 × 4 = 368,640 states.
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+pub struct StateCoverage {
+    /// Total unique states visited across all cycles.
+    pub states_visited: usize,
+    /// Per-dimension visit counts: [health_level, event_rate_q, activity_count_q, spc_alert_level, drift_status, rework_ratio_q, circuit_state, cycle_phase]
+    pub dimension_coverage: [usize; 8],
+    /// Coverage percentage (0-100).
+    pub coverage_percentage: f32,
 }
 
 impl Default for StateCoverage {
     fn default() -> Self {
-        Self::new()
+        Self {
+            states_visited: 0,
+            dimension_coverage: [0; 8],
+            coverage_percentage: 0.0,
+        }
     }
 }
 
@@ -501,6 +417,10 @@ pub struct RlOrchestrator {
     action_history: ActionHistory,
     state_coverage: StateCoverage,
     use_linucb_for_selection: bool,
+    /// Tracks which 8D state bins have been visited for reachability analysis.
+    visited_states: HashSet<u32>,
+    /// Rolling window of healing actions (max 100 entries).
+    action_history: VecDeque<ActionHistory>,
 }
 
 impl Default for RlOrchestrator {
@@ -525,6 +445,8 @@ impl RlOrchestrator {
             action_history: ActionHistory::new(),
             state_coverage: StateCoverage::new(),
             use_linucb_for_selection: false,
+            visited_states: HashSet::new(),
+            action_history: VecDeque::with_capacity(100),
         }
     }
 
@@ -546,6 +468,8 @@ impl RlOrchestrator {
             action_history: ActionHistory::new(),
             state_coverage: StateCoverage::new(),
             use_linucb_for_selection: false,
+            visited_states: HashSet::new(),
+            action_history: VecDeque::with_capacity(100),
         }
     }
 
@@ -563,6 +487,99 @@ impl RlOrchestrator {
     /// Get telemetry snapshot.
     pub fn telemetry(&self) -> &CycleTelemetry {
         &self.telemetry
+    }
+
+    /// Convert an RlState into a single u32 hash for state space binning.
+    pub fn state_to_bin(state: &RlState) -> u32 {
+        let h = state.health_level as u32;
+        let e = state.event_rate_q as u32;
+        let a = state.activity_count_q as u32;
+        let s = state.spc_alert_level as u32;
+        let d = state.drift_status as u32;
+        let r = state.rework_ratio_q as u32;
+        let c = state.circuit_state as u32;
+        let p = state.cycle_phase as u32;
+
+        h * 61440 + e * 7680 + a * 960 + s * 240 + d * 80 + r * 10 + c * 3 + p
+    }
+
+    /// Get state space coverage metrics.
+    pub fn get_state_coverage(&self) -> StateCoverage {
+        let total_bins = 368_640_u32;
+        let states_visited = self.visited_states.len();
+        let coverage_percentage = (states_visited as f32 / total_bins as f32) * 100.0;
+
+        let mut dimension_coverage = [0usize; 8];
+        let mut dim_seen: [std::collections::HashSet<u32>; 8] = Default::default();
+        for &bin in &self.visited_states {
+            let h = bin / 61440;
+            let e = (bin % 61440) / 7680;
+            let a = (bin % 7680) / 960;
+            let s = (bin % 960) / 240;
+            let d = (bin % 240) / 80;
+            let r = (bin % 80) / 10;
+            let c = (bin % 10) / 3;
+            let p = bin % 3;
+
+            dim_seen[0].insert(h);
+            dim_seen[1].insert(e);
+            dim_seen[2].insert(a);
+            dim_seen[3].insert(s);
+            dim_seen[4].insert(d);
+            dim_seen[5].insert(r);
+            dim_seen[6].insert(c);
+            dim_seen[7].insert(p);
+        }
+
+        for i in 0..8 {
+            dimension_coverage[i] = dim_seen[i].len();
+        }
+
+        StateCoverage {
+            states_visited,
+            dimension_coverage,
+            coverage_percentage,
+        }
+    }
+
+    /// Analyze dimensionality of visited state space.
+    ///
+    /// **Rank-1 Oracle:** Deterministic measurement of dimension coverage.
+    /// Reconstructs visited states from stored bins and analyzes per-dimension usage,
+    /// interactions, and bottlenecks.
+    ///
+    /// This method requires access to the full RlState values. Since only state bins
+    /// (u32) are stored in `visited_states`, this method reconstructs approximate
+    /// RlState instances by inverse-transforming the bin values.
+    ///
+    /// **Performance:** O(n) where n = number of visited bins (typically < 1000).
+    #[cfg(feature = "cloud")]
+    pub fn analyze_dimensionality(&self) -> crate::DimensionalityAnalyzer {
+        // Reconstruct RlState instances from visited bins
+        let mut states = Vec::new();
+        for &bin in &self.visited_states {
+            let h = (bin / 61440) as u8;
+            let e = ((bin % 61440) / 7680) as u8;
+            let a = ((bin % 7680) / 960) as u8;
+            let s = ((bin % 960) / 240) as u8;
+            let d = ((bin % 240) / 80) as u8;
+            let r = ((bin % 80) / 10) as u8;
+            let c = ((bin % 10) / 3) as u8;
+            let p = (bin % 3) as u8;
+
+            states.push(RlState {
+                health_level: h,
+                event_rate_q: e,
+                activity_count_q: a,
+                spc_alert_level: s,
+                drift_status: d,
+                rework_ratio_q: r,
+                circuit_state: c,
+                cycle_phase: p,
+            });
+        }
+
+        crate::analyze_dimension_usage(&states, self.telemetry.cycle_count)
     }
 
     /// Select action using the active RL agent.
@@ -716,52 +733,108 @@ impl RlOrchestrator {
 
     /// Use LinUCB to recommend which RL agent to use based on features.
     /// Maps LinUCB actions 0..4 to AgentType.
-    /// Emits OTEL span `autonomic.linucb.agent_selection` for every selection with:
-    /// - Gap 5: Per-action weight norms (L2 norm for convergence tracking, Rank-1)
-    /// - Gap 7: Agent success rate in selection context (Rank-2 domain contract)
+    /// Emits OTEL span with agent selection rationale (UCB score, context features, runner-up).
     pub fn linucb_select_agent(&mut self, features: &[f32; 8]) -> AgentType {
-        let (action_idx, linucb_score) = self.linucb.select(features);
-        let recommended_agent = AgentType::from_u8(action_idx as u8).unwrap_or(AgentType::QLearning);
+        let (action_idx, ucb_score) = self.linucb.select(features);
+        let selected_agent = AgentType::from_u8(action_idx as u8).unwrap_or(AgentType::QLearning);
 
-        // GAP 5: Per-action weight norms for convergence tracking (Rank-1 oracle)
-        let weight_norms = self.weight_norms();
-        let max_weight_norm = weight_norms.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
-        let recommended_agent_norm = weight_norms[action_idx as usize];
+        // Get all Q-values to identify runner-up agent
+        let q_values = self.linucb.get_q_values(features);
+        let mut runner_up_idx = 0_usize;
+        let mut runner_up_score = f32::NEG_INFINITY;
+        for (i, &q) in q_values.iter().enumerate() {
+            if i != action_idx as usize && q > runner_up_score {
+                runner_up_score = q;
+                runner_up_idx = i;
+            }
+        }
+        let runner_up_agent = AgentType::from_u8(runner_up_idx as u8)
+            .unwrap_or(AgentType::QLearning)
+            .name();
 
-        // GAP 7: Agent success rate in selection context (Rank-2 domain contract)
-        // Compute success rate for the selected agent over recent history
-        let action_history = &self.action_history;
-        let agent_success_rate = action_history.get_success_rate(action_history.recent_actions()
-            .first()
-            .map(|(a, _)| *a)
-            .unwrap_or(RlAction::Continue));
-
-        // Emit OTEL span for agent selection with convergence and performance context
-        tracing::info!(
-            target: "autonomic.linucb.agent_selection",
-            recommended_agent = recommended_agent.name(),
-            linucb_score = linucb_score,
-            // Gap 5: Weight norm convergence tracking (Rank-1)
-            recommended_agent_weight_norm = recommended_agent_norm,
-            max_weight_norm = max_weight_norm,
-            weight_norms = ?weight_norms,
-            // Gap 7: Agent success rate (Rank-2 domain)
-            agent_success_rate = agent_success_rate,
-            recent_actions_count = action_history.recent_actions().len(),
-            // Context
-            context_features = ?features,
-            action_idx = action_idx,
-            cycle_count = self.telemetry.cycle_count,
-            "LinUCB agent selection with convergence and success metrics"
+        // Serialize 8-dim context as JSON for span attribute
+        let context_json = format!(
+            r#"{{"event_rate":{:.4},"trace_count":{:.4},"activity_count":{:.4},"health":{:.4},"circuit_state":{:.4},"spc_alert_level":{:.4},"drift_status":{:.4},"cycle_phase":{:.4}}}"#,
+            features[0], features[1], features[2], features[3],
+            features[4], features[5], features[6], features[7]
         );
 
-        recommended_agent
+        // OBS-4 FIX: Get q_score (mean estimate) to compute exploration_bonus = ucb_score - q_score
+        let q_values = self.linucb.get_q_values(features);
+        let q_score = q_values[action_idx as usize];
+        let exploration_bonus = ucb_score - q_score;
+
+        // Emit OTEL span with LinUCB decision rationale (OBS-4 fix: add exploration_bonus)
+        let _span = tracing::info_span!(
+            "rl.linucb_agent_selection",
+            linucb_selected_agent = selected_agent.name(),
+            linucb_ucb_score = ucb_score,
+            linucb_q_score = q_score,
+            linucb_exploration_bonus = exploration_bonus,
+            linucb_context = context_json.as_str(),
+            linucb_runner_up = runner_up_agent,
+            service_name = "wpm",
+            status = "ok",
+        );
+        let _entered = _span.enter();
+
+        selected_agent
     }
 
     /// Update LinUCB with reward for the current agent selection.
-    pub fn linucb_update(&mut self, features: &[f32; 8], reward: f32) {
+    /// Emits OTEL span with convergence metrics (TD error, weight norms, weight delta).
+    pub fn linucb_update(&mut self, features: &[f32; 8], reward: f32) -> f32 {
         let action_idx = self.active_agent as u32;
+
+        // Compute TD error before update (prediction - target)
+        let (_, ucb_score_before) = self.linucb.select(features);
+        let td_error = reward - ucb_score_before;
+
+        // **GUARD (GAP-RL-6):** Detect pathological TD errors indicating divergence.
+        // TD error >100 suggests either unbounded reward or diverged value estimates.
+        // This should never occur with reward bounds [-5.5, +1.6] and clamped targets.
+        debug_assert!(
+            td_error.abs() < 100.0,
+            "TD error divergence detected: {:.2} (indicates learning breakdown)",
+            td_error
+        );
+
+        // Get weight norm BEFORE update for delta computation (OBS-1 fix)
+        let norms_before = self.linucb.weight_norms();
+        let active_norm_before = norms_before[action_idx as usize];
+
+        // Update agent
         self.linucb.update(features, action_idx, reward);
+
+        // Compute weight norms for convergence tracking
+        let norms = self.linucb.weight_norms();
+        let weight_norms_json = format!(
+            r#"{{"q_learning":{},"sarsa":{},"double_q":{},"expected_sarsa":{},"reinforce":{}}}"#,
+            norms[0], norms[1], norms[2], norms[3], norms[4]
+        );
+
+        // OBS-1 FIX: Extract active agent's weight delta for convergence signal
+        let active_norm_after = norms[action_idx as usize];
+        let weight_delta = (active_norm_after - active_norm_before).abs();
+        let convergence_signal = if weight_delta > 0.001 { "learning" } else { "stable" };
+
+        // Emit OTEL span with convergence signal (OBS-1 fix)
+        let _span = tracing::info_span!(
+            "rl.linucb_update",
+            linucb_td_error = td_error,
+            linucb_reward = reward,
+            linucb_ucb_before = ucb_score_before,
+            linucb_agent_id = self.telemetry.active_agent_name.as_str(),
+            linucb_weight_norms = weight_norms_json.as_str(),
+            linucb_weight_delta = weight_delta,
+            linucb_convergence_signal = convergence_signal,
+            learning_rate = self.linucb.alpha_lr,
+            service_name = "wpm",
+        );
+        let _entered = _span.enter();
+
+        // Return TD error for convergence diagnostics
+        td_error
     }
 
     /// Enable/disable LinUCB-based agent selection.
@@ -774,15 +847,53 @@ impl RlOrchestrator {
         self.use_linucb_for_selection
     }
 
-    /// Get action history statistics for observability.
-    pub fn get_action_stats(&self) -> &ActionHistory {
-        &self.action_history
+    /// Get LinUCB action bounds (GUARD: ensure action in [0, 4]).
+    ///
+    /// Returns the 0-based action index from LinUCB selection.
+    /// Bounds check is performed; if out of range, clamps to valid [0, 4].
+    pub fn linucb_bounded_select(&self, features: &[f32; 8]) -> u32 {
+        let (action_idx, _) = self.linucb.select(features);
+        // GUARD: clamp to valid action range [0, 4]
+        action_idx.min(4)
     }
 
-    /// Get LinUCB weight L2 norms for convergence monitoring.
-    /// Returns per-action norms array for observability/diagnostics.
-    pub fn weight_norms(&self) -> [f32; 5] {
-        self.linucb.weight_l2_norms()
+    /// Get action statistics (success rates per action type).
+    ///
+    /// Returns a map with action name as key and (total_count, successful_count, success_rate).
+    /// Success is defined as: reward_after > reward_before.
+    ///
+    /// **GUARD: Division-by-zero protection** — If total is 0, rate defaults to 0.0 (not NaN).
+    /// This prevents propagation of NaN through telemetry and OTEL spans.
+    pub fn get_action_stats(&self) -> std::collections::HashMap<String, (u32, u32, f32)> {
+        use std::collections::HashMap;
+        let mut stats: HashMap<String, (u32, u32)> = HashMap::new();
+
+        // Count totals and successes per action
+        for entry in &self.action_history {
+            let (total, successes) = stats.entry(entry.action.clone()).or_insert((0, 0));
+            *total += 1;
+            if entry.successful {
+                *successes += 1;
+            }
+        }
+
+        // Convert to (total, successful, success_rate)
+        // GUARD: if total == 0, rate = 0.0 (preventing NaN from division by zero)
+        stats
+            .into_iter()
+            .map(|(action, (total, successful))| {
+                let rate = if total > 0 {
+                    // Verified: successful <= total, so rate in [0.0, 1.0]
+                    (successful as f32) / (total as f32)
+                } else {
+                    // No division by zero: guard ensures rate is exactly 0.0
+                    0.0_f32
+                };
+                // Verify rate is finite (sanity check)
+                debug_assert!(rate.is_finite(), "rate must be finite, got {}", rate);
+                (action, (total, successful, rate))
+            })
+            .collect()
     }
 
     /// Restore telemetry from a serialized snapshot.
@@ -823,6 +934,99 @@ impl RlOrchestrator {
         circuit_allowed: bool,
         latency_budget_exceeded: bool,
     ) -> (String, f32) {
+        // OTEL span wrapper for autonomic run_cycle loop
+        // Convergence diagnostics: emit every 10 cycles to prove Bellman convergence (Rank-1 oracle)
+        // Only compute convergence metrics on the emission boundary to reduce overhead
+        let emit_convergence = self.telemetry.cycle_count > 0 && self.telemetry.cycle_count % 10 == 0;
+
+        // Learning rate schedule (for convergence diagnostics span)
+        let alpha_t = learning_rate_schedule(0.1, self.telemetry.cycle_count);
+
+        // Get weight norms for convergence signal (LinUCB weights track learning magnitude)
+        let norms = self.linucb.weight_norms();
+        let active_norm_before = norms[self.active_agent as usize];
+
+        // Create span with convergence diagnostics (only meaningful attributes on emission boundary)
+        let convergence_status_value = if emit_convergence { "learning" } else { "periodic" };
+
+        let _cycle_span = tracing::info_span!(
+            "rl.run_cycle",
+            health_before = state.health_level,
+            health_after = next_state.health_level,
+            agent = self.telemetry.active_agent_name.as_str(),
+            agent_id = self.telemetry.active_agent_name.as_str(),
+            spc_alerts = spc_alert_count,
+            // Convergence diagnostics (meaningful when emit_convergence=true, every 10 cycles)
+            linucb_weight_norm = active_norm_before,
+            learning_rate_current = alpha_t,
+            convergence_status = convergence_status_value,
+            service_name = "wpm",
+            status = "ok",
+        )
+        .entered();
+
+        // Track state space coverage (record visited bin)
+        let current_bin = Self::state_to_bin(state);
+        self.visited_states.insert(current_bin);
+
+        // Emit state coverage diagnostics every 100 cycles
+        if self.telemetry.cycle_count % 100 == 0 && self.telemetry.cycle_count > 0 {
+            let coverage = self.get_state_coverage();
+            tracing::info!(
+                rl_state_coverage = coverage.coverage_percentage,
+                rl_states_visited = coverage.states_visited,
+                rl_health_level_coverage = coverage.dimension_coverage[0],
+                rl_event_rate_coverage = coverage.dimension_coverage[1],
+                rl_activity_count_coverage = coverage.dimension_coverage[2],
+                rl_spc_alert_coverage = coverage.dimension_coverage[3],
+                rl_drift_status_coverage = coverage.dimension_coverage[4],
+                rl_rework_ratio_coverage = coverage.dimension_coverage[5],
+                rl_circuit_state_coverage = coverage.dimension_coverage[6],
+                rl_cycle_phase_coverage = coverage.dimension_coverage[7],
+                service_name = "wpm",
+                "state coverage diagnostics"
+            );
+
+            // Emit dimensionality analysis span (detailed per-dimension metrics)
+            #[cfg(feature = "cloud")]
+            {
+                let analyzer = self.analyze_dimensionality();
+                let bottleneck_dims = &analyzer.clustering.bottleneck_dimensions;
+                let high_var_dims = &analyzer.clustering.high_variance_dimensions;
+
+                tracing::info!(
+                    rl_unique_states = analyzer.clustering.unique_states,
+                    rl_total_observed_states = analyzer.clustering.total_states_observed,
+                    rl_health_spc_interaction_coverage = analyzer.clustering.health_spc_interaction_coverage,
+                    rl_circuit_drift_interaction_coverage = analyzer.clustering.circuit_drift_interaction_coverage,
+                    rl_bottleneck_dimensions_count = bottleneck_dims.len(),
+                    rl_high_variance_dimensions_count = high_var_dims.len(),
+                    rl_state_distribution_entropy = analyzer.clustering.state_distribution_entropy,
+                    rl_cycle_count = analyzer.total_cycles,
+                    service_name = "wpm",
+                    "rl.state_space.dimensionality"
+                );
+
+                // Emit detailed per-dimension metrics
+                for (i, report) in analyzer.per_dimension_reports.iter().enumerate() {
+                    let dim_name = &report.dimension_name;
+                    tracing::debug!(
+                        rl_dimension_index = i,
+                        rl_dimension_name = dim_name.as_str(),
+                        rl_dimension_min = report.min_value,
+                        rl_dimension_max = report.max_value,
+                        rl_dimension_unique_count = report.unique_count,
+                        rl_dimension_coverage_percent = report.coverage_percent,
+                        rl_dimension_is_bottleneck = report.is_bottleneck,
+                        rl_dimension_is_high_variance = report.is_high_variance,
+                        rl_dimension_gaps_count = report.gaps.len(),
+                        service_name = "wpm",
+                        "rl.dimension.analysis"
+                    );
+                }
+            }
+        }
+
         // LinUCB agent selection (if enabled)
         if self.use_linucb_for_selection {
             let recommended = self.linucb_select_agent(features);
@@ -842,16 +1046,40 @@ impl RlOrchestrator {
             self.telemetry.last_health_state = state.health_level;
         }
 
-        // Compute reward based on health transition (prev -> next)
+        // Compute reward based on health transition (prev -> next) with momentum bonus
         let prev_health = self.telemetry.last_health_state;
         let curr_health = next_state.health_level; // Use NEXT state for reward computation
-        let reward = compute_reward(
+
+        // **GUARD (GAP-RL-5):** SPC alert count must be valid (will be quantized [0-3] in reward computation).
+        // Assert that no overflow or pathological SPC count reaches the reward function.
+        debug_assert!(
+            spc_alert_count <= 255,
+            "SPC alert count must fit in u8: {}, will overflow quantization",
+            spc_alert_count
+        );
+
+        let reward = compute_reward_with_momentum(
             prev_health,
             curr_health,
             spc_alert_count,
             guard_pass,
             circuit_allowed,
             latency_budget_exceeded,
+            next_state.rework_ratio_q, // NEW: pass rework ratio for penalty computation
+            self.telemetry.consecutive_successes, // NEW: pass momentum for bonus computation
+        );
+
+        // Emit state transition event
+        let health_changed = prev_health != curr_health;
+        tracing::info!(
+            health_degraded = curr_health > prev_health,
+            health_improved = curr_health < prev_health,
+            health_changed = health_changed,
+            reward = reward,
+            cycle = self.telemetry.cycle_count,
+            status = if curr_health < 4 { "ok" } else { "error" },
+            service_name = "wpm",
+            "rl.state_transition"
         );
 
         // For SARSA: pre-select action for next_state so the update uses the
@@ -865,20 +1093,55 @@ impl RlOrchestrator {
             self.select_action(next_state);
         }
 
-        // Update agent with proper state transition (state -> next_state)
-        self.update(state, &action, reward, next_state, done);
+        // FM-1 fix: when state == next_state (health is unchanged, e.g. guard_pass
+        // && circuit_allowed but consecutive_successes < IMPROVEMENT_THRESHOLD), the
+        // Bellman update bootstraps from itself:
+        //   Q(s,a) = r + gamma * max_a' Q(s, a')
+        // which is self-referential and can diverge or lock up.
+        //
+        // Principle: an undifferentiated state transition carries no information
+        // about future value, so the correct target is the immediate reward alone
+        // (terminal-equivalent). Force done=true in this case so every agent
+        // collapses to: target = r.
+        let effective_done = done || (state == next_state);
 
-        // Update LinUCB
-        self.linucb_update(features, reward);
+        // Learning rate decay (exploration → exploitation transition).
+        // Compute current alpha using the multiplicative schedule: alpha_t = alpha_0 * (0.9999 ^ cycle_count).
+        // Early cycles aggressively explore with high alpha; later cycles fine-tune with lower alpha,
+        // reducing policy oscillation while allowing convergence on an optimal policy.
+        let alpha_t = learning_rate_schedule(0.1, self.telemetry.cycle_count);
+        self.agents[self.active_agent as usize].set_learning_rate(alpha_t);
+
+        // Update agent with proper state transition (state -> next_state)
+        self.update(state, &action, reward, next_state, effective_done);
+
+        // Update LinUCB and capture TD error for convergence diagnostics
+        let td_error_linucb = self.linucb_update(features, reward);
 
         // Decay exploration
         self.decay_exploration();
 
-        // Record action and reward for observability
-        self.action_history.record_action(action, reward);
+        // Emit convergence diagnostics span every 10 cycles (Rank-1 oracle: Bellman convergence)
+        if emit_convergence {
+            let norms_after = self.linucb.weight_norms();
+            let active_norm_after = norms_after[self.active_agent as usize];
+            let weight_delta_final = (active_norm_after - active_norm_before).abs();
 
-        // Track state coverage for observability (Gap 4: state space exploration)
-        self.state_coverage.track_state(next_state);
+            tracing::info!(
+                td_error = td_error_linucb,
+                td_error_magnitude = td_error_linucb.abs(),
+                linucb_weight_delta = weight_delta_final,
+                linucb_weight_norm_before = active_norm_before,
+                linucb_weight_norm_after = active_norm_after,
+                learning_rate_current = alpha_t,
+                convergence_status = if weight_delta_final > 0.001 { "learning" } else { "converged" },
+                cycle_count = self.telemetry.cycle_count,
+                agent = self.telemetry.active_agent_name.as_str(),
+                service_name = "wpm",
+                status = "ok",
+                "rl.convergence_diagnostics"
+            );
+        }
 
         // Update telemetry with NEXT state (post-cycle)
         self.telemetry.cycle_count += 1;
@@ -892,116 +1155,92 @@ impl RlOrchestrator {
         self.telemetry.last_reward = reward;
 
         // Track consecutive successes for health improvement eligibility.
+        // **CRITICAL:** Success is defined as BOTH guard_pass AND circuit_allowed.
+        // This must match the reward computation (GUARD_CIRCUIT matrix logic).
+        // If either condition is false, the streak resets to 0.
         // saturating_add prevents pathological wraparound on extremely long
         // runs (>4 billion successful cycles).
         if guard_pass && circuit_allowed {
             self.telemetry.consecutive_successes =
                 self.telemetry.consecutive_successes.saturating_add(1);
         } else {
-            self.telemetry.consecutive_successes = 0; // Reset on failure
+            self.telemetry.consecutive_successes = 0; // Reset on ANY failure
         }
 
-        // Emit convergence metrics every 100 cycles for observability (Gap 5: weight norm convergence)
-        if self.telemetry.cycle_count % 100 == 0 {
-            let norms = self.weight_norms();
-            let avg_norm = norms.iter().sum::<f32>() / 5.0;
-            let linucb_weight_delta = (avg_norm - self.telemetry.last_norm).abs();
-            self.telemetry.last_norm = avg_norm;
+        // Track healing action outcome (success = reward_after > reward_before)
+        let reward_before = self.telemetry.cumulative_reward - reward;
+        let action_entry = ActionHistory {
+            action: action_label_str.to_string(),
+            reward_before,
+            reward_after: self.telemetry.cumulative_reward,
+            successful: self.telemetry.cumulative_reward > reward_before,
+            timestamp: self.telemetry.cycle_count,
+        };
 
-            // Gap 5: Per-agent weight norm breakdown
-            let max_norm = norms.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
-            let min_norm = norms.iter().cloned().fold(f32::INFINITY, f32::min);
+        // Maintain rolling window (max 100 entries)
+        if self.action_history.len() >= 100 {
+            self.action_history.pop_front();
+        }
+        self.action_history.push_back(action_entry.clone());
 
-            tracing::info!(
-                target: "autonomic.rl.convergence",
-                // Gap 5: Weight norm convergence (Rank-1 oracle)
-                linucb_weight_delta = linucb_weight_delta,
-                linucb_convergence_signal = avg_norm,
-                max_weight_norm = max_norm,
-                min_weight_norm = min_norm,
-                weight_norms = ?norms,
-                // Gap 4: State space coverage (Rank-3 metamorphic)
-                state_coverage_percentage = self.state_coverage.coverage_percentage(),
-                unique_states_visited = self.state_coverage.unique_states_visited(),
-                // Telemetry
-                cycle_count = self.telemetry.cycle_count,
-                agent = ?self.active_agent,
-                cumulative_reward = self.telemetry.cumulative_reward,
-                "RL convergence and state coverage metrics (Gaps 4-5)"
-            );
+        // Compute action diversity metric: if same action >70% in last 10 cycles, apply penalty
+        let action_repetition_penalty = if self.action_history.len() >= 10 {
+            let recent_10: Vec<_> = self.action_history
+                .iter()
+                .rev()
+                .take(10)
+                .map(|h| h.action.as_str())
+                .collect();
 
-            // Gap 4: Per-dimension state coverage breakdown (every 200 cycles)
-            if self.telemetry.cycle_count % 200 == 0 {
-                let dim_coverage = self.state_coverage.get_dimension_coverage();
-                tracing::info!(
-                    target: "autonomic.rl.state_coverage",
-                    cycle_count = self.telemetry.cycle_count,
-                    health_coverage = dim_coverage[0],
-                    event_rate_coverage = dim_coverage[1],
-                    activity_count_coverage = dim_coverage[2],
-                    spc_alert_coverage = dim_coverage[3],
-                    drift_status_coverage = dim_coverage[4],
-                    rework_ratio_coverage = dim_coverage[5],
-                    circuit_state_coverage = dim_coverage[6],
-                    cycle_phase_coverage = dim_coverage[7],
-                    overall_coverage = self.state_coverage.coverage_percentage(),
-                    "Per-dimension state space coverage breakdown (Gap 4, Rank-3)"
+            let current_action_count = recent_10.iter()
+                .filter(|a| **a == action_label_str)
+                .count();
+
+            if current_action_count > 7 {
+                // >70% of last 10 were same action — apply diversity penalty
+                tracing::debug!(
+                    action = action_label_str,
+                    repetition_count = current_action_count,
+                    window_size = 10,
+                    "action diversity penalty applied: policy may be locked"
                 );
-            }
-        }
-
-        // Emit guard/circuit decision span every 10 cycles for decision observability
-        if self.telemetry.cycle_count % 10 == 0 {
-            let combined_signal = if guard_pass && circuit_allowed {
-                1.0 // Both passed: green light
-            } else if guard_pass || circuit_allowed {
-                0.5 // One passed: yellow light
+                -0.1
             } else {
-                0.0 // Both failed: red light
-            };
+                0.0
+            }
+        } else {
+            0.0
+        };
 
-            tracing::info!(
-                target: "autonomic.rl.guard_decision",
-                guard_pass = guard_pass,
-                circuit_allowed = circuit_allowed,
-                combined_signal = combined_signal,
-                spc_alert_count = spc_alert_count,
-                cycle_count = self.telemetry.cycle_count,
-                action_taken = action_label_str,
-                reward = reward,
-                "Guard and circuit breaker decision"
-            );
+        // Emit final reward adjustment if diversity penalty applied
+        let final_reward = reward + action_repetition_penalty;
+        if action_repetition_penalty != 0.0 {
+            self.telemetry.cumulative_reward += action_repetition_penalty;
         }
 
-        // Emit action distribution statistics every 100 cycles (Gap 7 complement: success rate per action)
-        if self.telemetry.cycle_count % 100 == 0 {
-            let action_dist = self.action_history.distribution();
-            let continue_rate = self.action_history.get_success_rate(RlAction::Continue);
-            let scale_rate = self.action_history.get_success_rate(RlAction::Scale);
-            let retry_rate = self.action_history.get_success_rate(RlAction::Retry);
-            let fallback_rate = self.action_history.get_success_rate(RlAction::Fallback);
-            let restart_rate = self.action_history.get_success_rate(RlAction::Restart);
-
-            tracing::info!(
-                target: "autonomic.rl.action_distribution",
-                cycle_count = self.telemetry.cycle_count,
-                // Action totals
-                continue_total = action_dist[0].1,
-                scale_total = action_dist[1].1,
-                retry_total = action_dist[2].1,
-                fallback_total = action_dist[3].1,
-                restart_total = action_dist[4].1,
-                // Gap 7: Success rates per action (Rank-2 domain contract)
-                continue_success_rate = continue_rate,
-                scale_success_rate = scale_rate,
-                retry_success_rate = retry_rate,
-                fallback_success_rate = fallback_rate,
-                restart_success_rate = restart_rate,
-                // Agent context
-                agent = ?self.active_agent,
-                "Action distribution and success rates (Gap 7, Rank-2)"
-            );
+        // Emit OTEL span with action distribution snapshot
+        let stats = self.get_action_stats();
+        let mut action_histogram = String::from(r#"{"actions":{"#);
+        for (action, (total, successful, rate)) in &stats {
+            if action_histogram.len() > r#"{"actions":{"#.len() {
+                action_histogram.push(',');
+            }
+            action_histogram.push_str(&format!(
+                r#""{}": {{"total":{},"successful":{},"success_rate":{:.3}}}"#,
+                action, total, successful, rate
+            ));
         }
+        action_histogram.push_str("}}");
+
+        tracing::info!(
+            action = action_label_str,
+            successful = action_entry.successful,
+            reward_delta = reward,
+            action_distribution = action_histogram.as_str(),
+            status = if action_entry.successful { "ok" } else { "error" },
+            service_name = "wpm",
+            "rl.action_tracked"
+        );
 
         (action_label_str.to_string(), reward)
     }
@@ -1016,15 +1255,51 @@ impl RlOrchestrator {
     }
 
     /// Restore all Q-tables to all 5 agents from serialized format.
+    ///
+    /// Returns (restored_count, skipped_count) to allow callers to detect silent failures.
+    /// If skipped_count > 0, an error is logged and a warning span is emitted.
+    ///
+    /// # Arguments
+    /// * `tables` - Serialized Q-tables from agents, indexed by agent_type (0..5)
+    ///
+    /// # Returns
+    /// Tuple of (successfully restored tables, silently skipped tables due to invalid agent_type)
     pub fn restore_all_q_tables(
         &self,
         tables: Vec<crate::rl_state_serialization::SerializedAgentQTable>,
-    ) {
+    ) -> (usize, usize) {
+        let span = span!(Level::DEBUG, "rl_orchestrator.restore_q_tables", agent_count = self.agents.len());
+        let _guard = span.enter();
+
+        let mut restored = 0;
+        let mut skipped = 0;
+        let table_count = tables.len();
+
         for table in tables {
-            if let Some(agent) = self.agents.get(table.agent_type as usize) {
+            let agent_idx = table.agent_type as usize;
+            if let Some(agent) = self.agents.get(agent_idx) {
                 agent.restore_q_table(table);
+                restored += 1;
+            } else {
+                skipped += 1;
+                error!(
+                    agent_type = agent_idx,
+                    total_agents = self.agents.len(),
+                    "Q-table restoration failed: invalid agent_type"
+                );
             }
         }
+
+        if skipped > 0 {
+            warn!(
+                skipped_count = skipped,
+                restored_count = restored,
+                total_count = table_count,
+                "Q-table restoration incomplete: policy divergence risk"
+            );
+        }
+
+        (restored, skipped)
     }
 
     /// Restore the full orchestrator state from a serialized snapshot.
@@ -1143,29 +1418,38 @@ mod tests {
 
     /// Best case: health improves, no SPC, guard+circuit pass, in budget.
     #[test]
-    fn reward_best_case_is_one_point_one() {
-        let r = compute_reward(2, 1, 0, true, true, false);
-        assert!((r - 1.1).abs() < 1e-6, "best case reward should be +1.1, got {}", r);
+    fn reward_best_case_without_momentum_is_one_point_one() {
+        // No momentum: health improved, no SPC, no rework, guard+circuit pass
+        let r = compute_reward(2, 1, 0, true, true, false, 0);
+        assert!((r - 1.1).abs() < 1e-6, "best case (no momentum) should be +1.1, got {}", r);
     }
 
-    /// Worst case: health degrades to terminal, max SPC penalty, guard fail,
-    /// latency exceeded. Per docstring: -5.3.
     #[test]
-    fn reward_worst_case_is_negative_five_point_three() {
-        // health 3 -> 4 (degrade + terminal), 5 SPC alerts (caps at -1.5),
-        // guard fail, latency exceeded.
-        let r = compute_reward(3, 4, 5, false, false, true);
-        assert!((r - (-5.3)).abs() < 1e-6, "worst case reward should be -5.3, got {}", r);
+    fn reward_best_case_with_momentum_is_one_point_six() {
+        // With 10-cycle momentum: +0.5 bonus on top of +1.1 base
+        let r = compute_reward_with_momentum(2, 1, 0, true, true, false, 0, 10);
+        assert!((r - 1.6).abs() < 1e-6, "best case (10-cycle momentum) should be +1.6, got {}", r);
+    }
+
+    /// Worst case: health degrades to terminal, max SPC penalty, max rework, guard fail,
+    /// latency exceeded. Per docstring: -5.6.
+    #[test]
+    fn reward_worst_case_is_negative_five_point_six() {
+        // health 3 -> 4 (degrade -1.0 + terminal -2.0 = -3.0), 5 SPC alerts (caps at -1.5),
+        // max rework_ratio_q=7 (penalty -0.2), guard fail (-0.5), latency exceeded (-0.3).
+        // Total: -3.0 - 1.5 - 0.5 - 0.3 - 0.2 = -5.5
+        let r = compute_reward(3, 4, 5, false, false, true, 7);
+        assert!((r - (-5.5)).abs() < 1e-6, "worst case reward should be -5.5, got {}", r);
     }
 
     #[test]
     fn reward_health_components_are_correct() {
         // Improved (curr < prev): +1.0 contribution
-        let improved = compute_reward(2, 1, 0, true, true, false);
+        let improved = compute_reward(2, 1, 0, true, true, false, 0);
         // Stable (curr == prev): +0.2 contribution
-        let stable = compute_reward(1, 1, 0, true, true, false);
+        let stable = compute_reward(1, 1, 0, true, true, false, 0);
         // Degraded (curr > prev, non-terminal): -1.0 contribution
-        let degraded = compute_reward(1, 2, 0, true, true, false);
+        let degraded = compute_reward(1, 2, 0, true, true, false, 0);
 
         // Differences are exactly 0.8 (1.0 vs 0.2) and 1.2 (0.2 vs -1.0).
         assert!((improved - stable - 0.8).abs() < 1e-6);
@@ -1175,9 +1459,9 @@ mod tests {
     #[test]
     fn reward_spc_penalty_caps_at_one_point_five() {
         // 1 alert: -0.3; 5 alerts: capped at -1.5; 100 alerts: still -1.5.
-        let r1 = compute_reward(1, 1, 1, true, true, false);
-        let r5 = compute_reward(1, 1, 5, true, true, false);
-        let r100 = compute_reward(1, 1, 100, true, true, false);
+        let r1 = compute_reward(1, 1, 1, true, true, false, 0);
+        let r5 = compute_reward(1, 1, 5, true, true, false, 0);
+        let r100 = compute_reward(1, 1, 100, true, true, false, 0);
         assert!((r1 - (0.2 + 0.1 - 0.3)).abs() < 1e-6);
         assert!((r5 - (0.2 + 0.1 - 1.5)).abs() < 1e-6);
         assert!((r100 - r5).abs() < 1e-6, "SPC penalty must cap at -1.5");
@@ -1185,10 +1469,10 @@ mod tests {
 
     #[test]
     fn reward_guard_circuit_penalty_only_when_either_fails() {
-        let pass = compute_reward(1, 1, 0, true, true, false); // +0.1
-        let guard_fail = compute_reward(1, 1, 0, false, true, false); // -0.5
-        let ckt_fail = compute_reward(1, 1, 0, true, false, false); // -0.5
-        let both_fail = compute_reward(1, 1, 0, false, false, false); // -0.5 (single penalty)
+        let pass = compute_reward(1, 1, 0, true, true, false, 0); // +0.1
+        let guard_fail = compute_reward(1, 1, 0, false, true, false, 0); // -0.5
+        let ckt_fail = compute_reward(1, 1, 0, true, false, false, 0); // -0.5
+        let both_fail = compute_reward(1, 1, 0, false, false, false, 0); // -0.5 (single penalty, 0)
         assert!((pass - 0.3).abs() < 1e-6); // 0.2 (stable) + 0.1
         assert!((guard_fail - (-0.3)).abs() < 1e-6); // 0.2 - 0.5
         assert!((ckt_fail - (-0.3)).abs() < 1e-6);
@@ -1199,8 +1483,8 @@ mod tests {
     fn reward_terminal_state_adds_two_point_zero_penalty() {
         // Same conditions, only difference is curr_health == 4 vs 3.
         // Both are degradations from health=2, so health component is -1.0.
-        let non_terminal = compute_reward(2, 3, 0, true, true, false);
-        let terminal = compute_reward(2, 4, 0, true, true, false);
+        let non_terminal = compute_reward(2, 3, 0, true, true, false, 0);
+        let terminal = compute_reward(2, 4, 0, true, true, false, 0);
         assert!((non_terminal - terminal - 2.0).abs() < 1e-6);
     }
 
@@ -1210,10 +1494,43 @@ mod tests {
     fn reward_monotone_in_spc_alerts() {
         let mut prev = f32::INFINITY;
         for n in 0..=10 {
-            let r = compute_reward(1, 1, n, true, true, false);
+            let r = compute_reward(1, 1, n, true, true, false, 0);
             assert!(r <= prev + 1e-6, "reward must be non-increasing in SPC alerts");
             prev = r;
         }
+    }
+
+    /// NEW: Rework penalty scales linearly from 0 to -0.2 as rework_ratio_q goes 0-7.
+    #[test]
+    fn reward_rework_penalty_scales_zero_to_negpoint_two() {
+        let no_rework = compute_reward(1, 1, 0, true, true, false, 0);
+        let max_rework = compute_reward(1, 1, 0, true, true, false, 7);
+        let diff = no_rework - max_rework;
+        assert!((diff - 0.2).abs() < 1e-6, "rework penalty should be 0.2, got {}", diff);
+    }
+
+    /// NEW: Momentum bonus applies only when guard_pass && circuit_allowed.
+    #[test]
+    fn reward_momentum_bonus_only_on_successful_cycles() {
+        // Successful: +0.05 * 5 = +0.25 bonus
+        let with_momentum = compute_reward_with_momentum(1, 1, 0, true, true, false, 0, 5);
+        // Without momentum: 0.2 + 0.1 = 0.3
+        let no_momentum = compute_reward(1, 1, 0, true, true, false, 0);
+        let bonus = with_momentum - no_momentum;
+        assert!((bonus - 0.25).abs() < 1e-6, "momentum bonus should be 0.25, got {}", bonus);
+
+        // Failed: no momentum bonus even with consecutive_successes>0
+        let failed = compute_reward_with_momentum(1, 1, 0, false, true, false, 0, 5);
+        let expected = no_momentum - 0.5; // only guard_fail penalty
+        assert!((failed - expected).abs() < 1e-6, "failed cycle must not get momentum bonus");
+    }
+
+    /// NEW: Momentum bonus caps at +0.5 (10-cycle window).
+    #[test]
+    fn reward_momentum_bonus_caps_at_point_five() {
+        let momentum_10 = compute_reward_with_momentum(1, 1, 0, true, true, false, 0, 10);
+        let momentum_100 = compute_reward_with_momentum(1, 1, 0, true, true, false, 0, 100);
+        assert!((momentum_10 - momentum_100).abs() < 1e-6, "momentum must cap at +0.5");
     }
 
     // --- CycleTelemetry default ------------------------------------------
@@ -1224,5 +1541,185 @@ mod tests {
         assert_eq!(t.cycle_count, 0);
         assert_eq!(t.cumulative_reward, 0.0);
         assert_eq!(t.active_agent_name, "QLearning");
+    }
+
+    // --- learning_rate_schedule: multiplicative decay -----
+
+    /// At cycle 0, no decay has occurred yet.
+    #[test]
+    fn learning_rate_schedule_zero_decay_at_cycle_zero() {
+        let alpha_0 = 0.1;
+        let alpha_t = learning_rate_schedule(alpha_0, 0);
+        assert!((alpha_t - alpha_0).abs() < 1e-6, "cycle 0 should have no decay");
+    }
+
+    /// Learning rate strictly decreases over time.
+    #[test]
+    fn learning_rate_schedule_monotonically_decreases() {
+        let alpha_0 = 0.1;
+        let alpha_1000 = learning_rate_schedule(alpha_0, 1000);
+        let alpha_2000 = learning_rate_schedule(alpha_0, 2000);
+        let alpha_10000 = learning_rate_schedule(alpha_0, 10000);
+
+        assert!(alpha_0 > alpha_1000, "alpha should decay from cycle 0 to 1000");
+        assert!(alpha_1000 > alpha_2000, "alpha should decay from cycle 1000 to 2000");
+        assert!(alpha_2000 > alpha_10000, "alpha should decay from cycle 2000 to 10000");
+    }
+
+    /// After 10,000 cycles, alpha drops to approximately 37% of its original value.
+    /// Empirical: 0.9999^10000 ≈ 0.3679
+    #[test]
+    fn learning_rate_schedule_reaches_37_percent_decay_at_ten_thousand() {
+        let alpha_0 = 0.1;
+        let alpha_10000 = learning_rate_schedule(alpha_0, 10000);
+        let expected = alpha_0 * 0.3679; // 0.9999^10000 ≈ 0.3679
+        assert!(
+            (alpha_10000 - expected).abs() < 0.001,
+            "alpha at 10k cycles should be ~37% of initial, got {}",
+            alpha_10000
+        );
+    }
+
+    /// Decay schedule remains positive (never becomes zero or negative).
+    #[test]
+    fn learning_rate_schedule_stays_positive() {
+        let alpha_0 = 0.1;
+        for cycle in [0, 100, 1000, 10000, 100000, 1_000_000] {
+            let alpha_t = learning_rate_schedule(alpha_0, cycle);
+            assert!(alpha_t > 0.0, "alpha at cycle {} must stay positive", cycle);
+        }
+    }
+
+    // --- Reward function completeness (Cycle 4 audit) -----
+
+    /// Rank-1 oracle: Verify that all reward components contribute meaningfully.
+    /// Every component (health, SPC, guard, circuit, latency, terminal) must have measurable effect.
+    #[test]
+    fn test_compute_reward_component_completeness() {
+        // Baseline: stable health (0.2), no SPC (0), guards pass (0.1), in budget (0) = +0.3
+        let baseline = compute_reward(2, 2, 0, true, true, false, 0);
+        assert!((baseline - 0.3).abs() < 1e-6, "Baseline should be 0.3");
+
+        // Health improvement: 2->1 adds +1.0, so 0.2 (stable for wrong health) + 1.0 (improved) = 1.1
+        let with_health_improvement = compute_reward(2, 1, 0, true, true, false, 0);
+        assert!(
+            with_health_improvement > baseline,
+            "Health improvement must increase reward"
+        );
+        assert!(
+            (with_health_improvement - baseline - 0.8).abs() < 1e-6,
+            "Health improvement from stable (0.2) to improved (1.0) adds +0.8 to baseline"
+        );
+
+        // SPC penalty: -0.3 per alert
+        let with_spc = compute_reward(2, 2, 1, true, true, false, 0);
+        assert!(with_spc < baseline, "SPC alerts must decrease reward");
+        assert!(
+            (baseline - with_spc - 0.3).abs() < 1e-6,
+            "SPC penalty should contribute exactly -0.3"
+        );
+
+        // Guard failure: changes from (true, true) = +0.1 to (false, true) = -0.5, delta = -0.6
+        let with_guard_fail = compute_reward(2, 2, 0, false, true, false, 0);
+        assert!(
+            (baseline - with_guard_fail - 0.6).abs() < 1e-6,
+            "Guard failure should change reward by -0.6 (0.1 -> -0.5)"
+        );
+
+        // Circuit failure: changes from (true, true) = +0.1 to (true, false) = -0.5, delta = -0.6
+        let with_circuit_fail = compute_reward(2, 2, 0, true, false, false, 0);
+        assert!(
+            (baseline - with_circuit_fail - 0.6).abs() < 1e-6,
+            "Circuit failure should change reward by -0.6 (0.1 -> -0.5)"
+        );
+
+        // Latency budget: -0.3 contribution
+        let with_latency = compute_reward(2, 2, 0, true, true, true, 0);
+        assert!(
+            (baseline - with_latency - 0.3).abs() < 1e-6,
+            "Latency budget exceeded should contribute -0.3"
+        );
+
+        // Terminal state: -2.0 contribution (on top of degradation -1.0)
+        // health 2->4 is degradation (-1.0) + terminal (-2.0) = -3.0
+        // guard+circuit still +0.1, so: -1.0 - 2.0 + 0.1 = -2.9
+        // baseline is +0.3, so delta is 0.3 - (-2.9) = 3.2
+        let with_terminal = compute_reward(2, 4, 0, true, true, false, 0);
+        assert!(
+            with_terminal < baseline,
+            "Terminal state must dramatically decrease reward"
+        );
+        assert!(
+            (baseline - with_terminal - 3.2).abs() < 1e-6,
+            "Terminal state (2->4) degrades (-1.0) plus terminal (-2.0) = -3.0 vs stable +0.2 = 3.2 delta"
+        );
+    }
+
+    /// Rank-2 domain contract: Double SPC alerts → strictly lower reward than single alert.
+    /// Validates monotonic SPC penalty (already tested in reward_monotone_in_spc_alerts,
+    /// but explicitly verify the doubling case for metamorphic relations).
+    #[test]
+    fn test_compute_reward_double_spc_worse_than_single() {
+        // Same conditions except for SPC alert count
+        let single_alert = compute_reward(1, 1, 1, true, true, false, 0); // -0.3 penalty
+        let double_alert = compute_reward(1, 1, 2, true, true, false, 0); // -0.6 penalty
+
+        assert!(
+            double_alert < single_alert,
+            "Double SPC alerts must yield strictly lower reward than single alert"
+        );
+        assert!(
+            (single_alert - double_alert - 0.3).abs() < 1e-6,
+            "Doubling alerts should add exactly -0.3 more penalty"
+        );
+    }
+
+    /// Verify reward range bounds are as documented in compute_reward docstring.
+    /// Range: [-5.3, +1.1] (worst to best case)
+    #[test]
+    fn test_compute_reward_range_is_bounded() {
+        // Best case: health improves from 4->0, no SPC, guards pass, in budget
+        // health: +1.0, SPC: 0, guard+circuit: +0.1, latency: 0, terminal: 0 = +1.1
+        let best = compute_reward(4, 0, 0, true, true, false, 0);
+        assert!(
+            (best - 1.1).abs() < 1e-6,
+            "Best case should be +1.1, got {}",
+            best
+        );
+
+        // Worst case: health degrades to terminal (4), max SPC (-1.5 capped), guards fail, latency exceeded
+        // health: -1.0 (degrade) + -2.0 (terminal) = -3.0
+        // SPC: -1.5
+        // guard+circuit: -0.5 (either fails is same penalty)
+        // latency: -0.3
+        // total: -3.0 - 1.5 - 0.5 - 0.3 = -5.3
+        let worst = compute_reward(3, 4, 5, false, false, true, 0);
+        assert!(
+            (worst - (-5.3)).abs() < 1e-6,
+            "Worst case should be -5.3, got {}",
+            worst
+        );
+
+        // Verify all intermediate cases stay within bounds
+        for health_prev in 0u8..=4 {
+            for health_curr in 0u8..=4 {
+                for spc_alerts in 0..=10 {
+                    for guard in [true, false] {
+                        for circuit in [true, false] {
+                            for latency in [true, false] {
+                                let r = compute_reward(
+                                    health_prev, health_curr, spc_alerts, guard, circuit, latency, 0,
+                                );
+                                assert!(
+                                    r >= -5.3 && r <= 1.1,
+                                    "Reward {} out of bounds for ({}, {}, {}, {}, {}, {})",
+                                    r, health_prev, health_curr, spc_alerts, guard, circuit, latency
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }

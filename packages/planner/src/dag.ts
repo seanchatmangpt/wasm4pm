@@ -242,5 +242,24 @@ export function validateDAG(dag: DAG): string[] {
     }
   }
 
+  // Check for orphan nodes (nodes with no incoming AND no outgoing edges) when the
+  // DAG has more than one node.  A fully disconnected node is unreachable from any
+  // source and cannot be reached by any sink — it is structurally invisible to any
+  // executor that traverses the graph from its roots.
+  //
+  // Exception: a single-node DAG with no edges is structurally valid (trivially acyclic).
+  if (dag.nodes.length > 1) {
+    const nodesWithEdges = new Set<string>();
+    for (const [source, target] of dag.edges) {
+      nodesWithEdges.add(source);
+      nodesWithEdges.add(target);
+    }
+    for (const node of dag.nodes) {
+      if (!nodesWithEdges.has(node)) {
+        errors.push(`Orphan node detected (no incoming or outgoing edges): ${node}`);
+      }
+    }
+  }
+
   return errors;
 }

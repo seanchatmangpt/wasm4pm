@@ -4,8 +4,28 @@
  * Bridge between planner (algorithm name) and WASM module (function calls)
  */
 
+import { randomBytes } from 'node:crypto';
 import { PlanStepType, type PlanStep } from '@wasm4pm/planner';
 import { getRegistry } from './registry.js';
+
+/**
+ * Drift window entry returned by WASM detect_drift.
+ */
+interface WasmDriftWindow {
+  window_start?: number;
+  window_end?: number;
+  distance?: number;
+  detected?: boolean;
+}
+
+/**
+ * Top-level result returned by WASM detect_drift.
+ */
+interface WasmDriftResult {
+  drifts?: WasmDriftWindow[];
+  ewma?: number;
+  threshold?: number;
+}
 
 /**
  * WASM module interface - defines all discoverable WASM functions
@@ -15,9 +35,9 @@ export interface WasmModule {
   // Basic discovery
   discover_dfg(eventlog_handle: string, activity_key: string): Promise<{ handle: string }>;
 
-  discover_ocel_dfg(ocel_handle: string): Promise<{ handle: string }>;
+  discover_ocel_dfg?(ocel_handle: string): Promise<{ handle: string }>;
 
-  discover_ocel_dfg_per_type(ocel_handle: string): Promise<{ handle: string }>;
+  discover_ocel_dfg_per_type?(ocel_handle: string): Promise<{ handle: string }>;
 
   // Alpha++ (improved Alpha algorithm)
   discover_alpha_plus_plus(
@@ -230,6 +250,22 @@ export interface WasmModule {
   ): string;
 
   detect_drift(eventLogHandle: string, activityKey: string, windowSize: number): string;
+
+  // ── Social network mining (van der Aalst organisational perspective) ──
+
+  /** Handover-of-work network: edges = direct resource handovers within a case */
+  discover_handover_network(log_handle: string, resource_key: string): Promise<{ handle: string }>;
+
+  /** Working-together network: edges = resources who worked on the same case */
+  discover_working_together_network(
+    log_handle: string,
+    resource_key: string
+  ): Promise<{ handle: string }>;
+
+  // ── SIMD-accelerated DFG ─────────────────────────────────────────────
+
+  /** SIMD-vectorised DFG discovery — ~500x throughput vs standard discover_dfg */
+  discover_dfg_simd(eventlog_handle: string, activity_key: string): Promise<{ handle: string }>;
 }
 
 /**
@@ -274,6 +310,7 @@ function stepTypeToAlgorithmId(stepType: PlanStepType): string {
     [PlanStepType.DISCOVER_ACO]: 'aco',
     [PlanStepType.DISCOVER_SIMULATED_ANNEALING]: 'simulated_annealing',
     [PlanStepType.DISCOVER_OPTIMIZED_DFG]: 'optimized_dfg',
+    [PlanStepType.DISCOVER_SIMD_STREAMING_DFG]: 'simd_streaming_dfg',
     // Wave 1 Discovery
     [PlanStepType.DISCOVER_TRANSITION_SYSTEM]: 'transition_system',
     [PlanStepType.DISCOVER_LOG_TO_TRIE]: 'log_to_trie',
@@ -330,6 +367,41 @@ function stepTypeToAlgorithmId(stepType: PlanStepType): string {
   };
 
   return mapping[stepType] || 'unknown';
+}
+
+/**
+ * Emit a non-blocking OTEL span for algorithm execution
+ */
+function emitAlgorithmSpan(
+  algorithmId: string,
+  status: 'OK' | 'ERROR',
+  executionTimeMs: number,
+  errorMessage?: string
+) {
+  try {
+    const span = {
+      trace_id: randomBytes(8).toString('hex'),
+      span_id: randomBytes(8).toString('hex'),
+      name: `kernel.algorithm.${algorithmId}`,
+      kind: 'INTERNAL',
+      start_time: (Date.now() - executionTimeMs) * 1_000_000,
+      end_time: Date.now() * 1_000_000,
+      status: errorMessage
+        ? { code: status, message: errorMessage }
+        : { code: status },
+      attributes: {
+        'service.name': 'wasm4pm',
+        'algorithm_id': algorithmId,
+        'execution_time_ms': executionTimeMs,
+        'status': status.toLowerCase(),
+      },
+    };
+    if (typeof (globalThis as any)._wasm4pm_span_sink === 'function') {
+      (globalThis as any)._wasm4pm_span_sink(span);
+    }
+  } catch {
+    /* never block on OTEL */
+  }
 }
 
 /**
@@ -400,7 +472,11 @@ export async function implementAlgorithmStep(
 
       case 'alpha_plus_plus': {
         const minSupport = (params.min_support as number) ?? 0.0;
-        const result = await wasmModule.discover_alpha_plus_plus(eventLogHandle, activityKey, minSupport);
+        const result = await wasmModule.discover_alpha_plus_plus(
+          eventLogHandle,
+          activityKey,
+          minSupport
+        );
         modelHandle = result.handle;
         break;
       }
@@ -785,7 +861,9 @@ export async function implementAlgorithmStep(
         const { forecastSeries } = await import('@wasm4pm/ml');
         const driftRaw = wasmModule.detect_drift(eventLogHandle, activityKey, 5);
         const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
-        const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
+        const distances = ((driftResult as WasmDriftResult)?.drifts ?? []).map(
+          (d: WasmDriftWindow) => d.distance ?? 0
+        );
         const result = await forecastSeries(distances, {
           forecastPeriods: (params.forecast_periods as number) ?? 5,
           useExponential: params.use_exponential as boolean,
@@ -798,7 +876,9 @@ export async function implementAlgorithmStep(
         const { detectEnhancedAnomalies } = await import('@wasm4pm/ml');
         const driftRaw = wasmModule.detect_drift(eventLogHandle, activityKey, 10);
         const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
-        const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
+        const distances = ((driftResult as WasmDriftResult)?.drifts ?? []).map(
+          (d: WasmDriftWindow) => d.distance ?? 0
+        );
         const result = await detectEnhancedAnomalies(distances, {
           smoothingMethod: params.smoothing_method as 'sma' | 'ema',
         });
@@ -877,6 +957,9 @@ export async function implementAlgorithmStep(
 
     const executionTimeMs = Date.now() - startTime;
 
+    // GAP-FIX #1: Emit success span for observability (FM-5 proof, chicago-tdd Rank-1)
+    emitAlgorithmSpan(metadata.id, 'OK', executionTimeMs);
+
     return {
       modelHandle,
       algorithm: metadata.id,
@@ -895,6 +978,10 @@ export async function implementAlgorithmStep(
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    const executionTimeMs = Date.now() - startTime;
+
+    // GAP-FIX #1: Emit error span for observability (FM-5 proof, chicago-tdd Rank-1)
+    emitAlgorithmSpan(metadata?.id ?? algorithmId, 'ERROR', executionTimeMs, errorMessage);
 
     // Provide helpful error messages
     if (errorMessage.includes('not found')) {

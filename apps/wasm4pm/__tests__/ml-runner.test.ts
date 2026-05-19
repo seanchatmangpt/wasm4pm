@@ -34,6 +34,7 @@ describe('executeMlTask — parameter validation', () => {
       labels: [],
     }),
     detect_drift: () => JSON.stringify({ drifts: [] }),
+    analyze_statistics: () => JSON.stringify({ trace_count: 10, variant_count: 5, num_activities: 8 }),
   };
   const logHandle = 'test-handle';
   const activityKey = 'concept:name';

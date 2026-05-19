@@ -38,13 +38,18 @@ export { latencyTierLte, qualityTierLte, latencyExceedsBudget, qualityDeficientF
 export { getQualityThreshold, ALGORITHM_QUALITY_THRESHOLDS, DEFAULT_QUALITY_THRESHOLD } from './quality-thresholds.js';
 // Algorithm registry utilities
 export { levenshteinDistance, findClosestMatch } from './algorithm-registry.js';
-// OCEL 2.0 event bridge — receipt → OCEL event conversion
+// mcpp/wasm4pm interop bridges
+export { andonToWasm4pmError, wasm4pmErrorToAndon, isMcppAndonCode, MCPP_ANDON_CODES, ANDON_TO_ERROR_CODE, } from './andon-bridge.js';
+export { evaluateConformance, isRefused, toSharedConformance, } from './conformance-bridge.js';
 export { receiptToOcelEvents, toOcelJsonl, fromMcppJsonl, fromMcppJsonlStrict, fromMcppNativeJsonl, fromMcppNativeJsonlStrict, isValidOcelEvent, } from './ocel-bridge.js';
+export { emitReceiptEmit, } from './receipt-emit-bridge.js';
+export { toSharedReceipt, fromMcppResponse, SHARED_RECEIPT_SCHEMA_V1, } from './shared-schema/adapter.js';
+// Marketplace domain OCEL bridge — adapts commerce events to OCEL 2.0 format
+export { adaptMarketplaceEvent, fromMarketplaceJsonl, isMarketplaceEvent, extractObjectTypes, countUniqueIds, } from './marketplace-bridge.js';
+export { buildMarketplaceReceipt, isMarketplaceReceipt, } from './marketplace-receipt.js';
 // AtomVM process lifecycle OCEL bridge — adapts Erlang/Elixir VM process events to OCEL 2.0
 export { isAtomVmProcEvent, adaptAtomVmProcEvent, fromAtomVmJsonl, fromAtomVmJsonlStrict, detectCrashes, detectCrashDetails, toOcel2Json, toOcel2JsonStandard, toOcelLog, } from './atomvm-bridge.js';
-// Erlang/OTP crash dump and SASL supervisor report OCEL bridge — closes the
-// AtomVM → wpm trace conform pipeline by turning Erlang text traces into
-// admissible OCEL 2.0 logs.
+// Erlang/OTP crash dump and SASL supervisor report OCEL bridge
 export { parseCrashDump, parseSaslSupervisorReports, crashEventsToOcel, supervisorReportsToOcel, detectAbnormalExits, traceGraphToOcelLog, } from './erlang-bridge.js';
 // Prolog8 Rule8/Fact8 compiler helpers — pre-compile Horn clauses for the WASM kernel
 export { internTerms, buildFact8, buildRule8, buildFactBlock, buildCatalog, buildQueryAtom, ARITY_CAP as PROLOG8_ARITY_CAP, BODY_CAP as PROLOG8_BODY_CAP, TERM_SENTINEL as PROLOG8_TERM_SENTINEL, FeatureBit as Prolog8FeatureBit, } from './prolog8-compiler.js';

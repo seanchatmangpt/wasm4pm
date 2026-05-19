@@ -26,16 +26,13 @@ pub fn matthews_corrcoef_impl(y_true: &[f64], y_pred: &[f64]) -> Result<f64, MlE
         }
     }
 
-    // Cast to f64 BEFORE subtraction to avoid usize underflow when fp*fn > tp*tn
-    // (the MCC numerator is signed: tp*tn - fp*fn can be negative).
-    // Also cast multiplicands to f64 before multiplying to avoid usize
-    // overflow on the 4-way product in the denominator for large samples.
-    let tp_f = tp as f64;
-    let tn_f = tn as f64;
-    let fp_f = fp as f64;
-    let fn_f = fn_count as f64;
-    let numerator = tp_f * tn_f - fp_f * fn_f;
-    let denominator = (tp_f + fp_f) * (tp_f + fn_f) * (tn_f + fp_f) * (tn_f + fn_f);
+    // Cast to i64 before subtraction to avoid usize underflow when the
+    // classifier is worse than random (fp*fn_count > tp*tn).
+    let numerator = (tp as i64 * tn as i64 - fp as i64 * fn_count as i64) as f64;
+    let denominator = ((tp + fp) as f64
+        * (tp + fn_count) as f64
+        * (tn + fp) as f64
+        * (tn + fn_count) as f64);
 
     if denominator == 0.0 {
         return Ok(0.0);  // Undefined case
@@ -88,7 +85,6 @@ pub fn cohens_kappa_impl(y_true: &[f64], y_pred: &[f64]) -> Result<f64, MlError>
             .map(|j| observed[j])
             .sum();
         let col_sum: usize = (0..n_classes)
-            .filter(|j| i < n_classes)
             .map(|j| observed[j * n_classes + i])
             .sum();
 

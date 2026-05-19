@@ -131,6 +131,74 @@ function rSquared(actual: number[], predicted: number[]): number {
 }
 
 // ---------------------------------------------------------------------------
+// Stratified k-fold cross-validation
+// ---------------------------------------------------------------------------
+
+/**
+ * Stratified k-fold partition that maintains class distribution across folds.
+ * Returns k pairs of (train, test) index sets.
+ */
+function stratifiedKFold(
+  labels: number[],
+  k: number = 3
+): { trainIndices: Int32Array[]; testIndices: Int32Array[] } {
+  const n = labels.length;
+  if (k < 2 || k > n) {
+    throw new Error(`k must be in range [2, ${n}], got ${k}`);
+  }
+
+  // Group indices by label for stratification
+  const labelGroups = new Map<number, number[]>();
+  for (let i = 0; i < n; i++) {
+    const label = labels[i];
+    if (!labelGroups.has(label)) {
+      labelGroups.set(label, []);
+    }
+    labelGroups.get(label)!.push(i);
+  }
+
+  // Assign each label's samples to folds (round-robin to balance)
+  const foldAssignment = new Int32Array(n);
+  for (const [label, indices] of labelGroups) {
+    for (let i = 0; i < indices.length; i++) {
+      foldAssignment[indices[i]] = i % k;
+    }
+  }
+
+  // Build train/test sets for each fold
+  const trainIndices: Int32Array[] = [];
+  const testIndices: Int32Array[] = [];
+
+  for (let foldIdx = 0; foldIdx < k; foldIdx++) {
+    const train: number[] = [];
+    const test: number[] = [];
+    for (let i = 0; i < n; i++) {
+      if (foldAssignment[i] === foldIdx) {
+        test.push(i);
+      } else {
+        train.push(i);
+      }
+    }
+    trainIndices.push(new Int32Array(train));
+    testIndices.push(new Int32Array(test));
+  }
+
+  return { trainIndices, testIndices };
+}
+
+/**
+ * Compute accuracy metric: fraction of correct predictions.
+ */
+function computeAccuracy(actual: number[], predicted: number[]): number {
+  if (actual.length === 0) return 0;
+  let correct = 0;
+  for (let i = 0; i < actual.length; i++) {
+    if (actual[i] === predicted[i]) correct++;
+  }
+  return correct / actual.length;
+}
+
+// ---------------------------------------------------------------------------
 // k-NN (squared-distance, pre-allocated sort buffer)
 // ---------------------------------------------------------------------------
 
@@ -204,7 +272,13 @@ function knnBatch(
       }
     }
 
-    results[qi] = { label: bestLabel, confidence: bestWeight / totalWeight };
+    // GAP-ML-1 FIX: Guard confidence against NaN/Infinity
+    // If totalWeight is 0 or NaN, default to uniform confidence
+    const confidence =
+      totalWeight > 0 && Number.isFinite(totalWeight)
+        ? Math.min(1, Math.max(0, bestWeight / totalWeight))
+        : 1 / Math.max(1, Object.keys(votes).length); // uniform distribution
+    results[qi] = { label: bestLabel, confidence };
   }
 
   return results;
@@ -304,9 +378,15 @@ function gaussianNBPredictBatch(
     }
     let expSum = 0;
     for (let ci = 0; ci < nClasses; ci++) expSum += Math.exp(logProbs[ci] - maxLp);
+    // GAP-ML-2 FIX: Guard confidence against NaN from extreme likelihoods
+    let confidence = 1 / nClasses; // default uniform
+    if (expSum > 0 && Number.isFinite(expSum) && Number.isFinite(bestLog - maxLp)) {
+      const raw = Math.exp(bestLog - maxLp) / expSum;
+      confidence = Number.isFinite(raw) ? Math.min(1, Math.max(0, raw)) : 1 / nClasses;
+    }
     results[i] = {
       label: model.classes[bestClass],
-      confidence: Math.exp(bestLog - maxLp) / expSum,
+      confidence,
     };
   }
 
@@ -420,7 +500,11 @@ function logisticRegressionPredictBatch(
       }
     }
 
-    results[i] = { label: bestClass, confidence: bestScore };
+    // GAP-ML-3 FIX: Guard confidence against values outside [0,1]
+    const confidence = Number.isFinite(bestScore)
+      ? Math.min(1, Math.max(0, bestScore))
+      : 1 / model.nClasses;
+    results[i] = { label: bestClass, confidence };
   }
 
   return results;
@@ -611,6 +695,7 @@ function predictTree(node: TreeNode, query: number[]): { label: number; confiden
     node = query[node.feature] <= node.threshold ? node.left! : node.right!;
   }
   // Compute confidence from class distribution at leaf node
+  // GAP-ML-4 FIX: Guard against zero samples in leaf (degenerate case)
   if (node.classCounts) {
     const cc = node.classCounts;
     let total = 0;
@@ -619,7 +704,11 @@ function predictTree(node: TreeNode, query: number[]): { label: number; confiden
       total += cc[i];
       if (cc[i] > maxCount) maxCount = cc[i];
     }
-    return { label: node.label, confidence: total > 0 ? maxCount / total : 1 };
+    // If leaf has no samples, return uniform confidence across observed classes
+    if (total === 0) {
+      return { label: node.label, confidence: 1 / Math.max(1, cc.length) };
+    }
+    return { label: node.label, confidence: Math.min(1, Math.max(0, maxCount / total)) };
   }
   return { label: node.label, confidence: 1 };
 }
@@ -809,304 +898,120 @@ function expFit(
 }
 
 // ---------------------------------------------------------------------------
-// Gradient Boosting Classification (Residual Fitting)
+// Public API — cross-validation helper
 // ---------------------------------------------------------------------------
 
 /**
- * Gradient Boosting model: ensemble of weak learners (decision stumps).
- * Each iteration fits a new weak learner to the residuals of the previous ensemble.
+ * Run stratified k-fold cross-validation for a given classifier.
+ *
+ * Trains and evaluates using the same algorithm as classifyTraces so CV accuracy
+ * is directly comparable to in-sample accuracy. Honest estimates will be lower
+ * than in-sample for overfit-prone methods on small datasets.
+ *
+ * Returns empty scores (mean=0, stdDev=0) when n < 2*cvFolds rather than
+ * throwing, allowing callers to degrade gracefully.
  */
-interface GradientBoostingModel {
-  trees: TreeNode[];
-  learningRate: number;
-  classMap: Map<number, number>; // class_id → tree_index
-  classes: number[];
-  nClasses: number;
-}
-
-/**
- * Build a single decision stump (depth=1) for regression on residuals.
- */
-function buildStump(
+export function runCrossValidation(
   data: number[][],
-  targets: number[],
-  d: number
-): TreeNode {
+  encoded: number[],
+  method: ClassificationMethod,
+  cvFolds: number = 3,
+  knnK: number = 5,
+  maxDepth: number = 5
+): { scores: number[]; mean: number; stdDev: number } {
   const n = data.length;
-  const indices = new Int32Array(n);
-  for (let i = 0; i < n; i++) indices[i] = i;
+  if (n < 2 * cvFolds) {
+    return { scores: [], mean: 0, stdDev: 0 };
+  }
 
-  // For regression stumps, we use a single-level tree
-  // Split on one feature only
-  let bestFeature = 0;
-  let bestThreshold = 0;
-  let bestMSE = Infinity;
+  const { trainIndices, testIndices } = stratifiedKFold(encoded, cvFolds);
+  const scores: number[] = [];
 
-  const leftValues: number[] = [];
-  const rightValues: number[] = [];
+  for (let foldIdx = 0; foldIdx < cvFolds; foldIdx++) {
+    const trainIdx = trainIndices[foldIdx];
+    const testIdx = testIndices[foldIdx];
 
-  for (let f = 0; f < d; f++) {
-    // Collect unique sorted thresholds
-    const thresholds = new Float64Array(n);
-    for (let i = 0; i < n; i++) thresholds[i] = data[i][f];
-    thresholds.sort();
+    const trainData = Array.from(trainIdx).map((i) => data[i]);
+    const trainLabels = Array.from(trainIdx).map((i) => encoded[i]);
+    const testData = Array.from(testIdx).map((i) => data[i]);
+    const testLabels = Array.from(testIdx).map((i) => encoded[i]);
 
-    // Sample thresholds (at most 10)
-    const step = Math.max(1, Math.floor(n / 10));
-    for (let t = 0; t < n; t += step) {
-      const thr = thresholds[t];
-      leftValues.length = 0;
-      rightValues.length = 0;
+    if (trainData.length === 0 || testData.length === 0) {
+      scores.push(0);
+      continue;
+    }
 
-      for (let i = 0; i < n; i++) {
-        if (data[i][f] <= thr) {
-          leftValues.push(targets[i]);
-        } else {
-          rightValues.push(targets[i]);
+    let predicted: number[];
+
+    if (method === 'knn') {
+      const validK = validateKnnK(knnK, trainData.length);
+      const trainCol = toColumnar(trainData);
+      predicted = testData.map((testPoint) => {
+        const distBuf = new Float64Array(trainData.length);
+        for (let i = 0; i < trainData.length; i++) {
+          let ss = 0;
+          for (let j = 0; j < trainCol.d; j++) {
+            const diff = trainCol.cols[j][i] - testPoint[j];
+            ss += diff * diff;
+          }
+          distBuf[i] = ss;
         }
-      }
-
-      if (leftValues.length === 0 || rightValues.length === 0) continue;
-
-      // Compute MSE reduction
-      const leftMean = leftValues.reduce((s, v) => s + v, 0) / leftValues.length;
-      const rightMean = rightValues.reduce((s, v) => s + v, 0) / rightValues.length;
-
-      let leftMSE = 0;
-      for (const v of leftValues) {
-        const d = v - leftMean;
-        leftMSE += d * d;
-      }
-      let rightMSE = 0;
-      for (const v of rightValues) {
-        const d = v - rightMean;
-        rightMSE += d * d;
-      }
-
-      const mse = (leftMSE + rightMSE) / n;
-      if (mse < bestMSE) {
-        bestMSE = mse;
-        bestFeature = f;
-        bestThreshold = thr;
-      }
-    }
-  }
-
-  // Create a stump with left and right leaf nodes predicting mean values
-  const leftIndices: Int32Array[] = [];
-  const rightIndices: Int32Array[] = [];
-  let leftLen = 0;
-  let rightLen = 0;
-
-  for (let i = 0; i < n; i++) {
-    if (data[i][bestFeature] <= bestThreshold) {
-      leftLen++;
+        const kk = Math.min(validK, trainData.length);
+        const sorted: number[] = [];
+        for (let i = 0; i < trainData.length; i++) {
+          if (sorted.length < kk) {
+            let pos = sorted.length;
+            while (pos > 0 && distBuf[i] < distBuf[sorted[pos - 1]]) pos--;
+            sorted.splice(pos, 0, i);
+          } else if (distBuf[i] < distBuf[sorted[kk - 1]]) {
+            let pos = kk - 1;
+            while (pos > 0 && distBuf[i] < distBuf[sorted[pos - 1]]) pos--;
+            sorted.splice(pos, 0, i);
+            sorted.pop();
+          }
+        }
+        const votes = new Map<number, number>();
+        let bestLabel = trainLabels[sorted[0]];
+        let bestWeight = 0;
+        for (const ni of sorted) {
+          const dist = Math.sqrt(distBuf[ni]);
+          const w = dist < 1e-10 ? 1e10 : 1 / dist;
+          const vw = (votes.get(trainLabels[ni]) ?? 0) + w;
+          votes.set(trainLabels[ni], vw);
+          if (vw > bestWeight) {
+            bestWeight = vw;
+            bestLabel = trainLabels[ni];
+          }
+        }
+        return bestLabel;
+      });
+    } else if (method === 'naive_bayes') {
+      const model = gaussianNBTrain(trainData, trainLabels);
+      predicted = gaussianNBPredictBatch(model, testData).map((r) => r.label);
+    } else if (method === 'logistic_regression') {
+      const model = logisticRegressionTrain(trainData, trainLabels);
+      predicted = logisticRegressionPredictBatch(model, testData).map((r) => r.label);
     } else {
-      rightLen++;
+      // decision_tree
+      const classCount = new Set(trainLabels).size;
+      const d = trainData[0]?.length ?? 0;
+      const indices = new Int32Array(trainData.length);
+      for (let i = 0; i < trainData.length; i++) indices[i] = i;
+      const tree = buildTree(trainData, trainLabels, indices, 0, maxDepth, d, classCount);
+      predicted = testData.map((row) => predictTree(tree, row).label);
     }
+
+    scores.push(computeAccuracy(testLabels, predicted));
   }
 
-  const leftIdx = new Int32Array(leftLen);
-  const rightIdx = new Int32Array(rightLen);
-  leftLen = 0;
-  rightLen = 0;
-
-  for (let i = 0; i < n; i++) {
-    if (data[i][bestFeature] <= bestThreshold) {
-      leftIdx[leftLen++] = i;
-    } else {
-      rightIdx[rightLen++] = i;
-    }
-  }
-
-  // Compute mean target values for each leaf
-  let leftMean = 0;
-  for (let i = 0; i < leftLen; i++) leftMean += targets[leftIdx[i]];
-  leftMean = leftLen > 0 ? leftMean / leftLen : 0;
-
-  let rightMean = 0;
-  for (let i = 0; i < rightLen; i++) rightMean += targets[rightIdx[i]];
-  rightMean = rightLen > 0 ? rightMean / rightLen : 0;
-
-  // Create leaf nodes
-  const leftLeaf: TreeNode = {
-    feature: 0,
-    threshold: leftMean, // Store prediction value in threshold field
-    left: null,
-    right: null,
-    label: 1, // Leaf node marker for stumps
-    depth: 1,
-    classCounts: null,
-  };
-
-  const rightLeaf: TreeNode = {
-    feature: 0,
-    threshold: rightMean,
-    left: null,
-    right: null,
-    label: 1,
-    depth: 1,
-    classCounts: null,
-  };
-
-  return {
-    feature: bestFeature,
-    threshold: bestThreshold,
-    left: leftLeaf,
-    right: rightLeaf,
-    label: -1, // Internal node
-    depth: 0,
-    classCounts: null,
-  };
-}
-
-/**
- * Predict regression value from a stump (for residual fitting).
- */
-function predictStump(node: TreeNode, query: number[]): number {
-  if (node.label !== -1) {
-    // Leaf node: threshold field stores the prediction
-    return node.threshold;
-  }
-  const child = query[node.feature] <= node.threshold ? node.left : node.right;
-  return child ? predictStump(child, query) : 0;
-}
-
-/**
- * Train gradient boosting classifier via residual fitting.
- * Uses decision stumps as weak learners.
- */
-function gradientBoostingTrain(
-  data: number[][],
-  labels: number[],
-  numIterations: number = 100,
-  learningRate: number = 0.1
-): GradientBoostingModel {
-  const classes = [...new Set(labels)].sort((a, b) => a - b);
-  const nClasses = classes.length;
-  const n = data.length;
-  const d = data[0]?.length ?? 0;
-
-  // Initialize: one tree ensemble per class (One-vs-Rest)
-  const classMap = new Map<number, number>();
-  const trees: TreeNode[] = [];
-
-  // For each class, train a binary classifier (class vs rest)
-  for (let ci = 0; ci < nClasses; ci++) {
-    const classId = classes[ci];
-    classMap.set(classId, ci);
-
-    // Convert to binary target: 1 if class_i, 0 otherwise
-    const targets = new Float64Array(n);
-    for (let i = 0; i < n; i++) {
-      targets[i] = labels[i] === classId ? 1 : 0;
-    }
-
-    // Gradient boosting: iteratively fit to residuals
-    const predictions = new Float64Array(n); // Start with 0 predictions
-    const residuals = new Float64Array(n);
-
-    for (let iter = 0; iter < numIterations; iter++) {
-      // Compute residuals (target - prediction)
-      for (let i = 0; i < n; i++) {
-        residuals[i] = targets[i] - predictions[i];
-      }
-
-      // Fit stump to residuals
-      const residualArray = Array.from(residuals);
-      const stump = buildStump(data, residualArray, d);
-      trees.push(stump);
-
-      // Update predictions: add scaled stump output
-      for (let i = 0; i < n; i++) {
-        const stumpPred = predictStump(stump, data[i]);
-        predictions[i] += learningRate * stumpPred;
-      }
-
-      // Early stopping if residuals are very small
-      let maxResidual = 0;
-      for (let i = 0; i < n; i++) {
-        maxResidual = Math.max(maxResidual, Math.abs(residuals[i]));
-      }
-      if (maxResidual < 1e-6) break;
-    }
-  }
-
-  return {
-    trees,
-    learningRate,
-    classMap,
-    classes,
-    nClasses,
-  };
-}
-
-/**
- * Predict with gradient boosting model.
- */
-function gradientBoostingPredictBatch(
-  model: GradientBoostingModel,
-  data: number[][]
-): { label: number; confidence: number }[] {
-  const n = data.length;
-  const nClasses = model.nClasses;
-  const results = new Array<{ label: number; confidence: number }>(n);
-
-  for (let i = 0; i < n; i++) {
-    const scores = new Float64Array(nClasses);
-    let treeIdx = 0;
-
-    // Accumulate predictions from all trees (organized per-class)
-    for (let ci = 0; ci < nClasses; ci++) {
-      let score = 0;
-      // Each class has multiple trees (iterations)
-      // We need to aggregate them by class
-      // For simplicity: assume trees are registered sequentially per class
-      // Count trees needed to identify per-class bounds
-      const treesPerClass = Math.floor((model.trees.length / nClasses) * 1.0) || 1;
-      for (let t = 0; t < treesPerClass && treeIdx < model.trees.length; t++) {
-        const pred = predictStump(model.trees[treeIdx], data[i]);
-        score += model.learningRate * pred;
-        treeIdx++;
-      }
-      scores[ci] = score;
-    }
-
-    // Softmax over scores
-    let maxScore = scores[0];
-    for (let ci = 1; ci < nClasses; ci++) {
-      if (scores[ci] > maxScore) maxScore = scores[ci];
-    }
-    let sumExp = 0;
-    for (let ci = 0; ci < nClasses; ci++) {
-      scores[ci] = Math.exp(scores[ci] - maxScore);
-      sumExp += scores[ci];
-    }
-    for (let ci = 0; ci < nClasses; ci++) {
-      scores[ci] /= sumExp;
-    }
-
-    // Select best class
-    let bestClass = 0;
-    let bestScore = scores[0];
-    for (let ci = 1; ci < nClasses; ci++) {
-      if (scores[ci] > bestScore) {
-        bestScore = scores[ci];
-        bestClass = ci;
-      }
-    }
-
-    results[i] = {
-      label: model.classes[bestClass],
-      confidence: bestScore,
-    };
-  }
-
-  return results;
+  const mean = scores.length > 0 ? scores.reduce((s, v) => s + v, 0) / scores.length : 0;
+  const variance =
+    scores.length > 1 ? scores.reduce((s, v) => s + (v - mean) ** 2, 0) / scores.length : 0;
+  return { scores, mean, stdDev: Math.sqrt(variance) };
 }
 
 // ---------------------------------------------------------------------------
-// Public API
+// Public API — classifyTraces
 // ---------------------------------------------------------------------------
 
 /**
@@ -1361,9 +1266,10 @@ export async function classifyTraces(
     method?: ClassificationMethod;
     k?: number;
     maxDepth?: number;
-    useCrossValidation?: boolean;
-    numIterations?: number;
-    learningRate?: number;
+    /** When true, run stratified CV and attach cv_accuracy/cv_std_dev/cv_folds. */
+    crossValidate?: boolean;
+    /** Number of CV folds. Default 3. Minimum 2. */
+    cvFolds?: number;
   } = {}
 ): Promise<ClassificationResult> {
   const targetKey = options.targetKey ?? 'outcome';
@@ -1394,50 +1300,19 @@ export async function classifyTraces(
 
   const { encoded, reverseMap } = encodeLabels(matrix.labels);
 
-  // Optionally run 3-fold cross-validation
-  let cvMetrics: CrossValidationResult | undefined;
-  if (options.useCrossValidation && matrix.data.length >= 6) {
-    // Need at least 6 samples for 3-fold CV (2+ per fold)
-    const validatedK = validateKnnK(options.k, matrix.data.length);
-    const validatedMaxDepth = validateMaxDepth(options.maxDepth);
-    cvMetrics = await crossValidateClassifier(
-      matrix.data,
-      encoded,
-      method,
-      validatedK,
-      validatedMaxDepth,
-      reverseMap,
-      matrix.caseIds
-    );
-
-    // Emit OTEL event with CV metrics if emitter is provided
-    // NOTE: otelEmit functionality deferred pending observability system integration
-    // if (false && cvMetrics) {
-    //   options.otelEmit({
-    //     type: 'MlCrossValidation',
-    //     method,
-    //     meanAccuracy: cvMetrics.meanAccuracy,
-    //     stdAccuracy: cvMetrics.stdAccuracy,
-    //     foldCount: cvMetrics.foldAccuracies.length,
-    //     foldAccuracies: cvMetrics.foldAccuracies,
-    //     confidenceCalibration: cvMetrics.confidenceCalibration,
-    //     sampleCount: matrix.data.length,
-    //     classCount: reverseMap.size,
-    //     status: 'OK',
-    //   });
-    // }
-  }
+  // ── In-sample prediction dispatch ─────────────────────────────────────────
+  let result: ClassificationResult;
 
   if (method === 'knn') {
     const validatedK = validateKnnK(options.k, matrix.data.length);
     const col = toColumnar(matrix.data);
     const batch = knnBatch(col, encoded, validatedK);
-    return {
+    result = {
       method: 'knn',
       predictions: matrix.caseIds.map((caseId, i) => ({
         caseId,
         predicted: reverseMap.get(batch[i].label) ?? 'unknown',
-        confidence: Math.max(0, Math.min(1, batch[i].confidence)), // Clamp confidence to [0, 1]
+        confidence: Math.max(0, Math.min(1, batch[i].confidence)),
       })),
       modelInfo: {
         k: validatedK,
@@ -1447,19 +1322,16 @@ export async function classifyTraces(
         ...(cvMetrics && { cvMetrics }),
       },
     };
-  }
-
-  if (method === 'logistic_regression') {
+  } else if (method === 'logistic_regression') {
     const model = logisticRegressionTrain(matrix.data, encoded);
     const batch = logisticRegressionPredictBatch(model, matrix.data);
-    return {
+    result = {
       method: 'logistic_regression',
       predictions: matrix.caseIds.map((caseId, i) => ({
         caseId,
         predicted: reverseMap.get(batch[i].label) ?? 'unknown',
         confidence: batch[i].confidence,
       })),
-      // Convert Float64Array to plain arrays for JSON serialization
       modelInfo: {
         weights: model.weights.map((w) => Array.from(w)),
         iterations: model.iterations,
@@ -1469,9 +1341,7 @@ export async function classifyTraces(
         ...(cvMetrics && { cvMetrics }),
       },
     };
-  }
-
-  if (method === 'decision_tree') {
+  } else if (method === 'decision_tree') {
     const validatedMaxDepth = validateMaxDepth(options.maxDepth);
     const classCount = reverseMap.size;
     const n = matrix.data.length;
@@ -1479,14 +1349,14 @@ export async function classifyTraces(
     const indices = new Int32Array(n);
     for (let i = 0; i < n; i++) indices[i] = i;
     const tree = buildTree(matrix.data, encoded, indices, 0, validatedMaxDepth, d, classCount);
-    return {
+    result = {
       method: 'decision_tree',
       predictions: matrix.caseIds.map((caseId, i) => {
         const { label, confidence } = predictTree(tree, matrix.data[i]);
         return {
           caseId,
           predicted: reverseMap.get(label) ?? 'unknown',
-          confidence: Math.max(0, Math.min(1, confidence)), // Clamp confidence to [0, 1]
+          confidence: Math.max(0, Math.min(1, confidence)),
         };
       }),
       modelInfo: {
@@ -1521,27 +1391,45 @@ export async function classifyTraces(
         ...(cvMetrics && { cvMetrics }),
       },
     };
+  } else {
+    // naive_bayes
+    const model = gaussianNBTrain(matrix.data, encoded);
+    const batch = gaussianNBPredictBatch(model, matrix.data);
+    result = {
+      method: 'naive_bayes',
+      predictions: matrix.caseIds.map((caseId, i) => ({
+        caseId,
+        predicted: reverseMap.get(batch[i].label) ?? 'unknown',
+        confidence: Math.max(0, Math.min(1, batch[i].confidence)),
+      })),
+      modelInfo: {
+        nClasses: model.nClasses,
+        nFeatures: model.nFeatures,
+        featureCount: matrix.featureNames.length,
+        traceCount: matrix.data.length,
+        classCount: reverseMap.size,
+      },
+    };
   }
 
-  // naive_bayes
-  const model = gaussianNBTrain(matrix.data, encoded);
-  const batch = gaussianNBPredictBatch(model, matrix.data);
-  return {
-    method: 'naive_bayes',
-    predictions: matrix.caseIds.map((caseId, i) => ({
-      caseId,
-      predicted: reverseMap.get(batch[i].label) ?? 'unknown',
-      confidence: Math.max(0, Math.min(1, batch[i].confidence)), // Clamp confidence to [0, 1]
-    })),
-    modelInfo: {
-      nClasses: model.nClasses,
-      nFeatures: model.nFeatures,
-      featureCount: matrix.featureNames.length,
-      traceCount: matrix.data.length,
-      classCount: reverseMap.size,
-      ...(cvMetrics && { cvMetrics }),
-    },
-  };
+  // ── Optional stratified k-fold cross-validation ───────────────────────────
+  // Backward compatible: crossValidate defaults to false. When enabled, the
+  // cv_* fields carry the honest held-out accuracy estimate. In-sample
+  // predictions above are kept intact — CV only adds the cv_* fields.
+  if (options.crossValidate) {
+    const cvFolds = Math.max(2, options.cvFolds ?? 3);
+    const validatedK = method === 'knn' ? validateKnnK(options.k, matrix.data.length) : 5;
+    const validatedDepth = method === 'decision_tree' ? validateMaxDepth(options.maxDepth) : 5;
+    const cv = runCrossValidation(matrix.data, encoded, method, cvFolds, validatedK, validatedDepth);
+    if (cv.scores.length > 0) {
+      result.cv_accuracy = cv.mean;
+      result.cv_std_dev = cv.stdDev;
+      result.cv_folds = cvFolds;
+      result.cv_fold_scores = cv.scores;
+    }
+  }
+
+  return result;
 }
 
 /**

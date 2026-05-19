@@ -104,12 +104,13 @@ export class TransitionValidator {
       if (canTransition(currentState, 'degraded')) {
         return 'degraded';
       }
+      // Recoverable but can't degrade — try ready
+      if (canTransition(currentState, 'ready')) {
+        return 'ready';
+      }
     }
 
-    if (canTransition(currentState, 'ready')) {
-      return 'ready';
-    }
-
+    // Non-recoverable, non-fatal errors → do not suggest ready (let caller use fallbackState)
     return null;
   }
 }

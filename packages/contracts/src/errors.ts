@@ -164,7 +164,7 @@ export interface ErrorInfo {
   message: string;
 
   /** Additional context about the error */
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 
   /** How to fix this error */
   remediation: string;
@@ -316,7 +316,7 @@ const RECOVERABLE: Record<ErrorCode, boolean> = {
 export function createError(
   code: ErrorCode,
   message: string,
-  context?: Record<string, any>
+  context?: Record<string, unknown>
 ): ErrorInfo {
   return {
     code,
@@ -422,7 +422,7 @@ export function formatError(error: ErrorInfo, colorize: boolean = true): string 
  * // }
  * ```
  */
-export function formatErrorJSON(error: ErrorInfo): Record<string, any> {
+export function formatErrorJSON(error: ErrorInfo): Record<string, unknown> {
   return {
     code: error.code,
     message: error.message,

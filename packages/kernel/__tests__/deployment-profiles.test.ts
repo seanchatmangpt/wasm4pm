@@ -29,7 +29,7 @@ describe('Deployment Profiles', () => {
       const mobileIds = mobileAlgorithms.map((a) => a.id);
       const edgeIds = edgeAlgorithms.map((a) => a.id);
 
-      // Edge should have more algorithms than mobile
+      // Edge should have more algorithms than mobile (minimal)
       expect(edgeIds.length).toBeGreaterThan(mobileIds.length);
 
       // Edge should include advanced algorithms
@@ -61,15 +61,15 @@ describe('Deployment Profiles', () => {
       expect(fogIds).toContain('simulated_annealing');
     });
 
-    it('should include all algorithms in browser profile (full-feature tier)', () => {
+    it('should include all algorithms in browser profile', () => {
       const registry = getRegistry();
-      const browserAlgorithms = registry.getForDeploymentProfile('browser');
+      const browserAlgorithms2 = registry.getForDeploymentProfile('browser');
 
-      // Browser is the full-feature tier (~2.78MB) and should have the most algorithms
-      expect(browserAlgorithms.length).toBeGreaterThan(0);
+      // Browser (full-featured) should have the most algorithms
+      expect(browserAlgorithms2.length).toBeGreaterThan(0);
 
       // Should include at least the core algorithms
-      const algorithmIds = browserAlgorithms.map((a) => a.id);
+      const algorithmIds = browserAlgorithms2.map((a) => a.id);
       expect(algorithmIds).toContain('dfg');
       expect(algorithmIds).toContain('genetic_algorithm');
       expect(algorithmIds).toContain('ml_cluster');
@@ -92,16 +92,15 @@ describe('Deployment Profiles', () => {
   describe('Profile Size Estimates', () => {
     it('should estimate mobile profile has fewest algorithms', () => {
       const registry = getRegistry();
-      const mobileAlgorithms = registry.getForDeploymentProfile('mobile');
-      const browserAlgorithms = registry.getForDeploymentProfile('browser');
+      const mobileAlgorithms2 = registry.getForDeploymentProfile('mobile');
+      const browserAlgorithms3 = registry.getForDeploymentProfile('browser');
 
-      // mobile (~500KB) must have fewer algorithms than browser (~2.78MB)
-      expect(mobileAlgorithms.length).toBeLessThan(browserAlgorithms.length);
+      expect(mobileAlgorithms2.length).toBeLessThan(browserAlgorithms3.length);
     });
 
     it('should estimate browser profile has most algorithms', () => {
       const registry = getRegistry();
-      const profiles = ['mobile', 'iot', 'edge', 'fog', 'browser'] as const;
+      const profiles = ['mobile', 'edge', 'fog', 'iot', 'browser'] as const;
       const sizes = profiles.map((p) => registry.getForDeploymentProfile(p).length);
 
       const maxSize = Math.max(...sizes);
@@ -117,7 +116,7 @@ describe('Deployment Profiles', () => {
       const fastAlgorithms = registry.getForProfile('fast');
       const mobileAlgorithms = registry.getForDeploymentProfile('mobile');
 
-      // All fast algorithms should be available in mobile (smallest footprint tier)
+      // All fast algorithms should be available in mobile
       const fastIds = new Set(fastAlgorithms.map((a) => a.id));
       const mobileIds = new Set(mobileAlgorithms.map((a) => a.id));
 
@@ -126,17 +125,17 @@ describe('Deployment Profiles', () => {
       }
     });
 
-    it('should infer edge deployment from balanced/quality execution profiles', () => {
+    it('should infer browser deployment from balanced/quality execution profiles', () => {
       const registry = getRegistry();
       const balancedAlgorithms = registry.getForProfile('balanced');
-      const edgeAlgorithms = registry.getForDeploymentProfile('edge');
+      const browserAlgorithms = registry.getForDeploymentProfile('browser');
 
-      // All balanced algorithms should be available in edge
+      // All balanced algorithms should be available in browser (full-featured)
       const balancedIds = new Set(balancedAlgorithms.map((a) => a.id));
-      const edgeIds = new Set(edgeAlgorithms.map((a) => a.id));
+      const browserIds = new Set(browserAlgorithms.map((a) => a.id));
 
       for (const id of balancedIds) {
-        expect(edgeIds.has(id)).toBe(true);
+        expect(browserIds.has(id)).toBe(true);
       }
     });
   });

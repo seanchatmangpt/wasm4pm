@@ -109,17 +109,24 @@ function kmeansCore(
       if (ss < minDists[i]) minDists[i] = ss;
     }
 
-    // Weighted random selection (deterministic: first qualifying index)
+    // Weighted selection (deterministic: first qualifying index).
+    // Guard: if totalDist == 0 all remaining points coincide with existing
+    // centroids — pick the next distinct data point instead (index c mod n).
     let totalDist = 0;
     for (let i = 0; i < n; i++) totalDist += minDists[i];
-    let cumulative = 0;
-    const threshold = (c / k) * totalDist;
     let chosen = n - 1;
-    for (let i = 0; i < n; i++) {
-      cumulative += minDists[i];
-      if (cumulative >= threshold) {
-        chosen = i;
-        break;
+    if (totalDist === 0) {
+      // Degenerate: pick next data point by position to avoid duplicate centroid
+      chosen = c % n;
+    } else {
+      let cumulative = 0;
+      const threshold = (c / k) * totalDist;
+      for (let i = 0; i < n; i++) {
+        cumulative += minDists[i];
+        if (cumulative >= threshold) {
+          chosen = i;
+          break;
+        }
       }
     }
 
@@ -137,21 +144,26 @@ function kmeansCore(
     // Assignment step (squared-distance, no sqrt)
     let changed = false;
     for (let i = 0; i < n; i++) {
+      // Seed bestDist with the distance to centroid 0 — avoids Infinity - Infinity = NaN
+      // in the branchless update when bestDist starts at Infinity.
       let bestC = 0;
-      let bestDist = Infinity;
-      for (let c = 0; c < k; c++) {
+      let bestDist = 0;
+      for (let j = 0; j < d; j++) {
+        const diff = cols[j][i] - centCols[j][0];
+        bestDist += diff * diff;
+      }
+      // Branchless argmin for centroids 1..k-1.
+      for (let c = 1; c < k; c++) {
         let ss = 0;
         for (let j = 0; j < d; j++) {
           const diff = cols[j][i] - centCols[j][c];
           ss += diff * diff;
         }
-        // NOTE: a branchless "Infinity - 1 * (Infinity - ss)" trick produces
-        // NaN on the first iteration (bestDist = Infinity), which silently
-        // sends every point to cluster 0. Keep the branched form.
-        if (ss < bestDist) {
-          bestDist = ss;
-          bestC = c;
-        }
+        // +(ss < bestDist) is 1 when strictly better, 0 otherwise.
+        // Both ss and bestDist are finite non-negative, so no NaN risk.
+        const isBetter = +(ss < bestDist);
+        bestDist = bestDist - isBetter * (bestDist - ss);
+        bestC    = bestC    - isBetter * (bestC - c);
       }
       if (assignments[i] !== bestC) {
         assignments[i] = bestC;
@@ -208,9 +220,10 @@ function dbscanCore(data: number[][], eps: number, minPoints: number): Int32Arra
   const col = toColumnar(data);
   const { cols, n, d } = col;
   const epsSq = eps * eps;
+  const UNVISITED = -2; // internal sentinel — never appears in returned labels
+  const NOISE = -1;     // standard DBSCAN noise label
   const labels = new Int32Array(n);
-  labels.fill(-1); // -1 = unvisited
-  const NOISE = -2;
+  labels.fill(UNVISITED);
   let clusterId = 0;
 
   // Pre-allocated neighbor buffer
@@ -233,7 +246,7 @@ function dbscanCore(data: number[][], eps: number, minPoints: number): Int32Arra
   const visited = new Uint8Array(n);
 
   for (let i = 0; i < n; i++) {
-    if (labels[i] !== -1) continue;
+    if (labels[i] !== UNVISITED) continue;
 
     const nCount = regionQueryCountAndFill(i);
     if (nCount < minPoints) {
@@ -256,7 +269,7 @@ function dbscanCore(data: number[][], eps: number, minPoints: number): Int32Arra
       visited[q] = 1;
 
       if (labels[q] === NOISE) labels[q] = clusterId;
-      if (labels[q] !== -1) continue;
+      if (labels[q] !== UNVISITED) continue;
 
       labels[q] = clusterId;
 
@@ -288,7 +301,7 @@ function dbscanCore(data: number[][], eps: number, minPoints: number): Int32Arra
  *   - `'kmeans'` — k-means++ initialisation, columnar squared-distance loop.
  *     Convergence is deterministic for identical input.
  *   - `'dbscan'` — density-based clustering. Points with fewer than `minPoints`
- *     within `eps` distance are labelled as noise (cluster `-2`).
+ *     within `eps` distance are labelled as noise (cluster `-1`, standard DBSCAN convention).
  *
  * Returns `{ assignments: [] }` for empty input — does not throw.
  *

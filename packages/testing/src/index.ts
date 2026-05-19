@@ -58,3 +58,14 @@ export type {
   AlignmentConfig,
 } from './conformance/token-replay.js';
 export * from './utils/index.js';
+
+// Performance Baseline Measurement
+export {
+  generateTestEventLogs,
+  measureAlgorithm,
+  formatMeasurement,
+  generateSummaryTable,
+  colorCodeLatency,
+  getMemorySnapshot,
+} from './perf-baseline.js';
+export type { TestEventLog, MemorySnapshot, Measurement, BenchmarkResult } from './perf-baseline.js';

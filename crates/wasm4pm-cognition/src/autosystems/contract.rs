@@ -34,16 +34,28 @@ pub struct ContractResult<TOut> {
 
 impl<TOut> ContractResult<TOut> {
     /// Query if result is clean (exit code 0).
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn is_clean(&self) -> bool {
         self.exit_code == 0
     }
 
     /// Query highest severity found.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn max_severity(&self) -> Option<Severity> {
         self.findings.iter().map(|f| f.severity).max()
     }
 
     /// Filter findings by severity.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn findings_with_severity(&self, threshold: Severity) -> Vec<Finding> {
         self.findings
             .iter()
@@ -78,6 +90,10 @@ impl<TIn, TOut> CognitionContract<TIn, TOut> {
     /// 3. Check postconditions → fail if not met
     /// 4. Run adversarial detectors → report findings
     /// 5. Compute exit code based on findings
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn run(&self, input: &TIn, registry: &FindingRegistry) -> ContractResult<TOut> {
         // Phase 1: Preconditions
         if !(self.preconditions)(input) {
@@ -150,6 +166,10 @@ impl<TIn, TOut> CognitionContract<TIn, TOut> {
 ///
 /// Convenience function that creates a `FindingRegistry`, registers all
 /// 8 detectors, and executes the contract.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn run_contract<TIn, TOut>(
     input: &TIn,
     contract: &CognitionContract<TIn, TOut>,

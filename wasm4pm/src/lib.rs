@@ -81,6 +81,8 @@
 
 /// Cache residency helpers for warm-starting the WASM module.
 pub mod cache_resident;
+/// Compatibility layer for bcinr.
+pub mod bcinr_compat;
 /// Structured error types and JS interop helpers.
 pub mod error;
 /// Event log I/O utilities (XES import/export, binary format).
@@ -302,6 +304,7 @@ pub mod gate_validator;
 pub mod algorithms;
 #[cfg(feature = "conformance_basic")]
 pub mod analysis;
+pub mod testing;
 pub mod binary_format;
 pub mod branchless;
 pub mod cache;
@@ -310,8 +313,11 @@ pub mod capability_registry;
 pub mod conformance;
 pub mod conformance_reporting;
 #[cfg(feature = "conformance_basic")]
+pub mod conformance_guards;
+#[cfg(feature = "conformance_basic")]
 pub mod data_quality;
 pub mod discovery;
+pub mod discovery_determinism_guards;
 #[cfg(feature = "discovery_advanced")]
 pub mod ensemble;
 pub mod fast_discovery;
@@ -332,7 +338,7 @@ pub mod incremental_dfg;
 #[cfg(feature = "discovery_advanced")]
 pub mod more_discovery;
 pub mod parallel_executor;
-#[cfg(feature = "conformance_basic")]
+#[cfg(all(feature = "conformance_basic", feature = "discovery_advanced"))]
 pub mod pattern_analysis;
 #[cfg(feature = "petri_net_playout")]
 pub mod playout;
@@ -556,6 +562,23 @@ pub mod reinforcement;
 // RL Orchestrator — persistent state hub for all RL agents
 #[cfg(feature = "cloud")]
 pub mod rl_orchestrator;
+#[cfg(feature = "cloud")]
+pub use rl_orchestrator::{RlOrchestrator, StateCoverage};
+
+// RL Stability Monitor — detects learning instability (TD error, Q-divergence, reward scaling)
+#[cfg(feature = "cloud")]
+pub mod rl_stability_monitor;
+#[cfg(feature = "cloud")]
+pub use rl_stability_monitor::RlStabilityMonitor;
+
+// RL Dimensionality Analysis — analyzes state space coverage and dimension usage
+#[cfg(feature = "cloud")]
+pub mod rl_dimensionality_analysis;
+#[cfg(feature = "cloud")]
+pub use rl_dimensionality_analysis::{
+    analyze_dimension_usage, format_dimensionality_report, DimensionalityAnalyzer,
+    DimensionUsageReport, StateClustering,
+};
 
 // Action Dispatch Layer — converts RL action labels to executable operations
 #[cfg(feature = "cloud")]
@@ -632,6 +655,15 @@ pub mod gpu;
 // AutoProcessAgent — Vision 2030 autonomic loop (Perception → Decision → Protection → Optimization)
 #[cfg(feature = "cloud")]
 pub mod autoprocess;
+
+// Trace correlation for CLI→WASM causality proof (Chicago TDD Tier 5)
+pub mod trace_correlation;
+
+// RL Policy Persistence — Checkpoint save/load with BLAKE3 integrity verification (Gap-18)
+pub mod policy_persistence;
+
+// Autonomic Audit Trail — Immutable append-only event log with Merkle chain (Gap-20)
+pub mod autonomic_audit_trail;
 
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]
@@ -1239,7 +1271,103 @@ pub fn autonomic_execute_cycle(
             serde_json::json!(if causes.is_empty() { "OK" } else { "ALERT" }),
         );
         for c in &causes {
-            tracing::warn!(target: "autonomic.spc", kind = "event_rate", cause = ?c, "Western Electric rule violation");
+            // Classify rule type and emit detailed span with attributes
+            let (rule_violated, rule_number, mut rule_attrs) = match c {
+                spc::SpecialCause::OutOfControl { value, .. } => {
+                    // Rule 1: Point beyond 3σ (outlier)
+                    let z_score = if chart_data.len() > 0 {
+                        let data_values: Vec<f64> = chart_data.iter().map(|cd| cd.value).collect();
+                        let mean = data_values.iter().sum::<f64>() / data_values.len() as f64;
+                        let std = (data_values.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / data_values.len() as f64).sqrt();
+                        if std > 0.0 { ((value - mean) / std).abs() } else { 0.0 }
+                    } else {
+                        0.0
+                    };
+                    (
+                        "rule_1_outlier",
+                        1u8,
+                        vec![
+                            ("z_score", format!("{:.2}", z_score)),
+                            ("outlier_value", format!("{:.2}", value)),
+                        ],
+                    )
+                },
+                spc::SpecialCause::Shift { direction, count } => {
+                    // Rule 2: 9+ consecutive points on one side of CL
+                    let direction_str = match direction {
+                        spc::ShiftDirection::Above => "above",
+                        spc::ShiftDirection::Below => "below",
+                    };
+                    (
+                        "rule_2_shift",
+                        2u8,
+                        vec![
+                            ("direction", direction_str.to_string()),
+                            ("consecutive_points", count.to_string()),
+                        ],
+                    )
+                },
+                spc::SpecialCause::Trend { direction, count } => {
+                    // Rule 3: 6+ consecutive increasing/decreasing points
+                    let direction_str = match direction {
+                        spc::TrendDirection::Increasing => "increasing",
+                        spc::TrendDirection::Decreasing => "decreasing",
+                    };
+                    (
+                        "rule_3_trend",
+                        3u8,
+                        vec![
+                            ("trend_direction", direction_str.to_string()),
+                            ("monotonic_sequence_length", count.to_string()),
+                        ],
+                    )
+                },
+                spc::SpecialCause::TwoOfThree { direction } => {
+                    // Rule 4: 2 of 3 consecutive points beyond 2σ on same side
+                    let direction_str = match direction {
+                        spc::ShiftDirection::Above => "above",
+                        spc::ShiftDirection::Below => "below",
+                    };
+                    (
+                        "rule_4_two_of_three",
+                        4u8,
+                        vec![
+                            ("direction", direction_str.to_string()),
+                        ],
+                    )
+                },
+            };
+
+            // Emit detailed OTEL span with classified rule type
+            let current_cycle = 0u64; // TODO: wire with_orch() accessor
+            let spc_value = if let Some(last_chart) = chart_data.last() { last_chart.value } else { 0.0 };
+            let spc_ucl = if let Some(last_chart) = chart_data.last() { last_chart.ucl } else { 0.0 };
+            let spc_lcl = if let Some(last_chart) = chart_data.last() { last_chart.lcl } else { 0.0 };
+            let spc_cl = if let Some(last_chart) = chart_data.last() { last_chart.cl } else { 0.0 };
+
+            let sigma_distance = if spc_cl > 0.0 {
+                ((spc_value - spc_cl) / ((spc_ucl - spc_cl) / 3.0)).abs()
+            } else {
+                0.0
+            };
+
+            tracing::warn!(
+                target: "autonomic.spc",
+                spc_rule_type = rule_violated,
+                spc_metric = "event_rate",
+                spc_value = spc_value,
+                spc_ucl = spc_ucl,
+                spc_lcl = spc_lcl,
+                spc_cl = spc_cl,
+                spc_sigma_distance = sigma_distance,
+                rule_number = rule_number,
+                cycle_count = current_cycle,
+                service_name = "wpm",
+                status = "error",
+                rule_details = rule_attrs.iter().map(|(k, v)| format!("{}={}", k, v)).collect::<Vec<_>>().join(", "),
+                "SPC rule violation classified"
+            );
+
             all_special_causes.push(format!("event_rate: {:?}", c));
         }
     } else {
@@ -1280,7 +1408,97 @@ pub fn autonomic_execute_cycle(
             serde_json::json!(if causes.is_empty() { "OK" } else { "ALERT" }),
         );
         for c in &causes {
-            tracing::warn!(target: "autonomic.spc", kind = "trace_duration", cause = ?c, "Western Electric rule violation");
+            // Classify rule type and emit detailed span with attributes
+            let (rule_violated, rule_number, mut rule_attrs) = match c {
+                spc::SpecialCause::OutOfControl { value, .. } => {
+                    let z_score = if chart_data.len() > 0 {
+                        let data_values: Vec<f64> = chart_data.iter().map(|cd| cd.value).collect();
+                        let mean = data_values.iter().sum::<f64>() / data_values.len() as f64;
+                        let std = (data_values.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / data_values.len() as f64).sqrt();
+                        if std > 0.0 { ((value - mean) / std).abs() } else { 0.0 }
+                    } else {
+                        0.0
+                    };
+                    (
+                        "rule_1_outlier",
+                        1u8,
+                        vec![
+                            ("z_score", format!("{:.2}", z_score)),
+                            ("outlier_value", format!("{:.2}", value)),
+                        ],
+                    )
+                },
+                spc::SpecialCause::Shift { direction, count } => {
+                    let direction_str = match direction {
+                        spc::ShiftDirection::Above => "above",
+                        spc::ShiftDirection::Below => "below",
+                    };
+                    (
+                        "rule_2_shift",
+                        2u8,
+                        vec![
+                            ("direction", direction_str.to_string()),
+                            ("consecutive_points", count.to_string()),
+                        ],
+                    )
+                },
+                spc::SpecialCause::Trend { direction, count } => {
+                    let direction_str = match direction {
+                        spc::TrendDirection::Increasing => "increasing",
+                        spc::TrendDirection::Decreasing => "decreasing",
+                    };
+                    (
+                        "rule_3_trend",
+                        3u8,
+                        vec![
+                            ("trend_direction", direction_str.to_string()),
+                            ("monotonic_sequence_length", count.to_string()),
+                        ],
+                    )
+                },
+                spc::SpecialCause::TwoOfThree { direction } => {
+                    let direction_str = match direction {
+                        spc::ShiftDirection::Above => "above",
+                        spc::ShiftDirection::Below => "below",
+                    };
+                    (
+                        "rule_4_two_of_three",
+                        4u8,
+                        vec![
+                            ("direction", direction_str.to_string()),
+                        ],
+                    )
+                },
+            };
+
+            let current_cycle = 0u64; // TODO: wire with_orch() accessor
+            let spc_value = if let Some(last_chart) = chart_data.last() { last_chart.value } else { 0.0 };
+            let spc_ucl = if let Some(last_chart) = chart_data.last() { last_chart.ucl } else { 0.0 };
+            let spc_lcl = if let Some(last_chart) = chart_data.last() { last_chart.lcl } else { 0.0 };
+            let spc_cl = if let Some(last_chart) = chart_data.last() { last_chart.cl } else { 0.0 };
+
+            let sigma_distance = if spc_cl > 0.0 {
+                ((spc_value - spc_cl) / ((spc_ucl - spc_cl) / 3.0)).abs()
+            } else {
+                0.0
+            };
+
+            tracing::warn!(
+                target: "autonomic.spc",
+                spc_rule_type = rule_violated,
+                spc_metric = "trace_duration",
+                spc_value = spc_value,
+                spc_ucl = spc_ucl,
+                spc_lcl = spc_lcl,
+                spc_cl = spc_cl,
+                spc_sigma_distance = sigma_distance,
+                rule_number = rule_number,
+                cycle_count = current_cycle,
+                service_name = "wpm",
+                status = "error",
+                rule_details = rule_attrs.iter().map(|(k, v)| format!("{}={}", k, v)).collect::<Vec<_>>().join(", "),
+                "SPC rule violation classified"
+            );
             all_special_causes.push(format!("trace_duration: {:?}", c));
         }
     } else {
@@ -1321,7 +1539,97 @@ pub fn autonomic_execute_cycle(
             serde_json::json!(if causes.is_empty() { "OK" } else { "ALERT" }),
         );
         for c in &causes {
-            tracing::warn!(target: "autonomic.spc", kind = "activity_frequency", cause = ?c, "Western Electric rule violation");
+            // Classify rule type and emit detailed span with attributes
+            let (rule_violated, rule_number, mut rule_attrs) = match c {
+                spc::SpecialCause::OutOfControl { value, .. } => {
+                    let z_score = if chart_data.len() > 0 {
+                        let data_values: Vec<f64> = chart_data.iter().map(|cd| cd.value).collect();
+                        let mean = data_values.iter().sum::<f64>() / data_values.len() as f64;
+                        let std = (data_values.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / data_values.len() as f64).sqrt();
+                        if std > 0.0 { ((value - mean) / std).abs() } else { 0.0 }
+                    } else {
+                        0.0
+                    };
+                    (
+                        "rule_1_outlier",
+                        1u8,
+                        vec![
+                            ("z_score", format!("{:.2}", z_score)),
+                            ("outlier_value", format!("{:.2}", value)),
+                        ],
+                    )
+                },
+                spc::SpecialCause::Shift { direction, count } => {
+                    let direction_str = match direction {
+                        spc::ShiftDirection::Above => "above",
+                        spc::ShiftDirection::Below => "below",
+                    };
+                    (
+                        "rule_2_shift",
+                        2u8,
+                        vec![
+                            ("direction", direction_str.to_string()),
+                            ("consecutive_points", count.to_string()),
+                        ],
+                    )
+                },
+                spc::SpecialCause::Trend { direction, count } => {
+                    let direction_str = match direction {
+                        spc::TrendDirection::Increasing => "increasing",
+                        spc::TrendDirection::Decreasing => "decreasing",
+                    };
+                    (
+                        "rule_3_trend",
+                        3u8,
+                        vec![
+                            ("trend_direction", direction_str.to_string()),
+                            ("monotonic_sequence_length", count.to_string()),
+                        ],
+                    )
+                },
+                spc::SpecialCause::TwoOfThree { direction } => {
+                    let direction_str = match direction {
+                        spc::ShiftDirection::Above => "above",
+                        spc::ShiftDirection::Below => "below",
+                    };
+                    (
+                        "rule_4_two_of_three",
+                        4u8,
+                        vec![
+                            ("direction", direction_str.to_string()),
+                        ],
+                    )
+                },
+            };
+
+            let current_cycle = 0u64; // TODO: wire with_orch() accessor
+            let spc_value = if let Some(last_chart) = chart_data.last() { last_chart.value } else { 0.0 };
+            let spc_ucl = if let Some(last_chart) = chart_data.last() { last_chart.ucl } else { 0.0 };
+            let spc_lcl = if let Some(last_chart) = chart_data.last() { last_chart.lcl } else { 0.0 };
+            let spc_cl = if let Some(last_chart) = chart_data.last() { last_chart.cl } else { 0.0 };
+
+            let sigma_distance = if spc_cl > 0.0 {
+                ((spc_value - spc_cl) / ((spc_ucl - spc_cl) / 3.0)).abs()
+            } else {
+                0.0
+            };
+
+            tracing::warn!(
+                target: "autonomic.spc",
+                spc_rule_type = rule_violated,
+                spc_metric = "activity_frequency",
+                spc_value = spc_value,
+                spc_ucl = spc_ucl,
+                spc_lcl = spc_lcl,
+                spc_cl = spc_cl,
+                spc_sigma_distance = sigma_distance,
+                rule_number = rule_number,
+                cycle_count = current_cycle,
+                service_name = "wpm",
+                status = "error",
+                rule_details = rule_attrs.iter().map(|(k, v)| format!("{}={}", k, v)).collect::<Vec<_>>().join(", "),
+                "SPC rule violation classified"
+            );
             all_special_causes.push(format!("activity_frequency: {:?}", c));
         }
     } else {
@@ -1409,8 +1717,26 @@ pub fn autonomic_execute_cycle(
                     "event_rate_historical".to_string(),
                     serde_json::json!("ALERT"),
                 );
+                // NOTE: Observability instrumentation for historical SPC rules simplified to allow compilation
+                // Full instrumentation (with rule attribute details) planned for Cycle 56+
                 for c in &causes_hist {
-                    tracing::warn!(target: "autonomic.spc", kind = "event_rate_historical", cause = ?c, "Western Electric rule violation");
+                    let (rule_violated, rule_number) = match c {
+                        spc::SpecialCause::OutOfControl { .. } => ("rule_1_outlier", 1u8),
+                        spc::SpecialCause::Shift { .. } => ("rule_2_shift", 2u8),
+                        spc::SpecialCause::Trend { .. } => ("rule_3_trend", 3u8),
+                        spc::SpecialCause::TwoOfThree { .. } => ("rule_4_two_of_three", 4u8),
+                    };
+                    let current_cycle = 0u64; // TODO: wire with_orch() accessor
+                    tracing::warn!(
+                        target: "autonomic.spc",
+                        spc_rule_type = rule_violated,
+                        spc_metric = "event_rate_historical",
+                        rule_number = rule_number,
+                        cycle_count = current_cycle,
+                        service_name = "wpm",
+                        status = "error",
+                        "SPC rule violation classified (historical)"
+                    );
                     all_special_causes.push(format!("event_rate_historical: {:?}", c));
                 }
             } else {
@@ -1441,7 +1767,23 @@ pub fn autonomic_execute_cycle(
                     serde_json::json!("ALERT"),
                 );
                 for c in &causes_hist {
-                    tracing::warn!(target: "autonomic.spc", kind = "trace_duration_historical", cause = ?c, "Western Electric rule violation");
+                    let (rule_violated, rule_number) = match c {
+                        spc::SpecialCause::OutOfControl { .. } => ("rule_1_outlier", 1u8),
+                        spc::SpecialCause::Shift { .. } => ("rule_2_shift", 2u8),
+                        spc::SpecialCause::Trend { .. } => ("rule_3_trend", 3u8),
+                        spc::SpecialCause::TwoOfThree { .. } => ("rule_4_two_of_three", 4u8),
+                    };
+                    let current_cycle = 0u64; // TODO: wire with_orch() accessor
+                    tracing::warn!(
+                        target: "autonomic.spc",
+                        spc_rule_type = rule_violated,
+                        spc_metric = "trace_duration_historical",
+                        rule_number = rule_number,
+                        cycle_count = current_cycle,
+                        service_name = "wpm",
+                        status = "error",
+                        "SPC rule violation classified (historical)"
+                    );
                     all_special_causes.push(format!("trace_duration_historical: {:?}", c));
                 }
             } else {
@@ -1475,7 +1817,23 @@ pub fn autonomic_execute_cycle(
                     serde_json::json!("ALERT"),
                 );
                 for c in &causes_hist {
-                    tracing::warn!(target: "autonomic.spc", kind = "activity_frequency_historical", cause = ?c, "Western Electric rule violation");
+                    let (rule_violated, rule_number) = match c {
+                        spc::SpecialCause::OutOfControl { .. } => ("rule_1_outlier", 1u8),
+                        spc::SpecialCause::Shift { .. } => ("rule_2_shift", 2u8),
+                        spc::SpecialCause::Trend { .. } => ("rule_3_trend", 3u8),
+                        spc::SpecialCause::TwoOfThree { .. } => ("rule_4_two_of_three", 4u8),
+                    };
+                    let current_cycle = 0u64; // TODO: wire with_orch() accessor
+                    tracing::warn!(
+                        target: "autonomic.spc",
+                        spc_rule_type = rule_violated,
+                        spc_metric = "activity_frequency_historical",
+                        rule_number = rule_number,
+                        cycle_count = current_cycle,
+                        service_name = "wpm",
+                        status = "error",
+                        "SPC rule violation classified (historical)"
+                    );
                     all_special_causes.push(format!("activity_frequency_historical: {:?}", c));
                 }
             } else {
@@ -1651,17 +2009,32 @@ pub fn autonomic_execute_cycle(
 
     let t_optimization_end = wall_clock_us();
 
+    // GAP-3: Enhanced decision visibility with action rationale and context
+    let action_rationale = match action_label.as_str() {
+        "Continue" => "no degradation detected; maintain status quo",
+        "Scale" => "spc alerts or instability; increase exploration",
+        "Retry" => "transient failure; exponential backoff attempted",
+        "Fallback" => "persistent failure; fallback algorithm invoked",
+        "Restart" => "critical state or drift; system restart required",
+        _ => "unknown action; fallback applied",
+    };
+
     tracing::info!(
         target: "autonomic",
         action = %action_label,
+        action_rationale = action_rationale,
         agent = %agent_name,
         reward = %reward_val,
+        cumulative_reward = %cumulative_reward,
         cycle = %cycle_count,
         health = %health_state_val,
         spc_alerts = %all_special_causes.len(),
         circuit_state = %circuit_state,
+        circuit_allowed = %circuit_allowed,
         guard_pass = %guard_pass,
-        "cycle complete"
+        service_name = "wpm",
+        status = if guard_pass && circuit_allowed { "ok" } else { "warning" },
+        "autonomic.decision_action_selected"
     );
 
     // Compute timing deltas using saturating_sub to handle any timing anomalies
@@ -2280,14 +2653,42 @@ pub fn restore_rl_state(json: &str) -> Result<String, JsValue> {
 
     RL_ORCHESTRATOR
         .with(|orch| {
-            // Single restore call — see RlOrchestrator::restore_state for the
-            // rationale. Previously this did `switch_agent` → `restore_telemetry`
-            // which clobbered `telemetry.active_agent_name` (PR #70-class drift).
-            let cycle_count = orch.borrow_mut().restore_state(state);
+            let mut orch_ref = orch.borrow_mut();
+
+            // Restore active agent
+            if let Some(agent_type) = rl_orchestrator::AgentType::from_u8(state.active_agent) {
+                orch_ref.switch_agent(agent_type);
+            }
+
+            // Restore LinUCB setting
+            orch_ref.set_linucb_selection(state.linucb_enabled);
+
+            // Restore telemetry (cycle_count, cumulative_reward, etc.)
+            let restored_telemetry = rl_orchestrator::CycleTelemetry {
+                cycle_count: state.telemetry.cycle_count,
+                last_health_state: state.telemetry.last_health_state,
+                last_action_label: state.telemetry.last_action_label.clone(),
+                last_spc_alert_count: state.telemetry.last_spc_alert_count,
+                cumulative_reward: state.telemetry.cumulative_reward as f32,
+                ..Default::default()
+            };
+            orch_ref.restore_telemetry(restored_telemetry);
+
+            // Restore Q-tables for all agents
+            let num_q_tables = state.agent_q_tables.len();
+            let mut restoration_status = String::new();
+            if num_q_tables > 0 {
+                let (restored, skipped) = orch_ref.restore_all_q_tables(state.agent_q_tables);
+                restoration_status = if skipped > 0 {
+                    format!("; {} Q-tables restored, {} skipped (policy divergence risk)", restored, skipped)
+                } else {
+                    format!("; all {} Q-tables restored successfully", restored)
+                };
+            }
 
             Ok::<String, JsValue>(format!(
-                "Restored RL state from cycle {} (agent {}, linucb={}, {} Q-tables)",
-                cycle_count, active_agent_id, linucb_enabled, num_q_tables
+                "Restored RL state from cycle {} (agent {}, linucb={}){}",
+                state.telemetry.cycle_count, state.active_agent, state.linucb_enabled, restoration_status
             ))
         })
         .map_err(|_e| crate::error::js_val("Failed to restore RL state"))
@@ -2687,4 +3088,157 @@ mod tests {
             *orch.borrow_mut() = rl_orchestrator::RlOrchestrator::new();
         });
     }
+}
+
+// ============================================================================
+// Agentic Framework WASM Exports
+// ============================================================================
+//
+// These four functions are the WASM public API for the agentic framework.
+// Each accepts a JSON-encoded input and returns a JSON-encoded output so that
+// no `serde_wasm_bindgen` round-trip is required (avoiding the known to_value
+// serialization bug with serde_json::Value on wasm32).
+//
+// All four are gated on `feature = "cloud"` — the same gate that controls
+// `pub mod agentic` — so they are never compiled into browser/edge/iot/fog
+// profiles unless cloud features are explicitly requested.
+//
+// # JS usage pattern
+//
+// ```js
+// const wasm = require('./pkg/wasm4pm.js');
+// const parse = r => typeof r === 'string' ? JSON.parse(r) : r;
+//
+// const taskJson = JSON.stringify({
+//   task_id: "t1", title: "triage", phase: "Triage",
+//   risk_level: "High",
+//   policy: { policy_ids:[], allowed_actions:["Delegate","Read"],
+//             forbidden_actions:[], required_roles:[], blocked_roles:[] },
+//   evidence: { receipt_refs:[], required_evidence_classes:["otel_span"],
+//               available_evidence_classes:["otel_span"], confidence_score:null,
+//               confidence_band:"High", drift_status:"Stable" },
+//   tags:[], metadata:{}
+// });
+// const bindings = parse(wasm.run_agentic_pipeline(taskJson));
+// ```
+
+/// Run the full agentic pipeline for a task: role selection → topology selection →
+/// evidence sufficiency → escalation check → prompt binding compilation.
+///
+/// Input: JSON-encoded `TaskContext`
+/// Output: JSON-encoded `{ bindings: PromptBindingSet, evidence_sufficient: bool,
+///         should_escalate: bool, escalation_target: AgentRole|null,
+///         gaps: string[] }`
+#[cfg(feature = "cloud")]
+#[wasm_bindgen]
+pub fn run_agentic_pipeline(task_json: &str) -> Result<String, JsValue> {
+    use crate::agentic::prelude::*;
+
+    let task: agentic::types::TaskContext = serde_json::from_str(task_json)
+        .map_err(|e| crate::error::js_val(&format!("invalid TaskContext JSON: {e}")))?;
+
+    let compiler = DefaultPromptBindingCompiler;
+    let bindings = compiler
+        .compile_bindings(&task)
+        .map_err(|e| crate::error::js_val(&format!("compile_bindings failed: {e}")))?;
+
+    let evidence_checker = DefaultEvidenceSufficiencyChecker;
+    let evidence_sufficient = evidence_checker
+        .is_sufficient(&task)
+        .map_err(|e| crate::error::js_val(&format!("is_sufficient failed: {e}")))?;
+    let gaps = evidence_checker
+        .summarize_gaps(&task)
+        .map_err(|e| crate::error::js_val(&format!("summarize_gaps failed: {e}")))?;
+
+    let escalation_engine = DefaultEscalationEngine;
+    let escalation = escalation_engine
+        .evaluate_escalation(&task)
+        .map_err(|e| crate::error::js_val(&format!("evaluate_escalation failed: {e}")))?;
+
+    let result = serde_json::json!({
+        "bindings": bindings,
+        "evidence_sufficient": evidence_sufficient,
+        "should_escalate": escalation.should_escalate,
+        "escalation_target": escalation.target_role,
+        "gaps": gaps,
+    });
+
+    serde_json::to_string(&result)
+        .map_err(|e| crate::error::js_val(&format!("serialization failed: {e}")))
+}
+
+/// Validate a handoff request between two agents.
+///
+/// Input: JSON-encoded `HandoffRequest`
+/// Output: JSON-encoded `HandoffDecision`
+#[cfg(feature = "cloud")]
+#[wasm_bindgen]
+pub fn validate_agentic_handoff(request_json: &str) -> Result<String, JsValue> {
+    use crate::agentic::prelude::*;
+
+    let req: agentic::types::HandoffRequest = serde_json::from_str(request_json)
+        .map_err(|e| crate::error::js_val(&format!("invalid HandoffRequest JSON: {e}")))?;
+
+    let validator = DefaultHandoffValidator;
+    let decision = validator
+        .validate_handoff(&req)
+        .map_err(|e| crate::error::js_val(&format!("validate_handoff failed: {e}")))?;
+
+    serde_json::to_string(&decision)
+        .map_err(|e| crate::error::js_val(&format!("serialization failed: {e}")))
+}
+
+/// Evaluate counterfactual action options for a task using the RL reward model.
+///
+/// Input: JSON-encoded `TaskContext`
+/// Output: JSON-encoded `CounterfactualResult` — ranked action options with
+///         estimated rewards from the RL orchestrator.
+#[cfg(feature = "cloud")]
+#[wasm_bindgen]
+pub fn evaluate_agentic_counterfactuals(task_json: &str) -> Result<String, JsValue> {
+    use crate::agentic::prelude::*;
+
+    let task: agentic::types::TaskContext = serde_json::from_str(task_json)
+        .map_err(|e| crate::error::js_val(&format!("invalid TaskContext JSON: {e}")))?;
+
+    let evaluator = DefaultCounterfactualEvaluator;
+    let result = evaluator
+        .evaluate_options(&task)
+        .map_err(|e| crate::error::js_val(&format!("evaluate_options failed: {e}")))?;
+
+    serde_json::to_string(&result)
+        .map_err(|e| crate::error::js_val(&format!("serialization failed: {e}")))
+}
+
+/// Run a JTBD (Jobs-to-be-Done) test suite against the agentic framework.
+///
+/// Accepts a JSON array of `JtbdCase` objects and returns a JSON array of
+/// `JtbdResult` objects, each containing per-assertion pass/fail details.
+///
+/// Input: JSON-encoded `JtbdCase[]`
+/// Output: JSON-encoded `{ passed: number, failed: number, results: JtbdResult[] }`
+#[cfg(feature = "cloud")]
+#[wasm_bindgen]
+pub fn run_agentic_jtbd_suite(cases_json: &str) -> Result<String, JsValue> {
+    use crate::agentic::prelude::*;
+
+    let cases: Vec<agentic::types::JtbdCase> = serde_json::from_str(cases_json)
+        .map_err(|e| crate::error::js_val(&format!("invalid JtbdCase[] JSON: {e}")))?;
+
+    let runner = DefaultJtbdRunner;
+    let results = runner
+        .run_suite(&cases)
+        .map_err(|e| crate::error::js_val(&format!("run_suite failed: {e}")))?;
+
+    let passed = results.iter().filter(|r| r.passed).count();
+    let failed = results.len() - passed;
+
+    let output = serde_json::json!({
+        "passed": passed,
+        "failed": failed,
+        "results": results,
+    });
+
+    serde_json::to_string(&output)
+        .map_err(|e| crate::error::js_val(&format!("serialization failed: {e}")))
 }

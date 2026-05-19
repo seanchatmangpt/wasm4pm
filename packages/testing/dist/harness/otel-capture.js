@@ -149,6 +149,32 @@ export class OtelCapture {
         }
         return errors;
     }
+    /**
+     * Assert that all completed spans have valid chronological timestamps:
+     * - endTime must be >= startTime (no negative durations from clock skew)
+     * - a child span's startTime must not precede its parent's startTime
+     *
+     * Returns a list of violation strings (empty = no violations).
+     */
+    assertChronological() {
+        const errors = [];
+        const spanById = new Map(this._spans.map((s) => [s.spanId, s]));
+        for (const span of this._spans) {
+            // Check endTime >= startTime for completed spans
+            if (span.endTime !== undefined && span.endTime < span.startTime) {
+                const durationMs = ((span.endTime - span.startTime) / 1000000).toFixed(3);
+                errors.push(`Span '${span.name}' (${span.spanId}) has negative duration: endTime < startTime (${durationMs}ms)`);
+            }
+            // Check child span does not start before its parent
+            if (span.parentSpanId) {
+                const parent = spanById.get(span.parentSpanId);
+                if (parent && span.startTime < parent.startTime) {
+                    errors.push(`Span '${span.name}' (${span.spanId}) starts before parent '${parent.name}' (${span.parentSpanId})`);
+                }
+            }
+        }
+        return errors;
+    }
     clear() {
         this._spans.length = 0;
         this._jsonEvents.length = 0;

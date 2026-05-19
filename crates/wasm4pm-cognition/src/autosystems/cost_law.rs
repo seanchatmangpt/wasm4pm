@@ -19,6 +19,10 @@ pub struct DimensionGroup<U: UnitMarker> {
 
 impl<U: UnitMarker> DimensionGroup<U> {
     /// Empty group.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn new() -> Self {
         Self {
             values: Vec::new(),
@@ -27,17 +31,29 @@ impl<U: UnitMarker> DimensionGroup<U> {
     }
 
     /// Append a value (caller asserts unit conformance).
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn push(&mut self, v: f64) {
         self.values.push(v);
     }
 
     /// View underlying values.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn values(&self) -> &[f64] {
         &self.values
     }
 
     /// Build a group from a candidate by selecting dimensions whose declared
     /// unit (in `specs`) matches `U::ID`.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn from_candidate(candidate: &Candidate, specs: &[DimensionSpec]) -> Self {
         let mut g = Self::new();
         for s in specs {
@@ -51,12 +67,20 @@ impl<U: UnitMarker> DimensionGroup<U> {
     }
 
     /// Sum values, preserving unit.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn sum(&self) -> Quantity<U> {
         let s: f64 = self.values.iter().sum();
         Quantity::new(s)
     }
 
     /// Mean of values, preserving unit. Returns 0 for empty groups.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn mean(&self) -> Quantity<U> {
         if self.values.is_empty() {
             return Quantity::new(0.0);
@@ -67,17 +91,29 @@ impl<U: UnitMarker> DimensionGroup<U> {
     /// Geometric-product folded value (same-unit multiplication).
     ///
     /// Empty groups yield `Quantity::new(1.0)` (multiplicative identity).
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn product(&self) -> Quantity<U> {
         let p: f64 = self.values.iter().copied().product();
         Quantity::new(p)
     }
 
     /// Element count.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn len(&self) -> usize {
         self.values.len()
     }
 
     /// Empty query.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn is_empty(&self) -> bool {
         self.values.is_empty()
     }

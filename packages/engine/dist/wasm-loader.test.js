@@ -16,10 +16,14 @@ class TestWasmModule {
     init;
     constructor(versionString) {
         try {
-            this.memory = new globalThis.WebAssembly.Memory({
-                initial: 256,
-                maximum: 512,
-            });
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const WasmMemoryConstructor = globalThis.WebAssembly?.Memory;
+            if (WasmMemoryConstructor) {
+                this.memory = new WasmMemoryConstructor({ initial: 256, maximum: 512 });
+            }
+            else {
+                this.memory = { buffer: new ArrayBuffer(256 * 64 * 1024) };
+            }
         }
         catch {
             this.memory = { buffer: new ArrayBuffer(256 * 64 * 1024) };

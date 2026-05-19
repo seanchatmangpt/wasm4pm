@@ -51,6 +51,7 @@ export async function runCertification(version, options) {
     const passed = gates.every((g) => g.passed);
     const passCount = gates.filter((g) => g.passed).length;
     const summary = `${passCount}/${gates.length} gates passed`;
+    const failedGates = gates.filter((g) => !g.passed).map((g) => g.gate);
     // Compute a stable corpus hash from the gate names so a later run can
     // detect if the gate set has changed (gate added/removed = different corpus).
     const gateNames = [...registeredGates.keys()].sort();
@@ -66,6 +67,7 @@ export async function runCertification(version, options) {
         gates,
         passed,
         summary,
+        failedGates,
         evidence: {
             corpus_hash: corpusHash,
             feature_flags: options?.featureFlags ?? [],

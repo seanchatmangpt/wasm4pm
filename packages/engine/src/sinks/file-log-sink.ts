@@ -108,7 +108,7 @@ export class FileLogSinkAdapter implements SinkAdapter {
 
       return ok(undefined);
     } catch (e) {
-      if ((e as any).code === 'EACCES') {
+      if ((e as { code?: string }).code === 'EACCES') {
         return error(
           createError('SINK_PERMISSION', `Permission denied writing to: ${this.config.directory}`, {
             directory: this.config.directory,
@@ -152,7 +152,7 @@ export class FileLogSinkAdapter implements SinkAdapter {
         }
       } catch (e) {
         // File doesn't exist, proceed normally
-        if ((e as any).code !== 'ENOENT') {
+        if ((e as { code?: string }).code !== 'ENOENT') {
           throw e;
         }
       }
@@ -166,7 +166,7 @@ export class FileLogSinkAdapter implements SinkAdapter {
 
       return ok(filename);
     } catch (e) {
-      if ((e as any).code === 'EACCES') {
+      if ((e as { code?: string }).code === 'EACCES') {
         return error(
           createError('SINK_PERMISSION', `Permission denied writing artifact: ${e}`, {
             type,
@@ -194,14 +194,14 @@ export class FileLogSinkAdapter implements SinkAdapter {
 
     switch (type) {
       case 'receipt': {
-        const receipt = artifact as any;
-        const runId = receipt.run_id || `run-${now}`;
+        const receipt = artifact as { run_id?: unknown };
+        const runId = typeof receipt.run_id === 'string' ? receipt.run_id : `run-${now}`;
         return `${runId}.receipt.json`;
       }
 
       case 'model': {
-        const model = artifact as any;
-        const name = model.name || `model-${now}`;
+        const model = artifact as { name?: unknown; petriNet?: unknown };
+        const name = typeof model.name === 'string' ? model.name : `model-${now}`;
         // Determine model type from content
         if (model.petriNet) {
           return `${name}.pn.json`;
@@ -210,9 +210,9 @@ export class FileLogSinkAdapter implements SinkAdapter {
       }
 
       case 'report': {
-        const report = artifact as any;
-        const name = report.name || `report-${now}`;
-        const format = report.format || 'html';
+        const report = artifact as { name?: unknown; format?: unknown };
+        const name = typeof report.name === 'string' ? report.name : `report-${now}`;
+        const format = typeof report.format === 'string' ? report.format : 'html';
         return `${name}.${format}`;
       }
 
@@ -231,16 +231,16 @@ export class FileLogSinkAdapter implements SinkAdapter {
    * Format artifact for file writing
    */
   private formatArtifact(artifact: unknown, type: ArtifactType): string {
-    const data = artifact as any;
+    const data = artifact as { format?: unknown; content?: unknown };
 
     // For HTML reports, return content directly
     if (type === 'report' && data.format === 'html') {
-      return data.content || '';
+      return typeof data.content === 'string' ? data.content : '';
     }
 
     // For markdown reports, return content directly
     if (type === 'report' && data.format === 'markdown') {
-      return data.content || '';
+      return typeof data.content === 'string' ? data.content : '';
     }
 
     // For everything else, serialize as JSON with pretty printing
@@ -257,7 +257,7 @@ export class FileLogSinkAdapter implements SinkAdapter {
   ): Promise<Result<string>> {
     try {
       const content = await fs.readFile(filePath, 'utf-8');
-      let existing: any;
+      let existing: unknown;
 
       try {
         existing = JSON.parse(content);
@@ -271,8 +271,8 @@ export class FileLogSinkAdapter implements SinkAdapter {
       // Merge JSON artifacts
       if (Array.isArray(existing)) {
         existing.push(artifact);
-      } else if (typeof existing === 'object' && typeof artifact === 'object') {
-        existing = { ...existing, ...artifact };
+      } else if (typeof existing === 'object' && existing !== null && typeof artifact === 'object' && artifact !== null) {
+        existing = { ...(existing as Record<string, unknown>), ...(artifact as Record<string, unknown>) };
       }
 
       const newContent = JSON.stringify(existing, null, 2);

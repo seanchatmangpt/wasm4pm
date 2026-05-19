@@ -9,7 +9,7 @@ import { exitWithFlush } from '../otel/exit.js';
 export const cell = defineCommand({
   meta: {
     name: 'cell',
-    description: 'Cell8 — manufacture, verify, and operate proof-carrying software parts',
+    description: 'Cell8 — manufacture, verify, and operate proof-carrying software parts. Example: wpm cell build ontology.json',
   },
   subCommands: {
     build: defineCommand({

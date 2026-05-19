@@ -1,48 +1,63 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
-import { watch as fsWatch } from 'fs';
 import * as path from 'path';
 import { randomBytes } from 'node:crypto';
 import chokidar from 'chokidar';
 import { resolveConfig as loadConfig } from '@wasm4pm/config';
 import { createFullEngine, WasmLoader } from '@wasm4pm/engine';
+import type { ExecutionPlan } from "@wasm4pm/planner";
 import { getTracer, WatchingSpans } from '@wasm4pm/observability';
 import { WasmBackend } from '@wasm4pm/kernel';
 import { plan } from '@wasm4pm/planner';
 import type { OtelSpan } from '@wasm4pm/cognition';
-import { StreamingOutput, ConsoleProjection } from '../output.js';
-import { EXIT_CODES } from '../exit-codes.js';
+import { StreamingOutput } from '../output.js';
 import { withSpanRaw } from './_otel.js';
 import { getGlobalSpanSink } from '../otel/sink.js';
 import { exitWithFlush } from '../otel/exit.js';
 import { runDiscovery, type Algorithm } from './run.js';
+import { WasmInstrumentation } from './_wasm-instrumentation.js';
+import { selectAutopilotAlgorithm, type LogStats } from './watch-autopilot.js';
+import { STANDARD_EXIT_CODE_DOCS } from '../help-standards.js';
 
-// ---------------------------------------------------------------------------
-// Autopilot: select algorithm from log characteristics
-// ---------------------------------------------------------------------------
+/**
+ * Config snapshot helpers for what-changed display
+ */
 
-type LogStats = {
-  total_cases?: number;
-  total_events?: number;
-  avg_events_per_case?: number;
-  unique_activities?: number;
-};
+/**
+ * Extract a comparable snapshot from a resolved config object.
+ * Only captures the fields a practitioner cares about (algorithm, source, profile, log level).
+ */
+function snapshotConfig(cfg: Record<string, unknown>): Record<string, unknown> {
+  const alg = cfg['algorithm'] as Record<string, unknown> | undefined;
+  const src = cfg['source'] as Record<string, unknown> | undefined;
+  const exec = cfg['execution'] as Record<string, unknown> | undefined;
+  const obs = cfg['observability'] as Record<string, unknown> | undefined;
+  return {
+    algorithm: alg?.['name'] ?? null,
+    algorithmParams: JSON.stringify(alg?.['parameters'] ?? {}),
+    sourceKind: src?.['kind'] ?? null,
+    sourcePath: src?.['path'] ?? null,
+    profile: exec?.['profile'] ?? null,
+    logLevel: obs?.['logLevel'] ?? null,
+  };
+}
 
-function selectAutopilotAlgorithm(stats: LogStats): { algo: Algorithm; rationale: string } {
-  const traces = stats.total_cases ?? 0;
-  const variants = 0; // analyze_event_statistics does not return variant count
-  const activities = stats.unique_activities ?? 0;
-
-  if (traces > 50_000)
-    return { algo: 'dfg', rationale: `log too large for conformance-checking (${traces.toLocaleString()} traces)` };
-  if (variants < 20 && traces < 5_000)
-    return { algo: 'inductive', rationale: `low-variant log (${variants} variants) — inductive produces clean process tree` };
-  if (activities > 100)
-    return { algo: 'heuristic', rationale: `high activity count (${activities}) — heuristic handles noise well` };
-  if (traces > 10_000)
-    return { algo: 'heuristic', rationale: `medium-large log (${traces.toLocaleString()} traces) — heuristic balances speed and quality` };
-
-  return { algo: 'dfg', rationale: 'default — fast, always produces a result' };
+/**
+ * Produce a human-readable list of changed fields between two config snapshots.
+ * Returns an empty array when the effective config is unchanged.
+ */
+function diffConfigSnapshots(
+  prev: Record<string, unknown>,
+  next: Record<string, unknown>
+): Array<{ field: string; from: unknown; to: unknown }> {
+  const changes: Array<{ field: string; from: unknown; to: unknown }> = [];
+  const allKeys = new Set([...Object.keys(prev), ...Object.keys(next)]);
+  for (const key of allKeys) {
+    if (JSON.stringify(prev[key]) !== JSON.stringify(next[key])) {
+      changes.push({ field: key, from: prev[key], to: next[key] });
+    }
+  }
+  return changes;
 }
 
 export interface WatchOptions {
@@ -56,7 +71,9 @@ export interface WatchOptions {
 export const watch = defineCommand({
   meta: {
     name: 'watch',
-    description: 'Watch for changes and re-run discovery automatically',
+    description: `Watch config file for changes, auto-discover. Ex: wpm watch
+
+${STANDARD_EXIT_CODE_DOCS}`,
   },
   args: {
     config: {
@@ -89,6 +106,21 @@ export const watch = defineCommand({
     },
   },
   async run(ctx) {
+    // Validate --interval when provided: must be a positive integer.
+    // An invalid value is a config_error (exit 1) — fail fast before starting the watcher.
+    const rawInterval = ctx.args.interval as string | undefined;
+    let pollIntervalMs: number | undefined;
+    if (rawInterval !== undefined) {
+      const parsed = parseInt(rawInterval, 10);
+      if (!Number.isFinite(parsed) || parsed <= 0) {
+        process.stderr.write(
+          `wpm watch: invalid --interval value "${rawInterval}". Must be a positive integer (milliseconds).\n`
+        );
+        process.exit(1);
+      }
+      pollIntervalMs = parsed;
+    }
+
     const streaming = new StreamingOutput({
       format: ctx.args.format as 'human' | 'json',
       verbose: ctx.args.verbose,
@@ -140,7 +172,7 @@ export const watch = defineCommand({
       kernel as any,
       plan as any,
       {
-        run: async (p: any) => {
+        run: async (p: ExecutionPlan) => {
           streaming.emitEvent('executing', { plan: p.id });
           await new Promise((resolve) => setTimeout(resolve, 500));
           return { run_id: 'watch-run', status: 'success', payload: {} } as any;
@@ -154,17 +186,42 @@ export const watch = defineCommand({
       timestamp: new Date().toISOString(),
     });
 
+    // Load initial config snapshot so the first change cycle always has a baseline to diff against.
+    // If this fails (e.g. no config file yet), the first cycle emits no diff — non-fatal.
+    let prevConfigSnapshot: Record<string, unknown> | null = null;
+    try {
+      const initialConfig = await loadConfig({ configSearchPaths: [configPath] });
+      prevConfigSnapshot = snapshotConfig(initialConfig as unknown as Record<string, unknown>);
+    } catch {
+      /* initial config load failure is non-fatal — watch proceeds without a baseline */
+    }
+
     // Step 2: Set up Watcher using chokidar for better cross-platform support
     const watchPath = path.resolve(configPath);
     const watcher = chokidar.watch(watchPath, {
       ignored: /(^|[\/\\])\../, // ignore dotfiles
       persistent: true,
       ignoreInitial: true,
+      // Use --interval as polling interval when provided (usePolling required for interval to take effect)
+      ...(pollIntervalMs !== undefined ? { usePolling: true, interval: pollIntervalMs } : {}),
     });
+
+    // Count watched paths for the startup status line.
+    // chokidar resolves globs lazily — use a small delay so the watcher has time to
+    // enumerate the initial file set before we report the count.
+    let watchedCount = 1; // at minimum the root path itself
+    try {
+      await new Promise((resolve) => setTimeout(resolve, 50));
+      const watched = watcher.getWatched();
+      watchedCount = Object.values(watched).reduce((sum, files) => sum + files.length, 0) || 1;
+    } catch {
+      /* getWatched() failure is non-fatal */
+    }
 
     streaming.emitEvent('watching', {
       path: watchPath,
-      message: 'Waiting for file changes...',
+      files_count: watchedCount,
+      message: `Watching ${watchedCount} file(s) in ${watchPath} — press Ctrl+C to stop`,
     });
 
     // Per-file debouncers prevent editor-save bursts from flooding spans.
@@ -185,6 +242,18 @@ export const watch = defineCommand({
           const idx = cyclesObserved;
           cyclesObserved += 1;
           const span = tracer.startSpan(WatchingSpans.heartbeat());
+
+          // Capture modification time before entering the async span so the
+          // practitioner sees exactly when the file was written, not when
+          // Node.js scheduled the debounced callback.
+          let mtime: string | null = null;
+          try {
+            const stat = await fs.stat(filePath);
+            mtime = stat.mtime.toISOString();
+          } catch {
+            /* stat failure is non-fatal — mtime stays null */
+          }
+
           try {
             await withSpanRaw(
               'wasm4pm.watch.cycle',
@@ -192,12 +261,43 @@ export const watch = defineCommand({
                 event_kind: 'change',
                 cycle_index: idx,
                 file_path: filePath,
+                mtime: mtime ?? 'unknown',
               },
               async () => {
-                streaming.emitEvent('change_detected', { file: filePath });
+                streaming.emitEvent('change_detected', {
+                  file: filePath,
+                  mtime: mtime ?? 'unknown',
+                  cycle: idx + 1,
+                });
 
-                // Reload and Run
+                // Reload config
                 const config = await loadConfig({ configSearchPaths: [configPath] });
+
+                // What-changed display: diff the new config against the last snapshot.
+                // This tells the practitioner which config field triggered the re-run.
+                const nextSnapshot = snapshotConfig(config as unknown as Record<string, unknown>);
+                if (prevConfigSnapshot !== null) {
+                  const changes = diffConfigSnapshots(prevConfigSnapshot, nextSnapshot);
+                  if (changes.length > 0) {
+                    streaming.emitEvent('config_changed', {
+                      file: filePath,
+                      changes: changes.map((c) => ({
+                        field: c.field,
+                        from: c.from,
+                        to: c.to,
+                        summary: `${c.field}: ${JSON.stringify(c.from)} → ${JSON.stringify(c.to)}`,
+                      })),
+                    });
+                  } else {
+                    // File changed but effective config values are identical (e.g., whitespace edit).
+                    streaming.emitEvent('config_unchanged', {
+                      file: filePath,
+                      message: 'File changed but effective config is unchanged — re-running anyway',
+                    });
+                  }
+                }
+                prevConfigSnapshot = nextSnapshot;
+
                 const executionPlan = plan(config as any);
 
                 streaming.emitEvent('processing_started', {
@@ -209,17 +309,22 @@ export const watch = defineCommand({
                 // and the changed file is an XES log (not a config file).
                 if (ctx.args.autopilot && filePath.endsWith('.xes')) {
                   try {
-                    const wasm = wasmLoader.get() as Record<string, (...args: unknown[]) => unknown>;
-                    const activityKey = (ctx.args['activity-key'] as string | undefined) ?? 'concept:name';
+                    const wasm = wasmLoader.get() as Record<
+                      string,
+                      (...args: unknown[]) => unknown
+                    >;
+                    const activityKey =
+                      (ctx.args['activity-key'] as string | undefined) ?? 'concept:name';
                     const xesContent = await fs.readFile(filePath, 'utf8');
                     const t0 = Date.now();
-                    const handle = wasm.load_eventlog_from_xes(xesContent) as string;
+                    // INSTRUMENTED: load_eventlog_from_xes — one of the top 10 most-called WASM exports
+                    const handle = WasmInstrumentation.load_eventlog_from_xes(wasm, xesContent);
 
-                    // Get log characteristics to select algorithm
-                    const statsRaw = wasm.analyze_event_statistics(handle, activityKey);
-                    const stats = (typeof statsRaw === 'string'
-                      ? JSON.parse(statsRaw)
-                      : statsRaw) as LogStats;
+                    // INSTRUMENTED: analyze_event_statistics — bonus instrumentation related to load
+                    const statsRaw = WasmInstrumentation.analyze_event_statistics(wasm, handle, activityKey);
+                    const stats = (
+                      typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw
+                    ) as LogStats;
                     const { algo, rationale } = selectAutopilotAlgorithm(stats);
 
                     streaming.emitEvent('autopilot_selected', {
@@ -249,11 +354,13 @@ export const watch = defineCommand({
                     streaming.emitEvent('autopilot_completed', {
                       algorithm: algo,
                       elapsedMs,
-                      modelKeys: typeof model === 'object' && model ? Object.keys(model as object) : [],
+                      modelKeys:
+                        typeof model === 'object' && model ? Object.keys(model as object) : [],
                     });
                   } catch (autopilotErr) {
                     streaming.emitEvent('autopilot_error', {
-                      message: autopilotErr instanceof Error ? autopilotErr.message : String(autopilotErr),
+                      message:
+                        autopilotErr instanceof Error ? autopilotErr.message : String(autopilotErr),
                     });
                   }
                 }
@@ -263,7 +370,7 @@ export const watch = defineCommand({
                   status: 'success',
                   timestamp: new Date().toISOString(),
                 });
-              },
+              }
             );
           } catch (error) {
             parentStatus = 'ERROR';
@@ -275,7 +382,7 @@ export const watch = defineCommand({
           } finally {
             span.end();
           }
-        }, DEBOUNCE_MS),
+        }, DEBOUNCE_MS)
       );
     });
 

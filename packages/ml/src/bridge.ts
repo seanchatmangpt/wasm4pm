@@ -111,8 +111,13 @@ export function buildFeatureMatrix(
   }
 
   // Assemble feature names
-  const featureNames: string[] = [...numericCols];
-  for (const [col, values] of oneHotMap) {
+  // GAP 3 FIX: Sort numeric columns and categorical columns for deterministic ordering
+  const sortedNumericCols = [...numericCols].sort();
+  const featureNames: string[] = [...sortedNumericCols];
+  // Iterate over categorical columns in sorted order for consistency
+  const sortedCategoricalCols = Array.from(oneHotMap.keys()).sort();
+  for (const col of sortedCategoricalCols) {
+    const values = oneHotMap.get(col)!;
     for (const v of values) {
       featureNames.push(`${col}=${v}`);
     }
@@ -137,18 +142,24 @@ export function buildFeatureMatrix(
 
     const numericRow: number[] = [];
 
-    // Numeric columns: coerce safely, guard against NaN
-    for (const col of numericCols) {
+    // Numeric columns: coerce safely, guard against NaN, Infinity, and missing values
+    // CRITICAL: Handle missing properties (undefined), NaN, Infinity all as 0
+    // GAP 1 FIX: Explicitly check Number.isFinite() which rejects NaN, Infinity, -Infinity
+    // GAP 3 FIX: Use sorted numeric columns to match feature name order
+    for (const col of sortedNumericCols) {
       const val = row[col];
-      if (typeof val === 'number' && !Number.isNaN(val) && Number.isFinite(val)) {
+      if (typeof val === 'number' && Number.isFinite(val)) {
         numericRow.push(val);
       } else {
+        // Coerce to 0: missing, null, NaN, Infinity, -Infinity, non-numeric
         numericRow.push(0);
       }
     }
 
-    // One-hot encoded string columns
-    for (const [col, values] of oneHotMap) {
+    // One-hot encoded string columns (in sorted order for determinism)
+    // GAP 3 FIX: Use sortedCategoricalCols to ensure consistent column ordering
+    for (const col of sortedCategoricalCols) {
+      const values = oneHotMap.get(col)!;
       const rowVal = row[col] == null ? '' : String(row[col]);
       for (const v of values) {
         numericRow.push(rowVal === v ? 1 : 0);
@@ -158,6 +169,8 @@ export function buildFeatureMatrix(
     data.push(numericRow);
 
     // Extract numeric target with NaN/Infinity guard
+    // CRITICAL: Must handle NaN explicitly since typeof NaN === 'number'
+    // GAP 4 FIX: Use Number.isFinite() which rejects NaN, Infinity, -Infinity
     if (numericTargetKey) {
       const val = row[numericTargetKey];
       if (typeof val === 'number' && Number.isFinite(val)) {
@@ -186,4 +199,152 @@ export function encodeLabels(labels: string[]): LabelEncoding {
   const reverseMap = new Map(unique.map((l, i) => [i, l]));
   const encoded = labels.map((l) => labelMap.get(l) ?? 0);
   return { encoded, labelMap, reverseMap };
+}
+
+/**
+ * Compute variance (population variance) for a column.
+ */
+function columnVariance(column: number[]): number {
+  if (column.length === 0) return 0;
+  const mean = column.reduce((a, b) => a + b, 0) / column.length;
+  const sumSq = column.reduce((sum, val) => sum + (val - mean) ** 2, 0);
+  return sumSq / column.length;
+}
+
+/**
+ * Select top features by variance, filtering out zero-variance
+ * and near-duplicates (correlation > threshold).
+ *
+ * @param data - Numeric feature matrix (rows = samples, cols = features)
+ * @param topK - Maximum number of features to keep (default 15)
+ * @param correlationThreshold - Remove features with |r| > this (default 0.95)
+ * @returns Array of selected feature indices, sorted by descending variance
+ */
+export function selectTopFeatures(
+  data: number[][],
+  topK: number = 15,
+  correlationThreshold: number = 0.95
+): number[] {
+  if (!data || data.length === 0 || data[0].length === 0) {
+    return [];
+  }
+
+  const numCols = data[0].length;
+
+  // Transpose to get columns
+  const columns: number[][] = Array(numCols)
+    .fill(null)
+    .map((_, colIdx) => data.map((row) => row[colIdx]));
+
+  // Compute variance for each feature
+  const variances: Array<{ idx: number; variance: number }> = [];
+  for (let i = 0; i < numCols; i++) {
+    const variance = columnVariance(columns[i]);
+    // Skip zero-variance columns
+    if (variance > 1e-10) {
+      variances.push({ idx: i, variance });
+    }
+  }
+
+  // Sort by descending variance
+  variances.sort((a, b) => b.variance - a.variance);
+
+  // Greedily select features, skipping highly correlated ones
+  const selected: number[] = [];
+  const selectedCols: number[] = [];
+
+  for (const { idx } of variances) {
+    // Check if this feature is highly correlated with any already-selected feature
+    let isCorrelated = false;
+    for (const selectedIdx of selectedCols) {
+      const corr = Math.abs(pearsonCorrelation(columns[idx], columns[selectedIdx]));
+      if (corr > correlationThreshold) {
+        isCorrelated = true;
+        break;
+      }
+    }
+    if (!isCorrelated) {
+      selected.push(idx);
+      selectedCols.push(idx);
+      if (selected.length >= topK) break;
+    }
+  }
+
+  return selected.sort((a, b) => a - b);
+}
+
+/**
+ * Compute Pearson correlation coefficient between two columns.
+ */
+function pearsonCorrelation(col1: number[], col2: number[]): number {
+  if (col1.length !== col2.length || col1.length === 0) return 0;
+
+  const n = col1.length;
+  const mean1 = col1.reduce((a, b) => a + b, 0) / n;
+  const mean2 = col2.reduce((a, b) => a + b, 0) / n;
+
+  let covariance = 0;
+  let sumSq1 = 0;
+  let sumSq2 = 0;
+
+  for (let i = 0; i < n; i++) {
+    const dev1 = col1[i] - mean1;
+    const dev2 = col2[i] - mean2;
+    covariance += dev1 * dev2;
+    sumSq1 += dev1 * dev1;
+    sumSq2 += dev2 * dev2;
+  }
+
+  const denom = Math.sqrt(sumSq1 * sumSq2);
+  return denom === 0 ? 0 : covariance / denom;
+}
+
+/**
+ * Normalize feature matrix to [0, 1] range (min-max scaling).
+ *
+ * Each feature is scaled as: (x - min) / (max - min)
+ * Constant features (max == min) remain at 0.5.
+ *
+ * Used before algorithms sensitive to feature scale (kNN, logistic regression).
+ */
+export function normalizeFeatures(data: number[][]): number[][] {
+  if (!data || data.length === 0 || data[0].length === 0) {
+    return data;
+  }
+
+  const numCols = data[0].length;
+  const numRows = data.length;
+
+  // Compute min/max for each column
+  const mins = new Array<number>(numCols).fill(Infinity);
+  const maxs = new Array<number>(numCols).fill(-Infinity);
+
+  for (let i = 0; i < numRows; i++) {
+    for (let j = 0; j < numCols; j++) {
+      const val = data[i][j];
+      if (Number.isFinite(val)) {
+        mins[j] = Math.min(mins[j], val);
+        maxs[j] = Math.max(maxs[j], val);
+      }
+    }
+  }
+
+  // Normalize each column
+  const normalized = data.map((row) => [...row]);
+  for (let i = 0; i < numRows; i++) {
+    for (let j = 0; j < numCols; j++) {
+      const val = data[i][j];
+      const min = mins[j];
+      const max = maxs[j];
+      if (min === Infinity || max === -Infinity) {
+        normalized[i][j] = 0.5;
+      } else if (max === min) {
+        normalized[i][j] = 0.5;
+      } else {
+        normalized[i][j] = (val - min) / (max - min);
+      }
+    }
+  }
+
+  return normalized;
 }

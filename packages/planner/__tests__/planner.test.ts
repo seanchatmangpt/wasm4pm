@@ -430,3 +430,204 @@ describe('Planner', () => {
     });
   });
 });
+
+describe('Profile-algorithm mapping fidelity (CLAUDE.md spec)', () => {
+  const baseConfig: Config = {
+    version: '1.0',
+    source: { format: 'xes' },
+    execution: { profile: 'fast' },
+  };
+
+  // fast → dfg + process_skeleton only — no wave-1 or ML algorithms
+  it('fast profile: exactly discover_dfg and discover_process_skeleton as discovery steps', () => {
+    const result = plan({ ...baseConfig, execution: { profile: 'fast' } });
+    const discoverySteps = result.steps
+      .filter((s) => (s.type as string).startsWith('discover_'))
+      .map((s) => s.type as string);
+
+    expect(discoverySteps).toContain('discover_dfg');
+    expect(discoverySteps).toContain('discover_process_skeleton');
+    // transition_system, log_to_trie, causal_graph must NOT appear in fast profile
+    expect(discoverySteps).not.toContain('discover_transition_system');
+    expect(discoverySteps).not.toContain('discover_log_to_trie');
+    expect(discoverySteps).not.toContain('discover_causal_graph');
+  });
+
+  it('fast profile: no ML steps by default (ML is balanced/quality only)', () => {
+    const result = plan({ ...baseConfig, execution: { profile: 'fast' } });
+    const typeSet = new Set(result.steps.map((s) => s.type as string));
+
+    expect(typeSet.has('ml_classify')).toBe(false);
+    expect(typeSet.has('ml_cluster')).toBe(false);
+    expect(typeSet.has('ml_forecast')).toBe(false);
+    expect(typeSet.has('ml_anomaly')).toBe(false);
+    expect(typeSet.has('ml_regress')).toBe(false);
+    expect(typeSet.has('ml_pca')).toBe(false);
+  });
+
+  // balanced → heuristic/alpha + all 6 ML algorithms (kernel registry: supportedProfiles: ['balanced', 'quality'])
+  it('balanced profile: includes all 6 ML algorithms automatically', () => {
+    const result = plan({ ...baseConfig, execution: { profile: 'balanced' } });
+    const typeSet = new Set(result.steps.map((s) => s.type as string));
+
+    expect(typeSet.has(PlanStepType.ML_CLASSIFY)).toBe(true);
+    expect(typeSet.has(PlanStepType.ML_CLUSTER)).toBe(true);
+    expect(typeSet.has(PlanStepType.ML_FORECAST)).toBe(true);
+    expect(typeSet.has(PlanStepType.ML_ANOMALY)).toBe(true);
+    expect(typeSet.has(PlanStepType.ML_REGRESS)).toBe(true);
+    expect(typeSet.has(PlanStepType.ML_PCA)).toBe(true);
+  });
+
+  // quality → genetic/ilp + all 6 ML algorithms
+  it('quality profile: includes all 6 ML algorithms automatically', () => {
+    const result = plan({ ...baseConfig, execution: { profile: 'quality' } });
+    const typeSet = new Set(result.steps.map((s) => s.type as string));
+
+    expect(typeSet.has(PlanStepType.ML_CLASSIFY)).toBe(true);
+    expect(typeSet.has(PlanStepType.ML_CLUSTER)).toBe(true);
+    expect(typeSet.has(PlanStepType.ML_FORECAST)).toBe(true);
+    expect(typeSet.has(PlanStepType.ML_ANOMALY)).toBe(true);
+    expect(typeSet.has(PlanStepType.ML_REGRESS)).toBe(true);
+    expect(typeSet.has(PlanStepType.ML_PCA)).toBe(true);
+  });
+
+  // stream → simd_streaming_dfg only — no ML (latency-sensitive pipeline)
+  it('stream profile: only simd_streaming_dfg discovery step, no ML', () => {
+    const result = plan({ ...baseConfig, source: { format: 'json' }, execution: { profile: 'stream' } });
+    const discoverySteps = result.steps
+      .filter((s) => (s.type as string).startsWith('discover_'))
+      .map((s) => s.type as string);
+    const typeSet = new Set(result.steps.map((s) => s.type as string));
+
+    expect(discoverySteps).toEqual(['discover_simd_streaming_dfg']);
+    expect(typeSet.has('ml_classify')).toBe(false);
+  });
+});
+
+describe('ML deduplication (profile + explicit config.ml.tasks)', () => {
+  const baseConfig: Config = {
+    version: '1.0',
+    source: { format: 'xes' },
+    execution: { profile: 'balanced' },
+  };
+
+  it('no duplicate ML steps when balanced profile + explicit config.ml.tasks overlap', () => {
+    // balanced already includes ml_classify from profile; config.ml.tasks also requests it
+    const config: Config = {
+      ...baseConfig,
+      ml: { enabled: true, tasks: ['classify', 'cluster'] },
+    };
+    const result = plan(config);
+    const mlClassifySteps = result.steps.filter((s) => s.type === PlanStepType.ML_CLASSIFY);
+    const mlClusterSteps = result.steps.filter((s) => s.type === PlanStepType.ML_CLUSTER);
+
+    // Each ML type must appear exactly once
+    expect(mlClassifySteps).toHaveLength(1);
+    expect(mlClusterSteps).toHaveLength(1);
+  });
+
+  it('explicit config.ml.tasks parameters override profile defaults for overlapping tasks', () => {
+    // balanced already includes ml_classify; config.ml overrides with method: 'naive_bayes', k: 3
+    const config: Config = {
+      ...baseConfig,
+      ml: { enabled: true, tasks: ['classify'], method: 'naive_bayes', k: 3 },
+    };
+    const result = plan(config);
+    const classifyStep = result.steps.find((s) => s.type === PlanStepType.ML_CLASSIFY);
+
+    expect(classifyStep).toBeDefined();
+    expect(classifyStep!.parameters.method).toBe('naive_bayes');
+    expect(classifyStep!.parameters.k).toBe(3);
+  });
+
+  it('empty ml.tasks with ml.enabled=true: profile ML steps present, each exactly once', () => {
+    const config: Config = {
+      ...baseConfig,
+      ml: { enabled: true, tasks: [] },
+    };
+    const result = plan(config);
+    // Profile ML steps should still be present (from profile pipeline, not from explicit tasks)
+    const typeSet = new Set(result.steps.map((s) => s.type as string));
+    expect(typeSet.has(PlanStepType.ML_CLASSIFY)).toBe(true);
+    // Each ML type appears exactly once
+    expect(result.steps.filter((s) => s.type === PlanStepType.ML_CLASSIFY)).toHaveLength(1);
+  });
+
+  it('fast profile + explicit ml.tasks: ML steps added (fast profile has no ML by default)', () => {
+    const config: Config = {
+      ...baseConfig,
+      execution: { profile: 'fast' },
+      ml: { enabled: true, tasks: ['classify', 'anomaly'] },
+    };
+    const result = plan(config);
+    const typeSet = new Set(result.steps.map((s) => s.type as string));
+
+    // Explicit opt-in should add ML even to fast profile
+    expect(typeSet.has(PlanStepType.ML_CLASSIFY)).toBe(true);
+    expect(typeSet.has(PlanStepType.ML_ANOMALY)).toBe(true);
+    // Each appears exactly once
+    expect(result.steps.filter((s) => s.type === PlanStepType.ML_CLASSIFY)).toHaveLength(1);
+  });
+
+  it('plan passes DAG validation when balanced profile + ml.tasks overlap (no duplicate nodes)', () => {
+    const config: Config = {
+      ...baseConfig,
+      ml: { enabled: true, tasks: ['classify', 'cluster', 'forecast'] },
+    };
+    const result = plan(config);
+    const stepIds = result.steps.map((s) => s.id);
+    // All step IDs must be unique
+    expect(new Set(stepIds).size).toBe(stepIds.length);
+  });
+});
+
+describe('Algorithm override edge cases', () => {
+  const baseConfig: Config = {
+    version: '1.0',
+    source: { format: 'xes' },
+    execution: { profile: 'quality' },
+  };
+
+  it('quality profile + algorithm.name dfg: dfg replaces discovery, keeps quality analysis + ML', () => {
+    const config: Config = { ...baseConfig, algorithm: { name: 'dfg' } };
+    const result = plan(config);
+    const typeSet = new Set(result.steps.map((s) => s.type as string));
+
+    // Discovery replaced with dfg
+    expect(typeSet.has(PlanStepType.DISCOVER_DFG)).toBe(true);
+    expect(typeSet.has(PlanStepType.DISCOVER_GENETIC)).toBe(false);
+    expect(typeSet.has(PlanStepType.DISCOVER_ILP)).toBe(false);
+
+    // Quality analysis steps are preserved
+    expect(typeSet.has(PlanStepType.ANALYZE_PERFORMANCE)).toBe(true);
+    expect(typeSet.has(PlanStepType.ANALYZE_CONFORMANCE)).toBe(true);
+
+    // ML steps are preserved (they are analysis, not discovery)
+    expect(typeSet.has(PlanStepType.ML_CLASSIFY)).toBe(true);
+  });
+
+  it('algorithm override with unknown name throws PlannerError', () => {
+    const config: Config = {
+      ...baseConfig,
+      algorithm: { name: 'nonexistent_algorithm' },
+    };
+    expect(() => plan(config)).toThrow();
+  });
+
+  it('fast profile + ilp override: ilp replaces discovery, fast analysis steps preserved', () => {
+    const config: Config = {
+      version: '1.0',
+      source: { format: 'xes' },
+      execution: { profile: 'fast' },
+      algorithm: { name: 'ilp' },
+    };
+    const result = plan(config);
+    const typeSet = new Set(result.steps.map((s) => s.type as string));
+
+    expect(typeSet.has(PlanStepType.DISCOVER_ILP)).toBe(true);
+    expect(typeSet.has(PlanStepType.DISCOVER_DFG)).toBe(false);
+    expect(typeSet.has(PlanStepType.ANALYZE_STATISTICS)).toBe(true);
+    // Fast profile has no ML by default, and override doesn't add ML
+    expect(typeSet.has(PlanStepType.ML_CLASSIFY)).toBe(false);
+  });
+});

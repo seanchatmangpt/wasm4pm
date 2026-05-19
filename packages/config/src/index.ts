@@ -15,6 +15,11 @@
  */
 
 // Resolution
+/**
+ * resolveConfig — Merges CLI, TOML, JSON, ENV, and defaults with 5-layer precedence.
+ * @description Returns Zod-validated Config with provenance tracking per field (source + path + timestamp).
+ * @example const config = await resolveConfig({ cliOverrides: { profile: 'quality' } });
+ */
 export {
   resolveConfig,
   checkConfigWarnings,
@@ -22,9 +27,16 @@ export {
   getExampleJsonConfig,
   getExampleEnvFile,
   getExamplePresetConfig,
+  configToToml,
+  configToEnv,
 } from './resolver.js';
 
 // Schema & validation
+/**
+ * configSchema — Zod schema for complete Config validation; use via validate().
+ * @description Enforces 5-layer (CLI > TOML > JSON > ENV > defaults) with Zod parsing and type-safe coercion.
+ * @example const config = configSchema.parse(raw); // throws if invalid
+ */
 export {
   configSchema,
   SCHEMA_VERSION,
@@ -64,6 +76,7 @@ export {
   membraneThresholdsSchema,
   membraneDriftSchema,
   membraneEnvelopesSchema,
+  swarmConfigSchema,
 } from './schema.js';
 export type { AlgorithmId } from './schema.js';
 
@@ -86,6 +99,16 @@ export {
 } from './provenance.js';
 
 // Types
+/**
+ * Config — Top-level configuration type with source, algorithm, execution, observability, watch, output, prediction, and metadata.
+ * @description After resolveConfig(), check config.metadata.provenance to trace field origins across 5-layer precedence.
+ * @example console.log(config.metadata.provenance.execution.profile.source); // 'cli' | 'toml' | 'env' | etc.
+ */
+/**
+ * ExecutionProfile — One of 'fast' | 'balanced' | 'quality' | 'stream' determines algorithm selection and resource constraints.
+ * @description Drives planner behavior; 'quality' enables genetic/ILP, 'fast' uses only DFG, 'stream' enables SIMD.
+ * @example const profile: ExecutionProfile = 'quality';
+ */
 export type {
   BaseConfig,
   Config,
@@ -125,7 +148,27 @@ export type {
 } from './types.js';
 
 // Hashing (only hashConfig is used externally - by resolver.ts)
+/**
+ * hashConfig — BLAKE3 hash of resolved Config (used in receipt chaining and audit trails).
+ * @description Deterministic hash reflects all merged 5-layer fields; changes if any config layer changes.
+ * @example const hash = hashConfig(config); // hex-64 string for receipt verification
+ */
 export { hashConfig } from './hash.js';
+
+// mcpp bridge — map ResolvedConfig to McpplusRequest fields
+export type {
+  ObjectRef,
+  ConformanceThresholds,
+  PolicyOnNonconformance,
+  Policy,
+  McpplusRequest,
+} from './mcpp-bridge.js';
+export {
+  MCPP_VERSION,
+  configToMcppExtensions,
+  configToConformanceThresholds,
+  buildMcppRequest,
+} from './mcpp-bridge.js';
 
 // Validation & Profiles
 export {
@@ -161,4 +204,5 @@ export {
   type PresetConstraints,
   type AlgorithmMeasurement,
   type BenchmarkData,
+  type LogCharacteristics,
 } from './validation/presets.js';

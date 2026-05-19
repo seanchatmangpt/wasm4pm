@@ -26,12 +26,6 @@ export interface CliTestEnv {
  * envelope's `error.code` field.
  */
 export declare const EXIT_CODES: {
-    readonly SUCCESS: 0;
-    readonly CONFIG_ERROR: 1;
-    readonly SOURCE_ERROR: 2;
-    readonly EXECUTION_ERROR: 3;
-    readonly PARTIAL_FAILURE: 4;
-    readonly SYSTEM_ERROR: 5;
     readonly success: 0;
     readonly config_error: 1;
     readonly source_error: 2;

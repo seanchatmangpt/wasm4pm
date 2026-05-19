@@ -1,0 +1,43 @@
+groups:
+  - id: pm.prediction
+    type: attribute_group
+    brief: >
+      Predictive process monitoring — covering van der Aalst's six prediction perspectives:
+      next-activity, remaining-time, outcome, drift, features, resource.
+    attributes:
+      - id: pm.prediction.task
+        type: string
+        stability: development
+        brief: Prediction task name (normalised to snake_case)
+        requirement_level: required
+        examples: ['next_activity', 'remaining_time', 'outcome', 'drift', 'features', 'resource']
+      - id: pm.prediction.input.trace_count
+        type: int
+        stability: development
+        brief: Number of traces supplied to the predictor
+        requirement_level: recommended
+      - id: pm.prediction.input.event_count
+        type: int
+        stability: development
+        brief: Number of events supplied to the predictor
+        requirement_level: recommended
+      - id: pm.prediction.output.count
+        type: int
+        stability: development
+        brief: Number of predictions produced
+        requirement_level: recommended
+      - id: pm.prediction.top_k
+        type: int
+        stability: development
+        brief: Top-k parameter for next-activity prediction
+        requirement_level: opt_in
+      - id: pm.prediction.ngram_order
+        type: int
+        stability: development
+        brief: N-gram order used for next-activity prediction
+        requirement_level: opt_in
+      - id: pm.prediction.duration_ms
+        type: int
+        stability: development
+        brief: Prediction task wall-clock duration in milliseconds
+        requirement_level: recommended

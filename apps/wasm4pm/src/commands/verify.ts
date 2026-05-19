@@ -1,4 +1,8 @@
 import { defineCommand } from 'citty';
+import * as fs from 'fs/promises';
+import * as path from 'path';
+import { randomUUID } from 'node:crypto';
+import { createHash } from 'node:crypto';
 import { runCertification } from '@wasm4pm/testing';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
@@ -6,10 +10,55 @@ import { withSpan } from './_otel.js';
 import pkg from '../../package.json' with { type: 'json' };
 import { exitWithFlush } from '../otel/exit.js';
 
+/**
+ * Save certification gate receipt to .wasm4pm/receipts/
+ */
+async function saveCertificationReceipt(
+  report: any,
+  elapsedMs: number,
+  version: string,
+): Promise<string> {
+  const receiptDir = path.resolve('.wasm4pm/receipts');
+  await fs.mkdir(receiptDir, { recursive: true });
+
+  const now = new Date();
+  const timestamp = now.toISOString();
+
+  const passCount = report.gates.filter((g: any) => g.passed).length;
+  const failCount = report.gates.filter((g: any) => !g.passed).length;
+
+  // Compute hash for receipt chain
+  const outputHash = createHash('sha256')
+    .update(JSON.stringify({
+      passed: report.passed,
+      pass_count: passCount,
+      fail_count: failCount,
+      gates: report.gates.map((g: any) => ({ gate: g.gate, passed: g.passed })),
+    }))
+    .digest('hex');
+
+  const receipt = {
+    run_id: randomUUID(),
+    timestamp,
+    duration_ms: elapsedMs,
+    output_hash: outputHash,
+    status: report.passed ? 'success' : 'partial',
+    passed: report.passed,
+    pass_count: passCount,
+    fail_count: failCount,
+    version,
+  };
+
+  const receiptPath = path.join(receiptDir, `verify-${receipt.run_id}.json`);
+  await fs.writeFile(receiptPath, JSON.stringify(receipt, null, 2));
+
+  return receiptPath;
+}
+
 export const verify = defineCommand({
   meta: {
     name: 'verify',
-    description: 'Run definition-of-done certification gates',
+    description: 'Run definition-of-done certification gates. Example: wpm verify --fast',
   },
   args: {
     fast: {
@@ -39,13 +88,22 @@ export const verify = defineCommand({
       const failCount = report.gates.filter((g) => !g.passed).length;
       const exitCode = failCount > 0 ? EXIT_CODES.execution_error : EXIT_CODES.success;
 
-      const result = makeResult('verify', {
-        passed: report.passed,
-        gates: report.gates,
-        summary: report.summary,
-        pass_count: passCount,
-        fail_count: failCount,
-      }, performance.now() - t0, exitCode);
+      // Save receipt for audit trail
+      await saveCertificationReceipt(report, performance.now() - t0, version);
+
+      const result = makeResult(
+        'verify',
+        {
+          passed: report.passed,
+          gates: report.gates,
+          summary: report.summary,
+          pass_count: passCount,
+          fail_count: failCount,
+          evidence: report.evidence,
+        },
+        performance.now() - t0,
+        exitCode
+      );
 
       emitResult(result, { format, verbose, quiet }, (res, projection) => {
         projection.info('wpm verify — Definition-of-Done gate check');
@@ -59,6 +117,42 @@ export const verify = defineCommand({
         projection.log(`${res.payload.pass_count}/${res.payload.gates.length} gates passed`);
         if (res.payload.fail_count > 0) {
           projection.warn(`${res.payload.fail_count} gate(s) failed`);
+        }
+
+        if (verbose && res.payload.evidence) {
+          const ev = res.payload.evidence;
+          projection.log('');
+          projection.log('Evidence:');
+          projection.log(`  corpus_hash:  ${ev.corpus_hash}`);
+          projection.log(`  node_version: ${ev.run_environment.node_version}`);
+          projection.log(`  platform:     ${ev.run_environment.platform}/${ev.run_environment.arch}`);
+          projection.log(`  wasm_profile: ${ev.wasm_build_profile}`);
+        }
+
+        if (res.payload.fail_count > 0) {
+          const failedGates = res.payload.gates.filter((g) => !g.passed);
+          projection.log('');
+          projection.warn('What to fix:');
+          for (const g of failedGates) {
+            projection.warn(`  ✗ ${g.gate}: ${g.details}`);
+            if (g.gate === 'parity:explain-run') {
+              projection.log(
+                '    → Run: wpm explain --algorithm dfg  and compare with  wpm run --dry-run'
+              );
+            } else if (g.gate === 'cli:exit-codes') {
+              projection.log(
+                '    → Run: wpm run /nonexistent/path.xes  and verify exit code is 2'
+              );
+            } else if (g.gate === 'performance:benchmarks') {
+              projection.log(
+                '    → Run: wpm benchmark calibrate  to measure this machine\'s baseline'
+              );
+            } else if (g.gate === 'config:resolution') {
+              projection.log('    → Run: wpm status  and check config precedence chain');
+            } else {
+              projection.log(`    → Gate: ${g.gate}`);
+            }
+          }
         }
       });
 

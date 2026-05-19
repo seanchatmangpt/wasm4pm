@@ -1081,7 +1081,7 @@ export function checkPowl2Conformance(
 // ── ingest subcommand ─────────────────────────────────────────────────────────
 
 const ingest = defineCommand({
-  meta: { name: 'ingest', description: 'Parse a stack trace into TraceGraph JSON-LD' },
+  meta: { name: 'ingest', description: 'Parse a stack trace into TraceGraph JSON-LD. Example: wpm trace ingest --from rust --input stack.txt' },
   args: {
     from: {
       type: 'string',

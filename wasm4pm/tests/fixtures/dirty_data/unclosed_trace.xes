@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<log xmlns="http://www.xes-standard.org/">
+  <trace>
+    <string key="concept:name" value="case1"/>
+    <event>
+      <string key="concept:name" value="A"/>
+      <date key="time:timestamp" value="2024-01-01T09:00:00Z"/>
+    </event>
+</log>

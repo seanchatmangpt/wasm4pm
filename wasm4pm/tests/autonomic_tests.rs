@@ -224,15 +224,196 @@ mod spc_tests {
 
     #[test]
     fn test_rule_1_out_of_control() {
+        // Use 8 in-control points alternating above/below CL (to suppress Rule 2 and Rule 4),
+        // then one point beyond UCL.
+        // UCL=10, CL=5, LCL=0 → sigma≈1.667 → 2σ boundary above≈8.333
+        // Alternating 5.1/4.9 stays well within 2σ and avoids 9-consecutive-same-side.
         let mut data = vec![];
-        for i in 0..8 {
-            data.push(chart(5.0 + i as f64, 10.0, 5.0, 0.0));
+        for i in 0..8u8 {
+            let v = if i % 2 == 0 { 5.1_f64 } else { 4.9_f64 };
+            data.push(chart(v, 10.0, 5.0, 0.0));
         }
         data.push(chart(11.0, 10.0, 5.0, 0.0));
 
         let alerts = check_western_electric_rules(&data);
         assert_eq!(alerts.len(), 1);
         assert!(matches!(alerts[0], SpecialCause::OutOfControl { .. }));
+    }
+
+    // -----------------------------------------------------------------------
+    // Rank-1 (mathematical theorem) exact-firing boundary tests
+    // -----------------------------------------------------------------------
+
+    /// Rule 1 fires at exactly the point that crosses 3σ, not before.
+    /// Feed 1 in-control point then 1 beyond-UCL point → alert fires at point 2.
+    #[test]
+    fn test_rule_1_fires_at_exactly_the_out_of_control_point() {
+        // Only 2 points total (too few for Rules 2/3/4 which need ≥9 points).
+        // UCL=13, CL=10, LCL=7 → value must be strictly inside [7, 13].
+        // Use 10.0 as in-control (exactly on CL — value==CL is not outside limits).
+        let in_control = chart(10.0, 13.0, 10.0, 7.0); // value == CL, inside UCL/LCL
+        let out_of_control = chart(14.0, 13.0, 10.0, 7.0); // value > UCL
+
+        // One in-control point alone → no alerts.
+        let alerts_one = check_western_electric_rules(&[in_control.clone()]);
+        assert!(
+            alerts_one.is_empty(),
+            "Rule 1 must not fire for an in-control point; got {:?}",
+            alerts_one
+        );
+
+        // Two points: first in-control, second beyond UCL → fires at 2nd (exactly one alert).
+        let alerts_two = check_western_electric_rules(&[in_control, out_of_control]);
+        assert_eq!(
+            alerts_two.len(),
+            1,
+            "Rule 1 must fire at exactly the 2nd point; got {:?}",
+            alerts_two
+        );
+        assert!(
+            matches!(alerts_two[0], SpecialCause::OutOfControl { .. }),
+            "Expected OutOfControl, got {:?}",
+            alerts_two[0]
+        );
+    }
+
+    /// Rule 2 must not fire on 8 consecutive same-side points; must fire on the 9th.
+    #[test]
+    fn test_rule_2_fires_at_exactly_the_9th_consecutive_point() {
+        // UCL=10, CL=5, LCL=0 → value=6 is above CL but within 2σ (2σ≈8.33) to keep Rule 4 quiet.
+        let above_cl = || chart(6.0, 10.0, 5.0, 0.0);
+
+        // 8 points above CL → Rule 2 must NOT fire.
+        let data_8: Vec<ChartData> = (0..8).map(|_| above_cl()).collect();
+        let alerts_8 = check_western_electric_rules(&data_8);
+        assert!(
+            !alerts_8.iter().any(|a| matches!(a, SpecialCause::Shift { .. })),
+            "Rule 2 must not fire on only 8 consecutive points; got {:?}",
+            alerts_8
+        );
+
+        // 9 points above CL → Rule 2 MUST fire.
+        let data_9: Vec<ChartData> = (0..9).map(|_| above_cl()).collect();
+        let alerts_9 = check_western_electric_rules(&data_9);
+        assert!(
+            alerts_9.iter().any(|a| matches!(
+                a,
+                SpecialCause::Shift {
+                    direction: ShiftDirection::Above,
+                    ..
+                }
+            )),
+            "Rule 2 must fire on exactly 9 consecutive points above CL; got {:?}",
+            alerts_9
+        );
+    }
+
+    /// Rule 3 must not fire on 5 consecutive increasing points; must fire on the 6th.
+    #[test]
+    fn test_rule_3_fires_at_exactly_the_6th_consecutive_trend_point() {
+        // Build a buffer of 9 points so that the WE function doesn't short-circuit.
+        // First 3 are neutral (oscillating, no trend), then 6 strictly increasing.
+        // UCL=20, CL=10, LCL=0; values stay well within 2σ (≈16.67) to avoid Rule 4.
+        let make_data = |values: &[f64]| -> Vec<ChartData> {
+            values.iter().map(|&v| chart(v, 20.0, 10.0, 0.0)).collect()
+        };
+
+        // 5 strictly increasing points after 4 neutral prefix (9 total).
+        // Neutral: 10, 11, 10, 11 (oscillates, not monotone).
+        let data_5_trend = make_data(&[10.0, 11.0, 10.0, 11.0, 10.5, 11.0, 11.5, 12.0, 12.5]);
+        // last 6 = 10.0, 10.5, 11.0, 11.5, 12.0, 12.5 — increasing? let me use a clean setup.
+        // Simpler: use 9 points where only the last 5 are monotone (below threshold of 6).
+        let five_trend = make_data(&[10.0, 11.0, 10.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0]);
+        // last 6 = 10, 11, 12, 13, 14, 15 → strictly increasing → Rule 3 fires
+        // But we need to first prove 5 is NOT enough.
+        // Build exactly 9 points where the last 5 (not 6) are strictly increasing.
+        let five_inc_only = make_data(&[10.0, 11.0, 10.0, 10.0, 10.0, 11.0, 12.0, 13.0, 14.0]);
+        // last 6 = 10, 10, 11, 12, 13, 14 — not strictly increasing (10==10) → no Rule 3
+        let alerts_five = check_western_electric_rules(&five_inc_only);
+        assert!(
+            !alerts_five.iter().any(|a| matches!(a, SpecialCause::Trend { .. })),
+            "Rule 3 must not fire when only 5 consecutive points are increasing; got {:?}",
+            alerts_five
+        );
+
+        // Now 9 points where the last 6 are strictly increasing.
+        let alerts_six = check_western_electric_rules(&five_trend);
+        assert!(
+            alerts_six.iter().any(|a| matches!(
+                a,
+                SpecialCause::Trend {
+                    direction: TrendDirection::Increasing,
+                    ..
+                }
+            )),
+            "Rule 3 must fire when 6 consecutive points are strictly increasing; got {:?}",
+            alerts_six
+        );
+    }
+
+    /// Rule 4 must fire when ≥2 of the last 3 points are beyond 2σ on the same side.
+    /// It must NOT fire when only 1 of 3 is beyond 2σ.
+    #[test]
+    fn test_rule_4_two_of_three_beyond_2sigma() {
+        // UCL=10, CL=5, LCL=0 → sigma=5/3≈1.667 → 2σ boundary above=8.333.
+        // Build 9 points: 6 neutral (≈5.1), then 3 where ≥2 are beyond 8.333.
+        let mk = |v: f64| chart(v, 10.0, 5.0, 0.0);
+
+        // Only 1 of last 3 beyond 2σ → Rule 4 must NOT fire.
+        let one_of_three: Vec<ChartData> = {
+            let mut v: Vec<ChartData> = (0..6).map(|_| mk(5.1)).collect(); // neutral
+            v.push(mk(5.1)); // in range
+            v.push(mk(9.0)); // beyond 2σ above (only 1 of 3)
+            v.push(mk(5.1)); // in range
+            v
+        };
+        let alerts_one = check_western_electric_rules(&one_of_three);
+        assert!(
+            !alerts_one.iter().any(|a| matches!(a, SpecialCause::TwoOfThree { .. })),
+            "Rule 4 must not fire when only 1 of 3 points is beyond 2σ; got {:?}",
+            alerts_one
+        );
+
+        // 2 of last 3 beyond 2σ above → Rule 4 MUST fire.
+        let two_of_three: Vec<ChartData> = {
+            let mut v: Vec<ChartData> = (0..6).map(|_| mk(5.1)).collect(); // neutral
+            v.push(mk(9.0)); // beyond 2σ
+            v.push(mk(5.1)); // in range (2 of 3 on same side)
+            v.push(mk(9.0)); // beyond 2σ
+            v
+        };
+        let alerts_two = check_western_electric_rules(&two_of_three);
+        assert!(
+            alerts_two.iter().any(|a| matches!(
+                a,
+                SpecialCause::TwoOfThree {
+                    direction: ShiftDirection::Above
+                }
+            )),
+            "Rule 4 must fire when 2 of 3 consecutive points are beyond 2σ above CL; got {:?}",
+            alerts_two
+        );
+
+        // 2 of last 3 beyond 2σ below → Rule 4 fires on the Below side.
+        let two_of_three_below: Vec<ChartData> = {
+            // LCL=0, CL=5, sigma=5/3 → 2σ boundary below = 5 - 3.333 = 1.667
+            let mut v: Vec<ChartData> = (0..6).map(|_| mk(5.1)).collect(); // neutral
+            v.push(mk(1.0)); // beyond 2σ below
+            v.push(mk(5.1)); // in range
+            v.push(mk(1.0)); // beyond 2σ below
+            v
+        };
+        let alerts_below = check_western_electric_rules(&two_of_three_below);
+        assert!(
+            alerts_below.iter().any(|a| matches!(
+                a,
+                SpecialCause::TwoOfThree {
+                    direction: ShiftDirection::Below
+                }
+            )),
+            "Rule 4 must fire when 2 of 3 consecutive points are beyond 2σ below CL; got {:?}",
+            alerts_below
+        );
     }
 
     #[test]

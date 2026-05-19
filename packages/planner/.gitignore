@@ -1,6 +1,11 @@
 node_modules/
 dist/
 *.tsbuildinfo
+# Compiled output co-located with source — belongs in dist/
+vitest.config.d.ts
+vitest.config.d.ts.map
+vitest.config.js
+vitest.config.js.map
 .env
 .env.local
 .env.*.local

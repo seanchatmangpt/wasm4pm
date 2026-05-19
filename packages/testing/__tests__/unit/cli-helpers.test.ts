@@ -21,13 +21,14 @@ describe('CLI Test Helpers', () => {
   });
 
   describe('EXIT_CODES', () => {
-    it('defines all expected exit codes', () => {
+    it('defines all expected exit codes (lowercase keys — current API)', () => {
       expect(EXIT_CODES.success).toBe(0);
       expect(EXIT_CODES.config_error).toBe(1);
       expect(EXIT_CODES.source_error).toBe(2);
       expect(EXIT_CODES.execution_error).toBe(3);
       expect(EXIT_CODES.partial_failure).toBe(4);
       expect(EXIT_CODES.system_error).toBe(5);
+      expect(EXIT_CODES.conformance_fail).toBe(6);
     });
   });
 

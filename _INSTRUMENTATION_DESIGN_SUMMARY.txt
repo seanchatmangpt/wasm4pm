@@ -1,0 +1,373 @@
+================================================================================
+OTEL CROSS-LAYER TRACE CORRELATION DESIGN — EXECUTIVE SUMMARY
+================================================================================
+
+DELIVERABLE: _INSTRUMENTATION_DESIGN.md (1144 lines)
+- 3 design documents (pseudocode + rationale)
+- Integration points mapped
+- Conflict analysis complete
+- Chicago TDD compliance checklist
+
+================================================================================
+DESIGN 1: TRACE CONTEXT PROPAGATION (CLI → WASM)
+================================================================================
+
+PROBLEM:
+  - CLI commands emit spans with random trace_id
+  - WASM functions emit spans with DIFFERENT random trace_id
+  - Jaeger cannot correlate CLI and WASM spans
+  - Root cause: no mechanism to pass trace context from JavaScript to Rust WASM
+
+SOLUTION ARCHITECTURE:
+  1. CLI: Generate trace_id + parent_span_id in command root span
+  2. CLI: Pass TraceContext via JSON to WASM discovery functions
+  3. WASM: Parse trace context from input JSON
+  4. WASM: Use inherited trace_id + parent_span_id in all child spans
+  5. Result: All spans linked in single distributed trace
+
+PSEUDOCODE PATTERNS:
+  - TraceContext interface (trace_id, parent_span_id, baggage)
+  - discover_dfg_with_trace(input_json) new WASM function
+  - Rust #[wasm_bindgen] parses TraceContext from input
+  - All WASM tracing::spans inherit trace_id
+
+INTEGRATION POINTS:
+  - apps/wasm4pm/src/commands/run.ts: Pass trace context to discovery
+  - apps/wasm4pm/src/commands/_otel.ts: Enhanced withWasmSpan()
+  - wasm4pm/src/lib.rs: New WASM functions accepting trace context
+  - crates/wasm4pm-algos/src/discovery.rs: Use inherited trace_id
+
+BACKWARD COMPATIBILITY:
+  - Old discover_dfg(handle, key) still works
+  - New discover_dfg_with_trace(input_json) added as alternative
+  - 6-month deprecation period, then sunset old functions
+
+CONFLICT RESOLUTIONS:
+  ✓ WASM signature mismatch → Add new variant functions
+  ✓ Rust tracing crate → Export trace_id as attribute, post-processing merge
+  ✓ Return value shape → Don't pollute return, use OTEL span headers
+
+JAEGER RESULT:
+  Trace ID: a1b2c3d4e5f6...xyz
+  ├─ Span: wasm4pm.command.run (CLI root)
+  │  └─ Span: wasm.discover_dfg (WASM child, parent_span_id = CLI span ID)
+  │     └─ Span: kernel.discover_dfg (WASM internal)
+
+================================================================================
+DESIGN 2: ERROR SPAN EMISSION PATTERN
+================================================================================
+
+PROBLEM:
+  - 8 error scenarios fail without emitting OTEL spans:
+    * Schema validation (missing concept:name)
+    * Algorithm hazard rate (insufficient data)
+    * EWMA drift detection (NaN from empty window)
+    * Feature preprocessing (zero-variance column)
+    * First-run detection (I/O failure)
+    * Config parsing (invalid TOML)
+    * WASM load timeout (bootstrap timeout)
+    * Cleanup resource leak (delete_object fails)
+  - Chicago TDD violation: "if code says it worked but no span evidence, it didn't"
+
+SOLUTION:
+  emitErrorSpanForPhase(phase, error, elapsedMs, attributes, options)
+  
+  - Emits OTEL error span with phase name, error type, duration
+  - Non-blocking: failures in span emission never block command
+  - Optional trace context inheritance (for pre-command errors)
+  - Recovery flag indicates best-effort (warning) vs. fatal (error)
+  - Error cause chain captured (Error.cause)
+
+PSEUDOCODE:
+  export function emitErrorSpanForPhase(
+    phase: string,                          // schema_validation, drift_detection, etc.
+    error: Error | string,
+    elapsedMs: number,
+    attributes: Record<string, ...>,
+    options?: {
+      traceId?: string;                     // Inherit from parent
+      parentSpanId?: string;
+      recovered?: boolean;                  // Whether caught and recovered
+      severity?: 'warning' | 'error' | 'fatal';
+      cause?: Error;                        // Underlying error chain
+    }
+  ): void
+
+CALL SITE EXAMPLES:
+
+1. Schema Validation (Early):
+   emitErrorSpanForPhase('schema_validation',
+     'Event log missing concept:name',
+     duration,
+     { file: path, missing_attributes: [...] },
+     { severity: 'error' }
+   );
+
+2. Algorithm Hazard Rate (ML Phase):
+   emitErrorSpanForPhase('hazard_rate_computation',
+     'Hazard rate returned NaN',
+     duration,
+     { trace_count: 10, model_type: 'Weibull' },
+     { severity: 'error', recovered: false }
+   );
+
+3. EWMA Drift Detection (Streaming):
+   emitWarningSpanForPhase('ewma_computation',
+     'EWMA skipped: NaN throughput',
+     { previous_smoothed: 5.2, event_throughput: NaN },
+     { severity: 'warning', recovered: true }
+   );
+
+INTEGRATION POINTS:
+  - apps/wasm4pm/src/otel/error-span-emitter.ts (NEW module)
+  - All catch blocks that previously had no span context
+  - Pre-command validation phases
+  - ML algorithm error handlers
+
+CHICAGO TDD COMPLIANCE:
+  ✓ OTEL Span: phase, error_type, error_message, duration
+  ✓ Status: code = 'ERROR'|'UNSET', message = error
+  ✓ Service name: always 'wasm4pm'
+  ✓ Attributes: phase, error type, recovery context
+  ✓ Error causality: error.cause captured
+
+================================================================================
+DESIGN 3: PRE-COMMAND VALIDATION WRAPPER
+================================================================================
+
+PROBLEM:
+  - Commands perform early validations BEFORE withSpan() wrapper activates
+  - Format flag check, first-run UX, config parsing all happen pre-span
+  - If validation fails, exit occurs with NO trace context
+  - Jaeger sees zero evidence of validation failures
+
+SOLUTION:
+  withSpanAndValidation(commandName, validators[], commandFn, attrs)
+  
+  - Creates root span with trace_id shared by ALL validators + command
+  - Runs each validator, emits sub-span for each (OK or ERROR)
+  - Runs command body in inherited trace context
+  - Single root span encompasses all validation + command phases
+  - Critical validators exit on failure; non-critical continue
+
+PSEUDOCODE:
+  export async function withSpanAndValidation<T>(
+    commandName: string,
+    validators: Array<{
+      name: string;
+      fn: (ctx: ValidationContext) => Promise<void>;
+      critical?: boolean;           // Exit on failure if true
+    }>,
+    commandFn: (ctx: CommandContext) => Promise<T>,
+    attrs?: SpanAttrs
+  ): Promise<T>
+
+  // Creates root trace
+  rootTraceId = randomBytes(16).toString('hex');
+  rootSpanId = randomBytes(8).toString('hex');
+
+  // Phase 1: Run validators
+  for (validator of validators) {
+    try {
+      await validator.fn({ traceId, parentSpanId, commandName });
+      // Emit sub-span: OK
+    } catch (e) {
+      // Emit sub-span: ERROR
+      if (validator.critical) {
+        exit(code);  // Fail fast
+      }
+    }
+  }
+
+  // Phase 2: Run command body (inherited trace context)
+  return await commandFn({ traceId, parentSpanId, commandName });
+
+  // Phase 3: Root span closes, summarizes all validators + command
+
+USAGE EXAMPLE:
+  export const run = defineCommand({
+    async run(ctx) {
+      await withSpanAndValidation('run', [
+        {
+          name: 'format_check',
+          fn: async (valCtx) => {
+            // Validate --format flag
+            // Emit span on error
+          },
+          critical: true,
+        },
+        {
+          name: 'first_run_ux',
+          fn: async (valCtx) => {
+            // Check first-run marker
+            // Emit span on error
+          },
+          critical: false,  // Non-critical
+        },
+        {
+          name: 'config_parsing',
+          fn: async (valCtx) => {
+            // Parse wasm4pm.toml
+            // Emit span on error
+          },
+          critical: true,
+        },
+      ],
+      async (cmdCtx) => {
+        // Command body (now has trace context)
+        // All child spans inherit cmdCtx.traceId
+        return await runDiscovery(...);
+      });
+    }
+  });
+
+JAEGER RESULT:
+  Trace ID: a1b2c3d4e5f6...xyz
+  ├─ Span: wasm4pm.command.run (root, duration 1250ms)
+  │  ├─ Span: wasm4pm.validation.format_check (OK)
+  │  ├─ Span: wasm4pm.validation.first_run_ux (WARNING, recovered)
+  │  ├─ Span: wasm4pm.validation.config_parsing (OK)
+  │  └─ Span: wasm4pm.command.run.body (OK, 900ms)
+
+INTEGRATION POINTS:
+  - apps/wasm4pm/src/commands/_otel.ts: withSpanAndValidation()
+  - apps/wasm4pm/src/commands/run.ts: Refactor to use wrapper
+  - apps/wasm4pm/src/commands/conformance.ts: Refactor to use wrapper
+  - apps/wasm4pm/src/commands/predict.ts: Refactor to use wrapper
+
+CRITICAL vs. NON-CRITICAL:
+  Critical (exit on fail):
+    - Format flag validation
+    - Config file parsing
+    - Algorithm name validation
+  
+  Non-critical (continue):
+    - First-run marker check (UI hint only)
+    - Feature quality warnings (can skip feature)
+    - Drift detection (process continues)
+
+================================================================================
+COMPLIANCE CHECKLIST
+================================================================================
+
+CHICAGO TDD DOCTRINE:
+  ✓ 100% OTEL Coverage: Every exit path (success, error, validation) → span
+  ✓ Evidence Requirement: Spans include phase, error type, status
+  ✓ Rank-1 Oracle: Validation fail → error span emitted (provable)
+  ✓ No Self-Referential Tests: Don't derive span attrs from code being tested
+
+CRITICAL CONSTRAINTS:
+  ✓ Service Name: All spans include 'service.name': 'wasm4pm'
+  ✓ Status Field: All spans include status: { code: 'OK'|'ERROR' }
+  ✓ Trace Context: Child spans inherit trace_id + include parent_span_id
+  ✓ Error Attribution: Error spans include error.type + error.message
+  ✓ MTTR: Span emission <10ms overhead
+  ✓ TPS (Fail-Fast): OTEL errors never block command
+
+================================================================================
+IMPLEMENTATION SEQUENCE
+================================================================================
+
+PHASE 1 (2-3 days):
+  1. Implement TraceContext parameter + passing (CLI → WASM)
+  2. Add emitErrorSpanForPhase() helper
+  3. Audit 8 error scenarios, add span emissions
+  4. Tests: Verify each error scenario emits span
+
+PHASE 2 (1-2 days):
+  5. Implement withSpanAndValidation() wrapper
+  6. Refactor run/conformance/predict commands
+  7. Tests: Validation failures emit sub-spans
+  8. Tests: Root span merges all validators + command
+
+PHASE 3 (1 day):
+  9. End-to-end Jaeger trace correlation tests
+  10. Performance benchmarking (span overhead)
+  11. Documentation: OTEL design guide, usage patterns
+
+================================================================================
+CONFLICT RESOLUTIONS
+================================================================================
+
+1. WASM Signature Backward Compatibility
+   Conflict: New trace_context param breaks existing discover_dfg(handle, key)
+   Resolution: Add discover_dfg_with_trace() variant; deprecate old
+   Timeline: 6 months deprecation, then sunset
+
+2. Rust Tracing Crate Integration
+   Conflict: Rust tracing lib doesn't natively support distributed trace IDs
+   Resolution: Export trace_id as OTEL attribute; post-processing merges spans
+   Impact: Jaeger queries must group by trace_id attribute
+
+3. Return Value Shape Changes
+   Conflict: Adding _trace field pollutes return JSON; breaks parsers
+   Resolution: Keep return clean; emit trace context via OTEL spans only
+   Impact: Trace ID available in Jaeger, not in JSON response
+
+4. Pre-Validation Timing
+   Conflict: When should validation spans be emitted vs. command span?
+   Resolution: Emit both; root span encompasses all phases
+   Structure: Root → validators[] → command → root summary
+
+5. Error Swallowing in Cleanup
+   Conflict: Cleanup errors are caught (recovery) but need visibility
+   Resolution: Always emit span; recovered=true flag indicates best-effort
+   Pattern: Cleanup failure doesn't propagate; span marks error + recovery
+
+================================================================================
+SUCCESS METRICS
+================================================================================
+
+Measurement:
+  1. Trace Correlation Rate: 100% of WASM calls linked to CLI span
+  2. Error Span Coverage: All 8 error scenarios emit status.code='ERROR'
+  3. Validation Visibility: Each validator emits sub-span (OK or ERROR)
+  4. Span Overhead: <10ms per command (measured via /usr/bin/time)
+  5. Chicago TDD: All spans include service.name, status, error context
+
+Verification:
+  - Jaeger query: span.trace_id EXISTS AND span.parent_span_id EXISTS
+  - CLI benchmark: time wpm run ... 2>&1 | grep span | wc -l
+  - Coverage: All 8 error scenarios in regression suite
+
+================================================================================
+KEY FILES TO CREATE/MODIFY
+================================================================================
+
+NEW FILES:
+  - _INSTRUMENTATION_DESIGN.md (1144 lines, this design doc)
+  - apps/wasm4pm/src/otel/error-span-emitter.ts (emitErrorSpanForPhase)
+  - docs/guides/otel-trace-correlation.md (user guide)
+
+MODIFY:
+  - apps/wasm4pm/src/commands/_otel.ts (withSpanInheritingContext)
+  - apps/wasm4pm/src/commands/run.ts (use withSpanAndValidation)
+  - apps/wasm4pm/src/commands/conformance.ts (use withSpanAndValidation)
+  - apps/wasm4pm/src/commands/predict.ts (use withSpanAndValidation)
+  - wasm4pm/src/lib.rs (new discover_*_with_trace functions)
+  - crates/wasm4pm-algos/src/discovery.rs (parse trace context)
+
+================================================================================
+CONCLUSION
+================================================================================
+
+This design provides THREE COMPLEMENTARY SOLUTIONS to fix cross-layer trace
+correlation per Cycle 2 findings:
+
+1. TRACE CONTEXT PROPAGATION: Unify trace_id from CLI to WASM
+   - Result: All spans in single distributed trace
+   - Jaeger can correlate CLI and WASM operations
+
+2. ERROR SPAN EMISSION: Standardized pattern for all error paths
+   - Result: No silent failures; every error has OTEL context
+   - Chicago TDD compliance: 100% OTEL coverage
+
+3. PRE-COMMAND VALIDATION: Wrap early validations in trace context
+   - Result: Validation failures emit sub-spans in command trace
+   - Root span summarizes all validators + command outcome
+
+TOGETHER: Ensure **100% OTEL coverage** per chicago-tdd.md doctrine
+
+ANALYSIS ONLY: No implementation code provided. Design ready for handoff.
+
+================================================================================

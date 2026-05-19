@@ -1,7 +1,7 @@
 {
   "name": "@wasm4pm/cli",
-  "version": "26.5.18",
-  "description": "wasm4pm \u2014 High-performance WASM-powered process mining CLI",
+  "version": "26.5.19",
+  "description": "wasm4pm — High-performance WASM-powered process mining CLI",
   "type": "module",
   "bin": {
     "wpm": "./dist/bin/wpm.js"
@@ -47,6 +47,7 @@
   "devDependencies": {
     "@faker-js/faker": "^10.4.0",
     "@types/node": "^20.10.0",
+    "@wasm4pm/testing": "workspace:*",
     "typescript": "^5.3.3",
     "vitest": "^1.1.0"
   },

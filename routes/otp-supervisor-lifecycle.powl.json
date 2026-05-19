@@ -9,48 +9,14 @@
   "receipt_required": true,
   "object_types": {
     "Supervisor": {
-      "created_by": [
-        "start_link"
-      ],
-      "schema": {
-        "$schema": "http://json-schema.org/draft-07/schema#",
-        "type": "object",
-        "properties": {
-          "supervisor_id": {
-            "type": "string"
-          },
-          "status": {
-            "type": "string",
-            "enum": [
-              "starting",
-              "running",
-              "terminating"
-            ]
-          }
-        },
-        "required": [
-          "supervisor_id"
-        ]
-      }
+      "created_by": ["start_link"]
     },
     "WorkerProcess": {
-      "created_by": [
-        "handle_info_child_started"
-      ],
-      "terminated_by": [
-        "handle_info_child_died",
-        "terminate"
-      ]
+      "created_by": ["handle_info_child_started"],
+      "terminated_by": ["handle_info_child_died", "terminate"]
     },
     "Receipt": {
-      "created_by": [
-        "start_link",
-        "init",
-        "handle_info_child_started",
-        "handle_info_child_died",
-        "restart_child",
-        "terminate"
-      ]
+      "created_by": ["start_link", "init", "handle_info_child_started", "handle_info_child_died", "restart_child", "terminate"]
     }
   },
   "model": {
@@ -67,46 +33,16 @@
         "□"
       ],
       "edges": [
-        [
-          "▷",
-          "start_link"
-        ],
-        [
-          "start_link",
-          "init"
-        ],
-        [
-          "init",
-          "handle_info_child_started"
-        ],
-        [
-          "handle_info_child_started",
-          "□"
-        ],
-        [
-          "handle_info_child_started",
-          "handle_info_child_died"
-        ],
-        [
-          "handle_info_child_died",
-          "restart_child"
-        ],
-        [
-          "handle_info_child_died",
-          "terminate"
-        ],
-        [
-          "handle_info_child_died",
-          "□"
-        ],
-        [
-          "restart_child",
-          "handle_info_child_started"
-        ],
-        [
-          "terminate",
-          "□"
-        ]
+        ["▷", "start_link"],
+        ["start_link", "init"],
+        ["init", "handle_info_child_started"],
+        ["handle_info_child_started", "□"],
+        ["handle_info_child_started", "handle_info_child_died"],
+        ["handle_info_child_died", "restart_child"],
+        ["handle_info_child_died", "terminate"],
+        ["handle_info_child_died", "□"],
+        ["restart_child", "handle_info_child_started"],
+        ["terminate", "□"]
       ]
     }
   }

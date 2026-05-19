@@ -1,0 +1,460 @@
+/**
+ * server-client.test.ts
+ * Tests for kernel server client round-trip correctness
+ */
+
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import * as net from 'net';
+import * as path from 'path';
+import * as os from 'os';
+import { WasmServerClient, isWasmServerAvailable } from '../server-client.js';
+
+/**
+ * Mock WASM server for testing
+ */
+class MockWasmServer {
+  private server?: net.Server;
+  socketPath: string;
+  requestLog: Array<{ method: string; params?: Record<string, unknown> }> = [];
+
+  constructor(socketPath: string) {
+    this.socketPath = socketPath;
+  }
+
+  async start(): Promise<void> {
+    return new Promise((resolve) => {
+      this.server = net.createServer((socket) => {
+        let buffer = '';
+
+        socket.on('data', (chunk) => {
+          buffer += chunk.toString('utf8');
+          const lines = buffer.split('\n');
+
+          while (lines.length > 1) {
+            const line = lines.shift()!.trim();
+            buffer = lines.join('\n');
+
+            if (!line) continue;
+
+            try {
+              const request = JSON.parse(line);
+              this.requestLog.push(request);
+
+              let response: any;
+
+              if (request.method === 'ping') {
+                response = {
+                  result: { pong: true, timestamp: Date.now() },
+                };
+              } else if (request.method === 'algorithm') {
+                const { handle, algo, activity_key } = request.params || {};
+                if (!handle || !algo) {
+                  response = { error: 'Missing required params: handle, algo' };
+                } else {
+                  const PETRINET_ALGOS = new Set(['alpha', 'alpha_plus_plus', 'ilp']);
+                  response = {
+                    result: {
+                      handle: `${algo}_result_${Date.now()}`,
+                      algorithm: algo,
+                      outputType: PETRINET_ALGOS.has(algo as string) ? 'petrinet' : 'dfg',
+                      durationMs: Math.random() * 100,
+                      params: { activity_key },
+                      hash: `hash_${Date.now()}`,
+                      server_latency_ms: Math.random() * 50,
+                    },
+                  };
+                }
+              } else if (request.method === 'list') {
+                response = {
+                  result: {
+                    algorithms: [
+                      { id: 'dfg', name: 'DFG', outputType: 'dfg' },
+                      { id: 'alpha', name: 'Alpha++', outputType: 'petrinet' },
+                    ],
+                  },
+                };
+              } else {
+                response = { error: 'Unknown method' };
+              }
+
+              socket.write(JSON.stringify(response) + '\n');
+            } catch (err) {
+              socket.write(JSON.stringify({ error: 'Parse error' }) + '\n');
+            }
+          }
+        });
+
+        socket.on('error', () => {
+          // Ignore
+        });
+      });
+
+      this.server.listen(this.socketPath, resolve);
+    });
+  }
+
+  async stop(): Promise<void> {
+    return new Promise((resolve) => {
+      if (this.server) {
+        this.server.close(() => resolve());
+      } else {
+        resolve();
+      }
+    });
+  }
+}
+
+describe('WasmServerClient', () => {
+  let mockServer: MockWasmServer;
+  let client: WasmServerClient;
+  const socketPath = path.join(os.tmpdir(), `kernel-test-${Date.now()}.sock`);
+
+  beforeEach(async () => {
+    mockServer = new MockWasmServer(socketPath);
+    await mockServer.start();
+    client = new WasmServerClient({ socketPath });
+  });
+
+  afterEach(async () => {
+    if (mockServer) {
+      await mockServer.stop();
+    }
+  });
+
+  it('should check server availability with ping', async () => {
+    const available = await client.isAvailable();
+    expect(available).toBe(true);
+    expect(mockServer.requestLog.length).toBeGreaterThan(0);
+    expect(mockServer.requestLog[0].method).toBe('ping');
+  });
+
+  it('should return false when server unavailable', async () => {
+    await mockServer.stop();
+    const available = await client.isAvailable();
+    expect(available).toBe(false);
+  });
+
+  it('should run algorithm on server', async () => {
+    const result = await client.runAlgorithm('dfg', 'handle_123', {
+      activity_key: 'concept:name',
+    });
+
+    expect(result.handle).toBeDefined();
+    expect(result.algorithm).toBe('dfg');
+    expect(result.outputType).toBe('dfg');
+    expect(result.durationMs).toBeGreaterThanOrEqual(0);
+    expect(result.server_latency_ms).toBeGreaterThanOrEqual(0);
+
+    // Verify request was logged
+    const algRequest = mockServer.requestLog.find(
+      (r) => r.method === 'algorithm'
+    );
+    expect(algRequest).toBeDefined();
+    expect(algRequest?.params?.algo).toBe('dfg');
+    expect(algRequest?.params?.handle).toBe('handle_123');
+  });
+
+  it('should pass extra params to server', async () => {
+    await client.runAlgorithm('alpha', 'handle_456', {
+      activity_key: 'custom:key',
+      min_support: 0.5,
+      noise_threshold: 0.2,
+    });
+
+    const algRequest = mockServer.requestLog.find(
+      (r) => r.method === 'algorithm'
+    );
+    expect(algRequest?.params?.activity_key).toBe('custom:key');
+    const extraParams = algRequest?.params?.extra_params as Record<string, unknown> | undefined;
+    expect(extraParams?.min_support).toBe(0.5);
+    expect(extraParams?.noise_threshold).toBe(0.2);
+  });
+
+  it('should list algorithms on server', async () => {
+    const algorithms = await client.listAlgorithms();
+
+    expect(algorithms).toBeInstanceOf(Array);
+    expect(algorithms.length).toBeGreaterThan(0);
+    expect(algorithms[0].id).toBeDefined();
+    expect(algorithms[0].name).toBeDefined();
+    expect(algorithms[0].outputType).toBeDefined();
+  });
+
+  it('should throw error when server returns error', async () => {
+    await expect(
+      client.runAlgorithm('unknown', '', {})
+    ).rejects.toThrow();
+  });
+
+  it('should handle connection timeout', async () => {
+    const slowClient = new WasmServerClient({
+      socketPath: path.join(os.tmpdir(), 'nonexistent.sock'),
+      requestTimeout: 50,
+    });
+
+    const available = await slowClient.isAvailable();
+    expect(available).toBe(false);
+  });
+
+  it('should handle missing required params', async () => {
+    await expect(
+      client.runAlgorithm('dfg', '', {})
+    ).rejects.toThrow('Missing required params');
+  });
+
+  it('should have round-trip correctness', async () => {
+    // Test that multiple requests return consistent structure
+    const result1 = await client.runAlgorithm('dfg', 'handle_1', {});
+    const result2 = await client.runAlgorithm('alpha', 'handle_2', {});
+
+    expect(result1.handle).toBeDefined();
+    expect(result1.algorithm).toBe('dfg');
+    expect(result1.outputType).toBe('dfg');
+
+    expect(result2.handle).toBeDefined();
+    expect(result2.algorithm).toBe('alpha');
+    expect(result2.outputType).toBe('petrinet');
+  });
+
+  it('should handle concurrent requests', async () => {
+    const promises = [
+      client.runAlgorithm('dfg', 'h1', {}),
+      client.runAlgorithm('alpha', 'h2', {}),
+      client.runAlgorithm('dfg', 'h3', {}),
+    ];
+
+    const results = await Promise.all(promises);
+
+    expect(results).toHaveLength(3);
+    results.forEach((result) => {
+      expect(result.handle).toBeDefined();
+      expect(result.server_latency_ms).toBeGreaterThanOrEqual(0);
+    });
+  });
+
+  it('concurrent requests each return the algorithm from their own request', async () => {
+    // Gap: the existing concurrent test only checks that results are defined.
+    // This verifies no cross-contamination between independent socket connections:
+    // each response must carry the algorithm name sent in that specific request.
+    const [r1, r2, r3] = await Promise.all([
+      client.runAlgorithm('dfg', 'h1', {}),
+      client.runAlgorithm('alpha', 'h2', {}),
+      client.runAlgorithm('alpha_plus_plus', 'h3', {}),
+    ]);
+
+    expect(r1.algorithm).toBe('dfg');
+    expect(r2.algorithm).toBe('alpha');
+    expect(r3.algorithm).toBe('alpha_plus_plus');
+  });
+
+  it('should have correct param structure', async () => {
+    const result = await client.runAlgorithm('dfg', 'handle_123', {
+      activity_key: 'concept:name',
+    });
+
+    expect(result.params).toBeDefined();
+    expect(result.params.activity_key).toBe('concept:name');
+  });
+});
+
+// ─── Helper: ephemeral test server ────────────────────────────────────────────
+//
+// Creates a net.Server that tracks all open sockets so server.closeAll()
+// can force-close them during afterEach cleanup (server.close() alone does
+// NOT close existing connections and will hang until they close naturally).
+
+function makeEphemeralServer(
+  handler: (socket: net.Socket) => void
+): { server: net.Server; closeAll: () => Promise<void> } {
+  const openSockets = new Set<net.Socket>();
+  const server = net.createServer((socket) => {
+    openSockets.add(socket);
+    socket.on('close', () => openSockets.delete(socket));
+    handler(socket);
+  });
+  const closeAll = (): Promise<void> =>
+    new Promise((resolve) => {
+      for (const s of openSockets) s.destroy();
+      server.close(() => resolve());
+    });
+  return { server, closeAll };
+}
+
+describe('WasmServerClient — gap coverage', () => {
+  let closeAll: (() => Promise<void>) | null = null;
+
+  afterEach(async () => {
+    if (closeAll) {
+      await closeAll();
+      closeAll = null;
+    }
+  });
+
+  /** Unique socket path per test to avoid conflicts. */
+  const sock = (label: string) =>
+    path.join(os.tmpdir(), `sc-gap-${label}-${process.pid}.sock`);
+
+  /**
+   * Gap 1 — requestTimeout fires on in-flight requests (server accepts but
+   * never responds). The existing "timeout" test only covers ECONNREFUSED
+   * (non-existent socket). This test verifies the timer also fires when the
+   * server accepts the connection but then goes silent.
+   */
+  it(
+    'requestTimeout fires when server accepts but never responds',
+    async () => {
+      const socketPath = sock('g1');
+      const { server, closeAll: ca } = makeEphemeralServer((_socket) => {
+        // Accept but never write — connection hangs.
+      });
+      closeAll = ca;
+      await new Promise<void>((r) => server.listen(socketPath, r));
+
+      const c = new WasmServerClient({ socketPath, requestTimeout: 150 });
+      await expect(c.runAlgorithm('dfg', 'h', {})).rejects.toThrow(/timeout/i);
+    },
+    3000 // 3s test budget (requestTimeout is only 150ms)
+  );
+
+  /**
+   * Gap 2 — buffer fragmentation: response split across two TCP chunks.
+   * If a response arrives as two consecutive writes with no newline in the
+   * first chunk, the client must buffer and parse only when the newline
+   * (terminator) arrives in the second chunk.
+   */
+  it(
+    'reassembles response split across two TCP chunks',
+    async () => {
+      const socketPath = sock('g2');
+      const { server, closeAll: ca } = makeEphemeralServer((socket) => {
+        socket.on('data', () => {
+          const full = JSON.stringify({ result: { pong: true } });
+          const mid = Math.floor(full.length / 2);
+          socket.write(full.slice(0, mid));
+          // Second chunk arrives in the next iteration of the event loop.
+          setImmediate(() => {
+            if (!socket.destroyed) socket.write(full.slice(mid) + '\n');
+          });
+        });
+      });
+      closeAll = ca;
+      await new Promise<void>((r) => server.listen(socketPath, r));
+
+      const c = new WasmServerClient({ socketPath, requestTimeout: 2000 });
+      const available = await c.isAvailable();
+      expect(available).toBe(true);
+    },
+    4000
+  );
+
+  /**
+   * Gap 3 — server closes mid-response (partial JSON, no newline).
+   * The close handler must reject with a clear error, not hang and not
+   * silently return undefined. isAvailable() must return false (not throw).
+   */
+  it(
+    'rejects cleanly when server closes before completing the response',
+    async () => {
+      const socketPath = sock('g3');
+      const { server, closeAll: ca } = makeEphemeralServer((socket) => {
+        socket.on('data', () => {
+          socket.write('{"result": '); // partial JSON, no newline
+          socket.destroy();
+        });
+      });
+      closeAll = ca;
+      await new Promise<void>((r) => server.listen(socketPath, r));
+
+      const c = new WasmServerClient({ socketPath, requestTimeout: 2000 });
+      // isAvailable() wraps sendRequest() and converts all errors to false.
+      await expect(c.isAvailable()).resolves.toBe(false);
+    },
+    4000
+  );
+
+  /**
+   * Gap 4 — server closes connection immediately without writing anything.
+   * The close handler must reject (not hang), and isAvailable() returns false.
+   */
+  it(
+    'rejects cleanly when server closes connection without any data',
+    async () => {
+      const socketPath = sock('g4');
+      const { server, closeAll: ca } = makeEphemeralServer((socket) => {
+        socket.on('data', () => socket.destroy());
+      });
+      closeAll = ca;
+      await new Promise<void>((r) => server.listen(socketPath, r));
+
+      const c = new WasmServerClient({ socketPath, requestTimeout: 2000 });
+      await expect(c.isAvailable()).resolves.toBe(false);
+    },
+    4000
+  );
+
+  /**
+   * Gap 5 — settled promise is not re-resolved after a timeout/data race.
+   * If the server sends a late response after the client's timeout fires,
+   * the promise must stay rejected (not flip to resolved), and the whole
+   * isAvailable() call must complete in < clientTimeout + small buffer ms.
+   */
+  it(
+    'does not resolve after timeout even when response arrives late',
+    async () => {
+      const socketPath = sock('g5');
+      const TIMEOUT_MS = 80;
+      const { server, closeAll: ca } = makeEphemeralServer((socket) => {
+        socket.on('data', () => {
+          // Reply 3× after the client timeout.
+          setTimeout(() => {
+            if (!socket.destroyed)
+              socket.write(JSON.stringify({ result: { pong: true } }) + '\n');
+          }, TIMEOUT_MS * 3);
+        });
+      });
+      closeAll = ca;
+      await new Promise<void>((r) => server.listen(socketPath, r));
+
+      const c = new WasmServerClient({ socketPath, requestTimeout: TIMEOUT_MS });
+      const start = Date.now();
+      const available = await c.isAvailable();
+      const elapsed = Date.now() - start;
+
+      // Must have resolved as false (timeout) — not waited for the late reply.
+      expect(available).toBe(false);
+      // Should complete within ~2× the timeout, well before the late reply.
+      expect(elapsed).toBeLessThan(TIMEOUT_MS * 2 + 100);
+    },
+    3000
+  );
+});
+
+describe('isWasmServerAvailable helper', () => {
+  let mockServer: MockWasmServer;
+  const socketPath = path.join(os.tmpdir(), `helper-test-${Date.now()}.sock`);
+
+  afterEach(async () => {
+    if (mockServer) {
+      await mockServer.stop();
+    }
+  });
+
+  it('should return true when server available', async () => {
+    mockServer = new MockWasmServer(socketPath);
+    await mockServer.start();
+
+    const available = await isWasmServerAvailable(socketPath);
+    expect(available).toBe(true);
+  });
+
+  it('should return false when server unavailable', async () => {
+    const available = await isWasmServerAvailable(socketPath);
+    expect(available).toBe(false);
+  });
+
+  it('should not throw on unavailable server', async () => {
+    expect(
+      async () => await isWasmServerAvailable(socketPath)
+    ).not.toThrow();
+  });
+});

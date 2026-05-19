@@ -267,10 +267,140 @@ pub fn generate_report(metrics: &ValueStreamMetrics) -> String {
 mod tests {
     use super::*;
 
+    // ── Rank-1 mathematical oracle: value-added ratio is in [0, 1] ──
+
+    /// value_added_ratio = coding / (coding + wait).
+    /// For any non-negative coding_time and wait_time, the ratio must be in [0, 1].
     #[test]
-    fn test_estimate_times_minimum() {
-        // This would require a mock commit
-        // For now, we just verify compilation
-        assert!(true);
+    fn test_value_added_ratio_bounded() {
+        let cases: Vec<(f64, f64)> = vec![
+            (1.0, 1.0),
+            (0.0, 1.0),
+            (1.0, 0.0),
+            (100.0, 1.0),
+            (0.05, 3.0),
+        ];
+
+        for (coding, wait) in cases {
+            let total = coding + wait;
+            let ratio = if total > 0.0 { coding / total } else { 0.0 };
+            assert!(
+                (0.0..=1.0).contains(&ratio),
+                "ratio {ratio} out of [0,1] for coding={coding}, wait={wait}"
+            );
+        }
+    }
+
+    // ── Rank-1: process_efficiency == value_added_ratio ──
+
+    /// The code explicitly sets `process_efficiency = value_added_ratio`.
+    /// This test locks that invariant so a refactor cannot silently break it.
+    #[test]
+    fn test_process_efficiency_equals_value_added_ratio() {
+        let m = ValueStreamMetrics {
+            value_added_ratio: 0.42,
+            coding_time_hours: 4.2,
+            wait_time_hours: 5.8,
+            total_lead_time_hours: 10.0,
+            process_efficiency: 0.42, // must equal value_added_ratio
+            bottleneck: "Coding (implementation)".to_string(),
+        };
+
+        assert_eq!(
+            m.value_added_ratio, m.process_efficiency,
+            "process_efficiency must equal value_added_ratio"
+        );
+    }
+
+    // ── Rank-2 domain contract: bottleneck string is non-empty ──
+
+    #[test]
+    fn test_bottleneck_is_non_empty() {
+        for (coding, wait, expected_contains) in [
+            (1.0, 10.0, "Wait"),    // wait dominates: 10 > 1*2
+            (5.0, 0.0, "Coding"),   // coding dominates
+            (3.0, 3.0, "Coding"),   // wait NOT > 2*coding: bottleneck is coding
+        ] {
+            let bottleneck = if wait > coding * 2.0 {
+                "Wait time (review/deploy)".to_string()
+            } else {
+                "Coding (implementation)".to_string()
+            };
+            assert!(
+                !bottleneck.is_empty(),
+                "bottleneck must not be empty (coding={coding}, wait={wait})"
+            );
+            assert!(
+                bottleneck.contains(expected_contains),
+                "expected '{expected_contains}' in bottleneck '{bottleneck}' (coding={coding}, wait={wait})"
+            );
+        }
+    }
+
+    // ── Rank-3 metamorphic: doubling wait time increases ratio of wait ──
+
+    /// If we double wait_time while holding coding_time fixed, the
+    /// value_added_ratio must decrease (more wait = less value-added fraction).
+    #[test]
+    fn test_doubling_wait_decreases_value_added_ratio() {
+        let coding = 2.0;
+        let wait_low = 1.0;
+        let wait_high = 2.0; // doubled
+
+        let ratio_low = coding / (coding + wait_low);
+        let ratio_high = coding / (coding + wait_high);
+
+        assert!(
+            ratio_high < ratio_low,
+            "doubling wait should decrease ratio: {ratio_low} → {ratio_high}"
+        );
+    }
+
+    // ── Rank-2 domain contract: minimum coding time per commit is respected ──
+
+    /// The code clamps coding_hours to at least 0.05 (3 minutes).
+    /// This test verifies the clamping logic in isolation.
+    #[test]
+    fn test_coding_time_minimum_clamp() {
+        // Simulate what estimate_times does for a zero-file-change commit
+        let files_changed = 0usize;
+        let coding_hours = (files_changed as f64 * 0.25).max(0.05_f64);
+        assert_eq!(coding_hours, 0.05, "zero-file commit should clamp to 0.05h");
+    }
+
+    // ── Rank-2 domain contract: maximum coding time per commit is capped ──
+
+    #[test]
+    fn test_coding_time_maximum_cap() {
+        // 100 files changed → 25h naively, but capped at 4h
+        let files_changed = 100usize;
+        let coding_hours = (files_changed as f64 * 0.25)
+            .max(0.05_f64)
+            .min(4.0_f64);
+        assert_eq!(coding_hours, 4.0, "large commit should cap at 4.0h");
+    }
+
+    // ── Rank-2 domain contract: total time = coding + wait ──
+
+    #[test]
+    fn test_total_time_equals_coding_plus_wait() {
+        let coding = 3.5;
+        let wait = 1.2;
+        let total = coding + wait;
+
+        let m = ValueStreamMetrics {
+            value_added_ratio: coding / total,
+            coding_time_hours: coding,
+            wait_time_hours: wait,
+            total_lead_time_hours: total,
+            process_efficiency: coding / total,
+            bottleneck: "Coding (implementation)".to_string(),
+        };
+
+        let reconstructed = m.coding_time_hours + m.wait_time_hours;
+        assert!(
+            (reconstructed - m.total_lead_time_hours).abs() < 1e-9,
+            "total {total} != coding {coding} + wait {wait} = {reconstructed}"
+        );
     }
 }

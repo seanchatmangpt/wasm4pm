@@ -578,7 +578,7 @@ fn test_h3_conditional_negation_guard_circuit_bonus_detected() {
 
     // Case 2: guard=true, circuit=false → should give -0.5 penalty
     // reward = +0.2 (stable) - 0.5 (guard+circ penalty) = -0.3
-    let reward_circ_fail = compute_reward(2, 2, 0, true, false, false);
+    let reward_circ_fail = compute_reward(2, 2, 0, true, false, false, 0);
 
     // Case 3: guard=false, circuit=true → should give -0.5 penalty
     // reward = +0.2 (stable) - 0.5 (guard+circ penalty) = -0.3
@@ -631,3 +631,4 @@ fn test_h3_conditional_negation_guard_circuit_bonus_detected() {
 // 5. Health improvement +→- -> detected by test_h1_plus_to_minus_operator_mutation_detected
 // 6. SPC Rule 2 boundary >→>= -> detected by test_h2_spc_rule2_fires_at_9_not_8_detected
 // 7. Guard+circuit conditional negation -> detected by test_h3_conditional_negation_guard_circuit_bonus_detected
+ed

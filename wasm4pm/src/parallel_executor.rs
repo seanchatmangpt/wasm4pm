@@ -293,8 +293,16 @@ fn process_batch_unrolled(
         *node_counts.entry(events[i]).or_insert(0) += 1;
     }
 
-    // Count edges with 4x unrolling (2 per iteration at most)
+    // Count edges — skip positions that cross a trace boundary.
+    // `trace_starts` marks where each trace begins in the batch; the event
+    // at position `trace_starts[k]` is NOT a successor of position `trace_starts[k]-1`.
+    let boundary_set: std::collections::HashSet<usize> =
+        trace_starts.iter().copied().collect();
     for i in 0..events.len().saturating_sub(1) {
+        // Skip if position i+1 is the start of a new trace
+        if boundary_set.contains(&(i + 1)) {
+            continue;
+        }
         *edge_counts.entry((events[i], events[i + 1])).or_insert(0) += 1;
     }
 

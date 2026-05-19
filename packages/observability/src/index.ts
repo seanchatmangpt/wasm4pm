@@ -27,16 +27,55 @@ export * from './secret-redaction.js';
 // Instrumentation helpers
 export * from './instrumentation.js';
 
+// OTEL span timing verification and remediation
+export * from './timing-verification.js';
+
+// Streaming bridge: wasm4pm StreamingLog → mcpp LIVE correlation events
+export * from './streaming-bridge.js';
+
 // Observability wrapper (facade)
 export * from './observability-wrapper.js';
 
 export * from './observability.js';
 
-// AtomVM bridge — silent-skip detection + span emitters for BEAM/Erlang traces
+// LIVE-10 relay bridge: cross-enterprise A2A relay span emitters
+export * from './relay-bridge.js';
+
+// LIVE-07 AtomVM bridge: detection and silent skip span emitters
 export * from './atomvm-bridge.js';
 
-// Spine bridge — typed span shapes consumed by atomvm-bridge and friends
-export * from './spine-bridge.js';
+// LIVE-15/LIVE-16 healthcare bridge: privacy compliance + MedWatch filing spans
+export * from './healthcare-bridge.js';
+
+// Algorithm feedback loop: capture quality metrics per algorithm per log size
+
+// Conformance invariant validation (5-layer audit)
+export * from './conformance-invariants.js';
+export * from './feedback-loop.js';
+
+// Root cause diagnosis: classify conformance failures into categories
+export * from './root-cause.js';
+
+// Conformance caching: lazy precision computation and result memoization
+export * from './conformance-cache.js';
+
+// Discovery caching: TTL-based result memoization for identical log+algorithm+params
+export * from './discovery-cache.js';
+
+// Cache invalidation: smart parameter-aware cache invalidation
+export * from './cache-invalidation.js';
+
+// Result deduplication: content-based detection of duplicate logs across batch runs
+export * from './result-dedup.js';
+
+// Algorithm ranking: multi-algorithm performance comparison
+export * from './algorithm-ranking.js';
+
+// Error span capture: robust error detection, stack trace capture, OTEL emission
+export * from './error-span-capture.js';
+
+// Agent Coordination Log: RL agent actions, SPC alerts, recovery events with OCEL export (Gap-19)
+export * from './agent-coordination-log.js';
 
 // Global singleton access
 import { ObservabilityWrapper } from './observability-wrapper.js';

@@ -41,25 +41,25 @@ describe('SecretRedaction', () => {
   describe('Object redaction', () => {
     it('redacts simple fields, nested objects, arrays, and respects max depth', () => {
       const simple = { username: 'alice', password: 'super-secret', email: 'alice@example.com' };
-      const simpleRedacted = SecretRedaction.redactObject(simple);
+      const simpleRedacted = SecretRedaction.redactObject(simple) as Record<string, unknown>;
       expect(simpleRedacted.username).toBe('alice');
       expect(simpleRedacted.password).toBe('[REDACTED]');
       expect(simpleRedacted.email).toBe('alice@example.com');
 
       const nested = { user: { name: 'alice', credentials: { password: 'secret123', token: 'token456' } } };
-      const nestedRedacted = SecretRedaction.redactObject(nested);
+      const nestedRedacted = SecretRedaction.redactObject(nested) as Record<string, Record<string, Record<string, unknown>>>;
       expect(nestedRedacted.user.name).toBe('alice');
       expect(nestedRedacted.user.credentials.password).toBe('[REDACTED]');
       expect(nestedRedacted.user.credentials.token).toBe('[REDACTED]');
 
       const withArray = { apiKeys: [{ name: 'prod', secret: 'prod-secret-key' }, { name: 'dev', secret: 'dev-secret-key' }] };
-      const arrayRedacted = SecretRedaction.redactObject(withArray);
+      const arrayRedacted = SecretRedaction.redactObject(withArray) as Record<string, Array<Record<string, unknown>>>;
       expect(arrayRedacted.apiKeys[0].name).toBe('prod');
       expect(arrayRedacted.apiKeys[0].secret).toBe('[REDACTED]');
       expect(arrayRedacted.apiKeys[1].secret).toBe('[REDACTED]');
 
       const deep = { level1: { level2: { level3: { level4: { level5: { secret: 'deep-secret' } } } } } };
-      const depthRedacted = SecretRedaction.redactObject(deep, 3);
+      const depthRedacted = SecretRedaction.redactObject(deep, 3) as Record<string, Record<string, Record<string, Record<string, unknown>>>>;
       expect(depthRedacted.level1.level2.level3.level4).toBeDefined();
     });
   });
@@ -71,7 +71,7 @@ describe('SecretRedaction', () => {
         database: { host: 'localhost', port: 5432, password: 'db-secret', apiToken: 'token123' },
         logging: { level: 'info' },
       };
-      const configRedacted = SecretRedaction.redactConfig(config);
+      const configRedacted = SecretRedaction.redactConfig(config) as Record<string, Record<string, unknown>>;
       expect(configRedacted.version).toBe('1.0');
       expect(configRedacted.database.host).toBe('localhost');
       expect(configRedacted.database.password).toBe('[REDACTED]');
@@ -110,15 +110,15 @@ describe('SecretRedaction', () => {
   describe('Content detection', () => {
     it('detects base64-like tokens, JWT tokens, hex tokens, and skips short strings', () => {
       const base64Token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIn0';
-      expect(SecretRedaction.redactObject({ bearerToken: base64Token }).bearerToken).toBe('[REDACTED]');
+      expect((SecretRedaction.redactObject({ bearerToken: base64Token }) as Record<string, unknown>).bearerToken).toBe('[REDACTED]');
 
       const jwt = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIxMjM0NTY3ODkwIiwibmFtZSI6IkpvaG4gRG9lIiwiaWF0IjoxNTE2MjM5MDIyfQ.SflKxwRJSMeKKF2QT4fwpMeJf36POk6yJV_adQssw5c';
-      expect(SecretRedaction.redactObject({ token: jwt }).token).toBe('[REDACTED]');
+      expect((SecretRedaction.redactObject({ token: jwt }) as Record<string, unknown>).token).toBe('[REDACTED]');
 
       const hexHash = 'a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4';
-      expect(SecretRedaction.redactObject({ apiSecret: hexHash }).apiSecret).toBe('[REDACTED]');
+      expect((SecretRedaction.redactObject({ apiSecret: hexHash }) as Record<string, unknown>).apiSecret).toBe('[REDACTED]');
 
-      expect(SecretRedaction.redactObject({ token: 'abc' }).token).toBe('abc');
+      expect((SecretRedaction.redactObject({ token: 'abc' }) as Record<string, unknown>).token).toBe('abc');
     });
   });
 
@@ -138,18 +138,18 @@ describe('SecretRedaction', () => {
       expect(tokenReport[0].reason).toBe('Sensitive content pattern');
 
       const nullObj = { password: null, username: 'alice' };
-      const nullRedacted = SecretRedaction.redactObject(nullObj);
+      const nullRedacted = SecretRedaction.redactObject(nullObj) as Record<string, unknown>;
       expect(nullRedacted.password).toBeNull();
       expect(nullRedacted.username).toBe('alice');
 
       const undefObj = { password: undefined, username: 'alice' };
-      const undefRedacted = SecretRedaction.redactObject(undefObj);
+      const undefRedacted = SecretRedaction.redactObject(undefObj) as Record<string, unknown>;
       expect(undefRedacted.password).toBeUndefined();
       expect(undefRedacted.username).toBe('alice');
 
       const date = new Date('2026-04-04T12:00:00Z');
       const dateObj = { created: date, password: 'secret' };
-      const dateRedacted = SecretRedaction.redactObject(dateObj);
+      const dateRedacted = SecretRedaction.redactObject(dateObj) as Record<string, unknown>;
       expect(dateRedacted.created).toEqual(date);
       expect(dateRedacted.password).toBe('[REDACTED]');
     });

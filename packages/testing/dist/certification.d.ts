@@ -21,6 +21,8 @@ export interface CertificationReport {
     gates: GateResult[];
     passed: boolean;
     summary: string;
+    /** Names of all gates that did not pass, in execution order. Empty when all gates pass. */
+    failedGates: string[];
     evidence?: {
         corpus_hash: string;
         generator_seed?: number;

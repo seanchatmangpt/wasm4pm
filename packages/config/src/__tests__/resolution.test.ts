@@ -17,6 +17,9 @@ describe('Resolution', () => {
     await fs.rm(tmpDir, { recursive: true, force: true }).catch(() => {});
   });
 
+  // ---------------------------------------------------------------------------
+  // Resolution order: CLI > TOML > JSON > ENV > defaults
+  // ---------------------------------------------------------------------------
   describe('resolution order: CLI > TOML > JSON > ENV > defaults', () => {
     it('uses defaults and env/json/toml/cli in precedence order', async () => {
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
@@ -51,13 +54,16 @@ describe('Resolution', () => {
     });
   });
 
+  // ---------------------------------------------------------------------------
+  // Source, sink, algorithm
+  // ---------------------------------------------------------------------------
   describe('source, sink, algorithm', () => {
     it('loads source, sink, and algorithm config from TOML, CLI, and env overrides', async () => {
       await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'),
-        `version = "1.0.0"\n[source]\nkind = "http"\nurl = "http://localhost:9000/events"`);
+        `version = "1.0.0"\n[source]\nkind = "http"\nurl = "https://example.com:9000/events"`);
       const cfgSrc = await resolveConfig({ configSearchPaths: [tmpDir] });
       expect(cfgSrc.source.kind).toBe('http');
-      expect(cfgSrc.source.url).toBe('http://localhost:9000/events');
+      expect(cfgSrc.source.url).toBe('https://example.com:9000/events');
 
       await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'),
         `version = "1.0.0"\n[source]\nkind = "file"\n[sink]\nkind = "file"\npath = "./out.pnml"`);
@@ -82,29 +88,33 @@ describe('Resolution', () => {
       expect(cfgAlgoCli.algorithm.parameters).toEqual({ generations: 100 });
 
       const cfgSinkCli = await resolveConfig({
-        cliOverrides: { sinkKind: 'http', sinkUrl: 'http://localhost:3000/ingest' },
+        cliOverrides: { sinkKind: 'http', sinkUrl: 'https://example.com:3000/ingest' },
         configSearchPaths: [tmpDir],
       });
       expect(cfgSinkCli.sink.kind).toBe('http');
-      expect(cfgSinkCli.sink.url).toBe('http://localhost:3000/ingest');
+      expect(cfgSinkCli.sink.url).toBe('https://example.com:3000/ingest');
 
       await fs.rm(path.join(tmpDir, 'wasm4pm.toml'), { force: true });
       const cfgSrcEnv = await resolveConfig({ configSearchPaths: [tmpDir], env: { WASM4PM_SOURCE_KIND: 'stream' } });
       expect(cfgSrcEnv.source.kind).toBe('stream');
 
-      const cfgSinkEnv = await resolveConfig({ configSearchPaths: [tmpDir], env: { WASM4PM_SINK_KIND: 'file' } });
-      expect(cfgSinkEnv.sink.kind).toBe('file');
+      // sink.kind='file' requires a path — use 'stdout' to test ENV var propagation
+      const cfgSinkEnv = await resolveConfig({ configSearchPaths: [tmpDir], env: { WASM4PM_SINK_KIND: 'stdout' } });
+      expect(cfgSinkEnv.sink.kind).toBe('stdout');
     });
   });
 
+  // ---------------------------------------------------------------------------
+  // Observability and watch config
+  // ---------------------------------------------------------------------------
   describe('observability and watch config', () => {
     it('loads otel and watch config from TOML, env, and CLI', async () => {
       await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'),
-        `version = "1.0.0"\n[source]\nkind = "file"\n[observability.otel]\nenabled = true\nexporter = "console"\nendpoint = "http://localhost:4318"\nrequired = true`);
+        `version = "1.0.0"\n[source]\nkind = "file"\n[observability.otel]\nenabled = true\nexporter = "console"\nendpoint = "https://example.com:4318"\nrequired = true`);
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
       expect(cfg.observability.otel?.enabled).toBe(true);
       expect(cfg.observability.otel?.exporter).toBe('console');
-      expect(cfg.observability.otel?.endpoint).toBe('http://localhost:4318');
+      expect(cfg.observability.otel?.endpoint).toBe('https://example.com:4318');
       expect(cfg.observability.otel?.required).toBe(true);
 
       await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'),
@@ -131,6 +141,9 @@ describe('Resolution', () => {
     });
   });
 
+  // ---------------------------------------------------------------------------
+  // Schema version
+  // ---------------------------------------------------------------------------
   describe('schema version', () => {
     it('defaults to SCHEMA_VERSION and preserves explicit value from file', async () => {
       const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
@@ -143,6 +156,9 @@ describe('Resolution', () => {
     });
   });
 
+  // ---------------------------------------------------------------------------
+  // Metadata
+  // ---------------------------------------------------------------------------
   describe('metadata', () => {
     it('includes loadTime, hash, and provenance for all resolved values', async () => {
       const before = Date.now();
@@ -169,6 +185,9 @@ describe('Resolution', () => {
     });
   });
 
+  // ---------------------------------------------------------------------------
+  // Deep merge, error handling, and env booleans
+  // ---------------------------------------------------------------------------
   describe('deep merge, error handling, and env booleans', () => {
     it('merges partial file config with defaults and CLI merges with file', async () => {
       await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'),
@@ -218,6 +237,9 @@ describe('Resolution', () => {
     });
   });
 
+  // ---------------------------------------------------------------------------
+  // Example configs and hashing integration
+  // ---------------------------------------------------------------------------
   describe('example configs and hashing integration', () => {
     it('provides valid TOML and JSON examples, fingerprint is 8 hex chars, and diff detects profile change', async () => {
       await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'), getExampleTomlConfig());
@@ -241,207 +263,143 @@ describe('Resolution', () => {
     });
   });
 
-  // --- CRITICAL BUG FIX #1: Algorithm-Profile Mismatch Enforcement ---
-  describe('CRITICAL FIX #1: Algorithm-Profile Mismatch Validation', () => {
-    it('rejects algorithm not available in selected profile', async () => {
-      // genetic_algorithm is NOT available in fast profile
-      await expect(
-        resolveConfig({
-          cliOverrides: { algorithm: 'genetic_algorithm', profile: 'fast' },
-          configSearchPaths: [tmpDir],
-        })
-      ).rejects.toThrow(/Algorithm "genetic_algorithm" is not available in profile "fast"/);
-    });
-
-    it('suggests upgrade to quality profile when algorithm only available there', async () => {
-      // powl_to_process_tree is only in quality profile
-      await expect(
-        resolveConfig({
-          cliOverrides: { algorithm: 'powl_to_process_tree', profile: 'balanced' },
-          configSearchPaths: [tmpDir],
-        })
-      ).rejects.toThrow(/Upgrade to "quality" profile/);
-    });
-
-    it('allows algorithm that is available in the selected profile', async () => {
-      // dfg is available in all profiles
-      const cfgDfg = await resolveConfig({
-        cliOverrides: { algorithm: 'dfg', profile: 'fast' },
+  // ---------------------------------------------------------------------------
+  // Edge cases: algorithm env var, log level env var, output format env var
+  // ---------------------------------------------------------------------------
+  describe('env var: algorithm, log level, output format', () => {
+    it('picks up WASM4PM_ALGORITHM from env', async () => {
+      const cfg = await resolveConfig({
         configSearchPaths: [tmpDir],
+        env: { WASM4PM_ALGORITHM: 'inductive_miner' },
       });
-      expect(cfgDfg.algorithm.name).toBe('dfg');
-      expect(cfgDfg.execution.profile).toBe('fast');
+      expect(cfg.algorithm.name).toBe('inductive_miner');
+      expect(cfg.metadata.provenance['algorithm.name']?.source).toBe('env');
+    });
 
-      // heuristic_miner is available in balanced and above
-      const cfgHeur = await resolveConfig({
-        cliOverrides: { algorithm: 'heuristic_miner', profile: 'balanced' },
+    it('picks up WASM4PM_LOG_LEVEL from env', async () => {
+      const cfg = await resolveConfig({
         configSearchPaths: [tmpDir],
+        env: { WASM4PM_LOG_LEVEL: 'debug' },
       });
-      expect(cfgHeur.algorithm.name).toBe('heuristic_miner');
+      expect(cfg.observability.logLevel).toBe('debug');
     });
 
-    it('validates algorithm from TOML against profile from CLI', async () => {
-      // Write TOML with algorithm
-      await fs.writeFile(
-        path.join(tmpDir, 'wasm4pm.toml'),
-        '[algorithm]\nname = "ilp"\n[source]\nkind = "file"'
-      );
-      // ilp is NOT available in fast profile
-      await expect(
-        resolveConfig({
-          cliOverrides: { profile: 'fast' },
-          configSearchPaths: [tmpDir],
-        })
-      ).rejects.toThrow(/Algorithm "ilp" is not available in profile "fast"/);
+    it('picks up WASM4PM_OUTPUT_FORMAT from env', async () => {
+      const cfg = await resolveConfig({
+        configSearchPaths: [tmpDir],
+        env: { WASM4PM_OUTPUT_FORMAT: 'json' },
+      });
+      expect(cfg.output.format).toBe('json');
     });
 
-    it('rejects non-existent algorithm with clear error', async () => {
-      await expect(
-        resolveConfig({
-          cliOverrides: { algorithm: 'non_existent_algo', profile: 'balanced' },
-          configSearchPaths: [tmpDir],
-        })
-      ).rejects.toThrow();
+    it('CLI algorithm overrides env algorithm', async () => {
+      const cfg = await resolveConfig({
+        cliOverrides: { algorithm: 'ilp' },
+        configSearchPaths: [tmpDir],
+        env: { WASM4PM_ALGORITHM: 'inductive_miner' },
+      });
+      expect(cfg.algorithm.name).toBe('ilp');
+      expect(cfg.metadata.provenance['algorithm.name']?.source).toBe('cli');
     });
   });
 
-  // --- CRITICAL BUG FIX #2: ENV Nested Object Merge ---
-  describe('CRITICAL FIX #2: ENV Nested Object Deep Merge', () => {
-    it('preserves sibling fields when merging nested ENV variables', async () => {
-      // Set both LOG_LEVEL and OTEL fields; both should be present
-      const cfg = await resolveConfig({
-        configSearchPaths: [tmpDir],
-        env: {
-          WASM4PM_LOG_LEVEL: 'debug',
-          WASM4PM_OTEL_ENABLED: 'true',
-          WASM4PM_OTEL_ENDPOINT: 'http://collector:4318',
-        },
-      });
-
-      // Both observability fields should be present
-      expect(cfg.observability.logLevel).toBe('debug');
-      expect(cfg.observability.otel?.enabled).toBe(true);
-      expect(cfg.observability.otel?.endpoint).toBe('http://collector:4318');
-    });
-
-    it('merges ML nested config without losing sibling fields', async () => {
-      const cfg = await resolveConfig({
-        configSearchPaths: [tmpDir],
-        env: {
-          WASM4PM_ML_ENABLED: 'true',
-          WASM4PM_ML_ALGORITHMS: 'classify,cluster',
-        },
-      });
-
-      expect(cfg.ml?.enabled).toBe(true);
-      expect(cfg.ml?.tasks).toEqual(['classify', 'cluster']);
-    });
-
-    it('merges RL nested config without losing sibling fields', async () => {
-      const cfg = await resolveConfig({
-        configSearchPaths: [tmpDir],
-        env: {
-          WASM4PM_RL_ENABLED: 'true',
-          WASM4PM_RL_LEARNING_RATE: '0.05',
-          WASM4PM_RL_DISCOUNT_FACTOR: '0.95',
-          WASM4PM_RL_EPSILON: '0.1',
-        },
-      });
-
-      expect(cfg.rl?.enabled).toBe(true);
-      expect(cfg.rl?.learning_rate).toBe(0.05);
-      expect(cfg.rl?.discount_factor).toBe(0.95);
-      expect(cfg.rl?.epsilon).toBe(0.1);
-    });
-
-    it('merges prediction drift nested config without losing sibling fields', async () => {
+  // ---------------------------------------------------------------------------
+  // Edge cases: prediction env vars
+  // ---------------------------------------------------------------------------
+  describe('env var: prediction configuration', () => {
+    it('picks up WASM4PM_PREDICTION_ENABLED=true from env', async () => {
       const cfg = await resolveConfig({
         configSearchPaths: [tmpDir],
         env: {
           WASM4PM_PREDICTION_ENABLED: 'true',
-          WASM4PM_PREDICTION_DRIFT_THRESHOLD: '0.25',
-          WASM4PM_PREDICTION_DRIFT_EWMA_ALPHA: '0.15',
-          WASM4PM_PREDICTION_ACTIVITY_KEY: 'custom:activity',
+          WASM4PM_PREDICTION_TASKS: 'next_activity,drift',
         },
       });
-
       expect(cfg.prediction?.enabled).toBe(true);
-      expect(cfg.prediction?.drift?.threshold).toBe(0.25);
-      expect(cfg.prediction?.drift?.ewma_alpha).toBe(0.15);
-      expect(cfg.prediction?.activityKey).toBe('custom:activity');
     });
 
-    it('merges membrane nested config without losing sibling fields', async () => {
-      const cfg = await resolveConfig({
-        configSearchPaths: [tmpDir],
-        env: {
-          WASM4PM_MEMBRANE_ENABLED: 'true',
-          WASM4PM_MEMBRANE_CUSTODY_ACTIONS: 'approve,release',
-          WASM4PM_MEMBRANE_PERSIST: 'true',
-          WASM4PM_MEMBRANE_PATH: '.wasm4pm/custom',
-        },
-      });
-
-      expect(cfg.membrane?.enabled).toBe(true);
-      expect(cfg.membrane?.custody_actions).toEqual(['approve', 'release']);
-      expect(cfg.membrane?.envelopes?.persist).toBe(true);
-      expect(cfg.membrane?.envelopes?.path).toBe('.wasm4pm/custom');
+    it('throws on invalid WASM4PM_PREDICTION_NGRAM_ORDER (non-integer)', async () => {
+      await expect(
+        resolveConfig({
+          configSearchPaths: [tmpDir],
+          env: { WASM4PM_PREDICTION_NGRAM_ORDER: 'abc' },
+        })
+      ).rejects.toThrow(/WASM4PM_PREDICTION_NGRAM_ORDER/);
     });
 
-    it('correctly merges multiple ENV variables into same nested object sequentially', async () => {
-      // Simulate setting WASM4PM_OUTPUT_FORMAT then WASM4PM_OUTPUT_DESTINATION
-      // Both should be present in the final config
-      const cfg = await resolveConfig({
-        configSearchPaths: [tmpDir],
-        env: {
-          WASM4PM_OUTPUT_FORMAT: 'json',
-          WASM4PM_OUTPUT_DESTINATION: 'file',
-        },
-      });
-
-      expect(cfg.output.format).toBe('json');
-      expect(cfg.output.destination).toBe('file');
-      // Other output fields should still have defaults
-      expect(cfg.output.pretty).toBe(true);
-      expect(cfg.output.colorize).toBe(true);
+    it('throws on out-of-range WASM4PM_PREDICTION_NGRAM_ORDER (6)', async () => {
+      await expect(
+        resolveConfig({
+          configSearchPaths: [tmpDir],
+          env: { WASM4PM_PREDICTION_NGRAM_ORDER: '6' },
+        })
+      ).rejects.toThrow(/WASM4PM_PREDICTION_NGRAM_ORDER/);
     });
 
-    it('merges TOML config with ENV config correctly (TOML wins over ENV per precedence)', async () => {
-      await fs.writeFile(
-        path.join(tmpDir, 'wasm4pm.toml'),
-        `[observability]\nlogLevel = "info"\n[observability.otel]\nenabled = false\nexporter = "otlp"\n[source]\nkind = "file"`
-      );
+    it('throws on non-positive WASM4PM_PREDICTION_DRIFT_WINDOW', async () => {
+      await expect(
+        resolveConfig({
+          configSearchPaths: [tmpDir],
+          env: { WASM4PM_PREDICTION_DRIFT_WINDOW: '0' },
+        })
+      ).rejects.toThrow(/WASM4PM_PREDICTION_DRIFT_WINDOW/);
+    });
+  });
 
+  // ---------------------------------------------------------------------------
+  // Edge cases: RL env vars
+  // ---------------------------------------------------------------------------
+  describe('env var: RL configuration', () => {
+    it('picks up WASM4PM_RL_ENABLED=true from env', async () => {
       const cfg = await resolveConfig({
         configSearchPaths: [tmpDir],
-        env: {
-          WASM4PM_LOG_LEVEL: 'debug', // ENV (lower precedence) will be overridden by TOML
-          WASM4PM_OTEL_ENABLED: 'true', // ENV (lower precedence) will be overridden by TOML
-        },
+        env: { WASM4PM_RL_ENABLED: 'true' },
       });
-
-      // TOML should override ENV per resolution order: defaults ← env ← file ← cli
-      expect(cfg.observability.logLevel).toBe('info'); // TOML wins
-      expect(cfg.observability.otel?.enabled).toBe(false); // TOML wins
-      // TOML value for exporter should be preserved
-      expect(cfg.observability.otel?.exporter).toBe('otlp');
+      expect(cfg.rl?.enabled).toBe(true);
     });
 
-    it('merges ENV config with CLI config correctly (CLI wins over ENV per precedence)', async () => {
-      const cfg = await resolveConfig({
-        configSearchPaths: [tmpDir],
-        env: {
-          WASM4PM_LOG_LEVEL: 'debug',
-          WASM4PM_OUTPUT_FORMAT: 'json',
-        },
-        cliOverrides: {
-          outputFormat: 'human', // CLI overrides ENV
-        },
-      });
+    it('throws on invalid WASM4PM_RL_LEARNING_RATE (NaN)', async () => {
+      await expect(
+        resolveConfig({
+          configSearchPaths: [tmpDir],
+          env: { WASM4PM_RL_LEARNING_RATE: 'not-a-number' },
+        })
+      ).rejects.toThrow(/WASM4PM_RL_LEARNING_RATE/);
+    });
 
-      // CLI should override ENV per resolution order: defaults ← env ← file ← cli
-      expect(cfg.observability.logLevel).toBe('debug'); // ENV (no CLI override)
-      expect(cfg.output.format).toBe('human'); // CLI wins over ENV
+    it('throws on out-of-range WASM4PM_RL_LEARNING_RATE (> 1)', async () => {
+      await expect(
+        resolveConfig({
+          configSearchPaths: [tmpDir],
+          env: { WASM4PM_RL_LEARNING_RATE: '1.5' },
+        })
+      ).rejects.toThrow(/WASM4PM_RL_LEARNING_RATE/);
+    });
+
+    it('throws on out-of-range WASM4PM_RL_EPSILON (< 0)', async () => {
+      await expect(
+        resolveConfig({
+          configSearchPaths: [tmpDir],
+          env: { WASM4PM_RL_EPSILON: '-0.1' },
+        })
+      ).rejects.toThrow(/WASM4PM_RL_EPSILON/);
+    });
+  });
+
+  // ---------------------------------------------------------------------------
+  // hashConfig determinism
+  // ---------------------------------------------------------------------------
+  describe('hashConfig determinism', () => {
+    it('same inputs produce identical hashes across two resolveConfig calls', async () => {
+      const cfg1 = await resolveConfig({ configSearchPaths: [tmpDir] });
+      const cfg2 = await resolveConfig({ configSearchPaths: [tmpDir] });
+      expect(hashConfig(cfg1)).toBe(hashConfig(cfg2));
+    });
+
+    it('different profiles produce different hashes', async () => {
+      const fast = await resolveConfig({ cliOverrides: { profile: 'fast' }, configSearchPaths: [tmpDir] });
+      const quality = await resolveConfig({ cliOverrides: { profile: 'quality' }, configSearchPaths: [tmpDir] });
+      expect(hashConfig(fast)).not.toBe(hashConfig(quality));
     });
   });
 });

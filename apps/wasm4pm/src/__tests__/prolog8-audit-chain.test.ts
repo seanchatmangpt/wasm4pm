@@ -350,17 +350,9 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
       // Enterprise invariant: "If a receipt chain has gaps, the proof is invalid"
       const replayPath = writeTmp(tmpDir, 'forged-receipt.json', makeGapReceiptReplay());
       const result = await runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env });
-      // Rejection paths, in order of preference:
-      //   - conformance_fail (6) — WASM loaded, ReceiptInvalid detected via hash mismatch
-      //   - execution_error (3) — WASM loaded, struct deserialization rejected (e.g. hex
-      //     where [u8; 32] is expected; still a valid rejection of a tampered receipt)
-      //   - source_error (2)    — WASM unavailable / pkg/ not built
+      // Engine: ReceiptInvalid → conformance_fail (6) or unavailable → source_error (2)
       expect(result.exitCode).not.toBe(EXIT_CODES.success);
-      expect([
-        EXIT_CODES.source_error,
-        EXIT_CODES.execution_error,
-        EXIT_CODES.conformance_fail,
-      ]).toContain(result.exitCode);
+      expect([EXIT_CODES.source_error, EXIT_CODES.conformance_fail]).toContain(result.exitCode);
     });
 
     it('replay with forged receipt_hash --format json status is "error"', async () => {
@@ -810,14 +802,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
   // ── 7. Answer cap (TruncatedAnswers envelope) ──────────────────────────────
 
   describe('Enterprise: TruncatedAnswers — answer cap enforcement (P8-CF-1 boundary)', () => {
-    // TODO(citty-pipe-drain): same vitest execFile stdout-capture quirk as the
-    // --help tests in prolog8-cli.test.ts. The CLI emits a ~830KB JSON envelope
-    // to stdout (manual test confirms full payload + TruncatedAnswers payload),
-    // but the test sees a truncated/empty buffer. Re-enable once the upstream
-    // pipe-drain fix lands. The intent — TruncatedAnswers must never classify as
-    // Denied — remains testable via the WASM kernel integration tests in
-    // crates/prolog8/tests/kernel_integration.rs.
-    it.skip('query with 130 matching facts returns TruncatedAnswers or Answered (never Denied)', async () => {
+    it('query with 130 matching facts returns TruncatedAnswers or Answered (never Denied)', async () => {
       // Insert 130 unique receipt facts — exceeds MAX_ANSWERS=128 cap
       // The CLI should return exit 0 (TruncatedAnswers is a valid Allow path)
       const catalog = {
@@ -850,11 +835,6 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
       );
       expect([EXIT_CODES.success, EXIT_CODES.source_error]).toContain(result.exitCode);
       if (result.exitCode === EXIT_CODES.source_error) return;
-      // Stdout may be empty under vitest's execFile pipe capture (citty/--help quirk
-      // also surfaces here for non-help JSON output paths). Skip the JSON shape
-      // assertion in that case; the exit-code check above already proved
-      // TruncatedAnswers is not classified as Denied (Denied → conformance_fail / 6).
-      if (!result.stdout.trim()) return;
       const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
       const payload = parsed['payload'] as Record<string, unknown>;
       const qResult = payload['result'] as Record<string, unknown>;

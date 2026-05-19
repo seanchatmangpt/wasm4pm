@@ -13,7 +13,7 @@ export interface ErrorInfo {
   code: string;
   message: string;
   stack?: string;
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
 }
 
 /**
@@ -31,7 +31,7 @@ export interface ExecutionSummary {
 export interface AlgorithmInfo {
   name: string;
   version: string;
-  parameters: Record<string, any>;
+  parameters: Record<string, unknown>;
 }
 
 /**

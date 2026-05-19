@@ -48,48 +48,51 @@ export function validateReceipt(receipt) {
     if (errors.length > 0) {
         return { valid: false, errors, warnings };
     }
+    // At this point required string fields, summary, algorithm, and model are all present.
+    // We re-cast to Receipt for the rest of the validation since structural requirements are met.
+    const validated = receipt;
     // Schema version check
-    if (r.schema_version !== '1.0') {
-        warnings.push(`Unknown schema version: ${r.schema_version}`);
+    if (validated.schema_version !== '1.0') {
+        warnings.push(`Unknown schema version: ${validated.schema_version}`);
     }
     // Validate run_id is a valid UUID
-    if (!isValidUUID(r.run_id)) {
+    if (!isValidUUID(validated.run_id)) {
         errors.push('run_id is not a valid UUID');
     }
     // Validate hash format (BLAKE3 hashes are 64 hex characters)
-    const hashErrors = validateHashFormats(r);
+    const hashErrors = validateHashFormats(validated);
     errors.push(...hashErrors);
     // Validate timestamps are ISO 8601
-    if (!isValidISO8601(r.start_time)) {
+    if (!isValidISO8601(validated.start_time)) {
         errors.push('start_time is not valid ISO 8601');
     }
-    if (!isValidISO8601(r.end_time)) {
+    if (!isValidISO8601(validated.end_time)) {
         errors.push('end_time is not valid ISO 8601');
     }
     // Validate duration
-    if (r.duration_ms < 0) {
+    if (validated.duration_ms < 0) {
         errors.push('duration_ms must be non-negative');
     }
     // Validate status
-    if (!['success', 'partial', 'failed'].includes(r.status)) {
-        errors.push(`Invalid status: ${r.status}`);
+    if (!['success', 'partial', 'failed'].includes(validated.status)) {
+        errors.push(`Invalid status: ${validated.status}`);
     }
     // If status is failed or partial, error should be present
-    if ((r.status === 'failed' || r.status === 'partial') && !r.error) {
-        warnings.push(`status is ${r.status} but no error information provided`);
+    if ((validated.status === 'failed' || validated.status === 'partial') && !validated.error) {
+        warnings.push(`status is ${validated.status} but no error information provided`);
     }
     // Validate summary
-    if (typeof r.summary.traces_processed !== 'number' ||
-        typeof r.summary.objects_processed !== 'number' ||
-        typeof r.summary.variants_discovered !== 'number') {
+    if (typeof validated.summary.traces_processed !== 'number' ||
+        typeof validated.summary.objects_processed !== 'number' ||
+        typeof validated.summary.variants_discovered !== 'number') {
         errors.push('Invalid summary: missing or non-numeric fields');
     }
     // Validate algorithm
-    if (!r.algorithm.name || !r.algorithm.version) {
+    if (!validated.algorithm.name || !validated.algorithm.version) {
         errors.push('Algorithm missing name or version');
     }
     // Validate model
-    if (typeof r.model.nodes !== 'number' || typeof r.model.edges !== 'number') {
+    if (typeof validated.model.nodes !== 'number' || typeof validated.model.edges !== 'number') {
         errors.push('Invalid model: missing or non-numeric node/edge counts');
     }
     return {
