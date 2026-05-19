@@ -325,37 +325,124 @@ const likelihood = JSON.parse(wasm.compute_trace_likelihood(modelHandle, trace))
 - `compute_boundary_coverage(log_handle: string, prefix_json: string, activity_key: string)` → `{ coverage: f64, matching_traces: usize, normal_completions: usize }`
 - `compute_trace_likelihood(model_handle: string, trace_json: string)` → `{ log_likelihood: f64, normalized: f64 }`
 
+**Classification Method (TypeScript ML)**
+
+For outcome prediction with labeled data, use ML classification via `@wasm4pm/ml`. This requires feature extraction and supervised learning:
+
+```typescript
+import {
+  extractOutcomeFeatures,
+  classifyTraces,
+  normalizeOutcomeFeatures,
+} from '@wasm4pm/ml';
+
+// 1. Extract outcome features from WASM feature matrix
+const configJson = JSON.stringify({
+  features: [
+    'trace_length',
+    'elapsed_time',
+    'activity_counts',
+    'rework_count',
+    'unique_activities',
+    'avg_inter_event_time',
+  ],
+  target: 'outcome',
+});
+
+const rawFeatures = wasm.extract_case_features(
+  logHandle,
+  'concept:name',
+  'time:timestamp',
+  configJson
+);
+const featuresArray = JSON.parse(rawFeatures);
+
+// 2. Extract outcome features for classification
+const featureMatrix = extractOutcomeFeatures(featuresArray);
+const normalized = normalizeOutcomeFeatures(featureMatrix);
+
+// 3. Run classifier (k-NN, logistic regression, decision tree)
+const result = await classifyTraces(normalized, {
+  method: 'knn',
+  k: 5,
+});
+
+// result = {
+//   predictions: [
+//     { predicted_label: 'hired', confidence: 0.85, topK: [...] },
+//     { predicted_label: 'rejected', confidence: 0.92, topK: [...] }
+//   ],
+//   method: 'knn'
+// }
+```
+
+**Features Extracted for Outcome:**
+- `trace_length` — number of activities
+- `elapsed_time` — duration from start to finish (ms)
+- `avg_inter_event_time` — mean time between consecutive events (ms)
+- `rework_ratio` — fraction of repeated activities [0, 1]
+- `cycle_count` — number of rework instances
+- `resource_variance` — diversity of resources [0, 1]
+- `unique_activities` — distinct activity count
+- `activity_*` — one-hot encoded activity frequencies
+
+**Hybrid Method**
+
+The `wpm predict outcome` command supports `--method hybrid` to ensemble anomaly scoring with ML classification:
+
+```bash
+wpm predict outcome -i log.xes --method hybrid --top-k 5
+```
+
+This combines:
+1. **Anomaly scoring** (WASM-based, fast)
+2. **ML classification** (TypeScript-based, accurate)
+3. **Confidence voting** for final predictions
+
 ---
 
-### Drift Detection (prediction_drift.rs)
+### Drift Detection (prediction_drift.rs + ML Integration)
 
-Answers **"Has the process changed?"** using Jaccard similarity and EWMA trend analysis.
+Answers **"Has the process changed?"** using three complementary methods:
+- **Jaccard** (WASM-based): Similarity on activity vocabulary
+- **Anomaly** (ML-based): Peak detection and residual decomposition on Jaccard distances
+- **Hybrid** (both): Consensus scoring for high-confidence drift signals
 
 | Function | Returns | Description |
 |----------|---------|-------------|
-| `detect_drift(handle, activity_key, window_size)` | `Result<JsValue, JsValue>` | Detect concept drift via Jaccard distance |
+| `detect_drift(handle, activity_key, window_size)` | `Result<JsValue, JsValue>` | Detect concept drift via Jaccard distance (WASM primitive) |
 | `compute_ewma(values_json, alpha)` | `Result<JsValue, JsValue>` | Exponentially weighted moving average |
+
+**Note:** ML-based anomaly integration is available via the TypeScript `@wasm4pm/ml` package. Use `executeMlTask(wasm, 'drift', logHandle, activityKey, { driftMethod: 'anomaly' | 'hybrid' })`.
 
 **Theory: Drift Detection**
 
-Two complementary primitives:
+Three complementary approaches:
 
-1. **Jaccard Distance** (`J_distance = 1 - |A ∩ B| / |A ∪ B|`):
+1. **Jaccard Distance** (WASM primitive, fast):
    - Compares activity vocabularies in consecutive trace windows
+   - `J_distance = 1 - |A ∩ B| / |A ∪ B|`
    - Range: [0.0, 1.0] where 0.0 = no change, 1.0 = completely different
    - Default threshold: 0.3 (drift signal when distance > threshold)
 
-2. **EWMA Trend Analysis**:
+2. **EWMA Trend Analysis** (WASM primitive, auxiliary):
    - Recursively smooths a numeric series: `s[i+1] = α·x[i+1] + (1−α)·s[i]`
    - Higher α (e.g., 0.3) weights recent values; lower α (e.g., 0.05) smooths long-term trends
    - Trend classification: `rising`, `falling`, or `stable` (within 5% of max range)
 
-**Example: Drift Detection**
+3. **ML-Based Anomaly Detection** (TypeScript, refinement over Jaccard):
+   - Windowed feature extraction: mean distance, max distance, trend slope, autocorrelation
+   - Peak detection via smoothing (SMA/EMA) and seasonal decomposition
+   - Residual anomaly scoring: identifies persistent deviations from expected behavior
+   - Scoring methods: `equal` (simple average) or `weighted` (prioritizes residuals)
+
+**Example: Drift Detection — Three Methods**
 
 ```typescript
 const wasm = require('./pkg/wasm4pm.js');
+const { executeMlTask } = require('@wasm4pm/ml');
 
-// 1. Load event log and detect drift
+// 1. WASM-based Jaccard drift detection (fast)
 const logHandle = wasm.load_eventlog_from_xes(xesContent);
 const driftEvents = JSON.parse(wasm.detect_drift(
   logHandle,
@@ -373,7 +460,61 @@ const driftEvents = JSON.parse(wasm.detect_drift(
 //   ...
 // ]
 
-// 2. Monitor a metric with EWMA trend analysis
+// 2. ML-based anomaly detection (identifies peak drifts)
+const result = await executeMlTask(
+  wasm,
+  'drift',
+  logHandle,
+  'concept:name',
+  { driftMethod: 'anomaly', driftWindowSize: 10 }
+);
+// result = {
+//   method: 'anomaly',
+//   distances: [0.1, 0.2, 0.8, 0.1, ...],  // Jaccard distances from WASM
+//   features: [
+//     {
+//       window_index: 0,
+//       mean_distance: 0.15,
+//       max_distance: 0.2,
+//       std_distance: 0.05,
+//       trend_slope: 0.01,
+//       autocorr_lag1: 0.3,
+//       peak_count: 0,
+//       residual_anomaly_score: 0.1,
+//       is_anomalous: false
+//     },
+//     ...
+//   ],
+//   anomalies: {
+//     anomalous_indices: [2, 5, 7],        // Windows with detected anomalies
+//     anomaly_scores: [0.8, 0.75, 0.72],
+//     threshold: 0.7,
+//     count: 3
+//   }
+// }
+
+// 3. Hybrid method (consensus: both Jaccard + anomaly agree)
+const hybridResult = await executeMlTask(
+  wasm,
+  'drift',
+  logHandle,
+  'concept:name',
+  { driftMethod: 'hybrid', driftWindowSize: 10 }
+);
+// hybridResult = {
+//   method: 'hybrid',
+//   distances: [...],
+//   drifts_detected: 8,
+//   features: [...],
+//   anomalies: {...},
+//   combined_assessment: {
+//     jaccard_consensus: 8,                // WASM detected 8 drifts
+//     ml_anomalies: 3,                     // ML detected 3 anomalies
+//     agreement_ratio: 0.375               // 3/8 agreement
+//   }
+// }
+
+// 4. EWMA trend analysis (auxiliary, for smoothing)
 const metricValues = JSON.stringify([
   0.8, 0.82, 0.81, 0.79, 0.75, 0.72, 0.68
 ]);

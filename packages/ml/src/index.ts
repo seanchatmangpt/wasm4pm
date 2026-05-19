@@ -33,6 +33,21 @@ export {
 } from './features-remaining-time.js';
 export type { RemainingTimeFeatures, FeatureQualityMetric } from './features-remaining-time.js';
 
+// Outcome feature extraction
+export {
+  extractOutcomeFeatures,
+  normalizeOutcomeFeatures,
+  assessOutcomeFeatureQuality,
+} from './features-outcome.js';
+export type { OutcomeFeatures, OutcomeFeatureQualityMetric } from './features-outcome.js';
+
+// Drift feature extraction
+export {
+  extractDriftFeatures,
+  detectAnomalousDriftWindows,
+} from './features-drift.js';
+export type { DriftFeatures } from './features-drift.js';
+
 // Feature quality assessment
 export { assessFeatureQuality } from './feature-quality.js';
 export type { FeatureQualityReport, FeatureQualityIssue } from './feature-quality.js';
@@ -44,6 +59,14 @@ export type { ParameterSuggestions, AlgorithmSuggestion } from './parameter-sugg
 // Grid search and hyperparameter tuning
 export { GridSearch, suggestSearchSpace, evaluateModel, findBestParams } from './hyperparameter-search.js';
 export type { SearchSpace, EvaluationMetrics, ParameterEvaluation, GridSearchResult } from './hyperparameter-search.js';
+
+// Algorithm selector (unified for all 6 prediction tasks)
+export {
+  extractLogProfile,
+  selectBestAlgorithmForTask,
+  recommendAlgorithm,
+} from './algorithm-selector.js';
+export type { LogProfile, AlgorithmRecommendation } from './algorithm-selector.js';
 
 // Types
 export type {
