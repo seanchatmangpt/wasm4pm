@@ -17,6 +17,7 @@ impl EscalationEngine for DefaultEscalationEngine {
 
         let mut should_escalate = false;
         let mut reason_codes = vec![];
+        let mut severity_level: u8 = 0;
 
         // Drift-based escalation
         if matches!(
@@ -24,18 +25,25 @@ impl EscalationEngine for DefaultEscalationEngine {
             DriftStatus::OutOfControl | DriftStatus::TrendDetected
         ) {
             should_escalate = true;
+            severity_level = severity_level.max(3);
             reason_codes.push(format!("drift:{:?}", task.evidence.drift_status));
         }
 
         // Risk-based escalation (Critical always escalates)
         if matches!(task.risk_level, RiskLevel::Critical) {
             should_escalate = true;
+            severity_level = severity_level.max(5);
             reason_codes.push(format!("risk:{:?}", task.risk_level));
+        } else if matches!(task.risk_level, RiskLevel::High) {
+            severity_level = severity_level.max(4);
+        } else if matches!(task.risk_level, RiskLevel::Medium) {
+            severity_level = severity_level.max(2);
         }
 
         // Phase-based escalation
         if matches!(task.phase, WorkflowPhase::Failed | WorkflowPhase::Escalate) {
             should_escalate = true;
+            severity_level = severity_level.max(4);
             reason_codes.push(format!("phase:{:?}", task.phase));
         }
 
@@ -45,11 +53,28 @@ impl EscalationEngine for DefaultEscalationEngine {
             None
         };
 
+        // Compute confidence (1.0 for drift/phase, 0.9 for risk)
+        let confidence = if reason_codes.iter().any(|r| r.starts_with("drift")) {
+            1.0_f32
+        } else if reason_codes.iter().any(|r| r.starts_with("phase")) {
+            1.0_f32
+        } else if reason_codes.iter().any(|r| r.starts_with("risk")) {
+            0.9_f32
+        } else {
+            0.5_f32
+        };
+
+        // Emit enriched OTEL span
         tracing::debug!(
             target: "agentic.evaluate_escalation",
             task_id = %task.task_id,
             should_escalate,
-            "escalation evaluated"
+            decision_type = if should_escalate { "escalate" } else { "mitigate" },
+            severity_level = severity_level,
+            escalation_path = if let Some(role) = &target_role { format!("{:?}", role) } else { "none".to_string() },
+            confidence = confidence,
+            reason_code = if reason_codes.is_empty() { "none".to_string() } else { reason_codes.join("|") },
+            "escalation decision"
         );
 
         Ok(EscalationDecision {

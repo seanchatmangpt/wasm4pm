@@ -1,5 +1,5 @@
 {
-  "audit_timestamp": "2026-05-18T16:10:36.691Z",
+  "audit_timestamp": "2026-05-19T05:36:34.345Z",
   "auditor": "wpm-doctor-hooks-jtbd",
   "probes": [
     {
@@ -35,14 +35,14 @@
       "scenario": "PostToolUse fires after Edit tool on wasm4pm/src/testing/harness.rs",
       "observed": "tool-events.jsonl unchanged at 0 lines — nothing was recorded",
       "verdict": "refuted",
-      "evidence": "events_file=/Users/sac/wasm4pm/apps/wasm4pm/wasm4pm/target/agent-runs/20260518/tool-events.jsonl; before=0; after=0"
+      "evidence": "events_file=/Users/sac/wasm4pm/apps/wasm4pm/wasm4pm/target/agent-runs/20260519/tool-events.jsonl; before=0; after=0"
     },
     {
       "job": "Record user prompts as timestamped work orders",
       "scenario": "UserPromptSubmit fires with prompt text and session_id",
       "observed": "prompts.jsonl unchanged at 0 lines — work order was not recorded",
       "verdict": "refuted",
-      "evidence": "prompts_file=/Users/sac/wasm4pm/apps/wasm4pm/wasm4pm/target/agent-runs/20260518/prompts.jsonl; before=0; after=0"
+      "evidence": "prompts_file=/Users/sac/wasm4pm/apps/wasm4pm/wasm4pm/target/agent-runs/20260519/prompts.jsonl; before=0; after=0"
     },
     {
       "job": "Allow stop when no critical testing files have uncommitted changes",
@@ -68,7 +68,7 @@
     {
       "job": "Block stop when critical testing files are dirty and proof audit returns AndonPull",
       "scenario": "harness.rs modified (git dirty), fake wpm returns AndonPull(4_cargo_tests)",
-      "observed": "Probe setup failed: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/tmp/jtbd-stop-cSTNXF/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n",
+      "observed": "Probe setup failed: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/tmp/jtbd-stop-vQKW7p/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n",
       "verdict": "inconclusive",
       "evidence": "probe-error"
     },

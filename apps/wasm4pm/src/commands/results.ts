@@ -261,7 +261,7 @@ function fmtFitness(fitness: number | undefined): string {
 export const results = defineCommand({
   meta: {
     name: 'results',
-    description: 'List and inspect saved discovery and prediction results from .wasm4pm/results/',
+    description: 'List and inspect saved discovery and prediction results from .wasm4pm/results/. Example: wpm results --last',
   },
   args: {
     cat: {

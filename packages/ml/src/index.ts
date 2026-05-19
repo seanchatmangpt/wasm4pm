@@ -77,6 +77,15 @@ export {
   type PreprocessingReport,
 } from './preprocessing.js';
 
+// Ensemble voting (deterministic tie-breaking, Rank-1 oracle)
+export {
+  deterministic_ensemble_vote,
+  ensemble_vote_with_confidence,
+  verify_voting_determinism,
+  categorize_vote_distribution,
+  type VoteCount,
+} from './ensemble-voting.js';
+
 // Types
 export type {
   FeatureMatrix,

@@ -281,7 +281,7 @@ async function handleCommand(
 export const repl = defineCommand({
   meta: {
     name: 'repl',
-    description: 'Interactive process mining session — WASM loads once, all commands run in milliseconds',
+    description: 'Interactive process mining session — WASM loads once, all commands run in milliseconds. Example: wpm repl -i log.xes',
   },
   args: {
     load: {

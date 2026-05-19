@@ -148,13 +148,35 @@ impl JtbdRunner for DefaultJtbdRunner {
         }
 
         let all_passed = assertions.iter().all(|a| a.passed);
+        let passed_count = assertions.iter().filter(|a| a.passed).count();
+        let success_rate = if assertions.is_empty() {
+            1.0_f32
+        } else {
+            (passed_count as f32) / (assertions.len() as f32)
+        };
 
+        // Determine JTBD type from job statement (heuristic)
+        let jtbd_type = if case.job_statement.to_lowercase().contains("outcome") {
+            "outcome"
+        } else if case.job_statement.to_lowercase().contains("progress") {
+            "progress"
+        } else if case.job_statement.to_lowercase().contains("emotional") {
+            "emotional"
+        } else {
+            "unclassified"
+        };
+
+        // Emit enriched OTEL span
         tracing::debug!(
             target: "agentic.run_case",
             case_id = %case.case_id,
             passed = all_passed,
             assertion_count = assertions.len(),
-            "JTBD case evaluated"
+            jtbd_id = %case.case_id,
+            jtbd_type = jtbd_type,
+            task_count = assertions.len(),
+            success_rate = success_rate,
+            "JTBD execution"
         );
 
         Ok(JtbdResult {
@@ -171,15 +193,37 @@ impl JtbdRunner for DefaultJtbdRunner {
         )
         .entered();
 
+        let t0 = std::time::Instant::now();
         let results: Result<Vec<JtbdResult>, AgenticError> =
             cases.iter().map(|c| self.run_case(c)).collect();
 
         if let Ok(ref rs) = results {
+            let passed_count = rs.iter().filter(|r| r.passed).count();
+            let total_assertions: usize = rs.iter().map(|r| r.assertions.len()).sum();
+            let total_passed: usize = rs
+                .iter()
+                .map(|r| r.assertions.iter().filter(|a| a.passed).count())
+                .sum();
+
+            let suite_success_rate = if total_assertions == 0 {
+                1.0_f32
+            } else {
+                (total_passed as f32) / (total_assertions as f32)
+            };
+
+            let duration_ms = t0.elapsed().as_millis() as u64;
+
+            // Emit enriched OTEL span
             tracing::debug!(
                 target: "agentic.run_suite",
                 total = rs.len(),
-                passed = rs.iter().filter(|r| r.passed).count(),
-                "JTBD suite complete"
+                passed = passed_count,
+                jtbd_id = "suite",
+                jtbd_type = "suite",
+                task_count = total_assertions,
+                success_rate = suite_success_rate,
+                duration_ms = duration_ms,
+                "JTBD suite execution"
             );
         }
 

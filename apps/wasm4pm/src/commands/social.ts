@@ -15,7 +15,7 @@ import { exitWithFlush } from '../otel/exit.js';
 export const social = defineCommand({
   meta: {
     name: 'social',
-    description: 'Mine social networks from event logs (handover, working together, similar tasks)',
+    description: 'Mine social networks from event logs (handover, working together, similar tasks). Example: wpm social log.xes',
   },
   args: {
     input: {

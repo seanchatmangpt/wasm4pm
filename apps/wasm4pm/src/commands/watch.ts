@@ -16,50 +16,11 @@ import { getGlobalSpanSink } from '../otel/sink.js';
 import { exitWithFlush } from '../otel/exit.js';
 import { runDiscovery, type Algorithm } from './run.js';
 import { WasmInstrumentation } from './_wasm-instrumentation.js';
+import { selectAutopilotAlgorithm, type LogStats } from './watch-autopilot.js';
 
-// ---------------------------------------------------------------------------
-// Autopilot: select algorithm from log characteristics
-// ---------------------------------------------------------------------------
-
-type LogStats = {
-  total_cases?: number;
-  total_events?: number;
-  avg_events_per_case?: number;
-  unique_activities?: number;
-};
-
-function selectAutopilotAlgorithm(stats: LogStats): { algo: Algorithm; rationale: string } {
-  const traces = stats.total_cases ?? 0;
-  const variants = 0; // analyze_event_statistics does not return variant count
-  const activities = stats.unique_activities ?? 0;
-
-  if (traces > 50_000)
-    return {
-      algo: 'dfg',
-      rationale: `log too large for conformance-checking (${traces.toLocaleString()} traces)`,
-    };
-  if (variants < 20 && traces < 5_000)
-    return {
-      algo: 'inductive',
-      rationale: `low-variant log (${variants} variants) — inductive produces clean process tree`,
-    };
-  if (activities > 100)
-    return {
-      algo: 'heuristic',
-      rationale: `high activity count (${activities}) — heuristic handles noise well`,
-    };
-  if (traces > 10_000)
-    return {
-      algo: 'heuristic',
-      rationale: `medium-large log (${traces.toLocaleString()} traces) — heuristic balances speed and quality`,
-    };
-
-  return { algo: 'dfg', rationale: 'default — fast, always produces a result' };
-}
-
-// ---------------------------------------------------------------------------
-// Config snapshot helpers for what-changed display
-// ---------------------------------------------------------------------------
+/**
+ * Config snapshot helpers for what-changed display
+ */
 
 /**
  * Extract a comparable snapshot from a resolved config object.
