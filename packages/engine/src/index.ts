@@ -95,6 +95,21 @@ export {
 // Signal handling and crash recovery (Phase 1.5)
 export { SignalHandler, type SignalHandlerConfig } from './signals.js';
 
+// Autonomous recovery orchestration (Phase 2 — Cycle 40)
+/**
+ * AutonomousRecoveryOrchestrator — Continuous monitoring, crash detection, and recovery execution
+ * @description Monitors engine health, detects crashes via lock files, makes recovery decisions (Rank-1/2/3 oracles)
+ * @description Executes recovery with MTTR <1s guarantee per critical-constraints.md
+ * @example const orchest = new AutonomousRecoveryOrchestrator(engine, detector, store, manager, runId);
+ *          orchest.start(); // begin monitoring loop
+ */
+export { AutonomousRecoveryOrchestrator } from './autonomous-recovery-loop.js';
+export type {
+  HealthCheckResult,
+  RecoveryDecision,
+  RecoveryExecutionResult,
+} from './autonomous-recovery-loop.js';
+
 // WASM loader
 /**
  * WasmLoader — Singleton WASM binary management with soft/hard reset and health checks.
