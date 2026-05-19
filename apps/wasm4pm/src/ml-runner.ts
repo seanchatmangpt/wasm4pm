@@ -20,6 +20,8 @@ import {
   pickBestAlgorithm,
   findBestParams,
   suggestSearchSpace,
+  extractDriftFeatures,
+  detectAnomalousDriftWindows,
 } from '@wasm4pm/ml';
 import type { ClassificationMethod, ClusteringMethod } from '@wasm4pm/ml';
 import { Instrumentation } from '@wasm4pm/observability';
@@ -33,6 +35,7 @@ export const VALID_ML_TASKS = [
   'anomaly',
   'regress',
   'pca',
+  'drift',
 ] as const;
 export type MlTask = (typeof VALID_ML_TASKS)[number];
 
@@ -46,6 +49,15 @@ export interface MlTaskOptions {
   eps?: number | string;
   smoothingMethod?: 'sma' | 'ema';
   useExponential?: boolean;
+  /**
+   * Drift detection method: 'jaccard' (WASM-based), 'anomaly' (ML-based),
+   * 'hybrid' (both, anomaly refinement of jaccard results).
+   */
+  driftMethod?: 'jaccard' | 'anomaly' | 'hybrid';
+  /**
+   * Sliding window size for drift feature extraction (default: 10).
+   */
+  driftWindowSize?: number | string;
   /**
    * Enable hyperparameter tuning via grid search.
    * When true, finds optimal parameters for the task via k-fold CV.
@@ -146,6 +158,7 @@ export async function executeMlTask(
     anomaly: 'ewma',
     regress: 'linear',
     pca: 'svd',
+    drift: 'jaccard',
   };
 
   // If instrumentation is configured, wrap the entire task dispatch in a span.
@@ -450,6 +463,76 @@ export async function executeMlTask(
       return (await reduceFeaturesPCA(features, {
         nComponents,
       })) as unknown as Record<string, unknown>;
+    }
+
+    case 'drift': {
+      // Step 1: Get drift distances from WASM detect_drift
+      const driftRaw = wasm.detect_drift(logHandle, activityKey, 10);
+      const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
+      const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
+
+      if (distances.length === 0) {
+        return {
+          method: options.method || 'jaccard',
+          distances: [],
+          features: [],
+          anomalies: null,
+          message: 'No drift points detected in log',
+        };
+      }
+
+      // Step 2: Resolve drift method (jaccard, anomaly, or hybrid)
+      const driftMethod = options.driftMethod || options.method || 'jaccard';
+      const windowSize = Math.max(
+        2,
+        parseInt(String(options.driftWindowSize ?? '10'), 10)
+      );
+
+      // Base result with Jaccard output
+      const result: Record<string, unknown> = {
+        method: driftMethod,
+        distances,
+        drifts_detected: driftResult?.drifts_detected ?? 0,
+      };
+
+      // Step 3: If anomaly or hybrid, add ML-based anomaly detection
+      if (driftMethod === 'anomaly' || driftMethod === 'hybrid') {
+        try {
+          // Extract features from drift signal
+          const driftFeatures = await extractDriftFeatures(distances, windowSize);
+          result.features = driftFeatures;
+
+          // Detect anomalous windows
+          const anomalies = detectAnomalousDriftWindows(driftFeatures, 'weighted');
+          result.anomalies = {
+            anomalous_indices: anomalies.anomalousIndices,
+            anomaly_scores: anomalies.scores,
+            threshold: anomalies.threshold,
+            count: anomalies.anomalousIndices.length,
+          };
+
+          if (driftMethod === 'hybrid') {
+            result.combined_assessment = {
+              jaccard_consensus: driftResult?.drifts_detected ?? 0,
+              ml_anomalies: anomalies.anomalousIndices.length,
+              agreement_ratio:
+                driftResult?.drifts_detected > 0
+                  ? anomalies.anomalousIndices.length / (driftResult?.drifts_detected ?? 1)
+                  : 0,
+            };
+          }
+        } catch (err) {
+          // Non-fatal: if ML detection fails, return Jaccard results
+          console.warn(
+            `[Warning] ML-based drift anomaly detection failed: ${
+              err instanceof Error ? err.message : String(err)
+            }. Returning Jaccard results only.`
+          );
+          result.anomalies = null;
+        }
+      }
+
+      return result;
     }
 
     default:
