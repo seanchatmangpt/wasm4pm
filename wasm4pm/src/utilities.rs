@@ -140,6 +140,19 @@ pub fn get_activities(eventlog_handle: &str, activity_key: &str) -> Result<JsVal
     })
 }
 
+/// Get all traces from EventLog as a list of activity sequences
+#[wasm_bindgen]
+pub fn get_traces(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+        Some(StoredObject::EventLog(log)) => {
+            let traces = log.get_traces(activity_key);
+            to_js(&traces)
+        }
+        Some(_) => Err(js_val("Object is not an EventLog")),
+        None => Err(js_val("EventLog not found")),
+    })
+}
+
 /// Get trace lengths (number of events per trace)
 #[wasm_bindgen]
 pub fn get_trace_lengths(eventlog_handle: &str) -> Result<JsValue, JsValue> {

@@ -1,10 +1,10 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.4",
-  "serialNumber": "urn:uuid:9D76F6A7-FAE2-40BB-907C-586F430D252E",
+  "serialNumber": "urn:uuid:53A73594-8FBE-4C0D-BD5B-5851927CDEF5",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-05-19T22:39:23Z",
+    "timestamp": "2026-05-19T23:06:41Z",
     "tools": [
       {
         "vendor": "wasm4pm",

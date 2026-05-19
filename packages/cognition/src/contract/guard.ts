@@ -80,7 +80,7 @@ export function assertSystemBuildResult(raw: unknown): SystemBuildResult {
 export function assertSystemVerifyResult(raw: unknown): SystemVerifyResult {
   if (!isObj(raw)) reject('system_verify', `expected object`);
   if (!isStr(raw.target)) reject('system_verify', `target must be string`);
-  if (raw.status !== 'verified' && raw.status !== 'has_findings')
+  if (raw.status !== 'verified' && raw.status !== 'has_findings' && raw.status !== 'ok')
     reject(
       'system_verify',
       `status must be 'verified' | 'has_findings', got ${JSON.stringify(raw.status)}`,

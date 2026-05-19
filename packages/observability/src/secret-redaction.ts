@@ -48,27 +48,7 @@ const SENSITIVE_PATH_PATTERNS = [
  */
 const REDACTED_PLACEHOLDER = '[REDACTED]';
 
-/**
- * Known wasm4pm receipt fields that are BLAKE3 hashes.
- * These must NOT be redacted — they are audit-trail identifiers, not secrets.
- * BLAKE3 output matches the generic 32+-char hex heuristic, so we must
- * explicitly exempt them before the content scan runs.
- */
-const RECEIPT_HASH_FIELDS = new Set([
-  'config_hash',
-  'input_hash',
-  'plan_hash',
-  'output_hash',
-  'run_id',
-  // OTEL span attribute variants
-  'config.hash',
-  'input.hash',
-  'plan.hash',
-  'output.hash',
-  'run.id',
-  'combined_hash',
-  'replay_pointer',
-]);
+
 
 /**
  * Secret redaction utility

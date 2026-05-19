@@ -128,3 +128,15 @@ export {
   type BeamMsgPayload,
   type BeamMonitorEvent,
 } from './beam-message-validator.js';
+
+export {
+  SwarmCoordinationHarness,
+  createSwarmCoordinationHarness,
+} from './testing-harness.js';
+
+export type {
+  ConsensusVerificationResult,
+  DivergenceReport,
+  ConvergenceTimingResult,
+  FailureIsolationResult,
+} from './testing-harness.js';

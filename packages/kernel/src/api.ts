@@ -123,34 +123,7 @@ export interface KernelStats {
   uptimeMs: number;
 }
 
-/**
- * Extended WASM module interface — adds lifecycle methods on top of WasmModule
- */
 export interface KernelWasmModule extends WasmModule {
-  /** Initialize the WASM module */
-  init?(): Promise<void>;
-
-  /** Get wasm4pm version */
-  get_version?(): string;
-
-  /** Load an event log from an XES string and return an opaque handle */
-  load_eventlog_from_xes?(xes: string): string;
-
-  /** Load an OCEL 2.0 JSON string and return an opaque OCEL handle */
-  load_ocel_from_json?(content: string): string;
-
-  /** Load an OCEL 2.0 JSON string (WASM2 variant name) */
-  load_ocel2_from_json?(content: string): string;
-
-  /** Discover OC-Petri net from an OCEL handle using a named algorithm */
-  discover_oc_petri_net?(ocel_handle: string, algorithm: string): unknown;
-
-  /** Encode OCEL as compact text representation */
-  encode_ocel_as_text?(ocel_handle: string): string;
-
-  /** Flatten one object type from an OCEL into a conventional flat EventLog handle */
-  flatten_ocel_to_eventlog?(ocel_handle: string, object_type: string): string;
-
   /** Delete an object handle from WASM memory */
   delete_object?(handle: string): void;
 
@@ -195,6 +168,7 @@ export class Kernel {
   private _resultCache = new Map<string, KernelResult>();
   private _spanSink: SpanSink = DEFAULT_SINK;
   private _feedbackCapture: FeedbackCapture | undefined;
+  private _smartEngineHandle: string | undefined;
 
   constructor(wasmModule: KernelWasmModule, options?: { spanSink?: SpanSink; feedbackCapture?: FeedbackCapture }) {
     this.wasm = wasmModule;
@@ -574,15 +548,32 @@ export class Kernel {
       case 'dfg':
       case 'hierarchical_dfg':
       case 'streaming_log':
-      case 'smart_engine':
         return this.wasm.discover_dfg(eventLogHandle, activityKey);
+
+      case 'smart_engine': {
+        const engineHandle = await this.getSmartEngine();
+        const traces = this.wasm.get_traces ? this.wasm.get_traces(eventLogHandle, activityKey) : [];
+        const resultJson = this.wasm.smart_engine_run
+          ? this.wasm.smart_engine_run(engineHandle, (params.algorithm as string) ?? 'dfg', JSON.stringify(traces))
+          : await this.wasm.discover_dfg(eventLogHandle, activityKey);
+
+        // If it's a discovery-style algorithm, the smart engine might return a handle or JSON.
+        // The Kernel contract expects a handle for discovery algorithms.
+        if (typeof resultJson === 'string' && resultJson.startsWith('{')) {
+          // It's JSON (analytics), we need to store it and return a "virtual" handle
+          // or just pass it through if the caller expects JSON.
+          // For now, let's assume smart_engine is used as a discovery wrapper.
+          return { handle: resultJson }; // This is a bit of a hack, but fits the 'discover' return type
+        }
+        return typeof resultJson === 'string' ? { handle: resultJson } : resultJson;
+      }
 
       // SIMD-accelerated DFG — dispatches to the dedicated vectorised WASM export,
       // not the standard discover_dfg. A practitioner who selects this algorithm
       // explicitly wants the ~500x throughput uplift; silently downgrading to the
       // standard DFG defeats the purpose.
       case 'simd_streaming_dfg':
-        return this.wasm.discover_dfg_simd(eventLogHandle, activityKey);
+        return this.wasm.discover_dfg_simd!(eventLogHandle, activityKey);
 
       case 'process_skeleton':
         return this.wasm.extract_process_skeleton(
@@ -592,7 +583,15 @@ export class Kernel {
         );
 
       case 'alpha_plus_plus':
-        return this.wasm.discover_alpha_plus_plus(
+        if (this.wasm.discover_alpha_ppp_wasm) {
+          return await this.wasm.discover_alpha_ppp_wasm(
+            eventLogHandle,
+            activityKey,
+            0, // absolute_df_clean_thresh (min_support handles this at high level)
+            (params.causal_threshold as number) ?? 0.8
+          );
+        }
+        return await this.wasm.discover_alpha_plus_plus(
           eventLogHandle,
           activityKey,
           (params.min_support as number) ?? 0.0
@@ -810,116 +809,192 @@ export class Kernel {
       // how do resources hand over work to each other?
 
       case 'handover_network':
-        return this.wasm.discover_handover_network(
+        return this.wasm.discover_handover_network!(
           eventLogHandle,
           (params.resource_key as string) ?? 'org:resource'
         );
 
       case 'working_together_network':
-        return this.wasm.discover_working_together_network(
+        return this.wasm.discover_working_together_network!(
           eventLogHandle,
           (params.resource_key as string) ?? 'org:resource'
         );
 
       // ─── OCEL (Object-Centric Event Log) algorithms ──────────────────────
-      //
-      // These algorithms operate on OCEL handles, not conventional XES log handles.
-      // The eventLogHandle parameter is interpreted as an OCEL handle for these cases.
-      // The caller must have loaded the OCEL via wasm.load_ocel_from_json() externally
-      // before calling kernel.run() with an ocel_* algorithm ID.
 
       case 'ocel_dfg': {
-        const wasmAny = this.wasm as unknown as Record<string, (h: string) => unknown>;
-        if (typeof wasmAny['discover_ocel_dfg'] !== 'function') {
-          throw new Error('discover_ocel_dfg is not available in this WASM build (requires feature-ocel)');
+        if (!this.wasm.discover_ocel_dfg) {
+          throw new Error('discover_ocel_dfg is not available (requires feature-ocel)');
         }
-        // OCEL DFG functions return data directly (not an opaque handle); we store
-        // the result in the module-level result store and return a synthetic handle.
-        wasmAny['discover_ocel_dfg'](eventLogHandle);
-        return { handle: `ocel_dfg_${Date.now()}` };
+        return await this.wasm.discover_ocel_dfg(eventLogHandle);
       }
 
       case 'ocel_dfg_per_type': {
-        const wasmAny = this.wasm as unknown as Record<string, (h: string) => unknown>;
-        if (typeof wasmAny['discover_ocel_dfg_per_type'] !== 'function') {
-          throw new Error('discover_ocel_dfg_per_type is not available in this WASM build (requires feature-ocel)');
+        if (!this.wasm.discover_ocel_dfg_per_type) {
+          throw new Error('discover_ocel_dfg_per_type is not available (requires feature-ocel)');
         }
-        wasmAny['discover_ocel_dfg_per_type'](eventLogHandle);
-        return { handle: `ocel_dfg_per_type_${Date.now()}` };
+        return await this.wasm.discover_ocel_dfg_per_type(eventLogHandle);
       }
 
       case 'ocel_petri_net': {
         const fn = this.wasm.discover_oc_petri_net;
-        if (!fn) {
-          throw new Error('discover_oc_petri_net is not available in this WASM build (requires feature-ocel)');
-        }
+        if (!fn) throw new Error('discover_oc_petri_net is not available (requires feature-ocel)');
         const algorithm = (params.algorithm as string) ?? 'inductive';
         fn.call(this.wasm, eventLogHandle, algorithm);
         return { handle: `ocel_petri_net_${Date.now()}` };
       }
 
+      case 'ocel_ocla': {
+        const fn = this.wasm.discover_ocla_wasm;
+        if (!fn) throw new Error('discover_ocla_wasm is not available (requires feature-ocel)');
+        fn.call(this.wasm, eventLogHandle);
+        return { handle: `ocel_ocla_${Date.now()}` };
+      }
+
+      case 'ocel_oc_declare': {
+        const fn = this.wasm.discover_oc_declare_wasm;
+        if (!fn) throw new Error('discover_oc_declare_wasm is not available (requires feature-ocel)');
+        const thresh = (params.noise_threshold as number) ?? 0.1;
+        await fn.call(this.wasm, eventLogHandle, thresh);
+        return { handle: `ocel_oc_declare_${Date.now()}` };
+      }
+
       case 'ocel_encode': {
         const fn = this.wasm.encode_ocel_as_text;
-        if (!fn) {
-          throw new Error('encode_ocel_as_text is not available in this WASM build (requires feature-ocel)');
-        }
-        fn.call(this.wasm, eventLogHandle);
+        if (!fn) throw new Error('encode_ocel_as_text is not available (requires feature-ocel)');
+        await fn.call(this.wasm, eventLogHandle);
         return { handle: `ocel_encode_${Date.now()}` };
       }
 
-      // ─── ML algorithms (TypeScript, not WASM) ────────────────────────────
+      // ─── Analytics (Wave 2) ──────────────────────────────────────────────
+
+      case 'detect_drift': {
+        const json = this.wasm.detect_drift!(
+          eventLogHandle,
+          activityKey,
+          (params.window_size as number) ?? 50
+        );
+        return { handle: `drift_${Date.now()}`, metadata: { result: JSON.parse(json) } } as any;
+      }
+
+      case 'compute_ewma': {
+        const json = this.wasm.compute_ewma!(
+          (params.values_json as string)!,
+          (params.alpha as number) ?? 0.3
+        );
+        return { handle: `ewma_${Date.now()}`, metadata: { result: JSON.parse(json) } } as any;
+      }
+
+      case 'analyze_variant_complexity': {
+        const json = this.wasm.analyze_variant_complexity!(eventLogHandle, activityKey);
+        return { handle: `complexity_${Date.now()}`, metadata: { result: JSON.parse(json) } } as any;
+      }
+
+      case 'compute_activity_transition_matrix': {
+        const json = this.wasm.compute_activity_transition_matrix!(eventLogHandle, activityKey);
+        return { handle: `transition_matrix_${Date.now()}`, metadata: { result: JSON.parse(json) } } as any;
+      }
+
+      case 'analyze_process_speedup': {
+        const json = this.wasm.analyze_process_speedup!(
+          eventLogHandle,
+          (params.timestamp_key as string) ?? 'time:timestamp',
+          (params.window_size as number) ?? 10
+        );
+        return { handle: `speedup_${Date.now()}`, metadata: { result: JSON.parse(json) } } as any;
+      }
+
+      case 'compute_trace_similarity_matrix': {
+        const json = this.wasm.compute_trace_similarity_matrix!(eventLogHandle, activityKey);
+        return { handle: `similarity_${Date.now()}`, metadata: { result: JSON.parse(json) } } as any;
+      }
+
+      case 'automl_classify': {
+        const json = await this.wasm.discover_automl_classify!(eventLogHandle, activityKey);
+        return { handle: `automl_classify_${Date.now()}`, metadata: { result: JSON.parse(json) } } as any;
+      }
+
+      case 'automl_forecast': {
+        const json = await this.wasm.discover_automl_forecast!(eventLogHandle, activityKey);
+        return { handle: `automl_forecast_${Date.now()}`, metadata: { result: JSON.parse(json) } } as any;
+      }
+
+      case 'automl_regress': {
+        const json = await this.wasm.discover_ml_regress_automl!(eventLogHandle, activityKey);
+        return { handle: `automl_regress_${Date.now()}`, metadata: { result: JSON.parse(json) } } as any;
+      }
+
+      case 'agentic_pipeline': {
+        const json = await this.wasm.run_agentic_pipeline!((params.task_json as string) ?? '{}');
+        return { handle: `agentic_pipeline_${Date.now()}`, metadata: { result: JSON.parse(json) } } as any;
+      }
+
+      // ─── ML algorithms (Restored WASM paths) ─────────────────────────────
 
       case 'ml_classify':
-        throw new Error(
-          `ML algorithm '${algorithmId}' requires the @wasm4pm/ml package. Run 'wpm ml classify ...' instead.`
-        );
+        if (this.wasm.discover_ml_classify) {
+          return await this.wasm.discover_ml_classify(eventLogHandle, activityKey);
+        }
+        throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`);
 
       case 'ml_cluster':
-        throw new Error(
-          `ML algorithm '${algorithmId}' requires the @wasm4pm/ml package. Run 'wpm ml cluster ...' instead.`
-        );
+        if (this.wasm.discover_ml_cluster) {
+          return await this.wasm.discover_ml_cluster(eventLogHandle, activityKey);
+        }
+        throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`);
 
       case 'ml_forecast':
-        throw new Error(
-          `ML algorithm '${algorithmId}' requires the @wasm4pm/ml package. Run 'wpm ml forecast ...' instead.`
-        );
+        if (this.wasm.discover_ml_forecast) {
+          return await this.wasm.discover_ml_forecast(eventLogHandle, activityKey);
+        }
+        throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`);
 
       case 'ml_anomaly':
-        throw new Error(
-          `ML algorithm '${algorithmId}' requires the @wasm4pm/ml package. Run 'wpm ml anomaly ...' instead.`
-        );
+        if (this.wasm.discover_ml_anomaly) {
+          return await this.wasm.discover_ml_anomaly(eventLogHandle, activityKey);
+        }
+        throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`);
 
       case 'ml_regress':
-        throw new Error(
-          `ML algorithm '${algorithmId}' requires the @wasm4pm/ml package. Run 'wpm ml regress ...' instead.`
-        );
+        if (this.wasm.discover_ml_regress) {
+          return await this.wasm.discover_ml_regress(eventLogHandle, activityKey);
+        }
+        throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`);
 
       case 'ml_pca':
-        throw new Error(
-          `ML algorithm '${algorithmId}' requires the @wasm4pm/ml package. Run 'wpm ml pca ...' instead.`
-        );
+        if (this.wasm.discover_ml_pca) {
+          return await this.wasm.discover_ml_pca(eventLogHandle, activityKey);
+        }
+        throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`);
+
+      // ─── Prediction (Stubs preserved for high-level package requirement) ─
 
       case 'predict_next_activity':
-        throw new Error(
-          `Prediction algorithm '${algorithmId}' requires the @wasm4pm/predict package and multi-step model building. ` +
-          `Use the CLI command: wpm predict next-activity -i <log.xes> [--prefix "A,B"] [--ngram-order 2]`
-        );
-
       case 'predict_remaining_time':
-        throw new Error(
-          `Prediction algorithm '${algorithmId}' requires the @wasm4pm/predict package and multi-step model building. ` +
-          `Use the CLI command: wpm predict remaining-time -i <log.xes> [--prefix "A,B,C"]`
-        );
-
       case 'predict_outcome':
         throw new Error(
-          `Prediction algorithm '${algorithmId}' requires the @wasm4pm/predict package and multi-step model building. ` +
-          `Use the CLI command: wpm predict outcome -i <log.xes> [--prefix "A,B"]`
+          `Prediction algorithm '${algorithmId}' requires the @wasm4pm/predict package. ` +
+          `Use the CLI command: wpm predict ...`
         );
 
       default:
         throw new Error(`Unsupported algorithm: ${algorithmId}`);
     }
+  }
+
+  /**
+   * Get or create the global SmartEngine handle for this kernel instance.
+   */
+  private async getSmartEngine(): Promise<string> {
+    if (!this._smartEngineHandle && this.wasm.smart_engine_create) {
+      try {
+        this._smartEngineHandle = this.wasm.smart_engine_create();
+      } catch (e) {
+        console.warn('Failed to create SmartEngine, falling back to default', e);
+        return 'default';
+      }
+    }
+    return this._smartEngineHandle ?? 'default';
   }
 }
 

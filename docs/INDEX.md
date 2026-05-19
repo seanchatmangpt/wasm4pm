@@ -7,8 +7,9 @@ Welcome to the `wasm4pm` documentation. We structure our documentation using the
 1. [Getting Started](tutorials/getting_started.md)
 2. [Predictive Process Monitoring](tutorials/predictive_monitoring.md)
 3. [Executing Cognition Contracts](tutorials/cognition_contracts.md)
-4. [Parsing Custom Event Logs](tutorials/custom_event_logs.md)
-5. [Advanced Benchmarking](tutorials/advanced_benchmarking.md)
+4. [Cognition Breeds Example Gallery](tutorials/cognition_examples.md)
+5. [Parsing Custom Event Logs](tutorials/custom_event_logs.md)
+6. [Advanced Benchmarking](tutorials/advanced_benchmarking.md)
 
 ## 🛠️ How-To Guides (Problem-Oriented)
 *Directions that guide the reader through a problem or task.*

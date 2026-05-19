@@ -8,7 +8,7 @@ import { Engine } from './engine.js';
 import { CrashDetector, CrashDetectionResult } from './crash-detector.js';
 import { ICheckpointStore, CheckpointMetadata } from './checkpoint-store.js';
 import { CheckpointManager } from './checkpointing.js';
-import { Instrumentation } from '@wasm4pm/observability';
+import { ObservabilityLayer } from '@wasm4pm/observability';
 import { EngineState } from '@wasm4pm/contracts';
 
 /**
@@ -64,7 +64,7 @@ export class AutonomousRecoveryOrchestrator {
     private checkpointStore: ICheckpointStore,
     private checkpointManager: CheckpointManager,
     private runId: string,
-    private instrumentation?: Instrumentation,
+    private instrumentation?: ObservabilityLayer,
     private monitoringIntervalMs = 5000,
     private heartbeatTimeoutMs = 30000
   ) {}
@@ -350,7 +350,7 @@ export class AutonomousRecoveryOrchestrator {
       const heartbeatAgeMs = health.lastHeartbeat ? Date.now() - health.lastHeartbeat : null;
       const isStale = heartbeatAgeMs && heartbeatAgeMs > timeoutMs;
 
-      this.instrumentation.createSpan('engine.health_check', {
+      this.instrumentation.createSpan(this.engine.getTraceId(), 'engine.health_check', this.engine.getRequiredOtelAttrs(), {
         service_name: 'wpm',
         status,
         engine_health_status: health.healthy,
@@ -403,7 +403,7 @@ export class AutonomousRecoveryOrchestrator {
       // Failed recovery → -0.5 penalty
       const reward_delta = result.success ? 0.4 : -0.5;
 
-      this.instrumentation.createSpan('engine.recovery_execution', {
+      this.instrumentation.createSpan(this.engine.getTraceId(), 'engine.recovery_execution', this.engine.getRequiredOtelAttrs(), {
         service_name: 'wpm',
         status: result.success ? 'ok' : 'error',
         recovery_type: recoveryType,
@@ -458,7 +458,7 @@ export class AutonomousRecoveryOrchestrator {
             ? 'medium'
             : 'critical';
 
-      this.instrumentation.createSpan('engine.escalation_unrecoverable', {
+      this.instrumentation.createSpan(this.engine.getTraceId(), 'engine.escalation_unrecoverable', this.engine.getRequiredOtelAttrs(), {
         service_name: 'wpm',
         status: 'error',
         escalation_reason: reason,
@@ -494,7 +494,7 @@ export class AutonomousRecoveryOrchestrator {
       const recoverable =
         errorType === 'mttrExceeded' || errorType === 'monitoringCycleError';
 
-      this.instrumentation.createSpan('engine.monitoring_error', {
+      this.instrumentation.createSpan(this.engine.getTraceId(), 'engine.monitoring_error', this.engine.getRequiredOtelAttrs(), {
         service_name: 'wpm',
         status: 'error',
         error_type: errorType,

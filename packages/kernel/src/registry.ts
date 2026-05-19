@@ -230,16 +230,16 @@ export class AlgorithmRegistry {
       scalesWell: true,
     });
 
-    // Alpha++ (improved Alpha algorithm)
+    // Alpha+++ (Improved Alpha algorithm)
     this.registerWithInferredProfiles({
       id: 'alpha_plus_plus',
-      name: 'Alpha++ (Improved Alpha)',
+      name: 'Alpha+++ (Triple Plus)',
       description:
-        'Alpha++ algorithm (de Medeiros et al. 2004). Extends the original Alpha algorithm with explicit handling of length-1 loops (self-loops) and length-2 loops, reclassifying parallel short-loop pairs as causal. Produces a proper Petri net with source/sink places and maximal (A,B) place candidates.',
+        'Advanced Alpha+++ algorithm. Extends the original Alpha algorithm with explicit handling of length-1 loops, length-2 loops, and parallel short-loop pairs. Produces a proper Petri net with source/sink places.',
       outputType: 'petrinet',
       complexity: 'O(n²)',
       speedTier: 20,
-      qualityTier: 45,
+      qualityTier: 50,
       parameters: [
         {
           name: 'activity_key',
@@ -251,10 +251,16 @@ export class AlgorithmRegistry {
         {
           name: 'min_support',
           type: 'number',
-          description:
-            'Minimum support threshold [0,1] for filtering rare directly-follows relations. 0.0 = no filtering.',
+          description: 'Minimum support threshold [0,1]',
           required: false,
           default: 0.0,
+        },
+        {
+          name: 'causal_threshold',
+          type: 'number',
+          description: 'Causal dependency threshold for Alpha+++ [0,1]',
+          required: false,
+          default: 0.8,
         },
       ],
       supportedProfiles: ['balanced', 'quality'],
@@ -1753,6 +1759,54 @@ export class AlgorithmRegistry {
       scalesWell: true,
     });
 
+    this.registerWithInferredProfiles({
+      id: 'ocel_ocla',
+      name: 'OC-Language Abstraction',
+      description:
+        'Discover Object-Centric Language Abstraction (OCLA) from an OCEL. Captures the language ' +
+        'of events per object type and their interactions. ' +
+        'WASM export: discover_ocla_wasm(ocel_handle). Requires feature-ocel.',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 10,
+      qualityTier: 40,
+      parameters: [],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 5,
+      estimatedMemoryMB: 50,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'ocel_oc_declare',
+      name: 'OC-Declare',
+      description:
+        'Discover Object-Centric Declare constraints from an OCEL. Identifies temporal constraints ' +
+        'that hold across different object types. ' +
+        'WASM export: discover_oc_declare_wasm(ocel_handle, noise_threshold). Requires feature-ocel.',
+      outputType: 'declare',
+      complexity: 'O(n²)',
+      speedTier: 40,
+      qualityTier: 60,
+      parameters: [
+        {
+          name: 'noise_threshold',
+          type: 'number',
+          description: 'Minimum support for OC-Declare constraints (0-1)',
+          required: false,
+          default: 0.1,
+          min: 0,
+          max: 1,
+        },
+      ],
+      supportedProfiles: ['quality'],
+      estimatedDurationMs: 50,
+      estimatedMemoryMB: 150,
+      robustToNoise: true,
+      scalesWell: false,
+    });
+
     // Prediction APIs
     this.registerWithInferredProfiles({
       id: 'predict_next_activity',
@@ -1856,6 +1910,306 @@ export class AlgorithmRegistry {
       supportedProfiles: ['balanced', 'quality'],
       estimatedDurationMs: 15,
       estimatedMemoryMB: 50,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    // ─── Advanced Analytics (Wave 2) ────────────────────────────────────────
+
+    this.registerWithInferredProfiles({
+      id: 'detect_drift',
+      name: 'Process Drift Detection',
+      description:
+        'Detect concept drift in a process by comparing activity distributions across sliding windows. ' +
+        'WASM export: detect_drift(log_handle, activity_key, window_size).',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 15,
+      qualityTier: 70,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity key',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'window_size',
+          type: 'number',
+          description: 'Sliding window size (number of traces)',
+          required: false,
+          default: 50,
+          min: 10,
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 10,
+      estimatedMemoryMB: 40,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'compute_ewma',
+      name: 'EWMA Smoothing',
+      description:
+        'Compute Exponentially Weighted Moving Average (EWMA) for a series of values. ' +
+        'WASM export: compute_ewma(values_json, alpha).',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 5,
+      qualityTier: 30,
+      parameters: [
+        {
+          name: 'values_json',
+          type: 'string',
+          description: 'JSON array of numeric values',
+          required: true,
+        },
+        {
+          name: 'alpha',
+          type: 'number',
+          description: 'Smoothing factor (0-1)',
+          required: false,
+          default: 0.3,
+          min: 0,
+          max: 1,
+        },
+      ],
+      supportedProfiles: ['fast', 'balanced', 'quality', 'stream'],
+      estimatedDurationMs: 2,
+      estimatedMemoryMB: 10,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'analyze_variant_complexity',
+      name: 'Variant Complexity Analysis',
+      description:
+        'Measure variant entropy and diversity in the event log. ' +
+        'WASM export: analyze_variant_complexity(log_handle, activity_key).',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 10,
+      qualityTier: 40,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity key',
+          required: true,
+          default: 'concept:name',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 5,
+      estimatedMemoryMB: 30,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'compute_activity_transition_matrix',
+      name: 'Activity Transition Matrix',
+      description:
+        'Compute activity transition matrix (Markov chain) for the process. ' +
+        'WASM export: compute_activity_transition_matrix(log_handle, activity_key).',
+      outputType: 'analytics',
+      complexity: 'O(n²)',
+      speedTier: 20,
+      qualityTier: 50,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity key',
+          required: true,
+          default: 'concept:name',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 10,
+      estimatedMemoryMB: 60,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'analyze_process_speedup',
+      name: 'Process Speedup Analysis',
+      description:
+        'Identify where process accelerates/decelerates over time using timestamp deltas. ' +
+        'WASM export: analyze_process_speedup(log_handle, timestamp_key, window_size).',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 15,
+      qualityTier: 60,
+      parameters: [
+        {
+          name: 'timestamp_key',
+          type: 'string',
+          description: 'Timestamp key',
+          required: true,
+          default: 'time:timestamp',
+        },
+        {
+          name: 'window_size',
+          type: 'number',
+          description: 'Window size for speedup detection',
+          required: false,
+          default: 10,
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 15,
+      estimatedMemoryMB: 50,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'compute_trace_similarity_matrix',
+      name: 'Trace Similarity Matrix',
+      description:
+        'Compute pairwise trace similarity matrix using Levenshtein distance on activity sequences. ' +
+        'WASM export: compute_trace_similarity_matrix(log_handle, activity_key).',
+      outputType: 'analytics',
+      complexity: 'O(n²)',
+      speedTier: 50,
+      qualityTier: 70,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity key',
+          required: true,
+          default: 'concept:name',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 100,
+      estimatedMemoryMB: 200,
+      robustToNoise: true,
+      scalesWell: false,
+    });
+
+    // ─── Agentic & AutoML (Wave 3) ──────────────────────────────────────────
+
+    this.registerWithInferredProfiles({
+      id: 'automl_classify',
+      name: 'AutoML Classification',
+      description:
+        'Auto-optimize classification model (RF/XGB) for trace outcome prediction. ' +
+        'WASM export: discover_automl_classify(log_handle, activity_key).',
+      outputType: 'analytics',
+      complexity: 'O(n log n)',
+      speedTier: 40,
+      qualityTier: 90,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Target activity key',
+          required: true,
+          default: 'concept:name',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 500,
+      estimatedMemoryMB: 300,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'automl_forecast',
+      name: 'AutoML Throughput Forecast',
+      description:
+        'Auto-optimize time-series forecasting model for process throughput. ' +
+        'WASM export: discover_automl_forecast(log_handle, activity_key).',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 30,
+      qualityTier: 85,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity key',
+          required: true,
+          default: 'concept:name',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 300,
+      estimatedMemoryMB: 200,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'smart_engine',
+      name: 'Smart Discovery Engine',
+      description:
+        'Agentic discovery engine with LRU caching, convergence monitoring, and fused multi-pass execution. ' +
+        'WASM export: smart_engine_run(handle, algorithm, traces_json).',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 5,
+      qualityTier: 80,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'The event attribute key used as the activity name (e.g., concept:name)',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'algorithm',
+          type: 'string',
+          description: 'The base algorithm to optimize (e.g., dfg, inductive)',
+          required: false,
+          default: 'dfg',
+        },
+        {
+          name: 'cache_capacity',
+          type: 'number',
+          description: 'LRU cache size',
+          required: false,
+          default: 100,
+        },
+      ],
+      supportedProfiles: ['fast', 'balanced', 'quality', 'stream'],
+      estimatedDurationMs: 5,
+      estimatedMemoryMB: 50,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'agentic_pipeline',
+      name: 'Agentic Process Pipeline',
+      description:
+        'End-to-end agentic lifecycle: perception, decision, protection, and Bellman-optimized policy. ' +
+        'WASM export: run_agentic_pipeline(task_json). Requires feature-cloud.',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 1,
+      qualityTier: 95,
+      parameters: [
+        {
+          name: 'task_json',
+          type: 'string',
+          description: 'JSON-encoded TaskContext',
+          required: true,
+        },
+      ],
+      supportedProfiles: ['fast', 'balanced', 'quality'],
+      estimatedDurationMs: 1,
+      estimatedMemoryMB: 10,
       robustToNoise: true,
       scalesWell: true,
     });

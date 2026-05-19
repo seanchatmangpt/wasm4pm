@@ -477,17 +477,36 @@ impl EventLog {
                     .or_insert(0) += 1;
             }
         }
-
         counts
             .into_iter()
-            .map(|((f, t), freq)| {
+            .map(|((from, to), count)| {
                 (
-                    col.vocab[f as usize].to_owned(),
-                    col.vocab[t as usize].to_owned(),
-                    freq,
+                    col.vocab[from as usize].to_string(),
+                    col.vocab[to as usize].to_string(),
+                    count,
                 )
             })
             .collect()
+    }
+
+    /// Get all traces as activity sequences.
+    #[inline]
+    pub fn get_traces(&self, activity_key: &str) -> Vec<Vec<String>> {
+        let col = self.to_columnar(activity_key);
+        let mut traces = Vec::with_capacity(col.trace_offsets.len().saturating_sub(1));
+
+        for t in 0..col.trace_offsets.len().saturating_sub(1) {
+            let start = col.trace_offsets[t];
+            let end = col.trace_offsets[t + 1];
+            let mut sequence = Vec::with_capacity(end - start);
+            for i in start..end {
+                sequence.push(col.vocab[col.events[i] as usize].to_string());
+            }
+            traces.push(sequence);
+        }
+        traces
+    }
+
     }
 }
 

@@ -91,16 +91,20 @@ function buildFm1Stub(): KernelWasmModule & {
     async powl_to_yawl_string(_s: string): Promise<string> { return '{}'; },
     async play_out(_m: string, _n: number, _l: number) { return { handle: 'po' }; },
     async monte_carlo_simulation(_l: string, _p: string, _r: string, _c: string) { return { handle: 'mo' }; },
-    extract_case_features(_h: string, _k: string, _t: string, _c: string): string { return '{"traces":[]}'; },
+    extract_case_features(_h: string, _k: string, _t: string, _c: string): string { return '[]'; },
     detect_drift(_h: string, _k: string, _w: number): string { return '{"drifts":[]}'; },
+    compute_ewma(_v: string, _a: number): string { return '{"smoothed":[]}'; },
+    analyze_variant_complexity(_h: string, _k: string): string { return '{}'; },
+    compute_activity_transition_matrix(_h: string, _k: string): string { return '{}'; },
+    analyze_process_speedup(_h: string, _t: string, _w: number): string { return '{}'; },
+    compute_trace_similarity_matrix(_h: string, _k: string): string { return '[]'; },
     async discover_ocel_dfg(_h: string) { return { handle: 'ocel' }; },
     async discover_ocel_dfg_per_type(_h: string) { return { handle: 'ocel_per' }; },
     async discover_handover_network(_h: string, _k: string) { return { handle: 'hn' }; },
     async discover_working_together_network(_h: string, _k: string) { return { handle: 'wt' }; },
-    async discover_dfg_simd(_h: string, _k: string) { return { handle: 'simd_dfg' }; },
     delete_object(_h: string) {},
     clear_all_objects() {},
-  } satisfies KernelWasmModule;
+  };
 
   // Object.assign does not preserve getter descriptors — use defineProperty.
   Object.defineProperty(wasmFacade, 'dfgCallCount', {

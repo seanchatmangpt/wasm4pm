@@ -143,6 +143,17 @@ export class Engine {
   /**
    * Gets the current engine state
    */
+  getTraceId(): string {
+    return this.traceId;
+  }
+
+  getRequiredOtelAttrs(): RequiredOtelAttributes {
+    return this.requiredOtelAttrs;
+  }
+
+  /**
+   * Get the current engine state
+   */
   state(): EngineState {
     return this.stateMachine.getState();
   }

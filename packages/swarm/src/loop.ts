@@ -145,6 +145,18 @@ export async function runSwarm(config: SwarmConfig): Promise<SwarmArtifact> {
         const { converged, stableWorkers, unstableWorkers, agreementRate, convergenceReason } =
           checkSwarmConvergence(workerResults, hashHistory, convergenceRuns);
 
+        const hashCounts = new Map<string, number>();
+        let maxCount = 0;
+        let dominantHash: string | null = null;
+        for (const r of workerResults) {
+          const c = (hashCounts.get(r.resultHash) ?? 0) + 1;
+          hashCounts.set(r.resultHash, c);
+          if (c > maxCount) {
+            maxCount = c;
+            dominantHash = r.resultHash;
+          }
+        }
+
         const convergenceReport = {
           algorithm: consensusDecision?.selectedAlgorithm ?? workerSpecs[0]?.algorithmId ?? 'unknown',
           converged,

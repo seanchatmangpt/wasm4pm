@@ -87,13 +87,11 @@ function buildOcelCapableStub(): KernelWasmModule & { ocelCallCounts: Record<str
     async from_pnml(_x) { return handle('pnml', _x); },
     async read_bpmn(_x) { return handle('bpmn', _x); },
     async powl_to_process_tree(_h) { return handle('powl2tree', _h); },
-    async powl_to_yawl_string(_s): Promise<string> { return '{}'; },
-    async play_out(_m, _n, _l) { return handle('playout', _m); },
-    async monte_carlo_simulation(_l, _p, _r, _c) { return handle('montecarlo', _l); },
-    extract_case_features(_h, _k, _t, _c): string { return '{"traces":[]}'; },
-    detect_drift(_h, _k, _w): string { return '{"drifts":[]}'; },
-    async discover_handover_network(h, _k) { return handle('handover', h); },
-    async discover_working_together_network(h, _k) { return handle('wt', h); },
+    async powl_to_yawl_string(_s: string): Promise<string> { return '{}'; },
+    async play_out(_m: string, _n: number, _l: number) { return handle('playout', _m); },
+    async monte_carlo_simulation(_l: string, _p: string, _r: string, _c: string) { return handle('montecarlo', _l); },
+    async discover_handover_network(h: string, _k: string) { return handle('handover', h); },
+    async discover_working_together_network(h: string, _k: string) { return handle('wt', h); },
     async discover_powl_from_log(_j, v) {
       inc('powl_log');
       return { root: 0, node_count: 1, repr: '()', variant: v };
@@ -105,6 +103,19 @@ function buildOcelCapableStub(): KernelWasmModule & { ocelCallCounts: Record<str
         config: { activity_key: k, min_trace_count: m, noise_threshold: n },
       };
     },
+    extract_case_features(_h: string, _k: string, _t: string, _c: string): string {
+      inc('extract_case_features');
+      return '[]';
+    },
+    detect_drift(_h: string, _k: string, _w: number): string {
+      inc('detect_drift');
+      return '{"drifts":[]}';
+    },
+    compute_ewma(_v: string, _a: number): string { return '{"smoothed":[]}'; },
+    analyze_variant_complexity(_h: string, _k: string): string { return '{}'; },
+    compute_activity_transition_matrix(_h: string, _k: string): string { return '{}'; },
+    analyze_process_speedup(_h: string, _t: string, _w: number): string { return '{}'; },
+    compute_trace_similarity_matrix(_h: string, _k: string): string { return '[]'; },
     delete_object(_h) {},
     clear_all_objects() {},
 
@@ -113,15 +124,15 @@ function buildOcelCapableStub(): KernelWasmModule & { ocelCallCounts: Record<str
       inc('load_ocel_from_json');
       return `ocel_handle_for_${content.length}`;
     },
-    discover_oc_petri_net(ocel_handle: string, algorithm: string): unknown {
+    async discover_oc_petri_net(ocel_handle: string, algorithm: string): Promise<{ handle: string }> {
       inc('discover_oc_petri_net');
       return { handle: `oc_petri_net_${ocel_handle}_${algorithm}` };
     },
-    encode_ocel_as_text(ocel_handle: string): string {
+    async encode_ocel_as_text(ocel_handle: string): Promise<string> {
       inc('encode_ocel_as_text');
       return `text_encoding_of_${ocel_handle}`;
     },
-    flatten_ocel_to_eventlog(ocel_handle: string, object_type: string): string {
+    async flatten_ocel_to_eventlog(ocel_handle: string, object_type: string): Promise<string> {
       inc('flatten_ocel_to_eventlog');
       return `flattened_${ocel_handle}_${object_type}`;
     },
@@ -550,25 +561,30 @@ describe('G5: KernelWasmModule OCEL optional field semantics (Rank 2 — domain 
     expect(handle.length).toBeGreaterThan(0);
   });
 
-  it('flatten_ocel_to_eventlog is optional on KernelWasmModule (present in OCEL-capable stub)', () => {
-    expect(typeof ocelStub.flatten_ocel_to_eventlog).toBe('function');
+  it('flatten_ocel_to_eventlog is optional on KernelWasmModule (present in OCEL-capable stub)', async () => {
+    const stub = buildOcelCapableStub();
+    const res = await stub.flatten_ocel_to_eventlog!('h1', 't1');
+    expect(res).toContain('flattened_h1_t1');
+    expect(stub.ocelCallCounts['flatten_ocel_to_eventlog']).toBe(1);
   });
 
-  it('flatten_ocel_to_eventlog returns a non-empty string handle when called', () => {
-    const result = ocelStub.flatten_ocel_to_eventlog!('ocel_handle_xyz', 'Order');
-    expect(typeof result).toBe('string');
-    expect(result.length).toBeGreaterThan(0);
+  it('encode_ocel_as_text is optional on KernelWasmModule (present in OCEL-capable stub)', async () => {
+    const stub = buildOcelCapableStub();
+    const res = await stub.encode_ocel_as_text!('h1');
+    expect(res).toContain('text_encoding_of_h1');
+    expect(stub.ocelCallCounts['encode_ocel_as_text']).toBe(1);
   });
 
-  it('discover_oc_petri_net is optional and returns a value in OCEL-capable stub', () => {
+  it('discover_oc_petri_net is optional and returns a value in OCEL-capable stub', async () => {
     expect(typeof ocelStub.discover_oc_petri_net).toBe('function');
-    const result = ocelStub.discover_oc_petri_net!('ocel_handle_xyz', 'inductive');
+    const result = await ocelStub.discover_oc_petri_net!('ocel_handle_xyz', 'inductive');
     expect(result).toBeDefined();
+    expect(result.handle).toBeDefined();
   });
 
-  it('encode_ocel_as_text is optional and returns a non-empty string in OCEL-capable stub', () => {
+  it('encode_ocel_as_text is optional and returns a non-empty string in OCEL-capable stub', async () => {
     expect(typeof ocelStub.encode_ocel_as_text).toBe('function');
-    const result = ocelStub.encode_ocel_as_text!('ocel_handle_xyz');
+    const result = await ocelStub.encode_ocel_as_text!('ocel_handle_xyz');
     expect(typeof result).toBe('string');
     expect(result.length).toBeGreaterThan(0);
   });

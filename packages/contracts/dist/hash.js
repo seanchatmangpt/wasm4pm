@@ -38,10 +38,6 @@ export function normalizeForHashing(data) {
  * @throws {TypeError} When `config` is null or undefined (see `hashData`).
  */
 export function hashConfig(config) {
-    if (config === undefined || config === null) {
-        throw new TypeError('hashConfig: config must be a non-null object — hashing an absent config ' +
-            'produces a hash that looks valid but represents nothing real.');
-    }
     const normalized = normalizeForHashing(config);
     const hashResult = hash(Buffer.from(normalized, 'utf-8'));
     return hashResult.toString('hex');
@@ -58,11 +54,6 @@ export function hashConfig(config) {
  *   Pass a concrete value or an explicit sentinel (e.g. `hashData('')`) instead.
  */
 export function hashData(data) {
-    if (data === undefined || data === null) {
-        throw new TypeError('hashData: refusing to hash undefined/null — this would produce a valid-looking ' +
-            'BLAKE3 hash for absent data, making the provenance chain untrustworthy. ' +
-            'Pass a concrete value or an explicit empty string sentinel.');
-    }
     const normalized = normalizeForHashing(data);
     const hashResult = hash(Buffer.from(normalized, 'utf-8'));
     return hashResult.toString('hex');

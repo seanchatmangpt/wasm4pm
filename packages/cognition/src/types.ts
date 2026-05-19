@@ -57,8 +57,10 @@ export interface TraceStep {
 // Breed catalogue (returned by cognition_show)
 // =============================================================================
 
+export type BreedId = 'eliza' | 'cbr' | 'dendral' | 'strips' | 'prolog' | 'mycin' | 'gps' | 'soar' | 'hearsay';
+
 export interface BreedDescriptor {
-  id: string;
+  id: BreedId;
   name: string;
   year: number;
 }
@@ -100,7 +102,7 @@ export interface TraceStep {
 }
 
 export interface BreedOutput {
-  breed: string;
+  breed: BreedId;
   candidates: Candidate[];
   facts: Fact[];
   selected?: string;
@@ -116,7 +118,7 @@ export interface BreedOutput {
 }
 
 export interface Receipt {
-  breed: string;
+  breed: BreedId;
   input_hash: string;
   output_hash: string;
   combined_hash: string;
@@ -159,7 +161,7 @@ export interface Finding {
  */
 export interface ContractResult {
   status: 'ok';
-  breed: string;
+  breed: BreedId;
   run_id: string;
   output_hash: string;
   replay_pointer: string;
