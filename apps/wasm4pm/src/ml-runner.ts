@@ -392,6 +392,35 @@ export async function executeMlTask(
         configJson
       );
       const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
+
+      // Hyperparameter tuning if --tune flag is set
+      if (options.tune) {
+        console.log('[Tuning] Starting grid search for regression parameters...');
+        const searchSpace = suggestSearchSpace(
+          'regress',
+          features.data.length,
+          features.featureNames.length
+        );
+        const cvFolds = options.cvFolds ?? 3;
+        const result = await findBestParams('regress', features, undefined, searchSpace, cvFolds);
+        console.log(
+          `[Tuning] Evaluated ${result.evaluatedConfigs} parameter configurations`
+        );
+        console.log(`[Tuning] Best params: method=${result.bestParams.method}, degree=${result.bestParams.degree}`);
+        if (result.bestMetrics.rSquared !== undefined) {
+          console.log(`[Tuning] Best R²: ${result.bestMetrics.rSquared.toFixed(3)}`);
+        }
+        if (result.bestMetrics.rmse !== undefined) {
+          console.log(`[Tuning] Best RMSE: ${result.bestMetrics.rmse.toFixed(2)}`);
+        }
+
+        // Run regression with tuned method
+        const tunedMethod = result.bestParams.method || options.method;
+        return (await regressRemainingTime(features, {
+          method: tunedMethod as any,
+        })) as unknown as Record<string, unknown>;
+      }
+
       return (await regressRemainingTime(features, {
         method: options.method as any,
       })) as unknown as Record<string, unknown>;

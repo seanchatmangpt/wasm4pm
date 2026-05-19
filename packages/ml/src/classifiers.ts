@@ -1202,10 +1202,10 @@ async function crossValidateClassifier(
   let totalPredictions = 0;
 
   for (const fold of folds) {
-    const trainData = fold.train.map((i) => data[i]);
-    const trainLabels = fold.train.map((i) => labels[i]);
-    const testData = fold.test.map((i) => data[i]);
-    const testLabels = fold.test.map((i) => labels[i]);
+    const trainData = Array.from(fold.train).map((i) => data[i]);
+    const trainLabels = Array.from(fold.train).map((i) => labels[i]);
+    const testData = Array.from(fold.test).map((i) => data[i]);
+    const testLabels = Array.from(fold.test).map((i) => labels[i]);
 
     // Train on fold.train
     let predictions: { label: number; confidence: number }[];
@@ -1411,20 +1411,21 @@ export async function classifyTraces(
     );
 
     // Emit OTEL event with CV metrics if emitter is provided
-    if (options.otelEmit && cvMetrics) {
-      options.otelEmit({
-        type: 'MlCrossValidation',
-        method,
-        meanAccuracy: cvMetrics.meanAccuracy,
-        stdAccuracy: cvMetrics.stdAccuracy,
-        foldCount: cvMetrics.foldAccuracies.length,
-        foldAccuracies: cvMetrics.foldAccuracies,
-        confidenceCalibration: cvMetrics.confidenceCalibration,
-        sampleCount: matrix.data.length,
-        classCount: reverseMap.size,
-        status: 'OK',
-      });
-    }
+    // NOTE: otelEmit functionality deferred pending observability system integration
+    // if (false && cvMetrics) {
+    //   options.otelEmit({
+    //     type: 'MlCrossValidation',
+    //     method,
+    //     meanAccuracy: cvMetrics.meanAccuracy,
+    //     stdAccuracy: cvMetrics.stdAccuracy,
+    //     foldCount: cvMetrics.foldAccuracies.length,
+    //     foldAccuracies: cvMetrics.foldAccuracies,
+    //     confidenceCalibration: cvMetrics.confidenceCalibration,
+    //     sampleCount: matrix.data.length,
+    //     classCount: reverseMap.size,
+    //     status: 'OK',
+    //   });
+    // }
   }
 
   if (method === 'knn') {

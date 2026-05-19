@@ -60,6 +60,14 @@ export const ml = defineCommand({
       type: 'boolean',
       description: 'Automatically select best algorithm based on data characteristics',
     },
+    tune: {
+      type: 'boolean',
+      description: 'Enable hyperparameter tuning via grid search with 3-fold CV',
+    },
+    'cv-folds': {
+      type: 'string',
+      description: 'Number of CV folds for hyperparameter tuning (default: 3)',
+    },
     format: {
       type: 'string',
       description: 'Output format (human or json)',
@@ -171,6 +179,22 @@ export const ml = defineCommand({
             }
           }
 
+          const tune = Boolean(ctx.args.tune);
+          const cvFolds = ctx.args['cv-folds']
+            ? parseInt(String(ctx.args['cv-folds']), 10)
+            : 3;
+
+          if (tune && Number.isNaN(cvFolds) || cvFolds <= 0) {
+            const result = makeErrorResult(
+              'ml',
+              new Error('Invalid --cv-folds value: must be a positive number (given: ' + ctx.args['cv-folds'] + ')'),
+              EXIT_CODES.config_error,
+              'INVALID_CV_FOLDS'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
+
           await withLogSession(
             { inputPath, activityKey, commandName: 'ml', emitOptions: { format, verbose, quiet } },
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -186,6 +210,8 @@ export const ml = defineCommand({
                 forecastPeriods: ctx.args['forecast-periods'] as string | number,
                 nComponents: ctx.args['n-components'] as string | number,
                 eps: ctx.args.eps as string | number,
+                tune,
+                cvFolds,
               });
 
               if (!ctx.args['no-save']) {

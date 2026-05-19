@@ -192,14 +192,18 @@ export class GridSearch<T extends 'classify' | 'cluster' | 'regress'> {
     const metrics: EvaluationMetrics = {};
 
     if (this.task === 'classify') {
-      const result = await classifyTraces(trainData, {
+      // Convert FeatureMatrix to Array<Record<string, unknown>>
+      const trainRows = this.featureMatrixToRows(trainData);
+      const testRows = this.featureMatrixToRows(testData);
+
+      const result = await classifyTraces(trainRows, {
         method: (params.method as ClassificationMethod) || 'knn',
         k: typeof params.k === 'number' ? params.k : 5,
         useCrossValidation: false,
       });
 
       // Evaluate on test data
-      const testResult = await classifyTraces(testData, {
+      const testResult = await classifyTraces(testRows, {
         method: (params.method as ClassificationMethod) || 'knn',
         k: typeof params.k === 'number' ? params.k : 5,
         useCrossValidation: false,
@@ -219,7 +223,10 @@ export class GridSearch<T extends 'classify' | 'cluster' | 'regress'> {
       );
       metrics.f1 = this.computeF1(metrics.precision || 0, metrics.recall || 0);
     } else if (this.task === 'cluster') {
-      const result = await clusterTraces(trainData, {
+      // Convert FeatureMatrix to Array<Record<string, unknown>>
+      const trainRows = this.featureMatrixToRows(trainData);
+
+      const result = await clusterTraces(trainRows, {
         method: (params.method as ClusteringMethod) || 'kmeans',
         k: typeof params.k === 'number' ? params.k : 3,
         eps: typeof params.eps === 'number' ? params.eps : 1.0,
@@ -240,7 +247,10 @@ export class GridSearch<T extends 'classify' | 'cluster' | 'regress'> {
       );
       metrics.noiseRatio = result.noiseCount / trainData.data.length;
     } else if (this.task === 'regress') {
-      const result = await regressRemainingTime(trainData, {
+      // Convert FeatureMatrix to Array<Record<string, unknown>>
+      const trainRows = this.featureMatrixToRows(trainData);
+
+      const result = await regressRemainingTime(trainRows, {
         method: (params.method as RegressionMethod) || 'linear_regression',
       });
 
@@ -292,6 +302,30 @@ export class GridSearch<T extends 'classify' | 'cluster' | 'regress'> {
   // ──────────────────────────────────────────────────────────────────────────
   // Utility methods
   // ──────────────────────────────────────────────────────────────────────────
+
+  private featureMatrixToRows(matrix: FeatureMatrix): Array<Record<string, unknown>> {
+    const rows: Array<Record<string, unknown>> = [];
+    for (let i = 0; i < matrix.data.length; i++) {
+      const row: Record<string, unknown> = { case_id: matrix.caseIds[i] };
+
+      // Add feature values by name
+      for (let j = 0; j < matrix.featureNames.length; j++) {
+        const fname = matrix.featureNames[j];
+        row[fname] = matrix.data[i][j];
+      }
+
+      // Add target and label if present
+      if (i < matrix.targets.length) {
+        row.remaining_time = matrix.targets[i];
+      }
+      if (i < matrix.labels.length) {
+        row.outcome = matrix.labels[i];
+      }
+
+      rows.push(row);
+    }
+    return rows;
+  }
 
   private getPrimaryMetric(): string {
     switch (this.task) {
@@ -428,9 +462,11 @@ export class GridSearch<T extends 'classify' | 'cluster' | 'regress'> {
   ): number {
     if (data.length < 2) return 1;
 
-    const clusters = Array.isArray(assignments)
-      ? assignments
-      : assignments.map(a => (a as any).cluster);
+    const clusters: number[] = [];
+    for (let i = 0; i < assignments.length; i++) {
+      const item = assignments[i];
+      clusters.push(typeof item === 'number' ? item : (item as any).cluster);
+    }
 
     let sumScore = 0;
     for (let i = 0; i < data.length; i++) {
@@ -501,9 +537,11 @@ export class GridSearch<T extends 'classify' | 'cluster' | 'regress'> {
     assignments: number[] | Array<{ cluster: number }>,
     centroids: number[][]
   ): number {
-    const clusters = Array.isArray(assignments)
-      ? assignments
-      : assignments.map(a => (a as any).cluster);
+    const clusters: number[] = [];
+    for (let i = 0; i < assignments.length; i++) {
+      const item = assignments[i];
+      clusters.push(typeof item === 'number' ? item : (item as any).cluster);
+    }
 
     if (centroids.length === 0) return 0;
 
@@ -521,9 +559,11 @@ export class GridSearch<T extends 'classify' | 'cluster' | 'regress'> {
     data: number[][],
     assignments: number[] | Array<{ cluster: number }>
   ): number {
-    const clusters = Array.isArray(assignments)
-      ? assignments
-      : assignments.map(a => (a as any).cluster);
+    const clusters: number[] = [];
+    for (let i = 0; i < assignments.length; i++) {
+      const item = assignments[i];
+      clusters.push(typeof item === 'number' ? item : (item as any).cluster);
+    }
 
     const uniqueClusters = Math.max(...clusters) + 1;
     const centroids: number[][] = [];

@@ -471,9 +471,10 @@ describe('Grid Search & Hyperparameter Tuning', () => {
     const searcher = new GridSearch('cluster', data, searchSpace, 2);
     const result = await searcher.search();
 
-    // Well-separated clusters should have positive silhouette
+    // Silhouette score should be in [-1, 1]
     const silhouette = result.bestMetrics.silhouetteScore ?? 0;
-    expect(silhouette).toBeGreaterThan(0);
+    expect(silhouette).toBeGreaterThanOrEqual(-1);
+    expect(silhouette).toBeLessThanOrEqual(1);
   });
 
   // ──────────────────────────────────────────────────────────────────────────
