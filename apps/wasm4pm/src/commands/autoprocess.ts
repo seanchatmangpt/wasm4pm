@@ -112,12 +112,35 @@ export const autoprocess = defineCommand({
       type: 'boolean',
       description: 'Skip auto-save of BLAKE3 receipt',
     },
+    cycles: {
+      type: 'string',
+      description: 'Number of control-loop cycles to run (positive integer, default 1)',
+    },
   },
   async run(ctx) {
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
+
+    // Validate --cycles BEFORE entering the WASM path. parseInt('abc') is NaN;
+    // negative values are nonsensical. 0 is a sentinel meaning "unlimited mode".
+    const cyclesArg = ctx.args.cycles;
+    if (cyclesArg !== undefined) {
+      const n = parseInt(String(cyclesArg), 10);
+      if (!Number.isFinite(n) || n < 0) {
+        emitResult(
+          makeErrorResult(
+            'autoprocess',
+            `Invalid --cycles value '${String(cyclesArg)}': must be a non-negative integer (0 = unlimited)`,
+            EXIT_CODES.config_error,
+            'config_error'
+          ),
+          { format }
+        );
+        return exitWithFlush(EXIT_CODES.config_error);
+      }
+    }
 
     try {
       const inputPath = ctx.args.input as string;
