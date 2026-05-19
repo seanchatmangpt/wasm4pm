@@ -29,7 +29,7 @@
  * ```
  */
 
-import { blake3 } from '@wasm4pm/contracts';
+import { hashData } from '@wasm4pm/contracts';
 
 export interface AlgorithmDeterminismTest {
   /** Display name of the algorithm (e.g., "dfg", "genetic_algorithm") */
@@ -94,7 +94,7 @@ export interface DeterminismTestResult {
  *   5,
  *   async (log, params) => {
  *     const result = await kernel.run('dfg', logHandle, params);
- *     return blake3(JSON.stringify(result)).toString();
+ *     return hashData(result);
  *   },
  * );
  *

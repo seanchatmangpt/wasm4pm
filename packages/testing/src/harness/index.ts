@@ -42,3 +42,18 @@ export type { SoundnessResult } from './soundness-verifier.js';
 
 export { ReceiptValidator, createReceiptValidator } from './receipt-validator.js';
 export type { ReceiptValidationError, ReceiptValidationResult } from './receipt-validator.js';
+
+export {
+  captureAlgorithmBaseline,
+  captureAlgorithmBaselineBatch,
+  checkRegressionAgainstBaseline,
+} from './baseline-capture.js';
+export type { AlgorithmBaseline, BaselintCaptureOptions } from './baseline-capture.js';
+
+export {
+  checkRegressionAgainstBaseline as checkBaselineRegression,
+  checkRegressionBatch,
+  summarizeRegressionReports,
+  detailedRegressionReport,
+} from './baseline-regression-check.js';
+export type { RegressionReport, RegressionDetail } from './baseline-regression-check.js';

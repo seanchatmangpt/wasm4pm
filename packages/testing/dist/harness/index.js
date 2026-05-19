@@ -7,4 +7,6 @@ export { AlgorithmDiscovery, ALGORITHM_PROFILES } from './algorithm-discovery.js
 export { ConformanceChecker } from './conformance-checker.js';
 export { SoundnessVerifier } from './soundness-verifier.js';
 export { ReceiptValidator, createReceiptValidator } from './receipt-validator.js';
+export { captureAlgorithmBaseline, captureAlgorithmBaselineBatch, checkRegressionAgainstBaseline, } from './baseline-capture.js';
+export { checkRegressionAgainstBaseline as checkBaselineRegression, checkRegressionBatch, summarizeRegressionReports, detailedRegressionReport, } from './baseline-regression-check.js';
 //# sourceMappingURL=index.js.map
