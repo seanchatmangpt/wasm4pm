@@ -344,6 +344,7 @@ pub mod smart_engine;
 pub mod social_network;
 pub mod text_encoding;
 pub mod utilities;
+pub mod wasm_utils;
 pub mod xes_format;
 
 // OCEL support (gated by ocel feature)

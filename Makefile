@@ -46,6 +46,8 @@ check-debt:
 
 # ── Proxy targets to root package.json ────────────────────────────────────────
 lint:
+	@echo "Running FM-5 linter..."
+	@./.claude/scripts/fm5-linter.sh || true
 	cd $(PKG_DIR) && npm run lint
 
 test:

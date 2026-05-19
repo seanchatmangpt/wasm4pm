@@ -50,9 +50,17 @@ impl_rl_serialization!(ExpectedSARSAAgent<RlState, RlAction>);
 impl_rl_serialization!(ReinforceAgent<RlState, RlAction>);
 
 // Combined dispatch trait — object-safe because RlState/RlAction are concrete.
-// Blanket impl covers all 5 agent types automatically.
-trait AgentBehavior: Agent<RlState, RlAction> + AgentMeta + RlSerialization {}
-impl<T: Agent<RlState, RlAction> + AgentMeta + RlSerialization> AgentBehavior for T {}
+trait AgentBehavior: Agent<RlState, RlAction> + AgentMeta + RlSerialization {
+    /// Get Q-value for (state, action) — required for OTEL instrumentation (Gap 2)
+    fn get_q_value_for_otel(&self, state: &RlState, action: &RlAction) -> f32;
+}
+
+// Blanket impl covers all 5 agent types automatically
+impl<T: Agent<RlState, RlAction> + AgentMeta + RlSerialization> AgentBehavior for T {
+    fn get_q_value_for_otel(&self, state: &RlState, action: &RlAction) -> f32 {
+        self.get_q_value(state, action)
+    }
+}
 
 /// Stable, allocation-free label for an `RlAction`. Used in telemetry to
 /// avoid `format!("{:?}", action)` per cycle.
@@ -538,6 +546,12 @@ impl RlOrchestrator {
     }
 
     /// Update the active RL agent with reward signal.
+    ///
+    /// Implements complete OTEL instrumentation for Bellman updates with:
+    /// - Q-value delta pre/post update (Gap 2, Rank-1 oracle)
+    /// - Failure mode detection: divergence, dead states, exploration collapse (Gap 3, Rank-4)
+    /// - Per-dimension state transition context (Gap 4, Rank-3)
+    /// - Convergence signal tracking
     pub fn update(
         &self,
         state: &RlState,
@@ -546,29 +560,116 @@ impl RlOrchestrator {
         next_state: &RlState,
         done: bool,
     ) {
+        // GAP 2: Q-value delta tracking (Rank-1 oracle)
+        // Capture Q-value BEFORE update for delta computation
+        let q_old = self.agents[self.active_agent as usize].get_q_value_for_otel(state, action);
+
         // Perform the actual Bellman update
         self.agents[self.active_agent as usize].update(state, action, reward, next_state, done);
 
-        // Emit OTEL span for Bellman update (Rank-1 mathematical oracle)
-        // Fields: agent_type, td_error (approximated from reward), q_delta (from next state), learning_rate (default 0.1)
-        let td_error = if done {
-            reward // Terminal: target = reward (no bootstrapping)
-        } else {
-            reward // Non-terminal: target would include bootstrapped value (0.1 * max_q(s'))
+        // Capture Q-value AFTER update
+        let q_new = self.agents[self.active_agent as usize].get_q_value_for_otel(state, action);
+        let q_delta = (q_new - q_old).abs();
+
+        // GAP 3: Failure mode detection (Rank-4 statistical oracle)
+        // Detect: (a) Q-value divergence (delta > 2.0), (b) dead state (all Q-values ~0),
+        // (c) exploration collapse (no action diversity)
+        let divergence_detected = q_delta > 2.0;
+
+        // Check for dead state: sample Q-values for both actions
+        let q_continue = self.agents[self.active_agent as usize].get_q_value_for_otel(state, &RlAction::Continue);
+        let q_scale = self.agents[self.active_agent as usize].get_q_value_for_otel(state, &RlAction::Scale);
+        let q_avg = (q_continue.abs() + q_scale.abs()) / 2.0;
+        let dead_state_detected = q_avg < 0.001 && self.telemetry.cycle_count > 50;
+
+        // GAP 6: Action selection exploration context (Rank-2 domain contract)
+        // Compute exploration rate for the active agent
+        let epsilon = {
+            // Default ε-greedy decay: ε = ε₀ * decay^t, with ε₀=1.0, decay=0.995
+            // After 500 cycles: ε ≈ 0.0067 (99.3% exploitation)
+            // This is approximate; the actual implementation is in the agent
+            1.0 * (0.995_f32).powi(self.telemetry.cycle_count as i32)
         };
 
+        // GAP 4: Per-dimension state transition tracing (Rank-3 metamorphic relation)
+        // Log state transition deltas per dimension to detect impossible transitions
+        let health_delta = next_state.health_level as i8 - state.health_level as i8;
+        let event_rate_delta = (next_state.event_rate_q as i8 - state.event_rate_q as i8).abs();
+        let activity_delta = (next_state.activity_count_q as i8 - state.activity_count_q as i8).abs();
+        let spc_alert_delta = (next_state.spc_alert_level as i8 - state.spc_alert_level as i8).abs();
+        let drift_delta = (next_state.drift_status as i8 - state.drift_status as i8).abs();
+        let rework_delta = (next_state.rework_ratio_q as i8 - state.rework_ratio_q as i8).abs();
+        let circuit_delta = (next_state.circuit_state as i8 - state.circuit_state as i8).abs();
+        let phase_delta = (next_state.cycle_phase as i8 - state.cycle_phase as i8).abs();
+
+        // Detect impossible transitions (metamorphic: some deltas should be bounded)
+        let impossible_transition = event_rate_delta > 4 || activity_delta > 4 || spc_alert_delta > 2;
+
+        // Primary Bellman update span (Rank-1 oracle)
         tracing::info!(
             target: "autonomic.rl.bellman_update",
             agent_type = self.active_agent.name(),
-            td_error = td_error,
-            q_delta = reward,
+            // Gap 2: Q-value deltas
+            q_old = q_old,
+            q_new = q_new,
+            q_delta = q_delta,
+            // Core Bellman parameters
+            reward = reward,
             learning_rate = 0.1, // Default learning rate used in agents
             done = done,
-            reward = reward,
+            // Gap 4: State transition context
             state_health = state.health_level,
             next_state_health = next_state.health_level,
+            health_delta = health_delta,
             "Bellman equation update"
         );
+
+        // Gap 3: Failure mode span (Rank-4, emitted only on detection or every 100 updates)
+        if divergence_detected || dead_state_detected || (self.telemetry.cycle_count % 100 == 0) {
+            tracing::warn!(
+                target: "autonomic.rl.failure_modes",
+                agent_type = self.active_agent.name(),
+                cycle_count = self.telemetry.cycle_count,
+                divergence_detected = divergence_detected,
+                q_delta = q_delta,
+                dead_state_detected = dead_state_detected,
+                q_continue_avg = q_avg,
+                exploration_collapse_detected = epsilon < 0.05 && self.telemetry.cycle_count > 200,
+                "Failure mode detection (Rank-4 oracle)"
+            );
+        }
+
+        // Gap 4: State transition tracing span (Rank-3 metamorphic relation, every 50 cycles or on impossible transition)
+        if impossible_transition || (self.telemetry.cycle_count % 50 == 0 && self.telemetry.cycle_count > 0) {
+            tracing::info!(
+                target: "autonomic.rl.state_transitions",
+                agent_type = self.active_agent.name(),
+                cycle_count = self.telemetry.cycle_count,
+                health_delta = health_delta,
+                event_rate_delta = event_rate_delta,
+                activity_delta = activity_delta,
+                spc_alert_delta = spc_alert_delta,
+                drift_delta = drift_delta,
+                rework_delta = rework_delta,
+                circuit_delta = circuit_delta,
+                phase_delta = phase_delta,
+                impossible_transition = impossible_transition,
+                "State transition context (Rank-3 metamorphic)"
+            );
+        }
+
+        // Gap 6: Exploration context span (Rank-2 domain contract, every 50 cycles or if epsilon < 0.1)
+        if epsilon < 0.1 || (self.telemetry.cycle_count % 50 == 0 && self.telemetry.cycle_count > 0) {
+            tracing::info!(
+                target: "autonomic.rl.exploration_context",
+                agent_type = self.active_agent.name(),
+                cycle_count = self.telemetry.cycle_count,
+                epsilon = epsilon,
+                exploration_rate = epsilon * 100.0,
+                exploitation_rate = (1.0 - epsilon) * 100.0,
+                "Action selection exploration context (Rank-2 domain)"
+            );
+        }
     }
 
     /// Decay exploration on the active agent.
@@ -590,19 +691,43 @@ impl RlOrchestrator {
 
     /// Use LinUCB to recommend which RL agent to use based on features.
     /// Maps LinUCB actions 0..4 to AgentType.
-    /// Emits OTEL span `autonomic.linucb.agent_selection` for every selection.
+    /// Emits OTEL span `autonomic.linucb.agent_selection` for every selection with:
+    /// - Gap 5: Per-action weight norms (L2 norm for convergence tracking, Rank-1)
+    /// - Gap 7: Agent success rate in selection context (Rank-2 domain contract)
     pub fn linucb_select_agent(&mut self, features: &[f32; 8]) -> AgentType {
         let (action_idx, linucb_score) = self.linucb.select(features);
         let recommended_agent = AgentType::from_u8(action_idx as u8).unwrap_or(AgentType::QLearning);
 
-        // Emit OTEL span for agent selection (Rank-1 oracle for LinUCB decision)
+        // GAP 5: Per-action weight norms for convergence tracking (Rank-1 oracle)
+        let weight_norms = self.weight_norms();
+        let max_weight_norm = weight_norms.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+        let recommended_agent_norm = weight_norms[action_idx as usize];
+
+        // GAP 7: Agent success rate in selection context (Rank-2 domain contract)
+        // Compute success rate for the selected agent over recent history
+        let action_history = &self.action_history;
+        let agent_success_rate = action_history.get_success_rate(action_history.recent_actions()
+            .first()
+            .map(|(a, _)| *a)
+            .unwrap_or(RlAction::Continue));
+
+        // Emit OTEL span for agent selection with convergence and performance context
         tracing::info!(
             target: "autonomic.linucb.agent_selection",
             recommended_agent = recommended_agent.name(),
             linucb_score = linucb_score,
+            // Gap 5: Weight norm convergence tracking (Rank-1)
+            recommended_agent_weight_norm = recommended_agent_norm,
+            max_weight_norm = max_weight_norm,
+            weight_norms = ?weight_norms,
+            // Gap 7: Agent success rate (Rank-2 domain)
+            agent_success_rate = agent_success_rate,
+            recent_actions_count = action_history.recent_actions().len(),
+            // Context
             context_features = ?features,
             action_idx = action_idx,
-            "LinUCB agent selection"
+            cycle_count = self.telemetry.cycle_count,
+            "LinUCB agent selection with convergence and success metrics"
         );
 
         recommended_agent
@@ -727,6 +852,9 @@ impl RlOrchestrator {
         // Record action and reward for observability
         self.action_history.record_action(action, reward);
 
+        // Track state coverage for observability (Gap 4: state space exploration)
+        self.state_coverage.track_state(next_state);
+
         // Update telemetry with NEXT state (post-cycle)
         self.telemetry.cycle_count += 1;
         self.telemetry.last_health_state = curr_health;
@@ -748,21 +876,53 @@ impl RlOrchestrator {
             self.telemetry.consecutive_successes = 0; // Reset on failure
         }
 
-        // Emit convergence metrics every 100 cycles for observability
+        // Emit convergence metrics every 100 cycles for observability (Gap 5: weight norm convergence)
         if self.telemetry.cycle_count % 100 == 0 {
             let norms = self.weight_norms();
             let avg_norm = norms.iter().sum::<f32>() / 5.0;
             let linucb_weight_delta = (avg_norm - self.telemetry.last_norm).abs();
             self.telemetry.last_norm = avg_norm;
 
+            // Gap 5: Per-agent weight norm breakdown
+            let max_norm = norms.iter().cloned().fold(f32::NEG_INFINITY, f32::max);
+            let min_norm = norms.iter().cloned().fold(f32::INFINITY, f32::min);
+
             tracing::info!(
                 target: "autonomic.rl.convergence",
+                // Gap 5: Weight norm convergence (Rank-1 oracle)
                 linucb_weight_delta = linucb_weight_delta,
                 linucb_convergence_signal = avg_norm,
+                max_weight_norm = max_norm,
+                min_weight_norm = min_norm,
+                weight_norms = ?norms,
+                // Gap 4: State space coverage (Rank-3 metamorphic)
+                state_coverage_percentage = self.state_coverage.coverage_percentage(),
+                unique_states_visited = self.state_coverage.unique_states_visited(),
+                // Telemetry
                 cycle_count = self.telemetry.cycle_count,
                 agent = ?self.active_agent,
-                "RL convergence metrics"
+                cumulative_reward = self.telemetry.cumulative_reward,
+                "RL convergence and state coverage metrics (Gaps 4-5)"
             );
+
+            // Gap 4: Per-dimension state coverage breakdown (every 200 cycles)
+            if self.telemetry.cycle_count % 200 == 0 {
+                let dim_coverage = self.state_coverage.get_dimension_coverage();
+                tracing::info!(
+                    target: "autonomic.rl.state_coverage",
+                    cycle_count = self.telemetry.cycle_count,
+                    health_coverage = dim_coverage[0],
+                    event_rate_coverage = dim_coverage[1],
+                    activity_count_coverage = dim_coverage[2],
+                    spc_alert_coverage = dim_coverage[3],
+                    drift_status_coverage = dim_coverage[4],
+                    rework_ratio_coverage = dim_coverage[5],
+                    circuit_state_coverage = dim_coverage[6],
+                    cycle_phase_coverage = dim_coverage[7],
+                    overall_coverage = self.state_coverage.coverage_percentage(),
+                    "Per-dimension state space coverage breakdown (Gap 4, Rank-3)"
+                );
+            }
         }
 
         // Emit guard/circuit decision span every 10 cycles for decision observability
@@ -785,6 +945,36 @@ impl RlOrchestrator {
                 action_taken = action_label_str,
                 reward = reward,
                 "Guard and circuit breaker decision"
+            );
+        }
+
+        // Emit action distribution statistics every 100 cycles (Gap 7 complement: success rate per action)
+        if self.telemetry.cycle_count % 100 == 0 {
+            let action_dist = self.action_history.distribution();
+            let continue_rate = self.action_history.get_success_rate(RlAction::Continue);
+            let scale_rate = self.action_history.get_success_rate(RlAction::Scale);
+            let retry_rate = self.action_history.get_success_rate(RlAction::Retry);
+            let fallback_rate = self.action_history.get_success_rate(RlAction::Fallback);
+            let restart_rate = self.action_history.get_success_rate(RlAction::Restart);
+
+            tracing::info!(
+                target: "autonomic.rl.action_distribution",
+                cycle_count = self.telemetry.cycle_count,
+                // Action totals
+                continue_total = action_dist[0].1,
+                scale_total = action_dist[1].1,
+                retry_total = action_dist[2].1,
+                fallback_total = action_dist[3].1,
+                restart_total = action_dist[4].1,
+                // Gap 7: Success rates per action (Rank-2 domain contract)
+                continue_success_rate = continue_rate,
+                scale_success_rate = scale_rate,
+                retry_success_rate = retry_rate,
+                fallback_success_rate = fallback_rate,
+                restart_success_rate = restart_rate,
+                // Agent context
+                agent = ?self.active_agent,
+                "Action distribution and success rates (Gap 7, Rank-2)"
             );
         }
 

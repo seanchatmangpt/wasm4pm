@@ -59,7 +59,7 @@ export interface LabelEncoding {
 }
 
 /** Classification method */
-export type ClassificationMethod = 'knn' | 'logistic_regression' | 'decision_tree' | 'naive_bayes';
+export type ClassificationMethod = 'knn' | 'logistic_regression' | 'decision_tree' | 'naive_bayes' | 'gradient_boosting';
 
 /** Regression method */
 export type RegressionMethod =

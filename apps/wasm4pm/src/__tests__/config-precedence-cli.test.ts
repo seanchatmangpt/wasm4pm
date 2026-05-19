@@ -440,11 +440,13 @@ format = "json"
       try {
         const output = JSON.parse(result.stdout);
         expect(output).toBeDefined();
-        // Parsing succeeded, so format was JSON
-        expect(true).toBe(true);
+        // Parsing succeeded, so format was JSON — verify it has required contract fields
+        expect(typeof output === 'object' && output !== null).toBe(true);
+        // Rank-2 domain contract: JSON output must have identifiable structure (status field or data)
+        expect('status' in output || 'data' in output || Object.keys(output).length > 0).toBe(true);
       } catch {
         // Not JSON (could be human format), but execution succeeded
-        // This is still acceptable for the test
+        // This is still acceptable for the test — Rank-2 contract: non-empty output on success
         expect(result.stdout.length).toBeGreaterThan(0);
       }
     }

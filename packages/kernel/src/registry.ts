@@ -817,6 +817,57 @@ export class AlgorithmRegistry {
       scalesWell: true,
     });
 
+    // ML Classification: Gradient Boosting
+    this.registerWithInferredProfiles({
+      id: 'gradient_boosting_classifier',
+      name: 'Gradient Boosting Classifier',
+      description:
+        'Classify traces using gradient boosting ensemble. Iteratively fits weak learners to residuals for improved accuracy.',
+      outputType: 'ml_result',
+      complexity: 'O(n * iterations)',
+      speedTier: 45,
+      qualityTier: 75,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity key',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'target_key',
+          type: 'string',
+          description: 'Target variable for classification',
+          required: false,
+          default: 'outcome',
+        },
+        {
+          name: 'num_iterations',
+          type: 'number',
+          description: 'Number of boosting iterations',
+          required: false,
+          default: 100,
+          min: 10,
+          max: 500,
+        },
+        {
+          name: 'learning_rate',
+          type: 'number',
+          description: 'Learning rate for gradient updates',
+          required: false,
+          default: 0.1,
+          min: 0.001,
+          max: 1.0,
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 25,
+      estimatedMemoryMB: 80,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
     // ml_forecast: REMOVED — no WASM export (Phase 4 audit)
 
     this.registerWithInferredProfiles({

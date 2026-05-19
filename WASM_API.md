@@ -121,11 +121,427 @@
 
 ## Prediction
 
+### Next Activity (prediction_next_activity.rs)
+
+Answers **"What activity comes next?"** using n-gram language models trained from event logs.
+
 | Function | Returns | Description |
 |----------|---------|-------------|
-| `build_ngram_predictor(handle, activity_key, order)` | `Result<String, JsValue>` | Build n-gram model |
-| `predict_next_activity(model_handle, trace_json, top_k)` | `Result<JsValue, JsValue>` | Next activity prediction |
-| `score_trace_likelihood(model_handle, trace_json)` | `Result<JsValue, JsValue>` | Trace likelihood scoring |
+| `build_ngram_predictor(handle, activity_key, order)` | `Result<String, JsValue>` | Build n-gram model (n=2 recommended for order parameter) |
+| `predict_next_activity(model_handle, trace_json, top_k)` | `Result<JsValue, JsValue>` | Next activity prediction with probabilities |
+| `score_trace_likelihood(model_handle, trace_json)` | `Result<JsValue, JsValue>` | Trace likelihood scoring (raw float) |
+
+**Example: Next Activity Prediction**
+
+```typescript
+const wasm = require('./pkg/wasm4pm.js');
+
+// 1. Build model from event log
+const logHandle = wasm.load_eventlog_from_xes(xesContent);
+const modelHandle = wasm.build_ngram_predictor(logHandle, 'concept:name', 2);
+
+// 2. Predict next activities for a running trace
+const prefix = JSON.stringify(['Register', 'Examine', 'Decide']);
+const predictions = JSON.parse(wasm.predict_next_activity(modelHandle, prefix, 5));
+// predictions = [
+//   { activity: 'Notify', probability: 0.45 },
+//   { activity: 'Approve', probability: 0.35 },
+//   ...
+// ]
+
+// 3. Score a complete trace
+const trace = JSON.stringify(['Register', 'Examine', 'Decide', 'Notify', 'Archive']);
+const likelihood = JSON.parse(wasm.score_trace_likelihood(modelHandle, trace));
+// likelihood = { result: -2.5 } (log-likelihood)
+```
+
+**Input/Output Shapes**
+
+- `build_ngram_predictor(handle: string, activity_key: string, order: number)` → `{ handle: string }` (JSON, wrapped in Result)
+- `predict_next_activity(model_handle: string, trace_json: string, top_k: usize)` → `[{ activity: string, probability: f64 }, ...]` (JSON, top-k sorted by descending probability)
+- `score_trace_likelihood(model_handle: string, trace_json: string)` → `{ result: f64 }` (raw log-likelihood)
+
+---
+
+### Remaining Time (prediction_remaining_time.rs)
+
+Answers **"When will this case complete?"** using Weibull survival models and conditional remaining-time statistics.
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `build_remaining_time_model(handle, activity_key, timestamp_key)` | `Result<String, JsValue>` | Train model from completed traces |
+| `predict_case_duration(model_handle, prefix_json)` | `Result<JsValue, JsValue>` | Estimate remaining time for a prefix |
+| `predict_hazard_rate(model_handle, elapsed_ms)` | `Result<JsValue, JsValue>` | Instantaneous hazard at elapsed time |
+
+**Theory: Weibull Regression**
+
+The model fits a Weibull distribution `W(k, λ)` to observed case durations:
+- **Shape parameter k**: < 1.0 = decreasing hazard (early completion preferred), > 1.0 = increasing hazard (late failure risk)
+- **Scale parameter λ**: characteristic time in milliseconds
+- **Hazard function**: `h(t) = (k/λ) * (t/λ)^(k-1)` — instantaneous failure rate at time *t*
+
+For each prefix (identified by last activity and prefix length), the model records empirical statistics:
+- Mean remaining time (conditional on prefix state)
+- Standard deviation of remaining time
+- Count of observations in that state
+
+**Example: Remaining Time Prediction**
+
+```typescript
+const wasm = require('./pkg/wasm4pm.js');
+
+// 1. Build model from event log with timestamps
+const logHandle = wasm.load_eventlog_from_xes(xesContent);
+const modelHandle = wasm.build_remaining_time_model(
+  logHandle,
+  'concept:name',      // activity key
+  'time:timestamp'     // timestamp key (ISO 8601 or milliseconds)
+);
+
+// 2. Predict remaining time for a running case
+const prefix = JSON.stringify(['Register', 'Examine', 'Decide']);
+const prediction = JSON.parse(wasm.predict_case_duration(modelHandle, prefix));
+// prediction = {
+//   remaining_ms: 5400000,                  // 90 minutes
+//   lower_bound_ms: 3600000,                // lower quartile
+//   upper_bound_ms: 8100000,                // upper quartile
+//   std_ms: 1200000,                        // uncertainty
+//   matched_prefix_states: 47               // observed traces with this prefix
+// }
+
+// 3. Compute hazard rate at elapsed time
+const hazardResult = JSON.parse(wasm.predict_hazard_rate(modelHandle, 1800000.0));
+// hazardResult = {
+//   hazard: 0.00008,                        // instantaneous failure rate
+//   survival_prob: 0.92,                    // P(duration > t)
+//   interpretation: "Low hazard; case likely to complete"
+// }
+```
+
+**Input/Output Shapes**
+
+- `build_remaining_time_model(handle: string, activity_key: string, timestamp_key: string)` → `{ handle: string }` (JSON, wrapped in Result)
+- `predict_case_duration(model_handle: string, prefix_json: string)` → `{ remaining_ms: f64, lower_bound_ms: f64, upper_bound_ms: f64, std_ms: f64, matched_prefix_states: usize }`
+- `predict_hazard_rate(model_handle: string, elapsed_ms: f64)` → `{ hazard: f64, survival_prob: f64, interpretation: string }`
+
+---
+
+### Outcome (prediction_outcome.rs)
+
+Answers **"Will this case complete normally?"** using anomaly scoring, boundary coverage, and trace likelihood.
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `score_anomaly(model_handle, trace_json)` | `Result<JsValue, JsValue>` | Anomaly score for a trace against DFG model |
+| `compute_boundary_coverage(log_handle, prefix_json, activity_key)` | `Result<JsValue, JsValue>` | Coverage of prefix against observed completions |
+| `compute_trace_likelihood(model_handle, trace_json)` | `Result<JsValue, JsValue>` | Structured trace likelihood (raw + normalized) |
+
+**Theory: Anomaly Scoring**
+
+Anomaly score measures deviation from a learned DFG model using Shannon self-information:
+- **Cost per step**: `-log₂(p)` bits, where `p` is the edge probability in the model
+- **Missing edges**: Penalized with a fixed 10-bit cost
+- **Normalization**: `score = 1 - exp(-raw_cost / scale)`, where `scale = 5.0` (calibrated threshold)
+- **Threshold**: `score > 0.7` → classified as anomalous
+
+**Boundary coverage** measures the fraction of matching trace prefixes that complete "normally" (within 2σ of median completion length).
+
+**Example: Outcome Prediction**
+
+```typescript
+const wasm = require('./pkg/wasm4pm.js');
+
+// 1. Build DFG model and get handle
+const logHandle = wasm.load_eventlog_from_xes(xesContent);
+const dfgHandle = wasm.discover_dfg(logHandle, 'concept:name');
+
+// 2. Score a trace for anomaly
+const trace = JSON.stringify(['Register', 'Check', 'Approve', 'Notify', 'Archive']);
+const anomaly = JSON.parse(wasm.score_anomaly(dfgHandle, trace));
+// anomaly = {
+//   score: 0.35,                            // 0.35 < 0.7 → normal
+//   is_anomalous: false,
+//   threshold: 0.7,
+//   raw_cost: 1.2,                          // bits per step
+//   missing_edge_ratio: 0.0,                // no missing edges
+//   edge_coverage: 1.0,                     // 100% of edges observed in model
+//   steps: 4                                // number of transitions
+// }
+
+// 3. Measure boundary coverage for a prefix
+const prefix = JSON.stringify(['Register', 'Check']);
+const coverage = JSON.parse(wasm.compute_boundary_coverage(
+  logHandle,
+  prefix,
+  'concept:name'
+));
+// coverage = {
+//   coverage: 0.85,                         // 85% of matching cases complete normally
+//   matching_traces: 120,                   // traces starting with this prefix
+//   normal_completions: 102                 // cases with normal length
+// }
+
+// 4. Score trace likelihood (n-gram model)
+const modelHandle = wasm.build_ngram_predictor(logHandle, 'concept:name', 2);
+const likelihood = JSON.parse(wasm.compute_trace_likelihood(modelHandle, trace));
+// likelihood = {
+//   log_likelihood: -4.5,                   // raw sum of log-probabilities
+//   normalized: -1.125                      // per-step average
+// }
+```
+
+**Input/Output Shapes**
+
+- `score_anomaly(model_handle: string, trace_json: string)` → `{ score: f64, is_anomalous: bool, threshold: f64, raw_cost: f64, missing_edge_ratio: f64, edge_coverage: f64, steps: usize }`
+- `compute_boundary_coverage(log_handle: string, prefix_json: string, activity_key: string)` → `{ coverage: f64, matching_traces: usize, normal_completions: usize }`
+- `compute_trace_likelihood(model_handle: string, trace_json: string)` → `{ log_likelihood: f64, normalized: f64 }`
+
+---
+
+### Drift Detection (prediction_drift.rs)
+
+Answers **"Has the process changed?"** using Jaccard similarity and EWMA trend analysis.
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `detect_drift(handle, activity_key, window_size)` | `Result<JsValue, JsValue>` | Detect concept drift via Jaccard distance |
+| `compute_ewma(values_json, alpha)` | `Result<JsValue, JsValue>` | Exponentially weighted moving average |
+
+**Theory: Drift Detection**
+
+Two complementary primitives:
+
+1. **Jaccard Distance** (`J_distance = 1 - |A ∩ B| / |A ∪ B|`):
+   - Compares activity vocabularies in consecutive trace windows
+   - Range: [0.0, 1.0] where 0.0 = no change, 1.0 = completely different
+   - Default threshold: 0.3 (drift signal when distance > threshold)
+
+2. **EWMA Trend Analysis**:
+   - Recursively smooths a numeric series: `s[i+1] = α·x[i+1] + (1−α)·s[i]`
+   - Higher α (e.g., 0.3) weights recent values; lower α (e.g., 0.05) smooths long-term trends
+   - Trend classification: `rising`, `falling`, or `stable` (within 5% of max range)
+
+**Example: Drift Detection**
+
+```typescript
+const wasm = require('./pkg/wasm4pm.js');
+
+// 1. Load event log and detect drift
+const logHandle = wasm.load_eventlog_from_xes(xesContent);
+const driftEvents = JSON.parse(wasm.detect_drift(
+  logHandle,
+  'concept:name',      // activity key
+  10                   // window size: compare every 10 consecutive traces
+));
+// driftEvents = [
+//   {
+//     window_index: 5,
+//     distance: 0.45,
+//     is_drift: true,
+//     activities_added: ['NewActivity'],
+//     activities_removed: ['ObsoleteActivity']
+//   },
+//   ...
+// ]
+
+// 2. Monitor a metric with EWMA trend analysis
+const metricValues = JSON.stringify([
+  0.8, 0.82, 0.81, 0.79, 0.75, 0.72, 0.68
+]);
+const ewmaResult = JSON.parse(wasm.compute_ewma(metricValues, 0.3));
+// ewmaResult = {
+//   smoothed_values: [0.8, 0.81, 0.81, 0.80, 0.77, 0.74, 0.71],
+//   trend: "falling",
+//   initial_value: 0.8,
+//   final_value: 0.71,
+//   rate_of_change: -0.09
+// }
+```
+
+**Input/Output Shapes**
+
+- `detect_drift(handle: string, activity_key: string, window_size: usize)` → `[{ window_index: usize, distance: f64, is_drift: bool, activities_added: string[], activities_removed: string[] }, ...]`
+- `compute_ewma(values_json: string, alpha: f64)` → `{ smoothed_values: f64[], trend: "rising" | "falling" | "stable", initial_value: f64, final_value: f64, rate_of_change: f64 }`
+
+**Thresholds**
+
+- Drift detection: default threshold = 0.3 (configurable via `set_drift_thresholds()`)
+- Trend stability: ±5% of max(|first|, |last|) classifies as stable
+
+---
+
+### Features & Rework (prediction_features.rs)
+
+Answers **"What features characterize this case?"** and **"How much rework occurred?"** using prefix feature extraction and rework scoring.
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `extract_prefix_features_wasm(prefix_json)` | `Result<JsValue, JsValue>` | Extract features from a trace prefix |
+| `compute_rework_score(trace_json)` | `Result<JsValue, JsValue>` | Measure rework via consecutive activity repeats |
+| `build_transition_probabilities(log_handle, activity_key)` | `Result<JsValue, JsValue>` | Transition probability graph |
+
+**Theory: Prefix Features**
+
+For a trace prefix `[A, B, C, D]`:
+- **Length**: 4 events
+- **Last activity**: 'D'
+- **Unique activities**: cardinality of {A, B, C, D}
+- **Rework count**: number of consecutive repeats (e.g., if trace = [A, A, B, C], rework_count = 1)
+- **Activity frequency entropy**: `-Σ (freq[a] / len) · log₂(freq[a] / len)` — uncertainty in activity distribution
+
+**Rework Scoring**: Measures process inefficiency via repeated consecutive activities.
+- `rework_count`: absolute number of repeats
+- `rework_ratio = rework_count / (trace.length - 1)` — proportion of steps that repeat
+- `repeated_pairs`: list of `"A→A"` transitions for diagnosis
+
+**Example: Feature Extraction**
+
+```typescript
+const wasm = require('./pkg/wasm4pm.js');
+
+// 1. Extract prefix features for ML models
+const prefix = JSON.stringify(['Register', 'Examine', 'Examine', 'Decide']);
+const features = JSON.parse(wasm.extract_prefix_features_wasm(prefix));
+// features = {
+//   length: 4,
+//   last_activity: 'Decide',
+//   unique_activities: 3,
+//   rework_count: 1,
+//   activity_frequency_entropy: 1.4
+// }
+
+// 2. Compute rework metrics
+const trace = JSON.stringify(['A', 'B', 'B', 'C', 'C', 'C', 'D']);
+const rework = JSON.parse(wasm.compute_rework_score(trace));
+// rework = {
+//   rework_count: 3,                        // 3 consecutive repeats (1 B→B, 2 C→C)
+//   rework_ratio: 0.5,                      // 50% of transitions are repeats
+//   repeated_pairs: ['B→B', 'C→C', 'C→C']
+// }
+
+// 3. Build transition probability graph
+const logHandle = wasm.load_eventlog_from_xes(xesContent);
+const graph = JSON.parse(wasm.build_transition_probabilities(logHandle, 'concept:name'));
+// graph = {
+//   edges: [
+//     { from: 'Register', to: 'Examine', probability: 0.95, count: 95 },
+//     { from: 'Examine', to: 'Decide', probability: 0.88, count: 88 },
+//     ...
+//   ],
+//   activities: ['Register', 'Examine', 'Decide', 'Notify', 'Archive']
+// }
+```
+
+**Input/Output Shapes**
+
+- `extract_prefix_features_wasm(prefix_json: string)` → `{ length: usize, last_activity: string, unique_activities: usize, rework_count: usize, activity_frequency_entropy: f64 }`
+- `compute_rework_score(trace_json: string)` → `{ rework_count: usize, rework_ratio: f64, repeated_pairs: string[] }`
+- `build_transition_probabilities(log_handle: string, activity_key: string)` → `{ edges: [{ from: string, to: string, probability: f64, count: usize }, ...], activities: string[] }`
+
+---
+
+### Resource & Intervention (prediction_resource.rs)
+
+Answers **"What action should be taken?"** and **"How long will a resource wait?"** using queueing theory (M/M/1) and multi-armed bandit (UCB1) intervention selection.
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `estimate_queue_delay(arrival_rate, service_rate)` | `Result<JsValue, JsValue>` | M/M/1 queue wait-time estimation |
+| `rank_interventions(interventions_json, exploitation_weight)` | `Result<JsValue, JsValue>` | Rank candidate interventions by utility |
+| `select_intervention(bandit_json, exploration_factor)` | `Result<JsValue, JsValue>` | UCB1 bandit selection for stateful intervention allocation |
+
+**Theory: M/M/1 Queueing Model**
+
+Estimates steady-state queue delay for a single-server queue with Poisson arrivals and exponential service times:
+- **Utilization**: `ρ = λ / μ` (arrival rate / service rate)
+- **Stability**: `ρ < 1.0` required; else queue grows without bound
+- **Mean wait time**: `W = (1/μ) / (1 - ρ)` — time in queue before service
+- **Wait time is stable** only if `ρ < 1.0`
+
+**Theory: UCB1 Bandit Algorithm**
+
+Stateful multi-armed bandit for intervention selection over repeated cycles:
+- **Forced exploration**: Always try an untested arm first
+- **UCB score**: `mean_reward + c · sqrt(ln(total_pulls) / pull_count)` where `c ≈ √2`
+- **Selection**: Greedy argmax over UCB scores (exploitation vs exploration trade-off)
+
+**Example: Resource Allocation**
+
+```typescript
+const wasm = require('./pkg/wasm4pm.js');
+
+// 1. Estimate queue delay for a resource pool
+const queueResult = JSON.parse(wasm.estimate_queue_delay(
+  2.5,                 // arrival rate: 2.5 requests/minute
+  3.0                  // service rate: 3.0 requests/minute
+));
+// queueResult = {
+//   wait_time: 60000,                       // 60 seconds expected wait
+//   utilization: 0.833,                     // 83.3% utilization
+//   is_stable: true                         // queue will not explode
+// }
+
+// 2. Rank candidate interventions by utility
+const interventions = JSON.stringify([
+  { name: "add_worker", utility: 0.8 },
+  { name: "optimize_process", utility: 0.6 },
+  { name: "escalate_case", utility: 0.4 }
+]);
+const ranked = JSON.parse(wasm.rank_interventions(
+  interventions,
+  0.7                  // exploit 70%, explore 30%
+));
+// ranked = [
+//   { name: 'add_worker', score: 0.73, rank: 1 },
+//   { name: 'optimize_process', score: 0.52, rank: 2 },
+//   { name: 'escalate_case', score: 0.37, rank: 3 }
+// ]
+
+// 3. Stateful UCB1 bandit for repeated intervention selection
+let banditState = {
+  arms: [
+    { name: 'add_worker', total_reward: 4.5, pull_count: 5 },
+    { name: 'optimize_process', total_reward: 2.0, pull_count: 4 },
+    { name: 'escalate_case', total_reward: 0.5, pull_count: 2 }
+  ],
+  total_pulls: 11
+};
+
+const selection = JSON.parse(wasm.select_intervention(
+  JSON.stringify(banditState),
+  Math.SQRT2                  // exploration factor (≈ 1.414)
+));
+// selection = {
+//   selected: 'add_worker',
+//   arm_index: 0,
+//   ucb_score: 1.24,                       // mean + exploration bonus
+//   mean_reward: 0.9,                      // 4.5 / 5
+//   exploration_bonus: 0.34
+// }
+
+// 4. Update bandit state and continue learning
+banditState.arms[selection.arm_index].total_reward += 1.0;
+banditState.arms[selection.arm_index].pull_count += 1;
+banditState.total_pulls += 1;
+```
+
+**Input/Output Shapes**
+
+- `estimate_queue_delay(arrival_rate: f64, service_rate: f64)` → `{ wait_time: f64, utilization: f64, is_stable: bool }`
+- `rank_interventions(interventions_json: string, exploitation_weight: f64)` → `[{ name: string, score: f64, rank: usize }, ...]`
+- `select_intervention(bandit_json: string, exploration_factor: f64)` → `{ selected: string, arm_index: usize, ucb_score: f64, mean_reward: f64, exploration_bonus: f64 }`
+
+**BanditState JSON Schema**
+
+```json
+{
+  "arms": [
+    { "name": "intervention_name", "total_reward": 4.5, "pull_count": 5 },
+    ...
+  ],
+  "total_pulls": 11
+}
+```
 
 ## Drift Thresholds
 

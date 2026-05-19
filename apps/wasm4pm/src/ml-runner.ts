@@ -18,6 +18,8 @@ import {
   reduceFeaturesPCA,
   assessFeatureQuality,
   pickBestAlgorithm,
+  findBestParams,
+  suggestSearchSpace,
 } from '@wasm4pm/ml';
 import type { ClassificationMethod, ClusteringMethod } from '@wasm4pm/ml';
 import { Instrumentation } from '@wasm4pm/observability';
@@ -44,6 +46,15 @@ export interface MlTaskOptions {
   eps?: number | string;
   smoothingMethod?: 'sma' | 'ema';
   useExponential?: boolean;
+  /**
+   * Enable hyperparameter tuning via grid search.
+   * When true, finds optimal parameters for the task via k-fold CV.
+   */
+  tune?: boolean;
+  /**
+   * Number of CV folds for hyperparameter tuning (default: 3).
+   */
+  cvFolds?: number;
   /**
    * Optional OTEL instrumentation. When provided, every ML task execution
    * emits a `ml.<task>` start/complete span pair via {@link Instrumentation.instrumentMlExecution}.
@@ -215,6 +226,42 @@ export async function executeMlTask(
       ) {
         selectedMethod = pickBestAlgorithm('classification', features) as ClassificationMethod;
       }
+
+      // Hyperparameter tuning if --tune flag is set
+      if (options.tune) {
+        console.log('[Tuning] Starting grid search for classification parameters...');
+        const searchSpace = suggestSearchSpace(
+          'classify',
+          features.data.length,
+          features.featureNames.length
+        );
+        const cvFolds = options.cvFolds ?? 3;
+        const result = await findBestParams('classify', features, features.labels, searchSpace, cvFolds);
+        console.log(
+          `[Tuning] Evaluated ${result.evaluatedConfigs} parameter configurations`
+        );
+        console.log(`[Tuning] Best params: method=${result.bestParams.method}, k=${result.bestParams.k}`);
+        console.log(
+          `[Tuning] Best accuracy: ${((result.bestMetrics.accuracy || 0) * 100).toFixed(2)}%`
+        );
+        if (result.bestMetrics.cvMeanAccuracy !== undefined) {
+          console.log(
+            `[Tuning] CV mean accuracy: ${((result.bestMetrics.cvMeanAccuracy || 0) * 100).toFixed(2)}%`
+          );
+          console.log(
+            `[Tuning] CV std accuracy: ${((result.bestMetrics.cvStdAccuracy || 0) * 100).toFixed(2)}%`
+          );
+        }
+
+        // Run classification with tuned parameters
+        const tunedK = typeof result.bestParams.k === 'number' ? result.bestParams.k : k;
+        selectedMethod = (result.bestParams.method as ClassificationMethod) || selectedMethod;
+        return (await classifyTraces(features, {
+          method: selectedMethod,
+          k: tunedK,
+        })) as unknown as Record<string, unknown>;
+      }
+
       return (await classifyTraces(features, {
         method: selectedMethod,
         k,
@@ -261,6 +308,43 @@ export async function executeMlTask(
       ) {
         selectedMethod = pickBestAlgorithm('clustering', features) as ClusteringMethod;
       }
+
+      // Hyperparameter tuning if --tune flag is set
+      if (options.tune) {
+        console.log('[Tuning] Starting grid search for clustering parameters...');
+        const searchSpace = suggestSearchSpace(
+          'cluster',
+          features.data.length,
+          features.featureNames.length
+        );
+        const cvFolds = options.cvFolds ?? 3;
+        const result = await findBestParams('cluster', features, undefined, searchSpace, cvFolds);
+        console.log(
+          `[Tuning] Evaluated ${result.evaluatedConfigs} parameter configurations`
+        );
+        console.log(
+          `[Tuning] Best params: method=${result.bestParams.method}, k=${result.bestParams.k}, eps=${result.bestParams.eps}`
+        );
+        if (result.bestMetrics.silhouetteScore !== undefined) {
+          console.log(
+            `[Tuning] Best silhouette score: ${result.bestMetrics.silhouetteScore.toFixed(3)}`
+          );
+        }
+        if (result.bestMetrics.inertia !== undefined) {
+          console.log(`[Tuning] Best inertia: ${result.bestMetrics.inertia.toFixed(2)}`);
+        }
+
+        // Run clustering with tuned parameters
+        const tunedK = typeof result.bestParams.k === 'number' ? result.bestParams.k : k;
+        const tunedEps = typeof result.bestParams.eps === 'number' ? result.bestParams.eps : eps;
+        selectedMethod = (result.bestParams.method as ClusteringMethod) || selectedMethod;
+        return (await clusterTraces(features, {
+          method: selectedMethod,
+          k: tunedK,
+          eps: tunedEps,
+        })) as unknown as Record<string, unknown>;
+      }
+
       return (await clusterTraces(features, {
         method: selectedMethod,
         k,

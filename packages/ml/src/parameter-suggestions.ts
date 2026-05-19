@@ -111,6 +111,24 @@ export function suggestParameters(
     });
   }
 
+  // Gradient Boosting: good all-purpose ensemble (for larger datasets)
+  if (!chars.isSmallDataset) {
+    classification.push({
+      name: 'gradient_boosting',
+      confidence: 0.82,
+      reason: 'Ensemble method effective on complex patterns',
+      suggestedParameters: { numIterations: 100, learningRate: 0.1 },
+    });
+  } else {
+    // Even for small datasets, GB can work with careful tuning
+    classification.push({
+      name: 'gradient_boosting',
+      confidence: 0.75,
+      reason: 'Ensemble method with careful regularization',
+      suggestedParameters: { numIterations: 50, learningRate: 0.05 },
+    });
+  }
+
   // ──────────────────────────────────────────────────────────────────
   // Regression suggestions
   // ──────────────────────────────────────────────────────────────────

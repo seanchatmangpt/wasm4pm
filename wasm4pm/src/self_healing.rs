@@ -20,6 +20,7 @@
 
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
+use tracing;
 
 // ---------------------------------------------------------------------------
 // Monotonic clock
@@ -372,8 +373,39 @@ impl CircuitBreaker {
 
     /// Transition to new state.
     fn transition_to(&mut self, new_state: CircuitState) {
+        let old_state = self.state;
         self.state = new_state;
         self.last_state_change_ms = now_ms();
+
+        let trigger_reason = match (old_state, new_state) {
+            (CircuitState::Closed, CircuitState::Open) => "failure_threshold_exceeded",
+            (CircuitState::HalfOpen, CircuitState::Open) => "half_open_failure",
+            (CircuitState::Open, CircuitState::HalfOpen) => "open_timeout_elapsed",
+            (CircuitState::HalfOpen, CircuitState::Closed) => "success_threshold_reached",
+            _ => "unexpected_transition",
+        };
+
+        let old_state_str = match old_state {
+            CircuitState::Closed => "Closed",
+            CircuitState::Open => "Open",
+            CircuitState::HalfOpen => "HalfOpen",
+        };
+
+        let new_state_str = match new_state {
+            CircuitState::Closed => "Closed",
+            CircuitState::Open => "Open",
+            CircuitState::HalfOpen => "HalfOpen",
+        };
+
+        tracing::info!(
+            target: "autonomic.circuit_breaker.transition",
+            from_state = old_state_str,
+            to_state = new_state_str,
+            trigger_reason = trigger_reason,
+            failure_count = self.failure_count,
+            success_count = self.success_count,
+            "Circuit breaker state transition"
+        );
 
         // Reset counters on state transition.
         match new_state {
