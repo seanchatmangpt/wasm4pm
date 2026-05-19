@@ -361,12 +361,36 @@ export class AutonomousRecoveryOrchestrator {
 
   /**
    * Emit recovery execution span (OTEL)
+   * Emits recovery diagnostics via console logging.
+   * Full OTEL span emission with recovery context deferred to future iteration
+   * when AutonomousRecoveryOrchestrator has access to complete RequiredOtelAttributes.
    */
   private emitRecoverySpan(result: RecoveryExecutionResult): void {
     if (!this.instrumentation) return;
 
-    // TODO: implement proper OTEL span emission
-    // Currently stubbed; will be implemented in future iteration with proper tracing instrumentation
+    // Determine recovery type based on success/failure and state
+    const currentState = this.engine.state();
+    const recoveryType: 'soft' | 'fast' | 'full' = result.success
+      ? this.consecutiveFailures === 0
+        ? 'fast'
+        : 'soft'
+      : 'full';
+
+    // TODO: Emit full RecoveryStarted and RecoveryCompleted OTEL events
+    // Requires access to config.hash, input.hash, plan.hash, execution.profile, source.kind, sink.kind
+    // which are currently not available in this class context.
+    // Implementation will be completed when AutonomousRecoveryOrchestrator integrates
+    // with engine's OTEL context in a future iteration.
+
+    if (result.success) {
+      console.log(
+        `Recovery successful: ${recoveryType} type, duration: ${result.recoveryTime}ms, from state: ${currentState}`
+      );
+    } else {
+      console.error(
+        `Recovery failed: ${recoveryType} type, error: ${result.error}`
+      );
+    }
   }
 
   /**

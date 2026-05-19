@@ -5,11 +5,14 @@ import { configVerify } from './config/verify.js';
 import { configExport } from './config/export.js';
 import { exitWithFlush } from '../otel/exit.js';
 import { withSpanRaw } from './_otel.js';
+import { STANDARD_EXIT_CODE_DOCS } from '../help-standards.js';
 
 export const config = defineCommand({
   meta: {
     name: 'config',
-    description: 'Inspect and manage wasm4pm configuration. Example: wpm config show --detailed',
+    description: `Inspect and manage wasm4pm configuration. Example: wpm config show --detailed
+
+${STANDARD_EXIT_CODE_DOCS}`,
   },
   async run() {
     return withSpanRaw('config.help', {}, async () => {

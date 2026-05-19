@@ -86,6 +86,16 @@ export {
   type VoteCount,
 } from './ensemble-voting.js';
 
+// Feature importance ranking
+export {
+  rankFeatureImportance,
+  computeCorrelationImportance,
+  computeMutualInformationImportance,
+  computePermutationImportance,
+  type FeatureImportance,
+  type FeatureImportanceResult,
+} from './feature-importance.js';
+
 // Types
 export type {
   FeatureMatrix,

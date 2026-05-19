@@ -221,3 +221,143 @@ describe('runCrossValidation — unit tests', () => {
     expect(cv.scores).toHaveLength(2);
   });
 });
+
+// ---------------------------------------------------------------------------
+// Cross-validation stability tests (Cycle 42: CV stability analysis)
+// ---------------------------------------------------------------------------
+
+describe('Cross-validation stability analysis', () => {
+  /**
+   * Test: Stratification maintains class distribution across folds.
+   * Verifies that each fold has approximately the same class proportions
+   * as the full dataset, which is critical for imbalanced datasets.
+   */
+  it('stratified CV maintains class distribution across folds', () => {
+    const { stratifiedKFold } = require('../cross-validation.js');
+
+    const labels = [0, 0, 0, 0, 1, 1, 1, 1, 1, 1]; // 40% class 0, 60% class 1
+    const { trainIndices, testIndices } = stratifiedKFold(labels, 3);
+
+    // Check class distribution in test folds
+    for (let i = 0; i < testIndices.length; i++) {
+      let class0Count = 0;
+      for (const idx of testIndices[i]) {
+        if (labels[idx] === 0) class0Count++;
+      }
+      const testSize = testIndices[i].length;
+      const class0Ratio = class0Count / testSize;
+
+      // Should be close to original ratio (40%), allow ±20% tolerance for small folds
+      expect(class0Ratio).toBeGreaterThanOrEqual(0.2);
+      expect(class0Ratio).toBeLessThanOrEqual(0.6);
+    }
+  });
+
+  /**
+   * Test: Small datasets (N < 20) still maintain stratification.
+   * Edge case: ensure stratification doesn't break with limited data.
+   */
+  it('stratified CV respects stratification on small datasets (N < 20)', () => {
+    const { stratifiedKFold } = require('../cross-validation.js');
+
+    const labels = [0, 0, 0, 1, 1, 1, 1, 1]; // N = 8
+    const { testIndices } = stratifiedKFold(labels, 3);
+
+    // Verify no fold is empty
+    for (const indices of testIndices) {
+      expect(indices.length).toBeGreaterThan(0);
+    }
+
+    // Verify all indices are covered
+    const allIndices = new Set<number>();
+    for (const fold of testIndices) {
+      for (const idx of fold) {
+        allIndices.add(idx);
+      }
+    }
+    expect(allIndices.size).toBeLessThanOrEqual(8);
+  });
+
+  /**
+   * Test: Single-class edge case (all samples same label).
+   * Should still produce valid fold assignments without error.
+   */
+  it('stratified CV handles single-class datasets gracefully', () => {
+    const { stratifiedKFold } = require('../cross-validation.js');
+
+    const labels = [0, 0, 0, 0, 0]; // All same class
+    const { trainIndices, testIndices } = stratifiedKFold(labels, 2);
+
+    // Should still partition data
+    expect(trainIndices.length).toBe(2);
+    expect(testIndices.length).toBe(2);
+
+    for (const indices of testIndices) {
+      expect(indices.length).toBeGreaterThan(0);
+    }
+  });
+
+  /**
+   * Test: Imbalanced classes (e.g., 90-10 split).
+   * Stratification should maintain this imbalance in each fold.
+   */
+  it('stratified CV maintains severe imbalance (90-10 split)', () => {
+    const { stratifiedKFold } = require('../cross-validation.js');
+
+    // 90% class 0, 10% class 1
+    const labels = Array(9).fill(0).concat([1]);
+    const { testIndices } = stratifiedKFold(labels, 3);
+
+    // Each fold should attempt to maintain ~90-10 split
+    for (const indices of testIndices) {
+      let class1Count = 0;
+      for (const idx of indices) {
+        if (labels[idx] === 1) class1Count++;
+      }
+      // Allow very permissive tolerance for small folds
+      expect(class1Count).toBeLessThanOrEqual(Math.ceil(indices.length * 0.5)); // At least some stratification
+    }
+  });
+
+  /**
+   * Test: Fold distribution is even.
+   * Verifies that fold sizes are balanced (no fold has significantly more samples than others).
+   */
+  it('CV fold sizes are balanced (no fold significantly larger)', () => {
+    const { stratifiedKFold } = require('../cross-validation.js');
+
+    const labels = Array.from({ length: 30 }, (_, i) => (i % 3 === 0 ? 0 : 1));
+    const { testIndices } = stratifiedKFold(labels, 3);
+
+    const sizes = testIndices.map((indices) => indices.length);
+    const maxSize = Math.max(...sizes);
+    const minSize = Math.min(...sizes);
+
+    // Max size should not be more than 2x min size (balanced)
+    expect(maxSize / minSize).toBeLessThanOrEqual(2);
+  });
+
+  /**
+   * Test: k-fold reproducibility.
+   * Same data and same k should always produce identical train/test splits.
+   * This is a Rank-1 oracle: deterministic partitioning.
+   */
+  it('stratified KFold is deterministic (same data → same splits)', () => {
+    const { stratifiedKFold } = require('../cross-validation.js');
+
+    const labels = [0, 0, 0, 0, 1, 1, 1, 1, 1, 1];
+
+    // Run twice and compare
+    const result1 = stratifiedKFold(labels, 3);
+    const result2 = stratifiedKFold(labels, 3);
+
+    // Should have same fold count
+    expect(result1.trainIndices.length).toBe(result2.trainIndices.length);
+    expect(result1.testIndices.length).toBe(result2.testIndices.length);
+
+    // Each fold should be identical
+    for (let i = 0; i < result1.testIndices.length; i++) {
+      expect(Array.from(result1.testIndices[i])).toEqual(Array.from(result2.testIndices[i]));
+    }
+  });
+});

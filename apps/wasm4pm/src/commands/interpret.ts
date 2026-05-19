@@ -1,4 +1,5 @@
 import { defineCommand } from 'citty';
+import { STANDARD_EXIT_CODE_DOCS } from '../help-standards.js';
 
 interface MetricInfo {
   name: string;
@@ -53,8 +54,10 @@ export const interpret = defineCommand({
   meta: {
     name: 'interpret',
     description:
-      'Interpret a quality metric value to understand what it means. ' +
-      'Example: wpm interpret fitness 0.73 or wpm interpret precision 0.64',
+      `Interpret a quality metric value to understand what it means. ` +
+      `Example: wpm interpret fitness 0.73 or wpm interpret precision 0.64
+
+${STANDARD_EXIT_CODE_DOCS}`,
   },
   args: {
     metric: {

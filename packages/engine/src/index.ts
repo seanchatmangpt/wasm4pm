@@ -110,6 +110,20 @@ export type {
   RecoveryExecutionResult,
 } from './autonomous-recovery-loop.js';
 
+// Checkpoint garbage collection and lock cleanup (Phase 3 — Cycle 42)
+/**
+ * CheckpointGarbageCollector — Automated disk space management for checkpoints and lock files
+ * @description Implements automated cleanup of old checkpoints (>7 days), stale lock files (>24h), and storage quota management
+ * @description Emits OTEL spans for observability; triggers aggressive cleanup if storage >2GB
+ * @example const gc = new CheckpointGarbageCollector(store, lockDir); await gc.triggerGarbageCollection();
+ */
+export { CheckpointGarbageCollector } from './checkpoint-gc.js';
+export type {
+  CheckpointStorageStats,
+  GarbageCollectionStats,
+  LockCleanupStats,
+} from './checkpoint-gc.js';
+
 // WASM loader
 /**
  * WasmLoader — Singleton WASM binary management with soft/hard reset and health checks.

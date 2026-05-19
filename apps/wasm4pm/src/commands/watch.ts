@@ -17,6 +17,7 @@ import { exitWithFlush } from '../otel/exit.js';
 import { runDiscovery, type Algorithm } from './run.js';
 import { WasmInstrumentation } from './_wasm-instrumentation.js';
 import { selectAutopilotAlgorithm, type LogStats } from './watch-autopilot.js';
+import { STANDARD_EXIT_CODE_DOCS } from '../help-standards.js';
 
 /**
  * Config snapshot helpers for what-changed display
@@ -70,7 +71,9 @@ export interface WatchOptions {
 export const watch = defineCommand({
   meta: {
     name: 'watch',
-    description: 'Watch config file for changes, auto-discover. Ex: wpm watch',
+    description: `Watch config file for changes, auto-discover. Ex: wpm watch
+
+${STANDARD_EXIT_CODE_DOCS}`,
   },
   args: {
     config: {
