@@ -81,6 +81,8 @@
 
 /// Cache residency helpers for warm-starting the WASM module.
 pub mod cache_resident;
+/// Compatibility layer for bcinr.
+pub mod bcinr_compat;
 /// Structured error types and JS interop helpers.
 pub mod error;
 /// Event log I/O utilities (XES import/export, binary format).
@@ -335,7 +337,7 @@ pub mod incremental_dfg;
 #[cfg(feature = "discovery_advanced")]
 pub mod more_discovery;
 pub mod parallel_executor;
-#[cfg(feature = "conformance_basic")]
+#[cfg(all(feature = "conformance_basic", feature = "discovery_advanced"))]
 pub mod pattern_analysis;
 #[cfg(feature = "petri_net_playout")]
 pub mod playout;
