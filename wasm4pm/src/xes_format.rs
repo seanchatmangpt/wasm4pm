@@ -34,7 +34,7 @@ fn extract_attr<'a>(src: &'a str, name: &[u8]) -> Option<&'a str> {
             #[cfg(feature = "bcinr")]
             {
                 // Use branchless byte scanning via bcinr
-                if let Some(pos) = bcinr::scan::find_byte(rest, b'"') {
+                if let Some(pos) = crate::bcinr_compat::scan::find_byte(rest, b'"') {
                     return Some(&src[value_start..value_start + pos]);
                 }
             }
@@ -92,7 +92,7 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
         let reader = std::io::BufReader::new(std::io::Cursor::new(content.as_bytes().to_vec()));
         match import_xes(reader, XESImportOptions::default()) {
             Ok(types_log) => {
-                let log: EventLog = types_log.into();
+                let log: EventLog = serde_json::from_str(&serde_json::to_string(&types_log).unwrap()).unwrap();
                 let handle = get_or_init_state()
                     .store_object(StoredObject::EventLog(log))
                     .map_err(|_e| crate::error::js_val("Failed to store EventLog"))?;
@@ -338,18 +338,17 @@ pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
                 });
             }
             b's' if tag_bytes.len() > 8 && &tag_bytes[..8] == b"<string " => {
-                // String attributes must be self-closing
-                if !is_self_closing {
-                    return Err(format!(
-                        "Line {}: <string> tag must be self-closing (</string> or />). Found: {}",
-                        line_number,
-                        tag
-                    ));
-                }
+                let is_self_closing = tag.ends_with("/>");
                 if let (Some(key), Some(value)) = (
                     extract_attr(tag, b"key"),
                     extract_attr(tag, b"value"),
                 ) {
+                    if !is_self_closing {
+                         return Err(format!(
+                            "Line {}: <string> tag must be self-closing (/>). Found: {}",
+                            line_number, tag
+                        ));
+                    }
                     insert_attr(
                         &mut current_event,
                         &mut current_trace,
@@ -364,17 +363,17 @@ pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
                 }
             }
             b'd' if tag_bytes.len() > 6 && &tag_bytes[..6] == b"<date " => {
-                // Date attributes must be self-closing
-                if !is_self_closing {
-                    return Err(format!(
-                        "Line {}: <date> tag must be self-closing (</date> or />). Found: {}",
-                        line_number, tag
-                    ));
-                }
+                let is_self_closing = tag.ends_with("/>");
                 if let (Some(key), Some(value)) = (
                     extract_attr(tag, b"key"),
                     extract_attr(tag, b"value"),
                 ) {
+                    if !is_self_closing {
+                        return Err(format!(
+                            "Line {}: <date> tag must be self-closing (/>). Found: {}",
+                            line_number, tag
+                        ));
+                    }
                     insert_attr(
                         &mut current_event,
                         &mut current_trace,
@@ -389,13 +388,6 @@ pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
                 }
             }
             b'i' if tag_bytes.len() > 5 && &tag_bytes[..5] == b"<int " => {
-                // Int attributes must be self-closing
-                if !is_self_closing {
-                    return Err(format!(
-                        "Line {}: <int> tag must be self-closing. Found: {}",
-                        line_number, tag
-                    ));
-                }
                 if let (Some(key), Some(value_str)) = (
                     extract_attr(tag, b"key"),
                     extract_attr(tag, b"value"),
@@ -421,13 +413,6 @@ pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
                 }
             }
             b'f' if tag_bytes.len() > 7 && &tag_bytes[..7] == b"<float " => {
-                // Float attributes must be self-closing
-                if !is_self_closing {
-                    return Err(format!(
-                        "Line {}: <float> tag must be self-closing. Found: {}",
-                        line_number, tag
-                    ));
-                }
                 if let (Some(key), Some(value_str)) = (
                     extract_attr(tag, b"key"),
                     extract_attr(tag, b"value"),
@@ -453,13 +438,6 @@ pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
                 }
             }
             b'b' if tag_bytes.len() > 9 && &tag_bytes[..9] == b"<boolean " => {
-                // Boolean attributes must be self-closing
-                if !is_self_closing {
-                    return Err(format!(
-                        "Line {}: <boolean> tag must be self-closing. Found: {}",
-                        line_number, tag
-                    ));
-                }
                 if let (Some(key), Some(value_str)) = (
                     extract_attr(tag, b"key"),
                     extract_attr(tag, b"value"),
@@ -488,6 +466,10 @@ pub fn validate_and_parse_xes(content: &str) -> Result<EventLog, String> {
             b'/' if tag_bytes.len() > 2 => {
                 // Closing tag — validate it matches the most recent opening tag
                 let tag_name = extract_closing_tag_name(tag);
+
+                if !matches!(tag_name.as_str(), "trace" | "event" | "log") {
+                    continue; // Ignore closing tags for tags we don't track
+                }
 
                 if let Some(expected) = tag_stack.pop() {
                     if expected.tag_name != tag_name {
