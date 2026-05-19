@@ -14,13 +14,13 @@ export default function globalSetup(): void {
         `Run: cd wasm4pm && npm run build:nodejs`,
     );
   }
-  // Detect target — nodejs target emits CommonJS `exports.X = X`,
-  // bundler target emits ESM `export ...`. Check for CommonJS markers.
+  // Detect target — nodejs target can be either CommonJS or ES modules.
+  // Check for either `exports.` (CommonJS) or `export {` (ES modules).
   const jsPath = path.join(repoRoot, 'wasm4pm/pkg/wasm4pm.js');
   const content = fs.readFileSync(jsPath, 'utf-8');
-  // Nodejs target signal: presence of `exports.` assignments at line start.
   const hasCjsExports = /^exports\./m.test(content);
-  if (!hasCjsExports) {
+  const hasEsExports = /^export\s*{/m.test(content);
+  if (!hasCjsExports && !hasEsExports) {
     throw new Error(
       `[global-setup] wasm4pm/pkg/ is not nodejs target. ` +
         `Run: cd wasm4pm && npm run build:nodejs`,

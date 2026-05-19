@@ -208,7 +208,7 @@ importers:
         specifier: ^1.6.0
         version: 1.6.1(vitest@1.6.1)
       '@wasm4pm/kernel':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../kernel
       typescript:
         specifier: ^5.3.3
