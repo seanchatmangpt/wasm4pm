@@ -73,8 +73,9 @@ describe('Resolution', () => {
 
       await fs.writeFile(path.join(tmpDir, 'wasm4pm.toml'),
         `version = "1.0.0"\n[source]\nkind = "file"`);
+      // genetic_algorithm requires quality profile
       const cfgAlgoCli = await resolveConfig({
-        cliOverrides: { algorithm: 'genetic_algorithm', algorithmParams: { generations: 100 } },
+        cliOverrides: { algorithm: 'genetic_algorithm', algorithmParams: { generations: 100 }, profile: 'quality' },
         configSearchPaths: [tmpDir],
       });
       expect(cfgAlgoCli.algorithm.name).toBe('genetic_algorithm');
@@ -242,34 +243,34 @@ describe('Resolution', () => {
 
   // --- CRITICAL BUG FIX #1: Algorithm-Profile Mismatch Enforcement ---
   describe('CRITICAL FIX #1: Algorithm-Profile Mismatch Validation', () => {
-    it('rejects algorithm not available in selected profile with exit code 1', async () => {
-      // genetic_algorithm is NOT available in mobile profile
+    it('rejects algorithm not available in selected profile', async () => {
+      // genetic_algorithm is NOT available in fast profile
       await expect(
         resolveConfig({
-          cliOverrides: { algorithm: 'genetic_algorithm', profile: 'mobile' },
+          cliOverrides: { algorithm: 'genetic_algorithm', profile: 'fast' },
           configSearchPaths: [tmpDir],
         })
-      ).rejects.toThrow(/Algorithm "genetic_algorithm" is not available in profile "mobile"/);
+      ).rejects.toThrow(/Algorithm "genetic_algorithm" is not available in profile "fast"/);
     });
 
-    it('suggests upgrade to browser profile when algorithm only available there', async () => {
-      // powl_to_process_tree is only in browser profile
+    it('suggests upgrade to quality profile when algorithm only available there', async () => {
+      // powl_to_process_tree is only in quality profile
       await expect(
         resolveConfig({
-          cliOverrides: { algorithm: 'powl_to_process_tree', profile: 'fog' },
+          cliOverrides: { algorithm: 'powl_to_process_tree', profile: 'balanced' },
           configSearchPaths: [tmpDir],
         })
-      ).rejects.toThrow(/Upgrade to "browser" profile to use it/);
+      ).rejects.toThrow(/Upgrade to "quality" profile/);
     });
 
     it('allows algorithm that is available in the selected profile', async () => {
       // dfg is available in all profiles
       const cfgDfg = await resolveConfig({
-        cliOverrides: { algorithm: 'dfg', profile: 'mobile' },
+        cliOverrides: { algorithm: 'dfg', profile: 'fast' },
         configSearchPaths: [tmpDir],
       });
       expect(cfgDfg.algorithm.name).toBe('dfg');
-      expect(cfgDfg.execution.profile).toBe('mobile');
+      expect(cfgDfg.execution.profile).toBe('fast');
 
       // heuristic_miner is available in balanced and above
       const cfgHeur = await resolveConfig({

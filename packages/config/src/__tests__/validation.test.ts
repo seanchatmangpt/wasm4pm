@@ -25,24 +25,24 @@ describe('Validation - Detailed Errors', () => {
   // --- CRITICAL FIX #1: Algorithm-Profile Mismatch Tests ---
   describe('Algorithm-Profile Compatibility (CRITICAL FIX #1)', () => {
     it('allows algorithms available in the profile', () => {
-      expect(validateAlgorithmProfile('dfg', 'mobile')).toEqual({ compatible: true });
       expect(validateAlgorithmProfile('dfg', 'fast')).toEqual({ compatible: true });
-      expect(validateAlgorithmProfile('dfg', 'browser')).toEqual({ compatible: true });
+      expect(validateAlgorithmProfile('dfg', 'balanced')).toEqual({ compatible: true });
+      expect(validateAlgorithmProfile('dfg', 'quality')).toEqual({ compatible: true });
       expect(validateAlgorithmProfile('heuristic_miner', 'balanced')).toEqual({
         compatible: true,
       });
-      expect(validateAlgorithmProfile('ilp', 'browser')).toEqual({ compatible: true });
+      expect(validateAlgorithmProfile('ilp', 'quality')).toEqual({ compatible: true });
     });
 
     it('rejects algorithms NOT available in the profile', () => {
-      const result1 = validateAlgorithmProfile('genetic_algorithm', 'mobile');
+      const result1 = validateAlgorithmProfile('genetic_algorithm', 'fast');
       expect(result1.compatible).toBe(false);
-      expect(result1.warning).toMatch(/not available in profile "mobile"/);
-      expect(result1.warning).toMatch(/Upgrade to "browser" profile/);
+      expect(result1.warning).toMatch(/not available in profile "fast"/);
+      expect(result1.warning).toMatch(/Upgrade to "quality" profile/);
 
-      const result2 = validateAlgorithmProfile('ilp', 'mobile');
+      const result2 = validateAlgorithmProfile('ilp', 'fast');
       expect(result2.compatible).toBe(false);
-      expect(result2.warning).toMatch(/not available in profile "mobile"/);
+      expect(result2.warning).toMatch(/not available in profile "fast"/);
     });
 
     it('rejects non-existent algorithms', () => {
@@ -51,10 +51,10 @@ describe('Validation - Detailed Errors', () => {
       expect(result.warning).toMatch(/not registered/);
     });
 
-    it('suggests browser profile when algorithm only available there', () => {
-      const result = validateAlgorithmProfile('powl_to_process_tree', 'fog');
+    it('suggests quality profile when algorithm only available there', () => {
+      const result = validateAlgorithmProfile('powl_to_process_tree', 'balanced');
       expect(result.compatible).toBe(false);
-      expect(result.warning).toMatch(/Upgrade to "browser" profile/);
+      expect(result.warning).toMatch(/Upgrade to "quality" profile/);
     });
   });
 
