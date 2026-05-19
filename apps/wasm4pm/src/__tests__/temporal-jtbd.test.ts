@@ -216,27 +216,38 @@ describe('JTBD-1: I want a temporal profile to set SLA benchmarks for each deal 
     } catch {
       // function may not be available in current WASM build
     }
-    // Either function exists and returns data, or it's not available — both acceptable
-    expect(result === null || result !== null).toBe(true);
+    // Function is either available and returns data, or it's not available
     if (result === null) {
-      expect(true).toBe(true);
+      // Function not available in this build — acceptable
+      expect(result).toBeNull();
       return;
     }
 
-    // Result should be an object (not throw on parse)
+    // Result must be an object (not null, not thrown)
+    expect(result).toBeDefined();
     expect(typeof result).toBe('object');
+    expect(result).not.toBeNull();
+
+    // Result must have at least one of the expected fields (structure validation)
+    const hasProfileData =
+      'durations' in result ||
+      'activity_stats' in result ||
+      'mean_durations' in result ||
+      'activities' in result ||
+      'profile' in result;
+    expect(hasProfileData).toBe(true);
 
     // If there's a durations or activity_stats field, all numeric values must be >= 0
     const durations = result.durations ?? result.activity_stats ?? result.mean_durations;
     if (durations && typeof durations === 'object') {
       const values = Object.values(durations as Record<string, unknown>);
+      expect(values.length).toBeGreaterThan(0); // at least one activity entry
       for (const v of values) {
         if (typeof v === 'number') {
-          expect(v).toBeGreaterThanOrEqual(0);
+          expect(v).toBeGreaterThanOrEqual(0); // mean durations must be non-negative
         }
       }
     }
-    expect(true).toBe(true); // always pass if no numeric values to check
   });
 });
 
@@ -250,14 +261,17 @@ describe('JTBD-2: I want to find temporal conformance violations — deals where
     } catch {
       // not available
     }
-    // Either returns something or is unavailable — must not crash
-    expect(result === null || result !== null).toBe(true);
+    // Function is either available and returns data, or it's not available
     if (result === null) {
-      expect(true).toBe(true);
+      // Function not available in this build — acceptable
+      expect(result).toBeNull();
       return;
     }
 
-    // Must parse without throwing
+    // Result must be defined (not null)
+    expect(result).toBeDefined();
+
+    // Must parse without throwing (field type validation)
     let parsed: unknown;
     expect(() => {
       parsed = typeof result === 'string' ? JSON.parse(result) : result;
@@ -265,13 +279,26 @@ describe('JTBD-2: I want to find temporal conformance violations — deals where
     expect(parsed).toBeDefined();
 
     const parsedObj = parse(result);
+    // Result must be an object with expected structure
+    expect(parsedObj).toBeDefined();
+    expect(typeof parsedObj).toBe('object');
+
+    // Result should have violations field (array, may be empty)
+    expect('violations' in parsedObj || 'conformance' in parsedObj || 'outliers' in parsedObj).toBe(true);
+
     const violations = (parsedObj.violations as Array<Record<string, unknown>>) ?? [];
-    // If there are violations, each must have case_id and activity
+    // Violations array should be defined (may be empty for normal log)
+    expect(Array.isArray(violations)).toBe(true);
+
+    // If there are violations, each must have required fields
     for (const v of violations) {
+      expect(v).toBeDefined();
+      expect(typeof v).toBe('object');
       expect(v).toHaveProperty('case_id');
       expect(v).toHaveProperty('activity');
+      expect(typeof v.case_id).toBe('string'); // case_id must be string
+      expect(typeof v.activity).toBe('string'); // activity must be string
     }
-    expect(true).toBe(true);
   });
 });
 
@@ -285,13 +312,20 @@ describe('JTBD-3: I want a performance DFG to see where deals get stuck', () => 
     } catch {
       // not available
     }
-    expect(dfgResult === null || dfgResult !== null).toBe(true);
+    // Performance DFG function may not be available — if so, skip validation
     if (dfgResult !== null) {
+      // Result must be defined and be an object
+      expect(dfgResult).toBeDefined();
+      expect(typeof dfgResult).toBe('object');
+      expect(dfgResult).not.toBeNull();
+
+      // Must have edges or performance_edges field (structure validation)
       const hasEdges =
         'edges' in dfgResult ||
         'performance_edges' in dfgResult ||
         'nodes' in dfgResult ||
-        'dfg' in dfgResult;
+        'dfg' in dfgResult ||
+        'performance_dfg' in dfgResult;
       expect(hasEdges).toBe(true);
     }
 
@@ -301,20 +335,37 @@ describe('JTBD-3: I want a performance DFG to see where deals get stuck', () => 
     } catch {
       // not available
     }
+    // Activity durations function may not be available — if so, skip validation
     if (durResult === null) {
-      expect(true).toBe(true);
+      expect(durResult).toBeNull();
       return;
     }
-    // Result should be an object
+
+    // Result must be defined and be an object
+    expect(durResult).toBeDefined();
     expect(typeof durResult).toBe('object');
-    // If it has activity-keyed data, at least one faker activity should appear
+    expect(durResult).not.toBeNull();
+
+    // Result must have activity-keyed data with keys and values
+    const resultKeys = Object.keys(durResult);
+    expect(resultKeys.length).toBeGreaterThan(0); // at least one activity
+
+    // At least one vocab activity should appear in result or keys
     const resultStr = JSON.stringify(durResult);
     const vocabActivities = [
       V.leadCreated, V.leadQualified, V.demoScheduled, V.demoCompleted,
       V.proposalSent, V.negotiationStarted, V.contractSigned, V.dealClosedWon,
     ];
     const hasVocabActivity = vocabActivities.some((a) => resultStr.includes(a));
-    // Either vocab activities appear, or the result has some other structure
-    expect(hasVocabActivity || Object.keys(durResult).length >= 0).toBe(true);
+    expect(hasVocabActivity).toBe(true); // at least one activity from vocab must appear
+
+    // Duration values should be numeric or objects containing numeric values
+    for (const key of resultKeys) {
+      const value = durResult[key];
+      expect(value).toBeDefined();
+      if (typeof value === 'number') {
+        expect(value).toBeGreaterThanOrEqual(0); // duration must be non-negative
+      }
+    }
   });
 });
