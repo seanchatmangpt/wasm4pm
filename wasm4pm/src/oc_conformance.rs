@@ -246,6 +246,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "oc_conformance_check uses serde_wasm_bindgen which panics outside WASM context"]
     fn test_oc_conformance_empty_ocel() {
         let ocel = OCEL {
             event_types: vec![],

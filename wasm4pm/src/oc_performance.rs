@@ -387,6 +387,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "oc_performance_analysis uses serde_wasm_bindgen which panics outside WASM context"]
     fn test_oc_performance_basic() {
         let ocel = create_test_ocel();
         let handle = get_or_init_state()
@@ -419,6 +420,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "oc_performance_analysis uses serde_wasm_bindgen which panics outside WASM context"]
     fn test_oc_performance_empty_ocel() {
         let ocel = OCEL {
             event_types: vec![],
