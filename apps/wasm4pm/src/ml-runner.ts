@@ -2,8 +2,11 @@
  * ml-runner.ts
  * Shared ML execution logic used by both `wpm ml` and `wpm run`.
  *
- * Extracts the core ML task dispatch from commands/ml.ts so it can be
- * reused without CLI-specific formatting concerns.
+ * Implements 5-layer precedence for ML parameters:
+ * 1. CLI arguments (highest priority)
+ * 2. Config file (wasm4pm.toml/json)
+ * 3. Environment variables (WASM4PM_ML_*)
+ * 4. Defaults (lowest priority)
  */
 
 import {
@@ -14,10 +17,12 @@ import {
   detectEnhancedAnomalies,
   reduceFeaturesPCA,
   assessFeatureQuality,
+  pickBestAlgorithm,
 } from '@wasm4pm/ml';
 import type { ClassificationMethod, ClusteringMethod } from '@wasm4pm/ml';
 import { Instrumentation } from '@wasm4pm/observability';
 import type { OtelEvent, RequiredOtelAttributes } from '@wasm4pm/observability';
+import type { Config } from '@wasm4pm/config';
 
 export const VALID_ML_TASKS = [
   'classify',
@@ -31,6 +36,7 @@ export type MlTask = (typeof VALID_ML_TASKS)[number];
 
 export interface MlTaskOptions {
   method?: string;
+  autoSelect?: boolean;
   k?: number | string;
   targetKey?: string;
   forecastPeriods?: number | string;
@@ -52,6 +58,56 @@ export interface MlTaskOptions {
 }
 
 /**
+ * Helper: Implement 5-layer precedence for ML method selection.
+ *
+ * Precedence (highest to lowest):
+ * 1. CLI: options.method
+ * 2. Config file: config.ml.<task>.model or config.ml.<task>.method
+ * 3. Environment: WASM4PM_ML_<TASK>_MODEL env var
+ * 4. Defaults: taskDefaults[task]
+ */
+function resolveMethodWithPrecedence(
+  task: MlTask,
+  options: MlTaskOptions,
+  config: Config | undefined,
+  env: NodeJS.ProcessEnv | undefined,
+  taskDefaults: Record<MlTask, string>
+): string {
+  // Layer 1: CLI arguments (highest priority)
+  if (options.method) {
+    return options.method;
+  }
+
+  // Layer 2: Config file
+  if (config?.ml) {
+    if (task === 'classify' && config.ml.classify?.model) {
+      return config.ml.classify.model;
+    }
+    if (task === 'cluster' && config.ml.cluster?.method) {
+      return config.ml.cluster.method;
+    }
+    if (task === 'forecast' && config.ml.forecast?.method) {
+      return config.ml.forecast.method;
+    }
+    if (task === 'anomaly' && config.ml.anomaly?.method) {
+      return config.ml.anomaly.method;
+    }
+    if (task === 'regress' && config.ml.regress?.method) {
+      return config.ml.regress.method;
+    }
+  }
+
+  // Layer 3: Environment variables
+  const envKey = `WASM4PM_ML_${task.toUpperCase()}_MODEL`;
+  if (env?.[envKey]) {
+    return env[envKey];
+  }
+
+  // Layer 4: Defaults
+  return taskDefaults[task];
+}
+
+/**
  * Execute a single ML task against a loaded WASM event log.
  *
  * @param wasm - WASM module instance (must have extract_case_features and detect_drift)
@@ -59,6 +115,8 @@ export interface MlTaskOptions {
  * @param logHandle - Handle from wasm.load_eventlog_from_xes()
  * @param activityKey - Activity attribute key (default: concept:name)
  * @param options - ML-specific options
+ * @param config - Optional config object (used for 5-layer precedence)
+ * @param env - Optional environment variables (used for 5-layer precedence)
  * @returns ML result as a plain object
  */
 export async function executeMlTask(
@@ -66,23 +124,24 @@ export async function executeMlTask(
   task: MlTask,
   logHandle: string,
   activityKey: string,
-  options: MlTaskOptions = {}
+  options: MlTaskOptions = {},
+  config?: Config,
+  env?: NodeJS.ProcessEnv
 ): Promise<Record<string, unknown>> {
+  const taskDefaults: Record<MlTask, string> = {
+    classify: 'knn',
+    cluster: 'kmeans',
+    forecast: 'linear',
+    anomaly: 'ewma',
+    regress: 'linear',
+    pca: 'svd',
+  };
+
   // If instrumentation is configured, wrap the entire task dispatch in a span.
   if (options.instrumentation) {
     const { traceId, requiredAttrs, emit, parentSpanId } = options.instrumentation;
-    const method =
-      (options.method as string) ||
-      (
-        {
-          classify: 'knn',
-          cluster: 'kmeans',
-          forecast: 'linear',
-          anomaly: 'ewma',
-          regress: 'linear',
-          pca: 'svd',
-        } as Record<MlTask, string>
-      )[task];
+    // Resolve method using precedence chain
+    const method = resolveMethodWithPrecedence(task, options, config, env, taskDefaults);
     const inputAttributes: Record<string, unknown> = {};
     const k = options.k !== undefined ? Number(options.k) : undefined;
     if (k !== undefined && !Number.isNaN(k)) inputAttributes.parameterK = k;
@@ -100,7 +159,7 @@ export async function executeMlTask(
       task,
       method,
       requiredAttrs,
-      () => executeMlTask(wasm, task, logHandle, activityKey, inner),
+      () => executeMlTask(wasm, task, logHandle, activityKey, inner, config, env),
       emit,
       { parentSpanId, inputAttributes: inputAttributes as any }
     );
@@ -130,14 +189,31 @@ export async function executeMlTask(
       if (quality.score < 0.7) {
         console.warn(
           `[Warning] Feature quality score is ${quality.score.toFixed(2)} (< 0.7). ` +
-          `Recommendations: ${quality.recommendations.join('; ')}`
+            `Recommendations: ${quality.recommendations.join('; ')}`
         );
       }
       const k = parseInt(String(options.k ?? '5'), 10);
       if (Number.isNaN(k) || k <= 0)
         throw new Error('Classification parameter k must be a positive number');
+      // Algorithm selection: precedence chain > auto-select > default
+      const method = resolveMethodWithPrecedence(
+        'classify',
+        options,
+        config,
+        env,
+        taskDefaults
+      );
+      let selectedMethod: ClassificationMethod = (method as ClassificationMethod) || 'knn';
+      if (
+        !options.method &&
+        !config?.ml?.classify?.model &&
+        !env?.WASM4PM_ML_CLASSIFY_MODEL &&
+        options.autoSelect
+      ) {
+        selectedMethod = pickBestAlgorithm('classification', features) as ClassificationMethod;
+      }
       return (await classifyTraces(features, {
-        method: (options.method as ClassificationMethod) || 'knn',
+        method: selectedMethod,
         k,
       })) as unknown as Record<string, unknown>;
     }
@@ -165,8 +241,25 @@ export async function executeMlTask(
         throw new Error('Clustering parameter k must be a positive number');
       if (Number.isNaN(eps) || eps <= 0)
         throw new Error('Clustering parameter eps must be a positive number');
+      // Algorithm selection: precedence chain > auto-select > default
+      const method = resolveMethodWithPrecedence(
+        'cluster',
+        options,
+        config,
+        env,
+        taskDefaults
+      );
+      let selectedMethod: ClusteringMethod = (method as ClusteringMethod) || 'kmeans';
+      if (
+        !options.method &&
+        !config?.ml?.cluster?.method &&
+        !env?.WASM4PM_ML_CLUSTER_MODEL &&
+        options.autoSelect
+      ) {
+        selectedMethod = pickBestAlgorithm('clustering', features) as ClusteringMethod;
+      }
       return (await clusterTraces(features, {
-        method: (options.method as ClusteringMethod) || 'kmeans',
+        method: selectedMethod,
         k,
         eps,
       })) as unknown as Record<string, unknown>;

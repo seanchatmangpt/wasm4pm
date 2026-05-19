@@ -55,6 +55,10 @@ export const ml = defineCommand({
       type: 'string',
       description: 'DBSCAN epsilon (default: 1.0)',
     },
+    'auto-select': {
+      type: 'boolean',
+      description: 'Automatically select best algorithm based on data characteristics',
+    },
     format: {
       type: 'string',
       description: 'Output format (human or json)',
@@ -80,97 +84,99 @@ export const ml = defineCommand({
         format,
       },
       async () => {
-    try {
-      const task = ctx.args.task as string;
-      if (!VALID_ML_TASKS.includes(task as MlTask)) {
-        const result = makeErrorResult(
-          'ml',
-          `Unknown ML task: "${task}". Valid: ${VALID_ML_TASKS.join(', ')}`,
-          EXIT_CODES.source_error,
-          'INVALID_TASK'
-        );
-        emitResult(result, { format, verbose, quiet });
-        return await exitWithFlush(result.exit_code);
-      }
+        try {
+          const task = ctx.args.task as string;
+          if (!VALID_ML_TASKS.includes(task as MlTask)) {
+            const result = makeErrorResult(
+              'ml',
+              `Unknown ML task: "${task}". Valid: ${VALID_ML_TASKS.join(', ')}`,
+              EXIT_CODES.source_error,
+              'INVALID_TASK'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
 
-      const inputPath = ctx.args.input as string;
-      const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
+          const inputPath = ctx.args.input as string;
+          const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
 
-      await withLogSession(
-        { inputPath, activityKey, commandName: 'ml', emitOptions: { format, verbose, quiet } },
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        async (wasmBase, logHandle) => {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        const wasm = wasmBase as Record<string, any>;
+          await withLogSession(
+            { inputPath, activityKey, commandName: 'ml', emitOptions: { format, verbose, quiet } },
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            async (wasmBase, logHandle) => {
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
+              const wasm = wasmBase as Record<string, any>;
 
-        const mlResult = await executeMlTask(wasm, task as MlTask, logHandle, activityKey, {
-          method: ctx.args.method as string,
-          k: ctx.args.k as string,
-          targetKey: ctx.args['target-key'] as string,
-          forecastPeriods: ctx.args['forecast-periods'] as string,
-          nComponents: ctx.args['n-components'] as string,
-          eps: ctx.args.eps as string,
-        });
+              const mlResult = await executeMlTask(wasm, task as MlTask, logHandle, activityKey, {
+                method: ctx.args.method as string,
+                autoSelect: Boolean(ctx.args['auto-select']),
+                k: ctx.args.k as string,
+                targetKey: ctx.args['target-key'] as string,
+                forecastPeriods: ctx.args['forecast-periods'] as string,
+                nComponents: ctx.args['n-components'] as string,
+                eps: ctx.args.eps as string,
+              });
 
-        if (!ctx.args['no-save']) {
-          const savedPath = await savePredictionResult(
-            `ml-${task}`,
-            inputPath,
-            activityKey,
-            mlResult
+              if (!ctx.args['no-save']) {
+                const savedPath = await savePredictionResult(
+                  `ml-${task}`,
+                  inputPath,
+                  activityKey,
+                  mlResult
+                );
+                if (savedPath && format === 'human' && verbose) {
+                  // savedPath info surfaced via verbose in human renderer
+                  (mlResult as Record<string, unknown>)['_savedPath'] = savedPath;
+                }
+              }
+
+              const payload = { task, input: inputPath, ...mlResult };
+              const result = makeResult('ml', payload, performance.now() - t0, EXIT_CODES.success);
+              emitResult(result, { format, verbose, quiet }, (res, projection) => {
+                const data = res.payload as typeof payload;
+                projection.success(`ML complete: ${data.task}`);
+                formatMlHumanOutput(projection, data.task as MlTask, data);
+                if (verbose && (data as Record<string, unknown>)['_savedPath']) {
+                  projection.debug(`Result saved: ${(data as Record<string, unknown>)['_savedPath']}`);
+                }
+              });
+
+              if (!ctx.args['no-save']) {
+                try {
+                  const inputBytes = await fs.readFile(inputPath).catch(() => Buffer.from(inputPath));
+                  const sampleSize = Array.isArray((mlResult as Record<string, unknown>).predictions)
+                    ? ((mlResult as Record<string, unknown>).predictions as unknown[]).length
+                    : Array.isArray((mlResult as Record<string, unknown>).assignments)
+                      ? ((mlResult as Record<string, unknown>).assignments as unknown[]).length
+                      : 0;
+                  const receipt: CommandReceipt = {
+                    ...newReceipt('ml'),
+                    command: 'ml',
+                    input_hash: blake3Hex(inputBytes),
+                    output_hash: blake3Hex(JSON.stringify(payload)),
+                    status: 'success',
+                    summary: {
+                      task,
+                      method: String(ctx.args.method ?? ''),
+                      activity_key: activityKey,
+                      sample_size: sampleSize,
+                    },
+                  };
+                  saveCommandReceipt(receipt);
+                } catch {
+                  /* receipt write must never break the command */
+                }
+              }
+
+              return await exitWithFlush(result.exit_code);
+            }
           );
-          if (savedPath && format === 'human' && verbose) {
-            // savedPath info surfaced via verbose in human renderer
-            (mlResult as Record<string, unknown>)['_savedPath'] = savedPath;
-          }
+        } catch (error) {
+          const result = makeErrorResult('ml', error, EXIT_CODES.execution_error);
+          emitResult(result, { format, verbose, quiet });
+          return await exitWithFlush(result.exit_code);
         }
-
-        const payload = { task, input: inputPath, ...mlResult };
-        const result = makeResult('ml', payload, performance.now() - t0, EXIT_CODES.success);
-        emitResult(result, { format, verbose, quiet }, (res, projection) => {
-          const data = res.payload as typeof payload;
-          projection.success(`ML complete: ${data.task}`);
-          formatMlHumanOutput(projection, data.task as MlTask, data);
-          if (verbose && (data as Record<string, unknown>)['_savedPath']) {
-            projection.debug(`Result saved: ${(data as Record<string, unknown>)['_savedPath']}`);
-          }
-        });
-
-        if (!ctx.args['no-save']) {
-          try {
-            const inputBytes = await fs.readFile(inputPath).catch(() => Buffer.from(inputPath));
-            const sampleSize = Array.isArray((mlResult as Record<string, unknown>).predictions)
-              ? ((mlResult as Record<string, unknown>).predictions as unknown[]).length
-              : Array.isArray((mlResult as Record<string, unknown>).assignments)
-                ? ((mlResult as Record<string, unknown>).assignments as unknown[]).length
-                : 0;
-            const receipt: CommandReceipt = {
-              ...newReceipt('ml'),
-              command: 'ml',
-              input_hash: blake3Hex(inputBytes),
-              output_hash: blake3Hex(JSON.stringify(payload)),
-              status: 'success',
-              summary: {
-                task,
-                method: String(ctx.args.method ?? ''),
-                activity_key: activityKey,
-                sample_size: sampleSize,
-              },
-            };
-            saveCommandReceipt(receipt);
-          } catch {
-            /* receipt write must never break the command */
-          }
-        }
-
-        return await exitWithFlush(result.exit_code);
-      });  // end withLogSession
-    } catch (error) {
-      const result = makeErrorResult('ml', error, EXIT_CODES.execution_error);
-      emitResult(result, { format, verbose, quiet });
-      return await exitWithFlush(result.exit_code);
-    }
-      },
+      }
     );
   },
 });
