@@ -97,9 +97,18 @@ export const predict = defineCommand({
       // Step 1: Validate task
       const task = ctx.args.task as string;
       if (!VALID_TASKS.includes(task as PredictTask)) {
+        const suggestions = VALID_TASKS.filter(
+          t => t.toLowerCase().includes(task.toLowerCase()) || task.toLowerCase().includes(t.toLowerCase())
+        );
+        const didYouMean = suggestions.length > 0
+          ? `\n\n  Did you mean: wpm predict ${suggestions[0]} -i <log.xes>`
+          : '';
+        const errorMessage =
+          `Unknown task: "${task}".${didYouMean}\n\n` +
+          `Valid tasks:\n  ${VALID_TASKS.join(', ')}`;
         const result = makeErrorResult(
           'predict',
-          new Error(`Unknown task: "${task}". Valid tasks: ${VALID_TASKS.join(', ')}`),
+          new Error(errorMessage),
           EXIT_CODES.source_error,
           'INVALID_TASK'
         );
@@ -120,6 +129,8 @@ export const predict = defineCommand({
       // Resolve parameters: CLI flag > config > hardcoded default
       const activityKey =
         (ctx.args['activity-key'] as string) || pred?.activityKey || 'concept:name';
+
+      // Validate and parse --top-k (must be > 0)
       const rawTopK = ctx.args['top-k'] as string | undefined;
       const parsedTopK = rawTopK != null ? parseInt(rawTopK, 10) : undefined;
       if (parsedTopK !== undefined && Number.isNaN(parsedTopK)) {
@@ -127,13 +138,24 @@ export const predict = defineCommand({
           'predict',
           new Error('Invalid --top-k value: must be a number'),
           EXIT_CODES.config_error,
-          'INVALID_ARG'
+          'INVALID_TOP_K'
+        );
+        emitResult(result, { format, verbose, quiet });
+        return await exitWithFlush(result.exit_code);
+      }
+      if (parsedTopK !== undefined && parsedTopK <= 0) {
+        const result = makeErrorResult(
+          'predict',
+          new Error('Invalid --top-k value: must be greater than 0 (given: ' + parsedTopK + ')'),
+          EXIT_CODES.config_error,
+          'INVALID_TOP_K'
         );
         emitResult(result, { format, verbose, quiet });
         return await exitWithFlush(result.exit_code);
       }
       const topK = parsedTopK ?? 3;
 
+      // Validate and parse --ngram-order (must be 2-5)
       const rawNgram = ctx.args['ngram-order'] as string | undefined;
       const parsedNgram = rawNgram != null ? parseInt(rawNgram, 10) : undefined;
       if (parsedNgram !== undefined && Number.isNaN(parsedNgram)) {
@@ -141,13 +163,24 @@ export const predict = defineCommand({
           'predict',
           new Error('Invalid --ngram-order value: must be a number'),
           EXIT_CODES.config_error,
-          'INVALID_ARG'
+          'INVALID_NGRAM_ORDER'
+        );
+        emitResult(result, { format, verbose, quiet });
+        return await exitWithFlush(result.exit_code);
+      }
+      if (parsedNgram !== undefined && (parsedNgram < 2 || parsedNgram > 5)) {
+        const result = makeErrorResult(
+          'predict',
+          new Error('Invalid --ngram-order value: must be between 2 and 5 (given: ' + parsedNgram + ')'),
+          EXIT_CODES.config_error,
+          'INVALID_NGRAM_ORDER'
         );
         emitResult(result, { format, verbose, quiet });
         return await exitWithFlush(result.exit_code);
       }
       const ngramOrder = parsedNgram ?? pred?.ngramOrder ?? 2;
 
+      // Validate and parse --drift-window (must be > 0)
       const rawDrift = ctx.args['drift-window'] as string | undefined;
       const parsedDrift = rawDrift != null ? parseInt(rawDrift, 10) : undefined;
       if (parsedDrift !== undefined && Number.isNaN(parsedDrift)) {
@@ -155,7 +188,17 @@ export const predict = defineCommand({
           'predict',
           new Error('Invalid --drift-window value: must be a number'),
           EXIT_CODES.config_error,
-          'INVALID_ARG'
+          'INVALID_DRIFT_WINDOW'
+        );
+        emitResult(result, { format, verbose, quiet });
+        return await exitWithFlush(result.exit_code);
+      }
+      if (parsedDrift !== undefined && parsedDrift <= 0) {
+        const result = makeErrorResult(
+          'predict',
+          new Error('Invalid --drift-window value: must be greater than 0 (given: ' + parsedDrift + ')'),
+          EXIT_CODES.config_error,
+          'INVALID_DRIFT_WINDOW'
         );
         emitResult(result, { format, verbose, quiet });
         return await exitWithFlush(result.exit_code);

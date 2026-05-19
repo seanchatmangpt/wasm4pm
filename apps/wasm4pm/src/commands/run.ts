@@ -301,23 +301,27 @@ export const run = defineCommand({
           );
         })();
 
+      // Step 3: Resolve input path (positional OR --file/-i)
+      const inputPath: string | undefined =
+        (ctx.args.input as string | undefined) || (ctx.args.file as string | undefined);
+
       if (!resolvedAlgo) {
         const available = Object.keys(ALGORITHM_CLI_ALIASES);
         const suggestion = findClosestMatch(rawAlgo.toLowerCase(), available.map((a) => a.toLowerCase()), 3);
-        const didYouMean = suggestion ? `\nDid you mean '${suggestion}'?` : '';
+        const didYouMean = suggestion && inputPath ? `\n\n  Did you mean: wpm run ${inputPath} --algorithm ${suggestion}` : '';
+        const errorMessage =
+          `Algorithm '${rawAlgo}' not found.${didYouMean}\n\n` +
+          `Available algorithms (${available.length} total):\n` +
+          `  ${available.sort().slice(0, 8).join(', ')}${available.length > 8 ? ', ...' : ''}`;
         const result = makeErrorResult(
           'run',
-          new Error(`Algorithm '${rawAlgo}' not found.${didYouMean}\nAvailable algorithms: ${available.slice(0, 5).join(', ')}... (${available.length} total)`),
+          new Error(errorMessage),
           EXIT_CODES.source_error,
           'ALGORITHM_NOT_FOUND'
         );
         emitResult(result, emitOptions);
         return await exitWithFlush(result.exit_code);
       }
-
-      // Step 3: Resolve input path (positional OR --file/-i)
-      const inputPath: string | undefined =
-        (ctx.args.input as string | undefined) || (ctx.args.file as string | undefined);
 
       if (!inputPath) {
         const result = makeErrorResult(
@@ -332,7 +336,7 @@ export const run = defineCommand({
 
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
 
-      // Preflight: only accept supported input extensions.
+      // Validate input extension
       const lowerInput = inputPath.toLowerCase();
       const acceptedExt =
         lowerInput.endsWith('.xes') ||

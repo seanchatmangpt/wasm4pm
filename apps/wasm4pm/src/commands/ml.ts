@@ -38,7 +38,7 @@ export const ml = defineCommand({
     },
     k: {
       type: 'string',
-      description: 'Number of clusters or neighbors (default: 3)',
+      description: 'Number of clusters or neighbors (numeric, default: 3)',
     },
     'target-key': {
       type: 'string',
@@ -46,15 +46,15 @@ export const ml = defineCommand({
     },
     'forecast-periods': {
       type: 'string',
-      description: 'Number of future periods to forecast (default: 5)',
+      description: 'Number of future periods to forecast (numeric, default: 5)',
     },
     'n-components': {
       type: 'string',
-      description: 'PCA components (default: 2)',
+      description: 'PCA components (numeric, default: 2)',
     },
     eps: {
       type: 'string',
-      description: 'DBSCAN epsilon (default: 1.0)',
+      description: 'DBSCAN epsilon (numeric, default: 1.0)',
     },
     'auto-select': {
       type: 'boolean',
@@ -88,9 +88,18 @@ export const ml = defineCommand({
         try {
           const task = ctx.args.task as string;
           if (!VALID_ML_TASKS.includes(task as MlTask)) {
+            const suggestions = VALID_ML_TASKS.filter(
+              t => t.toLowerCase().includes(task.toLowerCase()) || task.toLowerCase().includes(t.toLowerCase())
+            );
+            const didYouMean = suggestions.length > 0
+              ? `\n\n  Did you mean: wpm ml ${suggestions[0]} -i <log.xes>`
+              : '';
+            const errorMessage =
+              `Unknown ML task: "${task}".${didYouMean}\n\n` +
+              `Valid tasks:\n  ${VALID_ML_TASKS.join(', ')}`;
             const result = makeErrorResult(
               'ml',
-              `Unknown ML task: "${task}". Valid: ${VALID_ML_TASKS.join(', ')}`,
+              errorMessage,
               EXIT_CODES.source_error,
               'INVALID_TASK'
             );
@@ -100,6 +109,67 @@ export const ml = defineCommand({
 
           const inputPath = ctx.args.input as string;
           const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
+
+          // Validate numeric parameters (k, eps, forecast-periods, n-components)
+          const k = ctx.args.k as number | string | undefined;
+          if (k !== undefined) {
+            const kNum = typeof k === 'number' ? k : parseInt(String(k), 10);
+            if (Number.isNaN(kNum) || kNum <= 0) {
+              const result = makeErrorResult(
+                'ml',
+                new Error('Invalid --k value: must be a positive number (given: ' + k + ')'),
+                EXIT_CODES.config_error,
+                'INVALID_K'
+              );
+              emitResult(result, { format, verbose, quiet });
+              return await exitWithFlush(result.exit_code);
+            }
+          }
+
+          const eps = ctx.args.eps as number | string | undefined;
+          if (eps !== undefined) {
+            const epsNum = typeof eps === 'number' ? eps : parseFloat(String(eps));
+            if (Number.isNaN(epsNum) || epsNum <= 0) {
+              const result = makeErrorResult(
+                'ml',
+                new Error('Invalid --eps value: must be a positive number (given: ' + eps + ')'),
+                EXIT_CODES.config_error,
+                'INVALID_EPS'
+              );
+              emitResult(result, { format, verbose, quiet });
+              return await exitWithFlush(result.exit_code);
+            }
+          }
+
+          const forecastPeriods = ctx.args['forecast-periods'] as number | string | undefined;
+          if (forecastPeriods !== undefined) {
+            const fpNum = typeof forecastPeriods === 'number' ? forecastPeriods : parseInt(String(forecastPeriods), 10);
+            if (Number.isNaN(fpNum) || fpNum <= 0) {
+              const result = makeErrorResult(
+                'ml',
+                new Error('Invalid --forecast-periods value: must be a positive number (given: ' + forecastPeriods + ')'),
+                EXIT_CODES.config_error,
+                'INVALID_FORECAST_PERIODS'
+              );
+              emitResult(result, { format, verbose, quiet });
+              return await exitWithFlush(result.exit_code);
+            }
+          }
+
+          const nComponents = ctx.args['n-components'] as number | string | undefined;
+          if (nComponents !== undefined) {
+            const ncNum = typeof nComponents === 'number' ? nComponents : parseInt(String(nComponents), 10);
+            if (Number.isNaN(ncNum) || ncNum <= 0) {
+              const result = makeErrorResult(
+                'ml',
+                new Error('Invalid --n-components value: must be a positive number (given: ' + nComponents + ')'),
+                EXIT_CODES.config_error,
+                'INVALID_N_COMPONENTS'
+              );
+              emitResult(result, { format, verbose, quiet });
+              return await exitWithFlush(result.exit_code);
+            }
+          }
 
           await withLogSession(
             { inputPath, activityKey, commandName: 'ml', emitOptions: { format, verbose, quiet } },
@@ -111,11 +181,11 @@ export const ml = defineCommand({
               const mlResult = await executeMlTask(wasm, task as MlTask, logHandle, activityKey, {
                 method: ctx.args.method as string,
                 autoSelect: Boolean(ctx.args['auto-select']),
-                k: ctx.args.k as string,
+                k: ctx.args.k as string | number,
                 targetKey: ctx.args['target-key'] as string,
-                forecastPeriods: ctx.args['forecast-periods'] as string,
-                nComponents: ctx.args['n-components'] as string,
-                eps: ctx.args.eps as string,
+                forecastPeriods: ctx.args['forecast-periods'] as string | number,
+                nComponents: ctx.args['n-components'] as string | number,
+                eps: ctx.args.eps as string | number,
               });
 
               if (!ctx.args['no-save']) {

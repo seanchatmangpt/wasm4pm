@@ -102,17 +102,42 @@ export const conformance = defineCommand({
       async () => {
     try {
       // Resolve input path (positional OR --file/-i)
-      const inputPath: string | undefined =
-        (ctx.args.input as string | undefined) || (ctx.args.file as string | undefined);
+      // Either form is accepted; positional takes precedence
+      const inputPositional = ctx.args.input as string | undefined;
+      const inputNamed = ctx.args.file as string | undefined;
+
+      // Validate: no conflicting inputs
+      if (inputPositional && inputNamed && inputPositional !== inputNamed) {
+        const result = makeErrorResult(
+          'conformance',
+          new Error(
+            'Conflicting input arguments: both positional and --file/-i provided with different values.\n' +
+            'Use either: wpm conformance <log.xes>  OR  wpm conformance --file <log.xes>\n' +
+            'Not both.'
+          ),
+          EXIT_CODES.config_error,
+          'AMBIGUOUS_INPUT'
+        );
+        emitResult(result, { format, verbose, quiet });
+        return await exitWithFlush(result.exit_code);
+      }
+
+      const inputPath: string | undefined = inputPositional || inputNamed;
 
       if (!inputPath) {
         const result = makeErrorResult(
           'conformance',
           new Error(
-            'Input file required.\n\nUsage:  wpm conformance <log.xes>\n        wpm conformance <log.xes> --model <model.json>\n\nRun "wpm conformance --help" for details.'
+            'Input file required.\n\n' +
+            'Usage:\n' +
+            '  wpm conformance <log.xes>\n' +
+            '  wpm conformance -i <log.xes>\n' +
+            '  wpm conformance --file <log.xes>\n' +
+            '  wpm conformance <log.xes> --model <model.json>\n\n' +
+            'Run "wpm conformance --help" for details.'
           ),
           EXIT_CODES.source_error,
-          'SOURCE_ERROR'
+          'INPUT_REQUIRED'
         );
         emitResult(result, { format, verbose, quiet });
         return await exitWithFlush(result.exit_code);
