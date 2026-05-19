@@ -36,12 +36,34 @@ export const swarm = defineCommand({
       type: 'string',
       description: 'Maximum number of swarm episodes (default: 3)',
     },
+    workers: {
+      type: 'string',
+      description: 'Worker count (positive integer)',
+    },
   },
   async run(ctx) {
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
+
+    // Validate --workers BEFORE WASM. Mirror parseInt semantics: "abc" → NaN,
+    // "0.5" → 0 — both fail the >0 check. "2.9" → 2 is accepted (parseInt
+    // truncates), as is "10" → 10. Reject NaN or any result < 1.
+    const workersArg = ctx.args.workers;
+    if (workersArg !== undefined) {
+      const n = parseInt(String(workersArg), 10);
+      if (!Number.isFinite(n) || n < 1) {
+        const result = makeErrorResult(
+          'swarm',
+          `Invalid --workers value '${String(workersArg)}': must be a positive integer`,
+          EXIT_CODES.config_error,
+          'INVALID_WORKERS'
+        );
+        emitResult(result, { format, verbose, quiet });
+        return exitWithFlush(EXIT_CODES.config_error);
+      }
+    }
 
     return withSpan('swarm', {
       input: String(ctx.args.input ?? ''),
@@ -50,6 +72,20 @@ export const swarm = defineCommand({
     }, async () => {
     try {
       const inputPath = ctx.args.input as string;
+      // Existence check BEFORE readFile so a missing file maps to source_error (2),
+      // not the catch-all execution_error (3) downstream.
+      try {
+        await fs.access(inputPath);
+      } catch {
+        const result = makeErrorResult(
+          'swarm',
+          `Input file not found: ${inputPath}`,
+          EXIT_CODES.source_error,
+          'source_error'
+        );
+        emitResult(result, { format, verbose, quiet });
+        return exitWithFlush(EXIT_CODES.source_error);
+      }
       const xesContent = await fs.readFile(inputPath, 'utf-8');
       const maxEpisodes = ctx.args['max-episodes'] ? parseInt(ctx.args['max-episodes'], 10) : 3;
 
