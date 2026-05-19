@@ -75,26 +75,6 @@ pub fn discover_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFoll
 /// Discover a Directly-Follows Graph (DFG) from an EventLog
 #[wasm_bindgen]
 pub fn discover_dfg(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
-    // Entry span with parameters
-    let log_size = {
-        let state = get_or_init_state();
-        state.with_object(eventlog_handle, |obj| match obj {
-            Some(StoredObject::EventLog(log)) => {
-                let size = log.traces.len();
-                Ok(size)
-            }
-            _ => Ok(0),
-        }).ok().flatten().unwrap_or(0)
-    };
-
-    tracing::info!(
-        target: "wasm4pm.discovery.dfg",
-        algorithm = "dfg",
-        log_size = log_size,
-        activity_key = activity_key,
-        "DFG discovery started"
-    );
-
     let log = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => Ok(log.clone()),
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
@@ -103,6 +83,16 @@ pub fn discover_dfg(eventlog_handle: &str, activity_key: &str) -> Result<JsValue
             format!("EventLog '{}' not found", eventlog_handle),
         )),
     })?;
+
+    let log_size = log.traces.len();
+
+    tracing::info!(
+        target: "wasm4pm.discovery.dfg",
+        algorithm = "dfg",
+        log_size = log_size,
+        activity_key = activity_key,
+        "DFG discovery started"
+    );
 
     // Feature extraction checkpoint
     let activity_count = log.get_activities(activity_key).len();

@@ -19,15 +19,43 @@ pub fn discover_genetic_algorithm(
     population_size: usize,
     generations: usize,
 ) -> Result<JsValue, JsValue> {
+    tracing::info!(
+        target: "wasm4pm.discovery.genetic_algorithm",
+        algorithm = "genetic_algorithm",
+        activity_key = activity_key,
+        population_size = population_size,
+        generations = generations,
+        "Genetic Algorithm discovery started"
+    );
+
     let (best_dfg, best_fitness) =
         get_or_init_state().with_object(eventlog_handle, |obj| match obj {
             Some(StoredObject::EventLog(log)) => {
+                tracing::info!(
+                    target: "wasm4pm.discovery.genetic_algorithm",
+                    checkpoint = "feature_extraction",
+                    log_size = log.traces.len(),
+                    activity_count = log.get_activities(activity_key).len(),
+                    "Log loaded and analyzed"
+                );
                 discover_genetic_algorithm_from_log(log, activity_key, population_size, generations)
                     .ok_or_else(|| crate::error::js_val("no_edges"))
             }
             Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
             None => Err(crate::error::js_val("EventLog not found")),
         })?;
+
+    let node_count = best_dfg.nodes.len();
+    let edge_count = best_dfg.edges.len();
+
+    tracing::info!(
+        target: "wasm4pm.discovery.genetic_algorithm",
+        checkpoint = "result_generation",
+        node_count = node_count,
+        edge_count = edge_count,
+        fitness = best_fitness,
+        "DFG model evolved"
+    );
 
     let handle = get_or_init_state()
         .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
@@ -36,8 +64,8 @@ pub fn discover_genetic_algorithm(
     to_js_str(&json!({
         "handle": handle,
         "algorithm": "genetic_algorithm",
-        "nodes": best_dfg.nodes.len(),
-        "edges": best_dfg.edges.len(),
+        "nodes": node_count,
+        "edges": edge_count,
         "final_fitness": best_fitness,
         "population_size": population_size,
         "generations": generations,

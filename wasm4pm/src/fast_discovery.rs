@@ -13,14 +13,41 @@ pub fn discover_astar(
     activity_key: &str,
     max_iterations: usize,
 ) -> Result<JsValue, JsValue> {
+    tracing::info!(
+        target: "wasm4pm.discovery.astar",
+        algorithm = "astar",
+        activity_key = activity_key,
+        max_iterations = max_iterations,
+        "A* search discovery started"
+    );
+
     let (best_dfg, iterations) =
         get_or_init_state().with_object(eventlog_handle, |obj| match obj {
             Some(StoredObject::EventLog(log)) => {
+                tracing::info!(
+                    target: "wasm4pm.discovery.astar",
+                    checkpoint = "feature_extraction",
+                    log_size = log.traces.len(),
+                    activity_count = log.get_activities(activity_key).len(),
+                    "Log loaded and analyzed"
+                );
                 Ok(discover_astar_from_log(log, activity_key, max_iterations))
             }
             Some(_) => Err(crate::error::js_val("Not an EventLog")),
             None => Err(crate::error::js_val("EventLog not found")),
         })?;
+
+    let node_count = best_dfg.nodes.len();
+    let edge_count = best_dfg.edges.len();
+
+    tracing::info!(
+        target: "wasm4pm.discovery.astar",
+        checkpoint = "result_generation",
+        node_count = node_count,
+        edge_count = edge_count,
+        iterations_used = iterations,
+        "DFG model discovered"
+    );
 
     let handle = get_or_init_state()
         .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
@@ -29,8 +56,8 @@ pub fn discover_astar(
     to_js_str(&json!({
         "handle": handle,
         "algorithm": "astar",
-        "nodes": best_dfg.nodes.len(),
-        "edges": best_dfg.edges.len(),
+        "nodes": node_count,
+        "edges": edge_count,
         "iterations": iterations,
     }))
 }
@@ -41,11 +68,39 @@ pub fn discover_hill_climbing(
     eventlog_handle: &str,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
+    tracing::info!(
+        target: "wasm4pm.discovery.hill_climbing",
+        algorithm = "hill_climbing",
+        activity_key = activity_key,
+        "Hill Climbing discovery started"
+    );
+
     let current_dfg = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => Ok(discover_hill_climbing_from_log(log, activity_key)),
+        Some(StoredObject::EventLog(log)) => {
+            tracing::info!(
+                target: "wasm4pm.discovery.hill_climbing",
+                checkpoint = "feature_extraction",
+                log_size = log.traces.len(),
+                activity_count = log.get_activities(activity_key).len(),
+                "Log loaded and analyzed"
+            );
+            Ok(discover_hill_climbing_from_log(log, activity_key))
+        },
         Some(_) => Err(crate::error::js_val("Not an EventLog")),
         None => Err(crate::error::js_val("EventLog not found")),
     })?;
+
+    let node_count = current_dfg.nodes.len();
+    let edge_count = current_dfg.edges.len();
+
+    tracing::info!(
+        target: "wasm4pm.discovery.hill_climbing",
+        checkpoint = "result_generation",
+        node_count = node_count,
+        edge_count = edge_count,
+        complexity = if node_count > 0 { edge_count as f64 / node_count as f64 } else { 0.0 },
+        "DFG model optimized"
+    );
 
     let handle = get_or_init_state()
         .store_object(StoredObject::DirectlyFollowsGraph(current_dfg.clone()))
@@ -54,8 +109,8 @@ pub fn discover_hill_climbing(
     to_js_str(&json!({
         "handle": handle,
         "algorithm": "hill_climbing",
-        "nodes": current_dfg.nodes.len(),
-        "edges": current_dfg.edges.len(),
+        "nodes": node_count,
+        "edges": edge_count,
     }))
 }
 
