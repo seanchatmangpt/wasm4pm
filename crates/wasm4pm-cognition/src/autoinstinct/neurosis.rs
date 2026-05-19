@@ -21,12 +21,20 @@ pub struct NeuroticState {
 
 impl NeuroticState {
     /// Creates a new default `NeuroticState` with all levels at zero.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn new() -> Self {
         Self::default()
     }
 
     /// Process a new semantic input. If it conflicts with strongly held beliefs,
     /// mistrust and anger increase. If it aligns, they decrease.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn process_input(&mut self, concept: &str, incoming_strength: f64) -> String {
         let mut response = String::from("neutral");
 

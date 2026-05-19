@@ -11,42 +11,48 @@ use std::cell::RefCell;
 use std::collections::HashSet;
 
 /// Gate state for tracking passed proof gates (single-threaded WASM safety)
-static PASSED_GATES: std::sync::OnceLock<RefCell<Option<HashSet<ProofGate>>>> = std::sync::OnceLock::new();
+thread_local! {
+    static PASSED_GATES: RefCell<Option<HashSet<ProofGate>>> = const { RefCell::new(None) };
+}
 
-fn gates() -> &'static RefCell<Option<HashSet<ProofGate>>> {
-    PASSED_GATES.get_or_init(|| RefCell::new(None))
+fn gates<R>(f: impl FnOnce(&RefCell<Option<HashSet<ProofGate>>>) -> R) -> R {
+    PASSED_GATES.with(f)
 }
 
 /// Initialize gate state for a test run
 pub fn init_gates() {
-    let mut g = gates().borrow_mut();
-    *g = Some(HashSet::new());
+    gates(|g| {
+        *g.borrow_mut() = Some(HashSet::new());
+    });
 }
 
 /// Mark a gate as passed
 pub fn mark_gate_passed(gate: ProofGate) {
-    let mut gates_opt = gates().borrow_mut();
-    if let Some(ref mut gates) = *gates_opt {
-        gates.insert(gate);
-    }
+    gates(|g| {
+        if let Some(ref mut gates) = *g.borrow_mut() {
+            gates.insert(gate);
+        }
+    });
 }
 
 /// Check if a gate has passed
 pub fn gate_passed(gate: ProofGate) -> bool {
-    let gates_opt = gates().borrow();
-    gates_opt
-        .as_ref()
-        .map(|gates| gates.contains(&gate))
-        .unwrap_or(false)
+    gates(|g| {
+        g.borrow()
+            .as_ref()
+            .map(|gates| gates.contains(&gate))
+            .unwrap_or(false)
+    })
 }
 
 /// Returns list of all passed gates
 pub fn passed_gates() -> Vec<ProofGate> {
-    let gates_opt = gates().borrow();
-    gates_opt
-        .as_ref()
-        .map(|gates| gates.iter().copied().collect())
-        .unwrap_or_default()
+    gates(|g| {
+        g.borrow()
+            .as_ref()
+            .map(|gates| gates.iter().copied().collect())
+            .unwrap_or_default()
+    })
 }
 
 /// Verify that test_suite_passes gate has been reached before export

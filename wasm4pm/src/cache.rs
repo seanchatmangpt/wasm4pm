@@ -262,7 +262,8 @@ pub fn interner_cache_insert(log_handle: String, interner: Interner) {
 pub fn hash_xes_content(content: &str) -> String {
     #[cfg(feature = "bcinr")]
     {
-        let hash = bcinr::sketch::fnv1a_64(content.as_bytes());
+        let h1 = crate::bcinr_compat::sketch::fnv1a_64(content.as_bytes());
+        let hash = crate::bcinr_compat::sketch::fnv1a_64(&(h1.rotate_left(17)).to_le_bytes());
         format!("{:016x}", hash)
     }
 

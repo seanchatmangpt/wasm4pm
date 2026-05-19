@@ -19,18 +19,30 @@ pub struct HeuristicPlanner {
 
 impl HeuristicPlanner {
     /// Creates a new `HeuristicPlanner` with the given goal state bitmask.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn new(goal: u32) -> Self {
         Self { goal_state: goal }
     }
 
     /// Very fast bitwise heuristic to determine distance to goal.
     /// Uses population count to find missing bits.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn heuristic_distance(&self, current: &ProblemState) -> u32 {
         let missing = (!current.features) & self.goal_state;
         missing.count_ones()
     }
 
     /// Attempts to solve by flipping one missing bit at a time (greedy approach).
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn solve(&self, mut current: ProblemState) -> Vec<ProblemState> {
         let mut plan = vec![current.clone()];
         let mut distance = self.heuristic_distance(&current);

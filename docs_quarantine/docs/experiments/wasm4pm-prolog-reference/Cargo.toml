@@ -1,0 +1,15 @@
+[package]
+name = "wasm4pm-prolog"
+version = "0.1.0"
+edition = "2021"
+authors = ["Sean Chatman <info@chatmangpt.com>"]
+description = "Branchless Prolog VM for Nanosecond Process Mining"
+
+[dependencies]
+serde = { version = "1.0", features = ["derive"] }
+bytemuck = "1.14" # For safe bitcasting
+static_assertions = "1.1"
+
+[lib]
+name = "wasm4pm_prolog"
+path = "src/lib.rs"

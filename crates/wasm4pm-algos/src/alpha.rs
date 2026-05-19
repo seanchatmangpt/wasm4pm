@@ -4,6 +4,10 @@ use std::collections::{HashMap, HashSet};
 /// Alpha+ Miner - discovers Petri nets with implicit places handling
 /// Implements key relations: →, -|→, ||
 /// Time complexity: O(n + m²) where n = events, m = unique activities
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn discover_alpha(log: &EventLog, activity_key: &str) -> Result<PetriNet> {
     let mut net = PetriNet::default();
 

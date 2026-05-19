@@ -304,7 +304,7 @@ Every `wpm run` and `wpm cognition run` produces a BLAKE3-signed receipt:
   "plan_hash": "blake3-hex-64",
   "output_hash": "blake3-hex-64",
   "status": "success",
-  "algorithm": { "name": "ilp", "version": "26.5.6" }
+  "algorithm": { "name": "ilp", "version": "26.5.19" }
 }
 ```
 

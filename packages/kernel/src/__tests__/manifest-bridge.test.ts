@@ -328,7 +328,7 @@ describe('G — gap analysis: skeleton mode vs strict mode (Rank 2)', () => {
     const m = algorithmToPartManifest(makeEntry({ id: 'dfg' }));
     expect(typeof m.version).toBe('string');
     expect(m.version.length).toBeGreaterThan(0);
-    // Version should be semver-like or CalVer-like (e.g. "26.5.15" or "0.1.0")
+    // Version should be semver-like or CalVer-like (e.g. "26.5.19" or "0.1.0")
     expect(m.version).toMatch(/^\d+\.\d+/);
   });
 

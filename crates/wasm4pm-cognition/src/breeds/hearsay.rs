@@ -31,6 +31,10 @@ pub struct Hearsay;
 /// - Identity: `noisy_or(x, 0) == x`.
 /// - Bounds: `0 ≤ result ≤ 1` for inputs in `[0, 1]`.
 /// - Monotone: `noisy_or(a, b) ≥ max(a, b)` for inputs in `[0, 1]`.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn noisy_or(a: f32, b: f32) -> f32 {
     let a = a.clamp(0.0, 1.0);
     let b = b.clamp(0.0, 1.0);

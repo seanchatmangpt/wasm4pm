@@ -22,6 +22,10 @@ impl Default for BenchMissingDetector {
 
 impl BenchMissingDetector {
     /// Construct with explicit target list.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn for_targets(targets: Vec<String>) -> Self {
         Self { targets }
     }

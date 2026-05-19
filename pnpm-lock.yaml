@@ -114,8 +114,8 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
       vitest:
-        specifier: ^3.0.0
-        version: 3.2.4(@types/node@20.19.39)
+        specifier: ^1.6.0
+        version: 1.6.1(@types/node@20.19.39)(@vitest/browser@1.6.1)
 
   packages/cognition:
     dependencies:
@@ -423,6 +423,9 @@ importers:
       '@vitest/browser':
         specifier: ^1.1.0
         version: 1.6.1(playwright@1.59.1)(vitest@1.6.1)
+      '@vitest/coverage-v8':
+        specifier: 1.6.0
+        version: 1.6.0(vitest@1.6.1)
       playwright:
         specifier: ^1.40.0
         version: 1.59.1
@@ -439,7 +442,7 @@ importers:
         specifier: ^3.6.0
         version: 3.6.0(vite@5.4.21(@types/node@20.19.39))
       vitest:
-        specifier: ^1.1.0
+        specifier: ^1.6.0
         version: 1.6.1(@types/node@20.19.39)(@vitest/browser@1.6.1)
 
 packages:
@@ -865,6 +868,11 @@ packages:
         optional: true
       webdriverio:
         optional: true
+
+  '@vitest/coverage-v8@1.6.0':
+    resolution: {integrity: sha512-KvapcbMY/8GYIG0rlwwOKCVNRc0OL20rrhFkg/CHNzncV03TE2XWvO5w9uZYoxNiMEBacAJt3unSOiZ7svePew==}
+    peerDependencies:
+      vitest: 1.6.0
 
   '@vitest/coverage-v8@1.6.1':
     resolution: {integrity: sha512-6YeRZwuO4oTGKxD3bijok756oktHSIm3eczVVzNe3scqzuhLwltIF3S9ZL/vwOVIpURmU6SnZhziXXAfw8/Qlw==}
@@ -2363,6 +2371,25 @@ snapshots:
       vitest: 1.6.1(@types/node@20.19.39)(@vitest/browser@1.6.1)
     optionalDependencies:
       playwright: 1.59.1
+
+  '@vitest/coverage-v8@1.6.0(vitest@1.6.1)':
+    dependencies:
+      '@ampproject/remapping': 2.3.0
+      '@bcoe/v8-coverage': 0.2.3
+      debug: 4.4.3
+      istanbul-lib-coverage: 3.2.2
+      istanbul-lib-report: 3.0.1
+      istanbul-lib-source-maps: 5.0.6
+      istanbul-reports: 3.2.0
+      magic-string: 0.30.21
+      magicast: 0.3.5
+      picocolors: 1.1.1
+      std-env: 3.10.0
+      strip-literal: 2.1.1
+      test-exclude: 6.0.0
+      vitest: 1.6.1(@types/node@20.19.39)(@vitest/browser@1.6.1)
+    transitivePeerDependencies:
+      - supports-color
 
   '@vitest/coverage-v8@1.6.1(vitest@1.6.1)':
     dependencies:

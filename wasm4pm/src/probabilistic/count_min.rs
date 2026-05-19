@@ -49,7 +49,7 @@ impl<const WIDTH: usize, const DEPTH: usize> CountMinSketch<WIDTH, DEPTH> {
         {
             let mut data = key.to_le_bytes().to_vec();
             data.extend_from_slice(&self.seeds[row].to_le_bytes());
-            (bcinr::sketch::fnv1a_64(&data) as usize) % WIDTH
+            (crate::bcinr_compat::sketch::fnv1a_64(&data) as usize) % WIDTH
         }
         #[cfg(not(feature = "bcinr"))]
         {
@@ -107,7 +107,7 @@ impl<const WIDTH: usize, const DEPTH: usize> CountMinSketch<WIDTH, DEPTH> {
         {
             let mut data = from.to_le_bytes().to_vec();
             data.extend_from_slice(&to.to_le_bytes());
-            self.add(bcinr::sketch::fnv1a_64(&data));
+            self.add(crate::bcinr_compat::sketch::fnv1a_64(&data));
         }
         #[cfg(not(feature = "bcinr"))]
         {
@@ -127,7 +127,7 @@ impl<const WIDTH: usize, const DEPTH: usize> CountMinSketch<WIDTH, DEPTH> {
         {
             let mut data = from.to_le_bytes().to_vec();
             data.extend_from_slice(&to.to_le_bytes());
-            self.estimate(bcinr::sketch::fnv1a_64(&data))
+            self.estimate(crate::bcinr_compat::sketch::fnv1a_64(&data))
         }
         #[cfg(not(feature = "bcinr"))]
         {

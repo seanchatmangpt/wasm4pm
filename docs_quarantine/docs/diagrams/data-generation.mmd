@@ -1,0 +1,6 @@
+flowchart LR
+    Seed["LCG Seed\n0xDEAD_BEEF_CAFE_BABE"] --> LCG["LCG RNG\nwrapping_mul 6364136223846793005\nwrapping_add 1442695040888963407"]
+    LCG --> Shape["LogShape\nnum_cases x avg_events\nnum_activities, noise_factor"]
+    Shape --> Log["EventLog\nTraces + Events\nattributes HashMap"]
+    Log --> State["APP_STATE\nHandle -> StoredObject\nget_or_init_state()"]
+    State --> Bench["Criterion\nbenchmark fn\nThroughput::Elements"]

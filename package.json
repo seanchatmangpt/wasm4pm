@@ -1,6 +1,6 @@
 {
   "name": "wasm4pm-monorepo",
-  "version": "26.5.15",
+  "version": "26.5.19",
   "description": "High-performance process mining monorepo with WASM acceleration",
   "license": "MIT",
   "private": true,
@@ -38,8 +38,8 @@
     "health": "node scripts/health.mjs",
     "tps:check": "node scripts/tps-pipeline-check.mjs",
     "tps:check:json": "node scripts/tps-pipeline-check.mjs --json",
-    "docs:lint": "markdownlint '**/*.md' --config .markdownlint.json --ignore node_modules --ignore docs/archive",
-    "docs:link-check": "find . -name '*.md' -not -path '*/node_modules/*' -not -path '*/docs/archive/*' -print0 | xargs -0 markdown-link-check --config .mlc.config.json",
+    "docs:lint": "markdownlint '**/*.md' --config .markdownlint.json --ignore node_modules --ignore docs_quarantine --ignore docs/archive",
+    "docs:link-check": "find . -name '*.md' -not -path '*/node_modules/*' -not -path '*/docs_quarantine/*' -not -path '*/docs/archive/*' -print0 | xargs -0 npx markdown-link-check --config .mlc.config.json",
     "docs:check": "pnpm run docs:lint && pnpm run docs:link-check",
     "postinstall": "node scripts/check-engines.mjs",
     "build:browser": "bash scripts/build-profile.sh browser",

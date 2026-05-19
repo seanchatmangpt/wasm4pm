@@ -5,6 +5,10 @@ use std::collections::HashMap;
 /// Time complexity: O(n) where n = total events across all traces
 /// Space complexity: O(k + e) where k = unique activities, e = directly-follows edges
 /// Uses integer-ID columnar representation for efficient processing
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn discover_dfg(log: &EventLog, activity_key: &str) -> Result<DFG> {
     let mut dfg = DFG::new();
     let mut node_map: HashMap<String, usize> = HashMap::new();

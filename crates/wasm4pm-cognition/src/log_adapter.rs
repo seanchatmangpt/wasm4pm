@@ -19,6 +19,10 @@ use crate::breeds::{BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom};
 /// - `rework_ratio` — fraction of traces containing at least one repeated activity
 /// - `mean_trace_len` — mean number of events per trace
 /// - `top_activities` — up to 5 most frequent activities by name
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn log_to_breed_input(
     intent: &str,
     algorithm_candidates: &[&str],

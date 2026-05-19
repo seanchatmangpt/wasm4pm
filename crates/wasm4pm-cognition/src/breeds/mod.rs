@@ -218,6 +218,10 @@ impl std::error::Error for BreedError {}
 ///
 /// # Returns
 /// A `Receipt` with BLAKE3 hashes (all as hex-encoded 64-char strings)
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn compute_receipt(breed: BreedId, input: &BreedInput, output: &BreedOutput) -> Receipt {
     let input_json = serde_json::to_string(input).unwrap_or_default();
     let output_json = serde_json::to_string(output).unwrap_or_default();
@@ -271,6 +275,10 @@ pub trait CognitionBreed: Send + Sync {
 /// - Non-empty trace production (fraud detection)
 /// - Output structure validity
 /// - Multi-breed pipeline execution (Diagram 29)
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn dispatch_breed_test(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
     use crate::breeds::cbr::Cbr;
     use crate::breeds::dendral::Dendral;

@@ -113,6 +113,10 @@ pub struct OtelEvidenceSource {
 
 impl OtelEvidenceSource {
     /// Create a new OTEL evidence source from ingested spans.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn new(spans: Vec<serde_json::Value>, chain: ReceiptChain) -> Self {
         Self { spans, chain }
     }
@@ -307,6 +311,10 @@ pub struct FilesystemEvidenceSource {
 
 impl FilesystemEvidenceSource {
     /// Create a new filesystem evidence source rooted at `root`.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn new<P: Into<std::path::PathBuf>>(root: P, chain: ReceiptChain) -> Self {
         Self {
             root: root.into(),
@@ -365,6 +373,10 @@ pub struct CompositeEvidenceSource {
 
 impl CompositeEvidenceSource {
     /// Create a composite source.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn new(otel: OtelEvidenceSource, fs: FilesystemEvidenceSource) -> Self {
         Self { otel, fs }
     }

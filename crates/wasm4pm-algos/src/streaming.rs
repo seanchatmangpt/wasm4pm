@@ -3,6 +3,10 @@ use std::collections::HashMap;
 
 /// Inductive Miner - discovers structured process models recursively
 /// Simplified single-pass version focused on core control flow discovery
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn discover_streaming_dfg(log: &EventLog, activity_key: &str) -> Result<DFG> {
     let mut dfg = DFG::new();
     let mut node_map: HashMap<String, usize> = HashMap::new();

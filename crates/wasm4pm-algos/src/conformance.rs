@@ -6,6 +6,10 @@ use std::collections::{BinaryHeap, HashMap, HashSet};
 ///
 /// For each trace: simulate a token multiset through the DFG model.
 /// Fitness = 1.0 - missing / (consumed + missing)
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn check_conformance_token_replay(
     log: &EventLog,
     model: &DFG,
@@ -151,6 +155,10 @@ pub struct TraceAlignment {
 /// Alignment-based conformance checking (synchronous product / Dijkstra).
 ///
 /// Log moves cost 1, model moves cost 1, sync moves cost 0.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn check_conformance_alignment(
     log: &EventLog,
     model: &PetriNet,

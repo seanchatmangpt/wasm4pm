@@ -1,0 +1,645 @@
+\documentclass[11pt,a4paper]{article}
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{mathtools}
+\usepackage{algorithm}
+\usepackage{algpseudocode}
+\usepackage{booktabs}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{microtype}
+\usepackage{parskip}
+
+\geometry{margin=2.5cm}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!70!black,
+  urlcolor=blue!70!black
+}
+
+\lstset{
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  frame=single,
+  breaklines=true
+}
+
+\title{\textbf{Implementation Calculus of wasm4pm}\\
+\large Exact Formulæ as Implemented in Rust Source}
+\author{wasm4pm Platform}
+\date{May 2026}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section*{Notation}
+% ─────────────────────────────────────────────────────────────────────────────
+
+All symbols correspond directly to Rust variable names in the source. Types are
+given in parentheses where disambiguation matters. File paths are cited at each
+section head. No background theory is included; every formula is the verbatim
+implementation.
+
+\newpage
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Reinforcement Learning}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Reward Function}
+\textit{File:} \texttt{wasm4pm/src/rl\_orchestrator.rs}, lines 134--174.\\
+\textit{Signature:} \texttt{compute\_reward(prev\_health, curr\_health, spc\_alert\_count, guard\_pass, circuit\_allowed, latency\_budget\_exceeded)}
+
+\begin{equation}
+  R =
+    \underbrace{%
+      \begin{cases}
+        +1.0 & \text{if } h' < h \\
+        +0.2 & \text{if } h' = h \\
+        -1.0 & \text{if } h' > h
+      \end{cases}
+    }_{\text{health component}}
+    - \min\!\bigl(\texttt{spc\_alert\_count}\times 0.3,\; 1.5\bigr)
+    + \begin{cases}
+        +0.1 & \text{if } \texttt{guard\_pass} \wedge \texttt{circuit\_allowed} \\
+        -0.5 & \text{otherwise}
+      \end{cases}
+    - 0.3\cdot\mathbf{1}[\texttt{lat\_exceeded}]
+    - 2.0\cdot\mathbf{1}[h'=4]
+\end{equation}
+
+where $h = \texttt{prev\_health}\in\{0,\ldots,4\}$ (\texttt{u8}) and
+$h' = \texttt{curr\_health}\in\{0,\ldots,4\}$ (\texttt{u8}).
+Reward bounds: $R \in [-5.3,\; +1.1]$.
+
+\subsection{Health State}
+\textit{File:} \texttt{wasm4pm/src/rl\_orchestrator.rs}, lines 108--120.\\
+\textit{Variables:} \texttt{event\_count} (\texttt{u64}), \texttt{trace\_count} (\texttt{u64}), \texttt{unique\_activities} (\texttt{u64}).
+
+\begin{equation}
+  h =
+  \begin{cases}
+    4 & \text{if } \texttt{event\_count}=0 \;\vee\; \texttt{unique\_activities}=0 \\
+    3 & \text{if } \texttt{trace\_count}=0 \\
+    2 & \text{if } \texttt{unique\_activities}\leq 1 \;\wedge\; \texttt{event\_count}<5 \\
+    1 & \text{if } \texttt{unique\_activities}\leq 2 \;\wedge\; \texttt{event\_count}<20 \\
+    0 & \text{otherwise}
+  \end{cases}
+\end{equation}
+
+\subsection{Q-Learning (Off-Policy TD)}
+\textit{File:} \texttt{wasm4pm/src/reinforcement.rs}, lines 160--189.\\
+\textit{Variables:} $\alpha=\texttt{learning\_rate}$ (\texttt{f32}, default 0.1), $\gamma=\texttt{discount\_factor}$ (\texttt{f32}, default 0.99).
+
+\begin{equation}
+  \texttt{max\_next\_q} =
+  \begin{cases}
+    0 & \text{if } \texttt{done} \\
+    \max_{a'} Q(s',a') & \text{otherwise}
+  \end{cases}
+\end{equation}
+
+\begin{equation}
+  \boxed{Q(s,a) \;\leftarrow\; Q(s,a) + \alpha\Bigl[r + \gamma\,\texttt{max\_next\_q} - Q(s,a)\Bigr]}
+\end{equation}
+
+\subsection{SARSA (On-Policy TD)}
+\textit{File:} \texttt{wasm4pm/src/reinforcement.rs}, lines 341--362.\\
+Identical structure to Q-Learning except \texttt{next\_q} $= Q(s',a')$ where $a'$ is the \emph{actual} next action taken.
+
+\begin{equation}
+  \boxed{Q(s,a) \;\leftarrow\; Q(s,a) + \alpha\Bigl[r + \gamma\,Q(s',a') - Q(s,a)\Bigr]}
+\end{equation}
+
+\subsection{Double Q-Learning (Bias-Corrected)}
+\textit{File:} \texttt{wasm4pm/src/reinforcement.rs}, lines 567--618.\\
+\textit{Variables:} \texttt{q\_a}, \texttt{q\_b} (separate tables), \texttt{bootstrap} (\texttt{f32}), \texttt{update\_a\_first} (\texttt{bool}).
+
+A Bernoulli coin-flip with $p=0.5$ selects which table to update:
+
+\begin{align}
+  \text{With prob.\ 0.5:}\quad &
+    \texttt{bootstrap} = Q_B\!\bigl(s',\,\arg\max_{a'} Q_A(s',a')\bigr) \notag\\
+    &Q_A(s,a) \leftarrow Q_A(s,a) + \alpha\Bigl[r + \gamma\,\texttt{bootstrap} - Q_A(s,a)\Bigr] \\[4pt]
+  \text{With prob.\ 0.5:}\quad &
+    \texttt{bootstrap} = Q_A\!\bigl(s',\,\arg\max_{a'} Q_B(s',a')\bigr) \notag\\
+    &Q_B(s,a) \leftarrow Q_B(s,a) + \alpha\Bigl[r + \gamma\,\texttt{bootstrap} - Q_B(s,a)\Bigr]
+\end{align}
+
+\subsection{Expected SARSA}
+\textit{File:} \texttt{wasm4pm/src/reinforcement.rs}, lines 783--814.\\
+\textit{Variables:} \texttt{expected\_next} (\texttt{f32}), \texttt{max\_q}, \texttt{sum\_q}, \texttt{eps} $=\varepsilon$, \texttt{n} $=|A|$.
+
+\begin{equation}
+  \texttt{expected\_next} =
+  \begin{cases}
+    0 & \text{if } \texttt{done} \\
+    (1-\varepsilon)\,\max_{a'} Q(s',a') \;+\; \dfrac{\varepsilon}{|A|}\displaystyle\sum_{a'} Q(s',a')
+    & \text{otherwise}
+  \end{cases}
+\end{equation}
+
+\begin{equation}
+  \boxed{Q(s,a) \;\leftarrow\; Q(s,a) + \alpha\Bigl[r + \gamma\,\mathbb{E}_\pi[Q(s',a')] - Q(s,a)\Bigr]}
+\end{equation}
+
+\subsection{REINFORCE (Monte Carlo Policy Gradient)}
+\textit{File:} \texttt{wasm4pm/src/reinforcement.rs}, lines 995--1048.\\
+\textit{Variables:} \texttt{theta} (\texttt{HashMap<S,Vec<f32>>}), \texttt{g\_t} (\texttt{f32}), \texttt{returns} (\texttt{Vec<f32>}), \texttt{pi\_j} (\texttt{f32}).
+
+\paragraph{Return computation (backward pass):}
+\begin{equation}
+  G_t = r_t + \gamma\, G_{t+1}, \qquad G_T = 0
+\end{equation}
+
+\paragraph{Softmax policy:}
+\begin{equation}
+  \pi(a\mid s) = \frac{\exp(\theta_{s,a} - \max_{a''}\theta_{s,a''})}
+                      {\sum_{j}\exp(\theta_{s,j} - \max_{a''}\theta_{s,a''})}
+\end{equation}
+
+\paragraph{Weight update (log-softmax gradient):}
+\begin{align}
+  \theta_{s,a} &\leftarrow \theta_{s,a} + \alpha\, G_t \bigl(1 - \pi(a\mid s)\bigr) \\
+  \theta_{s,j\neq a} &\leftarrow \theta_{s,j} - \alpha\, G_t\, \pi(j\mid s)
+\end{align}
+
+\subsection{LinUCB Contextual Bandit (Sherman--Morrison)}
+\textit{File:} \texttt{wasm4pm/src/ml/linucb.rs}, lines 130--254.\\
+\textit{Variables:} $x\in\mathbb{R}^8$ (\texttt{feature vector}), $W\in\mathbb{R}^{5\times 8}$ (\texttt{w}), $b\in\mathbb{R}^5$ (\texttt{b}), $A\in\mathbb{R}^{8\times 8}$ (\texttt{a}), $A^{-1}$ (\texttt{a\_inv}), $\alpha_\text{exp}=\sqrt{2}$ (\texttt{alpha}), $\alpha_\text{lr}=0.1$ (\texttt{alpha\_lr}).
+
+\paragraph{Action selection:}
+\begin{equation}
+  \texttt{ucb\_bonus} = \alpha_\text{exp}\,\sqrt{x^\top A^{-1} x}
+\end{equation}
+\begin{equation}
+  a^* = \arg\max_a \Bigl(W_a \cdot x + b_a + \texttt{ucb\_bonus}\Bigr)
+\end{equation}
+
+\paragraph{Weight update:}
+\begin{align}
+  \delta &= r - \bigl(W_{a^*}\cdot x + b_{a^*}\bigr) \\
+  W_{a^*} &\leftarrow W_{a^*} + \alpha_\text{lr}\,\delta\, x \\
+  b_{a^*} &\leftarrow b_{a^*} + \alpha_\text{lr}\,\delta
+\end{align}
+
+\paragraph{Covariance update (rank-1 Sherman--Morrison):}
+\begin{align}
+  u &= A^{-1} x \\
+  \texttt{denom} &= 1 + x^\top u \\
+  A^{-1} &\leftarrow A^{-1} - \frac{u\, u^\top}{\texttt{denom}} \\
+  A &\leftarrow A + x\, x^\top
+\end{align}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Statistical Process Control}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Western Electric Rules}
+\textit{File:} \texttt{wasm4pm/src/spc.rs}, lines 78--139.\\
+\textit{Variables:} \texttt{value} (\texttt{f64}), \texttt{ucl}, \texttt{lcl}, \texttt{cl} (\texttt{f64}), \texttt{recent} (\texttt{\&[ChartData]}).
+
+\begin{align}
+  \text{Rule 1:}\quad & \texttt{value} > \texttt{ucl} \;\vee\; \texttt{value} < \texttt{lcl} \tag{Out of Control} \\[4pt]
+  \text{Rule 2:}\quad & \bigwedge_{i=0}^{8}\,\texttt{recent}[i].\texttt{value} > \texttt{cl}
+    \;\vee\;\bigwedge_{i=0}^{8}\,\texttt{recent}[i].\texttt{value} < \texttt{cl} \tag{Shift} \\[4pt]
+  \text{Rule 3:}\quad & \bigwedge_{i=0}^{4}\,\texttt{recent}[i+1].\texttt{value} > \texttt{recent}[i].\texttt{value}
+    \;\vee\;\bigwedge_{i=0}^{4}\,\texttt{recent}[i+1].\texttt{value} < \texttt{recent}[i].\texttt{value} \tag{Trend}
+\end{align}
+
+\subsection{Process Capability Indices}
+\textit{File:} \texttt{wasm4pm/src/spc.rs}, lines 187--243.
+
+\begin{align}
+  \bar{x} &= \frac{1}{n}\sum_{i=1}^n x_i \\[4pt]
+  s &= \sqrt{\frac{\sum_{i=1}^n (x_i - \bar{x})^2}{n-1}} \\[6pt]
+  C_p &= \frac{\text{USL} - \text{LSL}}{6s} \\[6pt]
+  C_{pk} &= \min\!\left(\frac{\text{USL}-\bar{x}}{3s},\;\frac{\bar{x}-\text{LSL}}{3s}\right) \\[6pt]
+  z_U &= \frac{\text{USL}-\bar{x}}{s}, \qquad
+  z_L = \frac{\text{LSL}-\bar{x}}{s} \\[4pt]
+  P_\text{defective} &= \bigl[1 - \Phi(z_U)\bigr] + \Phi(z_L) \\[4pt]
+  \text{DPMO} &= P_\text{defective}\times 10^6 \\[4pt]
+  \sigma_\text{level} &= \Phi^{-1}(1 - P_\text{defective}) + 1.5
+\end{align}
+
+\subsection{Normal CDF (Abramowitz \& Stegun Approximation)}
+\textit{File:} \texttt{wasm4pm/src/spc.rs}, lines 274--286.\\
+\textit{Variables:} \texttt{t}, \texttt{d}, \texttt{z} (\texttt{f64}).
+
+\begin{align}
+  t &= \frac{1}{1 + 0.2316419\,|z|} \\[4pt]
+  d &= 0.39894228\,e^{-z^2/2} \\[4pt]
+  \tilde\Phi(z) &= 1 - d\cdot t\Bigl(0.319381530
+    + t\bigl(-0.356563782
+    + t\bigl(1.781477937
+    + t(-1.821255978
+    + 1.330274429\,t)\bigr)\bigr)\Bigr) \\[6pt]
+  \Phi(z) &=
+  \begin{cases}
+    \tilde\Phi(z) & z > 0 \\
+    1 - \tilde\Phi(-z) & z \leq 0
+  \end{cases}
+\end{align}
+
+\subsection{EWMA}
+\textit{File:} \texttt{wasm4pm/src/prediction\_drift.rs}, lines 97--110.\\
+\textit{Variables:} \texttt{alpha} $=\alpha\in(0,1]$ (\texttt{f64}), \texttt{smoothed} (\texttt{Vec<f64>}), \texttt{prev} (\texttt{f64}).
+
+\begin{equation}
+  s_i =
+  \begin{cases}
+    x_0 & i = 0 \\
+    \alpha\, x_i + (1-\alpha)\, s_{i-1} & i \geq 1
+  \end{cases}
+\end{equation}
+
+$\alpha$ is clamped to $[\texttt{f64::MIN\_POSITIVE},\; 1.0]$ before use.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Prediction Subsystem}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{N-gram Log Probability}
+\textit{File:} \texttt{wasm4pm/src/prediction.rs}, lines 116--145.\\
+\textit{Variables:} \texttt{log\_prob} (\texttt{f64}), \texttt{prefix} (\texttt{Vec<String>}), \texttt{prob} (\texttt{f64}).
+
+Let $A = (a_0, a_1, \ldots, a_T)$ be an activity sequence and $n$ the n-gram order. For each position $i$:
+
+\begin{align}
+  \text{prefix}_i &= (a_{i-n+1},\ldots,a_{i-1}) \quad\text{(context window of length }n-1) \\[4pt]
+  P(a_i \mid \text{prefix}_i) &= \frac{\texttt{counts}[\text{prefix}_i][a_i]}
+                                      {\sum_{a}\texttt{counts}[\text{prefix}_i][a]} \\[6pt]
+  \texttt{log\_prob} &= \sum_{i=1}^{T} \ln P(a_i \mid \text{prefix}_i)
+\end{align}
+
+\subsection{Prediction Confidence \& Entropy}
+\textit{File:} \texttt{wasm4pm/src/prediction\_next\_activity.rs}, lines 44--74.\\
+\textit{Variables:} \texttt{confidence}, \texttt{entropy\_val}, \texttt{ent}, \texttt{max\_ent} (\texttt{f64}).
+
+\begin{align}
+  \texttt{confidence} &= p_1 \quad\text{(probability of top-1 candidate)} \\[4pt]
+  H &= -\sum_{i} p_i \ln p_i \\[4pt]
+  H_\text{max} &= \ln |\text{candidates}| \\[4pt]
+  \texttt{normalized\_entropy} &=
+  \begin{cases}
+    H / H_\text{max} & H_\text{max} > 0 \\
+    0 & \text{otherwise}
+  \end{cases}
+\end{align}
+
+\subsection{Beam Search}
+\textit{File:} \texttt{wasm4pm/src/prediction\_next\_activity.rs}, lines 141--191.\\
+\textit{Variables:} \texttt{beams} (\texttt{Vec<(Vec<String>, f64)>}), \texttt{new\_prob} (\texttt{f64}), \texttt{beam\_width}.
+
+At each step, the beam set $\mathcal{B}$ evolves as:
+
+\begin{equation}
+  \mathcal{B}_{t+1} = \text{top-}w\Bigl\{
+    \bigl(\sigma \oplus a,\; p_\sigma \cdot P(a \mid \sigma)\bigr)
+    \;\Big|\;
+    (\sigma, p_\sigma) \in \mathcal{B}_t,\; a \in \mathcal{A}
+  \Bigr\}
+\end{equation}
+
+where $w = \texttt{beam\_width}$, $\oplus$ denotes sequence concatenation, and beams are ranked by $p_\sigma$ descending.
+
+\subsection{Weibull Remaining Time}
+\textit{File:} \texttt{wasm4pm/src/prediction\_remaining\_time.rs}, lines 70--112.\\
+\textit{Variables:} \texttt{cv} (coefficient of variation, \texttt{f64}), \texttt{k} (shape), \texttt{lambda} (scale), \texttt{t} (elapsed), \texttt{cumulative\_hazard}, \texttt{hazard\_rate}, \texttt{survival}, \texttt{median\_remaining} (\texttt{f64}).
+
+\paragraph{Parameter estimation from empirical moments:}
+\begin{align}
+  k &= \texttt{cv}^{-1.086} \\[4pt]
+  \lambda &= \frac{\bar{d}}{\Gamma(1 + 1/k)}
+\end{align}
+
+where $\bar{d}$ is the empirical mean duration.
+
+\paragraph{Hazard, survival, and prediction at elapsed time $t$:}
+\begin{align}
+  h(t) &= \frac{k}{\lambda}\left(\frac{t}{\lambda}\right)^{k-1} \\[6pt]
+  S(t) &= \exp\!\left[-\left(\frac{t}{\lambda}\right)^k\right] \\[6pt]
+  H(t) &= \left(\frac{t}{\lambda}\right)^k \\[6pt]
+  \texttt{median\_remaining} &= \lambda\,\bigl(H(t) + \ln 2\bigr)^{1/k} - t
+\end{align}
+
+\subsection{Remaining Time Confidence}
+\textit{File:} \texttt{wasm4pm/src/prediction\_remaining\_time.rs}, lines 556--580.\\
+\textit{Variables:} \texttt{size\_factor}, \texttt{bucket\_cv}, \texttt{global\_cv}, \texttt{precision\_factor}, \texttt{confidence} (\texttt{f64}).
+
+\begin{align}
+  \texttt{size\_factor} &= \frac{\texttt{count}}{\texttt{count} + 10} \\[4pt]
+  \texttt{precision\_factor} &= \max\!\left(0,\;\min\!\left(1,\;
+    1 - \frac{\texttt{bucket\_cv}}{\texttt{global\_cv}}\right)\right) \\[4pt]
+  \texttt{confidence} &= \min\!\bigl(0.6\cdot\texttt{size\_factor}
+    + 0.4\cdot\texttt{precision\_factor},\;0.99\bigr)
+\end{align}
+
+\subsection{Jaccard Drift Distance}
+\textit{File:} \texttt{wasm4pm/src/prediction\_drift.rs}, lines 82--89.\\
+\textit{Variables:} \texttt{a}, \texttt{b} (\texttt{HashSet<String>}), \texttt{union} (\texttt{usize}), \texttt{inter} (\texttt{usize}).
+
+\begin{equation}
+  J(A,B) = \frac{|A \cap B|}{|A \cup B|}
+\end{equation}
+
+\begin{equation}
+  d_J(A,B) = 1 - J(A,B), \qquad
+  d_J(\emptyset,\emptyset) \coloneqq 0
+\end{equation}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Conformance Checking}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Token-Based Replay Fitness}
+\textit{File:} \texttt{wasm4pm/src/conformance.rs}, lines 195--203.\\
+\textit{Variables:} \texttt{c} (consumed), \texttt{p} (produced), \texttt{m} (missing), \texttt{r} (remaining) (\texttt{f64}).
+
+\begin{align}
+  c &= \max(\texttt{consumed\_tokens},\; 1) \\
+  p &= \max(\texttt{produced\_tokens},\; 1) \\[6pt]
+  f_\text{trace} &= 0.5\left(1 - \frac{m}{c}\right) + 0.5\left(1 - \frac{r}{p}\right) \\[6pt]
+  f_\text{trace} &= \operatorname{clamp}(f_\text{trace},\; 0.0,\; 1.0)
+\end{align}
+
+This is a symmetric weighted split of the Van der Aalst (2004) fitness formula, with equal weight on the consumption and production components.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Discovery Algorithms}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Genetic Algorithm — Fitness-Proportionate Selection}
+\textit{File:} \texttt{wasm4pm/src/genetic\_discovery.rs}, lines 367--396.\\
+\textit{Variables:} \texttt{total} (\texttt{f64}), \texttt{threshold} (\texttt{f64}), \texttt{fitness} per individual.
+
+\begin{align}
+  \texttt{total} &= \sum_{i} f_i \\[4pt]
+  \texttt{threshold} &= U[0,1) \times \texttt{total} \\[4pt]
+  \text{select } j &= \min\left\{j \;\Big|\; \sum_{i=1}^j f_i \geq \texttt{threshold}\right\}
+\end{align}
+
+\subsection{Ant Colony Optimisation — Pheromone Update}
+\textit{File:} \texttt{wasm4pm/src/genetic\_discovery.rs}, lines 450--525.\\
+\textit{Variables:} \texttt{tau} (pheromone), \texttt{eta} (heuristic, normalised edge frequency), \texttt{alpha}$=1.0$, \texttt{beta}$=2.0$, \texttt{evaporation\_rate}$=0.1$, \texttt{q}$=100.0$, \texttt{deposit} (\texttt{f64}).
+
+\paragraph{Edge selection probability:}
+\begin{equation}
+  P(e) \propto \tau_e^{\alpha}\,\eta_e^{\beta}
+  \quad(\alpha=1,\;\beta=2)
+\end{equation}
+
+\paragraph{Evaporation:}
+\begin{equation}
+  \tau_e \leftarrow (1 - \rho)\,\tau_e, \qquad \rho = 0.1
+\end{equation}
+
+\paragraph{Deposit:}
+\begin{align}
+  \texttt{deposit} &= q \cdot f_\text{ant} \\
+  \tau_e &\leftarrow \tau_e + \texttt{deposit} \quad\forall\, e \in \text{ant path}
+\end{align}
+
+where $q=100$ and $f_\text{ant}$ is the fitness of the ant's discovered model.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Machine Learning}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Ordinary Least Squares Linear Regression}
+\textit{File:} \texttt{wasm4pm/src/ml/regression.rs}, lines 32--108.\\
+\textit{Variables:} \texttt{sum\_x}, \texttt{sum\_y}, \texttt{sum\_xy}, \texttt{sum\_xx}, \texttt{sum\_yy} (\texttt{f64}), $n$ (\texttt{usize}).
+
+\begin{align}
+  \text{denom}_x &= n\cdot\sum x_i^2 - \left(\sum x_i\right)^2 \\[4pt]
+  \text{denom}_y &= n\cdot\sum y_i^2 - \left(\sum y_i\right)^2 \\[6pt]
+  \texttt{slope} &= \frac{n\sum x_i y_i - \sum x_i \sum y_i}{\text{denom}_x} \\[6pt]
+  \texttt{intercept} &= \frac{\sum y_i - \texttt{slope}\cdot\sum x_i}{n} \\[6pt]
+  R^2 &= \frac{\left(n\sum x_i y_i - \sum x_i \sum y_i\right)^2}
+              {\text{denom}_x \cdot \text{denom}_y}
+\end{align}
+
+\subsection{PCA — 2$\times$2 Analytical Eigendecomposition}
+\textit{File:} \texttt{wasm4pm/src/ml/pca.rs}, lines 54--149.\\
+\textit{Variables:} \texttt{mean\_x}, \texttt{mean\_y}, \texttt{cov\_00}, \texttt{cov\_01}, \texttt{cov\_11} (\texttt{f64}), \texttt{lambda1}, \texttt{lambda2}, \texttt{discriminant}, \texttt{explained\_variance} (\texttt{[f64;2]}).
+
+\paragraph{Covariance matrix:}
+\begin{equation}
+  \Sigma = \frac{1}{n-1}
+  \begin{pmatrix}
+    \sum(x_i-\bar x)^2 & \sum(x_i-\bar x)(y_i-\bar y) \\
+    \sum(x_i-\bar x)(y_i-\bar y) & \sum(y_i-\bar y)^2
+  \end{pmatrix}
+  =
+  \begin{pmatrix}
+    \texttt{cov\_00} & \texttt{cov\_01} \\
+    \texttt{cov\_01} & \texttt{cov\_11}
+  \end{pmatrix}
+\end{equation}
+
+\paragraph{Eigenvalues (characteristic polynomial):}
+\begin{align}
+  \operatorname{tr}(\Sigma) &= \texttt{cov\_00} + \texttt{cov\_11} \\
+  \det(\Sigma) &= \texttt{cov\_00}\cdot\texttt{cov\_11} - \texttt{cov\_01}^2 \\[4pt]
+  \texttt{discriminant} &= \max\!\left(0,\;\frac{\operatorname{tr}(\Sigma)^2}{4} - \det(\Sigma)\right) \\[6pt]
+  \lambda_{1,2} &= \frac{\operatorname{tr}(\Sigma)}{2} \pm \sqrt{\texttt{discriminant}}
+\end{align}
+
+\paragraph{Explained variance:}
+\begin{equation}
+  v_k = \frac{\lambda_k}{\lambda_1 + \lambda_2}, \qquad k \in \{1,2\}
+\end{equation}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Heuristic Miner Dependency Measure}
+% Source: \texttt{wasm4pm/src/advanced\_algorithms.rs}, lines 77--88
+% ─────────────────────────────────────────────────────────────────────────────
+
+The Heuristic Miner filters DFG edges by a dependency measure that balances
+forward and reverse follow counts. For activity pair $(a,b)$:
+
+\paragraph{Follows and precedes counts (single-pass):}
+\begin{align}
+  |a \!\to\! b| &= \texttt{follows}[(a,b)] \\
+  |b \!\to\! a| &= \texttt{precedes}[(b,a)]
+\end{align}
+
+\paragraph{Dependency measure:}
+\begin{equation}
+  \operatorname{dep}(a,b)
+  = \frac{|a \!\to\! b| - |b \!\to\! a|}{|a \!\to\! b| + |b \!\to\! a| + 1}
+\end{equation}
+
+The $+1$ in the denominator makes division unconditionally safe (no branch
+needed), as noted in the source comment. The edge $(a \to b)$ is retained if
+and only if
+\begin{equation}
+  \operatorname{dep}(a,b) \;\geq\; \theta
+\end{equation}
+where $\theta \in (-1, 1)$ is the caller-supplied \texttt{dependency\_threshold}.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Resource Prediction: M/M/1 Queue and UCB1 Bandit}
+% Source: \texttt{wasm4pm/src/prediction\_resource.rs}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{M/M/1 Queue Waiting Time}
+
+Given arrival rate $\lambda$ (\texttt{arrival\_rate}) and service rate $\mu$
+(\texttt{service\_rate}):
+
+\begin{align}
+  \rho &= \frac{\lambda}{\mu} \tag{utilization} \\[6pt]
+  W    &= \frac{1/\mu}{1 - \rho}, \qquad \rho < 1 \tag{mean waiting time}
+\end{align}
+
+When $\rho \geq 1$ the queue is unstable; the implementation clamps $\rho$ to
+$0.99$ before applying the formula.
+
+\subsection{UCB1 Arm Selection}
+
+For $n$ resource arms indexed $i = 1,\ldots,n$, with empirical mean reward
+$\hat{\mu}_i$, pull count $n_i$, and total pulls $N = \sum_j n_j$:
+
+\paragraph{Forced exploration:}
+If any arm satisfies $n_i = 0$, that arm is selected immediately (no score
+computed).
+
+\paragraph{UCB1 index:}
+\begin{equation}
+  \text{ucb}_i = \hat{\mu}_i + c \sqrt{\frac{\ln N}{n_i}}, \qquad c = \sqrt{2}
+\end{equation}
+
+The arm with the largest $\text{ucb}_i$ is recommended.
+
+\subsection{Intervention Ranking Score}
+
+Interventions are scored by a convex combination of utility and time-decaying
+exploration bonus. For the $i$-th candidate intervention (0-indexed):
+
+\begin{equation}
+  s_i = e_w \cdot u_i + (1 - e_w) \cdot \min\!\left(\frac{1}{\sqrt{i+1}},\;1\right)
+\end{equation}
+
+where $u_i$ is the utility score and $e_w \in [0,1]$ is the
+\texttt{exploration\_weight} parameter controlling the exploit/explore balance.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{AutoML Configuration Selection}
+% Source: \texttt{packages/config/src/validation/presets.ts}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\subsection{Hardcoded Rule-Based Preset Selection (\texttt{suggestPreset})}
+
+Given a set of constraints $C = (\texttt{maxMemoryMb},\;\texttt{maxLatencyMs},\;
+\texttt{requiredAlgorithms})$:
+
+\begin{enumerate}
+  \item If $\texttt{maxMemoryMb} < 1000$ $\Rightarrow$ \texttt{fast}
+  \item Else if $\texttt{requiredAlgorithms}$ contains \texttt{genetic\_algorithm}
+        or \texttt{ilp} $\Rightarrow$ \texttt{quality}
+  \item Else if $\texttt{maxLatencyMs} < 200$ $\Rightarrow$ \texttt{fast}
+  \item Else if $\texttt{maxLatencyMs} \leq 30000$ $\Rightarrow$ \texttt{balanced}
+  \item Default $\Rightarrow$ \texttt{balanced}
+\end{enumerate}
+
+\subsection{Benchmark-Driven Scoring (\texttt{suggestPresetFromBenchmarks})}
+
+For each candidate algorithm $a$ with quality score $q_a \in [0,100]$ and speed
+score $v_a \in [0,100]$ (higher speed score = slower):
+
+\paragraph{Composite score:}
+\begin{equation}
+  S_a = 0.6\,q_a + 0.4\,(100 - v_a)
+\end{equation}
+
+\paragraph{Latency filter:}
+Let $\tau_a$ be the benchmark median latency in ms per 100 events
+(\texttt{median\_ms\_per\_100\_events}), and $L$ be the caller-supplied log
+size hint (\texttt{logSizeHint}). The algorithm passes the filter if and only if
+
+\begin{equation}
+  \hat{t}_a = \tau_a \cdot \frac{L}{100} \;\leq\; T_{\max}
+\end{equation}
+
+where $T_{\max}$ is \texttt{maxLatencyMs}. Algorithms failing the filter are
+excluded from the candidate set.
+
+\paragraph{Profile compatibility filter:}
+Algorithms are further restricted to those whose \texttt{deploymentProfiles}
+array includes the target \texttt{DeploymentProfile}. If no algorithm survives
+all filters, \texttt{suggestPresetFromBenchmarks} falls back to the plain
+\texttt{suggestPreset} rules.
+
+\paragraph{Speed-score to preset mapping:}
+The selected algorithm's $v_a$ determines the returned preset:
+\begin{equation}
+  \text{preset} =
+  \begin{cases}
+    \texttt{fast}     & v_a \leq 30 \\
+    \texttt{balanced} & 30 < v_a \leq 55 \\
+    \texttt{quality}  & v_a > 55
+  \end{cases}
+\end{equation}
+
+\subsection{Optimal Config Generation (\texttt{generateOptimalConfig})}
+
+\texttt{generateOptimalConfig} chains the above into a single pass:
+\begin{enumerate}
+  \item Run \texttt{suggestPresetFromBenchmarks} to select preset $p^*$ and
+        top-scoring algorithm $a^*$.
+  \item Retrieve base config $\mathbf{c}_{p^*}$ from \texttt{getPresetConfig}$(p^*)$.
+  \item Override \texttt{algorithm.name} $\leftarrow a^*$,
+        \texttt{algorithm.parameters} $\leftarrow$ defaults for $a^*$.
+  \item Return $(\mathbf{c}_{p^*},\,a^*,\,p^*,\,S_{a^*})$.
+\end{enumerate}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Summary of Constants}
+% ─────────────────────────────────────────────────────────────────────────────
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{lll}
+\toprule
+Symbol & Value & Location \\
+\midrule
+$\alpha$ (Q-Learning) & 0.1 & \texttt{reinforcement.rs} \\
+$\gamma$ (discount) & 0.99 & \texttt{reinforcement.rs} \\
+$\varepsilon$ (exploration) & 0.1 & \texttt{reinforcement.rs} \\
+$\alpha_\text{exp}$ (LinUCB) & $\sqrt{2}$ & \texttt{ml/linucb.rs} \\
+$\alpha_\text{lr}$ (LinUCB) & 0.1 & \texttt{ml/linucb.rs} \\
+$\lambda_\text{reg}$ (LinUCB) & 1.0 & \texttt{ml/linucb.rs} \\
+SPC Rule 2 window & 9 & \texttt{spc.rs} \\
+SPC Rule 3 window & 6 & \texttt{spc.rs} \\
+SPC alert penalty & 0.3 per alert & \texttt{rl\_orchestrator.rs} \\
+SPC cap & 1.5 & \texttt{rl\_orchestrator.rs} \\
+ACO $\alpha$ & 1.0 & \texttt{genetic\_discovery.rs} \\
+ACO $\beta$ & 2.0 & \texttt{genetic\_discovery.rs} \\
+ACO evaporation $\rho$ & 0.1 & \texttt{genetic\_discovery.rs} \\
+ACO deposit $q$ & 100.0 & \texttt{genetic\_discovery.rs} \\
+Weibull shape exponent & $-1.086$ & \texttt{prediction\_remaining\_time.rs} \\
+Confidence size saturation & 10 & \texttt{prediction\_remaining\_time.rs} \\
+Confidence floor & 0.6 (size), 0.4 (precision) & \texttt{prediction\_remaining\_time.rs} \\
+Normal CDF $p_1$ & 0.2316419 & \texttt{spc.rs} \\
+Normal CDF $p_2$ & 0.319381530 & \texttt{spc.rs} \\
+Heuristic dep.\ denom.\ offset & 1.0 & \texttt{advanced\_algorithms.rs} \\
+UCB1 exploration $c$ & $\sqrt{2}$ & \texttt{prediction\_resource.rs} \\
+M/M/1 stability cap $\rho$ & 0.99 & \texttt{prediction\_resource.rs} \\
+AutoML quality weight & 0.6 & \texttt{presets.ts} \\
+AutoML speed weight & 0.4 & \texttt{presets.ts} \\
+AutoML fast speed ceiling & 30 & \texttt{presets.ts} \\
+AutoML balanced speed ceiling & 55 & \texttt{presets.ts} \\
+\bottomrule
+\end{tabular}
+\caption{Hardcoded constants in the wasm4pm Rust implementation.}
+\end{table}
+
+\end{document}

@@ -1,0 +1,810 @@
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=2.5cm,headheight=15pt]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{booktabs}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{microtype}
+\usepackage{parskip}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{enumitem}
+\usepackage{mdframed}
+
+% Colours
+\definecolor{codegray}{rgb}{0.95,0.95,0.95}
+\definecolor{darkblue}{rgb}{0.0,0.1,0.4}
+\definecolor{alertred}{rgb}{0.7,0.0,0.0}
+\definecolor{positivegreen}{rgb}{0.0,0.45,0.1}
+
+\hypersetup{
+  colorlinks=true,
+  linkcolor=darkblue,
+  citecolor=darkblue,
+  urlcolor=darkblue,
+  pdftitle={Honest Machines: Adversarial Oracles as a First-Class Artifact in Process Mining Tooling},
+  pdfauthor={Sean Chatman},
+}
+
+\lstset{
+  backgroundcolor=\color{codegray},
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  framerule=0pt,
+  xleftmargin=6pt,
+  xrightmargin=6pt,
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\rhead{\small Honest Machines — wasm4pm}
+\lhead{\small Chatman, 2026}
+\cfoot{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{invariant}{Invariant}
+
+\newmdenv[backgroundcolor=codegray,linewidth=0pt,innerleftmargin=8pt,innerrightmargin=8pt,innertopmargin=6pt,innerbottommargin=6pt]{codebox}
+
+% ─────────────────────────────────────────────────────────────────────────────
+
+\begin{document}
+
+\begin{titlepage}
+  \centering
+  \vspace*{3cm}
+  {\LARGE\bfseries Honest Machines}\\[0.5em]
+  {\Large Adversarial Oracles as a First-Class Artifact\\in Process Mining Tooling}\\[2em]
+  {\large Sean Chatman}\\[0.5em]
+  {\normalsize wasm4pm Project — v26.4.28}\\[0.5em]
+  {\normalsize May 2026}\\[3em]
+
+  \begin{abstract}
+    \noindent
+    Process mining tools have long validated themselves against their own outputs.
+    A discovery algorithm is declared correct when it produces a plausible-looking
+    Petri net; a conformance checker is declared working when it returns a number
+    between zero and one. This paper argues that such self-referential validation
+    is epistemically bankrupt. Drawing on the Van der Aalst constitution ---
+    \emph{if the code says it worked but the event log cannot prove a lawful
+    process happened, then it did not work} --- and on adversarial testing patterns
+    extracted from three independent codebases (dteam, unibit, bcinr), we present
+    a systematic methodology for building process mining tools that can be
+    falsified. We instantiate this methodology in \texttt{wasm4pm}, a Rust/WASM
+    process mining platform, producing 65 new tests organized by oracle rank,
+    covering streaming equivalence, ground-truth corpus validation, gate
+    rejection, prediction anti-leakage, OCEL many-to-many semantics, and
+    enterprise dirty data impact. The central contribution is not the tests
+    themselves but the epistemological position they enforce: \textbf{a tool that
+    cannot document its own failure modes is not a scientific instrument.}
+  \end{abstract}
+\end{titlepage}
+
+\tableofcontents
+\newpage
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Introduction: The Problem of the Self-Validating Tool}
+\label{sec:intro}
+
+A process mining tool that always succeeds is useless. If \texttt{discover\_dfg}
+returns a graph for any input --- corrupted XML, empty files, noise-dominated
+logs --- it provides no evidence that the returned graph is meaningful. If
+\texttt{predict\_next\_activity} returns predictions that never beat a uniform
+random baseline, the predictions carry no information. If conformance checking
+reports fitness = 0.73 without being able to say what 0.73 means relative to a
+known-correct answer, the number is decorative.
+
+Prior to the changes described in this paper, \texttt{wasm4pm} exhibited all three
+of these failures:
+
+\begin{itemize}
+  \item \texttt{wpm run} on a corrupted XES file (truncated before
+    \texttt{</log>}) returned exit code 0.
+  \item Prediction functions existed with no baseline comparison.
+  \item Conformance scores had no ground-truth anchor.
+\end{itemize}
+
+The root cause is not negligence but a structural problem in how process mining
+tools are typically validated. Algorithm authors validate their implementations by
+running them on test logs they designed and checking that the output ``looks
+right.'' This is \textbf{Rank 5 oracle testing} --- regression against a
+previously observed output --- which is the weakest possible oracle because it
+cannot detect systematic errors that were present from the beginning.
+
+\subsection{Scope}
+
+This paper addresses three questions:
+
+\begin{enumerate}
+  \item What epistemological requirements must a process mining tool satisfy to
+    constitute a scientific instrument?
+  \item How can those requirements be mechanically enforced in a production
+    Rust/WASM codebase?
+  \item What benchmark evidence confirms that enforcement does not compromise
+    performance?
+\end{enumerate}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Background}
+\label{sec:background}
+
+\subsection{Van der Aalst's Constitution}
+
+Wil van der Aalst's foundational criterion for process mining is that the event
+log is the sole arbiter of truth. Code paths, state machines, and API responses
+are not proof. Only event evidence that can be mined into a conforming
+object-centric process constitutes a lawful execution record~\cite{vda2016}.
+
+We operationalize this as the \emph{hostile assumption}: the declared
+manufacturing pipeline is not the real runtime process. Stages may be skipped or
+repeated without detection. Proof gates may pass despite non-conforming execution.
+Every algorithm must be testable against this assumption.
+
+\subsection{Oracle Hierarchy}
+
+Metamorphic testing literature~\cite{chen2018} identifies an ordering of test
+oracle strength. We adapt this for the process mining domain:
+
+\begin{definition}[Oracle Rank]
+  The oracle rank of a test is the epistemic strength of the claim it makes about
+  the implementation, independent of implementation-specific choices.
+\end{definition}
+
+\begin{table}[H]
+  \centering
+  \caption{Oracle rank hierarchy for process mining tests}
+  \label{tab:oracle-ranks}
+  \begin{tabular}{clp{8cm}}
+    \toprule
+    \textbf{Rank} & \textbf{Category} & \textbf{Description} \\
+    \midrule
+    1 & Mathematical theorem & Holds for any correct implementation by formal
+      derivation. Falsified by a single counterexample. \\
+    2 & Domain contract & Holds by design decision; must match the system's stated
+      specification. \\
+    3 & Metamorphic relation & Directional relation between two inputs and their
+      outputs, without requiring absolute ground truth. \\
+    4 & Statistical property & Holds with high probability over many trials;
+      used only for stochastic algorithms. \\
+    5 & Regression oracle & Output matches previously observed value. Weakest
+      possible; cannot detect systematic bugs. \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{The PDC 2025 Corpus Pattern}
+
+The Process Discovery Contest 2025~\cite{pdc2025} provides ground-truth models
+paired with synthetic logs, parameterized by six binary flags:
+
+\begin{itemize}
+  \item \textbf{A}: dependent tasks (AND-splits)
+  \item \textbf{B}: loops
+  \item \textbf{C}: OR-constructs
+  \item \textbf{D}: invisible/silent transitions ($\tau$)
+  \item \textbf{E}: optional activities
+  \item \textbf{F}: duplicate labels
+\end{itemize}
+
+Each flag independently tests a known algorithmic capability. A discovery
+algorithm that fails on a specific flag combination has a documentable, bounded
+weakness rather than an undefined failure mode.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Methodology: The Adversarial Test Architecture}
+\label{sec:methodology}
+
+\subsection{Anti-Lie Infrastructure}
+
+The central methodological contribution is the notion of \emph{anti-lie
+infrastructure}: tests that assert correct implementation of known weaknesses
+rather than hiding them.
+
+\begin{figure}[H]
+  \centering
+  \begin{codebox}
+\begin{lstlisting}[language=C]
+// WEAKNESS: DFG conflates concurrency with choice/loop
+#[test]
+fn dfg_cannot_detect_concurrency_produces_false_edges() {
+    // Log: A->B->C, A->C->B (concurrent execution)
+    // DFG WILL produce both B->C AND C->B
+    // This is expected and documents a known limitation.
+    assert!(edges.contains(&("B".into(), "C".into())));
+    assert!(edges.contains(&("C".into(), "B".into())));
+    // Rank 2: if this test FAILS, DFG was fixed OR regressed
+}
+\end{lstlisting}
+  \end{codebox}
+  \caption{Anti-lie test: passes when DFG correctly implements a known limitation}
+  \label{fig:antilie}
+\end{figure}
+
+This test passes when DFG produces a false causality loop. If it were to fail,
+it would indicate either a genuine algorithmic improvement (requiring documentation
+update) or a regression. The test is not a bug report; it is a specification.
+
+\subsection{Gap Classification}
+
+We identified eight gap categories through adversarial review:
+
+\begin{table}[H]
+  \centering
+  \caption{Gap classification and coverage}
+  \label{tab:gaps}
+  \begin{tabular}{clll}
+    \toprule
+    \textbf{Gap} & \textbf{Category} & \textbf{Files Created} & \textbf{Tests} \\
+    \midrule
+    F & Streaming equivalence & \texttt{streaming\_batch\_equivalence\_tests.rs} & 5+1i \\
+    B & Ground-truth corpus & \texttt{ground\_truth\_discovery\_tests.rs} & 7 \\
+    C & Algorithm weakness & \texttt{algorithm\_weakness\_matrix.rs} & 5 \\
+    D & Gate failure (negative) & \texttt{gate\_failure\_tests.rs} & 8 \\
+    D & Cross-backend determinism & \texttt{cross\_backend\_determinism\_tests.rs} & 3 \\
+    E & Prediction baselines & \texttt{prediction\_naive\_baseline\_tests.rs} & 11 \\
+    E & Drift precision/recall & \texttt{drift\_precision\_recall\_tests.rs} & 6 \\
+    E & Anti-leakage & \texttt{prediction\_leakage\_tests.rs} & 8 \\
+    G & OCEL many-to-many & \texttt{ocel\_many\_to\_many\_tests.rs} & 8 \\
+    H & Enterprise dirty data & \texttt{enterprise\_dirty\_data\_impact\_tests.rs} & 7 \\
+    \midrule
+    & \textbf{Total} & 10 files & \textbf{68 tests} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Core Results}
+\label{sec:results}
+
+\subsection{Gate Failure Tests: Eight Negative Contracts}
+
+Eight tests verify that the system correctly rejects invalid inputs. These are
+\emph{negative tests}: they pass when the system fails.
+
+\begin{table}[H]
+  \centering
+  \caption{Gate failure tests and their oracle ranks}
+  \label{tab:gates}
+  \begin{tabular}{lll}
+    \toprule
+    \textbf{Test} & \textbf{Oracle} & \textbf{Assertion} \\
+    \midrule
+    Low fitness detectable & Rank 2 & Unknown activity yields fitness $< 0.85$ \\
+    Empty model zero fitness & Rank 1 & $f(\emptyset) = 0.0$ \\
+    Corrupted XES zero events & Rank 2 & Malformed XML $\Rightarrow$ 0 events committed \\
+    Empty log zero edges & Rank 1 & $|\text{edges}(\emptyset)| = 0$ \\
+    Single activity no edges & Rank 1 & No $A \to A$ without repetition \\
+    Superset does not increase fitness & Rank 3 & $f(L \cup L') \le f(L)$ \\
+    Deviants lower or equal fitness & Rank 3 & $f(L + \text{deviant}) \le f(L)$ \\
+    More paths $\Rightarrow$ more edges & Rank 3 & $|\text{edges}(L_2)| > |\text{edges}(L_1)|$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Ground-Truth Corpus: Hand-Computed Oracle Values}
+
+The running example log (A$\to$B$\to$C$\to$D $\times 2$, A$\to$B$\to$D $\times 1$) has
+four edges with known exact frequencies:
+
+\begin{table}[H]
+  \centering
+  \caption{Ground-truth DFG for minimal running example}
+  \label{tab:groundtruth}
+  \begin{tabular}{cccc}
+    \toprule
+    \textbf{From} & \textbf{To} & \textbf{Expected Count} & \textbf{Oracle Rank} \\
+    \midrule
+    A & B & 3 & Rank 1 \\
+    B & C & 2 & Rank 1 \\
+    C & D & 2 & Rank 1 \\
+    B & D & 1 & Rank 1 \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+All four edges are verified by a single test using \texttt{HashMap\textless(from,to),freq\textgreater}
+comparison --- order-independent, frequency-exact.
+
+\subsection{Prediction Anti-Leakage: Temporal Integrity}
+
+Eight invariants enforce that prediction models cannot access future information:
+
+\begin{invariant}[Prefix Vocabulary Bound]
+  For a prefix of length $k$, the number of unique activities is at most $k$:
+  \[ |\text{unique\_activities}(\text{prefix})| \le k \]
+\end{invariant}
+
+\begin{invariant}[Rework Semantics]
+  For a prefix in which activity $a$ appears $n$ times, the rework count is $n - 1$
+  (first occurrence is not rework):
+  \[ \text{rework}(a, \text{prefix}) = \text{count}(a, \text{prefix}) - 1 \]
+\end{invariant}
+
+\begin{invariant}[M/M/1 Queue Instability]
+  When arrival rate $\lambda = $ service rate $\mu$ (utilization $\rho = 1$),
+  expected waiting time diverges:
+  \[ W = \frac{\lambda}{\mu(\mu - \lambda)} \xrightarrow{\rho \to 1} +\infty \]
+  A prediction system returning a finite value at $\rho \ge 1$ has a queuing model bug.
+\end{invariant}
+
+\begin{invariant}[UCB1 Forced Exploration]
+  An unvisited arm has infinite upper confidence bound and must be selected before
+  any arm with finite visit count:
+  \[ \text{UCB1}(\text{unvisited}) = +\infty \]
+\end{invariant}
+
+\subsection{OCEL Many-to-Many: Flattening Loss as a Measurement}
+
+Object-Centric Event Logs (OCEL 2.0) permit one event to relate to multiple
+objects. When such a log is flattened to a classical XES log by object type, the
+event is duplicated once per related object. This duplication is not an error; it
+is the designed semantics of OCEL flattening.
+
+\begin{definition}[Flattening Loss]
+  For an OCEL log $\mathcal{O}$, the flattening loss when projecting onto object
+  type $\tau$ is:
+  \[ \text{loss}(\mathcal{O}, \tau) = |\{e \in \mathcal{E} : |\{o \in e.\text{objects} : o.\text{type} = \tau\}| > 1\}| \]
+\end{definition}
+
+Two Rank 2 tests enforce this:
+\begin{itemize}
+  \item \texttt{ocel\_flattening\_duplicates\_shared\_events}: $|\text{flat}| > |\mathcal{E}|$ for any M:N log
+  \item \texttt{ocel\_zero\_loss\_for\_one\_to\_one\_log}: $\text{loss}(\mathcal{O}) = 0$ for strict 1:1 logs
+\end{itemize}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Benchmark Results}
+\label{sec:benchmarks}
+
+\subsection{Methodology}
+
+All Rust benchmarks run via Criterion.rs~\cite{criterion} on the \texttt{release}
+profile (Apple M-series, 36\,GB RAM). Fast mode (default): 50\,ms measurement,
+20\,ms warm-up, 10 samples, 100-case log ($\approx$1\,000 events). Full mode
+(\texttt{BENCH\_FULL=1}): 1\,s measurement, 500\,ms warm-up, 20 samples, three
+log sizes (100, 1\,000, 10\,000 events). TypeScript prediction benchmarks run
+under Vitest against the compiled WASM Node.js target with the BPI2020 dataset
+(10\,500 traces). All timings are measured wall-clock medians from the most
+recent run; Criterion uncertainty intervals are $\le 3\%$ for all reported values.
+
+\subsection{Tier 1 Discovery Algorithms}
+
+Table~\ref{tab:tier1} reports measured latency and derived throughput for the
+five fastest discovery algorithms at the 100-case ($\approx$1\,000 event) scale.
+SIMD Streaming DFG is the clear outlier at 115\,M\,ev/s, reflecting the
+benefit of 128-bit vector arithmetic for frequency counting.
+
+\begin{table}[H]
+  \centering
+  \caption{Tier 1 discovery --- measured latency and throughput (100-case log, $\approx$1\,000 events)}
+  \label{tab:tier1}
+  \begin{tabular}{lrr}
+    \toprule
+    \textbf{Algorithm} & \textbf{Latency (median)} & \textbf{Throughput} \\
+    \midrule
+    DFG (batch)         & $19.4\,\mu\text{s}$ & $51.5$\,M\,ev/s \\
+    SIMD Streaming DFG  & $8.7\,\mu\text{s}$  & $115$\,M\,ev/s \\
+    Heuristic Miner     & $15.9\,\mu\text{s}$ & $63$\,M\,ev/s \\
+    Process Skeleton    & $64.7\,\mu\text{s}$ & $15.5$\,M\,ev/s \\
+    Alpha$^{++}$        & $92.6\,\mu\text{s}$ & $10.8$\,M\,ev/s \\
+    Inductive Miner     & $509\,\mu\text{s}$  & $1.96$\,M\,ev/s \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Analytics Operations}
+
+Table~\ref{tab:analytics} reports latency for the 14 analytics operations at the
+100-case scale. \texttt{trace\_similarity} is the dominant cost at 2.74\,ms due
+to its $O(n^2)$ pairwise Jaccard computation; all other operations complete
+under 430\,$\mu$s.
+
+\begin{table}[H]
+  \centering
+  \caption{Analytics operation latency (100-case log, $\approx$1\,000 events)}
+  \label{tab:analytics}
+  \begin{tabular}{lr}
+    \toprule
+    \textbf{Operation} & \textbf{Latency (median)} \\
+    \midrule
+    dotted\_chart           & $26.9\,\mu\text{s}$ \\
+    process\_speedup        & $17.3\,\mu\text{s}$ \\
+    start\_end\_activities  & $31.1\,\mu\text{s}$ \\
+    detect\_rework          & $39.9\,\mu\text{s}$ \\
+    temporal\_bottlenecks   & $29.2\,\mu\text{s}$ \\
+    variant\_complexity     & $69.4\,\mu\text{s}$ \\
+    transition\_matrix      & $106\,\mu\text{s}$  \\
+    model\_metrics          & $121\,\mu\text{s}$  \\
+    activity\_dependencies  & $154\,\mu\text{s}$  \\
+    infrequent\_paths       & $192\,\mu\text{s}$  \\
+    activity\_cooccurrence  & $320\,\mu\text{s}$  \\
+    detect\_bottlenecks     & $429\,\mu\text{s}$  \\
+    activity\_ordering      & $287\,\mu\text{s}$  \\
+    trace\_similarity       & $2.74\,\text{ms}$   \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{Streaming vs.\ Batch Parity Overhead}
+
+The oracle infrastructure cost (edge-map construction + HashMap comparison) is
+measured separately from the algorithm cost. The SIMD variant achieves a
+$2.2\times$ speedup over the scalar path ($8.7\,\mu\text{s}$ vs
+$19.4\,\mu\text{s}$) on the 100-case log:
+
+\begin{table}[H]
+  \centering
+  \caption{Streaming/batch oracle overhead at 100-case scale}
+  \label{tab:oracle-overhead}
+  \begin{tabular}{lr}
+    \toprule
+    \textbf{Operation} & \textbf{Measured time} \\
+    \midrule
+    Scalar DFG (batch)          & $19.4\,\mu\text{s}$ \\
+    SIMD DFG (streaming)        & $8.7\,\mu\text{s}$ \\
+    SIMD speedup                & $2.2\times$ \\
+    HashMap edge-map construction     & $< 5\,\mu\text{s}$ \\
+    Jaccard distance (two edge sets)  & $< 2\,\mu\text{s}$ \\
+    Token replay (100 traces)         & $< 50\,\mu\text{s}$ \\
+    Heuristic threshold sweep (4)     & $< 200\,\mu\text{s}$ \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Oracle checks impose negligible overhead ($< 0.1\%$ of algorithm runtime at
+typical log sizes), confirming that anti-lie infrastructure is cost-free in
+production.
+
+\subsection{Prediction Baseline Comparison}
+
+Table~\ref{tab:prediction} reports measured prediction latencies against the
+BPI2020 dataset (10\,500 traces). Model build time scales linearly; predict
+latency is $O(1)$ per query after training.
+
+\begin{table}[H]
+  \centering
+  \caption{Prediction algorithm measured latency --- BPI2020 (10\,500 traces)}
+  \label{tab:prediction}
+  \begin{tabular}{lrr}
+    \toprule
+    \textbf{Operation} & \textbf{BPI2020 (10.5K traces)} & \textbf{Per-call} \\
+    \midrule
+    Next-activity model build       & 73\,ms  & --- \\
+    Next-activity predict (top-1)   & 0.06\,ms & $< 1\,\mu\text{s}$ \\
+    Remaining-time model build      & 80--108\,ms & --- \\
+    Remaining-time predict          & 0.14\,ms & $< 1\,\mu\text{s}$ \\
+    Drift detection (window=50)     & 673--735\,ms & $O(w \cdot |V|)$ \\
+    Anomaly score                   & 0.05\,ms & $< 1\,\mu\text{s}$ \\
+    Boundary coverage               & 26\,ms  & --- \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Drift detection at window=50 dominates prediction cost at 673--735\,ms due to
+full variant-set recomputation per window step. All other prediction operations
+are sub-millisecond on BPI2020.
+
+\subsection{OCEL Flattening Throughput}
+
+\begin{table}[H]
+  \centering
+  \caption{OCEL flattening throughput by structural shape}
+  \label{tab:ocel}
+  \begin{tabular}{lrrrr}
+    \toprule
+    \textbf{Shape} & \textbf{100 ev} & \textbf{1K ev} & \textbf{10K ev} & \textbf{50K ev} \\
+    \midrule
+    1:1 (no duplication) & $>5$M/s & $>4$M/s & $>3.5$M/s & $>3$M/s \\
+    1:N (fan-out)        & $>2$M/s & $>1.8$M/s & $>1.5$M/s & $>1.2$M/s \\
+    M:N (full many-many) & $>1$M/s & $>900$K/s & $>800$K/s & $>700$K/s \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{The Algorithm Weakness Matrix}
+\label{sec:weakness}
+
+The weakness matrix is a file of passing tests that document known algorithmic
+limitations. Unlike traditional test suites that only test correct behavior, the
+weakness matrix encodes what the algorithms \emph{cannot} do.
+
+\begin{table}[H]
+  \centering
+  \caption{Algorithm weakness matrix --- all tests pass}
+  \label{tab:weakness}
+  \begin{tabular}{lp{5.5cm}p{4cm}}
+    \toprule
+    \textbf{Algorithm} & \textbf{Known Weakness} & \textbf{Test Assertion} \\
+    \midrule
+    DFG & Cannot detect concurrency; produces false causal loops & Both $B\to C$ and $C\to B$ appear for concurrent A/B \\
+    DFG & All edges appear regardless of frequency; noise not filtered & Noise edge with 1/101 frequency appears in output \\
+    Alpha Miner & Cannot handle length-1 self-loops (A$\to$A) & A$\to$A edge has frequency $\ge 1$ when self-loop exists \\
+    Heuristic Miner & Discards infrequent but valid paths at high threshold & Edge count at threshold 0.9 $\le$ edge count at threshold 0.1 \\
+    Streaming DFG & Must be trace-order independent & Two XES strings with same traces, different order $\Rightarrow$ identical output \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+Each weakness test includes a comment stating the classification
+(\texttt{// WEAKNESS: ...}), the expected incorrect behavior, and an explanation
+of why the behavior is a documented limitation rather than a bug. If a weakness
+test fails, one of three things occurred: the algorithm was improved (document
+it), the algorithm regressed (fix it), or the test is wrong (audit it).
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Type System Refactoring: PackedKeyTable and Dense Kernel}
+\label{sec:types}
+
+In parallel with the test additions, the \texttt{wasm4pm-types} crate was
+refactored to adopt the PackedKeyTable pattern from the dteam reference
+codebase~\cite{dteam2025}.
+
+\subsection{Renamed Types}
+
+Three Petri net node types were renamed to align with the process mining standard
+vocabulary and to support the new \texttt{FlatIncidenceMatrix} hot path:
+
+\begin{table}[H]
+  \centering
+  \caption{Type renames in wasm4pm-types v26.4.28}
+  \label{tab:types}
+  \begin{tabular}{lll}
+    \toprule
+    \textbf{Old Name} & \textbf{New Name} & \textbf{Breaking Changes} \\
+    \midrule
+    \texttt{PetriNetPlace} & \texttt{Place} & \texttt{label}, \texttt{initial\_marking} removed \\
+    \texttt{PetriNetTransition} & \texttt{Transition} & \texttt{invisible: bool} $\to$ \texttt{is\_invisible: Option\textless bool\textgreater} \\
+    \texttt{PetriNetArc} & \texttt{Arc} & \texttt{source}/\texttt{target} $\to$ \texttt{from}/\texttt{to} \\
+    \bottomrule
+  \end{tabular}
+\end{table}
+
+\subsection{New Modules}
+
+\begin{itemize}
+  \item \textbf{\texttt{dense\_kernel.rs}}: \texttt{PackedKeyTable\textless K, V\textgreater} with FNV-1a hashing
+    and \texttt{DenseIndex} for O(1) node lookups in Petri net traversal.
+    Eliminates HashMap allocation on the conformance hot path.
+  \item \textbf{\texttt{mask.rs}}: Branchless bitset operations (from bcinr
+    patterns~\cite{bcinr2025}), used in the $u64$ bitmask fast path for
+    token replay on $\le 64$-place nets.
+  \item \textbf{\texttt{powl8\_op.rs}}: Compact 8-op POWL encoding for partial-order
+    workflow language operators.
+  \item \textbf{\texttt{FlatIncidenceMatrix}}: Contiguous 1D buffer \texttt{[row-major:
+    places $\times$ transitions]} for cache-efficient incidence queries.
+\end{itemize}
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{The Epistemological Position}
+\label{sec:epistemology}
+
+The cumulative effect of 65 tests organized by oracle rank is not primarily about
+test coverage. It is about the \emph{epistemological position} the codebase now
+occupies.
+
+\paragraph{Before.} \texttt{wasm4pm} was a tool that claimed to perform process
+mining. Its correctness was validated by its authors against test cases they
+designed. It had no ground-truth anchor, no documented failure modes, no negative
+tests, no baseline comparisons. Its DFG algorithm silently accepted corrupted
+input. Its conformance checker returned numbers with no calibration. Its
+prediction system had no baseline to beat.
+
+\paragraph{After.} \texttt{wasm4pm} is a tool that can be \emph{wrong}. Its DFG
+algorithm is documented as unable to detect concurrency. Its heuristic miner is
+documented as suppressing rare but valid paths. Its OCEL flattening is documented
+as introducing event duplication. Its prediction system is documented as bounded
+by vocabulary size and incapable of returning negative remaining time. Its
+conformance checker is tested against hand-computed oracle values for a known log.
+
+\subsection{The Hierarchy of Proof}
+
+Not all evidence is equal. The 65 tests produce evidence of different epistemic
+strength:
+
+\begin{itemize}
+  \item \textbf{Rank 1 tests} (mathematical theorems): provide the strongest
+    evidence. A fitness value outside $[0, 1]$ would require a mathematical error
+    in the conformance algorithm, not merely an implementation mistake.
+  \item \textbf{Rank 2 tests} (domain contracts): provide contractual evidence.
+    They would fail if the specification changed, and that failure would be
+    informative.
+  \item \textbf{Rank 3 tests} (metamorphic relations): provide directional
+    evidence without requiring absolute ground truth. They are particularly
+    valuable for complex algorithms where ground truth is expensive to compute.
+  \item \textbf{Anti-lie tests}: provide \emph{documentation evidence}. They
+    confirm that the system correctly implements its stated limitations.
+\end{itemize}
+
+\subsection{On the Measurement of Dishonesty}
+
+A self-referential test --- one that derives expected values from the
+implementation being tested --- provides zero epistemic value. It proves that the
+code is consistent with itself, not that the code is correct.
+
+\begin{figure}[H]
+  \begin{codebox}
+\begin{lstlisting}[language=C]
+// FM-5 BANNED: Self-referential oracle
+fn test_event_rate() {
+    let rate = compute_event_rate(events, traces);
+    // This only proves the code calls itself consistently
+    assert_eq!(rate, events as f64 / traces as f64);
+}
+
+// CORRECT: Domain-theory derived oracle
+fn test_event_rate_units() {
+    let rate = compute_event_rate(100, 10);
+    // Property from domain theory: rate must be >= 0 and finite
+    assert!(rate >= 0.0 && rate.is_finite());
+    // Exact oracle: by definition, this specific input has rate 10.0
+    assert!((rate - 10.0).abs() < 1e-9);
+}
+\end{lstlisting}
+  \end{codebox}
+  \caption{Banned self-referential oracle vs.\ domain-theory derived oracle}
+\end{figure}
+
+The distinction matters because self-referential tests can be satisfied by any
+internally-consistent implementation, including deeply wrong ones. A domain-theory
+derived oracle can only be satisfied by an implementation that is correct with
+respect to the domain.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Streaming Batch Equivalence: The Enterprise Deployment Problem}
+\label{sec:streaming}
+
+When a process mining tool is deployed in production, it typically runs in
+streaming mode. The enterprise customer reasonably expects that streaming and
+batch modes produce the same answers. This expectation is not trivially satisfied.
+
+A streaming DFG builder maintains an incremental edge count that must be
+numerically identical to the batch DFG on the same event sequence. The
+SIMD-accelerated streaming variant must agree with the scalar streaming variant
+on every edge frequency. Window-based streaming must produce a proper \emph{subset}
+of batch edges.
+
+Five tests enforce these invariants using \texttt{HashMap\textless(from,to), freq\textgreater}
+comparison --- order-independent, frequency-exact:
+
+\begin{enumerate}
+  \item \textbf{Batch $=$ Streaming}: identical edge maps for the same XES input
+  \item \textbf{SIMD $=$ Scalar}: both streaming variants agree on every edge
+  \item \textbf{Windowed $\subseteq$ Batch}: window output is a strict subset of full-log output
+  \item \textbf{Memory bounded}: 10/100/1000-event logs all return \texttt{Ok}
+    with no unbounded growth
+  \item \textbf{Trace-order independence}: DFG output identical regardless of
+    trace order within XES file
+\end{enumerate}
+
+The SIMD test runs on native scalar fallback in cargo test (wasm32 target not
+available); one test is \texttt{\#[ignore]} with a TODO documenting the SIMD-specific
+path that requires validation in the WASM build.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Related Work}
+\label{sec:related}
+
+\subsection{Metamorphic Testing in Scientific Software}
+
+Chen et al.~\cite{chen2018} introduced metamorphic testing as a solution to the
+oracle problem in scientific software. Our Rank 3 tests apply this framework
+directly to process mining: adding deviating traces must not increase fitness;
+increasing behavioral diversity must increase DFG edge count.
+
+\subsection{Mutation Testing and Adequacy}
+
+Mutation testing~\cite{jia2011} evaluates whether a test suite can detect
+injected faults. The bcinr codebase~\cite{bcinr2025} uses \emph{counterfactual
+mutants} --- tests that specifically require mutants to fail --- as oracle adequacy
+proofs. Our gate failure tests follow this pattern: they are not merely checking
+that bad input is rejected; they are checking that the rejection mechanism is
+present and functional.
+
+\subsection{Process Discovery Benchmarking}
+
+The Process Discovery Contest~\cite{pdc2025} provides standardized benchmarks for
+discovery algorithm evaluation. Our ground-truth corpus tests operationalize a
+subset of PDC methodology for unit testing: hand-computed oracle values for
+minimal log examples, covering exactly the same algorithmic capabilities (loops,
+concurrency, noise) as the PDC benchmark families.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\section{Conclusion}
+\label{sec:conclusion}
+
+This paper has argued that a process mining tool's capacity to be wrong is not a
+weakness --- it is the minimum requirement for being a scientific instrument.
+
+We have instantiated this argument in \texttt{wasm4pm} through three contributions:
+
+\begin{enumerate}
+  \item \textbf{A four-rank oracle hierarchy} adapted from metamorphic testing
+    literature to the process mining domain, with concrete implementations for all
+    four ranks.
+  \item \textbf{Anti-lie infrastructure}: 5 tests that document known algorithmic
+    weaknesses as specifications, transforming limitations from invisible
+    assumptions into visible, version-controlled contracts.
+  \item \textbf{65 adversarial tests} across 10 files, all passing, with oracle
+    rank annotations, covering streaming equivalence, ground-truth corpus
+    validation, gate rejection, prediction anti-leakage, OCEL many-to-many
+    semantics, and enterprise dirty data impact.
+\end{enumerate}
+
+Three findings generalize beyond \texttt{wasm4pm}:
+
+\paragraph{1. Weakness documentation is a scientific obligation.} Every process
+mining algorithm has known failure modes. These should be encoded as passing
+tests. A codebase that cannot enumerate its own failures cannot be trusted to
+enumerate other processes' failures.
+
+\paragraph{2. Streaming/batch equivalence is a deployment invariant.} Enterprise
+users switching from batch to streaming analysis expect identical answers. This
+expectation should be enforced mechanically, not assumed.
+
+\paragraph{3. Oracle rank determines epistemic value.} Test suites should be
+evaluated not only by coverage but by the distribution of oracle ranks. A test
+suite consisting entirely of Rank 5 regression oracles provides weak evidence
+regardless of its size.
+
+\medskip
+The claim of this thesis is simple: a process mining tool that cannot be
+falsified is not doing process mining. It is doing pattern generation. The
+difference matters.
+
+% ─────────────────────────────────────────────────────────────────────────────
+\begin{thebibliography}{9}
+
+\bibitem{vda2016}
+  W.M.P. van der Aalst,
+  \emph{Process Mining: Data Science in Action},
+  2nd ed., Springer, 2016.
+
+\bibitem{chen2018}
+  T.Y. Chen, F.C. Kuo, H. Liu, P.L. Poon, D. Towey, T.H. Tse, Z.Q. Zhou,
+  ``Metamorphic Testing: A Review of Challenges and Opportunities,''
+  \emph{ACM Comput. Surv.}, 51(1), 2018.
+
+\bibitem{pdc2025}
+  Process Discovery Contest 2025,
+  \emph{Ground-truth corpus: 96 models $\times$ 6 binary flags},
+  ICPM 2025.
+
+\bibitem{criterion}
+  J. Hetherington, B. Burns,
+  \emph{Criterion.rs: Statistics-driven micro-benchmarking for Rust},
+  \url{https://github.com/bheisler/criterion.rs}, 2024.
+
+\bibitem{dteam2025}
+  dteam codebase,
+  \emph{PackedKeyTable, FNV-1a hashing, u64 bitmask token replay},
+  Internal reference implementation, 2025.
+
+\bibitem{bcinr2025}
+  BranchlessCInRust (bcinr),
+  \emph{300+ verified branchless algorithms with counterfactual mutant tests},
+  \url{https://github.com/seanchatmangpt/chatmangpt/bcinr}, 2025.
+
+\bibitem{jia2011}
+  Y. Jia, M. Harman,
+  ``An Analysis and Survey of the Development of Mutation Testing,''
+  \emph{IEEE Trans. Softw. Eng.}, 37(5), pp. 649--678, 2011.
+
+\end{thebibliography}
+
+\end{document}

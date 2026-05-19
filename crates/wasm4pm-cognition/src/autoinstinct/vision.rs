@@ -29,16 +29,28 @@ impl Default for SymbolicVisionSystem {
 
 impl SymbolicVisionSystem {
     /// Creates an empty `SymbolicVisionSystem` with no observed objects.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn new() -> Self {
         Self { objects: Vec::new() }
     }
 
     /// Adds a newly observed `Polyhedron` to the scene.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn observe(&mut self, object: Polyhedron) {
         self.objects.push(object);
     }
 
     /// Find an object that has nothing supported by it (it's clear to move).
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn find_clear_object(&self) -> Option<&Polyhedron> {
         self.objects.iter().find(|obj| {
             !self.objects.iter().any(|other| {

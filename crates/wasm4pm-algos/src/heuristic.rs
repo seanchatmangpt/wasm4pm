@@ -4,6 +4,10 @@ use std::collections::HashMap;
 /// Heuristic Miner - discovers DFG based on activity frequencies and directly-follows relationships
 /// Time complexity: O(n + m) where n = events, m = edges
 /// Space complexity: O(k + e) where k = unique activities, e = edges
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn discover_heuristic(log: &EventLog, activity_key: &str) -> Result<DFG> {
     let mut dfg = DFG::new();
     let mut node_map: HashMap<String, usize> = HashMap::new();

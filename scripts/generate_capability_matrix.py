@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-generate_capability_matrix.py — generates capability-matrix.json for wasm4pm v26.5.15
+generate_capability_matrix.py — generates capability-matrix.json for wasm4pm v26.5.19
 
 Usage:
   python3 scripts/generate_capability_matrix.py \
     --src-dir wasm4pm/src \
     --tests-dir wasm4pm/tests \
     --cargo-toml wasm4pm/Cargo.toml \
-    --output target/wasm4pm-v26.5.15/capability-matrix.json \
-    --version 26.5.15
+    --output target/wasm4pm-v26.5.19/capability-matrix.json \
+    --version 26.5.19
 
 Run from the repo root.
 """
@@ -59,8 +59,8 @@ def parse_args():
     p.add_argument("--src-dir", default="wasm4pm/src")
     p.add_argument("--tests-dir", default="wasm4pm/tests")
     p.add_argument("--cargo-toml", default="wasm4pm/Cargo.toml")
-    p.add_argument("--output", default="target/wasm4pm-v26.5.15/capability-matrix.json")
-    p.add_argument("--version", default="26.5.15")
+    p.add_argument("--output", default="target/wasm4pm-v26.5.19/capability-matrix.json")
+    p.add_argument("--version", default="26.5.19")
     return p.parse_args()
 
 

@@ -1,0 +1,39 @@
+\contentsline {section}{\numberline {1}Introduction: The Problem of the Self-Validating Tool}{2}{section.1}%
+\contentsline {subsection}{\numberline {1.1}Scope}{2}{subsection.1.1}%
+\contentsline {section}{\numberline {2}Background}{2}{section.2}%
+\contentsline {subsection}{\numberline {2.1}Van der Aalst's Constitution}{2}{subsection.2.1}%
+\contentsline {subsection}{\numberline {2.2}Oracle Hierarchy}{3}{subsection.2.2}%
+\contentsline {subsection}{\numberline {2.3}The PDC 2025 Corpus Pattern}{3}{subsection.2.3}%
+\contentsline {section}{\numberline {3}Methodology: The Adversarial Test Architecture}{3}{section.3}%
+\contentsline {subsection}{\numberline {3.1}Anti-Lie Infrastructure}{3}{subsection.3.1}%
+\contentsline {subsection}{\numberline {3.2}Gap Classification}{4}{subsection.3.2}%
+\contentsline {section}{\numberline {4}Core Results}{4}{section.4}%
+\contentsline {subsection}{\numberline {4.1}Gate Failure Tests: Eight Negative Contracts}{4}{subsection.4.1}%
+\contentsline {subsection}{\numberline {4.2}Ground-Truth Corpus: Hand-Computed Oracle Values}{5}{subsection.4.2}%
+\contentsline {subsection}{\numberline {4.3}Prediction Anti-Leakage: Temporal Integrity}{5}{subsection.4.3}%
+\contentsline {subsection}{\numberline {4.4}OCEL Many-to-Many: Flattening Loss as a Measurement}{6}{subsection.4.4}%
+\contentsline {section}{\numberline {5}Benchmark Results}{6}{section.5}%
+\contentsline {subsection}{\numberline {5.1}Methodology}{6}{subsection.5.1}%
+\contentsline {subsection}{\numberline {5.2}Tier 1 Discovery Algorithms}{6}{subsection.5.2}%
+\contentsline {subsection}{\numberline {5.3}Analytics Operations}{7}{subsection.5.3}%
+\contentsline {subsection}{\numberline {5.4}Streaming vs.\ Batch Parity Overhead}{7}{subsection.5.4}%
+\contentsline {subsection}{\numberline {5.5}Prediction Baseline Comparison}{8}{subsection.5.5}%
+\contentsline {subsection}{\numberline {5.6}OCEL Flattening Throughput}{8}{subsection.5.6}%
+\contentsline {section}{\numberline {6}The Algorithm Weakness Matrix}{8}{section.6}%
+\contentsline {section}{\numberline {7}Type System Refactoring: PackedKeyTable and Dense Kernel}{9}{section.7}%
+\contentsline {subsection}{\numberline {7.1}Renamed Types}{9}{subsection.7.1}%
+\contentsline {subsection}{\numberline {7.2}New Modules}{10}{subsection.7.2}%
+\contentsline {section}{\numberline {8}The Epistemological Position}{10}{section.8}%
+\contentsline {paragraph}{Before.}{10}{section.8}%
+\contentsline {paragraph}{After.}{10}{section.8}%
+\contentsline {subsection}{\numberline {8.1}The Hierarchy of Proof}{10}{subsection.8.1}%
+\contentsline {subsection}{\numberline {8.2}On the Measurement of Dishonesty}{11}{subsection.8.2}%
+\contentsline {section}{\numberline {9}Streaming Batch Equivalence: The Enterprise Deployment Problem}{11}{section.9}%
+\contentsline {section}{\numberline {10}Related Work}{12}{section.10}%
+\contentsline {subsection}{\numberline {10.1}Metamorphic Testing in Scientific Software}{12}{subsection.10.1}%
+\contentsline {subsection}{\numberline {10.2}Mutation Testing and Adequacy}{12}{subsection.10.2}%
+\contentsline {subsection}{\numberline {10.3}Process Discovery Benchmarking}{12}{subsection.10.3}%
+\contentsline {section}{\numberline {11}Conclusion}{12}{section.11}%
+\contentsline {paragraph}{1. Weakness documentation is a scientific obligation.}{13}{Item.11}%
+\contentsline {paragraph}{2. Streaming/batch equivalence is a deployment invariant.}{13}{Item.11}%
+\contentsline {paragraph}{3. Oracle rank determines epistemic value.}{13}{Item.11}%

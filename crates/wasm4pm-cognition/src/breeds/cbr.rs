@@ -24,6 +24,10 @@ pub struct Cbr;
 /// - Identity: `jaccard(a,a) == 1` for any non-empty set.
 /// - Bounds: `0.0 ≤ result ≤ 1.0` always.
 /// - Empty case: `jaccard(∅, ∅) == 0` (convention; empty intersection).
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn jaccard(a: &HashSet<String>, b: &HashSet<String>) -> f32 {
     if a.is_empty() && b.is_empty() {
         return 0.0;

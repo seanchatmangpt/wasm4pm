@@ -1,5 +1,5 @@
 {
-  "version": "26.5.13",
+  "version": "26.5.19",
   "name": "wasm4pm-monorepo",
   "description": "High-performance process mining monorepo with WASM acceleration",
   "license": "MIT",
@@ -11,8 +11,8 @@
   "packageManager": "pnpm@9.15.0",
   "scripts": {
     "build": "pnpm -r build",
-    "test": "pnpm -r test",
-    "test:coverage": "pnpm -r --filter './packages/*' run test:coverage && cd wasm4pm && npm run test:coverage",
+    "test": "pnpm -r --parallel test",
+    "test:coverage": "pnpm -r --parallel --filter './packages/*' run test:coverage && cd wasm4pm && npm run test:coverage",
     "lint": "pnpm -r lint",
     "clean": "pnpm -r clean && rm -rf node_modules",
     "release": "pnpm run build && pnpm run test && pnpm run lint",
@@ -38,8 +38,8 @@
     "health": "node scripts/health.mjs",
     "tps:check": "node scripts/tps-pipeline-check.mjs",
     "tps:check:json": "node scripts/tps-pipeline-check.mjs --json",
-    "docs:lint": "markdownlint '**/*.md' --config .markdownlint.json --ignore node_modules --ignore docs/archive",
-    "docs:link-check": "find . -name '*.md' -not -path '*/node_modules/*' -not -path '*/docs/archive/*' -print0 | xargs -0 markdown-link-check --config .mlc.config.json",
+    "docs:lint": "markdownlint '**/*.md' --config .markdownlint.json --ignore node_modules --ignore docs_quarantine --ignore docs/archive",
+    "docs:link-check": "find . -name '*.md' -not -path '*/node_modules/*' -not -path '*/docs_quarantine/*' -not -path '*/docs/archive/*' -print0 | xargs -0 npx markdown-link-check --config .mlc.config.json",
     "docs:check": "pnpm run docs:lint && pnpm run docs:link-check",
     "postinstall": "node scripts/check-engines.mjs",
     "build:browser": "bash scripts/build-profile.sh browser",
@@ -48,14 +48,15 @@
     "build:iot": "bash scripts/build-profile.sh iot",
     "build:cloud": "bash scripts/build-profile.sh cloud",
     "build:profiles": "bash scripts/build-all-profiles.sh",
-    "verify:profiles": "node scripts/verify-profiles.js"
+    "verify:profiles": "node scripts/verify-profiles.js",
+    "bench:real": "node benchmarks/real_data_wasm_bench.js"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^1.6.0",
     "typescript": "^5.3.3",
     "prettier": "^3.1.1"
   },
-  "_id": "wasm4pm-monorepo@26.5.13",
+  "_id": "wasm4pm-monorepo@26.5.19",
   "extraneous": false,
   "path": "/Users/sac/wasm4pm",
   "_dependencies": {},
@@ -70,31 +71,20 @@
     "extraneous: @babel/runtime@7.29.2 /Users/sac/wasm4pm/node_modules/@babel/runtime",
     "extraneous: @faker-js/faker@10.4.0 /Users/sac/wasm4pm/node_modules/@faker-js/faker",
     "extraneous: @hono/node-server@1.19.12 /Users/sac/wasm4pm/node_modules/@hono/node-server",
-    "extraneous: @jest/schemas@29.6.3 /Users/sac/wasm4pm/node_modules/@jest/schemas",
     "extraneous: @modelcontextprotocol/sdk@1.29.0 /Users/sac/wasm4pm/node_modules/@modelcontextprotocol/sdk",
     "extraneous: @opentelemetry/api@1.9.0 /Users/sac/wasm4pm/node_modules/@opentelemetry/api",
-    "extraneous: @polka/url@1.0.0-next.29 /Users/sac/wasm4pm/node_modules/@polka/url",
-    "extraneous: @sinclair/typebox@0.27.10 /Users/sac/wasm4pm/node_modules/@sinclair/typebox",
     "extraneous: @standard-schema/spec@1.1.0 /Users/sac/wasm4pm/node_modules/@standard-schema/spec",
     "extraneous: @testing-library/dom@9.3.4 /Users/sac/wasm4pm/node_modules/@testing-library/dom",
     "extraneous: @testing-library/jest-dom@6.9.1 /Users/sac/wasm4pm/node_modules/@testing-library/jest-dom",
     "extraneous: @types/aria-query@5.0.4 /Users/sac/wasm4pm/node_modules/@types/aria-query",
-    "extraneous: @types/node@20.19.39 /Users/sac/wasm4pm/node_modules/@types/node",
     "extraneous: @types/uuid@9.0.8 /Users/sac/wasm4pm/node_modules/@types/uuid",
     "extraneous: @vercel/oidc@3.2.0 /Users/sac/wasm4pm/node_modules/@vercel/oidc",
-    "extraneous: @vitest/browser@1.6.1 /Users/sac/wasm4pm/node_modules/@vitest/browser",
-    "extraneous: @vitest/utils@1.6.1 /Users/sac/wasm4pm/node_modules/@vitest/utils",
-    "extraneous: @wasm4pm/contracts@26.5.13 /Users/sac/wasm4pm/node_modules/@wasm4pm/contracts",
-    "extraneous: @wasm4pm/testing@26.4.17 /Users/sac/wasm4pm/node_modules/@wasm4pm/testing",
     "extraneous: accepts@2.0.0 /Users/sac/wasm4pm/node_modules/accepts",
-    "extraneous: acorn-walk@8.3.5 /Users/sac/wasm4pm/node_modules/acorn-walk",
-    "extraneous: acorn@8.16.0 /Users/sac/wasm4pm/node_modules/acorn",
     "extraneous: ai@6.0.168 /Users/sac/wasm4pm/node_modules/ai",
     "extraneous: ajv-formats@3.0.1 /Users/sac/wasm4pm/node_modules/ajv-formats",
     "extraneous: ajv@8.18.0 /Users/sac/wasm4pm/node_modules/ajv",
     "extraneous: ansi-regex@5.0.1 /Users/sac/wasm4pm/node_modules/ansi-regex",
     "extraneous: ansi-sequence-parser@1.1.3 /Users/sac/wasm4pm/node_modules/ansi-sequence-parser",
-    "extraneous: ansi-styles@5.2.0 /Users/sac/wasm4pm/node_modules/ansi-styles",
     "extraneous: aria-query@5.1.3 /Users/sac/wasm4pm/node_modules/aria-query",
     "extraneous: array-buffer-byte-length@1.0.2 /Users/sac/wasm4pm/node_modules/array-buffer-byte-length",
     "extraneous: available-typed-arrays@1.0.7 /Users/sac/wasm4pm/node_modules/available-typed-arrays",
@@ -109,20 +99,17 @@
     "extraneous: citty@0.1.6 /Users/sac/wasm4pm/node_modules/citty",
     "extraneous: color-convert@2.0.1 /Users/sac/wasm4pm/node_modules/color-convert",
     "extraneous: color-name@1.1.4 /Users/sac/wasm4pm/node_modules/color-name",
-    "extraneous: confbox@0.1.8 /Users/sac/wasm4pm/node_modules/confbox",
     "extraneous: consola@3.4.2 /Users/sac/wasm4pm/node_modules/consola",
     "extraneous: content-disposition@1.0.1 /Users/sac/wasm4pm/node_modules/content-disposition",
     "extraneous: content-type@1.0.5 /Users/sac/wasm4pm/node_modules/content-type",
     "extraneous: cookie-signature@1.2.2 /Users/sac/wasm4pm/node_modules/cookie-signature",
     "extraneous: cookie@0.7.2 /Users/sac/wasm4pm/node_modules/cookie",
     "extraneous: cors@2.8.6 /Users/sac/wasm4pm/node_modules/cors",
-    "extraneous: cross-spawn@7.0.6 /Users/sac/wasm4pm/node_modules/cross-spawn",
     "extraneous: css.escape@1.5.1 /Users/sac/wasm4pm/node_modules/css.escape",
     "extraneous: deep-equal@2.2.3 /Users/sac/wasm4pm/node_modules/deep-equal",
     "extraneous: define-data-property@1.1.4 /Users/sac/wasm4pm/node_modules/define-data-property",
     "extraneous: define-properties@1.2.1 /Users/sac/wasm4pm/node_modules/define-properties",
     "extraneous: depd@2.0.0 /Users/sac/wasm4pm/node_modules/depd",
-    "extraneous: diff-sequences@29.6.3 /Users/sac/wasm4pm/node_modules/diff-sequences",
     "extraneous: dom-accessibility-api@0.5.16 /Users/sac/wasm4pm/node_modules/dom-accessibility-api",
     "extraneous: dunder-proto@1.0.1 /Users/sac/wasm4pm/node_modules/dunder-proto",
     "extraneous: ee-first@1.1.1 /Users/sac/wasm4pm/node_modules/ee-first",
@@ -135,7 +122,6 @@
     "extraneous: etag@1.8.1 /Users/sac/wasm4pm/node_modules/etag",
     "extraneous: eventsource-parser@3.0.6 /Users/sac/wasm4pm/node_modules/eventsource-parser",
     "extraneous: eventsource@3.0.7 /Users/sac/wasm4pm/node_modules/eventsource",
-    "extraneous: execa@8.0.1 /Users/sac/wasm4pm/node_modules/execa",
     "extraneous: express-rate-limit@8.3.2 /Users/sac/wasm4pm/node_modules/express-rate-limit",
     "extraneous: express@5.2.1 /Users/sac/wasm4pm/node_modules/express",
     "extraneous: fast-deep-equal@3.1.3 /Users/sac/wasm4pm/node_modules/fast-deep-equal",
@@ -146,10 +132,8 @@
     "extraneous: fresh@2.0.0 /Users/sac/wasm4pm/node_modules/fresh",
     "extraneous: function-bind@1.1.2 /Users/sac/wasm4pm/node_modules/function-bind",
     "extraneous: functions-have-names@1.2.3 /Users/sac/wasm4pm/node_modules/functions-have-names",
-    "extraneous: get-func-name@2.0.2 /Users/sac/wasm4pm/node_modules/get-func-name",
     "extraneous: get-intrinsic@1.3.0 /Users/sac/wasm4pm/node_modules/get-intrinsic",
     "extraneous: get-proto@1.0.1 /Users/sac/wasm4pm/node_modules/get-proto",
-    "extraneous: get-stream@8.0.1 /Users/sac/wasm4pm/node_modules/get-stream",
     "extraneous: gopd@1.2.0 /Users/sac/wasm4pm/node_modules/gopd",
     "extraneous: has-bigints@1.1.0 /Users/sac/wasm4pm/node_modules/has-bigints",
     "extraneous: has-property-descriptors@1.0.2 /Users/sac/wasm4pm/node_modules/has-property-descriptors",
@@ -158,7 +142,6 @@
     "extraneous: hasown@2.0.2 /Users/sac/wasm4pm/node_modules/hasown",
     "extraneous: hono@4.12.10 /Users/sac/wasm4pm/node_modules/hono",
     "extraneous: http-errors@2.0.1 /Users/sac/wasm4pm/node_modules/http-errors",
-    "extraneous: human-signals@5.0.0 /Users/sac/wasm4pm/node_modules/human-signals",
     "extraneous: iconv-lite@0.7.2 /Users/sac/wasm4pm/node_modules/iconv-lite",
     "extraneous: indent-string@4.0.0 /Users/sac/wasm4pm/node_modules/indent-string",
     "extraneous: internal-slot@1.1.0 /Users/sac/wasm4pm/node_modules/internal-slot",
@@ -176,56 +159,40 @@
     "extraneous: is-regex@1.2.1 /Users/sac/wasm4pm/node_modules/is-regex",
     "extraneous: is-set@2.0.3 /Users/sac/wasm4pm/node_modules/is-set",
     "extraneous: is-shared-array-buffer@1.0.4 /Users/sac/wasm4pm/node_modules/is-shared-array-buffer",
-    "extraneous: is-stream@3.0.0 /Users/sac/wasm4pm/node_modules/is-stream",
     "extraneous: is-string@1.1.1 /Users/sac/wasm4pm/node_modules/is-string",
     "extraneous: is-symbol@1.1.1 /Users/sac/wasm4pm/node_modules/is-symbol",
     "extraneous: is-weakmap@2.0.2 /Users/sac/wasm4pm/node_modules/is-weakmap",
     "extraneous: is-weakset@2.0.4 /Users/sac/wasm4pm/node_modules/is-weakset",
     "extraneous: isarray@2.0.5 /Users/sac/wasm4pm/node_modules/isarray",
-    "extraneous: isexe@2.0.0 /Users/sac/wasm4pm/node_modules/isexe",
     "extraneous: jose@6.2.2 /Users/sac/wasm4pm/node_modules/jose",
     "extraneous: json-schema-traverse@1.0.0 /Users/sac/wasm4pm/node_modules/json-schema-traverse",
     "extraneous: json-schema-typed@8.0.2 /Users/sac/wasm4pm/node_modules/json-schema-typed",
     "extraneous: json-schema@0.4.0 /Users/sac/wasm4pm/node_modules/json-schema",
     "extraneous: jsonc-parser@3.3.1 /Users/sac/wasm4pm/node_modules/jsonc-parser",
-    "extraneous: local-pkg@0.5.1 /Users/sac/wasm4pm/node_modules/local-pkg",
     "extraneous: lunr@2.3.9 /Users/sac/wasm4pm/node_modules/lunr",
     "extraneous: lz-string@1.5.0 /Users/sac/wasm4pm/node_modules/lz-string",
     "extraneous: marked@4.3.0 /Users/sac/wasm4pm/node_modules/marked",
     "extraneous: math-intrinsics@1.1.0 /Users/sac/wasm4pm/node_modules/math-intrinsics",
     "extraneous: media-typer@1.1.0 /Users/sac/wasm4pm/node_modules/media-typer",
     "extraneous: merge-descriptors@2.0.0 /Users/sac/wasm4pm/node_modules/merge-descriptors",
-    "extraneous: merge-stream@2.0.0 /Users/sac/wasm4pm/node_modules/merge-stream",
     "extraneous: mime-db@1.54.0 /Users/sac/wasm4pm/node_modules/mime-db",
     "extraneous: mime-types@3.0.2 /Users/sac/wasm4pm/node_modules/mime-types",
-    "extraneous: mimic-fn@4.0.0 /Users/sac/wasm4pm/node_modules/mimic-fn",
     "extraneous: min-indent@1.0.1 /Users/sac/wasm4pm/node_modules/min-indent",
-    "extraneous: mlly@1.8.2 /Users/sac/wasm4pm/node_modules/mlly",
-    "extraneous: mrmime@2.0.1 /Users/sac/wasm4pm/node_modules/mrmime",
     "extraneous: negotiator@1.0.0 /Users/sac/wasm4pm/node_modules/negotiator",
-    "extraneous: npm-run-path@5.3.0 /Users/sac/wasm4pm/node_modules/npm-run-path",
     "extraneous: object-assign@4.1.1 /Users/sac/wasm4pm/node_modules/object-assign",
     "extraneous: object-inspect@1.13.4 /Users/sac/wasm4pm/node_modules/object-inspect",
     "extraneous: object-is@1.1.6 /Users/sac/wasm4pm/node_modules/object-is",
     "extraneous: object-keys@1.1.1 /Users/sac/wasm4pm/node_modules/object-keys",
     "extraneous: object.assign@4.1.7 /Users/sac/wasm4pm/node_modules/object.assign",
     "extraneous: on-finished@2.4.1 /Users/sac/wasm4pm/node_modules/on-finished",
-    "extraneous: onetime@6.0.0 /Users/sac/wasm4pm/node_modules/onetime",
-    "extraneous: p-limit@5.0.0 /Users/sac/wasm4pm/node_modules/p-limit",
     "extraneous: parseurl@1.3.3 /Users/sac/wasm4pm/node_modules/parseurl",
-    "extraneous: path-key@3.1.1 /Users/sac/wasm4pm/node_modules/path-key",
     "extraneous: path-to-regexp@8.4.2 /Users/sac/wasm4pm/node_modules/path-to-regexp",
     "extraneous: pkce-challenge@5.0.1 /Users/sac/wasm4pm/node_modules/pkce-challenge",
-    "extraneous: pkg-types@1.3.1 /Users/sac/wasm4pm/node_modules/pkg-types",
-    "extraneous: playwright-core@1.59.1 /Users/sac/wasm4pm/node_modules/playwright-core",
-    "extraneous: playwright@1.59.1 /Users/sac/wasm4pm/node_modules/playwright",
     "extraneous: possible-typed-array-names@1.1.0 /Users/sac/wasm4pm/node_modules/possible-typed-array-names",
-    "extraneous: pretty-format@29.7.0 /Users/sac/wasm4pm/node_modules/pretty-format",
     "extraneous: proxy-addr@2.0.7 /Users/sac/wasm4pm/node_modules/proxy-addr",
     "extraneous: qs@6.14.2 /Users/sac/wasm4pm/node_modules/qs",
     "extraneous: range-parser@1.2.1 /Users/sac/wasm4pm/node_modules/range-parser",
     "extraneous: raw-body@3.0.2 /Users/sac/wasm4pm/node_modules/raw-body",
-    "extraneous: react-is@18.3.1 /Users/sac/wasm4pm/node_modules/react-is",
     "extraneous: readdirp@4.1.2 /Users/sac/wasm4pm/node_modules/readdirp",
     "extraneous: redent@3.0.0 /Users/sac/wasm4pm/node_modules/redent",
     "extraneous: regexp.prototype.flags@1.5.4 /Users/sac/wasm4pm/node_modules/regexp.prototype.flags",
@@ -238,41 +205,29 @@
     "extraneous: set-function-length@1.2.2 /Users/sac/wasm4pm/node_modules/set-function-length",
     "extraneous: set-function-name@2.0.2 /Users/sac/wasm4pm/node_modules/set-function-name",
     "extraneous: setprototypeof@1.2.0 /Users/sac/wasm4pm/node_modules/setprototypeof",
-    "extraneous: shebang-command@2.0.0 /Users/sac/wasm4pm/node_modules/shebang-command",
-    "extraneous: shebang-regex@3.0.0 /Users/sac/wasm4pm/node_modules/shebang-regex",
     "extraneous: shiki@0.14.7 /Users/sac/wasm4pm/node_modules/shiki",
     "extraneous: side-channel-list@1.0.0 /Users/sac/wasm4pm/node_modules/side-channel-list",
     "extraneous: side-channel-map@1.0.1 /Users/sac/wasm4pm/node_modules/side-channel-map",
     "extraneous: side-channel-weakmap@1.0.2 /Users/sac/wasm4pm/node_modules/side-channel-weakmap",
     "extraneous: side-channel@1.1.0 /Users/sac/wasm4pm/node_modules/side-channel",
-    "extraneous: signal-exit@4.1.0 /Users/sac/wasm4pm/node_modules/signal-exit",
-    "extraneous: sirv@2.0.4 /Users/sac/wasm4pm/node_modules/sirv",
     "extraneous: smol-toml@1.6.1 /Users/sac/wasm4pm/node_modules/smol-toml",
     "extraneous: statuses@2.0.2 /Users/sac/wasm4pm/node_modules/statuses",
     "extraneous: stop-iteration-iterator@1.1.0 /Users/sac/wasm4pm/node_modules/stop-iteration-iterator",
-    "extraneous: strip-final-newline@3.0.0 /Users/sac/wasm4pm/node_modules/strip-final-newline",
     "extraneous: strip-indent@3.0.0 /Users/sac/wasm4pm/node_modules/strip-indent",
     "extraneous: toidentifier@1.0.1 /Users/sac/wasm4pm/node_modules/toidentifier",
     "extraneous: toml@3.0.0 /Users/sac/wasm4pm/node_modules/toml",
-    "extraneous: totalist@3.0.1 /Users/sac/wasm4pm/node_modules/totalist",
-    "extraneous: type-detect@4.1.0 /Users/sac/wasm4pm/node_modules/type-detect",
     "extraneous: type-is@2.0.1 /Users/sac/wasm4pm/node_modules/type-is",
     "extraneous: typedoc@0.25.13 /Users/sac/wasm4pm/node_modules/typedoc",
-    "extraneous: ufo@1.6.3 /Users/sac/wasm4pm/node_modules/ufo",
-    "extraneous: undici-types@6.21.0 /Users/sac/wasm4pm/node_modules/undici-types",
     "extraneous: unpipe@1.0.0 /Users/sac/wasm4pm/node_modules/unpipe",
     "extraneous: uuid@9.0.1 /Users/sac/wasm4pm/node_modules/uuid",
     "extraneous: vary@1.1.2 /Users/sac/wasm4pm/node_modules/vary",
     "extraneous: vite-plugin-wasm@3.6.0 /Users/sac/wasm4pm/node_modules/vite-plugin-wasm",
-    "extraneous: vitest@1.6.1 /Users/sac/wasm4pm/node_modules/vitest",
     "extraneous: vscode-oniguruma@1.7.0 /Users/sac/wasm4pm/node_modules/vscode-oniguruma",
     "extraneous: vscode-textmate@8.0.0 /Users/sac/wasm4pm/node_modules/vscode-textmate",
-    "extraneous: wasm4pm-cognition@26.4.28 /Users/sac/wasm4pm/node_modules/wasm4pm-cognition",
+    "extraneous: wasm4pm-cognition@26.5.18 /Users/sac/wasm4pm/node_modules/wasm4pm-cognition",
     "extraneous: which-boxed-primitive@1.1.1 /Users/sac/wasm4pm/node_modules/which-boxed-primitive",
     "extraneous: which-collection@1.0.2 /Users/sac/wasm4pm/node_modules/which-collection",
     "extraneous: which-typed-array@1.1.20 /Users/sac/wasm4pm/node_modules/which-typed-array",
-    "extraneous: which@2.0.2 /Users/sac/wasm4pm/node_modules/which",
-    "extraneous: yocto-queue@1.2.2 /Users/sac/wasm4pm/node_modules/yocto-queue",
     "extraneous: zod-to-json-schema@3.25.2 /Users/sac/wasm4pm/node_modules/zod-to-json-schema",
     "extraneous: zod@3.25.76 /Users/sac/wasm4pm/node_modules/zod"
   ],
@@ -2109,45 +2064,6 @@
         "extraneous: @hono/node-server@1.19.12 /Users/sac/wasm4pm/node_modules/@hono/node-server"
       ]
     },
-    "@jest/schemas": {
-      "version": "29.6.3",
-      "resolved": "https://registry.npmjs.org/@jest/schemas/-/schemas-29.6.3.tgz",
-      "overridden": false,
-      "name": "@jest/schemas",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/jestjs/jest.git",
-        "directory": "packages/jest-schemas"
-      },
-      "license": "MIT",
-      "main": "./build/index.js",
-      "types": "./build/index.d.ts",
-      "exports": {
-        ".": {
-          "types": "./build/index.d.ts",
-          "default": "./build/index.js"
-        },
-        "./package.json": "./package.json"
-      },
-      "engines": {
-        "node": "^14.15.0 || ^16.10.0 || >=18.0.0"
-      },
-      "publishConfig": {
-        "access": "public"
-      },
-      "gitHead": "fb7d95c8af6e0d65a8b65348433d8a0ea0725b5b",
-      "_id": "@jest/schemas@29.6.3",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/@jest/schemas",
-      "_dependencies": {
-        "@sinclair/typebox": "^0.27.8"
-      },
-      "devDependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: @jest/schemas@29.6.3 /Users/sac/wasm4pm/node_modules/@jest/schemas"
-      ]
-    },
     "@modelcontextprotocol/sdk": {
       "version": "1.29.0",
       "overridden": false,
@@ -2439,105 +2355,6 @@
       "peerDependencies": {},
       "problems": [
         "extraneous: @opentelemetry/api@1.9.0 /Users/sac/wasm4pm/node_modules/@opentelemetry/api"
-      ]
-    },
-    "@polka/url": {
-      "version": "1.0.0-next.29",
-      "overridden": false,
-      "name": "@polka/url",
-      "repository": "lukeed/polka",
-      "description": "Super fast, memoized `req.url` parser",
-      "module": "build.mjs",
-      "types": "index.d.ts",
-      "main": "build.js",
-      "license": "MIT",
-      "exports": {
-        ".": {
-          "types": "./index.d.ts",
-          "import": "./build.mjs",
-          "require": "./build.js"
-        },
-        "./package.json": "./package.json"
-      },
-      "files": [
-        "build.*",
-        "index.d.*"
-      ],
-      "author": {
-        "name": "Luke Edwards",
-        "email": "luke@lukeed.com",
-        "url": "https://lukeed.com"
-      },
-      "publishConfig": {
-        "access": "public"
-      },
-      "_id": "@polka/url@1.0.0-next.29",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/@polka/url",
-      "_dependencies": {},
-      "devDependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: @polka/url@1.0.0-next.29 /Users/sac/wasm4pm/node_modules/@polka/url"
-      ]
-    },
-    "@sinclair/typebox": {
-      "version": "0.27.10",
-      "resolved": "https://registry.npmjs.org/@sinclair/typebox/-/typebox-0.27.10.tgz",
-      "overridden": false,
-      "name": "@sinclair/typebox",
-      "description": "JSONSchema Type Builder with Static Type Resolution for TypeScript",
-      "keywords": [
-        "typescript",
-        "json-schema",
-        "validate",
-        "typecheck"
-      ],
-      "author": "sinclairzx81",
-      "license": "MIT",
-      "main": "./typebox.js",
-      "types": "./typebox.d.ts",
-      "exports": {
-        "./compiler": "./compiler/index.js",
-        "./errors": "./errors/index.js",
-        "./system": "./system/index.js",
-        "./value": "./value/index.js",
-        ".": "./typebox.js"
-      },
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/sinclairzx81/typebox-legacy"
-      },
-      "scripts": {
-        "clean": "hammer task clean",
-        "format": "hammer task format",
-        "start": "hammer task start",
-        "test": "hammer task test",
-        "benchmark": "hammer task benchmark",
-        "build": "hammer task build",
-        "build:native": "hammer task build_native",
-        "publish": "hammer task publish"
-      },
-      "devDependencies": {
-        "@sinclair/hammer": "^0.17.1",
-        "@typescript/native-preview": "^7.0.0-dev.20260203.1",
-        "@types/chai": "^4.3.3",
-        "@types/mocha": "^9.1.1",
-        "@types/node": "^18.19.130",
-        "ajv": "^8.12.0",
-        "ajv-formats": "^2.1.1",
-        "chai": "^4.3.6",
-        "mocha": "^9.2.2",
-        "prettier": "^2.7.1",
-        "typescript": "5.0.2"
-      },
-      "_id": "@sinclair/typebox@0.27.10",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/@sinclair/typebox",
-      "_dependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: @sinclair/typebox@0.27.10 /Users/sac/wasm4pm/node_modules/@sinclair/typebox"
       ]
     },
     "@standard-schema/spec": {
@@ -2922,154 +2739,6 @@
         "extraneous: @types/aria-query@5.0.4 /Users/sac/wasm4pm/node_modules/@types/aria-query"
       ]
     },
-    "@types/node": {
-      "version": "20.19.39",
-      "overridden": false,
-      "name": "@types/node",
-      "description": "TypeScript definitions for node",
-      "homepage": "https://github.com/DefinitelyTyped/DefinitelyTyped/tree/master/types/node",
-      "license": "MIT",
-      "contributors": [
-        {
-          "name": "Microsoft TypeScript",
-          "githubUsername": "Microsoft",
-          "url": "https://github.com/Microsoft"
-        },
-        {
-          "name": "Alberto Schiabel",
-          "githubUsername": "jkomyno",
-          "url": "https://github.com/jkomyno"
-        },
-        {
-          "name": "Andrew Makarov",
-          "githubUsername": "r3nya",
-          "url": "https://github.com/r3nya"
-        },
-        {
-          "name": "Benjamin Toueg",
-          "githubUsername": "btoueg",
-          "url": "https://github.com/btoueg"
-        },
-        {
-          "name": "David Junger",
-          "githubUsername": "touffy",
-          "url": "https://github.com/touffy"
-        },
-        {
-          "name": "Mohsen Azimi",
-          "githubUsername": "mohsen1",
-          "url": "https://github.com/mohsen1"
-        },
-        {
-          "name": "Nikita Galkin",
-          "githubUsername": "galkin",
-          "url": "https://github.com/galkin"
-        },
-        {
-          "name": "Sebastian Silbermann",
-          "githubUsername": "eps1lon",
-          "url": "https://github.com/eps1lon"
-        },
-        {
-          "name": "Wilco Bakker",
-          "githubUsername": "WilcoBakker",
-          "url": "https://github.com/WilcoBakker"
-        },
-        {
-          "name": "Marcin Kopacz",
-          "githubUsername": "chyzwar",
-          "url": "https://github.com/chyzwar"
-        },
-        {
-          "name": "Trivikram Kamat",
-          "githubUsername": "trivikr",
-          "url": "https://github.com/trivikr"
-        },
-        {
-          "name": "Junxiao Shi",
-          "githubUsername": "yoursunny",
-          "url": "https://github.com/yoursunny"
-        },
-        {
-          "name": "Ilia Baryshnikov",
-          "githubUsername": "qwelias",
-          "url": "https://github.com/qwelias"
-        },
-        {
-          "name": "ExE Boss",
-          "githubUsername": "ExE-Boss",
-          "url": "https://github.com/ExE-Boss"
-        },
-        {
-          "name": "Piotr Błażejewicz",
-          "githubUsername": "peterblazejewicz",
-          "url": "https://github.com/peterblazejewicz"
-        },
-        {
-          "name": "Anna Henningsen",
-          "githubUsername": "addaleax",
-          "url": "https://github.com/addaleax"
-        },
-        {
-          "name": "Victor Perin",
-          "githubUsername": "victorperin",
-          "url": "https://github.com/victorperin"
-        },
-        {
-          "name": "NodeJS Contributors",
-          "githubUsername": "NodeJS",
-          "url": "https://github.com/NodeJS"
-        },
-        {
-          "name": "Linus Unnebäck",
-          "githubUsername": "LinusU",
-          "url": "https://github.com/LinusU"
-        },
-        {
-          "name": "wafuwafu13",
-          "githubUsername": "wafuwafu13",
-          "url": "https://github.com/wafuwafu13"
-        },
-        {
-          "name": "Matteo Collina",
-          "githubUsername": "mcollina",
-          "url": "https://github.com/mcollina"
-        },
-        {
-          "name": "Dmitry Semigradsky",
-          "githubUsername": "Semigradsky",
-          "url": "https://github.com/Semigradsky"
-        }
-      ],
-      "main": "",
-      "types": "index.d.ts",
-      "typesVersions": {
-        "<=5.6": {
-          "*": [
-            "ts5.6/*"
-          ]
-        }
-      },
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/DefinitelyTyped/DefinitelyTyped.git",
-        "directory": "types/node"
-      },
-      "scripts": {},
-      "peerDependencies": {},
-      "typesPublisherContentHash": "871323d2249864178e2cf14d45e1136232baed800bb0184748818383371a02fb",
-      "typeScriptVersion": "5.3",
-      "_id": "@types/node@20.19.39",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/@types/node",
-      "_dependencies": {
-        "undici-types": "~6.21.0"
-      },
-      "devDependencies": {},
-      "problems": [
-        "extraneous: @types/node@20.19.39 /Users/sac/wasm4pm/node_modules/@types/node"
-      ]
-    },
     "@types/uuid": {
       "version": "9.0.8",
       "overridden": false,
@@ -3194,100 +2863,6 @@
         "extraneous: @vercel/oidc@3.2.0 /Users/sac/wasm4pm/node_modules/@vercel/oidc"
       ]
     },
-    "@vitest/browser": {
-      "version": "1.6.1",
-      "overridden": false,
-      "name": "@vitest/browser",
-      "type": "module",
-      "description": "Browser running for Vitest",
-      "license": "MIT",
-      "funding": {
-        "url": "https://opencollective.com/vitest"
-      },
-      "homepage": "https://github.com/vitest-dev/vitest/tree/main/packages/browser#readme",
-      "repository": {
-        "type": "git",
-        "url": "git+https://github.com/vitest-dev/vitest.git",
-        "directory": "packages/browser"
-      },
-      "bugs": {
-        "url": "https://github.com/vitest-dev/vitest/issues"
-      },
-      "sideEffects": false,
-      "exports": {
-        ".": {
-          "types": "./dist/index.d.ts",
-          "default": "./dist/index.js"
-        },
-        "./providers": {
-          "types": "./providers.d.ts",
-          "default": "./dist/providers.js"
-        },
-        "./providers/webdriverio": {
-          "types": "./providers/webdriverio.d.ts"
-        },
-        "./providers/playwright": {
-          "types": "./providers/playwright.d.ts"
-        },
-        "./*": "./*"
-      },
-      "main": "./dist/index.js",
-      "module": "./dist/index.js",
-      "types": "./dist/index.d.ts",
-      "files": [
-        "*.d.ts",
-        "dist",
-        "providers"
-      ],
-      "peerDependencies": {
-        "playwright": "*",
-        "webdriverio": "*",
-        "vitest": "1.6.1"
-      },
-      "peerDependenciesMeta": {
-        "playwright": {
-          "optional": true
-        },
-        "safaridriver": {
-          "optional": true
-        },
-        "webdriverio": {
-          "optional": true
-        }
-      },
-      "devDependencies": {
-        "@types/ws": "^8.5.9",
-        "@wdio/protocols": "^8.29.7",
-        "periscopic": "^4.0.2",
-        "playwright": "^1.49.1",
-        "playwright-core": "^1.41.0",
-        "safaridriver": "^0.1.2",
-        "webdriverio": "^8.32.2",
-        "@vitest/ui": "1.6.1",
-        "@vitest/ws-client": "1.6.1",
-        "@vitest/runner": "1.6.1",
-        "vitest": "1.6.1"
-      },
-      "scripts": {
-        "build": "rimraf dist && pnpm build:node && pnpm build:client",
-        "build:client": "vite build src/client",
-        "build:node": "rollup -c",
-        "dev:client": "vite build src/client --watch",
-        "dev:node": "rollup -c --watch --watch.include 'src/node/**'",
-        "dev": "rimraf dist && pnpm run --stream '/^dev:/'"
-      },
-      "_id": "@vitest/browser@1.6.1",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/@vitest/browser",
-      "_dependencies": {
-        "magic-string": "^0.30.5",
-        "sirv": "^2.0.4",
-        "@vitest/utils": "1.6.1"
-      },
-      "problems": [
-        "extraneous: @vitest/browser@1.6.1 /Users/sac/wasm4pm/node_modules/@vitest/browser"
-      ]
-    },
     "@vitest/coverage-v8": {
       "version": "1.6.1",
       "resolved": "https://registry.npmjs.org/@vitest/coverage-v8/-/coverage-v8-1.6.1.tgz",
@@ -3367,229 +2942,6 @@
         "test-exclude": "^6.0.0"
       }
     },
-    "@vitest/utils": {
-      "version": "1.6.1",
-      "resolved": "https://registry.npmjs.org/@vitest/utils/-/utils-1.6.1.tgz",
-      "overridden": false,
-      "name": "@vitest/utils",
-      "type": "module",
-      "description": "Shared Vitest utility functions",
-      "license": "MIT",
-      "funding": {
-        "url": "https://opencollective.com/vitest"
-      },
-      "homepage": "https://github.com/vitest-dev/vitest/tree/main/packages/utils#readme",
-      "repository": {
-        "type": "git",
-        "url": "git+https://github.com/vitest-dev/vitest.git",
-        "directory": "packages/utils"
-      },
-      "bugs": {
-        "url": "https://github.com/vitest-dev/vitest/issues"
-      },
-      "sideEffects": false,
-      "exports": {
-        ".": {
-          "types": "./dist/index.d.ts",
-          "default": "./dist/index.js"
-        },
-        "./diff": {
-          "types": "./dist/diff.d.ts",
-          "default": "./dist/diff.js"
-        },
-        "./ast": {
-          "types": "./dist/ast.d.ts",
-          "default": "./dist/ast.js"
-        },
-        "./error": {
-          "types": "./dist/error.d.ts",
-          "default": "./dist/error.js"
-        },
-        "./helpers": {
-          "types": "./dist/helpers.d.ts",
-          "default": "./dist/helpers.js"
-        },
-        "./source-map": {
-          "types": "./dist/source-map.d.ts",
-          "default": "./dist/source-map.js"
-        },
-        "./*": "./*"
-      },
-      "main": "./dist/index.js",
-      "module": "./dist/index.js",
-      "types": "./dist/index.d.ts",
-      "typesVersions": {
-        "*": {
-          "source-map": [
-            "dist/source-map.d.ts"
-          ]
-        }
-      },
-      "files": [
-        "*.d.ts",
-        "dist"
-      ],
-      "devDependencies": {
-        "@jridgewell/trace-mapping": "^0.3.22",
-        "@types/estree": "^1.0.5",
-        "tinyhighlight": "^0.3.2"
-      },
-      "scripts": {
-        "build": "rimraf dist && rollup -c",
-        "dev": "rollup -c --watch"
-      },
-      "_id": "@vitest/utils@1.6.1",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/@vitest/utils",
-      "_dependencies": {
-        "diff-sequences": "^29.6.3",
-        "estree-walker": "^3.0.3",
-        "loupe": "^2.3.7",
-        "pretty-format": "^29.7.0"
-      },
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: @vitest/utils@1.6.1 /Users/sac/wasm4pm/node_modules/@vitest/utils"
-      ]
-    },
-    "@wasm4pm/contracts": {
-      "version": "26.5.13",
-      "resolved": "file:../../packages/contracts",
-      "overridden": false,
-      "name": "@wasm4pm/contracts",
-      "description": "Runtime contracts, receipts, and hash verification",
-      "type": "module",
-      "main": "./dist/index.js",
-      "types": "./dist/index.d.ts",
-      "exports": {
-        ".": {
-          "import": "./dist/index.js",
-          "types": "./dist/index.d.ts"
-        },
-        "./receipt": {
-          "import": "./dist/receipt.js",
-          "types": "./dist/receipt.d.ts"
-        },
-        "./hash": {
-          "import": "./dist/hash.js",
-          "types": "./dist/hash.d.ts"
-        },
-        "./receipt-builder": {
-          "import": "./dist/receipt-builder.js",
-          "types": "./dist/receipt-builder.d.ts"
-        },
-        "./validation": {
-          "import": "./dist/validation.js",
-          "types": "./dist/validation.d.ts"
-        },
-        "./plan": {
-          "import": "./dist/plan.js",
-          "types": "./dist/plan.d.ts"
-        },
-        "./status": {
-          "import": "./dist/status.js",
-          "types": "./dist/status.d.ts"
-        },
-        "./explain": {
-          "import": "./dist/explain.js",
-          "types": "./dist/explain.d.ts"
-        },
-        "./errors": {
-          "import": "./dist/errors.js",
-          "types": "./dist/errors.d.ts"
-        }
-      },
-      "files": [
-        "dist",
-        "src"
-      ],
-      "scripts": {
-        "build": "tsc",
-        "test": "vitest run",
-        "test:watch": "vitest --watch",
-        "test:coverage": "vitest --coverage",
-        "lint": "tsc --noEmit",
-        "clean": "rm -rf dist"
-      },
-      "devDependencies": {
-        "@types/node": "^20.10.0",
-        "@types/uuid": "^9.0.7",
-        "@vitest/coverage-v8": "^1.6.0",
-        "typescript": "^5.3.3",
-        "vitest": "^1.1.0"
-      },
-      "keywords": [
-        "contracts",
-        "receipts",
-        "hashing",
-        "blake3",
-        "verification"
-      ],
-      "author": "Sean Chatman",
-      "license": "SEE LICENSE IN LICENSE",
-      "_id": "@wasm4pm/contracts@26.5.13",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/@wasm4pm/contracts",
-      "_dependencies": {
-        "blake3": "^2.1.4",
-        "uuid": "^9.0.1"
-      },
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: @wasm4pm/contracts@26.5.13 /Users/sac/wasm4pm/node_modules/@wasm4pm/contracts"
-      ]
-    },
-    "@wasm4pm/testing": {
-      "version": "26.4.17",
-      "overridden": false,
-      "name": "@wasm4pm/testing",
-      "description": "Testing utilities and fixtures",
-      "type": "module",
-      "main": "./dist/index.js",
-      "types": "./dist/index.d.ts",
-      "exports": {
-        ".": {
-          "import": "./dist/index.js",
-          "types": "./dist/index.d.ts"
-        }
-      },
-      "files": [
-        "dist",
-        "src"
-      ],
-      "scripts": {
-        "build": "tsc",
-        "test": "vitest run",
-        "test:watch": "vitest --watch",
-        "test:coverage": "vitest --coverage",
-        "test:run": "vitest run",
-        "lint": "tsc --noEmit",
-        "clean": "rm -rf dist"
-      },
-      "devDependencies": {
-        "@types/node": "^20.10.0",
-        "@vitest/coverage-v8": "^1.6.0",
-        "typescript": "^5.3.3",
-        "vitest": "^1.1.0"
-      },
-      "keywords": [
-        "testing",
-        "fixtures",
-        "utilities"
-      ],
-      "author": "Sean Chatman",
-      "license": "SEE LICENSE IN LICENSE",
-      "_id": "@wasm4pm/testing@26.4.17",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/@wasm4pm/testing",
-      "_dependencies": {
-        "@wasm4pm/contracts": "workspace:*"
-      },
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: @wasm4pm/testing@26.4.17 /Users/sac/wasm4pm/node_modules/@wasm4pm/testing"
-      ]
-    },
     "accepts": {
       "version": "2.0.0",
       "overridden": false,
@@ -3643,127 +2995,6 @@
       "peerDependencies": {},
       "problems": [
         "extraneous: accepts@2.0.0 /Users/sac/wasm4pm/node_modules/accepts"
-      ]
-    },
-    "acorn-walk": {
-      "version": "8.3.5",
-      "resolved": "https://registry.npmjs.org/acorn-walk/-/acorn-walk-8.3.5.tgz",
-      "overridden": false,
-      "name": "acorn-walk",
-      "description": "ECMAScript (ESTree) AST walker",
-      "homepage": "https://github.com/acornjs/acorn",
-      "main": "dist/walk.js",
-      "types": "dist/walk.d.ts",
-      "module": "dist/walk.mjs",
-      "exports": {
-        ".": [
-          {
-            "import": "./dist/walk.mjs",
-            "require": "./dist/walk.js",
-            "default": "./dist/walk.js"
-          },
-          "./dist/walk.js"
-        ],
-        "./package.json": "./package.json"
-      },
-      "engines": {
-        "node": ">=0.4.0"
-      },
-      "maintainers": [
-        {
-          "name": "Marijn Haverbeke",
-          "email": "marijnh@gmail.com",
-          "web": "https://marijnhaverbeke.nl"
-        },
-        {
-          "name": "Ingvar Stepanyan",
-          "email": "me@rreverser.com",
-          "web": "https://rreverser.com/"
-        },
-        {
-          "name": "Adrian Heine",
-          "web": "http://adrianheine.de"
-        }
-      ],
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/acornjs/acorn.git"
-      },
-      "scripts": {
-        "prepare": "cd ..; npm run build:walk"
-      },
-      "license": "MIT",
-      "_id": "acorn-walk@8.3.5",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/acorn-walk",
-      "_dependencies": {
-        "acorn": "^8.11.0"
-      },
-      "devDependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: acorn-walk@8.3.5 /Users/sac/wasm4pm/node_modules/acorn-walk"
-      ]
-    },
-    "acorn": {
-      "version": "8.16.0",
-      "resolved": "https://registry.npmjs.org/acorn/-/acorn-8.16.0.tgz",
-      "overridden": false,
-      "name": "acorn",
-      "description": "ECMAScript parser",
-      "homepage": "https://github.com/acornjs/acorn",
-      "main": "dist/acorn.js",
-      "types": "dist/acorn.d.ts",
-      "module": "dist/acorn.mjs",
-      "exports": {
-        ".": [
-          {
-            "import": "./dist/acorn.mjs",
-            "require": "./dist/acorn.js",
-            "default": "./dist/acorn.js"
-          },
-          "./dist/acorn.js"
-        ],
-        "./package.json": "./package.json"
-      },
-      "engines": {
-        "node": ">=0.4.0"
-      },
-      "maintainers": [
-        {
-          "name": "Marijn Haverbeke",
-          "email": "marijnh@gmail.com",
-          "web": "https://marijnhaverbeke.nl"
-        },
-        {
-          "name": "Ingvar Stepanyan",
-          "email": "me@rreverser.com",
-          "web": "https://rreverser.com/"
-        },
-        {
-          "name": "Adrian Heine",
-          "web": "http://adrianheine.de"
-        }
-      ],
-      "repository": {
-        "type": "git",
-        "url": "git+https://github.com/acornjs/acorn.git"
-      },
-      "license": "MIT",
-      "scripts": {
-        "prepare": "cd ..; npm run build:main"
-      },
-      "bin": {
-        "acorn": "bin/acorn"
-      },
-      "_id": "acorn@8.16.0",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/acorn",
-      "_dependencies": {},
-      "devDependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: acorn@8.16.0 /Users/sac/wasm4pm/node_modules/acorn"
       ]
     },
     "ai": {
@@ -4223,70 +3454,6 @@
       "peerDependencies": {},
       "problems": [
         "extraneous: ansi-sequence-parser@1.1.3 /Users/sac/wasm4pm/node_modules/ansi-sequence-parser"
-      ]
-    },
-    "ansi-styles": {
-      "version": "5.2.0",
-      "resolved": "https://registry.npmjs.org/ansi-styles/-/ansi-styles-5.2.0.tgz",
-      "overridden": false,
-      "name": "ansi-styles",
-      "description": "ANSI escape codes for styling strings in the terminal",
-      "license": "MIT",
-      "repository": "chalk/ansi-styles",
-      "funding": {
-        "url": "https://github.com/chalk/ansi-styles?sponsor=1"
-      },
-      "author": {
-        "name": "Sindre Sorhus",
-        "email": "sindresorhus@gmail.com",
-        "url": "https://sindresorhus.com"
-      },
-      "engines": {
-        "node": ">=10"
-      },
-      "scripts": {
-        "test": "xo && ava && tsd",
-        "screenshot": "svg-term --command='node screenshot' --out=screenshot.svg --padding=3 --width=55 --height=3 --at=1000 --no-cursor"
-      },
-      "files": [
-        "index.js",
-        "index.d.ts"
-      ],
-      "keywords": [
-        "ansi",
-        "styles",
-        "color",
-        "colour",
-        "colors",
-        "terminal",
-        "console",
-        "cli",
-        "string",
-        "tty",
-        "escape",
-        "formatting",
-        "rgb",
-        "256",
-        "shell",
-        "xterm",
-        "log",
-        "logging",
-        "command-line",
-        "text"
-      ],
-      "devDependencies": {
-        "ava": "^2.4.0",
-        "svg-term-cli": "^2.1.1",
-        "tsd": "^0.14.0",
-        "xo": "^0.37.1"
-      },
-      "_id": "ansi-styles@5.2.0",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/ansi-styles",
-      "_dependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: ansi-styles@5.2.0 /Users/sac/wasm4pm/node_modules/ansi-styles"
       ]
     },
     "aria-query": {
@@ -5363,102 +4530,6 @@
         "extraneous: color-name@1.1.4 /Users/sac/wasm4pm/node_modules/color-name"
       ]
     },
-    "confbox": {
-      "version": "0.1.8",
-      "resolved": "https://registry.npmjs.org/confbox/-/confbox-0.1.8.tgz",
-      "overridden": false,
-      "name": "confbox",
-      "description": "Compact and high quality YAML, TOML, JSONC and JSON5 parsers",
-      "keywords": [
-        "yaml",
-        "toml",
-        "jsonc",
-        "json5",
-        "unjs",
-        "config"
-      ],
-      "repository": "unjs/confbox",
-      "license": "MIT",
-      "sideEffects": false,
-      "type": "module",
-      "exports": {
-        ".": {
-          "types": "./dist/index.d.ts",
-          "import": "./dist/index.mjs",
-          "require": "./dist/index.cjs"
-        },
-        "./json5": {
-          "types": "./dist/json5.d.ts",
-          "import": "./dist/json5.mjs",
-          "require": "./dist/json5.cjs"
-        },
-        "./jsonc": {
-          "types": "./dist/jsonc.d.ts",
-          "import": "./dist/jsonc.mjs",
-          "require": "./dist/jsonc.cjs"
-        },
-        "./toml": {
-          "types": "./dist/toml.d.ts",
-          "import": "./dist/toml.mjs",
-          "require": "./dist/toml.cjs"
-        },
-        "./yaml": {
-          "types": "./dist/yaml.d.ts",
-          "import": "./dist/yaml.mjs",
-          "require": "./dist/yaml.cjs"
-        }
-      },
-      "main": "./dist/index.cjs",
-      "module": "./dist/index.mjs",
-      "types": "./dist/index.d.ts",
-      "files": [
-        "dist",
-        "*.d.ts"
-      ],
-      "scripts": {
-        "build": "unbuild",
-        "dev": "vitest dev --coverage",
-        "bench": "pnpm build && node test/bench.mjs",
-        "lint": "eslint && prettier -c src test",
-        "lint:fix": "eslint --fix && prettier -c src test -w",
-        "prepack": "pnpm build",
-        "release": "pnpm test && changelogen --release && npm publish && git push --follow-tags",
-        "test": "pnpm lint && pnpm test:types && vitest run --coverage",
-        "test:types": "tsc --noEmit --skipLibCheck"
-      },
-      "devDependencies": {
-        "@types/js-yaml": "^4.0.9",
-        "@types/node": "^22.7.4",
-        "@vitest/coverage-v8": "^2.1.2",
-        "automd": "^0.3.10",
-        "changelogen": "^0.5.7",
-        "detect-indent": "^7.0.1",
-        "eslint": "^9.12.0",
-        "eslint-config-unjs": "^0.4.1",
-        "jiti": "^2.3.1",
-        "js-toml": "^1.0.0",
-        "js-yaml": "^4.1.0",
-        "json5": "^2.2.3",
-        "jsonc-parser": "^3.3.1",
-        "mitata": "^1.0.10",
-        "prettier": "^3.3.3",
-        "smol-toml": "^1.3.0",
-        "toml": "^3.0.0",
-        "typescript": "^5.6.2",
-        "unbuild": "^2.0.0",
-        "vitest": "^2.1.2",
-        "yaml": "^2.5.1"
-      },
-      "packageManager": "pnpm@9.12.0",
-      "_id": "confbox@0.1.8",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/confbox",
-      "_dependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: confbox@0.1.8 /Users/sac/wasm4pm/node_modules/confbox"
-      ]
-    },
     "consola": {
       "version": "3.4.2",
       "overridden": false,
@@ -5844,88 +4915,6 @@
       "peerDependencies": {},
       "problems": [
         "extraneous: cors@2.8.6 /Users/sac/wasm4pm/node_modules/cors"
-      ]
-    },
-    "cross-spawn": {
-      "version": "7.0.6",
-      "resolved": "https://registry.npmjs.org/cross-spawn/-/cross-spawn-7.0.6.tgz",
-      "overridden": false,
-      "name": "cross-spawn",
-      "description": "Cross platform child_process#spawn and child_process#spawnSync",
-      "keywords": [
-        "spawn",
-        "spawnSync",
-        "windows",
-        "cross-platform",
-        "path-ext",
-        "shebang",
-        "cmd",
-        "execute"
-      ],
-      "author": "André Cruz <andre@moxy.studio>",
-      "homepage": "https://github.com/moxystudio/node-cross-spawn",
-      "repository": {
-        "type": "git",
-        "url": "git@github.com:moxystudio/node-cross-spawn.git"
-      },
-      "license": "MIT",
-      "main": "index.js",
-      "files": [
-        "lib"
-      ],
-      "scripts": {
-        "lint": "eslint .",
-        "test": "jest --env node --coverage",
-        "prerelease": "npm t && npm run lint",
-        "release": "standard-version",
-        "postrelease": "git push --follow-tags origin HEAD && npm publish"
-      },
-      "husky": {
-        "hooks": {
-          "commit-msg": "commitlint -E HUSKY_GIT_PARAMS",
-          "pre-commit": "lint-staged"
-        }
-      },
-      "lint-staged": {
-        "*.js": [
-          "eslint --fix",
-          "git add"
-        ]
-      },
-      "commitlint": {
-        "extends": [
-          "@commitlint/config-conventional"
-        ]
-      },
-      "devDependencies": {
-        "@commitlint/cli": "^8.1.0",
-        "@commitlint/config-conventional": "^8.1.0",
-        "babel-core": "^6.26.3",
-        "babel-jest": "^24.9.0",
-        "babel-preset-moxy": "^3.1.0",
-        "eslint": "^5.16.0",
-        "eslint-config-moxy": "^7.1.0",
-        "husky": "^3.0.5",
-        "jest": "^24.9.0",
-        "lint-staged": "^9.2.5",
-        "mkdirp": "^0.5.1",
-        "rimraf": "^3.0.0",
-        "standard-version": "^9.5.0"
-      },
-      "engines": {
-        "node": ">= 8"
-      },
-      "_id": "cross-spawn@7.0.6",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/cross-spawn",
-      "_dependencies": {
-        "path-key": "^3.1.0",
-        "shebang-command": "^2.0.0",
-        "which": "^2.0.1"
-      },
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: cross-spawn@7.0.6 /Users/sac/wasm4pm/node_modules/cross-spawn"
       ]
     },
     "css.escape": {
@@ -6383,55 +5372,6 @@
       "peerDependencies": {},
       "problems": [
         "extraneous: depd@2.0.0 /Users/sac/wasm4pm/node_modules/depd"
-      ]
-    },
-    "diff-sequences": {
-      "version": "29.6.3",
-      "resolved": "https://registry.npmjs.org/diff-sequences/-/diff-sequences-29.6.3.tgz",
-      "overridden": false,
-      "name": "diff-sequences",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/jestjs/jest.git",
-        "directory": "packages/diff-sequences"
-      },
-      "license": "MIT",
-      "description": "Compare items in two sequences to find a longest common subsequence",
-      "keywords": [
-        "fast",
-        "linear",
-        "space",
-        "callback",
-        "diff"
-      ],
-      "engines": {
-        "node": "^14.15.0 || ^16.10.0 || >=18.0.0"
-      },
-      "main": "./build/index.js",
-      "types": "./build/index.d.ts",
-      "exports": {
-        ".": {
-          "types": "./build/index.d.ts",
-          "default": "./build/index.js"
-        },
-        "./package.json": "./package.json"
-      },
-      "devDependencies": {
-        "@fast-check/jest": "^1.3.0",
-        "benchmark": "^2.1.4",
-        "diff": "^5.0.0"
-      },
-      "publishConfig": {
-        "access": "public"
-      },
-      "gitHead": "fb7d95c8af6e0d65a8b65348433d8a0ea0725b5b",
-      "_id": "diff-sequences@29.6.3",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/diff-sequences",
-      "_dependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: diff-sequences@29.6.3 /Users/sac/wasm4pm/node_modules/diff-sequences"
       ]
     },
     "dom-accessibility-api": {
@@ -7434,107 +6374,6 @@
         "extraneous: eventsource@3.0.7 /Users/sac/wasm4pm/node_modules/eventsource"
       ]
     },
-    "execa": {
-      "version": "8.0.1",
-      "resolved": "https://registry.npmjs.org/execa/-/execa-8.0.1.tgz",
-      "overridden": false,
-      "name": "execa",
-      "description": "Process execution for humans",
-      "license": "MIT",
-      "repository": "sindresorhus/execa",
-      "funding": {
-        "url": "https://github.com/sindresorhus/execa?sponsor=1"
-      },
-      "author": {
-        "name": "Sindre Sorhus",
-        "email": "sindresorhus@gmail.com",
-        "url": "https://sindresorhus.com"
-      },
-      "type": "module",
-      "exports": {
-        "types": "./index.d.ts",
-        "default": "./index.js"
-      },
-      "engines": {
-        "node": ">=16.17"
-      },
-      "scripts": {
-        "test": "xo && c8 ava && tsd"
-      },
-      "files": [
-        "index.js",
-        "index.d.ts",
-        "lib"
-      ],
-      "keywords": [
-        "exec",
-        "child",
-        "process",
-        "execute",
-        "fork",
-        "execfile",
-        "spawn",
-        "file",
-        "shell",
-        "bin",
-        "binary",
-        "binaries",
-        "npm",
-        "path",
-        "local",
-        "zx"
-      ],
-      "devDependencies": {
-        "@types/node": "^20.4.0",
-        "ava": "^5.2.0",
-        "c8": "^8.0.1",
-        "get-node": "^14.2.0",
-        "is-running": "^2.1.0",
-        "p-event": "^6.0.0",
-        "path-key": "^4.0.0",
-        "tempfile": "^5.0.0",
-        "tsd": "^0.28.1",
-        "xo": "^0.55.0"
-      },
-      "c8": {
-        "reporter": [
-          "text",
-          "lcov"
-        ],
-        "exclude": [
-          "**/fixtures/**",
-          "**/test.js",
-          "**/test/**"
-        ]
-      },
-      "ava": {
-        "workerThreads": false
-      },
-      "xo": {
-        "rules": {
-          "unicorn/no-empty-file": "off",
-          "@typescript-eslint/ban-types": "off"
-        }
-      },
-      "_id": "execa@8.0.1",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/execa",
-      "_dependencies": {
-        "cross-spawn": "^7.0.3",
-        "get-stream": "^8.0.1",
-        "human-signals": "^5.0.0",
-        "is-stream": "^3.0.0",
-        "merge-stream": "^2.0.0",
-        "npm-run-path": "^5.1.0",
-        "onetime": "^6.0.0",
-        "signal-exit": "^4.1.0",
-        "strip-final-newline": "^3.0.0"
-      },
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: execa@8.0.1 /Users/sac/wasm4pm/node_modules/execa"
-      ]
-    },
     "express-rate-limit": {
       "version": "8.3.2",
       "overridden": false,
@@ -8319,100 +7158,6 @@
         "extraneous: functions-have-names@1.2.3 /Users/sac/wasm4pm/node_modules/functions-have-names"
       ]
     },
-    "get-func-name": {
-      "version": "2.0.2",
-      "resolved": "https://registry.npmjs.org/get-func-name/-/get-func-name-2.0.2.tgz",
-      "overridden": false,
-      "name": "get-func-name",
-      "description": "Utility for getting a function's name for node and the browser",
-      "keywords": [
-        "get-func-name",
-        "chai util"
-      ],
-      "license": "MIT",
-      "author": "Jake Luer <jake@alogicalparadox.com> (http://alogicalparadox.com)",
-      "contributors": [
-        "Keith Cirkel (https://github.com/keithamus)",
-        "Lucas Fernandes da Costa (https://github.com/lucasfcosta)",
-        "Grant Snodgrass (https://github.com/meeber)",
-        "Lucas Vieira (https://github.com/vieiralucas)",
-        "Aleksey Shvayka (https://github.com/shvaikalesh)"
-      ],
-      "files": [
-        "index.js",
-        "get-func-name.js"
-      ],
-      "main": "./index.js",
-      "repository": {
-        "type": "git",
-        "url": "git+ssh://git@github.com/chaijs/get-func-name.git"
-      },
-      "scripts": {
-        "build": "browserify --bare $npm_package_main --standalone getFuncName -o get-func-name.js",
-        "lint": "eslint --ignore-path .gitignore .",
-        "prepublish": "npm run build",
-        "semantic-release": "semantic-release pre && npm publish && semantic-release post",
-        "pretest": "npm run lint",
-        "test": "npm run test:node && npm run test:browser && npm run upload-coverage",
-        "test:browser": "karma start --singleRun=true",
-        "test:node": "istanbul cover _mocha",
-        "upload-coverage": "lcov-result-merger 'coverage/**/lcov.info' | coveralls; exit 0"
-      },
-      "config": {
-        "ghooks": {
-          "commit-msg": "validate-commit-msg"
-        }
-      },
-      "eslintConfig": {
-        "extends": [
-          "strict/es5"
-        ],
-        "env": {
-          "es6": true
-        },
-        "globals": {
-          "HTMLElement": false
-        },
-        "rules": {
-          "complexity": 0,
-          "max-statements": 0
-        }
-      },
-      "devDependencies": {
-        "browserify": "^13.0.0",
-        "browserify-istanbul": "^2.0.0",
-        "coveralls": "2.11.14",
-        "eslint": "^2.4.0",
-        "eslint-config-strict": "^9.1.0",
-        "eslint-plugin-filenames": "^1.1.0",
-        "ghooks": "^1.0.1",
-        "istanbul": "^0.4.2",
-        "karma": "^1.3.0",
-        "karma-browserify": "^5.0.2",
-        "karma-coverage": "^1.1.1",
-        "karma-mocha": "^1.2.0",
-        "karma-phantomjs-launcher": "^1.0.0",
-        "karma-sauce-launcher": "^1.0.0",
-        "lcov-result-merger": "^1.0.2",
-        "mocha": "^3.1.2",
-        "phantomjs-prebuilt": "^2.1.5",
-        "semantic-release": "^4.3.5",
-        "simple-assert": "^1.0.0",
-        "travis-after-all": "^1.4.4",
-        "validate-commit-msg": "^2.3.1"
-      },
-      "engines": {
-        "node": "*"
-      },
-      "_id": "get-func-name@2.0.2",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/get-func-name",
-      "_dependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: get-func-name@2.0.2 /Users/sac/wasm4pm/node_modules/get-func-name"
-      ]
-    },
     "get-intrinsic": {
       "version": "1.3.0",
       "overridden": false,
@@ -8605,71 +7350,6 @@
       "peerDependencies": {},
       "problems": [
         "extraneous: get-proto@1.0.1 /Users/sac/wasm4pm/node_modules/get-proto"
-      ]
-    },
-    "get-stream": {
-      "version": "8.0.1",
-      "resolved": "https://registry.npmjs.org/get-stream/-/get-stream-8.0.1.tgz",
-      "overridden": false,
-      "name": "get-stream",
-      "description": "Get a stream as a string, Buffer, ArrayBuffer or array",
-      "license": "MIT",
-      "repository": "sindresorhus/get-stream",
-      "funding": {
-        "url": "https://github.com/sponsors/sindresorhus"
-      },
-      "author": {
-        "name": "Sindre Sorhus",
-        "email": "sindresorhus@gmail.com",
-        "url": "https://sindresorhus.com"
-      },
-      "type": "module",
-      "exports": {
-        "types": "./source/index.d.ts",
-        "default": "./source/index.js"
-      },
-      "engines": {
-        "node": ">=16"
-      },
-      "scripts": {
-        "benchmark": "node benchmarks/index.js",
-        "test": "xo && ava && tsd --typings=source/index.d.ts --files=source/index.test-d.ts"
-      },
-      "files": [
-        "source",
-        "!*.test-d.ts"
-      ],
-      "keywords": [
-        "get",
-        "stream",
-        "promise",
-        "concat",
-        "string",
-        "text",
-        "buffer",
-        "read",
-        "data",
-        "consume",
-        "readable",
-        "readablestream",
-        "object",
-        "concat"
-      ],
-      "devDependencies": {
-        "@types/node": "^20.5.0",
-        "ava": "^5.3.1",
-        "precise-now": "^2.0.0",
-        "stream-json": "^1.8.0",
-        "tsd": "^0.28.1",
-        "xo": "^0.56.0"
-      },
-      "_id": "get-stream@8.0.1",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/get-stream",
-      "_dependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: get-stream@8.0.1 /Users/sac/wasm4pm/node_modules/get-stream"
       ]
     },
     "gopd": {
@@ -10018,77 +8698,6 @@
       "peerDependencies": {},
       "problems": [
         "extraneous: http-errors@2.0.1 /Users/sac/wasm4pm/node_modules/http-errors"
-      ]
-    },
-    "human-signals": {
-      "version": "5.0.0",
-      "resolved": "https://registry.npmjs.org/human-signals/-/human-signals-5.0.0.tgz",
-      "overridden": false,
-      "name": "human-signals",
-      "type": "module",
-      "exports": {
-        "types": "./build/src/main.d.ts",
-        "default": "./build/src/main.js"
-      },
-      "main": "./build/src/main.js",
-      "types": "./build/src/main.d.ts",
-      "files": [
-        "build/src/**/*.{js,json,d.ts}",
-        "!build/src/**/*.test.js",
-        "!build/src/{helpers,fixtures}"
-      ],
-      "sideEffects": false,
-      "scripts": {
-        "test": "gulp test"
-      },
-      "description": "Human-friendly process signals",
-      "keywords": [
-        "signal",
-        "signals",
-        "handlers",
-        "error-handling",
-        "interrupts",
-        "sigterm",
-        "sigint",
-        "irq",
-        "process",
-        "exit",
-        "exit-code",
-        "status",
-        "operating-system",
-        "es6",
-        "javascript",
-        "typescript",
-        "linux",
-        "macos",
-        "windows",
-        "nodejs"
-      ],
-      "license": "Apache-2.0",
-      "homepage": "https://www.github.com/ehmicky/human-signals",
-      "repository": "ehmicky/human-signals",
-      "bugs": {
-        "url": "https://github.com/ehmicky/human-signals/issues"
-      },
-      "author": "ehmicky <ehmicky@gmail.com> (https://github.com/ehmicky)",
-      "directories": {
-        "lib": "src"
-      },
-      "devDependencies": {
-        "@ehmicky/dev-tasks": "^2.0.80",
-        "ajv": "^8.12.0",
-        "test-each": "^6.0.0"
-      },
-      "engines": {
-        "node": ">=16.17.0"
-      },
-      "_id": "human-signals@5.0.0",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/human-signals",
-      "_dependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: human-signals@5.0.0 /Users/sac/wasm4pm/node_modules/human-signals"
       ]
     },
     "iconv-lite": {
@@ -11574,62 +10183,6 @@
         "extraneous: is-shared-array-buffer@1.0.4 /Users/sac/wasm4pm/node_modules/is-shared-array-buffer"
       ]
     },
-    "is-stream": {
-      "version": "3.0.0",
-      "resolved": "https://registry.npmjs.org/is-stream/-/is-stream-3.0.0.tgz",
-      "overridden": false,
-      "name": "is-stream",
-      "description": "Check if something is a Node.js stream",
-      "license": "MIT",
-      "repository": "sindresorhus/is-stream",
-      "funding": {
-        "url": "https://github.com/sponsors/sindresorhus"
-      },
-      "author": {
-        "name": "Sindre Sorhus",
-        "email": "sindresorhus@gmail.com",
-        "url": "https://sindresorhus.com"
-      },
-      "type": "module",
-      "exports": "./index.js",
-      "engines": {
-        "node": "^12.20.0 || ^14.13.1 || >=16.0.0"
-      },
-      "scripts": {
-        "test": "xo && ava && tsd"
-      },
-      "files": [
-        "index.js",
-        "index.d.ts"
-      ],
-      "keywords": [
-        "stream",
-        "type",
-        "streams",
-        "writable",
-        "readable",
-        "duplex",
-        "transform",
-        "check",
-        "detect",
-        "is"
-      ],
-      "devDependencies": {
-        "@types/node": "^16.4.13",
-        "ava": "^3.15.0",
-        "tempy": "^1.0.1",
-        "tsd": "^0.17.0",
-        "xo": "^0.44.0"
-      },
-      "_id": "is-stream@3.0.0",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/is-stream",
-      "_dependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: is-stream@3.0.0 /Users/sac/wasm4pm/node_modules/is-stream"
-      ]
-    },
     "is-string": {
       "version": "1.1.1",
       "overridden": false,
@@ -12080,47 +10633,6 @@
         "extraneous: isarray@2.0.5 /Users/sac/wasm4pm/node_modules/isarray"
       ]
     },
-    "isexe": {
-      "version": "2.0.0",
-      "resolved": "https://registry.npmjs.org/isexe/-/isexe-2.0.0.tgz",
-      "overridden": false,
-      "name": "isexe",
-      "description": "Minimal module to check if a file is executable.",
-      "main": "index.js",
-      "directories": {
-        "test": "test"
-      },
-      "devDependencies": {
-        "mkdirp": "^0.5.1",
-        "rimraf": "^2.5.0",
-        "tap": "^10.3.0"
-      },
-      "scripts": {
-        "test": "tap test/*.js --100",
-        "preversion": "npm test",
-        "postversion": "npm publish",
-        "postpublish": "git push origin --all; git push origin --tags"
-      },
-      "author": "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me/)",
-      "license": "ISC",
-      "repository": {
-        "type": "git",
-        "url": "git+https://github.com/isaacs/isexe.git"
-      },
-      "keywords": [],
-      "bugs": {
-        "url": "https://github.com/isaacs/isexe/issues"
-      },
-      "homepage": "https://github.com/isaacs/isexe#readme",
-      "_id": "isexe@2.0.0",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/isexe",
-      "_dependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: isexe@2.0.0 /Users/sac/wasm4pm/node_modules/isexe"
-      ]
-    },
     "jose": {
       "version": "6.2.2",
       "overridden": false,
@@ -12526,82 +11038,6 @@
         "extraneous: jsonc-parser@3.3.1 /Users/sac/wasm4pm/node_modules/jsonc-parser"
       ]
     },
-    "local-pkg": {
-      "version": "0.5.1",
-      "resolved": "https://registry.npmjs.org/local-pkg/-/local-pkg-0.5.1.tgz",
-      "overridden": false,
-      "name": "local-pkg",
-      "type": "module",
-      "packageManager": "pnpm@9.13.2",
-      "description": "Get information on local packages.",
-      "author": "Anthony Fu <anthonyfu117@hotmail.com>",
-      "license": "MIT",
-      "funding": {
-        "url": "https://github.com/sponsors/antfu"
-      },
-      "homepage": "https://github.com/antfu/local-pkg#readme",
-      "repository": {
-        "type": "git",
-        "url": "git+https://github.com/antfu/local-pkg.git"
-      },
-      "bugs": {
-        "url": "https://github.com/antfu/local-pkg/issues"
-      },
-      "keywords": [
-        "package"
-      ],
-      "sideEffects": false,
-      "exports": {
-        ".": {
-          "types": "./dist/index.d.ts",
-          "import": "./dist/index.mjs",
-          "require": "./dist/index.cjs"
-        }
-      },
-      "main": "dist/index.cjs",
-      "module": "dist/index.mjs",
-      "types": "dist/index.d.ts",
-      "files": [
-        "dist"
-      ],
-      "engines": {
-        "node": ">=14"
-      },
-      "scripts": {
-        "prepublishOnly": "nr build",
-        "build": "unbuild",
-        "lint": "eslint .",
-        "release": "bumpp && npm publish",
-        "typecheck": "tsc --noEmit",
-        "test": "vitest run && node ./test/cjs.cjs && node ./test/esm.mjs"
-      },
-      "devDependencies": {
-        "@antfu/eslint-config": "^3.9.2",
-        "@antfu/ni": "^0.23.1",
-        "@antfu/utils": "^0.7.10",
-        "@types/chai": "^5.0.1",
-        "@types/node": "^22.9.0",
-        "bumpp": "^9.8.1",
-        "chai": "^5.1.2",
-        "eslint": "^9.15.0",
-        "esno": "^4.8.0",
-        "find-up": "^6.3.0",
-        "typescript": "^5.6.3",
-        "unbuild": "^2.0.0",
-        "vitest": "^2.1.5"
-      },
-      "_id": "local-pkg@0.5.1",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/local-pkg",
-      "_dependencies": {
-        "mlly": "^1.7.3",
-        "pkg-types": "^1.2.1"
-      },
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: local-pkg@0.5.1 /Users/sac/wasm4pm/node_modules/local-pkg"
-      ]
-    },
     "lunr": {
       "version": "2.3.9",
       "overridden": false,
@@ -12993,34 +11429,6 @@
         "extraneous: merge-descriptors@2.0.0 /Users/sac/wasm4pm/node_modules/merge-descriptors"
       ]
     },
-    "merge-stream": {
-      "version": "2.0.0",
-      "resolved": "https://registry.npmjs.org/merge-stream/-/merge-stream-2.0.0.tgz",
-      "overridden": false,
-      "name": "merge-stream",
-      "description": "Create a stream that emits events from multiple other streams",
-      "files": [
-        "index.js"
-      ],
-      "scripts": {
-        "test": "istanbul cover test.js && istanbul check-cover --statements 100 --branches 100"
-      },
-      "repository": "grncdr/merge-stream",
-      "author": "Stephen Sugden <me@stephensugden.com>",
-      "license": "MIT",
-      "devDependencies": {
-        "from2": "^2.0.3",
-        "istanbul": "^0.4.5"
-      },
-      "_id": "merge-stream@2.0.0",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/merge-stream",
-      "_dependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: merge-stream@2.0.0 /Users/sac/wasm4pm/node_modules/merge-stream"
-      ]
-    },
     "mime-db": {
       "version": "1.54.0",
       "overridden": false,
@@ -13143,63 +11551,6 @@
         "extraneous: mime-types@3.0.2 /Users/sac/wasm4pm/node_modules/mime-types"
       ]
     },
-    "mimic-fn": {
-      "version": "4.0.0",
-      "resolved": "https://registry.npmjs.org/mimic-fn/-/mimic-fn-4.0.0.tgz",
-      "overridden": false,
-      "name": "mimic-fn",
-      "description": "Make a function mimic another one",
-      "license": "MIT",
-      "repository": "sindresorhus/mimic-fn",
-      "funding": {
-        "url": "https://github.com/sponsors/sindresorhus"
-      },
-      "author": {
-        "name": "Sindre Sorhus",
-        "email": "sindresorhus@gmail.com",
-        "url": "https://sindresorhus.com"
-      },
-      "type": "module",
-      "exports": "./index.js",
-      "engines": {
-        "node": ">=12"
-      },
-      "scripts": {
-        "test": "xo && ava && tsd"
-      },
-      "files": [
-        "index.js",
-        "index.d.ts"
-      ],
-      "keywords": [
-        "function",
-        "mimic",
-        "imitate",
-        "rename",
-        "copy",
-        "inherit",
-        "properties",
-        "name",
-        "func",
-        "fn",
-        "set",
-        "infer",
-        "change"
-      ],
-      "devDependencies": {
-        "ava": "^3.15.0",
-        "tsd": "^0.14.0",
-        "xo": "^0.38.2"
-      },
-      "_id": "mimic-fn@4.0.0",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/mimic-fn",
-      "_dependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: mimic-fn@4.0.0 /Users/sac/wasm4pm/node_modules/mimic-fn"
-      ]
-    },
     "min-indent": {
       "version": "1.0.1",
       "overridden": false,
@@ -13245,123 +11596,6 @@
       "peerDependencies": {},
       "problems": [
         "extraneous: min-indent@1.0.1 /Users/sac/wasm4pm/node_modules/min-indent"
-      ]
-    },
-    "mlly": {
-      "version": "1.8.2",
-      "resolved": "https://registry.npmjs.org/mlly/-/mlly-1.8.2.tgz",
-      "overridden": false,
-      "name": "mlly",
-      "description": "Missing ECMAScript module utils for Node.js",
-      "repository": "unjs/mlly",
-      "license": "MIT",
-      "sideEffects": false,
-      "type": "module",
-      "exports": {
-        "types": "./dist/index.d.ts",
-        "import": "./dist/index.mjs",
-        "require": "./dist/index.cjs"
-      },
-      "main": "./dist/index.cjs",
-      "module": "./dist/index.mjs",
-      "types": "./dist/index.d.ts",
-      "files": [
-        "dist"
-      ],
-      "scripts": {
-        "build": "unbuild",
-        "dev": "vitest",
-        "lint": "eslint src test && prettier -c src test",
-        "lint:fix": "eslint src test --fix && prettier -w src test",
-        "release": "pnpm test && pnpm build && changelogen --release && npm publish && git push --follow-tags",
-        "test": "pnpm lint && pnpm test:types && vitest run",
-        "test:types": "tsc --noEmit"
-      },
-      "devDependencies": {
-        "@types/node": "^25.5.0",
-        "@vitest/coverage-v8": "^4.1.0",
-        "changelogen": "^0.6.2",
-        "eslint": "^10.0.3",
-        "eslint-config-unjs": "^0.6.2",
-        "import-meta-resolve": "^4.2.0",
-        "jiti": "^2.6.1",
-        "prettier": "^3.8.1",
-        "std-env": "^4.0.0",
-        "typescript": "^5.9.3",
-        "unbuild": "^3.6.1",
-        "vitest": "^4.1.0"
-      },
-      "packageManager": "pnpm@10.20.0",
-      "pnpm": {
-        "onlyBuiltDependencies": [
-          "esbuild"
-        ]
-      },
-      "_id": "mlly@1.8.2",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/mlly",
-      "_dependencies": {
-        "acorn": "^8.16.0",
-        "pathe": "^2.0.3",
-        "pkg-types": "^1.3.1",
-        "ufo": "^1.6.3"
-      },
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: mlly@1.8.2 /Users/sac/wasm4pm/node_modules/mlly"
-      ]
-    },
-    "mrmime": {
-      "version": "2.0.1",
-      "overridden": false,
-      "name": "mrmime",
-      "repository": "lukeed/mrmime",
-      "description": "A tiny (2.8kB) and fast utility for getting a MIME type from an extension or filename",
-      "module": "index.mjs",
-      "types": "index.d.ts",
-      "main": "index.js",
-      "license": "MIT",
-      "author": {
-        "name": "Luke Edwards",
-        "email": "luke.edwards05@gmail.com",
-        "url": "https://lukeed.com"
-      },
-      "exports": {
-        ".": {
-          "types": "./index.d.ts",
-          "import": "./index.mjs",
-          "require": "./index.js"
-        },
-        "./package.json": "./package.json"
-      },
-      "files": [
-        "index.d.ts",
-        "index.mjs",
-        "index.js"
-      ],
-      "engines": {
-        "node": ">=10"
-      },
-      "scripts": {
-        "build": "tsm bin/index.ts",
-        "test": "uvu -r tsm test"
-      },
-      "keywords": [
-        "mime",
-        "extension",
-        "mimetype"
-      ],
-      "devDependencies": {
-        "tsm": "2.3.0",
-        "uvu": "0.5.2"
-      },
-      "_id": "mrmime@2.0.1",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/mrmime",
-      "_dependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: mrmime@2.0.1 /Users/sac/wasm4pm/node_modules/mrmime"
       ]
     },
     "negotiator": {
@@ -13414,66 +11648,6 @@
       "peerDependencies": {},
       "problems": [
         "extraneous: negotiator@1.0.0 /Users/sac/wasm4pm/node_modules/negotiator"
-      ]
-    },
-    "npm-run-path": {
-      "version": "5.3.0",
-      "resolved": "https://registry.npmjs.org/npm-run-path/-/npm-run-path-5.3.0.tgz",
-      "overridden": false,
-      "name": "npm-run-path",
-      "description": "Get your PATH prepended with locally installed binaries",
-      "license": "MIT",
-      "repository": "sindresorhus/npm-run-path",
-      "funding": {
-        "url": "https://github.com/sponsors/sindresorhus"
-      },
-      "author": {
-        "name": "Sindre Sorhus",
-        "email": "sindresorhus@gmail.com",
-        "url": "https://sindresorhus.com"
-      },
-      "type": "module",
-      "exports": "./index.js",
-      "types": "./index.d.ts",
-      "sideEffects": false,
-      "engines": {
-        "node": "^12.20.0 || ^14.13.1 || >=16.0.0"
-      },
-      "scripts": {
-        "test": "xo && ava && tsd"
-      },
-      "files": [
-        "index.js",
-        "index.d.ts"
-      ],
-      "keywords": [
-        "npm",
-        "run",
-        "path",
-        "package",
-        "bin",
-        "binary",
-        "binaries",
-        "script",
-        "cli",
-        "command-line",
-        "execute",
-        "executable"
-      ],
-      "devDependencies": {
-        "ava": "^3.15.0",
-        "tsd": "^0.17.0",
-        "xo": "^0.45.0"
-      },
-      "_id": "npm-run-path@5.3.0",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/npm-run-path",
-      "_dependencies": {
-        "path-key": "^4.0.0"
-      },
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: npm-run-path@5.3.0 /Users/sac/wasm4pm/node_modules/npm-run-path"
       ]
     },
     "object-assign": {
@@ -13992,137 +12166,6 @@
         "extraneous: on-finished@2.4.1 /Users/sac/wasm4pm/node_modules/on-finished"
       ]
     },
-    "onetime": {
-      "version": "6.0.0",
-      "resolved": "https://registry.npmjs.org/onetime/-/onetime-6.0.0.tgz",
-      "overridden": false,
-      "name": "onetime",
-      "description": "Ensure a function is only called once",
-      "license": "MIT",
-      "repository": "sindresorhus/onetime",
-      "funding": {
-        "url": "https://github.com/sponsors/sindresorhus"
-      },
-      "author": {
-        "name": "Sindre Sorhus",
-        "email": "sindresorhus@gmail.com",
-        "url": "https://sindresorhus.com"
-      },
-      "type": "module",
-      "exports": "./index.js",
-      "engines": {
-        "node": ">=12"
-      },
-      "scripts": {
-        "test": "xo && ava && tsd"
-      },
-      "files": [
-        "index.js",
-        "index.d.ts"
-      ],
-      "keywords": [
-        "once",
-        "function",
-        "one",
-        "onetime",
-        "func",
-        "fn",
-        "single",
-        "call",
-        "called",
-        "prevent"
-      ],
-      "devDependencies": {
-        "ava": "^3.15.0",
-        "tsd": "^0.14.0",
-        "xo": "^0.38.2"
-      },
-      "_id": "onetime@6.0.0",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/onetime",
-      "_dependencies": {
-        "mimic-fn": "^4.0.0"
-      },
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: onetime@6.0.0 /Users/sac/wasm4pm/node_modules/onetime"
-      ]
-    },
-    "p-limit": {
-      "version": "5.0.0",
-      "resolved": "https://registry.npmjs.org/p-limit/-/p-limit-5.0.0.tgz",
-      "overridden": false,
-      "name": "p-limit",
-      "description": "Run multiple promise-returning & async functions with limited concurrency",
-      "license": "MIT",
-      "repository": "sindresorhus/p-limit",
-      "funding": {
-        "url": "https://github.com/sponsors/sindresorhus"
-      },
-      "author": {
-        "name": "Sindre Sorhus",
-        "email": "sindresorhus@gmail.com",
-        "url": "https://sindresorhus.com"
-      },
-      "type": "module",
-      "exports": {
-        "types": "./index.d.ts",
-        "default": "./index.js"
-      },
-      "imports": {
-        "#async_hooks": {
-          "node": "async_hooks",
-          "default": "./async-hooks-stub.js"
-        }
-      },
-      "engines": {
-        "node": ">=18"
-      },
-      "scripts": {
-        "test": "xo && ava && tsd"
-      },
-      "files": [
-        "index.js",
-        "index.d.ts",
-        "async-hooks-stub.js"
-      ],
-      "keywords": [
-        "promise",
-        "limit",
-        "limited",
-        "concurrency",
-        "throttle",
-        "throat",
-        "rate",
-        "batch",
-        "ratelimit",
-        "task",
-        "queue",
-        "async",
-        "await",
-        "promises",
-        "bluebird"
-      ],
-      "devDependencies": {
-        "ava": "^5.3.1",
-        "delay": "^6.0.0",
-        "in-range": "^3.0.0",
-        "random-int": "^3.0.0",
-        "time-span": "^5.1.0",
-        "tsd": "^0.29.0",
-        "xo": "^0.56.0"
-      },
-      "_id": "p-limit@5.0.0",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/p-limit",
-      "_dependencies": {
-        "yocto-queue": "^1.0.0"
-      },
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: p-limit@5.0.0 /Users/sac/wasm4pm/node_modules/p-limit"
-      ]
-    },
     "parseurl": {
       "version": "1.3.3",
       "overridden": false,
@@ -14170,55 +12213,6 @@
       "peerDependencies": {},
       "problems": [
         "extraneous: parseurl@1.3.3 /Users/sac/wasm4pm/node_modules/parseurl"
-      ]
-    },
-    "path-key": {
-      "version": "3.1.1",
-      "resolved": "https://registry.npmjs.org/path-key/-/path-key-3.1.1.tgz",
-      "overridden": false,
-      "name": "path-key",
-      "description": "Get the PATH environment variable key cross-platform",
-      "license": "MIT",
-      "repository": "sindresorhus/path-key",
-      "author": {
-        "name": "Sindre Sorhus",
-        "email": "sindresorhus@gmail.com",
-        "url": "sindresorhus.com"
-      },
-      "engines": {
-        "node": ">=8"
-      },
-      "scripts": {
-        "test": "xo && ava && tsd"
-      },
-      "files": [
-        "index.js",
-        "index.d.ts"
-      ],
-      "keywords": [
-        "path",
-        "key",
-        "environment",
-        "env",
-        "variable",
-        "var",
-        "get",
-        "cross-platform",
-        "windows"
-      ],
-      "devDependencies": {
-        "@types/node": "^11.13.0",
-        "ava": "^1.4.1",
-        "tsd": "^0.7.2",
-        "xo": "^0.24.0"
-      },
-      "_id": "path-key@3.1.1",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/path-key",
-      "_dependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: path-key@3.1.1 /Users/sac/wasm4pm/node_modules/path-key"
       ]
     },
     "path-to-regexp": {
@@ -14360,198 +12354,6 @@
       "peerDependencies": {},
       "problems": [
         "extraneous: pkce-challenge@5.0.1 /Users/sac/wasm4pm/node_modules/pkce-challenge"
-      ]
-    },
-    "pkg-types": {
-      "version": "1.3.1",
-      "resolved": "https://registry.npmjs.org/pkg-types/-/pkg-types-1.3.1.tgz",
-      "overridden": false,
-      "name": "pkg-types",
-      "description": "Node.js utilities and TypeScript definitions for `package.json` and `tsconfig.json`",
-      "license": "MIT",
-      "main": "./dist/index.cjs",
-      "sideEffects": false,
-      "exports": {
-        "types": "./dist/index.d.ts",
-        "import": "./dist/index.mjs",
-        "require": "./dist/index.cjs"
-      },
-      "types": "./dist/index.d.ts",
-      "repository": "unjs/pkg-types",
-      "files": [
-        "dist"
-      ],
-      "scripts": {
-        "build": "unbuild",
-        "prepack": "pnpm build",
-        "dev": "vitest --typecheck",
-        "release": "pnpm test && changelogen --release && npm publish && git push --follow-tags",
-        "lint": "eslint && prettier -c src test",
-        "lint:fix": "automd && eslint --fix . && prettier -w src test",
-        "test": "vitest run --typecheck --coverage"
-      },
-      "devDependencies": {
-        "@types/node": "^22.10.6",
-        "@vitest/coverage-v8": "^2.1.8",
-        "automd": "^0.3.12",
-        "changelogen": "^0.5.7",
-        "eslint": "^9.18.0",
-        "eslint-config-unjs": "^0.4.2",
-        "expect-type": "^1.1.0",
-        "jiti": "^2.4.2",
-        "prettier": "^3.4.2",
-        "typescript": "^5.7.3",
-        "unbuild": "^3.3.1",
-        "vitest": "^2.1.8"
-      },
-      "packageManager": "pnpm@9.15.4",
-      "_id": "pkg-types@1.3.1",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/pkg-types",
-      "_dependencies": {
-        "confbox": "^0.1.8",
-        "mlly": "^1.7.4",
-        "pathe": "^2.0.1"
-      },
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: pkg-types@1.3.1 /Users/sac/wasm4pm/node_modules/pkg-types"
-      ]
-    },
-    "playwright-core": {
-      "version": "1.59.1",
-      "overridden": false,
-      "name": "playwright-core",
-      "description": "A high-level API to automate web browsers",
-      "repository": {
-        "type": "git",
-        "url": "git+https://github.com/microsoft/playwright.git"
-      },
-      "homepage": "https://playwright.dev",
-      "engines": {
-        "node": ">=18"
-      },
-      "author": {
-        "name": "Microsoft Corporation"
-      },
-      "license": "Apache-2.0",
-      "exports": {
-        ".": {
-          "types": "./index.d.ts",
-          "import": "./index.mjs",
-          "require": "./index.js",
-          "default": "./index.js"
-        },
-        "./package.json": "./package.json",
-        "./lib/bootstrap": "./lib/bootstrap.js",
-        "./lib/outofprocess": "./lib/outofprocess.js",
-        "./lib/cli/program": "./lib/cli/program.js",
-        "./lib/tools/cli-client/program": "./lib/tools/cli-client/program.js",
-        "./lib/tools/mcp/program": "./lib/tools/mcp/program.js",
-        "./lib/mcpBundle": "./lib/mcpBundle.js",
-        "./lib/zodBundle": "./lib/zodBundle.js",
-        "./lib/tools/exports": "./lib/tools/exports.js",
-        "./lib/remote/playwrightServer": "./lib/remote/playwrightServer.js",
-        "./lib/server": "./lib/server/index.js",
-        "./lib/server/utils/image_tools/stats": "./lib/server/utils/image_tools/stats.js",
-        "./lib/server/utils/image_tools/compare": "./lib/server/utils/image_tools/compare.js",
-        "./lib/server/utils/image_tools/imageChannel": "./lib/server/utils/image_tools/imageChannel.js",
-        "./lib/server/utils/image_tools/colorUtils": "./lib/server/utils/image_tools/colorUtils.js",
-        "./lib/server/registry/index": "./lib/server/registry/index.js",
-        "./lib/utils": "./lib/utils.js",
-        "./lib/utilsBundle": "./lib/utilsBundle.js",
-        "./lib/zipBundle": "./lib/zipBundle.js"
-      },
-      "bin": {
-        "playwright-core": "cli.js"
-      },
-      "types": "types/types.d.ts",
-      "_id": "playwright-core@1.59.1",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/playwright-core",
-      "_dependencies": {},
-      "devDependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: playwright-core@1.59.1 /Users/sac/wasm4pm/node_modules/playwright-core"
-      ]
-    },
-    "playwright": {
-      "version": "1.59.1",
-      "overridden": false,
-      "name": "playwright",
-      "description": "A high-level API to automate web browsers",
-      "repository": {
-        "type": "git",
-        "url": "git+https://github.com/microsoft/playwright.git"
-      },
-      "homepage": "https://playwright.dev",
-      "engines": {
-        "node": ">=18"
-      },
-      "main": "index.js",
-      "exports": {
-        ".": {
-          "types": "./index.d.ts",
-          "import": "./index.mjs",
-          "require": "./index.js",
-          "default": "./index.js"
-        },
-        "./package.json": "./package.json",
-        "./lib/common/configLoader": "./lib/common/configLoader.js",
-        "./lib/fsWatcher": "./lib/fsWatcher.js",
-        "./lib/mcp/index": "./lib/mcp/index.js",
-        "./lib/program": "./lib/program.js",
-        "./lib/reporters/base": "./lib/reporters/base.js",
-        "./lib/reporters/list": "./lib/reporters/list.js",
-        "./lib/transform/babelBundle": "./lib/transform/babelBundle.js",
-        "./lib/transform/compilationCache": "./lib/transform/compilationCache.js",
-        "./lib/transform/esmLoader": "./lib/transform/esmLoader.js",
-        "./lib/transform/transform": "./lib/transform/transform.js",
-        "./lib/internalsForTest": "./lib/internalsForTest.js",
-        "./lib/plugins": "./lib/plugins/index.js",
-        "./lib/runner/testRunner": "./lib/runner/testRunner.js",
-        "./jsx-runtime": {
-          "import": "./jsx-runtime.mjs",
-          "require": "./jsx-runtime.js",
-          "default": "./jsx-runtime.js"
-        },
-        "./lib/util": "./lib/util.js",
-        "./lib/utilsBundle": "./lib/utilsBundle.js",
-        "./types/test": {
-          "types": "./types/test.d.ts"
-        },
-        "./types/testReporter": {
-          "types": "./types/testReporter.d.ts"
-        },
-        "./test": {
-          "types": "./test.d.ts",
-          "import": "./test.mjs",
-          "require": "./test.js",
-          "default": "./test.js"
-        }
-      },
-      "bin": {
-        "playwright": "cli.js"
-      },
-      "author": {
-        "name": "Microsoft Corporation"
-      },
-      "license": "Apache-2.0",
-      "optionalDependencies": {
-        "fsevents": "2.3.2"
-      },
-      "_id": "playwright@1.59.1",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/playwright",
-      "_dependencies": {
-        "playwright-core": "1.59.1",
-        "fsevents": "2.3.2"
-      },
-      "devDependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: playwright@1.59.1 /Users/sac/wasm4pm/node_modules/playwright"
       ]
     },
     "possible-typed-array-names": {
@@ -14862,58 +12664,6 @@
       "devDependencies": {},
       "peerDependencies": {}
     },
-    "pretty-format": {
-      "version": "29.7.0",
-      "resolved": "https://registry.npmjs.org/pretty-format/-/pretty-format-29.7.0.tgz",
-      "overridden": false,
-      "name": "pretty-format",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/jestjs/jest.git",
-        "directory": "packages/pretty-format"
-      },
-      "license": "MIT",
-      "description": "Stringify any JavaScript value.",
-      "main": "./build/index.js",
-      "types": "./build/index.d.ts",
-      "exports": {
-        ".": {
-          "types": "./build/index.d.ts",
-          "default": "./build/index.js"
-        },
-        "./package.json": "./package.json"
-      },
-      "author": "James Kyle <me@thejameskyle.com>",
-      "devDependencies": {
-        "@types/react": "^17.0.3",
-        "@types/react-is": "^18.0.0",
-        "@types/react-test-renderer": "17.0.2",
-        "immutable": "^4.0.0",
-        "jest-util": "^29.7.0",
-        "react": "17.0.2",
-        "react-dom": "^17.0.1",
-        "react-test-renderer": "17.0.2"
-      },
-      "engines": {
-        "node": "^14.15.0 || ^16.10.0 || >=18.0.0"
-      },
-      "publishConfig": {
-        "access": "public"
-      },
-      "gitHead": "4e56991693da7cd4c3730dc3579a1dd1403ee630",
-      "_id": "pretty-format@29.7.0",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/pretty-format",
-      "_dependencies": {
-        "@jest/schemas": "^29.6.3",
-        "ansi-styles": "^5.0.0",
-        "react-is": "^18.0.0"
-      },
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: pretty-format@29.7.0 /Users/sac/wasm4pm/node_modules/pretty-format"
-      ]
-    },
     "proxy-addr": {
       "version": "2.0.7",
       "overridden": false,
@@ -15176,43 +12926,6 @@
       "peerDependencies": {},
       "problems": [
         "extraneous: raw-body@3.0.2 /Users/sac/wasm4pm/node_modules/raw-body"
-      ]
-    },
-    "react-is": {
-      "version": "18.3.1",
-      "resolved": "https://registry.npmjs.org/react-is/-/react-is-18.3.1.tgz",
-      "overridden": false,
-      "name": "react-is",
-      "description": "Brand checking of React Elements.",
-      "main": "index.js",
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/facebook/react.git",
-        "directory": "packages/react-is"
-      },
-      "keywords": [
-        "react"
-      ],
-      "license": "MIT",
-      "bugs": {
-        "url": "https://github.com/facebook/react/issues"
-      },
-      "homepage": "https://reactjs.org/",
-      "files": [
-        "LICENSE",
-        "README.md",
-        "index.js",
-        "cjs/",
-        "umd/"
-      ],
-      "_id": "react-is@18.3.1",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/react-is",
-      "_dependencies": {},
-      "devDependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: react-is@18.3.1 /Users/sac/wasm4pm/node_modules/react-is"
       ]
     },
     "readdirp": {
@@ -16072,94 +13785,6 @@
         "extraneous: setprototypeof@1.2.0 /Users/sac/wasm4pm/node_modules/setprototypeof"
       ]
     },
-    "shebang-command": {
-      "version": "2.0.0",
-      "resolved": "https://registry.npmjs.org/shebang-command/-/shebang-command-2.0.0.tgz",
-      "overridden": false,
-      "name": "shebang-command",
-      "description": "Get the command from a shebang",
-      "license": "MIT",
-      "repository": "kevva/shebang-command",
-      "author": {
-        "name": "Kevin Mårtensson",
-        "email": "kevinmartensson@gmail.com",
-        "url": "github.com/kevva"
-      },
-      "engines": {
-        "node": ">=8"
-      },
-      "scripts": {
-        "test": "xo && ava"
-      },
-      "files": [
-        "index.js"
-      ],
-      "keywords": [
-        "cmd",
-        "command",
-        "parse",
-        "shebang"
-      ],
-      "devDependencies": {
-        "ava": "^2.3.0",
-        "xo": "^0.24.0"
-      },
-      "_id": "shebang-command@2.0.0",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/shebang-command",
-      "_dependencies": {
-        "shebang-regex": "^3.0.0"
-      },
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: shebang-command@2.0.0 /Users/sac/wasm4pm/node_modules/shebang-command"
-      ]
-    },
-    "shebang-regex": {
-      "version": "3.0.0",
-      "resolved": "https://registry.npmjs.org/shebang-regex/-/shebang-regex-3.0.0.tgz",
-      "overridden": false,
-      "name": "shebang-regex",
-      "description": "Regular expression for matching a shebang line",
-      "license": "MIT",
-      "repository": "sindresorhus/shebang-regex",
-      "author": {
-        "name": "Sindre Sorhus",
-        "email": "sindresorhus@gmail.com",
-        "url": "sindresorhus.com"
-      },
-      "engines": {
-        "node": ">=8"
-      },
-      "scripts": {
-        "test": "xo && ava && tsd"
-      },
-      "files": [
-        "index.js",
-        "index.d.ts"
-      ],
-      "keywords": [
-        "regex",
-        "regexp",
-        "shebang",
-        "match",
-        "test",
-        "line"
-      ],
-      "devDependencies": {
-        "ava": "^1.4.1",
-        "tsd": "^0.7.2",
-        "xo": "^0.24.0"
-      },
-      "_id": "shebang-regex@3.0.0",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/shebang-regex",
-      "_dependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: shebang-regex@3.0.0 /Users/sac/wasm4pm/node_modules/shebang-regex"
-      ]
-    },
     "shiki": {
       "version": "0.14.7",
       "overridden": false,
@@ -16576,158 +14201,6 @@
         "extraneous: side-channel@1.1.0 /Users/sac/wasm4pm/node_modules/side-channel"
       ]
     },
-    "signal-exit": {
-      "version": "4.1.0",
-      "resolved": "https://registry.npmjs.org/signal-exit/-/signal-exit-4.1.0.tgz",
-      "overridden": false,
-      "name": "signal-exit",
-      "description": "when you want to fire an event no matter how a process exits.",
-      "main": "./dist/cjs/index.js",
-      "module": "./dist/mjs/index.js",
-      "browser": "./dist/mjs/browser.js",
-      "types": "./dist/mjs/index.d.ts",
-      "exports": {
-        ".": {
-          "import": {
-            "types": "./dist/mjs/index.d.ts",
-            "default": "./dist/mjs/index.js"
-          },
-          "require": {
-            "types": "./dist/cjs/index.d.ts",
-            "default": "./dist/cjs/index.js"
-          }
-        },
-        "./signals": {
-          "import": {
-            "types": "./dist/mjs/signals.d.ts",
-            "default": "./dist/mjs/signals.js"
-          },
-          "require": {
-            "types": "./dist/cjs/signals.d.ts",
-            "default": "./dist/cjs/signals.js"
-          }
-        },
-        "./browser": {
-          "import": {
-            "types": "./dist/mjs/browser.d.ts",
-            "default": "./dist/mjs/browser.js"
-          },
-          "require": {
-            "types": "./dist/cjs/browser.d.ts",
-            "default": "./dist/cjs/browser.js"
-          }
-        }
-      },
-      "files": [
-        "dist"
-      ],
-      "engines": {
-        "node": ">=14"
-      },
-      "repository": {
-        "type": "git",
-        "url": "https://github.com/tapjs/signal-exit.git"
-      },
-      "keywords": [
-        "signal",
-        "exit"
-      ],
-      "author": "Ben Coe <ben@npmjs.com>",
-      "license": "ISC",
-      "devDependencies": {
-        "@types/cross-spawn": "^6.0.2",
-        "@types/node": "^18.15.11",
-        "@types/signal-exit": "^3.0.1",
-        "@types/tap": "^15.0.8",
-        "c8": "^7.13.0",
-        "prettier": "^2.8.6",
-        "tap": "^16.3.4",
-        "ts-node": "^10.9.1",
-        "typedoc": "^0.23.28",
-        "typescript": "^5.0.2"
-      },
-      "scripts": {
-        "preversion": "npm test",
-        "postversion": "npm publish",
-        "prepublishOnly": "git push origin --follow-tags",
-        "preprepare": "rm -rf dist",
-        "prepare": "tsc -p tsconfig.json && tsc -p tsconfig-esm.json && bash ./scripts/fixup.sh",
-        "pretest": "npm run prepare",
-        "presnap": "npm run prepare",
-        "test": "c8 tap",
-        "snap": "c8 tap",
-        "format": "prettier --write . --loglevel warn",
-        "typedoc": "typedoc --tsconfig tsconfig-esm.json ./src/*.ts"
-      },
-      "prettier": {
-        "semi": false,
-        "printWidth": 75,
-        "tabWidth": 2,
-        "useTabs": false,
-        "singleQuote": true,
-        "jsxSingleQuote": false,
-        "bracketSameLine": true,
-        "arrowParens": "avoid",
-        "endOfLine": "lf"
-      },
-      "tap": {
-        "coverage": false,
-        "jobs": 1,
-        "node-arg": [
-          "--no-warnings",
-          "--loader",
-          "ts-node/esm"
-        ],
-        "ts": false
-      },
-      "funding": {
-        "url": "https://github.com/sponsors/isaacs"
-      },
-      "_id": "signal-exit@4.1.0",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/signal-exit",
-      "_dependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: signal-exit@4.1.0 /Users/sac/wasm4pm/node_modules/signal-exit"
-      ]
-    },
-    "sirv": {
-      "version": "2.0.4",
-      "overridden": false,
-      "name": "sirv",
-      "description": "The optimized & lightweight middleware for serving requests to static assets",
-      "repository": "lukeed/sirv",
-      "module": "build.mjs",
-      "types": "sirv.d.ts",
-      "main": "build.js",
-      "license": "MIT",
-      "files": [
-        "build.*",
-        "sirv.d.ts"
-      ],
-      "author": {
-        "name": "Luke Edwards",
-        "email": "luke@lukeed.com",
-        "url": "https://lukeed.com"
-      },
-      "engines": {
-        "node": ">= 10"
-      },
-      "_id": "sirv@2.0.4",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/sirv",
-      "_dependencies": {
-        "@polka/url": "^1.0.0-next.24",
-        "mrmime": "^2.0.0",
-        "totalist": "^3.0.0"
-      },
-      "devDependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: sirv@2.0.4 /Users/sac/wasm4pm/node_modules/sirv"
-      ]
-    },
     "smol-toml": {
       "version": "1.6.1",
       "overridden": false,
@@ -16936,61 +14409,6 @@
         "extraneous: stop-iteration-iterator@1.1.0 /Users/sac/wasm4pm/node_modules/stop-iteration-iterator"
       ]
     },
-    "strip-final-newline": {
-      "version": "3.0.0",
-      "resolved": "https://registry.npmjs.org/strip-final-newline/-/strip-final-newline-3.0.0.tgz",
-      "overridden": false,
-      "name": "strip-final-newline",
-      "description": "Strip the final newline character from a string/buffer",
-      "license": "MIT",
-      "repository": "sindresorhus/strip-final-newline",
-      "funding": {
-        "url": "https://github.com/sponsors/sindresorhus"
-      },
-      "author": {
-        "name": "Sindre Sorhus",
-        "email": "sindresorhus@gmail.com",
-        "url": "https://sindresorhus.com"
-      },
-      "type": "module",
-      "exports": "./index.js",
-      "engines": {
-        "node": ">=12"
-      },
-      "scripts": {
-        "test": "xo && ava"
-      },
-      "files": [
-        "index.js"
-      ],
-      "keywords": [
-        "strip",
-        "trim",
-        "remove",
-        "delete",
-        "final",
-        "last",
-        "end",
-        "file",
-        "newline",
-        "linebreak",
-        "character",
-        "string",
-        "buffer"
-      ],
-      "devDependencies": {
-        "ava": "^3.15.0",
-        "xo": "^0.39.1"
-      },
-      "_id": "strip-final-newline@3.0.0",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/strip-final-newline",
-      "_dependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: strip-final-newline@3.0.0 /Users/sac/wasm4pm/node_modules/strip-final-newline"
-      ]
-    },
     "strip-indent": {
       "version": "3.0.0",
       "overridden": false,
@@ -17119,193 +14537,6 @@
       "peerDependencies": {},
       "problems": [
         "extraneous: toml@3.0.0 /Users/sac/wasm4pm/node_modules/toml"
-      ]
-    },
-    "totalist": {
-      "version": "3.0.1",
-      "overridden": false,
-      "name": "totalist",
-      "repository": "lukeed/totalist",
-      "description": "A tiny (195B to 220B) utility to recursively list all (total) files in a directory",
-      "module": "dist/index.mjs",
-      "main": "dist/index.js",
-      "types": "index.d.ts",
-      "exports": {
-        ".": {
-          "types": "./index.d.ts",
-          "import": "./dist/index.mjs",
-          "require": "./dist/index.js"
-        },
-        "./sync": {
-          "types": "./sync/index.d.ts",
-          "import": "./sync/index.mjs",
-          "require": "./sync/index.js"
-        }
-      },
-      "license": "MIT",
-      "files": [
-        "index.d.ts",
-        "dist",
-        "sync"
-      ],
-      "author": {
-        "name": "Luke Edwards",
-        "email": "luke.edwards05@gmail.com",
-        "url": "https://lukeed.com"
-      },
-      "engines": {
-        "node": ">=6"
-      },
-      "keywords": [
-        "list",
-        "recursive",
-        "files",
-        "glob",
-        "tree"
-      ],
-      "scripts": {
-        "build": "bundt",
-        "test": "uvu -r esm test -i fixtures"
-      },
-      "modes": {
-        "sync": "src/sync.js",
-        "default": "src/async.js"
-      },
-      "devDependencies": {
-        "bundt": "1.1.1",
-        "esm": "3.2.25",
-        "uvu": "0.3.3"
-      },
-      "_id": "totalist@3.0.1",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/totalist",
-      "_dependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: totalist@3.0.1 /Users/sac/wasm4pm/node_modules/totalist"
-      ]
-    },
-    "type-detect": {
-      "version": "4.1.0",
-      "resolved": "https://registry.npmjs.org/type-detect/-/type-detect-4.1.0.tgz",
-      "overridden": false,
-      "name": "type-detect",
-      "description": "Improved typeof detection for node.js and the browser.",
-      "keywords": [
-        "type",
-        "typeof",
-        "types"
-      ],
-      "license": "MIT",
-      "author": "Jake Luer <jake@alogicalparadox.com> (http://alogicalparadox.com)",
-      "contributors": [
-        "Keith Cirkel (https://github.com/keithamus)",
-        "David Losert (https://github.com/davelosert)",
-        "Aleksey Shvayka (https://github.com/shvaikalesh)",
-        "Lucas Fernandes da Costa (https://github.com/lucasfcosta)",
-        "Grant Snodgrass (https://github.com/meeber)",
-        "Jeremy Tice (https://github.com/jetpacmonkey)",
-        "Edward Betts (https://github.com/EdwardBetts)",
-        "dvlsg (https://github.com/dvlsg)",
-        "Amila Welihinda (https://github.com/amilajack)",
-        "Jake Champion (https://github.com/JakeChampion)",
-        "Miroslav Bajtoš (https://github.com/bajtos)"
-      ],
-      "files": [
-        "index.js",
-        "index.ts",
-        "index.d.ts",
-        "type-detect.js"
-      ],
-      "main": "./type-detect.js",
-      "repository": {
-        "type": "git",
-        "url": "git+ssh://git@github.com/chaijs/type-detect.git"
-      },
-      "scripts": {
-        "bench": "node bench",
-        "build": "tsc && rollup -c rollup.conf.js",
-        "commit-msg": "commitlint -x angular",
-        "lint": "eslint --ignore-path .gitignore . --ext .js,.ts",
-        "prepare": "cross-env NODE_ENV=production npm run build",
-        "semantic-release": "semantic-release pre && npm publish && semantic-release post",
-        "pretest:node": "cross-env NODE_ENV=test npm run build",
-        "pretest:browser": "cross-env NODE_ENV=test npm run build",
-        "test": "npm run test:node && npm run test:browser",
-        "test:browser": "karma start --singleRun=true",
-        "test:node": "nyc mocha type-detect.test.js",
-        "test:deno": "deno test test/deno-test.ts",
-        "posttest:node": "nyc report --report-dir \"coverage/node-$(node --version)\" --reporter=lcovonly && npm run upload-coverage",
-        "posttest:browser": "npm run upload-coverage",
-        "upload-coverage": "codecov"
-      },
-      "eslintConfig": {
-        "parser": "@typescript-eslint/parser",
-        "plugins": [
-          "@typescript-eslint"
-        ],
-        "env": {
-          "es6": true
-        },
-        "extends": [
-          "strict/es6"
-        ],
-        "globals": {
-          "HTMLElement": false,
-          "window": false
-        },
-        "rules": {
-          "complexity": 0,
-          "max-statements": 0,
-          "prefer-rest-params": 0
-        }
-      },
-      "devDependencies": {
-        "@commitlint/cli": "^13.1.0",
-        "@rollup/plugin-buble": "^0.21.3",
-        "@rollup/plugin-commonjs": "^20.0.0",
-        "@rollup/plugin-node-resolve": "^13.0.5",
-        "@typescript-eslint/eslint-plugin": "^4.31.2",
-        "@typescript-eslint/parser": "^4.31.2",
-        "benchmark": "^2.1.4",
-        "buble": "^0.20.0",
-        "codecov": "^3.8.3",
-        "commitlint-config-angular": "^13.1.0",
-        "cross-env": "^7.0.3",
-        "eslint": "^7.32.0",
-        "eslint-config-strict": "^14.0.1",
-        "eslint-plugin-filenames": "^1.3.2",
-        "husky": "^7.0.2",
-        "karma": "^6.3.4",
-        "karma-chrome-launcher": "^3.1.0",
-        "karma-coverage": "^2.0.3",
-        "karma-detect-browsers": "^2.3.3",
-        "karma-edge-launcher": "^0.4.2",
-        "karma-firefox-launcher": "^2.1.1",
-        "karma-ie-launcher": "^1.0.0",
-        "karma-mocha": "^2.0.1",
-        "karma-opera-launcher": "^1.0.0",
-        "karma-safari-launcher": "^1.0.0",
-        "karma-safaritechpreview-launcher": "^2.0.2",
-        "karma-sauce-launcher": "^4.3.6",
-        "mocha": "^9.1.1",
-        "nyc": "^15.1.0",
-        "rollup": "^2.57.0",
-        "rollup-plugin-istanbul": "^3.0.0",
-        "semantic-release": "^18.0.0",
-        "simple-assert": "^1.0.0",
-        "typescript": "^4.4.3"
-      },
-      "engines": {
-        "node": ">=4"
-      },
-      "_id": "type-detect@4.1.0",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/type-detect",
-      "_dependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: type-detect@4.1.0 /Users/sac/wasm4pm/node_modules/type-detect"
       ]
     },
     "type-is": {
@@ -17601,128 +14832,6 @@
       "path": "/Users/sac/wasm4pm/node_modules/typescript",
       "_dependencies": {},
       "peerDependencies": {}
-    },
-    "ufo": {
-      "version": "1.6.3",
-      "overridden": false,
-      "name": "ufo",
-      "description": "URL utils for humans",
-      "repository": "unjs/ufo",
-      "license": "MIT",
-      "sideEffects": false,
-      "exports": {
-        ".": {
-          "types": "./dist/index.d.ts",
-          "import": "./dist/index.mjs",
-          "require": "./dist/index.cjs",
-          "default": "./dist/index.mjs"
-        },
-        "./*": "./*"
-      },
-      "main": "./dist/index.cjs",
-      "module": "./dist/index.mjs",
-      "types": "./dist/index.d.ts",
-      "files": [
-        "dist"
-      ],
-      "scripts": {
-        "build": "automd && unbuild",
-        "automd": "automd",
-        "dev": "vitest",
-        "lint": "eslint . && prettier -c src test",
-        "lint:fix": "eslint --fix . && prettier -w src test",
-        "prepack": "pnpm build",
-        "release": "pnpm test && changelogen --release && npm publish && git push --follow-tags",
-        "test": "pnpm lint && vitest run --typecheck"
-      },
-      "devDependencies": {
-        "@types/node": "^25.0.8",
-        "@vitest/coverage-v8": "^4.0.17",
-        "automd": "^0.4.2",
-        "changelogen": "^0.6.2",
-        "eslint": "^9.39.2",
-        "eslint-config-unjs": "^0.6.2",
-        "jiti": "^2.6.1",
-        "prettier": "^3.7.4",
-        "typescript": "^5.9.3",
-        "unbuild": "^3.6.1",
-        "untyped": "^2.0.0",
-        "vitest": "^4.0.17"
-      },
-      "packageManager": "pnpm@10.28.0",
-      "_id": "ufo@1.6.3",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/ufo",
-      "_dependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: ufo@1.6.3 /Users/sac/wasm4pm/node_modules/ufo"
-      ]
-    },
-    "undici-types": {
-      "version": "6.21.0",
-      "overridden": false,
-      "name": "undici-types",
-      "description": "A stand-alone types package for Undici",
-      "homepage": "https://undici.nodejs.org",
-      "bugs": {
-        "url": "https://github.com/nodejs/undici/issues"
-      },
-      "repository": {
-        "type": "git",
-        "url": "git+https://github.com/nodejs/undici.git"
-      },
-      "license": "MIT",
-      "types": "index.d.ts",
-      "files": [
-        "*.d.ts"
-      ],
-      "contributors": [
-        {
-          "name": "Daniele Belardi",
-          "url": "https://github.com/dnlup",
-          "author": true
-        },
-        {
-          "name": "Ethan Arrowood",
-          "url": "https://github.com/ethan-arrowood",
-          "author": true
-        },
-        {
-          "name": "Matteo Collina",
-          "url": "https://github.com/mcollina",
-          "author": true
-        },
-        {
-          "name": "Matthew Aitken",
-          "url": "https://github.com/KhafraDev",
-          "author": true
-        },
-        {
-          "name": "Robert Nagy",
-          "url": "https://github.com/ronag",
-          "author": true
-        },
-        {
-          "name": "Szymon Marczak",
-          "url": "https://github.com/szmarczak",
-          "author": true
-        },
-        {
-          "name": "Tomas Della Vedova",
-          "url": "https://github.com/delvedor",
-          "author": true
-        }
-      ],
-      "_id": "undici-types@6.21.0",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/undici-types",
-      "_dependencies": {},
-      "devDependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: undici-types@6.21.0 /Users/sac/wasm4pm/node_modules/undici-types"
-      ]
     },
     "unpipe": {
       "version": "1.0.0",
@@ -18032,219 +15141,6 @@
         "extraneous: vite-plugin-wasm@3.6.0 /Users/sac/wasm4pm/node_modules/vite-plugin-wasm"
       ]
     },
-    "vitest": {
-      "version": "1.6.1",
-      "resolved": "https://registry.npmjs.org/vitest/-/vitest-1.6.1.tgz",
-      "overridden": false,
-      "name": "vitest",
-      "type": "module",
-      "description": "Next generation testing framework powered by Vite",
-      "author": "Anthony Fu <anthonyfu117@hotmail.com>",
-      "license": "MIT",
-      "funding": {
-        "url": "https://opencollective.com/vitest"
-      },
-      "homepage": "https://github.com/vitest-dev/vitest#readme",
-      "repository": {
-        "type": "git",
-        "url": "git+https://github.com/vitest-dev/vitest.git",
-        "directory": "packages/vitest"
-      },
-      "bugs": {
-        "url": "https://github.com/vitest-dev/vitest/issues"
-      },
-      "keywords": [
-        "vite",
-        "vite-node",
-        "vitest",
-        "test",
-        "jest"
-      ],
-      "sideEffects": false,
-      "exports": {
-        ".": {
-          "import": {
-            "types": "./dist/index.d.ts",
-            "default": "./dist/index.js"
-          },
-          "require": {
-            "types": "./index.d.cts",
-            "default": "./index.cjs"
-          }
-        },
-        "./*": "./*",
-        "./globals": {
-          "types": "./globals.d.ts"
-        },
-        "./jsdom": {
-          "types": "./jsdom.d.ts"
-        },
-        "./importMeta": {
-          "types": "./importMeta.d.ts"
-        },
-        "./import-meta": {
-          "types": "./import-meta.d.ts"
-        },
-        "./node": {
-          "types": "./dist/node.d.ts",
-          "default": "./dist/node.js"
-        },
-        "./execute": {
-          "types": "./dist/execute.d.ts",
-          "default": "./dist/execute.js"
-        },
-        "./workers": {
-          "types": "./dist/workers.d.ts",
-          "import": "./dist/workers.js"
-        },
-        "./browser": {
-          "types": "./dist/browser.d.ts",
-          "default": "./dist/browser.js"
-        },
-        "./runners": {
-          "types": "./dist/runners.d.ts",
-          "default": "./dist/runners.js"
-        },
-        "./suite": {
-          "types": "./dist/suite.d.ts",
-          "default": "./dist/suite.js"
-        },
-        "./environments": {
-          "types": "./dist/environments.d.ts",
-          "default": "./dist/environments.js"
-        },
-        "./utils": {
-          "types": "./dist/utils.d.ts",
-          "default": "./dist/utils.js"
-        },
-        "./config": {
-          "types": "./config.d.ts",
-          "require": "./dist/config.cjs",
-          "default": "./dist/config.js"
-        },
-        "./coverage": {
-          "types": "./coverage.d.ts",
-          "default": "./dist/coverage.js"
-        },
-        "./reporters": {
-          "types": "./dist/reporters.d.ts",
-          "default": "./dist/reporters.js"
-        },
-        "./snapshot": {
-          "types": "./dist/snapshot.d.ts",
-          "default": "./dist/snapshot.js"
-        }
-      },
-      "main": "./dist/index.js",
-      "module": "./dist/index.js",
-      "types": "./dist/index.d.ts",
-      "bin": {
-        "vitest": "vitest.mjs"
-      },
-      "files": [
-        "*.cjs",
-        "*.d.cts",
-        "*.d.ts",
-        "*.mjs",
-        "bin",
-        "dist"
-      ],
-      "engines": {
-        "node": "^18.0.0 || >=20.0.0"
-      },
-      "peerDependencies": {
-        "@edge-runtime/vm": "*",
-        "@types/node": "^18.0.0 || >=20.0.0",
-        "happy-dom": "*",
-        "jsdom": "*",
-        "@vitest/ui": "1.6.1",
-        "@vitest/browser": "1.6.1"
-      },
-      "peerDependenciesMeta": {
-        "@edge-runtime/vm": {
-          "optional": true
-        },
-        "@types/node": {
-          "optional": true
-        },
-        "@vitest/browser": {
-          "optional": true
-        },
-        "@vitest/ui": {
-          "optional": true
-        },
-        "happy-dom": {
-          "optional": true
-        },
-        "jsdom": {
-          "optional": true
-        }
-      },
-      "devDependencies": {
-        "@ampproject/remapping": "^2.2.1",
-        "@antfu/install-pkg": "^0.3.1",
-        "@edge-runtime/vm": "^3.1.8",
-        "@sinonjs/fake-timers": "11.1.0",
-        "@types/estree": "^1.0.5",
-        "@types/istanbul-lib-coverage": "^2.0.6",
-        "@types/istanbul-reports": "^3.0.4",
-        "@types/jsdom": "^21.1.6",
-        "@types/micromatch": "^4.0.6",
-        "@types/node": "^20.11.5",
-        "@types/prompts": "^2.4.9",
-        "@types/sinonjs__fake-timers": "^8.1.5",
-        "birpc": "0.2.15",
-        "cac": "^6.7.14",
-        "chai-subset": "^1.6.0",
-        "cli-truncate": "^4.0.0",
-        "expect-type": "^0.17.3",
-        "fast-glob": "^3.3.2",
-        "find-up": "^6.3.0",
-        "flatted": "^3.2.9",
-        "get-tsconfig": "^4.7.3",
-        "happy-dom": "^14.3.10",
-        "jsdom": "^24.0.0",
-        "log-update": "^5.0.1",
-        "micromatch": "^4.0.5",
-        "p-limit": "^5.0.0",
-        "pretty-format": "^29.7.0",
-        "prompts": "^2.4.2",
-        "strip-ansi": "^7.1.0",
-        "ws": "^8.14.2"
-      },
-      "scripts": {
-        "build": "rimraf dist && rollup -c",
-        "dev": "NODE_OPTIONS=\"--max-old-space-size=8192\" rollup -c --watch -m inline"
-      },
-      "_id": "vitest@1.6.1",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/vitest",
-      "_dependencies": {
-        "acorn-walk": "^8.3.2",
-        "chai": "^4.3.10",
-        "debug": "^4.3.4",
-        "execa": "^8.0.1",
-        "local-pkg": "^0.5.0",
-        "magic-string": "^0.30.5",
-        "pathe": "^1.1.1",
-        "picocolors": "^1.0.0",
-        "std-env": "^3.5.0",
-        "strip-literal": "^2.0.0",
-        "tinybench": "^2.5.1",
-        "tinypool": "^0.8.3",
-        "vite": "^5.0.0",
-        "why-is-node-running": "^2.2.2",
-        "@vitest/runner": "1.6.1",
-        "@vitest/expect": "1.6.1",
-        "@vitest/spy": "1.6.1",
-        "@vitest/utils": "1.6.1",
-        "vite-node": "1.6.1",
-        "@vitest/snapshot": "1.6.1"
-      },
-      "problems": [
-        "extraneous: vitest@1.6.1 /Users/sac/wasm4pm/node_modules/vitest"
-      ]
-    },
     "vscode-oniguruma": {
       "version": "1.7.0",
       "overridden": false,
@@ -18339,7 +15235,7 @@
       ]
     },
     "wasm4pm-cognition": {
-      "version": "26.4.28",
+      "version": "26.5.18",
       "overridden": false,
       "name": "wasm4pm-cognition",
       "collaborators": [
@@ -18356,16 +15252,17 @@
         "wasm4pm_cognition.js",
         "wasm4pm_cognition.d.ts"
       ],
-      "main": "wasm4pm_cognition.js",
+      "main": "index.js",
       "types": "wasm4pm_cognition.d.ts",
-      "_id": "wasm4pm-cognition@26.4.28",
+      "type": "module",
+      "_id": "wasm4pm-cognition@26.5.18",
       "extraneous": true,
       "path": "/Users/sac/wasm4pm/node_modules/wasm4pm-cognition",
       "_dependencies": {},
       "devDependencies": {},
       "peerDependencies": {},
       "problems": [
-        "extraneous: wasm4pm-cognition@26.4.28 /Users/sac/wasm4pm/node_modules/wasm4pm-cognition"
+        "extraneous: wasm4pm-cognition@26.5.18 /Users/sac/wasm4pm/node_modules/wasm4pm-cognition"
       ]
     },
     "which-boxed-primitive": {
@@ -18688,118 +15585,6 @@
       "peerDependencies": {},
       "problems": [
         "extraneous: which-typed-array@1.1.20 /Users/sac/wasm4pm/node_modules/which-typed-array"
-      ]
-    },
-    "which": {
-      "version": "2.0.2",
-      "resolved": "https://registry.npmjs.org/which/-/which-2.0.2.tgz",
-      "overridden": false,
-      "name": "which",
-      "author": "Isaac Z. Schlueter <i@izs.me> (http://blog.izs.me)",
-      "description": "Like which(1) unix command. Find the first instance of an executable in the PATH.",
-      "repository": {
-        "type": "git",
-        "url": "git://github.com/isaacs/node-which.git"
-      },
-      "main": "which.js",
-      "bin": {
-        "node-which": "bin/node-which"
-      },
-      "license": "ISC",
-      "devDependencies": {
-        "mkdirp": "^0.5.0",
-        "rimraf": "^2.6.2",
-        "tap": "^14.6.9"
-      },
-      "scripts": {
-        "test": "tap",
-        "preversion": "npm test",
-        "postversion": "npm publish",
-        "prepublish": "npm run changelog",
-        "prechangelog": "bash gen-changelog.sh",
-        "changelog": "git add CHANGELOG.md",
-        "postchangelog": "git commit -m 'update changelog - '${npm_package_version}",
-        "postpublish": "git push origin --follow-tags"
-      },
-      "files": [
-        "which.js",
-        "bin/node-which"
-      ],
-      "tap": {
-        "check-coverage": true
-      },
-      "engines": {
-        "node": ">= 8"
-      },
-      "_id": "which@2.0.2",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/which",
-      "_dependencies": {
-        "isexe": "^2.0.0"
-      },
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: which@2.0.2 /Users/sac/wasm4pm/node_modules/which"
-      ]
-    },
-    "yocto-queue": {
-      "version": "1.2.2",
-      "resolved": "https://registry.npmjs.org/yocto-queue/-/yocto-queue-1.2.2.tgz",
-      "overridden": false,
-      "name": "yocto-queue",
-      "description": "Tiny queue data structure",
-      "license": "MIT",
-      "repository": "sindresorhus/yocto-queue",
-      "funding": {
-        "url": "https://github.com/sponsors/sindresorhus"
-      },
-      "author": {
-        "name": "Sindre Sorhus",
-        "email": "sindresorhus@gmail.com",
-        "url": "https://sindresorhus.com"
-      },
-      "type": "module",
-      "exports": "./index.js",
-      "types": "./index.d.ts",
-      "sideEffects": false,
-      "engines": {
-        "node": ">=12.20"
-      },
-      "scripts": {
-        "//test": "xo && ava && tsd",
-        "test": "ava && tsd"
-      },
-      "files": [
-        "index.js",
-        "index.d.ts"
-      ],
-      "keywords": [
-        "queue",
-        "data",
-        "structure",
-        "algorithm",
-        "queues",
-        "queuing",
-        "list",
-        "array",
-        "linkedlist",
-        "fifo",
-        "enqueue",
-        "dequeue",
-        "data-structure"
-      ],
-      "devDependencies": {
-        "ava": "^3.15.0",
-        "tsd": "^0.17.0",
-        "xo": "^0.44.0"
-      },
-      "_id": "yocto-queue@1.2.2",
-      "extraneous": true,
-      "path": "/Users/sac/wasm4pm/node_modules/yocto-queue",
-      "_dependencies": {},
-      "peerDependencies": {},
-      "problems": [
-        "extraneous: yocto-queue@1.2.2 /Users/sac/wasm4pm/node_modules/yocto-queue"
       ]
     },
     "zod-to-json-schema": {

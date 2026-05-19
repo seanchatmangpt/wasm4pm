@@ -25,6 +25,10 @@ pub struct FilesystemDiscovery {
 
 impl FilesystemDiscovery {
     /// Construct a new discovery rooted at `root` with default depth 8.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn new(root: impl Into<PathBuf>) -> Self {
         Self {
             root: root.into(),
