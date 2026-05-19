@@ -72,6 +72,8 @@ fake = { workspace = true }
 proptest = { workspace = true }
 insta = { version = "1", features = ["json"] }
 wasm-bindgen-test = "0.3"
+tempfile = { workspace = true }
+regex = "1"
 
 [[bench]]
 name = "fast_algorithms"

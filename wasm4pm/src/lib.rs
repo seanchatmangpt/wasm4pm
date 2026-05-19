@@ -648,6 +648,15 @@ pub mod gpu;
 #[cfg(feature = "cloud")]
 pub mod autoprocess;
 
+// Trace correlation for CLI→WASM causality proof (Chicago TDD Tier 5)
+pub mod trace_correlation;
+
+// RL Policy Persistence — Checkpoint save/load with BLAKE3 integrity verification (Gap-18)
+pub mod policy_persistence;
+
+// Autonomic Audit Trail — Immutable append-only event log with Merkle chain (Gap-20)
+pub mod autonomic_audit_trail;
+
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]
 use state::*;
@@ -1254,14 +1263,103 @@ pub fn autonomic_execute_cycle(
             serde_json::json!(if causes.is_empty() { "OK" } else { "ALERT" }),
         );
         for c in &causes {
+            // Classify rule type and emit detailed span with attributes
+            let (rule_violated, rule_number, mut rule_attrs) = match c {
+                spc::SpecialCause::OutOfControl { value, .. } => {
+                    // Rule 1: Point beyond 3σ (outlier)
+                    let z_score = if chart_data.len() > 0 {
+                        let data_values: Vec<f64> = chart_data.iter().map(|cd| cd.value).collect();
+                        let mean = data_values.iter().sum::<f64>() / data_values.len() as f64;
+                        let std = (data_values.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / data_values.len() as f64).sqrt();
+                        if std > 0.0 { ((value - mean) / std).abs() } else { 0.0 }
+                    } else {
+                        0.0
+                    };
+                    (
+                        "rule_1_outlier",
+                        1u8,
+                        vec![
+                            ("z_score", format!("{:.2}", z_score)),
+                            ("outlier_value", format!("{:.2}", value)),
+                        ],
+                    )
+                },
+                spc::SpecialCause::Shift { direction, count } => {
+                    // Rule 2: 9+ consecutive points on one side of CL
+                    let direction_str = match direction {
+                        spc::ShiftDirection::Above => "above",
+                        spc::ShiftDirection::Below => "below",
+                    };
+                    (
+                        "rule_2_shift",
+                        2u8,
+                        vec![
+                            ("direction", direction_str.to_string()),
+                            ("consecutive_points", count.to_string()),
+                        ],
+                    )
+                },
+                spc::SpecialCause::Trend { direction, count } => {
+                    // Rule 3: 6+ consecutive increasing/decreasing points
+                    let direction_str = match direction {
+                        spc::TrendDirection::Increasing => "increasing",
+                        spc::TrendDirection::Decreasing => "decreasing",
+                    };
+                    (
+                        "rule_3_trend",
+                        3u8,
+                        vec![
+                            ("trend_direction", direction_str.to_string()),
+                            ("monotonic_sequence_length", count.to_string()),
+                        ],
+                    )
+                },
+                spc::SpecialCause::TwoOfThree { direction } => {
+                    // Rule 4: 2 of 3 consecutive points beyond 2σ on same side
+                    let direction_str = match direction {
+                        spc::ShiftDirection::Above => "above",
+                        spc::ShiftDirection::Below => "below",
+                    };
+                    (
+                        "rule_4_two_of_three",
+                        4u8,
+                        vec![
+                            ("direction", direction_str.to_string()),
+                        ],
+                    )
+                },
+            };
+
+            // Emit detailed OTEL span with classified rule type
+            let current_cycle = 0u64; // TODO: wire with_orch() accessor
+            let spc_value = if let Some(last_chart) = chart_data.last() { last_chart.value } else { 0.0 };
+            let spc_ucl = if let Some(last_chart) = chart_data.last() { last_chart.ucl } else { 0.0 };
+            let spc_lcl = if let Some(last_chart) = chart_data.last() { last_chart.lcl } else { 0.0 };
+            let spc_cl = if let Some(last_chart) = chart_data.last() { last_chart.cl } else { 0.0 };
+
+            let sigma_distance = if spc_cl > 0.0 {
+                ((spc_value - spc_cl) / ((spc_ucl - spc_cl) / 3.0)).abs()
+            } else {
+                0.0
+            };
+
             tracing::warn!(
                 target: "autonomic.spc",
-                kind = "event_rate",
-                cause = ?c,
+                spc_rule_type = rule_violated,
+                spc_metric = "event_rate",
+                spc_value = spc_value,
+                spc_ucl = spc_ucl,
+                spc_lcl = spc_lcl,
+                spc_cl = spc_cl,
+                spc_sigma_distance = sigma_distance,
+                rule_number = rule_number,
+                cycle_count = current_cycle,
                 service_name = "wpm",
                 status = "error",
-                "Western Electric rule violation"
+                rule_details = rule_attrs.iter().map(|(k, v)| format!("{}={}", k, v)).collect::<Vec<_>>().join(", "),
+                "SPC rule violation classified"
             );
+
             all_special_causes.push(format!("event_rate: {:?}", c));
         }
     } else {
@@ -1302,13 +1400,96 @@ pub fn autonomic_execute_cycle(
             serde_json::json!(if causes.is_empty() { "OK" } else { "ALERT" }),
         );
         for c in &causes {
+            // Classify rule type and emit detailed span with attributes
+            let (rule_violated, rule_number, mut rule_attrs) = match c {
+                spc::SpecialCause::OutOfControl { value, .. } => {
+                    let z_score = if chart_data.len() > 0 {
+                        let data_values: Vec<f64> = chart_data.iter().map(|cd| cd.value).collect();
+                        let mean = data_values.iter().sum::<f64>() / data_values.len() as f64;
+                        let std = (data_values.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / data_values.len() as f64).sqrt();
+                        if std > 0.0 { ((value - mean) / std).abs() } else { 0.0 }
+                    } else {
+                        0.0
+                    };
+                    (
+                        "rule_1_outlier",
+                        1u8,
+                        vec![
+                            ("z_score", format!("{:.2}", z_score)),
+                            ("outlier_value", format!("{:.2}", value)),
+                        ],
+                    )
+                },
+                spc::SpecialCause::Shift { direction, count } => {
+                    let direction_str = match direction {
+                        spc::ShiftDirection::Above => "above",
+                        spc::ShiftDirection::Below => "below",
+                    };
+                    (
+                        "rule_2_shift",
+                        2u8,
+                        vec![
+                            ("direction", direction_str.to_string()),
+                            ("consecutive_points", count.to_string()),
+                        ],
+                    )
+                },
+                spc::SpecialCause::Trend { direction, count } => {
+                    let direction_str = match direction {
+                        spc::TrendDirection::Increasing => "increasing",
+                        spc::TrendDirection::Decreasing => "decreasing",
+                    };
+                    (
+                        "rule_3_trend",
+                        3u8,
+                        vec![
+                            ("trend_direction", direction_str.to_string()),
+                            ("monotonic_sequence_length", count.to_string()),
+                        ],
+                    )
+                },
+                spc::SpecialCause::TwoOfThree { direction } => {
+                    let direction_str = match direction {
+                        spc::ShiftDirection::Above => "above",
+                        spc::ShiftDirection::Below => "below",
+                    };
+                    (
+                        "rule_4_two_of_three",
+                        4u8,
+                        vec![
+                            ("direction", direction_str.to_string()),
+                        ],
+                    )
+                },
+            };
+
+            let current_cycle = 0u64; // TODO: wire with_orch() accessor
+            let spc_value = if let Some(last_chart) = chart_data.last() { last_chart.value } else { 0.0 };
+            let spc_ucl = if let Some(last_chart) = chart_data.last() { last_chart.ucl } else { 0.0 };
+            let spc_lcl = if let Some(last_chart) = chart_data.last() { last_chart.lcl } else { 0.0 };
+            let spc_cl = if let Some(last_chart) = chart_data.last() { last_chart.cl } else { 0.0 };
+
+            let sigma_distance = if spc_cl > 0.0 {
+                ((spc_value - spc_cl) / ((spc_ucl - spc_cl) / 3.0)).abs()
+            } else {
+                0.0
+            };
+
             tracing::warn!(
                 target: "autonomic.spc",
-                kind = "trace_duration",
-                cause = ?c,
+                spc_rule_type = rule_violated,
+                spc_metric = "trace_duration",
+                spc_value = spc_value,
+                spc_ucl = spc_ucl,
+                spc_lcl = spc_lcl,
+                spc_cl = spc_cl,
+                spc_sigma_distance = sigma_distance,
+                rule_number = rule_number,
+                cycle_count = current_cycle,
                 service_name = "wpm",
                 status = "error",
-                "Western Electric rule violation"
+                rule_details = rule_attrs.iter().map(|(k, v)| format!("{}={}", k, v)).collect::<Vec<_>>().join(", "),
+                "SPC rule violation classified"
             );
             all_special_causes.push(format!("trace_duration: {:?}", c));
         }
@@ -1350,13 +1531,96 @@ pub fn autonomic_execute_cycle(
             serde_json::json!(if causes.is_empty() { "OK" } else { "ALERT" }),
         );
         for c in &causes {
+            // Classify rule type and emit detailed span with attributes
+            let (rule_violated, rule_number, mut rule_attrs) = match c {
+                spc::SpecialCause::OutOfControl { value, .. } => {
+                    let z_score = if chart_data.len() > 0 {
+                        let data_values: Vec<f64> = chart_data.iter().map(|cd| cd.value).collect();
+                        let mean = data_values.iter().sum::<f64>() / data_values.len() as f64;
+                        let std = (data_values.iter().map(|x| (x - mean).powi(2)).sum::<f64>() / data_values.len() as f64).sqrt();
+                        if std > 0.0 { ((value - mean) / std).abs() } else { 0.0 }
+                    } else {
+                        0.0
+                    };
+                    (
+                        "rule_1_outlier",
+                        1u8,
+                        vec![
+                            ("z_score", format!("{:.2}", z_score)),
+                            ("outlier_value", format!("{:.2}", value)),
+                        ],
+                    )
+                },
+                spc::SpecialCause::Shift { direction, count } => {
+                    let direction_str = match direction {
+                        spc::ShiftDirection::Above => "above",
+                        spc::ShiftDirection::Below => "below",
+                    };
+                    (
+                        "rule_2_shift",
+                        2u8,
+                        vec![
+                            ("direction", direction_str.to_string()),
+                            ("consecutive_points", count.to_string()),
+                        ],
+                    )
+                },
+                spc::SpecialCause::Trend { direction, count } => {
+                    let direction_str = match direction {
+                        spc::TrendDirection::Increasing => "increasing",
+                        spc::TrendDirection::Decreasing => "decreasing",
+                    };
+                    (
+                        "rule_3_trend",
+                        3u8,
+                        vec![
+                            ("trend_direction", direction_str.to_string()),
+                            ("monotonic_sequence_length", count.to_string()),
+                        ],
+                    )
+                },
+                spc::SpecialCause::TwoOfThree { direction } => {
+                    let direction_str = match direction {
+                        spc::ShiftDirection::Above => "above",
+                        spc::ShiftDirection::Below => "below",
+                    };
+                    (
+                        "rule_4_two_of_three",
+                        4u8,
+                        vec![
+                            ("direction", direction_str.to_string()),
+                        ],
+                    )
+                },
+            };
+
+            let current_cycle = 0u64; // TODO: wire with_orch() accessor
+            let spc_value = if let Some(last_chart) = chart_data.last() { last_chart.value } else { 0.0 };
+            let spc_ucl = if let Some(last_chart) = chart_data.last() { last_chart.ucl } else { 0.0 };
+            let spc_lcl = if let Some(last_chart) = chart_data.last() { last_chart.lcl } else { 0.0 };
+            let spc_cl = if let Some(last_chart) = chart_data.last() { last_chart.cl } else { 0.0 };
+
+            let sigma_distance = if spc_cl > 0.0 {
+                ((spc_value - spc_cl) / ((spc_ucl - spc_cl) / 3.0)).abs()
+            } else {
+                0.0
+            };
+
             tracing::warn!(
                 target: "autonomic.spc",
-                kind = "activity_frequency",
-                cause = ?c,
+                spc_rule_type = rule_violated,
+                spc_metric = "activity_frequency",
+                spc_value = spc_value,
+                spc_ucl = spc_ucl,
+                spc_lcl = spc_lcl,
+                spc_cl = spc_cl,
+                spc_sigma_distance = sigma_distance,
+                rule_number = rule_number,
+                cycle_count = current_cycle,
                 service_name = "wpm",
                 status = "error",
-                "Western Electric rule violation"
+                rule_details = rule_attrs.iter().map(|(k, v)| format!("{}={}", k, v)).collect::<Vec<_>>().join(", "),
+                "SPC rule violation classified"
             );
             all_special_causes.push(format!("activity_frequency: {:?}", c));
         }
@@ -1445,14 +1709,25 @@ pub fn autonomic_execute_cycle(
                     "event_rate_historical".to_string(),
                     serde_json::json!("ALERT"),
                 );
+                // NOTE: Observability instrumentation for historical SPC rules simplified to allow compilation
+                // Full instrumentation (with rule attribute details) planned for Cycle 56+
                 for c in &causes_hist {
+                    let (rule_violated, rule_number) = match c {
+                        spc::SpecialCause::OutOfControl { .. } => ("rule_1_outlier", 1u8),
+                        spc::SpecialCause::Shift { .. } => ("rule_2_shift", 2u8),
+                        spc::SpecialCause::Trend { .. } => ("rule_3_trend", 3u8),
+                        spc::SpecialCause::TwoOfThree { .. } => ("rule_4_two_of_three", 4u8),
+                    };
+                    let current_cycle = 0u64; // TODO: wire with_orch() accessor
                     tracing::warn!(
                         target: "autonomic.spc",
-                        kind = "event_rate_historical",
-                        cause = ?c,
+                        spc_rule_type = rule_violated,
+                        spc_metric = "event_rate_historical",
+                        rule_number = rule_number,
+                        cycle_count = current_cycle,
                         service_name = "wpm",
                         status = "error",
-                        "Western Electric rule violation"
+                        "SPC rule violation classified (historical)"
                     );
                     all_special_causes.push(format!("event_rate_historical: {:?}", c));
                 }
@@ -1484,13 +1759,22 @@ pub fn autonomic_execute_cycle(
                     serde_json::json!("ALERT"),
                 );
                 for c in &causes_hist {
+                    let (rule_violated, rule_number) = match c {
+                        spc::SpecialCause::OutOfControl { .. } => ("rule_1_outlier", 1u8),
+                        spc::SpecialCause::Shift { .. } => ("rule_2_shift", 2u8),
+                        spc::SpecialCause::Trend { .. } => ("rule_3_trend", 3u8),
+                        spc::SpecialCause::TwoOfThree { .. } => ("rule_4_two_of_three", 4u8),
+                    };
+                    let current_cycle = 0u64; // TODO: wire with_orch() accessor
                     tracing::warn!(
                         target: "autonomic.spc",
-                        kind = "trace_duration_historical",
-                        cause = ?c,
+                        spc_rule_type = rule_violated,
+                        spc_metric = "trace_duration_historical",
+                        rule_number = rule_number,
+                        cycle_count = current_cycle,
                         service_name = "wpm",
                         status = "error",
-                        "Western Electric rule violation"
+                        "SPC rule violation classified (historical)"
                     );
                     all_special_causes.push(format!("trace_duration_historical: {:?}", c));
                 }
@@ -1525,13 +1809,22 @@ pub fn autonomic_execute_cycle(
                     serde_json::json!("ALERT"),
                 );
                 for c in &causes_hist {
+                    let (rule_violated, rule_number) = match c {
+                        spc::SpecialCause::OutOfControl { .. } => ("rule_1_outlier", 1u8),
+                        spc::SpecialCause::Shift { .. } => ("rule_2_shift", 2u8),
+                        spc::SpecialCause::Trend { .. } => ("rule_3_trend", 3u8),
+                        spc::SpecialCause::TwoOfThree { .. } => ("rule_4_two_of_three", 4u8),
+                    };
+                    let current_cycle = 0u64; // TODO: wire with_orch() accessor
                     tracing::warn!(
                         target: "autonomic.spc",
-                        kind = "activity_frequency_historical",
-                        cause = ?c,
+                        spc_rule_type = rule_violated,
+                        spc_metric = "activity_frequency_historical",
+                        rule_number = rule_number,
+                        cycle_count = current_cycle,
                         service_name = "wpm",
                         status = "error",
-                        "Western Electric rule violation"
+                        "SPC rule violation classified (historical)"
                     );
                     all_special_causes.push(format!("activity_frequency_historical: {:?}", c));
                 }

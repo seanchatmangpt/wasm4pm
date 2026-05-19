@@ -458,9 +458,9 @@ fn test_real_log_spc_penalty_bounded() {
     // Use compute_reward directly from the orchestrator module.
     use wasm4pm::rl_orchestrator::compute_reward;
 
-    let penalty_3_alerts = compute_reward(0, 0, 3, true, true, false);
-    let penalty_5_alerts = compute_reward(0, 0, 5, true, true, false);
-    let penalty_10_alerts = compute_reward(0, 0, 10, true, true, false);
+    let penalty_3_alerts = compute_reward(0, 0, 3, true, true, false, 0);
+    let penalty_5_alerts = compute_reward(0, 0, 5, true, true, false, 0);
+    let penalty_10_alerts = compute_reward(0, 0, 10, true, true, false, 0);
 
     // 3 alerts: -0.9 penalty
     // 5 alerts: -1.5 penalty (capped)

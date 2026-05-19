@@ -96,6 +96,41 @@ export {
   type FeatureImportanceResult,
 } from './feature-importance.js';
 
+// Algorithm selection (Tier 3 AUTOML Gap-14)
+export {
+  selectAlgorithm,
+  selectClassificationAlgorithm,
+  selectClusteringAlgorithm,
+  selectForecastingAlgorithm,
+  selectRegressionAlgorithm,
+  selectPcaDimensionality,
+  computeMulticollinearity,
+  type AlgorithmRecommendation,
+  type FeatureMatrixCharacteristics,
+} from './algorithm-selection.js';
+
+// Hyperparameter search (Tier 3 AUTOML Gap-15/16)
+export {
+  gridSearch,
+  expandGrid,
+  getBestParams,
+  type ParamGrid,
+  type ParamValue,
+  type GridSearchResult,
+} from './hyperparameter-search.js';
+
+// Bootstrap confidence intervals (Tier 3 AUTOML Gap-17)
+export {
+  bootstrapCI,
+  bootstrapRegressionCI,
+  seededRng,
+  accuracy,
+  mae,
+  rmse,
+  f1,
+  type BootstrapCIResult,
+} from './confidence-intervals.js';
+
 // Types
 export type {
   FeatureMatrix,

@@ -74,6 +74,9 @@ export * from './algorithm-ranking.js';
 // Error span capture: robust error detection, stack trace capture, OTEL emission
 export * from './error-span-capture.js';
 
+// Agent Coordination Log: RL agent actions, SPC alerts, recovery events with OCEL export (Gap-19)
+export * from './agent-coordination-log.js';
+
 // Global singleton access
 import { ObservabilityWrapper } from './observability-wrapper.js';
 import { Tracer } from './spans.js';

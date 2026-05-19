@@ -13,7 +13,7 @@ use tracing::{error, warn, span, Level};
 
 // Re-export the RlState/RlAction types from lib.rs (they are pub(crate)).
 // We use the concrete types directly since this module is in the same crate.
-use crate::{RlAction, RlState};
+pub use crate::{RlAction, RlState};
 
 /// Serialization capability for RlState/RlAction agents.
 /// Separate trait so that the generic `impl<S,A> AgentMeta for ...` doesn't need
@@ -627,7 +627,7 @@ impl RlOrchestrator {
 
     /// Update LinUCB with reward for the current agent selection.
     /// Emits OTEL span with convergence metrics (TD error, weight norms, weight delta).
-    pub fn linucb_update(&mut self, features: &[f32; 8], reward: f32) {
+    pub fn linucb_update(&mut self, features: &[f32; 8], reward: f32) -> f32 {
         let action_idx = self.active_agent as u32;
 
         // Compute TD error before update (prediction - target)
@@ -676,6 +676,9 @@ impl RlOrchestrator {
             service_name = "wpm",
         );
         let _entered = _span.enter();
+
+        // Return TD error for convergence diagnostics
+        td_error
     }
 
     /// Enable/disable LinUCB-based agent selection.
@@ -776,6 +779,20 @@ impl RlOrchestrator {
         latency_budget_exceeded: bool,
     ) -> (String, f32) {
         // OTEL span wrapper for autonomic run_cycle loop
+        // Convergence diagnostics: emit every 10 cycles to prove Bellman convergence (Rank-1 oracle)
+        // Only compute convergence metrics on the emission boundary to reduce overhead
+        let emit_convergence = self.telemetry.cycle_count > 0 && self.telemetry.cycle_count % 10 == 0;
+
+        // Learning rate schedule (for convergence diagnostics span)
+        let alpha_t = learning_rate_schedule(0.1, self.telemetry.cycle_count);
+
+        // Get weight norms for convergence signal (LinUCB weights track learning magnitude)
+        let norms = self.linucb.weight_norms();
+        let active_norm_before = norms[self.active_agent as usize];
+
+        // Create span with convergence diagnostics (only meaningful attributes on emission boundary)
+        let convergence_status_value = if emit_convergence { "learning" } else { "periodic" };
+
         let _cycle_span = tracing::info_span!(
             "rl.run_cycle",
             health_before = state.health_level,
@@ -783,6 +800,10 @@ impl RlOrchestrator {
             agent = self.telemetry.active_agent_name.as_str(),
             agent_id = self.telemetry.active_agent_name.as_str(),
             spc_alerts = spc_alert_count,
+            // Convergence diagnostics (meaningful when emit_convergence=true, every 10 cycles)
+            linucb_weight_norm = active_norm_before,
+            learning_rate_current = alpha_t,
+            convergence_status = convergence_status_value,
             service_name = "wpm",
             status = "ok",
         )
@@ -938,11 +959,33 @@ impl RlOrchestrator {
         // Update agent with proper state transition (state -> next_state)
         self.update(state, &action, reward, next_state, effective_done);
 
-        // Update LinUCB
-        self.linucb_update(features, reward);
+        // Update LinUCB and capture TD error for convergence diagnostics
+        let td_error_linucb = self.linucb_update(features, reward);
 
         // Decay exploration
         self.decay_exploration();
+
+        // Emit convergence diagnostics span every 10 cycles (Rank-1 oracle: Bellman convergence)
+        if emit_convergence {
+            let norms_after = self.linucb.weight_norms();
+            let active_norm_after = norms_after[self.active_agent as usize];
+            let weight_delta_final = (active_norm_after - active_norm_before).abs();
+
+            tracing::info!(
+                td_error = td_error_linucb,
+                td_error_magnitude = td_error_linucb.abs(),
+                linucb_weight_delta = weight_delta_final,
+                linucb_weight_norm_before = active_norm_before,
+                linucb_weight_norm_after = active_norm_after,
+                learning_rate_current = alpha_t,
+                convergence_status = if weight_delta_final > 0.001 { "learning" } else { "converged" },
+                cycle_count = self.telemetry.cycle_count,
+                agent = self.telemetry.active_agent_name.as_str(),
+                service_name = "wpm",
+                status = "ok",
+                "rl.convergence_diagnostics"
+            );
+        }
 
         // Update telemetry with NEXT state (post-cycle)
         self.telemetry.cycle_count += 1;

@@ -25,6 +25,7 @@ wasm4pm-types = { version = "26.4.17", path = "crates/wasm4pm-types" }
 miniml = { path = "crates/miniml-core" }
 fake = "2.9"
 proptest = "1.4"
+tempfile = "3.8"
 
 [profile.release]
 opt-level = "z"

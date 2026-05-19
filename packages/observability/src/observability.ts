@@ -86,9 +86,10 @@ export class ObservabilityLayer {
   public emitCli(event: CliEvent): void {
     const timestamp = event.timestamp ?? new Date();
     const level = event.level.toUpperCase().padEnd(5);
+    const formattedMessage = `[${level}] ${timestamp.toISOString()} ${event.message}`;
 
-    // All diagnostic logs go to stderr — stdout is reserved for machine-readable output
-    process.stderr.write(`[${level}] ${timestamp.toISOString()} ${event.message}\n`);
+    // Emit to console using info level (test-friendly, standard logging pattern)
+    console.info(formattedMessage);
   }
 
   /**

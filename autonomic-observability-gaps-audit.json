@@ -1,0 +1,166 @@
+{
+  "audit_metadata": {
+    "date": "2026-05-19",
+    "scope": "autonomic healing and RL/SPC/circuit observability gaps",
+    "auditor": "claude-haiku-4-5",
+    "codebase": "wasm4pm",
+    "compliance_standard": "chicago-tdd.md (Van der Aalst process mining)"
+  },
+  "executive_summary": {
+    "total_gaps_identified": 3,
+    "severity_critical": 3,
+    "severity_high": 0,
+    "severity_medium": 0,
+    "total_files_affected": 3,
+    "fm5_risk_count": 3,
+    "key_finding": "Three critical observability gaps prevent causal proof that autonomic RL system is learning and adapting. RL convergence invisible (no per-cycle TD error), SPC-RL decoupled (rule type lost in quantization), Circuit→reward opaque (no causality correlation). All violate chicago-tdd.md Rank-1 or Rank-2 oracle requirements."
+  },
+  "gaps": [
+    {
+      "gap_id": "OBS-GAP-1",
+      "title": "RL Convergence Invisible — No Per-Cycle TD Error, Q-Value, Weight Norm Metrics",
+      "severity": "CRITICAL",
+      "file": "wasm4pm/src/rl_orchestrator.rs",
+      "line": 779,
+      "chicago_tdd_violation": "Rank-1 oracle (Bellman convergence theorem) incomplete — cannot prove |δ_t| → 0",
+      "fm5_risk": "HIGH — Tests can claim 'RL learning' without proving TD error convergence; self-referential test bypass",
+      "description": "The main autonomic `rl.run_cycle` OTEL span (line 779-789) emits health_before, health_after, agent, spc_alerts, but MISSING:\n- `td_error` (Bellman residual: reward - old_q + γ*max_q(next_state)) \n- `q_value_max` (current max Q-value to detect divergence)\n- `q_value_change` (magnitude of Q-value update)\n- `linucb_weight_delta` (per-agent weight norm change)\n- `learning_rate_current` (current α_t for exploration phase tracking)\n- `convergence_status` ('learning' if |δ_t| > 0.1, else 'converged')\n\nTD error IS computed in `linucb_update()` (line 635: `let td_error = reward - ucb_score_before`) and emitted separately in `linucb_td_error` attribute, but NOT in main cycle span. Auditors must correlate two separate span contexts to reconstruct convergence trajectory.",
+      "root_cause": "RL convergence metrics exist locally but are not aggregated into the main per-cycle span. Each agent computes TD error independently; no unified cycle-level convergence view.",
+      "evidence": {
+        "span_location": "wasm4pm/src/rl_orchestrator.rs:779-789",
+        "missing_attributes": [
+          "td_error (f32)",
+          "q_value_max (f32)",
+          "q_value_change (f32)",
+          "linucb_weight_delta (f32)",
+          "learning_rate_current (f32)",
+          "convergence_status (string: 'learning' | 'converged')"
+        ],
+        "existing_related_code": "linucb_update() line 635 computes td_error but emits in separate span"
+      },
+      "impact": "Cannot prove learning without independent TD error trajectory; FM-5 self-referential testing blocked; Jaeger cannot query convergence trend",
+      "recommendation": {
+        "priority": 1,
+        "effort": "MEDIUM (computation already exists, must be aggregated)",
+        "implementation": "Add 6 new attributes to `rl.run_cycle` span:\n1. Capture TD error after linucb_update() call\n2. Emit max_q_value from active agent\n3. Track learning_rate_schedule(0.1, cycle_count)\n4. Add convergence_status heuristic\n5. Aggregate weight norm deltas from LinUCB\nExample span:\n```rust\nlet _cycle_span = tracing::info_span!(\n    \"rl.run_cycle\",\n    health_before = state.health_level,\n    health_after = next_state.health_level,\n    agent = self.telemetry.active_agent_name.as_str(),\n    spc_alerts = spc_alert_count,\n    // NEW attributes:\n    td_error = td_error_from_update,\n    q_value_max = agent.get_max_q(),\n    learning_rate_current = alpha_t,\n    convergence_status = if td_error.abs() > 0.1 { \"learning\" } else { \"converged\" },\n    service_name = \"wpm\",\n    status = \"ok\",\n).entered();\n```",
+        "oracle_satisfied": "Rank-1 (Bellman): |δ_t| trajectory proves convergence; Rank-4 (statistical): convergence trend over 50+ cycles"
+      }
+    },
+    {
+      "gap_id": "OBS-GAP-2",
+      "title": "SPC-RL Decoupled — Rule Type Lost in Quantization, No Action Correlation",
+      "severity": "CRITICAL",
+      "file": "wasm4pm/src/lib.rs",
+      "line": 1256,
+      "chicago_tdd_violation": "Rank-2 domain contract (SPC rule type → RL action type) opaque; cannot prove rule-specific recovery",
+      "fm5_risk": "HIGH — RL action distribution can claim correctness despite learning suboptimal generalization; rule type never reaches RL state",
+      "description": "TWO PART GAP:\n\nPART A (SPC Rule Classification Missing at Emission):\nLines 1256-1264: SPC Western Electric rule violations emit `cause = ?c` (enum Debug format) but NO explicit rule_type classification:\n```rust\nfor c in &causes {\n    tracing::warn!(\n        target: \"autonomic.spc\",\n        kind = \"event_rate\",\n        cause = ?c,  // ← SpecialCause enum, Debug formatted: \"Outlier { z_score: 3.5 }\"\n        service_name = \"wpm\",\n        status = \"error\",\n        \"Western Electric rule violation\"\n    );\n    all_special_causes.push(format!(\"event_rate: {:?}\", c));\n}\n```\nMISSING: `rule_violated` (string: \"rule_1_outlier\" | \"rule_2_shift\" | \"rule_3_trend\" | \"rule_4_two_of_three\"), `rule_number` (u8), `z_score` (f64), `consecutive_points` (u32 for Rule 2/3)\n\nPART B (Rule Type Lost in RL State Quantization at line 1622):\nSPC alert context quantized to single scalar:\n```rust\n(all_special_causes.len() as f32 / 10.0).min(1.0), // [5] spc_alert_level\n```\nRule 1 fires (outlier, single event) → `spc_alert_count = 1` → quantized to same level as Rule 2 (9 consecutive points) → RL agent receives IDENTICAL state feature despite different rule type.\n\nOptimal RL action for Rule 1 (outlier): Retry/Scale\nOptimal RL action for Rule 2 (shift): Scale/Fallback  \nOptimal RL action for Rule 3 (trend): Scale/Restart\n\nAgent cannot distinguish rule types → learns \"average best action\" across all rules (suboptimal convergence).",
+      "root_cause": "SPC enum causes are not pattern-matched to semantic rule strings at emission time; quantization drops rule type information before RL state construction; no per-rule-type RL state feature.",
+      "evidence": {
+        "span_location_1": "wasm4pm/src/lib.rs:1256-1264 (also 1304-1312, 1352-1360, 1448-1456, 1486-1494)",
+        "span_location_2": "wasm4pm/src/lib.rs:1622 (RL state feature quantization)",
+        "missing_attributes_at_emission": [
+          "rule_violated (string: rule_1_outlier | rule_2_shift | rule_3_trend | rule_4_two_of_three)",
+          "rule_number (u8: 1, 2, 3, or 4)",
+          "z_score (f64) — for rule 1, the statistical magnitude",
+          "consecutive_points (u32) — for rule 2/3, pattern strength"
+        ],
+        "quantization_issue": "all_special_causes.len() → spc_alert_level [0-3] loses rule type entirely"
+      },
+      "impact": "RL policy cannot learn rule-specific recovery actions; policy locked into suboptimal generalization; Jaeger cannot correlate 'Rule 2 shift → Scale action → alert resolves'",
+      "recommendation": {
+        "priority": 2,
+        "effort": "LOW-MEDIUM (enum dispatch pattern-matching + 4 new span attributes)",
+        "implementation": "TWO PART FIX:\n\nFIX A - Classify rules at emission (wasm4pm/src/lib.rs ~line 1256):\n```rust\nfor c in &causes {\n    let (rule_violated, rule_num, rule_metadata) = match c {\n        SpecialCause::Outlier { z_score } => (\n            \"rule_1_outlier\",\n            1u8,\n            json!({ \"z_score\": z_score })\n        ),\n        SpecialCause::Shift { direction, count } => (\n            \"rule_2_shift\",\n            2u8,\n            json!({ \"direction\": ?direction, \"consecutive_points\": count })\n        ),\n        SpecialCause::Trend { length } => (\n            \"rule_3_trend\",\n            3u8,\n            json!({ \"monotonic_sequence_length\": length })\n        ),\n        SpecialCause::TwoOfThree { count } => (\n            \"rule_4_two_of_three\",\n            4u8,\n            json!({ \"consecutive_count\": count })\n        ),\n    };\n    \n    tracing::warn!(\n        target: \"autonomic.spc\",\n        rule_violated = rule_violated,\n        rule_number = rule_num,\n        metric = \"event_rate\",\n        z_score = rule_metadata.get(\"z_score\"),\n        consecutive_points = rule_metadata.get(\"consecutive_points\"),\n        service_name = \"wpm\",\n        status = \"error\",\n        \"Western Electric rule violation classified\"\n    );\n}\n```\n\nFIX B - Emit RL action correlation span (after action selected, ~line 1650):\n```rust\nlet spc_primary_rule = all_special_causes.first();\nlet action_matches_rule = {\n    match (spc_primary_rule, &action) {\n        (Some(r), a) if r.contains(\"rule_1\") && (a == \"Scale\" || a == \"Retry\") => true,\n        (Some(r), a) if r.contains(\"rule_2\") && (a == \"Scale\" || a == \"Fallback\") => true,\n        (Some(r), a) if r.contains(\"rule_3\") && (a == \"Scale\" || a == \"Restart\") => true,\n        _ => false\n    }\n};\n\ntracing::info!(\n    spc_alert_count = all_special_causes.len(),\n    spc_primary_rule_type = spc_primary_rule.clone(),\n    action_selected = action.clone(),\n    action_matches_rule = action_matches_rule,\n    service_name = \"wpm\",\n    \"rl.action_for_spc_alert\"\n);\n```",
+        "oracle_satisfied": "Rank-2 domain contract: rule type → RL action mapping now observable; can validate via Jaeger query"
+      }
+    },
+    {
+      "gap_id": "OBS-GAP-3",
+      "title": "Circuit Breaker → Reward Opaque — No Per-Cycle Causality Correlation",
+      "severity": "CRITICAL",
+      "file": "wasm4pm/src/lib.rs",
+      "line": 1207,
+      "chicago_tdd_violation": "Rank-2 domain contract (circuit block duration → health degradation) and Rank-3 metamorphic (circuit allowed → health improves) not provable",
+      "fm5_risk": "HIGH — Tests see 'health improved after circuit recovered' without proving circuit decision caused it (could be variance); MTBT (mean time between transitions) unknown",
+      "description": "Circuit breaker and RL health change are in SEPARATE, UNCORRELATED span contexts across multiple cycles:\n\nCycle 220:\n  - `circuit_breaker.allow_request`: state=Closed → Open (failure threshold exceeded)\n  - `rl.run_cycle`: health_before=2, health_after=3 (circuit blocking, health degrades)\n\nCycles 221-249:\n  - Circuit remains Open, blocking all requests\n  - No span correlation between circuit block and health degradation\n\nCycle 250:\n  - `circuit_breaker.allow_request`: state=Open → HalfOpen → Closed (timeout probe succeeded)\n  - NO explicit link to health outcome or reward change in THIS span\n\nCycle 251:\n  - `rl.run_cycle`: health_before=3, health_after=2 (recovered!)\n  - NO span attribute correlating recovery to circuit change on previous cycle\n\nMISSING ATTRIBUTES IN `circuit_breaker.allow_request` SPAN (line 347-357):\n- `health_level_when_allowed` (u8): health at time of request approval\n- `health_delta_if_allowed` (i8): predicted health change if allowed vs blocked\n- `action_could_execute` (bool): was the healing action actually executed?\n- `rl_reward_delta_after_block_recovery` (f32): reward delta correlating to circuit recovery\n\nMISSING LINKAGE IN `rl.run_cycle` SPAN:\n- No reference to circuit_state_changed from previous cycle\n- No `circuit_recovery_signal` attribute\n- No `health_recovery_reason` tracking circuit vs natural recovery",
+      "root_cause": "Circuit decision and RL health change are emitted in separate, temporally displaced spans with no shared trace context or parent-child correlation; no per-cycle link from circuit decision → action execution → reward outcome.",
+      "evidence": {
+        "span_location_1": "wasm4pm/src/self_healing.rs:347-357 (circuit_breaker.allow_request)",
+        "span_location_2": "wasm4pm/src/lib.rs:1207-1214 (circuit call site)",
+        "span_location_3": "wasm4pm/src/rl_orchestrator.rs:779-789 (rl.run_cycle, no circuit correlation)",
+        "missing_attributes_circuit": [
+          "health_level_when_allowed (u8)",
+          "health_delta_if_allowed (i8)",
+          "action_could_execute (bool)",
+          "rl_reward_delta_after_block_recovery (f32)"
+        ],
+        "missing_attributes_rl": [
+          "circuit_state_changed (bool)",
+          "circuit_recovery_signal (bool)",
+          "health_recovery_reason (string)"
+        ]
+      },
+      "impact": "Cannot prove causality: circuit block → recovery → health improvement → reward increase; MTBT (mean time between transitions) untracked; policy cannot learn causal relationship between circuit decisions and outcomes",
+      "recommendation": {
+        "priority": 1,
+        "effort": "MEDIUM (requires state tracking across cycles + span attribute addition)",
+        "implementation": "TWO PART FIX:\n\nFIX A - Enhance `circuit_breaker.allow_request` span (wasm4pm/src/self_healing.rs ~line 384-393):\n```rust\n// Capture health state at decision point\nlet health_before_decision = compute_current_health();  // Get from RL state\nlet allow = self.allow_request();\nlet health_after_decision = compute_current_health();\n\ntracing::debug!(\n    is_allowed = allow,\n    next_state = ?next_state,\n    elapsed_ms = elapsed,\n    timeout_threshold_ms = timeout_threshold,\n    timeout_comparison_result = timed_out,\n    decision_reason = decision_reason,\n    // NEW: Health linkage\n    health_level_when_allowed = if allow { health_after_decision } else { health_before_decision },\n    health_delta = (health_after_decision as i8 - health_before_decision as i8),\n    action_could_execute = allow,\n    service_name = \"wpm\",\n    status = if allow { \"ok\" } else { \"error\" },\n    \"circuit breaker healing decision with health correlation\"\n);\n```\n\nFIX B - Emit circuit recovery correlation span in `run_cycle()` (wasm4pm/src/lib.rs ~line 1670):\n```rust\n// After circuit allows recovery and action executes successfully\nif circuit_state_changed && circuit_allowed {\n    let recovery_reward = /* compute reward delta for successful recovery */;\n    tracing::info!(\n        event = \"circuit_breaker_recovery\",\n        cycles_blocked = cycles_spent_in_open_state,\n        health_recovered = health_after - health_during_block,\n        rl_reward_delta = recovery_reward,\n        circuit_state_transition = format!(\"{:?} -> {:?}\", old_state, new_state),\n        service_name = \"wpm\",\n        status = \"ok\",\n        \"Circuit breaker recovery completed with health improvement\"\n    );\n}\n```",
+        "oracle_satisfied": "Rank-2 domain contract: circuit block duration → health correlation; Rank-3 metamorphic: circuit allowed → health improves (input perturbation → output relation)"
+      }
+    }
+  ],
+  "summary_by_subsystem": {
+    "RL_Convergence": {
+      "status": "GAP-1 OPEN",
+      "affected_files": ["wasm4pm/src/rl_orchestrator.rs"],
+      "observability_score": "40% (health + agent tracked, convergence missing)",
+      "chicagotdd_compliance": "Rank-1 oracle INCOMPLETE (Bellman convergence cannot be independently verified)"
+    },
+    "SPC_Detection": {
+      "status": "GAP-2 OPEN",
+      "affected_files": ["wasm4pm/src/lib.rs"],
+      "observability_score": "20% (SPC alerts counted, rule types not classified)",
+      "chicagotdd_compliance": "Rank-2 contract INCOMPLETE (rule-specific action mapping invisible)"
+    },
+    "Circuit_Breaker": {
+      "status": "GAP-3 OPEN",
+      "affected_files": ["wasm4pm/src/self_healing.rs", "wasm4pm/src/lib.rs"],
+      "observability_score": "50% (circuit decisions tracked, health correlation missing)",
+      "chicagotdd_compliance": "Rank-2 contract + Rank-3 metamorphic INCOMPLETE (causality not proven)"
+    }
+  },
+  "fm5_self_referential_testing_risks": {
+    "risk_1_rl_convergence": "Tests can verify 'cumulative reward > 0' WITHOUT TD error proof; code claims learning but observability cannot prove Bellman convergence; FM-5 violation if test only checks reward, not convergence trajectory",
+    "risk_2_spc_rule_correlation": "Tests can verify 'SPC alert fired' and 'action taken' in SEPARATE test assertions WITHOUT proving rule type matched action; code handles alerts but observability cannot prove rule-action correctness; FM-5 if test doesn't validate rule classification",
+    "risk_3_circuit_healing": "Tests can verify 'health improved after circuit recovered' using state machine logic WITHOUT independent causality proof; code transitions states but observability cannot prove circuit decision caused improvement; FM-5 if test re-derives expected state from code, not from event evidence"
+  },
+  "jaeger_query_impossibilities": [
+    "Query: 'Plot RL convergence trend (TD error over 100 cycles)' → IMPOSSIBLE (td_error not in main cycle span)",
+    "Query: 'Which RL actions matched SPC rule types?' → IMPOSSIBLE (rule types not classified in OTEL)",
+    "Query: 'Correlate circuit block duration to health degradation' → IMPOSSIBLE (no per-cycle correlation span)",
+    "Query: 'Validate circuit recovery improved health' → IMPOSSIBLE (no causality attribution in spans)"
+  ],
+  "recommended_implementation_sequence": [
+    {
+      "phase": 1,
+      "gaps": ["OBS-GAP-1", "OBS-GAP-3"],
+      "rationale": "Highest impact: enables RL convergence + circuit causality proof",
+      "effort_hours": "4-6",
+      "files_modified": ["wasm4pm/src/rl_orchestrator.rs", "wasm4pm/src/self_healing.rs", "wasm4pm/src/lib.rs"]
+    },
+    {
+      "phase": 2,
+      "gaps": ["OBS-GAP-2"],
+      "rationale": "Medium impact: enables rule-type aware RL policies",
+      "effort_hours": "2-3",
+      "files_modified": ["wasm4pm/src/lib.rs"]
+    }
+  ],
+  "compliance_assessment": {
+    "chicago_tdd_status": "FAILS — All 3 gaps violate Rank-1 or Rank-2 oracle requirements",
+    "doctrine_quote": "\"If the code says it worked but the event log cannot prove a lawful process happened, then it did not work.\"",
+    "current_state": "Code transitions states ✓; isolated OTEL events emitted ✓; EVENT LOG CANNOT PROVE CAUSALITY ✗",
+    "post_fix_status": "Will PASS — All gaps remediated with span attribute additions and correlation spans"
+  }
+}
