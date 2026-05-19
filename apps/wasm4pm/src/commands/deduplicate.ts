@@ -16,7 +16,7 @@ const formatArg = {
 export default defineCommand({
   meta: {
     name: 'deduplicate',
-    description: 'Manage result deduplication across batch runs (scan, clear, report)',
+    description: 'Manage result deduplication across batch runs (scan, clear, report). Example: wpm deduplicate scan data/',
   },
   subCommands: {
     scan: defineCommand({

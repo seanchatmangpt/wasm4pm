@@ -75,7 +75,7 @@ export const powl = defineCommand({
   meta: {
     name: 'powl',
     description:
-      'POWL model analysis — parse, convert, simplify, diff, complexity, footprints, conformance, import, discover, get-children, node-info, freq-analysis',
+      'POWL model analysis — parse, convert, simplify, diff, complexity, footprints, conformance, import, discover, get-children, node-info, freq-analysis. Example: wpm powl parse \"*( A , B )\"',
   },
   args: {
     subcommand: {

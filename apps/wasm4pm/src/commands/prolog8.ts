@@ -405,7 +405,7 @@ const PROLOG8_VALID_SUBCOMMANDS = ['show', 'query', 'replay'] as const;
 export const prolog8 = defineCommand({
   meta: {
     name: 'prolog8',
-    description: 'Byte-capped proof engine: fact admission, Horn rule chaining, BLAKE3 receipts',
+    description: 'Byte-capped proof engine: fact admission, Horn rule chaining, BLAKE3 receipts. Example: wpm prolog8 show',
   },
   args: {
     format: { type: 'string', description: 'Output format (human or json)', default: 'human' },

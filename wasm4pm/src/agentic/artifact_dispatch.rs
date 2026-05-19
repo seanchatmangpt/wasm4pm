@@ -6,8 +6,8 @@ pub struct DefaultArtifactDispatcher;
 
 impl ArtifactDispatcher for DefaultArtifactDispatcher {
     fn plan_artifacts(&self, req: &ArtifactRequest) -> Result<ArtifactPlan, AgenticError> {
-        let _span = tracing::debug_span!(
-            "agentic.plan_artifacts",
+        let mut span = tracing::debug_span!(
+            "autonomic.artifact_dispatch",
             task_id = %req.task.task_id,
             selected_role = ?req.selected_role,
         )
@@ -45,11 +45,22 @@ impl ArtifactDispatcher for DefaultArtifactDispatcher {
             AgentRole::Custom(_) => vec![ArtifactFamily::TaskPrompt],
         };
 
+        // Emit OTEL fields per Cycle 40 spec
+        let artifact_family_names: Vec<String> = artifact_families
+            .iter()
+            .map(|af| format!("{:?}", af))
+            .collect();
+        let artifact_count = artifact_family_names.len();
+
+        span.record("role", format!("{:?}", role));
+        span.record("artifact_families", artifact_family_names.join(","));
+        span.record("artifact_count", artifact_count);
+
         tracing::debug!(
-            target: "agentic.plan_artifacts",
+            target: "autonomic.artifact_dispatch",
             task_id = %req.task.task_id,
             role = ?role,
-            artifact_count = artifact_families.len(),
+            artifact_count,
             "artifact plan complete"
         );
 

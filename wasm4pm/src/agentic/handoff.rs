@@ -6,8 +6,8 @@ pub struct DefaultHandoffValidator;
 
 impl HandoffValidator for DefaultHandoffValidator {
     fn validate_handoff(&self, req: &HandoffRequest) -> Result<HandoffDecision, AgenticError> {
-        let _span = tracing::debug_span!(
-            "agentic.validate_handoff",
+        let mut span = tracing::debug_span!(
+            "autonomic.handoff_validation",
             task_id = %req.task.task_id,
             from = %req.from_agent,
             to_role = ?req.to_role,
@@ -17,7 +17,13 @@ impl HandoffValidator for DefaultHandoffValidator {
         let policy = &req.task.policy;
 
         // Gate 1: Check if to_role is blocked
-        if policy.blocked_roles.contains(&req.to_role) {
+        let gate_1_pass = !policy.blocked_roles.contains(&req.to_role);
+        if !gate_1_pass {
+            span.record("allowed", false);
+            span.record("gate_1_pass", false);
+            span.record("gate_2_pass", false); // Not evaluated
+            span.record("gate_3_pass", false); // Not evaluated
+            span.record("disposition", "Deny");
             return Ok(HandoffDecision {
                 allowed: false,
                 disposition: DecisionDisposition::Deny,
@@ -27,9 +33,14 @@ impl HandoffValidator for DefaultHandoffValidator {
         }
 
         // Gate 2: Check if Delegate action is allowed (if any allowed_actions are specified)
-        if !policy.allowed_actions.is_empty()
-            && !policy.allowed_actions.contains(&ActionClass::Delegate)
-        {
+        let gate_2_pass = policy.allowed_actions.is_empty()
+            || policy.allowed_actions.contains(&ActionClass::Delegate);
+        if !gate_2_pass {
+            span.record("allowed", false);
+            span.record("gate_1_pass", true);
+            span.record("gate_2_pass", false);
+            span.record("gate_3_pass", false); // Not evaluated
+            span.record("disposition", "Deny");
             return Ok(HandoffDecision {
                 allowed: false,
                 disposition: DecisionDisposition::Deny,
@@ -39,7 +50,14 @@ impl HandoffValidator for DefaultHandoffValidator {
         }
 
         // Gate 3: Check required roles constraint
-        if !policy.required_roles.is_empty() && !policy.required_roles.contains(&req.to_role) {
+        let gate_3_pass =
+            policy.required_roles.is_empty() || policy.required_roles.contains(&req.to_role);
+        if !gate_3_pass {
+            span.record("allowed", false);
+            span.record("gate_1_pass", true);
+            span.record("gate_2_pass", true);
+            span.record("gate_3_pass", false);
+            span.record("disposition", "Escalate");
             return Ok(HandoffDecision {
                 allowed: false,
                 disposition: DecisionDisposition::Escalate,
@@ -59,10 +77,20 @@ impl HandoffValidator for DefaultHandoffValidator {
             reason_codes: vec!["handoff:approved".to_string()],
         };
 
+        // Emit OTEL fields per Cycle 40 spec
+        span.record("allowed", true);
+        span.record("gate_1_pass", gate_1_pass);
+        span.record("gate_2_pass", gate_2_pass);
+        span.record("gate_3_pass", gate_3_pass);
+        span.record("disposition", "Allow");
+
         tracing::debug!(
-            target: "agentic.validate_handoff",
+            target: "autonomic.handoff_validation",
             task_id = %req.task.task_id,
             allowed = true,
+            gate_1_pass,
+            gate_2_pass,
+            gate_3_pass,
             "handoff approved"
         );
 

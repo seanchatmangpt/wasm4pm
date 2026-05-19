@@ -41,6 +41,11 @@ export { bootstrapEngine, createBootstrapError } from './bootstrap.js';
 export { WatchSession, heartbeatToStatusUpdate } from './watch.js';
 // Checkpointing
 export { CheckpointManager } from './checkpointing.js';
+// Checkpoint persistence (Phase 1)
+export { MemoryCheckpointStore, FileCheckpointStore, SqliteCheckpointStore, } from './checkpoint-store.js';
+export { CrashDetector, AutonomicRecovery, } from './crash-detector.js';
+// Signal handling and crash recovery (Phase 1.5)
+export { SignalHandler } from './signals.js';
 // WASM loader
 /**
  * WasmLoader — Singleton WASM binary management with soft/hard reset and health checks.

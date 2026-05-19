@@ -572,7 +572,7 @@ const benchmarkCalibrate = defineCommand({
 export const benchmark = defineCommand({
   meta: {
     name: 'benchmark',
-    description: 'Benchmark corpus management and verification',
+    description: 'Benchmark corpus management and verification. Example: wpm benchmark verify --corpus data/benchmarks.jsonl',
   },
   async run() {
     process.stdout.write(`

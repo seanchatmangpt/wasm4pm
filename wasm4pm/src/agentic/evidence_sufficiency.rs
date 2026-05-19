@@ -6,8 +6,8 @@ pub struct DefaultEvidenceSufficiencyChecker;
 
 impl EvidenceSufficiencyChecker for DefaultEvidenceSufficiencyChecker {
     fn is_sufficient(&self, task: &TaskContext) -> Result<bool, AgenticError> {
-        let _span = tracing::debug_span!(
-            "agentic.is_sufficient",
+        let mut span = tracing::debug_span!(
+            "autonomic.evidence_sufficiency_check",
             task_id = %task.task_id,
             confidence = ?task.evidence.confidence_band,
             drift = ?task.evidence.drift_status,
@@ -17,36 +17,43 @@ impl EvidenceSufficiencyChecker for DefaultEvidenceSufficiencyChecker {
         let envelope = &task.evidence;
 
         // Check: all required evidence classes are available
-        let classes_ok = envelope
+        let check1_pass = envelope
             .required_evidence_classes
             .iter()
             .all(|c| envelope.available_evidence_classes.contains(c));
 
         // Check: confidence is at least Medium
-        let confidence_ok = matches!(
+        let check2_pass = matches!(
             envelope.confidence_band,
             ConfidenceBand::Medium | ConfidenceBand::High | ConfidenceBand::Certain
         );
 
         // Check: drift is not out of control
-        let drift_ok = !matches!(envelope.drift_status, DriftStatus::OutOfControl);
+        let check3_pass = !matches!(envelope.drift_status, DriftStatus::OutOfControl);
 
-        let sufficient = classes_ok && confidence_ok && drift_ok;
+        let is_sufficient = check1_pass && check2_pass && check3_pass;
+
+        // Record OTEL fields per Cycle 40 spec
+        span.record("is_sufficient", is_sufficient);
+        span.record("check1_pass", check1_pass); // Evidence classes available
+        span.record("check2_pass", check2_pass); // Confidence OK
+        span.record("check3_pass", check3_pass); // Drift OK
+
         tracing::debug!(
-            target: "agentic.is_sufficient",
+            target: "autonomic.evidence_sufficiency_check",
             task_id = %task.task_id,
-            sufficient,
-            classes_ok,
-            confidence_ok,
-            drift_ok,
+            is_sufficient,
+            check1_pass,
+            check2_pass,
+            check3_pass,
             "evidence sufficiency evaluated"
         );
-        Ok(sufficient)
+        Ok(is_sufficient)
     }
 
     fn summarize_gaps(&self, task: &TaskContext) -> Result<Vec<String>, AgenticError> {
-        let _span = tracing::debug_span!(
-            "agentic.summarize_gaps",
+        let mut span = tracing::debug_span!(
+            "autonomic.evidence_sufficiency_gaps",
             task_id = %task.task_id,
         )
         .entered();
@@ -75,6 +82,16 @@ impl EvidenceSufficiencyChecker for DefaultEvidenceSufficiencyChecker {
         if matches!(envelope.drift_status, DriftStatus::OutOfControl) {
             gaps.push("drift out of control".to_string());
         }
+
+        // Record OTEL gap count
+        span.record("gap_count", gaps.len());
+
+        tracing::debug!(
+            target: "autonomic.evidence_sufficiency_gaps",
+            task_id = %task.task_id,
+            gap_count = gaps.len(),
+            "gaps summarized"
+        );
 
         Ok(gaps)
     }

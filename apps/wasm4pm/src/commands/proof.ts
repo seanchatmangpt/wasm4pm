@@ -1065,7 +1065,7 @@ const promote = defineCommand({
 export const proof = defineCommand({
   meta: {
     name: 'proof',
-    description: 'Proof pack gate: collect, verify, audit, show, or promote evidence',
+    description: 'Proof pack gate: collect, verify, audit, show, or promote evidence. Example: wpm proof show',
   },
   subCommands: { collect, verify: verifyCmd, show, audit, promote },
 });

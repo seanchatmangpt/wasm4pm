@@ -352,7 +352,7 @@ async function saveState(wasm: Record<string, any>): Promise<void> {
 export const autoprocess = defineCommand({
   meta: {
     name: 'autoprocess',
-    description: 'Run AutoProcess: Perception → Decision → Protection → Optimization',
+    description: 'Run AutoProcess: Perception → Decision → Protection → Optimization. Example: wpm autoprocess log.xes --algorithm genetic',
   },
   args: {
     input: {

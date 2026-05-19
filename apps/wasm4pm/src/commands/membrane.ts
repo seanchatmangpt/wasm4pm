@@ -1643,7 +1643,7 @@ export const membrane = defineCommand({
   meta: {
     name: 'membrane',
     description:
-      'AutoMembrane — pre-control membrane for process motion classification (Vision 2030)',
+      'AutoMembrane — pre-control membrane for process motion classification (Vision 2030). Example: wpm membrane --format json',
   },
   args: {
     format: {

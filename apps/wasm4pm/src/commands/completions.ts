@@ -18,7 +18,7 @@ const SCRIPT_NAMES: Record<SupportedShell, string> = {
 export const completions = defineCommand({
   meta: {
     name: 'completions',
-    description: 'Print shell completion script for bash, zsh, or fish',
+    description: 'Print shell completion script for bash, zsh, or fish. Example: wpm completions bash | source',
   },
   args: {
     shell: {

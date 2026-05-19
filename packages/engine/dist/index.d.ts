@@ -39,6 +39,9 @@ export { WatchSession, heartbeatToStatusUpdate } from './watch.js';
 export type { WatchConfig, HeartbeatEvent } from './watch.js';
 export { CheckpointManager } from './checkpointing.js';
 export type { Checkpoint } from './checkpointing.js';
+export { MemoryCheckpointStore, FileCheckpointStore, SqliteCheckpointStore, type ICheckpointStore, type CheckpointMetadata, type RunFilter, } from './checkpoint-store.js';
+export { CrashDetector, AutonomicRecovery, type ProcessLock, type CrashDetectionResult, } from './crash-detector.js';
+export { SignalHandler, type SignalHandlerConfig } from './signals.js';
 /**
  * WasmLoader — Singleton WASM binary management with soft/hard reset and health checks.
  * @description Loads, caches, and validates wasm4pm.wasm; supports local dev and production targets.

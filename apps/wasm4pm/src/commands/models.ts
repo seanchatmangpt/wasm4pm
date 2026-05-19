@@ -43,7 +43,7 @@ interface ModelsCacheInfo {
 export default defineCommand({
   meta: {
     name: 'models',
-    description: 'List and manage cached process models from warm-start cache',
+    description: 'List and manage cached process models from warm-start cache. Example: wpm models list --algorithm genetic',
   },
   async run() {
     // Default to stats subcommand

@@ -9,7 +9,7 @@ import { withSpanRaw } from './_otel.js';
 export const config = defineCommand({
   meta: {
     name: 'config',
-    description: 'Inspect and manage wasm4pm configuration',
+    description: 'Inspect and manage wasm4pm configuration. Example: wpm config show --detailed',
   },
   async run() {
     return withSpanRaw('config.help', {}, async () => {

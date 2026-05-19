@@ -8,6 +8,8 @@ import { StatusTracker, formatStatus } from './status.js';
 import { WasmLoader } from './wasm-loader.js';
 import { bootstrapEngine } from './bootstrap.js';
 import { WatchSession } from './watch.js';
+import { SignalHandler } from './signals.js';
+import { FileCheckpointStore } from './checkpoint-store.js';
 import { ObservabilityWrapper, Instrumentation, } from '@wasm4pm/observability';
 /**
  * Main Engine class orchestrating the complete lifecycle
@@ -30,6 +32,8 @@ export class Engine {
     traceId;
     requiredOtelAttrs;
     observabilityErrors = [];
+    signalHandler;
+    checkpointStore;
     /**
      * Creates a new Engine instance
      * @param kernel WASM kernel implementation
@@ -39,11 +43,12 @@ export class Engine {
      * @param observabilityConfig Optional observability configuration (OTEL, JSON logging)
      * @param watchConfig Optional watch mode configuration (heartbeat, checkpointing)
      */
-    constructor(kernel, planner, executor, wasmLoaderConfig, observabilityConfig, watchConfig) {
+    constructor(kernel, planner, executor, wasmLoaderConfig, observabilityConfig, watchConfig, checkpointStore) {
         this.kernel = kernel;
         this.planner = planner;
         this.executor = executor;
         this.watchConfig = watchConfig;
+        this.checkpointStore = checkpointStore || new FileCheckpointStore();
         this.stateMachine = new StateMachine();
         this.statusTracker = new StatusTracker();
         this.wasmLoader = WasmLoader.getInstance(wasmLoaderConfig);
@@ -114,6 +119,7 @@ export class Engine {
      * Bootstraps the engine: loads WASM, initializes kernel
      * Transitions: uninitialized -> bootstrapping -> ready | failed
      * Emits observability events for bootstrap lifecycle
+     * Detects previous crashes and loads checkpoints if available
      * @param timeoutMs Timeout in milliseconds (default: 30000ms). Falls back to degraded state on timeout.
      */
     async bootstrap(timeoutMs = 30000) {
@@ -121,8 +127,27 @@ export class Engine {
         if (!this.traceId) {
             this.traceId = Instrumentation.generateTraceId();
         }
+        // Set up run ID if not already set
+        if (!this.currentRunId) {
+            this.currentRunId = this.generateRunId();
+        }
+        // Initialize signal handler and crash detection
+        if (!this.signalHandler) {
+            this.signalHandler = new SignalHandler(this, this.checkpointStore, {
+                runId: this.currentRunId,
+                enabled: true,
+            });
+            // Check for previous crash and attempt recovery
+            const crashDetected = await this.signalHandler.initializeCrashDetection();
+            if (crashDetected) {
+                const recoveredCheckpoint = await this.signalHandler.loadRecoveryCheckpoint();
+                if (recoveredCheckpoint) {
+                    this.statusTracker.setState(recoveredCheckpoint.state);
+                }
+            }
+        }
         // Update required OTEL attributes with current run ID
-        this.requiredOtelAttrs['run.id'] = this.currentRunId || 'bootstrap';
+        this.requiredOtelAttrs['run.id'] = this.currentRunId;
         const bootstrapStart = Date.now();
         try {
             // Validate transition
@@ -630,6 +655,27 @@ export class Engine {
      */
     async shutdown() {
         try {
+            // Save final checkpoint before shutdown
+            if (this.signalHandler && this.currentRunId) {
+                try {
+                    const currentState = this.state();
+                    const checkpointMgr = this.signalHandler.getCheckpointManager();
+                    const checkpoint = checkpointMgr.create(currentState, 1.0, {
+                        shutdownTime: new Date().toISOString(),
+                        type: 'graceful_shutdown',
+                    });
+                    await this.checkpointStore.save(checkpoint.id, checkpoint);
+                    // Emit shutdown checkpoint span
+                    const shutdownEvent = Instrumentation.createStateChangeEvent(this.traceId, currentState, 'failed', this.requiredOtelAttrs, { reason: 'Graceful shutdown with checkpoint saved' });
+                    this.observability.emitOtelSafe(shutdownEvent.otelEvent);
+                    // Clear lock file
+                    const crashDetector = this.signalHandler.getCrashDetector();
+                    crashDetector.clearLock();
+                }
+                catch (checkpointErr) {
+                    console.error('Error saving checkpoint during shutdown:', checkpointErr);
+                }
+            }
             await this.kernel.shutdown();
             // Transition to failed (terminal state)
             this.stateMachine.transition('failed', 'Engine shutdown');
@@ -637,6 +683,10 @@ export class Engine {
             // Unsubscribe from lifecycle events
             if (this.transitionUnsubscribe) {
                 this.transitionUnsubscribe();
+            }
+            // Deregister signal handlers
+            if (this.signalHandler) {
+                this.signalHandler.deregister();
             }
         }
         catch (err) {
@@ -694,6 +744,56 @@ export class Engine {
      */
     getRecoveryCount() {
         return this.stateMachine.getRecoveryCount();
+    }
+    /**
+     * Save a checkpoint to persistent storage with current engine state and progress
+     * @param progress Progress value from 0 (start) to 1 (complete)
+     * @param metadata Optional metadata to store with checkpoint
+     */
+    async saveCheckpoint(progress = 0.5, metadata) {
+        if (!this.signalHandler) {
+            console.warn('Signal handler not initialized; cannot save checkpoint');
+            return null;
+        }
+        try {
+            const currentState = this.state();
+            const checkpointMgr = this.signalHandler.getCheckpointManager();
+            const checkpoint = checkpointMgr.create(currentState, progress, {
+                ...metadata,
+                savedTime: new Date().toISOString(),
+            });
+            await this.checkpointStore.save(checkpoint.id, checkpoint);
+            // Emit checkpoint save span
+            const saveEvent = Instrumentation.createStateChangeEvent(this.traceId, currentState, currentState, this.requiredOtelAttrs, { reason: `Checkpoint saved at progress ${(progress * 100).toFixed(1)}%` });
+            this.observability.emitOtelSafe(saveEvent.otelEvent);
+            return checkpoint;
+        }
+        catch (err) {
+            console.error('Error saving checkpoint:', err);
+            return null;
+        }
+    }
+    /**
+     * List all saved checkpoints for the current run
+     */
+    async getCheckpoints() {
+        try {
+            if (!this.currentRunId) {
+                return [];
+            }
+            const metadata = await this.checkpointStore.list({ runId: this.currentRunId });
+            return metadata;
+        }
+        catch (err) {
+            console.error('Error listing checkpoints:', err);
+            return [];
+        }
+    }
+    /**
+     * Get the signal handler instance for direct access if needed
+     */
+    getSignalHandler() {
+        return this.signalHandler;
     }
     /**
      * Compute MTTR from transition history timestamps.

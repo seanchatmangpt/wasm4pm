@@ -39,8 +39,8 @@ impl DefaultCounterfactualEvaluator {
 
 impl CounterfactualEvaluator for DefaultCounterfactualEvaluator {
     fn evaluate_options(&self, task: &TaskContext) -> Result<CounterfactualResult, AgenticError> {
-        let _span = tracing::debug_span!(
-            "agentic.evaluate_options",
+        let mut span = tracing::debug_span!(
+            "autonomic.counterfactual_evaluation",
             task_id = %task.task_id,
             drift = ?task.evidence.drift_status,
         )
@@ -117,11 +117,60 @@ impl CounterfactualEvaluator for DefaultCounterfactualEvaluator {
             })
             .map(|o| o.option_id.clone());
 
+        // Emit OTEL fields per Cycle 40 spec
+        let options_count = options.len();
+        let best_reward = selected_option_id
+            .as_ref()
+            .and_then(|id| {
+                options
+                    .iter()
+                    .find(|o| &o.option_id == id)
+                    .and_then(|o| o.estimated_reward)
+            })
+            .unwrap_or(f32::NEG_INFINITY);
+
+        let best_option_idx = selected_option_id
+            .as_ref()
+            .and_then(|id| options.iter().position(|o| &o.option_id == id))
+            .map(|i| i as i32)
+            .unwrap_or(-1);
+
+        // Compute confidence: if many options agree on reward, confidence is high
+        let reward_variance = if options.len() > 1 {
+            let mean = options.iter().filter_map(|o| o.estimated_reward).fold(0.0, |a, b| a + b)
+                / options.len() as f32;
+            let variance = options
+                .iter()
+                .filter_map(|o| o.estimated_reward)
+                .map(|r| (r - mean).powi(2))
+                .fold(0.0, |a, b| a + b)
+                / options.len() as f32;
+            variance.sqrt()
+        } else {
+            0.0
+        };
+
+        let confidence = if reward_variance < 0.5 {
+            0.9
+        } else if reward_variance < 1.5 {
+            0.7
+        } else {
+            0.5
+        };
+
+        span.record("health", curr_health as i32);
+        span.record("options", options_count);
+        span.record("best_option_idx", best_option_idx);
+        span.record("best_reward", best_reward);
+        span.record("confidence", confidence);
+
         tracing::debug!(
-            target: "agentic.evaluate_options",
+            target: "autonomic.counterfactual_evaluation",
             task_id = %task.task_id,
-            option_count = options.len(),
+            option_count = options_count,
             selected = ?selected_option_id,
+            best_reward,
+            confidence,
             "counterfactual evaluation complete"
         );
 

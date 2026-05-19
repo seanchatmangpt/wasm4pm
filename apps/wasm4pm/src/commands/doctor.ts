@@ -2115,7 +2115,7 @@ function isAutoExecutable(fixCmd: string): boolean {
 export const doctorCheck = defineCommand({
   meta: {
     name: 'check',
-    description: 'Run all 24 health checks (or a filtered subset)',
+    description: 'Run all 24 health checks (or a filtered subset). Example: wpm doctor check --verbose',
   },
   args: {
     format: {
@@ -2276,7 +2276,7 @@ export const doctorTps = defineCommand({
 export const doctorFix = defineCommand({
   meta: {
     name: 'fix',
-    description: 'Run all checks and execute auto-fixable repair commands',
+    description: 'Run all checks and execute auto-fixable repair commands. Example: wpm doctor fix --verbose',
   },
   args: {
     format: {

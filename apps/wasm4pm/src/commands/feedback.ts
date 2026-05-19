@@ -43,7 +43,7 @@ interface FeedbackExportPayload {
 export const feedback = defineCommand({
   meta: {
     name: 'feedback',
-    description: 'Manage algorithm feedback data and quality metrics',
+    description: 'Manage algorithm feedback data and quality metrics. Example: wpm feedback stats --algorithm genetic',
   },
   subCommands: {
     stats: defineCommand({

@@ -51,7 +51,7 @@ export function verifyEventChain(events: Record<string, unknown>[]): {
 const sessionVerify = defineCommand({
   meta: {
     name: 'verify',
-    description: 'Verify session evidence chain integrity — detects tampered, deleted, or reordered events',
+    description: 'Verify session evidence chain integrity — detects tampered, deleted, or reordered events. Example: wpm claude verify --verbose',
   },
   args: {
     date: { type: 'string', description: 'Date to verify (YYYYMMDD, default: today)' },

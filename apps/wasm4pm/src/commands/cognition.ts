@@ -17,7 +17,7 @@ export const cognition = defineCommand({
   meta: {
     name: 'cognition',
     description:
-      'Breed selection, contract verification, and receipt chain validation. Run cognitive tasks (run), explain selections (explain), or audit chain integrity (verify).',
+      'Breed selection, contract verification, and receipt chain validation. Run cognitive tasks (run), explain selections (explain), or audit chain integrity (verify). Example: wpm cognition run --help',
   },
   subCommands: {
     run,

@@ -10,7 +10,7 @@ import { withSpan } from './_otel.js';
 export default defineCommand({
   meta: {
     name: 'cache',
-    description: 'Manage discovery result caching and model caching (stats, clear, models)',
+    description: 'Manage discovery result caching and model caching (stats, clear, models). Example: wpm cache stats',
   },
   subCommands: {
     stats: defineCommand({

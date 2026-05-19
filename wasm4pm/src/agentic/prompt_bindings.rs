@@ -8,8 +8,8 @@ impl PromptBindingCompiler for DefaultPromptBindingCompiler {
     fn compile_bindings(&self, task: &TaskContext) -> Result<PromptBindingSet, AgenticError> {
         use crate::agentic::prelude::*;
 
-        let _span = tracing::debug_span!(
-            "agentic.compile_bindings",
+        let mut span = tracing::debug_span!(
+            "autonomic.prompt_binding_compilation",
             task_id = %task.task_id,
             phase = ?task.phase,
             risk = ?task.risk_level,
@@ -85,13 +85,29 @@ impl PromptBindingCompiler for DefaultPromptBindingCompiler {
         let forbidden_actions: Vec<ActionClass> =
             task.policy.forbidden_actions.iter().cloned().collect();
 
+        // Emit OTEL fields per Cycle 40 spec
+        let binding_count = bindings.len();
+        let receipt_count = evidence_receipts.len();
+        let action_names: Vec<String> = recommended_actions
+            .iter()
+            .map(|a| format!("{:?}", a))
+            .collect();
+
+        span.record("binding_count", binding_count);
+        span.record("role", format!("{:?}", selected_role));
+        span.record("topology", format!("{:?}", topology));
+        span.record("receipt_count", receipt_count);
+        span.record("actions_count", action_names.len());
+
         tracing::debug!(
-            target: "agentic.compile_bindings",
+            target: "autonomic.prompt_binding_compilation",
             task_id = %task.task_id,
             selected_role = ?selected_role,
             topology = ?topology,
-            evidence_receipts = evidence_receipts.len(),
-            "bindings compiled"
+            binding_count,
+            receipt_count,
+            action_count = action_names.len(),
+            "bindings compiled successfully"
         );
 
         Ok(PromptBindingSet {

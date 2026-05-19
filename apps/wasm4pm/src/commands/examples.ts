@@ -74,7 +74,7 @@ const EXAMPLES_BY_CATEGORY = {
 export const examples = defineCommand({
   meta: {
     name: 'examples',
-    description: 'Browse example commands organized by task. See docs/TUTORIALS.md for full learning path.',
+    description: 'Browse example commands organized by task. See docs/TUTORIALS.md for full learning path. Example: wpm examples',
   },
   async run() {
     const BOLD = '\x1b[1m';

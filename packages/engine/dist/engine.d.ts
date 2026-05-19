@@ -7,6 +7,9 @@ import { EngineState, ExecutionPlan, ExecutionReceipt, EngineStatus, StatusUpdat
 import { LifecycleEvent } from './lifecycle.js';
 import { WasmLoaderConfig, WasmModule } from './wasm-loader.js';
 import { WatchSession, WatchConfig } from './watch.js';
+import { Checkpoint } from './checkpointing.js';
+import { SignalHandler } from './signals.js';
+import { ICheckpointStore } from './checkpoint-store.js';
 import { ObservabilityConfig } from '@wasm4pm/observability';
 /**
  * Result returned from Kernel.run()
@@ -70,6 +73,8 @@ export declare class Engine {
     private traceId;
     private requiredOtelAttrs;
     private observabilityErrors;
+    private signalHandler?;
+    private checkpointStore;
     /**
      * Creates a new Engine instance
      * @param kernel WASM kernel implementation
@@ -79,7 +84,7 @@ export declare class Engine {
      * @param observabilityConfig Optional observability configuration (OTEL, JSON logging)
      * @param watchConfig Optional watch mode configuration (heartbeat, checkpointing)
      */
-    constructor(kernel: Kernel, planner?: Planner, executor?: Executor, wasmLoaderConfig?: WasmLoaderConfig, observabilityConfig?: ObservabilityConfig, watchConfig?: WatchConfig);
+    constructor(kernel: Kernel, planner?: Planner, executor?: Executor, wasmLoaderConfig?: WasmLoaderConfig, observabilityConfig?: ObservabilityConfig, watchConfig?: WatchConfig, checkpointStore?: ICheckpointStore);
     /**
      * Gets the current engine state
      */
@@ -96,6 +101,7 @@ export declare class Engine {
      * Bootstraps the engine: loads WASM, initializes kernel
      * Transitions: uninitialized -> bootstrapping -> ready | failed
      * Emits observability events for bootstrap lifecycle
+     * Detects previous crashes and loads checkpoints if available
      * @param timeoutMs Timeout in milliseconds (default: 30000ms). Falls back to degraded state on timeout.
      */
     bootstrap(timeoutMs?: number): Promise<void>;
@@ -179,6 +185,20 @@ export declare class Engine {
      * Gets the number of recovery operations performed since engine creation.
      */
     getRecoveryCount(): number;
+    /**
+     * Save a checkpoint to persistent storage with current engine state and progress
+     * @param progress Progress value from 0 (start) to 1 (complete)
+     * @param metadata Optional metadata to store with checkpoint
+     */
+    saveCheckpoint(progress?: number, metadata?: Record<string, unknown>): Promise<Checkpoint | null>;
+    /**
+     * List all saved checkpoints for the current run
+     */
+    getCheckpoints(): Promise<any[]>;
+    /**
+     * Get the signal handler instance for direct access if needed
+     */
+    getSignalHandler(): SignalHandler | undefined;
     /**
      * Compute MTTR from transition history timestamps.
      *
