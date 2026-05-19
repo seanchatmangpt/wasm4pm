@@ -813,6 +813,226 @@ function expFit(
 // ---------------------------------------------------------------------------
 
 /**
+ * 3-Fold Cross-Validation result for a classification run.
+ */
+export interface CrossValidationResult {
+  /** Mean accuracy across 3 folds */
+  meanAccuracy: number;
+  /** Standard deviation of accuracy across 3 folds */
+  stdAccuracy: number;
+  /** Per-fold accuracy scores */
+  foldAccuracies: number[];
+  /** Per-fold confusion matrices: [TP, FP, TN, FN] per class */
+  foldConfusionMatrices: Array<Record<string, { tp: number; fp: number; tn: number; fn: number }>>;
+  /** Overall confidence calibration metric (mean confidence vs actual accuracy) */
+  confidenceCalibration: number;
+}
+
+/**
+ * Partition data into k folds for cross-validation.
+ * Deterministic: same input always produces same fold assignment.
+ */
+function stratifiedKFold(
+  labels: number[],
+  k: number = 3
+): Array<{ train: Int32Array; test: Int32Array }> {
+  const n = labels.length;
+  const folds: Array<{ train: Int32Array; test: Int32Array }> = [];
+
+  // Count classes for stratification
+  const classCounts = new Map<number, number>();
+  for (let i = 0; i < n; i++) {
+    classCounts.set(labels[i], (classCounts.get(labels[i]) ?? 0) + 1);
+  }
+
+  // Group indices by class
+  const classIndices = new Map<number, number[]>();
+  for (const [cls] of classCounts) classIndices.set(cls, []);
+  for (let i = 0; i < n; i++) {
+    classIndices.get(labels[i])!.push(i);
+  }
+
+  // Distribute each class evenly across folds
+  const foldAssignments = new Int32Array(n);
+  let foldIdx = 0;
+  for (const [_, indices] of classIndices) {
+    for (const idx of indices) {
+      foldAssignments[idx] = foldIdx % k;
+      foldIdx++;
+    }
+  }
+
+  // Build fold arrays
+  for (let f = 0; f < k; f++) {
+    const testIndices: number[] = [];
+    const trainIndices: number[] = [];
+    for (let i = 0; i < n; i++) {
+      if (foldAssignments[i] === f) {
+        testIndices.push(i);
+      } else {
+        trainIndices.push(i);
+      }
+    }
+    folds.push({
+      train: new Int32Array(trainIndices),
+      test: new Int32Array(testIndices),
+    });
+  }
+
+  return folds;
+}
+
+/**
+ * Run 3-fold cross-validation on classifier.
+ * Returns aggregated metrics from all folds.
+ */
+async function crossValidateClassifier(
+  data: number[][],
+  labels: number[],
+  method: ClassificationMethod,
+  k: number,
+  maxDepth: number,
+  reverseMap: Map<number, string>,
+  caseIds: string[]
+): Promise<CrossValidationResult> {
+  const folds = stratifiedKFold(labels, 3);
+  const foldAccuracies: number[] = [];
+  const foldConfusionMatrices: Array<
+    Record<string, { tp: number; fp: number; tn: number; fn: number }>
+  > = [];
+  let totalConfidences = 0;
+  let totalCorrectAndConfident = 0;
+  let totalPredictions = 0;
+
+  for (const fold of folds) {
+    const trainData = fold.train.map((i) => data[i]);
+    const trainLabels = fold.train.map((i) => labels[i]);
+    const testData = fold.test.map((i) => data[i]);
+    const testLabels = fold.test.map((i) => labels[i]);
+
+    // Train on fold.train
+    let predictions: { label: number; confidence: number }[];
+    if (method === 'knn') {
+      const col = toColumnar(trainData);
+      predictions = knnBatch(col, trainLabels, Math.min(k, trainData.length - 1));
+      // Apply trained model to test set (in k-NN, "training" means remembering all points)
+      const testCol = toColumnar(testData);
+      const testPredictions = new Array<{ label: number; confidence: number }>(testData.length);
+      for (let qi = 0; qi < testData.length; qi++) {
+        const distBuf = new Float64Array(trainData.length);
+        for (let i = 0; i < trainData.length; i++) {
+          let ss = 0;
+          for (let j = 0; j < trainData[0].length; j++) {
+            const diff = trainData[i][j] - testData[qi][j];
+            ss += diff * diff;
+          }
+          distBuf[i] = ss;
+        }
+        const sorted = new Array<number>(k);
+        let sortedLen = 0;
+        for (let i = 0; i < trainData.length && sortedLen < k; i++) {
+          let pos = sortedLen;
+          while (pos > 0 && distBuf[i] < distBuf[sorted[pos - 1]]) pos--;
+          for (let s = sortedLen; s > pos; s--) sorted[s] = sorted[s - 1];
+          sorted[pos] = i;
+          sortedLen++;
+        }
+        let bestLabel = trainLabels[sorted[0]];
+        let bestWeight = 0;
+        let totalWeight = 0;
+        const votes = new Map<number, number>();
+        for (let ni = 0; ni < sortedLen; ni++) {
+          const idx = sorted[ni];
+          const dist = Math.sqrt(distBuf[idx]);
+          const w = dist < 1e-10 ? 1e10 : 1 / dist;
+          totalWeight += w;
+          const vw = (votes.get(trainLabels[idx]) ?? 0) + w;
+          votes.set(trainLabels[idx], vw);
+          if (vw > bestWeight) {
+            bestWeight = vw;
+            bestLabel = trainLabels[idx];
+          }
+        }
+        testPredictions[qi] = { label: bestLabel, confidence: bestWeight / totalWeight };
+      }
+      predictions = testPredictions;
+    } else if (method === 'logistic_regression') {
+      const model = logisticRegressionTrain(trainData, trainLabels);
+      predictions = logisticRegressionPredictBatch(model, testData);
+    } else if (method === 'decision_tree') {
+      const d = trainData[0].length;
+      const classCount = reverseMap.size;
+      const n = trainData.length;
+      const indices = new Int32Array(n);
+      for (let i = 0; i < n; i++) indices[i] = i;
+      const tree = buildTree(trainData, trainLabels, indices, 0, maxDepth, d, classCount);
+      predictions = testData.map((row) => predictTree(tree, row));
+    } else {
+      const model = gaussianNBTrain(trainData, trainLabels);
+      predictions = gaussianNBPredictBatch(model, testData);
+    }
+
+    // Compute accuracy and confusion matrix for this fold
+    let correct = 0;
+    const confusionMatrix: Record<string, { tp: number; fp: number; tn: number; fn: number }> =
+      {};
+    for (const label of reverseMap.values()) {
+      confusionMatrix[label] = { tp: 0, fp: 0, tn: 0, fn: 0 };
+    }
+
+    for (let i = 0; i < testLabels.length; i++) {
+      const actualLabel = reverseMap.get(testLabels[i]) ?? 'unknown';
+      const predictedLabel = reverseMap.get(predictions[i].label) ?? 'unknown';
+      const confidence = predictions[i].confidence;
+
+      if (actualLabel === predictedLabel) {
+        correct++;
+        totalConfidences += confidence;
+        totalCorrectAndConfident++;
+      }
+      totalPredictions++;
+
+      // Update confusion matrix for this class
+      for (const cls of reverseMap.values()) {
+        const isActual = cls === actualLabel;
+        const isPredicted = cls === predictedLabel;
+        if (isActual && isPredicted) confusionMatrix[cls].tp++;
+        else if (!isActual && isPredicted) confusionMatrix[cls].fp++;
+        else if (isActual && !isPredicted) confusionMatrix[cls].fn++;
+        else if (!isActual && !isPredicted) confusionMatrix[cls].tn++;
+      }
+    }
+
+    const accuracy = testLabels.length > 0 ? correct / testLabels.length : 0;
+    foldAccuracies.push(accuracy);
+    foldConfusionMatrices.push(confusionMatrix);
+  }
+
+  // Compute mean and std accuracy
+  const meanAccuracy = foldAccuracies.reduce((a, b) => a + b, 0) / foldAccuracies.length;
+  let variance = 0;
+  for (const acc of foldAccuracies) {
+    variance += (acc - meanAccuracy) ** 2;
+  }
+  const stdAccuracy = Math.sqrt(variance / foldAccuracies.length);
+
+  // Compute confidence calibration: how well does predicted confidence match actual accuracy
+  const avgConfidence =
+    totalCorrectAndConfident > 0
+      ? totalConfidences / totalCorrectAndConfident
+      : 0;
+  const confidenceCalibration = Math.abs(meanAccuracy - avgConfidence);
+
+  return {
+    meanAccuracy,
+    stdAccuracy,
+    foldAccuracies,
+    foldConfusionMatrices,
+    confidenceCalibration,
+  };
+}
+
+/**
  * Classify traces by a categorical target (e.g., process outcome).
  *
  * Supports four methods:
@@ -830,7 +1050,9 @@ function expFit(
  * @param options.method - Classifier method. Default `'knn'`.
  * @param options.k - Neighbours for k-NN. Default `5`.
  * @param options.maxDepth - Max depth for decision tree. Default `5`.
+ * @param options.useCrossValidation - Enable 3-fold cross-validation. Default `false`.
  * @returns ClassificationResult with per-case predictions and confidence in [0, 1].
+ *          If useCrossValidation is true, includes cvMetrics in modelInfo.
  */
 export async function classifyTraces(
   featuresJson: Array<Record<string, unknown>>,
@@ -839,6 +1061,7 @@ export async function classifyTraces(
     method?: ClassificationMethod;
     k?: number;
     maxDepth?: number;
+    useCrossValidation?: boolean;
   } = {}
 ): Promise<ClassificationResult> {
   const targetKey = options.targetKey ?? 'outcome';
@@ -869,6 +1092,23 @@ export async function classifyTraces(
 
   const { encoded, reverseMap } = encodeLabels(matrix.labels);
 
+  // Optionally run 3-fold cross-validation
+  let cvMetrics: CrossValidationResult | undefined;
+  if (options.useCrossValidation && matrix.data.length >= 6) {
+    // Need at least 6 samples for 3-fold CV (2+ per fold)
+    const validatedK = validateKnnK(options.k, matrix.data.length);
+    const validatedMaxDepth = validateMaxDepth(options.maxDepth);
+    cvMetrics = await crossValidateClassifier(
+      matrix.data,
+      encoded,
+      method,
+      validatedK,
+      validatedMaxDepth,
+      reverseMap,
+      matrix.caseIds
+    );
+  }
+
   if (method === 'knn') {
     const validatedK = validateKnnK(options.k, matrix.data.length);
     const col = toColumnar(matrix.data);
@@ -885,6 +1125,7 @@ export async function classifyTraces(
         featureCount: col.d,
         traceCount: col.n,
         classCount: reverseMap.size,
+        ...(cvMetrics && { cvMetrics }),
       },
     };
   }
@@ -906,6 +1147,7 @@ export async function classifyTraces(
         featureCount: matrix.featureNames.length,
         traceCount: matrix.data.length,
         classCount: reverseMap.size,
+        ...(cvMetrics && { cvMetrics }),
       },
     };
   }
@@ -934,6 +1176,7 @@ export async function classifyTraces(
         featureCount: d,
         traceCount: n,
         classCount: reverseMap.size,
+        ...(cvMetrics && { cvMetrics }),
       },
     };
   }
@@ -954,6 +1197,7 @@ export async function classifyTraces(
       featureCount: matrix.featureNames.length,
       traceCount: matrix.data.length,
       classCount: reverseMap.size,
+      ...(cvMetrics && { cvMetrics }),
     },
   };
 }

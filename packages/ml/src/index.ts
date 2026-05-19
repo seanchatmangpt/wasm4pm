@@ -11,6 +11,7 @@ export { buildFeatureMatrix, encodeLabels } from './bridge.js';
 
 // Classification & regression
 export { classifyTraces, regressRemainingTime } from './classifiers.js';
+export type { CrossValidationResult } from './classifiers.js';
 
 // Clustering
 export { clusterTraces } from './clustering.js';
