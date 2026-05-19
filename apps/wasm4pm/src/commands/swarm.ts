@@ -60,7 +60,7 @@ async function saveSwarmReceipt(
 export const swarm = defineCommand({
   meta: {
     name: 'swarm',
-    description: 'Execute the Agent Swarm Logic using core mining backends',
+    description: 'Execute the Agent Swarm Logic using core mining backends. Example: wpm swarm log.xes --format json',
   },
   args: {
     input: {

@@ -29,7 +29,7 @@ export interface TimeoutOptions {
 export const timeout = defineCommand({
   meta: {
     name: 'timeout',
-    description: 'Estimate adaptive timeout for an algorithm on a given event log',
+    description: 'Estimate adaptive timeout for an algorithm on a given event log. Example: wpm timeout estimate log.xes --algorithm genetic',
   },
   subCommands: {
     estimate: defineCommand({
