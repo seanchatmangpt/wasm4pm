@@ -5,13 +5,15 @@ import { createRequire } from 'node:module';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
+import { withSpan, withSpanRaw } from './_otel.js';
+import { parseSaslSupervisorReports, supervisorReportsToOcel } from '@wasm4pm/contracts';
 
 // Lazy-loaded require for CJS deps (ajv) — avoids module load cost on unrelated commands
 const _require = createRequire(import.meta.url);
 
 // ── shared types ──────────────────────────────────────────────────────────────
 
-type TraceLanguage = 'rust' | 'typescript' | 'python' | 'java' | 'js' | 'unknown';
+type TraceLanguage = 'rust' | 'typescript' | 'python' | 'java' | 'js' | 'erlang' | 'unknown';
 
 interface TraceFrame {
   index: number;
@@ -61,11 +63,11 @@ interface OcelLog {
 }
 
 interface ObjectTypeDeclaration {
-  created_by: string[];       // activities that create objects of this type
-  terminated_by?: string[];   // activities that terminate objects of this type
-  schema?: string;            // path to JSON Schema file (relative to projectDir)
-  min_count?: number;         // minimum distinct instances required
-  max_count?: number;         // maximum distinct instances allowed
+  created_by: string[]; // activities that create objects of this type
+  terminated_by?: string[]; // activities that terminate objects of this type
+  schema?: string; // path to JSON Schema file (relative to projectDir)
+  min_count?: number; // minimum distinct instances required
+  max_count?: number; // maximum distinct instances allowed
 }
 
 interface Powl2Model {
@@ -114,6 +116,11 @@ function frameToActivity(fn: string, lang: TraceLanguage): string {
     // anonymous lambdas → anonymous; keep dot form for member access
     if (!fn || fn === '<anonymous>') return 'anonymous';
     return fn.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._<>]/g, '_');
+  }
+  if (lang === 'erlang') {
+    // module:function/arity → module.function_N (dot-separated, arity suffix)
+    // E.g. "my_mod:handle_call/3" → "my_mod.handle_call_3"
+    return fn.replace(/:/g, '.').replace(/\//g, '_').replace(/[^a-zA-Z0-9._]/g, '_');
   }
   // TypeScript: ClassName.method or standalone fn
   return fn.replace(/\s+/g, '_').replace(/[^a-zA-Z0-9._<>]/g, '_');
@@ -277,9 +284,208 @@ function parseJsTrace(text: string): TraceFrame[] {
   return frames;
 }
 
+function parseErlangTrace(text: string): TraceFrame[] {
+  // Erlang/BEAM stack traces appear in two formats:
+  //
+  // Format 1 — OTP exception tuple (error_logger / logger / shell):
+  //   {error,{badarg,[{Module,Function,Arity,[{file,"path.erl"},{line,N}]}]}}
+  //   Multi-frame example:
+  //   {error,{function_clause,[
+  //     {mymod,my_fun,2,[{file,"src/mymod.erl"},{line,45}]},
+  //     {gen_server,handle_msg,6,[{file,"gen_server.erl"},{line,1128}]}
+  //   ]}}
+  //
+  // Format 2 — Crash dump style (flat lines):
+  //   my_module:function_name/2 (my_module.erl:45)
+  //   erl_eval:do_apply/6 (erl_eval.erl:689)
+  //
+  // Format 3 — Verbose exception style (shell / observer):
+  //   in function  lists:nth/2 (lists.erl, line 312)
+  //   in call from my_module:my_function/2 (my_module.erl, line 45)
+  //   called from supervisor:init/1 (supervisor.erl, line 267)
+  //
+  // All three formats are parsed to TraceFrame with:
+  //   function: "module:function/arity" (canonical MFA form)
+  //   file:     "path.erl"
+  //   line:     N
+  //   language: 'erlang'
+
+  const frames: TraceFrame[] = [];
+  const lines = text.split('\n');
+  let index = 0;
+
+  // We join the whole text for the OTP tuple regex (which can span multiple lines),
+  // then use line-by-line regexes for crash-dump and verbose formats.
+
+  // ── Format 1: OTP tuple pattern ──────────────────────────────────────────────
+  // Match each MFA entry within the stacktrace list:
+  //   {Module,Function,Arity,[{file,"path"},{line,N}]}
+  // We allow Arity to be an integer OR a list literal (when args are captured).
+  const otpPattern =
+    /\{(\w+),(\w+),(?:\d+|\[.*?\]),\[(?:[^\]]*\{file,"([^"]+)"\}[^\]]*\{line,(\d+)\}|[^\]]*\{line,(\d+)\}[^\]]*\{file,"([^"]+)"\})[^\]]*\]/g;
+
+  const flatText = text.replace(/\n\s*/g, ' ');
+  let m: RegExpExecArray | null;
+
+  // Track whether Format 1 matched anything so we don't double-parse.
+  const otpMatched = new Set<number>();
+
+  while ((m = otpPattern.exec(flatText)) !== null) {
+    const mod = m[1] ?? 'unknown';
+    const fn = m[2] ?? 'unknown';
+    // Arity is embedded in the text but not directly captured — derive from context.
+    // Extract it from the surrounding text by looking for the arity token.
+    const arityMatch = flatText
+      .slice(m.index, m.index + m[0].length)
+      .match(/^\{(\w+),(\w+),(\d+),/);
+    const arity = arityMatch ? arityMatch[3] : '';
+    // File/line: the two capture groups handle either ordering in the Erlang proplist.
+    const file = (m[3] ?? m[6] ?? '').trim();
+    const line = parseInt((m[4] ?? m[5] ?? '0'), 10);
+    const fnName = arity ? `${mod}:${fn}/${arity}` : `${mod}:${fn}`;
+    frames.push({ index: index++, function: fnName, file: file || undefined, line: line || undefined, language: 'erlang' });
+    // Record the approximate line numbers that produced this frame (best effort).
+    otpMatched.add(index - 1);
+  }
+
+  // If the OTP tuple parser found frames, return them — don't double-parse.
+  if (frames.length > 0) return frames;
+
+  // ── Format 2: crash dump style (flat lines) ──────────────────────────────────
+  // Pattern: "module:function/arity (file.erl:N)"
+  const crashDumpPattern = /^[\s*]*(\w+):(\w+)\/(\d+)\s+\(([^):]+\.erl):(\d+)\)/;
+
+  // ── Format 3: verbose exception lines ────────────────────────────────────────
+  // Pattern: "in function  module:function/arity (file.erl, line N)"   (comma-line style)
+  //          "in call from module:function/arity (file.erl, line N)"
+  //          "called from module:function/arity (file.erl, line N)"
+  //          "in function  module:function/arity (file.erl:N)"          (colon style)
+  // Also handle lines without module prefix: "function/arity (file.erl, line N)"
+  const verbosePattern =
+    /(?:in (?:function|call from)|called from)\s+(?:(\w+):)?(\w+)\/(\d+)\s+\(([^),]+\.erl)(?:,\s*line\s+|:)(\d+)\)/;
+
+  // ── Format 4: generic "module:function/arity (file.erl, line N)" ─────────────
+  // Handles lines like:  lists:nth/2 (lists.erl, line 312)
+  const genericCommaPattern = /^[\s*]*(\w+):(\w+)\/(\d+)\s+\(([^),]+\.erl),\s*line\s+(\d+)\)/;
+
+  for (const line of lines) {
+    const stripped = line.trim();
+
+    // Skip exception header lines and empty lines.
+    if (!stripped || stripped.startsWith('**') || stripped.startsWith('{error') || stripped.startsWith('ERROR:') || stripped.startsWith('AtomVM')) {
+      continue;
+    }
+
+    // Try Format 3 (verbose) first — most specific.
+    const v = stripped.match(verbosePattern);
+    if (v) {
+      const mod = v[1] ?? '';
+      const fn = v[2] ?? 'unknown';
+      const arity = v[3] ?? '';
+      const file = (v[4] ?? '').trim();
+      const lineNum = parseInt(v[5] ?? '0', 10);
+      const fnName = mod ? `${mod}:${fn}/${arity}` : `${fn}/${arity}`;
+      frames.push({ index: index++, function: fnName, file: file || undefined, line: lineNum || undefined, language: 'erlang' });
+      continue;
+    }
+
+    // Try Format 4 (generic comma style).
+    const g = stripped.match(genericCommaPattern);
+    if (g) {
+      const mod = g[1] ?? 'unknown';
+      const fn = g[2] ?? 'unknown';
+      const arity = g[3] ?? '';
+      const file = (g[4] ?? '').trim();
+      const lineNum = parseInt(g[5] ?? '0', 10);
+      frames.push({ index: index++, function: `${mod}:${fn}/${arity}`, file: file || undefined, line: lineNum || undefined, language: 'erlang' });
+      continue;
+    }
+
+    // Try Format 2 (crash dump colon style).
+    const c = stripped.match(crashDumpPattern);
+    if (c) {
+      const mod = c[1] ?? 'unknown';
+      const fn = c[2] ?? 'unknown';
+      const arity = c[3] ?? '';
+      const file = (c[4] ?? '').trim();
+      const lineNum = parseInt(c[5] ?? '0', 10);
+      frames.push({ index: index++, function: `${mod}:${fn}/${arity}`, file: file || undefined, line: lineNum || undefined, language: 'erlang' });
+    }
+  }
+
+  return frames;
+}
+
+// ── SASL supervisor report detection ─────────────────────────────────────────
+
+/**
+ * Returns true when `text` looks like OTP SASL supervisor report output.
+ * The canonical header is: `=SUPERVISOR REPORT==== <timestamp> ===`
+ * We also accept the less-decorated `supervisor: {local,...}` block opener
+ * used in some OTP versions.
+ */
+function isSaslSupervisorReport(text: string): boolean {
+  return /=SUPERVISOR REPORT====/.test(text) || /supervisor:\s*\{(?:local|global),/.test(text);
+}
+
+/**
+ * Convert SASL supervisor reports (parsed via @wasm4pm/contracts) to the local
+ * OcelLog format used by the trace conformance pipeline.
+ *
+ * The contracts `OcelEvent` uses OCEL 2.0 JSON-LD keys (`ocel:activity`, etc.).
+ * The local OcelLog uses plain-object keys (`activity`, `event_id`, etc.).
+ * This adapter bridges the two.
+ */
+function saslReportsToLocalOcel(text: string): OcelLog {
+  const reports = parseSaslSupervisorReports(text);
+  const contractEvents = supervisorReportsToOcel(reports);
+  const now = new Date().toISOString();
+
+  const objectMap = new Map<string, { id: string; type: string; attributes: Record<string, unknown> }>();
+
+  const events: OcelEvent[] = contractEvents.map((ev, i) => {
+    const pid = (ev['ocel:omap'] ?? [])[0] ?? `proc:${i}`;
+    const activity = ev['ocel:activity'] ?? 'erlang_proc.supervisor_unknown';
+    const vmap = (ev['ocel:vmap'] ?? {}) as Record<string, unknown>;
+
+    // Register the process object
+    if (!objectMap.has(pid)) {
+      objectMap.set(pid, { id: pid, type: 'WorkerProcess', attributes: {} });
+    }
+    // Register a Receipt object (so object evidence is present)
+    const receiptId = `Receipt:sasl:${i}`;
+    if (!objectMap.has(receiptId)) {
+      objectMap.set(receiptId, { id: receiptId, type: 'Receipt', attributes: {} });
+    }
+
+    return {
+      event_id: (ev['ocel:eid'] as string | undefined) ?? `sasl:e${i}`,
+      activity,
+      timestamp: (ev['ocel:timestamp'] as string | undefined) ?? now,
+      objects: [
+        { id: pid, type: 'WorkerProcess' },
+        { id: receiptId, type: 'Receipt' },
+      ],
+      attributes: { ...vmap, frame_index: i },
+    };
+  });
+
+  return {
+    ocel_version: '2.0',
+    ocel_global_log: { ocel_attribute_names: ['supervisor', 'reason', 'child_name', 'child_mfa', 'frame_index'] },
+    ocel_events: events,
+    ocel_objects: Array.from(objectMap.values()),
+  };
+}
+
 // ── projectors ────────────────────────────────────────────────────────────────
 
-function framesToTraceGraph(frames: TraceFrame[], runId: string, lang: string, source: string): TraceGraph {
+function framesToTraceGraph(
+  frames: TraceFrame[],
+  runId: string,
+  lang: string,
+  source: string
+): TraceGraph {
   const ctx = {
     prov: 'http://www.w3.org/ns/prov#',
     ocel: 'https://www.ocel-standard.org/ns#',
@@ -332,7 +538,10 @@ function framesToTraceGraph(frames: TraceFrame[], runId: string, lang: string, s
 
 function traceGraphToOcel(graph: TraceGraph): OcelLog {
   const now = new Date().toISOString();
-  const objectSet = new Map<string, { id: string; type: string; attributes: Record<string, unknown> }>();
+  const objectSet = new Map<
+    string,
+    { id: string; type: string; attributes: Record<string, unknown> }
+  >();
 
   for (const obj of graph['trace:objects']) {
     const id = obj['@id'].replace('trace:', '');
@@ -353,7 +562,10 @@ function traceGraphToOcel(graph: TraceGraph): OcelLog {
       activity: ev['ocel:activity'],
       timestamp: now,
       objects,
-      attributes: { frame_index: i, ...(ev['trace:frame']['trace:file'] && { file: ev['trace:frame']['trace:file'] }) },
+      attributes: {
+        frame_index: i,
+        ...(ev['trace:frame']['trace:file'] && { file: ev['trace:frame']['trace:file'] }),
+      },
     };
   });
 
@@ -373,7 +585,7 @@ function ocelToObservedRoute(ocel: OcelLog): string[] {
 
 function measureObjectLifecycle(
   ocel: OcelLog,
-  objectTypes: Record<string, ObjectTypeDeclaration>,
+  objectTypes: Record<string, ObjectTypeDeclaration>
 ): {
   valid: boolean;
   coverage: number;
@@ -392,11 +604,15 @@ function measureObjectLifecycle(
       const firstActivity = objEvents[0]!.activity;
       const lastActivity = objEvents[objEvents.length - 1]!.activity;
       if (!typeDecl.created_by.includes(firstActivity)) {
-        create_violations.push(`${typeName}:${objId} first seen in "${firstActivity}" (not a create activity: [${typeDecl.created_by.join(', ')}])`);
+        create_violations.push(
+          `${typeName}:${objId} first seen in "${firstActivity}" (not a create activity: [${typeDecl.created_by.join(', ')}])`
+        );
       }
       if (typeDecl.terminated_by && typeDecl.terminated_by.length > 0) {
         if (!typeDecl.terminated_by.includes(lastActivity)) {
-          terminate_violations.push(`${typeName}:${objId} last seen in "${lastActivity}" (not a terminate activity: [${typeDecl.terminated_by.join(', ')}])`);
+          terminate_violations.push(
+            `${typeName}:${objId} last seen in "${lastActivity}" (not a terminate activity: [${typeDecl.terminated_by.join(', ')}])`
+          );
         }
       }
     }
@@ -408,7 +624,7 @@ function measureObjectLifecycle(
 
 function measureCardinality(
   ocel: OcelLog,
-  objectTypes: Record<string, ObjectTypeDeclaration>,
+  objectTypes: Record<string, ObjectTypeDeclaration>
 ): { valid: boolean; violations: string[] } {
   const violations: string[] = [];
   for (const [typeName, typeDecl] of Object.entries(objectTypes)) {
@@ -427,18 +643,24 @@ function measureCardinality(
 function measureReceiptSchema(
   ocel: OcelLog,
   objectTypes: Record<string, ObjectTypeDeclaration>,
-  projectDir: string,
+  projectDir: string
 ): { valid: boolean; violations: string[]; checked: number } {
   const violations: string[] = [];
   let checked = 0;
 
-  const typesWithSchema = Object.entries(objectTypes).filter(([, d]) => typeof d.schema === 'string');
+  const typesWithSchema = Object.entries(objectTypes).filter(
+    ([, d]) => typeof d.schema === 'string'
+  );
   if (typesWithSchema.length === 0) {
     return { valid: true, violations: [], checked: 0 };
   }
 
   let AjvCtor: new (opts?: Record<string, unknown>) => {
-    compile: (schema: unknown) => ((data: unknown) => boolean) & { errors?: Array<{ instancePath?: string; message?: string }> };
+    compile: (
+      schema: unknown
+    ) => ((data: unknown) => boolean) & {
+      errors?: Array<{ instancePath?: string; message?: string }>;
+    };
   };
   try {
     const mod = _require('ajv');
@@ -479,8 +701,13 @@ function measureReceiptSchema(
     for (const obj of objectsOfType) {
       checked++;
       if (!validate(obj.attributes)) {
-        const errs = (validate as unknown as { errors?: Array<{ instancePath?: string; message?: string }> }).errors ?? [];
-        const reasons = errs.slice(0, 3).map((e) => `${e.instancePath ?? '/'} ${e.message ?? ''}`.trim()).join('; ');
+        const errs =
+          (validate as unknown as { errors?: Array<{ instancePath?: string; message?: string }> })
+            .errors ?? [];
+        const reasons = errs
+          .slice(0, 3)
+          .map((e) => `${e.instancePath ?? '/'} ${e.message ?? ''}`.trim())
+          .join('; ');
         violations.push(`${typeName}:${obj.id} schema violation: ${reasons}`);
       }
     }
@@ -489,7 +716,11 @@ function measureReceiptSchema(
   return { valid: violations.length === 0, violations, checked };
 }
 
-function measureReceiptCoverage(ocel: OcelLog): { coverage: number; activities_with_receipts: number; total_activities: number } {
+function measureReceiptCoverage(ocel: OcelLog): {
+  coverage: number;
+  activities_with_receipts: number;
+  total_activities: number;
+} {
   const activitiesWithReceipts = new Set<string>();
   for (const ev of ocel.ocel_events) {
     if (ev.objects.some((o) => o.type === 'Receipt' || o.type.toLowerCase().includes('receipt'))) {
@@ -497,17 +728,25 @@ function measureReceiptCoverage(ocel: OcelLog): { coverage: number; activities_w
     }
   }
   const uniqueActivities = new Set(ocel.ocel_events.map((e) => e.activity));
-  const coverage = uniqueActivities.size > 0 ? activitiesWithReceipts.size / uniqueActivities.size : 0;
-  return { coverage, activities_with_receipts: activitiesWithReceipts.size, total_activities: uniqueActivities.size };
+  const coverage =
+    uniqueActivities.size > 0 ? activitiesWithReceipts.size / uniqueActivities.size : 0;
+  return {
+    coverage,
+    activities_with_receipts: activitiesWithReceipts.size,
+    total_activities: uniqueActivities.size,
+  };
 }
 
 function checkPartialOrderConstraints(
   observed: string[],
-  constraints: [string, string][],
+  constraints: [string, string][]
 ): { valid: boolean; violations: string[] } {
   const violations: string[] = [];
   const positions = new Map<string, number[]>();
-  observed.forEach((a, i) => { if (!positions.has(a)) positions.set(a, []); positions.get(a)!.push(i); });
+  observed.forEach((a, i) => {
+    if (!positions.has(a)) positions.set(a, []);
+    positions.get(a)!.push(i);
+  });
 
   for (const [before, after] of constraints) {
     const bPos = positions.get(before);
@@ -516,7 +755,9 @@ function checkPartialOrderConstraints(
       const minBefore = Math.min(...bPos);
       const minAfter = Math.min(...aPos);
       if (minBefore >= minAfter) {
-        violations.push(`"${after}" (pos ${minAfter}) precedes "${before}" (pos ${minBefore}) — order constraint violated`);
+        violations.push(
+          `"${after}" (pos ${minAfter}) precedes "${before}" (pos ${minBefore}) — order constraint violated`
+        );
       }
     }
   }
@@ -525,7 +766,7 @@ function checkPartialOrderConstraints(
 
 function checkChoiceGraphEdges(
   observed: string[],
-  edges: [string, string][],
+  edges: [string, string][]
 ): { valid: boolean; invalid_transitions: string[] } {
   const edgeSet = new Set(edges.map(([a, b]) => `${a}→${b}`));
   const invalid: string[] = [];
@@ -548,20 +789,24 @@ function checkChoiceGraphEdges(
 export function checkPowl2Conformance(
   ocel: OcelLog,
   model: Powl2Model,
-  projectDir: string = process.cwd(),
+  projectDir: string = process.cwd()
 ): ConformanceResult {
   const details: ConformanceResult['details'] = [];
-  const m = model.model;
-  const observed = ocelToObservedRoute(ocel);
+  // Guard: model.model may be undefined if caller passes a structurally incomplete model
+  const m = (model.model ?? {}) as Powl2Model['model'];
+  // Guard: ocel.ocel_events may be undefined/null if OCEL is structurally incomplete
+  const safeEvents: OcelLog['ocel_events'] = Array.isArray(ocel.ocel_events) ? ocel.ocel_events : [];
+  const safeOcel: OcelLog = safeEvents === ocel.ocel_events ? ocel : { ...ocel, ocel_events: safeEvents };
+  const observed = ocelToObservedRoute(safeOcel);
 
   // ── Object evidence check: activity-only fake route ─────────────────────────
-  const eventsWithObjects = ocel.ocel_events.filter((e) => e.objects.length > 0);
+  const eventsWithObjects = safeOcel.ocel_events.filter((e) => e.objects.length > 0);
   const objectEvidencePresent = eventsWithObjects.length > 0;
   details.push({
     dimension: 'object_evidence_present',
     ok: objectEvidencePresent,
     detail: objectEvidencePresent
-      ? `${eventsWithObjects.length}/${ocel.ocel_events.length} events have object evidence`
+      ? `${eventsWithObjects.length}/${safeOcel.ocel_events.length} events have object evidence`
       : 'all events have zero objects — activity-only fake route detected',
   });
 
@@ -575,11 +820,18 @@ export function checkPowl2Conformance(
     choiceEdges = edges;
     admissibleActivities = new Set(nodes.filter((n) => n !== '▷' && n !== '□'));
     const adj = new Map<string, string[]>();
-    for (const [from, to] of edges) { if (!adj.has(from)) adj.set(from, []); adj.get(from)!.push(to); }
+    for (const [from, to] of edges) {
+      if (!adj.has(from)) adj.set(from, []);
+      adj.get(from)!.push(to);
+    }
     const findPaths = (current: string, path: string[], depth: number): void => {
       if (depth > nodes.length + 2) return;
-      if (current === '□') { validPaths.push([...path]); return; }
-      for (const next of (adj.get(current) ?? [])) findPaths(next, next !== '□' ? [...path, next] : path, depth + 1);
+      if (current === '□') {
+        validPaths.push([...path]);
+        return;
+      }
+      for (const next of adj.get(current) ?? [])
+        findPaths(next, next !== '□' ? [...path, next] : path, depth + 1);
     };
     findPaths('▷', [], 0);
   } else if (m.sequence) {
@@ -606,8 +858,11 @@ export function checkPowl2Conformance(
   });
 
   // ── Precision ────────────────────────────────────────────────────────────────
-  const modelActivitiesInObserved = [...admissibleActivities].filter((a) => observedSet.has(a)).length;
-  const precision = admissibleActivities.size > 0 ? modelActivitiesInObserved / admissibleActivities.size : 1.0;
+  const modelActivitiesInObserved = [...admissibleActivities].filter((a) =>
+    observedSet.has(a)
+  ).length;
+  const precision =
+    admissibleActivities.size > 0 ? modelActivitiesInObserved / admissibleActivities.size : 1.0;
   details.push({
     dimension: 'precision',
     ok: precision <= 1.0,
@@ -617,15 +872,17 @@ export function checkPowl2Conformance(
   // ── Required stage coverage ──────────────────────────────────────────────────
   const requiredStages = model.required_stages ?? [];
   const missingStages = requiredStages.filter((s) => !observedSet.has(s));
-  const stageCoverage = requiredStages.length > 0
-    ? (requiredStages.length - missingStages.length) / requiredStages.length
-    : 1.0;
+  const stageCoverage =
+    requiredStages.length > 0
+      ? (requiredStages.length - missingStages.length) / requiredStages.length
+      : 1.0;
   details.push({
     dimension: 'required_stage_coverage',
     ok: missingStages.length === 0,
-    detail: missingStages.length === 0
-      ? `all ${requiredStages.length} required stages present`
-      : `missing: ${missingStages.join(', ')}`,
+    detail:
+      missingStages.length === 0
+        ? `all ${requiredStages.length} required stages present`
+        : `missing: ${missingStages.join(', ')}`,
   });
 
   // ── Route sequence + choice graph edge validity ───────────────────────────
@@ -635,8 +892,13 @@ export function checkPowl2Conformance(
   } else {
     for (const path of validPaths) {
       let pi = 0;
-      for (const act of observed) { if (pi < path.length && path[pi] === act) pi++; }
-      if (pi === path.length) { routeValid = true; break; }
+      for (const act of observed) {
+        if (pi < path.length && path[pi] === act) pi++;
+      }
+      if (pi === path.length) {
+        routeValid = true;
+        break;
+      }
     }
   }
   details.push({
@@ -682,8 +944,8 @@ export function checkPowl2Conformance(
   let lifecycleTerminateDetail = '';
   let cardinalityDetail = '';
   if (model.object_types && Object.keys(model.object_types).length > 0) {
-    const lcResult = measureObjectLifecycle(ocel, model.object_types);
-    const cardResult = measureCardinality(ocel, model.object_types);
+    const lcResult = measureObjectLifecycle(safeOcel, model.object_types);
+    const cardResult = measureCardinality(safeOcel, model.object_types);
     lifecycleCreateOk = lcResult.create_violations.length === 0;
     lifecycleTerminateOk = lcResult.terminate_violations.length === 0;
     cardinalityOk = cardResult.valid;
@@ -701,7 +963,9 @@ export function checkPowl2Conformance(
             !lifecycleCreateOk && `create violation: ${lifecycleCreateDetail}`,
             !lifecycleTerminateOk && `terminate violation: ${lifecycleTerminateDetail}`,
             !cardinalityOk && `cardinality violation: ${cardinalityDetail}`,
-          ].filter(Boolean).join(' | '),
+          ]
+            .filter(Boolean)
+            .join(' | '),
     });
   } else {
     objectLifecycleValidity = -1; // sentinel: NotMeasured
@@ -719,12 +983,12 @@ export function checkPowl2Conformance(
   let receiptCountDetail = '';
   let receiptSchemaDetail = '';
   if (model.receipt_required === true) {
-    const rcResult = measureReceiptCoverage(ocel);
+    const rcResult = measureReceiptCoverage(safeOcel);
     receiptCountOk = rcResult.coverage >= 1.0;
     receiptCountDetail = `${rcResult.activities_with_receipts}/${rcResult.total_activities} activities have receipts`;
     // Schema validation only if model.object_types declares Receipt types with schema
     if (model.object_types) {
-      const schemaResult = measureReceiptSchema(ocel, model.object_types, projectDir);
+      const schemaResult = measureReceiptSchema(safeOcel, model.object_types, projectDir);
       receiptSchemaOk = schemaResult.valid;
       receiptSchemaDetail = schemaResult.valid
         ? schemaResult.checked > 0
@@ -743,7 +1007,9 @@ export function checkPowl2Conformance(
         : [
             !receiptCountOk && `count violation: ${receiptCountDetail}`,
             !receiptSchemaOk && `schema violation: ${receiptSchemaDetail}`,
-          ].filter(Boolean).join(' | '),
+          ]
+            .filter(Boolean)
+            .join(' | '),
     });
   } else {
     receiptCoverage = -1; // sentinel: NotMeasured
@@ -758,9 +1024,11 @@ export function checkPowl2Conformance(
   const fitnessOk = fitness >= 1.0;
   const stagesOk = missingStages.length === 0;
   const seqOk = routeValid || validPaths.length === 0;
-  const edgesOk = choiceEdges.length === 0 ||
+  const edgesOk =
+    choiceEdges.length === 0 ||
     details.find((d) => d.dimension === 'choice_graph_edges_valid')?.ok !== false;
-  const poOk = !m.partial_order?.order ||
+  const poOk =
+    !m.partial_order?.order ||
     details.find((d) => d.dimension === 'partial_order_constraints')?.ok !== false;
   const objEvOk = objectEvidencePresent;
 
@@ -813,7 +1081,11 @@ export function checkPowl2Conformance(
 const ingest = defineCommand({
   meta: { name: 'ingest', description: 'Parse a stack trace into TraceGraph JSON-LD' },
   args: {
-    from: { type: 'string', default: 'typescript', description: 'Language: rust | typescript | python | java | js' },
+    from: {
+      type: 'string',
+      default: 'typescript',
+      description: 'Language: rust | typescript | python | java | js | erlang',
+    },
     input: { type: 'string', alias: 'i', description: 'Input file (default: stdin)' },
     out: { type: 'string', alias: 'o', description: 'Output file (default: stdout)' },
     runId: { type: 'string', description: 'Run ID for trace graph identity' },
@@ -829,84 +1101,185 @@ const ingest = defineCommand({
     const lang = (ctx.args.from as string) ?? 'typescript';
     const runId = (ctx.args.runId as string | undefined) ?? `trace-${Date.now()}`;
 
-    let text: string;
-    const inputPath = ctx.args.input as string | undefined;
-    if (inputPath) {
-      if (!existsSync(inputPath)) {
-        const r = makeErrorResult('trace ingest', `Input file not found: ${inputPath}`, EXIT_CODES.source_error, 'FILE_NOT_FOUND');
-        emitResult(r, { format, verbose, quiet });
-        return exitWithFlush(EXIT_CODES.source_error);
+    return withSpan('trace.ingest', { 'trace.language': lang, input: ctx.args.input as string ?? 'stdin' }, async () => {
+      let text: string;
+      const inputPath = ctx.args.input as string | undefined;
+      if (inputPath) {
+        if (!existsSync(inputPath)) {
+          const r = makeErrorResult(
+            'trace ingest',
+            `Input file not found: ${inputPath}`,
+            EXIT_CODES.source_error,
+            'FILE_NOT_FOUND'
+          );
+          emitResult(r, { format, verbose, quiet });
+          return exitWithFlush(EXIT_CODES.source_error);
+        }
+        text = readFileSync(inputPath, 'utf8');
+      } else {
+        // Read from stdin
+        const chunks: Buffer[] = [];
+        for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
+        text = Buffer.concat(chunks).toString('utf8');
       }
-      text = readFileSync(inputPath, 'utf8');
-    } else {
-      // Read from stdin
-      const chunks: Buffer[] = [];
-      for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
-      text = Buffer.concat(chunks).toString('utf8');
-    }
 
-    let frames: TraceFrame[];
-    switch (lang) {
-      case 'rust':       frames = parseRustTrace(text); break;
-      case 'typescript': frames = parseTypeScriptTrace(text); break;
-      case 'python':     frames = parsePythonTrace(text); break;
-      case 'java':       frames = parseJavaTrace(text); break;
-      case 'js':         frames = parseJsTrace(text); break;
-      default: {
-        const r = makeErrorResult(
-          'trace ingest',
-          `Unknown language '${lang}'. Accepted: rust, typescript, python, java, js`,
-          EXIT_CODES.config_error,
-          'INVALID_LANGUAGE',
-        );
-        emitResult(r, { format, verbose, quiet });
-        return exitWithFlush(EXIT_CODES.config_error);
+      let frames: TraceFrame[];
+      switch (lang) {
+        case 'rust':
+          frames = parseRustTrace(text);
+          break;
+        case 'typescript':
+          frames = parseTypeScriptTrace(text);
+          break;
+        case 'python':
+          frames = parsePythonTrace(text);
+          break;
+        case 'java':
+          frames = parseJavaTrace(text);
+          break;
+        case 'js':
+          frames = parseJsTrace(text);
+          break;
+        case 'erlang':
+          // SASL supervisor reports have a distinct header and richer lifecycle
+          // semantics than raw stack frames. Detect and dispatch separately,
+          // producing OCEL directly rather than going through TraceGraph.
+          if (isSaslSupervisorReport(text)) {
+            const saslOcel = saslReportsToLocalOcel(text);
+            const saslJson = JSON.stringify(saslOcel, null, 2);
+            const outPath = ctx.args.out as string | undefined;
+            if (outPath) {
+              writeFileSync(outPath, saslJson, 'utf8');
+            } else if (format === 'json') {
+              process.stdout.write(saslJson + '\n');
+              return exitWithFlush(EXIT_CODES.success);
+            }
+            const saslResult = makeResult(
+              'trace ingest',
+              {
+                run_id: runId,
+                language: 'erlang',
+                mode: 'sasl_supervisor_report',
+                events: saslOcel.ocel_events.length,
+                objects: saslOcel.ocel_objects.length,
+                out: outPath ?? 'stdout',
+              },
+              performance.now() - t0,
+              EXIT_CODES.success
+            );
+            emitResult(saslResult, { format, verbose, quiet }, (res, p) => {
+              const d = res.payload as {
+                run_id: string; language: string; mode: string;
+                events: number; objects: number; out: string;
+              };
+              p.log('');
+              p.log('wpm trace ingest — SASL Supervisor Report → OCEL');
+              p.log(`  Language:  ${d.language} (${d.mode})`);
+              p.log(`  Events:    ${d.events}`);
+              p.log(`  Objects:   ${d.objects}`);
+              p.log(`  Output:    ${d.out}`);
+              if (!outPath) {
+                p.log('');
+                p.log(saslJson);
+              }
+            });
+            return exitWithFlush(EXIT_CODES.success);
+          }
+          frames = parseErlangTrace(text);
+          break;
+        default: {
+          const r = makeErrorResult(
+            'trace ingest',
+            `Unknown language '${lang}'. Accepted: rust, typescript, python, java, js, erlang`,
+            EXIT_CODES.config_error,
+            'INVALID_LANGUAGE'
+          );
+          emitResult(r, { format, verbose, quiet });
+          return exitWithFlush(EXIT_CODES.config_error);
+        }
       }
-    }
-    const graph = framesToTraceGraph(frames, runId, lang, inputPath ?? 'stdin');
-    const graphJson = JSON.stringify(graph, null, 2);
 
-    const outPath = ctx.args.out as string | undefined;
-    if (outPath) {
-      writeFileSync(outPath, graphJson, 'utf8');
-    } else if (format === 'json') {
-      // Pipe-friendly: emit only the raw TraceGraph JSON
-      process.stdout.write(graphJson + '\n');
+      // Diagnostic: non-empty input that yields zero frames is a silent parse failure.
+      // Emit a warning so callers can distinguish "parsed nothing" from "file was empty".
+      const inputLineCount = text.split('\n').filter((l) => l.trim().length > 0).length;
+      const zeroFramesWarning =
+        frames.length === 0 && inputLineCount > 0
+          ? `zero frames parsed from ${inputLineCount} non-empty line(s) — input may not be a valid ${lang} stack trace`
+          : undefined;
+
+      if (zeroFramesWarning && !quiet) {
+        process.stderr.write(`[trace ingest] WARN: ${zeroFramesWarning}\n`);
+      }
+
+      let graph!: TraceGraph;
+      let graphJson!: string;
+      await withSpanRaw('trace.ingest.parse', { 'trace.language': lang, 'trace.frame_count': frames.length }, async () => {
+        graph = framesToTraceGraph(frames, runId, lang, inputPath ?? 'stdin');
+        graphJson = JSON.stringify(graph, null, 2);
+      });
+
+      const outPath = ctx.args.out as string | undefined;
+      if (outPath) {
+        writeFileSync(outPath, graphJson, 'utf8');
+      } else if (format === 'json') {
+        // Pipe-friendly: emit only the raw TraceGraph JSON
+        process.stdout.write(graphJson + '\n');
+        return exitWithFlush(EXIT_CODES.success);
+      }
+
+      const result = makeResult(
+        'trace ingest',
+        {
+          run_id: runId,
+          language: lang,
+          frames: frames.length,
+          events: graph['trace:events'].length,
+          objects: graph['trace:objects'].length,
+          out: outPath ?? 'stdout',
+          ...(zeroFramesWarning && { warning: zeroFramesWarning }),
+        },
+        performance.now() - t0,
+        EXIT_CODES.success
+      );
+
+      emitResult(result, { format, verbose, quiet }, (res, p) => {
+        const d = res.payload as {
+          run_id: string;
+          language: string;
+          frames: number;
+          events: number;
+          out: string;
+          warning?: string;
+        };
+        p.log('');
+        p.log(`wpm trace ingest — TraceGraph projection`);
+        p.log(`  Language:  ${d.language}`);
+        p.log(`  Frames:    ${d.frames}`);
+        p.log(`  Events:    ${d.events}`);
+        p.log(`  Output:    ${d.out}`);
+        if (d.warning) {
+          p.warn(`  Warning:   ${d.warning}`);
+        }
+        if (verbose && outPath && existsSync(outPath)) {
+          p.log('  TraceGraph written to: ' + outPath);
+        } else if (!outPath) {
+          p.log('');
+          p.log(graphJson);
+        }
+      });
+
       return exitWithFlush(EXIT_CODES.success);
-    }
-
-    const result = makeResult('trace ingest', {
-      run_id: runId,
-      language: lang,
-      frames: frames.length,
-      events: graph['trace:events'].length,
-      objects: graph['trace:objects'].length,
-      out: outPath ?? 'stdout',
-    }, performance.now() - t0, EXIT_CODES.success);
-
-    emitResult(result, { format, verbose, quiet }, (res, p) => {
-      const d = res.payload as { run_id: string; language: string; frames: number; events: number; out: string };
-      p.log('');
-      p.log(`wpm trace ingest — TraceGraph projection`);
-      p.log(`  Language:  ${d.language}`);
-      p.log(`  Frames:    ${d.frames}`);
-      p.log(`  Events:    ${d.events}`);
-      p.log(`  Output:    ${d.out}`);
-      if (verbose && outPath && existsSync(outPath)) {
-        p.log('  TraceGraph written to: ' + outPath);
-      } else if (!outPath) {
-        p.log(''); p.log(graphJson);
-      }
     });
-
-    return exitWithFlush(EXIT_CODES.success);
   },
 });
 
 // ── ocel subcommand ───────────────────────────────────────────────────────────
 
 const ocel = defineCommand({
-  meta: { name: 'ocel', description: 'Project TraceGraph JSON-LD to OCEL object-centric event log' },
+  meta: {
+    name: 'ocel',
+    description: 'Project TraceGraph JSON-LD to OCEL object-centric event log',
+  },
   args: {
     input: { type: 'string', alias: 'i', description: 'TraceGraph JSON-LD file (default: stdin)' },
     out: { type: 'string', alias: 'o', description: 'Output OCEL JSON file (default: stdout)' },
@@ -920,59 +1293,91 @@ const ocel = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
 
-    let text: string;
-    const inputPath = ctx.args.input as string | undefined;
-    if (inputPath) {
-      if (!existsSync(inputPath)) {
-        const r = makeErrorResult('trace ocel', `Input file not found: ${inputPath}`, EXIT_CODES.source_error, 'FILE_NOT_FOUND');
+    return withSpan('trace.ocel', { input: (ctx.args.input as string | undefined) ?? 'stdin' }, async () => {
+      let text: string;
+      const inputPath = ctx.args.input as string | undefined;
+      if (inputPath) {
+        if (!existsSync(inputPath)) {
+          const r = makeErrorResult(
+            'trace ocel',
+            `Input file not found: ${inputPath}`,
+            EXIT_CODES.source_error,
+            'FILE_NOT_FOUND'
+          );
+          emitResult(r, { format, verbose, quiet });
+          return exitWithFlush(EXIT_CODES.source_error);
+        }
+        text = readFileSync(inputPath, 'utf8');
+      } else {
+        const chunks: Buffer[] = [];
+        for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
+        text = Buffer.concat(chunks).toString('utf8');
+      }
+
+      let graph: TraceGraph;
+      try {
+        graph = JSON.parse(text) as TraceGraph;
+      } catch {
+        const r = makeErrorResult(
+          'trace ocel',
+          'Invalid TraceGraph JSON',
+          EXIT_CODES.source_error,
+          'PARSE_ERROR'
+        );
         emitResult(r, { format, verbose, quiet });
         return exitWithFlush(EXIT_CODES.source_error);
       }
-      text = readFileSync(inputPath, 'utf8');
-    } else {
-      const chunks: Buffer[] = [];
-      for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
-      text = Buffer.concat(chunks).toString('utf8');
-    }
 
-    let graph: TraceGraph;
-    try { graph = JSON.parse(text) as TraceGraph; }
-    catch {
-      const r = makeErrorResult('trace ocel', 'Invalid TraceGraph JSON', EXIT_CODES.source_error, 'PARSE_ERROR');
-      emitResult(r, { format, verbose, quiet });
-      return exitWithFlush(EXIT_CODES.source_error);
-    }
+      let log!: OcelLog;
+      let logJson!: string;
+      await withSpanRaw('trace.convert_ocel', { 'trace.event_count': 0 }, async () => {
+        log = traceGraphToOcel(graph);
+        logJson = JSON.stringify(log, null, 2);
+      }, () => ({ 'trace.event_count': log?.ocel_events?.length ?? 0 }));
 
-    const log = traceGraphToOcel(graph);
-    const logJson = JSON.stringify(log, null, 2);
+      const outPath = ctx.args.out as string | undefined;
+      if (outPath) {
+        writeFileSync(outPath, logJson, 'utf8');
+      } else if (format === 'json') {
+        process.stdout.write(logJson + '\n');
+        return exitWithFlush(EXIT_CODES.success);
+      }
 
-    const outPath = ctx.args.out as string | undefined;
-    if (outPath) {
-      writeFileSync(outPath, logJson, 'utf8');
-    } else if (format === 'json') {
-      process.stdout.write(logJson + '\n');
+      const result = makeResult(
+        'trace ocel',
+        {
+          events: log.ocel_events.length,
+          objects: log.ocel_objects.length,
+          activities: [...new Set(log.ocel_events.map((e) => e.activity))],
+          out: outPath ?? 'stdout',
+        },
+        performance.now() - t0,
+        EXIT_CODES.success
+      );
+
+      emitResult(result, { format, verbose, quiet }, (res, p) => {
+        const d = res.payload as {
+          events: number;
+          objects: number;
+          activities: string[];
+          out: string;
+        };
+        p.log('');
+        p.log('wpm trace ocel — OCEL projection');
+        p.log(`  Events:     ${d.events}`);
+        p.log(`  Objects:    ${d.objects}`);
+        p.log(
+          `  Activities: ${d.activities.slice(0, 5).join(', ')}${d.activities.length > 5 ? ` +${d.activities.length - 5} more` : ''}`
+        );
+        p.log(`  Output:     ${d.out}`);
+        if (!outPath) {
+          p.log('');
+          p.log(logJson);
+        }
+      });
+
       return exitWithFlush(EXIT_CODES.success);
-    }
-
-    const result = makeResult('trace ocel', {
-      events: log.ocel_events.length,
-      objects: log.ocel_objects.length,
-      activities: [...new Set(log.ocel_events.map((e) => e.activity))],
-      out: outPath ?? 'stdout',
-    }, performance.now() - t0, EXIT_CODES.success);
-
-    emitResult(result, { format, verbose, quiet }, (res, p) => {
-      const d = res.payload as { events: number; objects: number; activities: string[]; out: string };
-      p.log('');
-      p.log('wpm trace ocel — OCEL projection');
-      p.log(`  Events:     ${d.events}`);
-      p.log(`  Objects:    ${d.objects}`);
-      p.log(`  Activities: ${d.activities.slice(0, 5).join(', ')}${d.activities.length > 5 ? ` +${d.activities.length - 5} more` : ''}`);
-      p.log(`  Output:     ${d.out}`);
-      if (!outPath) { p.log(''); p.log(logJson); }
     });
-
-    return exitWithFlush(EXIT_CODES.success);
   },
 });
 
@@ -982,7 +1387,11 @@ const powlRoute = defineCommand({
   meta: { name: 'powl', description: 'Derive observed POWL route from OCEL event log' },
   args: {
     input: { type: 'string', alias: 'i', description: 'OCEL JSON file (default: stdin)' },
-    out: { type: 'string', alias: 'o', description: 'Output observed route JSON (default: stdout)' },
+    out: {
+      type: 'string',
+      alias: 'o',
+      description: 'Output observed route JSON (default: stdout)',
+    },
     format: { type: 'string', default: 'human' },
     verbose: { type: 'boolean', alias: 'v' },
     quiet: { type: 'boolean', alias: 'q' },
@@ -993,80 +1402,103 @@ const powlRoute = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
 
-    let text: string;
-    const inputPath = ctx.args.input as string | undefined;
-    if (inputPath) {
-      if (!existsSync(inputPath)) {
-        const r = makeErrorResult('trace powl', `Input file not found: ${inputPath}`, EXIT_CODES.source_error, 'FILE_NOT_FOUND');
+    return withSpan('trace.powl', { input: (ctx.args.input as string | undefined) ?? 'stdin' }, async () => {
+      let text: string;
+      const inputPath = ctx.args.input as string | undefined;
+      if (inputPath) {
+        if (!existsSync(inputPath)) {
+          const r = makeErrorResult(
+            'trace powl',
+            `Input file not found: ${inputPath}`,
+            EXIT_CODES.source_error,
+            'FILE_NOT_FOUND'
+          );
+          emitResult(r, { format, verbose, quiet });
+          return exitWithFlush(EXIT_CODES.source_error);
+        }
+        text = readFileSync(inputPath, 'utf8');
+      } else {
+        const chunks: Buffer[] = [];
+        for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
+        text = Buffer.concat(chunks).toString('utf8');
+      }
+
+      let log: OcelLog;
+      try {
+        log = JSON.parse(text) as OcelLog;
+      } catch {
+        const r = makeErrorResult(
+          'trace powl',
+          'Invalid OCEL JSON',
+          EXIT_CODES.source_error,
+          'PARSE_ERROR'
+        );
         emitResult(r, { format, verbose, quiet });
         return exitWithFlush(EXIT_CODES.source_error);
       }
-      text = readFileSync(inputPath, 'utf8');
-    } else {
-      const chunks: Buffer[] = [];
-      for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
-      text = Buffer.concat(chunks).toString('utf8');
-    }
 
-    let log: OcelLog;
-    try { log = JSON.parse(text) as OcelLog; }
-    catch {
-      const r = makeErrorResult('trace powl', 'Invalid OCEL JSON', EXIT_CODES.source_error, 'PARSE_ERROR');
-      emitResult(r, { format, verbose, quiet });
-      return exitWithFlush(EXIT_CODES.source_error);
-    }
+      const observed = ocelToObservedRoute(log);
+      const uniqueActivities = [...new Set(observed)];
 
-    const observed = ocelToObservedRoute(log);
-    const uniqueActivities = [...new Set(observed)];
-
-    // Build a simple DFG from the observed sequence
-    const dfg: Record<string, Record<string, number>> = {};
-    for (let i = 0; i < observed.length - 1; i++) {
-      const a = observed[i]!;
-      const b = observed[i + 1]!;
-      if (!dfg[a]) dfg[a] = {};
-      dfg[a]![b] = (dfg[a]![b] ?? 0) + 1;
-    }
-
-    const observedRoute = {
-      observed_activities: observed,
-      unique_activities: uniqueActivities,
-      activity_count: observed.length,
-      dfg,
-    };
-
-    const outPath = ctx.args.out as string | undefined;
-    const outJson = JSON.stringify(observedRoute, null, 2);
-    if (outPath) writeFileSync(outPath, outJson, 'utf8');
-    else if (format === 'json') process.stdout.write(outJson + '\n');
-
-    const result = makeResult('trace powl', {
-      ...observedRoute,
-      out: outPath ?? 'stdout',
-    }, performance.now() - t0, EXIT_CODES.success);
-
-    emitResult(result, { format, verbose, quiet }, (res, p) => {
-      const d = res.payload as { activity_count: number; unique_activities: string[]; out: string };
-      p.log('');
-      p.log('wpm trace powl — Observed POWL route');
-      p.log(`  Activities:   ${d.activity_count} total, ${d.unique_activities.length} unique`);
-      p.log(`  Route:        ${d.unique_activities.slice(0, 6).join(' → ')}${d.unique_activities.length > 6 ? ' → ...' : ''}`);
-      p.log(`  Output:       ${d.out}`);
-      if (verbose) {
-        p.log('');
-        p.log('  All activities:');
-        for (const a of d.unique_activities) p.log(`    • ${a}`);
+      // Build a simple DFG from the observed sequence
+      const dfg: Record<string, Record<string, number>> = {};
+      for (let i = 0; i < observed.length - 1; i++) {
+        const a = observed[i]!;
+        const b = observed[i + 1]!;
+        if (!dfg[a]) dfg[a] = {};
+        dfg[a]![b] = (dfg[a]![b] ?? 0) + 1;
       }
-    });
 
-    return exitWithFlush(EXIT_CODES.success);
+      const observedRoute = {
+        observed_activities: observed,
+        unique_activities: uniqueActivities,
+        activity_count: observed.length,
+        dfg,
+      };
+
+      const outPath = ctx.args.out as string | undefined;
+      const outJson = JSON.stringify(observedRoute, null, 2);
+      if (outPath) writeFileSync(outPath, outJson, 'utf8');
+      else if (format === 'json') process.stdout.write(outJson + '\n');
+
+      const result = makeResult(
+        'trace powl',
+        {
+          ...observedRoute,
+          out: outPath ?? 'stdout',
+        },
+        performance.now() - t0,
+        EXIT_CODES.success
+      );
+
+      emitResult(result, { format, verbose, quiet }, (res, p) => {
+        const d = res.payload as { activity_count: number; unique_activities: string[]; out: string };
+        p.log('');
+        p.log('wpm trace powl — Observed POWL route');
+        p.log(`  Activities:   ${d.activity_count} total, ${d.unique_activities.length} unique`);
+        p.log(
+          `  Route:        ${d.unique_activities.slice(0, 6).join(' → ')}${d.unique_activities.length > 6 ? ' → ...' : ''}`
+        );
+        p.log(`  Output:       ${d.out}`);
+        if (verbose) {
+          p.log('');
+          p.log('  All activities:');
+          for (const a of d.unique_activities) p.log(`    • ${a}`);
+        }
+      });
+
+      return exitWithFlush(EXIT_CODES.success);
+    });
   },
 });
 
 // ── conform subcommand ────────────────────────────────────────────────────────
 
 const conform = defineCommand({
-  meta: { name: 'conform', description: 'Check observed POWL route against a declared POWL v2 model' },
+  meta: {
+    name: 'conform',
+    description: 'Check observed POWL route against a declared POWL v2 model',
+  },
   args: {
     input: { type: 'string', alias: 'i', description: 'OCEL JSON file (default: stdin)' },
     model: { type: 'string', alias: 'm', required: true, description: 'POWL v2 model JSON file' },
@@ -1082,97 +1514,203 @@ const conform = defineCommand({
     const quiet = Boolean(ctx.args.quiet);
     const modelPath = ctx.args.model as string;
 
-    if (!existsSync(modelPath)) {
-      const r = makeErrorResult('trace conform', `POWL v2 model not found: ${modelPath}`, EXIT_CODES.source_error, 'MODEL_NOT_FOUND');
-      emitResult(r, { format, verbose, quiet });
-      return exitWithFlush(EXIT_CODES.source_error);
-    }
-
-    let ocelLog: OcelLog;
-    const inputPath = ctx.args.input as string | undefined;
-    if (inputPath) {
-      if (!existsSync(inputPath)) {
-        const r = makeErrorResult('trace conform', `Input file not found: ${inputPath}`, EXIT_CODES.source_error, 'FILE_NOT_FOUND');
+    return withSpan('trace.conform', {
+      model: modelPath,
+      input: (ctx.args.input as string | undefined) ?? 'stdin',
+    }, async () => {
+      if (!existsSync(modelPath)) {
+        const r = makeErrorResult(
+          'trace conform',
+          `POWL v2 model not found: ${modelPath}`,
+          EXIT_CODES.source_error,
+          'MODEL_NOT_FOUND'
+        );
         emitResult(r, { format, verbose, quiet });
         return exitWithFlush(EXIT_CODES.source_error);
       }
-      try { ocelLog = JSON.parse(readFileSync(inputPath, 'utf8')) as OcelLog; }
-      catch {
-        const r = makeErrorResult('trace conform', 'Invalid OCEL JSON', EXIT_CODES.source_error, 'PARSE_ERROR');
-        emitResult(r, { format, verbose, quiet }); return exitWithFlush(EXIT_CODES.source_error);
-      }
-    } else {
-      const chunks: Buffer[] = [];
-      for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
-      try { ocelLog = JSON.parse(Buffer.concat(chunks).toString('utf8')) as OcelLog; }
-      catch {
-        const r = makeErrorResult('trace conform', 'Invalid OCEL JSON from stdin', EXIT_CODES.source_error, 'PARSE_ERROR');
-        emitResult(r, { format, verbose, quiet }); return exitWithFlush(EXIT_CODES.source_error);
-      }
-    }
 
-    let powlModel: Powl2Model;
-    try { powlModel = JSON.parse(readFileSync(modelPath, 'utf8')) as Powl2Model; }
-    catch {
-      const r = makeErrorResult('trace conform', `Invalid POWL v2 model JSON: ${modelPath}`, EXIT_CODES.source_error, 'MODEL_PARSE_ERROR');
-      emitResult(r, { format, verbose, quiet }); return exitWithFlush(EXIT_CODES.source_error);
-    }
-
-    const projectDir = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
-    const conformance = checkPowl2Conformance(ocelLog, powlModel, projectDir);
-
-    // ── WASM4PM_CAPTURE_FIXTURE: one-shot capture for real-fixtures.test.ts ───
-    if (process.env.WASM4PM_CAPTURE_FIXTURE === '1') {
-      const label = process.env.WASM4PM_CAPTURE_LABEL ?? `trace-conform-${Date.now()}`;
-      const fixDir = join(projectDir, 'fixtures', 'real', label);
-      try {
-        mkdirSync(fixDir, { recursive: true });
-        const stack = (new Error('capture-stack')).stack ?? '';
-        writeFileSync(join(fixDir, 'stack.ts.txt'), stack, 'utf8');
-        writeFileSync(join(fixDir, 'expected-ocel.json'), JSON.stringify(ocelLog, null, 2), 'utf8');
-        writeFileSync(join(fixDir, 'expected-conform.json'), JSON.stringify(conformance, null, 2), 'utf8');
-        writeFileSync(join(fixDir, 'model.powl.json'), JSON.stringify(powlModel, null, 2), 'utf8');
-      } catch { /* capture is best-effort */ }
-    }
-
-    const outPath = ctx.args.out as string | undefined;
-    if (outPath) {
-      const auditDir = resolve(outPath, '..');
-      mkdirSync(auditDir, { recursive: true });
-      writeFileSync(outPath, JSON.stringify(conformance, null, 2), 'utf8');
-    }
-
-    const exitCode = conformance.verdict === 'Accepted' ? EXIT_CODES.success : EXIT_CODES.execution_error;
-    const result = makeResult('trace conform', {
-      ...conformance,
-      observed_count: ocelLog.ocel_events.length,
-      out: outPath ?? 'none',
-    }, performance.now() - t0, exitCode);
-
-    emitResult(result, { format, verbose, quiet }, (res, p) => {
-      const d = res.payload as typeof conformance & { observed_count: number; out: string };
-      p.log('');
-      p.log(`wpm trace conform — POWL v2 Conformance Check`);
-      p.log(`  Route:        ${d.route_id}`);
-      p.log(`  Observed:     ${d.observed_count} activities`);
-      p.log('─'.repeat(52));
-      for (const dim of d.details) {
-        const icon = dim.ok ? '✓' : '✗';
-        p.log(`  ${icon} ${dim.dimension.padEnd(30)} ${dim.detail}`);
-      }
-      p.log('─'.repeat(52));
-      p.log(`  Fitness:      ${(d.fitness * 100).toFixed(1)}%`);
-      p.log(`  Stage cover:  ${(d.required_stage_coverage * 100).toFixed(1)}%`);
-      p.log('');
-      if (d.verdict === 'Accepted') {
-        p.success(`Accepted — route conforms to ${d.route_id}`);
+      let ocelLog: OcelLog;
+      const inputPath = ctx.args.input as string | undefined;
+      if (inputPath) {
+        if (!existsSync(inputPath)) {
+          const r = makeErrorResult(
+            'trace conform',
+            `Input file not found: ${inputPath}`,
+            EXIT_CODES.source_error,
+            'FILE_NOT_FOUND'
+          );
+          emitResult(r, { format, verbose, quiet });
+          return exitWithFlush(EXIT_CODES.source_error);
+        }
+        try {
+          ocelLog = JSON.parse(readFileSync(inputPath, 'utf8')) as OcelLog;
+        } catch {
+          const r = makeErrorResult(
+            'trace conform',
+            'Invalid OCEL JSON',
+            EXIT_CODES.source_error,
+            'PARSE_ERROR'
+          );
+          emitResult(r, { format, verbose, quiet });
+          return exitWithFlush(EXIT_CODES.source_error);
+        }
       } else {
-        p.error(`AndonPull(${d.andon_reason}) — ${d.route_id}`);
+        const chunks: Buffer[] = [];
+        for await (const chunk of process.stdin) chunks.push(chunk as Buffer);
+        try {
+          ocelLog = JSON.parse(Buffer.concat(chunks).toString('utf8')) as OcelLog;
+        } catch {
+          const r = makeErrorResult(
+            'trace conform',
+            'Invalid OCEL JSON from stdin',
+            EXIT_CODES.source_error,
+            'PARSE_ERROR'
+          );
+          emitResult(r, { format, verbose, quiet });
+          return exitWithFlush(EXIT_CODES.source_error);
+        }
       }
-      if (d.out !== 'none') p.log(`  Report:       ${d.out}`);
-    });
 
-    return exitWithFlush(exitCode);
+      // Structural validation: ocel_events must be an array (presence check)
+      if (!Array.isArray((ocelLog as unknown as Record<string, unknown>).ocel_events)) {
+        const r = makeErrorResult(
+          'trace conform',
+          'Invalid OCEL: missing required "ocel_events" array',
+          EXIT_CODES.source_error,
+          'OCEL_INVALID_STRUCTURE'
+        );
+        emitResult(r, { format, verbose, quiet });
+        return exitWithFlush(EXIT_CODES.source_error);
+      }
+
+      let powlModel: Powl2Model;
+      try {
+        powlModel = JSON.parse(readFileSync(modelPath, 'utf8')) as Powl2Model;
+      } catch {
+        const r = makeErrorResult(
+          'trace conform',
+          `Invalid POWL v2 model JSON: ${modelPath}`,
+          EXIT_CODES.source_error,
+          'MODEL_PARSE_ERROR'
+        );
+        emitResult(r, { format, verbose, quiet });
+        return exitWithFlush(EXIT_CODES.source_error);
+      }
+
+      const projectDir = process.env.CLAUDE_PROJECT_DIR ?? process.cwd();
+
+      let conformance!: ConformanceResult;
+      await withSpanRaw('trace.conform.check', {
+        model: modelPath,
+        'trace.event_count': ocelLog.ocel_events.length,
+      }, async () => {
+        conformance = checkPowl2Conformance(ocelLog, powlModel, projectDir);
+      }, () => ({
+        'trace.verdict': conformance?.verdict ?? 'unknown',
+        'trace.fitness': conformance?.fitness ?? 0,
+      }));
+
+      // ── WASM4PM_CAPTURE_FIXTURE: one-shot capture for real-fixtures.test.ts ───
+      if (process.env.WASM4PM_CAPTURE_FIXTURE === '1') {
+        const label = process.env.WASM4PM_CAPTURE_LABEL ?? `trace-conform-${Date.now()}`;
+        const fixDir = join(projectDir, 'fixtures', 'real', label);
+        try {
+          mkdirSync(fixDir, { recursive: true });
+          const stack = new Error('capture-stack').stack ?? '';
+          writeFileSync(join(fixDir, 'stack.ts.txt'), stack, 'utf8');
+          writeFileSync(join(fixDir, 'expected-ocel.json'), JSON.stringify(ocelLog, null, 2), 'utf8');
+          writeFileSync(
+            join(fixDir, 'expected-conform.json'),
+            JSON.stringify(conformance, null, 2),
+            'utf8'
+          );
+          writeFileSync(join(fixDir, 'model.powl.json'), JSON.stringify(powlModel, null, 2), 'utf8');
+        } catch {
+          /* capture is best-effort */
+        }
+      }
+
+      const outPath = ctx.args.out as string | undefined;
+      if (outPath) {
+        const auditDir = resolve(outPath, '..');
+        mkdirSync(auditDir, { recursive: true });
+        writeFileSync(outPath, JSON.stringify(conformance, null, 2), 'utf8');
+      }
+
+      const exitCode =
+        conformance.verdict === 'Accepted' ? EXIT_CODES.success : EXIT_CODES.execution_error;
+      const result = makeResult(
+        'trace conform',
+        {
+          ...conformance,
+          observed_count: ocelLog.ocel_events.length,
+          out: outPath ?? 'none',
+        },
+        performance.now() - t0,
+        exitCode
+      );
+
+      emitResult(result, { format, verbose, quiet }, (res, p) => {
+        const d = res.payload as typeof conformance & { observed_count: number; out: string };
+        p.log('');
+        p.log(`wpm trace conform — POWL v2 Conformance Check`);
+        p.log(`  Route:        ${d.route_id}`);
+        p.log(`  Observed:     ${d.observed_count} activities`);
+        p.log('─'.repeat(52));
+        for (const dim of d.details) {
+          const icon = dim.ok ? '✓' : '✗';
+          p.log(`  ${icon} ${dim.dimension.padEnd(30)} ${dim.detail}`);
+        }
+        p.log('─'.repeat(52));
+        p.log(`  Fitness:      ${(d.fitness * 100).toFixed(1)}%`);
+        p.log(`  Stage cover:  ${(d.required_stage_coverage * 100).toFixed(1)}%`);
+        p.log('');
+        if (d.verdict === 'Accepted') {
+          p.success(`Accepted — route conforms to ${d.route_id}`);
+          p.log('');
+          p.log('  All declared stages are present, all observed activities are in the');
+          p.log('  model, and all object lifecycle + receipt constraints are satisfied.');
+          p.log('  This route is admissible per MCPP doctrine.');
+        } else {
+          p.error(`AndonPull(${d.andon_reason}) — ${d.route_id}`);
+          p.log('');
+          if (d.fitness < 1.0) {
+            const missingPct = ((1.0 - d.fitness) * 100).toFixed(1);
+            p.log(
+              `  Route conformance is ${(d.fitness * 100).toFixed(1)}% (below the required 1.0).`
+            );
+            p.log(`  ${missingPct}% of observed activities are not declared in the POWL model.`);
+            p.log('  This raises an AndonPull — the route cannot be admitted until conformance');
+            p.log('  reaches 1.0. Per MCPP doctrine: 0.999 is still a defect.');
+            p.log('');
+            p.log('  Recommended actions:');
+            p.log('    1. Run `wpm proof audit` to identify which activities lack BLAKE3 receipts.');
+            p.log('    2. Compare observed activities above against the declared model edges.');
+            p.log('    3. Either add the missing activities to the POWL model, or remove them');
+            p.log('       from the execution path if they represent rework or illegal steps.');
+          } else if (d.andon_reason === 'MissingRequiredStages') {
+            p.log('  One or more required stages were not observed in the event log.');
+            p.log('  These stages are mandatory checkpoints in the manufacturing route.');
+            p.log('  Run `wpm proof audit` to check receipt coverage for missing stages.');
+          } else if (d.andon_reason === 'TestRouteIncomplete') {
+            p.log('  The POWL model is missing `object_types` or `receipt_required` declarations.');
+            p.log('  Without these, object lifecycle and receipt coverage cannot be measured,');
+            p.log('  and the route is rejected as incomplete. Add both fields to the model.');
+          } else if (d.andon_reason === 'ActivityOnlyFakeRoute') {
+            p.log('  All events in the log have zero related objects — this is an activity-only');
+            p.log('  fake route. Real manufacturing routes must have object evidence (receipts,');
+            p.log('  artifacts) attached to events. Re-run with a real OCEL log.');
+          } else {
+            p.log(`  Andon reason: ${d.andon_reason ?? 'unknown'}`);
+            p.log('  Review the dimension details above to identify the failing constraint.');
+            p.log('  Run `wpm proof audit` to check receipt coverage.');
+          }
+        }
+        if (d.out !== 'none') p.log(`  Report:       ${d.out}`);
+      });
+
+      return exitWithFlush(exitCode);
+    });
   },
 });
 

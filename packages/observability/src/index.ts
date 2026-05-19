@@ -32,6 +32,12 @@ export * from './observability-wrapper.js';
 
 export * from './observability.js';
 
+// AtomVM bridge — silent-skip detection + span emitters for BEAM/Erlang traces
+export * from './atomvm-bridge.js';
+
+// Spine bridge — typed span shapes consumed by atomvm-bridge and friends
+export * from './spine-bridge.js';
+
 // Global singleton access
 import { ObservabilityWrapper } from './observability-wrapper.js';
 import { Tracer } from './spans.js';
