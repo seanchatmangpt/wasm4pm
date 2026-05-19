@@ -411,16 +411,30 @@ pub fn evaluate_custody_layer(motion: &RequestMotion) -> LayerVerdict {
     };
 
     // OTEL: Emit custody layer evaluation span for high-stakes actions
+    // GAP-2: Enhanced custody diagnostics with evidence analysis
     if is_high_stakes {
+        let evidence_count = motion.claimed_evidence.len();
+        let missing_count = verdict.missing_evidence.len();
+        let decision_quality = if evidence_count == 0 && missing_count > 0 {
+            "insufficient_evidence"
+        } else if evidence_count > 0 {
+            "sufficient_evidence"
+        } else {
+            "neutral"
+        };
+
         tracing::info_span!(
             "autonomic.membrane_custody_evaluation",
             request_id = motion.request_id.as_str(),
             actor = motion.actor.as_str(),
             action = motion.requested_action.as_str(),
             is_high_stakes = is_high_stakes,
-            evidence_provided = motion.claimed_evidence.len() as u32,
+            evidence_provided = evidence_count as u32,
+            evidence_missing = missing_count as u32,
+            evidence_quality = decision_quality,
             verdict = verdict.verdict.to_string().as_str(),
             confidence = verdict.confidence,
+            decision_rationale = verdict.reason.as_str(),
             service_name = "wpm",
             status = if matches!(verdict.verdict, Verdict::RequireEvidence) { "error" } else { "ok" },
         );
@@ -501,6 +515,16 @@ fn evaluate_actor_layer_with_envelope(motion: &RequestMotion, handle: Option<&st
         };
         let envelope: crate::actor_envelope::ActorEnvelope =
             serde_json::from_str(json_str).map_err(|e| {
+                // GAP-1: Emit error span for envelope deserialization failure
+                tracing::warn!(
+                    envelope_type = "actor",
+                    error_type = "deserialization_failed",
+                    error_message = e.to_string(),
+                    handle = h,
+                    service_name = "wpm",
+                    status = "error",
+                    "Actor envelope deserialization failed; falling back to stateless layer"
+                );
                 crate::error::wasm_err(crate::error::codes::INTERNAL_ERROR, e.to_string())
             })?;
         Ok(crate::actor_envelope::score_actor_motion_from_envelope(&envelope, motion))
@@ -508,7 +532,16 @@ fn evaluate_actor_layer_with_envelope(motion: &RequestMotion, handle: Option<&st
 
     match result {
         Ok(verdict) => verdict,
-        Err(_) => evaluate_actor_layer(motion),
+        Err(e) => {
+            tracing::warn!(
+                envelope_type = "actor",
+                error_code = format!("{:?}", &e),
+                service_name = "wpm",
+                status = "error",
+                "Actor envelope evaluation failed; falling back to stateless evaluation"
+            );
+            evaluate_actor_layer(motion)
+        }
     }
 }
 
@@ -528,6 +561,16 @@ fn evaluate_route_layer_with_envelope(motion: &RequestMotion, handle: Option<&st
         };
         let envelope: crate::route_envelope::RouteEnvelope =
             serde_json::from_str(json_str).map_err(|e| {
+                // GAP-1: Emit error span for envelope deserialization failure
+                tracing::warn!(
+                    envelope_type = "route",
+                    error_type = "deserialization_failed",
+                    error_message = e.to_string(),
+                    handle = h,
+                    service_name = "wpm",
+                    status = "error",
+                    "Route envelope deserialization failed; falling back to stateless layer"
+                );
                 crate::error::wasm_err(crate::error::codes::INTERNAL_ERROR, e.to_string())
             })?;
         Ok(crate::route_envelope::score_route_motion_from_envelope(&envelope, motion))
@@ -535,7 +578,16 @@ fn evaluate_route_layer_with_envelope(motion: &RequestMotion, handle: Option<&st
 
     match result {
         Ok(verdict) => verdict,
-        Err(_) => evaluate_route_layer(motion),
+        Err(e) => {
+            tracing::warn!(
+                envelope_type = "route",
+                error_code = format!("{:?}", &e),
+                service_name = "wpm",
+                status = "error",
+                "Route envelope evaluation failed; falling back to stateless evaluation"
+            );
+            evaluate_route_layer(motion)
+        }
     }
 }
 
@@ -556,6 +608,16 @@ fn evaluate_automl_layer_with_envelope(motion: &RequestMotion, handle: Option<&s
         };
         let model: crate::automl_envelope::AutomlEnvelopeModel =
             serde_json::from_str(json_str).map_err(|e| {
+                // GAP-1: Emit error span for envelope deserialization failure
+                tracing::warn!(
+                    envelope_type = "automl",
+                    error_type = "deserialization_failed",
+                    error_message = e.to_string(),
+                    handle = h,
+                    service_name = "wpm",
+                    status = "error",
+                    "AutoML envelope deserialization failed; falling back to stateless layer"
+                );
                 crate::error::wasm_err(crate::error::codes::INTERNAL_ERROR, e.to_string())
             })?;
         Ok(crate::automl_envelope::score_motion_automl_from_envelope(&model, motion))
@@ -563,7 +625,16 @@ fn evaluate_automl_layer_with_envelope(motion: &RequestMotion, handle: Option<&s
 
     match result {
         Ok(verdict) => verdict,
-        Err(_) => evaluate_automl_layer(motion),
+        Err(e) => {
+            tracing::warn!(
+                envelope_type = "automl",
+                error_code = format!("{:?}", &e),
+                service_name = "wpm",
+                status = "error",
+                "AutoML envelope evaluation failed; falling back to stateless evaluation"
+            );
+            evaluate_automl_layer(motion)
+        }
     }
 }
 

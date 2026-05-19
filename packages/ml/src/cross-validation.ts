@@ -166,11 +166,60 @@ export function holdoutSplit(
     const trainIndices: number[] = [];
 
     // Distribute test samples proportionally per class
+    // For small datasets (n < numClasses), ensure at least 1 train sample total
+    let totalTestAllocated = 0;
+    const classAllocs = new Map<number, number>();
+
+    // First pass: calculate allocations proportionally (rounding to nearest)
     for (const [_label, indices] of labelGroups) {
-      const testCountForClass = Math.max(
-        1,
-        Math.floor((indices.length * testSize) / n)
-      );
+      const proportionalTest = (indices.length * testSize) / n;
+      const testCountForClass = Math.round(proportionalTest);
+      // Ensure we don't allocate more than available, but allow all samples in test if needed
+      classAllocs.set(_label, Math.min(testCountForClass, indices.length));
+      totalTestAllocated += classAllocs.get(_label)!;
+    }
+
+    // Second pass: adjust to match target testSize exactly
+    // If we allocated too many to test, reduce from largest allocations
+    // If we allocated too few to test, increase from smallest allocations
+    while (totalTestAllocated > testSize) {
+      let maxLabel = -1;
+      let maxAlloc = -1;
+      for (const [label, alloc] of classAllocs) {
+        if (alloc > maxAlloc && alloc > 0) {
+          maxAlloc = alloc;
+          maxLabel = label;
+        }
+      }
+      if (maxLabel !== -1) {
+        classAllocs.set(maxLabel, classAllocs.get(maxLabel)! - 1);
+        totalTestAllocated--;
+      } else {
+        break;
+      }
+    }
+
+    while (totalTestAllocated < testSize) {
+      let minLabel = -1;
+      let minAlloc = Infinity;
+      for (const [label, indices] of labelGroups) {
+        const alloc = classAllocs.get(label) || 0;
+        if (alloc < minAlloc && alloc < indices.length) {
+          minAlloc = alloc;
+          minLabel = label;
+        }
+      }
+      if (minLabel !== -1) {
+        classAllocs.set(minLabel, classAllocs.get(minLabel)! + 1);
+        totalTestAllocated++;
+      } else {
+        break;
+      }
+    }
+
+    // Final pass: apply allocations to split indices
+    for (const [label, indices] of labelGroups) {
+      const testCountForClass = classAllocs.get(label) || 0;
       for (let i = 0; i < indices.length; i++) {
         if (i < testCountForClass) {
           testIndices.push(indices[i]);

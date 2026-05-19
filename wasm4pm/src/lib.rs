@@ -1708,17 +1708,32 @@ pub fn autonomic_execute_cycle(
 
     let t_optimization_end = wall_clock_us();
 
+    // GAP-3: Enhanced decision visibility with action rationale and context
+    let action_rationale = match action_label.as_str() {
+        "Continue" => "no degradation detected; maintain status quo",
+        "Scale" => "spc alerts or instability; increase exploration",
+        "Retry" => "transient failure; exponential backoff attempted",
+        "Fallback" => "persistent failure; fallback algorithm invoked",
+        "Restart" => "critical state or drift; system restart required",
+        _ => "unknown action; fallback applied",
+    };
+
     tracing::info!(
         target: "autonomic",
         action = %action_label,
+        action_rationale = action_rationale,
         agent = %agent_name,
         reward = %reward_val,
+        cumulative_reward = %cumulative_reward,
         cycle = %cycle_count,
         health = %health_state_val,
         spc_alerts = %all_special_causes.len(),
         circuit_state = %circuit_state,
+        circuit_allowed = %circuit_allowed,
         guard_pass = %guard_pass,
-        "cycle complete"
+        service_name = "wpm",
+        status = if guard_pass && circuit_allowed { "ok" } else { "warning" },
+        "autonomic.decision_action_selected"
     );
 
     // Compute timing deltas using saturating_sub to handle any timing anomalies

@@ -46,6 +46,23 @@ export { MemoryCheckpointStore, FileCheckpointStore, SqliteCheckpointStore, } fr
 export { CrashDetector, AutonomicRecovery, } from './crash-detector.js';
 // Signal handling and crash recovery (Phase 1.5)
 export { SignalHandler } from './signals.js';
+// Autonomous recovery orchestration (Phase 2 — Cycle 40)
+/**
+ * AutonomousRecoveryOrchestrator — Continuous monitoring, crash detection, and recovery execution
+ * @description Monitors engine health, detects crashes via lock files, makes recovery decisions (Rank-1/2/3 oracles)
+ * @description Executes recovery with MTTR <1s guarantee per critical-constraints.md
+ * @example const orchest = new AutonomousRecoveryOrchestrator(engine, detector, store, manager, runId);
+ *          orchest.start(); // begin monitoring loop
+ */
+export { AutonomousRecoveryOrchestrator } from './autonomous-recovery-loop.js';
+// Checkpoint garbage collection and lock cleanup (Phase 3 — Cycle 42)
+/**
+ * CheckpointGarbageCollector — Automated disk space management for checkpoints and lock files
+ * @description Implements automated cleanup of old checkpoints (>7 days), stale lock files (>24h), and storage quota management
+ * @description Emits OTEL spans for observability; triggers aggressive cleanup if storage >2GB
+ * @example const gc = new CheckpointGarbageCollector(store, lockDir); await gc.triggerGarbageCollection();
+ */
+export { CheckpointGarbageCollector } from './checkpoint-gc.js';
 // WASM loader
 /**
  * WasmLoader — Singleton WASM binary management with soft/hard reset and health checks.
