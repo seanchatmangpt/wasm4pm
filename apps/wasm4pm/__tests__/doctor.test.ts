@@ -11,27 +11,33 @@ import { doctor } from '../src/cli.js';
 
 describe('doctor command — shape', () => {
   it('is a valid citty command with meta, args, and subCommands', () => {
-    expect(doctor.meta?.name).toBe('doctor');
-    expect(doctor.meta?.description).toContain('health');
-    expect(doctor.args).toBeDefined();
+    const meta = doctor.meta as any;
+    const args = doctor.args as any;
+    const subs = doctor.subCommands as any;
+    
+    expect(meta?.name).toBe('doctor');
+    expect(meta?.description).toContain('health');
+    expect(args).toBeDefined();
     // doctor uses citty's subCommands pattern; citty dispatches to a matching
     // subcommand (check/fix/publish/env/tps/perf/watch/report) or prints help.
-    expect(doctor.subCommands).toBeDefined();
-    expect(doctor.subCommands?.check).toBeDefined();
+    expect(subs).toBeDefined();
+    expect(subs?.check).toBeDefined();
   });
 
   it('accepts --format, --verbose, and --quiet flags with correct types and aliases', () => {
-    expect(doctor.args?.format?.type).toBe('string');
-    expect(doctor.args?.format?.default).toBe('human');
-    expect(doctor.args?.verbose?.type).toBe('boolean');
-    expect(doctor.args?.verbose?.alias).toBe('v');
-    expect(doctor.args?.quiet?.type).toBe('boolean');
-    expect(doctor.args?.quiet?.alias).toBe('q');
+    const args = doctor.args as any;
+    expect(args?.format?.type).toBe('string');
+    expect(args?.format?.default).toBe('human');
+    expect(args?.verbose?.type).toBe('boolean');
+    expect(args?.verbose?.alias).toBe('v');
+    expect(args?.quiet?.type).toBe('boolean');
+    expect(args?.quiet?.alias).toBe('q');
   });
 
   it('requires zero positional arguments', () => {
-    const positionals = Object.values(doctor.args ?? {}).filter(
-      (a) => a && typeof a === 'object' && 'type' in a && a.type === 'positional'
+    const args = doctor.args as any;
+    const positionals = Object.values(args ?? {}).filter(
+      (a: any) => a && typeof a === 'object' && 'type' in a && a.type === 'positional'
     );
     expect(positionals).toHaveLength(0);
   });

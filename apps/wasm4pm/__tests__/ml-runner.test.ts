@@ -22,7 +22,17 @@ describe('VALID_ML_TASKS', () => {
 
 describe('executeMlTask — parameter validation', () => {
   const mockWasm = {
-    extract_case_features: () => JSON.stringify({ features: [], caseIds: [] }),
+    extract_case_features: () => JSON.stringify({
+      data: [
+        [1, 2, 3, 0.5, 2, 0.1],
+        [2, 3, 4, 0.6, 3, 0.2],
+        [1, 1, 2, 0.3, 1, 0.05],
+      ],
+      featureNames: ['trace_length', 'elapsed_time', 'activity_counts', 'rework_count', 'unique_activities', 'avg_inter_event_time'],
+      caseIds: ['case-1', 'case-2', 'case-3'],
+      targets: [60, 75, 45],
+      labels: [],
+    }),
     detect_drift: () => JSON.stringify({ drifts: [] }),
   };
   const logHandle = 'test-handle';
