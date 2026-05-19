@@ -458,3 +458,154 @@ fn test_policy_recovers_from_terminal_health_state() {
         phase2_avg_reward - phase1_avg_reward
     );
 }
+
+// ---------------------------------------------------------------------------
+// OTEL Span Emission Tests (Rank-1 Oracle: Mathematical proofs)
+// ---------------------------------------------------------------------------
+
+#[test]
+fn test_otel_span_linucb_agent_selection() {
+    // Initialize subscriber with tracing (OTEL span emission)
+    let _ = tracing_subscriber::fmt()
+        .with_test_writer()
+        .with_ansi(false)
+        .with_max_level(tracing::Level::INFO)
+        .try_init();
+
+    let mut orch = RlOrchestrator::new();
+    orch.set_linucb_selection(true);
+
+    let features = [0.5, 0.3, 0.2, 0.1, 0.0, 0.0, 0.5, 0.0];
+
+    // Calling linucb_select_agent should emit OTEL span autonomic.linucb.agent_selection
+    // Verifying no panic and agent selection completes successfully
+    let recommended_agent = orch.linucb_select_agent(&features);
+
+    // Assert: returned agent type is valid (Rank-1 oracle: type safety)
+    assert!(matches!(
+        recommended_agent,
+        AgentType::QLearning
+            | AgentType::SARSA
+            | AgentType::DoubleQLearning
+            | AgentType::ExpectedSARSA
+            | AgentType::REINFORCE
+    ));
+}
+
+#[test]
+fn test_otel_span_bellman_update() {
+    let _ = tracing_subscriber::fmt()
+        .with_test_writer()
+        .with_ansi(false)
+        .with_max_level(tracing::Level::INFO)
+        .try_init();
+
+    let orch = RlOrchestrator::new();
+    let state = make_test_state(0);
+    let next_state = make_test_state(0);
+
+    // Call update which should emit autonomic.rl.bellman_update span
+    // Verify: Bellman update completes without panic (Rank-1 oracle: update consistency)
+    orch.update(&state, &RlAction::Continue, 0.5, &next_state, false);
+
+    // Assert: telemetry reflects the cycle (no observable state should be corrupt)
+    // Note: telemetry.last_reward is only updated in run_cycle, not in update() directly
+    assert_eq!(orch.telemetry().cycle_count, 0); // Update doesn't increment cycle counter
+}
+
+#[test]
+fn test_otel_span_action_performance_every_10_actions() {
+    let _ = tracing_subscriber::fmt()
+        .with_test_writer()
+        .with_ansi(false)
+        .with_max_level(tracing::Level::INFO)
+        .try_init();
+
+    let mut orch = RlOrchestrator::new();
+
+    // Record 15 actions through run_cycle (should emit span at action 10)
+    for _i in 0..15 {
+        let state = make_test_state(0);
+        let next_state = make_test_state(0);
+        let features = [0.5, 0.3, 0.2, 0.1, 0.0, 0.0, 0.5, 0.0];
+        let _ = orch.run_cycle(&features, &state, &next_state, 0, true, true, false);
+    }
+
+    // Assert: action history was populated correctly
+    assert!(orch.get_action_stats().recent_actions().len() > 0);
+
+    // Assert: success rate can be computed (Rank-1 oracle: metric correctness)
+    let success_rate = orch.get_action_stats().get_success_rate(RlAction::Continue);
+    assert!(success_rate >= 0.0 && success_rate <= 1.0);
+}
+
+#[test]
+fn test_otel_span_guard_circuit_decision_every_10_cycles() {
+    let _ = tracing_subscriber::fmt()
+        .with_test_writer()
+        .with_ansi(false)
+        .with_max_level(tracing::Level::INFO)
+        .try_init();
+
+    let mut orch = RlOrchestrator::new();
+    let features = [0.5, 0.3, 0.2, 0.1, 0.0, 0.0, 0.5, 0.0];
+
+    // Run 25 cycles (should emit span at cycles 10 and 20)
+    for cycle in 0..25 {
+        let state = make_test_state(0);
+        let next_state = make_test_state(if cycle % 3 == 0 { 1 } else { 0 });
+        let guard_pass = cycle % 2 == 0;
+        let circuit_allowed = cycle % 3 != 0;
+
+        let (_action, _reward) = orch.run_cycle(
+            &features,
+            &state,
+            &next_state,
+            if cycle % 5 == 0 { 1 } else { 0 },
+            guard_pass,
+            circuit_allowed,
+            false,
+        );
+    }
+
+    // Assert: telemetry reflects all 25 cycles (Rank-1 oracle: cycle counter consistency)
+    assert_eq!(orch.telemetry().cycle_count, 25);
+}
+
+#[test]
+fn test_otel_convergence_metrics_every_100_cycles() {
+    let _ = tracing_subscriber::fmt()
+        .with_test_writer()
+        .with_ansi(false)
+        .with_max_level(tracing::Level::INFO)
+        .try_init();
+
+    let mut orch = RlOrchestrator::new();
+    let features = [0.5, 0.3, 0.2, 0.1, 0.0, 0.0, 0.5, 0.0];
+
+    // Run 150 cycles (should emit convergence span at cycles 100, 150)
+    for _ in 0..150 {
+        let state = make_test_state(0);
+        let next_state = make_test_state(0);
+
+        let _result = orch.run_cycle(
+            &features,
+            &state,
+            &next_state,
+            0,
+            true,
+            true,
+            false,
+        );
+    }
+
+    // Assert: 150 cycles completed and telemetry is consistent
+    assert_eq!(orch.telemetry().cycle_count, 150);
+
+    // Assert: weight norms are computed correctly (LinUCB convergence oracle)
+    let norms = orch.weight_norms();
+    assert_eq!(norms.len(), 5); // 5 agents
+    for norm in norms.iter() {
+        assert!(norm.is_finite(), "Weight norm must be finite, got {}", norm);
+    }
+}

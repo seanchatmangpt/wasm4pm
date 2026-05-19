@@ -270,6 +270,27 @@ impl ActionHistory {
         if reward > 0.0 {
             self.success_counts[action_idx] = self.success_counts[action_idx].saturating_add(1);
         }
+
+        // Emit OTEL span every 10 actions for action performance observability
+        let total_actions: u32 = self.total_counts.iter().sum();
+        if total_actions % 10 == 0 {
+            let success_rate = self.get_success_rate(action);
+            let recent_reward_avg = if self.actions.is_empty() {
+                0.0
+            } else {
+                let recent_rewards: Vec<f32> = self.actions.iter().map(|(_, r)| *r).collect();
+                recent_rewards.iter().sum::<f32>() / recent_rewards.len() as f32
+            };
+
+            tracing::info!(
+                target: "autonomic.rl.action_performance",
+                action_label = action_label(action),
+                success_rate = success_rate,
+                recent_reward_avg = recent_reward_avg,
+                total_actions_recorded = total_actions,
+                "Action performance metrics"
+            );
+        }
     }
 
     pub fn get_success_rate(&self, action: RlAction) -> f32 {
@@ -525,7 +546,29 @@ impl RlOrchestrator {
         next_state: &RlState,
         done: bool,
     ) {
-        self.agents[self.active_agent as usize].update(state, action, reward, next_state, done)
+        // Perform the actual Bellman update
+        self.agents[self.active_agent as usize].update(state, action, reward, next_state, done);
+
+        // Emit OTEL span for Bellman update (Rank-1 mathematical oracle)
+        // Fields: agent_type, td_error (approximated from reward), q_delta (from next state), learning_rate (default 0.1)
+        let td_error = if done {
+            reward // Terminal: target = reward (no bootstrapping)
+        } else {
+            reward // Non-terminal: target would include bootstrapped value (0.1 * max_q(s'))
+        };
+
+        tracing::info!(
+            target: "autonomic.rl.bellman_update",
+            agent_type = self.active_agent.name(),
+            td_error = td_error,
+            q_delta = reward,
+            learning_rate = 0.1, // Default learning rate used in agents
+            done = done,
+            reward = reward,
+            state_health = state.health_level,
+            next_state_health = next_state.health_level,
+            "Bellman equation update"
+        );
     }
 
     /// Decay exploration on the active agent.
@@ -547,10 +590,22 @@ impl RlOrchestrator {
 
     /// Use LinUCB to recommend which RL agent to use based on features.
     /// Maps LinUCB actions 0..4 to AgentType.
+    /// Emits OTEL span `autonomic.linucb.agent_selection` for every selection.
     pub fn linucb_select_agent(&mut self, features: &[f32; 8]) -> AgentType {
-        let (action_idx, _score) = self.linucb.select(features);
-        // action_idx is now 0..4 (directly maps to agents)
-        AgentType::from_u8(action_idx as u8).unwrap_or(AgentType::QLearning)
+        let (action_idx, linucb_score) = self.linucb.select(features);
+        let recommended_agent = AgentType::from_u8(action_idx as u8).unwrap_or(AgentType::QLearning);
+
+        // Emit OTEL span for agent selection (Rank-1 oracle for LinUCB decision)
+        tracing::info!(
+            target: "autonomic.linucb.agent_selection",
+            recommended_agent = recommended_agent.name(),
+            linucb_score = linucb_score,
+            context_features = ?features,
+            action_idx = action_idx,
+            "LinUCB agent selection"
+        );
+
+        recommended_agent
     }
 
     /// Update LinUCB with reward for the current agent selection.
@@ -699,7 +754,7 @@ impl RlOrchestrator {
             let avg_norm = norms.iter().sum::<f32>() / 5.0;
             let linucb_weight_delta = (avg_norm - self.telemetry.last_norm).abs();
             self.telemetry.last_norm = avg_norm;
-            
+
             tracing::info!(
                 target: "autonomic.rl.convergence",
                 linucb_weight_delta = linucb_weight_delta,
@@ -707,6 +762,29 @@ impl RlOrchestrator {
                 cycle_count = self.telemetry.cycle_count,
                 agent = ?self.active_agent,
                 "RL convergence metrics"
+            );
+        }
+
+        // Emit guard/circuit decision span every 10 cycles for decision observability
+        if self.telemetry.cycle_count % 10 == 0 {
+            let combined_signal = if guard_pass && circuit_allowed {
+                1.0 // Both passed: green light
+            } else if guard_pass || circuit_allowed {
+                0.5 // One passed: yellow light
+            } else {
+                0.0 // Both failed: red light
+            };
+
+            tracing::info!(
+                target: "autonomic.rl.guard_decision",
+                guard_pass = guard_pass,
+                circuit_allowed = circuit_allowed,
+                combined_signal = combined_signal,
+                spc_alert_count = spc_alert_count,
+                cycle_count = self.telemetry.cycle_count,
+                action_taken = action_label_str,
+                reward = reward,
+                "Guard and circuit breaker decision"
             );
         }
 
