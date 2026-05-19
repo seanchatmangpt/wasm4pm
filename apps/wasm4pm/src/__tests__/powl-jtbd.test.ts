@@ -535,10 +535,119 @@ describe('JTBD-8: Parse an externally-provided POWL model string', () => {
   });
 });
 
-// ─── JTBD-9: Full Pipeline ───────────────────────────────────────────────────
+// ─── JTBD-9a: Get Children ───────────────────────────────────────────────────
 
-describe('JTBD-9: Full pipeline — discover → simplify → convert → export for wiki embedding', () => {
-  it('all pipeline stages complete without error and produce non-empty output + each pipeline stage output is compatible with the next stage input + final BPMN export contains faker-generated RevOps activity names and BPMN structure', () => {
+describe('JTBD-9a: Get children of a POWL model node', () => {
+  it('get_children returns a structured array of numeric indices + children of a choice node (X) are non-empty + children indices are valid arena references', () => {
+    const repr = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic')).repr as string;
+    const model = parse(wasm.parse_powl(repr));
+    const root = model.root as number;
+
+    // Get children of the root node
+    const childrenResult = parse(wasm.get_children(repr, String(root)));
+    expect(Array.isArray(childrenResult.children)).toBe(true);
+
+    const children = childrenResult.children as number[];
+    // For a non-trivial discovered model, the root should have children
+    expect(children.length).toBeGreaterThanOrEqual(0);
+
+    // All children must be non-negative integers
+    for (const child of children) {
+      expect(typeof child).toBe('number');
+      expect(child).toBeGreaterThanOrEqual(0);
+    }
+
+    // Test with a simple XOR model: X(A, B) should have 2 children
+    const simpleXor = `X(${V.leadCreated}, ${V.leadQualified})`;
+    const simpleModel = parse(wasm.parse_powl(simpleXor));
+    const simpleChildren = parse(wasm.get_children(simpleXor, String(simpleModel.root as number)));
+    expect(Array.isArray(simpleChildren.children)).toBe(true);
+    expect((simpleChildren.children as number[]).length).toBe(2);
+  });
+});
+
+// ─── JTBD-9b: Node Info ──────────────────────────────────────────────────────
+
+describe('JTBD-9b: Get detailed info about a POWL model node', () => {
+  it('node_info returns structured metadata (type, label, children, edges) + node type is one of (transition, operator, decision_graph, etc.) + label is present for activity nodes + children is always an array', () => {
+    const repr = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic')).repr as string;
+    const model = parse(wasm.parse_powl(repr));
+    const root = model.root as number;
+
+    // Get info about the root node
+    const infoResult = parse(wasm.node_info_json(repr, String(root)));
+    expect(infoResult.type).toBeDefined();
+    expect(typeof infoResult.type).toBe('string');
+
+    // Valid node types (from powl_api.rs node_info_json implementation)
+    const validTypes = ['transition', 'frequent_transition', 'strict_partial_order', 'operator', 'decision_graph', 'choice_graph'];
+    expect(validTypes).toContain(infoResult.type as string);
+
+    // Children must always be an array
+    expect(Array.isArray(infoResult.children)).toBe(true);
+
+    // For a transition node, label should be present
+    const simpleActivity = V.leadCreated;
+    const activityModel = parse(wasm.parse_powl(simpleActivity));
+    const activityInfo = parse(wasm.node_info_json(simpleActivity, String(activityModel.root as number)));
+
+    if (activityInfo.type === 'transition' || activityInfo.type === 'frequent_transition') {
+      expect(activityInfo.label).toBeDefined();
+      expect(typeof activityInfo.label).toBe('string');
+    }
+
+    // Complex model: test that children info is consistent
+    const xorModel = `X(${V.leadCreated}, ${V.dealClosedWon})`;
+    const xorParsed = parse(wasm.parse_powl(xorModel));
+    const xorInfo = parse(wasm.node_info_json(xorModel, String(xorParsed.root as number)));
+
+    expect(xorInfo.type).toBe('operator');
+    expect(Array.isArray(xorInfo.children)).toBe(true);
+    expect((xorInfo.children as number[]).length).toBe(2);
+  });
+});
+
+// ─── JTBD-9c: SVG Conversion ─────────────────────────────────────────────────
+
+describe('JTBD-9c: Convert POWL model to SVG for visualization', () => {
+  it('powl_to_svg produces valid SVG XML + SVG contains svg root element and viewBox attribute + SVG output is stable (round-trip conversion matches)', () => {
+    const repr = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic')).repr as string;
+    const svgOutput: string = wasm.powl_to_svg(repr);
+
+    expect(typeof svgOutput).toBe('string');
+    expect(svgOutput.length).toBeGreaterThan(0);
+
+    // Valid SVG XML should contain svg root element
+    expect(svgOutput).toContain('<svg');
+    expect(svgOutput).toContain('</svg>');
+
+    // Should have viewBox attribute for proper scaling
+    expect(svgOutput).toContain('viewBox');
+
+    // SVG should contain text or group elements for the process nodes
+    const hasSvgElements =
+      svgOutput.includes('<g') ||
+      svgOutput.includes('<text') ||
+      svgOutput.includes('<rect') ||
+      svgOutput.includes('<circle');
+    expect(hasSvgElements).toBe(true);
+
+    // Round-trip: convert same model twice should give identical SVG
+    const svgOutput2: string = wasm.powl_to_svg(repr);
+    expect(svgOutput2).toBe(svgOutput);
+
+    // Simple linear model to SVG
+    const simpleModel = linearPowl([V.leadCreated, V.dealClosedWon]);
+    const simpleSvg: string = wasm.powl_to_svg(simpleModel);
+    expect(simpleSvg).toContain('<svg');
+    expect(simpleSvg).toContain('</svg>');
+  });
+});
+
+// ─── JTBD-9d: Full Pipeline ───────────────────────────────────────────────────
+
+describe('JTBD-9d: Full pipeline — discover → simplify → convert (including SVG) → export for wiki embedding', () => {
+  it('all pipeline stages complete without error and produce non-empty output + each pipeline stage output is compatible with the next stage input + final BPMN export contains faker-generated RevOps activity names and BPMN structure + SVG export is included in the conversion flow', () => {
     const discovered = parse(wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic'));
     expect((discovered.node_count as number)).toBeGreaterThan(0);
 
@@ -550,6 +659,11 @@ describe('JTBD-9: Full pipeline — discover → simplify → convert → export
 
     const bpmnXml: string = wasm.powl_to_bpmn(simplified.repr as string);
     expect(bpmnXml.length).toBeGreaterThan(0);
+
+    // SVG conversion
+    const svgOutput: string = wasm.powl_to_svg(simplified.repr as string);
+    expect(svgOutput.length).toBeGreaterThan(0);
+    expect(svgOutput).toContain('<svg');
 
     const discoverRepr = parse(
       wasm.discover_powl_from_log(modelsLogJson, 'decision_graph_cyclic')

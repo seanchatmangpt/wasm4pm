@@ -40,7 +40,12 @@ export type EventType =
   | 'DriftDetected'
   // Conformance events
   | 'ConformanceCheckStarted'
-  | 'ConformanceCheckCompleted';
+  | 'ConformanceCheckCompleted'
+  // Autonomic system events (new)
+  | 'RlAgentDecisionEvent'
+  | 'ProtectionActivationEvent'
+  | 'OptimizationResultEvent'
+  | 'MultiObjectiveDecisionEvent';
 
 /**
  * State change event
@@ -339,6 +344,96 @@ export interface MlAnalysisEvent {
     cpuDurationNs?: number;
     wallDurationNs?: number;
   };
+  requiredAttrs: RequiredOtelAttributes;
+}
+
+/**
+ * Multi-objective decision event — emitted when autonomic system makes decision
+ * with health, quality, and performance objectives.
+ *
+ * Span name: `autonomic.decision.multi_objective`
+ * Span kind: INTERNAL
+ */
+export interface MultiObjectiveDecisionEvent {
+  type: 'MultiObjectiveDecisionEvent';
+  traceId: string;
+  spanId: string;
+  parentSpanId?: string;
+  runId: string;
+  primaryObjective: 'health' | 'quality' | 'performance';
+  decisionConfidence: number; // 0-1
+  objectiveScores: {
+    healthScore: number;
+    qualityScore: number;
+    performanceScore: number;
+  };
+  preferenceWeights: {
+    healthWeight: number;
+    qualityWeight: number;
+    performanceWeight: number;
+  };
+  compositeScore: number; // weighted average
+  durationMs?: number;
+  status: 'OK' | 'ERROR' | 'UNSET';
+  rationale: string;
+  requiredAttrs: RequiredOtelAttributes;
+}
+
+/**
+ * Protection activation event — emitted when circuit breaker or SPC protection triggers
+ *
+ * Span name: `autonomic.protection.activation`
+ * Span kind: INTERNAL
+ */
+export interface ProtectionActivationEvent {
+  type: 'ProtectionActivationEvent';
+  traceId: string;
+  spanId: string;
+  parentSpanId?: string;
+  runId: string;
+  degradationLevel: 'NONE' | 'QUALITY' | 'PERFORMANCE' | 'AVAILABILITY';
+  triggerReasons: {
+    spcAlertsDetected: boolean;
+    circuitBreakerOpen: boolean;
+    resourceConstraint: boolean;
+    latencyViolation: boolean;
+  };
+  openCircuitBreakers: string[]; // algorithm names with open circuits
+  activeSpcAlerts: number;
+  degradationRationale: string;
+  durationMs?: number;
+  status: 'OK' | 'ERROR' | 'UNSET';
+  requiredAttrs: RequiredOtelAttributes;
+}
+
+/**
+ * Optimization result event — emitted after RL optimization loop completes
+ * with algorithm selection and profile recommendations.
+ *
+ * Span name: `autonomic.optimization.result`
+ * Span kind: INTERNAL
+ */
+export interface OptimizationResultEvent {
+  type: 'OptimizationResultEvent';
+  traceId: string;
+  spanId: string;
+  parentSpanId?: string;
+  runId: string;
+  recommendedAlgorithm: string;
+  algorithmCostBenefitScore: number;
+  recommendedProfile: string;
+  profileCostScore: number;
+  timeTradeoffScore: number;
+  resourceTradeoffScore: number;
+  overallOptimizationScore: number;
+  estimatedCycleTimeMs: number;
+  actionTaken: string; // e.g., 'Continue', 'Scale', 'Retry'
+  agentName: string; // which RL agent made decision
+  cumulativeReward: number;
+  cycleCount: number;
+  durationMs?: number;
+  status: 'OK' | 'ERROR' | 'UNSET';
+  rationale: string;
   requiredAttrs: RequiredOtelAttributes;
 }
 

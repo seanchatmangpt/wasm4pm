@@ -6,6 +6,7 @@ import { withLogSession } from '../with-log-session.js';
 import { withSpan } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
+import { formatFitnessBreakdown, compareModels, exportTracesAsCSV } from './conformance-enhanced.js';
 
 interface ConformancePayload {
   schema: string;
@@ -26,6 +27,25 @@ interface ConformancePayload {
     produced: unknown;
   };
   modelHandle: string;
+  fitnessBreakdown?: {
+    overall_fitness: number;
+    token_missing_pct: number;
+    token_produced_pct: number;
+    token_consumed_pct: number;
+    token_remaining_pct: number;
+    total_missing: number;
+    total_produced: number;
+    total_consumed: number;
+    total_remaining: number;
+  };
+  traceDetails?: Array<{
+    case_id: string;
+    is_conforming: boolean;
+    trace_fitness: number;
+    tokens_missing: number;
+    tokens_remaining: number;
+    deviation_count: number;
+  }>;
 }
 
 export const conformance = defineCommand({
@@ -50,6 +70,11 @@ export const conformance = defineCommand({
       description: 'Process model handle or file path to compare against (Petri net JSON)',
       alias: 'm',
     },
+    models: {
+      type: 'string',
+      description: 'Multiple model paths for comparison (comma-separated)',
+      alias: 'M',
+    },
     method: {
       type: 'string',
       description: 'Conformance checking method: token-replay (default) or alignment',
@@ -64,6 +89,15 @@ export const conformance = defineCommand({
       type: 'string',
       description: 'Fitness threshold for "good" conformance (default: 0.8)',
       default: '0.8',
+    },
+    detailed: {
+      type: 'boolean',
+      description: 'Include per-trace conformance details in output',
+      alias: 'd',
+    },
+    compare: {
+      type: 'boolean',
+      description: 'Compare metrics across models (used with --models)',
     },
     format: {
       type: 'string',
@@ -312,6 +346,8 @@ function printHumanConformance(payload: ConformancePayload, projection: ConsoleP
   const threshold = payload.threshold ?? 1.0;
   const isFit = payload.isFit;
   const diagnostics = payload.diagnostics;
+  const breakdown = payload.fitnessBreakdown;
+  const traceDetails = payload.traceDetails;
 
   projection.log('');
   projection.success(`Conformance Check — ${payload.input}`);
@@ -325,6 +361,26 @@ function printHumanConformance(payload: ConformancePayload, projection: ConsoleP
     precisionAvailable && precisionRaw !== null ? precisionRaw.toFixed(3) : 'N/A (not computed)';
   projection.log(`  Precision: ${precisionDisplay}`);
   projection.log('');
+
+  // Show enhanced breakdown if available
+  if (breakdown) {
+    projection.log('  Fitness Breakdown:');
+    projection.log(`    Overall Fitness:    ${breakdown.overall_fitness.toFixed(3)}`);
+    projection.log(
+      `    Token Missing:      ${breakdown.token_missing_pct.toFixed(1)}% (${breakdown.total_missing} tokens)`
+    );
+    projection.log(
+      `    Token Produced:     ${breakdown.token_produced_pct.toFixed(1)}% (${breakdown.total_produced} tokens)`
+    );
+    projection.log(
+      `    Token Consumed:     ${breakdown.token_consumed_pct.toFixed(1)}% (${breakdown.total_consumed} tokens)`
+    );
+    projection.log(
+      `    Token Remaining:    ${breakdown.token_remaining_pct.toFixed(1)}% (${breakdown.total_remaining} tokens)`
+    );
+    projection.log('');
+  }
+
   projection.log('  Diagnostics (token replay):');
   projection.log(`    Traced:     ${diagnostics.traced as number}`);
   projection.log(`    Remaining:  ${diagnostics.remaining as number}`);
@@ -332,6 +388,22 @@ function printHumanConformance(payload: ConformancePayload, projection: ConsoleP
   projection.log(`    Consumed:   ${diagnostics.consumed as number}`);
   projection.log(`    Produced:   ${diagnostics.produced as number}`);
   projection.log('');
+
+  // Show trace summary if available
+  if (traceDetails && traceDetails.length > 0) {
+    const conformingCount = traceDetails.filter((t) => t.is_conforming).length;
+    projection.log(`  Trace Summary: ${conformingCount}/${traceDetails.length} traces conforming`);
+    if (conformingCount < traceDetails.length) {
+      const nonConforming = traceDetails.filter((t) => !t.is_conforming).slice(0, 3);
+      projection.log('  Non-conforming traces (first 3):');
+      for (const trace of nonConforming) {
+        projection.log(
+          `    ${trace.case_id}: fitness=${trace.trace_fitness.toFixed(3)}, deviations=${trace.deviation_count}`
+        );
+      }
+    }
+    projection.log('');
+  }
 
   if (isFit) {
     projection.success('Log conforms to model (fitness >= threshold)');

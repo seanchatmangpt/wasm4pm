@@ -25,8 +25,13 @@ export const social = defineCommand({
     },
     metric: {
       type: 'string',
-      description: 'Social network metric: handover (default), working-together, or similar-task',
+      description: 'Social network metric: handover, working-together, centrality, clustering, or community',
       default: 'handover',
+    },
+    'centrality-type': {
+      type: 'string',
+      description: 'When metric=centrality: degree, betweenness, closeness, or all (default: all)',
+      default: 'all',
     },
     'resource-key': {
       type: 'string',
@@ -40,8 +45,13 @@ export const social = defineCommand({
     },
     format: {
       type: 'string',
-      description: 'Output format (human or json)',
+      description: 'Output format: human, json, graphml, or csv (default: human)',
       default: 'human',
+    },
+    'min-interactions': {
+      type: 'string',
+      description: 'Filter edges with weight below this threshold (default: 0)',
+      default: '0',
     },
     verbose: {
       type: 'boolean',
@@ -60,7 +70,7 @@ export const social = defineCommand({
   },
   async run(ctx) {
     const t0 = performance.now();
-    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const format = (ctx.args.format as 'json' | 'human' | 'graphml' | 'csv') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
 
@@ -86,27 +96,58 @@ export const social = defineCommand({
           EXIT_CODES.source_error,
           'MISSING_INPUT'
         );
-        emitResult(result, { format, verbose, quiet });
+        emitResult(result, { format: 'json', verbose, quiet });
         return await exitWithFlush(result.exit_code);
       }
 
       const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
       const resourceKey = (ctx.args['resource-key'] as string) || 'org:resource';
       const metric = (ctx.args.metric as string) || 'handover';
+      const centralityType = (ctx.args['centrality-type'] as string) || 'all';
+      const minInteractions = Math.max(0, Number(ctx.args['min-interactions']) || 0);
 
-      if (!['handover', 'working-together', 'similar-task'].includes(metric)) {
+      const validMetrics = ['handover', 'working-together', 'similar-task', 'centrality', 'clustering', 'community'];
+      const validFormats = ['human', 'json', 'graphml', 'csv'];
+      const validCentralityTypes = ['degree', 'betweenness', 'closeness', 'all'];
+
+      if (!validMetrics.includes(metric)) {
         const result = makeErrorResult(
           'social',
-          `Invalid metric: ${metric}. Must be one of: handover, working-together, similar-task`,
+          `Invalid metric: ${metric}. Must be one of: ${validMetrics.join(', ')}`,
           EXIT_CODES.source_error,
           'INVALID_METRIC'
         );
-        emitResult(result, { format, verbose, quiet });
+        emitResult(result, { format: 'json', verbose, quiet });
         return await exitWithFlush(result.exit_code);
       }
 
+      if (!validFormats.includes(format)) {
+        const result = makeErrorResult(
+          'social',
+          `Invalid format: ${format}. Must be one of: ${validFormats.join(', ')}`,
+          EXIT_CODES.source_error,
+          'INVALID_FORMAT'
+        );
+        emitResult(result, { format: 'json', verbose, quiet });
+        return await exitWithFlush(result.exit_code);
+      }
+
+      if (metric === 'centrality' && !validCentralityTypes.includes(centralityType)) {
+        const result = makeErrorResult(
+          'social',
+          `Invalid centrality-type: ${centralityType}. Must be one of: ${validCentralityTypes.join(', ')}`,
+          EXIT_CODES.source_error,
+          'INVALID_CENTRALITY_TYPE'
+        );
+        emitResult(result, { format: 'json', verbose, quiet });
+        return await exitWithFlush(result.exit_code);
+      }
+
+      // Coerce format for emitResult (which only accepts specific types)
+      const emitFormat = (format === 'graphml' || format === 'csv') ? 'json' : (format as 'json' | 'human');
+
       await withLogSession(
-        { inputPath, activityKey, commandName: 'social', emitOptions: { format, verbose, quiet } },
+        { inputPath, activityKey, commandName: 'social', emitOptions: { format: emitFormat, verbose, quiet } },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         async (wasmBase, logHandle) => {
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -114,6 +155,8 @@ export const social = defineCommand({
 
         let rawNetwork: unknown;
         let similarTaskWarning = false;
+        let metrics: Record<string, unknown> = {};
+
         switch (metric) {
           case 'handover':
             rawNetwork = wasm.discover_handover_network(logHandle, resourceKey);
@@ -121,6 +164,37 @@ export const social = defineCommand({
           case 'working-together':
             rawNetwork = wasm.discover_working_together_network(logHandle, resourceKey);
             break;
+          case 'centrality': {
+            try {
+              const rawMetrics = wasm.compute_network_metrics(logHandle, resourceKey);
+              metrics = typeof rawMetrics === 'string' ? JSON.parse(rawMetrics) : rawMetrics;
+              // For centrality output, use working-together network as base
+              rawNetwork = wasm.discover_working_together_network(logHandle, resourceKey);
+            } catch (e) {
+              throw new Error(`Failed to compute centrality metrics: ${e}`);
+            }
+            break;
+          }
+          case 'clustering': {
+            try {
+              const rawMetrics = wasm.compute_clustering_coefficient(logHandle, resourceKey);
+              metrics = typeof rawMetrics === 'string' ? JSON.parse(rawMetrics) : rawMetrics;
+              rawNetwork = wasm.discover_working_together_network(logHandle, resourceKey);
+            } catch (e) {
+              throw new Error(`Failed to compute clustering metrics: ${e}`);
+            }
+            break;
+          }
+          case 'community': {
+            try {
+              const rawCommunities = wasm.detect_communities(logHandle, resourceKey);
+              metrics = typeof rawCommunities === 'string' ? JSON.parse(rawCommunities) : rawCommunities;
+              rawNetwork = wasm.discover_working_together_network(logHandle, resourceKey);
+            } catch (e) {
+              throw new Error(`Failed to detect communities: ${e}`);
+            }
+            break;
+          }
           case 'similar-task':
             rawNetwork = { nodes: [], edges: [] };
             similarTaskWarning = true;
@@ -131,31 +205,49 @@ export const social = defineCommand({
 
         const network = typeof rawNetwork === 'string' ? JSON.parse(rawNetwork) : rawNetwork;
 
-        let centrality: Record<string, unknown> | null = null;
-        try {
-          const rawCentrality = wasm.compute_network_centrality(logHandle, activityKey, resourceKey);
-          centrality = typeof rawCentrality === 'string' ? JSON.parse(rawCentrality) : rawCentrality;
-        } catch {
-          // Centrality not available
-        }
+        // Filter edges by minimum interactions
+        const filteredNetwork = {
+          nodes: network.nodes,
+          edges: (network.edges as Array<{ from: string; to: string; weight?: number }>)
+            .filter((e) => (e.weight ?? 1) >= minInteractions),
+        };
 
         const payload = {
           input: inputPath,
           activityKey,
           resourceKey,
           metric,
+          centralityType: metric === 'centrality' ? centralityType : undefined,
+          minInteractions,
           similarTaskWarning,
           network: {
-            nodes: ((network as Record<string, unknown>).nodes ?? []) as Array<{ id: string; label?: string }>,
-            edges: ((network as Record<string, unknown>).edges ?? []) as Array<{ from: string; to: string; weight?: number }>,
+            nodes: (filteredNetwork.nodes ?? []) as Array<{ id: string; label?: string }>,
+            edges: (filteredNetwork.edges ?? []) as Array<{ from: string; to: string; weight?: number }>,
           },
-          centrality,
+          metrics: Object.keys(metrics).length > 0 ? metrics : undefined,
         };
 
+        // Format output based on requested format
+        let formattedOutput: string | undefined;
+        if (format === 'graphml') {
+          formattedOutput = networkToGraphML(filteredNetwork);
+        } else if (format === 'csv') {
+          formattedOutput = networkToCSV(filteredNetwork);
+        }
+
         const result = makeResult('social', payload, performance.now() - t0, EXIT_CODES.success);
-        emitResult(result, { format, verbose, quiet }, (res, projection) => {
-          printHumanSocial(projection, res.payload as typeof payload);
-        });
+
+        // Handle special output formats
+        if (format === 'graphml' || format === 'csv') {
+          if (!quiet && formattedOutput) {
+            console.log(formattedOutput);
+          }
+        } else {
+          const resultFormat = 'human' as const;
+          emitResult(result, { format: resultFormat, verbose, quiet }, (res, projection) => {
+            printHumanSocial(projection, res.payload as typeof payload);
+          });
+        }
 
         if (!ctx.args['no-save']) {
           try {
@@ -182,13 +274,55 @@ export const social = defineCommand({
       });  // end withLogSession
     } catch (error) {
       const result = makeErrorResult('social', error, EXIT_CODES.execution_error);
-      emitResult(result, { format, verbose, quiet });
+      const emitFormat = (format === 'graphml' || format === 'csv') ? 'json' : (format as 'json' | 'human');
+      emitResult(result, { format: emitFormat, verbose, quiet });
       return await exitWithFlush(result.exit_code);
     }
       },
     );
   },
 });
+
+function networkToGraphML(network: { nodes: Array<{ id: string; label?: string }>; edges: Array<{ from: string; to: string; weight?: number }> }): string {
+  let xml = '<?xml version="1.0" encoding="UTF-8"?>\n';
+  xml += '<graphml xmlns="http://graphml.graphdrawing.org/xmlns">\n';
+  xml += '  <key id="weight" for="edge" attr.name="weight" attr.type="long"/>\n';
+  xml += '  <graph edgedefault="undirected">\n';
+
+  for (const node of network.nodes) {
+    xml += `    <node id="${escapeXml(node.id)}"`;
+    if (node.label) {
+      xml += ` label="${escapeXml(node.label)}"`;
+    }
+    xml += '/>\n';
+  }
+
+  for (const edge of network.edges) {
+    xml += `    <edge source="${escapeXml(edge.from)}" target="${escapeXml(edge.to)}">\n`;
+    xml += `      <data key="weight">${edge.weight ?? 1}</data>\n`;
+    xml += '    </edge>\n';
+  }
+
+  xml += '  </graph>\n</graphml>\n';
+  return xml;
+}
+
+function networkToCSV(network: { nodes: Array<{ id: string; label?: string }>; edges: Array<{ from: string; to: string; weight?: number }> }): string {
+  let csv = 'from,to,weight\n';
+  for (const edge of network.edges) {
+    csv += `${edge.from},${edge.to},${edge.weight ?? 1}\n`;
+  }
+  return csv;
+}
+
+function escapeXml(s: string): string {
+  return s
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&apos;');
+}
 
 function printHumanSocial(
   projection: import('../output.js').ConsoleProjection,
@@ -197,12 +331,14 @@ function printHumanSocial(
     activityKey: string;
     resourceKey: string;
     metric: string;
+    centralityType?: string;
+    minInteractions: number;
     similarTaskWarning: boolean;
     network: { nodes: Array<{ id: string; label?: string }>; edges: Array<{ from: string; to: string; weight?: number }> };
-    centrality: Record<string, unknown> | null;
+    metrics?: Record<string, unknown>;
   }
 ): void {
-  const { network, centrality, metric } = payload;
+  const { network, metrics, metric } = payload;
 
   projection.log('');
   projection.success(`Social Network Mining — ${payload.input}`);
@@ -233,27 +369,81 @@ function printHumanSocial(
     projection.log('');
   }
 
-  if (centrality) {
-    const centralityScores = centrality.scores as Record<string, number>;
-    if (centralityScores) {
-      const sorted = Object.entries(centralityScores).sort((a, b) => b[1] - a[1]);
-      const maxScore = sorted[0]?.[1] ?? 1;
-      projection.log('  Centrality scores — bar shows score relative to top hub:');
-      for (const [resource, score] of sorted.slice(0, 10)) {
-        const ratio = Math.min(1, score / Math.max(maxScore, 0.0001));
-        const filled = Math.round(ratio * 8);
-        const bar = '▓'.repeat(filled) + '░'.repeat(8 - filled);
-        const label = resource === sorted[0]?.[0] ? '  <- central hub' : '';
-        projection.log(`    ${bar} ${resource}: ${score.toFixed(3)}${label}`);
+  // Display metrics if computed
+  if (metrics) {
+    if (metric === 'centrality') {
+      const metricsObj = metrics as { degree?: Record<string, number>; betweenness?: Record<string, number>; closeness?: Record<string, number> };
+
+      // Show requested centrality type(s)
+      const typesToShow = payload.centralityType === 'all'
+        ? ['degree', 'betweenness', 'closeness']
+        : [payload.centralityType];
+
+      for (const type of typesToShow) {
+        const scores = metricsObj[type as keyof typeof metricsObj] as Record<string, number> | undefined;
+        if (scores) {
+          const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+          const maxScore = sorted[0]?.[1] ?? 1;
+          const typeStr = (type ?? 'unknown').charAt(0).toUpperCase() + (type ?? '').slice(1);
+          projection.log(`  ${typeStr} centrality — bar shows score relative to top:`.trim());
+          for (const [resource, score] of sorted.slice(0, 10)) {
+            const ratio = Math.min(1, score / Math.max(maxScore, 0.0001));
+            const filled = Math.round(ratio * 8);
+            const bar = '▓'.repeat(filled) + '░'.repeat(8 - filled);
+            const label = resource === sorted[0]?.[0] ? '  <- highest' : '';
+            projection.log(`    ${bar} ${resource}: ${score.toFixed(3)}${label}`);
+          }
+          if (sorted.length > 10) {
+            projection.log(`    ... and ${sorted.length - 10} more resources`);
+          }
+          projection.log('');
+        }
       }
-      if (sorted.length > 10) {
-        projection.log(`    ... and ${sorted.length - 10} more resources`);
+    } else if (metric === 'clustering') {
+      const clusterObj = metrics as { global?: number; local?: Record<string, number> };
+      if (clusterObj.global !== undefined) {
+        projection.log(`  Global clustering coefficient: ${clusterObj.global.toFixed(3)}`);
+        projection.log('    (Measure of how tightly connected resource groups are)');
       }
-      if (sorted[0]) {
-        projection.log('');
-        projection.log(`  Next step: "${sorted[0][0]}" has the highest centrality (${sorted[0][1].toFixed(3)}). This resource is a coordination hub — a bottleneck or single point of failure. Consider load-balancing or cross-training.`);
+      if (clusterObj.local) {
+        const sorted = Object.entries(clusterObj.local).sort((a, b) => b[1] - a[1]);
+        if (sorted.length > 0) {
+          projection.log('  Local clustering coefficient by resource (top 10):');
+          for (const [resource, coeff] of sorted.slice(0, 10)) {
+            const filled = Math.round(coeff * 8);
+            const bar = '▓'.repeat(filled) + '░'.repeat(8 - filled);
+            projection.log(`    ${bar} ${resource}: ${coeff.toFixed(3)}`);
+          }
+          if (sorted.length > 10) {
+            projection.log(`    ... and ${sorted.length - 10} more resources`);
+          }
+        }
       }
       projection.log('');
+    } else if (metric === 'community') {
+      const communities = metrics as Record<string, number>;
+      if (Object.keys(communities).length > 0) {
+        // Group resources by community
+        const byComm: Record<number, string[]> = {};
+        for (const [resource, commId] of Object.entries(communities)) {
+          if (!byComm[commId]) {
+            byComm[commId] = [];
+          }
+          byComm[commId].push(resource);
+        }
+
+        const numCommunities = Object.keys(byComm).length;
+        projection.log(`  Detected ${numCommunities} communities:`);
+        for (const [commId, resources] of Object.entries(byComm).sort((a, b) => Number(a[0]) - Number(b[0]))) {
+          projection.log(`    Community ${commId}: ${resources.join(', ')}`);
+        }
+        projection.log('');
+      }
     }
+  }
+
+  if (payload.minInteractions > 0) {
+    projection.log(`  (Filtered to interactions with weight ≥ ${payload.minInteractions})`);
+    projection.log('');
   }
 }

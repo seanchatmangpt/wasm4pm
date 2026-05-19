@@ -33,9 +33,18 @@ export const simulate = defineCommand({
       description: 'Maximum simulation time in milliseconds (default: 60000)',
       default: '60000',
     },
+    iterations: {
+      type: 'string',
+      description: 'Number of simulation runs to execute for statistics (default: 1)',
+      default: '1',
+    },
     seed: {
       type: 'string',
       description: 'Random seed for reproducibility (default: random)',
+    },
+    'max-duration': {
+      type: 'string',
+      description: 'Stop simulations after N milliseconds of wall-clock time (default: unlimited)',
     },
     'activity-key': {
       type: 'string',
@@ -123,6 +132,35 @@ export const simulate = defineCommand({
         return await exitWithFlush(result.exit_code);
       }
       const maxTime = parsedTime ?? 60000;
+
+      const rawIterations = ctx.args.iterations as string | undefined;
+      const parsedIterations = rawIterations != null ? parseInt(rawIterations, 10) : undefined;
+      if (parsedIterations !== undefined && Number.isNaN(parsedIterations)) {
+        const result = makeErrorResult(
+          'simulate',
+          'Invalid --iterations value: must be a number',
+          EXIT_CODES.config_error,
+          'INVALID_ARG'
+        );
+        emitResult(result, { format, verbose, quiet });
+        return await exitWithFlush(result.exit_code);
+      }
+      const numIterations = Math.max(1, parsedIterations ?? 1);
+
+      const rawMaxDuration = ctx.args['max-duration'] as string | undefined;
+      const parsedMaxDuration = rawMaxDuration != null ? parseInt(rawMaxDuration, 10) : undefined;
+      if (parsedMaxDuration !== undefined && Number.isNaN(parsedMaxDuration)) {
+        const result = makeErrorResult(
+          'simulate',
+          'Invalid --max-duration value: must be a number',
+          EXIT_CODES.config_error,
+          'INVALID_ARG'
+        );
+        emitResult(result, { format, verbose, quiet });
+        return await exitWithFlush(result.exit_code);
+      }
+      const maxDuration = parsedMaxDuration;
+
       const rawSeed = ctx.args.seed as string | undefined;
       const parsedSeed = rawSeed != null ? parseInt(rawSeed, 10) : undefined;
       if (parsedSeed !== undefined && Number.isNaN(parsedSeed)) {
@@ -135,7 +173,7 @@ export const simulate = defineCommand({
         emitResult(result, { format, verbose, quiet });
         return await exitWithFlush(result.exit_code);
       }
-      const seed = parsedSeed ?? Math.floor(Math.random() * 2_147_483_647);
+      const baseSeed = parsedSeed ?? Math.floor(Math.random() * 2_147_483_647);
 
       await withLogSession(
         { inputPath, activityKey, commandName: 'simulate', emitOptions: { format, verbose, quiet } },
@@ -144,28 +182,75 @@ export const simulate = defineCommand({
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const wasm = wasmBase as Record<string, any>;
 
-        const config = JSON.stringify({
-          num_cases: numCases,
-          inter_arrival_mean_ms: 1000.0,
-          activity_service_time_ms: {},
-          resource_capacity: {},
-          simulation_time_ms: maxTime,
-          random_seed: seed,
-        });
-        const rawSim = wasm.monte_carlo_simulation(logHandle, '', '', config);
-        const simResult = typeof rawSim === 'string' ? JSON.parse(rawSim) : rawSim;
+        // Run multiple iterations if requested
+        const iterationResults: Array<{ traceLengths: number[]; duration: number }> = [];
+        const wallClockStart = Date.now();
 
-        let playoutResult: Record<string, unknown> | null = null;
-        try {
-          const rawPlayout = wasm.simulate_process_tree_playout(
-            logHandle,
-            activityKey,
-            numCases,
-            seed
-          );
-          playoutResult = typeof rawPlayout === 'string' ? JSON.parse(rawPlayout) : rawPlayout;
-        } catch {
-          // Process tree playout not available
+        for (let iter = 0; iter < numIterations; iter++) {
+          // Check max-duration wall-clock limit
+          if (maxDuration && Date.now() - wallClockStart > maxDuration) {
+            break;
+          }
+
+          const iterSeed = baseSeed + iter; // Vary seed per iteration
+          const config = JSON.stringify({
+            num_cases: numCases,
+            inter_arrival_mean_ms: 1000.0,
+            activity_service_time_ms: {},
+            resource_capacity: {},
+            simulation_time_ms: maxTime,
+            random_seed: iterSeed,
+          });
+
+          const rawSim = wasm.monte_carlo_simulation(logHandle, '', '', config);
+          const simResult = typeof rawSim === 'string' ? JSON.parse(rawSim) : rawSim;
+          const traces = ((simResult as Record<string, unknown>).traces ?? []) as Array<Record<string, unknown>>;
+          const traceLengths = traces.map((t) => {
+            const activities = t.activities as string[] | undefined;
+            return activities ? activities.length : 0;
+          });
+
+          iterationResults.push({
+            traceLengths,
+            duration: (simResult as Record<string, unknown>).simulation_time_ms as number ?? maxTime,
+          });
+        }
+
+        // Compute statistics across iterations
+        const allTraceLengths: number[] = [];
+        const allDurations: number[] = [];
+        for (const iter of iterationResults) {
+          allTraceLengths.push(...iter.traceLengths);
+          allDurations.push(iter.duration);
+        }
+
+        const computeStats = (values: number[]) => {
+          if (values.length === 0) {
+            return { mean: 0, std: 0, p95: 0, min: 0, max: 0 };
+          }
+          const sorted = [...values].sort((a, b) => a - b);
+          const mean = values.reduce((a, b) => a + b, 0) / values.length;
+          const variance = values.reduce((a, b) => a + (b - mean) ** 2, 0) / values.length;
+          const std = Math.sqrt(variance);
+          const p95Index = Math.ceil(sorted.length * 0.95) - 1;
+          return {
+            mean: Math.round(mean * 100) / 100,
+            std: Math.round(std * 100) / 100,
+            p95: sorted[Math.max(0, p95Index)],
+            min: sorted[0],
+            max: sorted[sorted.length - 1],
+          };
+        };
+
+        const traceStats = computeStats(allTraceLengths);
+        const durationStats = computeStats(allDurations);
+
+        // Discover variants in aggregated results
+        const variantSet = new Set<string>();
+        for (const iter of iterationResults) {
+          if (iter.traceLengths.length > 0) {
+            variantSet.add(iter.traceLengths.join(','));
+          }
         }
 
         const payload = {
@@ -174,17 +259,19 @@ export const simulate = defineCommand({
           simulation: {
             method: 'monte_carlo',
             casesRequested: numCases,
-            casesCompleted: (simResult as Record<string, unknown>).completed_cases ?? numCases,
+            casesCompleted: allTraceLengths.length,
+            iterations: numIterations,
+            completedIterations: iterationResults.length,
             elapsedMs: Math.round((performance.now() - t0) * 100) / 100,
-            seed,
+            seed: baseSeed,
+            maxDuration: maxDuration ?? null,
           },
           statistics: {
-            avgTraceLength: (simResult as Record<string, unknown>).avg_trace_length ?? 0,
-            avgSojournTime: (simResult as Record<string, unknown>).avg_sojourn_time ?? 0,
-            resourceUtilization: (simResult as Record<string, unknown>).resource_utilization ?? 0,
+            traceCount: allTraceLengths.length,
+            traceLengths: traceStats,
+            durations: durationStats,
+            variantsDiscovered: variantSet.size,
           },
-          traces: ((simResult as Record<string, unknown>).traces ?? []) as Array<Record<string, unknown>>,
-          ...(playoutResult && { playout: playoutResult }),
         };
 
         const result = makeResult('simulate', payload, performance.now() - t0, EXIT_CODES.success);
@@ -202,8 +289,9 @@ export const simulate = defineCommand({
               output_hash: blake3Hex(JSON.stringify(payload)),
               status: 'success',
               summary: {
-                cases_generated: payload.traces.length,
-                seed,
+                cases_generated: allTraceLengths.length,
+                iterations: iterationResults.length,
+                seed: baseSeed,
                 model_kind: 'monte-carlo',
               },
             };
@@ -230,9 +318,8 @@ function printHumanSimulation(
   payload: {
     input: string;
     activityKey: string;
-    simulation: { method: string; casesRequested: number; casesCompleted: unknown; elapsedMs: number; seed: number };
-    statistics: { avgTraceLength: unknown; avgSojournTime: unknown; resourceUtilization: unknown };
-    traces: Array<Record<string, unknown>>;
+    simulation: { method: string; casesRequested: number; casesCompleted: number; iterations: number; completedIterations: number; elapsedMs: number; seed: number; maxDuration: number | null };
+    statistics: { traceCount: number; traceLengths: { mean: number; std: number; p95: number; min: number; max: number }; durations: { mean: number; std: number; p95: number; min: number; max: number }; variantsDiscovered: number };
   }
 ): void {
   const { simulation: sim, statistics: stats } = payload;
@@ -243,27 +330,30 @@ function printHumanSimulation(
   projection.log(`  Seed: ${sim.seed}`);
   projection.log('');
   projection.log('  Simulation:');
-  projection.log(`    Cases requested:  ${sim.casesRequested}`);
-  projection.log(`    Cases completed:  ${sim.casesCompleted}`);
-  projection.log(`    Elapsed time:     ${sim.elapsedMs}ms`);
-  projection.log('');
-  projection.log('  Statistics:');
-  projection.log(`    Avg trace length:    ${stats.avgTraceLength}`);
-  projection.log(`    Avg sojourn time:    ${stats.avgSojournTime}`);
-  projection.log(
-    `    Resource utilization: ${((stats.resourceUtilization as number) * 100).toFixed(1)}%`
-  );
-  projection.log('');
-
-  if (payload.traces.length > 0) {
-    projection.log('  Sample traces (first 5):');
-    for (const trace of payload.traces.slice(0, 5)) {
-      const activities = trace.activities as string[];
-      projection.log(`    ${activities.join(' → ')}`);
-    }
-    if (payload.traces.length > 5) {
-      projection.log(`    ... and ${payload.traces.length - 5} more traces`);
-    }
-    projection.log('');
+  projection.log(`    Cases requested:    ${sim.casesRequested}`);
+  projection.log(`    Cases completed:    ${sim.casesCompleted}`);
+  projection.log(`    Iterations:         ${sim.iterations}`);
+  projection.log(`    Completed:          ${sim.completedIterations}`);
+  projection.log(`    Elapsed time:       ${sim.elapsedMs}ms`);
+  if (sim.maxDuration !== null) {
+    projection.log(`    Max duration:       ${sim.maxDuration}ms`);
   }
+  projection.log('');
+  projection.log('  Trace Statistics:');
+  projection.log(`    Total traces:       ${stats.traceCount}`);
+  projection.log(`    Trace length (activities):
+      Mean:    ${stats.traceLengths.mean.toFixed(2)}
+      Std:     ${stats.traceLengths.std.toFixed(2)}
+      P95:     ${stats.traceLengths.p95}
+      Range:   [${stats.traceLengths.min}, ${stats.traceLengths.max}]`);
+  projection.log('');
+  projection.log('  Duration Statistics (ms):');
+  projection.log(`    Duration:
+      Mean:    ${stats.durations.mean.toFixed(2)}
+      Std:     ${stats.durations.std.toFixed(2)}
+      P95:     ${stats.durations.p95}
+      Range:   [${stats.durations.min}, ${stats.durations.max}]`);
+  projection.log('');
+  projection.log(`  Variants discovered: ${stats.variantsDiscovered}`);
+  projection.log('');
 }

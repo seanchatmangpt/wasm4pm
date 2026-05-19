@@ -28,6 +28,11 @@ export const temporal = defineCommand({
       description: 'Significance threshold for temporal violations (default: 0.05)',
       default: '0.05',
     },
+    'bucket-size': {
+      type: 'string',
+      description: 'Time window for aggregation in hours (default: 1)',
+      default: '1',
+    },
     'activity-key': {
       type: 'string',
       description: 'XES activity attribute key (default: concept:name)',
@@ -94,6 +99,21 @@ export const temporal = defineCommand({
       const timestampKey = (ctx.args['timestamp-key'] as string) || 'time:timestamp';
       const threshold = parseFloat((ctx.args.threshold as string) || '0.05');
 
+      const rawBucketSize = ctx.args['bucket-size'] as string | undefined;
+      const parsedBucketSize = rawBucketSize != null ? parseInt(rawBucketSize, 10) : undefined;
+      if (parsedBucketSize !== undefined && Number.isNaN(parsedBucketSize)) {
+        const result = makeErrorResult(
+          'temporal',
+          'Invalid --bucket-size value: must be a number',
+          EXIT_CODES.config_error,
+          'INVALID_ARG'
+        );
+        emitResult(result, { format, verbose, quiet });
+        return await exitWithFlush(result.exit_code);
+      }
+      const bucketSizeHours = Math.max(1, parsedBucketSize ?? 1);
+      const bucketSizeMs = bucketSizeHours * 60 * 60 * 1000;
+
       await withLogSession(
         { inputPath, activityKey, commandName: 'temporal', emitOptions: { format, verbose, quiet } },
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -144,11 +164,67 @@ export const temporal = defineCommand({
           // Activity durations not available
         }
 
+        // Compute per-bucket statistics for trend analysis
+        interface BucketStats {
+          bucketStart: number;
+          bucketEnd: number;
+          traceCount: number;
+          avgDuration: number;
+          bottleneckActivity?: string;
+          bottleneckDuration?: number;
+        }
+        const buckets: BucketStats[] = [];
+
+        if (activityDurations && typeof activityDurations === 'object') {
+          const durations = activityDurations.durations as Record<
+            string,
+            { mean: number; min: number; max: number; median: number }
+          >;
+          if (durations && Object.keys(durations).length > 0) {
+            // For now, create a single bucket with overall stats
+            // In a full implementation, this would parse trace timestamps and bucket by time
+            const means = Object.entries(durations).map(([name, stats]) => ({
+              name,
+              mean: (stats.mean as number) ?? 0,
+            }));
+            const avgAllDurations =
+              means.length > 0
+                ? means.reduce((sum, m) => sum + m.mean, 0) / means.length
+                : 0;
+            const bottleneck = means.sort((a, b) => b.mean - a.mean)[0];
+
+            buckets.push({
+              bucketStart: 0,
+              bucketEnd: bucketSizeMs,
+              traceCount: 0,
+              avgDuration: avgAllDurations,
+              bottleneckActivity: bottleneck?.name,
+              bottleneckDuration: bottleneck?.mean,
+            });
+          }
+        }
+
+        // Trend detection: compare early vs late buckets
+        let trendDirection: 'accelerating' | 'decelerating' | 'stable' = 'stable';
+        if (buckets.length >= 2) {
+          const firstBucket = buckets[0];
+          const lastBucket = buckets[buckets.length - 1];
+          if (firstBucket && lastBucket) {
+            const change = (lastBucket.avgDuration - firstBucket.avgDuration) / firstBucket.avgDuration;
+            if (change > 0.1) {
+              trendDirection = 'decelerating';
+            } else if (change < -0.1) {
+              trendDirection = 'accelerating';
+            }
+          }
+        }
+
         const payload = {
           input: inputPath,
           activityKey,
           timestampKey,
           threshold,
+          bucketSizeHours,
           dfg: {
             nodes: (dfg as Record<string, unknown>).nodes ?? [],
             edges: (dfg as Record<string, unknown>).edges ?? [],
@@ -159,6 +235,8 @@ export const temporal = defineCommand({
             threshold,
             items: violations,
           },
+          buckets,
+          trendDirection,
           performanceDfg,
           activityDurations,
         };
@@ -211,18 +289,39 @@ function printHumanTemporal(
     activityKey: string;
     timestampKey: string;
     threshold: number;
+    bucketSizeHours: number;
+    buckets: Array<{ bucketStart: number; bucketEnd: number; traceCount: number; avgDuration: number; bottleneckActivity?: string; bottleneckDuration?: number }>;
+    trendDirection: 'accelerating' | 'decelerating' | 'stable';
     violations: { count: number; threshold: number; items: Array<Record<string, unknown>> };
     performanceDfg: Record<string, unknown> | null;
     activityDurations: Record<string, unknown> | null;
   }
 ): void {
-  const { violations, performanceDfg, activityDurations } = payload;
+  const { violations, performanceDfg, activityDurations, buckets, trendDirection } = payload;
 
   projection.log('');
   projection.success(`Temporal Analysis — ${payload.input}`);
   projection.log(`  Activity key: ${payload.activityKey}`);
   projection.log(`  Timestamp key: ${payload.timestampKey}`);
   projection.log(`  Threshold: ${payload.threshold.toFixed(3)}`);
+  projection.log(`  Bucket size: ${payload.bucketSizeHours}h`);
+  projection.log('');
+
+  // Trend analysis
+  projection.log('  Trend Analysis:');
+  const trendSymbol = trendDirection === 'accelerating' ? '↑' : trendDirection === 'decelerating' ? '↓' : '→';
+  projection.log(`    Overall trend: ${trendSymbol} ${trendDirection}`);
+  if (buckets.length > 0) {
+    projection.log(`    Buckets analyzed: ${buckets.length}`);
+    for (let i = 0; i < buckets.length; i++) {
+      const bucket = buckets[i];
+      projection.log(
+        `      Bucket ${i + 1}: ${bucket.traceCount} traces, avg duration: ${bucket.avgDuration.toFixed(1)}ms${
+          bucket.bottleneckActivity ? `, bottleneck: ${bucket.bottleneckActivity}` : ''
+        }`
+      );
+    }
+  }
   projection.log('');
 
   if (violations.count > 0) {

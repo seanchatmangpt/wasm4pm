@@ -49,7 +49,7 @@ const POWL_WRITE_SUBS = new Set<PowlSubcommand>([
   'discover',
 ]);
 
-const CONVERT_TARGETS = ['petri-net', 'process-tree', 'bpmn'] as const;
+const CONVERT_TARGETS = ['petri-net', 'process-tree', 'bpmn', 'svg'] as const;
 type ConvertTarget = (typeof CONVERT_TARGETS)[number];
 
 const IMPORT_SOURCES = ['process-tree', 'petri-net'] as const;
@@ -131,6 +131,14 @@ export const powl = defineCommand({
     'noise-threshold': {
       type: 'string',
       description: 'Noise threshold for fall-through (default: 0.0)',
+    },
+    'input-format': {
+      type: 'string',
+      description: 'Input log format: xes or ocel (for discover; default: auto-detect)',
+    },
+    'ocel-variant': {
+      type: 'string',
+      description: 'OCEL discovery variant: flattening or oc_powl (default: flattening)',
     },
   },
   async run(ctx) {
@@ -354,6 +362,10 @@ async function executePowlCommand(
           const raw: string = wasm.powl_to_bpmn(modelStr);
           return { target, output: raw };
         }
+        case 'svg': {
+          const raw: string = wasm.powl_to_svg(modelStr);
+          return { target, output: raw };
+        }
       }
       throw new Error(`Unhandled convert target: ${target}`);
     }
@@ -448,19 +460,39 @@ async function executePowlCommand(
       const activityKey = (args['activity-key'] as string) || 'concept:name';
       const minTraceCount = (args['min-trace-count'] as number) || 1;
       const noiseThreshold = (args['noise-threshold'] as number) || 0.0;
+      const inputFormat = (args['input-format'] as string) || '';
+      const ocelVariant = (args['ocel-variant'] as string) || 'flattening';
 
+      // Auto-detect format or use explicit --input-format
       let logJson: string;
-      if (input.endsWith('.xes')) {
+      let isOcel = false;
+      if (inputFormat === 'ocel' || input.endsWith('.json')) {
+        isOcel = true;
+        logJson = await fs.readFile(input, 'utf-8');
+      } else if (inputFormat === 'xes' || input.endsWith('.xes')) {
         const xesContent = await fs.readFile(input, 'utf-8');
         const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
         logJson = wasm.export_eventlog_to_json(logHandle);
         wasm.delete_object(logHandle);
       } else {
-        logJson = await fs.readFile(input, 'utf-8');
+        // Default: try XES first, fallback to JSON
+        try {
+          const xesContent = await fs.readFile(input, 'utf-8');
+          const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
+          logJson = wasm.export_eventlog_to_json(logHandle);
+          wasm.delete_object(logHandle);
+        } catch {
+          // Fallback to JSON/OCEL
+          logJson = await fs.readFile(input, 'utf-8');
+          isOcel = true;
+        }
       }
 
       let raw;
-      if (Object.keys(args).some((k) => ['min-trace-count', 'noise-threshold'].includes(k))) {
+      if (isOcel && inputFormat !== 'xes') {
+        // Use OCEL discovery if OCEL format detected
+        raw = wasm.discover_ocel_powl(logJson, ocelVariant);
+      } else if (Object.keys(args).some((k) => ['min-trace-count', 'noise-threshold'].includes(k))) {
         raw = wasm.discover_powl_from_log_config(
           logJson,
           activityKey,

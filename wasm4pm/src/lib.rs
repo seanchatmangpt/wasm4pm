@@ -308,6 +308,7 @@ pub mod cache;
 pub mod capability_registry;
 #[cfg(feature = "conformance_basic")]
 pub mod conformance;
+pub mod conformance_reporting;
 #[cfg(feature = "conformance_basic")]
 pub mod data_quality;
 pub mod discovery;
@@ -342,6 +343,7 @@ pub mod rl_state_serialization;
 #[cfg(feature = "discovery_advanced")]
 pub mod smart_engine;
 pub mod social_network;
+pub mod network_metrics;
 pub mod text_encoding;
 pub mod utilities;
 pub mod wasm_utils;
