@@ -187,6 +187,10 @@ name = "drift_bench"
 harness = false
 
 [[bench]]
+name = "mttr_recovery"
+harness = false
+
+[[bench]]
 name = "rl_convergence"
 harness = false
 
