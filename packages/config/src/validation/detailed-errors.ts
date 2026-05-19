@@ -86,44 +86,36 @@ export function validateAlgorithmProfile(
 /**
  * Get algorithms available in an execution profile.
  * Maps execution profiles (fast, balanced, quality, stream) to their algorithm lists.
+ * These lists match the feature flags and deployment constraints defined in CLAUDE.md.
  */
 function getExecutionProfileAlgorithms(
   profile: 'fast' | 'balanced' | 'quality' | 'stream'
 ): string[] {
-  // These are the execution profile algorithm lists
-  // Keep in sync with profile-management.ts getProfileCapabilities
+  // List of algorithms excluded from each profile
+  const advancedAlgos = [
+    'genetic_algorithm',
+    'ilp',
+    'aco',
+    'pso',
+    'a_star',
+    'simulated_annealing',
+  ];
+  const ocelAlgos = ['log_to_ocel'];
+  const powlAlgos = ['powl_to_process_tree'];
+  const mlAlgos = ['ml_classify', 'ml_cluster', 'ml_forecast', 'ml_anomaly', 'ml_regress', 'ml_pca'];
+
   if (profile === 'quality') {
+    // Quality profile: all algorithms
     return [...ALGORITHM_IDS];
   }
   if (profile === 'balanced') {
-    return [
-      'dfg',
-      'process_skeleton',
-      'alpha_plus_plus',
-      'heuristic_miner',
-      'inductive_miner',
-      'hill_climbing',
-      'declare',
-      'optimized_dfg',
-      'hierarchical_dfg',
-      'ml_classify',
-      'ml_cluster',
-      'ml_forecast',
-      'ml_anomaly',
-      'ml_regress',
-      'ml_pca',
-      'transition_system',
-      'log_to_trie',
-      'causal_graph',
-      'performance_spectrum',
-      'batches',
-      'correlation_miner',
-      'generalization',
-      'etconformance_precision',
-      'complexity_metrics',
-    ];
+    // Balanced profile: standard discovery + ML, no advanced/ocel/powl
+    return ALGORITHM_IDS.filter(
+      (a) => !advancedAlgos.includes(a as any) && !ocelAlgos.includes(a as any) && !powlAlgos.includes(a as any)
+    );
   }
   if (profile === 'stream') {
+    // Stream profile: streaming-only algorithms
     return [
       'dfg',
       'simd_streaming_dfg',
@@ -134,6 +126,7 @@ function getExecutionProfileAlgorithms(
     ];
   }
   if (profile === 'fast') {
+    // Fast profile: minimal, ultra-fast only
     return ['dfg', 'process_skeleton', 'simd_streaming_dfg'];
   }
 
