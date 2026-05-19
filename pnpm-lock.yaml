@@ -361,6 +361,9 @@ importers:
       '@vitest/coverage-v8':
         specifier: ^1.6.0
         version: 1.6.1(vitest@1.6.1)
+      '@wasm4pm/swarm':
+        specifier: workspace:*
+        version: link:../swarm
       typescript:
         specifier: ^5.3.3
         version: 5.9.3
@@ -2499,6 +2502,7 @@ snapshots:
   '@wasm4pm/testing@file:packages/testing':
     dependencies:
       '@wasm4pm/contracts': link:packages/contracts
+      '@wasm4pm/swarm': link:packages/swarm
 
   accepts@2.0.0:
     dependencies:

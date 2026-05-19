@@ -6,4 +6,5 @@ export { OcelHarvester } from './ocel-harvester.js';
 export { AlgorithmDiscovery, ALGORITHM_PROFILES } from './algorithm-discovery.js';
 export { ConformanceChecker } from './conformance-checker.js';
 export { SoundnessVerifier } from './soundness-verifier.js';
+export { ReceiptValidator, createReceiptValidator } from './receipt-validator.js';
 //# sourceMappingURL=index.js.map

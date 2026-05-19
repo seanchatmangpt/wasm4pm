@@ -14,4 +14,6 @@ export { ConformanceChecker } from './conformance-checker.js';
 export type { ConformanceResult, ConformanceViolation, DiscoveredModel, } from './conformance-checker.js';
 export { SoundnessVerifier } from './soundness-verifier.js';
 export type { SoundnessResult } from './soundness-verifier.js';
+export { ReceiptValidator, createReceiptValidator } from './receipt-validator.js';
+export type { ReceiptValidationError, ReceiptValidationResult } from './receipt-validator.js';
 //# sourceMappingURL=index.d.ts.map

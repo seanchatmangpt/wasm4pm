@@ -42,11 +42,3 @@ export type { SoundnessResult } from './soundness-verifier.js';
 
 export { ReceiptValidator, createReceiptValidator } from './receipt-validator.js';
 export type { ReceiptValidationError, ReceiptValidationResult } from './receipt-validator.js';
-
-export { SwarmCoordinationHarness, createSwarmCoordinationHarness } from './swarm-coordinator.js';
-export type {
-  ConsensusVerificationResult,
-  DivergenceReport,
-  ConvergenceTimingResult,
-  FailureIsolationResult,
-} from './swarm-coordinator.js';

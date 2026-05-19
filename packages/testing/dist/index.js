@@ -5,6 +5,8 @@ export * from './fixtures/index.js';
 export * from './mocks/index.js';
 // Harnesses
 export * from './harness/index.js';
+// Re-export SwarmCoordinationHarness from @wasm4pm/swarm for convenience
+export { SwarmCoordinationHarness, createSwarmCoordinationHarness } from '@wasm4pm/swarm';
 // Certification
 export * from './certification.js';
 // Process Mining Testing Utilities

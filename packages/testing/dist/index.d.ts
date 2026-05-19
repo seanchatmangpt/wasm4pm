@@ -2,6 +2,8 @@ export type { OtelSpan, OtelResource, OtelInstrumentationScope } from './types.j
 export * from './fixtures/index.js';
 export * from './mocks/index.js';
 export * from './harness/index.js';
+export { SwarmCoordinationHarness, createSwarmCoordinationHarness } from '@wasm4pm/swarm';
+export type { ConsensusVerificationResult, DivergenceReport, ConvergenceTimingResult, FailureIsolationResult, } from '@wasm4pm/swarm';
 export * from './certification.js';
 export * from './validators/index.js';
 export { verifySoundness, computeQualityMetrics, validateVerifierDFG, formatSoundnessResult, formatQualityMetrics, type PetriNet, type ProcessTreeNode, type VerifierDFG, type QualityMetrics, } from './verifiers/index.js';

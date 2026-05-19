@@ -37,3 +37,11 @@ export type {
   SwarmConvergenceReport,
   Directive,
 } from './types.js';
+
+export { SwarmCoordinationHarness, createSwarmCoordinationHarness } from './testing-harness.js';
+export type {
+  ConsensusVerificationResult,
+  DivergenceReport,
+  ConvergenceTimingResult,
+  FailureIsolationResult,
+} from './testing-harness.js';
