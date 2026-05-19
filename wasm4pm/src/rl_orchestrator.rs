@@ -116,6 +116,7 @@ pub struct CycleTelemetry {
     pub last_reward: f32,
     pub active_agent_name: String,
     pub consecutive_successes: u32, // Track consecutive successes for health improvement eligibility
+    pub last_norm: f32,  // Last average L2 norm for convergence tracking
 }
 
 impl Default for CycleTelemetry {
@@ -131,6 +132,7 @@ impl Default for CycleTelemetry {
             last_reward: 0.0,
             active_agent_name: "QLearning".to_string(),
             consecutive_successes: 0,
+            last_norm: 0.0,
         }
     }
 }
@@ -434,6 +436,12 @@ impl RlOrchestrator {
         &self.action_history
     }
 
+    /// Get LinUCB weight L2 norms for convergence monitoring.
+    /// Returns per-action norms array for observability/diagnostics.
+    pub fn weight_norms(&self) -> [f32; 5] {
+        self.linucb.weight_l2_norms()
+    }
+
     /// Restore telemetry from a serialized snapshot.
     ///
     /// Used by `restore_rl_state` to resume learning progress across sessions.
@@ -547,6 +555,23 @@ impl RlOrchestrator {
             self.telemetry.consecutive_successes = 0; // Reset on failure
         }
 
+        // Emit convergence metrics every 100 cycles for observability
+        if self.telemetry.cycle_count % 100 == 0 {
+            let norms = self.weight_norms();
+            let avg_norm = norms.iter().sum::<f32>() / 5.0;
+            let linucb_weight_delta = (avg_norm - self.telemetry.last_norm).abs();
+            self.telemetry.last_norm = avg_norm;
+            
+            tracing::info!(
+                target: "autonomic.rl.convergence",
+                linucb_weight_delta = linucb_weight_delta,
+                linucb_convergence_signal = avg_norm,
+                cycle_count = self.telemetry.cycle_count,
+                agent = ?self.active_agent,
+                "RL convergence metrics"
+            );
+        }
+
         (action_label_str.to_string(), reward)
     }
 
@@ -621,6 +646,7 @@ impl RlOrchestrator {
             // (active_agent_name == active_agent.name()) holds by construction.
             active_agent_name: active.name().to_string(),
             consecutive_successes: 0,
+            last_norm: 0.0,
         };
 
         self.telemetry.cycle_count
