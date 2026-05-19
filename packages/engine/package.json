@@ -24,7 +24,7 @@
     "@wasm4pm/observability": "workspace:*"
   },
   "devDependencies": {
-    "@wasm4pm/kernel": "workspace:^",
+    "@wasm4pm/kernel": "workspace:*",
     "@vitest/coverage-v8": "^1.6.0",
     "typescript": "^5.3.3",
     "vitest": "^1.1.0"
