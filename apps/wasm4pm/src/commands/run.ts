@@ -211,7 +211,7 @@ export const run = defineCommand({
     },
     file: {
       type: 'string',
-      description: 'Path to XES event log (named alternative to positional)',
+      description: 'Path to XES event log — use -i as shorthand (named alternative to positional)',
       alias: 'i',
     },
     config: {
@@ -220,12 +220,12 @@ export const run = defineCommand({
     },
     algorithm: {
       type: 'string',
-      description: `Discovery algorithm — one of: ${ALGORITHMS.join(', ')} (default: heuristic)`,
+      description: `Discovery algorithm — use -a as shorthand — one of: ${ALGORITHMS.join(', ')} (default: heuristic)`,
       alias: 'a',
     },
     output: {
       type: 'string',
-      description: 'Write JSON result to this file path',
+      description: 'Write JSON result to file — use -o as shorthand',
       alias: 'o',
     },
     format: {

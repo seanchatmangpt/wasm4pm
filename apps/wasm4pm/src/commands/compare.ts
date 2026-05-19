@@ -441,7 +441,7 @@ export const compare = defineCommand({
     },
     input: {
       type: 'string',
-      description: 'Path to XES event log file',
+      description: 'Path to XES event log file — use -i as shorthand',
       required: true,
       alias: 'i',
     },
@@ -457,12 +457,12 @@ export const compare = defineCommand({
     },
     verbose: {
       type: 'boolean',
-      description: 'Enable verbose output',
+      description: 'Enable verbose output — use -v as shorthand',
       alias: 'v',
     },
     quiet: {
       type: 'boolean',
-      description: 'Suppress non-error output',
+      description: 'Suppress non-error output — use -q as shorthand',
       alias: 'q',
     },
     'cache-stats': {

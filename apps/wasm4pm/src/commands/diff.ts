@@ -102,12 +102,12 @@ export const diff = defineCommand({
     },
     verbose: {
       type: 'boolean',
-      description: 'Enable verbose output',
+      description: 'Enable verbose output — use -v as shorthand',
       alias: 'v',
     },
     quiet: {
       type: 'boolean',
-      description: 'Suppress non-error output',
+      description: 'Suppress non-error output — use -q as shorthand',
       alias: 'q',
     },
     'no-save': {

@@ -140,12 +140,12 @@ export const conformance = defineCommand({
     },
     file: {
       type: 'string',
-      description: 'Path to XES event log file (named alternative to positional)',
+      description: 'Path to XES event log file — use -i as shorthand (named alternative to positional)',
       alias: 'i',
     },
     model: {
       type: 'string',
-      description: 'Process model handle or file path to compare against (Petri net JSON)',
+      description: 'Process model handle or file path — use -m as shorthand (Petri net JSON)',
       alias: 'm',
     },
     method: {

@@ -63,7 +63,7 @@ export const quality = defineCommand({
     },
     file: {
       type: 'string',
-      description: 'Path to XES event log file (named alternative to positional)',
+      description: 'Path to XES event log file — use -i as shorthand (named alternative to positional)',
       alias: 'i',
     },
     metrics: {
@@ -84,12 +84,12 @@ export const quality = defineCommand({
     },
     verbose: {
       type: 'boolean',
-      description: 'Enable verbose output',
+      description: 'Enable verbose output — use -v as shorthand',
       alias: 'v',
     },
     quiet: {
       type: 'boolean',
-      description: 'Suppress non-error output',
+      description: 'Suppress non-error output — use -q as shorthand',
       alias: 'q',
     },
     threshold: {
@@ -102,7 +102,7 @@ export const quality = defineCommand({
     algorithm: {
       type: 'string',
       description:
-        'Discovery algorithm used to build the process model before quality assessment. ' +
+        'Discovery algorithm used to build the process model before quality assessment — use -a as shorthand. ' +
         'Supported: ilp (default, highest quality), inductive, heuristic. ' +
         'All algorithms return a Petri net stored in WASM memory for alignment-based scoring.',
       default: 'ilp',
