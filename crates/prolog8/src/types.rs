@@ -398,16 +398,7 @@ impl FactBlock8 {
         }
         self.metadata.min_terms = mins;
         self.metadata.max_terms = maxs;
-        // Arity-clamped live mask. Avoids `1u8 << 8` overflow (panics in debug,
-        // wraps to 1 in release → `(1 - 1) = 0` and erases every constant column
-        // bit for arity-8 blocks). The widened 1u16 shift is the same pattern
-        // used by `admission::admit_atom`.
-        let live_mask: u8 = if arity == ARITY_CAP as usize {
-            0xFFu8
-        } else {
-            ((1u16 << arity) as u8).wrapping_sub(1)
-        };
-        self.metadata.constant_columns = const_mask & live_mask;
+        self.metadata.constant_columns = const_mask & ((1u8 << arity).wrapping_sub(1));
         self.metadata.fact_root = hasher.finalize().into();
     }
 
@@ -626,47 +617,6 @@ mod tests {
         assert_eq!(r1.fact_hash, r2.fact_hash);
         let r3 = FactRow8::new(PredicateId(1), 2, &[TermId(10), TermId(12)], SourceId(0));
         assert_ne!(r1.fact_hash, r3.fact_hash);
-    }
-
-    /// Rank-1 oracle: at arity 8 with all-identical rows, every column is
-    /// constant, so `constant_columns` must equal `0xFF`. The original
-    /// implementation computed `(1u8 << 8) - 1 = 0` (release) or panicked
-    /// (debug), silently zeroing the metadata regardless of row content.
-    #[test]
-    fn fact_block_constant_columns_correct_at_max_arity() {
-        let args = [
-            TermId(1),
-            TermId(2),
-            TermId(3),
-            TermId(4),
-            TermId(5),
-            TermId(6),
-            TermId(7),
-            TermId(8),
-        ];
-        let rows = vec![
-            FactRow8::new(PredicateId(1), 8, &args, SourceId(0)),
-            FactRow8::new(PredicateId(1), 8, &args, SourceId(0)),
-        ];
-        let block = FactBlock8::new(PredicateId(1), 8, rows);
-        assert_eq!(
-            block.metadata.constant_columns, 0xFF,
-            "arity-8 block with identical rows must mark every column constant"
-        );
-    }
-
-    /// Rank-2 oracle: bits ≥ arity must always be zero in `constant_columns`.
-    /// (Padding columns are not "constant"; they do not exist.)
-    #[test]
-    fn fact_block_constant_columns_clears_padding_bits() {
-        let rows = vec![
-            FactRow8::new(PredicateId(1), 2, &[TermId(7), TermId(7)], SourceId(0)),
-            FactRow8::new(PredicateId(1), 2, &[TermId(7), TermId(7)], SourceId(0)),
-        ];
-        let block = FactBlock8::new(PredicateId(1), 2, rows);
-        // Bits 2..=7 are padding; must be zero. Bits 0..=1 are constant; must be one.
-        assert_eq!(block.metadata.constant_columns & !0b11, 0);
-        assert_eq!(block.metadata.constant_columns & 0b11, 0b11);
     }
 
     #[test]

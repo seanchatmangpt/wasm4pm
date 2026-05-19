@@ -589,4 +589,43 @@ mod tests {
         assert_eq!(r1.receipt_hash, r2.receipt_hash);
         assert_eq!(r1.proof_root, r2.proof_root);
     }
+
+    /// Every Deny decision MUST carry a non-zero BLAKE3 receipt hash.
+    ///
+    /// Rationale: A zero receipt hash is indistinguishable from an
+    /// uninitialized or fabricated receipt (FM-5 / receipt-forgery attack).
+    /// The kernel commits to BLAKE3(input_root ‖ proof_root ‖ "deny"),
+    /// which is non-zero for any non-trivially-colliding input — this is
+    /// guaranteed by BLAKE3's preimage resistance (a collision against the
+    /// all-zero output would break the hash function).
+    ///
+    /// This test is the most critical single correctness gate for
+    /// `Kernel::query`: if the deny path skips receipt assembly, every
+    /// policy enforcement point that trusts the receipt is bypassed.
+    #[test]
+    fn deny_decision_emits_nonzero_receipt_hash() {
+        let k = build_kernel();
+        let alice = k.catalog.term_id("alice").unwrap();
+        let carol = k.catalog.term_id("carol").unwrap();
+        // alice→carol is NOT in the fact block, so query must return Denied.
+        let mut q_atom = Atom8::new(PredicateId(1), 2, &[alice, carol]);
+        q_atom.binding_mask = 0b11;
+        let q = QueryAtom8 {
+            atom: q_atom,
+            output_mask: 0,
+            proof_mode: ProofMode::NegativeOnly,
+            epoch: EpochId(0),
+        };
+        match k.query(&q) {
+            QueryResult::Denied(d) => {
+                assert_eq!(d.kind, DecisionKind::Deny);
+                assert_ne!(
+                    d.receipt.receipt_hash,
+                    [0u8; 32],
+                    "Deny receipt_hash must be non-zero (BLAKE3 preimage resistance)"
+                );
+            }
+            other => panic!("expected Denied, got {other:?}"),
+        }
+    }
 }

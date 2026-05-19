@@ -110,3 +110,25 @@ export type { QualityThresholdProfile } from './quality-thresholds.js';
 
 // Algorithm registry utilities
 export { levenshteinDistance, findClosestMatch } from './algorithm-registry.js';
+
+// Prolog8 Rule8/Fact8 compiler helpers — pre-compile Horn clauses for the WASM kernel
+export {
+  internTerms,
+  buildFact8,
+  buildRule8,
+  buildFactBlock,
+  buildCatalog,
+  buildQueryAtom,
+  ARITY_CAP as PROLOG8_ARITY_CAP,
+  BODY_CAP as PROLOG8_BODY_CAP,
+  TERM_SENTINEL as PROLOG8_TERM_SENTINEL,
+  FeatureBit as Prolog8FeatureBit,
+  type TermInternTable,
+  type Rule8Json,
+  type Atom8Json,
+  type FactBlockJson,
+  type FactRowJson,
+  type BodyAtomSpec,
+  type PredicateDescriptor,
+  type Prolog8Catalog,
+} from './prolog8-compiler.js';
