@@ -204,11 +204,15 @@ export function computeMutualInformationImportance(
   const numFeatures = featureNames.length;
   const n = data.length;
 
-  // Bin targets into quintiles
+  // Bin targets into quintiles based on sorted value ranges
   const sortedTargets = [...targets].sort((a, b) => a - b);
+  const targetMin = Math.min(...targets);
+  const targetMax = Math.max(...targets);
+  const targetBinWidth = (targetMax - targetMin) / numBins || 1;
+
   const targetBins: number[] = [];
   for (let i = 0; i < n; i++) {
-    const binIdx = Math.min(numBins - 1, Math.floor((i / n) * numBins));
+    const binIdx = targetMax === targetMin ? 0 : Math.min(numBins - 1, Math.floor((targets[i] - targetMin) / targetBinWidth));
     targetBins.push(binIdx);
   }
 
@@ -243,8 +247,16 @@ export function computeMutualInformationImportance(
     }
     const jointEntropy = computeEntropy(jointCounts, n);
 
-    // Mutual information = H(target) - H(target | feature)
-    const mutualInfo = Math.max(0, targetEntropy - jointEntropy);
+    // Compute feature entropy for MI calculation
+    const featureCounts = new Array(numBins).fill(0);
+    for (const bin of featureBins) {
+      featureCounts[bin]++;
+    }
+    const featureEntropy = computeEntropy(featureCounts, n);
+
+    // Mutual information = H(target) + H(feature) - H(target, feature)
+    // This is equivalent to H(target) - H(target|feature)
+    const mutualInfo = Math.max(0, targetEntropy + featureEntropy - jointEntropy);
 
     // Normalize by target entropy [0, 1]
     const importance = targetEntropy > 1e-10 ? mutualInfo / targetEntropy : 0;

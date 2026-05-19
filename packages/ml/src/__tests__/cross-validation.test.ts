@@ -10,6 +10,7 @@
 import { describe, it, expect } from 'vitest';
 import { classifyTraces, runCrossValidation } from '../classifiers.js';
 import { encodeLabels, buildFeatureMatrix } from '../bridge.js';
+import { stratifiedKFold } from '../cross-validation.js';
 
 // ---------------------------------------------------------------------------
 // Shared fixtures
@@ -233,8 +234,6 @@ describe('Cross-validation stability analysis', () => {
    * as the full dataset, which is critical for imbalanced datasets.
    */
   it('stratified CV maintains class distribution across folds', () => {
-    const { stratifiedKFold } = require('../cross-validation.js');
-
     const labels = [0, 0, 0, 0, 1, 1, 1, 1, 1, 1]; // 40% class 0, 60% class 1
     const { trainIndices, testIndices } = stratifiedKFold(labels, 3);
 
@@ -258,8 +257,6 @@ describe('Cross-validation stability analysis', () => {
    * Edge case: ensure stratification doesn't break with limited data.
    */
   it('stratified CV respects stratification on small datasets (N < 20)', () => {
-    const { stratifiedKFold } = require('../cross-validation.js');
-
     const labels = [0, 0, 0, 1, 1, 1, 1, 1]; // N = 8
     const { testIndices } = stratifiedKFold(labels, 3);
 
@@ -283,8 +280,6 @@ describe('Cross-validation stability analysis', () => {
    * Should still produce valid fold assignments without error.
    */
   it('stratified CV handles single-class datasets gracefully', () => {
-    const { stratifiedKFold } = require('../cross-validation.js');
-
     const labels = [0, 0, 0, 0, 0]; // All same class
     const { trainIndices, testIndices } = stratifiedKFold(labels, 2);
 
@@ -302,8 +297,6 @@ describe('Cross-validation stability analysis', () => {
    * Stratification should maintain this imbalance in each fold.
    */
   it('stratified CV maintains severe imbalance (90-10 split)', () => {
-    const { stratifiedKFold } = require('../cross-validation.js');
-
     // 90% class 0, 10% class 1
     const labels = Array(9).fill(0).concat([1]);
     const { testIndices } = stratifiedKFold(labels, 3);
@@ -324,8 +317,6 @@ describe('Cross-validation stability analysis', () => {
    * Verifies that fold sizes are balanced (no fold has significantly more samples than others).
    */
   it('CV fold sizes are balanced (no fold significantly larger)', () => {
-    const { stratifiedKFold } = require('../cross-validation.js');
-
     const labels = Array.from({ length: 30 }, (_, i) => (i % 3 === 0 ? 0 : 1));
     const { testIndices } = stratifiedKFold(labels, 3);
 
@@ -343,8 +334,6 @@ describe('Cross-validation stability analysis', () => {
    * This is a Rank-1 oracle: deterministic partitioning.
    */
   it('stratified KFold is deterministic (same data → same splits)', () => {
-    const { stratifiedKFold } = require('../cross-validation.js');
-
     const labels = [0, 0, 0, 0, 1, 1, 1, 1, 1, 1];
 
     // Run twice and compare
