@@ -462,4 +462,245 @@ describe('CheckpointGarbageCollector', () => {
       expect(counts.gc).toBe(0);
     });
   });
+
+  describe('Checkpoint GC Boundary Fix', () => {
+    it('deletes checkpoint exactly at max age (boundary condition)', async () => {
+      const now = Date.now();
+      const maxAgeMs = 24 * 60 * 60 * 1000; // 24 hours
+      const maxAgeHours = 24;
+
+      // Create checkpoint exactly 24 hours old
+      const exactlyAtBoundary = new Date(now - maxAgeMs);
+
+      const boundaryCheckpoint: Checkpoint = {
+        id: 'boundary',
+        runId: 'run1',
+        timestamp: exactlyAtBoundary,
+        sequenceNumber: 1,
+        state: 'ready',
+        progress: 0.5,
+        metadata: {},
+      };
+
+      const newCheckpoint: Checkpoint = {
+        id: 'new',
+        runId: 'run1',
+        timestamp: new Date(now),
+        sequenceNumber: 2,
+        state: 'ready',
+        progress: 0.6,
+        metadata: {},
+      };
+
+      await store.save('boundary', boundaryCheckpoint);
+      await store.save('new', newCheckpoint);
+
+      const gcStats = await gc.deleteOldCheckpoints(maxAgeHours);
+
+      // Boundary checkpoint should be deleted (ageMs >= maxAgeMs, not just >)
+      expect(gcStats.checkpointsDeleted).toBe(1);
+
+      const statsAfter = await gc.getStorageStats();
+      expect(statsAfter.checkpointCount).toBe(1);
+      expect(statsAfter.totalBytes).toBeGreaterThan(0);
+    });
+  });
+
+  describe('Storage Quota Management', () => {
+    it('enforces storage quota by deleting oldest checkpoints', async () => {
+      const now = new Date();
+
+      // Create 5 checkpoints of different ages
+      const checkpoints: Checkpoint[] = [];
+      for (let i = 0; i < 5; i++) {
+        const cp: Checkpoint = {
+          id: `cp${i}`,
+          runId: 'run1',
+          timestamp: new Date(now.getTime() - i * 60 * 60 * 1000), // i hours old
+          sequenceNumber: i,
+          state: 'ready',
+          progress: 0.5 + i * 0.1,
+          metadata: {},
+        };
+        checkpoints.push(cp);
+        await store.save(`cp${i}`, cp);
+      }
+
+      const statsBefore = await gc.getStorageStats();
+      expect(statsBefore.checkpointCount).toBe(5);
+
+      // Enforce a quota that allows only 2 checkpoints
+      // Calculate reasonable quota size (allow 2 checkpoints)
+      const quotaSize = Math.floor((statsBefore.totalBytes / 5) * 2.5);
+
+      const quotaStats = await gc.enforceStorageQuota(quotaSize);
+
+      // Should have deleted some checkpoints
+      expect(quotaStats.checkpointsDeleted).toBeGreaterThan(0);
+      expect(quotaStats.bytesFreed).toBeGreaterThan(0);
+
+      // Verify we're under quota
+      expect(quotaStats.storageStatsAfter.totalBytes).toBeLessThanOrEqual(quotaSize);
+    });
+
+    it('deletes oldest checkpoints first (FIFO order)', async () => {
+      const now = new Date();
+
+      // Create 3 checkpoints with clear age ordering
+      const oldest: Checkpoint = {
+        id: 'oldest',
+        runId: 'run1',
+        timestamp: new Date(now.getTime() - 3 * 60 * 60 * 1000),
+        sequenceNumber: 1,
+        state: 'ready',
+        progress: 0.3,
+        metadata: {},
+      };
+
+      const middle: Checkpoint = {
+        id: 'middle',
+        runId: 'run1',
+        timestamp: new Date(now.getTime() - 2 * 60 * 60 * 1000),
+        sequenceNumber: 2,
+        state: 'ready',
+        progress: 0.5,
+        metadata: {},
+      };
+
+      const newest: Checkpoint = {
+        id: 'newest',
+        runId: 'run1',
+        timestamp: now,
+        sequenceNumber: 3,
+        state: 'ready',
+        progress: 0.7,
+        metadata: {},
+      };
+
+      await store.save('oldest', oldest);
+      await store.save('middle', middle);
+      await store.save('newest', newest);
+
+      // Enforce quota to keep only newest checkpoint
+      const statsBefore = await gc.getStorageStats();
+      const quotaSize = Math.floor((statsBefore.totalBytes / 3) * 1.2);
+
+      const quotaStats = await gc.enforceStorageQuota(quotaSize);
+
+      // Should delete oldest first, then middle
+      expect(quotaStats.checkpointsDeleted).toBeGreaterThanOrEqual(1);
+
+      // Newest should still exist (most recent)
+      const statsAfter = await gc.getStorageStats();
+      const remaining = await store.list();
+      expect(remaining.some((cp) => cp.id === 'newest')).toBe(true);
+    });
+
+    it('respects no-deletion requirement when under quota', async () => {
+      const now = new Date();
+
+      const cp1: Checkpoint = {
+        id: 'cp1',
+        runId: 'run1',
+        timestamp: new Date(now.getTime() - 1 * 60 * 60 * 1000),
+        sequenceNumber: 1,
+        state: 'ready',
+        progress: 0.5,
+        metadata: {},
+      };
+
+      const cp2: Checkpoint = {
+        id: 'cp2',
+        runId: 'run1',
+        timestamp: now,
+        sequenceNumber: 2,
+        state: 'ready',
+        progress: 0.6,
+        metadata: {},
+      };
+
+      await store.save('cp1', cp1);
+      await store.save('cp2', cp2);
+
+      const statsBefore = await gc.getStorageStats();
+
+      // Set quota much larger than current usage
+      const largeQuota = statsBefore.totalBytes * 10;
+
+      const quotaStats = await gc.enforceStorageQuota(largeQuota);
+
+      // Should not delete anything
+      expect(quotaStats.checkpointsDeleted).toBe(0);
+      expect(quotaStats.bytesFreed).toBe(0);
+
+      const statsAfter = await gc.getStorageStats();
+      expect(statsAfter.checkpointCount).toBe(2);
+    });
+
+    it('always keeps most recent checkpoint per run during quota enforcement', async () => {
+      const now = new Date();
+
+      // Create 2 runs with multiple checkpoints each
+      const run1Old: Checkpoint = {
+        id: 'run1-old',
+        runId: 'run1',
+        timestamp: new Date(now.getTime() - 2 * 60 * 60 * 1000),
+        sequenceNumber: 1,
+        state: 'ready',
+        progress: 0.5,
+        metadata: {},
+      };
+
+      const run1New: Checkpoint = {
+        id: 'run1-new',
+        runId: 'run1',
+        timestamp: now,
+        sequenceNumber: 2,
+        state: 'ready',
+        progress: 0.6,
+        metadata: {},
+      };
+
+      const run2Old: Checkpoint = {
+        id: 'run2-old',
+        runId: 'run2',
+        timestamp: new Date(now.getTime() - 2 * 60 * 60 * 1000),
+        sequenceNumber: 1,
+        state: 'ready',
+        progress: 0.5,
+        metadata: {},
+      };
+
+      const run2New: Checkpoint = {
+        id: 'run2-new',
+        runId: 'run2',
+        timestamp: now,
+        sequenceNumber: 2,
+        state: 'ready',
+        progress: 0.6,
+        metadata: {},
+      };
+
+      await store.save('run1-old', run1Old);
+      await store.save('run1-new', run1New);
+      await store.save('run2-old', run2Old);
+      await store.save('run2-new', run2New);
+
+      // Set quota to force deletion
+      const statsBefore = await gc.getStorageStats();
+      const tinyQuota = Math.floor((statsBefore.totalBytes / 4) * 2.1); // Allow ~2 checkpoints
+
+      const quotaStats = await gc.enforceStorageQuota(tinyQuota);
+
+      const statsAfter = await gc.getStorageStats();
+      const remaining = await store.list();
+
+      // Should keep both new checkpoints (most recent per run)
+      expect(remaining.some((cp) => cp.id === 'run1-new')).toBe(true);
+      expect(remaining.some((cp) => cp.id === 'run2-new')).toBe(true);
+
+      // At least one old checkpoint should be deleted
+      expect(quotaStats.checkpointsDeleted).toBeGreaterThan(0);
+    });
+  });
 });

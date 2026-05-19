@@ -127,7 +127,7 @@ export class CheckpointGarbageCollector {
           const cp = sorted[i];
           const ageMs = now - cp.createdAt.getTime();
 
-          if (ageMs > maxAgeMs) {
+          if (ageMs >= maxAgeMs) {
             toDelete.push(cp);
           }
         }
@@ -321,5 +321,95 @@ export class CheckpointGarbageCollector {
   resetCycleCounts(): void {
     this.gcCycleCount = 0;
     this.lockCleanupCycleCount = 0;
+  }
+
+  /**
+   * Enforce storage quota by deleting oldest checkpoints until below threshold
+   * Policy: Delete oldest checkpoints first (FIFO order) until total size < maxBytes
+   * Rank-1 oracle: deterministic deletion order based on createdAt timestamp
+   * Rank-2 domain contract: always keep at least one checkpoint per run_id
+   */
+  async enforceStorageQuota(maxBytes: number): Promise<GarbageCollectionStats> {
+    const startMs = Date.now();
+    const statsBefore = await this.getStorageStats();
+
+    // If we're already under quota, no action needed
+    if (statsBefore.totalBytes <= maxBytes) {
+      const statsAfter = await this.getStorageStats();
+      return {
+        checkpointsDeleted: 0,
+        bytesFreed: 0,
+        executionTimeMs: Date.now() - startMs,
+        storageStatsBefore: statsBefore,
+        storageStatsAfter: statsAfter,
+      };
+    }
+
+    try {
+      const checkpoints = await this.checkpointStore.list();
+      const now = Date.now();
+
+      // Group by run_id to identify most recent per run (must keep at least one)
+      const runMap = new Map<string, CheckpointMetadata[]>();
+      for (const cp of checkpoints) {
+        if (!runMap.has(cp.runId)) {
+          runMap.set(cp.runId, []);
+        }
+        runMap.get(cp.runId)!.push(cp);
+      }
+
+      // Mark which checkpoints are protected (most recent per run)
+      const protectedIds = new Set<string>();
+      for (const [, cpList] of runMap) {
+        const sorted = cpList.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+        if (sorted.length > 0) {
+          protectedIds.add(sorted[0].id);
+        }
+      }
+
+      // Sort all checkpoints by age (oldest first) for FIFO deletion
+      const sortedByAge = checkpoints
+        .filter((cp) => !protectedIds.has(cp.id))
+        .sort((a, b) => a.createdAt.getTime() - b.createdAt.getTime());
+
+      // Delete oldest checkpoints until we're under quota
+      let currentSize = statsBefore.totalBytes;
+      let bytesFreed = 0;
+      const deleted: CheckpointMetadata[] = [];
+
+      for (const cp of sortedByAge) {
+        if (currentSize <= maxBytes) {
+          break;
+        }
+
+        try {
+          await this.checkpointStore.delete(cp.id);
+          currentSize -= cp.sizeBytes;
+          bytesFreed += cp.sizeBytes;
+          deleted.push(cp);
+        } catch (error) {
+          console.error(`Failed to delete checkpoint ${cp.id} during quota enforcement:`, error);
+        }
+      }
+
+      const statsAfter = await this.getStorageStats();
+      return {
+        checkpointsDeleted: deleted.length,
+        bytesFreed,
+        executionTimeMs: Date.now() - startMs,
+        storageStatsBefore: statsBefore,
+        storageStatsAfter: statsAfter,
+      };
+    } catch (error) {
+      console.error('Storage quota enforcement failed:', error);
+      const statsAfter = await this.getStorageStats();
+      return {
+        checkpointsDeleted: 0,
+        bytesFreed: 0,
+        executionTimeMs: Date.now() - startMs,
+        storageStatsBefore: statsBefore,
+        storageStatsAfter: statsAfter,
+      };
+    }
   }
 }
