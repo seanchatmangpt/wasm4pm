@@ -7,8 +7,8 @@ import {
   assertExitCode,
   assertJsonOutput,
   assertErrorCode,
-} from '../../src/harness/cli.js';
-import type { CliResult, CliTestEnv } from '../../src/harness/cli.js';
+} from '../../dist/harness/cli.js';
+import type { CliResult, CliTestEnv } from '../../dist/harness/cli.js';
 
 describe('CLI Test Helpers', () => {
   let env: CliTestEnv | null = null;
