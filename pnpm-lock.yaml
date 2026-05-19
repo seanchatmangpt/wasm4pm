@@ -39,10 +39,10 @@ importers:
         specifier: workspace:*
         version: link:../../packages/kernel
       '@wasm4pm/ml':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/ml
       '@wasm4pm/observability':
-        specifier: workspace:^
+        specifier: workspace:*
         version: link:../../packages/observability
       '@wasm4pm/planner':
         specifier: workspace:*

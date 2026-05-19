@@ -1,7 +1,7 @@
 {
   "name": "@wasm4pm/cli",
   "version": "26.5.18",
-  "description": "wasm4pm — High-performance WASM-powered process mining CLI",
+  "description": "wasm4pm \u2014 High-performance WASM-powered process mining CLI",
   "type": "module",
   "bin": {
     "wpm": "./dist/bin/wpm.js"
@@ -34,8 +34,8 @@
     "@wasm4pm/contracts": "workspace:*",
     "@wasm4pm/engine": "workspace:*",
     "@wasm4pm/kernel": "workspace:*",
-    "@wasm4pm/ml": "workspace:^",
-    "@wasm4pm/observability": "workspace:^",
+    "@wasm4pm/ml": "workspace:*",
+    "@wasm4pm/observability": "workspace:*",
     "@wasm4pm/planner": "workspace:*",
     "@wasm4pm/swarm": "workspace:*",
     "wasm4pm": "workspace:*",

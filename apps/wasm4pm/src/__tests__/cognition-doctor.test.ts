@@ -192,7 +192,7 @@ describe('cognition doctor', () => {
 
     expect(exitCode).toBe(3);
 
-    const parsed = JSON.parse(output) as Record<string, unknown>;
+    const parsed = JSON.parse(output) as Record<string, any>;
     assertEnvelope(parsed);
     expect(parsed['status']).toBe('error');
     expect(parsed['error_code']).toBe('DOCTOR_CHECK_FAILED');
@@ -212,7 +212,7 @@ describe('cognition doctor', () => {
 
     // Output may be present (JSON format always emits envelope for errors)
     if (output.trim()) {
-      const parsed = JSON.parse(output) as Record<string, unknown>;
+      const parsed = JSON.parse(output) as Record<string, any>;
       expect(parsed['error_code']).toBe('DOCTOR_SPAWN_FAILED');
     }
   });
@@ -226,7 +226,7 @@ describe('cognition doctor', () => {
     expect(exitCode).toBe(3);
 
     if (output.trim()) {
-      const parsed = JSON.parse(output) as Record<string, unknown>;
+      const parsed = JSON.parse(output) as Record<string, any>;
       expect(parsed['error_code']).toBe('DOCTOR_PARSE_FAILED');
     }
   });

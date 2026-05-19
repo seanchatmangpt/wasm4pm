@@ -475,6 +475,14 @@ export class Instrumentation {
       requiredAttrs,
     };
 
+    const profile = requiredAttrs['execution.profile'];
+    const attrs = {
+      'service.name': 'wasm4pm',
+      ...requiredAttrs,
+      'algorithm.name': algorithmName,
+      'algorithm.step_id': options?.stepId || 'unspecified',
+      'algorithm.profile': profile,
+    };
     const otelEvent: OtelEvent = {
       trace_id: traceId,
       span_id: spanId,
@@ -483,13 +491,7 @@ export class Instrumentation {
       kind: 'INTERNAL',
       start_time: now,
       status: { code: 'UNSET' },
-      attributes: {
-        'service.name': 'wasm4pm',
-        ...requiredAttrs,
-        'algorithm.name': algorithmName,
-        'algorithm.step_id': options?.stepId || 'unspecified',
-        'algorithm.profile': requiredAttrs['execution.profile'],
-      },
+      attributes: attrs,
     };
 
     return { event, otelEvent };
