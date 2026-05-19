@@ -185,12 +185,15 @@ export async function executeMlTask(
         configJson
       );
       const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
-      const quality = assessFeatureQuality(features);
-      if (quality.score < 0.7) {
-        console.warn(
-          `[Warning] Feature quality score is ${quality.score.toFixed(2)} (< 0.7). ` +
-            `Recommendations: ${quality.recommendations.join('; ')}`
-        );
+      // Defensive: only assess quality if features have the expected structure
+      if (features && typeof features === 'object' && 'data' in features) {
+        const quality = assessFeatureQuality(features);
+        if (quality.score < 0.7) {
+          console.warn(
+            `[Warning] Feature quality score is ${quality.score.toFixed(2)} (< 0.7). ` +
+              `Recommendations: ${quality.recommendations.join('; ')}`
+          );
+        }
       }
       const k = parseInt(String(options.k ?? '5'), 10);
       if (Number.isNaN(k) || k <= 0)

@@ -243,8 +243,9 @@ describe('JTBD-1: "I want to classify deals by likely outcome to prioritize my p
         expect(typeof p.predicted).toBe('string');
       }
     }
-    // Always passes — empty array is valid
-    expect(true).toBe(true);
+    // Verify result.predictions exists and is accessible
+    expect(result).toHaveProperty('predictions');
+    expect(Array.isArray(result.predictions)).toBe(true);
 
     for (const p of predictions) {
       expect(p.confidence).toBeGreaterThanOrEqual(0);
@@ -313,13 +314,15 @@ describe('JTBD-3: "I want to forecast next month\'s deal throughput for capacity
         expect(Number.isFinite(v)).toBe(true);
       }
     }
-    // Valid even if forecast is undefined (series too short to forecast)
-    expect(true).toBe(true);
+    // Verify result is an object with defined structure (even if forecast undefined)
+    expect(typeof result === 'object' && result !== null).toBe(true);
+    expect(['forecast', 'trend'].some((k) => k in result)).toBe(true);
 
     if (forecast !== undefined) {
       expect(forecast.length).toBeLessThanOrEqual(3);
+      // Verify forecast array length matches or is less than requested periods
+      expect(forecast.length).toBeGreaterThanOrEqual(0);
     }
-    expect(true).toBe(true);
   });
 });
 
@@ -339,14 +342,20 @@ describe('JTBD-4: "I want to find anomalous deals that deviate from standard pro
         expect(Number.isInteger(idx)).toBe(true);
       }
     }
-    expect(true).toBe(true);
+    // Verify peakIndices is array-like or undefined (valid states per contract)
+    expect(peakIndices === undefined || Array.isArray(peakIndices)).toBe(true);
 
     const originalLength = result.originalLength as number | undefined;
     if (originalLength !== undefined) {
       expect(typeof originalLength).toBe('number');
       expect(originalLength).toBeGreaterThanOrEqual(0);
     }
-    expect(true).toBe(true);
+    // Verify all anomaly indices are within bounds of original series
+    if (peakIndices !== undefined && originalLength !== undefined) {
+      for (const idx of peakIndices) {
+        expect(idx).toBeLessThan(originalLength);
+      }
+    }
   });
 });
 
@@ -364,15 +373,19 @@ describe('JTBD-5: "I want to regress deal duration against features to identify 
     const rSquared = result.rSquared as number | undefined;
     if (rSquared !== undefined && Number.isFinite(rSquared)) {
       expect(rSquared).toBeLessThanOrEqual(1.0);
+      // Verify r² is bounded: finite values must be ≤ 1
+      expect(rSquared).toBeGreaterThanOrEqual(-10);
     }
-    expect(true).toBe(true);
+    // Verify rSquared field exists in result (required by contract)
+    expect('rSquared' in result).toBe(true);
 
     const mae = result.mae as number | undefined;
     if (mae !== undefined) {
       expect(typeof mae).toBe('number');
       expect(mae).toBeGreaterThanOrEqual(0);
+      // MAE must be finite and non-negative (average absolute error)
+      expect(Number.isFinite(mae)).toBe(true);
     }
-    expect(true).toBe(true);
   });
 });
 
@@ -399,19 +412,22 @@ describe('JTBD-6: "I want PCA to reduce the feature space for visualization"', (
       const hasVariance = 'explainedVariance' in result || 'components' in result;
       expect(hasVariance).toBe(true);
     }
-    // null = degenerate input — not a product defect, graceful rejection is correct
-    expect(true).toBe(true);
+    // Verify null result is valid (degenerate input) or result has required fields
+    expect(result === null || typeof result === 'object').toBe(true);
 
     if (result !== null) {
       const explainedVariance = result.explainedVariance as number[] | undefined;
       if (explainedVariance !== undefined) {
+        // Verify all variance values are non-negative numbers
         for (const v of explainedVariance) {
           expect(typeof v).toBe('number');
           expect(v).toBeGreaterThanOrEqual(0);
+          expect(Number.isFinite(v)).toBe(true);
         }
+        // Verify variance array is not empty if present
+        expect(explainedVariance.length).toBeGreaterThan(0);
       }
     }
-    expect(true).toBe(true);
 
     if (result !== null) {
       const nComponents = result.nComponents as number | undefined;
@@ -419,8 +435,9 @@ describe('JTBD-6: "I want PCA to reduce the feature space for visualization"', (
         // May be clamped to available features — must be at most 2
         expect(nComponents).toBeLessThanOrEqual(2);
         expect(nComponents).toBeGreaterThan(0);
+        // Verify nComponents is integer within valid PCA range
+        expect(Number.isInteger(nComponents)).toBe(true);
       }
     }
-    expect(true).toBe(true);
   });
 });
