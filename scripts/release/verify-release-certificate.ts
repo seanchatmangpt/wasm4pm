@@ -85,6 +85,18 @@ async function main() {
     }
   }
 
+  // Read reachability evidence hash
+  const reachabilityPath = path.join(rootDir, `artifacts/release/ALGORITHM_REACHABILITY_EVIDENCE.v${version}.json`);
+  let reachabilityHash = 'not_found';
+  if (fs.existsSync(reachabilityPath)) {
+    try {
+      const rEvidence = JSON.parse(fs.readFileSync(reachabilityPath, 'utf8'));
+      reachabilityHash = rEvidence.reachability_hash;
+    } catch (e) {
+      console.warn("Could not read reachability evidence", e);
+    }
+  }
+
   const certificate = {
     package: {
       name: "wasm4pm",
@@ -92,9 +104,9 @@ async function main() {
       git_commit: execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim()
     },
     reachability: {
-      registry_algorithm_count: 60,
+      algorithm_count: 60,
       algorithms_reachable: 60,
-      reachability_hash: manifestHash
+      reachability_hash: reachabilityHash
     },
     behavior: behaviorMeta,
     examples: {
@@ -103,9 +115,9 @@ async function main() {
       manifest_hash: manifestHash
     },
     package_artifact: {
-      tarball_name: packMeta.tarball_name || "wasm4pm-kernel-26.5.19.tgz",
+      tarball_name: packMeta.tarball_name || `wasm4pm-kernel-${version}.tgz`,
       tarball_integrity: packMeta.tarball_integrity || "integrity_not_found",
-      pack_smoke_tarball_path: "packages/kernel/" + (packMeta.tarball_name || "wasm4pm-kernel-26.5.19.tgz"),
+      pack_smoke_tarball_path: `packages/kernel/wasm4pm-kernel-${version}.tgz`,
       wasm_bundle_hash: bundleHash
     },
     timestamp: new Date().toISOString()
