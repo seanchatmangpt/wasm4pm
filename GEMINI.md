@@ -227,6 +227,199 @@ Examples:
 
 A blocker is not an excuse to continue. It is the current lawful outcome.
 
+## Package Identity Gate
+
+The package identity in all release evidence must match the exact npm artifact being published.
+
+For wasm4pm, the npm package is unscoped:
+
+wasm4pm
+
+Invalid package identities include:
+
+@wasm4pm/kernel
+wasm4pm-monorepo
+@wasm4pm/*
+workspace package aliases
+
+Before claiming release readiness, show:
+
+node -p "require('./packages/kernel/package.json').name + '@' + require('./packages/kernel/package.json').version"
+
+Expected:
+
+wasm4pm@<version>
+
+The release certificate, reachability evidence, behavior evidence, example receipts, npm pack output, and post-publish receipt must all use the same package identity.
+
+If any artifact uses a different package identity, state is PackageIdentityMismatch.
+
+## Evidence Completeness Gate
+
+Do not summarize partial evidence as closure.
+
+A transcript is incomplete if any of the following are true:
+
+- command output is hidden, folded, truncated, or replaced by summaries
+- JSON output is excerpted rather than shown from disk
+- receipt files are described but not printed or verified
+- a directory count is claimed but `find` / `ls` output is not shown
+- a hash is shown but recomputation output is not shown
+- a representative receipt is shown but the full manifest is not shown
+- command output contains duplicated pasted sections
+- command output contains malformed or repeated JSON fragments
+- final grep/placeholder scan output is missing
+- git status is not shown after artifact generation
+- final package identity is not shown from the actual package being published
+
+If evidence is incomplete, final state must be:
+
+EvidenceIncomplete
+
+not:
+
+Closed
+Ready
+Verified
+Sealed
+Admitted
+
+The agent must explicitly say which evidence is missing and provide the next command to obtain it.
+
+## No Representative-Only Closure
+
+Representative receipts are useful for review, but they do not prove global closure.
+
+A representative `dfg.receipt.json` proves only that one algorithm receipt exists.
+
+Do not claim 60/60 behavior closure unless all of the following are shown or verified:
+
+- ALGORITHM_BEHAVIOR_EVIDENCE.v${VERSION}.json exists
+- the evidence file contains exactly 60 algorithm rows
+- each row has at least one positive case
+- each row has at least one negative case
+- each row has at least one invariant case
+- each row has an algorithm_evidence_hash
+- the top-level behavior_evidence_hash recomputes
+- `find artifacts/release/algorithm-behavior-receipts -name '*.receipt.json' | wc -l` matches the expected receipt count
+- `release:verify-algorithm-behavior` passes from the committed state
+- RELEASE_CERTIFICATE.v${VERSION}.json embeds the behavior_evidence_hash
+
+Never infer global closure from one representative receipt.
+
+## Required Final Proof Block
+
+For release or evidence tasks, the final response must include this exact proof block.
+
+State:
+<Closed | PrePublishOnly | EvidenceIncomplete | RegistryAdmissionBlocked | ReceiptTheaterDetected | InfrastructureBlocked>
+
+Commit:
+<output of git rev-parse HEAD>
+
+Tree:
+<output of git status --short>
+
+Package:
+<output of node -p "require('./packages/kernel/package.json').name + '@' + require('./packages/kernel/package.json').version">
+
+Commands:
+- <exact command run>: <pass/fail>
+
+Artifacts:
+- <path>: <exists/hash/count>
+
+Receipts:
+- reachability evidence: <hash/count>
+- behavior evidence: <hash/count>
+- examples evidence: <hash/count>
+- release certificate: <hash>
+
+Verifier Output:
+- release:verify-algorithm-behavior: <pass/fail>
+- release:certificate: <pass/fail>
+- placeholder scan: <pass/fail>
+
+Remaining Blockers:
+- <none or exact blocker>
+
+Next Command:
+<single exact command>
+
+## Disk Artifact Rule
+
+When asked to show receipts or evidence, use `cat`, `jq`, `find`, `sha256sum` / `shasum`, and verifier commands against files on disk.
+
+Do not reconstruct JSON in prose.
+Do not paste a manually assembled sample.
+Do not show a representative object and call it the artifact.
+Do not use “summary” as a replacement for the actual file.
+
+Valid examples:
+
+- `cat artifacts/release/ALGORITHM_BEHAVIOR_EVIDENCE.v$(node -p "require('./package.json').version").json`
+- `jq '.algorithms | length' artifacts/release/ALGORITHM_BEHAVIOR_EVIDENCE.v${VERSION}.json`
+- `jq '.summary' artifacts/release/ALGORITHM_BEHAVIOR_EVIDENCE.v${VERSION}.json`
+- `find artifacts/release/algorithm-behavior-receipts -name '*.receipt.json' | wc -l`
+- `shasum -a 256 artifacts/release/ALGORITHM_BEHAVIOR_EVIDENCE.v${VERSION}.json`
+- `pnpm run release:verify-algorithm-behavior`
+
+The only valid source of truth is the file system plus verifier output.
+
+## No Blind Git Add
+
+Never run:
+
+git add .
+
+for release, evidence, certificate, package, or publish work.
+
+Use explicit paths.
+
+Required:
+
+git status --short
+git diff --stat
+git diff -- <each changed source file>
+git add <specific intended files>
+
+Before committing, confirm no unintended artifacts, temp files, secrets, hidden outputs, local env files, or bulky generated outputs are staged.
+
+## Algorithm Behavior Evidence Closure Rule
+
+For algorithm behavior evidence, closure requires all four domains:
+
+1. Reachability
+   - 60/60 registry entries
+   - 60/60 dispatch entries
+   - CLI/WASM mapping as claimed
+
+2. Behavior
+   - 60/60 positive cases pass
+   - 60/60 negative cases fail correctly
+   - 60/60 invariant cases pass or have structured nondeterministic invariant
+   - no panic, unhandled exception, silent fallback, or false success
+
+3. Receipts
+   - every algorithm row has receipt evidence
+   - every evidence hash recomputes
+   - behavior_evidence_hash recomputes
+
+4. Certificate Binding
+   - release certificate embeds reachability hash
+   - release certificate embeds behavior evidence hash
+   - release certificate embeds examples manifest hash
+   - release certificate embeds tarball/package artifact hash
+
+If any domain is missing, state is BehaviorEvidenceMissing or EvidenceIncomplete.
+
+## Final Law
+
+Enumeration is not execution.
+Representative evidence is not global evidence.
+Summary is not receipt.
+Receipt is not closure unless it verifies from disk and binds to the current commit.
+
 ## Final Response Format
 
 Every task response must include:

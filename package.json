@@ -26,7 +26,7 @@
     "release:algorithm-reachability": "tsx scripts/release/algorithm-behavior/write-reachability-evidence.ts",
     "release:verify-algorithm-behavior": "tsx scripts/release/verify-algorithm-behavior.ts",
     "release:full": "npm run release:forbidden && npm run release:algorithm-reachability && npm run release:algorithm-behavior && npm run release:verify-algorithm-behavior && npm run examples:gate && npm run prepublish:pack-smoke && npm run release:certificate && tsx scripts/release/verify-certificate-authenticity.ts",
-    "build:wasm": "pnpm --filter wasm4pm build:all",
+    "build:wasm": "pnpm --filter @wasm4pm/core build:all",
     "build:engine": "pnpm --filter @wasm4pm/engine build",
     "build:cli": "pnpm --filter @wasm4pm/cli build",
     "build:all": "pnpm run build:wasm && pnpm run build:engine && pnpm run build:cli",

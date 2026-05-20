@@ -115,9 +115,9 @@ async function main() {
       manifest_hash: manifestHash
     },
     package_artifact: {
-      tarball_name: packMeta.tarball_name || `wasm4pm-kernel-${version}.tgz`,
+      tarball_name: packMeta.tarball_name || `wasm4pm-${version}.tgz`,
       tarball_integrity: packMeta.tarball_integrity || "integrity_not_found",
-      pack_smoke_tarball_path: `packages/kernel/wasm4pm-kernel-${version}.tgz`,
+      pack_smoke_tarball_path: `packages/kernel/wasm4pm-${version}.tgz`,
       wasm_bundle_hash: bundleHash
     },
     timestamp: new Date().toISOString()

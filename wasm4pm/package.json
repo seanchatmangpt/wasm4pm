@@ -1,5 +1,5 @@
 {
-  "name": "wasm4pm",
+  "name": "@wasm4pm/core",
   "version": "26.5.19",
   "description": "Process Mining in WebAssembly - High-Speed Algorithms for Browser and Node.js",
   "main": "pkg/wasm4pm.js",

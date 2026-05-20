@@ -70,7 +70,7 @@ async function main() {
 
     writeExampleReceipt({
       example_id: exampleId,
-      package: "@wasm4pm/kernel",
+      package: "wasm4pm",
       version: version,
       event_log_hash: logHash,
       algorithms: algorithms,

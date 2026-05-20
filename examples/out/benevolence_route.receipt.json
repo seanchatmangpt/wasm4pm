@@ -1,6 +1,6 @@
 {
   "example_id": "benevolence_route",
-  "package": "@wasm4pm/kernel",
+  "package": "wasm4pm",
   "version": "26.5.19",
   "event_log_hash": "0c5a5518442970cd1012b1f1053ab8b780b91efd9a02e1297ac922fcbf74f8f0",
   "algorithms": [
@@ -8,62 +8,62 @@
       "id": "simulated_annealing",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "f0082c1835776f1c0c20c574f127bba0139308cbacd070ff48be71215086377d",
-      "duration_ms": 53.224449459900185
+      "result_hash": "9ae4213df88300ad86cf0885dc1e7a73b8dc67a7c9dfc826cee1fb373693d399",
+      "duration_ms": 30.674729093327333
     },
     {
       "id": "declare",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "3c9382f2c206ecf21ba90b8af88f9bef7e7a0be86b2a2657caf4be9f2de0945c",
-      "duration_ms": 14.425357075728463
+      "result_hash": "ed9d008d469fbb15a566bb00df9143081237d975225ea9fbc5d502a927ffd7af",
+      "duration_ms": 42.716582677123704
     },
     {
       "id": "optimized_dfg",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "015e3f26ad7bdc0a77a9560cf2ba9495094cdeae8b8c76e04fff2a7890d0c8e2",
-      "duration_ms": 14.08140344104298
+      "result_hash": "6dd0bb8d44b6f6376339b4c82fcfdb8ebb0b100e00208eacbf55e27c2a9205d3",
+      "duration_ms": 10.822608415803222
     },
     {
       "id": "ilp",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "8d3ee7f5d8ec4f92ec18474a4b73b217d462cce02a70708fb2b1cc841c65be12",
-      "duration_ms": 30.7572544003622
+      "result_hash": "f316308e43a3281e49ddfb5c356f4e562aed86f22701cffae9659453237e22e8",
+      "duration_ms": 19.93258695661583
     },
     {
       "id": "simd_streaming_dfg",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "e203ccb38f9295daf893d6f8ae8446ff1480c03f333aca6a665cd4777d3d2271",
-      "duration_ms": 42.48765973743544
+      "result_hash": "4a863df09b9facea1162f5a6c5b6b3b2a4757448c9cd4995361bd3b36088d3b6",
+      "duration_ms": 19.53900232507854
     },
     {
       "id": "hierarchical_dfg",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "2749c12918d65c37aa47bb676b03dac0cb77fefb7015669da9db506c6834ca92",
-      "duration_ms": 43.45173241882248
+      "result_hash": "644749a5a9a205c03126737a7771ca8a864c2998202c65cd67dc3298f8d8a784",
+      "duration_ms": 11.866567402855491
     },
     {
       "id": "streaming_log",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "d2dc05b775e084d1df11d3fd3c4519f728035b3f6a13956d4ba928bca82e6411",
-      "duration_ms": 50.34936883302732
+      "result_hash": "3a19145073dd2732a8a181c82ebd0707f716c35758d2b48d95b76e3daa48f532",
+      "duration_ms": 59.82049926883264
     },
     {
       "id": "smart_engine",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "f2e914cde9dc66f87e857ef5179b1a042dc7121394b2866f2091cc8463548e13",
-      "duration_ms": 43.43298917153278
+      "result_hash": "c45db5bc3bce210ad0878c29c1bf3e980dc8c28c508e3bc903eac12f70f8dce0",
+      "duration_ms": 44.40213368102093
     }
   ],
   "algorithm_count": 8,
   "all_real": true,
-  "created_at": "2026-05-20T02:00:15.923Z",
+  "created_at": "2026-05-20T02:05:16.866Z",
   "previous_receipt_hash": null,
-  "receipt_hash": "83f99f7412eeeba09967be71c1796a430aa3b456efeaf2d1f695d4eca8efb472"
+  "receipt_hash": "34ad3efb0e7d042d896364b442665ba404a7ed0cd3eb4f60ba4e35c283bfab05"
 }

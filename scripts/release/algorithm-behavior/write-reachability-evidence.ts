@@ -28,7 +28,7 @@ async function main() {
       id: algo.id,
       category: algo.category,
       reachable: true,
-      dispatch_path: `@wasm4pm/kernel/src/api.js`,
+      dispatch_path: `wasm4pm/src/api.js`,
       wasm_required: true
     })),
     reachability_hash: ''

@@ -1,5 +1,5 @@
 {
-  "name": "@wasm4pm/kernel",
+  "name": "wasm4pm",
   "version": "26.5.19",
   "description": "Core kernel and runtime utilities",
   "type": "module",
@@ -26,8 +26,7 @@
   "dependencies": {
     "@wasm4pm/contracts": "workspace:*",
     "@wasm4pm/ml": "workspace:*",
-    "@wasm4pm/planner": "workspace:*",
-    "wasm4pm": "workspace:*"
+    "@wasm4pm/planner": "workspace:*"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^1.6.0",
