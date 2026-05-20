@@ -1,0 +1,69 @@
+{
+  "example_id": "sunday_andon",
+  "package": "@wasm4pm/kernel",
+  "version": "26.5.19",
+  "event_log_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36",
+  "algorithms": [
+    {
+      "id": "alpha_plus_plus",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "b5b4f66b22be485b4d141bccf567cf1424e4303e24593690141ab96889640206",
+      "duration_ms": 10.776983695882205
+    },
+    {
+      "id": "heuristic_miner",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "70505bc0a5d69a835d7ecc7cde8efae269a82b8a2b871b2b92362ba60e5d2c81",
+      "duration_ms": 23.568945563728146
+    },
+    {
+      "id": "inductive_miner",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "c08d2218309d0219900da42a12b645f98d9344ff4df23eab767c071d54ae5ad2",
+      "duration_ms": 17.386394667459044
+    },
+    {
+      "id": "genetic_algorithm",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "ce5b86af73a65fdae9e26dd762f76f715196604b168f668258358bbf5511de91",
+      "duration_ms": 31.035659571818165
+    },
+    {
+      "id": "pso",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "3a7806cc0114ba4737512adbf360572d6c4c35124112fbe280cf413035a262c3",
+      "duration_ms": 41.904720822843345
+    },
+    {
+      "id": "a_star",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "3fc834ea94deaad00b1c983fa63f559bb06307cb64373c3d3c1c54b7bd4d4a17",
+      "duration_ms": 31.60404116050602
+    },
+    {
+      "id": "hill_climbing",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "7c2bf21d1153ce0d1e389bf87fc16f5bf053243ec5acc18733acae7b7ebc8fba",
+      "duration_ms": 53.522441831295666
+    },
+    {
+      "id": "aco",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "350cc219fd7d2103141f5b8c0a19a48dbe2dfdb93951645a053db8cf5eb1e208",
+      "duration_ms": 45.99526304774777
+    }
+  ],
+  "algorithm_count": 8,
+  "all_real": true,
+  "created_at": "2026-05-20T01:37:00.154Z",
+  "previous_receipt_hash": null,
+  "receipt_hash": "bcd3828d9644480d2375a5664b01f1a306fb141791a3dc80ddd9eb339797fd22"
+}

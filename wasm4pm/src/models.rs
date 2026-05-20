@@ -15,7 +15,7 @@
 
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Deserializer, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap};
 
 /// Parse an ISO 8601 / RFC 3339 timestamp string into milliseconds since Unix epoch.
 /// Handles formats: "2024-01-01T10:00:00+00:00", "2024-01-01T10:00:00Z",
@@ -235,6 +235,68 @@ impl Trace {
 pub struct EventLog {
     pub attributes: Attributes,
     pub traces: Vec<Trace>,
+}
+
+fn convert_attribute_value(val: wasm4pm_types::AttributeValue) -> Option<AttributeValue> {
+    match val {
+        wasm4pm_types::AttributeValue::String(s) => Some(AttributeValue::String(s)),
+        wasm4pm_types::AttributeValue::Date(d) => Some(AttributeValue::Date(d.to_rfc3339())),
+        wasm4pm_types::AttributeValue::Int(i) => Some(AttributeValue::Int(i)),
+        wasm4pm_types::AttributeValue::Float(f) => Some(AttributeValue::Float(f)),
+        wasm4pm_types::AttributeValue::Boolean(b) => Some(AttributeValue::Boolean(b)),
+        wasm4pm_types::AttributeValue::ID(id) => Some(AttributeValue::String(id.to_string())),
+        wasm4pm_types::AttributeValue::List(l) => {
+            let mut list = Vec::new();
+            for attr in l {
+                if let Some(cv) = convert_attribute_value(attr.value) {
+                    list.push(cv);
+                }
+            }
+            Some(AttributeValue::List(list))
+        },
+        wasm4pm_types::AttributeValue::Container(c) => {
+            let mut map = HashMap::new();
+            for attr in c {
+                if let Some(cv) = convert_attribute_value(attr.value) {
+                    map.insert(attr.key, cv);
+                }
+            }
+            Some(AttributeValue::Container(map))
+        },
+        wasm4pm_types::AttributeValue::None() => None,
+    }
+}
+
+fn convert_attributes(attrs: wasm4pm_types::Attributes) -> HashMap<String, AttributeValue> {
+    let mut map = HashMap::new();
+    for attr in attrs {
+        if let Some(cv) = convert_attribute_value(attr.value) {
+            map.insert(attr.key, cv);
+        }
+    }
+    map
+}
+
+impl From<wasm4pm_types::EventLog> for EventLog {
+    fn from(log: wasm4pm_types::EventLog) -> Self {
+        let mut traces = Vec::with_capacity(log.traces.len());
+        for trace in log.traces {
+            let mut events = Vec::with_capacity(trace.events.len());
+            for event in trace.events {
+                events.push(Event {
+                    attributes: convert_attributes(event.attributes),
+                });
+            }
+            traces.push(Trace {
+                attributes: convert_attributes(trace.attributes),
+                events,
+            });
+        }
+        EventLog {
+            attributes: convert_attributes(log.attributes),
+            traces,
+        }
+    }
 }
 
 /// Columnar, integer-encoded view of an event log.
@@ -506,8 +568,6 @@ impl EventLog {
         }
         traces
     }
-
-    }
 }
 
 /// OCEL Object Attribute definition
@@ -741,8 +801,8 @@ pub struct DirectlyFollowsRelation {
 pub struct DirectlyFollowsGraph {
     pub nodes: Vec<DFGNode>,
     pub edges: Vec<DirectlyFollowsRelation>,
-    pub start_activities: HashMap<String, usize>,
-    pub end_activities: HashMap<String, usize>,
+    pub start_activities: BTreeMap<String, usize>,
+    pub end_activities: BTreeMap<String, usize>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -758,8 +818,8 @@ impl DirectlyFollowsGraph {
         DirectlyFollowsGraph {
             nodes: Vec::new(),
             edges: Vec::new(),
-            start_activities: HashMap::new(),
-            end_activities: HashMap::new(),
+            start_activities: BTreeMap::new(),
+            end_activities: BTreeMap::new(),
         }
     }
 }

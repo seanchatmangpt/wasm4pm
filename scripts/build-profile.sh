@@ -125,28 +125,32 @@ fi
 echo ""
 
 # ─────────────────────────────────────────────────────────────────────────────
-# Step 2: Build WASM with Cargo
+# Step 2: Build WASM with wasm-pack
 # ─────────────────────────────────────────────────────────────────────────────
 
-echo "[1/5] Building WASM with Cargo (profile: $PROFILE, features: $FEATURES)..."
+echo "[1/5] Building WASM with wasm-pack (profile: $PROFILE, features: $FEATURES)..."
 mkdir -p "$OUTPUT_DIR"
 
-# Cargo build with profile-specific features
+# wasm-pack build with profile-specific features
 cd "$PROJECT_ROOT/wasm4pm"
 RUSTFLAGS="${RUSTFLAGS:-} -C target-feature=+simd128" \
-  cargo build --release --target wasm32-unknown-unknown \
-    --features "$FEATURES" \
-    --quiet 2>&1 | grep -v "warning:" || true
+  wasm-pack build --target web --out-dir "$OUTPUT_DIR" --out-name wasm4pm --release -- --features "$FEATURES" --quiet
 
-# Copy to output directory
-BUILT_WASM="$PROJECT_ROOT/target/wasm32-unknown-unknown/release/wasm4pm.wasm"
-if [ ! -f "$BUILT_WASM" ]; then
-  echo "ERROR: Cargo build failed, WASM file not found at $BUILT_WASM"
+# wasm-pack for --target web produces wasm4pm_bg.wasm, rename it to wasm4pm.wasm
+# to maintain compatibility with the rest of the script and simplify the bundle.
+# We also need to patch the generated JS to point to the renamed WASM file.
+if [ -f "$OUTPUT_DIR/wasm4pm_bg.wasm" ]; then
+  mv "$OUTPUT_DIR/wasm4pm_bg.wasm" "$WASM_FILE"
+  # Use python to perform the replacement in the JS file to avoid sed/awk as per project standards
+  python3 -c "import sys; content = open('$OUTPUT_DIR/wasm4pm.js').read(); open('$OUTPUT_DIR/wasm4pm.js', 'w').write(content.replace('wasm4pm_bg.wasm', 'wasm4pm.wasm'))"
+fi
+
+if [ ! -f "$WASM_FILE" ]; then
+  echo "ERROR: wasm-pack build failed, WASM file not found at $WASM_FILE"
   exit 1
 fi
 
-cp "$BUILT_WASM" "$WASM_FILE"
-echo "[✓] WASM built: $WASM_FILE"
+echo "[✓] WASM built and patched: $WASM_FILE"
 
 # Report raw size
 if [ "$(uname)" = "Darwin" ]; then
@@ -164,8 +168,8 @@ echo ""
 # ─────────────────────────────────────────────────────────────────────────────
 
 if [ "$WASM_OPT_AVAILABLE" = true ] && [ -n "$WASM_OPT_LEVEL" ]; then
-  echo "[2/5] Optimizing with wasm-opt $WASM_OPT_LEVEL..."
-  wasm-opt "$WASM_OPT_LEVEL" "$WASM_FILE" -o "$WASM_OPT_FILE" 2>/dev/null || {
+  echo "[2/5] Optimizing with wasm-opt $WASM_OPT_LEVEL --enable-simd..."
+  wasm-opt "$WASM_OPT_LEVEL" --enable-simd "$WASM_FILE" -o "$WASM_OPT_FILE" 2>/dev/null || {
     echo "ERROR: wasm-opt optimization failed"
     exit 1
   }

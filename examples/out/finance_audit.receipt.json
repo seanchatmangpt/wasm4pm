@@ -1,0 +1,69 @@
+{
+  "example_id": "finance_audit",
+  "package": "@wasm4pm/kernel",
+  "version": "26.5.19",
+  "event_log_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1",
+  "algorithms": [
+    {
+      "id": "ml_classify",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "7f8297cbfd135847cb9fb469238ee32f787697dbf744f0173a39ed790e4329c1",
+      "duration_ms": 48.70421504173028
+    },
+    {
+      "id": "ml_cluster",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "b99fbe9ee6a7c333a42a398c5bdb7f1adf3eaa4795381c22ed700e67088ffd83",
+      "duration_ms": 33.4289656795207
+    },
+    {
+      "id": "ml_forecast",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "004a389ae5cdc1e955aeb01dbd587af24483b457d9d358895f346881b7b61c07",
+      "duration_ms": 56.8523047453955
+    },
+    {
+      "id": "ml_anomaly",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "bdd26f5f70dfdd7251f9913571b976027fc1d0e0e09677f4dbf632eb2f2dec89",
+      "duration_ms": 59.98469594840319
+    },
+    {
+      "id": "ml_regress",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "72dcff09711a0c1cb377e2e25f7668aaa35f446c79cc334e1a47c8cd7d3c23f5",
+      "duration_ms": 55.47983391266105
+    },
+    {
+      "id": "ml_pca",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "546fb32f4a719b608b60ba2f426fe31828d7d9847191f8bd349860eb9372893d",
+      "duration_ms": 19.59921567894455
+    },
+    {
+      "id": "transition_system",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "69d389cd9884e0a93b5675e4ebc8e835f2063ec2651e449be40d2d48021afb4a",
+      "duration_ms": 21.706792611090055
+    },
+    {
+      "id": "log_to_trie",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "3508143ef8a3d755ee2f6d7b3e8e056e5a501aad087ab3bc7c55e3e24a81ad28",
+      "duration_ms": 56.86337050856833
+    }
+  ],
+  "algorithm_count": 8,
+  "all_real": true,
+  "created_at": "2026-05-20T01:37:00.155Z",
+  "previous_receipt_hash": null,
+  "receipt_hash": "c29ef464e7f906c2306673cab3fb39077c4b8be8cac2e93f90b1debed1e11865"
+}

@@ -1,0 +1,27 @@
+{
+  "version": "26.5.19",
+  "registry_algorithm_count": 60,
+  "examples": {
+    "count": 8,
+    "algorithms_per_example": 8,
+    "all_passed": true,
+    "manifest_hash": "285206116e4b3618cb9a3d3da0716b86eda81af3b328ce9a6c80cf01f50e7776"
+  },
+  "cli_parity": {
+    "passed": true,
+    "algorithms_reachable": 60
+  },
+  "pack_smoke": {
+    "passed": true
+  },
+  "forbidden_terms": {
+    "passed": true
+  },
+  "wasm": {
+    "bundle_hash": "tarball_not_found"
+  },
+  "npm": {
+    "provenance": true
+  },
+  "timestamp": "2026-05-20T01:38:38.450Z"
+}
