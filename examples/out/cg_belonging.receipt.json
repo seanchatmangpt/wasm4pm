@@ -8,62 +8,62 @@
       "id": "hill_climbing",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "589faabdcd7a912d006b06ee724e475ae94b27d6d144aa44ec0a7a0f42c349da",
-      "duration_ms": 26.703242556767695
+      "result_hash": "ebef86f830f2c12b06d49fac77dfffcf8703d664f9d4c7007b94e75e26900206",
+      "duration_ms": 41.32655835268535
     },
     {
       "id": "aco",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "0c4c1bd375184e50598398fecb2d4b6acfc28e21e9fb092f53a852698aef2187",
-      "duration_ms": 55.96241012468381
+      "result_hash": "a551ec8ba48ef7b29487fd2d651fa038f9502b44c0438b009674b57775f0c33f",
+      "duration_ms": 13.820424771222752
     },
     {
       "id": "simulated_annealing",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "cd22f8adaac2a76a4805cc1384b7e3e2c60b2a77aa977ce6c04db35c3423455d",
-      "duration_ms": 21.853203233384534
+      "result_hash": "b75c347fc478448bbaf88bd0d9c5e991be7b6ecb5146689a392554b73b72f9d8",
+      "duration_ms": 31.94127896194654
     },
     {
       "id": "declare",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "0fc849ee433ffdad4ac1444aeb411b56b9ec578b2d8723c433c7bde4f7ae370b",
-      "duration_ms": 24.49537048655088
+      "result_hash": "dc20f17798420f9043fba98caad949b1c7654ab2d2137489cfe2eccabdc51a78",
+      "duration_ms": 13.54215172080048
     },
     {
       "id": "optimized_dfg",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "4966901d8b11a4c3b96b56e1ac275636998ce3a07b2301fc34abfaa3eb7de0c1",
-      "duration_ms": 17.33338191743008
+      "result_hash": "a42a79252c1c365c5aff85fefad718d70d37e405585be98100c6f7f486132a49",
+      "duration_ms": 31.5357306463809
     },
     {
       "id": "ilp",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "62e6d4ab14889b7893bd6a331d60f49b167bf710c30ff2b31a7b2c63bd63221a",
-      "duration_ms": 40.45059415338529
+      "result_hash": "d1d6bcaf3aa6a0ba7312af9e0d3d66e43208e1b49fba45937902ff0b8a2560c7",
+      "duration_ms": 37.99999088143153
     },
     {
       "id": "simd_streaming_dfg",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "36a57ee8fa8383da8781fd616afb47673d3cd5edfc2d2edd392c8ffd1f1bede0",
-      "duration_ms": 51.93895703341061
+      "result_hash": "c140ad3191a9714c7697a4a4722914c2f8d735692a17aefe692fe28e3f2815d2",
+      "duration_ms": 54.577884793593135
     },
     {
       "id": "hierarchical_dfg",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "80d50f2bff6402cb7e514acfb0578d14469fe96abb3bf91875f1d3ca800a8fc0",
-      "duration_ms": 13.899802981107959
+      "result_hash": "f4c3358d699933ee2d00dd916d74c4fec2df96e8a83033c5f08352af1eced315",
+      "duration_ms": 52.826197672192386
     }
   ],
   "algorithm_count": 8,
   "all_real": true,
-  "created_at": "2026-05-20T02:09:30.897Z",
+  "created_at": "2026-05-20T02:27:29.954Z",
   "previous_receipt_hash": null,
-  "receipt_hash": "b627670dd8310fe8592ed90f3f704a48320d8eb343aa9944af9bf0c213f107ce"
+  "receipt_hash": "483adcf1c45469ce6467ceba3bd15a36823de53ca191a04a2d5ba6e6f5283d91"
 }

@@ -11,12 +11,14 @@ echo "=== STARTING PREPUBLISH GAUNTLET FOR v$VERSION ==="
 
 # 1. Clean build
 echo "--- 1. Clean Build ---"
-pnpm run clean
-pnpm run build:all
+npm run clean
+npm install
+npm run build:all
 
 # 2. Lint & Type Check
 echo "--- 2. Lint & Type Check ---"
-pnpm run lint
+npm run lint
+
 
 # 3. Native Tests (Rust)
 echo "--- 3. Native Rust Tests ---"

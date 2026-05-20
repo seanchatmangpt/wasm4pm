@@ -9,7 +9,7 @@ import fs from 'node:fs';
 
 async function main() {
   const registry = getRegistry();
-  const algos = registry.getAlgorithms();
+  const algos = registry.list();
   
   console.log(`--- Verifying CLI Parity for ${algos.length} algorithms ---`);
   

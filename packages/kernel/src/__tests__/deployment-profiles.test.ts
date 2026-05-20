@@ -127,30 +127,30 @@ describe('Profile containment invariants (Rank 1)', () => {
 // ---------------------------------------------------------------------------
 
 describe('Algorithm count invariants (Rank 1)', () => {
-  it('total registered algorithms is exactly 49', () => {
+  it('total registered algorithms is exactly 60', () => {
     // Verified via node introspection 2026-05-17 — if this changes a human must
     // consciously update this test after reviewing what was added/removed.
-    expect(registry.list().length).toBe(49);
+    expect(registry.list().length).toBe(60);
   });
 
   it('browser profile exposes all registered algorithms', () => {
     expect(registry.getForDeploymentProfile('browser').length).toBe(registry.list().length);
   });
 
-  it('mobile profile has exactly 20 algorithms', () => {
-    expect(registry.getForDeploymentProfile('mobile').length).toBe(20);
+  it('mobile profile has exactly 22 algorithms', () => {
+    expect(registry.getForDeploymentProfile('mobile').length).toBe(22);
   });
 
-  it('iot profile has exactly 20 algorithms (same set as mobile)', () => {
-    expect(registry.getForDeploymentProfile('iot').length).toBe(20);
+  it('iot profile has exactly 22 algorithms (same set as mobile)', () => {
+    expect(registry.getForDeploymentProfile('iot').length).toBe(22);
   });
 
-  it('edge profile has exactly 38 algorithms', () => {
-    expect(registry.getForDeploymentProfile('edge').length).toBe(38);
+  it('edge profile has exactly 48 algorithms', () => {
+    expect(registry.getForDeploymentProfile('edge').length).toBe(48);
   });
 
-  it('fog profile has exactly 49 algorithms (same set as browser)', () => {
-    expect(registry.getForDeploymentProfile('fog').length).toBe(49);
+  it('fog profile has exactly 60 algorithms (same set as browser)', () => {
+    expect(registry.getForDeploymentProfile('fog').length).toBe(60);
   });
 
   it('mobile has fewer than 30 algorithms', () => {

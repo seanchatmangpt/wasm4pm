@@ -26,7 +26,7 @@
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 
-vi.mock('wasm4pm', () => {
+vi.mock('@wasm4pm/core', () => {
   return {
     // WasmBackend.init() probes for an optional `init` export. Provide a noop.
     init: undefined,
@@ -39,7 +39,7 @@ vi.mock('wasm4pm', () => {
   };
 });
 
-import * as wasm from 'wasm4pm';
+import * as wasm from '@wasm4pm/core';
 import { WasmBackend } from '../backends/wasm-backend.js';
 import type { EventLogIR, ModelIR, BudgetEnvelope } from '../mining-backend.js';
 

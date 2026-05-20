@@ -472,7 +472,7 @@ describe('G4: OCEL deployment profile placement correctness (Rank 2 — domain c
   it('all 4 OCEL algorithms exist in the registry', () => {
     const ocelAlgos = registry.getForInputFormat('ocel');
     const ocelIds = ocelAlgos.map((a) => a.id).sort();
-    expect(ocelIds).toEqual(['ocel_dfg', 'ocel_dfg_per_type', 'ocel_encode', 'ocel_petri_net']);
+    expect(ocelIds).toEqual(['ocel_dfg', 'ocel_dfg_per_type', 'ocel_encode', 'ocel_oc_declare', 'ocel_ocla', 'ocel_petri_net']);
   });
 
   it('ocel_dfg_per_type is ONLY in edge, fog, and browser (feature-ocel guard)', () => {

@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@wasm4pm/contracts": "*",
+    "@wasm4pm/core": "*",
     "@wasm4pm/ml": "*",
     "@wasm4pm/planner": "*"
   },

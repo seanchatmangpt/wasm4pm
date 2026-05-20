@@ -97,7 +97,7 @@ describe('AlgorithmRegistry', () => {
       const dfg = registry.get('dfg')!;
       const excludedIds = new Set([
         'dfg', 'process_skeleton', 'simd_streaming_dfg', 'streaming_dfg',
-        'streaming_conformance', 'optimized_dfg', 'smart_engine',
+        'streaming_conformance', 'optimized_dfg', 'smart_engine', 'agentic_pipeline',
       ]);
       for (const algo of algorithms) {
         if (!excludedIds.has(algo.id)) {

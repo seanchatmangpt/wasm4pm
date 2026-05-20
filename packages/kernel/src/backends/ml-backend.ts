@@ -8,7 +8,7 @@
  * Spec reference: Section 3.3 (MlBackend declaration)
  */
 
-import * as wasm from 'wasm4pm';
+import * as wasm from '@wasm4pm/core';
 import type {
   MiningBackend,
   BackendCapabilities,

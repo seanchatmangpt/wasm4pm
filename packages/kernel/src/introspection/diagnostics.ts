@@ -192,7 +192,7 @@ const safeValue = clampValue(${value}, ${min}, ${max});  // ${Math.max(min, Math
 // Current: ${details.profile} ❌
 
 // Solution: Use one of these profiles
-import { getRegistry } from 'wasm4pm';
+import { getRegistry } from '../registry.js';
 const algo = getRegistry().getAlgorithm('${details.algorithmId}');
 console.log('Try these:', algo.deploymentProfiles);  // ${details.availableInProfiles}
       `,

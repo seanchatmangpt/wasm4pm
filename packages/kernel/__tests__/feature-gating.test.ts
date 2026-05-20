@@ -43,7 +43,7 @@ describe('Feature Gating - Algorithm Registry Integration', () => {
 
       // Should have algorithms in expected range
       expect(algorithms.length).toBeGreaterThanOrEqual(10); // at least browser profile
-      expect(algorithms.length).toBeLessThanOrEqual(50); // at most ~41 (could have more in future)
+      expect(algorithms.length).toBeLessThanOrEqual(65); // at most ~60 (could have more in future)
     });
 
     test('should have valid metadata for all algorithms', () => {
