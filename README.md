@@ -369,6 +369,10 @@ cargo test --test <name>                     # specific Rust integration test
 
 See [CONTRIBUTING.md](CONTRIBUTING.md). Key rules for cognition contributions: no stubs, no `todo!()`, no placeholder CI gates, three-layer evidence (OTEL span + test assertion + schema conformance).
 
+## Contact
+
+For questions or support, you can reach out at [info@chatmangpt.com](mailto:info@chatmangpt.com).
+
 ## License
 
 Apache-2.0 OR MIT. See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT).
