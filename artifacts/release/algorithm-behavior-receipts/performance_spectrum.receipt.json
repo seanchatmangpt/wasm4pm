@@ -1,6 +1,11 @@
 {
   "algorithm_id": "performance_spectrum",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "4c7d84b6f707b764242a49c0a4cd42eea067a7075210c0af82a2a6d5ca210bf6",
-      "duration_ms": 0.013249999999999318,
-      "receipt_hash": "974ad215169056e541690c36ccc4ab339ccff332d366381e7027cba62f88cf88"
+      "duration_ms": 0.020332999999993717,
+      "receipt_hash": "c8e4fce51f0b65638a9d6efbc856fbeaf17ae5146b310dbf8477854594eb4d58"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "performance_spectrum.empty_log",
+      "case_id": "performance_spectrum.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "8fd4b0cbbe201cf1a830f5d8e780a7e8a01e64dc22318fafc1138f06cd44b414"
+      "receipt_hash": "97498aa1f5a17a88c24cab7b14791629c10e432c489ef128d59a33eecc91e396"
     },
     {
-      "case_id": "performance_spectrum.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "performance_spectrum.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "911872fdd815e978d064b70943f4067659f393db319f95ed0cfa58fbc0249b36"
+      "receipt_hash": "73383d79bf7944e4b3edd819c24e2b5a1303a1a141ac3add14d36dca0fa1444c"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "performance_spectrum.deterministic_same_input",
+      "case_id": "performance_spectrum.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "4c7d84b6f707b764242a49c0a4cd42eea067a7075210c0af82a2a6d5ca210bf6",
       "second_result_hash": "4c7d84b6f707b764242a49c0a4cd42eea067a7075210c0af82a2a6d5ca210bf6",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "3816eec9de60356c898affe184ecc9513aedfb6e1c65808525f268d8fd554fcf"
+  "algorithm_evidence_hash": "8dc5d4054a6edf41ee1b64571846599271cf92507f660643991bb01436236da5"
 }

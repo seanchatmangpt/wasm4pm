@@ -1,6 +1,11 @@
 {
   "algorithm_id": "aco",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "07295ef04449e8e87e1644a2a44e96a0e9b6d4ebbc477ec659e973327a5381b5",
-      "duration_ms": 0.013332999999988715,
-      "receipt_hash": "3e9713870729d34cfe972cfa508262f38c0c9173c5ac78ed5a79444ef083ead4"
+      "duration_ms": 0.018792000000004805,
+      "receipt_hash": "890686a97b4736c89188cb2903232dfeec30ff0dcb05419f01b2d4ef22f70163"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "aco.empty_log",
+      "case_id": "aco.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "dd53729aed4b4282ed20f7e3552e05797b27d85ab7c0aac86a3521ca05cee975"
+      "receipt_hash": "4577d30efb1d1d3bffcefb56902c7a2b3c951e00ab37e4b6d48a2827506014ef"
     },
     {
-      "case_id": "aco.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "aco.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "9ec29cb9c6bc03605fe61667b53c996f7333c5fc14e3a7bdd500f79d336a686b"
+      "receipt_hash": "40c4eb1c38a418e709c57d7202dc63c0055a5c920c7821596facdf4f86c2b86a"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "aco.seeded_repeatability",
+      "case_id": "aco.SeededRepeatabilityCase",
       "seed": 42,
       "status": "passed",
       "result_schema_valid": true,
       "fitness_within_expected_range": true
     }
   ],
-  "algorithm_evidence_hash": "1a619bd03978456267925c8b9757a85909e3886d0175195899e0118b4e9e6c44"
+  "algorithm_evidence_hash": "05ded5e2d145a56136f0580f56fb494562337d41a6536e121de39314a6a73453"
 }

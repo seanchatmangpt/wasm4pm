@@ -1,6 +1,11 @@
 {
   "algorithm_id": "genetic_algorithm",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "443ce639ad4cb009f401a3db0846c6e08e6ddb1ac68e1ad7bfa3316bcfd0d8db",
-      "duration_ms": 0.0143330000000077,
-      "receipt_hash": "144f6b63a4891ba58ab4f37f4992f6ff4ebad12685cc078d0fd04b39cd4fc343"
+      "duration_ms": 0.012416999999999234,
+      "receipt_hash": "9e9ace15c45ba4aeee13f69796291d320c5fbdb728c5d8f26164ce9408fef00c"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "genetic_algorithm.empty_log",
+      "case_id": "genetic_algorithm.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "afa6a770858fbccc813ea63ec30d92589d7a21ea20dd7ac52dff9c7b4f7ec759"
+      "receipt_hash": "22c4d335798c7dc755219ecd75720fea08ebde374279d6b9c643674018e7d44a"
     },
     {
-      "case_id": "genetic_algorithm.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "genetic_algorithm.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "00f9fd6265139cc8abb21069d6cc347f68220e6808b58229698141133f39240e"
+      "receipt_hash": "e851d740b60c394c96ac7f22a65777dc4b72568ea80c98b761cef1ab516b717d"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "genetic_algorithm.seeded_repeatability",
+      "case_id": "genetic_algorithm.SeededRepeatabilityCase",
       "seed": 42,
       "status": "passed",
       "result_schema_valid": true,
       "fitness_within_expected_range": true
     }
   ],
-  "algorithm_evidence_hash": "876affff62b5c2136fa856a127cc4c1c2158639f76589b40895b6eebfa1741d6"
+  "algorithm_evidence_hash": "99a2417e636fccf38fa5ee23c362ef5cff9a348f1980cf808d78ee44d5747605"
 }

@@ -1,6 +1,11 @@
 {
   "algorithm_id": "predict_remaining_time",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "d87de583a5480a8fb924ee642549d6a348832a91cd9a1be680944c3541176391",
-      "duration_ms": 0.01258299999999224,
-      "receipt_hash": "bf063d71f51051050fe48cdff11b9de3b3dcc4373485eb9de1da6ebcbcc3e6a2"
+      "duration_ms": 0.015250000000008868,
+      "receipt_hash": "16659f4e2b73f25be1600732cc8bf910645c66fa9b85e4aa1b4e0972e41906bb"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "predict_remaining_time.empty_log",
+      "case_id": "predict_remaining_time.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "8d824c7bae8a319c740984d78ee61f9469aa739be12826cc73908dcc786d7d22"
+      "receipt_hash": "e175290d7a09d2693293395a3b1ade5ee2345bc2ea0b18259ae9b3af32a983d1"
     },
     {
-      "case_id": "predict_remaining_time.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "predict_remaining_time.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "PREDICTION_FEATURES_REQUIRED",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "7825cb62f817a070c48e884ab6c71d38f02c7c0e090545f1663063cb1d842975"
+      "receipt_hash": "e1ea0feb281fc16353fd656241b92f2e4844d7b93a19d23be97cc256d50149a7"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "predict_remaining_time.deterministic_same_input",
+      "case_id": "predict_remaining_time.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "d87de583a5480a8fb924ee642549d6a348832a91cd9a1be680944c3541176391",
       "second_result_hash": "d87de583a5480a8fb924ee642549d6a348832a91cd9a1be680944c3541176391",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "17c2ebce0a022a63343317dc0fbfe6b2bfa39569f7047343faa69c5398058dd6"
+  "algorithm_evidence_hash": "1f7dc84991b85562f8f5ce32f85c849166aa4cca1ef9894b65c7e67bc5f400a9"
 }

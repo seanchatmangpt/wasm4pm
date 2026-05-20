@@ -1,6 +1,11 @@
 {
   "algorithm_id": "working_together_network",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "6a85b17c2e80ecb641cb49f153ee1f8f1b72a24e12eb878617a06dfcc5e571a6",
-      "duration_ms": 0.012500000000002842,
-      "receipt_hash": "35ba35fd19eb70571781ceb3c840e6db6cda542d668f3d6fcbf52fe25c3016d8"
+      "duration_ms": 0.01187500000000341,
+      "receipt_hash": "7bdc7718bd3798403334b115cfc6becefe6f7d07b2832ef616dd6edceeee6a1b"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "working_together_network.empty_log",
+      "case_id": "working_together_network.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "49da2809fc04a9b185dd557916789d59d9ff8a6964dd8db77c52079fd7d91b51"
+      "receipt_hash": "dc0487a67782c9e1cf3e42e5afc4b512e41cf705552c28a2957718997a1b65b8"
     },
     {
-      "case_id": "working_together_network.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "working_together_network.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "734930575aa3f1c84a9fa0705332db41e1c3f0434faf72cb863a64afc0f42ea4"
+      "receipt_hash": "68af253407ea52a546e27180afd31866a8260ed30eee5d0bf0cef2b1559733a2"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "working_together_network.deterministic_same_input",
+      "case_id": "working_together_network.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "6a85b17c2e80ecb641cb49f153ee1f8f1b72a24e12eb878617a06dfcc5e571a6",
       "second_result_hash": "6a85b17c2e80ecb641cb49f153ee1f8f1b72a24e12eb878617a06dfcc5e571a6",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "87fca3d6a2986b8df2c92bc84ee3f8298f77bdb22529f1ff50d4ef81fe2f875e"
+  "algorithm_evidence_hash": "5f1dcd410326bac23678fe4f66e8e7b1bc49cc08b83ed29a80d86b45c94e2cfc"
 }

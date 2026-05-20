@@ -1,6 +1,11 @@
 {
   "algorithm_id": "compute_trace_similarity_matrix",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "9a0929e939a015f393cd122d098b6cfc086bf231f9f148f66c461f96c64996d1",
-      "duration_ms": 0.011833999999993239,
-      "receipt_hash": "4e5bf07b0ef577f7b561a7e71497f06639411532fd66dbe5d7dc2904d9ca8b55"
+      "duration_ms": 0.012917000000015832,
+      "receipt_hash": "ca94db2437140e868eead2aee49d02db2efc2f197c11c7a7f0d361ab70ddcb8d"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "compute_trace_similarity_matrix.empty_log",
+      "case_id": "compute_trace_similarity_matrix.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "5e6a2c36dd452f78adc90191c1ce6c30dbac57988760147a095521fa3cc1e133"
+      "receipt_hash": "735eab346f76a1ef22986e548ba92b0634392d7baedfacfe03892020ec1603b5"
     },
     {
-      "case_id": "compute_trace_similarity_matrix.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "compute_trace_similarity_matrix.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "b9de027c297b12af84599c25a76155f9459bfe35c681622ca48a910dcf1e168e"
+      "receipt_hash": "56936c1e15b7ed8dd443fe5683b8188577ae2287e3b0440b1b99c4c892ef5a2a"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "compute_trace_similarity_matrix.deterministic_same_input",
+      "case_id": "compute_trace_similarity_matrix.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "9a0929e939a015f393cd122d098b6cfc086bf231f9f148f66c461f96c64996d1",
       "second_result_hash": "9a0929e939a015f393cd122d098b6cfc086bf231f9f148f66c461f96c64996d1",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "4bbf3bd2541d6483ec8aae7034569891b5f36c814f7e1a38b261a0aaddab4b20"
+  "algorithm_evidence_hash": "e21953fd953f9253c8d538fea2ffcf559fb85cc10b3f251a3d1c65d5c7cff06b"
 }

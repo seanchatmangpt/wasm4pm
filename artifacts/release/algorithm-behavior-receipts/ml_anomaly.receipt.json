@@ -1,6 +1,11 @@
 {
   "algorithm_id": "ml_anomaly",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "d3d1d51bd107becde99df9eff2abb81525f2812c7e3231cdb993c772f90ccccc",
-      "duration_ms": 0.01320799999999167,
-      "receipt_hash": "f93b9a57ec4a10c15395054481563abda2a0cd33fd8d0f04029ca567d017c6f9"
+      "duration_ms": 0.01404199999998923,
+      "receipt_hash": "aaf972bed701fcd491c267742f752e5892cbdf05d53d28b2c9bb7cabfc4c2640"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "ml_anomaly.empty_log",
+      "case_id": "ml_anomaly.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "cb3aae874f4e423ec9638a37ba0f6af4fcbd4dbe4b9e3819b08173ea166d3a38"
+      "receipt_hash": "b20dea030ee2b82c255d4a84effb4d1faa2776000f922425100a4530a13a98be"
     },
     {
-      "case_id": "ml_anomaly.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "ml_anomaly.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "PREDICTION_FEATURES_REQUIRED",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "6425a85f04d533819a76062d34f7e6873614b6aab1c35f2ccf0c9f9f07828add"
+      "receipt_hash": "f14569f37d39b1f5c298ff8bcb2247f4bbb2ece739c3ed189612869e534702b3"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "ml_anomaly.deterministic_same_input",
+      "case_id": "ml_anomaly.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "d3d1d51bd107becde99df9eff2abb81525f2812c7e3231cdb993c772f90ccccc",
       "second_result_hash": "d3d1d51bd107becde99df9eff2abb81525f2812c7e3231cdb993c772f90ccccc",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "eb410af9ebdc3673b43bc135697709d612cef2866c25a8f903b64eb0ffadff61"
+  "algorithm_evidence_hash": "3ed599e3be4449ad98e8505c7cb58fa875e30ae685515e7717ae80abda09de27"
 }

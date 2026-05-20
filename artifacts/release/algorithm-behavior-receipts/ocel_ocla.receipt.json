@@ -1,6 +1,11 @@
 {
   "algorithm_id": "ocel_ocla",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "5696fc675e8bd544fd32ff5ddb45fbce903294c04ee05e31410f28d8947d394b",
-      "duration_ms": 0.014375000000001137,
-      "receipt_hash": "4768a02e469349124907891dba086153e3fc37a17adbe5d9f3d6eda92d02b3a5"
+      "duration_ms": 0.011541999999991504,
+      "receipt_hash": "feb04ac9195673bb54ae5008211ae78c28abb7650ea04cc4c1ed929e29694d50"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "ocel_ocla.empty_log",
+      "case_id": "ocel_ocla.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "eb31f91b4d16b9232d0385d0b44e08b3dc6a8f08934a3968b210b3e5376c4ad4"
+      "receipt_hash": "47e38992257a8f47faab1d6c5ca6c58531186ebafd3f9b16cd8117a86e3ed1fe"
     },
     {
-      "case_id": "ocel_ocla.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "ocel_ocla.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "9ed6119ae4bba538e643cf784ee8f29b1b1e39298f813ae582a17b0f140c243b"
+      "receipt_hash": "5fbaaf3673cccd6f69551b1df6f8e01e9838b6a597d515e576cc03867e9ced5f"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "ocel_ocla.deterministic_same_input",
+      "case_id": "ocel_ocla.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "5696fc675e8bd544fd32ff5ddb45fbce903294c04ee05e31410f28d8947d394b",
       "second_result_hash": "5696fc675e8bd544fd32ff5ddb45fbce903294c04ee05e31410f28d8947d394b",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "9a6fb393352475cd93969d1ac2256da91f25c03fa81da91db2acbf9d1986eb8a"
+  "algorithm_evidence_hash": "9522b9175df7b910a20c580ac81af82bdc4d53517a6414b8fc49eb63725165f7"
 }

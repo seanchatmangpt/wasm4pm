@@ -1,6 +1,11 @@
 {
   "algorithm_id": "compute_ewma",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "bbb6cc56f3b6571a0e72d2b65a1dcb9b185a361b374dfb488a6c30b34f39d2ff",
-      "duration_ms": 0.0818750000000108,
-      "receipt_hash": "645aea752cffb217c9c09a7151a5f82a976575779b783de63256484cbc47bbe9"
+      "duration_ms": 0.01300000000000523,
+      "receipt_hash": "fff9f2dd174c10222770b9588301e1549bdc69999b11d84f7c55de38955b1cdf"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "compute_ewma.empty_log",
+      "case_id": "compute_ewma.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "799194043c1549422803e05c91e2cc7d7bfa6c32e73c74fc8b32610a95678b6e"
+      "receipt_hash": "224416912e01afb3e92a9413147e62dcab923fd5ab9e16f77b6b21669ff523a2"
     },
     {
-      "case_id": "compute_ewma.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "compute_ewma.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "e7bc2df0510527b4f533f18a7a84aba5fc13b61312004368540cc8c93b9d6efd"
+      "receipt_hash": "ee3beae0ade1e11b54982e16e71d37efa95cf8c9cb3a3594a330f78de404e94b"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "compute_ewma.deterministic_same_input",
+      "case_id": "compute_ewma.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "bbb6cc56f3b6571a0e72d2b65a1dcb9b185a361b374dfb488a6c30b34f39d2ff",
       "second_result_hash": "bbb6cc56f3b6571a0e72d2b65a1dcb9b185a361b374dfb488a6c30b34f39d2ff",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "0dfad88cfabf24325f47bac92a4d36104f2c99775f8b2e4bb598695bcc7373f3"
+  "algorithm_evidence_hash": "51513eec42e0edd7415646062a07529d84d35f4ba858d7aea820dbf2016a60d2"
 }

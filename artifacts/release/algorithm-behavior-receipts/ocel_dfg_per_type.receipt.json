@@ -1,6 +1,11 @@
 {
   "algorithm_id": "ocel_dfg_per_type",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "f408555fa653368458e60dabef3521746f187b7dc26668f5a92e04f5405d4619",
-      "duration_ms": 0.012375000000005798,
-      "receipt_hash": "dd5f7bf992a00be9d90670dbc05cf87bea5cc32b35a97b034918a1d362debdcd"
+      "duration_ms": 0.011541999999991504,
+      "receipt_hash": "e3c1d3a9d52146b366779cfd3832cdeab048575f03dfe33b710a10def0920063"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "ocel_dfg_per_type.empty_log",
+      "case_id": "ocel_dfg_per_type.EmptyLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "97bae33800d3f308590b7d577c176e6b0d3630d2e1bcf9bcc766163ee24f609f"
+      "receipt_hash": "cfff7ff634f70f4e459cc0d2f78ce86eea1805c159405eaf179c6b553159c19d"
     },
     {
-      "case_id": "ocel_dfg_per_type.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "ocel_dfg_per_type.MalformedLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "2b69fbfaff1eeff5540ddd9a549b121875c322e199d8974e08eefc1e150b73fa"
+      "receipt_hash": "f861c98828231a57ba9c8de7311846a9fe758356b8dc486689855816ae02c10d"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "ocel_dfg_per_type.deterministic_same_input",
+      "case_id": "ocel_dfg_per_type.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "f408555fa653368458e60dabef3521746f187b7dc26668f5a92e04f5405d4619",
       "second_result_hash": "f408555fa653368458e60dabef3521746f187b7dc26668f5a92e04f5405d4619",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "26ac563cf82f8a25575ec60cb7232cb8636688f85d05d29148c5225deabedd4f"
+  "algorithm_evidence_hash": "cf0ce96e39e0c83306c0ba2e2eb36969e4a5fec6b7cf7eb449aa25d43c2d3d2a"
 }

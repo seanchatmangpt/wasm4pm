@@ -1,6 +1,11 @@
 {
   "algorithm_id": "hill_climbing",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "04b105c1e71422342479fd8430422ec48e44ac1c76006a2bc6cd54ca89a3548b",
-      "duration_ms": 0.014583999999999264,
-      "receipt_hash": "c75af97204b9266a70548c299c168f55ed80716ea2925bdd5148595ed8c144d7"
+      "duration_ms": 0.012541999999996278,
+      "receipt_hash": "1f4413c765c0664f8bcf5095c5699cee5abdcf227e1f54d447dfcd10aca14b07"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "hill_climbing.empty_log",
+      "case_id": "hill_climbing.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "81fa1ee55a5dc2e43b6953460238cd0ad6807b8be82ec6d32346d1436953a059"
+      "receipt_hash": "4935b2edff7e547d279487f5a2d6a2c0f86cc6da189acbd2bcb821038d6baab8"
     },
     {
-      "case_id": "hill_climbing.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "hill_climbing.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "9bd0f8c0e3479e00fed480d485789a706b77df71a9f9ea194c2ede6072eeab65"
+      "receipt_hash": "fee404a02980284a01e477f18bfb96a6673b816eaf127aedc60251e912f66538"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "hill_climbing.deterministic_same_input",
+      "case_id": "hill_climbing.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "04b105c1e71422342479fd8430422ec48e44ac1c76006a2bc6cd54ca89a3548b",
       "second_result_hash": "04b105c1e71422342479fd8430422ec48e44ac1c76006a2bc6cd54ca89a3548b",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "811ed0e0f616df275e77021194217d072436ae28aa12b44ccc9ddcbdc1bf8088"
+  "algorithm_evidence_hash": "e23ccb0e6661d055b7270a310b1d43467913f69aa378ee742afa305c26aeef25"
 }

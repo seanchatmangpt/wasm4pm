@@ -246,3 +246,51 @@ pm:predictionConfidence a rdf:Property ;
     rdfs:label "prediction confidence"@en ;
     rdfs:comment "Confidence of a prediction"@en ;
     rdfs:range xsd:double .
+
+# ─────────────────────────────────────────────────────────────────────────────
+# AutoReceipt & Evidence Manufacturing Concepts
+# ─────────────────────────────────────────────────────────────────────────────
+pm:EvidenceCase a rdfs:Class ;
+    rdfs:label "Evidence Case"@en ;
+    rdfs:comment "A test case required for combinatorial maximalism proof."@en .
+
+pm:PositiveCase a rdfs:Class ;
+    rdfs:label "Positive Case"@en ;
+    rdfs:subClassOf pm:EvidenceCase .
+
+pm:NegativeCase a rdfs:Class ;
+    rdfs:label "Negative Case"@en ;
+    rdfs:subClassOf pm:EvidenceCase .
+
+pm:InvariantCase a rdfs:Class ;
+    rdfs:label "Invariant Case"@en ;
+    rdfs:subClassOf pm:EvidenceCase .
+
+pm:requiresNegativeCase a rdf:Property ;
+    rdfs:label "requires negative case"@en ;
+    rdfs:domain pm:DiscoveryAlgorithm ;
+    rdfs:range pm:NegativeCase .
+
+pm:requiresInvariantCase a rdf:Property ;
+    rdfs:label "requires invariant case"@en ;
+    rdfs:domain pm:DiscoveryAlgorithm ;
+    rdfs:range pm:InvariantCase .
+
+# Specific Required Cases
+pm:EmptyLogCase a pm:NegativeCase ;
+    rdfs:label "Empty Log Case"@en ;
+    pm:expectedErrorCode "EMPTY_EVENT_LOG" .
+
+pm:MalformedLogCase a pm:NegativeCase ;
+    rdfs:label "Malformed Log Case"@en ;
+    pm:expectedErrorCode "MALFORMED_EVENT_LOG" .
+
+pm:MissingFeaturesCase a pm:NegativeCase ;
+    rdfs:label "Missing Features Case"@en ;
+    pm:expectedErrorCode "PREDICTION_FEATURES_REQUIRED" .
+
+pm:SeededRepeatabilityCase a pm:InvariantCase ;
+    rdfs:label "Seeded Repeatability Case"@en .
+
+pm:DeterministicSameInputCase a pm:InvariantCase ;
+    rdfs:label "Deterministic Same Input Case"@en .

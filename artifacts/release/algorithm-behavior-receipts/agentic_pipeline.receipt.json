@@ -1,6 +1,11 @@
 {
   "algorithm_id": "agentic_pipeline",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "a3e46107b6100b0ed2680dc6b9296674bc9394bf9a3653a62ff94f27a193b2e1",
-      "duration_ms": 0.011791999999999803,
-      "receipt_hash": "08ed02289e880fe34ad9b1d4811a7d6243939be49f6c98276d56af6f037fed93"
+      "duration_ms": 0.022291999999993095,
+      "receipt_hash": "52fb7db55ece7c53c36b9ec85e04e980b6fbbead172e5cccd7a45b3256644940"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "agentic_pipeline.empty_log",
+      "case_id": "agentic_pipeline.EmptyLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "25cedfc3e08bcb0b44b0690330eecedf39e8fc91c778ab06e1d45845f46f7517"
+      "receipt_hash": "fe891c4637fa2c42ca0ac894a65412feaf26a01febf7c5d6fdfd436b785198a6"
     },
     {
-      "case_id": "agentic_pipeline.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "agentic_pipeline.MalformedLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "22715794e9c2c3fa1e22b948b07d756a01e5cf9df1a3cf0d4a60db908e71033a"
+      "receipt_hash": "6d95071ed91b7454bfa9b0574ea78a56c7fb3f60c46b2a70734cc1e2fc92f83a"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "agentic_pipeline.deterministic_same_input",
+      "case_id": "agentic_pipeline.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "a3e46107b6100b0ed2680dc6b9296674bc9394bf9a3653a62ff94f27a193b2e1",
       "second_result_hash": "a3e46107b6100b0ed2680dc6b9296674bc9394bf9a3653a62ff94f27a193b2e1",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "fb6d4c0f0e52f3b384d8b36082efc9d36a4fda8a61ab719ce9b7c8e778511866"
+  "algorithm_evidence_hash": "7aa6ca1545f3c3bac2ec7b48ff031ed723759e5549989afef3381f14d67c1ea5"
 }

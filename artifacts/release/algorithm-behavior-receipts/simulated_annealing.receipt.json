@@ -1,6 +1,11 @@
 {
   "algorithm_id": "simulated_annealing",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "ca07ad07d3498d1f652335cc161ed458319ed91e7e44bfc2dc2ed72a62c934a5",
-      "duration_ms": 0.01304099999998698,
-      "receipt_hash": "dc74e9431a289eb9134bcbe7b1173ce602bff63361b4b7e02af08de924a281ed"
+      "duration_ms": 0.025166999999981954,
+      "receipt_hash": "ef5cbde3c35635a0e737939dbbfc49515ac7523c1a25bf8319339b16bbfde509"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "simulated_annealing.empty_log",
+      "case_id": "simulated_annealing.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "52c3c57cf34d4a04525748ad9f6dd647c8c17bebe10a9196b27659c260224d1c"
+      "receipt_hash": "540d731c732f9d692a24088638249df309b5cbb4fac6ad9cc75d3c442b2cd06b"
     },
     {
-      "case_id": "simulated_annealing.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "simulated_annealing.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "7c9fb028e6fdcea9bfa32d8999689b2581eee09e1f4561b57f3455bc30ec87f4"
+      "receipt_hash": "f0695f072c1eca8aaa5445cd5410a1fecfe97289dcb5a3ed61a575f2cad58898"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "simulated_annealing.seeded_repeatability",
+      "case_id": "simulated_annealing.SeededRepeatabilityCase",
       "seed": 42,
       "status": "passed",
       "result_schema_valid": true,
       "fitness_within_expected_range": true
     }
   ],
-  "algorithm_evidence_hash": "ff16b8e1943d7af274764ddf29c92d3511f84afa96590e7077b34f1e67a7a91f"
+  "algorithm_evidence_hash": "3431e0e0740861eac18da77ced3f62fb66a3f93fb9ae09d0a44cbd2442cd787c"
 }

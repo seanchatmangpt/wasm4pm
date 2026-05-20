@@ -1,6 +1,11 @@
 {
   "algorithm_id": "ocel_dfg",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "32c2860b5a1e22450b2ff184f94f6197ffaec646580496928d53683fcd7dbfab",
-      "duration_ms": 0.06229100000000187,
-      "receipt_hash": "6102158c3392d5fef2792a673a156bd1cbe7029c732fc0d11f589ac194318db9"
+      "duration_ms": 0.014083000000027823,
+      "receipt_hash": "f308f933273881059ea4426060a1cbd4a341551143bd2c8bfdd02e9f02fa85c9"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "ocel_dfg.empty_log",
+      "case_id": "ocel_dfg.EmptyLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "ad8caf27d5326a0718dabb9adefff6ce0f8b4f7f4a51482caa3086c07a250fbe"
+      "receipt_hash": "87af2397d2be19ff4b1c7fb523928b6178123e58cfd5ca8c809fd435f467df44"
     },
     {
-      "case_id": "ocel_dfg.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "ocel_dfg.MalformedLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "a1d75dc4da477b2a695372649ef9e7a669c0849a9e127cd9e36adf3eb54a6664"
+      "receipt_hash": "df0fb5d397ee1122770eafe14730962755ad8f79e59b66da8b6eeca07b654731"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "ocel_dfg.deterministic_same_input",
+      "case_id": "ocel_dfg.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "32c2860b5a1e22450b2ff184f94f6197ffaec646580496928d53683fcd7dbfab",
       "second_result_hash": "32c2860b5a1e22450b2ff184f94f6197ffaec646580496928d53683fcd7dbfab",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "7b49baeddba4800c7c5e698b29a5bec7d4262f38a3452257ed1e9bc24efcf4ae"
+  "algorithm_evidence_hash": "b746d7547346e0457465db18605f301d8ecbee712af88a14d1693d9b9935feb6"
 }

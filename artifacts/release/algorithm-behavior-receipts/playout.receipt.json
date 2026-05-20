@@ -1,6 +1,11 @@
 {
   "algorithm_id": "playout",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "10cae287a7517799f217df4620566bd2e2052ec4df4022cb69e331d9fc18539c",
-      "duration_ms": 0.011624999999995111,
-      "receipt_hash": "357858b7b36c956620085cf21577bb9e0f5592fc0fa2745b331dbf8486f11ae0"
+      "duration_ms": 0.013333000000017137,
+      "receipt_hash": "511f157dc93dcb576911de122b6ea01bcb00ba1df42929e157a08260d0cbb0fe"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "playout.empty_log",
+      "case_id": "playout.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "9ce58bce4f2daa57f93f0540497aca81cf965c5872fc0e9a52787c049e0d00d0"
+      "receipt_hash": "b87c653a92a7ad11e7e4b4ff260d9bbfac0f34e48b86b551f6ffb7c5f6418235"
     },
     {
-      "case_id": "playout.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "playout.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "57b88fc3176c80c1440e23f6657aa72f8bf3e2c27b26766eb525a23167f79579"
+      "receipt_hash": "5a85d373e88de94775e8315ff6e4f90f276783d406babe4ed5c27ca52d982d08"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "playout.deterministic_same_input",
+      "case_id": "playout.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "10cae287a7517799f217df4620566bd2e2052ec4df4022cb69e331d9fc18539c",
       "second_result_hash": "10cae287a7517799f217df4620566bd2e2052ec4df4022cb69e331d9fc18539c",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "b366edfcaafaeb722655b8437d85df80bb2da3eb1d60c8f85bb76a895570767d"
+  "algorithm_evidence_hash": "c6b2fb44da653f3bf5781a27ce14087b0f75c9298a883b4c84145480bb40b44c"
 }

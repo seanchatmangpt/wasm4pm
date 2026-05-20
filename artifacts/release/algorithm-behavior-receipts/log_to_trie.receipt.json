@@ -1,6 +1,11 @@
 {
   "algorithm_id": "log_to_trie",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "9b489b4d7bb5a92701b953cd9d90847d9429fb302330c740fb7b4962359a32bf",
-      "duration_ms": 0.04737500000000239,
-      "receipt_hash": "864d1d45056cd3be7f88a23b4ad45bf5f07ae4c14f4e0ede625e3b87d24fb3eb"
+      "duration_ms": 0.07683399999999097,
+      "receipt_hash": "80c1ea417709f3efaa26c9665afd305337e8f683e3e8836fd0e4a185ed494b5f"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "log_to_trie.empty_log",
+      "case_id": "log_to_trie.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "c933a3f6a91705b2a452141f314a5a495652d1caccc42dd4858f0571cc5f3f0f"
+      "receipt_hash": "e249e03586546d5b7e10ea4e0c86f1cee9fb648699f92fbe5914dae5b0637566"
     },
     {
-      "case_id": "log_to_trie.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "log_to_trie.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "aaa928f806c856868be0c1b3469bcfe6b17932b3ec600a881bc50702a4ee76fe"
+      "receipt_hash": "4d7482e629011d2887000e875e8dd792db02416fa0458463aa3aaa3bf2adf8f3"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "log_to_trie.deterministic_same_input",
+      "case_id": "log_to_trie.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "9b489b4d7bb5a92701b953cd9d90847d9429fb302330c740fb7b4962359a32bf",
       "second_result_hash": "9b489b4d7bb5a92701b953cd9d90847d9429fb302330c740fb7b4962359a32bf",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "7c8e2c971080d1ddedff2c5a5cd89e866965f8a7f2dd44a1e652bab1bef6db92"
+  "algorithm_evidence_hash": "38a6ca484324a4a24fc7f4a72ef40b69f51698c1a5283be284a0c20359c13b21"
 }

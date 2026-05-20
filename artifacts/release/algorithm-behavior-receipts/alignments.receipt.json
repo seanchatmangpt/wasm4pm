@@ -1,6 +1,11 @@
 {
   "algorithm_id": "alignments",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "a897bf29208a5f8ecd3c56cf0f486fad0e8f8540e30754fb13e321358a23c848",
-      "duration_ms": 0.027874999999994543,
-      "receipt_hash": "7a4ccc44f54121bbbbb9ed7fa5d3bf7951241c50b91ad069ce018733bd0e7571"
+      "duration_ms": 0.02345900000000256,
+      "receipt_hash": "57e44a83f32d0b33c43e46ddb8ee7b7cb380281a49df30f76d988d1707bfd93e"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "alignments.empty_log",
+      "case_id": "alignments.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "599cb9454a5f8f7aacc300cd67bad3fd203a6830e4a6c42b464134cb112d4891"
+      "receipt_hash": "c03084c6b513a2d319b2cd4ad99a18b391941eaedb8cff4df2729be3e52fea7e"
     },
     {
-      "case_id": "alignments.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "alignments.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "306b97bf3a4e10e217024966a9bde6a0ecf54e0df38cec0ce1eab687c84765f6"
+      "receipt_hash": "0989964acb2ac783130189c0f56520503d34a7b6f3b09596b8f3b18bf3d20b65"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "alignments.deterministic_same_input",
+      "case_id": "alignments.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "a897bf29208a5f8ecd3c56cf0f486fad0e8f8540e30754fb13e321358a23c848",
       "second_result_hash": "a897bf29208a5f8ecd3c56cf0f486fad0e8f8540e30754fb13e321358a23c848",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "0f14cac89b8b44b5e8f0b50369b5da8b0bc8b8697a715877a6f7ad2cbce148fd"
+  "algorithm_evidence_hash": "92d9b504863f9a0fc69f29bb7524db3f72ad5432e9695424c9115daa4a53147a"
 }

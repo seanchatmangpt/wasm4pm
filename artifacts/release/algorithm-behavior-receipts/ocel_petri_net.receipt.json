@@ -1,6 +1,11 @@
 {
   "algorithm_id": "ocel_petri_net",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "a74e9b85a5092c75a9787bb87f6019c4a3c733966f8edf496d9b2120261d981d",
-      "duration_ms": 0.01679099999999778,
-      "receipt_hash": "151f6a015eea08a71d013300c2c2dbc450fe5e5e6fba138ebbd4e1d0ef54394d"
+      "duration_ms": 0.02662499999999568,
+      "receipt_hash": "85b2777f6abf9cceb138209b8c40799400f08789f17edcd8ec8d76ed5b737f68"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "ocel_petri_net.empty_log",
+      "case_id": "ocel_petri_net.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "7a2125c80c93a3f51dfcf53a236c0b7c97ccace1eaaab1dad39e584c4c743590"
+      "receipt_hash": "772f1418ee608d44955b5f85e6786697bdbd0248534106f89ae6d5a4243d70b9"
     },
     {
-      "case_id": "ocel_petri_net.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "ocel_petri_net.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "6b51198991a237f8ed22b2b3a3b8a5a69fccc97200f035c1a7f33a5f2f35695f"
+      "receipt_hash": "d19d6e069573b8cdd68541d50a044d59aa3ce59d5d1f9a9c4e3966d1cc7efd14"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "ocel_petri_net.deterministic_same_input",
+      "case_id": "ocel_petri_net.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "a74e9b85a5092c75a9787bb87f6019c4a3c733966f8edf496d9b2120261d981d",
       "second_result_hash": "a74e9b85a5092c75a9787bb87f6019c4a3c733966f8edf496d9b2120261d981d",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "6fdcb83797989d05595d61a25768dc97578415fc777052d11291deeb311f1e1f"
+  "algorithm_evidence_hash": "eae508f32c8b48426e9e5b75b31ff5b949190b09c3c107525e3b4f2c3276fa18"
 }

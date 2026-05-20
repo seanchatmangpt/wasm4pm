@@ -1,6 +1,11 @@
 {
   "algorithm_id": "detect_drift",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "ef9a6bee176c5edfc519cffcc2096f9617ed22441d92c688f6eec2591baec283",
-      "duration_ms": 0.01274999999999693,
-      "receipt_hash": "5776e5c7e6ed19f51f1f3a93c34e3867854e8bd36778fa6b8e3777df9c3b9f2a"
+      "duration_ms": 0.012833000000000538,
+      "receipt_hash": "9574c4c5e56c62459c0b1492bafbf7229c0a745e50080ac3fe7a1b3fafaa3cf9"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "detect_drift.empty_log",
+      "case_id": "detect_drift.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "d4815db9322e62cb274a79cc7b5886455ba17a4fb16ff3a8400e5a12e301a0f4"
+      "receipt_hash": "3444830502f85c97f0d729642ee95e1501f23096baa6e9860fae12038f46f524"
     },
     {
-      "case_id": "detect_drift.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "detect_drift.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "9f88c3e474797fa4fa5add35e7e2fcafacfe37789c6a1533da175ba32013b355"
+      "receipt_hash": "28dac701532de528aaf479a3d5a9d610493f1ba53152357dbb25cd41e41d1e99"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "detect_drift.deterministic_same_input",
+      "case_id": "detect_drift.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "ef9a6bee176c5edfc519cffcc2096f9617ed22441d92c688f6eec2591baec283",
       "second_result_hash": "ef9a6bee176c5edfc519cffcc2096f9617ed22441d92c688f6eec2591baec283",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "aebfe24eb5fba3aacfa4bb605f44e75cc6f746bb98a2c38468f1fa32fef21fe4"
+  "algorithm_evidence_hash": "a294a928e21cf6719e3dcf53d64db05ae49d737d9ed4f35140a8196c4669bf78"
 }

@@ -1,6 +1,11 @@
 {
   "algorithm_id": "etconformance_precision",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "3177e3662cdc5c13b88480fd4abd02627ef2484d304616f39ac58ebe4424e380",
-      "duration_ms": 0.016000000000005343,
-      "receipt_hash": "cca1ff2ccf3fcbf59cd1cbf02cf3d495d101c8b15bf36f17a85b37db45fe7ddc"
+      "duration_ms": 0.014791999999999916,
+      "receipt_hash": "8d110a9d4678df497f18b4196a81e461130704cd1b15eb1f4864be8dce65f180"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "etconformance_precision.empty_log",
+      "case_id": "etconformance_precision.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "30ba2834869b7aba758ed037c3bd43d39394d0b5c684d6628d3fd506bd765b90"
+      "receipt_hash": "db2df7fec652a5cf3171ac5327e2e5d3831e7ee1ba174504cb3b02e4361ecb9a"
     },
     {
-      "case_id": "etconformance_precision.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "etconformance_precision.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "7fbea3302653df6a12211deaf291eb5d924d47f668e1a078cdea0d36e3fd00a8"
+      "receipt_hash": "1ccb68048f215d817b4658ca17f0978279a55f5ae5bb7c0a97f18928ea8c609c"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "etconformance_precision.deterministic_same_input",
+      "case_id": "etconformance_precision.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "3177e3662cdc5c13b88480fd4abd02627ef2484d304616f39ac58ebe4424e380",
       "second_result_hash": "3177e3662cdc5c13b88480fd4abd02627ef2484d304616f39ac58ebe4424e380",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "2417ce7705cb725d8f65636c7e49c6577e4311d44fb155ad1b42c7645ccfb967"
+  "algorithm_evidence_hash": "6cb5064e08d2d5f5bea3520e08f344f1c187f5d9aeea03b9a63804ffd6108b62"
 }

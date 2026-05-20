@@ -1,6 +1,11 @@
 {
   "algorithm_id": "correlation_miner",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "be0430e22b7e33150a81a5743482fc5cd84615f1ee9e7d03dd71ee6045bb1a84",
-      "duration_ms": 0.013958999999999833,
-      "receipt_hash": "31fbbe3423572a2c69d615c53e61a3550353b20bf383969141985234cfd67319"
+      "duration_ms": 0.01258300000000645,
+      "receipt_hash": "ef3b927c736797f0003eceefc7c86cc46fc45e37b19d785416cc30c7dc34ca23"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "correlation_miner.empty_log",
+      "case_id": "correlation_miner.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "55f35db3bf41856eb1fadb5c856089aa413032d0df107deca5d2852f12d4d37f"
+      "receipt_hash": "24fee40363bc5eeb70c37f948dbc7413a359ff8e3ded0e8292e64f4d4cedab0a"
     },
     {
-      "case_id": "correlation_miner.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "correlation_miner.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "454ce0dcc09317b8ae5c83ebeb12497238dddbc12bb4fd03592e8b12c8ef0e83"
+      "receipt_hash": "a2fa0cf8c2f8966da65739d90e012f58e81502a294e8749867a746d6cef108aa"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "correlation_miner.deterministic_same_input",
+      "case_id": "correlation_miner.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "be0430e22b7e33150a81a5743482fc5cd84615f1ee9e7d03dd71ee6045bb1a84",
       "second_result_hash": "be0430e22b7e33150a81a5743482fc5cd84615f1ee9e7d03dd71ee6045bb1a84",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "ac9a4c18984799e41f189be9ffd15476ce42817c67ff305987a88e7d8da9d1a5"
+  "algorithm_evidence_hash": "a6260935a8e8b263a24902eef6a564dd9447d9af0a3d31f84a79b708e55b2cbf"
 }

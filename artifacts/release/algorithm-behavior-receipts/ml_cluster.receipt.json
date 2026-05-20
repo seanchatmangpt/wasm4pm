@@ -1,6 +1,11 @@
 {
   "algorithm_id": "ml_cluster",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "b3489ecb254f25844799a9d2bbb85703d7b79af2563a3f71565eb2fb7123c835",
-      "duration_ms": 0.015249999999994657,
-      "receipt_hash": "92c378eaaecd2fd361117d8afc932255d02f9136a50d6f593189978292753fde"
+      "duration_ms": 0.012042000000008102,
+      "receipt_hash": "9e4bd4c5cdac05a54fa4392d727a4f6dbc6c4cae50db364bad3acad6a23f35a6"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "ml_cluster.empty_log",
+      "case_id": "ml_cluster.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "454e055b8e1aafbb5a9846dfbfb77339174428187ec63f4b4e6d7c610fbb6d66"
+      "receipt_hash": "cd2eb8dda5914eb863144039b56531c425b1e69cf7b685a2c4c2dec832239fe1"
     },
     {
-      "case_id": "ml_cluster.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "ml_cluster.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "PREDICTION_FEATURES_REQUIRED",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "d77e9f7dab138bc99e563be052c33932029c38669aa5e987f215cb1680e0214e"
+      "receipt_hash": "1099c8154bb5e31e099849022839faa4d23ffbe04357f1c6951e4c8ef4384bbf"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "ml_cluster.deterministic_same_input",
+      "case_id": "ml_cluster.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "b3489ecb254f25844799a9d2bbb85703d7b79af2563a3f71565eb2fb7123c835",
       "second_result_hash": "b3489ecb254f25844799a9d2bbb85703d7b79af2563a3f71565eb2fb7123c835",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "0721cfdf871bab29263c2d9c33c2d2fae019748a54099a4eef2f6da488086eb8"
+  "algorithm_evidence_hash": "8b048921c5a64cc88a48d77992921b3c3ea83c1f0c597286d6c5232c90963362"
 }

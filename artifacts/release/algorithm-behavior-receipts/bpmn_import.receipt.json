@@ -1,6 +1,11 @@
 {
   "algorithm_id": "bpmn_import",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "9c467a9135920ec48b68a5a77ff7e58a0d8cf33c80e4c0c3bf1837854dc90d14",
-      "duration_ms": 0.01187500000000341,
-      "receipt_hash": "b794741e042941dc11a12f52c82410eaf2df5cf529e21dadc9764ad0e52051d5"
+      "duration_ms": 0.014915999999999485,
+      "receipt_hash": "8ee49554d6c463fc58b85425fd7bc87f9db52f32708a777548ad0b9ec1ddfbdd"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "bpmn_import.empty_log",
+      "case_id": "bpmn_import.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "bb57186cba186c54c9fc993474844b41a28afaf42ce3a6d1afee4e315aa298a3"
+      "receipt_hash": "624f23018d158530fe5c5003606b77d6684e71c935af8e1e5cdc5fb42cc44b1e"
     },
     {
-      "case_id": "bpmn_import.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "bpmn_import.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "65905ea352c8c8d5a654fb87043674b832d9f2932d2d57422ab547faf2419a8f"
+      "receipt_hash": "ee68f8eab43a47f67cd994b00394b8782e76496c7358d91530e536c13c320f1c"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "bpmn_import.deterministic_same_input",
+      "case_id": "bpmn_import.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "9c467a9135920ec48b68a5a77ff7e58a0d8cf33c80e4c0c3bf1837854dc90d14",
       "second_result_hash": "9c467a9135920ec48b68a5a77ff7e58a0d8cf33c80e4c0c3bf1837854dc90d14",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "afb886fa12754458dfa3ecd9ec1a97e9196d96d71c34ce843e018843c1908980"
+  "algorithm_evidence_hash": "937994a9960a23ecd1ce9b0a15b1a590ece614483c6dfc70c1ce6a9cb3e8a8a5"
 }

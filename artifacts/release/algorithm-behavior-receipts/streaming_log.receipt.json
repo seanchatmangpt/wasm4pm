@@ -1,6 +1,11 @@
 {
   "algorithm_id": "streaming_log",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "de395a186c18d223ec81f437b6d0f23362383987054d403674cb52ebb63b0795",
-      "duration_ms": 0.030457999999995877,
-      "receipt_hash": "332f3d652e5c787dc06d3176c2cc60ab2e60c46b82870a4b7d7d44d4901eb224"
+      "duration_ms": 0.018124999999997726,
+      "receipt_hash": "69e7a9ffc5d756db3d78de24f527c3ad66177e943cda0fc0176dfaa732110912"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "streaming_log.empty_log",
+      "case_id": "streaming_log.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "94a7e7c8a8348e4e09ba6a3c7859e7bbb732cc4e1b0cdb89c9da5a0aca3c6a0c"
+      "receipt_hash": "9ab023a03ad2a42bd079bc6f735d8c8dd5ef3c1cd454a73aec15533d7540c493"
     },
     {
-      "case_id": "streaming_log.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "streaming_log.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "8de80896c83f94c212c2b3be1f0b515fb1ed8201a149fc9239d3eddda9c59974"
+      "receipt_hash": "5480df3e485510147163c055211c504b4131b3b9470e701357b4a982acc3702c"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "streaming_log.deterministic_same_input",
+      "case_id": "streaming_log.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "de395a186c18d223ec81f437b6d0f23362383987054d403674cb52ebb63b0795",
       "second_result_hash": "de395a186c18d223ec81f437b6d0f23362383987054d403674cb52ebb63b0795",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "015d1d64e18b096fab5c6ee1c1cd71f56a5ff81bfeee19f86198d0d07d816aed"
+  "algorithm_evidence_hash": "ae5cdeadff4470a3ab51e9fc3e0d65fab67b277a40aaed1769ac6b991b151418"
 }

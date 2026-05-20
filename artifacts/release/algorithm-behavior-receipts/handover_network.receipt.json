@@ -1,6 +1,11 @@
 {
   "algorithm_id": "handover_network",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "6bf9a6eccd494d097207da2361a1aefc8c6809922c87f5e682db66624349613f",
-      "duration_ms": 0.023791000000002782,
-      "receipt_hash": "0ad7106c496489414f2c228a89c8ae0b18e3305644728b7f9dce82128d4df181"
+      "duration_ms": 0.014999999999986358,
+      "receipt_hash": "9a1682efd1cd17948cb8dcfa01c89b50b304de9137fb170cc4d4f48e90762143"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "handover_network.empty_log",
+      "case_id": "handover_network.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "a03a820811da94a93b16d7e3f4951144021d25e36af9da8af50da2c76b1c5788"
+      "receipt_hash": "b7544cccccf4b2dfe4e6a5c2322cef411a07a97201b852232d1a3bfb28045e09"
     },
     {
-      "case_id": "handover_network.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "handover_network.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "c523eff654d7921ea3ef9cc8f88739c9751d675d5c5e610288966038b308186e"
+      "receipt_hash": "653aa66ed3d2894c83e4d1770f93bade6c55f86fd2d2ab3c6d871926fb780c26"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "handover_network.deterministic_same_input",
+      "case_id": "handover_network.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "6bf9a6eccd494d097207da2361a1aefc8c6809922c87f5e682db66624349613f",
       "second_result_hash": "6bf9a6eccd494d097207da2361a1aefc8c6809922c87f5e682db66624349613f",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "d96de1a87dc95e5def2021ec3a3ba77c3efe007233e839c9b4ab09e6271940a6"
+  "algorithm_evidence_hash": "7f0e16eef3576e6fb4853eb12e85fe8bfad3417eb3656bb4d66c7c531ca9f5dd"
 }

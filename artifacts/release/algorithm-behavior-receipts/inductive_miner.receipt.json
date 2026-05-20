@@ -1,6 +1,11 @@
 {
   "algorithm_id": "inductive_miner",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "29162c8840b584f51557650da88f7c35f5bcef7cc0b2279dc24be2f2383738d9",
-      "duration_ms": 0.014667000000002872,
-      "receipt_hash": "b4a880f27f2eb8633cd5d19b9cb37cb8ad7ed420fe5db0cdbf7772260b46831e"
+      "duration_ms": 0.012541999999996278,
+      "receipt_hash": "2220e688f25cfa85f6504c67a91832f3c20e7ce1c1226760c811f8ab2b8cab26"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "inductive_miner.empty_log",
+      "case_id": "inductive_miner.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "6898bad4dba1f081ee72f73d431588e8d304fae3bb9edacb50ac8a915358dfae"
+      "receipt_hash": "9f4b41377af667e9ba401a9f5851f446c33207f11d830aa4e5a1a62a8e930485"
     },
     {
-      "case_id": "inductive_miner.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "inductive_miner.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "ffee9a5d32472c6bc4693de2b57457cf1b41e5baf1463c59f43d7daca0d870a2"
+      "receipt_hash": "ed76821463589cdbba46ea507d3ab069bd9589de1eae2bb0fee5f785020aa4fc"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "inductive_miner.deterministic_same_input",
+      "case_id": "inductive_miner.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "29162c8840b584f51557650da88f7c35f5bcef7cc0b2279dc24be2f2383738d9",
       "second_result_hash": "29162c8840b584f51557650da88f7c35f5bcef7cc0b2279dc24be2f2383738d9",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "8c2d3264c9d62710aa6fc17148417c9447fb5495bcb2728602800b11c39f25c0"
+  "algorithm_evidence_hash": "e292ab6b502cf85fec586de3809ccbfc98516993a34f1be6ea7199029bd7767f"
 }

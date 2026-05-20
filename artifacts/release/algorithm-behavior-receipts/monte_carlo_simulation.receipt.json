@@ -1,6 +1,11 @@
 {
   "algorithm_id": "monte_carlo_simulation",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "974f03d133c9813258c2f97b90c056c89fbaca953868a18ead04b8c78dd8450f",
-      "duration_ms": 0.013333000000002926,
-      "receipt_hash": "ed2502eb9598ea27174130786bf4633ee83d398ed9253988decb066c247b7f99"
+      "duration_ms": 0.011792000000014013,
+      "receipt_hash": "5b906479a041329c6e7071888e17baa77bce35ccf568b60bc735c10ce4f0a9ec"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "monte_carlo_simulation.empty_log",
+      "case_id": "monte_carlo_simulation.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "f19ad560aae2d918e6f7ff0f4fac9817446684c63bbbfd8104d977333e1f87bb"
+      "receipt_hash": "6f48b7c427ad9d3a022c8296137e23410f9aa79ede881a2c91ade84d3959c7f2"
     },
     {
-      "case_id": "monte_carlo_simulation.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "monte_carlo_simulation.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "59e0c71917f3aca50114ffcefddc2ed6dc914df0721382c06e8ab8e03c4ccb0f"
+      "receipt_hash": "7c5297cc7c85b32d4acf5418ee78ee5713486b061f8d1bc6c36f61bf9f82ef34"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "monte_carlo_simulation.deterministic_same_input",
+      "case_id": "monte_carlo_simulation.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "974f03d133c9813258c2f97b90c056c89fbaca953868a18ead04b8c78dd8450f",
       "second_result_hash": "974f03d133c9813258c2f97b90c056c89fbaca953868a18ead04b8c78dd8450f",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "f2e4aac74137391a2b7424790f3bfd0e8717141889c424e8693becb0843e56cd"
+  "algorithm_evidence_hash": "236256964550ea04f552881baf4334ea0d8909e308a4de9becb0c2d57b7afe1a"
 }

@@ -1,6 +1,11 @@
 {
   "algorithm_id": "pnml_import",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "5b8bd443d813472620cb29d6907fd5ee3d2b4933f57c17cae284b685369a2c84",
-      "duration_ms": 0.012584000000003925,
-      "receipt_hash": "34d570ee6b75dc0b0654063a30f9bbfb11cb816a09c8c98cf20a7a87c4703555"
+      "duration_ms": 0.014833000000010088,
+      "receipt_hash": "7a690af428a84b32654b63b1e7dc48b463f535e847ea0c7b19e66483f3e9f8c9"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "pnml_import.empty_log",
+      "case_id": "pnml_import.EmptyLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "7075ce63432f4a08d39310756ead9b50f991f5dbf95d34c8eb7f62c1be210a4e"
+      "receipt_hash": "550a97bb4bb099581367ff82a3e356dcaeaaa5ea0dddc52a46136019e35c81f0"
     },
     {
-      "case_id": "pnml_import.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "pnml_import.MalformedLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "f8725e25e051ba300852f09f85bf190827bb3ebe1c7f71232ef1ab4df5c6cee5"
+      "receipt_hash": "4ae2d02cb0dbf84d4a8c1d54464f596522e05ab7493a218c8c7cccc7abcd4726"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "pnml_import.deterministic_same_input",
+      "case_id": "pnml_import.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "5b8bd443d813472620cb29d6907fd5ee3d2b4933f57c17cae284b685369a2c84",
       "second_result_hash": "5b8bd443d813472620cb29d6907fd5ee3d2b4933f57c17cae284b685369a2c84",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "a73766d20d15f2fec0b768854253be995babfa0db9f50d1b9f0d00beda5d0691"
+  "algorithm_evidence_hash": "80cc79adba5d6cc3102c1a7f301f45069165ec6fedb1bbe83b8157e6bf9f377e"
 }

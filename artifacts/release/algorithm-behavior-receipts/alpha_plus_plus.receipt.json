@@ -1,6 +1,11 @@
 {
   "algorithm_id": "alpha_plus_plus",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "2dd501e4ee20ea2e7dac3e7a0662fd3d8e6666a0c637543499167f683412f36b",
-      "duration_ms": 0.01679099999999778,
-      "receipt_hash": "2c226159d00ce3a3d09b815207a31a4b1c2ca33403edc93103bb20a16aee12b1"
+      "duration_ms": 0.015332999999998265,
+      "receipt_hash": "8a936cb4d2ff10060e9ba71732266e0d220d67a7253d6bd0c54706522a1049a3"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "alpha_plus_plus.empty_log",
+      "case_id": "alpha_plus_plus.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "6874b72df4adef830c676e63187524b48882d5358032267a15f879cf52ecd3ee"
+      "receipt_hash": "be644c9802e003626816d50f82e1e0d62f38605c76d8d4a6524bce7d68c8bd1b"
     },
     {
-      "case_id": "alpha_plus_plus.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "alpha_plus_plus.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "be19072222a6de2940ceb4757ba6baeeeeef92c0adf4bf8765bb20a3e35484ed"
+      "receipt_hash": "150f349a4a6c705307c0b74ea7b18e982761ed3b7f5f36ce92bdf958d5538172"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "alpha_plus_plus.deterministic_same_input",
+      "case_id": "alpha_plus_plus.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "2dd501e4ee20ea2e7dac3e7a0662fd3d8e6666a0c637543499167f683412f36b",
       "second_result_hash": "2dd501e4ee20ea2e7dac3e7a0662fd3d8e6666a0c637543499167f683412f36b",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "589e136dbefe12cf150ea73c4bf186b7cfce5ba171495c22a035335f3ce9210b"
+  "algorithm_evidence_hash": "56c5253a65f20d35e7d734ed8ad68e9342b9e2a7e445023c6d584e2dcccbfa91"
 }

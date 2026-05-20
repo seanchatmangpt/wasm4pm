@@ -1,6 +1,11 @@
 {
   "algorithm_id": "generalization",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "2df92c3809127109165db2fea093e5134407d5d814e2e7eb77cb6f1a40e2d73c",
-      "duration_ms": 0.015083000000004176,
-      "receipt_hash": "e0140b10ac38dfd3beeb1aeb548f6172e6a158a9de626466d352d3fae40f3cca"
+      "duration_ms": 0.012416000000001759,
+      "receipt_hash": "f8a7fdc028397e19e17ebe406a973fe15866da3985b1627e609569ac2bc9881b"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "generalization.empty_log",
+      "case_id": "generalization.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "3dd54f4e3d71019de7a1bfc46110b51b5084d82b8c88c940f29ccc7ebd001523"
+      "receipt_hash": "3c8eee009805a9f1b36b6cb17319a4565cdfe0d090fee75f42ae0969e9896de3"
     },
     {
-      "case_id": "generalization.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "generalization.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "d53dcdffb12bb9611af10ebd1474143f84cdcc6cf0522d13bdf6a88ebb81b0c5"
+      "receipt_hash": "dfd5ecf8030e64c75e48f4fa041473d8dc2be6c6d3db29d995b6716ac094e485"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "generalization.deterministic_same_input",
+      "case_id": "generalization.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "2df92c3809127109165db2fea093e5134407d5d814e2e7eb77cb6f1a40e2d73c",
       "second_result_hash": "2df92c3809127109165db2fea093e5134407d5d814e2e7eb77cb6f1a40e2d73c",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "2a312c46237544a88944ad282fdb2c5932735a6f0fd449eb28974a4bb103717e"
+  "algorithm_evidence_hash": "2c004878d5a6b61547b0b9ed1a84d9cb9fd6f6930b4cbcf907736c15b886e4c9"
 }

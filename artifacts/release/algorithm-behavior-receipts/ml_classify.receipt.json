@@ -1,6 +1,11 @@
 {
   "algorithm_id": "ml_classify",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "666a34588ea776f9291a2191399d0c75c262a487ee42d966ccc5cb106e64de70",
-      "duration_ms": 0.02291599999999505,
-      "receipt_hash": "7e859a7f7318bb7801d1819a5012fb3bdc5de5ff5ae974384d578d95fbe79880"
+      "duration_ms": 0.012500000000017053,
+      "receipt_hash": "7d1c98609bb81933af52d9fea06c6c96e5e282f8c4e2c60c954b5f66db59bde4"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "ml_classify.empty_log",
+      "case_id": "ml_classify.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "4b29b5830388d5a788a5e3d155f40d25621d4c49ce74c9f2fae81433c2a13392"
+      "receipt_hash": "0c60434429d87a6b4b68b9a9d35b6ab4cb4e2983fe1cd4a3aac90282b2a4edb3"
     },
     {
-      "case_id": "ml_classify.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "ml_classify.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "PREDICTION_FEATURES_REQUIRED",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "de6985f4d154aa29d80b3204dcc10dbfd7d8f934b348b2de6854d3bfa7a3b46c"
+      "receipt_hash": "5842720d08f4653c95d9e9b61428a0b78e3a102752abbc4981caf4805307fb19"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "ml_classify.deterministic_same_input",
+      "case_id": "ml_classify.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "666a34588ea776f9291a2191399d0c75c262a487ee42d966ccc5cb106e64de70",
       "second_result_hash": "666a34588ea776f9291a2191399d0c75c262a487ee42d966ccc5cb106e64de70",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "2bfa95361fc472328fb597ae0cb73528951624d03199e9f905bf2d5779e8cec2"
+  "algorithm_evidence_hash": "b8a7d55ac53ef0a12f2b045a4f9fd0231e3c3872380ff10187388927294ebf6a"
 }

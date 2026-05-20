@@ -1,0 +1,24 @@
+PREFIX pm: <http://purl.org/pm/ontology#>
+PREFIX wpm: <urn:wasm4pm:>
+PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
+
+SELECT ?id ?name ?neg_case ?neg_code ?inv_case
+WHERE {
+  ?algo a pm:DiscoveryAlgorithm ;
+        rdfs:label ?name .
+  FILTER(STRSTARTS(STR(?algo), "urn:wasm4pm:algo_"))
+  
+  BIND(REPLACE(STR(?algo), "urn:wasm4pm:algo_", "") AS ?id)
+  
+  OPTIONAL {
+    ?algo pm:requiresNegativeCase ?negNode .
+    ?negNode pm:expectedErrorCode ?neg_code .
+    BIND(REPLACE(STR(?negNode), "http://purl.org/pm/ontology#", "") AS ?neg_case)
+  }
+  
+  OPTIONAL {
+    ?algo pm:requiresInvariantCase ?invNode .
+    BIND(REPLACE(STR(?invNode), "http://purl.org/pm/ontology#", "") AS ?inv_case)
+  }
+}
+ORDER BY ?id

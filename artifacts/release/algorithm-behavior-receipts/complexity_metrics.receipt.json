@@ -1,6 +1,11 @@
 {
   "algorithm_id": "complexity_metrics",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "22932bfa58b28f6767d6a1fb1b30e7efbd641d0441a71709e4fb93f40e19d85e",
-      "duration_ms": 0.015583000000006564,
-      "receipt_hash": "dd8ea2bb9b0ad0ee25817ec9fd652b858a4363713245937d51b1762f2971f876"
+      "duration_ms": 0.013917000000020607,
+      "receipt_hash": "1ec7d68b6388c6d0628ef2f18611ca2112efdd0bb067c51f30297955d083304e"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "complexity_metrics.empty_log",
+      "case_id": "complexity_metrics.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "c0d4e4a17bc358bb255db257d5f5ade530471389d795d9177581bca1a53807dd"
+      "receipt_hash": "3f3ae3a8ec706303d1b794b8d21bdd293d963e0a76cdcf90733523c65a92e9f4"
     },
     {
-      "case_id": "complexity_metrics.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "complexity_metrics.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "58401cce7905b1c761fe561fd501c22f05e2ce6772248319e910096661c0c237"
+      "receipt_hash": "01fa8ed69e13cbc70757fa82fe61c2de3ded24e29b208f9207f40a2d2b31e6be"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "complexity_metrics.deterministic_same_input",
+      "case_id": "complexity_metrics.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "22932bfa58b28f6767d6a1fb1b30e7efbd641d0441a71709e4fb93f40e19d85e",
       "second_result_hash": "22932bfa58b28f6767d6a1fb1b30e7efbd641d0441a71709e4fb93f40e19d85e",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "b31efe082900482654425a8db4b445f5554d1a3815b51863e82240c6390d6b6a"
+  "algorithm_evidence_hash": "c09f24cc5036eaf633f646bbecc6a400fd0fc888d0c835ae48eb55ecf25d2b14"
 }

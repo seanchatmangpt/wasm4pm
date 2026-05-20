@@ -1,6 +1,11 @@
 {
   "algorithm_id": "automl_forecast",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "f5fc00a0bac34f3f7eda2600e9f8c111dbaf1120b4fbe05b242f32f0ead7e9ee",
-      "duration_ms": 0.01158399999999915,
-      "receipt_hash": "b04d835220206b794605501de450b37986d0a59423a67aa60f4e39b22525c443"
+      "duration_ms": 0.024750000000011596,
+      "receipt_hash": "086c6fe0a5504de75ae39a009012b44fa040fbf06055d21b5156b329dc0636de"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "automl_forecast.empty_log",
+      "case_id": "automl_forecast.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "d83634a4c6fce016fa3b141e7843eba5429311c1ea7ecf9cac60b2aba5bacb39"
+      "receipt_hash": "9a81ff3fd26537c409e98f265ddec1b99d66213dda03316d7f775745ccec2b90"
     },
     {
-      "case_id": "automl_forecast.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "automl_forecast.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "e783c36f06868a115744c8774ce7c5c967eff3628d4838f002e92b84501f9c1e"
+      "receipt_hash": "eb9347ab8422ef507decb93ec8ae9cf0d71ba18e0aaa45447c364d50411221db"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "automl_forecast.deterministic_same_input",
+      "case_id": "automl_forecast.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "f5fc00a0bac34f3f7eda2600e9f8c111dbaf1120b4fbe05b242f32f0ead7e9ee",
       "second_result_hash": "f5fc00a0bac34f3f7eda2600e9f8c111dbaf1120b4fbe05b242f32f0ead7e9ee",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "3bb75e39d6f26ab91bd48d591b9f708f0d10555a06c8accec7eb7e1bc6e7511f"
+  "algorithm_evidence_hash": "6a16417d64c67a22bcec33d737dcde7e896440f2703d56ac53d5e04d9b67a5c1"
 }

@@ -1,6 +1,11 @@
 {
   "algorithm_id": "analyze_variant_complexity",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "89f2c5c973519a7f01cc069fe98c22af96c6b36db0e060a3d06dd223db6d6347",
-      "duration_ms": 0.013917000000006396,
-      "receipt_hash": "6c419cd188d2f70c6bb3c33925580a729bd2845b9703c5ec75a2585592709815"
+      "duration_ms": 0.022334000000000742,
+      "receipt_hash": "8a6326ac6f99729acc39b50bc33f0d9af30bf4e241d1a515643dbfda62627cd9"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "analyze_variant_complexity.empty_log",
+      "case_id": "analyze_variant_complexity.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "9b12e69678c06fd773248c19bf0c88224e808208e7049804d4c00f8f488175c6"
+      "receipt_hash": "5672a566b5e075ecbfc269a08a708c4dafd099b4b2b6e01ff21a71f06013b9f7"
     },
     {
-      "case_id": "analyze_variant_complexity.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "analyze_variant_complexity.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "fd0dc4e79343bc62daf805ecec85c0a25349b4f1ae69aa94a43edb09192cb372"
+      "receipt_hash": "17e39ba0e36878e7dc3ff8edc48df9fd3da16bfd6475176329c5cd231d7d625d"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "analyze_variant_complexity.deterministic_same_input",
+      "case_id": "analyze_variant_complexity.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "89f2c5c973519a7f01cc069fe98c22af96c6b36db0e060a3d06dd223db6d6347",
       "second_result_hash": "89f2c5c973519a7f01cc069fe98c22af96c6b36db0e060a3d06dd223db6d6347",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "d21e08949a6a3f7bdffb8dfd37c4ea3da53797f525c8767f8aab745ca89b50f9"
+  "algorithm_evidence_hash": "5901d60e2c0334334664c4631afc866cba5e1b07bc11381e911b8c622c31e73b"
 }

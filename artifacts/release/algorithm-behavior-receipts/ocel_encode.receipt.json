@@ -1,6 +1,11 @@
 {
   "algorithm_id": "ocel_encode",
-  "profiles": [],
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
   "registry_present": true,
   "ts_dispatch_present": true,
   "cli_present": true,
@@ -11,38 +16,38 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "c01bf515c638cf33aeefa6282f0a0d73bf719432f17602c3d75dfd411093be98",
-      "duration_ms": 0.017165999999988912,
-      "receipt_hash": "caeb2af2af3edd1b3ac977e008746b07fad06b1416abe613aff78ccc7b464b8e"
+      "duration_ms": 0.011625000000009322,
+      "receipt_hash": "5d0ef05b7a35c9989219b06473040609dbfe531df175dce0a1ba00ac76b70a0d"
     }
   ],
   "negative_cases": [
     {
-      "case_id": "ocel_encode.empty_log",
+      "case_id": "ocel_encode.MalformedLogCase",
       "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "5fe8fc0d554da16777ddede6edd76f6c40ce044c1f66bbaf15b015a300c23d9f"
+      "receipt_hash": "e7a39342dba86fa1dfa2613ac5045ed24fc2bd5054b348b4fe054e94d1845039"
     },
     {
-      "case_id": "ocel_encode.malformed_log",
-      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "case_id": "ocel_encode.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
       "status": "failed_correctly",
-      "error_code": "MALFORMED_EVENT_LOG",
+      "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "5bcd6a9faba95be4e62eb29b0bf6cb8473fa5e16a0ee63621e2d97e90f9b8e66"
+      "receipt_hash": "d9b995477711fb31d5362a8506e65514c563569ad3f74ef4e2ee95751576a051"
     }
   ],
   "invariant_cases": [
     {
-      "case_id": "ocel_encode.deterministic_same_input",
+      "case_id": "ocel_encode.DeterministicSameInputCase",
       "status": "passed",
       "first_result_hash": "c01bf515c638cf33aeefa6282f0a0d73bf719432f17602c3d75dfd411093be98",
       "second_result_hash": "c01bf515c638cf33aeefa6282f0a0d73bf719432f17602c3d75dfd411093be98",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "ea712ad01cab9136cfdbc9671995b94644056562da6827e2583ed63aa7aaeb5d"
+  "algorithm_evidence_hash": "80da2fa9f18a0b91ce714f1f9ed11a12db531303856d3eb1ff2f845163324308"
 }
