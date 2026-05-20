@@ -1,0 +1,369 @@
+{
+  "package": "wasm4pm",
+  "version": "26.5.19",
+  "generated_at": "2026-05-20T02:00:15.133Z",
+  "algorithm_count": 60,
+  "algorithms": [
+    {
+      "id": "dfg",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "process_skeleton",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "alpha_plus_plus",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "heuristic_miner",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "inductive_miner",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "genetic_algorithm",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "pso",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "a_star",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "hill_climbing",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "aco",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "simulated_annealing",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "declare",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "optimized_dfg",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "ilp",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "simd_streaming_dfg",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "hierarchical_dfg",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "streaming_log",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "smart_engine",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "ml_classify",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "ml_cluster",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "ml_forecast",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "ml_anomaly",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "ml_regress",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "ml_pca",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "transition_system",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "log_to_trie",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "causal_graph",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "performance_spectrum",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "batches",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "correlation_miner",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "generalization",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "etconformance_precision",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "alignments",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "complexity_metrics",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "pnml_import",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "bpmn_import",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "powl_to_process_tree",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "yawl_export",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "playout",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "monte_carlo_simulation",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "handover_network",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "working_together_network",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "ocel_dfg",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "ocel_dfg_per_type",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "ocel_petri_net",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "ocel_encode",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "ocel_ocla",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "ocel_oc_declare",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "predict_next_activity",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "predict_remaining_time",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "predict_outcome",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "detect_drift",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "compute_ewma",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "analyze_variant_complexity",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "compute_activity_transition_matrix",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "analyze_process_speedup",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "compute_trace_similarity_matrix",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "automl_classify",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "automl_forecast",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    },
+    {
+      "id": "agentic_pipeline",
+      "reachable": true,
+      "dispatch_path": "@wasm4pm/kernel/src/api.js",
+      "wasm_required": true
+    }
+  ],
+  "reachability_hash": "98e5d576f64bd1251067d7487ae8ac7189a1b70616f726472fe7430be8a12201"
+}
