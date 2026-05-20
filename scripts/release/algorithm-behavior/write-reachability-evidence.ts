@@ -1,6 +1,6 @@
 import fs from 'node:fs';
 import path from 'node:path';
-import { getRegistry } from '../../packages/kernel/src/registry.js';
+import { getRegistry } from '../../../packages/kernel/src/registry.js';
 import { createHash } from 'node:crypto';
 
 function packageVersion() {
