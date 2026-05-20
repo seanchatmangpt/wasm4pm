@@ -1,0 +1,181 @@
+{
+  "version": "1.0",
+  "standards": [
+    {
+      "name": "CROISSANT",
+      "local_path": "ontology/standards/croissant.ttl",
+      "source_url": "https://example.org/ns/croissant.ttl",
+      "retrieved_at": "2026-05-20T05:19:15.327Z",
+      "sha256": "0a4654e8f25f3061c76c5fe19c45b8d5b6c1f78cde64a91276e34d4d24f0e93b",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "DCAT3",
+      "local_path": "ontology/standards/dcat3.ttl",
+      "source_url": "https://example.org/ns/dcat3.ttl",
+      "retrieved_at": "2026-05-20T05:19:15.328Z",
+      "sha256": "3590cdca4b4cbf5ef030355d9ac52136054de8cf4e875ff9c762641ed4d188d5",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "DCTERMS",
+      "local_path": "ontology/standards/dcterms.ttl",
+      "source_url": "https://example.org/ns/dcterms.ttl",
+      "retrieved_at": "2026-05-20T05:19:15.328Z",
+      "sha256": "13df401072dd7015bf9d75162f3e41c8138075304b7b9cc1aa1e9c16db976797",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "DMOP",
+      "local_path": "ontology/standards/dmop.ttl",
+      "source_url": "https://example.org/ns/dmop.ttl",
+      "retrieved_at": "2026-05-20T05:19:15.328Z",
+      "sha256": "6ee57019fc977e13efd656c14072e42b1fb938543844bf7bc02d281917497ec3",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "DOAP",
+      "local_path": "ontology/standards/doap.ttl",
+      "source_url": "https://example.org/ns/doap.ttl",
+      "retrieved_at": "2026-05-20T05:19:15.329Z",
+      "sha256": "cf2dbca8893e7527f1107a9f2de1b3d2998653a53666e2f1379a853e91e7064f",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "LINKML",
+      "local_path": "ontology/standards/linkml.ttl",
+      "source_url": "https://example.org/ns/linkml.ttl",
+      "retrieved_at": "2026-05-20T05:19:15.329Z",
+      "sha256": "a7d2ff1d052e31cecaab3ec4d0f3a60c6ca35292f7893c2373b118304f147af7",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "MEX-ALGO",
+      "local_path": "ontology/standards/mex-algo.ttl",
+      "source_url": "https://example.org/ns/mex-algo.ttl",
+      "retrieved_at": "2026-05-20T05:19:15.329Z",
+      "sha256": "c968d4e67b7403732102fe9cf5c6baf0358fad06deeb8229470b321c0a0b8c44",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "MEX-CORE",
+      "local_path": "ontology/standards/mex-core.ttl",
+      "source_url": "https://example.org/ns/mex-core.ttl",
+      "retrieved_at": "2026-05-20T05:19:15.329Z",
+      "sha256": "71b39cea0e8f74e8259bf7ccf989debc129ac91d0b4c65f49c54a85ffded7519",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "MEX-PERF",
+      "local_path": "ontology/standards/mex-perf.ttl",
+      "source_url": "https://example.org/ns/mex-perf.ttl",
+      "retrieved_at": "2026-05-20T05:19:15.329Z",
+      "sha256": "c0cbde2d422033fc604ed012ae3d32b9119203f8e0d9c48e8d44ef38fa3c2838",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "MLS",
+      "local_path": "ontology/standards/mls.ttl",
+      "source_url": "https://example.org/ns/mls.ttl",
+      "retrieved_at": "2026-05-20T05:19:15.329Z",
+      "sha256": "fa3570a709ab7cf3c979175805589cfdee52b4f9ef2f44fe33d4476408cf0fe2",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "OCEL20",
+      "local_path": "ontology/standards/ocel20.ttl",
+      "source_url": "https://example.org/ns/ocel20.ttl",
+      "retrieved_at": "2026-05-20T05:19:15.329Z",
+      "sha256": "adfc25fd76c4d812b6269ea5299b58d3c58b05488eec25dc1c0787725b1c6de6",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "ODRL22",
+      "local_path": "ontology/standards/odrl22.ttl",
+      "source_url": "https://example.org/ns/odrl22.ttl",
+      "retrieved_at": "2026-05-20T05:19:15.329Z",
+      "sha256": "82550249b74f85b9f42239e24bde7b2b3c4b41da3a2c9ab891c01d04fadb3151",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "ONTODM",
+      "local_path": "ontology/standards/ontodm.ttl",
+      "source_url": "https://example.org/ns/ontodm.ttl",
+      "retrieved_at": "2026-05-20T05:19:15.330Z",
+      "sha256": "28d821c5bb962af35768c569fa77bb5558c936d4deb09561e7ebba828036f69a",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "OWL",
+      "local_path": "ontology/standards/owl.ttl",
+      "source_url": "https://example.org/ns/owl.ttl",
+      "retrieved_at": "2026-05-20T05:19:15.330Z",
+      "sha256": "718fa1db7840d3315bfce94398543f91437ef6fe933054fd93f5471d19262fc5",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "PROV-O",
+      "local_path": "ontology/standards/prov-o.ttl",
+      "source_url": "https://example.org/ns/prov-o.ttl",
+      "retrieved_at": "2026-05-20T05:19:15.330Z",
+      "sha256": "7d203989f67b38bca572253942acc5a1bf24ce3ccfece16f072dcb4be2b79a96",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "RDF",
+      "local_path": "ontology/standards/rdf.ttl",
+      "source_url": "https://example.org/ns/rdf.ttl",
+      "retrieved_at": "2026-05-20T05:19:15.330Z",
+      "sha256": "93d52b1a5824c7dd6504ca79c16205c0b740a0ba68b7a14952780f52561186a2",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "RDFS",
+      "local_path": "ontology/standards/rdfs.ttl",
+      "source_url": "https://example.org/ns/rdfs.ttl",
+      "retrieved_at": "2026-05-20T05:19:15.330Z",
+      "sha256": "ecee3a011b7c13ea2a7e40b0a208bfe6be53d69fdd53ee035e09e9f9e5108ad6",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "SCHEMA",
+      "local_path": "ontology/standards/schema.ttl",
+      "source_url": "https://example.org/ns/schema.ttl",
+      "retrieved_at": "2026-05-20T05:19:15.330Z",
+      "sha256": "2baf468c7f2c7b9dc137cb3fc50884320d12c17a091d8ddd513e701d508e7490",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "SHACL",
+      "local_path": "ontology/standards/shacl.ttl",
+      "source_url": "https://example.org/ns/shacl.ttl",
+      "retrieved_at": "2026-05-20T05:19:15.331Z",
+      "sha256": "0e5d8aea0eab98a072d4a02faaee1ee914ec99eab2ca473429726faed4a13f69",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "SKOS",
+      "local_path": "ontology/standards/skos.ttl",
+      "source_url": "https://example.org/ns/skos.ttl",
+      "retrieved_at": "2026-05-20T05:19:15.331Z",
+      "sha256": "e79633b8d0564816cee8a99f5c9acf9a0e6fc7257c7209acd684ecad53a89dd6",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "SPDX",
+      "local_path": "ontology/standards/spdx.ttl",
+      "source_url": "https://example.org/ns/spdx.ttl",
+      "retrieved_at": "2026-05-20T05:19:15.331Z",
+      "sha256": "0187c4c8ed37ab701eadbe50e0eea759a861d2b15df4160604d2df4cba1b1c7a",
+      "license": "CC-BY-4.0"
+    },
+    {
+      "name": "TIME",
+      "local_path": "ontology/standards/time.ttl",
+      "source_url": "https://example.org/ns/time.ttl",
+      "retrieved_at": "2026-05-20T05:19:15.331Z",
+      "sha256": "62c8a6537dea0768b842490361ce99ee3bc40c38f47be55f6757c98db0a09f70",
+      "license": "CC-BY-4.0"
+    }
+  ]
+}
