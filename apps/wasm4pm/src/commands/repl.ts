@@ -2,7 +2,7 @@ import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import { createInterface } from 'node:readline/promises';
 import { WasmLoader } from '@wasm4pm/engine';
-import { getRegistry } from '@wasm4pm/kernel';
+import { getRegistry } from 'wasm4pm';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
 import { emitResult, makeErrorResult } from '../output.js';

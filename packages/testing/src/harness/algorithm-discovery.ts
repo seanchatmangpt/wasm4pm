@@ -13,7 +13,7 @@
  *   without requiring a live WASM instance.
  *
  *   Do NOT use these values as ground truth in production conformance decisions.
- *   For real quality measurement, call the WASM kernel directly via `@wasm4pm/kernel`
+ *   For real quality measurement, call the WASM kernel directly via `wasm4pm`
  *   and use the `alignments` or `etconformance_precision` algorithms.
  *
  *   Fields affected: `AlgorithmResult.fitness`, `.precision`, `.simplicity`,

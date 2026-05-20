@@ -8,7 +8,7 @@ import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { randomUUID } from 'node:crypto';
-import { BatchRunner, type BatchConfig, type BatchResult } from '@wasm4pm/kernel';
+import { BatchRunner, type BatchConfig, type BatchResult } from 'wasm4pm';
 import { emitResult, makeResult, makeErrorResult, type CommandResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';

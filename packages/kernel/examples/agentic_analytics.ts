@@ -15,8 +15,8 @@
  *  8. Remaining Time Regression (Predictive analytics)
  */
 
-import { Kernel } from '@wasm4pm/kernel';
-import type { KernelWasmModule } from '@wasm4pm/kernel';
+import { Kernel } from 'wasm4pm';
+import type { KernelWasmModule } from 'wasm4pm';
 
 export async function runAgenticExample(wasm: KernelWasmModule, logHandle: string) {
   const kernel = new Kernel(wasm);

@@ -4,6 +4,13 @@
   "description": "High-performance process mining monorepo with WASM acceleration",
   "license": "MIT",
   "private": true,
+  "workspaces": [
+    "wasm4pm",
+    "apps/*",
+    "packages/*",
+    "playground",
+    "lab"
+  ],
   "engines": {
     "node": ">=20.0.0",
     "pnpm": ">=8.0.0"

@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { WasmLoader } from '@wasm4pm/engine';
-import { getRegistry, validateDeploymentProfile } from '@wasm4pm/kernel';
+import { getRegistry, validateDeploymentProfile } from 'wasm4pm';
 import { resolveConfig } from '@wasm4pm/config';
 import { exitWithFlush } from '../otel/exit.js';
 import { withSpan } from './_otel.js';
@@ -157,7 +157,7 @@ export const status = defineCommand({
           // Validate features against the claimed deployment profile
           try {
             const validation = validateDeploymentProfile(
-              wasm as unknown as import('@wasm4pm/kernel').WasmModule,
+              wasm as unknown as import('wasm4pm').WasmModule,
               wasmDeploymentProfile as
                 | 'mobile'
                 | 'iot'
@@ -341,7 +341,7 @@ export const status = defineCommand({
               },
               // verbose=true: include full algorithm ID list for machine-readable consumers.
               // Closes the gap where --verbose with --format json returned identical payload
-              // to non-verbose mode. The IDs are the canonical names from @wasm4pm/kernel.
+              // to non-verbose mode. The IDs are the canonical names from wasm4pm.
               algorithms: verbose ? allAlgorithms.map((a) => a.id) : undefined,
               health: {
                 // Summarises WASM + autonomic health in a single machine-readable field.

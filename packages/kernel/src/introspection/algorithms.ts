@@ -639,7 +639,7 @@ let instance: MlAlgorithmRegistry | undefined;
  *
  * @example
  * ```typescript
- * import { getMlRegistry } from '@wasm4pm/kernel/introspection';
+ * import { getMlRegistry } from 'wasm4pm/introspection';
  * const registry = getMlRegistry();
  * const classify = registry.getAlgorithmMetadata('classify');
  * ```

@@ -4,7 +4,7 @@ import * as path from 'path';
 import { resolveConfig as loadConfig } from '@wasm4pm/config';
 import { plan as makePlan } from '@wasm4pm/planner';
 import { ALGORITHM_CLI_ALIASES, findClosestMatch, getProfileAlgorithms } from '@wasm4pm/contracts';
-import { getRegistry } from '@wasm4pm/kernel';
+import { getRegistry } from 'wasm4pm';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { withLogSession } from '../with-log-session.js';
 import { EXIT_CODES } from '../exit-codes.js';

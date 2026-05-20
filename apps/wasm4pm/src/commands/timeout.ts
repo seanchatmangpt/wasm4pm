@@ -14,7 +14,7 @@
 
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
-import { computeTimeout, classifyComplexity, detectAlgorithmTier } from '@wasm4pm/kernel';
+import { computeTimeout, classifyComplexity, detectAlgorithmTier } from 'wasm4pm';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withSpan } from './_otel.js';

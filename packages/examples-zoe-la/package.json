@@ -11,8 +11,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@wasm4pm/cognition": "workspace:^",
-    "wasm4pm": "workspace:^"
+    "@wasm4pm/cognition": "*",
+    "wasm4pm": "*"
   },
   "devDependencies": {
     "@types/node": "^25.9.1",

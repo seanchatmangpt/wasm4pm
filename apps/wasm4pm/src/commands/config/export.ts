@@ -1,6 +1,6 @@
 import { defineCommand } from 'citty';
 import { resolveConfig, configToToml, configToEnv } from '@wasm4pm/config';
-import { registryToJsonSchema } from '@wasm4pm/kernel';
+import { registryToJsonSchema } from 'wasm4pm';
 import { emitResult, makeResult, makeErrorResult } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { exitWithFlush } from '../../otel/exit.js';

@@ -1,5 +1,5 @@
 /**
- * @wasm4pm/kernel
+ * wasm4pm
  * Core kernel — versioned API facade over wasm4pm WASM algorithms
  *
  * Provides: Kernel class, algorithm registry, version checks, deterministic hashing,

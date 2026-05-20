@@ -69,7 +69,7 @@ export class SystemError extends Wasm4pmError {
 
 /**
  * Handle a Wasm4pmError by exiting with its typed exit code.
- * ValidationError from @wasm4pm/kernel exits with execution_error (3).
+ * ValidationError from wasm4pm exits with execution_error (3).
  * For unknown errors, exits with system_error (5).
  * Prints recovery hints and diagnostic suggestions when available.
  */
@@ -83,7 +83,7 @@ export function handleError(error: unknown): never {
     process.exit(error.exitCode);
   }
 
-  // ValidationError from @wasm4pm/kernel — model failed structural checks
+  // ValidationError from wasm4pm — model failed structural checks
   if (isValidationError(error)) {
     console.error(`[ValidationError] ${(error as Error).message}`);
     const violations = (error as { violations?: Array<{ rule: string; severity: string; message: string }> }).violations ?? [];
@@ -132,9 +132,9 @@ function printRecoveryHint(recovery: RecoveryHint): void {
 
 function printDiagnosticHint(error: unknown): void {
   try {
-    // Dynamic import avoids adding @wasm4pm/kernel to the startup module graph,
+    // Dynamic import avoids adding wasm4pm to the startup module graph,
     // preventing circular-dependency and load-order issues in test environments.
-    import('@wasm4pm/kernel').then(({ introspection }) => {
+    import('wasm4pm').then(({ introspection }) => {
       const diag = introspection.diagnoseError(error);
       if (diag.suggestions.length > 0) {
         console.error('\nDiagnostics:');

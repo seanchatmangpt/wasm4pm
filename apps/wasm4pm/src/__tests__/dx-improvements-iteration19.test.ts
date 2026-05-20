@@ -8,7 +8,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
-import { getRegistry } from '@wasm4pm/kernel';
+import { getRegistry } from 'wasm4pm';
 import {
   enrichWasmMemoryError,
   enrichModuleLoadError,

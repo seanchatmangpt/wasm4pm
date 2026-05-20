@@ -24,9 +24,9 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@wasm4pm/contracts": "workspace:*",
-    "@wasm4pm/ml": "workspace:*",
-    "@wasm4pm/planner": "workspace:*"
+    "@wasm4pm/contracts": "*",
+    "@wasm4pm/ml": "*",
+    "@wasm4pm/planner": "*"
   },
   "devDependencies": {
     "@vitest/coverage-v8": "^1.6.0",

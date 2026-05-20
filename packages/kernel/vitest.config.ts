@@ -8,7 +8,7 @@ export default defineConfig({
     exclude: [
       'node_modules',
       'dist',
-      // These load @wasm4pm/kernel or wasm4pm which requires the nodejs WASM binary.
+      // These load wasm4pm or wasm4pm which requires the nodejs WASM binary.
       // Run independently after `cd wasm4pm && npm run build:nodejs`.
       '__tests__/backend-registry.test.ts',
       '__tests__/deployment-profiles.test.ts',

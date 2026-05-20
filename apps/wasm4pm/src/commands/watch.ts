@@ -7,7 +7,7 @@ import { resolveConfig as loadConfig } from '@wasm4pm/config';
 import { createFullEngine, WasmLoader } from '@wasm4pm/engine';
 import type { ExecutionPlan } from "@wasm4pm/planner";
 import { getTracer, WatchingSpans } from '@wasm4pm/observability';
-import { WasmBackend } from '@wasm4pm/kernel';
+import { WasmBackend } from 'wasm4pm';
 import { plan } from '@wasm4pm/planner';
 import type { OtelSpan } from '@wasm4pm/cognition';
 import { StreamingOutput } from '../output.js';

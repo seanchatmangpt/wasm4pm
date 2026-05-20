@@ -44,7 +44,7 @@ const PROFILE_SIZES: Record<DeploymentProfile, string> = {
  *
  * @example
  * ```typescript
- * import { getAlgorithmMetadata } from '@wasm4pm/kernel/introspection';
+ * import { getAlgorithmMetadata } from 'wasm4pm/introspection';
  * const meta = getAlgorithmMetadata('dfg');
  * console.log(meta?.speedTier);  // 5
  * ```

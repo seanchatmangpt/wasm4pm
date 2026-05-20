@@ -1,5 +1,5 @@
 /**
- * @wasm4pm/kernel/introspection
+ * wasm4pm/introspection
  *
  * Comprehensive introspection APIs for ML, prediction, and RL systems.
  *
@@ -50,7 +50,7 @@ export type { ValidatorResult } from './validators.js';
  *
  * @example
  * ```typescript
- * import { getMlRegistry } from '@wasm4pm/kernel/introspection';
+ * import { getMlRegistry } from 'wasm4pm/introspection';
  *
  * const registry = getMlRegistry();
  * const classify = registry.getAlgorithmMetadata('classify');
@@ -63,7 +63,7 @@ export type { ValidatorResult } from './validators.js';
  *
  * @example
  * ```typescript
- * import { getPerspectiveRegistry } from '@wasm4pm/kernel/introspection';
+ * import { getPerspectiveRegistry } from 'wasm4pm/introspection';
  *
  * const registry = getPerspectiveRegistry();
  * const perspectives = registry.getAllPerspectives();
@@ -76,7 +76,7 @@ export type { ValidatorResult } from './validators.js';
  *
  * @example
  * ```typescript
- * import { getDiagnostic, formatDiagnostic } from '@wasm4pm/kernel/introspection';
+ * import { getDiagnostic, formatDiagnostic } from 'wasm4pm/introspection';
  *
  * const diagnostic = getDiagnostic('parameterOutOfBounds', {
  *   paramName: 'k',
@@ -95,7 +95,7 @@ export type { ValidatorResult } from './validators.js';
  *
  * @example
  * ```typescript
- * import { loadPublicDataset, getAvailableDatasets } from '@wasm4pm/kernel/introspection';
+ * import { loadPublicDataset, getAvailableDatasets } from 'wasm4pm/introspection';
  *
  * console.log(getAvailableDatasets());  // ["simple", "bpi2020", "synthetic"]
  *

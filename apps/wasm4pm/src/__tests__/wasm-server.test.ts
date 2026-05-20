@@ -9,7 +9,7 @@ import * as path from 'path';
 import * as os from 'os';
 import * as fs from 'fs/promises';
 import { WasmServer } from '../wasm-server.js';
-import { WasmServerClient, isWasmServerAvailable } from '@wasm4pm/kernel';
+import { WasmServerClient, isWasmServerAvailable } from 'wasm4pm';
 
 describe('WasmServer', () => {
   let server: WasmServer;

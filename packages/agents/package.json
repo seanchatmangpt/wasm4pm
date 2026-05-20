@@ -28,9 +28,9 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@wasm4pm/contracts": "workspace:*",
-    "@wasm4pm/kernel": "workspace:*",
-    "@wasm4pm/engine": "workspace:*"
+    "@wasm4pm/contracts": "*",
+    "wasm4pm": "*",
+    "@wasm4pm/engine": "*"
   },
   "devDependencies": {
     "typescript": "^5.7.0",

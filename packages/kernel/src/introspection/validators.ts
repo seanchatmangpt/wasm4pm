@@ -381,7 +381,7 @@ export class Validators {
  *
  * @example
  * ```typescript
- * import { getConfigValidators } from '@wasm4pm/kernel/introspection';
+ * import { getConfigValidators } from 'wasm4pm/introspection';
  *
  * const validators = getConfigValidators();
  * const result = validators.validateFeatureMatrix(data);

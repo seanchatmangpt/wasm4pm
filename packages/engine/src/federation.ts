@@ -22,8 +22,8 @@ import type {
   AnalysisTask,
   ProvenanceChain,
   KernelWasmModule,
-} from '@wasm4pm/kernel';
-import { DefaultBackendRegistry, WasmBackend, MlBackend } from '@wasm4pm/kernel';
+} from 'wasm4pm';
+import { DefaultBackendRegistry, WasmBackend, MlBackend } from 'wasm4pm';
 import { NullBackend } from './null-backend.js';
 
 /**

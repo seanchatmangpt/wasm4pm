@@ -18,7 +18,7 @@ import * as net from 'net';
 import * as path from 'path';
 import * as fs from 'fs/promises';
 import * as os from 'os';
-import type { Kernel } from '@wasm4pm/kernel';
+import type { Kernel } from 'wasm4pm';
 import { WasmLoader } from '@wasm4pm/engine';
 import { ObservabilityLayer } from '@wasm4pm/observability';
 
@@ -328,7 +328,7 @@ export class WasmServer {
       isReady: () => true,
       algorithms: () => {
         // Return a list of available algorithms (from kernel registry)
-        // In production, import @wasm4pm/kernel and use getRegistry()
+        // In production, import wasm4pm and use getRegistry()
         return [];
       },
       run: async (

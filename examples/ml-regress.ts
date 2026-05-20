@@ -18,7 +18,7 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { getRegistry } from '@wasm4pm/kernel';
+import { getRegistry } from 'wasm4pm';
 import {
   buildFeatureMatrix,
   regressRemainingTime,

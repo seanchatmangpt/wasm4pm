@@ -526,7 +526,7 @@ let instance: PerspectiveRegistry | undefined;
  *
  * @example
  * ```typescript
- * import { getPerspectiveRegistry } from '@wasm4pm/kernel/introspection';
+ * import { getPerspectiveRegistry } from 'wasm4pm/introspection';
  * const registry = getPerspectiveRegistry();
  * const meta = registry.getPerspectiveMetadata('next_activity');
  * ```

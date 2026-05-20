@@ -4,7 +4,7 @@
  *
  * bootstrap.js is mocked so tests run without a compiled WASM binary.
  * All other dependencies (Kernel, Planner, Executor) are real mock classes,
- * not mocked via vi.mock — per CLAUDE.md "do not mock @wasm4pm/kernel".
+ * not mocked via vi.mock — per CLAUDE.md "do not mock wasm4pm".
  *
  * Covers:
  *   - degraded → ready  (engine.recover() soft path)

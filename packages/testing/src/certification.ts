@@ -147,7 +147,7 @@ export function getRegisteredGates(): string[] {
 
 registerGate('contracts:schemas', async () => {
   try {
-    const kernel = (await import(/* @vite-ignore */ '@wasm4pm/kernel' as string)) as {
+    const kernel = (await import(/* @vite-ignore */ 'wasm4pm' as string)) as {
       getRegistry: () => { getAllAlgorithms: () => Record<string, any>[] };
     };
     const registry = kernel.getRegistry();
@@ -166,7 +166,7 @@ registerGate('contracts:schemas', async () => {
     return {
       gate: 'contracts:schemas',
       passed: false,
-      details: `Failed to load @wasm4pm/kernel: ${err instanceof Error ? err.message : String(err)}`,
+      details: `Failed to load wasm4pm: ${err instanceof Error ? err.message : String(err)}`,
       duration_ms: 0,
     };
   }

@@ -1,7 +1,7 @@
 import { tool } from 'ai';
 import { z } from 'zod';
 import * as wasm from 'wasm4pm';
-import { WasmBackend } from '@wasm4pm/kernel';
+import { WasmBackend } from 'wasm4pm';
 
 /**
  * wasm4pm__ tools for Vercel AI SDK swarm workers.

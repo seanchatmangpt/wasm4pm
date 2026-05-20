@@ -28,7 +28,7 @@
  *
  *   GAP-3: No Prolog8 query path in this package — verification requires calling
  *          wasm4pm WASM's prolog8_query() with the compiled catalog. That call lives
- *          in @wasm4pm/kernel, not @wasm4pm/agents.
+ *          in wasm4pm, not @wasm4pm/agents.
  *
  * WHAT PASSES:
  *   - MAPE-K cycle successfully processes a simulated CodeManufactory manufacturing route
@@ -477,7 +477,7 @@ describe('mcpp → wasm4pm → Prolog8 audit chain: structural contract', () => 
    *   AuditStore        ──AuditEntry[]──▶  compileAuditEntriesToCatalog()
    *   compileAuditEntriesToCatalog ──Prolog8Catalog + Rule8Json[]──▶  prolog8_query()  [future]
    *
-   * GAP-3 NOTE: prolog8_query() is in @wasm4pm/kernel (WASM boundary). This test
+   * GAP-3 NOTE: prolog8_query() is in wasm4pm (WASM boundary). This test
    * verifies the catalog is structurally correct for admission, but cannot call
    * prolog8_query() without the WASM binary. The call would be:
    *   kernel.run('prolog8', handle, { catalog, rules: facts, query: admitQuery })
@@ -586,7 +586,7 @@ describe('mcpp → wasm4pm → Prolog8 audit chain: structural contract', () => 
      * This test documents what would happen at Link 4 if we had the WASM binary
      * available in this package. The call would be:
      *
-     *   import { getRegistry } from '@wasm4pm/kernel';
+     *   import { getRegistry } from 'wasm4pm';
      *   const kernel = getRegistry();
      *   const result = await kernel.run('prolog8', wasmHandle, {
      *     catalog: compiledCatalog,
@@ -596,7 +596,7 @@ describe('mcpp → wasm4pm → Prolog8 audit chain: structural contract', () => 
      *   expect(result.answers.length).toBeGreaterThan(0);
      *
      * This is NOT implemented here because:
-     *   1. @wasm4pm/kernel requires the WASM binary to be built (wasm-pack)
+     *   1. wasm4pm requires the WASM binary to be built (wasm-pack)
      *   2. Kernel initialization is async and requires WasmLoader.init()
      *   3. prolog8_query() is a WASM export, not a pure TypeScript function
      *
@@ -613,14 +613,14 @@ describe('mcpp → wasm4pm → Prolog8 audit chain: structural contract', () => 
     const gapDescription = [
       'GAP-3: prolog8_query() not called — requires WASM binary (WasmLoader.init())',
       'Resolution: use wpm prolog8 query with compiled catalog from compileAuditEntriesToCatalog()',
-      'Kernel path: @wasm4pm/kernel → kernel.run("prolog8", handle, { catalog, rules, query })',
+      'Kernel path: wasm4pm → kernel.run("prolog8", handle, { catalog, rules, query })',
     ];
 
     // The gap exists and is documented
     expect(gapDescription).toHaveLength(3);
     expect(gapDescription[0]).toContain('WASM binary');
     expect(gapDescription[1]).toContain('wpm prolog8 query');
-    expect(gapDescription[2]).toContain('@wasm4pm/kernel');
+    expect(gapDescription[2]).toContain('wasm4pm');
   });
 
   it('full chain: mcpp OCEL events → MAPE-K cycle → AuditStore → Rule8 catalog (end-to-end)', async () => {

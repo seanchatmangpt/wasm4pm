@@ -1,7 +1,7 @@
 /**
  * state-machine-rank1.test.ts — Rank-1 / Rank-2 oracle tests.
  * Imports source directly (not via ./index.js) to avoid pulling the optional
- * @wasm4pm/kernel transitive dependency from federation/null-backend.
+ * wasm4pm transitive dependency from federation/null-backend.
  */
 
 import { describe, it, expect } from 'vitest';

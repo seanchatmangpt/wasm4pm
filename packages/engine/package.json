@@ -19,12 +19,12 @@
     "test:coverage": "vitest --coverage"
   },
   "dependencies": {
-    "@wasm4pm/config": "workspace:*",
-    "@wasm4pm/contracts": "workspace:*",
-    "@wasm4pm/observability": "workspace:*"
+    "@wasm4pm/config": "*",
+    "@wasm4pm/contracts": "*",
+    "@wasm4pm/observability": "*"
   },
   "devDependencies": {
-    "@wasm4pm/kernel": "workspace:*",
+    "wasm4pm": "*",
     "@vitest/coverage-v8": "^1.6.0",
     "typescript": "^5.3.3",
     "vitest": "^1.1.0"

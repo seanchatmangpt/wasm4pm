@@ -15,8 +15,8 @@
  *  8. Process Skeleton (High-level structural extraction)
  */
 
-import { Kernel } from '@wasm4pm/kernel';
-import type { KernelWasmModule } from '@wasm4pm/kernel';
+import { Kernel } from 'wasm4pm';
+import type { KernelWasmModule } from 'wasm4pm';
 
 // This example assumes a loaded WASM module and an event log handle.
 export async function runClassicExample(wasm: KernelWasmModule, logHandle: string) {

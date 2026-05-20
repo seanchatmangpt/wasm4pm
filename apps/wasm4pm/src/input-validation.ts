@@ -94,7 +94,7 @@ export function validateAlgorithm(algoName: string): AlgorithmValidationResult {
   }
 
   // Lazy import to avoid WASM initialization in tests
-  const { getRegistry } = require('@wasm4pm/kernel');
+  const { getRegistry } = require('wasm4pm');
   const registry = getRegistry();
   const allAlgos = registry.list();
   const algoIds = (allAlgos as { id: string }[]).map((a) => a.id);
