@@ -50,7 +50,7 @@ export const social = defineCommand({
     },
     format: {
       type: 'string',
-      description: 'Output format: human, json, graphml, or csv (default: human)',
+      description: 'Output format: human or json (default: human)',
       default: 'human',
     },
     'min-interactions': {
@@ -80,7 +80,7 @@ export const social = defineCommand({
   },
   async run(ctx) {
     const t0 = performance.now();
-    const format = (ctx.args.format as 'json' | 'human' | 'graphml' | 'csv') ?? 'human';
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
 
@@ -121,6 +121,7 @@ export const social = defineCommand({
           const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
           const resourceKey = (ctx.args['resource-key'] as string) || 'org:resource';
           const metric = (ctx.args.metric as string) || 'handover';
+          const minInteractions = parseInt(ctx.args['min-interactions'] as string) || 0;
 
           if (!['handover', 'working-together', 'similar-task'].includes(metric)) {
             const result = makeErrorResult(
@@ -307,6 +308,7 @@ export const social = defineCommand({
                 activityKey,
                 resourceKey,
                 metric,
+                minInteractions,
                 // network_type: machine-readable canonical snake_case discriminator.
                 // Consumers should prefer this over parsing the metric string.
                 network_type: metric === 'handover' ? 'handover' : metric === 'working-together' ? 'working_together' : 'similar_task',
@@ -560,7 +562,7 @@ function printHumanSocial(
         projection.log(`    ${resource.padEnd(25)} ${score.toFixed(3)}${interpretation}`);
       }
     } else if (metric === 'clustering') {
-      const clusterObj = metrics as { global?: number; local?: Record<string, number> };
+      const clusterObj = centrality as { global?: number; local?: Record<string, number> };
       if (clusterObj.global !== undefined) {
         projection.log(`  Global clustering coefficient: ${clusterObj.global.toFixed(3)}`);
         projection.log('    (Measure of how tightly connected resource groups are)');
@@ -581,7 +583,7 @@ function printHumanSocial(
       }
       projection.log('');
     } else if (metric === 'community') {
-      const communities = metrics as Record<string, number>;
+      const communities = centrality as Record<string, number>;
       if (Object.keys(communities).length > 0) {
         // Group resources by community
         const byComm: Record<number, string[]> = {};

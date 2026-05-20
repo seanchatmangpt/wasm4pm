@@ -1,0 +1,48 @@
+{
+  "algorithm_id": "log_to_trie",
+  "profiles": [],
+  "registry_present": true,
+  "ts_dispatch_present": true,
+  "cli_present": true,
+  "wasm_export_present": true,
+  "positive_cases": [
+    {
+      "case_id": "log_to_trie.valid_minimal_log",
+      "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
+      "status": "passed",
+      "result_hash": "9b489b4d7bb5a92701b953cd9d90847d9429fb302330c740fb7b4962359a32bf",
+      "duration_ms": 0.012124999999997499,
+      "receipt_hash": "87c1a382a425f462df9aeb8ac6b6ae03881727ef6685b3bdfb799b8cfb999e8e"
+    }
+  ],
+  "negative_cases": [
+    {
+      "case_id": "log_to_trie.empty_log",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
+      "status": "failed_correctly",
+      "error_code": "EMPTY_EVENT_LOG",
+      "no_panic": true,
+      "no_false_success": true,
+      "receipt_hash": "c933a3f6a91705b2a452141f314a5a495652d1caccc42dd4858f0571cc5f3f0f"
+    },
+    {
+      "case_id": "log_to_trie.malformed_log",
+      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "status": "failed_correctly",
+      "error_code": "MALFORMED_EVENT_LOG",
+      "no_panic": true,
+      "no_false_success": true,
+      "receipt_hash": "aaa928f806c856868be0c1b3469bcfe6b17932b3ec600a881bc50702a4ee76fe"
+    }
+  ],
+  "invariant_cases": [
+    {
+      "case_id": "log_to_trie.deterministic_same_input",
+      "status": "passed",
+      "first_result_hash": "9b489b4d7bb5a92701b953cd9d90847d9429fb302330c740fb7b4962359a32bf",
+      "second_result_hash": "9b489b4d7bb5a92701b953cd9d90847d9429fb302330c740fb7b4962359a32bf",
+      "stable": true
+    }
+  ],
+  "algorithm_evidence_hash": "b5e717ca5885bd2cdfb7d2214f0f95c5e68a61600b42ad17c795eff00699e9d2"
+}

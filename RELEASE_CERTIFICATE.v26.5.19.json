@@ -1,38 +1,32 @@
 {
-  "version": "26.5.19",
-  "registry_algorithm_count": 60,
+  "package": {
+    "name": "wasm4pm",
+    "version": "26.5.19",
+    "git_commit": "11ff57c608a3f855e376739174aa056a513be17b"
+  },
+  "reachability": {
+    "registry_algorithm_count": 60,
+    "algorithms_reachable": 60,
+    "reachability_hash": "1efe455c0230996c8feb562a206565b222e826d354c9ec06fb805b2078d0ab55"
+  },
+  "behavior": {
+    "algorithm_count": 60,
+    "positive_case_count": 60,
+    "negative_case_count": 120,
+    "invariant_case_count": 60,
+    "behavior_evidence_hash": "f23e195245c698856497d8dbefe3b2f9d6685084b0b7ef9e3f5a149d6effad12",
+    "all_failed_correctly": true
+  },
   "examples": {
-    "count": 8,
-    "algorithms_per_example": 8,
-    "all_passed": true,
-    "manifest_hash": "285206116e4b3618cb9a3d3da0716b86eda81af3b328ce9a6c80cf01f50e7776"
+    "example_count": 8,
+    "examples_total_executions": 64,
+    "manifest_hash": "1efe455c0230996c8feb562a206565b222e826d354c9ec06fb805b2078d0ab55"
   },
-  "cli_parity": {
-    "passed": true,
-    "algorithms_reachable": 60
+  "package_artifact": {
+    "tarball_name": "wasm4pm-kernel-26.5.19.tgz",
+    "tarball_integrity": "sha512-eeAMRm1wUlYrHBYmPk/uhEFnlDhCKkUpGTae5h/uRoNHLmnmXY4/sVhZtiAN5I3l61Zu/3roLSiSKArxa0J9aw==",
+    "pack_smoke_tarball_path": "packages/kernel/wasm4pm-kernel-26.5.19.tgz",
+    "wasm_bundle_hash": "9dddc389d92d3a4a0519934712ef5bf698ea0555fb6771f3ce4cfddeeb1e5684"
   },
-  "pack_smoke": {
-    "passed": true
-  },
-  "forbidden_terms": {
-    "passed": true
-  },
-  "wasm": {
-    "bundle_hash": "9dddc389d92d3a4a0519934712ef5bf698ea0555fb6771f3ce4cfddeeb1e5684",
-    "bundle_path": "wasm4pm/pkg/wasm4pm_bg.wasm",
-    "verified": true
-  },
-  "npm": {
-    "provenance": true,
-    "tarball": {
-      "package_name": "@wasm4pm/kernel",
-      "tarball_name": "wasm4pm-kernel-26.5.19.tgz",
-      "tarball_shasum": "0784caeda28f2e18c41dec9f3817866fcb2ecc99",
-      "tarball_integrity": "sha512-eeAMRm1wUlYrHBYmPk/uhEFnlDhCKkUpGTae5h/uRoNHLmnmXY4/sVhZtiAN5I3l61Zu/3roLSiSKArxa0J9aw==",
-      "file_count": 397,
-      "unpacked_size": 2671854,
-      "package_size": 493714
-    }
-  },
-  "timestamp": "2026-05-20T01:42:14.016Z"
+  "timestamp": "2026-05-20T01:56:53.722Z"
 }

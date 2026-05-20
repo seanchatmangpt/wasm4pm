@@ -1,0 +1,48 @@
+{
+  "algorithm_id": "simulated_annealing",
+  "profiles": [],
+  "registry_present": true,
+  "ts_dispatch_present": true,
+  "cli_present": true,
+  "wasm_export_present": true,
+  "positive_cases": [
+    {
+      "case_id": "simulated_annealing.valid_minimal_log",
+      "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
+      "status": "passed",
+      "result_hash": "ca07ad07d3498d1f652335cc161ed458319ed91e7e44bfc2dc2ed72a62c934a5",
+      "duration_ms": 0.015332999999998265,
+      "receipt_hash": "18ab0aa1d1383e9e9e756f4fdd1dd738918b6cf5e7329a89cc73c73a4ef7ce54"
+    }
+  ],
+  "negative_cases": [
+    {
+      "case_id": "simulated_annealing.empty_log",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
+      "status": "failed_correctly",
+      "error_code": "EMPTY_EVENT_LOG",
+      "no_panic": true,
+      "no_false_success": true,
+      "receipt_hash": "52c3c57cf34d4a04525748ad9f6dd647c8c17bebe10a9196b27659c260224d1c"
+    },
+    {
+      "case_id": "simulated_annealing.malformed_log",
+      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "status": "failed_correctly",
+      "error_code": "MALFORMED_EVENT_LOG",
+      "no_panic": true,
+      "no_false_success": true,
+      "receipt_hash": "7c9fb028e6fdcea9bfa32d8999689b2581eee09e1f4561b57f3455bc30ec87f4"
+    }
+  ],
+  "invariant_cases": [
+    {
+      "case_id": "simulated_annealing.seeded_repeatability",
+      "seed": 42,
+      "status": "passed",
+      "result_schema_valid": true,
+      "fitness_within_expected_range": true
+    }
+  ],
+  "algorithm_evidence_hash": "ecdbf508784175e741db9e088bfeb33d615999cc29771c82fe9f5942c0fe55e3"
+}

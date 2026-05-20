@@ -115,10 +115,6 @@ export const swarm = defineCommand({
       type: 'boolean',
       description: 'Do not auto-save the swarm result to .wasm4pm/results/',
     },
-    workers: {
-      type: 'string',
-      description: 'Worker count (positive integer)',
-    },
   },
   async run(ctx) {
     const t0 = performance.now();

@@ -438,22 +438,4 @@ function printHumanSimulation(
     }
     projection.log('');
   }
-  projection.log('');
-  projection.log('  Trace Statistics:');
-  projection.log(`    Total traces:       ${stats.traceCount}`);
-  projection.log(`    Trace length (activities):
-      Mean:    ${stats.traceLengths.mean.toFixed(2)}
-      Std:     ${stats.traceLengths.std.toFixed(2)}
-      P95:     ${stats.traceLengths.p95}
-      Range:   [${stats.traceLengths.min}, ${stats.traceLengths.max}]`);
-  projection.log('');
-  projection.log('  Duration Statistics (ms):');
-  projection.log(`    Duration:
-      Mean:    ${stats.durations.mean.toFixed(2)}
-      Std:     ${stats.durations.std.toFixed(2)}
-      P95:     ${stats.durations.p95}
-      Range:   [${stats.durations.min}, ${stats.durations.max}]`);
-  projection.log('');
-  projection.log(`  Variants discovered: ${stats.variantsDiscovered}`);
-  projection.log('');
 }

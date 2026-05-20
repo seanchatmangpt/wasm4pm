@@ -228,8 +228,8 @@ ${STANDARD_EXIT_CODE_DOCS}`,
     // --interval wires directly to the debounce window so practitioners can
     // tune for fast-feedback (low ms) vs. noisy-editor (high ms) workflows.
     const debouncers = new Map<string, NodeJS.Timeout>();
-    const rawInterval = ctx.args.interval as string | undefined;
-    const parsedInterval = rawInterval !== undefined ? parseInt(rawInterval, 10) : NaN;
+    const rawIntervalStr = ctx.args.interval as string | undefined;
+    const parsedInterval = rawIntervalStr !== undefined ? parseInt(rawIntervalStr, 10) : NaN;
     const DEBOUNCE_MS = !Number.isNaN(parsedInterval) && parsedInterval > 0 ? parsedInterval : 200;
 
     watcher.on('change', (filePath: string) => {

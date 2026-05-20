@@ -38,8 +38,13 @@ npm run cli:parity
 echo "--- 6. Examples Gate ---"
 npm run examples:gate
 
-# 7. Forbidden Term Check
-echo "--- 7. Forbidden Terms ---"
+# 7. Algorithm Behavior Evidence
+echo "--- 7. Algorithm Behavior Evidence ---"
+npm run release:algorithm-behavior
+npm run release:verify-algorithm-behavior
+
+# 8. Forbidden Term Check
+echo "--- 8. Forbidden Terms ---"
 npm run release:forbidden
 
 # 8. Pack Smoke Test

@@ -432,9 +432,6 @@ function printHumanTemporal(
     activityKey: string;
     timestampKey: string;
     threshold: number;
-    bucketSizeHours: number;
-    buckets: Array<{ bucketStart: number; bucketEnd: number; traceCount: number; avgDuration: number; bottleneckActivity?: string; bottleneckDuration?: number }>;
-    trendDirection: 'accelerating' | 'decelerating' | 'stable';
     violations: { count: number; threshold: number; items: Array<Record<string, unknown>> };
     impossibleTimestampCount: number;
     cycleTimePercentiles: Record<

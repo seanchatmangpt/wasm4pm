@@ -58,7 +58,7 @@ describe('Browser Artifact Validation: @wasm4pm/wasm4pm', () => {
 
     beforeEach(() => {
       mockWasm = {
-        memory: new WebAssembly.Memory({ initial: 256, maximum: 512 }),
+        memory: new (globalThis as any).WebAssembly.Memory({ initial: 256, maximum: 512 }),
         init_panic_hook: vi.fn(),
       };
     });
@@ -70,7 +70,7 @@ describe('Browser Artifact Validation: @wasm4pm/wasm4pm', () => {
     });
 
     it('should have memory allocated correctly', () => {
-      expect(mockWasm.memory).toBeInstanceOf(WebAssembly.Memory);
+      expect(mockWasm.memory).toBeInstanceOf((globalThis as any).WebAssembly.Memory);
       expect(mockWasm.memory.buffer.byteLength).toBeGreaterThan(0);
     });
 
@@ -81,7 +81,7 @@ describe('Browser Artifact Validation: @wasm4pm/wasm4pm', () => {
 
     it('should expose memory object', () => {
       expect(mockWasm.memory).toBeDefined();
-      expect(mockWasm.memory instanceof WebAssembly.Memory).toBe(true);
+      expect(mockWasm.memory instanceof (globalThis as any).WebAssembly.Memory).toBe(true);
     });
 
     it('should allow memory growth', () => {

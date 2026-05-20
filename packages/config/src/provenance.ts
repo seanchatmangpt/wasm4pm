@@ -9,6 +9,7 @@ export interface Provenance {
   value: unknown;
   source: ProvenanceSource;
   path?: string; // file path when source is 'toml' or 'json'
+  timestamp?: number; // Time of resolution
 }
 
 /**

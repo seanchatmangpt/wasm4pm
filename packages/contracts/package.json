@@ -8,10 +8,14 @@
   "exports": {
     ".": {
       "import": "./dist/index.js",
+      "require": "./dist/index.js",
+      "default": "./dist/index.js",
       "types": "./dist/index.d.ts"
     },
     "./algorithm-registry": {
       "import": "./dist/algorithm-registry.js",
+      "require": "./dist/algorithm-registry.js",
+      "default": "./dist/algorithm-registry.js",
       "types": "./dist/algorithm-registry.d.ts"
     },
     "./andon-bridge": {

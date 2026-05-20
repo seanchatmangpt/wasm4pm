@@ -8,62 +8,62 @@
       "id": "streaming_log",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "304aa45d2321b1076db37f6f08c9fa8558f046d845c970a73fddcbb183607d1d",
-      "duration_ms": 49.02249893790012
+      "result_hash": "223b3f1c8dcabb1cc00a17e6e7bb34e903a182c68eff8446fabe90902d406ec6",
+      "duration_ms": 41.57171950804876
     },
     {
       "id": "smart_engine",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "a47a54eee3409fad8e8713dabe1bbc6e8fcf2d94328f7907be8cea3d1f199905",
-      "duration_ms": 18.60147975183443
+      "result_hash": "3560a4052cb81c8121f0abf6ee2de1fac3329644fc8b531582208509130c3aa1",
+      "duration_ms": 24.953234527899717
     },
     {
       "id": "ml_classify",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "74bff9b682c70f6b2c6d3cbce7a7fc4b7e87b01d69c9de2b727346a3ab871642",
-      "duration_ms": 48.494427102585774
+      "result_hash": "b2999529863c1983faf191ca19f60c956b6f6f1bfa1987b4bc926e888767895e",
+      "duration_ms": 33.261991753286
     },
     {
       "id": "ml_cluster",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "3485ff186b11748f5a5af822311b4087136147eaacf6a9d877486a91249c4799",
-      "duration_ms": 20.09624513502806
+      "result_hash": "853ccd35a682b08e1f5899ca17323a145bf019950c0605dc63d3327f39433276",
+      "duration_ms": 55.71506869049801
     },
     {
       "id": "ml_forecast",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "fe7b66afa1024247e4a65987fe2be4cec7ed052bca99f71db2d1e6b59b44ca0e",
-      "duration_ms": 25.25366140404563
+      "result_hash": "289e815aacea24a1ed7a20ba60989988f9391a0d7a5fc46005f6c0fec757b50c",
+      "duration_ms": 48.51204719909396
     },
     {
       "id": "ml_anomaly",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "0fe160271d68817114be2ac7eaa60ceb883530b1668342aef0fcc9f6170e5d03",
-      "duration_ms": 54.44723497670155
+      "result_hash": "ca74cd2c9961b99aaca98e5cfb5b0a207e6d03625910297be9ad59304631f054",
+      "duration_ms": 38.18059770888148
     },
     {
       "id": "ml_regress",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "4a0ecb7e130c3ff138fd4f5795ec9de0b05c2cb9e8339f89ed55275ed68f258d",
-      "duration_ms": 42.89865865300453
+      "result_hash": "87e01230a108234f43ed94bc2d4201f2268f875267e25ac080d88805f85e74a7",
+      "duration_ms": 38.58012186361479
     },
     {
       "id": "ml_pca",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "1a0f56d24f4c4686686ce20ac210352542aea083c74f51a97b3ab7f336efb724",
-      "duration_ms": 47.1737120139617
+      "result_hash": "73a60bf116488f862fbf98fd9af95c495faf91922088e7584ee7b206fd0c945a",
+      "duration_ms": 46.564551134661606
     }
   ],
   "algorithm_count": 8,
   "all_real": true,
-  "created_at": "2026-05-20T01:37:00.154Z",
+  "created_at": "2026-05-20T01:56:51.715Z",
   "previous_receipt_hash": null,
-  "receipt_hash": "77b13d618760e7e35ff4b95333c19ebe23dfca213b88c47250b4e7560e4b0fbb"
+  "receipt_hash": "cba6f4f80c8ef2461d5b971f28034ee497a8b01e9cac3f1d085d93998f1749a5"
 }

@@ -1,0 +1,48 @@
+{
+  "algorithm_id": "yawl_export",
+  "profiles": [],
+  "registry_present": true,
+  "ts_dispatch_present": true,
+  "cli_present": true,
+  "wasm_export_present": true,
+  "positive_cases": [
+    {
+      "case_id": "yawl_export.valid_minimal_log",
+      "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
+      "status": "passed",
+      "result_hash": "675dd1212bc2e94d438409e7e55d63bdcbae8cd1effeaa44a5ad1601fdf21138",
+      "duration_ms": 0.012791999999990367,
+      "receipt_hash": "46ac24e007d7558cd761e86efbe669b84314cfd90ee2c5313255e13fd6373885"
+    }
+  ],
+  "negative_cases": [
+    {
+      "case_id": "yawl_export.empty_log",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
+      "status": "failed_correctly",
+      "error_code": "EMPTY_EVENT_LOG",
+      "no_panic": true,
+      "no_false_success": true,
+      "receipt_hash": "d700ae06e5b20425b4421cee9cbf9b6613d90fe94e1803cb49ce4d5bc24aa25f"
+    },
+    {
+      "case_id": "yawl_export.malformed_log",
+      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
+      "status": "failed_correctly",
+      "error_code": "MALFORMED_EVENT_LOG",
+      "no_panic": true,
+      "no_false_success": true,
+      "receipt_hash": "162784bf7afdb21e1dcc20084897508cc995d1221c65d865b0d69ce6db1b96e0"
+    }
+  ],
+  "invariant_cases": [
+    {
+      "case_id": "yawl_export.deterministic_same_input",
+      "status": "passed",
+      "first_result_hash": "675dd1212bc2e94d438409e7e55d63bdcbae8cd1effeaa44a5ad1601fdf21138",
+      "second_result_hash": "675dd1212bc2e94d438409e7e55d63bdcbae8cd1effeaa44a5ad1601fdf21138",
+      "stable": true
+    }
+  ],
+  "algorithm_evidence_hash": "8af909218c6be1dd40a293004625e78fb57808246f0ba68d78eada1db417c28c"
+}

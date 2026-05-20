@@ -25,6 +25,8 @@ import {
   suggestClusteringK,
   detectLogCharacteristics,
   assessFeatureQuality,
+  extractDriftFeatures,
+  detectAnomalousDriftWindows,
 } from '@wasm4pm/ml';
 import type { ClassificationMethod, ClusteringMethod, RegressionMethod } from '@wasm4pm/ml';
 import { Instrumentation } from '@wasm4pm/observability';
@@ -85,6 +87,8 @@ export interface MlTaskOptions {
   eps?: number | string;
   smoothingMethod?: 'sma' | 'ema';
   useExponential?: boolean;
+  driftMethod?: string;
+  driftWindowSize?: number | string;
   /**
    * When true, run stratified k-fold cross-validation on classify and attach
    * cv_accuracy, cv_std_dev, cv_folds to the result. Default false.
@@ -332,6 +336,7 @@ const TASK_MINIMUM_TRACES: Record<MlTask, number> = {
   anomaly: 3, // peak detection needs at least 3 points
   regress: 2, // linear regression requires at least 2 points
   pca: 2, // PCA requires at least 2 observations and 2 features
+  drift: 10, // Drift needs enough traces to compute distribution differences
 };
 
 /**
@@ -345,6 +350,7 @@ const TASK_RECOMMENDATIONS: Record<MlTask, string[]> = {
   anomaly: ['forecast'],
   regress: ['classify', 'cluster'],
   pca: ['cluster'],
+  drift: ['anomaly', 'cluster'],
 };
 
 /**
@@ -359,7 +365,7 @@ const TASK_RECOMMENDATIONS: Record<MlTask, string[]> = {
 function resolveMethodWithPrecedence(
   task: MlTask,
   options: MlTaskOptions,
-  config: Config | undefined,
+  config: any | undefined,
   env: NodeJS.ProcessEnv | undefined,
   taskDefaults: Record<MlTask, string>
 ): string {
@@ -419,7 +425,7 @@ export async function executeMlTask(
   logHandle: string,
   activityKey: string,
   options: MlTaskOptions = {},
-  config?: Config,
+  config?: any,
   env?: NodeJS.ProcessEnv
 ): Promise<Record<string, unknown>> {
   const taskDefaults: Record<MlTask, string> = {
