@@ -3,7 +3,7 @@ use wasm4pm::advanced::oc_declare::{discover_oc_declare, OCDeclareOptions};
 use wasm4pm::advanced::ocdfg::OCDirectlyFollowsGraph;
 use wasm4pm::advanced::ocla::OCLanguageAbstraction;
 use wasm4pm::models::{OCEL, EventLog};
-use wasm4pm::xes_format::parse_xes;
+use wasm4pm::xes_format::validate_and_parse_xes;
 use std::fs;
 
 #[test]
@@ -23,7 +23,7 @@ fn test_real_world_xes_and_alphappp() {
     let xes_content = fs::read_to_string(path).expect("Failed to read dataset");
 
     // Test the high-performance core parser
-    let log = parse_xes(&xes_content).expect("Failed to parse XES natively");
+    let log = validate_and_parse_xes(&xes_content).expect("Failed to parse XES natively");
 
     assert!(log.traces.len() > 0, "Log should have traces");
 

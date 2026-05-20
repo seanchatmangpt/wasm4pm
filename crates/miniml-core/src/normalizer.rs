@@ -1,6 +1,4 @@
 use wasm_bindgen::prelude::*;
-use crate::error::MlError;
-use crate::matrix::validate_matrix;
 
 /// Normalizer - Scale samples to unit norm (L1, L2, or Max)
 #[wasm_bindgen]

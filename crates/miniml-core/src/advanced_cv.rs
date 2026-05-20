@@ -2,7 +2,6 @@
 //!
 //! Provides stratified K-fold, group K-fold, time series CV, nested CV, LOOCV, and bootstrapping.
 
-use crate::error::MlError;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 use std::collections::HashMap;
@@ -108,7 +107,7 @@ pub fn stratified_k_fold(
     let mut folds: Vec<Vec<usize>> = vec![Vec::new(); n_folds];
 
     for (_, indices) in class_indices.iter() {
-        let n_class = indices.len();
+        let _n_class = indices.len();
 
         for (fold_idx, &idx) in indices.iter().enumerate() {
             let fold = fold_idx % n_folds;
@@ -121,7 +120,7 @@ pub fn stratified_k_fold(
 
     for fold_idx in 0..n_folds {
         let mut train_indices = Vec::new();
-        let mut val_indices = folds[fold_idx].clone();
+        let val_indices = folds[fold_idx].clone();
 
         for (i, fold) in folds.iter().enumerate() {
             if i != fold_idx {
@@ -217,7 +216,7 @@ pub fn group_k_fold(
 
     for fold_idx in 0..n_folds {
         let mut train_indices = Vec::new();
-        let mut val_indices = folds[fold_idx].clone();
+        let val_indices = folds[fold_idx].clone();
 
         for (i, fold) in folds.iter().enumerate() {
             if i != fold_idx {

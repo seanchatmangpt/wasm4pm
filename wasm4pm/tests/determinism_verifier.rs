@@ -97,22 +97,23 @@ impl DeterminismVerifier {
     pub fn verify_determinism_f32(
         &self,
         seed: u64,
-        n_trials: usize,
-        algorithm: impl Fn() -> f32,
+        iterations: usize,
+        mut algorithm: impl FnMut() -> f32,
     ) -> DeterminismResult {
         let mut trials = Vec::new();
 
-        for _ in 0..n_trials {
+        for _ in 0..iterations {
             let result = algorithm();
             trials.push(result);
         }
 
+        // Compare all pairs for determinism (within float tolerance)
         let mut failed_trials = Vec::new();
         let mut consistent_pairs = 0;
-        let total_pairs = (n_trials * (n_trials - 1)) / 2;
+        let total_pairs = (iterations * (iterations - 1)) / 2;
 
-        for i in 0..n_trials {
-            for j in (i + 1)..n_trials {
+        for i in 0..iterations {
+            for j in (i + 1)..iterations {
                 let diff = (trials[i] - trials[j]).abs();
 
                 // Check for NaN/Inf mismatch
@@ -151,7 +152,7 @@ impl DeterminismVerifier {
         &self,
         seed: u64,
         n_trials: usize,
-        algorithm: impl Fn() -> f32,
+        algorithm: impl FnMut() -> f32,
         tolerance: f32,
     ) -> DeterminismResult {
         let saved_tolerance = self.float_tolerance;

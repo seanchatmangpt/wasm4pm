@@ -13,7 +13,7 @@ import { WasmLoader } from '@wasm4pm/engine';
 import { resolveConfig } from '@wasm4pm/config';
 import { buildSarifOutput } from '../sarif.js';
 import { exitWithFlush } from '../otel/exit.js';
-import { withSpan } from './_otel.js';
+import { withSpan, withSpanRaw } from './_otel.js';
 
 // ---------------------------------------------------------------------------
 // Shared parse helper — WASM functions return either a JS string or an object

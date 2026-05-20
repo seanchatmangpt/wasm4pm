@@ -3,7 +3,6 @@
 //! Provides SHAP-like feature attribution, LIME-like local explanations,
 //! decision paths for trees, confidence intervals, and counterfactuals.
 
-use crate::error::MlError;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 

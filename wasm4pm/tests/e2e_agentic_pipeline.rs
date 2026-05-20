@@ -237,7 +237,7 @@ fn e2e_cpu_hot_path_marking_sequence() {
     assert_eq!(m2.p1, 1, "Output token produced");
 
     // RL reward for health improvement (3 → 1 = large gain)
-    let reward = compute_reward(3, 1, 0, true, true, false);
+    let reward = compute_reward(3, 1, 0, true, true, false, 0);
     assert!(reward > 0.0, "Positive reward for health improvement");
 
     // Blocked marking produces no state change
@@ -336,7 +336,7 @@ fn e2e_autonomic_state_machine_happy_path() {
     assert_eq!(m2.p1, 1);
 
     // MONITOR: RL reward is positive (health improved from 1 to 0)
-    let reward = compute_reward(1, 0, 0, true, true, false);
+    let reward = compute_reward(1, 0, 0, true, true, false, 0);
     assert!(reward > 0.0);
 
     // LEARN: orchestrator cycle recorded
@@ -552,9 +552,9 @@ fn e2e_rl_challenge_ucb_exploration_bonus() {
 #[test]
 fn e2e_rl_challenge_bounded_reward_kernel() {
     // Worst case: severe degradation, many SPC alerts, both guards failed
-    let min_reward = compute_reward(0, 4, 100, false, false, false);
+    let min_reward = compute_reward(0, 4, 100, false, false, false, 0);
     // Best case: maximum improvement, clean process, all guards pass
-    let max_reward = compute_reward(4, 0, 0, true, true, false);
+    let max_reward = compute_reward(4, 0, 0, true, true, false, 0);
 
     assert!(min_reward > -20.0, "Reward floor must be bounded");
     assert!(max_reward < 5.0, "Reward ceiling must be bounded");
@@ -1189,7 +1189,7 @@ fn e2e_health_state_blocked_on_disabled_marking() {
     assert_eq!(en, 0, "No tokens = Blocked state");
 
     // RL records a penalty for the blocked state
-    let reward = compute_reward(2, 2, 0, false, false, false); // guard failed = circuit open
+    let reward = compute_reward(2, 2, 0, false, false, false, 0); // guard failed = circuit open
     assert!(reward < 0.0, "Circuit breaker failure must penalise reward");
 }
 
@@ -1219,7 +1219,7 @@ fn e2e_health_state_recovery_from_blocked() {
     let m2 = marking_fire4(m_recovered, t, en);
     assert_eq!(m2.p1, 1, "Lawful path restored");
 
-    let reward = compute_reward(2, 1, 0, true, true, false);
+    let reward = compute_reward(2, 1, 0, true, true, false, 0);
     assert!(reward > 0.0, "Recovery produces positive reward");
 }
 

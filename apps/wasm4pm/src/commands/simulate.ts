@@ -255,6 +255,10 @@ export const simulate = defineCommand({
                     (sim.resource_utilization as Record<string, number> | undefined) ?? {},
                   activityStatistics:
                     (sim.activity_statistics as Record<string, unknown> | undefined) ?? {},
+                  traceCount: undefined as unknown,
+                  traceLengths: undefined as any,
+                  durations: undefined as any,
+                  variantsDiscovered: undefined as unknown,
                 },
                 traces: (sim.traces ?? []) as Array<Record<string, unknown>>,
                 ...(playoutResult && { playout: playoutResult }),
@@ -357,6 +361,10 @@ function printHumanSimulation(
       sojournTimeP50Ms: unknown;
       sojournTimeP95Ms: unknown;
       resourceUtilization: unknown;
+      traceCount?: unknown;
+      traceLengths?: any;
+      durations?: any;
+      variantsDiscovered?: unknown;
     };
     traces: Array<Record<string, unknown>>;
     playout?: Record<string, unknown>;

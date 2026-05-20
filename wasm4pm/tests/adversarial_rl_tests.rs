@@ -371,7 +371,7 @@ fn a3_fm1_regression_via_orchestrator_run_cycle() {
     // guard_pass && circuit_allowed: +0.1
     // Not latency_exceeded: 0.0 penalty
     // Total: 1.1
-    let expected_reward = compute_reward(2, 1, 0, true, true, false);
+    let expected_reward = compute_reward(2, 1, 0, true, true, false, 0);
     assert!(
         (reward - expected_reward).abs() < 1e-5,
         "A3 orchestrator: reward must be {:.4} (health improvement + guard bonus), got {:.4}",

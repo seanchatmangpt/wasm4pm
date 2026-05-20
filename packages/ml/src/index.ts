@@ -9,6 +9,9 @@
 // Bridge utilities
 export { buildFeatureMatrix, encodeLabels, selectTopFeatures, normalizeFeatures } from './bridge.js';
 
+// Feature extractors
+export { extractRemainingTimeFeatures } from './features-remaining-time.js';
+
 // Classification & regression (includes runCrossValidation for advanced usage)
 export { classifyTraces, regressRemainingTime, runCrossValidation } from './classifiers.js';
 
@@ -105,9 +108,14 @@ export {
   selectRegressionAlgorithm,
   selectPcaDimensionality,
   computeMulticollinearity,
-  type AlgorithmRecommendation,
   type FeatureMatrixCharacteristics,
 } from './algorithm-selection.js';
+
+export {
+  recommendAlgorithm,
+  selectBestAlgorithmForTask,
+  type AlgorithmRecommendation,
+} from './algorithm-selector.js';
 
 // Hyperparameter search (Tier 3 AUTOML Gap-15/16)
 export {

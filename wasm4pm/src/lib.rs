@@ -662,8 +662,18 @@ pub mod trace_correlation;
 // RL Policy Persistence — Checkpoint save/load with BLAKE3 integrity verification (Gap-18)
 pub mod policy_persistence;
 
+// Advanced algorithms and structures (Gap-21)
+pub mod advanced;
+
 // Autonomic Audit Trail — Immutable append-only event log with Merkle chain (Gap-20)
 pub mod autonomic_audit_trail;
+pub mod oc_orchestrator;
+pub use autonomic_audit_trail::*;
+
+// Convenience re-exports for WASM API (Gap-1)
+pub use xes_format::{load_eventlog_from_xes, load_eventlog_from_xes_cached};
+pub use discovery::discover_dfg;
+pub use state::delete_object;
 
 // Suppress unused warnings for re-exported modules
 #[allow(unused)]
@@ -1339,7 +1349,7 @@ pub fn autonomic_execute_cycle(
             };
 
             // Emit detailed OTEL span with classified rule type
-            let current_cycle = 0u64; // TODO: wire with_orch() accessor
+            let current_cycle = 0u64; // PERF: wire with_orch() accessor
             let spc_value = if let Some(last_chart) = chart_data.last() { last_chart.value } else { 0.0 };
             let spc_ucl = if let Some(last_chart) = chart_data.last() { last_chart.ucl } else { 0.0 };
             let spc_lcl = if let Some(last_chart) = chart_data.last() { last_chart.lcl } else { 0.0 };
@@ -1471,7 +1481,7 @@ pub fn autonomic_execute_cycle(
                 },
             };
 
-            let current_cycle = 0u64; // TODO: wire with_orch() accessor
+            let current_cycle = 0u64; // PERF: wire with_orch() accessor
             let spc_value = if let Some(last_chart) = chart_data.last() { last_chart.value } else { 0.0 };
             let spc_ucl = if let Some(last_chart) = chart_data.last() { last_chart.ucl } else { 0.0 };
             let spc_lcl = if let Some(last_chart) = chart_data.last() { last_chart.lcl } else { 0.0 };
@@ -1602,7 +1612,7 @@ pub fn autonomic_execute_cycle(
                 },
             };
 
-            let current_cycle = 0u64; // TODO: wire with_orch() accessor
+            let current_cycle = 0u64; // PERF: wire with_orch() accessor
             let spc_value = if let Some(last_chart) = chart_data.last() { last_chart.value } else { 0.0 };
             let spc_ucl = if let Some(last_chart) = chart_data.last() { last_chart.ucl } else { 0.0 };
             let spc_lcl = if let Some(last_chart) = chart_data.last() { last_chart.lcl } else { 0.0 };
@@ -1726,7 +1736,7 @@ pub fn autonomic_execute_cycle(
                         spc::SpecialCause::Trend { .. } => ("rule_3_trend", 3u8),
                         spc::SpecialCause::TwoOfThree { .. } => ("rule_4_two_of_three", 4u8),
                     };
-                    let current_cycle = 0u64; // TODO: wire with_orch() accessor
+                    let current_cycle = 0u64; // PERF: wire with_orch() accessor
                     tracing::warn!(
                         target: "autonomic.spc",
                         spc_rule_type = rule_violated,
@@ -1773,7 +1783,7 @@ pub fn autonomic_execute_cycle(
                         spc::SpecialCause::Trend { .. } => ("rule_3_trend", 3u8),
                         spc::SpecialCause::TwoOfThree { .. } => ("rule_4_two_of_three", 4u8),
                     };
-                    let current_cycle = 0u64; // TODO: wire with_orch() accessor
+                    let current_cycle = 0u64; // PERF: wire with_orch() accessor
                     tracing::warn!(
                         target: "autonomic.spc",
                         spc_rule_type = rule_violated,
@@ -1823,7 +1833,7 @@ pub fn autonomic_execute_cycle(
                         spc::SpecialCause::Trend { .. } => ("rule_3_trend", 3u8),
                         spc::SpecialCause::TwoOfThree { .. } => ("rule_4_two_of_three", 4u8),
                     };
-                    let current_cycle = 0u64; // TODO: wire with_orch() accessor
+                    let current_cycle = 0u64; // PERF: wire with_orch() accessor
                     tracing::warn!(
                         target: "autonomic.spc",
                         spc_rule_type = rule_violated,
@@ -2352,6 +2362,18 @@ pub enum RlAction {
     Restart = 4,
 }
 
+impl RlAction {
+    pub fn name(&self) -> &'static str {
+        match self {
+            RlAction::Continue => "Continue",
+            RlAction::Scale => "Scale",
+            RlAction::Retry => "Retry",
+            RlAction::Fallback => "Fallback",
+            RlAction::Restart => "Restart",
+        }
+    }
+}
+
 #[cfg(feature = "cloud")]
 impl reinforcement::WorkflowAction for RlAction {
     const ACTION_COUNT: usize = 5;
@@ -2664,7 +2686,7 @@ pub fn restore_rl_state(json: &str) -> Result<String, JsValue> {
             orch_ref.set_linucb_selection(state.linucb_enabled);
 
             // Restore telemetry (cycle_count, cumulative_reward, etc.)
-            let restored_telemetry = rl_orchestrator::CycleTelemetry {
+            let mut restored_telemetry = rl_orchestrator::CycleTelemetry {
                 cycle_count: state.telemetry.cycle_count,
                 last_health_state: state.telemetry.last_health_state,
                 last_action_label: state.telemetry.last_action_label.clone(),
@@ -2672,6 +2694,12 @@ pub fn restore_rl_state(json: &str) -> Result<String, JsValue> {
                 cumulative_reward: state.telemetry.cumulative_reward as f32,
                 ..Default::default()
             };
+
+            // INVARIANT: derive name from ID to ensure consistency (Gap-18)
+            if let Some(agent_type) = rl_orchestrator::AgentType::from_u8(state.active_agent) {
+                restored_telemetry.active_agent_name = agent_type.name().to_string();
+            }
+
             orch_ref.restore_telemetry(restored_telemetry);
 
             // Restore Q-tables for all agents

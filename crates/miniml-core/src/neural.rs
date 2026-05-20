@@ -4,7 +4,6 @@
 
 use crate::error::MlError;
 use serde::{Deserialize, Serialize};
-use wasm_bindgen::prelude::*;
 #[cfg(target_arch = "wasm32")]
 use js_sys;
 
@@ -319,7 +318,7 @@ impl NeuralNet {
             self.optimizer = Some(Optimizer::sgd(0.01));
         }
 
-        for epoch in 0..n_epochs {
+        for _epoch in 0..n_epochs {
             for batch_start in (0..n_samples).step_by(batch_size) {
                 let batch_end = (batch_start + batch_size).min(n_samples);
 
@@ -410,7 +409,7 @@ impl NeuralNet {
                     for (neuron_idx, neuron_weights) in weights.iter().enumerate() {
                         let error = current_error[neuron_idx];
 
-                        for (weight_idx, &weight) in neuron_weights.iter().enumerate() {
+                        for (weight_idx, &_weight) in neuron_weights.iter().enumerate() {
                             layer_gradients[neuron_idx][weight_idx] += error * input[weight_idx];
                         }
                     }
@@ -418,7 +417,7 @@ impl NeuralNet {
                     // Propagate error to previous layer
                     if layer_idx > 0 {
                         let mut prev_error = vec![0.0; input.len()];
-                        for (input_idx, &input_val) in input.iter().enumerate() {
+                        for (input_idx, &_input_val) in input.iter().enumerate() {
                             for (neuron_idx, neuron_weights) in weights.iter().enumerate() {
                                 prev_error[input_idx] +=
                                     current_error[neuron_idx] * neuron_weights[input_idx];

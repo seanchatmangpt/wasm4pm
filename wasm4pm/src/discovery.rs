@@ -59,8 +59,12 @@ pub fn discover_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFoll
             .or_insert(0) += 1;
     }
 
+    let mut sorted_edges: Vec<_> = edge_counts.into_iter().collect();
+    // Sort by source then target index to ensure deterministic order (Gap-1)
+    sorted_edges.sort_unstable_by_key(|&((f, t), _)| (f, t));
+
     dfg.edges.extend(
-        edge_counts
+        sorted_edges
             .into_iter()
             .map(|((f, t), freq)| DirectlyFollowsRelation {
                 from: col.vocab[f as usize].to_owned(),
@@ -175,14 +179,17 @@ pub fn discover_ocel_dfg_pure(ocel: &OCEL) -> DirectlyFollowsGraph {
                 .or_insert(0) += 1;
         }
     }
-    for ((from, to), freq) in edge_map {
+
+    let mut sorted_edges: Vec<_> = edge_map.into_iter().collect();
+    sorted_edges.sort_unstable_by_key(|((f, t), _)| (f.clone(), t.clone()));
+
+    for ((from, to), frequency) in sorted_edges {
         dfg.edges.push(DirectlyFollowsRelation {
             from,
             to,
-            frequency: freq,
+            frequency,
         });
     }
-
     // Collect start/end event types using .first()/.last() to eliminate
     // manual bounds checks and the len()-1 index expression.
     for obj_id in events_by_object.keys() {

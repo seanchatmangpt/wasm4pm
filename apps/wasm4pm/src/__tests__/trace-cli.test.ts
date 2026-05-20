@@ -803,7 +803,7 @@ describe('wpm trace — additional coverage', () => {
     it.each(['go', 'ruby', 'swift', 'kotlin', 'csharp', 'php'])(
       'exits 1 (config_error) for unsupported language "%s"',
       async (lang) => {
-        const traceFile = path.join(tmpDir, 'dummy.txt');
+        const traceFile = path.join(tmpDir, 'test_file.txt');
         await fs.writeFile(traceFile, 'some content', 'utf8');
 
         const result = await wpmAsync(
@@ -817,7 +817,7 @@ describe('wpm trace — additional coverage', () => {
     );
 
     it('JSON error envelope for unknown language mentions the invalid language name', async () => {
-      const traceFile = path.join(tmpDir, 'dummy.txt');
+      const traceFile = path.join(tmpDir, 'test_file.txt');
       await fs.writeFile(traceFile, 'some content', 'utf8');
 
       const result = await wpmAsync(

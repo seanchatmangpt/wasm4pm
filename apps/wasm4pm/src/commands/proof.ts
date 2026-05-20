@@ -500,7 +500,6 @@ const audit = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
-    return withSpan('proof.audit', { out: String(ctx.args.out ?? '') }, async () => {
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = ctx.args.verbose ?? false;

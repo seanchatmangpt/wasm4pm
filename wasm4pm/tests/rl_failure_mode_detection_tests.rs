@@ -24,9 +24,9 @@ fn make_state(health: u8, event_rate_q: u8) -> RlState {
 fn health_reward_monotonicity() {
     // Rank-2 domain contract: health degradation should correlate with negative reward
     // This validates the reward function used in failure detection
-    let r_improve = compute_reward(2, 1, 0, true, true, false); // health improves
-    let r_stable = compute_reward(1, 1, 0, true, true, false); // health stable
-    let r_degrade = compute_reward(1, 2, 0, true, true, false); // health degrades
+    let r_improve = compute_reward(2, 1, 0, true, true, false, 0); // health improves
+    let r_stable = compute_reward(1, 1, 0, true, true, false, 0); // health stable
+    let r_degrade = compute_reward(1, 2, 0, true, true, false, 0); // health degrades
 
     assert!(
         r_improve > r_stable,
@@ -43,7 +43,7 @@ fn spc_alert_penalty_monotonic() {
     // Rank-4: increasing SPC alerts should decrease reward monotonically
     let mut prev = f32::INFINITY;
     for n in 0..=5 {
-        let r = compute_reward(1, 1, n, true, true, false);
+        let r = compute_reward(1, 1, n, true, true, false, 0);
         assert!(
             r <= prev + 1e-6,
             "Reward must be non-increasing with SPC alerts: {} > {}",
@@ -57,8 +57,8 @@ fn spc_alert_penalty_monotonic() {
 #[test]
 fn spc_alert_penalty_saturates() {
     // Rank-4: SPC penalty should cap (not unbounded growth)
-    let r5 = compute_reward(1, 1, 5, true, true, false);
-    let r100 = compute_reward(1, 1, 100, true, true, false);
+    let r5 = compute_reward(1, 1, 5, true, true, false, 0);
+    let r100 = compute_reward(1, 1, 100, true, true, false, 0);
 
     // Both should produce the same reward (saturated at -1.5 cap)
     assert!(
@@ -72,10 +72,10 @@ fn spc_alert_penalty_saturates() {
 #[test]
 fn guard_circuit_penalty_correct() {
     // Rank-2 domain contract: guard/circuit failures should penalize reward
-    let pass = compute_reward(1, 1, 0, true, true, false); // Both pass
-    let guard_fail = compute_reward(1, 1, 0, false, true, false); // Guard fails
-    let ckt_fail = compute_reward(1, 1, 0, true, false, false); // Circuit fails
-    let both_fail = compute_reward(1, 1, 0, false, false, false); // Both fail
+    let pass = compute_reward(1, 1, 0, true, true, false, 0); // Both pass
+    let guard_fail = compute_reward(1, 1, 0, false, true, false, 0); // Guard fails
+    let ckt_fail = compute_reward(1, 1, 0, true, false, false, 0); // Circuit fails
+    let both_fail = compute_reward(1, 1, 0, false, false, false, 0); // Both fail
 
     // When both pass: +0.1 bonus
     // When either fails: -0.5 penalty
@@ -93,8 +93,8 @@ fn guard_circuit_penalty_correct() {
 #[test]
 fn terminal_state_large_penalty() {
     // Rank-1 oracle: health=4 (terminal) should incur -2.0 penalty
-    let non_terminal = compute_reward(2, 3, 0, true, true, false);
-    let terminal = compute_reward(2, 4, 0, true, true, false);
+    let non_terminal = compute_reward(2, 3, 0, true, true, false, 0);
+    let terminal = compute_reward(2, 4, 0, true, true, false, 0);
 
     // Terminal adds -2.0 on top of health degradation penalty
     assert!(
@@ -106,8 +106,8 @@ fn terminal_state_large_penalty() {
 #[test]
 fn latency_budget_exceeded_penalty() {
     // Rank-2: latency budget exceeded should reduce reward by 0.3
-    let on_budget = compute_reward(1, 1, 0, true, true, false);
-    let over_budget = compute_reward(1, 1, 0, true, true, true);
+    let on_budget = compute_reward(1, 1, 0, true, true, false, 0);
+    let over_budget = compute_reward(1, 1, 0, true, true, true, 0);
 
     let penalty = on_budget - over_budget;
     assert!(
@@ -128,7 +128,7 @@ fn orchestrator_survives_many_cycles() {
 
     for i in 0..100 {
         let s_next = make_state(0, (i % 4) as u8);
-        let reward = compute_reward(0, 0, (i % 3), true, true, false);
+        let reward = compute_reward(0, 0, i % 3, true, true, false, 0);
 
         // Simulate cycle via update (not run_cycle to avoid LinUCB overhead)
         let action = orch.select_action(&s);

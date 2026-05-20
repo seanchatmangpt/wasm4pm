@@ -345,16 +345,16 @@ fn fine_tune_ensemble_model(
 /// Fine-tune neural network
 fn fine_tune_neural_network(
     model: &mut PersistentModel,
-    X: &[f64],
-    y: &[f64],
+    _X: &[f64],
+    _y: &[f64],
     layers_to_freeze: &[usize],
-    n_samples: usize,
-    n_features: usize,
-    learning_rate: f64,
-    epochs: usize,
+    _n_samples: usize,
+    _n_features: usize,
+    _learning_rate: f64,
+    _epochs: usize,
 ) -> Result<(), MlError> {
     // Extract network structure
-    let network = extract_neural_network_from_model(model)?;
+    let _network = extract_neural_network_from_model(model)?;
 
     // Fine-tune with frozen layers
     // (In production, would implement backprop with layer freezing)
@@ -376,9 +376,9 @@ fn extract_neural_network_from_model(model: &PersistentModel) -> Result<serde_js
 
 /// Extract features from neural network
 fn extract_neural_network_features(
-    model: &PersistentModel,
+    _model: &PersistentModel,
     X: &[f64],
-    layer_index: usize,
+    _layer_index: usize,
     n_samples: usize,
     n_features: usize,
 ) -> Result<Vec<f64>, MlError> {
@@ -396,7 +396,7 @@ fn extract_neural_network_features(
 
 /// Extract features from random forest
 fn extract_random_forest_features(
-    model: &PersistentModel,
+    _model: &PersistentModel,
     X: &[f64],
     n_samples: usize,
     n_features: usize,

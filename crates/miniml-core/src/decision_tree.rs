@@ -255,7 +255,7 @@ impl<'a> TreeBuilder<'a> {
         // Build class-to-index map once
         let unique_classes: Vec<_> = targets.iter().map(|&t| t as u32).collect();
         let class_set: HashSet<_> = unique_classes.iter().collect();
-        let class_to_idx: HashMap<_, _> =
+        let _class_to_idx: HashMap<_, _> =
             class_set.iter().enumerate().map(|(i, &c)| (c, i)).collect();
 
         let mut best_feature = 0;

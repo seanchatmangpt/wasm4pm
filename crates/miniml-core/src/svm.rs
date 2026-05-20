@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 use crate::error::MlError;
-use crate::matrix::{validate_matrix, mat_get};
+use crate::matrix::validate_matrix;
 
 /// Linear SVM Classifier (using PEGASOS algorithm for WASM compatibility)
 /// Subgradient descent with hinge loss

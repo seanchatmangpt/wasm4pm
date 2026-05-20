@@ -63,40 +63,41 @@ fn test_ensemble_module_no_longer_exposes_ensemble_discover_symbol() {
 
 #[cfg(feature = "poc_gate_validator")]
 mod gate_validator_tests {
-    use wasm4pm::gate_validator::{init_gates, mark_gate_passed, gate_passed, verify_export_gate};
+    use wasm4pm::gate_validator::UnverifiedRun;
     use wasm4pm::proof_gate_registry::ProofGate;
 
     #[test]
     fn test_gate_validator_lifecycle_with_poc_feature() {
-        init_gates();
-        assert!(!gate_passed(ProofGate::gate_test_suite_passes),
+        let mut run = UnverifiedRun::new();
+        assert!(!run.gate_passed(ProofGate::gate_test_suite_passes),
             "Gate should not be passed before marking");
 
-        assert!(verify_export_gate().is_err(),
+        assert!(run.clone().verify().is_err(),
             "Export should be refused before gate passes");
 
-        mark_gate_passed(ProofGate::gate_test_suite_passes);
-        assert!(gate_passed(ProofGate::gate_test_suite_passes),
+        run.mark_gate_passed(ProofGate::gate_test_suite_passes);
+        assert!(run.gate_passed(ProofGate::gate_test_suite_passes),
             "Gate should be passed after marking");
 
-        assert!(verify_export_gate().is_ok(),
+        assert!(run.verify().is_ok(),
             "Export should be allowed after gate passes");
     }
 
     #[test]
-    fn test_poc_gate_validator_cannot_be_used_in_production_profiles() {
-        // poc_gate_validator must NEVER appear in browser/cloud/fog/edge/iot
-        #[cfg(any(
-            all(feature = "poc_gate_validator", feature = "browser"),
-            all(feature = "poc_gate_validator", feature = "cloud"),
-            all(feature = "poc_gate_validator", feature = "fog"),
-            all(feature = "poc_gate_validator", feature = "edge"),
-            all(feature = "poc_gate_validator", feature = "iot"),
+    fn test_gate_validator_not_in_production_profile() {
+        #[cfg(all(
+            feature = "poc_gate_validator",
+            any(
+                feature = "browser",
+                feature = "cloud",
+                feature = "fog",
+                feature = "edge",
+                feature = "iot",
+                feature = "mobile"
+            )
         ))]
-        compile_error!("poc_gate_validator must not be enabled in any deployment profile");
-        assert!(true);
+        panic!("poc_gate_validator must not be enabled in any deployment profile");
     }
-}
 
 // ── Category C: AutoML Refused Contract ─────────────────────────────────────
 
@@ -162,4 +163,5 @@ fn test_wasm_dts_contains_bottleneck_and_infrequent_functions() {
         content.contains("analyze_infrequent_paths"),
         "Expected 'analyze_infrequent_paths' in pkg/wasm4pm.d.ts"
     );
+}
 }

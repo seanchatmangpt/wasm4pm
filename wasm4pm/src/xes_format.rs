@@ -47,29 +47,7 @@ mod xes_compat {
         out
     }
 
-    impl From<ext::Event> for Event {
-        fn from(e: ext::Event) -> Self {
-            Event { attributes: conv_attrs(e.attributes) }
-        }
-    }
 
-    impl From<ext::Trace> for Trace {
-        fn from(t: ext::Trace) -> Self {
-            Trace {
-                attributes: conv_attrs(t.attributes),
-                events: t.events.into_iter().map(Into::into).collect(),
-            }
-        }
-    }
-
-    impl From<ext::EventLog> for EventLog {
-        fn from(l: ext::EventLog) -> Self {
-            EventLog {
-                attributes: conv_attrs(l.attributes),
-                traces: l.traces.into_iter().map(Into::into).collect(),
-            }
-        }
-    }
 }
 
 // ---------------------------------------------------------------------------
@@ -161,7 +139,7 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
         let reader = std::io::BufReader::new(std::io::Cursor::new(content.as_bytes().to_vec()));
         match import_xes(reader, XESImportOptions::default()) {
             Ok(types_log) => {
-                let log: EventLog = serde_json::from_str(&serde_json::to_string(&types_log).unwrap()).unwrap();
+                let log: EventLog = types_log.into();
                 let handle = get_or_init_state()
                     .store_object(StoredObject::EventLog(log))
                     .map_err(|_e| crate::error::js_val("Failed to store EventLog"))?;

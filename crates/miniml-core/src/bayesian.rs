@@ -255,7 +255,7 @@ pub fn bayesian_linear_regression_impl(
 
     // Generate posterior samples for prediction intervals (optional)
     let mut posterior_samples = Vec::with_capacity(n.min(1000));
-    let mut rng = Rng::new(42);
+    let _rng = Rng::new(42);
     for _ in 0..n.min(1000) {
         posterior_samples.push(intercept);
     }

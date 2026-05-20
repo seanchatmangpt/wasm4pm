@@ -2,7 +2,6 @@
 //!
 //! Supports JSON (human-readable) and binary (compact) formats.
 
-use crate::error::MlError;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;

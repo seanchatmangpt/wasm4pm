@@ -1,5 +1,4 @@
 use wasm_bindgen::prelude::*;
-use crate::error::MlError;
 
 /// One-Hot Encoder - Encode categorical features as binary vectors
 #[wasm_bindgen]

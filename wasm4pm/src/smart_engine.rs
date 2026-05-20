@@ -312,8 +312,8 @@ impl FusedMultiPass {
         let dfg = DirectlyFollowsGraph {
             nodes,
             edges,
-            start_activities: start_counts,
-            end_activities: end_counts,
+            start_activities: start_counts.into_iter().collect(),
+            end_activities: end_counts.into_iter().collect(),
         };
 
         self.dfg_log_hash = hash;
@@ -516,8 +516,8 @@ impl FusedMultiPassStreaming {
         let dfg = DirectlyFollowsGraph {
             nodes,
             edges,
-            start_activities,
-            end_activities,
+            start_activities: start_activities.into_iter().collect(),
+            end_activities: end_activities.into_iter().collect(),
         };
 
         self.inner.dfg_log_hash = hash;

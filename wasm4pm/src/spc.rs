@@ -143,7 +143,7 @@ pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
     // first-class defect, not a discrepancy. Treat any non-finite value as an
     // out-of-control signal so the autonomic loop notices and degrades safely.
     if let Some(latest) = data.last() {
-        if latest.value > latest.ucl || latest.value < latest.lcl {
+        if !latest.value.is_finite() || latest.value > latest.ucl || latest.value < latest.lcl {
             debug!(
                 rule = 1,
                 value = latest.value,

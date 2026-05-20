@@ -76,6 +76,8 @@ tempfile = { workspace = true }
 regex = "1"
 naga = { version = "0.19", features = ["wgsl-in"] }
 wasm4pm-macros = { path = "../crates/wasm4pm-macros" }
+quick-xml = "0.37"
+miniml = { path = "../crates/miniml-core" }
 
 [[bench]]
 name = "fast_algorithms"

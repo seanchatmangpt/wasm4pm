@@ -70,4 +70,10 @@ export { WasmErrorCode, WasmLoadError } from './wasm-loader.js';
 export { FederationController, FederationCircuitBreaker, initializeFederationStack, planFederationIntegration, } from './federation.js';
 export type { BackendState, CircuitBreakerState, DecisionTraceEntry } from './federation.js';
 export { NullBackend } from './null-backend.js';
+export { computeObjectiveScores, makeAutonomicDecision, validatePreferences } from './autonomic-decision.js';
+export type { MultiObjectiveScores, DecisionPreferences, AutonomicDecision, } from './autonomic-decision.js';
+export { ProtectionManager, DegradationLevel } from './protection-layer.js';
+export type { AlgorithmCircuitBreaker, ProtectionDecision, } from './protection-layer.js';
+export { recommendAlgorithm, recommendProfile, optimize, } from './optimization-engine.js';
+export type { AlgorithmCharacteristics, LogCharacteristics, AlgorithmRecommendation, ProfileRecommendation, OptimizationResult, DeploymentProfile, } from './optimization-engine.js';
 //# sourceMappingURL=index.d.ts.map

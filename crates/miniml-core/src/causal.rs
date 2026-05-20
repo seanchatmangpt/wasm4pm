@@ -6,7 +6,6 @@
 use crate::error::MlError;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
-use std::f64::consts::SQRT_2;
 
 /// Causal effect estimation result
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -116,7 +115,7 @@ pub fn propensity_score_matching_impl(
     for &treated_idx in &treated_indices {
         let treated_score = propensity_scores[treated_idx];
         let treated_covariates = &covariates[treated_idx * n_features..(treated_idx + 1) * n_features];
-        let treated_outcome = outcome[treated_idx];
+        let _treated_outcome = outcome[treated_idx];
 
         // Find best matching control (not yet used)
         let mut best_match_pos = None;
@@ -191,7 +190,7 @@ pub fn propensity_score_matching(
 
 /// Compute propensity scores using logistic regression
 fn compute_propensity_scores(
-    treatment: &[f64],
+    _treatment: &[f64],
     covariates: &[f64],
     n_samples: usize,
     n_features: usize,
@@ -228,10 +227,10 @@ fn average_treatment_effect(treated_outcomes: &[f64], control_outcomes: &[f64]) 
 /// Bootstrap confidence interval
 fn bootstrap_ci(
     matched_pairs: &[(usize, usize)],
-    treatment: &[f64],
+    _treatment: &[f64],
     outcome: &[f64],
-    covariates: &[f64],
-    n_features: usize,
+    _covariates: &[f64],
+    _n_features: usize,
 ) -> (f64, f64) {
     // Simplified CI using normal approximation
     // In production, would use actual bootstrap
@@ -496,7 +495,7 @@ pub fn uplift_forest(
     let mut n_negative = 0;
 
     for i in 0..n_samples {
-        let sample_features = &features[i * n_features..(i + 1) * n_features];
+        let _sample_features = &features[i * n_features..(i + 1) * n_features];
 
         // Use feature similarity to estimate individual treatment effect
         let mut treated_similar = 0.0;

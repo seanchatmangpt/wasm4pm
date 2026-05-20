@@ -537,7 +537,7 @@ impl CircuitBreaker {
         // Detect thrashing: >5 transitions in 60s indicates rapid open/close cycles
         let is_thrashing = self.transition_count > 5 && elapsed_ms < 60_000;
 
-        let trigger_reason = match (old_state, new_state) {
+        let trigger_reason = match (prev_state, new_state) {
             (CircuitState::Closed, CircuitState::Open) => "failure_threshold_exceeded",
             (CircuitState::HalfOpen, CircuitState::Open) => "half_open_failure",
             (CircuitState::Open, CircuitState::HalfOpen) => "open_timeout_elapsed",
@@ -545,7 +545,7 @@ impl CircuitBreaker {
             _ => "unexpected_transition",
         };
 
-        let old_state_str = match old_state {
+        let old_state_str = match prev_state {
             CircuitState::Closed => "Closed",
             CircuitState::Open => "Open",
             CircuitState::HalfOpen => "HalfOpen",

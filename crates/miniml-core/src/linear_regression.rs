@@ -234,7 +234,7 @@ pub fn lasso_regression_impl(
         }
     }
 
-    let mut centered_targets: Vec<f64> = targets.iter().map(|&t| t - mean_y).collect();
+    let centered_targets: Vec<f64> = targets.iter().map(|&t| t - mean_y).collect();
 
     // Coordinate descent
     let mut coefficients = vec![0.0f64; n_features];

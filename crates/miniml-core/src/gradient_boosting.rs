@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 use crate::error::MlError;
-use crate::matrix::{validate_matrix, mat_get, Rng};
+use crate::matrix::validate_matrix;
 use crate::decision_tree::{decision_tree_impl, DecisionTreeModel};
 
 /// Gradient Boosting Classifier (XGBoost/LightGBM-style)
@@ -103,7 +103,7 @@ pub fn gradient_boosting_impl(
     let n_classes = classes.len();
 
     // Initialize with equal weights
-    let mut sample_weights: Vec<f64> = vec![1.0; n];
+    let _sample_weights: Vec<f64> = vec![1.0; n];
     let mut residual_labels = labels.to_vec();
     let mut trees = Vec::new();
 

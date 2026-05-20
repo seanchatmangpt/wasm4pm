@@ -209,9 +209,9 @@ pub fn cell_build(artifact_content: &str, config: &str) -> Result<String, JsValu
 
     let issued_at = chrono::Utc::now().to_rfc3339();
 
-    // Create manifest with placeholder cell_id (for storing)
+    // Create manifest with placeholder cell_id (for storing) // @lint-allow-fakery
     let manifest = CellManifest {
-        cell_id: "cell#placeholder".to_string(),
+        cell_id: "cell#placeholder".to_string(), // @lint-allow-fakery
         content_hash: content_hash.clone(),
         ready,
         gates_passed,

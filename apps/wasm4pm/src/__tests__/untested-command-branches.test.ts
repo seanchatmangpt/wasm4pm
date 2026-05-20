@@ -100,7 +100,7 @@ describe('Untested Command Branches', () => {
 
   describe('timeout command error paths', () => {
     it('should validate timeout value is numeric', async () => {
-      const result = await runCli(['run', 'dummy.xes', '--timeout', 'not-a-number']);
+      const result = await runCli(['run', 'test_file.xes', '--timeout', 'not-a-number']);
 
       expect(result.exitCode).toBe(EXIT_CODES.config_error);
       const output = result.stdout + result.stderr;
@@ -108,7 +108,7 @@ describe('Untested Command Branches', () => {
     });
 
     it('should reject negative timeout', async () => {
-      const result = await runCli(['run', 'dummy.xes', '--timeout', '-100']);
+      const result = await runCli(['run', 'test_file.xes', '--timeout', '-100']);
 
       if (result.exitCode !== EXIT_CODES.success) {
         const output = result.stdout + result.stderr;

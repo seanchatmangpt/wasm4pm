@@ -299,7 +299,7 @@ mod discovery_otel_validation {
     /// Helper: Verify span attribute is numeric
     fn assert_attribute_numeric(attr: &str, value: &str) {
         value.parse::<u64>()
-            .or_else(|_| value.parse::<f64>())
+            .or_else(|_| value.parse::<f64>().map(|f| f as u64))
             .expect(&format!("Attribute {} should be numeric, got: {}", attr, value));
     }
 

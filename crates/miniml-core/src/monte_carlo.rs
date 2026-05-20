@@ -400,11 +400,11 @@ pub fn mc_estimate_pi(n_samples: usize, seed: u64) -> MonteCarloResult {
 /// Monte Carlo integration of a JS function over [a, b].
 #[wasm_bindgen(js_name = "mcIntegrate")]
 pub fn mc_integrate(
-    f: &js_sys::Function,
-    a: f64,
-    b: f64,
-    n_samples: usize,
-    seed: u64,
+    _f: &js_sys::Function,
+    _a: f64,
+    _b: f64,
+    _n_samples: usize,
+    _seed: u64,
 ) -> Result<JsValue, JsValue> {
     // For WASM, we use a simple polynomial integration since we can't pass closures.
     // Users should use mc_integrate_multidim or the _impl version directly.

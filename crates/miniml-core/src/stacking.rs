@@ -247,11 +247,11 @@ impl VotingEnsemble {
 pub fn stacked_ensemble(
     base_models: Vec<String>,
     meta_model: String,
-    X: &[f64],
+    _X: &[f64],
     y: &[f64],
     cv_folds: usize,
     n_samples: usize,
-    n_features: usize,
+    _n_features: usize,
 ) -> Result<JsValue, JsError> {
     let n_models = base_models.len();
 

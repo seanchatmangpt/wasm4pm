@@ -1,6 +1,6 @@
 {
   "name": "examples-zoe-la",
-  "version": "1.0.0",
+  "version": "26.5.19",
   "description": "",
   "main": "index.js",
   "type": "module",
@@ -11,6 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@wasm4pm/cognition": "workspace:^",
     "wasm4pm": "workspace:^"
   },
   "devDependencies": {

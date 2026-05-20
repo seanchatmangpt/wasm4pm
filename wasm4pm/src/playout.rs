@@ -18,7 +18,7 @@ use crate::models::{AttributeValue, Event, EventLog, Trace};
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js_str;
 use serde::{Deserialize, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap};
 use wasm_bindgen::prelude::*;
 
 #[cfg(feature = "powl")]
@@ -205,8 +205,8 @@ pub fn play_out_tree(
 pub fn play_out_dfg_core(
     activities: &[String],
     edges: &[(String, String)],
-    start_activities: &HashMap<String, usize>,
-    end_activities: &HashMap<String, usize>,
+    start_activities: &std::collections::BTreeMap<String, usize>,
+    end_activities: &std::collections::BTreeMap<String, usize>,
     params: &PlayOutParameters,
 ) -> EventLog {
     // Build adjacency list: activity -> Vec<successor>
@@ -229,7 +229,7 @@ pub fn play_out_dfg_core(
 fn play_out_dfg_with_starts(
     start_names: &[&str],
     adj: &HashMap<String, Vec<String>>,
-    end_activities: &HashMap<String, usize>,
+    end_activities: &std::collections::BTreeMap<String, usize>,
     params: &PlayOutParameters,
 ) -> EventLog {
     let mut log = EventLog::new();
@@ -448,7 +448,7 @@ pub fn play_out_dfg(dfg_json: &str, params: &JsValue) -> Result<JsValue, JsValue
 mod tests {
     use super::*;
     use crate::powl_process_tree::ProcessTree;
-    use std::collections::HashMap;
+    use std::collections::{HashMap, BTreeMap};
 
     fn default_params() -> PlayOutParameters {
         PlayOutParameters {
@@ -700,9 +700,9 @@ mod tests {
             ("A".to_string(), "B".to_string()),
             ("B".to_string(), "C".to_string()),
         ];
-        let mut start_activities = HashMap::new();
+        let mut start_activities = BTreeMap::new();
         start_activities.insert("A".to_string(), 10usize);
-        let mut end_activities = HashMap::new();
+        let mut end_activities = BTreeMap::new();
         end_activities.insert("C".to_string(), 8usize);
 
         let params = default_params();
@@ -742,9 +742,9 @@ mod tests {
             ("C".to_string(), "D".to_string()),
             ("D".to_string(), "E".to_string()),
         ];
-        let mut start_activities = HashMap::new();
+        let mut start_activities = BTreeMap::new();
         start_activities.insert("A".to_string(), 10usize);
-        let end_activities = HashMap::new(); // No explicit end activities
+        let end_activities = BTreeMap::new(); // No explicit end activities
 
         let params = PlayOutParameters {
             num_traces: 10,
@@ -781,9 +781,9 @@ mod tests {
             ("A".to_string(), "B".to_string()),
             ("B".to_string(), "C".to_string()),
         ];
-        let mut start_activities = HashMap::new();
+        let mut start_activities = BTreeMap::new();
         start_activities.insert("A".to_string(), 10usize);
-        let mut end_activities = HashMap::new();
+        let mut end_activities = BTreeMap::new();
         end_activities.insert("C".to_string(), 5usize);
 
         let params = PlayOutParameters {

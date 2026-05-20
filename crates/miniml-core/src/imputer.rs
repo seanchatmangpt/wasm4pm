@@ -1,6 +1,4 @@
 use wasm_bindgen::prelude::*;
-use crate::error::MlError;
-use crate::matrix::validate_matrix;
 
 /// Simple Imputer - Missing value imputation
 /// Uses NaN as missing value indicator

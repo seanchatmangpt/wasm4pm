@@ -640,7 +640,7 @@ describe('wpm trace', () => {
 
   describe('trace ingest --from unknown-lang', () => {
     it('exits 1 (config_error) when an unknown language is specified — CLAUDE.md spec', async () => {
-      const traceFile = path.join(tmpDir, 'dummy.txt');
+      const traceFile = path.join(tmpDir, 'test_file.txt');
       await fs.writeFile(traceFile, 'some text', 'utf8');
 
       const result = await wpmAsync(
@@ -653,7 +653,7 @@ describe('wpm trace', () => {
     });
 
     it('unknown language JSON error envelope contains error.message naming the invalid language', async () => {
-      const traceFile = path.join(tmpDir, 'dummy.txt');
+      const traceFile = path.join(tmpDir, 'test_file.txt');
       await fs.writeFile(traceFile, 'some text', 'utf8');
 
       const result = await wpmAsync(
@@ -670,7 +670,7 @@ describe('wpm trace', () => {
     });
 
     it('exits 1 for each language not in the accepted set (go, ruby, swift, kotlin)', async () => {
-      const traceFile = path.join(tmpDir, 'dummy.txt');
+      const traceFile = path.join(tmpDir, 'test_file.txt');
       await fs.writeFile(traceFile, 'data', 'utf8');
       const disallowedLangs = ['go', 'ruby', 'swift', 'kotlin'];
       for (const lang of disallowedLangs) {

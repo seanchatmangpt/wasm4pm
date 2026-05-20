@@ -84,13 +84,13 @@ fn test_monotonic_reward_improvement() {
         "mean reward of last 10 cycles ({:.4}) should be positive in stable regime",
         mean_last_10,
     );
-    // First 10 cycles include improvement bonuses, so they should have higher mean
-    // than the stable last 10 cycles (which are pure stability rewards)
+    // First 10 cycles include improvement bonuses, but the last 10 cycles
+    // include saturated momentum bonuses (+0.5).
     assert!(
-        mean_first_10 >= mean_last_10,
-        "mean reward of first 10 cycles ({:.4}) should >= last 10 ({:.4}) — front-loaded improvement",
-        mean_first_10,
-        mean_last_10
+        mean_last_10 > mean_first_10,
+        "mean reward of last 10 cycles ({:.4}) should > first 10 ({:.4}) due to momentum saturation",
+        mean_last_10,
+        mean_first_10
     );
 
     // Telemetry confirms the final cumulative reward matches our manual sum.
@@ -538,12 +538,21 @@ fn test_health_improves_after_three_consecutive_successes() {
         // - Health improvement: +1.0 (cycle 2)
         // - Health stability: +0.2 (cycles 0,1,3)
         // - Guard+circuit bonus: +0.1 (all cycles)
-        // - No SPC alerts: 0
-        // Total: 0.3 for stable cycles, 1.1 for improvement cycle
-        let expected_reward = if i == 2 { 1.1 } else { 0.3 };
+        // - Momentum bonus: 0.05 * min(consecutive_successes, 10)
+        //   - Cycle 0: 0.3 + 0.0 = 0.3
+        //   - Cycle 1: 0.3 + 0.05 = 0.35
+        //   - Cycle 2: 1.1 + 0.10 = 1.20 (improvement)
+        //   - Cycle 3: 0.3 + 0.15 = 0.45
+        let expected_reward = match i {
+            0 => 0.30,
+            1 => 0.35,
+            2 => 1.20,
+            3 => 0.45,
+            _ => 0.30, // fallback
+        };
         assert!(
             (reward - expected_reward).abs() < 0.01,
-            "reward should be {:.1} after cycle {}, got {:.2}",
+            "reward should be {:.2} after cycle {}, got {:.2}",
             expected_reward,
             i,
             reward

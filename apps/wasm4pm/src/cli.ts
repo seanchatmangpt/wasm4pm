@@ -38,7 +38,6 @@ import { examples } from './commands/examples.js';
 import { interpret } from './commands/interpret.js';
 import { exitCodes } from './commands/exit-codes.js';
 import { repl } from './commands/repl.js';
-import { prolog8 } from './commands/prolog8.js';
 import { feedback } from './commands/feedback.js';
 import { wasmServer } from './commands/wasm-server.js';
 import { timeout } from './commands/timeout.js';
@@ -270,7 +269,6 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     interpret,
     'exit-codes': exitCodes,
     repl,
-    prolog8,
     feedback,
     timeout,
     'wasm-server': wasmServer,

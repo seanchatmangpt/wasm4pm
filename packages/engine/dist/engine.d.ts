@@ -10,7 +10,7 @@ import { WatchSession, WatchConfig } from './watch.js';
 import { Checkpoint } from './checkpointing.js';
 import { SignalHandler } from './signals.js';
 import { ICheckpointStore } from './checkpoint-store.js';
-import { ObservabilityConfig } from '@wasm4pm/observability';
+import { RequiredOtelAttributes, ObservabilityConfig } from '@wasm4pm/observability';
 /**
  * Result returned from Kernel.run()
  */
@@ -87,6 +87,11 @@ export declare class Engine {
     constructor(kernel: Kernel, planner?: Planner, executor?: Executor, wasmLoaderConfig?: WasmLoaderConfig, observabilityConfig?: ObservabilityConfig, watchConfig?: WatchConfig, checkpointStore?: ICheckpointStore);
     /**
      * Gets the current engine state
+     */
+    getTraceId(): string;
+    getRequiredOtelAttrs(): RequiredOtelAttributes;
+    /**
+     * Get the current engine state
      */
     state(): EngineState;
     /**

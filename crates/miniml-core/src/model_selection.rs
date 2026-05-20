@@ -1,6 +1,5 @@
 use wasm_bindgen::prelude::*;
 use crate::error::MlError;
-use crate::matrix::{validate_matrix, euclidean_dist_sq};
 
 /// ROC AUC (Area Under ROC Curve) for binary classification
 /// Returns AUC score in [0, 1] where 1 = perfect classifier

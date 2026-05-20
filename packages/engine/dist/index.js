@@ -76,3 +76,7 @@ export { WasmErrorCode, WasmLoadError } from './wasm-loader.js';
 export { FederationController, FederationCircuitBreaker, initializeFederationStack, planFederationIntegration, } from './federation.js';
 // NullBackend sentinel
 export { NullBackend } from './null-backend.js';
+// Autonomic system enhancements (new in Iteration 16)
+export { computeObjectiveScores, makeAutonomicDecision, validatePreferences } from './autonomic-decision.js';
+export { ProtectionManager, DegradationLevel } from './protection-layer.js';
+export { recommendAlgorithm, recommendProfile, optimize, } from './optimization-engine.js';

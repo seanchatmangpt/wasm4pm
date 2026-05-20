@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 use crate::error::MlError;
-use crate::matrix::{euclidean_dist_sq, mat_get};
+use crate::matrix::mat_get;
 
 /// Davies-Bouldin Index - lower is better (cluster separation vs compactness)
 #[wasm_bindgen(js_name = "daviesBouldinScore")]

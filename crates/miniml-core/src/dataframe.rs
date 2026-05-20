@@ -204,7 +204,7 @@ impl DataFrame {
     /// Get summary statistics (describe)
     pub fn describe(&self) -> DataFrame {
         let mut summary_data = Vec::new();
-        let mut summary_cols = vec![
+        let _summary_cols = vec![
             "count".to_string(),
             "mean".to_string(),
             "std".to_string(),

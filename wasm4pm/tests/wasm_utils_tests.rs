@@ -12,9 +12,8 @@ use std::collections::HashMap;
 /// Create a minimal test event log with configurable activities and traces.
 fn create_test_eventlog() -> EventLog {
     let mut log = EventLog {
+        attributes: HashMap::new(),
         traces: vec![],
-        globals: HashMap::new(),
-        classifiers: vec![],
     };
 
     // Trace 1: A -> B -> C
@@ -247,7 +246,7 @@ fn test_ewma_series_invalid_json() {
 fn test_identify_high_variance_activities_basic() {
     let log = create_test_eventlog();
     let state = get_or_init_state();
-    let handle = state.store_object(wasm4pm::state::StoredObject::EventLog(log));
+    let handle = state.store_object(wasm4pm::state::StoredObject::EventLog(log)).unwrap();
 
     let result = identify_high_variance_activities(&handle, "concept:name", 0.5)
         .expect("identify_high_variance_activities should succeed");

@@ -41,10 +41,3 @@ harness = false
 [[bench]]
 name = "wasm_bench"
 harness = false
-
-[profile.release]
-opt-level = 3        # Speed optimization
-lto = true
-codegen-units = 1
-strip = true
-panic = "abort"

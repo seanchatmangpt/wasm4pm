@@ -198,8 +198,8 @@ fn test_action_retry_first_attempt() {
 
     if let DispatchOutcome::RetryInitiated { attempt, delay_ms } = result.unwrap() {
         assert_eq!(attempt, 1); // first retry
-                                // Exponential: 1000 * 2^0 = 1000 + jitter(500) = 1500
-        assert_eq!(delay_ms, 1500);
+        // Exponential: 1000 * 2^0 = 1000 + jitter(0..=1000) = [1000, 2000]
+        assert!(delay_ms >= 1000 && delay_ms <= 2000, "delay_ms {} out of expected range [1000, 2000]", delay_ms);
     } else {
         panic!("Expected RetryInitiated outcome");
     }
@@ -219,8 +219,8 @@ fn test_action_retry_second_attempt() {
 
     if let DispatchOutcome::RetryInitiated { attempt, delay_ms } = result.unwrap() {
         assert_eq!(attempt, 2); // second retry
-                                // Exponential: 1000 * 2^1 = 2000 + jitter(500) = 2500
-        assert_eq!(delay_ms, 2500);
+        // Exponential: 1000 * 2^1 = 2000 + jitter(0..=1000) = [2000, 3000]
+        assert!(delay_ms >= 2000 && delay_ms <= 3000, "delay_ms {} out of expected range [2000, 3000]", delay_ms);
     } else {
         panic!("Expected RetryInitiated outcome");
     }
@@ -240,8 +240,8 @@ fn test_action_retry_exponential_backoff() {
 
     if let DispatchOutcome::RetryInitiated { attempt, delay_ms } = result.unwrap() {
         assert_eq!(attempt, 3); // third retry
-                                // Exponential: 1000 * 2^2 = 4000 + jitter(500) = 4500
-        assert_eq!(delay_ms, 4500);
+        // Exponential: 1000 * 2^2 = 4000 + jitter(0..=1000) = [4000, 5000]
+        assert!(delay_ms >= 4000 && delay_ms <= 5000, "delay_ms {} out of expected range [4000, 5000]", delay_ms);
     } else {
         panic!("Expected RetryInitiated outcome");
     }
@@ -299,21 +299,29 @@ fn test_action_scale_circuit_breaker_blocks() {
 }
 
 #[test]
-fn test_action_fallback_not_implemented() {
+fn test_action_fallback_implemented() {
     let context = ExecutionContext::default();
     let result = dispatch_action(&RlAction::Fallback, &context);
 
     assert!(result.is_ok());
-    assert_eq!(result.unwrap(), DispatchOutcome::NotImplemented);
+    if let DispatchOutcome::FallbackInitiated { algorithm } = result.unwrap() {
+        assert_eq!(algorithm, "dfg");
+    } else {
+        panic!("Expected FallbackInitiated outcome");
+    }
 }
 
 #[test]
-fn test_action_restart_not_implemented() {
+fn test_action_restart_implemented() {
     let context = ExecutionContext::default();
     let result = dispatch_action(&RlAction::Restart, &context);
 
     assert!(result.is_ok());
-    assert_eq!(result.unwrap(), DispatchOutcome::NotImplemented);
+    if let DispatchOutcome::RestartInitiated { state_cleared } = result.unwrap() {
+        assert!(state_cleared);
+    } else {
+        panic!("Expected RestartInitiated outcome");
+    }
 }
 
 #[test]

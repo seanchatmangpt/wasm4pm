@@ -17,7 +17,7 @@
     "clean": "pnpm -r clean && rm -rf node_modules",
     "release:gauntlet": "bash scripts/release/prepublish-gauntlet.sh",
     "release:forbidden": "bash scripts/release/verify-forbidden-terms.sh",
-    "examples:gate": "cd packages/examples-zoe-la && npx tsx 01-prayer-request-pipeline.ts && npx tsx 02-connect-group-belonging.ts && npx tsx 03-sunday-threshold-andon.ts && npx tsx 04-autonomic-care-coordinator.ts && npx tsx 05-red-team-adversary.ts",
+    "examples:gate": "tsx scripts/examples/run-all.ts",
     "cli:parity": "tsx scripts/release/verify-cli-parity.ts",
     "prepublish:pack-smoke": "bash scripts/release/verify-pack-smoke.sh",
     "release:certificate": "tsx scripts/release/verify-release-certificate.ts",

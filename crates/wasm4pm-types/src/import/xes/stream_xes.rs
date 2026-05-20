@@ -4,14 +4,11 @@ use crate::event_log::{
     XESEditableAttribute,
 };
 use crate::import::timestamp_utils::parse_timestamp;
-use chrono::{DateTime, FixedOffset, NaiveDateTime};
-use flate2::read::GzDecoder;
 use quick_xml::{escape::unescape, events::BytesStart, Reader};
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::Debug,
-    io::{BufRead, BufReader, Read},
-    iter::FusedIterator,
+    io::BufRead,
     str::FromStr,
 };
 use uuid::Uuid;

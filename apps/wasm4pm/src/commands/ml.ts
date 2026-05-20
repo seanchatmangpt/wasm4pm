@@ -100,10 +100,6 @@ export const ml = defineCommand({
       type: 'boolean',
       description: 'Enable k-fold cross-validation for classify task (reports cv_accuracy, cv_std_dev)',
     },
-    'cv-folds': {
-      type: 'string',
-      description: 'Number of CV folds (default: 3, min: 2)',
-    },
   },
   async run(ctx) {
     const t0 = performance.now();

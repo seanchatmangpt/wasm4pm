@@ -50,7 +50,7 @@ impl DefaultJtbdRunner {
     ) -> JtbdAssertion {
         use crate::agentic::prelude::*;
 
-        // Construct a dummy handoff request to check disposition
+        // Construct a synthetic handoff request to check disposition
         let to_role = case.expected_role.clone().unwrap_or(AgentRole::Explorer);
         let handoff_req = HandoffRequest {
             from_agent: "test-agent".to_string(),

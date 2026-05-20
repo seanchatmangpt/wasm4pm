@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 use crate::error::MlError;
-use crate::matrix::{validate_matrix, euclidean_dist_sq, Rng};
+use crate::matrix::{validate_matrix, Rng};
 
 /// K-Means++ Clustering (improved initialization)
 /// Returns cluster assignments and final centroids

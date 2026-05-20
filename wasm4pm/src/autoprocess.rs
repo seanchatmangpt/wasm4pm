@@ -609,17 +609,16 @@ impl AutoProcessAgent {
             let mut max_next_q = f32::NEG_INFINITY;
             let next_base = (trans.next_state_id as usize) * ACTION_SPACE_SIZE;
 
-            // Unsafe: we trust next_state_id is bounds checked during encoding
+            // Strict bounds-checking assertion before unsafe access
+            assert!(next_base + ACTION_SPACE_SIZE <= QTABLE_SIZE, "Q-table bounds check failed for next_state_id");
             unsafe {
-                if next_base + ACTION_SPACE_SIZE <= QTABLE_SIZE {
-                    let s = self
-                        .q_table
-                        .get_unchecked(next_base..next_base + ACTION_SPACE_SIZE);
-                    let m01 = if s[0] > s[1] { s[0] } else { s[1] };
-                    let m23 = if s[2] > s[3] { s[2] } else { s[3] };
-                    let m = if m01 > m23 { m01 } else { m23 };
-                    max_next_q = if m > s[4] { m } else { s[4] };
-                }
+                let s = self
+                    .q_table
+                    .get_unchecked(next_base..next_base + ACTION_SPACE_SIZE);
+                let m01 = if s[0] > s[1] { s[0] } else { s[1] };
+                let m23 = if s[2] > s[3] { s[2] } else { s[3] };
+                let m = if m01 > m23 { m01 } else { m23 };
+                max_next_q = if m > s[4] { m } else { s[4] };
             }
 
             let target =
@@ -629,12 +628,12 @@ impl AutoProcessAgent {
                 .wrapping_mul(ACTION_SPACE_SIZE)
                 .wrapping_add(trans.action_idx as usize);
 
+            // Strict bounds-checking assertion before unsafe access
+            assert!(q_idx < QTABLE_SIZE, "Q-table bounds check failed for q_idx");
             unsafe {
-                if q_idx < QTABLE_SIZE {
-                    let current_q = *self.q_table.get_unchecked(q_idx);
-                    let delta = target - current_q;
-                    *self.q_table.get_unchecked_mut(q_idx) = current_q + self.learning_rate * delta;
-                }
+                let current_q = *self.q_table.get_unchecked(q_idx);
+                let delta = target - current_q;
+                *self.q_table.get_unchecked_mut(q_idx) = current_q + self.learning_rate * delta;
             }
         }
         self.queue_head = 0;
@@ -662,21 +661,20 @@ impl AutoProcessAgent {
         done: bool,
     ) {
         let next_base = (next_state_id as usize) * ACTION_SPACE_SIZE;
+        
+        // Strict bounds-checking assertion before unsafe access
+        assert!(next_base + ACTION_SPACE_SIZE <= QTABLE_SIZE, "Q-table bounds check failed for next_state_id");
         let max_next_q = unsafe {
-            if next_base + ACTION_SPACE_SIZE <= QTABLE_SIZE {
-                let s = self
-                    .q_table
-                    .get_unchecked(next_base..next_base + ACTION_SPACE_SIZE);
-                let m01 = if s[0] > s[1] { s[0] } else { s[1] };
-                let m23 = if s[2] > s[3] { s[2] } else { s[3] };
-                let m = if m01 > m23 { m01 } else { m23 };
-                if m > s[4] {
-                    m
-                } else {
-                    s[4]
-                }
+            let s = self
+                .q_table
+                .get_unchecked(next_base..next_base + ACTION_SPACE_SIZE);
+            let m01 = if s[0] > s[1] { s[0] } else { s[1] };
+            let m23 = if s[2] > s[3] { s[2] } else { s[3] };
+            let m = if m01 > m23 { m01 } else { m23 };
+            if m > s[4] {
+                m
             } else {
-                0.0
+                s[4]
             }
         };
 
@@ -688,12 +686,12 @@ impl AutoProcessAgent {
             .wrapping_mul(ACTION_SPACE_SIZE)
             .wrapping_add(action_idx);
 
+        // Strict bounds-checking assertion before unsafe access
+        assert!(q_idx < QTABLE_SIZE, "Q-table bounds check failed for q_idx");
         unsafe {
-            if q_idx < QTABLE_SIZE {
-                let current_q = *self.q_table.get_unchecked(q_idx);
-                let delta = target - current_q;
-                *self.q_table.get_unchecked_mut(q_idx) = current_q + self.learning_rate * delta;
-            }
+            let current_q = *self.q_table.get_unchecked(q_idx);
+            let delta = target - current_q;
+            *self.q_table.get_unchecked_mut(q_idx) = current_q + self.learning_rate * delta;
         }
     }
 

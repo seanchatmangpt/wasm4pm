@@ -29,10 +29,10 @@ pub fn matthews_corrcoef_impl(y_true: &[f64], y_pred: &[f64]) -> Result<f64, MlE
     // Cast to i64 before subtraction to avoid usize underflow when the
     // classifier is worse than random (fp*fn_count > tp*tn).
     let numerator = (tp as i64 * tn as i64 - fp as i64 * fn_count as i64) as f64;
-    let denominator = ((tp + fp) as f64
+    let denominator = (tp + fp) as f64
         * (tp + fn_count) as f64
         * (tn + fp) as f64
-        * (tn + fn_count) as f64);
+        * (tn + fn_count) as f64 ;
 
     if denominator == 0.0 {
         return Ok(0.0);  // Undefined case

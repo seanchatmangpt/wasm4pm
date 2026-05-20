@@ -1,5 +1,4 @@
 use wasm_bindgen::prelude::*;
-use crate::error::MlError;
 use crate::matrix::validate_matrix;
 
 /// MinMax Scaler - Transform features to [0, 1] range

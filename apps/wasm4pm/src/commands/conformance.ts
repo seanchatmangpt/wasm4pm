@@ -79,7 +79,7 @@ interface TraceResult {
   };
 }
 
-interface ConformancePayload {
+export interface ConformancePayload {
   schema: string;
   status: string;
   input: string;

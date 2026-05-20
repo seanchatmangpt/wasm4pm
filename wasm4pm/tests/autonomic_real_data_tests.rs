@@ -663,7 +663,7 @@ fn compute_reward_monotonic_with_health_degradation() {
     // prev_health h, curr_health h+1 = degradation by 1 step at each level.
     // Terminal penalty (-2.0) at curr_health=4 ensures the last step is strictly worse.
     let rewards: Vec<f32> = (0u8..4)
-        .map(|h_prev| compute_reward(h_prev, h_prev + 1, 0, true, true, false))
+        .map(|h_prev| compute_reward(h_prev, h_prev + 1, 0, true, true, false, 0))
         .collect();
 
     for w in rewards.windows(2) {

@@ -557,72 +557,18 @@ async function executePredictionTask(
           { prefix_length: prefixActivities.length },
           () => wasm.predict_case_duration(modelHandle, JSON.stringify(prefixActivities))
         );
-        if (prefixActivities && prefixActivities.length > 0) {
-          const raw: string = wasm.predict_case_duration(
-            modelHandle,
-            JSON.stringify(prefixActivities)
-          );
-          const prediction = JSON.parse(raw);
-          wasm.delete_object(modelHandle);
-          return { prediction };
-        } else {
-          wasm.delete_object(modelHandle);
-          process.stderr.write(
-            'wpm predict remaining-time: no --prefix given — model built but no prediction made.\n' +
-            'To get a duration estimate, provide a prefix:\n' +
-            '  wpm predict remaining-time -i <log.xes> --prefix "Register,Approve"\n'
-          );
-          return {
-            predicted: false,
-            message:
-              'Remaining-time model built. Use --prefix "Activity1,Activity2" to predict case duration.',
-          };
-        }
-      }
-
-      // Route to appropriate method
-      if (resolvedMethod === 'weibull') {
-        // Use WASM Weibull model
-        const modelHandle: string = wasm.build_remaining_time_model(
-          logHandle,
-          activityKey,
-          'time:timestamp'
-        );
-        if (prefixActivities && prefixActivities.length > 0) {
-          const raw: string = wasm.predict_case_duration(
-            modelHandle,
-            JSON.stringify(prefixActivities)
-          );
-          const prediction = JSON.parse(raw);
-          wasm.delete_object(modelHandle);
-          return { prediction, method: 'weibull' };
-        } else {
-          wasm.delete_object(modelHandle);
-          return { predicted: false, message: 'Use --prefix to predict case duration.' };
-        }
-      } else if (resolvedMethod === 'regress') {
-        // Use ML regression
-        const regressionResult = await regressRemainingTime(featureMatrix.data.map((row, i) => ({
-          case_id: featureMatrix.caseIds[i],
-          ...Object.fromEntries(featureMatrix.featureNames.map((name, j) => [name, row[j]])),
-          remaining_time: featureMatrix.targets[i],
-        })), { method: 'linear_regression' });
-        return { ...regressionResult, method: 'regress' };
-      } else if (resolvedMethod === 'hybrid') {
-        // Ensemble: Weibull + Regress, average predictions
-        const modelHandle: string = wasm.build_remaining_time_model(
-          logHandle,
-          activityKey,
-          'time:timestamp'
-        );
-        const weibullPrediction = prefixActivities && prefixActivities.length > 0
-          ? JSON.parse(wasm.predict_case_duration(modelHandle, JSON.stringify(prefixActivities)))
-          : null;
+        const prediction = JSON.parse(raw);
         wasm.delete_object(modelHandle);
         return { prediction, weibull };
       } else {
         wasm.delete_object(modelHandle);
+        process.stderr.write(
+          'wpm predict remaining-time: no --prefix given — model built but no prediction made.\n' +
+          'To get a duration estimate, provide a prefix:\n' +
+          '  wpm predict remaining-time -i <log.xes> --prefix "Register,Approve"\n'
+        );
         return {
+          predicted: false,
           weibull,
           message:
             'Remaining-time model built. Use --prefix "Activity1,Activity2" to predict case duration.',

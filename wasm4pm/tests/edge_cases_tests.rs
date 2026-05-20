@@ -391,29 +391,29 @@ fn test_health_level_boundary_rewards() {
     // Test reward computation at health level boundaries
 
     // Boundary: health_level = 0 (Normal)
-    let reward = compute_reward(0, 0, 0, true, true, false);
+    let reward = compute_reward(0, 0, 0, true, true, false, 0);
     assert!(reward > 0.0, "Stable at Normal should be positive reward");
 
     // Boundary: health_level = 4 (Failed)
-    let reward = compute_reward(4, 4, 0, true, true, false);
+    let reward = compute_reward(4, 4, 0, true, true, false, 0);
     assert!(
         reward < -1.0,
         "Stable at Failed should have terminal penalty"
     );
 
     // Boundary: health transition 4 → 4 (failed stays failed)
-    let reward = compute_reward(4, 4, 0, true, true, false);
+    let reward = compute_reward(4, 4, 0, true, true, false, 0);
     assert!(reward.is_finite(), "Reward should not be NaN or Inf");
 
     // Boundary: all SPC alerts max (5 alerts = -1.5 max penalty)
-    let reward = compute_reward(2, 2, 5, true, true, false);
-    let reward_more = compute_reward(2, 2, 10, true, true, false);
+    let reward = compute_reward(2, 2, 5, true, true, false, 0);
+    let reward_more = compute_reward(2, 2, 10, true, true, false, 0);
     assert_eq!(reward, reward_more, "SPC penalty should be bounded at -1.5");
 
     // Verify reward range is bounded
     for health in 0..=4 {
         for alerts in 0..10 {
-            let r = compute_reward(health, health, alerts, true, true, false);
+            let r = compute_reward(health, health, alerts, true, true, false, 0);
             assert!(
                 r >= -5.5 && r <= 1.1,
                 "Reward out of bounds: {} for health={}, alerts={}",
@@ -524,4 +524,3 @@ fn test_all_edge_cases_no_panic_summary() {
     // E. Health score extremes: All boundary values handled correctly
 }
 
-}

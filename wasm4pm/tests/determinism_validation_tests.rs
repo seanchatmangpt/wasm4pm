@@ -308,10 +308,10 @@ fn test_compute_reward_is_pure_function() {
 
     let inputs = (3u8, 2u8, 0usize, true, true);
 
-    let first_result = compute_reward(inputs.0, inputs.1, inputs.2, inputs.3, inputs.4, false);
+    let first_result = compute_reward(inputs.0, inputs.1, inputs.2, inputs.3, inputs.4, false, 0);
 
     for _ in 0..99 {
-        let result = compute_reward(inputs.0, inputs.1, inputs.2, inputs.3, inputs.4, false);
+        let result = compute_reward(inputs.0, inputs.1, inputs.2, inputs.3, inputs.4, false, 0);
         assert_eq!(
             result, first_result,
             "compute_reward must return identical results for identical inputs"
@@ -319,14 +319,14 @@ fn test_compute_reward_is_pure_function() {
     }
 
     // Different inputs should produce different results
-    let different = compute_reward(3u8, 3u8, 0usize, true, true, false);
+    let different = compute_reward(3u8, 3u8, 0usize, true, true, false, 0);
     assert_ne!(
         first_result, different,
         "compute_reward must return different results for different inputs"
     );
 
     // More specific: health improvement (3->2) vs stability (2->2)
-    let improvement = compute_reward(3, 2, 0, true, true, false);
+    let improvement = compute_reward(3, 2, 0, true, true, false, 0);
     let stability = compute_reward(2, 2, 0, true, true, false, 0);
     assert!(
         improvement > stability,
@@ -410,10 +410,10 @@ fn test_telemetry_accumulation_deterministic() {
     }
 
     // Verify compute_reward is pure (reinforcement of Test 5, in context)
-    let reward = compute_reward(3, 2, 0, true, true, false);
+    let reward = compute_reward(3, 2, 0, true, true, false, 0);
     for _ in 0..100 {
         assert_eq!(
-            compute_reward(3, 2, 0, true, true, false),
+            compute_reward(3, 2, 0, true, true, false, 0),
             reward,
             "compute_reward must be deterministic"
         );
@@ -436,7 +436,7 @@ fn test_telemetry_accumulation_deterministic() {
 
     // On cycle 0, prev_health is initialized from state.health_level (=3).
     // So reward = compute_reward(3, 2, 0, true, true).
-    let expected_reward = compute_reward(3, 2, 0, true, true, false);
+    let expected_reward = compute_reward(3, 2, 0, true, true, false, 0);
 
     let (_, actual_reward) = orch.run_cycle(&FEATURES, &state, &next_state, 0, true, true, false);
 
@@ -504,8 +504,8 @@ fn test_run_cycle_output_reproducible() {
     // (eps=1.0 by default), the REWARD COMPUTATION is deterministic.
     // Two orchestrators given the same (prev_health, curr_health, spc, guard, circuit)
     // will always compute the same reward, regardless of which action was selected.
-    let reward_a = compute_reward(3, 2, 0, true, true, false);
-    let reward_b = compute_reward(3, 2, 0, true, true, false);
+    let reward_a = compute_reward(3, 2, 0, true, true, false, 0);
+    let reward_b = compute_reward(3, 2, 0, true, true, false, 0);
     assert_eq!(
         reward_a, reward_b,
         "reward computation must be bit-identical across calls"

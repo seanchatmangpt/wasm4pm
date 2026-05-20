@@ -475,8 +475,8 @@ fn test_h1_plus_to_minus_operator_mutation_detected() {
     //
     // If mutation existed: reward_improve < reward_stable, assertion would FAIL.
 
-    let reward_improve = compute_reward(3, 1, 0, true, true, false); // health 3→1 (improvement)
-    let reward_stable = compute_reward(2, 2, 0, true, true, false); // health 2→2 (stable)
+    let reward_improve = compute_reward(3, 1, 0, true, true, false, 0); // health 3→1 (improvement)
+    let reward_stable = compute_reward(2, 2, 0, true, true, false, 0); // health 2→2 (stable)
 
     assert!(
         reward_improve > reward_stable,
@@ -574,7 +574,7 @@ fn test_h2_spc_rule2_fires_at_9_not_8_detected() {
 fn test_h3_conditional_negation_guard_circuit_bonus_detected() {
     // Case 1: guard=true, circuit=true → should give +0.1 bonus
     // reward = +0.2 (stable) + 0.1 (guard+circ) = +0.3
-    let reward_both_pass = compute_reward(2, 2, 0, true, true, false);
+    let reward_both_pass = compute_reward(2, 2, 0, true, true, false, 0);
 
     // Case 2: guard=true, circuit=false → should give -0.5 penalty
     // reward = +0.2 (stable) - 0.5 (guard+circ penalty) = -0.3
@@ -582,7 +582,7 @@ fn test_h3_conditional_negation_guard_circuit_bonus_detected() {
 
     // Case 3: guard=false, circuit=true → should give -0.5 penalty
     // reward = +0.2 (stable) - 0.5 (guard+circ penalty) = -0.3
-    let reward_guard_fail = compute_reward(2, 2, 0, false, true, false);
+    let reward_guard_fail = compute_reward(2, 2, 0, false, true, false, 0);
 
     // H3 mutation detection: both_pass must give the HIGHER reward (bonus),
     // not the lower reward (penalty). If mutation existed, both_pass would give
@@ -631,4 +631,3 @@ fn test_h3_conditional_negation_guard_circuit_bonus_detected() {
 // 5. Health improvement +→- -> detected by test_h1_plus_to_minus_operator_mutation_detected
 // 6. SPC Rule 2 boundary >→>= -> detected by test_h2_spc_rule2_fires_at_9_not_8_detected
 // 7. Guard+circuit conditional negation -> detected by test_h3_conditional_negation_guard_circuit_bonus_detected
-ed

@@ -66,7 +66,7 @@ describe('CLI Error Messages — Clarity & Actionability', () => {
 
   describe('predict command', () => {
     it('should validate task parameter with suggestions', async () => {
-      const result = await runCli(['predict', 'invalid-task', '-i', 'dummy.xes']);
+      const result = await runCli(['predict', 'invalid-task', '-i', 'test_file.xes']);
 
       expect(result.exitCode).toBe(EXIT_CODES.config_error);
       const output = result.stdout + result.stderr;
@@ -81,7 +81,7 @@ describe('CLI Error Messages — Clarity & Actionability', () => {
       const result = await runCli([
         'predict',
         'next-activity',
-        '-i', 'dummy.xes',
+        '-i', 'test_file.xes',
         '--prefix', 'NotAnActivity,Also-NotOne',
       ]);
 

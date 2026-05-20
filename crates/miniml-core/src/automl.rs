@@ -11,8 +11,7 @@ use wasm_bindgen::prelude::*;
 use std::cell::RefCell;
 use crate::error::MlError;
 use crate::optimization::genetic::{GeneticAlgorithm, GeneticOptions};
-use crate::optimization::pso::{PSO, PSOOptions};
-use crate::optimization::{FitnessFunction, Individual, OptimizationResult};
+use crate::optimization::{FitnessFunction, Individual};
 use crate::knn::knn_fit_impl;
 use crate::decision_tree::decision_tree_impl;
 use crate::naive_bayes::naive_bayes_impl;
@@ -766,7 +765,7 @@ fn evaluate_algorithm_with_params(
     params: &[f64],
     n_samples: usize,
     n_features: usize,
-    n_classes: usize,
+    _n_classes: usize,
     cv_folds: usize,
 ) -> f64 {
     // Simple k-fold cross-validation
@@ -784,7 +783,7 @@ fn evaluate_algorithm_with_params(
         // For now, use a simple evaluation (can be enhanced)
         let score = match algorithm {
             AlgorithmType::KNearestNeighbors => {
-                let k = params[0] as usize;
+                let _k = params[0] as usize;
                 // Simple k-NN accuracy
                 let mut correct = 0;
                 for i in test_start..test_end {
@@ -918,7 +917,7 @@ fn train_algorithm(
     data: &[f64],
     n_features: usize,
     targets: &[f64],
-    algorithm: AlgorithmType,
+    _algorithm: AlgorithmType,
 ) -> Result<AutoMLResult, MlError> {
     // Convert flat data to matrix format
     let n_samples = data.len() / n_features;

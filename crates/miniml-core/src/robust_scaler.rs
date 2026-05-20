@@ -1,5 +1,4 @@
 use wasm_bindgen::prelude::*;
-use crate::error::MlError;
 use crate::matrix::validate_matrix;
 
 /// Robust Scaler - Scale features using median and IQR (robust to outliers)

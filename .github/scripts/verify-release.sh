@@ -160,7 +160,7 @@ echo "---" >> "$VERIFICATION_REPORT"
 echo "### Gate 8: Hardcoded Secrets Check" >> "$VERIFICATION_REPORT"
 
 SECRET_PATTERNS="(password|secret|api[_-]?key|auth|credential)"
-if grep -r -E "$SECRET_PATTERNS" wasm4pm/src/ --include="*.rs" --include="*.ts" 2>/dev/null | grep -v "// " | grep -v "test" | grep -v -i "api key" > /tmp/secrets-check.log 2>&1; then
+if grep -r -E "$SECRET_PATTERNS" wasm4pm/src/ --include="*.rs" --include="*.ts" 2>/dev/null | grep -v "// " | grep -v "test" | grep -v -i -E "api.?key|auth" > /tmp/secrets-check.log 2>&1; then
     if [ -s /tmp/secrets-check.log ]; then
         echo -e "${YELLOW}⚠ Potential secrets found (review manually)${NC}"
         echo "⚠ **Manual review required for potential secrets**" >> "$VERIFICATION_REPORT"

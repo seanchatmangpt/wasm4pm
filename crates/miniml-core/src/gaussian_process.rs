@@ -295,7 +295,7 @@ fn cholesky_decompose(a: &[f64], n: usize) -> Result<Vec<f64>, MlError> {
 }
 
 /// Solve L * L^T * x = b given the Cholesky factor L of A.
-fn cholesky_solve(l: &[f64], original_a: &[f64], b: &[f64], n: usize) -> Vec<f64> {
+fn cholesky_solve(l: &[f64], _original_a: &[f64], b: &[f64], n: usize) -> Vec<f64> {
     // Forward substitution: L * y = b
     let mut y = vec![0.0; n];
     for i in 0..n {

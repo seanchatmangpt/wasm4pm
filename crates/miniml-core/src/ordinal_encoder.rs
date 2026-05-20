@@ -1,5 +1,4 @@
 use wasm_bindgen::prelude::*;
-use crate::error::MlError;
 
 /// Ordinal Encoder - Encode categorical features as ordered integers
 #[wasm_bindgen]

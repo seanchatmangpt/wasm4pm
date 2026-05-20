@@ -18,10 +18,21 @@
     "passed": true
   },
   "wasm": {
-    "bundle_hash": "tarball_not_found"
+    "bundle_hash": "9dddc389d92d3a4a0519934712ef5bf698ea0555fb6771f3ce4cfddeeb1e5684",
+    "bundle_path": "wasm4pm/pkg/wasm4pm_bg.wasm",
+    "verified": true
   },
   "npm": {
-    "provenance": true
+    "provenance": true,
+    "tarball": {
+      "package_name": "@wasm4pm/kernel",
+      "tarball_name": "wasm4pm-kernel-26.5.19.tgz",
+      "tarball_shasum": "0784caeda28f2e18c41dec9f3817866fcb2ecc99",
+      "tarball_integrity": "sha512-eeAMRm1wUlYrHBYmPk/uhEFnlDhCKkUpGTae5h/uRoNHLmnmXY4/sVhZtiAN5I3l61Zu/3roLSiSKArxa0J9aw==",
+      "file_count": 397,
+      "unpacked_size": 2671854,
+      "package_size": 493714
+    }
   },
-  "timestamp": "2026-05-20T01:38:38.450Z"
+  "timestamp": "2026-05-20T01:42:14.016Z"
 }

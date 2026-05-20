@@ -30,15 +30,13 @@ export const completions = defineCommand({
   },
   async run({ args }) {
     const shell = args.shell as string;
-    return withSpan('completions', { shell }, async () => {
-      if (!(SUPPORTED_SHELLS as readonly string[]).includes(shell)) {
-        process.stderr.write(
-          `Unsupported shell: ${shell}. Try one of: ${SUPPORTED_SHELLS.join(' | ')}\n`
-        );
-        return await exitWithFlush(2);
-      }
-
-      const scriptName = SCRIPT_NAMES[shell as SupportedShell];
+    
+    if (!(SUPPORTED_SHELLS as readonly string[]).includes(shell)) {
+      process.stderr.write(
+        `Unsupported shell: ${shell}. Try one of: ${SUPPORTED_SHELLS.join(' | ')}\n`
+      );
+      return await exitWithFlush(2);
+    }
 
     let scriptBytes = 0;
     return withSpanRaw(

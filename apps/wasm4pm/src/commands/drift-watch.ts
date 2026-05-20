@@ -431,6 +431,8 @@ export const driftWatch = defineCommand({
           alertsFired += 1;
           const newPoints = drifts.slice(previousDriftCount);
           const latest = newPoints[newPoints.length - 1];
+          const latestDist = latest?.distance ?? 0;
+          const overageStr = latestDist > driftThreshold ? ` (+${(latestDist - driftThreshold).toFixed(4)})` : '';
           const alertLine =
             `${BOLD}${RED}  ⚠  ALERT${RESET} — ${newDriftCount} new drift point${newDriftCount !== 1 ? 's' : ''} ` +
             `at position ${latest?.position ?? '?'}, distance=${latestDist.toFixed(4)}${overageStr}`;
