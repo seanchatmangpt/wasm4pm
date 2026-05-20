@@ -12,7 +12,7 @@ echo "--- Running npm pack smoke test for v$VERSION ---"
 # 1. Pack the kernel
 cd packages/kernel
 npm pack
-TARBALL="wasm4pm-kernel-$VERSION.tgz"
+TARBALL="wasm4pm-$VERSION.tgz"
 
 # 2. Create temp test project
 TEMP_DIR=$(mktemp -d)
