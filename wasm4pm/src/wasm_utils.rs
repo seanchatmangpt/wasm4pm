@@ -57,9 +57,10 @@ pub fn cache_stats() -> Result<JsValue, JsValue> {
 /// 16-character lowercase hex string
 ///
 /// # Example
-/// ```no_run
-/// let hash = hash_xes_content(xes_string)?;
-/// // Returns: "a1b2c3d4e5f6g7h8"
+/// ```
+/// use wasm4pm::wasm_utils::hash_xes_content;
+/// let hash = hash_xes_content("<log></log>");
+/// assert_eq!(hash.len(), 16);
 /// ```
 #[wasm_bindgen]
 pub fn hash_xes_content(xes_content: &str) -> String {
@@ -78,20 +79,21 @@ pub fn hash_xes_content(xes_content: &str) -> String {
 /// - `1.0` = completely disjoint
 ///
 /// # Example
-/// ```no_run
-/// let dist = jaccard_distance(r#"["A", "B"]"#, r#"["B", "C"]"#)?;
-/// // Returns: 0.666... (2 union, 1 intersection)
+/// ```
+/// use wasm4pm::wasm_utils::jaccard_distance;
+/// let dist = jaccard_distance(r#"["A", "B"]"#, r#"["B", "C"]"#).unwrap();
+/// assert!((dist - 0.6666666666666667).abs() < 1e-10);
 /// ```
 #[wasm_bindgen]
-pub fn jaccard_distance(set1_json: &str, set2_json: &str) -> Result<JsValue, JsValue> {
+pub fn jaccard_distance(set1_json: &str, set2_json: &str) -> Result<f64, JsValue> {
     let set1: HashSet<String> = serde_json::from_str(set1_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid set1 JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid set1 JSON: {}", e)))?;
 
     let set2: HashSet<String> = serde_json::from_str(set2_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid set2 JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid set2 JSON: {}", e)))?;
 
     let distance = internal_jaccard_distance(&set1, &set2);
-    Ok(JsValue::from(distance))
+    Ok(distance)
 }
 
 /// Compute exponential weighted moving average over a numeric series.
@@ -104,9 +106,9 @@ pub fn jaccard_distance(set1_json: &str, set2_json: &str) -> Result<JsValue, JsV
 /// JSON string: `[1.0, 1.5, 2.25, ...]` (EWMA series)
 ///
 /// # Example
-/// ```no_run
-/// let smoothed = ewma_series(r#"[1, 2, 3, 4, 5]"#, 0.5)?;
-/// // Returns JSON array of smoothed values
+/// ```
+/// use wasm4pm::wasm_utils::ewma_series;
+/// let smoothed = ewma_series(r#"[1.0, 2.0, 3.0, 4.0, 5.0]"#, 0.5).unwrap();
 /// ```
 ///
 /// # Theory
@@ -114,7 +116,7 @@ pub fn jaccard_distance(set1_json: &str, set2_json: &str) -> Result<JsValue, JsV
 #[wasm_bindgen]
 pub fn ewma_series(values_json: &str, alpha: f64) -> Result<JsValue, JsValue> {
     let values: Vec<f64> = serde_json::from_str(values_json)
-        .map_err(|e| JsValue::from_str(&format!("Invalid values JSON: {}", e)))?;
+        .map_err(|e| crate::error::js_val(&format!("Invalid values JSON: {}", e)))?;
 
     let smoothed = internal_ewma_series(&values, alpha);
     to_js_str(&smoothed)

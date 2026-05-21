@@ -133,7 +133,7 @@ export const ml = defineCommand({
                   `  wpm ml classify -i process.xes\n\n` +
                   `Run 'wpm ml --help' for full task descriptions.`
               ),
-              EXIT_CODES.config_error,
+              EXIT_CODES.source_error,
               'INVALID_TASK'
             );
             emitResult(result, { format, verbose, quiet });

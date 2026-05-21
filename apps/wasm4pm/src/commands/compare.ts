@@ -547,7 +547,7 @@ export const compare = defineCommand({
                   `  Usage:  wpm compare dfg,heuristic,genetic -i log.xes\n` +
                   `  Run 'wpm algorithms' to list all available algorithms with descriptions.`
               ),
-              EXIT_CODES.config_error,
+              EXIT_CODES.source_error,
               'UNKNOWN_ALGORITHMS'
             );
             emitResult(result, emitOptions);
@@ -590,7 +590,7 @@ export const compare = defineCommand({
                   `Quick picks: dfg, heuristic, inductive, ilp, genetic\n` +
                   `Run 'wpm algorithms' to list all available algorithms.`
               ),
-              EXIT_CODES.config_error,
+              EXIT_CODES.source_error,
               'TOO_FEW_ALGORITHMS'
             );
             emitResult(result, emitOptions);

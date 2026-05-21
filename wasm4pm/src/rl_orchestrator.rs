@@ -512,6 +512,12 @@ pub struct StateCoverage {
     pub dimension_coverage: [usize; 8],
     /// Overall coverage percentage (0.0 to 100.0).
     pub coverage_percentage: f32,
+    /// Internal tracking of visited states to avoid duplicate counting.
+    #[serde(default, skip)]
+    pub visited_states: std::collections::HashSet<u32>,
+    /// Internal tracking of visited values per dimension.
+    #[serde(default, skip)]
+    pub dimension_seen: [std::collections::HashSet<u8>; 8],
 }
 
 impl StateCoverage {
@@ -520,22 +526,41 @@ impl StateCoverage {
         Self::default()
     }
 
+    fn state_to_bin_index(state: &RlState) -> u32 {
+        let h = state.health_level as u32;
+        let e = state.event_rate_q as u32;
+        let a = state.activity_count_q as u32;
+        let s = state.spc_alert_level as u32;
+        let d = state.drift_status as u32;
+        let r = state.rework_ratio_q as u32;
+        let c = state.circuit_state as u32;
+        let p = state.cycle_phase as u32;
+
+        h * 73728 + e * 9216 + a * 1152 + s * 288 + d * 96 + r * 12 + c * 4 + p
+    }
+
     /// Updates coverage metrics with a newly visited state.
     pub fn track_state(&mut self, state: &RlState) {
-        self.states_visited += 1;
-        // Dimension counts for 8D state: [5, 8, 8, 4, 3, 8, 3, 4]
-        
-        // Track dimension-wise occupancy (simplified for coverage approximation)
-        self.dimension_coverage[0] = self.dimension_coverage[0].max(state.health_level as usize + 1);
-        self.dimension_coverage[1] = self.dimension_coverage[1].max(1); // placeholder
-        self.dimension_coverage[2] = self.dimension_coverage[2].max(1); // placeholder
-        self.dimension_coverage[3] = self.dimension_coverage[3].max(1); // placeholder
-        self.dimension_coverage[4] = self.dimension_coverage[4].max(1); // placeholder
-        self.dimension_coverage[5] = self.dimension_coverage[5].max(1); // placeholder
-        self.dimension_coverage[6] = self.dimension_coverage[6].max(1); // placeholder
-        self.dimension_coverage[7] = self.dimension_coverage[7].max(1); // placeholder
-        
-        self.coverage_percentage = (self.states_visited as f32 / 368640.0) * 100.0;
+        let bin = Self::state_to_bin_index(state);
+        if self.visited_states.insert(bin) {
+            self.states_visited = self.visited_states.len();
+            
+            // Track dimension-wise occupancy
+            self.dimension_seen[0].insert(state.health_level);
+            self.dimension_seen[1].insert(state.event_rate_q);
+            self.dimension_seen[2].insert(state.activity_count_q);
+            self.dimension_seen[3].insert(state.spc_alert_level);
+            self.dimension_seen[4].insert(state.drift_status);
+            self.dimension_seen[5].insert(state.rework_ratio_q);
+            self.dimension_seen[6].insert(state.circuit_state);
+            self.dimension_seen[7].insert(state.cycle_phase);
+            
+            for i in 0..8 {
+                self.dimension_coverage[i] = self.dimension_seen[i].len();
+            }
+            
+            self.coverage_percentage = (self.states_visited as f32 / 368640.0) * 100.0;
+        }
     }
 
     /// Returns the total number of unique states visited.
@@ -565,6 +590,8 @@ impl Default for StateCoverage {
             states_visited: 0,
             dimension_coverage: [0; 8],
             coverage_percentage: 0.0,
+            visited_states: std::collections::HashSet::new(),
+            dimension_seen: Default::default(),
         }
     }
 }
@@ -677,7 +704,7 @@ impl RlOrchestrator {
         let c = state.circuit_state as u32;
         let p = state.cycle_phase as u32;
 
-        h * 61440 + e * 7680 + a * 960 + s * 240 + d * 80 + r * 10 + c * 3 + p
+        h * 73728 + e * 9216 + a * 1152 + s * 288 + d * 96 + r * 12 + c * 4 + p
     }
 
     /// Computes and returns state space coverage metrics based on visited states.
@@ -687,16 +714,16 @@ impl RlOrchestrator {
         let coverage_percentage = (states_visited as f32 / total_bins as f32) * 100.0;
 
         let mut dimension_coverage = [0usize; 8];
-        let mut dim_seen: [std::collections::HashSet<u32>; 8] = Default::default();
+        let mut dim_seen: [std::collections::HashSet<u8>; 8] = Default::default();
         for &bin in &self.visited_states {
-            let h = bin / 61440;
-            let e = (bin % 61440) / 7680;
-            let a = (bin % 7680) / 960;
-            let s = (bin % 960) / 240;
-            let d = (bin % 240) / 80;
-            let r = (bin % 80) / 10;
-            let c = (bin % 10) / 3;
-            let p = bin % 3;
+            let h = (bin / 73728) as u8;
+            let e = ((bin % 73728) / 9216) as u8;
+            let a = ((bin % 9216) / 1152) as u8;
+            let s = ((bin % 1152) / 288) as u8;
+            let d = ((bin % 288) / 96) as u8;
+            let r = ((bin % 96) / 12) as u8;
+            let c = ((bin % 12) / 4) as u8;
+            let p = (bin % 4) as u8;
 
             dim_seen[0].insert(h);
             dim_seen[1].insert(e);
@@ -716,6 +743,8 @@ impl RlOrchestrator {
             states_visited,
             dimension_coverage,
             coverage_percentage,
+            visited_states: self.visited_states.clone(),
+            dimension_seen: dim_seen,
         }
     }
 
@@ -735,14 +764,14 @@ impl RlOrchestrator {
         // Reconstruct RlState instances from visited bins
         let mut states = Vec::new();
         for &bin in &self.visited_states {
-            let h = (bin / 61440) as u8;
-            let e = ((bin % 61440) / 7680) as u8;
-            let a = ((bin % 7680) / 960) as u8;
-            let s = ((bin % 960) / 240) as u8;
-            let d = ((bin % 240) / 80) as u8;
-            let r = ((bin % 80) / 10) as u8;
-            let c = ((bin % 10) / 3) as u8;
-            let p = (bin % 3) as u8;
+            let h = (bin / 73728) as u8;
+            let e = ((bin % 73728) / 9216) as u8;
+            let a = ((bin % 9216) / 1152) as u8;
+            let s = ((bin % 1152) / 288) as u8;
+            let d = ((bin % 288) / 96) as u8;
+            let r = ((bin % 96) / 12) as u8;
+            let c = ((bin % 12) / 4) as u8;
+            let p = (bin % 4) as u8;
 
             states.push(RlState {
                 health_level: h,

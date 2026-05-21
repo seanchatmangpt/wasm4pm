@@ -261,10 +261,10 @@ fn strips_presatisfied_goal_returns_empty_plan() {
     let output = dispatch_breed_test("strips", &input).expect("STRIPS presatisfied");
 
     // Domain contract: plan is empty because goal is already achieved.
-    // selected is None when plan is empty (per STRIPS implementation).
+    // selected is Some("") when plan is empty (per STRIPS implementation).
     assert!(
-        output.selected.is_none(),
-        "presatisfied goal must produce empty plan (selected=None)"
+        output.selected.as_deref() == Some(""),
+        "presatisfied goal must produce empty plan (selected=Some(\"\"))"
     );
     assert_eq!(output.breed, BreedId::Strips);
 }
@@ -370,9 +370,9 @@ fn gps_presatisfied_goal_returns_empty_plan() {
 
     let output = dispatch_breed_test("gps", &input).expect("GPS presatisfied");
 
-    // Domain contract: already satisfied → empty plan → selected is None.
+    // Domain contract: already satisfied → empty plan → selected is Some("").
     assert!(
-        output.selected.is_none(),
+        output.selected.as_deref() == Some(""),
         "presatisfied goal must produce empty plan"
     );
     assert_eq!(output.breed, BreedId::Gps);

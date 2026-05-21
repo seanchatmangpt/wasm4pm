@@ -70,7 +70,17 @@ export const main = defineCommand({
       description: 'Disable emoji in output for terminal compatibility',
     },
   },
-  async run() {
+  async run(ctx) {
+    // If a subcommand was matched, do not run the parent command's run function.
+    // This prevents double-run output in citty when subcommands are invoked.
+    if (ctx && ctx.rawArgs && ctx.cmd && ctx.cmd.subCommands) {
+      const subCommands = Object.keys(ctx.cmd.subCommands);
+      const hasSubcommand = ctx.rawArgs.some(arg => subCommands.includes(arg));
+      if (hasSubcommand) {
+        return;
+      }
+    }
+
     const BOLD = '\x1b[1m';
     const CYAN = '\x1b[36m';
     const GREEN = '\x1b[32m';

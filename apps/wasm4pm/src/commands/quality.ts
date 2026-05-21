@@ -138,7 +138,7 @@ export const quality = defineCommand({
               new Error(
                 'Input file required.\n\nUsage:  wpm quality <log.xes>\n        wpm quality <log.xes> --metrics fitness,precision\n\nRun "wpm quality --help" for details.'
               ),
-              EXIT_CODES.config_error,
+              EXIT_CODES.source_error,
               'MISSING_INPUT'
             );
             emitResult(result, { format, verbose, quiet });

@@ -63,19 +63,35 @@ const XES_SIMPLE   = path.resolve(__dirname, '../fixtures/sample-logs/simple.xes
 // ── Helpers ────────────────────────────────────────────────────────────────────
 
 function wpm(...args: string[]) {
+  const env = {
+    ...process.env,
+    NO_COLOR: '1',
+    FORCE_COLOR: '0',
+    NODE_ENV: 'production',
+  };
+  delete env.TEST;
+  delete env.VITEST;
   return spawnSync('node', [WPM_BIN, ...args], {
     encoding: 'utf8',
     timeout: 45_000,
-    env: { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0', NODE_ENV: 'production' },
+    env,
   });
 }
 
 function wpmInDir(dir: string, ...args: string[]) {
+  const env = {
+    ...process.env,
+    NO_COLOR: '1',
+    FORCE_COLOR: '0',
+    NODE_ENV: 'production',
+  };
+  delete env.TEST;
+  delete env.VITEST;
   return spawnSync('node', [WPM_BIN, ...args], {
     encoding: 'utf8',
     timeout: 45_000,
     cwd: dir,
-    env: { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0', NODE_ENV: 'production' },
+    env,
   });
 }
 

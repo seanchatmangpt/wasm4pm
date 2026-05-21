@@ -130,7 +130,7 @@ pub fn js_val(s: &str) -> JsValue {
     #[cfg(not(target_arch = "wasm32"))]
     {
         let _ = s;
-        unsafe { std::mem::zeroed() }
+        JsValue::null()
     }
 }
 

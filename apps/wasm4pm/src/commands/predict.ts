@@ -152,7 +152,7 @@ export const predict = defineCommand({
                   `  wpm predict remaining-time -i process.xes --prefix "A,B"\n\n` +
                   `Run 'wpm predict --help' for full task descriptions.`
               ),
-              EXIT_CODES.config_error,
+              EXIT_CODES.source_error,
               'INVALID_TASK'
             );
             emitResult(result, { format, verbose, quiet });
@@ -313,7 +313,7 @@ export const predict = defineCommand({
               new Error(
                 'Input file required.\n\nUsage:  wpm predict <task> <log.xes>\n        wpm predict <task> -i <log.xes>\n\nRun "wpm predict --help" for details.'
               ),
-              EXIT_CODES.source_error,
+              EXIT_CODES.config_error,
               'MISSING_INPUT'
             );
             emitResult(result, { format, verbose, quiet });

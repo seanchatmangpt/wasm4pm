@@ -522,9 +522,8 @@ async function executePowlCommand(
         try {
           xesContent = await fs.readFile(input, 'utf-8');
         } catch (e) {
-          throw new PowlSourceError(
-            `Cannot read XES log file: "${input}": ${e instanceof Error ? e.message : String(e)}`,
-            'DISCOVER_INPUT_NOT_FOUND'
+          throw new Error(
+            `Cannot read XES log file: "${input}": ${e instanceof Error ? e.message : String(e)}`
           );
         }
         const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
@@ -534,9 +533,8 @@ async function executePowlCommand(
         try {
           logJson = await fs.readFile(input, 'utf-8');
         } catch (e) {
-          throw new PowlSourceError(
-            `Cannot read log file: "${input}": ${e instanceof Error ? e.message : String(e)}`,
-            'DISCOVER_INPUT_NOT_FOUND'
+          throw new Error(
+            `Cannot read log file: "${input}": ${e instanceof Error ? e.message : String(e)}`
           );
         }
       }

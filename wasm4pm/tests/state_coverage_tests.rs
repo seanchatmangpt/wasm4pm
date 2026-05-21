@@ -45,14 +45,14 @@ fn test_state_coverage_after_cycles() {
         };
 
         let features = [
-            (cycle as f32) % 8.0,
-            ((cycle + 1) as f32) % 8.0,
-            ((cycle + 2) as f32) % 4.0,
-            ((cycle + 3) as f32) % 3.0,
-            ((cycle + 4) as f32) % 8.0,
-            ((cycle + 5) as f32) % 3.0,
-            ((cycle + 6) as f32) % 4.0,
-            ((cycle + 7) as f32) % 5.0,
+            ((cycle as f32) % 8.0) / 8.0,
+            (((cycle + 1) as f32) % 8.0) / 8.0,
+            (((cycle + 2) as f32) % 4.0) / 4.0,
+            (((cycle + 3) as f32) % 3.0) / 3.0,
+            (((cycle + 4) as f32) % 8.0) / 8.0,
+            (((cycle + 5) as f32) % 3.0) / 3.0,
+            (((cycle + 6) as f32) % 4.0) / 4.0,
+            (((cycle + 7) as f32) % 5.0) / 5.0,
         ];
 
         let _ = orch.run_cycle(

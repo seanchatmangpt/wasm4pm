@@ -75,6 +75,18 @@ describe('Node.js Artifact Validation - @wasm4pm/wasm4pm', () => {
     config_tests: [],
   };
 
+  const possiblePaths = [
+    path.resolve(__dirname, '../node_modules/wasm4pm'),
+    path.resolve(__dirname, '../../node_modules/wasm4pm'),
+  ];
+  let globalPkgDir = possiblePaths[0];
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      globalPkgDir = p;
+      break;
+    }
+  }
+
   beforeEach(() => {
     testDir = path.join('/tmp', `wasm4pm-test-${Date.now()}`);
     if (!fs.existsSync(testDir)) {
@@ -96,8 +108,8 @@ describe('Node.js Artifact Validation - @wasm4pm/wasm4pm', () => {
   describe('1. Package Installation', () => {
     it('1.1 Should have package.json in wasm4pm package', () => {
       const pkgJsonPath = path.join(
-        __dirname,
-        '../node_modules/wasm4pm/package.json'
+        globalPkgDir,
+        'package.json'
       );
       expect(fs.existsSync(pkgJsonPath)).toBe(true);
 
@@ -116,7 +128,7 @@ describe('Node.js Artifact Validation - @wasm4pm/wasm4pm', () => {
     });
 
     it('1.2 Should have built WASM bindings in pkg/', () => {
-      const pkgDir = path.join(__dirname, '../node_modules/wasm4pm/pkg');
+      const pkgDir = path.join(globalPkgDir, 'pkg');
       expect(fs.existsSync(pkgDir)).toBe(true);
 
       // Check for essential files
@@ -147,8 +159,8 @@ describe('Node.js Artifact Validation - @wasm4pm/wasm4pm', () => {
 
     it('1.3 Should have valid TypeScript declarations', () => {
       const dtsPath = path.join(
-        __dirname,
-        '../node_modules/wasm4pm/pkg/wasm4pm.d.ts'
+        globalPkgDir,
+        'pkg/wasm4pm.d.ts'
       );
       const dtsContent = fs.readFileSync(dtsPath, 'utf8');
 
@@ -167,8 +179,8 @@ describe('Node.js Artifact Validation - @wasm4pm/wasm4pm', () => {
 
     it('1.4 Should have package.json exports field', () => {
       const pkgJsonPath = path.join(
-        __dirname,
-        '../node_modules/wasm4pm/package.json'
+        globalPkgDir,
+        'package.json'
       );
       const pkgJson = JSON.parse(fs.readFileSync(pkgJsonPath, 'utf8'));
 

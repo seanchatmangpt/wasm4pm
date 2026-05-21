@@ -170,8 +170,7 @@ fn test_jaccard_distance_identical_sets() {
     let dist = jaccard_distance(&set1_json, &set1_json)
         .expect("jaccard_distance should succeed");
 
-    let dist_f64 = dist.as_f64().expect("Result should be a number");
-    assert!((dist_f64 - 0.0).abs() < 1e-10, "Identical sets should have distance 0");
+    assert!((dist - 0.0).abs() < 1e-10, "Identical sets should have distance 0");
 }
 
 #[test]
@@ -184,8 +183,7 @@ fn test_jaccard_distance_disjoint_sets() {
     let dist = jaccard_distance(&set1_json, &set2_json)
         .expect("jaccard_distance should succeed");
 
-    let dist_f64 = dist.as_f64().expect("Result should be a number");
-    assert!((dist_f64 - 1.0).abs() < 1e-10, "Disjoint sets should have distance 1");
+    assert!((dist - 1.0).abs() < 1e-10, "Disjoint sets should have distance 1");
 }
 
 #[test]
@@ -198,10 +196,9 @@ fn test_jaccard_distance_partial_overlap() {
     let dist = jaccard_distance(&set1_json, &set2_json)
         .expect("jaccard_distance should succeed");
 
-    let dist_f64 = dist.as_f64().expect("Result should be a number");
     // Union: {A, B, C, D} = 4, Intersection: {B, C} = 2
     // Distance = 1 - (2/4) = 0.5
-    assert!((dist_f64 - 0.5).abs() < 1e-10, "Partial overlap distance = 0.5");
+    assert!((dist - 0.5).abs() < 1e-10, "Partial overlap distance = 0.5");
 }
 
 #[test]
