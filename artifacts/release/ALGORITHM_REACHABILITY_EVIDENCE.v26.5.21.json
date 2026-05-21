@@ -1,7 +1,7 @@
 {
   "package": "wasm4pm",
   "version": "26.5.21",
-  "generated_at": "2026-05-21T20:35:34.311Z",
+  "generated_at": "2026-05-21T22:09:27.927Z",
   "algorithm_count": 60,
   "algorithms": [
     {
@@ -365,5 +365,5 @@
       "wasm_required": true
     }
   ],
-  "reachability_hash": "4e0e040d79d4a7961fa9b134aa581efde7c3f074a0402bf9c24505f6b3262dad"
+  "reachability_hash": "6bc5cbdb32635e691fbc4dde154379649e877a5be1038cd3c14ce2ce19873d46"
 }
