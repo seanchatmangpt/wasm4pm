@@ -352,9 +352,9 @@ fn all_subsets(items: &[usize]) -> Vec<Vec<usize>> {
     let total = 1usize << n;
     for mask in 1..total.saturating_sub(1) {
         let mut subset = Vec::new();
-        for i in 0..n {
+        for (i, &item) in items.iter().enumerate() {
             if mask & (1 << i) != 0 {
-                subset.push(items[i]);
+                subset.push(item);
             }
         }
         subsets.push(subset);

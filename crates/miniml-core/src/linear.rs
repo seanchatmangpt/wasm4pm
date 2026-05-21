@@ -78,9 +78,7 @@ pub fn linear_regression_impl(x: &[f64], y: &[f64]) -> Result<LinearModel, MlErr
     let mut sum_yy = 0.0;
     let mut sum_xy = 0.0;
 
-    for i in 0..n {
-        let xi = x[i];
-        let yi = y[i];
+    for (&xi, &yi) in x.iter().zip(y.iter()) {
         sum_x += xi;
         sum_y += yi;
         sum_xx += xi * xi;
@@ -145,9 +143,8 @@ pub fn linear_regression_simple(y: &[f64]) -> Result<LinearModel, JsError> {
     let mut sum_yy = 0.0;
     let mut sum_xy = 0.0;
 
-    for i in 0..n {
+    for (i, &yi) in y.iter().enumerate() {
         let xi = i as f64;
-        let yi = y[i];
         sum_y += yi;
         sum_yy += yi * yi;
         sum_xy += xi * yi;

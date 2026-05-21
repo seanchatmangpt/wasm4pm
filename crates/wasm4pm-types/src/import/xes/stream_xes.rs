@@ -69,6 +69,17 @@ pub enum XESNextStreamElement {
     Error(XESParseError),
 }
 
+/// Context for attribute parsing to avoid too-many-arguments clippy lint
+pub struct XESAttributeContext<'a> {
+    pub current_mode: &'a mut Mode,
+    pub current_trace: &'a mut Option<Trace>,
+    pub log_data: &'a mut XESOuterLogData,
+    pub current_nested_attributes: &'a mut Vec<Attribute>,
+    pub options: &'a XESImportOptions,
+    pub knowledge_base: &'a IngestionKnowledgeBase,
+    pub last_mode_before_attr: &'a mut Mode,
+}
+
 impl StreamingXESParser<'_> {
     pub fn next_trace(&mut self) -> Option<XESNextStreamElement> {
         if self.finished {
@@ -134,21 +145,16 @@ impl StreamingXESParser<'_> {
                                 if !self.encountered_log {
                                     return self.error(XESParseError::NoTopLevelLog);
                                 }
-                                let key = get_attribute_string(&t, "key").unwrap_or_default();
-                                if !should_ignore_attribute(&self.options, &self.knowledge_base, &self.current_mode, &key) {
-                                    let value = parse_attribute_value_from_tag(&t, &self.current_mode, &self.options);
-                                    if !(key.is_empty() && matches!(value, AttributeValue::None())) {
-                                        self.current_nested_attributes.push(Attribute {
-                                            key,
-                                            value,
-                                            own_attributes: None,
-                                        });
-                                        if !matches!(self.current_mode, Mode::Attribute) {
-                                            self.last_mode_before_attr = self.current_mode;
-                                        }
-                                        self.current_mode = Mode::Attribute;
-                                    }
-                                }
+                                let mut ctx = XESAttributeContext {
+                                    current_mode: &mut self.current_mode,
+                                    current_trace: &mut self.current_trace,
+                                    log_data: &mut self.log_data,
+                                    current_nested_attributes: &mut self.current_nested_attributes,
+                                    options: &self.options,
+                                    knowledge_base: &self.knowledge_base,
+                                    last_mode_before_attr: &mut self.last_mode_before_attr,
+                                };
+                                StreamingXESParser::parse_attributes(&mut ctx, &t);
                             }
                         },
                         quick_xml::events::Event::Empty(t) => match t.name().as_ref() {
@@ -183,15 +189,16 @@ impl StreamingXESParser<'_> {
                                 if !self.encountered_log {
                                     return self.error(XESParseError::NoTopLevelLog);
                                 }
-                                if !StreamingXESParser::add_attribute_from_tag(
-                                    &self.current_mode,
-                                    &mut self.current_trace,
-                                    &mut self.log_data,
-                                    &mut self.current_nested_attributes,
-                                    &self.options,
-                                    &self.knowledge_base,
-                                    &t,
-                                ) {
+                                let mut ctx = XESAttributeContext {
+                                    current_mode: &mut self.current_mode,
+                                    current_trace: &mut self.current_trace,
+                                    log_data: &mut self.log_data,
+                                    current_nested_attributes: &mut self.current_nested_attributes,
+                                    options: &self.options,
+                                    knowledge_base: &self.knowledge_base,
+                                    last_mode_before_attr: &mut self.last_mode_before_attr,
+                                };
+                                if !StreamingXESParser::add_attribute_from_tag(&mut ctx, &t) {
                                     return self.error(XESParseError::AttributeOutsideLog);
                                 }
                             }
@@ -285,39 +292,51 @@ impl StreamingXESParser<'_> {
         self.error(XESParseError::MissingLastTrace)
     }
 
-    #[allow(clippy::ptr_arg)]
+    fn parse_attributes(ctx: &mut XESAttributeContext<'_>, t: &BytesStart<'_>) {
+        let key = get_attribute_string(t, "key").unwrap_or_default();
+        if !should_ignore_attribute(ctx.options, ctx.knowledge_base, ctx.current_mode, &key) {
+            let value = parse_attribute_value_from_tag(t, ctx.current_mode, ctx.options);
+            if !(key.is_empty() && matches!(value, AttributeValue::None())) {
+                ctx.current_nested_attributes.push(Attribute {
+                    key,
+                    value,
+                    own_attributes: None,
+                });
+                if !matches!(ctx.current_mode, Mode::Attribute) {
+                    *ctx.last_mode_before_attr = *ctx.current_mode;
+                }
+                *ctx.current_mode = Mode::Attribute;
+            }
+        }
+    }
+
     fn add_attribute_from_tag(
-        current_mode: &Mode,
-        current_trace: &mut Option<Trace>,
-        log_data: &mut XESOuterLogData,
-        current_nested_attributes: &mut Vec<Attribute>,
-        options: &XESImportOptions,
-        knowledge_base: &IngestionKnowledgeBase,
+        ctx: &mut XESAttributeContext<'_>,
         t: &BytesStart<'_>,
     ) -> bool {
         let key = get_attribute_string(t, "key").unwrap_or_default();
-        if should_ignore_attribute(options, knowledge_base, current_mode, &key) {
+        if should_ignore_attribute(ctx.options, ctx.knowledge_base, ctx.current_mode, &key) {
             return true;
         }
-        let val = parse_attribute_value_from_tag(t, current_mode, options);
-        match current_mode {
+        let val = parse_attribute_value_from_tag(t, ctx.current_mode, ctx.options);
+        match ctx.current_mode {
             Mode::Trace => {
-                if let Some(tr) = current_trace {
+                if let Some(tr) = ctx.current_trace {
                     tr.attributes.add_to_attributes(key, val);
                 }
             }
             Mode::Event => {
-                if let Some(tr) = current_trace {
+                if let Some(tr) = ctx.current_trace {
                     if let Some(ev) = tr.events.last_mut() {
                         ev.attributes.add_to_attributes(key, val);
                     }
                 }
             }
-            Mode::Log => log_data.log_attributes.add_to_attributes(key, val),
-            Mode::GlobalTraceAttributes => log_data.global_trace_attrs.add_to_attributes(key, val),
-            Mode::GlobalEventAttributes => log_data.global_event_attrs.add_to_attributes(key, val),
+            Mode::Log => ctx.log_data.log_attributes.add_to_attributes(key, val),
+            Mode::GlobalTraceAttributes => ctx.log_data.global_trace_attrs.add_to_attributes(key, val),
+            Mode::GlobalEventAttributes => ctx.log_data.global_event_attrs.add_to_attributes(key, val),
             Mode::Attribute => {
-                if let Some(parent) = current_nested_attributes.last_mut() {
+                if let Some(parent) = ctx.current_nested_attributes.last_mut() {
                     match &mut parent.value {
                         AttributeValue::List(l) | AttributeValue::Container(l) => l.push(Attribute::new(key, val)),
                         _ => {

@@ -296,6 +296,29 @@ pub fn inject_noise(
     inject_noise_impl(x, noise_level, distribution, n_samples, n_features, &|| js_sys::Math::random())
 }
 
+/// Mixup configuration
+#[derive(Debug, Clone)]
+#[wasm_bindgen]
+pub struct MixupConfig {
+    pub alpha: f64,
+    pub n_samples1: usize,
+    pub n_samples2: usize,
+    pub n_features: usize,
+}
+
+#[wasm_bindgen]
+impl MixupConfig {
+    #[wasm_bindgen(constructor)]
+    pub fn new(alpha: f64, n_samples1: usize, n_samples2: usize, n_features: usize) -> MixupConfig {
+        MixupConfig {
+            alpha,
+            n_samples1,
+            n_samples2,
+            n_features,
+        }
+    }
+}
+
 /// Mixup augmentation
 ///
 /// # Arguments
@@ -303,34 +326,28 @@ pub fn inject_noise(
 /// * `y1` - First dataset labels
 /// * `x2` - Second dataset (n_samples2 × n_features)
 /// * `y2` - Second dataset labels
-/// * `alpha` - Mixup interpolation strength
-/// * `n_samples1` - Number of samples in first dataset
-/// * `n_samples2` - Number of samples in second dataset
-/// * `n_features` - Number of features
+/// * `config` - Mixup configuration
 #[wasm_bindgen]
 pub fn mixup(
     x1: &[f64],
     y1: &[f64],
     x2: &[f64],
     y2: &[f64],
-    alpha: f64,
-    n_samples1: usize,
-    n_samples2: usize,
-    n_features: usize,
+    config: &MixupConfig,
 ) -> Result<js_sys::Array, JsError> {
-    let n_mixup = n_samples1.min(n_samples2);
+    let n_mixup = config.n_samples1.min(config.n_samples2);
 
-    let mut mixed_x = Vec::with_capacity(n_mixup * n_features);
+    let mut mixed_x = Vec::with_capacity(n_mixup * config.n_features);
     let mut mixed_y = Vec::with_capacity(n_mixup);
 
     for i in 0..n_mixup {
         // Sample lambda from Beta(alpha, alpha)
-        let lambda = sample_beta(alpha, alpha);
+        let lambda = sample_beta(config.alpha, config.alpha);
 
         // Mix features
-        for j in 0..n_features {
-            let val1 = x1[i * n_features + j];
-            let val2 = x2[i * n_features + j];
+        for j in 0..config.n_features {
+            let val1 = x1[i * config.n_features + j];
+            let val2 = x2[i * config.n_features + j];
             mixed_x.push(lambda * val1 + (1.0 - lambda) * val2);
         }
 
@@ -554,7 +571,8 @@ mod wasm_tests {
         let X2 = vec![3.0, 4.0];
         let y2 = vec![1.0];
 
-        let result = mixup(&X1, &y1, &X2, &y2, 0.5, 1, 1, 2).unwrap();
+        let config = MixupConfig::new(0.5, 1, 1, 2);
+        let result = mixup(&X1, &y1, &X2, &y2, &config).unwrap();
 
         assert_eq!(result.length(), 2);
 

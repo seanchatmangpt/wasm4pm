@@ -63,19 +63,19 @@ pub fn perceptron_impl(data: &[f64], n_features: usize, labels: &[f64], lr: f64,
         iterations = iter + 1;
         let mut errors = 0;
 
-        for i in 0..n {
+        for (i, &target_y) in y.iter().enumerate().take(n) {
             let mut sum = bias;
-            for j in 0..n_features {
-                sum += weights[j] * mat_get(data, n_features, i, j);
+            for (j, &w) in weights.iter().enumerate().take(n_features) {
+                sum += w * mat_get(data, n_features, i, j);
             }
             let pred = if sum >= 0.0 { 1.0 } else { -1.0 };
 
-            if pred != y[i] {
+            if pred != target_y {
                 errors += 1;
-                for j in 0..n_features {
-                    weights[j] += lr * y[i] * mat_get(data, n_features, i, j);
+                for (j, w) in weights.iter_mut().enumerate().take(n_features) {
+                    *w += lr * target_y * mat_get(data, n_features, i, j);
                 }
-                bias += lr * y[i];
+                bias += lr * target_y;
             }
         }
 

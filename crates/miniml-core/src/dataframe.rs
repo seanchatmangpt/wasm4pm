@@ -145,8 +145,8 @@ impl DataFrame {
 
         for row_idx in 0..self.n_rows {
             if predicate(row_idx) {
-                for col_idx in 0..self.n_cols {
-                    new_data[col_idx].push(self.data[col_idx][row_idx]);
+                for (new_col, self_col) in new_data.iter_mut().zip(self.data.iter()) {
+                    new_col.push(self_col[row_idx]);
                 }
             }
         }
@@ -185,9 +185,9 @@ impl DataFrame {
 
         // Create sorted data
         let mut new_data = vec![vec![]; self.n_cols];
-        for col_idx in 0..self.n_cols {
+        for (new_col, self_col) in new_data.iter_mut().zip(self.data.iter()) {
             for &row_idx in &indices {
-                new_data[col_idx].push(self.data[col_idx][row_idx]);
+                new_col.push(self_col[row_idx]);
             }
         }
 
@@ -472,10 +472,10 @@ pub fn join_dataframes_impl(
             }
             // Add right-only rows (no match in left)
             for (right_row, &key) in right_df.data[right_idx].iter().enumerate() {
-                if left_map.get(&key.to_bits()).is_none() {
+                if !left_map.contains_key(&key.to_bits()) {
                     // Left columns get NaN
-                    for col_idx in 0..left_df.n_cols {
-                        new_data[col_idx].push(f64::NAN);
+                    for col in new_data.iter_mut().take(left_df.n_cols) {
+                        col.push(f64::NAN);
                     }
                     // Right columns get actual values
                     let mut data_offset = left_df.n_cols;

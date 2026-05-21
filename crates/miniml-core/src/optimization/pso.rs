@@ -77,16 +77,16 @@ impl Particle {
     }
 
     fn update_velocity(&mut self, global_best: &[f64], w: f64, c1: f64, c2: f64) {
-        for i in 0..self.position.len() {
+        for (i, v) in self.velocity.iter_mut().enumerate() {
             let r1 = rand_f64();
             let r2 = rand_f64();
 
-            self.velocity[i] = w * self.velocity[i]
+            *v = w * *v
                 + c1 * r1 * (self.best_position[i] - self.position[i])
                 + c2 * r2 * (global_best[i] - self.position[i]);
 
             // Clamp velocity to prevent explosion
-            self.velocity[i] = self.velocity[i].max(-2.0).min(2.0);
+            *v = v.clamp(-2.0, 2.0);
         }
     }
 
@@ -96,7 +96,7 @@ impl Particle {
 
             // Apply bounds if specified
             if let Some((min, max)) = bounds {
-                self.position[i] = self.position[i].max(min).min(max);
+                self.position[i] = self.position[i].clamp(min, max);
             }
         }
     }

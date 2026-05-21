@@ -17,45 +17,82 @@ pub struct MatrixFactorizationModel {
     pub n_factors: usize,
 }
 
+/// Matrix factorization configuration
+#[derive(Debug, Clone, Copy)]
+#[wasm_bindgen]
+pub struct MatrixFactorizationConfig {
+    pub n_users: usize,
+    pub n_items: usize,
+    pub n_factors: usize,
+    pub max_iter: usize,
+    pub lr: f64,
+    pub reg: f64,
+    pub seed: u64,
+}
+
+#[wasm_bindgen]
+impl MatrixFactorizationConfig {
+    #[wasm_bindgen(constructor)]
+    pub fn new(
+        n_users: usize,
+        n_items: usize,
+        n_factors: usize,
+        max_iter: usize,
+        lr: f64,
+        reg: f64,
+        seed: u64,
+    ) -> MatrixFactorizationConfig {
+        MatrixFactorizationConfig {
+            n_users,
+            n_items,
+            n_factors,
+            max_iter,
+            lr,
+            reg,
+            seed,
+        }
+    }
+}
+
 pub fn matrix_factorization_impl(
-    ratings: &[f64], n_users: usize, n_items: usize, n_factors: usize,
-    max_iter: usize, lr: f64, reg: f64, seed: u64,
+    ratings: &[f64],
+    config: &MatrixFactorizationConfig,
 ) -> Result<MatrixFactorizationModel, MlError> {
-    if n_users == 0 || n_items == 0 { return Err(MlError::new("n_users and n_items must be > 0")); }
-    if n_factors == 0 { return Err(MlError::new("n_factors must be > 0")); }
-    if ratings.len() != n_users * n_items { return Err(MlError::new("ratings length must equal n_users * n_items")); }
-    let mut rng = Rng::new(seed);
+    if config.n_users == 0 || config.n_items == 0 { return Err(MlError::new("n_users and n_items must be > 0")); }
+    if config.n_factors == 0 { return Err(MlError::new("n_factors must be > 0")); }
+    if ratings.len() != config.n_users * config.n_items { return Err(MlError::new("ratings length must equal n_users * n_items")); }
+    let mut rng = Rng::new(config.seed);
     let init_scale = 0.1;
-    let mut user_factors = vec![0.0; n_users * n_factors];
-    let mut item_factors = vec![0.0; n_items * n_factors];
+    let mut user_factors = vec![0.0; config.n_users * config.n_factors];
+    let mut item_factors = vec![0.0; config.n_items * config.n_factors];
     for v in user_factors.iter_mut() { *v = (rng.next_f64() - 0.5) * 2.0 * init_scale; }
     for v in item_factors.iter_mut() { *v = (rng.next_f64() - 0.5) * 2.0 * init_scale; }
     let (sum_ratings, count_ratings): (f64, usize) = ratings.iter().filter(|&&r| r != 0.0).fold((0.0, 0), |(s, c), &r| (s + r, c + 1));
     let global_mean = if count_ratings > 0 { sum_ratings / count_ratings as f64 } else { 0.0 };
-    let known_ratings: Vec<(usize, usize, f64)> = (0..n_users).flat_map(|u| (0..n_items).filter_map(move |i| { let r = ratings[u * n_items + i]; if r != 0.0 { Some((u, i, r)) } else { None } })).collect();
+    let known_ratings: Vec<(usize, usize, f64)> = (0..config.n_users).flat_map(|u| (0..config.n_items).filter_map(move |i| { let r = ratings[u * config.n_items + i]; if r != 0.0 { Some((u, i, r)) } else { None } })).collect();
     if known_ratings.is_empty() { return Err(MlError::new("ratings must contain at least one non-zero entry")); }
-    for _iter in 0..max_iter {
+    for _iter in 0..config.max_iter {
         let mut indices: Vec<usize> = (0..known_ratings.len()).collect();
         for i in 0..indices.len() { let j = rng.next_usize(indices.len()); indices.swap(i, j); }
         for &ri in &indices {
             let (user_idx, item_idx, actual_rating) = known_ratings[ri];
-            let u_off = user_idx * n_factors; let i_off = item_idx * n_factors;
+            let u_off = user_idx * config.n_factors; let i_off = item_idx * config.n_factors;
             let mut dot = 0.0;
-            for k in 0..n_factors { dot += user_factors[u_off + k] * item_factors[i_off + k]; }
+            for k in 0..config.n_factors { dot += user_factors[u_off + k] * item_factors[i_off + k]; }
             let error = actual_rating - (global_mean + dot);
-            for k in 0..n_factors {
+            for k in 0..config.n_factors {
                 let uf = user_factors[u_off + k]; let i_f = item_factors[i_off + k];
-                user_factors[u_off + k] += lr * (error * i_f - reg * uf);
-                item_factors[i_off + k] += lr * (error * uf - reg * i_f);
+                user_factors[u_off + k] += config.lr * (error * i_f - config.reg * uf);
+                item_factors[i_off + k] += config.lr * (error * uf - config.reg * i_f);
             }
         }
     }
-    Ok(MatrixFactorizationModel { user_factors, item_factors, global_mean, n_users, n_items, n_factors })
+    Ok(MatrixFactorizationModel { user_factors, item_factors, global_mean, n_users: config.n_users, n_items: config.n_items, n_factors: config.n_factors })
 }
 
 #[wasm_bindgen(js_name = "matrixFactorization")]
-pub fn matrix_factorization(ratings: &[f64], n_users: usize, n_items: usize, n_factors: usize, max_iter: usize, lr: f64, reg: f64, seed: u64) -> Result<JsValue, JsValue> {
-    let model = matrix_factorization_impl(ratings, n_users, n_items, n_factors, max_iter, lr, reg, seed).map_err(|e| JsValue::from_str(&e.message))?;
+pub fn matrix_factorization(ratings: &[f64], config: &MatrixFactorizationConfig) -> Result<JsValue, JsValue> {
+    let model = matrix_factorization_impl(ratings, config).map_err(|e| JsValue::from_str(&e.message))?;
     let mut out = vec![model.global_mean, model.n_users as f64, model.n_items as f64, model.n_factors as f64];
     out.extend(&model.user_factors); out.extend(&model.item_factors);
     Ok(JsValue::from(out))
@@ -130,16 +167,20 @@ mod tests {
     #[test]
     fn test_matrix_factorization_simple() {
         let ratings = vec![5.0, 3.0, 4.0, 4.0, 5.0, 2.0, 1.0, 2.0, 5.0];
-        let model = matrix_factorization_impl(&ratings, 3, 3, 2, 500, 0.01, 0.1, 42).unwrap();
+        let config = MatrixFactorizationConfig::new(3, 3, 2, 500, 0.01, 0.1, 42);
+        let model = matrix_factorization_impl(&ratings, &config).unwrap();
         assert_eq!(model.n_users, 3); assert_eq!(model.n_items, 3); assert_eq!(model.n_factors, 2);
         let pred = matrix_factorization_predict_impl(&model, 0, &[0, 1, 2]);
         assert!(pred[0] > 0.0); assert!((model.global_mean - 3.444).abs() < 0.01);
     }
     #[test]
     fn test_matrix_factorization_errors() {
-        assert!(matrix_factorization_impl(&[], 1, 1, 2, 100, 0.01, 0.1, 42).is_err());
-        assert!(matrix_factorization_impl(&[0.0, 0.0, 5.0], 0, 1, 2, 100, 0.01, 0.1, 42).is_err());
-        assert!(matrix_factorization_impl(&[0.0, 0.0], 1, 1, 2, 100, 0.01, 0.1, 42).is_err());
+        let config_empty = MatrixFactorizationConfig::new(1, 1, 2, 100, 0.01, 0.1, 42);
+        assert!(matrix_factorization_impl(&[], &config_empty).is_err());
+        let config_zero_users = MatrixFactorizationConfig::new(0, 1, 2, 100, 0.01, 0.1, 42);
+        assert!(matrix_factorization_impl(&[0.0, 0.0, 5.0], &config_zero_users).is_err());
+        let config_wrong_len = MatrixFactorizationConfig::new(1, 1, 2, 100, 0.01, 0.1, 42);
+        assert!(matrix_factorization_impl(&[0.0, 0.0], &config_wrong_len).is_err());
     }
     #[test]
     fn test_user_user_collaborative() {

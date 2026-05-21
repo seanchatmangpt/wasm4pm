@@ -296,7 +296,7 @@ mod tests {
             retrieve_step.detail
         );
         assert!(
-            output.selected.as_ref().map_or(false, |a| a == "arch1"),
+            output.selected.as_ref().is_some_and(|a| a == "arch1"),
             "Should select arch1 from c1"
         );
     }

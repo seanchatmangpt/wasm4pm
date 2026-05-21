@@ -53,32 +53,44 @@ impl<TOut> ContractResult<TOut> {
     }
 }
 
+/// Type alias for contract precondition functions.
+pub type PreconditionFn<TIn> = Box<dyn Fn(&TIn) -> bool + Send + Sync>;
+
+/// Type alias for contract execution functions.
+pub type ExecutionFn<TIn, TOut> = Box<dyn Fn(&TIn) -> Result<TOut, String> + Send + Sync>;
+
+/// Type alias for contract adversarial check functions.
+pub type AdversarialCheckFn<TIn, TOut> =
+    Box<dyn Fn(&TIn, &TOut) -> Box<dyn EvidenceSource> + Send + Sync>;
+
+/// Type alias for contract postcondition functions.
+pub type PostconditionFn<TOut> = Box<dyn Fn(&TOut) -> bool + Send + Sync>;
+
 /// Contract definition for a manufacturing verb8.
 ///
 /// Specifies preconditions, the execution function, adversarial checks,
 /// and postconditions. The contract ensures that the manufacturing pipeline
 /// follows the protocol.
-#[allow(clippy::type_complexity)]
 pub struct CognitionContract<TIn, TOut> {
     /// Precondition check function (returns true if satisfied).
-    pub preconditions: Box<dyn Fn(&TIn) -> bool + Send + Sync>,
+    pub preconditions: PreconditionFn<TIn>,
     /// Execution function (runs if preconditions pass).
-    pub execute: Box<dyn Fn(&TIn) -> Result<TOut, String> + Send + Sync>,
+    pub execute: ExecutionFn<TIn, TOut>,
     /// Adversarial evidence-source builder.
-    pub adversarial_checks: Box<dyn Fn(&TIn, &TOut) -> Box<dyn EvidenceSource> + Send + Sync>,
+    pub adversarial_checks: AdversarialCheckFn<TIn, TOut>,
     /// Postcondition check function (returns true if satisfied).
-    pub postconditions: Box<dyn Fn(&TOut) -> bool + Send + Sync>,
+    pub postconditions: PostconditionFn<TOut>,
 }
 
 impl<TIn, TOut> CognitionContract<TIn, TOut> {
     /// Execute the contract with the given input.
     ///
     /// Protocol:
-    /// 1. Check preconditions → fail if not met
-    /// 2. Execute → fail if error
-    /// 3. Check postconditions → fail if not met
-    /// 4. Run adversarial detectors → report findings
-    /// 5. Compute exit code based on findings
+    /// 1.  Check preconditions → fail if not met
+    /// 2.  Execute → fail if error
+    /// 3.  Check postconditions → fail if not met
+    /// 4.  Run adversarial detectors → report findings
+    /// 5.  Compute exit code based on findings
     pub fn run(&self, input: &TIn, registry: &FindingRegistry) -> ContractResult<TOut> {
         // Phase 1: Preconditions
         if !(self.preconditions)(input) {
@@ -118,22 +130,12 @@ impl<TIn, TOut> CognitionContract<TIn, TOut> {
         let findings = registry.run_all(evidence.as_ref());
 
         // Phase 5: Compute exit code
-        let exit_code = if findings.is_empty() {
-            0
-        } else {
-            let max_sev = findings
-                .iter()
-                .map(|f| f.severity)
-                .max()
-                .unwrap_or(Severity::Info);
+        let max_sev = findings.iter().map(|f| f.severity).max();
 
-            if max_sev == Severity::Fatal {
-                5
-            } else if max_sev == Severity::Error {
-                4
-            } else {
-                0 // Warnings and info don't block success
-            }
+        let exit_code = match max_sev {
+            Some(Severity::Fatal) => 5,
+            Some(Severity::Error) => 4,
+            _ => 0, // Clean success, info, or warnings don't block
         };
 
         ContractResult {

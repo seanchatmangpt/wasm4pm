@@ -369,7 +369,6 @@ fn is_final_marking(
 }
 
 /// Generate successor states for A* search.
-#[allow(clippy::too_many_arguments)]
 fn generate_successors(
     activities: &[String],
     petri_net: &PetriNet,

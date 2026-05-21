@@ -62,8 +62,8 @@ pub fn kaplan_meier_impl(times: &[f64], events: &[f64]) -> Result<KaplanMeierRes
     for k in 0..event_times.len() {
         let log_s = if survival_probs[k] > 0.0 { survival_probs[k].ln() } else { f64::NEG_INFINITY };
         let se = var_log_s[k].sqrt();
-        ci_lower.push((log_s - z * se).exp().max(0.0).min(1.0));
-        ci_upper.push((log_s + z * se).exp().max(0.0).min(1.0));
+        ci_lower.push((log_s - z * se).exp().clamp(0.0, 1.0));
+        ci_upper.push((log_s + z * se).exp().clamp(0.0, 1.0));
     }
     let median_survival = survival_probs.iter().position(|&sp| sp <= 0.5).map(|idx| event_times[idx]).unwrap_or(f64::NAN);
     Ok(KaplanMeierResult { times: event_times, survival: survival_probs, ci_lower, ci_upper, median_survival, n_at_risk: n_at_risk_vals })
@@ -100,7 +100,9 @@ pub fn cox_proportional_hazards_impl(features: &[f64], n_features: usize, times:
             let mut at_risk: Vec<usize> = Vec::new(); let mut event_indices: Vec<usize> = Vec::new();
             let mut j = i;
             while j < n_samples && (times[indices[j]] - t).abs() < 1e-10 { at_risk.push(indices[j]); if events[indices[j]] > 0.5 { event_indices.push(indices[j]); } j += 1; }
-            for k in j..n_samples { at_risk.push(indices[k]); }
+            for &idx in indices.iter().take(n_samples).skip(j) {
+                at_risk.push(idx);
+            }
             if event_indices.is_empty() { i = j; continue; }
             let mut sum_exp = 0.0;
             for &ar_idx in &at_risk { sum_exp += eta[ar_idx].exp(); }

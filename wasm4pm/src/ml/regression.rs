@@ -4,38 +4,18 @@ use crate::models::{AttributeValue, parse_timestamp_ms};
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js;
 use wasm_bindgen::prelude::*;
+use serde::{Deserialize, Serialize};
+
 
 const EPSILON: f64 = 1e-12;
 const TIME_KEY: &str = "time:timestamp";
 
-#[derive(Debug, Clone, Copy, serde::Serialize)]
-pub struct RegressionResult {
-    pub slope: f64,
-    pub intercept: f64,
-    pub r_squared: f64,
-    /// Mean Absolute Error on the training residuals: mean(|y_i - (slope*x_i + intercept)|).
-    /// Zero when no slope/intercept can be computed.
-    pub mae: f64,
-    /// Root Mean Squared Error on the training residuals: sqrt(mean((y_i - ŷ_i)^2)).
-    pub rmse: f64,
-    /// Standard error of the residuals (sqrt of unbiased variance, n-2 denominator).
-    /// Zero for n < 3 or when the regression is undefined.
-    pub residual_std: f64,
-}
-
-#[derive(serde::Serialize)]
-struct MLRegressOutput {
-    algorithm: &'static str,
-    regression: RegressionResult,
-}
-
-#[derive(serde::Serialize)]
-struct MLRegressAutoMLOutput {
-    algorithm: &'static str,
-    folds: usize,
-    results: Vec<RegressionResult>,
-}
-
+/// Nanosecond-scale Ordinary Least Squares (OLS) linear regression.
+///
+/// Implements a high-performance two-pass solver for simple linear regression.
+/// The first pass computes the normal equations using multiple accumulators to
+/// break dependency chains, enabling SIMD-like performance. The second pass
+/// computes detailed residual metrics (MAE, RMSE, R²).
 #[inline(always)]
 pub fn regression_internal(x: &[f64], y: &[f64]) -> RegressionResult {
     let n = x.len();
@@ -244,4 +224,30 @@ pub fn discover_ml_regress_automl(eventlog_handle: &str, k_folds: u32) -> Result
         folds: k,
         results
     })
+}
+
+/// Result of a linear regression analysis.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct RegressionResult {
+    pub slope: f64,
+    pub intercept: f64,
+    pub r_squared: f64,
+    pub mae: f64,
+    pub rmse: f64,
+    pub residual_std: f64,
+}
+
+/// High-level output for the single-run regression algorithm.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MLRegressOutput {
+    pub algorithm: &'static str,
+    pub regression: RegressionResult,
+}
+
+/// High-level output for the AutoML cross-validated regression algorithm.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct MLRegressAutoMLOutput {
+    pub algorithm: &'static str,
+    pub folds: usize,
+    pub results: Vec<RegressionResult>,
 }

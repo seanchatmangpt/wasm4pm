@@ -11,7 +11,6 @@ pub struct GradientBoostingClassifier {
     n_features: usize,
     n_classes: usize,
     learning_rate: f64,
-    max_depth: usize,
 }
 
 #[wasm_bindgen]
@@ -143,7 +142,6 @@ pub fn gradient_boosting_impl(
         n_features,
         n_classes,
         learning_rate,
-        max_depth,
     })
 }
 

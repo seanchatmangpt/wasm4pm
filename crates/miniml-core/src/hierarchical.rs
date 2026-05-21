@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 use crate::error::MlError;
-use crate::matrix::{validate_matrix, euclidean_dist_sq};
+use crate::matrix::{validate_matrix, euclidean_dist_sq_raw};
 use std::collections::BinaryHeap;
 use std::cmp::Ordering;
 
@@ -91,35 +91,26 @@ pub fn hierarchical_impl(
     Ok(labels)
 }
 
-/// Single linkage distance between clusters (minimum pairwise distance)
-fn cluster_distance(
-    data: &[f64],
-    n_features: usize,
-    cluster_a: &[usize],
-    cluster_b: &[usize],
-) -> f64 {
-    cluster_distance_sq(data, n_features, cluster_a, cluster_b).sqrt()
-}
-
-/// Single linkage distance squared between clusters (minimum pairwise distance, no sqrt)
 fn cluster_distance_sq(
     data: &[f64],
     n_features: usize,
-    cluster_a: &[usize],
-    cluster_b: &[usize],
+    c1: &[usize],
+    c2: &[usize],
 ) -> f64 {
-    let mut min_dist = f64::INFINITY;
+    let mut min_dist_sq = f64::INFINITY;
+    for &i in c1 {
+        for &j in c2 {
+            let d_sq = euclidean_dist_sq_raw(
+                &data[i * n_features..(i + 1) * n_features],
+                &data[j * n_features..(j + 1) * n_features],
+            );
 
-    for &idx_a in cluster_a {
-        for &idx_b in cluster_b {
-            let dist_sq = euclidean_dist_sq(data, n_features, idx_a, idx_b);
-            if dist_sq < min_dist {
-                min_dist = dist_sq;
+            if d_sq < min_dist_sq {
+                min_dist_sq = d_sq;
             }
         }
     }
-
-    min_dist
+    min_dist_sq
 }
 
 #[cfg(test)]

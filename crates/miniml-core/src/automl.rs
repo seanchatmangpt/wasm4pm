@@ -18,20 +18,15 @@ use crate::naive_bayes::naive_bayes_impl;
 use crate::logistic::logistic_regression_impl;
 use crate::perceptron::perceptron_impl;
 use crate::linear_regression::ridge_regression_impl;
-use crate::polynomial::polynomial_regression_impl;
-use crate::regression_metrics::r2_score_impl;
-
-// ── helpers ──────────────────────────────────────────────────────────
-
-/// Flatten 2D row-major data into a flat Vec<f64>
-fn flatten_data(x: &[Vec<f64>]) -> Vec<f64> {
-    x.iter().flat_map(|row| row.iter().copied()).collect()
-}
-
 /// Convert Vec<u32> predictions to Vec<f64>
 fn preds_to_f64(preds: &[u32]) -> Vec<f64> {
     preds.iter().map(|&p| p as f64).collect()
 }
+
+use crate::polynomial::polynomial_regression_impl;
+use crate::regression_metrics::r2_score_impl;
+
+// ── helpers ──────────────────────────────────────────────────────────
 
 /// Simple accuracy: fraction of matches within tolerance
 fn accuracy_simple(y_true: &[f64], y_pred: &[f64]) -> f64 {
@@ -99,11 +94,6 @@ impl AlgorithmType {
         ]
     }
 
-    fn all_clustering() -> Vec<AlgorithmType> {
-        vec![
-            AlgorithmType::KMeans,
-        ]
-    }
 
     pub fn as_str(&self) -> &'static str {
         match self {
@@ -428,22 +418,10 @@ impl AutoMLEngine {
         }
     }
 
-    fn parse_algorithm(&self, s: &str) -> AlgorithmType {
-        match s {
-            "LinearRegression" => AlgorithmType::LinearRegression,
-            "PolynomialRegression" => AlgorithmType::PolynomialRegression,
-            "KNearestNeighbors" => AlgorithmType::KNearestNeighbors,
-            "LogisticRegression" => AlgorithmType::LogisticRegression,
-            "NaiveBayes" => AlgorithmType::NaiveBayes,
-            "DecisionTree" => AlgorithmType::DecisionTree,
-            "Perceptron" => AlgorithmType::Perceptron,
-            "KMeans" => AlgorithmType::KMeans,
-            _ => AlgorithmType::LinearRegression,
-        }
-    }
 
     fn evaluate_algorithm_cv(&self, algorithm: AlgorithmType, x: &[Vec<f64>], y: &[f64]) -> f64 {
         let n_samples = x.len();
+
         let n_features = if x.is_empty() { 0 } else { x[0].len() };
         if n_samples == 0 || n_features == 0 { return 0.0; }
 
@@ -699,10 +677,12 @@ pub fn optimize_hyperparameters_pso(
             targets,
             algorithm,
             &params,
-            n_samples,
-            n_features,
-            n_classes,
-            3, // 3-fold CV for speed
+            EvaluationConfig {
+                n_samples,
+                n_features,
+                _n_classes: n_classes,
+                cv_folds: 3, // 3-fold CV for speed
+            },
         );
         -cv_score // PSO minimizes, so negate
     };
@@ -757,17 +737,26 @@ pub fn optimize_hyperparameters_pso(
     )
 }
 
+/// Configuration for algorithm evaluation
+struct EvaluationConfig {
+    n_samples: usize,
+    n_features: usize,
+    _n_classes: usize,
+    cv_folds: usize,
+}
+
 /// Evaluate algorithm with specific hyperparameters
 fn evaluate_algorithm_with_params(
     data: &[f64],
     targets: &[f64],
     algorithm: AlgorithmType,
     params: &[f64],
-    n_samples: usize,
-    n_features: usize,
-    _n_classes: usize,
-    cv_folds: usize,
+    config: EvaluationConfig,
 ) -> f64 {
+    let cv_folds = config.cv_folds;
+    let n_samples = config.n_samples;
+    let n_features = config.n_features;
+
     // Simple k-fold cross-validation
     let fold_size = n_samples / cv_folds;
     let mut total_score = 0.0;

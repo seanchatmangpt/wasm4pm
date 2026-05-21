@@ -245,7 +245,7 @@ fn ks_p_value(d_stat: f64, n: usize) -> f64 {
         sum += term;
         if term.abs() < 1e-15 { break; }
     }
-    (2.0 * sum).max(0.0).min(1.0)
+    (2.0 * sum).clamp(0.0, 1.0)
 }
 
 // ---------------------------------------------------------------------------
@@ -427,8 +427,7 @@ pub fn ks_test_impl(data: &[f64]) -> Result<KSTestResult, MlError> {
     sorted.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
 
     let mut d_stat = 0.0f64;
-    for i in 0..n {
-        let x = sorted[i];
+    for (i, &x) in sorted.iter().enumerate().take(n) {
         let ecdf = (i + 1) as f64 / n as f64;
         let ncdf = normal_cdf(x, 0.0, 1.0);
         let diff = (ecdf - ncdf).abs();

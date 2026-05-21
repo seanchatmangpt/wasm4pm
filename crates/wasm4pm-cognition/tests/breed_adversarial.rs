@@ -1507,22 +1507,24 @@ fn soar_deterministic_tiebreak() {
 /// - candidates match the provided algorithm list
 /// - facts include required derived keys
 /// - cases are non-empty (anchor library)
+///
 /// Rank 2 — domain contract: adapter output is usable by all breeds.
 #[test]
 fn log_adapter_produces_valid_breed_input() {
-    use wasm4pm_cognition::log_adapter::log_to_breed_input;
+    use wasm4pm_cognition::log_adapter::{log_to_breed_input, LogAdapterInput};
 
     let top = vec!["Register".to_string(), "Approve".to_string(), "Close".to_string()];
-    let input = log_to_breed_input(
-        "select discovery algorithm",
-        &["dfg", "heuristic_miner", "ilp"],
-        5_000,    // traces
-        12,       // activities
-        80,       // variants
-        0.08,     // rework_ratio
-        6.5,      // mean_trace_len
-        &top,
-    );
+    let input = log_to_breed_input(LogAdapterInput {
+        intent: "select discovery algorithm",
+        algorithm_candidates: &["dfg", "heuristic_miner", "ilp"],
+        traces: 5_000,
+        activities: 12,
+        variants: 450,
+        rework_ratio: 0.12,
+        mean_trace_len: 8.5,
+        top_activities: &top,
+    });
+
 
     // Candidates must match the provided list.
     let candidate_ids: Vec<&str> = input.candidates.iter().map(|c| c.id.as_str()).collect();

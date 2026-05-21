@@ -86,7 +86,7 @@ pub fn log_loss_impl(y_true: &[f64], y_proba: &[f64], n_classes: usize) -> Resul
         if true_class < n_classes {
             let prob = y_proba[i * n_classes + true_class];
             // Clip to avoid log(0)
-            let prob_clipped = prob.max(1e-15).min(1.0 - 1e-15);
+            let prob_clipped = prob.clamp(1e-15, 1.0 - 1e-15);
             loss -= prob_clipped.ln();
         }
     }

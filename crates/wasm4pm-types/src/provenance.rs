@@ -34,35 +34,36 @@ pub struct ProvenanceChain {
     pub wasm_build_hash: String,
 }
 
+pub struct ProvenanceChainArgs {
+    pub input_hash: String,
+    pub config_hash: String,
+    pub plan_hash: String,
+    pub output_hash: String,
+    pub combined_hash: String,
+    pub algorithm_id: String,
+    pub algorithm_version: String,
+    pub backend_id: String,
+    pub kernel_version: String,
+    pub wasm_build_hash: String,
+}
+
 impl ProvenanceChain {
     pub fn builder() -> ProvenanceChainBuilder {
         ProvenanceChainBuilder::default()
     }
 
-    #[allow(clippy::too_many_arguments)]
-    pub fn new(
-        input_hash: String,
-        config_hash: String,
-        plan_hash: String,
-        output_hash: String,
-        combined_hash: String,
-        algorithm_id: String,
-        algorithm_version: String,
-        backend_id: String,
-        kernel_version: String,
-        wasm_build_hash: String,
-    ) -> Self {
+    pub fn new(args: ProvenanceChainArgs) -> Self {
         ProvenanceChain {
-            input_hash,
-            config_hash,
-            plan_hash,
-            output_hash,
-            combined_hash,
-            algorithm_id,
-            algorithm_version,
-            backend_id,
-            kernel_version,
-            wasm_build_hash,
+            input_hash: args.input_hash,
+            config_hash: args.config_hash,
+            plan_hash: args.plan_hash,
+            output_hash: args.output_hash,
+            combined_hash: args.combined_hash,
+            algorithm_id: args.algorithm_id,
+            algorithm_version: args.algorithm_version,
+            backend_id: args.backend_id,
+            kernel_version: args.kernel_version,
+            wasm_build_hash: args.wasm_build_hash,
         }
     }
 
@@ -217,18 +218,18 @@ mod tests {
     use super::*;
 
     fn create_test_provenance() -> ProvenanceChain {
-        ProvenanceChain::new(
-            "a".repeat(64),
-            "b".repeat(64),
-            "c".repeat(64),
-            "d".repeat(64),
-            "e".repeat(64),
-            "dfg".to_string(),
-            "26.4.10".to_string(),
-            "wasm".to_string(),
-            "26.4.10".to_string(),
-            "f".repeat(64),
-        )
+        ProvenanceChain::new(ProvenanceChainArgs {
+            input_hash: "a".repeat(64),
+            config_hash: "b".repeat(64),
+            plan_hash: "c".repeat(64),
+            output_hash: "d".repeat(64),
+            combined_hash: "e".repeat(64),
+            algorithm_id: "dfg".to_string(),
+            algorithm_version: "26.4.10".to_string(),
+            backend_id: "wasm".to_string(),
+            kernel_version: "26.4.10".to_string(),
+            wasm_build_hash: "f".repeat(64),
+        })
     }
 
     #[test]

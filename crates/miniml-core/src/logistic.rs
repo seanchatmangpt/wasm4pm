@@ -35,8 +35,8 @@ impl LogisticModel {
         let mut result = Vec::with_capacity(n);
         for i in 0..n {
             let mut z = self.bias;
-            for j in 0..self.n_features {
-                z += self.weights[j] * data[i * self.n_features + j];
+            for (j, &w) in self.weights.iter().enumerate() {
+                z += w * data[i * self.n_features + j];
             }
             result.push(sigmoid(z));
         }
@@ -68,35 +68,35 @@ pub fn logistic_regression_impl(data: &[f64], n_features: usize, labels: &[f64],
         let mut grad_w = vec![0.0; n_features];
         let mut grad_b = 0.0;
 
-        for i in 0..n {
+        for (i, &label) in labels.iter().enumerate().take(n) {
             let mut z = bias;
-            for j in 0..n_features {
-                z += weights[j] * mat_get(data, n_features, i, j);
+            for (j, &w) in weights.iter().enumerate().take(n_features) {
+                z += w * mat_get(data, n_features, i, j);
             }
             let pred = sigmoid(z);
-            let error = pred - labels[i];
+            let error = pred - label;
             grad_b += error;
-            for j in 0..n_features {
-                grad_w[j] += error * mat_get(data, n_features, i, j);
+            for (j, gw) in grad_w.iter_mut().enumerate().take(n_features) {
+                *gw += error * mat_get(data, n_features, i, j);
             }
         }
 
         // Update with L2 regularization
-        for j in 0..n_features {
-            weights[j] -= lr * (grad_w[j] / n_f + lambda * weights[j]);
+        for (j, w) in weights.iter_mut().enumerate().take(n_features) {
+            *w -= lr * (grad_w[j] / n_f + lambda * *w);
         }
         bias -= lr * grad_b / n_f;
     }
 
     // Compute final loss (binary cross-entropy)
     let mut loss = 0.0;
-    for i in 0..n {
+    for (i, &label) in labels.iter().enumerate().take(n) {
         let mut z = bias;
-        for j in 0..n_features {
-            z += weights[j] * mat_get(data, n_features, i, j);
+        for (j, &w) in weights.iter().enumerate().take(n_features) {
+            z += w * mat_get(data, n_features, i, j);
         }
         let p = sigmoid(z).clamp(1e-15, 1.0 - 1e-15);
-        loss -= labels[i] * p.ln() + (1.0 - labels[i]) * (1.0 - p).ln();
+        loss -= label * p.ln() + (1.0 - label) * (1.0 - p).ln();
     }
     loss /= n_f;
 

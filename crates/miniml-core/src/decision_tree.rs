@@ -21,7 +21,7 @@ pub struct TreeArena {
 
 /// Tree node enum for arena storage (internal use)
 #[derive(Clone)]
-enum TreeNode {
+pub enum TreeNode {
     Leaf(f64),
     Internal { feature: usize, threshold: f64, left: u32, right: u32 },
 }

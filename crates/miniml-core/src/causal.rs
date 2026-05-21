@@ -313,8 +313,8 @@ pub fn instrumental_variables_impl(
 
     // Stage 2: Regress outcome on predicted treatment
     let mut predicted_treatment = Vec::with_capacity(n_samples);
-    for i in 0..n_samples {
-        predicted_treatment.push(beta0_stage1 + beta1_stage1 * instrument[i]);
+    for &val in instrument.iter().take(n_samples) {
+        predicted_treatment.push(beta0_stage1 + beta1_stage1 * val);
     }
 
     let (beta1_stage2, _beta0_stage2) = simple_linear_regression(&predicted_treatment, outcome);

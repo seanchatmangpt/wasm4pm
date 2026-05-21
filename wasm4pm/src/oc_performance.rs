@@ -90,7 +90,6 @@ fn build_performance_dfgs(ocel: &OCEL) -> FxHashMap<String, PerformanceDFG> {
 
     // Single-pass aggregation: build (obj_type, obj_id) → events index
     // This eliminates the N+1 pattern of initializing then populating separately
-    #[allow(clippy::type_complexity)]
     let mut type_events: FxHashMap<&str, FxHashMap<String, Vec<(usize, &str, Option<i64>)>>> =
         FxHashMap::default();
 

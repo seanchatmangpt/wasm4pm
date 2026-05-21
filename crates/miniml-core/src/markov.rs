@@ -11,7 +11,7 @@ use crate::matrix::Rng;
 pub struct MarkovChain {
     n_states: usize,
     transition_matrix: Vec<f64>, // row-major n_states x n_states
-    initial_distribution: Vec<f64>,
+    _initial_distribution: Vec<f64>,
 }
 
 #[wasm_bindgen]
@@ -174,7 +174,7 @@ pub fn markov_chain_impl(
     Ok(MarkovChain {
         n_states,
         transition_matrix: transition_matrix.to_vec(),
-        initial_distribution: initial_distribution.to_vec(),
+        _initial_distribution: initial_distribution.to_vec(),
     })
 }
 
@@ -498,9 +498,9 @@ pub fn hmm_viterbi_impl(
     // Backtrace
     let mut path = vec![0usize; t_len];
     let mut max_val = neg_inf;
-    for i in 0..n_states {
-        if delta[i] > max_val {
-            max_val = delta[i];
+    for (i, &val) in delta.iter().enumerate() {
+        if val > max_val {
+            max_val = val;
             path[t_len - 1] = i;
         }
     }
@@ -565,11 +565,11 @@ pub fn hmm_train_baum_welch_impl(
 
         // Compute gamma: gamma[t][i] = P(state_i at time t | observations)
         let mut gamma = vec![vec![0.0; n_states]; t_len];
-        for t in 0..t_len {
+        for gamma_t in gamma.iter_mut().take(t_len) {
             let sum: f64 = (0..n_states).map(|i| alpha[i] * beta[i]).sum();
             if sum > 0.0 {
                 for i in 0..n_states {
-                    gamma[t][i] = alpha[i] * beta[i] / sum;
+                    gamma_t[i] = alpha[i] * beta[i] / sum;
                 }
             }
         }
@@ -597,9 +597,7 @@ pub fn hmm_train_baum_welch_impl(
 
         // M-step
         // Update initial probs
-        for i in 0..n_states {
-            initial[i] = gamma[0][i];
-        }
+        initial[..n_states].copy_from_slice(&gamma[0][..n_states]);
 
         // Update transition probs
         for i in 0..n_states {

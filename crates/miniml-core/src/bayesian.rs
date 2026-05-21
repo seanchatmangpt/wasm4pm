@@ -45,7 +45,7 @@ pub struct BayesianLinearModel {
     coefficient_std: Vec<f64>,
     intercept: f64,
     intercept_std: f64,
-    posterior_samples: Vec<f64>,
+    _posterior_samples: Vec<f64>,
 }
 
 #[wasm_bindgen]
@@ -154,7 +154,7 @@ where
     let variance: f64 = samples.iter().map(|x| (x - mean) * (x - mean)).sum::<f64>() / (n as f64 - 1.0).max(1.0);
     let std = variance.sqrt();
 
-    let ci_lower = samples[((0.025 * n as f64) as usize).max(0)];
+    let ci_lower = samples[(0.025 * n as f64) as usize ];
     let ci_upper = samples[((0.975 * n as f64) as usize).min(n - 1)];
 
     Ok(BayesianResult {
@@ -265,7 +265,7 @@ pub fn bayesian_linear_regression_impl(
         coefficient_std,
         intercept,
         intercept_std,
-        posterior_samples,
+        _posterior_samples: posterior_samples,
     })
 }
 
@@ -360,7 +360,7 @@ fn validate_matrix(data: &[f64], n_features: usize) -> Result<usize, MlError> {
     if data.is_empty() {
         return Err(MlError::new("data must not be empty"));
     }
-    if data.len() % n_features != 0 {
+    if !data.len().is_multiple_of(n_features) {
         return Err(MlError::new("data length must be divisible by n_features"));
     }
     Ok(data.len() / n_features)

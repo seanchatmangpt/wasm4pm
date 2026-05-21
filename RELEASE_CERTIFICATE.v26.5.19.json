@@ -2,25 +2,25 @@
   "package": {
     "name": "wasm4pm",
     "version": "26.5.19",
-    "git_commit": "1ec22c16956112f4fc45ca4174cf5586e767c74a"
+    "git_commit": "e282d73af0f9086933690c1eae98a32c906c552b"
   },
   "reachability": {
     "algorithm_count": 60,
     "algorithms_reachable": 60,
-    "reachability_hash": "b2309f6e500205afa471eafd514901e46c7b241632250b45c4bbe602da719067"
+    "reachability_hash": "d9d4eefee31ec43987dfff09a06285b723edc598755b20cbd7b2ebb5b215e0a5"
   },
   "behavior": {
     "algorithm_count": 60,
     "positive_case_count": 60,
     "negative_case_count": 120,
     "invariant_case_count": 60,
-    "behavior_evidence_hash": "699ee1914ccae399832e64d405c65c21e6de0f89088996cab189c83ee0fe56ee",
+    "behavior_evidence_hash": "d1cd35c834b2bd4b2e293ea552cdc8054a1f4806a66ea2797fac0e760a662b46",
     "all_failed_correctly": true
   },
   "examples": {
     "example_count": 8,
     "examples_total_executions": 64,
-    "manifest_hash": "ab485b95f5779cf34e1f77d8fe80588f3ef6a3944351f6fd22d553298c668361"
+    "manifest_hash": "bf3cfa0cb812432192fa0a031c36db58594f94a3abd0e1d0a5218f146510a6fb"
   },
   "package_artifact": {
     "tarball_name": "wasm4pm-26.5.19.tgz",
@@ -28,5 +28,5 @@
     "pack_smoke_tarball_path": "packages/kernel/wasm4pm-26.5.19.tgz",
     "wasm_bundle_hash": "dba57d838103da9fb7bb194b3c41189207ea638554a7b520fe3711eb74b2b858"
   },
-  "timestamp": "2026-05-21T05:54:48.803Z"
+  "timestamp": "2026-05-21T07:42:49.343Z"
 }

@@ -281,7 +281,6 @@ pub fn identify_resource_bottlenecks(
     let json = get_or_init_state().with_object(log_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             // Per-resource, per-case: (case_id, first_activity_time, resource_start_time, resource_end_time, activity)
-            #[allow(clippy::type_complexity)]
             let mut resource_case_intervals: HashMap<String, Vec<(String, i64, i64, i64, String)>> =
                 HashMap::new();
             let mut case_start_times: HashMap<String, i64> = HashMap::new();

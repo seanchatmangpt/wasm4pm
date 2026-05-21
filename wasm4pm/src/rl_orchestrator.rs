@@ -102,20 +102,32 @@ fn action_label(action: RlAction) -> &'static str {
     }
 }
 
-/// Which RL algorithm is currently active.
+/// Which RL algorithm is currently active in the autonomic loop.
+///
+/// These variants correspond to the 5 reinforcement learning agents supported by the
+/// orchestrator. They are used for both manual selection and automated selection via LinUCB.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum AgentType {
+    /// Standard Q-Learning agent with ε-greedy exploration.
     QLearning = 0,
+    /// SARSA (State-Action-Reward-State-Action) on-policy agent.
     SARSA = 1,
+    /// Double Q-Learning agent to reduce overestimation bias.
     DoubleQLearning = 2,
+    /// Expected SARSA agent which uses the expected value of the next state.
     ExpectedSARSA = 3,
+    /// REINFORCE policy gradient agent.
     REINFORCE = 4,
 }
 
 impl AgentType {
+    /// The total number of supported agent types.
     pub const COUNT: usize = 5;
 
+    /// Creates an `AgentType` from a raw u8 value.
+    ///
+    /// Returns `None` if the value does not correspond to a valid agent type.
     pub fn from_u8(v: u8) -> Option<Self> {
         match v {
             0 => Some(AgentType::QLearning),
@@ -127,6 +139,7 @@ impl AgentType {
         }
     }
 
+    /// Returns a human-readable name for the agent type.
     pub fn name(&self) -> &'static str {
         match self {
             AgentType::QLearning => "QLearning",
@@ -138,20 +151,34 @@ impl AgentType {
     }
 }
 
-/// Cycle telemetry — persisted across cycles for reward computation.
+/// Cycle telemetry — persisted across cycles for reward computation and observability.
+///
+/// This struct captures the state and outcome of each autonomic cycle, providing
+/// data for the reward signal and for external monitoring via OTEL or audit trails.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct CycleTelemetry {
+    /// The total number of cycles completed since the orchestrator started.
     pub cycle_count: u64,
+    /// The health state at the end of the last cycle (0=Normal..4=Failed).
     pub last_health_state: u8,
+    /// The human-readable label of the action taken in the last cycle.
     pub last_action_label: String,
+    /// The number of SPC (Statistical Process Control) alerts detected in the last cycle.
     pub last_spc_alert_count: usize,
+    /// Whether the guard rules passed in the last cycle.
     pub last_guard_pass: bool,
+    /// Whether the circuit breaker allowed the action in the last cycle.
     pub last_circuit_allowed: bool,
+    /// Total reward accumulated across all cycles.
     pub cumulative_reward: f32,
+    /// The reward signal computed for the last completed cycle.
     pub last_reward: f32,
+    /// The name of the agent that was active during the last cycle.
     pub active_agent_name: String,
-    pub consecutive_successes: u32, // Track consecutive successes for health improvement eligibility
-    pub last_norm: f32,  // Last average L2 norm for convergence tracking
+    /// The number of consecutive cycles where both guard and circuit breaker passed.
+    pub consecutive_successes: u32,
+    /// The average L2 norm of the LinUCB weights, used for tracking convergence.
+    pub last_norm: f32,
 }
 
 impl Default for CycleTelemetry {
@@ -246,6 +273,19 @@ pub fn compute_health_state(event_count: u64, trace_count: u64, unique_activitie
 /// let r2 = compute_reward(3, 4, 5, true, true, false, 7);
 /// assert!(r2 < -3.0, "failed state with rework must yield large negative reward, got {r2}");
 /// ```
+/// Parameters for reward computation.
+#[derive(Debug, Clone, Copy)]
+pub struct RewardParameters {
+    pub prev_health: u8,
+    pub curr_health: u8,
+    pub spc_alert_count: usize,
+    pub guard_pass: bool,
+    pub circuit_allowed: bool,
+    pub latency_budget_exceeded: bool,
+    pub rework_ratio_q: u8,
+    pub consecutive_successes: u32,
+}
+
 pub fn compute_reward(
     prev_health: u8,
     curr_health: u8,
@@ -255,7 +295,7 @@ pub fn compute_reward(
     latency_budget_exceeded: bool,
     rework_ratio_q: u8,
 ) -> f32 {
-    compute_reward_with_momentum(
+    compute_reward_with_momentum(RewardParameters {
         prev_health,
         curr_health,
         spc_alert_count,
@@ -263,8 +303,8 @@ pub fn compute_reward(
         circuit_allowed,
         latency_budget_exceeded,
         rework_ratio_q,
-        0, // default: no momentum bonus
-    )
+        consecutive_successes: 0, // default: no momentum bonus
+    })
 }
 
 /// Compute reward with momentum bonus for consecutive successes.
@@ -278,48 +318,48 @@ pub fn compute_reward(
 ///
 /// ```ignore
 /// // 5 consecutive successes: +0.25 bonus
-/// let r = compute_reward_with_momentum(2, 1, 0, true, true, false, 0, 5);
+/// let r = compute_reward_with_momentum(RewardParameters {
+///     prev_health: 2,
+///     curr_health: 1,
+///     spc_alert_count: 0,
+///     guard_pass: true,
+///     circuit_allowed: true,
+///     latency_budget_exceeded: false,
+///     rework_ratio_q: 0,
+///     consecutive_successes: 5,
+/// });
 /// assert!(r > 1.1, "momentum bonus should increase reward");
 /// ```
-pub fn compute_reward_with_momentum(
-    prev_health: u8,
-    curr_health: u8,
-    spc_alert_count: usize,
-    guard_pass: bool,
-    circuit_allowed: bool,
-    latency_budget_exceeded: bool,
-    rework_ratio_q: u8,
-    consecutive_successes: u32,
-) -> f32 {
+pub fn compute_reward_with_momentum(params: RewardParameters) -> f32 {
     let mut reward = 0.0_f32;
 
     // Health delta — branchless 3-entry LUT.
     // Encoding: improved=1 (0b01), stable=2 (0b10), degraded=0 (0b00)
     const HEALTH_DELTA: [f32; 3] = [-1.0, 1.0, 0.2]; // [degraded, improved, stable]
-    let improved = (curr_health < prev_health) as usize;
-    let stable   = ((curr_health == prev_health) as usize) << 1;
+    let improved = (params.curr_health < params.prev_health) as usize;
+    let stable   = ((params.curr_health == params.prev_health) as usize) << 1;
     reward += HEALTH_DELTA[improved | stable];
 
     // SPC penalty: each special cause signal is a -0.3 penalty (bounded by -1.5)
     // **GUARD: SPC penalty is explicitly capped at 1.5 to prevent overflow**
     // This ensures even pathological cases (1000+ SPC alerts) don't exceed bounds.
-    let spc_penalty_magnitude = (spc_alert_count as f32 * 0.3).min(1.5);
-    debug_assert!(spc_penalty_magnitude >= 0.0 && spc_penalty_magnitude <= 1.5, "spc penalty magnitude must be in [0, 1.5], got {}", spc_penalty_magnitude);
+    let spc_penalty_magnitude = (params.spc_alert_count as f32 * 0.3).min(1.5);
+    debug_assert!((0.0..=1.5).contains(&spc_penalty_magnitude), "spc penalty magnitude must be in [0, 1.5], got {}", spc_penalty_magnitude);
     reward -= spc_penalty_magnitude;
 
     // Guard/circuit bonus/penalty — branchless 2D LUT
     const GUARD_CIRCUIT: [[f32; 2]; 2] = [[-0.5, -0.5], [-0.5, 0.1]];
-    reward += GUARD_CIRCUIT[guard_pass as usize][circuit_allowed as usize];
+    reward += GUARD_CIRCUIT[params.guard_pass as usize][params.circuit_allowed as usize];
 
     // Latency budget penalty — branchless
-    reward -= latency_budget_exceeded as i32 as f32 * 0.3;
+    reward -= params.latency_budget_exceeded as u8 as f32 * 0.3;
 
     // Rework penalty (NEW): scales from 0 at ratio_q=0 to -0.2 at ratio_q=7
     // Encourages policies that reduce repeated activities and cycle inefficiency
     // **GUARD: rework_ratio_q must be in [0, 7]; clamp to prevent out-of-range**
-    let clamped_rework_q = (rework_ratio_q as f32).min(7.0).max(0.0) as f32;
+    let clamped_rework_q = (params.rework_ratio_q as f32).clamp(0.0, 7.0);
     let rework_penalty = -(clamped_rework_q / 7.0) * 0.2;
-    debug_assert!(rework_penalty >= -0.2 && rework_penalty <= 0.0, "rework penalty must be in [-0.2, 0], got {}", rework_penalty);
+    debug_assert!((-0.2..=0.0).contains(&rework_penalty), "rework penalty must be in [-0.2, 0], got {}", rework_penalty);
     reward += rework_penalty;
 
     // Momentum bonus (NEW): reward persistent improvement
@@ -327,16 +367,16 @@ pub fn compute_reward_with_momentum(
     // Scales from 0 to +0.5 over 10-cycle window
     // **GUARD: momentum bonus caps at 10-cycle window (0.05 * min(consecutive_successes, 10))**
     // This prevents unbounded accumulation and keeps reward magnitude bounded.
-    if guard_pass && circuit_allowed {
+    if params.guard_pass && params.circuit_allowed {
         // Verified: consecutive_successes is capped via saturating_add; here we add additional cap
-        let capped_successes = (consecutive_successes as f32).min(10.0);
+        let capped_successes = (params.consecutive_successes as f32).min(10.0);
         let momentum_bonus = 0.05_f32 * capped_successes;
-        debug_assert!(momentum_bonus >= 0.0 && momentum_bonus <= 0.5, "momentum bonus must be in [0, 0.5], got {}", momentum_bonus);
+        debug_assert!((0.0..=0.5).contains(&momentum_bonus), "momentum bonus must be in [0, 0.5], got {}", momentum_bonus);
         reward += momentum_bonus;
     }
 
     // Terminal penalty — branchless
-    reward -= (curr_health == 4) as i32 as f32 * 2.0;
+    reward -= (params.curr_health == 4) as u8 as f32 * 2.0;
 
     reward
 }
@@ -376,29 +416,42 @@ pub fn learning_rate_schedule(alpha_0: f32, cycle_count: u64) -> f32 {
 }
 
 /// Action history entry — tracks healing decision outcome per cycle.
+///
+/// Contains the data necessary to evaluate the success rate and distribution
+/// of healing actions taken by the orchestrator.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct ActionHistoryEntry {
-    pub action: String,     // e.g., "Continue", "Scale", "Restart"
-    pub reward_before: f32, // Cumulative reward before cycle
-    pub reward_after: f32,  // Cumulative reward after cycle
-    pub successful: bool,   // true if reward improved (reward_after > reward_before)
-    pub timestamp: u64,     // Cycle count when action was taken
+    /// Human-readable label of the action (e.g., "Continue", "Scale", "Restart").
+    pub action: String,
+    /// Cumulative reward before the action was taken.
+    pub reward_before: f32,
+    /// Cumulative reward after the action and its consequences were processed.
+    pub reward_after: f32,
+    /// Whether the action resulted in a positive reward delta.
+    pub successful: bool,
+    /// The cycle count when this action was recorded.
+    pub timestamp: u64,
 }
 
 /// Action history container — manages a rolling window of healing decision outcomes.
+///
+/// Stores up to 100 recent actions to provide statistics on action success rates
+/// and selection distribution, enabling observability into the agent's behavior.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize, Default)]
 pub struct ActionHistory {
+    /// The rolling window of recent action entries.
     pub entries: VecDeque<ActionHistoryEntry>,
 }
 
 impl ActionHistory {
+    /// Creates a new, empty action history with a capacity of 100.
     pub fn new() -> Self {
         Self {
             entries: VecDeque::with_capacity(100),
         }
     }
 
-    /// Record a new action outcome.
+    /// Record a new action outcome, maintaining the rolling window.
     pub fn record_action_entry(&mut self, entry: ActionHistoryEntry) {
         if self.entries.len() >= 100 {
             self.entries.pop_front();
@@ -407,7 +460,8 @@ impl ActionHistory {
     }
 
     /// Record an action with its reward delta (Gap-25).
-    /// Used by tests and high-level orchestrator.
+    ///
+    /// Primarily used by tests and high-level orchestrator for simplified tracking.
     pub fn record_action(&mut self, action: impl Into<String>, reward_delta: f32) {
         let entry = ActionHistoryEntry {
             action: action.into(),
@@ -419,10 +473,14 @@ impl ActionHistory {
         self.record_action_entry(entry);
     }
 
+    /// Returns a reference to the queue of recent actions.
     pub fn recent_actions(&self) -> &VecDeque<ActionHistoryEntry> {
         &self.entries
     }
 
+    /// Computes the success rate (0.0 to 1.0) for a specific action type.
+    ///
+    /// Success is defined as a positive reward delta.
     pub fn get_success_rate(&self, action: impl Into<String>) -> f32 {
         let action_str = action.into();
         let filtered: Vec<_> = self.entries.iter().filter(|e| e.action == action_str).collect();
@@ -431,6 +489,7 @@ impl ActionHistory {
         successes as f32 / filtered.len() as f32
     }
 
+    /// Returns the distribution of actions taken in the current history window.
     pub fn distribution(&self) -> HashMap<String, u32> {
         let mut dist = HashMap::new();
         for e in &self.entries {
@@ -441,27 +500,30 @@ impl ActionHistory {
 }
 
 /// State space coverage metrics — tracks which 8D bins have been visited.
-/// Total possible bins: 5 × 8 × 8 × 4 × 3 × 8 × 3 × 4 = 368,640 states.
+///
+/// The 8D state space is binned into 368,640 possible states. This struct
+/// tracks how many of these unique states have been explored.
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct StateCoverage {
     /// Total unique states visited across all cycles.
     pub states_visited: usize,
-    /// Per-dimension visit counts: [health_level, event_rate_q, activity_count_q, spc_alert_level, drift_status, rework_ratio_q, circuit_state, cycle_phase]
+    /// Per-dimension visit counts.
+    /// Order: [health_level, event_rate_q, activity_count_q, spc_alert_level, drift_status, rework_ratio_q, circuit_state, cycle_phase]
     pub dimension_coverage: [usize; 8],
-    /// Coverage percentage (0-100).
+    /// Overall coverage percentage (0.0 to 100.0).
     pub coverage_percentage: f32,
 }
 
 impl StateCoverage {
+    /// Creates a new `StateCoverage` tracker with zero initial coverage.
     pub fn new() -> Self {
         Self::default()
     }
 
+    /// Updates coverage metrics with a newly visited state.
     pub fn track_state(&mut self, state: &RlState) {
         self.states_visited += 1;
         // Dimension counts for 8D state: [5, 8, 8, 4, 3, 8, 3, 4]
-        // health_level (0-4), event_rate_q (0-7), activity_count_q (0-7), spc_alert_level (0-3), 
-        // drift_status (0-2), rework_ratio_q (0-7), circuit_state (0-2), cycle_phase (0-3)
         
         // Track dimension-wise occupancy (simplified for coverage approximation)
         self.dimension_coverage[0] = self.dimension_coverage[0].max(state.health_level as usize + 1);
@@ -476,10 +538,12 @@ impl StateCoverage {
         self.coverage_percentage = (self.states_visited as f32 / 368640.0) * 100.0;
     }
 
+    /// Returns the total number of unique states visited.
     pub fn unique_states_visited(&self) -> usize {
         self.states_visited
     }
 
+    /// Returns the coverage percentage for each of the 8 state dimensions.
     pub fn get_dimension_coverage(&self) -> [f32; 8] {
         let max_bins = [5.0, 8.0, 8.0, 4.0, 3.0, 8.0, 3.0, 4.0];
         let mut pct = [0.0; 8];
@@ -489,6 +553,7 @@ impl StateCoverage {
         pct
     }
     
+    /// Returns the overall state space coverage percentage.
     pub fn coverage_percentage(&self) -> f32 {
         self.coverage_percentage
     }
@@ -504,7 +569,13 @@ impl Default for StateCoverage {
     }
 }
 
-/// The RL Orchestrator — holds all agents, dispatches to active one.
+/// The RL Orchestrator — persistent state hub for the autonomic loop.
+///
+/// This is the central coordinator for reinforcement learning in `wasm4pm`.
+/// It manages multiple RL agents, selection logic (including LinUCB),
+/// reward computation, and telemetry persistence. It provides a polymorphic
+/// interface to different RL algorithms while maintaining a consistent state
+/// representation.
 pub struct RlOrchestrator {
     // Indexed by AgentType discriminant (0–4); vtable dispatch replaces match blocks.
     agents: Vec<Box<dyn AgentBehavior>>,
@@ -526,6 +597,7 @@ impl Default for RlOrchestrator {
 }
 
 impl RlOrchestrator {
+    /// Creates a new `RlOrchestrator` with all 5 agents initialized to their defaults.
     pub fn new() -> Self {
         Self {
             agents: vec![
@@ -546,7 +618,9 @@ impl RlOrchestrator {
     }
 
     /// Create orchestrator with seeded RNG for all 5 RL agents.
-    /// Each agent gets a unique seed derived from the base seed.
+    ///
+    /// Each agent gets a unique seed derived from the base seed to ensure
+    /// deterministic but independent exploration paths.
     #[allow(dead_code)]
     pub fn new_with_seed(seed: u64) -> Self {
         Self {
@@ -568,6 +642,8 @@ impl RlOrchestrator {
     }
 
     /// Switch the active RL algorithm.
+    ///
+    /// Subsequent calls to `select_action` and `update` will use the newly selected agent.
     pub fn switch_agent(&mut self, agent_type: AgentType) {
         self.active_agent = agent_type;
         self.telemetry.active_agent_name = agent_type.name().to_string();
@@ -578,17 +654,19 @@ impl RlOrchestrator {
         self.linucb.weight_norms().to_vec()
     }
 
-    /// Get the currently active agent type.
+    /// Returns the currently active agent type.
     pub fn active_agent(&self) -> AgentType {
         self.active_agent
     }
 
-    /// Get telemetry snapshot.
+    /// Returns a reference to the current telemetry snapshot.
     pub fn telemetry(&self) -> &CycleTelemetry {
         &self.telemetry
     }
 
-    /// Convert an RlState into a single u32 hash for state space binning.
+    /// Convert an `RlState` into a single u32 hash for state space binning.
+    ///
+    /// This is used for tracking reachability and coverage across the 8D state space.
     pub fn state_to_bin(state: &RlState) -> u32 {
         let h = state.health_level as u32;
         let e = state.event_rate_q as u32;
@@ -602,7 +680,7 @@ impl RlOrchestrator {
         h * 61440 + e * 7680 + a * 960 + s * 240 + d * 80 + r * 10 + c * 3 + p
     }
 
-    /// Get state space coverage metrics.
+    /// Computes and returns state space coverage metrics based on visited states.
     pub fn get_state_coverage(&self) -> StateCoverage {
         let total_bins = 368_640_u32;
         let states_visited = self.visited_states.len();
@@ -681,12 +759,12 @@ impl RlOrchestrator {
         crate::analyze_dimension_usage(&states, self.telemetry.cycle_count)
     }
 
-    /// Select action using the active RL agent.
+    /// Select an action using the currently active RL agent.
     pub fn select_action(&self, state: &RlState) -> RlAction {
         self.agents[self.active_agent as usize].select_action(state)
     }
 
-    /// Update the active RL agent with reward signal.
+    /// Update the active RL agent with a reward signal.
     ///
     /// Implements complete OTEL instrumentation for Bellman updates with:
     /// - Q-value delta pre/post update (Gap 2, Rank-1 oracle)
@@ -818,20 +896,26 @@ impl RlOrchestrator {
         self.agents[self.active_agent as usize].decay_exploration()
     }
 
-    /// Set exploration rate on all agents (for MAPE-K action dispatch).
+    /// Set exploration rate (epsilon) on all agents.
+    ///
+    /// Primarily used for MAPE-K action dispatch where a specific level of exploration
+    /// is required globally.
     pub fn set_exploration_rate(&mut self, rate: f32) {
         for a in &mut self.agents {
             a.set_exploration_rate(rate);
         }
     }
 
-    /// Reset all exploration rates to default (1.0) — used by Restart action.
+    /// Reset all exploration rates to default (1.0).
+    ///
+    /// Used by the "Restart" action to force the system back into full exploration mode.
     pub fn reset_all_exploration_rates(&mut self) {
         self.set_exploration_rate(1.0);
     }
 
     /// Use LinUCB to recommend which RL agent to use based on features.
-    /// Maps LinUCB actions 0..4 to AgentType.
+    ///
+    /// Maps LinUCB actions 0..4 to `AgentType`.
     /// Emits OTEL span with agent selection rationale (UCB score, context features, runner-up).
     pub fn linucb_select_agent(&mut self, features: &[f32; 8]) -> AgentType {
         let (action_idx, ucb_score) = self.linucb.select(features);
@@ -881,6 +965,7 @@ impl RlOrchestrator {
     }
 
     /// Update LinUCB with reward for the current agent selection.
+    ///
     /// Emits OTEL span with convergence metrics (TD error, weight norms, weight delta).
     pub fn linucb_update(&mut self, features: &[f32; 8], reward: f32) -> f32 {
         let action_idx = self.active_agent as u32;
@@ -941,28 +1026,22 @@ impl RlOrchestrator {
         self.use_linucb_for_selection = enabled;
     }
 
-    /// Check if LinUCB-based selection is enabled.
+    /// Returns `true` if LinUCB-based agent selection is enabled.
     pub fn linucb_selection_enabled(&self) -> bool {
         self.use_linucb_for_selection
     }
 
-    /// Get LinUCB action bounds (GUARD: ensure action in [0, 4]).
-    ///
-    /// Returns the 0-based action index from LinUCB selection.
-    /// Bounds check is performed; if out of range, clamps to valid [0, 4].
+    /// Get LinUCB action selection with a guaranteed valid range [0, 4].
     pub fn linucb_bounded_select(&self, features: &[f32; 8]) -> u32 {
         let (action_idx, _) = self.linucb.select(features);
         // GUARD: clamp to valid action range [0, 4]
         action_idx.min(4)
     }
 
-    /// Get action statistics (success rates per action type).
+    /// Computes success rates and selection counts for all healing actions.
     ///
-    /// Returns a map with action name as key and (total_count, successful_count, success_rate).
-    /// Success is defined as: reward_after > reward_before.
-    ///
-    /// **GUARD: Division-by-zero protection** — If total is 0, rate defaults to 0.0 (not NaN).
-    /// This prevents propagation of NaN through telemetry and OTEL spans.
+    /// Returns a map where the key is the action label and the value is a tuple:
+    /// `(total_count, successful_count, success_rate)`.
     pub fn get_action_stats(&self) -> std::collections::HashMap<String, (u32, u32, f32)> {
         use std::collections::HashMap;
         let mut stats: HashMap<String, (u32, u32)> = HashMap::new();
@@ -997,32 +1076,26 @@ impl RlOrchestrator {
 
     /// Restore telemetry from a serialized snapshot.
     ///
-    /// Used by `restore_rl_state` to resume learning progress across sessions.
-    /// Note: Q-tables are NOT restored (agents start fresh) — only the
-    /// cycle count, cumulative reward, and metadata are preserved.
+    /// Note: This does NOT restore agent Q-tables; use `restore_all_q_tables` for that.
     pub fn restore_telemetry(&mut self, telemetry: CycleTelemetry) {
         self.telemetry = telemetry;
     }
 
-    /// Get mutable reference to telemetry (for restoration).
+    /// Returns a mutable reference to the internal telemetry.
     pub fn telemetry_mut(&mut self) -> &mut CycleTelemetry {
         &mut self.telemetry
     }
 
-    /// Run one full cycle: select agent (if LinUCB enabled), select action,
-    /// compute reward, update agent, update telemetry.
+    /// Run one full autonomic cycle.
     ///
-    /// # Parameters
-    /// - `features`: Current perception feature vector
-    /// - `state`: Current health state (before cycle actions)
-    /// - `next_state`: Health state AFTER cycle actions complete
-    /// - `spc_alert_count`: Number of SPC violations detected
-    /// - `guard_pass`: Whether pre-action guard passed
-    /// - `circuit_allowed`: Whether circuit breaker allowed execution
-    /// - `latency_budget_exceeded`: Whether cycle latency exceeded budget
+    /// This method orchestrates:
+    /// 1. Optional agent selection via LinUCB.
+    /// 2. Action selection via the active agent.
+    /// 3. Reward computation based on health transitions and process stability.
+    /// 4. Bellman update to the active agent.
+    /// 5. Telemetry and state coverage updates.
     ///
-    /// Returns (action_label, reward).
-    #[allow(clippy::too_many_arguments)]
+    /// Returns a tuple of `(selected_action_label, reward_signal)`.
     pub fn run_cycle(
         &mut self,
         features: &[f32; 8],
@@ -1157,16 +1230,16 @@ impl RlOrchestrator {
             spc_alert_count
         );
 
-        let reward = compute_reward_with_momentum(
+        let reward = compute_reward_with_momentum(RewardParameters {
             prev_health,
             curr_health,
             spc_alert_count,
             guard_pass,
             circuit_allowed,
             latency_budget_exceeded,
-            next_state.rework_ratio_q, // NEW: pass rework ratio for penalty computation
-            self.telemetry.consecutive_successes, // NEW: pass momentum for bonus computation
-        );
+            rework_ratio_q: next_state.rework_ratio_q,
+            consecutive_successes: self.telemetry.consecutive_successes,
+        });
 
         // Emit state transition event
         let health_changed = prev_health != curr_health;
@@ -1341,7 +1414,9 @@ impl RlOrchestrator {
         (action_label_str.to_string(), final_reward)
     }
 
-    /// Export all Q-tables from all 5 agents as serialized format.
+    /// Export all Q-tables from all 5 agents as a serialized vector.
+    ///
+    /// The resulting vector is indexed by the `AgentType` discriminant.
     pub fn export_all_q_tables(&self) -> Vec<crate::rl_state_serialization::SerializedAgentQTable> {
         self.agents
             .iter()
@@ -1350,16 +1425,14 @@ impl RlOrchestrator {
             .collect()
     }
 
-    /// Restore all Q-tables to all 5 agents from serialized format.
+    /// Restore all Q-tables to all 5 agents from a serialized format.
     ///
-    /// Returns (restored_count, skipped_count) to allow callers to detect silent failures.
-    /// If skipped_count > 0, an error is logged and a warning span is emitted.
+    /// Returns `(restored_count, skipped_count)` to allow callers to detect silent failures.
+    /// If `skipped_count > 0`, an error is logged as it indicates a potential
+    /// policy divergence risk.
     ///
     /// # Arguments
-    /// * `tables` - Serialized Q-tables from agents, indexed by agent_type (0..5)
-    ///
-    /// # Returns
-    /// Tuple of (successfully restored tables, silently skipped tables due to invalid agent_type)
+    /// * `tables` - Serialized Q-tables, where each table contains an `agent_type` field.
     pub fn restore_all_q_tables(
         &self,
         tables: Vec<crate::rl_state_serialization::SerializedAgentQTable>,
@@ -1400,22 +1473,11 @@ impl RlOrchestrator {
 
     /// Restore the full orchestrator state from a serialized snapshot.
     ///
-    /// Replaces step-by-step mutation (`switch_agent` → `set_linucb_selection`
-    /// → `restore_telemetry`) with a single atomic assignment per field. The
-    /// previous step-by-step path had a PR #70-class drift bug: `switch_agent`
-    /// set `telemetry.active_agent_name`, then `restore_telemetry` clobbered it
-    /// back to `Default::default()` (`"QLearning"`). The clobber left
-    /// `active_agent` and `telemetry.active_agent_name` inconsistent whenever
-    /// the restored agent was anything other than QLearning.
+    /// This method performs an atomic restoration of all orchestrator fields,
+    /// including active agent selection, LinUCB settings, and cycle telemetry.
+    /// It also triggers the restoration of agent Q-tables if present in the snapshot.
     ///
-    /// Fields not present on the wire (`last_guard_pass`,
-    /// `last_circuit_allowed`, `last_reward`, `consecutive_successes`) are
-    /// reset to their `Default::default()` values — which is the intended
-    /// semantics for a fresh-process resume. `active_agent_name` is derived
-    /// from `active_agent` so the invariant holds by construction.
-    ///
-    /// Returns the restored `cycle_count` so callers can log it without
-    /// re-borrowing the orchestrator.
+    /// Returns the restored `cycle_count`.
     pub fn restore_state(
         &mut self,
         snapshot: crate::rl_state_serialization::SerializedRlState,
@@ -1523,7 +1585,16 @@ mod tests {
     #[test]
     fn reward_best_case_with_momentum_is_one_point_six() {
         // With 10-cycle momentum: +0.5 bonus on top of +1.1 base
-        let r = compute_reward_with_momentum(2, 1, 0, true, true, false, 0, 10);
+        let r = compute_reward_with_momentum(RewardParameters {
+            prev_health: 2,
+            curr_health: 1,
+            spc_alert_count: 0,
+            guard_pass: true,
+            circuit_allowed: true,
+            latency_budget_exceeded: false,
+            rework_ratio_q: 0,
+            consecutive_successes: 10,
+        });
         assert!((r - 1.6).abs() < 1e-6, "best case (10-cycle momentum) should be +1.6, got {}", r);
     }
 
@@ -1609,14 +1680,32 @@ mod tests {
     #[test]
     fn reward_momentum_bonus_only_on_successful_cycles() {
         // Successful: +0.05 * 5 = +0.25 bonus
-        let with_momentum = compute_reward_with_momentum(1, 1, 0, true, true, false, 0, 5);
+        let with_momentum = compute_reward_with_momentum(RewardParameters {
+            prev_health: 1,
+            curr_health: 1,
+            spc_alert_count: 0,
+            guard_pass: true,
+            circuit_allowed: true,
+            latency_budget_exceeded: false,
+            rework_ratio_q: 0,
+            consecutive_successes: 5,
+        });
         // Without momentum: 0.2 + 0.1 = 0.3
         let no_momentum = compute_reward(1, 1, 0, true, true, false, 0);
         let bonus = with_momentum - no_momentum;
         assert!((bonus - 0.25).abs() < 1e-6, "momentum bonus should be 0.25, got {}", bonus);
 
         // Failed: no momentum bonus even with consecutive_successes>0
-        let failed = compute_reward_with_momentum(1, 1, 0, false, true, false, 0, 5);
+        let failed = compute_reward_with_momentum(RewardParameters {
+            prev_health: 1,
+            curr_health: 1,
+            spc_alert_count: 0,
+            guard_pass: false,
+            circuit_allowed: true,
+            latency_budget_exceeded: false,
+            rework_ratio_q: 0,
+            consecutive_successes: 5,
+        });
         let expected = compute_reward(1, 1, 0, false, true, false, 0);
         assert!((failed - expected).abs() < 1e-6, "failed cycle must not get momentum bonus");
     }
@@ -1624,8 +1713,26 @@ mod tests {
     /// NEW: Momentum bonus caps at +0.5 (10-cycle window).
     #[test]
     fn reward_momentum_bonus_caps_at_point_five() {
-        let momentum_10 = compute_reward_with_momentum(1, 1, 0, true, true, false, 0, 10);
-        let momentum_100 = compute_reward_with_momentum(1, 1, 0, true, true, false, 0, 100);
+        let momentum_10 = compute_reward_with_momentum(RewardParameters {
+            prev_health: 1,
+            curr_health: 1,
+            spc_alert_count: 0,
+            guard_pass: true,
+            circuit_allowed: true,
+            latency_budget_exceeded: false,
+            rework_ratio_q: 0,
+            consecutive_successes: 10,
+        });
+        let momentum_100 = compute_reward_with_momentum(RewardParameters {
+            prev_health: 1,
+            curr_health: 1,
+            spc_alert_count: 0,
+            guard_pass: true,
+            circuit_allowed: true,
+            latency_budget_exceeded: false,
+            rework_ratio_q: 0,
+            consecutive_successes: 100,
+        });
         assert!((momentum_10 - momentum_100).abs() < 1e-6, "momentum must cap at +0.5");
     }
 

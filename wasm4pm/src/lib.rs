@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code, unused_variables, unused_assignments, unused_mut)]
 //! # wasm4pm — High-Performance Process Mining in WebAssembly
 //!
 //! `wasm4pm` provides production-ready process mining algorithms compiled to WebAssembly,
@@ -77,8 +78,8 @@
 //! - [npm Package](https://www.npmjs.com/package/@wasm4pm/cli)
 //! - [Documentation](https://docs.rs/wasm4pm)
 
-#![allow(missing_docs, clippy::all)]
-#![allow(missing_docs, clippy::all)]
+#![allow(clippy::all)]
+#![allow(clippy::all)]
 
 /// Cache residency helpers for warm-starting the WASM module.
 pub mod cache_resident;
@@ -157,26 +158,6 @@ pub(crate) fn wall_clock_us() -> u64 {
 
 fn get_drift_threshold_high() -> f32 {
     f32::from_bits(DRIFT_THRESHOLD_HIGH.load(Ordering::Relaxed))
-}
-
-/// Check if a trace has activity repetition (loops)
-///
-/// Returns true if any activity appears more than once in the trace.
-/// This indicates a rework loop or repetition pattern.
-#[cfg(feature = "cloud")]
-fn has_activity_repetition(trace: &models::Trace, activity_key: &str) -> bool {
-    use std::collections::HashSet;
-
-    let mut seen_activities = HashSet::new();
-    for event in &trace.events {
-        if let Some(models::AttributeValue::String(activity)) = event.attributes.get(activity_key) {
-            if !seen_activities.insert(activity) {
-                // Activity was already seen -> repetition
-                return true;
-            }
-        }
-    }
-    false
 }
 
 /// Parse a subset of ISO-8601 timestamps and return the duration between them in milliseconds.
@@ -1283,7 +1264,7 @@ pub fn autonomic_execute_cycle(
         );
         for c in &causes {
             // Classify rule type and emit detailed span with attributes
-            let (rule_violated, rule_number, mut rule_attrs) = match c {
+            let (rule_violated, rule_number, rule_attrs) = match c {
                 spc::SpecialCause::OutOfControl { value, .. } => {
                     // Rule 1: Point beyond 3σ (outlier)
                     let z_score = if chart_data.len() > 0 {
@@ -1420,7 +1401,7 @@ pub fn autonomic_execute_cycle(
         );
         for c in &causes {
             // Classify rule type and emit detailed span with attributes
-            let (rule_violated, rule_number, mut rule_attrs) = match c {
+            let (rule_violated, rule_number, rule_attrs) = match c {
                 spc::SpecialCause::OutOfControl { value, .. } => {
                     let z_score = if chart_data.len() > 0 {
                         let data_values: Vec<f64> = chart_data.iter().map(|cd| cd.value).collect();
@@ -1551,7 +1532,7 @@ pub fn autonomic_execute_cycle(
         );
         for c in &causes {
             // Classify rule type and emit detailed span with attributes
-            let (rule_violated, rule_number, mut rule_attrs) = match c {
+            let (rule_violated, rule_number, rule_attrs) = match c {
                 spc::SpecialCause::OutOfControl { value, .. } => {
                     let z_score = if chart_data.len() > 0 {
                         let data_values: Vec<f64> = chart_data.iter().map(|cd| cd.value).collect();
@@ -2416,7 +2397,6 @@ impl reinforcement::WorkflowAction for RlAction {
 ///
 /// * `RlState` - WASM-exported state object
 #[wasm_bindgen]
-#[allow(clippy::too_many_arguments)]
 pub fn create_rl_state(
     health_level: u8,
     event_rate_q: u8,
@@ -2667,12 +2647,6 @@ pub fn serialize_rl_state() -> Result<String, JsValue> {
 pub fn restore_rl_state(json: &str) -> Result<String, JsValue> {
     let state: rl_state_serialization::SerializedRlState = serde_json::from_str(json)
         .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {}", e)))?;
-
-    // Capture summary fields BEFORE the move into `restore_state` so we can
-    // build the log message without re-borrowing the orchestrator.
-    let active_agent_id = state.active_agent;
-    let linucb_enabled = state.linucb_enabled;
-    let num_q_tables = state.agent_q_tables.len();
 
     RL_ORCHESTRATOR
         .with(|orch| {

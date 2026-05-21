@@ -92,25 +92,6 @@ fn bootstrap_sample(n: usize, rng: &mut Rng) -> Vec<usize> {
     (0..n).map(|_| rng.next_usize(n)).collect()
 }
 
-#[allow(dead_code)]
-/// Random feature subset: sqrt(n_features) for classification, n_features/3 for regression
-fn feature_subset(n_features: usize, is_classifier: bool, rng: &mut Rng) -> Vec<usize> {
-    let n_select = if is_classifier {
-        (n_features as f64).sqrt().ceil() as usize
-    } else {
-        (n_features as f64 / 3.0).ceil() as usize
-    };
-    let n_select = n_select.max(1).min(n_features);
-
-    // Fisher-Yates partial shuffle
-    let mut indices: Vec<usize> = (0..n_features).collect();
-    for i in 0..n_select {
-        let j = rng.next_usize(n_features - i) + i;
-        indices.swap(i, j);
-    }
-    indices[..n_select].to_vec()
-}
-
 pub fn random_forest_impl(
     data: &[f64],
     n_features: usize,

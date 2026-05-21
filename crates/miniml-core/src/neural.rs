@@ -307,7 +307,7 @@ impl NeuralNet {
     /// Train the network
     pub fn train(
         &mut self,
-        X: &[f64],
+        x: &[f64],
         y: &[f64],
         n_samples: usize,
         n_features: usize,
@@ -323,7 +323,7 @@ impl NeuralNet {
                 let batch_end = (batch_start + batch_size).min(n_samples);
 
                 // Compute gradients (backpropagation)
-                let gradients = self.compute_batch_gradients(X, y, batch_start, batch_end, n_features);
+                let gradients = self.compute_batch_gradients(x, y, batch_start, batch_end, n_features);
 
                 // Update weights
                 if let Some(ref mut optimizer) = self.optimizer {
@@ -338,7 +338,7 @@ impl NeuralNet {
     /// Compute gradients for a batch using backpropagation
     fn compute_batch_gradients(
         &self,
-        X: &[f64],
+        x: &[f64],
         y: &[f64],
         batch_start: usize,
         batch_end: usize,
@@ -360,7 +360,7 @@ impl NeuralNet {
 
         // Accumulate gradients over batch
         for i in batch_start..batch_end {
-            let input = &X[i * n_features..(i + 1) * n_features];
+            let input = &x[i * n_features..(i + 1) * n_features];
             let target = y[i];
 
             // Forward pass (store intermediate values)

@@ -40,8 +40,8 @@ impl PolynomialModel {
     /// Predict a single value using Horner's method for numerical stability
     pub fn predict_one(&self, x: f64) -> f64 {
         let mut result = 0.0;
-        for i in (0..=self.degree).rev() {
-            result = result * x + self.coefficients[i];
+        for &coef in self.coefficients.iter().rev() {
+            result = result * x + coef;
         }
         result
     }
@@ -106,8 +106,15 @@ fn solve_linear_system(mut a: Vec<Vec<f64>>, mut b: Vec<f64>) -> Option<Vec<f64>
         for k in (i + 1)..n {
             let factor = a[k][i] / a[i][i];
             b[k] -= factor * b[i];
+            let (row_i, row_k) = if i < k {
+                let (first, second) = a.split_at_mut(k);
+                (&first[i], &mut second[0])
+            } else {
+                let (first, second) = a.split_at_mut(i);
+                (&second[0], &mut first[k])
+            };
             for j in i..n {
-                a[k][j] -= factor * a[i][j];
+                row_k[j] -= factor * row_i[j];
             }
         }
     }
@@ -148,19 +155,19 @@ pub fn polynomial_regression_impl(x: &[f64], y: &[f64], degree: usize) -> Result
 
     // Build X^T X matrix (m x m)
     let mut xtx = vec![vec![0.0; m]; m];
-    for i in 0..m {
-        for j in 0..m {
-            for k in 0..n {
-                xtx[i][j] += x[k].powi((i + j) as i32);
+    for (i, row) in xtx.iter_mut().enumerate() {
+        for (j, val) in row.iter_mut().enumerate() {
+            for &xi in x.iter().take(n) {
+                *val += xi.powi((i + j) as i32);
             }
         }
     }
 
     // Build X^T y vector
     let mut xty = vec![0.0; m];
-    for i in 0..m {
-        for k in 0..n {
-            xty[i] += x[k].powi(i as i32) * y[k];
+    for (i, val) in xty.iter_mut().enumerate() {
+        for (&xi, &yi) in x.iter().zip(y.iter()).take(n) {
+            *val += xi.powi(i as i32) * yi;
         }
     }
 
@@ -173,13 +180,13 @@ pub fn polynomial_regression_impl(x: &[f64], y: &[f64], degree: usize) -> Result
     let mut ss_res = 0.0;
     let mut ss_tot = 0.0;
 
-    for i in 0..n {
+    for (&xi, &yi) in x.iter().zip(y.iter()).take(n) {
         let mut y_pred = 0.0;
         for (j, &coef) in coefficients.iter().enumerate() {
-            y_pred += coef * x[i].powi(j as i32);
+            y_pred += coef * xi.powi(j as i32);
         }
-        ss_res += (y[i] - y_pred).powi(2);
-        ss_tot += (y[i] - y_mean).powi(2);
+        ss_res += (yi - y_pred).powi(2);
+        ss_tot += (yi - y_mean).powi(2);
     }
 
     let r_squared = if ss_tot == 0.0 { 1.0 } else { 1.0 - (ss_res / ss_tot) };

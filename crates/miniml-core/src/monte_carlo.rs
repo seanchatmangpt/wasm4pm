@@ -315,8 +315,8 @@ pub fn mc_bootstrap_impl(
 
     for _ in 0..n_bootstrap {
         // Draw n samples with replacement
-        for i in 0..n {
-            sample[i] = data[rng.next_usize(n)];
+        for val in sample.iter_mut() {
+            *val = data[rng.next_usize(n)];
         }
 
         let stat = compute_statistic(&sample, statistic);

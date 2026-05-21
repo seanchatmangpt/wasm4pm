@@ -103,8 +103,8 @@ pub fn linear_svm_impl(
             bias += eta * label;
         } else {
             // Correctly classified: only regularization
-            for f in 0..n_features {
-                weights[f] *= 1.0 - eta * lambda;
+            for w in weights.iter_mut().take(n_features) {
+                *w *= 1.0 - eta * lambda;
             }
         }
     }

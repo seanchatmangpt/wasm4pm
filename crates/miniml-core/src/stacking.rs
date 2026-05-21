@@ -268,8 +268,8 @@ pub fn stacked_ensemble(
 
             // Simplified: use actual values as predictions
             // In production, would get predictions from actual models
-            for i in test_start..test_end.min(n_samples) {
-                model_preds.push(y[i]);
+            for &val in y.iter().take(test_end.min(n_samples)).skip(test_start) {
+                model_preds.push(val);
             }
         }
 

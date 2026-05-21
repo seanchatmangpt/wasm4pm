@@ -316,7 +316,7 @@ pub fn decision_path_impl(x: &[f64], n_features: usize) -> Result<Vec<DecisionNo
             vec![1.0 - class_prob, class_prob],
         ));
 
-        if class_prob > 0.8 || class_prob < 0.2 {
+        if !(0.2..=0.8).contains(&class_prob) {
             break;
         }
     }
