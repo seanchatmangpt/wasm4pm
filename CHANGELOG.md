@@ -5,6 +5,51 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [26.5.21] - 2026-05-21
+
+### Release posture
+
+v26.5.21 is a receipt-backed validation release focused on closing the examples gate, verifying platform examples, and strengthening GHF receipt validation.
+
+### Verified examples
+
+- prayer_pipeline
+- cg_belonging
+- kids_safety
+- volunteer_serving
+- sunday_andon
+- benevolence_route
+- finance_audit
+- supply_chain_port
+
+All 8 examples passed and emitted receipts.
+
+### GHF validation
+
+- Structured ValidationResult replacing simple boolean verification
+- RefusalState8 coverage:
+  - ReceiptSchemaInvalid
+  - HashBindingFailed
+  - BoundaryEvidenceMissing
+  - PolicyConformanceFailed
+  - OCELAlignmentFailed
+  - ReplayFailed
+  - FleetDriftDetected
+  - TemporalConformanceFailed
+  - ExternalVerificationFailed
+
+### Release evidence
+
+- examples gate: passed
+- receipt verification: passed
+- clippy deny warnings: passed
+- npm dry-run: passed
+- cargo dry-run: passed
+
+### Commit
+
+f03bed5cf9362c65600b627e1d00168c0b7375a7
+
 ## [26.5.19] - 2026-05-19
 
 ### Added
