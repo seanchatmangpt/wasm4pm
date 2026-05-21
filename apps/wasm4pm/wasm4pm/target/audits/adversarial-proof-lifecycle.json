@@ -1,5 +1,5 @@
 {
-  "audit_timestamp": "2026-05-19T09:37:56.592Z",
+  "audit_timestamp": "2026-05-21T21:06:48.201Z",
   "auditor": "wpm-adversary",
   "verdict": "AndonPull(AdversarialEscape)",
   "defense_posture": "WEAK",
@@ -57,11 +57,11 @@
   "inconclusive_probes": [
     {
       "job": "Block stop when verifier (wpm) is unavailable and critical files are dirty",
-      "observed": "Probe error: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/tmp/adv-stop-novpm-IXvuJU/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n"
+      "observed": "Probe error: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/tmp/adv-stop-novpm-5jhRCY/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n"
     },
     {
       "job": "Block stop when audit exits 0 but does not contain Accepted verdict",
-      "observed": "Probe error: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/tmp/adv-stop-0-zNymcK/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n"
+      "observed": "Probe error: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/tmp/adv-stop-0-A4z3wz/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n"
     }
   ],
   "probes": [
@@ -138,14 +138,14 @@
     {
       "job": "Block stop when verifier (wpm) is unavailable and critical files are dirty",
       "scenario": "harness.rs modified, apps/wasm4pm/dist/bin/wpm.js does not exist",
-      "observed": "Probe error: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/tmp/adv-stop-novpm-IXvuJU/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n",
+      "observed": "Probe error: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/tmp/adv-stop-novpm-5jhRCY/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n",
       "verdict": "inconclusive",
       "evidence": "probe-error"
     },
     {
       "job": "Block stop when audit exits 0 but does not contain Accepted verdict",
       "scenario": "harness.rs dirty, fake wpm exits 0 with JSON missing final_verdict=Accepted",
-      "observed": "Probe error: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/tmp/adv-stop-0-zNymcK/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n",
+      "observed": "Probe error: Command failed: cp \"/Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh\" \"/tmp/adv-stop-0-A4z3wz/.claude/hooks/stop-proof-gate.sh\"\ncp: /Users/sac/wasm4pm/apps/wasm4pm/.claude/hooks/stop-proof-gate.sh: No such file or directory\n",
       "verdict": "inconclusive",
       "evidence": "probe-error"
     },
@@ -186,7 +186,7 @@
     },
     {
       "job": "Hooks JTBD audit JSON must exist on disk with Accepted verdict",
-      "scenario": "Check wasm4pm/target/audits/claude-hooks-jtbd-verification.json",
+      "scenario": "Check .wasm4pm/audits/claude-hooks-jtbd-verification.json",
       "observed": "Audit exists but verdict=AndonPull(RefutedJobs) (not Accepted)",
       "verdict": "refuted",
       "evidence": "exists=true; verdict=AndonPull(RefutedJobs)"
