@@ -140,8 +140,8 @@ pub fn is_evidence_field(path: &str) -> bool {
     let lower = path.to_lowercase();
     lower.ends_with("receipt_hash")
         || lower.ends_with("previous_receipt_hash")
-        || lower.ends_with("observed_ocel_hash")
-        || lower.ends_with("expected_ocel_hash")
+        || lower.ends_with("observed_ocel2_hash")
+        || lower.ends_with("expected_ocel2_hash")
         || lower.ends_with("tool_call_hash")
         || lower.ends_with("event_log_hash")
         || lower.ends_with("result_hash")
@@ -266,7 +266,6 @@ impl OCELReceiptLinter {
         for (algo_idx, algo) in algorithms.iter().enumerate() {
             let algo_path_prefix = format!("$.algorithms[{}]", algo_idx);
             
-            // Check expected path
             let expected_path = algo.get("expected_path");
             if expected_path.is_none() || expected_path.unwrap().is_null() {
                 findings.push(ReceiptFinding {
@@ -275,6 +274,16 @@ impl OCELReceiptLinter {
                     message: "expected_path is missing or null".to_string(),
                     severity: FindingSeverity::Deny,
                 });
+            } else {
+                let ep = expected_path.unwrap();
+                if ep.get("expected_ocel2").is_none() || ep.get("expected_ocel2").unwrap().is_null() {
+                    findings.push(ReceiptFinding {
+                        code: ReceiptTruthRefusal::ExpectedOCELMissing,
+                        json_path: format!("{}.expected_path.expected_ocel2", algo_path_prefix),
+                        message: "expected_path.expected_ocel2 is missing".to_string(),
+                        severity: FindingSeverity::Deny,
+                    });
+                }
             }
 
             // Check observed path
@@ -290,12 +299,12 @@ impl OCELReceiptLinter {
             }
             let observed_path = observed_path.unwrap();
 
-            let ocel = observed_path.get("ocel");
+            let ocel = observed_path.get("observed_ocel2");
             if ocel.is_none() || ocel.unwrap().is_null() {
                 findings.push(ReceiptFinding {
                     code: ReceiptTruthRefusal::ObservedOCELMissing,
-                    json_path: format!("{}.observed_path.ocel", algo_path_prefix),
-                    message: "observed_path.ocel is missing".to_string(),
+                    json_path: format!("{}.observed_path.observed_ocel2", algo_path_prefix),
+                    message: "observed_path.observed_ocel2 is missing".to_string(),
                     severity: FindingSeverity::Deny,
                 });
                 continue;
@@ -311,8 +320,8 @@ impl OCELReceiptLinter {
                     if evs.is_empty() {
                         findings.push(ReceiptFinding {
                             code: ReceiptTruthRefusal::ObservedOCELMissing,
-                            json_path: format!("{}.observed_path.ocel.events", algo_path_prefix),
-                            message: "observed_path.ocel.events is empty".to_string(),
+                            json_path: format!("{}.observed_path.observed_ocel2.events", algo_path_prefix),
+                            message: "observed_path.observed_ocel2.events is empty".to_string(),
                             severity: FindingSeverity::Deny,
                         });
                     } else {
@@ -327,7 +336,7 @@ impl OCELReceiptLinter {
                         }
 
                         for (e_idx, ev) in evs.iter().enumerate() {
-                            let ev_path = format!("{}.observed_path.ocel.events[{}]", algo_path_prefix, e_idx);
+                            let ev_path = format!("{}.observed_path.observed_ocel2.events[{}]", algo_path_prefix, e_idx);
                             if ev.get("id").and_then(|v| v.as_str()).is_none() {
                                 findings.push(ReceiptFinding {
                                     code: ReceiptTruthRefusal::ObservedOCELSynthetic,
@@ -374,8 +383,8 @@ impl OCELReceiptLinter {
                 None => {
                     findings.push(ReceiptFinding {
                         code: ReceiptTruthRefusal::ObservedOCELMissing,
-                        json_path: format!("{}.observed_path.ocel.events", algo_path_prefix),
-                        message: "observed_path.ocel.events is missing or not an array".to_string(),
+                        json_path: format!("{}.observed_path.observed_ocel2.events", algo_path_prefix),
+                        message: "observed_path.observed_ocel2.events is missing or not an array".to_string(),
                         severity: FindingSeverity::Deny,
                     });
                 }
@@ -386,8 +395,8 @@ impl OCELReceiptLinter {
                     if objs.is_empty() {
                         findings.push(ReceiptFinding {
                             code: ReceiptTruthRefusal::ObservedOCELMissing,
-                            json_path: format!("{}.observed_path.ocel.objects", algo_path_prefix),
-                            message: "observed_path.ocel.objects is empty".to_string(),
+                            json_path: format!("{}.observed_path.observed_ocel2.objects", algo_path_prefix),
+                            message: "observed_path.observed_ocel2.objects is empty".to_string(),
                             severity: FindingSeverity::Deny,
                         });
                     }
@@ -395,8 +404,8 @@ impl OCELReceiptLinter {
                 None => {
                     findings.push(ReceiptFinding {
                         code: ReceiptTruthRefusal::ObservedOCELMissing,
-                        json_path: format!("{}.observed_path.ocel.objects", algo_path_prefix),
-                        message: "observed_path.ocel.objects is missing or not an array".to_string(),
+                        json_path: format!("{}.observed_path.observed_ocel2.objects", algo_path_prefix),
+                        message: "observed_path.observed_ocel2.objects is missing or not an array".to_string(),
                         severity: FindingSeverity::Deny,
                     });
                 }
@@ -431,15 +440,15 @@ impl ExpectedObservedCloneDetector {
             for (idx, algo) in algorithms.iter().enumerate() {
                 let algo_path = format!("$.algorithms[{}]", idx);
                 
-                let expected_hash = algo.get("expected_path").and_then(|ep| ep.get("expected_ocel_hash")).and_then(|h| h.as_str());
-                let observed_hash = algo.get("observed_path").and_then(|op| op.get("observed_ocel_hash")).and_then(|h| h.as_str());
+                let expected_hash = algo.get("expected_path").and_then(|ep| ep.get("expected_ocel2_hash")).and_then(|h| h.as_str());
+                let observed_hash = algo.get("observed_path").and_then(|op| op.get("observed_ocel2_hash")).and_then(|h| h.as_str());
 
                 if let (Some(eh), Some(oh)) = (expected_hash, observed_hash) {
                     if eh == oh {
                         // suspicious cloning
                         findings.push(ReceiptFinding {
                             code: ReceiptTruthRefusal::ExpectedObservedCloneDetected,
-                            json_path: format!("{}.observed_path.observed_ocel_hash", algo_path),
+                            json_path: format!("{}.observed_path.observed_ocel2_hash", algo_path),
                             message: "Observed OCEL hash matches expected hash exactly (unobserved clone suspect)".to_string(),
                             severity: FindingSeverity::Deny,
                         });
@@ -464,7 +473,7 @@ impl ExpectedObservedCloneDetector {
                                 if all_timestamps.len() > 1 && all_timestamps[0] == "2026-05-21T19:42:52.249Z" {
                                     findings.push(ReceiptFinding {
                                         code: ReceiptTruthRefusal::ExpectedObservedCloneDetected,
-                                        json_path: format!("{}.observed_path.ocel.events", algo_path),
+                                        json_path: format!("{}.observed_path.observed_ocel2.events", algo_path),
                                         message: "Observed events contain static template timestamp constants".to_string(),
                                         severity: FindingSeverity::Deny,
                                     });
@@ -610,7 +619,7 @@ impl ClosureOverclaimDetector {
                         if !has_artifact_emitted {
                             findings.push(ReceiptFinding {
                                 code: ReceiptTruthRefusal::ClosureOverclaimed,
-                                json_path: format!("{}.observed_path.ocel.events", algo_path),
+                                json_path: format!("{}.observed_path.observed_ocel2.events", algo_path),
                                 message: "Closed receipt requires an artifact.emitted event in observed path".to_string(),
                                 severity: FindingSeverity::Deny,
                             });
@@ -618,7 +627,7 @@ impl ClosureOverclaimDetector {
                         if !has_task_closed {
                             findings.push(ReceiptFinding {
                                 code: ReceiptTruthRefusal::ClosureOverclaimed,
-                                json_path: format!("{}.observed_path.ocel.events", algo_path),
+                                json_path: format!("{}.observed_path.observed_ocel2.events", algo_path),
                                 message: "Closed receipt requires a task.closed event in observed path".to_string(),
                                 severity: FindingSeverity::Deny,
                             });
@@ -639,19 +648,19 @@ impl CanonicalHashVerifier {
     pub fn verify(receipt: &serde_json::Value) -> Vec<ReceiptFinding> {
         let mut findings = Vec::new();
 
-        // 1. Verify individual algorithms' observed_ocel_hash matches canonical ocel serialization
+        // 1. Verify individual algorithms' observed_ocel2_hash matches canonical ocel serialization
         if let Some(algorithms) = receipt.get("algorithms").and_then(|v| v.as_array()) {
             for (idx, algo) in algorithms.iter().enumerate() {
                 let algo_path = format!("$.algorithms[{}]", idx);
                 if let Some(observed_path) = algo.get("observed_path") {
                     if let Some(ocel) = observed_path.get("ocel") {
-                        if let Some(stored_hash) = observed_path.get("observed_ocel_hash").and_then(|h| h.as_str()) {
+                        if let Some(stored_hash) = observed_path.get("observed_ocel2_hash").and_then(|h| h.as_str()) {
                             // Check that stored hash is not placeholder
                             if stored_hash.is_empty() || stored_hash.contains("placeholder") {
                                 findings.push(ReceiptFinding {
                                     code: ReceiptTruthRefusal::PlaceholderEvidenceDetected,
-                                    json_path: format!("{}.observed_path.observed_ocel_hash", algo_path),
-                                    message: "Placeholder observed_ocel_hash detected".to_string(),
+                                    json_path: format!("{}.observed_path.observed_ocel2_hash", algo_path),
+                                    message: "Placeholder observed_ocel2_hash detected".to_string(),
                                     severity: FindingSeverity::Deny,
                                 });
                                 continue;
@@ -665,7 +674,7 @@ impl CanonicalHashVerifier {
                             if stored_hash != blake3_computed && stored_hash != sha256_computed {
                                 findings.push(ReceiptFinding {
                                     code: ReceiptTruthRefusal::OCELCanonicalHashMismatch,
-                                    json_path: format!("{}.observed_path.observed_ocel_hash", algo_path),
+                                    json_path: format!("{}.observed_path.observed_ocel2_hash", algo_path),
                                     message: format!(
                                         "OCEL canonical hash mismatch. Stored: '{}', Computed BLAKE3: '{}', SHA256: '{}'",
                                         stored_hash, blake3_computed, sha256_computed
@@ -897,7 +906,7 @@ mod tests {
                     "duration_ms": 29.45,
                     "expected_path": {
                         "route_id": "route1",
-                        "expected_ocel_hash": "1cb17f11",
+                        "expected_ocel2_hash": "1cb17f11",
                         "required_events": ["wpm.input.import.started"]
                     },
                     "observed_path": {
@@ -915,7 +924,7 @@ mod tests {
                                 { "id": "log1", "type": "Log" }
                             ]
                         },
-                        "observed_ocel_hash": "1cb17f11",
+                        "observed_ocel2_hash": "1cb17f11",
                         "observed_result_hash": "hash_placeholder"
                     }
                 }
@@ -954,7 +963,7 @@ mod tests {
                     "duration_ms": 29.45,
                     "expected_path": {
                         "route_id": "route1",
-                        "expected_ocel_hash": "1cb17f11",
+                        "expected_ocel2_hash": "1cb17f11",
                         "required_events": ["wpm.input.import.started"]
                     },
                     "observed_path": {
@@ -972,7 +981,7 @@ mod tests {
                                 { "id": "log1", "type": "Log" }
                             ]
                         },
-                        "observed_ocel_hash": "1cb17f11",
+                        "observed_ocel2_hash": "1cb17f11",
                         "observed_result_hash": "343a0b9e",
                         "role8": "default_role",
                         "purpose8": "default_purpose"
@@ -1008,7 +1017,7 @@ mod tests {
                     "duration_ms": 29.45,
                     "expected_path": {
                         "route_id": "route1",
-                        "expected_ocel_hash": "1cb17f1183c046e0447aaafcccc75c67741fbd346662fbe330ff9b5332d820e8",
+                        "expected_ocel2_hash": "1cb17f1183c046e0447aaafcccc75c67741fbd346662fbe330ff9b5332d820e8",
                         "required_events": ["wpm.input.import.started"]
                     },
                     "observed_path": {
@@ -1026,7 +1035,7 @@ mod tests {
                                 { "id": "log1", "type": "Log" }
                             ]
                         },
-                        "observed_ocel_hash": "1cb17f1183c046e0447aaafcccc75c67741fbd346662fbe330ff9b5332d820e8",
+                        "observed_ocel2_hash": "1cb17f1183c046e0447aaafcccc75c67741fbd346662fbe330ff9b5332d820e8",
                         "observed_result_hash": "343a0b9e"
                     }
                 }
@@ -1061,14 +1070,14 @@ mod tests {
                     "result_hash": "343a0b9e",
                     "expected_path": {
                         "route_id": "route1",
-                        "expected_ocel_hash": "1cb17f11"
+                        "expected_ocel2_hash": "1cb17f11"
                     },
                     "observed_path": {
                         "ocel": {
                             "events": [],
                             "objects": []
                         },
-                        "observed_ocel_hash": "2cb17f11",
+                        "observed_ocel2_hash": "2cb17f11",
                         "observed_result_hash": "343a0b9e",
                         "mcp": {
                             "tool_call_hash": "stub_hash"
@@ -1102,7 +1111,7 @@ mod tests {
                     "result_hash": "343a0b9e",
                     "expected_path": {
                         "route_id": "route1",
-                        "expected_ocel_hash": "1cb17f11"
+                        "expected_ocel2_hash": "1cb17f11"
                     },
                     "observed_path": {
                         "ocel": {
@@ -1119,7 +1128,7 @@ mod tests {
                                 { "id": "log1", "type": "Log" }
                             ]
                         },
-                        "observed_ocel_hash": "2cb17f11",
+                        "observed_ocel2_hash": "2cb17f11",
                         "observed_result_hash": "343a0b9e"
                     }
                 }
@@ -1150,14 +1159,14 @@ mod tests {
                     "result_hash": "343a0b9e",
                     "expected_path": {
                         "route_id": "route1",
-                        "expected_ocel_hash": "1cb17f11"
+                        "expected_ocel2_hash": "1cb17f11"
                     },
                     "observed_path": {
                         "ocel": {
                             "events": [],
                             "objects": []
                         },
-                        "observed_ocel_hash": "2cb17f11",
+                        "observed_ocel2_hash": "2cb17f11",
                         "observed_result_hash": "343a0b9e",
                         "stdout": "task completed",
                         "exit_code": 0
@@ -1190,14 +1199,14 @@ mod tests {
                     "result_hash": "343a0b9e",
                     "expected_path": {
                         "route_id": "route1",
-                        "expected_ocel_hash": "1cb17f11"
+                        "expected_ocel2_hash": "1cb17f11"
                     },
                     "observed_path": {
                         "ocel": {
                             "events": [],
                             "objects": []
                         },
-                        "observed_ocel_hash": "2cb17f11",
+                        "observed_ocel2_hash": "2cb17f11",
                         "observed_result_hash": "343a0b9e",
                         "exit_code": 0
                     }
@@ -1230,7 +1239,7 @@ mod tests {
                     "result_hash": "343a0b9e",
                     "expected_path": {
                         "route_id": "route1",
-                        "expected_ocel_hash": "1cb17f11"
+                        "expected_ocel2_hash": "1cb17f11"
                     },
                     "observed_path": {
                         "ocel": {
@@ -1247,7 +1256,7 @@ mod tests {
                                 { "id": "log1", "type": "Log" }
                             ]
                         },
-                        "observed_ocel_hash": "2cb17f11",
+                        "observed_ocel2_hash": "2cb17f11",
                         "observed_result_hash": "343a0b9e",
                         "boundary_evidence": {
                             "stdout_hash": "3adbffc69f"
@@ -1286,7 +1295,7 @@ mod tests {
                     "result_hash": "343a0b9e",
                     "expected_path": {
                         "route_id": "route1",
-                        "expected_ocel_hash": "1cb17f11"
+                        "expected_ocel2_hash": "1cb17f11"
                     },
                     "observed_path": {
                         "ocel": {
@@ -1303,7 +1312,7 @@ mod tests {
                                 { "id": "log1", "type": "Log" }
                             ]
                         },
-                        "observed_ocel_hash": "2cb17f11",
+                        "observed_ocel2_hash": "2cb17f11",
                         "observed_result_hash": "343a0b9e",
                         "boundary_evidence": {
                             "stdout_hash": "3adbffc69f"
@@ -1341,7 +1350,7 @@ mod tests {
                     "result_hash": "343a0b9e",
                     "expected_path": {
                         "route_id": "route1",
-                        "expected_ocel_hash": "1cb17f11"
+                        "expected_ocel2_hash": "1cb17f11"
                     },
                     "observed_path": {
                         "ocel": {
@@ -1358,7 +1367,7 @@ mod tests {
                                 { "id": "log1", "type": "Log" }
                             ]
                         },
-                        "observed_ocel_hash": "2cb17f11",
+                        "observed_ocel2_hash": "2cb17f11",
                         "observed_result_hash": "343a0b9e"
                     }
                 }
@@ -1389,7 +1398,7 @@ mod tests {
                     "result_hash": "343a0b9e",
                     "expected_path": {
                         "route_id": "route1",
-                        "expected_ocel_hash": "1cb17f11"
+                        "expected_ocel2_hash": "1cb17f11"
                     },
                     "observed_path": {
                         "ocel": {
@@ -1406,7 +1415,7 @@ mod tests {
                                 { "id": "log1", "type": "Log" }
                             ]
                         },
-                        "observed_ocel_hash": "2cb17f11",
+                        "observed_ocel2_hash": "2cb17f11",
                         "observed_result_hash": "343a0b9e",
                         "boundary_evidence": {
                             "stdout_hash": "fake_stdout_marker"
@@ -1464,11 +1473,11 @@ mod tests {
                     "result_hash": "343a0b9e",
                     "expected_path": {
                         "route_id": "route1",
-                        "expected_ocel_hash": "1cb17f11"
+                        "expected_ocel2_hash": "1cb17f11"
                     },
                     "observed_path": {
                         "ocel": ocel,
-                        "observed_ocel_hash": ocel_hash,
+                        "observed_ocel2_hash": ocel_hash,
                         "observed_result_hash": "343a0b9e"
                     }
                 }
@@ -1529,11 +1538,11 @@ mod tests {
                     "expected_path": {
                         "route_id": "route1",
                         // Make expected hash different to avoid clone detection
-                        "expected_ocel_hash": "different_expected_ocel_hash"
+                        "expected_ocel2_hash": "different_expected_ocel2_hash"
                     },
                     "observed_path": {
                         "ocel": ocel,
-                        "observed_ocel_hash": ocel_hash,
+                        "observed_ocel2_hash": ocel_hash,
                         "observed_result_hash": "343a0b9e",
                         "boundary_evidence": {
                             "stdout_hash": "3adbffc69f"
