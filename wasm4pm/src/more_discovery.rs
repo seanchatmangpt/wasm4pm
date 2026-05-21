@@ -402,9 +402,7 @@ pub fn discover_simulated_annealing_from_log(
 ) -> (DirectlyFollowsGraph, f64) {
     use std::collections::HashSet as HS;
 
-    // Parameter validation: ensure temperature and cooling_rate are in valid ranges
-    // Returns empty DFG if parameters invalid (fail-safe behavior)
-    if temperature <= 0.0 || !temperature.is_finite() {
+    if temperature <= 0.0 {
         return (DirectlyFollowsGraph::new(), 0.0); // invalid temperature
     }
     if cooling_rate <= 0.0 || cooling_rate >= 1.0 || !cooling_rate.is_finite() {

@@ -165,6 +165,7 @@ pub fn compute_enhanced_report(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::models::TokenReplayResult;
 
     #[test]
     fn test_fitness_breakdown_calculation() {

@@ -130,8 +130,13 @@ pub fn registered_names() -> Vec<String> {
 mod tests {
     use super::*;
 
+    lazy_static! {
+        static ref TEST_LOCK: Mutex<()> = Mutex::new(());
+    }
+
     #[test]
     fn test_fixture_registry_lifecycle() {
+        let _guard = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         clear();
         assert_eq!(registered_names().len(), 0);
 
@@ -152,6 +157,7 @@ mod tests {
 
     #[test]
     fn test_fixture_json_parsing() {
+        let _guard = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         clear();
 
         let fixture = Fixture {
@@ -170,6 +176,7 @@ mod tests {
 
     #[test]
     fn test_fixture_not_found_error() {
+        let _guard = TEST_LOCK.lock().unwrap_or_else(|e| e.into_inner());
         clear();
         let result = get("nonexistent");
         assert!(result.is_err());

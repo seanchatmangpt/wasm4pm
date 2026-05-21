@@ -7,3 +7,4 @@ pub mod mining;
 pub mod spc;
 pub mod telco;
 pub mod wizard;
+pub mod receipt;

@@ -97,6 +97,8 @@ pub mod models;
 pub mod state;
 /// Shared type aliases and newtype wrappers.
 pub mod types;
+/// Adversarial receipt doctor validation and truth verification.
+pub mod receipt;
 
 use std::cell::RefCell;
 

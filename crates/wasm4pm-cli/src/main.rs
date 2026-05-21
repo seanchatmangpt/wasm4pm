@@ -64,6 +64,8 @@ enum Commands {
     },
     /// Generate markdown documentation for the CLI.
     Man,
+    /// Forensics toolkit for receipt verification and adversarial audits.
+    Receipt(commands::receipt::ReceiptArgs),
 }
 
 fn main() {
@@ -104,6 +106,9 @@ fn try_main() -> anyhow::Result<()> {
         }
         Commands::Man => {
             generate_markdown()?;
+        }
+        Commands::Receipt(args) => {
+            commands::receipt::run(args)?;
         }
     }
 

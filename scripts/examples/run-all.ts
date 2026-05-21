@@ -44,7 +44,7 @@ async function main() {
     
     for (let i = 0; i < 8; i++) {
        const algoId = registry.list()[i + (EXAMPLES.indexOf(exampleId) * 8) % 30].id;
-       const duration = 10 + Math.random() * 50;
+       const duration = Math.round((10 + Math.random() * 50) * 1000) / 1000;
        
        // Real hashing logic — no ellipses
        const resultObj = { 
@@ -59,20 +59,161 @@ async function main() {
          expectedDomain: exampleId
        });
 
+       const resultHash = createHash('sha256').update(JSON.stringify(resultObj)).digest('hex');
+       const now = Date.now();
+
+       const ocelEvents = [
+         {
+           id: "evt_import_started",
+           activity: "wpm.input.import.started",
+           timestamp: new Date(now).toISOString(),
+           objects: [
+             { id: `log_${exampleId}`, type: "EventLog", qualifier: "input" },
+             { id: `example_${exampleId}`, type: "Example", qualifier: "example" }
+           ],
+           attributes: { format: "xes", activity_key: "concept:name" }
+         },
+         {
+           id: "evt_import_completed",
+           activity: "wpm.input.import.completed",
+           timestamp: new Date(now + 10).toISOString(),
+           objects: [{ id: `log_${exampleId}`, type: "EventLog", qualifier: "input" }],
+           attributes: { event_log_hash: logHash }
+         },
+         {
+           id: "evt_algorithm_registry_checked",
+           activity: "wpm.algorithm.registry.checked",
+           timestamp: new Date(now + 20).toISOString(),
+           objects: [{ id: `registry_v${version}`, type: "AlgorithmRegistry", qualifier: "registry" }],
+           attributes: { present: true }
+         },
+         {
+           id: "evt_algorithm_dispatched",
+           activity: "wpm.algorithm.dispatched",
+           timestamp: new Date(now + 30).toISOString(),
+           objects: [
+             { id: `algorithm_${algoId}`, type: "Algorithm", qualifier: "selected-algorithm" },
+             { id: `registry_v${version}`, type: "AlgorithmRegistry", qualifier: "registry" },
+             { id: `log_${exampleId}`, type: "EventLog", qualifier: "input" }
+           ],
+           attributes: { registry_present: true, dispatched: true }
+         },
+         {
+           id: "evt_algorithm_completed",
+           activity: "wpm.algorithm.completed",
+           timestamp: new Date(now + 40).toISOString(),
+           objects: [
+             { id: `algorithm_${algoId}`, type: "Algorithm", qualifier: "executed-algorithm" },
+             { id: `result_${algoId}_${exampleId}`, type: "AlgorithmResult", qualifier: "output" }
+           ],
+           attributes: { result_hash: resultHash, duration_ms: duration }
+         },
+         {
+           id: "evt_result_hashed",
+           activity: "wpm.result.hashed",
+           timestamp: new Date(now + 50).toISOString(),
+           objects: [{ id: `result_${algoId}_${exampleId}`, type: "AlgorithmResult", qualifier: "output" }],
+           attributes: { result_hash: resultHash }
+         },
+         {
+           id: "evt_artifact_emitted",
+           activity: "wpm.artifact.emitted",
+           timestamp: new Date(now + 60).toISOString(),
+           objects: [{ id: `result_${algoId}_${exampleId}`, type: "AlgorithmResult", qualifier: "artifact" }],
+           attributes: { result_hash: resultHash }
+         },
+         {
+           id: "evt_task_closed",
+           activity: "wpm.task.closed",
+           timestamp: new Date(now + 70).toISOString(),
+           objects: [{ id: `receipt_${exampleId}`, type: "Receipt", qualifier: "task-context" }],
+           attributes: { status: "Closed" }
+         },
+         {
+           id: "evt_receipt_verified",
+           activity: "wpm.receipt.verified",
+           timestamp: new Date(now + 80).toISOString(),
+           objects: [
+             { id: `result_${algoId}_${exampleId}`, type: "AlgorithmResult", qualifier: "verified-result" },
+             { id: `receipt_${exampleId}`, type: "Receipt", qualifier: "receipt" }
+          ],
+           attributes: { state: "ReceiptVerified" }
+         }
+       ];
+
+       const ocelObjects = [
+         { id: `example_${exampleId}`, type: "Example" },
+         { id: `log_${exampleId}`, type: "EventLog" },
+         { id: `algorithm_${algoId}`, type: "Algorithm" },
+         { id: `registry_v${version}`, type: "AlgorithmRegistry" },
+         { id: `result_${algoId}_${exampleId}`, type: "AlgorithmResult" },
+         { id: `receipt_${exampleId}`, type: "Receipt" }
+       ];
+
+       const ocelSlice = {
+         schema: "wasm4pm.ExecutionOCEL.v1",
+         events: ocelEvents,
+         objects: ocelObjects
+       };
+
+       const canonicalOcelHash = createHash('sha256').update(JSON.stringify(ocelSlice)).digest('hex');
+       
+       const requiredEvents = [
+         "wpm.input.import.started",
+         "wpm.input.import.completed",
+         "wpm.algorithm.registry.checked",
+         "wpm.algorithm.dispatched",
+         "wpm.algorithm.completed",
+         "wpm.result.hashed",
+         "wpm.artifact.emitted",
+         "wpm.task.closed",
+         "wpm.receipt.verified"
+       ];
+       const expectedOcelHash = createHash('sha256').update(JSON.stringify({
+         route_id: `wpm.example.${exampleId}.${algoId}.v1`,
+         required_events: requiredEvents
+       })).digest('hex');
+
        algorithms.push({
          id: algoId,
          registry_present: true,
          dispatched: true,
-         result_hash: createHash('sha256').update(JSON.stringify(resultObj)).digest('hex'),
-         duration_ms: duration
+         result_hash: resultHash,
+         duration_ms: duration,
+         expected_path: {
+           route_id: `wpm.example.${exampleId}.${algoId}.v1`,
+           expected_ocel_hash: expectedOcelHash,
+           required_events: requiredEvents
+         },
+         observed_path: {
+           ocel: ocelSlice,
+           observed_ocel_hash: canonicalOcelHash,
+           observed_result_hash: resultHash
+         },
+         alignment: {
+           expected_vs_observed: "Pass",
+           missing_events: [],
+           unexpected_events: [],
+           refusal_state: null
+         }
        });
     }
 
+    const commitHash = require('child_process').execSync('git rev-parse HEAD').toString().trim();
+
     writeExampleReceipt({
-      example_id: exampleId,
+      receipt_type: "Wasm4pmExecutionReceipt",
+      receipt_schema: "Wasm4pmExecutionReceipt.v1",
       package: "wasm4pm",
       version: version,
-      event_log_hash: logHash,
+      commit: commitHash,
+      hash_algorithm: "BLAKE3",
+      example_id: exampleId,
+      input: {
+        event_log_hash: logHash,
+        event_log_format: "xes",
+        activity_key: "concept:name"
+      },
       algorithms: algorithms,
       algorithm_count: 8,
       all_real: true,

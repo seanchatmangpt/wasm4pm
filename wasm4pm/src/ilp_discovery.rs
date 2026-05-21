@@ -35,7 +35,7 @@ pub fn compute_simplicity(places: usize, transitions: usize, arcs: usize) -> f64
         return 1.0; // Empty model is trivially simple
     }
 
-    let n = transitions.max(1); // visible activities
+    let n = transitions.saturating_sub(1).max(1); // visible activities
     let min_places = n + 1;
     let min_transitions = n;
     let min_arcs = 2 * n;

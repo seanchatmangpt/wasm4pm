@@ -1,69 +1,1829 @@
 {
-  "example_id": "benevolence_route",
+  "receipt_type": "Wasm4pmExecutionReceipt",
+  "receipt_schema": "Wasm4pmExecutionReceipt.v1",
   "package": "wasm4pm",
   "version": "26.5.21",
-  "event_log_hash": "0c5a5518442970cd1012b1f1053ab8b780b91efd9a02e1297ac922fcbf74f8f0",
+  "commit": "2f65dc9dd706203462ef92bc4815f24bec61159f",
+  "hash_algorithm": "BLAKE3",
+  "example_id": "benevolence_route",
+  "input": {
+    "event_log_hash": "0c5a5518442970cd1012b1f1053ab8b780b91efd9a02e1297ac922fcbf74f8f0",
+    "event_log_format": "xes",
+    "activity_key": "concept:name"
+  },
   "algorithms": [
     {
       "id": "simulated_annealing",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "9e09af9de9d9e8e9ffb5747d8ab448645b5df9b0daff77085f36fe798b790e49",
-      "duration_ms": 15.393471198440984
+      "result_hash": "1f5ff8e2ec6ca4793dbe7b470420ebeee4397c21e5c2dfccd155132807d0a689",
+      "duration_ms": 30.341,
+      "expected_path": {
+        "route_id": "wpm.example.benevolence_route.simulated_annealing.v1",
+        "expected_ocel_hash": "2dc5d866edce6f69de1c219908fe968bdaffddc010067a843b3f7723e4df70b6",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.156Z",
+              "objects": [
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_benevolence_route",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.166Z",
+              "objects": [
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "0c5a5518442970cd1012b1f1053ab8b780b91efd9a02e1297ac922fcbf74f8f0"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.176Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.186Z",
+              "objects": [
+                {
+                  "id": "algorithm_simulated_annealing",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.196Z",
+              "objects": [
+                {
+                  "id": "algorithm_simulated_annealing",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_simulated_annealing_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "1f5ff8e2ec6ca4793dbe7b470420ebeee4397c21e5c2dfccd155132807d0a689",
+                "duration_ms": 30.341
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.206Z",
+              "objects": [
+                {
+                  "id": "result_simulated_annealing_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "1f5ff8e2ec6ca4793dbe7b470420ebeee4397c21e5c2dfccd155132807d0a689"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.216Z",
+              "objects": [
+                {
+                  "id": "result_simulated_annealing_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "1f5ff8e2ec6ca4793dbe7b470420ebeee4397c21e5c2dfccd155132807d0a689"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.226Z",
+              "objects": [
+                {
+                  "id": "receipt_benevolence_route",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.236Z",
+              "objects": [
+                {
+                  "id": "result_simulated_annealing_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_benevolence_route",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_benevolence_route",
+              "type": "Example"
+            },
+            {
+              "id": "log_benevolence_route",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_simulated_annealing",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_simulated_annealing_benevolence_route",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_benevolence_route",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "4ae74d805fb4aab1495bbb083f9a723ac1dbd56d1abec664d673ab7163a05148",
+        "observed_result_hash": "1f5ff8e2ec6ca4793dbe7b470420ebeee4397c21e5c2dfccd155132807d0a689"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "declare",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "ba749cc07b5e7036b94fcfd5595ab6d95d71a05d337246e180cee8f3157a4b31",
-      "duration_ms": 18.53057823575535
+      "result_hash": "e3f6b554e04a322446302577e504a19c5d60a56e62fafdcb49f489dedf875445",
+      "duration_ms": 12.941,
+      "expected_path": {
+        "route_id": "wpm.example.benevolence_route.declare.v1",
+        "expected_ocel_hash": "b020dd528f1ae58892ac30e20e090a0ba5b6bbe0179983e4abf015cec19f6c43",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.156Z",
+              "objects": [
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_benevolence_route",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.166Z",
+              "objects": [
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "0c5a5518442970cd1012b1f1053ab8b780b91efd9a02e1297ac922fcbf74f8f0"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.176Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.186Z",
+              "objects": [
+                {
+                  "id": "algorithm_declare",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.196Z",
+              "objects": [
+                {
+                  "id": "algorithm_declare",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_declare_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "e3f6b554e04a322446302577e504a19c5d60a56e62fafdcb49f489dedf875445",
+                "duration_ms": 12.941
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.206Z",
+              "objects": [
+                {
+                  "id": "result_declare_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "e3f6b554e04a322446302577e504a19c5d60a56e62fafdcb49f489dedf875445"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.216Z",
+              "objects": [
+                {
+                  "id": "result_declare_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "e3f6b554e04a322446302577e504a19c5d60a56e62fafdcb49f489dedf875445"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.226Z",
+              "objects": [
+                {
+                  "id": "receipt_benevolence_route",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.236Z",
+              "objects": [
+                {
+                  "id": "result_declare_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_benevolence_route",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_benevolence_route",
+              "type": "Example"
+            },
+            {
+              "id": "log_benevolence_route",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_declare",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_declare_benevolence_route",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_benevolence_route",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "0203e18689313aad29e735be517d0574da44702145efc082ab9a662be889bf39",
+        "observed_result_hash": "e3f6b554e04a322446302577e504a19c5d60a56e62fafdcb49f489dedf875445"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "optimized_dfg",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "12711bf6c0ef885cac2f5109a53ae72053eb49e9d4073f792137266bb7d9e94a",
-      "duration_ms": 27.519959283867138
+      "result_hash": "132c3121ae2b078f525b641c6a9157c9c169e92befc565982e6bf9a0eb445b48",
+      "duration_ms": 52.849,
+      "expected_path": {
+        "route_id": "wpm.example.benevolence_route.optimized_dfg.v1",
+        "expected_ocel_hash": "0ec3f27546fa22040c0572d507e31495f90d6228ed3338c6ea08e72c1d34c6d4",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.156Z",
+              "objects": [
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_benevolence_route",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.166Z",
+              "objects": [
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "0c5a5518442970cd1012b1f1053ab8b780b91efd9a02e1297ac922fcbf74f8f0"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.176Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.186Z",
+              "objects": [
+                {
+                  "id": "algorithm_optimized_dfg",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.196Z",
+              "objects": [
+                {
+                  "id": "algorithm_optimized_dfg",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_optimized_dfg_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "132c3121ae2b078f525b641c6a9157c9c169e92befc565982e6bf9a0eb445b48",
+                "duration_ms": 52.849
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.206Z",
+              "objects": [
+                {
+                  "id": "result_optimized_dfg_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "132c3121ae2b078f525b641c6a9157c9c169e92befc565982e6bf9a0eb445b48"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.216Z",
+              "objects": [
+                {
+                  "id": "result_optimized_dfg_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "132c3121ae2b078f525b641c6a9157c9c169e92befc565982e6bf9a0eb445b48"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.226Z",
+              "objects": [
+                {
+                  "id": "receipt_benevolence_route",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.236Z",
+              "objects": [
+                {
+                  "id": "result_optimized_dfg_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_benevolence_route",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_benevolence_route",
+              "type": "Example"
+            },
+            {
+              "id": "log_benevolence_route",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_optimized_dfg",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_optimized_dfg_benevolence_route",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_benevolence_route",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "5c227d8485e1ccffb3dcf972454a726eac4a9200db4310e5654ed50b5369c5d1",
+        "observed_result_hash": "132c3121ae2b078f525b641c6a9157c9c169e92befc565982e6bf9a0eb445b48"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "ilp",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "06f5f0bc0cdf2d57920ce02873ada60ba39eca3f45be95981000d1e0a61dedfb",
-      "duration_ms": 48.78065172033149
+      "result_hash": "dcc039aa8cdbfc7adf96c47748e0120380b59536e4ee75372e027f00aa3e7a47",
+      "duration_ms": 32.461,
+      "expected_path": {
+        "route_id": "wpm.example.benevolence_route.ilp.v1",
+        "expected_ocel_hash": "80f791e374ab9246ba4cf2d8535c6c83fbe595493181e2f56bd5fcae7de9c10a",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.156Z",
+              "objects": [
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_benevolence_route",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.166Z",
+              "objects": [
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "0c5a5518442970cd1012b1f1053ab8b780b91efd9a02e1297ac922fcbf74f8f0"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.176Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.186Z",
+              "objects": [
+                {
+                  "id": "algorithm_ilp",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.196Z",
+              "objects": [
+                {
+                  "id": "algorithm_ilp",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_ilp_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "dcc039aa8cdbfc7adf96c47748e0120380b59536e4ee75372e027f00aa3e7a47",
+                "duration_ms": 32.461
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.206Z",
+              "objects": [
+                {
+                  "id": "result_ilp_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "dcc039aa8cdbfc7adf96c47748e0120380b59536e4ee75372e027f00aa3e7a47"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.216Z",
+              "objects": [
+                {
+                  "id": "result_ilp_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "dcc039aa8cdbfc7adf96c47748e0120380b59536e4ee75372e027f00aa3e7a47"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.226Z",
+              "objects": [
+                {
+                  "id": "receipt_benevolence_route",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.236Z",
+              "objects": [
+                {
+                  "id": "result_ilp_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_benevolence_route",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_benevolence_route",
+              "type": "Example"
+            },
+            {
+              "id": "log_benevolence_route",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_ilp",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_ilp_benevolence_route",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_benevolence_route",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "5975aa8757647bfc8b4c9c38ffd08261698644eb7cc66f8b2b46961f3a2b3efc",
+        "observed_result_hash": "dcc039aa8cdbfc7adf96c47748e0120380b59536e4ee75372e027f00aa3e7a47"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "simd_streaming_dfg",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "8053379c4919647324b0b9eafae3b76c0129feb934ebc6c648bc6568a9313701",
-      "duration_ms": 29.371938613966904
+      "result_hash": "0b6b2d2a1183a779d7785b6dfd340033becb52bdfaaa903dd2c84d4461c80ee4",
+      "duration_ms": 10.037,
+      "expected_path": {
+        "route_id": "wpm.example.benevolence_route.simd_streaming_dfg.v1",
+        "expected_ocel_hash": "184860887280a2ac10d2e7b0e6dc2473cc4ff46e992c193ce07fd2e35d7d51f5",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.156Z",
+              "objects": [
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_benevolence_route",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.166Z",
+              "objects": [
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "0c5a5518442970cd1012b1f1053ab8b780b91efd9a02e1297ac922fcbf74f8f0"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.176Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.186Z",
+              "objects": [
+                {
+                  "id": "algorithm_simd_streaming_dfg",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.196Z",
+              "objects": [
+                {
+                  "id": "algorithm_simd_streaming_dfg",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_simd_streaming_dfg_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "0b6b2d2a1183a779d7785b6dfd340033becb52bdfaaa903dd2c84d4461c80ee4",
+                "duration_ms": 10.037
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.206Z",
+              "objects": [
+                {
+                  "id": "result_simd_streaming_dfg_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "0b6b2d2a1183a779d7785b6dfd340033becb52bdfaaa903dd2c84d4461c80ee4"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.216Z",
+              "objects": [
+                {
+                  "id": "result_simd_streaming_dfg_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "0b6b2d2a1183a779d7785b6dfd340033becb52bdfaaa903dd2c84d4461c80ee4"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.226Z",
+              "objects": [
+                {
+                  "id": "receipt_benevolence_route",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.236Z",
+              "objects": [
+                {
+                  "id": "result_simd_streaming_dfg_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_benevolence_route",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_benevolence_route",
+              "type": "Example"
+            },
+            {
+              "id": "log_benevolence_route",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_simd_streaming_dfg",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_simd_streaming_dfg_benevolence_route",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_benevolence_route",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "8cd8417f456f6d18781a378bcc97eec56f047fc09e69fb3ef263dcebd5d155c0",
+        "observed_result_hash": "0b6b2d2a1183a779d7785b6dfd340033becb52bdfaaa903dd2c84d4461c80ee4"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "hierarchical_dfg",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "678f66db17f1b93f0f0d8c60406881292da72138fb740baa6d2646e95c6b2e3e",
-      "duration_ms": 34.9721279944971
+      "result_hash": "145ad6ad221cc30d5eade5988ec068ec717e6566beaa22cdc222998ad476b925",
+      "duration_ms": 51.502,
+      "expected_path": {
+        "route_id": "wpm.example.benevolence_route.hierarchical_dfg.v1",
+        "expected_ocel_hash": "943901c7fefc5804923631dc29e9f23b4f7a8b57e799ca5f9a4d82ae386dcfdf",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.156Z",
+              "objects": [
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_benevolence_route",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.166Z",
+              "objects": [
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "0c5a5518442970cd1012b1f1053ab8b780b91efd9a02e1297ac922fcbf74f8f0"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.176Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.186Z",
+              "objects": [
+                {
+                  "id": "algorithm_hierarchical_dfg",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.196Z",
+              "objects": [
+                {
+                  "id": "algorithm_hierarchical_dfg",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_hierarchical_dfg_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "145ad6ad221cc30d5eade5988ec068ec717e6566beaa22cdc222998ad476b925",
+                "duration_ms": 51.502
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.206Z",
+              "objects": [
+                {
+                  "id": "result_hierarchical_dfg_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "145ad6ad221cc30d5eade5988ec068ec717e6566beaa22cdc222998ad476b925"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.216Z",
+              "objects": [
+                {
+                  "id": "result_hierarchical_dfg_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "145ad6ad221cc30d5eade5988ec068ec717e6566beaa22cdc222998ad476b925"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.226Z",
+              "objects": [
+                {
+                  "id": "receipt_benevolence_route",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.236Z",
+              "objects": [
+                {
+                  "id": "result_hierarchical_dfg_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_benevolence_route",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_benevolence_route",
+              "type": "Example"
+            },
+            {
+              "id": "log_benevolence_route",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_hierarchical_dfg",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_hierarchical_dfg_benevolence_route",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_benevolence_route",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "59f5fe29cd4ce1d0a7b9ad5af0435b84ec8e751f0404331c9f7966169ed1068a",
+        "observed_result_hash": "145ad6ad221cc30d5eade5988ec068ec717e6566beaa22cdc222998ad476b925"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "streaming_log",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "66fec98c073343d6a0f27152cb5724152b13f7c61c7976acbe8af46c53d39e9f",
-      "duration_ms": 26.186030538942724
+      "result_hash": "d50cf6db93657ed9bb3b1a76ad65a6352a45a7408bdb7f49b6ac6fd625253263",
+      "duration_ms": 28.655,
+      "expected_path": {
+        "route_id": "wpm.example.benevolence_route.streaming_log.v1",
+        "expected_ocel_hash": "35748427dcf7f88d118bf9894d8f2bb2b40d621e24a59134cc62859ec34cdcdf",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.156Z",
+              "objects": [
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_benevolence_route",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.166Z",
+              "objects": [
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "0c5a5518442970cd1012b1f1053ab8b780b91efd9a02e1297ac922fcbf74f8f0"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.176Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.186Z",
+              "objects": [
+                {
+                  "id": "algorithm_streaming_log",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.196Z",
+              "objects": [
+                {
+                  "id": "algorithm_streaming_log",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_streaming_log_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "d50cf6db93657ed9bb3b1a76ad65a6352a45a7408bdb7f49b6ac6fd625253263",
+                "duration_ms": 28.655
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.206Z",
+              "objects": [
+                {
+                  "id": "result_streaming_log_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "d50cf6db93657ed9bb3b1a76ad65a6352a45a7408bdb7f49b6ac6fd625253263"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.216Z",
+              "objects": [
+                {
+                  "id": "result_streaming_log_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "d50cf6db93657ed9bb3b1a76ad65a6352a45a7408bdb7f49b6ac6fd625253263"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.226Z",
+              "objects": [
+                {
+                  "id": "receipt_benevolence_route",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.236Z",
+              "objects": [
+                {
+                  "id": "result_streaming_log_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_benevolence_route",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_benevolence_route",
+              "type": "Example"
+            },
+            {
+              "id": "log_benevolence_route",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_streaming_log",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_streaming_log_benevolence_route",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_benevolence_route",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "fc9df5d671b8e1daa7e29e2111ef9960165320efdb18524f3227da8a629a91fc",
+        "observed_result_hash": "d50cf6db93657ed9bb3b1a76ad65a6352a45a7408bdb7f49b6ac6fd625253263"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "smart_engine",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "27cec969224fae2c62db620779396162deb081e1c8f604251518f1b5ca133ebe",
-      "duration_ms": 20.67689125614547
+      "result_hash": "7e853513d7f9c8f4ae56c71baf5054ade907d17dcd37261460ea16836742c68e",
+      "duration_ms": 47.721,
+      "expected_path": {
+        "route_id": "wpm.example.benevolence_route.smart_engine.v1",
+        "expected_ocel_hash": "46bad92f1bd2e36448d45f52e3e874da2a776da2a7168860c313c4941ce2714b",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.156Z",
+              "objects": [
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_benevolence_route",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.166Z",
+              "objects": [
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "0c5a5518442970cd1012b1f1053ab8b780b91efd9a02e1297ac922fcbf74f8f0"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.176Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.186Z",
+              "objects": [
+                {
+                  "id": "algorithm_smart_engine",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_benevolence_route",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.196Z",
+              "objects": [
+                {
+                  "id": "algorithm_smart_engine",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_smart_engine_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "7e853513d7f9c8f4ae56c71baf5054ade907d17dcd37261460ea16836742c68e",
+                "duration_ms": 47.721
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.206Z",
+              "objects": [
+                {
+                  "id": "result_smart_engine_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "7e853513d7f9c8f4ae56c71baf5054ade907d17dcd37261460ea16836742c68e"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.216Z",
+              "objects": [
+                {
+                  "id": "result_smart_engine_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "7e853513d7f9c8f4ae56c71baf5054ade907d17dcd37261460ea16836742c68e"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.226Z",
+              "objects": [
+                {
+                  "id": "receipt_benevolence_route",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.236Z",
+              "objects": [
+                {
+                  "id": "result_smart_engine_benevolence_route",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_benevolence_route",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_benevolence_route",
+              "type": "Example"
+            },
+            {
+              "id": "log_benevolence_route",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_smart_engine",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_smart_engine_benevolence_route",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_benevolence_route",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "12bb4df1161e1fa99faa3a62510e91ede5020b7b8d5612e05719a40f6875254d",
+        "observed_result_hash": "7e853513d7f9c8f4ae56c71baf5054ade907d17dcd37261460ea16836742c68e"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     }
   ],
   "algorithm_count": 8,
   "all_real": true,
-  "created_at": "2026-05-21T19:09:00.022Z",
+  "created_at": "2026-05-21T20:35:35.172Z",
   "previous_receipt_hash": null,
-  "receipt_hash": "787a8f8e2e685cccae6c3cc592431593d512e49bfafb56edc2810a86c862966b"
+  "receipt_hash": "4db5859935f854019461c3e8e2ae5d38e9420f1dcea1dfbbd9cb6ddde1bb3994"
 }

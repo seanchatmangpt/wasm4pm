@@ -12,7 +12,7 @@ repository = "https://github.com/seanchatmangpt/wasm4pm"
 
 [workspace.dependencies]
 serde = { version = "1.0", features = ["derive"] }
-serde_json = "1.0"
+serde_json = { version = "1.0", features = ["preserve_order"] }
 chrono = { version = "0.4", features = ["serde"] }
 uuid = { version = "1.16", features = ["v4", "serde", "js"] }
 hashbrown = { version = "0.17", features = ["inline-more"] }
@@ -20,6 +20,7 @@ smallvec = { version = "1.13", features = ["serde"] }
 itertools = "0.14.0"
 rustc-hash = "2"
 blake3 = "1.5"
+sha2 = "0.10.8"
 bcinr = { version = "26.4.22" }
 wasm4pm-types = { version = "26.5.21", path = "crates/wasm4pm-types" }
 wasm4pm-algos = { version = "26.5.21", path = "crates/wasm4pm-algos" }

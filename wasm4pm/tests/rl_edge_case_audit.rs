@@ -1,6 +1,6 @@
 //! Edge case audit for RL orchestrator: action bounds, reward NaN/Inf, LinUCB safety
 
-use wasm4pm::rl_orchestrator::{RlOrchestrator, AgentType, compute_reward, compute_reward_with_momentum};
+use wasm4pm::rl_orchestrator::{RlOrchestrator, AgentType, compute_reward, compute_reward_with_momentum, RewardParameters};
 use wasm4pm::{RlState, RlAction};
 
 // GUARD 1: Action bounds (0-4 valid, reject out-of-range)
@@ -71,11 +71,29 @@ fn reward_never_nan_or_inf() {
 
     // Case 4: With momentum bonus that could accumulate
     for momentum in [0u32, 5, 10, 100, 1000] {
-        let r = compute_reward_with_momentum(2, 1, 0, true, true, false, 0, momentum);
+        let r = compute_reward_with_momentum(RewardParameters {
+            prev_health: 2,
+            curr_health: 1,
+            spc_alert_count: 0,
+            guard_pass: true,
+            circuit_allowed: true,
+            latency_budget_exceeded: false,
+            rework_ratio_q: 0,
+            consecutive_successes: momentum,
+        });
         assert!(r.is_finite(), "reward with momentum {} should be finite, got {}", momentum, r);
         // Momentum bonus caps at 10-cycle window, should not grow unbounded
         if momentum > 10 {
-            let r_capped = compute_reward_with_momentum(2, 1, 0, true, true, false, 0, 10);
+            let r_capped = compute_reward_with_momentum(RewardParameters {
+                prev_health: 2,
+                curr_health: 1,
+                spc_alert_count: 0,
+                guard_pass: true,
+                circuit_allowed: true,
+                latency_budget_exceeded: false,
+                rework_ratio_q: 0,
+                consecutive_successes: 10,
+            });
             assert!(r <= r_capped * 1.001, "momentum bonus should cap at 10-cycle window");
         }
     }
@@ -155,16 +173,16 @@ fn reward_component_bounds_verified() {
     assert!(r_worst <= -5.4 && r_worst >= -5.6, "worst case should be ~-5.5, got {}", r_worst);
 
     // Best case: all bonuses
-    let r_best = compute_reward_with_momentum(
-        2,    // prev_health
-        1,    // curr_health (improved)
-        0,    // spc_alert_count
-        true, // guard_pass
-        true, // circuit_allowed
-        false, // latency_budget_exceeded
-        0,    // rework_ratio_q
-        10,   // consecutive_successes (max momentum)
-    );
+    let r_best = compute_reward_with_momentum(RewardParameters {
+        prev_health: 2,    // prev_health
+        curr_health: 1,    // curr_health (improved)
+        spc_alert_count: 0,    // spc_alert_count
+        guard_pass: true, // guard_pass
+        circuit_allowed: true, // circuit_allowed
+        latency_budget_exceeded: false, // latency_budget_exceeded
+        rework_ratio_q: 0,    // rework_ratio_q
+        consecutive_successes: 10,   // consecutive_successes (max momentum)
+    });
 
     // Expected: +1.0 (improved) + 0.1 (guard+circuit) + 0.5 (momentum capped) = +1.6
     assert!(r_best <= 1.61 && r_best >= 1.59, "best case should be ~+1.6, got {}", r_best);

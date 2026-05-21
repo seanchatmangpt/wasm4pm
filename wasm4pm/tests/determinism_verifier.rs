@@ -188,10 +188,7 @@ mod tests {
 
         let result = verifier.verify_determinism(42u64, 5, || {
             // Random result without seeding (non-deterministic)
-            std::time::SystemTime::now()
-                .duration_since(std::time::UNIX_EPOCH)
-                .unwrap()
-                .as_nanos() as u64
+            rand::thread_rng().gen::<u64>()
         });
 
         // Highly unlikely all trials are identical without seeding

@@ -15,14 +15,14 @@ use std::collections::HashSet;
 /// Chicago TDD oracle rank (hierarchy from strongest to weakest)
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Rank {
-    /// Mathematical theorem (e.g., Bellman equation, Western Electric rules)
-    Rank1,
-    /// Domain contract (e.g., SPC penalty structure, health state machine)
-    Rank2,
-    /// Metamorphic relation (e.g., health degrades → reward decreases)
-    Rank3,
     /// Statistical property (e.g., convergence over 50+ cycles, 5+ seeds)
     Rank4,
+    /// Metamorphic relation (e.g., health degrades → reward decreases)
+    Rank3,
+    /// Domain contract (e.g., SPC penalty structure, health state machine)
+    Rank2,
+    /// Mathematical theorem (e.g., Bellman equation, Western Electric rules)
+    Rank1,
 }
 
 /// Oracle validation result

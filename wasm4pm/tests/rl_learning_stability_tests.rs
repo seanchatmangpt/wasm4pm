@@ -229,16 +229,16 @@ mod stability_tests {
         let mut prev_reward = 0.0;
 
         for successes in 0..50 {
-            let reward = compute_reward_with_momentum(
-                1,      // improved (from health_level 1 → 0)
-                0,
-                0,      // no SPC alerts
-                true,   // guard pass
-                true,   // circuit allowed
-                false,  // no latency budget exceeded
-                0,      // no rework
-                successes,
-            );
+            let reward = compute_reward_with_momentum(wasm4pm::rl_orchestrator::RewardParameters {
+                prev_health: 1,      // improved (from health_level 1 → 0)
+                curr_health: 0,
+                spc_alert_count: 0,  // no SPC alerts
+                guard_pass: true,   // guard pass
+                circuit_allowed: true,   // circuit allowed
+                latency_budget_exceeded: false,  // no latency budget exceeded
+                rework_ratio_q: 0,      // no rework
+                consecutive_successes: successes,
+            });
             cumulative += reward;
 
             // Check that reward increments are decreasing (momentum saturates)

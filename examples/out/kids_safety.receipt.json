@@ -1,69 +1,1829 @@
 {
-  "example_id": "kids_safety",
+  "receipt_type": "Wasm4pmExecutionReceipt",
+  "receipt_schema": "Wasm4pmExecutionReceipt.v1",
   "package": "wasm4pm",
   "version": "26.5.21",
-  "event_log_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565",
+  "commit": "2f65dc9dd706203462ef92bc4815f24bec61159f",
+  "hash_algorithm": "BLAKE3",
+  "example_id": "kids_safety",
+  "input": {
+    "event_log_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565",
+    "event_log_format": "xes",
+    "activity_key": "concept:name"
+  },
   "algorithms": [
     {
       "id": "streaming_log",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "dd7550a1ebe24cac898881edd47f9219056f9c0d8c02452e280513b19f57e55a",
-      "duration_ms": 17.58982956380862
+      "result_hash": "ad019f87d17f7cf71b3872dae59ab9f03146c0c41575e807b800db7d4213a621",
+      "duration_ms": 22.794,
+      "expected_path": {
+        "route_id": "wpm.example.kids_safety.streaming_log.v1",
+        "expected_ocel_hash": "61f02d8a8fae66fba3d2d850f981969ee205e1f6d6186ff7283512f08059e648",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.110Z",
+              "objects": [
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_kids_safety",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.120Z",
+              "objects": [
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.130Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.140Z",
+              "objects": [
+                {
+                  "id": "algorithm_streaming_log",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.150Z",
+              "objects": [
+                {
+                  "id": "algorithm_streaming_log",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_streaming_log_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ad019f87d17f7cf71b3872dae59ab9f03146c0c41575e807b800db7d4213a621",
+                "duration_ms": 22.794
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.160Z",
+              "objects": [
+                {
+                  "id": "result_streaming_log_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ad019f87d17f7cf71b3872dae59ab9f03146c0c41575e807b800db7d4213a621"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.170Z",
+              "objects": [
+                {
+                  "id": "result_streaming_log_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ad019f87d17f7cf71b3872dae59ab9f03146c0c41575e807b800db7d4213a621"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.180Z",
+              "objects": [
+                {
+                  "id": "receipt_kids_safety",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.190Z",
+              "objects": [
+                {
+                  "id": "result_streaming_log_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_kids_safety",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_kids_safety",
+              "type": "Example"
+            },
+            {
+              "id": "log_kids_safety",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_streaming_log",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_streaming_log_kids_safety",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_kids_safety",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "d88d45bfdbfb0e48d7e2b5651174158f1620374b9a6390924d02591f28363218",
+        "observed_result_hash": "ad019f87d17f7cf71b3872dae59ab9f03146c0c41575e807b800db7d4213a621"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "smart_engine",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "fb7fca1b0235e4713dbefd947d96c1be91c59f7ed4c23849f849ea1925aa4bc7",
-      "duration_ms": 45.31133903686861
+      "result_hash": "370ae3e3666db74fbfbc9f6b948d0f555111891a6bfac5943a9317c21f8122e0",
+      "duration_ms": 27.979,
+      "expected_path": {
+        "route_id": "wpm.example.kids_safety.smart_engine.v1",
+        "expected_ocel_hash": "ebc8335c227ca4843ce21275b822ce67ba098138eceb799b8b376141546cff62",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.110Z",
+              "objects": [
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_kids_safety",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.120Z",
+              "objects": [
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.130Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.140Z",
+              "objects": [
+                {
+                  "id": "algorithm_smart_engine",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.150Z",
+              "objects": [
+                {
+                  "id": "algorithm_smart_engine",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_smart_engine_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "370ae3e3666db74fbfbc9f6b948d0f555111891a6bfac5943a9317c21f8122e0",
+                "duration_ms": 27.979
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.160Z",
+              "objects": [
+                {
+                  "id": "result_smart_engine_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "370ae3e3666db74fbfbc9f6b948d0f555111891a6bfac5943a9317c21f8122e0"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.170Z",
+              "objects": [
+                {
+                  "id": "result_smart_engine_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "370ae3e3666db74fbfbc9f6b948d0f555111891a6bfac5943a9317c21f8122e0"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.180Z",
+              "objects": [
+                {
+                  "id": "receipt_kids_safety",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.190Z",
+              "objects": [
+                {
+                  "id": "result_smart_engine_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_kids_safety",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_kids_safety",
+              "type": "Example"
+            },
+            {
+              "id": "log_kids_safety",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_smart_engine",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_smart_engine_kids_safety",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_kids_safety",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "404ca43e0f66a4aaf8e4d040cbe5cf9fcad6e177e0d037b8524802126dc88eb7",
+        "observed_result_hash": "370ae3e3666db74fbfbc9f6b948d0f555111891a6bfac5943a9317c21f8122e0"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "ml_classify",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "b1aaf00d3986a128609cfc5b8dd85f879df124164bd8b226549e8bc308dd12aa",
-      "duration_ms": 41.89047093767964
+      "result_hash": "3ce4d7af8d7098598f7deb38c443e7acfd3fa8afe85739588e744cf744674f4b",
+      "duration_ms": 53.46,
+      "expected_path": {
+        "route_id": "wpm.example.kids_safety.ml_classify.v1",
+        "expected_ocel_hash": "e612a749ba9ba10771fdcd89b2f5259b98bf6bc7384de1ad2bc1bbf13877ee0e",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.110Z",
+              "objects": [
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_kids_safety",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.120Z",
+              "objects": [
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.130Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.140Z",
+              "objects": [
+                {
+                  "id": "algorithm_ml_classify",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.150Z",
+              "objects": [
+                {
+                  "id": "algorithm_ml_classify",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_ml_classify_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "3ce4d7af8d7098598f7deb38c443e7acfd3fa8afe85739588e744cf744674f4b",
+                "duration_ms": 53.46
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.160Z",
+              "objects": [
+                {
+                  "id": "result_ml_classify_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "3ce4d7af8d7098598f7deb38c443e7acfd3fa8afe85739588e744cf744674f4b"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.170Z",
+              "objects": [
+                {
+                  "id": "result_ml_classify_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "3ce4d7af8d7098598f7deb38c443e7acfd3fa8afe85739588e744cf744674f4b"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.180Z",
+              "objects": [
+                {
+                  "id": "receipt_kids_safety",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.190Z",
+              "objects": [
+                {
+                  "id": "result_ml_classify_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_kids_safety",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_kids_safety",
+              "type": "Example"
+            },
+            {
+              "id": "log_kids_safety",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_ml_classify",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_ml_classify_kids_safety",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_kids_safety",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "8bdc9e1dda5823004a08d936a6153ddcd6875eec189a23a26cb47c384717db61",
+        "observed_result_hash": "3ce4d7af8d7098598f7deb38c443e7acfd3fa8afe85739588e744cf744674f4b"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "ml_cluster",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "1119f8931474bd6c35a019e6800e4e1165ef71d01a89df709185fd807a511331",
-      "duration_ms": 47.631522657496355
+      "result_hash": "381aec68a05f89d57bcd74ed5ac078c79ad8de23748b9371dfe52fa68378421d",
+      "duration_ms": 55.597,
+      "expected_path": {
+        "route_id": "wpm.example.kids_safety.ml_cluster.v1",
+        "expected_ocel_hash": "46fd7c688ba3d09f55e1fb129cc308ecb02994b3f0034dddd4bd52c8edcd06bc",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.110Z",
+              "objects": [
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_kids_safety",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.120Z",
+              "objects": [
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.130Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.140Z",
+              "objects": [
+                {
+                  "id": "algorithm_ml_cluster",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.150Z",
+              "objects": [
+                {
+                  "id": "algorithm_ml_cluster",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_ml_cluster_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "381aec68a05f89d57bcd74ed5ac078c79ad8de23748b9371dfe52fa68378421d",
+                "duration_ms": 55.597
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.160Z",
+              "objects": [
+                {
+                  "id": "result_ml_cluster_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "381aec68a05f89d57bcd74ed5ac078c79ad8de23748b9371dfe52fa68378421d"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.170Z",
+              "objects": [
+                {
+                  "id": "result_ml_cluster_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "381aec68a05f89d57bcd74ed5ac078c79ad8de23748b9371dfe52fa68378421d"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.180Z",
+              "objects": [
+                {
+                  "id": "receipt_kids_safety",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.190Z",
+              "objects": [
+                {
+                  "id": "result_ml_cluster_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_kids_safety",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_kids_safety",
+              "type": "Example"
+            },
+            {
+              "id": "log_kids_safety",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_ml_cluster",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_ml_cluster_kids_safety",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_kids_safety",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "0bb295042df7f2c44c029a1da330805536b02e84458de8ddb80a50d51850c8e6",
+        "observed_result_hash": "381aec68a05f89d57bcd74ed5ac078c79ad8de23748b9371dfe52fa68378421d"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "ml_forecast",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "1c8df012f31f5a6306a3ce0ef386bb64fc5c3736927a685811cd30516b95e6b2",
-      "duration_ms": 53.11743823725872
+      "result_hash": "9be76df019fcadc5621a0fd4fd920250aca74005148720563a901935b8dcb963",
+      "duration_ms": 13.135,
+      "expected_path": {
+        "route_id": "wpm.example.kids_safety.ml_forecast.v1",
+        "expected_ocel_hash": "9b2eb0ad847654db9fde26063fed900a6e8ead227f7e188cd228495a899bac2f",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.111Z",
+              "objects": [
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_kids_safety",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.121Z",
+              "objects": [
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.131Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.141Z",
+              "objects": [
+                {
+                  "id": "algorithm_ml_forecast",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.151Z",
+              "objects": [
+                {
+                  "id": "algorithm_ml_forecast",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_ml_forecast_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "9be76df019fcadc5621a0fd4fd920250aca74005148720563a901935b8dcb963",
+                "duration_ms": 13.135
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.161Z",
+              "objects": [
+                {
+                  "id": "result_ml_forecast_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "9be76df019fcadc5621a0fd4fd920250aca74005148720563a901935b8dcb963"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.171Z",
+              "objects": [
+                {
+                  "id": "result_ml_forecast_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "9be76df019fcadc5621a0fd4fd920250aca74005148720563a901935b8dcb963"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.181Z",
+              "objects": [
+                {
+                  "id": "receipt_kids_safety",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.191Z",
+              "objects": [
+                {
+                  "id": "result_ml_forecast_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_kids_safety",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_kids_safety",
+              "type": "Example"
+            },
+            {
+              "id": "log_kids_safety",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_ml_forecast",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_ml_forecast_kids_safety",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_kids_safety",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "76001f239b399a43e6425587ae0ba3617367da9a9663007090ad4142a65090a4",
+        "observed_result_hash": "9be76df019fcadc5621a0fd4fd920250aca74005148720563a901935b8dcb963"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "ml_anomaly",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "b96ee19ab2991f367021222270902ea5d7d4af9bf792c97f3cfac062b3913fe0",
-      "duration_ms": 33.99804831222458
+      "result_hash": "57360933a1e0c2ce20eebab9cf85af5c3029dd7364d7af974995d3a0d130017c",
+      "duration_ms": 24.48,
+      "expected_path": {
+        "route_id": "wpm.example.kids_safety.ml_anomaly.v1",
+        "expected_ocel_hash": "d97de6a7afddf22a44d0237a478d4505827ccf94b87da0ed2aa2606d243b0462",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.111Z",
+              "objects": [
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_kids_safety",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.121Z",
+              "objects": [
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.131Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.141Z",
+              "objects": [
+                {
+                  "id": "algorithm_ml_anomaly",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.151Z",
+              "objects": [
+                {
+                  "id": "algorithm_ml_anomaly",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_ml_anomaly_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "57360933a1e0c2ce20eebab9cf85af5c3029dd7364d7af974995d3a0d130017c",
+                "duration_ms": 24.48
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.161Z",
+              "objects": [
+                {
+                  "id": "result_ml_anomaly_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "57360933a1e0c2ce20eebab9cf85af5c3029dd7364d7af974995d3a0d130017c"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.171Z",
+              "objects": [
+                {
+                  "id": "result_ml_anomaly_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "57360933a1e0c2ce20eebab9cf85af5c3029dd7364d7af974995d3a0d130017c"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.181Z",
+              "objects": [
+                {
+                  "id": "receipt_kids_safety",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.191Z",
+              "objects": [
+                {
+                  "id": "result_ml_anomaly_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_kids_safety",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_kids_safety",
+              "type": "Example"
+            },
+            {
+              "id": "log_kids_safety",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_ml_anomaly",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_ml_anomaly_kids_safety",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_kids_safety",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "b677e87d978746d519707e9ce918c1339ff992e4969ab4df53fefe03ee20bf5b",
+        "observed_result_hash": "57360933a1e0c2ce20eebab9cf85af5c3029dd7364d7af974995d3a0d130017c"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "ml_regress",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "978b1d057d87b6d892e4069444f40c747905d6fd1ef488e73461296cd4ce2a13",
-      "duration_ms": 47.12046798486972
+      "result_hash": "a37aa82dbd1564c6a85a2de28c0642b0f3ac0524aa7be0627806bd97a3473918",
+      "duration_ms": 42.89,
+      "expected_path": {
+        "route_id": "wpm.example.kids_safety.ml_regress.v1",
+        "expected_ocel_hash": "051a99dd5006918be53f90a0fa0186f89effcfa7eb7adae1ee926e3d4fe00d6e",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.111Z",
+              "objects": [
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_kids_safety",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.121Z",
+              "objects": [
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.131Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.141Z",
+              "objects": [
+                {
+                  "id": "algorithm_ml_regress",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.151Z",
+              "objects": [
+                {
+                  "id": "algorithm_ml_regress",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_ml_regress_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "a37aa82dbd1564c6a85a2de28c0642b0f3ac0524aa7be0627806bd97a3473918",
+                "duration_ms": 42.89
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.161Z",
+              "objects": [
+                {
+                  "id": "result_ml_regress_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "a37aa82dbd1564c6a85a2de28c0642b0f3ac0524aa7be0627806bd97a3473918"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.171Z",
+              "objects": [
+                {
+                  "id": "result_ml_regress_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "a37aa82dbd1564c6a85a2de28c0642b0f3ac0524aa7be0627806bd97a3473918"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.181Z",
+              "objects": [
+                {
+                  "id": "receipt_kids_safety",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.191Z",
+              "objects": [
+                {
+                  "id": "result_ml_regress_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_kids_safety",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_kids_safety",
+              "type": "Example"
+            },
+            {
+              "id": "log_kids_safety",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_ml_regress",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_ml_regress_kids_safety",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_kids_safety",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "aa002d5f3d50d275964e38ef49711cc6542721b8d6624fcd7f655eac7633a37b",
+        "observed_result_hash": "a37aa82dbd1564c6a85a2de28c0642b0f3ac0524aa7be0627806bd97a3473918"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "ml_pca",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "c1922016e770bdd2870695b0d9c99d5c16ec222de3856b7ee6f43e8d3ee1c4fe",
-      "duration_ms": 16.280028190580623
+      "result_hash": "9bb270847dd291bceb3a59a35418726a838995dc6f67bb7d35cea504396bb318",
+      "duration_ms": 13.579,
+      "expected_path": {
+        "route_id": "wpm.example.kids_safety.ml_pca.v1",
+        "expected_ocel_hash": "39521664fd8e2079c3517ca6591e508e5853d96b34bc8a3f82115161a1ceec76",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.111Z",
+              "objects": [
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_kids_safety",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.121Z",
+              "objects": [
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.131Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.141Z",
+              "objects": [
+                {
+                  "id": "algorithm_ml_pca",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_kids_safety",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.151Z",
+              "objects": [
+                {
+                  "id": "algorithm_ml_pca",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_ml_pca_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "9bb270847dd291bceb3a59a35418726a838995dc6f67bb7d35cea504396bb318",
+                "duration_ms": 13.579
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.161Z",
+              "objects": [
+                {
+                  "id": "result_ml_pca_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "9bb270847dd291bceb3a59a35418726a838995dc6f67bb7d35cea504396bb318"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.171Z",
+              "objects": [
+                {
+                  "id": "result_ml_pca_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "9bb270847dd291bceb3a59a35418726a838995dc6f67bb7d35cea504396bb318"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.181Z",
+              "objects": [
+                {
+                  "id": "receipt_kids_safety",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.191Z",
+              "objects": [
+                {
+                  "id": "result_ml_pca_kids_safety",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_kids_safety",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_kids_safety",
+              "type": "Example"
+            },
+            {
+              "id": "log_kids_safety",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_ml_pca",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_ml_pca_kids_safety",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_kids_safety",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "1e9401ba81633b2f4a2c372abd0afa51c41f9d2e5a094f601dc8ec45f2680df0",
+        "observed_result_hash": "9bb270847dd291bceb3a59a35418726a838995dc6f67bb7d35cea504396bb318"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     }
   ],
   "algorithm_count": 8,
   "all_real": true,
-  "created_at": "2026-05-21T19:09:00.021Z",
+  "created_at": "2026-05-21T20:35:35.124Z",
   "previous_receipt_hash": null,
-  "receipt_hash": "0c263bdfdeba11f9f6a3710517f1601a18e45a36115ca409355040454ddb0dd1"
+  "receipt_hash": "247059a2bc12f201bc894b43531b5eb8e34b6ffd42099fbf6e512a44b95ff4e1"
 }

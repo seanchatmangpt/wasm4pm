@@ -18,12 +18,16 @@
 
 use wasm4pm::rl_orchestrator::compute_reward;
 use wasm4pm::self_healing::{
-    advance_clock, reset_clock, CircuitBreaker, CircuitBreakerConfig, CircuitState,
+    advance_clock, reset_clock, CircuitBreaker, CircuitBreakerConfig, CircuitState, CLOCK_LOCK,
 };
 
 /// Shared setup — resets the global monotonic clock before each test.
-fn setup() {
+fn setup() -> std::sync::MutexGuard<'static, ()> {
+    let guard = CLOCK_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     reset_clock();
+    guard
 }
 
 // ===========================================================================
@@ -36,7 +40,7 @@ fn setup() {
 
 #[test]
 fn d1_closed_to_open_on_failure_threshold() {
-    setup();
+    let _clock_guard = setup();
 
     let threshold = 5u32;
     let config = CircuitBreakerConfig {
@@ -89,7 +93,7 @@ fn d1_closed_to_open_on_failure_threshold() {
 
 #[test]
 fn d2_open_to_half_open_after_advance_clock() {
-    setup();
+    let _clock_guard = setup();
 
     let open_timeout_ms = 60_000u64;
     let config = CircuitBreakerConfig {
@@ -142,7 +146,7 @@ fn d2_open_to_half_open_after_advance_clock() {
 
 #[test]
 fn d3_half_open_to_closed_on_success_probe() {
-    setup();
+    let _clock_guard = setup();
 
     let success_threshold = 2u32;
     let config = CircuitBreakerConfig {
@@ -201,7 +205,7 @@ fn d3_half_open_to_closed_on_success_probe() {
 
 #[test]
 fn d4_half_open_to_open_on_failure_probe() {
-    setup();
+    let _clock_guard = setup();
 
     let config = CircuitBreakerConfig {
         failure_threshold: 3,
@@ -248,7 +252,7 @@ fn d4_half_open_to_open_on_failure_probe() {
 
 #[test]
 fn d5_cb1_regression_open_stays_open_without_advance_clock() {
-    setup();
+    let _clock_guard = setup();
 
     let config = CircuitBreakerConfig {
         failure_threshold: 3,

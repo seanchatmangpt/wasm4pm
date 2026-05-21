@@ -2,25 +2,74 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 
+export interface WpmOcelObjectRef {
+  id: string;
+  type: string;
+  qualifier?: string;
+}
+
+export interface WpmOcelEvent {
+  id: string;
+  activity: string;
+  timestamp: string;
+  objects: WpmOcelObjectRef[];
+  attributes: Record<string, any>;
+}
+
+export interface WpmOcelObject {
+  id: string;
+  type: string;
+}
+
+export interface Wasm4pmReceiptOcelSlice {
+  schema: string;
+  events: WpmOcelEvent[];
+  objects: WpmOcelObject[];
+}
+
 export interface AlgorithmReceipt {
   id: string;
   registry_present: boolean;
   dispatched: boolean;
-  result_hash: string;
+  result_hash: string | null;
   duration_ms: number;
+  expected_path: {
+    route_id: string;
+    expected_ocel_hash: string;
+    required_events: string[];
+  };
+  observed_path: {
+    ocel: Wasm4pmReceiptOcelSlice;
+    observed_ocel_hash: string;
+    observed_result_hash: string | null;
+  };
+  alignment: {
+    expected_vs_observed: string;
+    missing_events: string[];
+    unexpected_events: string[];
+    refusal_state: string | null;
+  };
 }
 
 export interface ExampleReceipt {
-  example_id: string;
+  receipt_type: string;
+  receipt_schema: string;
   package: string;
   version: string;
-  event_log_hash: string;
+  commit: string;
+  hash_algorithm: string;
+  example_id: string;
+  input: {
+    event_log_hash: string;
+    event_log_format: string;
+    activity_key: string;
+  };
   algorithms: AlgorithmReceipt[];
   algorithm_count: number;
   all_real: boolean;
   created_at: string;
-  receipt_hash: string;
   previous_receipt_hash: string | null;
+  receipt_hash: string;
 }
 
 /**

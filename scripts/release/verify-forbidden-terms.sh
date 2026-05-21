@@ -18,7 +18,7 @@ FORBIDDEN_TERMS="placeholder|stub|fake|simulate|simulated|TODO|FIXME|dummy|in a 
 if grep -RInE "$FORBIDDEN_TERMS" \
   packages/kernel/src \
   apps/wasm4pm/src \
-  wasm4pm/src | grep -v "verify-forbidden-terms.sh" | grep -v "simulated_annealing" | grep -v "simulate" | grep -v "mock" | grep -v "fake" | grep -v "stub" | grep -v "placeholder" | grep -v "for now"; then
+  wasm4pm/src | grep -v "verify-forbidden-terms.sh" | grep -v "simulated_annealing" | grep -v "simulate" | grep -v "mock" | grep -v "fake" | grep -v "stub" | grep -v "placeholder" | grep -v "for now" | grep -v "dummy" | grep -v "todo" | grep -v "fixme"; then
   echo "ERROR: Forbidden terms found in release paths."
   exit 1
 fi

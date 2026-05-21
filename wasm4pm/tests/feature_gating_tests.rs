@@ -72,8 +72,7 @@ fn test_canonical_features_map_to_internal_features() {
 
 #[test]
 fn test_browser_profile_contains_essential_algorithms() {
-    // Browser profile must include: DFG, skeleton, heuristic, alpha++
-    // Must NOT include: advanced discovery, ML, GPU, streaming-full
+    // Browser profile (redefined as full profile in v26.5.21) must include DFG, skeleton, heuristic, alpha++, ML, conformance, etc.
 
     #[cfg(feature = "browser")]
     {
@@ -81,9 +80,9 @@ fn test_browser_profile_contains_essential_algorithms() {
         #[cfg(feature = "conformance_basic")]
         assert!(true, "Browser includes basic conformance");
 
-        // Should NOT have ML
+        // Should have ML
         #[cfg(feature = "ml")]
-        panic!("Browser profile should not include ML feature");
+        assert!(true, "Browser profile includes ML feature");
 
         // Should NOT have GPU
         #[cfg(feature = "gpu")]
@@ -364,18 +363,18 @@ fn test_basic_conformance_available_in_all_profiles() {
 
 #[test]
 fn test_full_conformance_only_in_advanced_profiles() {
-    // Full conformance should only be in fog and cloud
+    // Full conformance should only be in browser/fog/cloud profiles
 
     #[cfg(feature = "feature-conformance-full")]
     {
-        #[cfg(any(feature = "fog", feature = "cloud"))]
-        assert!(true, "Full conformance in fog/cloud");
+        #[cfg(any(feature = "browser", feature = "fog", feature = "cloud"))]
+        assert!(true, "Full conformance in browser/fog/cloud");
     }
 
-    #[cfg(any(feature = "browser", feature = "iot", feature = "edge"))]
+    #[cfg(any(feature = "iot", feature = "edge"))]
     {
         #[cfg(feature = "feature-conformance-full")]
-        panic!("Full conformance should not be in browser/iot/edge");
+        panic!("Full conformance should not be in iot/edge");
     }
 }
 

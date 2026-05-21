@@ -1,69 +1,1829 @@
 {
-  "example_id": "prayer_pipeline",
+  "receipt_type": "Wasm4pmExecutionReceipt",
+  "receipt_schema": "Wasm4pmExecutionReceipt.v1",
   "package": "wasm4pm",
   "version": "26.5.21",
-  "event_log_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb",
+  "commit": "2f65dc9dd706203462ef92bc4815f24bec61159f",
+  "hash_algorithm": "BLAKE3",
+  "example_id": "prayer_pipeline",
+  "input": {
+    "event_log_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb",
+    "event_log_format": "xes",
+    "activity_key": "concept:name"
+  },
   "algorithms": [
     {
       "id": "dfg",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "d7bebe09dc8785af393f3c9b737b57adfad1567e3f6c5cea827fec9b973ad04a",
-      "duration_ms": 25.168483052429053
+      "result_hash": "24ad4f651bb232857361bbca34af432902572a9fa889c7a7badd6ebbd7469ade",
+      "duration_ms": 48.886,
+      "expected_path": {
+        "route_id": "wpm.example.prayer_pipeline.dfg.v1",
+        "expected_ocel_hash": "11c630830b3b327e0771f8e9c83acd1f78c7475c38a9a1c274f9b76e03e7cc58",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.077Z",
+              "objects": [
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_prayer_pipeline",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.087Z",
+              "objects": [
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.097Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.107Z",
+              "objects": [
+                {
+                  "id": "algorithm_dfg",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.117Z",
+              "objects": [
+                {
+                  "id": "algorithm_dfg",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_dfg_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "24ad4f651bb232857361bbca34af432902572a9fa889c7a7badd6ebbd7469ade",
+                "duration_ms": 48.886
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.127Z",
+              "objects": [
+                {
+                  "id": "result_dfg_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "24ad4f651bb232857361bbca34af432902572a9fa889c7a7badd6ebbd7469ade"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.137Z",
+              "objects": [
+                {
+                  "id": "result_dfg_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "24ad4f651bb232857361bbca34af432902572a9fa889c7a7badd6ebbd7469ade"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.147Z",
+              "objects": [
+                {
+                  "id": "receipt_prayer_pipeline",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.157Z",
+              "objects": [
+                {
+                  "id": "result_dfg_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_prayer_pipeline",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_prayer_pipeline",
+              "type": "Example"
+            },
+            {
+              "id": "log_prayer_pipeline",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_dfg",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_dfg_prayer_pipeline",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_prayer_pipeline",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "a8bf458abbec6b96afc07a1deef716a0ad1bf8e953150b971611dcdca49f3152",
+        "observed_result_hash": "24ad4f651bb232857361bbca34af432902572a9fa889c7a7badd6ebbd7469ade"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "process_skeleton",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "c77b27da5399a1d0cdd35bc1bad0aaf743cc417c0c23795febdf416d7be86bb8",
-      "duration_ms": 57.415130286654524
+      "result_hash": "0980fdc1c8a154a3472ffee811c39c71ed0c3a93b991710618d1a2fac734747d",
+      "duration_ms": 57.68,
+      "expected_path": {
+        "route_id": "wpm.example.prayer_pipeline.process_skeleton.v1",
+        "expected_ocel_hash": "b6662885443c911a50b553091ec9190b560f295c2352222e279b63f462be2ec7",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.078Z",
+              "objects": [
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_prayer_pipeline",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.088Z",
+              "objects": [
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.098Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.108Z",
+              "objects": [
+                {
+                  "id": "algorithm_process_skeleton",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.118Z",
+              "objects": [
+                {
+                  "id": "algorithm_process_skeleton",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_process_skeleton_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "0980fdc1c8a154a3472ffee811c39c71ed0c3a93b991710618d1a2fac734747d",
+                "duration_ms": 57.68
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.128Z",
+              "objects": [
+                {
+                  "id": "result_process_skeleton_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "0980fdc1c8a154a3472ffee811c39c71ed0c3a93b991710618d1a2fac734747d"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.138Z",
+              "objects": [
+                {
+                  "id": "result_process_skeleton_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "0980fdc1c8a154a3472ffee811c39c71ed0c3a93b991710618d1a2fac734747d"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.148Z",
+              "objects": [
+                {
+                  "id": "receipt_prayer_pipeline",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.158Z",
+              "objects": [
+                {
+                  "id": "result_process_skeleton_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_prayer_pipeline",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_prayer_pipeline",
+              "type": "Example"
+            },
+            {
+              "id": "log_prayer_pipeline",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_process_skeleton",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_process_skeleton_prayer_pipeline",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_prayer_pipeline",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "d62adc17fc0c5120031feb1b4114af14a3752b35d77cd7de666a339f9074eeb5",
+        "observed_result_hash": "0980fdc1c8a154a3472ffee811c39c71ed0c3a93b991710618d1a2fac734747d"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "alpha_plus_plus",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "b76c9c3465b4f726e23602afafaddd750d6bfc56ab133355099070dfa4eceeef",
-      "duration_ms": 35.25782730044455
+      "result_hash": "e9a034130a00b23c9602e205e7ce3e99090cad2b6890f533c237ad2da75774fe",
+      "duration_ms": 18.541,
+      "expected_path": {
+        "route_id": "wpm.example.prayer_pipeline.alpha_plus_plus.v1",
+        "expected_ocel_hash": "831d804bd49e133ee5450b10c45e6e19d613f1daca3f3cb19e61e10bab9270a7",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.078Z",
+              "objects": [
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_prayer_pipeline",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.088Z",
+              "objects": [
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.098Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.108Z",
+              "objects": [
+                {
+                  "id": "algorithm_alpha_plus_plus",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.118Z",
+              "objects": [
+                {
+                  "id": "algorithm_alpha_plus_plus",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_alpha_plus_plus_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "e9a034130a00b23c9602e205e7ce3e99090cad2b6890f533c237ad2da75774fe",
+                "duration_ms": 18.541
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.128Z",
+              "objects": [
+                {
+                  "id": "result_alpha_plus_plus_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "e9a034130a00b23c9602e205e7ce3e99090cad2b6890f533c237ad2da75774fe"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.138Z",
+              "objects": [
+                {
+                  "id": "result_alpha_plus_plus_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "e9a034130a00b23c9602e205e7ce3e99090cad2b6890f533c237ad2da75774fe"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.148Z",
+              "objects": [
+                {
+                  "id": "receipt_prayer_pipeline",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.158Z",
+              "objects": [
+                {
+                  "id": "result_alpha_plus_plus_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_prayer_pipeline",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_prayer_pipeline",
+              "type": "Example"
+            },
+            {
+              "id": "log_prayer_pipeline",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_alpha_plus_plus",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_alpha_plus_plus_prayer_pipeline",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_prayer_pipeline",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "9783a4d6a986ba30c50ddba107a03fe77e94c86642dd7e72fd05077aafcf5ddc",
+        "observed_result_hash": "e9a034130a00b23c9602e205e7ce3e99090cad2b6890f533c237ad2da75774fe"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "heuristic_miner",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "b23560eb826100fe288e4ece3a40f01ea3b8fe7a71650a5b210025391d6e2170",
-      "duration_ms": 10.363441982916452
+      "result_hash": "4e8978e79370766d04d9ae1bb24fc39b8fb58b9008609a8c4b5d0af708eadf05",
+      "duration_ms": 30.532,
+      "expected_path": {
+        "route_id": "wpm.example.prayer_pipeline.heuristic_miner.v1",
+        "expected_ocel_hash": "9f2ea5c977de1227351858f8b4eb614ed5f928bba3e3d2b29f949c7b5367f785",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.078Z",
+              "objects": [
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_prayer_pipeline",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.088Z",
+              "objects": [
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.098Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.108Z",
+              "objects": [
+                {
+                  "id": "algorithm_heuristic_miner",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.118Z",
+              "objects": [
+                {
+                  "id": "algorithm_heuristic_miner",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_heuristic_miner_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "4e8978e79370766d04d9ae1bb24fc39b8fb58b9008609a8c4b5d0af708eadf05",
+                "duration_ms": 30.532
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.128Z",
+              "objects": [
+                {
+                  "id": "result_heuristic_miner_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "4e8978e79370766d04d9ae1bb24fc39b8fb58b9008609a8c4b5d0af708eadf05"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.138Z",
+              "objects": [
+                {
+                  "id": "result_heuristic_miner_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "4e8978e79370766d04d9ae1bb24fc39b8fb58b9008609a8c4b5d0af708eadf05"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.148Z",
+              "objects": [
+                {
+                  "id": "receipt_prayer_pipeline",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.158Z",
+              "objects": [
+                {
+                  "id": "result_heuristic_miner_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_prayer_pipeline",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_prayer_pipeline",
+              "type": "Example"
+            },
+            {
+              "id": "log_prayer_pipeline",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_heuristic_miner",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_heuristic_miner_prayer_pipeline",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_prayer_pipeline",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "7257316c9129b2935f0940b488e13147b55b152e2669f3e5b55154103ee08eb0",
+        "observed_result_hash": "4e8978e79370766d04d9ae1bb24fc39b8fb58b9008609a8c4b5d0af708eadf05"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "inductive_miner",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "91fcb9e59f05a7fe50c8971579d487e56264f831fd3198171a94b495c3b60c37",
-      "duration_ms": 42.189584622610774
+      "result_hash": "6065f4131fbeb400dea7e472e4bb9f59c1e1c7ea0c87303ae9f93e2268a6a304",
+      "duration_ms": 37.565,
+      "expected_path": {
+        "route_id": "wpm.example.prayer_pipeline.inductive_miner.v1",
+        "expected_ocel_hash": "853a9a70e12e865b4bd6733d132cb3e045ee3f6f0c8494ec79ad5fd267e7e067",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.078Z",
+              "objects": [
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_prayer_pipeline",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.088Z",
+              "objects": [
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.098Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.108Z",
+              "objects": [
+                {
+                  "id": "algorithm_inductive_miner",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.118Z",
+              "objects": [
+                {
+                  "id": "algorithm_inductive_miner",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_inductive_miner_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "6065f4131fbeb400dea7e472e4bb9f59c1e1c7ea0c87303ae9f93e2268a6a304",
+                "duration_ms": 37.565
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.128Z",
+              "objects": [
+                {
+                  "id": "result_inductive_miner_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "6065f4131fbeb400dea7e472e4bb9f59c1e1c7ea0c87303ae9f93e2268a6a304"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.138Z",
+              "objects": [
+                {
+                  "id": "result_inductive_miner_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "6065f4131fbeb400dea7e472e4bb9f59c1e1c7ea0c87303ae9f93e2268a6a304"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.148Z",
+              "objects": [
+                {
+                  "id": "receipt_prayer_pipeline",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.158Z",
+              "objects": [
+                {
+                  "id": "result_inductive_miner_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_prayer_pipeline",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_prayer_pipeline",
+              "type": "Example"
+            },
+            {
+              "id": "log_prayer_pipeline",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_inductive_miner",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_inductive_miner_prayer_pipeline",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_prayer_pipeline",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "94f8c1a93651210c858906fa00e0106b568c54a6b52a9a9198f8684db73a71bc",
+        "observed_result_hash": "6065f4131fbeb400dea7e472e4bb9f59c1e1c7ea0c87303ae9f93e2268a6a304"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "genetic_algorithm",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "a4105d8bae42d724e4e19221bd053c864221e0ea0797aaf6a35cacec8d2fb00e",
-      "duration_ms": 40.150754733468844
+      "result_hash": "4bdca5f00f5c179565662067556fb199fbde5f11b15206d4d7040a273ec1f289",
+      "duration_ms": 56.081,
+      "expected_path": {
+        "route_id": "wpm.example.prayer_pipeline.genetic_algorithm.v1",
+        "expected_ocel_hash": "4ddd8a8ef29931a941e7437dde9fa4e94cfca6467d46532ec3e2f269ecc60d4c",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.078Z",
+              "objects": [
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_prayer_pipeline",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.088Z",
+              "objects": [
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.098Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.108Z",
+              "objects": [
+                {
+                  "id": "algorithm_genetic_algorithm",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.118Z",
+              "objects": [
+                {
+                  "id": "algorithm_genetic_algorithm",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_genetic_algorithm_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "4bdca5f00f5c179565662067556fb199fbde5f11b15206d4d7040a273ec1f289",
+                "duration_ms": 56.081
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.128Z",
+              "objects": [
+                {
+                  "id": "result_genetic_algorithm_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "4bdca5f00f5c179565662067556fb199fbde5f11b15206d4d7040a273ec1f289"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.138Z",
+              "objects": [
+                {
+                  "id": "result_genetic_algorithm_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "4bdca5f00f5c179565662067556fb199fbde5f11b15206d4d7040a273ec1f289"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.148Z",
+              "objects": [
+                {
+                  "id": "receipt_prayer_pipeline",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.158Z",
+              "objects": [
+                {
+                  "id": "result_genetic_algorithm_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_prayer_pipeline",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_prayer_pipeline",
+              "type": "Example"
+            },
+            {
+              "id": "log_prayer_pipeline",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_genetic_algorithm",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_genetic_algorithm_prayer_pipeline",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_prayer_pipeline",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "3ead9c928ba898bb69e2746cc0e5bd2eddee1030f18eadfdbf2ed2e90d0a6ddc",
+        "observed_result_hash": "4bdca5f00f5c179565662067556fb199fbde5f11b15206d4d7040a273ec1f289"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "pso",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "cb3cf152b3b1dc8ec2514082dc65a16988c4277121585ca43f835d2bf89a360c",
-      "duration_ms": 53.0196934105313
+      "result_hash": "1b4442e4d07a3b950a21eaf71665898857182203f285dcc3cbda311ce1791a0b",
+      "duration_ms": 19.14,
+      "expected_path": {
+        "route_id": "wpm.example.prayer_pipeline.pso.v1",
+        "expected_ocel_hash": "35e006b040dc30e6b46fee136aefe836fba00e1245790dd655cb7990eeb78db4",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.078Z",
+              "objects": [
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_prayer_pipeline",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.088Z",
+              "objects": [
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.098Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.108Z",
+              "objects": [
+                {
+                  "id": "algorithm_pso",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.118Z",
+              "objects": [
+                {
+                  "id": "algorithm_pso",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_pso_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "1b4442e4d07a3b950a21eaf71665898857182203f285dcc3cbda311ce1791a0b",
+                "duration_ms": 19.14
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.128Z",
+              "objects": [
+                {
+                  "id": "result_pso_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "1b4442e4d07a3b950a21eaf71665898857182203f285dcc3cbda311ce1791a0b"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.138Z",
+              "objects": [
+                {
+                  "id": "result_pso_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "1b4442e4d07a3b950a21eaf71665898857182203f285dcc3cbda311ce1791a0b"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.148Z",
+              "objects": [
+                {
+                  "id": "receipt_prayer_pipeline",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.158Z",
+              "objects": [
+                {
+                  "id": "result_pso_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_prayer_pipeline",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_prayer_pipeline",
+              "type": "Example"
+            },
+            {
+              "id": "log_prayer_pipeline",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_pso",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_pso_prayer_pipeline",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_prayer_pipeline",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "62e2599aeac5fbf44edb01f3cc0c04fb4f7e002871c34e549ce014198289d02e",
+        "observed_result_hash": "1b4442e4d07a3b950a21eaf71665898857182203f285dcc3cbda311ce1791a0b"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "a_star",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "00062874b68529167257c740937e6fc7e5476603196060dcd91d1155879b4023",
-      "duration_ms": 32.712690809947446
+      "result_hash": "b5e5bc72fcd03085e98ece865d12a059b1bb39018fbe454fae17227627f504e9",
+      "duration_ms": 16.723,
+      "expected_path": {
+        "route_id": "wpm.example.prayer_pipeline.a_star.v1",
+        "expected_ocel_hash": "16fe240a02534dd2057740b07eb64326e60fba668440c0a030468caf7d6cac89",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.078Z",
+              "objects": [
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_prayer_pipeline",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.088Z",
+              "objects": [
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.098Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.108Z",
+              "objects": [
+                {
+                  "id": "algorithm_a_star",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_prayer_pipeline",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.118Z",
+              "objects": [
+                {
+                  "id": "algorithm_a_star",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_a_star_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "b5e5bc72fcd03085e98ece865d12a059b1bb39018fbe454fae17227627f504e9",
+                "duration_ms": 16.723
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.128Z",
+              "objects": [
+                {
+                  "id": "result_a_star_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "b5e5bc72fcd03085e98ece865d12a059b1bb39018fbe454fae17227627f504e9"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.138Z",
+              "objects": [
+                {
+                  "id": "result_a_star_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "b5e5bc72fcd03085e98ece865d12a059b1bb39018fbe454fae17227627f504e9"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.148Z",
+              "objects": [
+                {
+                  "id": "receipt_prayer_pipeline",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.158Z",
+              "objects": [
+                {
+                  "id": "result_a_star_prayer_pipeline",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_prayer_pipeline",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_prayer_pipeline",
+              "type": "Example"
+            },
+            {
+              "id": "log_prayer_pipeline",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_a_star",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_a_star_prayer_pipeline",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_prayer_pipeline",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "bf6d79b1b8f75a9f00124acb2781396e8c5f5ba3c8fc439a62271ffd998818ee",
+        "observed_result_hash": "b5e5bc72fcd03085e98ece865d12a059b1bb39018fbe454fae17227627f504e9"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     }
   ],
   "algorithm_count": 8,
   "all_real": true,
-  "created_at": "2026-05-21T19:09:00.018Z",
+  "created_at": "2026-05-21T20:35:35.095Z",
   "previous_receipt_hash": null,
-  "receipt_hash": "bbaeba136167fc0b1865c73f5ecb0d8ab73994fdd446257294c8ae927f097cfb"
+  "receipt_hash": "311b69a14aed749f54f37749f1b790705f61fc18d2b2df2260c5fca6c9bbed55"
 }

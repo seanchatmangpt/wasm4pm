@@ -236,13 +236,13 @@ fn cpu_linucb_throughput_exceeds_250k_states_per_sec() {
 fn cpu_linucb_converges_to_rewarded_action() {
     let mut agent = LinUCBAgent::new();
     let features: [f32; N_FEATURES] = [0.1, 0.9, 0.2, 0.8, 0.3, 0.7, 0.4, 0.6];
-    // Reward action 7 repeatedly — should become argmax
+    // Reward action 3 repeatedly — should become argmax
     for _ in 0..500 {
-        agent.update(&features, 7, 1.0);
+        agent.update(&features, 3, 1.0);
     }
     let (best, _) = agent.select(&features);
     assert_eq!(
-        best, 7,
-        "After 500 positive rewards for action 7, argmax should be 7, got {best}"
+        best, 3,
+        "After 500 positive rewards for action 3, argmax should be 3, got {best}"
     );
 }

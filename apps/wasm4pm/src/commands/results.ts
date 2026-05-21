@@ -547,8 +547,8 @@ export const results = defineCommand({
             try {
               const rPath = path.join(receiptsDir, rFile);
               if (!existsSync(rPath)) continue;
-              const r = JSON.parse(await fs.readFile(rPath, 'utf-8')) as CommandReceipt;
-              if (hashesToMatch.has(r.output_hash)) {
+              const r = JSON.parse(await fs.readFile(rPath, 'utf-8'));
+              if (hashesToMatch.has(r.output_hash || r.receipt_hash || r.observed_path?.observed_result_hash)) {
                 matchedReceipt = r;
                 matchedReceiptFile = rFile;
                 break;
@@ -558,15 +558,35 @@ export const results = defineCommand({
             }
           }
 
+          let ocelMissing = false;
+          if (matchedReceipt) {
+             const r = matchedReceipt as any;
+             if (!r.observed_path || !r.observed_path.ocel) {
+                ocelMissing = true;
+             } else if (r.algorithms && Array.isArray(r.algorithms)) {
+                for (const algo of r.algorithms) {
+                   if (!algo.observed_path || !algo.observed_path.ocel) {
+                      ocelMissing = true;
+                      break;
+                   }
+                }
+             }
+          }
+
           // Determine integrity:
+          //   missing_ocel - matched receipt lacks embedded OCEL path
           //   mismatch   — stored output_hash differs from current payload (tampering detected)
           //   ok         — hashes agree and a matching receipt was found
           //   no_receipt — hashes agree (or no stored hash) but no receipt found
-          const integrity: 'ok' | 'mismatch' | 'no_receipt' = storedHashMismatch
+          let integrity: 'ok' | 'mismatch' | 'no_receipt' | 'missing_ocel' = storedHashMismatch
             ? 'mismatch'
-            : matchedReceipt !== null && matchedReceipt.output_hash === recomputedOutputHash
+            : matchedReceipt !== null && (matchedReceipt as any).output_hash === recomputedOutputHash
               ? 'ok'
               : 'no_receipt';
+
+          if (matchedReceipt !== null && ocelMissing) {
+            integrity = 'missing_ocel';
+          }
 
           const verifyPayload = {
             ref,
@@ -588,11 +608,11 @@ export const results = defineCommand({
             timestamp: matchedReceipt?.timestamp ?? null,
           };
 
-          // exit 3 (execution_error) when hash mismatch is detected — the
+          // exit 3 (execution_error) when hash mismatch or missing OCEL is detected — the
           // stored receipt proof does not match the current payload, indicating
           // tampering or corruption.  exit 0 for ok or no_receipt (no breach).
           const verifyExitCode =
-            integrity === 'mismatch' ? EXIT_CODES.execution_error : EXIT_CODES.success;
+            (integrity === 'mismatch' || integrity === 'missing_ocel') ? EXIT_CODES.execution_error : EXIT_CODES.success;
 
           const verifyResult = makeResult(
             'results',
@@ -638,6 +658,11 @@ export const results = defineCommand({
                   `    ${'~'.repeat(firstDiff)}^ first difference at byte ${firstDiff}`
                 );
               }
+            } else if (p.integrity === 'missing_ocel') {
+              projection.error(`FAIL — missing embedded OCEL path`);
+              projection.log('');
+              projection.log('  The receipt was found but does not contain an embedded canonical OCEL slice.');
+              projection.log('  This violates the Wasm4pmExecutionReceipt constraint requiring the object-centric execution path.');
             } else {
               projection.warn(`INFO — no receipt found for this result`);
               projection.log('');

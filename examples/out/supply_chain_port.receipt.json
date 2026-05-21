@@ -1,69 +1,1829 @@
 {
-  "example_id": "supply_chain_port",
+  "receipt_type": "Wasm4pmExecutionReceipt",
+  "receipt_schema": "Wasm4pmExecutionReceipt.v1",
   "package": "wasm4pm",
   "version": "26.5.21",
-  "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5",
+  "commit": "2f65dc9dd706203462ef92bc4815f24bec61159f",
+  "hash_algorithm": "BLAKE3",
+  "example_id": "supply_chain_port",
+  "input": {
+    "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5",
+    "event_log_format": "xes",
+    "activity_key": "concept:name"
+  },
   "algorithms": [
     {
       "id": "causal_graph",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "b4cccf01fda1e91cc5b8c76cd49f93c98e517c79712785c5afce4f64ac9e04e1",
-      "duration_ms": 39.82520231399906
+      "result_hash": "18d736f60af52824b4927d64be733023fa728a6bb958929af1ab83d8462185b3",
+      "duration_ms": 16.496,
+      "expected_path": {
+        "route_id": "wpm.example.supply_chain_port.causal_graph.v1",
+        "expected_ocel_hash": "c29bbb25cbed5166a853a56ae5b5228e4035baa00cbcbcefc7ae32b49e0e1aa6",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.188Z",
+              "objects": [
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_supply_chain_port",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.198Z",
+              "objects": [
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.208Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.218Z",
+              "objects": [
+                {
+                  "id": "algorithm_causal_graph",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.228Z",
+              "objects": [
+                {
+                  "id": "algorithm_causal_graph",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_causal_graph_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "18d736f60af52824b4927d64be733023fa728a6bb958929af1ab83d8462185b3",
+                "duration_ms": 16.496
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.238Z",
+              "objects": [
+                {
+                  "id": "result_causal_graph_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "18d736f60af52824b4927d64be733023fa728a6bb958929af1ab83d8462185b3"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.248Z",
+              "objects": [
+                {
+                  "id": "result_causal_graph_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "18d736f60af52824b4927d64be733023fa728a6bb958929af1ab83d8462185b3"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.258Z",
+              "objects": [
+                {
+                  "id": "receipt_supply_chain_port",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.268Z",
+              "objects": [
+                {
+                  "id": "result_causal_graph_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_supply_chain_port",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example"
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_causal_graph",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_causal_graph_supply_chain_port",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "211f05d8311e52f67470744b05997e03453a5fce18ae87d53bcae37ef3eba996",
+        "observed_result_hash": "18d736f60af52824b4927d64be733023fa728a6bb958929af1ab83d8462185b3"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "performance_spectrum",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "f156fedd17ce9b96cdf6c4527b2125c2df86a24e2f9601d123afaee51777b17b",
-      "duration_ms": 10.38033120093186
+      "result_hash": "3767b0b8a6433c740c142cb0a56da609c6e9a91a96155222a8af23f3197d6018",
+      "duration_ms": 42.827,
+      "expected_path": {
+        "route_id": "wpm.example.supply_chain_port.performance_spectrum.v1",
+        "expected_ocel_hash": "8c20c830e2745a21c483ad2e27614f3799d70a3e023b3d7cda1e2124b223ad72",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.188Z",
+              "objects": [
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_supply_chain_port",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.198Z",
+              "objects": [
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.208Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.218Z",
+              "objects": [
+                {
+                  "id": "algorithm_performance_spectrum",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.228Z",
+              "objects": [
+                {
+                  "id": "algorithm_performance_spectrum",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_performance_spectrum_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "3767b0b8a6433c740c142cb0a56da609c6e9a91a96155222a8af23f3197d6018",
+                "duration_ms": 42.827
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.238Z",
+              "objects": [
+                {
+                  "id": "result_performance_spectrum_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "3767b0b8a6433c740c142cb0a56da609c6e9a91a96155222a8af23f3197d6018"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.248Z",
+              "objects": [
+                {
+                  "id": "result_performance_spectrum_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "3767b0b8a6433c740c142cb0a56da609c6e9a91a96155222a8af23f3197d6018"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.258Z",
+              "objects": [
+                {
+                  "id": "receipt_supply_chain_port",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.268Z",
+              "objects": [
+                {
+                  "id": "result_performance_spectrum_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_supply_chain_port",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example"
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_performance_spectrum",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_performance_spectrum_supply_chain_port",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "d8d1805e310555627924476050ec96ba4c9cb27c53a11a6def033c4c3ff24926",
+        "observed_result_hash": "3767b0b8a6433c740c142cb0a56da609c6e9a91a96155222a8af23f3197d6018"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "batches",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "c11838409d21cda8223e403554885dd23fbf9f13f1906075dfb005e5163ab709",
-      "duration_ms": 57.307076571532285
+      "result_hash": "0a9d3f414bb85fdd2ada967ec67fa07b96698d16bd9ebc895182002dc45b4941",
+      "duration_ms": 54.905,
+      "expected_path": {
+        "route_id": "wpm.example.supply_chain_port.batches.v1",
+        "expected_ocel_hash": "3174674f9165c0652b457ebcba79df814f0376346c7ebb98d961cbf31fc0056a",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.188Z",
+              "objects": [
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_supply_chain_port",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.198Z",
+              "objects": [
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.208Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.218Z",
+              "objects": [
+                {
+                  "id": "algorithm_batches",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.228Z",
+              "objects": [
+                {
+                  "id": "algorithm_batches",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_batches_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "0a9d3f414bb85fdd2ada967ec67fa07b96698d16bd9ebc895182002dc45b4941",
+                "duration_ms": 54.905
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.238Z",
+              "objects": [
+                {
+                  "id": "result_batches_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "0a9d3f414bb85fdd2ada967ec67fa07b96698d16bd9ebc895182002dc45b4941"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.248Z",
+              "objects": [
+                {
+                  "id": "result_batches_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "0a9d3f414bb85fdd2ada967ec67fa07b96698d16bd9ebc895182002dc45b4941"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.258Z",
+              "objects": [
+                {
+                  "id": "receipt_supply_chain_port",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.268Z",
+              "objects": [
+                {
+                  "id": "result_batches_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_supply_chain_port",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example"
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_batches",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_batches_supply_chain_port",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "1d4aeccff317956fc3455039800180e91d3aeefcdcd2d70c593c44581be9b3e1",
+        "observed_result_hash": "0a9d3f414bb85fdd2ada967ec67fa07b96698d16bd9ebc895182002dc45b4941"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "correlation_miner",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "41888a272e8bf98cc7f587877f3b79c8eb2c00b8abbf9d673ad205463be84b8b",
-      "duration_ms": 41.014206564428605
+      "result_hash": "2d7d7e0e8c825b83e67404b5de6e6f5764536509ea7bb1601eda9b779399f97a",
+      "duration_ms": 42.395,
+      "expected_path": {
+        "route_id": "wpm.example.supply_chain_port.correlation_miner.v1",
+        "expected_ocel_hash": "4a4c6221bb630456fd1b5006726ba51db4a5a85616ca707e58d747ec98ebf3b9",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.188Z",
+              "objects": [
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_supply_chain_port",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.198Z",
+              "objects": [
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.208Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.218Z",
+              "objects": [
+                {
+                  "id": "algorithm_correlation_miner",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.228Z",
+              "objects": [
+                {
+                  "id": "algorithm_correlation_miner",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_correlation_miner_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "2d7d7e0e8c825b83e67404b5de6e6f5764536509ea7bb1601eda9b779399f97a",
+                "duration_ms": 42.395
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.238Z",
+              "objects": [
+                {
+                  "id": "result_correlation_miner_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "2d7d7e0e8c825b83e67404b5de6e6f5764536509ea7bb1601eda9b779399f97a"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.248Z",
+              "objects": [
+                {
+                  "id": "result_correlation_miner_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "2d7d7e0e8c825b83e67404b5de6e6f5764536509ea7bb1601eda9b779399f97a"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.258Z",
+              "objects": [
+                {
+                  "id": "receipt_supply_chain_port",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.268Z",
+              "objects": [
+                {
+                  "id": "result_correlation_miner_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_supply_chain_port",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example"
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_correlation_miner",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_correlation_miner_supply_chain_port",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "6c0e38ca537e8c1dd4901b3631a134f0124b39e8f526d36e85c9f7869115914b",
+        "observed_result_hash": "2d7d7e0e8c825b83e67404b5de6e6f5764536509ea7bb1601eda9b779399f97a"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "generalization",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "0df37b3dfedaaabf7f7343db5547a8dd05b07ab8d716657ffd50757da327a6e8",
-      "duration_ms": 42.35559932270027
+      "result_hash": "688a6eafa14f94b6f36232a766b0422667cab42f08530e1fb5fcfe3833d92aae",
+      "duration_ms": 25.201,
+      "expected_path": {
+        "route_id": "wpm.example.supply_chain_port.generalization.v1",
+        "expected_ocel_hash": "d3b8ead9d83df5c955d44a903233e3d3a28983aaadb0386cd4d317de45c17ebc",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.188Z",
+              "objects": [
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_supply_chain_port",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.198Z",
+              "objects": [
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.208Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.218Z",
+              "objects": [
+                {
+                  "id": "algorithm_generalization",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.228Z",
+              "objects": [
+                {
+                  "id": "algorithm_generalization",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_generalization_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "688a6eafa14f94b6f36232a766b0422667cab42f08530e1fb5fcfe3833d92aae",
+                "duration_ms": 25.201
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.238Z",
+              "objects": [
+                {
+                  "id": "result_generalization_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "688a6eafa14f94b6f36232a766b0422667cab42f08530e1fb5fcfe3833d92aae"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.248Z",
+              "objects": [
+                {
+                  "id": "result_generalization_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "688a6eafa14f94b6f36232a766b0422667cab42f08530e1fb5fcfe3833d92aae"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.258Z",
+              "objects": [
+                {
+                  "id": "receipt_supply_chain_port",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.268Z",
+              "objects": [
+                {
+                  "id": "result_generalization_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_supply_chain_port",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example"
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_generalization",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_generalization_supply_chain_port",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "6e810d7f5d70927eaba8cc565bbd53258ca7862505251426a8e887efbaf5bf8f",
+        "observed_result_hash": "688a6eafa14f94b6f36232a766b0422667cab42f08530e1fb5fcfe3833d92aae"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "etconformance_precision",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "8a1830fae4db70f306226ba6771cf9782dbba4999a2715bafc06bfffa9066781",
-      "duration_ms": 46.59416139703347
+      "result_hash": "3333011423e803c6a7fcc70773ef3f7709cd938114c8c4f0396303e10d2498d3",
+      "duration_ms": 38.92,
+      "expected_path": {
+        "route_id": "wpm.example.supply_chain_port.etconformance_precision.v1",
+        "expected_ocel_hash": "4eb6ea03af44b0abb9d5fa4b3b3110b03d26a92929b2a315f84c152f1f91a128",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.188Z",
+              "objects": [
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_supply_chain_port",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.198Z",
+              "objects": [
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.208Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.218Z",
+              "objects": [
+                {
+                  "id": "algorithm_etconformance_precision",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.228Z",
+              "objects": [
+                {
+                  "id": "algorithm_etconformance_precision",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_etconformance_precision_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "3333011423e803c6a7fcc70773ef3f7709cd938114c8c4f0396303e10d2498d3",
+                "duration_ms": 38.92
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.238Z",
+              "objects": [
+                {
+                  "id": "result_etconformance_precision_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "3333011423e803c6a7fcc70773ef3f7709cd938114c8c4f0396303e10d2498d3"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.248Z",
+              "objects": [
+                {
+                  "id": "result_etconformance_precision_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "3333011423e803c6a7fcc70773ef3f7709cd938114c8c4f0396303e10d2498d3"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.258Z",
+              "objects": [
+                {
+                  "id": "receipt_supply_chain_port",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.268Z",
+              "objects": [
+                {
+                  "id": "result_etconformance_precision_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_supply_chain_port",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example"
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_etconformance_precision",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_etconformance_precision_supply_chain_port",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "a214b0893706318fe322680df2fa62124dd5d1e97772f6fb9c3503b78c1c1268",
+        "observed_result_hash": "3333011423e803c6a7fcc70773ef3f7709cd938114c8c4f0396303e10d2498d3"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "alignments",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "01489543a80d3f2f200bcc85e3bff566a7be5ee6d1ef7061adb4f7b1bfb75488",
-      "duration_ms": 16.23394849530277
+      "result_hash": "83bae0b49e7a1cf5865dc83d464654b787631a9099b2caa42262f9fda2f96fba",
+      "duration_ms": 27.69,
+      "expected_path": {
+        "route_id": "wpm.example.supply_chain_port.alignments.v1",
+        "expected_ocel_hash": "163d0c55dacb6c03306aaa481e057f88960ad11600dba490207156dcfbeb98fd",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.189Z",
+              "objects": [
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_supply_chain_port",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.199Z",
+              "objects": [
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.209Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.219Z",
+              "objects": [
+                {
+                  "id": "algorithm_alignments",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.229Z",
+              "objects": [
+                {
+                  "id": "algorithm_alignments",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_alignments_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "83bae0b49e7a1cf5865dc83d464654b787631a9099b2caa42262f9fda2f96fba",
+                "duration_ms": 27.69
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.239Z",
+              "objects": [
+                {
+                  "id": "result_alignments_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "83bae0b49e7a1cf5865dc83d464654b787631a9099b2caa42262f9fda2f96fba"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.249Z",
+              "objects": [
+                {
+                  "id": "result_alignments_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "83bae0b49e7a1cf5865dc83d464654b787631a9099b2caa42262f9fda2f96fba"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.259Z",
+              "objects": [
+                {
+                  "id": "receipt_supply_chain_port",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.269Z",
+              "objects": [
+                {
+                  "id": "result_alignments_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_supply_chain_port",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example"
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_alignments",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_alignments_supply_chain_port",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "069ca46ad49b23ed42a3fadb06d002558fa810569c1a7d6a2a5c215c922fb717",
+        "observed_result_hash": "83bae0b49e7a1cf5865dc83d464654b787631a9099b2caa42262f9fda2f96fba"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     },
     {
       "id": "complexity_metrics",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "a63ce3c4ee31708589fc75dc72d0166d23e38ce2ee61d03a5b30314bcf59e482",
-      "duration_ms": 45.877830233208904
+      "result_hash": "c0db3da6c9b98f510c969a9e2d34f4975fd8b4dca342104f0dd80ab7080844e5",
+      "duration_ms": 50.278,
+      "expected_path": {
+        "route_id": "wpm.example.supply_chain_port.complexity_metrics.v1",
+        "expected_ocel_hash": "2d8bbb64e5060a9f34315efc7f9fbe218ecb29c9b23c76cefa465b06ae82aa4a",
+        "required_events": [
+          "wpm.input.import.started",
+          "wpm.input.import.completed",
+          "wpm.algorithm.registry.checked",
+          "wpm.algorithm.dispatched",
+          "wpm.algorithm.completed",
+          "wpm.result.hashed",
+          "wpm.artifact.emitted",
+          "wpm.task.closed",
+          "wpm.receipt.verified"
+        ]
+      },
+      "observed_path": {
+        "ocel": {
+          "schema": "wasm4pm.ExecutionOCEL.v1",
+          "events": [
+            {
+              "id": "evt_import_started",
+              "activity": "wpm.input.import.started",
+              "timestamp": "2026-05-21T20:35:35.189Z",
+              "objects": [
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                },
+                {
+                  "id": "example_supply_chain_port",
+                  "type": "Example",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name"
+              }
+            },
+            {
+              "id": "evt_import_completed",
+              "activity": "wpm.input.import.completed",
+              "timestamp": "2026-05-21T20:35:35.199Z",
+              "objects": [
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_algorithm_registry_checked",
+              "activity": "wpm.algorithm.registry.checked",
+              "timestamp": "2026-05-21T20:35:35.209Z",
+              "objects": [
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_algorithm_dispatched",
+              "activity": "wpm.algorithm.dispatched",
+              "timestamp": "2026-05-21T20:35:35.219Z",
+              "objects": [
+                {
+                  "id": "algorithm_complexity_metrics",
+                  "type": "Algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "id": "registry_v26.5.21",
+                  "type": "AlgorithmRegistry",
+                  "qualifier": "registry"
+                },
+                {
+                  "id": "log_supply_chain_port",
+                  "type": "EventLog",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_algorithm_completed",
+              "activity": "wpm.algorithm.completed",
+              "timestamp": "2026-05-21T20:35:35.229Z",
+              "objects": [
+                {
+                  "id": "algorithm_complexity_metrics",
+                  "type": "Algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "id": "result_complexity_metrics_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "c0db3da6c9b98f510c969a9e2d34f4975fd8b4dca342104f0dd80ab7080844e5",
+                "duration_ms": 50.278
+              }
+            },
+            {
+              "id": "evt_result_hashed",
+              "activity": "wpm.result.hashed",
+              "timestamp": "2026-05-21T20:35:35.239Z",
+              "objects": [
+                {
+                  "id": "result_complexity_metrics_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "c0db3da6c9b98f510c969a9e2d34f4975fd8b4dca342104f0dd80ab7080844e5"
+              }
+            },
+            {
+              "id": "evt_artifact_emitted",
+              "activity": "wpm.artifact.emitted",
+              "timestamp": "2026-05-21T20:35:35.249Z",
+              "objects": [
+                {
+                  "id": "result_complexity_metrics_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "c0db3da6c9b98f510c969a9e2d34f4975fd8b4dca342104f0dd80ab7080844e5"
+              }
+            },
+            {
+              "id": "evt_task_closed",
+              "activity": "wpm.task.closed",
+              "timestamp": "2026-05-21T20:35:35.259Z",
+              "objects": [
+                {
+                  "id": "receipt_supply_chain_port",
+                  "type": "Receipt",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_receipt_verified",
+              "activity": "wpm.receipt.verified",
+              "timestamp": "2026-05-21T20:35:35.269Z",
+              "objects": [
+                {
+                  "id": "result_complexity_metrics_supply_chain_port",
+                  "type": "AlgorithmResult",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "id": "receipt_supply_chain_port",
+                  "type": "Receipt",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example"
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog"
+            },
+            {
+              "id": "algorithm_complexity_metrics",
+              "type": "Algorithm"
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry"
+            },
+            {
+              "id": "result_complexity_metrics_supply_chain_port",
+              "type": "AlgorithmResult"
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt"
+            }
+          ]
+        },
+        "observed_ocel_hash": "6c95c5ffff492715f69be2d299fc9477e0b86bb4e60a92fcf5b8c67e34061614",
+        "observed_result_hash": "c0db3da6c9b98f510c969a9e2d34f4975fd8b4dca342104f0dd80ab7080844e5"
+      },
+      "alignment": {
+        "expected_vs_observed": "Pass",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": null
+      }
     }
   ],
   "algorithm_count": 8,
   "all_real": true,
-  "created_at": "2026-05-21T19:09:00.023Z",
+  "created_at": "2026-05-21T20:35:35.202Z",
   "previous_receipt_hash": null,
-  "receipt_hash": "1dfadba71cfc587f95d541251abb4de04b000f29247c7bbd8b7ff6fa5c0aee51"
+  "receipt_hash": "860bd3825d5493177ece646d49fdd1db33e8560688a95fc0d8d599d2f712cf7f"
 }

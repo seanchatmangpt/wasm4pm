@@ -46,14 +46,14 @@ impl FM5Detector {
         // Detects: assert_eq!(actual, computed_same_formula()) or assert!(expr using impl var)
         patterns.insert(
             "self_derived_expected",
-            Regex::new(r"assert_eq!\(\s*[^,]+\s*,\s*([a-z_]+)\s*\(.*computed.*\)|assert.*==.*\.unwrap\(\)").unwrap(),
+            Regex::new(r"assert_eq!\(\s*[^,]+\s*,\s*[a-z_]*computed[a-z_]*\s*\(.*\)|assert.*==.*\.unwrap\(\)").unwrap(),
         );
 
         // Pattern 2: Function called twice without explicit seeding
         // Detects: let result1 = func(); let result2 = func(); assert_eq!(result1, result2)
         patterns.insert(
             "unseeded_double_call",
-            Regex::new(r"let\s+[a-z_]+\s*=\s*([a-z_]+)\s*\(.*\);\s*(?:.*?;\s*)*let\s+[a-z_]+\s*=\s*\1\s*\(.*\);").unwrap(),
+            Regex::new(r"let\s+[a-z_0-9]+\s*=\s*([a-z_]+)\s*\(.*\);\s*(?:.*?;\s*)*let\s+[a-z_0-9]+\s*=\s*([a-z_]+)\s*\(.*\);").unwrap(),
         );
 
         // Pattern 3: Test mocks function and asserts on mock behavior
@@ -67,7 +67,7 @@ impl FM5Detector {
         // Detects: assert_eq!(actual, impl_var) or assert!(impl_var ==)
         patterns.insert(
             "impl_var_in_assert",
-            Regex::new(r"assert_eq!\([^,]+,\s*[a-z_]*_impl[a-z_]*\)|assert!\([^)]*[a-z_]*_impl[a-z_]*").unwrap(),
+            Regex::new(r"assert_eq!\([^,]+,\s*[a-z_]*impl[a-z_]*\)|assert!\([^)]*[a-z_]*impl[a-z_]*").unwrap(),
         );
 
         FM5Detector { patterns }
@@ -90,14 +90,16 @@ impl FM5Detector {
             }
 
             // Pattern 2: Unseeded double call
-            if self.patterns["unseeded_double_call"].is_match(line) {
-                violations.push(Violation {
-                    pattern: "unseeded_double_call".to_string(),
-                    confidence: Confidence::Medium,
-                    line_number,
-                    code_snippet: line.to_string(),
-                    fix_suggestion: "Explicitly seed RNG before calling. For determinism: use StdRng::seed_from_u64(42) or similar. For stochastic algorithms: use 5+ independent seeds".to_string(),
-                });
+            if let Some(caps) = self.patterns["unseeded_double_call"].captures(line) {
+                if caps.get(1).map(|m| m.as_str()) == caps.get(2).map(|m| m.as_str()) {
+                    violations.push(Violation {
+                        pattern: "unseeded_double_call".to_string(),
+                        confidence: Confidence::Medium,
+                        line_number,
+                        code_snippet: line.to_string(),
+                        fix_suggestion: "Explicitly seed RNG before calling. For determinism: use StdRng::seed_from_u64(42) or similar. For stochastic algorithms: use 5+ independent seeds".to_string(),
+                    });
+                }
             }
 
             // Pattern 3: Mock self-reference

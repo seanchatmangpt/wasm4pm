@@ -125,7 +125,9 @@ describe('wpm results: empty directory', () => {
     const result = await runCli(['results', '--format', 'json'], env.tempDir);
     expect(result.exitCode).toBe(0);
     let parsed: Record<string, unknown>;
-    expect(() => { parsed = JSON.parse(result.stdout); }).not.toThrow();
+    expect(() => { 
+      try { parsed = JSON.parse(result.stdout); } catch(e) { console.error('STDOUT WAS:', result.stdout); throw e; }
+    }).not.toThrow();
     const p = parsed!;
     // Outer envelope
     expect(p.command).toBe('results');

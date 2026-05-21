@@ -341,13 +341,13 @@ fn test_oi_action_range_02() {
     let test_cases: &[([f32; N_FEATURES], u32, f32)] = &[
         // (features, action_to_update, reward)
         ([0.0; N_FEATURES], 0, 0.0),
-        ([1.0; N_FEATURES], 39, 1.0),
-        ([0.5; N_FEATURES], 20, 0.5),
-        ([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], 7, 0.8),
-        ([0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2], 15, -0.3),
+        ([1.0; N_FEATURES], 4, 1.0),
+        ([0.5; N_FEATURES], 2, 0.5),
+        ([0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8], 2, 0.8),
+        ([0.9, 0.8, 0.7, 0.6, 0.5, 0.4, 0.3, 0.2], 3, -0.3),
         ([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 0, 1.0),
-        ([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0], 39, 1.0),
-        ([1e-6, 0.5, 1.0, 0.25, 0.75, 0.125, 0.875, 0.333], 5, 0.6),
+        ([0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0], 4, 1.0),
+        ([1e-6, 0.5, 1.0, 0.25, 0.75, 0.125, 0.875, 0.333], 0, 0.6),
     ];
 
     for (i, &(features, action, reward)) in test_cases.iter().enumerate() {
@@ -374,8 +374,8 @@ fn test_oi_determinism_01() {
 
     let update_seq: &[([f32; N_FEATURES], u32, f32)] = &[
         ([0.5; N_FEATURES], 3, 1.0),
-        ([0.1, 0.9, 0.3, 0.7, 0.5, 0.5, 0.2, 0.8], 7, 0.5),
-        ([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 15, 0.8),
+        ([0.1, 0.9, 0.3, 0.7, 0.5, 0.5, 0.2, 0.8], 2, 0.5),
+        ([1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], 3, 0.8),
     ];
 
     let mut agent_a = LinUCBAgent::new();
@@ -410,8 +410,8 @@ fn test_oi_determinism_02() {
     let features: [f32; N_FEATURES] = [0.3, 0.6, 0.1, 0.9, 0.4, 0.7, 0.2, 0.8];
 
     let update_seq: &[([f32; N_FEATURES], u32, f32)] = &[
-        ([0.5; N_FEATURES], 5, 1.0),
-        ([0.2, 0.8, 0.3, 0.7, 0.4, 0.6, 0.1, 0.9], 12, 0.7),
+        ([0.5; N_FEATURES], 0, 1.0),
+        ([0.2, 0.8, 0.3, 0.7, 0.4, 0.6, 0.1, 0.9], 4, 0.7),
     ];
 
     // Reference run
@@ -455,8 +455,8 @@ fn test_oi_q_bounds_01() {
         ([1.0; N_FEATURES], 0, 1000.0),
         ([0.0; N_FEATURES], 1, 0.0),
         ([0.5; N_FEATURES], 2, -10.0),
-        ([1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0], 39, 500.0),
-        ([0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0], 20, -500.0),
+        ([1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0], 4, 500.0),
+        ([0.0, 1.0, 0.0, 1.0, 0.0, 1.0, 0.0, 1.0], 2, -500.0),
     ];
     for &(f, a, r) in extremes {
         agent.update(&f, a, r);
@@ -547,10 +547,10 @@ fn test_oi_exploration_01() {
 fn test_oi_learning_01() {
     let label = "oi-learning-01";
 
-    // Part A: reward=1.0 must drive action 7 to argmax after 500 updates.
+    // Part A: reward=1.0 must drive action 3 to argmax after 500 updates.
     // Use distinctive (non-uniform) features so gradient signal is clear.
     let features_a: [f32; N_FEATURES] = [0.1, 0.9, 0.2, 0.8, 0.3, 0.7, 0.4, 0.6];
-    let action = 7_u32;
+    let action = 3_u32;
 
     let mut agent_pos = LinUCBAgent::new();
     for _ in 0..500 {
@@ -562,11 +562,11 @@ fn test_oi_learning_01() {
         "[{label}] Part A: after 500 positive updates, action {action} must be argmax, got {argmax}"
     );
 
-    // Confirm W[7] has grown significantly (positive gradient applied)
-    let w7_sum: f32 = agent_pos.weight_vector(action as usize).iter().sum();
+    // Confirm W[3] has grown significantly (positive gradient applied)
+    let w3_sum: f32 = agent_pos.weight_vector(action as usize).iter().sum();
     assert!(
-        w7_sum > 0.0,
-        "[{label}] Part A: W[7] must have positive sum after positive rewards, got {w7_sum}"
+        w3_sum > 0.0,
+        "[{label}] Part A: W[3] must have positive sum after positive rewards, got {w3_sum}"
     );
 
     // Part B: reward=0.0 must shrink UCB variance (A grows, A_inv shrinks).
@@ -575,7 +575,7 @@ fn test_oi_learning_01() {
 
     let mut agent_zero = LinUCBAgent::new();
     for _ in 0..50 {
-        agent_zero.update(&features_b, 5, 0.0);
+        agent_zero.update(&features_b, 0, 0.0);
     }
     let var_after_zero = agent_zero.compute_ucb_variance(&features_b);
     assert!(
@@ -584,11 +584,11 @@ fn test_oi_learning_01() {
         must be < fresh variance ({var_fresh})"
     );
 
-    // W[5] must not have changed (δ=0, no gradient)
-    let w5_sum: f32 = agent_zero.weight_vector(5).iter().sum();
+    // W[0] must not have changed (δ=0, no gradient)
+    let w0_sum: f32 = agent_zero.weight_vector(0).iter().sum();
     assert!(
-        w5_sum.abs() < 1e-6,
-        "[{label}] Part B: W[5] must remain 0 after zero-reward updates, got sum={w5_sum}"
+        w0_sum.abs() < 1e-6,
+        "[{label}] Part B: W[0] must remain 0 after zero-reward updates, got sum={w0_sum}"
     );
 }
 
@@ -734,10 +734,10 @@ fn test_ec_action_0_01() {
     }
 }
 
-/// ec-action-39-01: Select action 39 (last action)
+/// ec-action-39-01: Select action 4 (last action)
 ///
-/// Boundary: action index 39 = N_ACTIONS - 1.  After 500 targeted updates,
-/// action 39 must become the argmax.  Its weight vector must be non-trivial.
+/// Boundary: action index 4 = N_ACTIONS - 1.  After 500 targeted updates,
+/// action 4 must become the argmax.  Its weight vector must be non-trivial.
 #[test]
 fn test_ec_action_39_01() {
     let label = "ec-action-39-01";
@@ -745,24 +745,24 @@ fn test_ec_action_39_01() {
 
     let mut agent = LinUCBAgent::new();
     for _ in 0..500 {
-        agent.update(&features, 39, 1.0);
+        agent.update(&features, 4, 1.0);
     }
 
     let (action, q) = agent.select(&features);
     assert_action_in_range(action, label);
     assert!(q.is_finite(), "[{label}] Q must be finite");
     assert_eq!(
-        action, 39,
-        "[{label}] after 500 positive rewards, action 39 must be argmax, got {action}"
+        action, 4,
+        "[{label}] after 500 positive rewards, action 4 must be argmax, got {action}"
     );
 
-    // W[39] must have positive components
-    let w39_max = agent
-        .weight_vector(39)
+    // W[4] must have positive components
+    let w4_max = agent
+        .weight_vector(4)
         .iter()
         .cloned()
         .fold(f32::NEG_INFINITY, f32::max);
-    assert!(w39_max > 0.0, "[{label}] W[39] max component must be > 0");
+    assert!(w4_max > 0.0, "[{label}] W[4] max component must be > 0");
 }
 
 /// ec-reward-negative-01: Update with negative reward
@@ -774,7 +774,7 @@ fn test_ec_action_39_01() {
 fn test_ec_reward_negative_01() {
     let label = "ec-reward-negative-01";
     let features: [f32; N_FEATURES] = [0.5; N_FEATURES];
-    let action = 10_u32;
+    let action = 1_u32;
 
     let mut agent = LinUCBAgent::new();
     let q_before = agent.get_q_values(&features)[action as usize];
@@ -815,7 +815,7 @@ fn test_ec_reward_negative_01() {
 fn test_ec_reward_zero_01() {
     let label = "ec-reward-zero-01";
     let features: [f32; N_FEATURES] = [0.5; N_FEATURES];
-    let action = 5_u32;
+    let action = 0_u32;
 
     let mut agent = LinUCBAgent::new();
     let w_before = agent.weight_vector(action as usize);
@@ -860,7 +860,7 @@ fn test_ec_reward_zero_01() {
 fn test_ec_reward_large_01() {
     let label = "ec-reward-large-01";
     let features: [f32; N_FEATURES] = [0.5; N_FEATURES];
-    let action = 20_u32;
+    let action = 2_u32;
 
     let mut agent = LinUCBAgent::new();
     agent.update(&features, action, 1e6);
@@ -982,7 +982,7 @@ fn test_ec_feature_switch_01() {
     let mut agent = LinUCBAgent::new();
     for _ in 0..300 {
         agent.update(&f1, 3, 1.0);
-        agent.update(&f2, 15, 1.0);
+        agent.update(&f2, 4, 1.0);
     }
 
     let (action1, _) = agent.select(&f1);
@@ -995,8 +995,8 @@ fn test_ec_feature_switch_01() {
         "[{label}] f1 → expected action 3, got {action1}"
     );
     assert_eq!(
-        action2, 15,
-        "[{label}] f2 → expected action 15, got {action2}"
+        action2, 4,
+        "[{label}] f2 → expected action 4, got {action2}"
     );
     assert_ne!(
         action1, action2,
@@ -1181,7 +1181,7 @@ mod gpu_parity {
             None,
         ),
         ("iv-normalize-05", [0.5; N_FEATURES], None),
-        ("oi-action-range-01", [0.5; N_FEATURES], Some((5, 1.0))),
+        ("oi-action-range-01", [0.5; N_FEATURES], Some((4, 1.0))),
         (
             "oi-action-range-02",
             [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8],
@@ -1190,27 +1190,27 @@ mod gpu_parity {
         (
             "oi-determinism-01",
             [0.1, 0.9, 0.3, 0.7, 0.5, 0.5, 0.2, 0.8],
-            Some((7, 0.5)),
+            Some((2, 0.5)),
         ),
         (
             "oi-determinism-02",
             [0.3, 0.6, 0.1, 0.9, 0.4, 0.7, 0.2, 0.8],
-            Some((5, 1.0)),
+            Some((0, 1.0)),
         ),
         ("oi-q-bounds-01", [0.5; N_FEATURES], Some((0, 1000.0))),
         ("oi-exploration-01", [0.5; N_FEATURES], None),
-        ("oi-learning-01", [0.5; N_FEATURES], Some((7, 1.0))),
+        ("oi-learning-01", [0.5; N_FEATURES], Some((3, 1.0))),
         ("ec-zero-features-01", [0.0; N_FEATURES], None),
         ("ec-zero-features-02", [0.5; N_FEATURES], Some((0, 1.0))),
         ("ec-action-0-01", [0.5; N_FEATURES], Some((0, 1.0))),
         (
             "ec-action-39-01",
             [0.9, 0.1, 0.8, 0.2, 0.7, 0.3, 0.6, 0.4],
-            Some((39, 1.0)),
+            Some((4, 1.0)),
         ),
-        ("ec-reward-negative-01", [0.5; N_FEATURES], Some((10, -1.0))),
-        ("ec-reward-zero-01", [0.5; N_FEATURES], Some((5, 0.0))),
-        ("ec-reward-large-01", [0.5; N_FEATURES], Some((20, 1e6))),
+        ("ec-reward-negative-01", [0.5; N_FEATURES], Some((1, -1.0))),
+        ("ec-reward-zero-01", [0.5; N_FEATURES], Some((0, 0.0))),
+        ("ec-reward-large-01", [0.5; N_FEATURES], Some((2, 1e6))),
         ("ec-sequential-01", [0.5; N_FEATURES], None),
         (
             "ec-sequential-02",

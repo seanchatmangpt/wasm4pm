@@ -2,6 +2,7 @@ import { packageVersion } from './lib/version.js';
 import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
+import { execSync } from 'node:child_process';
 
 /**
  * verify-receipt-authenticity.ts
@@ -51,6 +52,25 @@ async function main() {
        throw new Error(`Count mismatch in ${file}`);
     }
 
+    if (receipt.receipt_schema !== 'Wasm4pmExecutionReceipt.v1') {
+       throw new Error(`Missing or invalid schema in ${file}`);
+    }
+
+    for (const algo of receipt.algorithms) {
+       if (!algo.observed_path || !algo.observed_path.ocel) {
+          throw new Error(`Missing embedded OCEL path in algorithm ${algo.id} in ${file}`);
+       }
+       if (!algo.expected_path || !algo.expected_path.required_events) {
+          throw new Error(`Missing expected path events in algorithm ${algo.id} in ${file}`);
+       }
+       
+       // Verify canonical OCEL hash matches
+       const canonicalOcelHash = createHash('sha256').update(JSON.stringify(algo.observed_path.ocel)).digest('hex');
+       if (canonicalOcelHash !== algo.observed_path.observed_ocel_hash) {
+          throw new Error(`OCEL path mismatch in algorithm ${algo.id} in ${file}. Expected hash: ${algo.observed_path.observed_ocel_hash}, Got: ${canonicalOcelHash}`);
+       }
+    }
+
     // Verify no placeholders
     verifyNoPlaceholders(receipt, filePath);
 
@@ -59,6 +79,14 @@ async function main() {
     const computed = createHash('sha256').update(JSON.stringify(rest)).digest('hex');
     if (computed !== receipt_hash) {
        throw new Error(`Hash mismatch in ${file}. Stored: ${receipt_hash}, Computed: ${computed}`);
+    }
+
+    // Verify via Rust Receipt Doctor
+    console.log(`[DOCTOR] Auditing ${file} with Rust Receipt Doctor...`);
+    try {
+      execSync(`cargo run --bin wpm --quiet -- receipt doctor "${filePath}" --strict --audience operator`, { stdio: 'inherit' });
+    } catch (err) {
+      throw new Error(`[AUTHENTICITY FAILURE] Rust Receipt Doctor rejected ${file}`);
     }
   }
 

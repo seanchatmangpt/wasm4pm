@@ -77,10 +77,19 @@ impl PolicyCheckpoint {
 
     /// Compute BLAKE3 hash of policy state (deterministic, collision-resistant)
     fn compute_hash(&self) -> String {
+        use std::collections::BTreeMap;
+        let sorted_q_table: BTreeMap<u64, BTreeMap<u32, f32>> = self.q_table
+            .iter()
+            .map(|(k, v)| {
+                let sorted_inner: BTreeMap<u32, f32> = v.iter().map(|(&ik, &iv)| (ik, iv)).collect();
+                (*k, sorted_inner)
+            })
+            .collect();
+
         // Serialize the core components to bytes
         let serialized = serde_json::json!({
             "agent_id": self.agent_id,
-            "q_table": self.q_table,
+            "q_table": sorted_q_table,
             "linucb_weights": self.linucb_weights,
             "convergence_metrics": self.convergence_metrics,
             "checkpoint_epoch": self.checkpoint_epoch,

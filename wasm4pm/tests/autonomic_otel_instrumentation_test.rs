@@ -67,28 +67,30 @@ fn test_circuit_breaker_closed_state_emits_decision_span() {
 
 #[test]
 fn test_circuit_breaker_open_timeout_expiration_emits_probe_span() {
-    let config = CircuitBreakerConfig {
-        failure_threshold: 2,
-        success_threshold: 2,
-        open_timeout_ms: 100,
-        half_open_timeout_ms: 50,
-    };
-    let mut breaker = CircuitBreaker::with_config(config);
+    wasm4pm::self_healing::with_clock_lock(|| {
+        let config = CircuitBreakerConfig {
+            failure_threshold: 2,
+            success_threshold: 2,
+            open_timeout_ms: 100,
+            half_open_timeout_ms: 50,
+        };
+        let mut breaker = CircuitBreaker::with_config(config);
 
-    // Force Open by recording failures
-    breaker.record_failure();
-    breaker.record_failure();
-    assert_eq!(breaker.state(), CircuitState::Open);
+        // Force Open by recording failures
+        breaker.record_failure();
+        breaker.record_failure();
+        assert_eq!(breaker.state(), CircuitState::Open);
 
-    // Advance time past open_timeout
-    wasm4pm::self_healing::advance_clock(150); // 150ms > 100ms open_timeout
+        // Advance time past open_timeout
+        wasm4pm::self_healing::advance_clock(150); // 150ms > 100ms open_timeout
 
-    // Call allow_request() which should detect timeout and transition
-    let allowed = breaker.allow_request();
+        // Call allow_request() which should detect timeout and transition
+        let allowed = breaker.allow_request();
 
-    // Verify transition to HalfOpen and request allowed for probe
-    assert_eq!(breaker.state(), CircuitState::HalfOpen);
-    assert!(allowed, "HalfOpen state should allow probe request");
+        // Verify transition to HalfOpen and request allowed for probe
+        assert_eq!(breaker.state(), CircuitState::HalfOpen);
+        assert!(allowed, "HalfOpen state should allow probe request");
+    });
 }
 
 // ===========================================================================
@@ -101,34 +103,36 @@ fn test_circuit_breaker_open_timeout_expiration_emits_probe_span() {
 
 #[test]
 fn test_circuit_breaker_halfopen_timeout_recovery_failure_emits_span() {
-    let config = CircuitBreakerConfig {
-        failure_threshold: 2,
-        success_threshold: 2,
-        open_timeout_ms: 100,
-        half_open_timeout_ms: 50,
-    };
-    let mut breaker = CircuitBreaker::with_config(config);
+    wasm4pm::self_healing::with_clock_lock(|| {
+        let config = CircuitBreakerConfig {
+            failure_threshold: 2,
+            success_threshold: 2,
+            open_timeout_ms: 100,
+            half_open_timeout_ms: 50,
+        };
+        let mut breaker = CircuitBreaker::with_config(config);
 
-    // Force to Open
-    breaker.record_failure();
-    breaker.record_failure();
-    assert_eq!(breaker.state(), CircuitState::Open);
+        // Force to Open
+        breaker.record_failure();
+        breaker.record_failure();
+        assert_eq!(breaker.state(), CircuitState::Open);
 
-    // Advance past open_timeout → HalfOpen
-    wasm4pm::self_healing::advance_clock(150);
-    let _ = breaker.allow_request(); // Triggers transition
-    assert_eq!(breaker.state(), CircuitState::HalfOpen);
+        // Advance past open_timeout → HalfOpen
+        wasm4pm::self_healing::advance_clock(150);
+        let _ = breaker.allow_request(); // Triggers transition
+        assert_eq!(breaker.state(), CircuitState::HalfOpen);
 
-    // Advance past half_open_timeout (circuit still HalfOpen) → should fail
-    wasm4pm::self_healing::advance_clock(100); // Total 250ms, half_open_timeout is 50ms from last change
-    let allowed = breaker.allow_request();
+        // Advance past half_open_timeout (circuit still HalfOpen) → should fail
+        wasm4pm::self_healing::advance_clock(100); // Total 250ms, half_open_timeout is 50ms from last change
+        let allowed = breaker.allow_request();
 
-    // Verify transition back to Open due to timeout
-    assert_eq!(breaker.state(), CircuitState::Open);
-    assert!(
-        !allowed,
-        "Open state must not allow requests"
-    );
+        // Verify transition back to Open due to timeout
+        assert_eq!(breaker.state(), CircuitState::Open);
+        assert!(
+            !allowed,
+            "Open state must not allow requests"
+        );
+    });
 }
 
 // ===========================================================================
@@ -141,29 +145,31 @@ fn test_circuit_breaker_halfopen_timeout_recovery_failure_emits_span() {
 
 #[test]
 fn test_circuit_breaker_halfopen_to_closed_on_success() {
-    let config = CircuitBreakerConfig {
-        failure_threshold: 2,
-        success_threshold: 2,
-        open_timeout_ms: 100,
-        half_open_timeout_ms: 50,
-    };
-    let mut breaker = CircuitBreaker::with_config(config);
+    wasm4pm::self_healing::with_clock_lock(|| {
+        let config = CircuitBreakerConfig {
+            failure_threshold: 2,
+            success_threshold: 2,
+            open_timeout_ms: 100,
+            half_open_timeout_ms: 50,
+        };
+        let mut breaker = CircuitBreaker::with_config(config);
 
-    // Force to Open
-    breaker.record_failure();
-    breaker.record_failure();
+        // Force to Open
+        breaker.record_failure();
+        breaker.record_failure();
 
-    // Advance and move to HalfOpen
-    wasm4pm::self_healing::advance_clock(150);
-    let _ = breaker.allow_request();
-    assert_eq!(breaker.state(), CircuitState::HalfOpen);
+        // Advance and move to HalfOpen
+        wasm4pm::self_healing::advance_clock(150);
+        let _ = breaker.allow_request();
+        assert_eq!(breaker.state(), CircuitState::HalfOpen);
 
-    // Record successes to reach threshold
-    breaker.record_success();
-    breaker.record_success();
+        // Record successes to reach threshold
+        breaker.record_success();
+        breaker.record_success();
 
-    // Verify transition to Closed
-    assert_eq!(breaker.state(), CircuitState::Closed);
+        // Verify transition to Closed
+        assert_eq!(breaker.state(), CircuitState::Closed);
+    });
 }
 
 // ===========================================================================
@@ -367,17 +373,19 @@ fn test_spc_multiple_rules_fire_in_single_buffer() {
 
 #[test]
 fn test_spc_and_circuit_breaker_clock_consistency() {
-    // Reset clock for clean test
-    wasm4pm::self_healing::reset_clock();
+    wasm4pm::self_healing::with_clock_lock(|| {
+        // Reset clock for clean test
+        wasm4pm::self_healing::reset_clock();
 
-    let t0 = wasm4pm::self_healing::now_ms();
+        let t0 = wasm4pm::self_healing::now_ms();
 
-    wasm4pm::self_healing::advance_clock(100);
-    let t1 = wasm4pm::self_healing::now_ms();
+        wasm4pm::self_healing::advance_clock(100);
+        let t1 = wasm4pm::self_healing::now_ms();
 
-    assert!(t1 > t0, "Clock must advance monotonically");
-    assert!(
-        t1 >= t0 + 100,
-        "Clock advance of 100ms must be reflected in now_ms()"
-    );
+        assert!(t1 > t0, "Clock must advance monotonically");
+        assert!(
+            t1 >= t0 + 100,
+            "Clock advance of 100ms must be reflected in now_ms()"
+        );
+    });
 }

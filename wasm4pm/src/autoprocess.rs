@@ -278,7 +278,7 @@ impl AutoProcessAgent {
         circuit_timeout_steps: u64,
     ) -> Self {
         let mut agent = Self {
-            q_table: Box::new([0.0_f32; QTABLE_SIZE]),
+            q_table: vec![0.0_f32; QTABLE_SIZE].into_boxed_slice().try_into().unwrap(),
             circuit_state: CircuitState::Closed,
             circuit_failure_count: 0,
             circuit_threshold,
@@ -927,14 +927,14 @@ mod tests {
         let done = false;
 
         // Before update: Q[0,0] = 0
-        let q_before = agent.q_lookup(state_id, action_idx);
+        let q_before = agent.q_lookup(state_id as usize, action_idx);
         assert_eq!(q_before, 0.0);
 
         // Perform Bellman update
         agent.bellman_update_direct(state_id, action_idx, reward, next_state_id, done);
 
         // After update: Q[0,0] should increase
-        let q_after = agent.q_lookup(state_id, action_idx);
+        let q_after = agent.q_lookup(state_id as usize, action_idx);
         assert!(
             q_after > q_before,
             "Q-value should increase with positive reward"
