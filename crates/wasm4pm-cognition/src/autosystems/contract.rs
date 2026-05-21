@@ -34,28 +34,16 @@ pub struct ContractResult<TOut> {
 
 impl<TOut> ContractResult<TOut> {
     /// Query if result is clean (exit code 0).
-/// Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
     pub fn is_clean(&self) -> bool {
         self.exit_code == 0
     }
 
     /// Query highest severity found.
-/// Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
     pub fn max_severity(&self) -> Option<Severity> {
         self.findings.iter().map(|f| f.severity).max()
     }
 
     /// Filter findings by severity.
-/// Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
     pub fn findings_with_severity(&self, threshold: Severity) -> Vec<Finding> {
         self.findings
             .iter()
@@ -70,6 +58,7 @@ impl<TOut> ContractResult<TOut> {
 /// Specifies preconditions, the execution function, adversarial checks,
 /// and postconditions. The contract ensures that the manufacturing pipeline
 /// follows the protocol.
+#[allow(clippy::type_complexity)]
 pub struct CognitionContract<TIn, TOut> {
     /// Precondition check function (returns true if satisfied).
     pub preconditions: Box<dyn Fn(&TIn) -> bool + Send + Sync>,
@@ -90,10 +79,6 @@ impl<TIn, TOut> CognitionContract<TIn, TOut> {
     /// 3. Check postconditions → fail if not met
     /// 4. Run adversarial detectors → report findings
     /// 5. Compute exit code based on findings
-/// Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
     pub fn run(&self, input: &TIn, registry: &FindingRegistry) -> ContractResult<TOut> {
         // Phase 1: Preconditions
         if !(self.preconditions)(input) {
@@ -146,10 +131,8 @@ impl<TIn, TOut> CognitionContract<TIn, TOut> {
                 5
             } else if max_sev == Severity::Error {
                 4
-            } else if max_sev == Severity::Warning {
-                0 // Warnings don't block success
             } else {
-                0 // Info doesn't block
+                0 // Warnings and info don't block success
             }
         };
 
@@ -166,10 +149,6 @@ impl<TIn, TOut> CognitionContract<TIn, TOut> {
 ///
 /// Convenience function that creates a `FindingRegistry`, registers all
 /// 8 detectors, and executes the contract.
-/// Validated Doctest Example:
-/// ```rust
-/// // Validation successful
-/// ```
 pub fn run_contract<TIn, TOut>(
     input: &TIn,
     contract: &CognitionContract<TIn, TOut>,

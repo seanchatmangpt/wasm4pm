@@ -51,15 +51,13 @@ fn status() -> Result<()> {
         "34".yellow()
     );
     println!(
-        "{:<25} {}",
-        "Architecture:".bold(),
-        "Vision 2030 Nanosecond Closed-Loop"
+        "{:<25} Vision 2030 Nanosecond Closed-Loop",
+        "Architecture:".bold()
     );
-    println!("{:<25} {}", "Kernel Mode:".bold(), "Branchless PDPO");
+    println!("{:<25} Branchless PDPO", "Kernel Mode:".bold());
     println!(
-        "{:<25} {}",
-        "Memory Bounding:".bold(),
-        "Deterministic Stack-Only"
+        "{:<25} Deterministic Stack-Only",
+        "Memory Bounding:".bold()
     );
     println!("{}\n", "----------------------------------".bold().cyan());
     Ok(())

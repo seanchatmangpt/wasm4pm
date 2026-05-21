@@ -8,7 +8,7 @@
 //!   * `rule.id`             = action name
 //!   * `rule.premise`        = list of `predicate=value` preconditions
 //!   * `rule.conclusion`     = `add1;add2;!del1` semicolon-separated;
-//!                             a `!` prefix means delete from state.
+//!     a `!` prefix means delete from state.
 //!   * `rule.certainty`      = unused (kept for serialization parity).
 //! - Goals come from `input.goals` as `predicate=value`.
 //! - Frame axioms (Fikes & Nilsson 1971) are encoded in `input.facts`:
@@ -43,7 +43,6 @@ fn goal_strings(goals: &[Goal]) -> Vec<String> {
 /// Encoded in input.facts as: fact.key="frame", fact.value="atom,action1,action2"
 #[derive(Debug, Clone)]
 struct FrameAxiom {
-    atom: String,
     actions: HashSet<String>,
 }
 
@@ -59,7 +58,7 @@ fn parse_frame_axioms(facts: &[crate::breeds::Fact]) -> HashMap<String, FrameAxi
                     .iter()
                     .map(|s| s.to_string())
                     .collect();
-                axioms.insert(atom.clone(), FrameAxiom { atom, actions });
+                axioms.insert(atom, FrameAxiom { actions });
             }
         }
     }

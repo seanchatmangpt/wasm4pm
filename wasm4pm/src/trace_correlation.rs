@@ -1,13 +1,13 @@
-/// Trace Correlation Proof — Prove CLI→WASM Causality via OTEL Trace IDs
-///
-/// Rank-1 Oracle: Identical trace_id + parent_span_id reference = causal proof
-/// When CLI parent calls WASM child, both must share trace_id.
-///
-/// Pattern:
-/// CLI span: trace_abc, span_001, name=wasm4pm.command.run
-/// WASM span: trace_abc, span_002, parent_span_id=span_001, name=wasm.discover_dfg
-///
-/// Correlation proves: WASM execution causally depends on CLI invocation
+//! Trace Correlation Proof — Prove CLI→WASM Causality via OTEL Trace IDs
+//!
+//! Rank-1 Oracle: Identical trace_id + parent_span_id reference = causal proof
+//! When CLI parent calls WASM child, both must share trace_id.
+//!
+//! Pattern:
+//! CLI span: trace_abc, span_001, name=wasm4pm.command.run
+//! WASM span: trace_abc, span_002, parent_span_id=span_001, name=wasm.discover_dfg
+//!
+//! Correlation proves: WASM execution causally depends on CLI invocation
 
 use std::collections::HashMap;
 

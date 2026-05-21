@@ -157,7 +157,7 @@ pub fn quantile_regression_predict_impl(
     if data.is_empty() {
         return Ok(Vec::new());
     }
-    if data.len() % model.n_features != 0 {
+    if !data.len().is_multiple_of(model.n_features) {
         return Err(MlError::new("data length must be divisible by n_features"));
     }
 

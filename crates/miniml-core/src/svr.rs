@@ -193,7 +193,7 @@ pub fn svr_predict_impl(model: &SVRModel, data: &[f64]) -> Result<Vec<f64>, MlEr
     if data.is_empty() {
         return Ok(Vec::new());
     }
-    if data.len() % model.n_features != 0 {
+    if !data.len().is_multiple_of(model.n_features) {
         return Err(MlError::new("data length must be divisible by n_features"));
     }
 

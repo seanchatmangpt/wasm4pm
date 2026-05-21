@@ -1,4 +1,3 @@
-use serde_json::json;
 use std::collections::{HashMap, HashSet, VecDeque};
 
 /// Network metrics for social network analysis.
@@ -62,8 +61,8 @@ impl SocialNetwork {
             adj.insert(node.id.clone(), Vec::new());
         }
         for edge in &self.edges {
-            adj.entry(edge.from.clone()).or_insert_with(Vec::new).push(edge.to.clone());
-            adj.entry(edge.to.clone()).or_insert_with(Vec::new).push(edge.from.clone());
+            adj.entry(edge.from.clone()).or_default().push(edge.to.clone());
+            adj.entry(edge.to.clone()).or_default().push(edge.from.clone());
         }
 
         // BFS from each node
@@ -86,7 +85,7 @@ impl SocialNetwork {
                             queue.push_back(w.clone());
                         }
                         if distances.get(w).copied().unwrap_or(usize::MAX) == distances[&v] + 1 {
-                            predecessors.entry(w.clone()).or_insert_with(Vec::new).push(v.clone());
+                            predecessors.entry(w.clone()).or_default().push(v.clone());
                         }
                     }
                 }
@@ -129,8 +128,8 @@ impl SocialNetwork {
             adj.insert(node.id.clone(), Vec::new());
         }
         for edge in &self.edges {
-            adj.entry(edge.from.clone()).or_insert_with(Vec::new).push(edge.to.clone());
-            adj.entry(edge.to.clone()).or_insert_with(Vec::new).push(edge.from.clone());
+            adj.entry(edge.from.clone()).or_default().push(edge.to.clone());
+            adj.entry(edge.to.clone()).or_default().push(edge.from.clone());
         }
 
         // BFS from each node
@@ -188,8 +187,8 @@ impl SocialNetwork {
             adj.insert(node.id.clone(), HashSet::new());
         }
         for edge in &self.edges {
-            adj.entry(edge.from.clone()).or_insert_with(HashSet::new).insert(edge.to.clone());
-            adj.entry(edge.to.clone()).or_insert_with(HashSet::new).insert(edge.from.clone());
+            adj.entry(edge.from.clone()).or_default().insert(edge.to.clone());
+            adj.entry(edge.to.clone()).or_default().insert(edge.from.clone());
         }
 
         for node in &self.nodes {
@@ -246,10 +245,10 @@ impl SocialNetwork {
         }
         for edge in &self.edges {
             adj.entry(edge.from.clone())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push((edge.to.clone(), edge.weight));
             adj.entry(edge.to.clone())
-                .or_insert_with(Vec::new)
+                .or_default()
                 .push((edge.from.clone(), edge.weight));
         }
 
@@ -295,8 +294,8 @@ impl SocialNetwork {
         let mut next_label = 0;
         for node in &self.nodes {
             let old_label = communities[&node.id];
-            if !mapping.contains_key(&old_label) {
-                mapping.insert(old_label, next_label);
+            if let std::collections::hash_map::Entry::Vacant(e) = mapping.entry(old_label) {
+                e.insert(next_label);
                 next_label += 1;
             }
         }

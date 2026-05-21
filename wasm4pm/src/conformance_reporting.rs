@@ -3,7 +3,7 @@
 //! Provides detailed per-activity fitness contributions, bottleneck identification,
 //! and structured metrics for multi-model comparison.
 
-use crate::models::{ConformanceResult, TokenReplayResult};
+use crate::models::ConformanceResult;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
@@ -60,8 +60,6 @@ pub struct TraceConformanceDetail {
 /// Compute fitness breakdown from ConformanceResult
 pub fn compute_fitness_breakdown(result: &ConformanceResult) -> FitnessBreakdown {
     let mut total_missing = 0usize;
-    let mut total_produced = 0usize;
-    let mut total_consumed = 0usize;
     let mut total_remaining = 0usize;
     let mut activity_map: HashMap<String, ActivityFitnessContribution> = HashMap::new();
 
@@ -91,9 +89,8 @@ pub fn compute_fitness_breakdown(result: &ConformanceResult) -> FitnessBreakdown
     // Estimate produced/consumed from overall fitness formula
     // fitness = 1 - (missing + consumed) / (produced + remaining)
     // For approximation, assume balanced token flow
-    let denominator = result.case_fitness.len().max(1);
-    total_produced = result.case_fitness.iter().map(|t| t.trace_fitness as usize).sum::<usize>().max(total_missing);
-    total_consumed = total_missing;
+    let total_produced = result.case_fitness.iter().map(|t| t.trace_fitness as usize).sum::<usize>().max(total_missing);
+    let total_consumed = total_missing;
 
     // Calculate percentages (with safe division)
     let total_tokens = (total_produced + total_remaining).max(1) as f64;
@@ -104,7 +101,7 @@ pub fn compute_fitness_breakdown(result: &ConformanceResult) -> FitnessBreakdown
 
     // Identify bottleneck activities (those with highest deviation counts)
     let mut activities: Vec<_> = activity_map.values().collect();
-    activities.sort_by(|a, b| b.missing_tokens.cmp(&a.missing_tokens));
+    activities.sort_by_key(|a| std::cmp::Reverse(a.missing_tokens));
     let bottleneck_activities: Vec<String> =
         activities.iter().take(3).map(|a| a.activity.clone()).collect();
 

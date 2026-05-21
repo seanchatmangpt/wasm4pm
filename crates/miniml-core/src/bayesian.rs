@@ -126,7 +126,7 @@ where
     let mut samples = Vec::with_capacity(n_samples);
     let mut current = initial;
     let mut current_log_post = log_likelihood(current) + log_prior(current);
-    let mut accepted = 0usize;
+    let mut _accepted = 0usize;
 
     for i in 0..total {
         let proposal = current + box_muller(&mut rng) * proposal_sd;
@@ -137,7 +137,7 @@ where
             current = proposal;
             current_log_post = proposal_log_post;
             if i >= burn_in {
-                accepted += 1;
+                _accepted += 1;
             }
         }
 

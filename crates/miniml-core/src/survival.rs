@@ -79,7 +79,7 @@ pub fn kaplan_meier(times: &[f64], events: &[f64]) -> Result<JsValue, JsValue> {
 
 pub fn cox_proportional_hazards_impl(features: &[f64], n_features: usize, times: &[f64], events: &[f64], max_iter: usize, lr: f64) -> Result<CoxResult, MlError> {
     if features.is_empty() || n_features == 0 { return Err(MlError::new("features must not be empty and n_features must be > 0")); }
-    if features.len() % n_features != 0 { return Err(MlError::new("features length must be divisible by n_features")); }
+    if !features.len().is_multiple_of(n_features) { return Err(MlError::new("features length must be divisible by n_features")); }
     if times.len() != events.len() { return Err(MlError::new("times and events must have the same length")); }
     let n_samples = features.len() / n_features;
     if times.len() != n_samples { return Err(MlError::new("features, times, and events must have the same sample count")); }

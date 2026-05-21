@@ -285,6 +285,7 @@ impl StreamingXESParser<'_> {
         self.error(XESParseError::MissingLastTrace)
     }
 
+    #[allow(clippy::ptr_arg)]
     fn add_attribute_from_tag(
         current_mode: &Mode,
         current_trace: &mut Option<Trace>,

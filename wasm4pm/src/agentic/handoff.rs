@@ -6,7 +6,7 @@ pub struct DefaultHandoffValidator;
 
 impl HandoffValidator for DefaultHandoffValidator {
     fn validate_handoff(&self, req: &HandoffRequest) -> Result<HandoffDecision, AgenticError> {
-        let mut span = tracing::debug_span!(
+        let span = tracing::debug_span!(
             "autonomic.handoff_validation",
             task_id = %req.task.task_id,
             from = %req.from_agent,

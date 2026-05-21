@@ -39,7 +39,7 @@ impl DefaultCounterfactualEvaluator {
 
 impl CounterfactualEvaluator for DefaultCounterfactualEvaluator {
     fn evaluate_options(&self, task: &TaskContext) -> Result<CounterfactualResult, AgenticError> {
-        let mut span = tracing::debug_span!(
+        let span = tracing::debug_span!(
             "autonomic.counterfactual_evaluation",
             task_id = %task.task_id,
             drift = ?task.evidence.drift_status,

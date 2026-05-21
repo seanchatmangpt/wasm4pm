@@ -8,7 +8,6 @@
 //! - Use deterministic algorithms (seeded RNG for stochastic)
 //! - Are idempotent (same input → same output)
 
-use crate::models::*;
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js_str;
 use serde_json::{json, Value};
@@ -399,21 +398,7 @@ fn run_discovery_algorithm(
 
 /// Compute BLAKE3 hash of a string.
 fn blake3_hash(data: &str) -> String {
-    // Use blake3 crate if available, otherwise use a simple hash
-    #[cfg(feature = "blake3")]
-    {
-        use blake3;
-        blake3::hash(data.as_bytes()).to_hex().to_string()
-    }
-    #[cfg(not(feature = "blake3"))]
-    {
-        // Fallback: simple hash (not cryptographically secure, for testing only)
-        let mut hash = 5381u64;
-        for b in data.bytes() {
-            hash = hash.wrapping_mul(33).wrapping_add(b as u64);
-        }
-        format!("{:064x}", hash)
-    }
+    blake3::hash(data.as_bytes()).to_hex().to_string()
 }
 
 /// Estimate fitness from algorithm output (heuristic).

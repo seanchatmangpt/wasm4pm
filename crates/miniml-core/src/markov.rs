@@ -161,14 +161,14 @@ pub fn markov_chain_impl(
     for i in 0..n_states {
         let row_sum: f64 = (0..n_states).map(|j| transition_matrix[i * n_states + j]).sum();
         if (row_sum - 1.0).abs() > 0.01 {
-            return Err(MlError::new(&format!("Row {} of transition matrix sums to {} (expected 1.0)", i, row_sum)));
+            return Err(MlError::new(format!("Row {} of transition matrix sums to {} (expected 1.0)", i, row_sum)));
         }
     }
 
     // Validate initial distribution sums to ~1.0
     let init_sum: f64 = initial_distribution.iter().sum();
     if (init_sum - 1.0).abs() > 0.01 {
-        return Err(MlError::new(&format!("initial_distribution sums to {} (expected 1.0)", init_sum)));
+        return Err(MlError::new(format!("initial_distribution sums to {} (expected 1.0)", init_sum)));
     }
 
     Ok(MarkovChain {
@@ -371,7 +371,7 @@ pub fn hmm_forward_impl(
             c += new_alpha[j];
         }
         if c == 0.0 {
-            return Err(MlError::new(&format!("Zero probability at t={}", t)));
+            return Err(MlError::new(format!("Zero probability at t={}", t)));
         }
         scale[t] = c;
         for v in new_alpha.iter_mut() {

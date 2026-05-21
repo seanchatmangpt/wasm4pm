@@ -6,7 +6,7 @@ pub struct DefaultArtifactDispatcher;
 
 impl ArtifactDispatcher for DefaultArtifactDispatcher {
     fn plan_artifacts(&self, req: &ArtifactRequest) -> Result<ArtifactPlan, AgenticError> {
-        let mut span = tracing::debug_span!(
+        let span = tracing::debug_span!(
             "autonomic.artifact_dispatch",
             task_id = %req.task.task_id,
             selected_role = ?req.selected_role,

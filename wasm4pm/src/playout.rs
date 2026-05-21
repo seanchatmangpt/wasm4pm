@@ -18,7 +18,7 @@ use crate::models::{AttributeValue, Event, EventLog, Trace};
 use crate::state::{get_or_init_state, StoredObject};
 use crate::utilities::to_js_str;
 use serde::{Deserialize, Serialize};
-use std::collections::{HashMap, BTreeMap};
+use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 
 #[cfg(feature = "powl")]

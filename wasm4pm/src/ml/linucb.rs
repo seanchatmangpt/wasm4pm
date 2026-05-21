@@ -283,12 +283,12 @@ impl LinUCBAgent {
     /// Can be used to track learning progress (larger norms = more adapted agents).
     pub fn weight_norms(&self) -> [f32; N_ACTIONS] {
         let mut norms = [0.0_f32; N_ACTIONS];
-        for a in 0..N_ACTIONS {
+        for (norm, weights) in norms.iter_mut().zip(self.w.iter()) {
             let mut norm_sq = 0.0_f32;
-            for &w in &self.w[a] {
+            for &w in weights {
                 norm_sq += w * w;
             }
-            norms[a] = norm_sq.sqrt();
+            *norm = norm_sq.sqrt();
         }
         norms
     }

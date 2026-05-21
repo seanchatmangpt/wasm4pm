@@ -18,7 +18,7 @@ pub struct ManifestDiscovery {
 
 impl ManifestDiscovery {
     /// Construct from raw JSON bytes.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -34,7 +34,7 @@ impl ManifestDiscovery {
 
     /// Read a manifest from a path (native only).
     #[cfg(not(target_arch = "wasm32"))]
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```

@@ -53,7 +53,7 @@ pub struct AuthorityClassifier;
 
 impl AuthorityClassifier {
     /// Classify `text`. See [`classify`].
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -69,7 +69,8 @@ impl AuthorityClassifier {
 /// * If both a human/LLM marker and a machine marker are present → `Mixed`.
 /// * Else exactly one of `HumanProse`, `LlmProjection`, `MachineEvidence`.
 /// * Otherwise (no markers fired) → `Empty`.
-/// Validated Doctest Example:
+///
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```

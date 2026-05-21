@@ -36,7 +36,7 @@ impl MonteCarloResult {
 
 /// Result of bootstrap estimation
 #[wasm_bindgen]
-pub struct BootstrapResult {
+pub struct MonteCarloBootstrapResult {
     estimate: f64,
     ci_lower: f64,
     ci_upper: f64,
@@ -46,7 +46,7 @@ pub struct BootstrapResult {
 }
 
 #[wasm_bindgen]
-impl BootstrapResult {
+impl MonteCarloBootstrapResult {
     #[wasm_bindgen(getter)]
     pub fn estimate(&self) -> f64 { self.estimate }
 
@@ -296,7 +296,7 @@ pub fn mc_bootstrap_impl(
     statistic: &str,
     confidence: f64,
     seed: u64,
-) -> Result<BootstrapResult, MlError> {
+) -> Result<MonteCarloBootstrapResult, MlError> {
     if data.is_empty() {
         return Err(MlError::new("data must not be empty"));
     }
@@ -340,7 +340,7 @@ pub fn mc_bootstrap_impl(
     let ci_lower = bootstrap_stats[lower_idx.min(n_bootstrap - 1)];
     let ci_upper = bootstrap_stats[upper_idx.min(n_bootstrap - 1)];
 
-    Ok(BootstrapResult {
+    Ok(MonteCarloBootstrapResult {
         estimate,
         ci_lower,
         ci_upper,
@@ -362,7 +362,7 @@ fn compute_statistic(data: &[f64], name: &str) -> f64 {
             let mut sorted = data.to_vec();
             sorted.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
             let mid = sorted.len() / 2;
-            if sorted.len() % 2 == 0 {
+            if sorted.len().is_multiple_of(2) {
                 (sorted[mid - 1] + sorted[mid]) / 2.0
             } else {
                 sorted[mid]
@@ -419,7 +419,7 @@ pub fn mc_bootstrap(
     statistic: &str,
     confidence: f64,
     seed: u64,
-) -> Result<BootstrapResult, JsValue> {
+) -> Result<MonteCarloBootstrapResult, JsValue> {
     mc_bootstrap_impl(data, n_bootstrap, statistic, confidence, seed)
         .map_err(|e| JsValue::from_str(&e.message))
 }
@@ -432,7 +432,7 @@ pub fn mc_expected_value(
     n_samples: usize,
     seed: u64,
 ) -> MonteCarloResult {
-    mc_expected_value_impl(|x| x, a, b, n_samples, seed).unwrap_or_else(|_| MonteCarloResult {
+    mc_expected_value_impl(|x| x, a, b, n_samples, seed).unwrap_or(MonteCarloResult {
         estimate: 0.0,
         std_error: 0.0,
         ci_lower: 0.0,

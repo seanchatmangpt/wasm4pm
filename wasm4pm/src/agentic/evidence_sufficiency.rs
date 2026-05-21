@@ -6,7 +6,7 @@ pub struct DefaultEvidenceSufficiencyChecker;
 
 impl EvidenceSufficiencyChecker for DefaultEvidenceSufficiencyChecker {
     fn is_sufficient(&self, task: &TaskContext) -> Result<bool, AgenticError> {
-        let mut span = tracing::debug_span!(
+        let span = tracing::debug_span!(
             "autonomic.evidence_sufficiency_check",
             task_id = %task.task_id,
             confidence = ?task.evidence.confidence_band,
@@ -52,7 +52,7 @@ impl EvidenceSufficiencyChecker for DefaultEvidenceSufficiencyChecker {
     }
 
     fn summarize_gaps(&self, task: &TaskContext) -> Result<Vec<String>, AgenticError> {
-        let mut span = tracing::debug_span!(
+        let span = tracing::debug_span!(
             "autonomic.evidence_sufficiency_gaps",
             task_id = %task.task_id,
         )

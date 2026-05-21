@@ -33,7 +33,7 @@ pub struct Finding {
 
 impl Finding {
     /// Construct a finding.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -47,7 +47,7 @@ impl Finding {
     }
 
     /// Attach evidence strings.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -73,7 +73,7 @@ pub struct FindingRegistry {
 
 impl FindingRegistry {
     /// Build a registry containing all 8 adversarial detectors.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -99,7 +99,7 @@ impl FindingRegistry {
     }
 
     /// Run every detector and collect all findings.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```

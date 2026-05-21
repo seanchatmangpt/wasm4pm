@@ -31,7 +31,7 @@ pub struct Hearsay;
 /// - Identity: `noisy_or(x, 0) == x`.
 /// - Bounds: `0 ≤ result ≤ 1` for inputs in `[0, 1]`.
 /// - Monotone: `noisy_or(a, b) ≥ max(a, b)` for inputs in `[0, 1]`.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -147,12 +147,10 @@ impl CognitionBreed for Hearsay {
             })
             .map(|(k, _)| (*k).clone());
 
-        let mut new_facts: Vec<Fact> = blackboard
-            .iter()
-            .filter_map(|(k, _)| {
-                let mut parts = k.splitn(2, ':');
-                let kk = parts.next()?;
-                let vv = parts.next()?;
+        let mut new_facts: Vec<Fact> = blackboard.keys().filter_map(|k| {
+                let (kk, vv) = k.split_once(':')?;
+                
+                
                 Some(Fact {
                     key: kk.to_string(),
                     value: vv.to_string(),

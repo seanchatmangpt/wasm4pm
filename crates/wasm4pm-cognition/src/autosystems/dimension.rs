@@ -66,7 +66,7 @@ pub struct Quantity<U: UnitMarker> {
 
 impl<U: UnitMarker> Quantity<U> {
     /// Wrap a raw scalar in a unit.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -78,7 +78,7 @@ impl<U: UnitMarker> Quantity<U> {
     }
 
     /// Underlying scalar.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -87,7 +87,7 @@ impl<U: UnitMarker> Quantity<U> {
     }
 
     /// Unit identifier.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -96,7 +96,7 @@ impl<U: UnitMarker> Quantity<U> {
     }
 
     /// Finiteness query.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -158,7 +158,7 @@ pub struct DimensionSpec {
 
 impl DimensionSpec {
     /// Validate that `value` lies within declared bounds and is finite.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```

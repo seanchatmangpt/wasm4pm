@@ -13,7 +13,7 @@ use std::cell::RefCell;
 // Thread-local XORShift64 PRNG for random number generation
 // (Deterministic, no external dependencies)
 thread_local! {
-    static RNG: RefCell<u64> = RefCell::new(1);
+    static RNG: RefCell<u64> = const { RefCell::new(1) };
 }
 
 /// Generate a random f64 in [0, 1)

@@ -19,7 +19,7 @@ pub struct HeuristicPlanner {
 
 impl HeuristicPlanner {
     /// Creates a new `HeuristicPlanner` with the given goal state bitmask.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -29,7 +29,7 @@ impl HeuristicPlanner {
 
     /// Very fast bitwise heuristic to determine distance to goal.
     /// Uses population count to find missing bits.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -39,7 +39,7 @@ impl HeuristicPlanner {
     }
 
     /// Attempts to solve by flipping one missing bit at a time (greedy approach).
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```

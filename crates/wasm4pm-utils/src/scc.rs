@@ -3,7 +3,6 @@ use std::cmp::min;
 
 /// Computes all SCCs of a generic K-Tier graph using Tarjan's $O(V+E)$ algorithm.
 /// Optimized for sparse Directly Follows Graphs (DFG).
-#[allow(clippy::needless_range_loop)]
 pub fn compute_sccs_generic<const WORDS: usize>(adj: &[KBitSet<WORDS>]) -> Vec<KBitSet<WORDS>> {
     let max_nodes = WORDS * 64;
     let mut sccs = Vec::new();

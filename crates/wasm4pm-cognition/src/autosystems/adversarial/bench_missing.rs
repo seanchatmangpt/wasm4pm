@@ -22,7 +22,7 @@ impl Default for BenchMissingDetector {
 
 impl BenchMissingDetector {
     /// Construct with explicit target list.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```

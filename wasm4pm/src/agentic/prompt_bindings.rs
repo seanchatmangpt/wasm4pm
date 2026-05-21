@@ -8,7 +8,7 @@ impl PromptBindingCompiler for DefaultPromptBindingCompiler {
     fn compile_bindings(&self, task: &TaskContext) -> Result<PromptBindingSet, AgenticError> {
         use crate::agentic::prelude::*;
 
-        let mut span = tracing::debug_span!(
+        let span = tracing::debug_span!(
             "autonomic.prompt_binding_compilation",
             task_id = %task.task_id,
             phase = ?task.phase,

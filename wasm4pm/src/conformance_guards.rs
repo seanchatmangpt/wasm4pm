@@ -57,7 +57,7 @@ pub fn guard_zero_denominator(numerator: u32, denominator: u32) -> f64 {
 /// Empty trace fitness should be well-defined:
 /// - If model accepts empty traces (epsilon language): fitness = 1.0
 /// - If model requires ≥1 event: fitness < 1.0
-pub fn guard_empty_trace_fitness(event_count: usize, is_conforming: bool) -> f64 {
+pub fn guard_empty_trace_fitness(event_count: usize, _is_conforming: bool) -> f64 {
     if event_count == 0 {
         // Empty trace: 0.5 conformance (half of min fitness for 1-event trace)
         // This ensures empty traces are penalized but not catastrophic
@@ -73,8 +73,8 @@ pub fn guard_empty_trace_fitness(event_count: usize, is_conforming: bool) -> f64
 /// Fitness should still be [0.0, 1.0].
 pub fn guard_degenerate_model_fitness(
     fitness: f64,
-    activity_count: usize,
-    transition_count: usize,
+    _activity_count: usize,
+    _transition_count: usize,
 ) -> f64 {
     // Degenerate models (activity_count < 2) still produce bounded fitness
     guard_fitness_bounds(fitness)
@@ -87,7 +87,7 @@ pub fn guard_degenerate_model_fitness(
 pub fn guard_cumulative_fitness(
     current_total: f64,
     trace_fitness: f64,
-    trace_count: usize,
+    _trace_count: usize,
 ) -> f64 {
     // Clamp each trace fitness before adding to total
     let bounded_fitness = guard_fitness_bounds(trace_fitness);

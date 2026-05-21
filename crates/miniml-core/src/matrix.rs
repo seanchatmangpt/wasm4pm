@@ -8,7 +8,7 @@ pub fn validate_matrix(data: &[f64], n_features: usize) -> Result<usize, MlError
     if data.is_empty() {
         return Err(MlError::new("data must not be empty"));
     }
-    if data.len() % n_features != 0 {
+    if !data.len().is_multiple_of(n_features) {
         return Err(MlError::new("data length must be divisible by n_features"));
     }
     Ok(data.len() / n_features)

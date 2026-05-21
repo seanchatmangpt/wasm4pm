@@ -84,7 +84,7 @@ pub fn linear_svm_impl(
         let eta = learning_rate / (1.0 + (iter as f64) * learning_rate * lambda);
 
         // Select random sample
-        let idx = (iter % n) as usize;
+        let idx = iter % n ;
         let x = &data[idx * n_features..(idx + 1) * n_features];
         let label = y[idx];
 

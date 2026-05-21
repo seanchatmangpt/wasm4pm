@@ -13,43 +13,6 @@ use wasm_bindgen::prelude::*;
 // uses `HashMap<String, AttributeValue>`. The conversions below flatten
 // one into the other.
 
-#[cfg(feature = "import")]
-mod xes_compat {
-    use super::{AttributeValue, Attributes, Event, EventLog, Trace};
-    use std::collections::HashMap;
-    use wasm4pm_types::event_log as ext;
-
-    fn conv_value(v: ext::AttributeValue) -> Option<AttributeValue> {
-        match v {
-            ext::AttributeValue::String(s) => Some(AttributeValue::String(s)),
-            ext::AttributeValue::Date(d) => Some(AttributeValue::Date(d.to_rfc3339())),
-            ext::AttributeValue::Int(i) => Some(AttributeValue::Int(i)),
-            ext::AttributeValue::Float(f) => Some(AttributeValue::Float(f)),
-            ext::AttributeValue::Boolean(b) => Some(AttributeValue::Boolean(b)),
-            ext::AttributeValue::ID(u) => Some(AttributeValue::String(u.to_string())),
-            ext::AttributeValue::List(items) => Some(AttributeValue::List(
-                items.into_iter().filter_map(|a| conv_value(a.value)).collect(),
-            )),
-            ext::AttributeValue::Container(items) => Some(AttributeValue::Container(
-                conv_attrs(items),
-            )),
-            ext::AttributeValue::None() => None,
-        }
-    }
-
-    fn conv_attrs(attrs: Vec<ext::Attribute>) -> Attributes {
-        let mut out: HashMap<String, AttributeValue> = HashMap::with_capacity(attrs.len());
-        for a in attrs {
-            if let Some(v) = conv_value(a.value) {
-                out.insert(a.key, v);
-            }
-        }
-        out
-    }
-
-
-}
-
 // ---------------------------------------------------------------------------
 // Fast attribute extraction helpers
 // ---------------------------------------------------------------------------
@@ -143,10 +106,10 @@ pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
                 let handle = get_or_init_state()
                     .store_object(StoredObject::EventLog(log))
                     .map_err(|_e| crate::error::js_val("Failed to store EventLog"))?;
-                return Ok(handle);
+                Ok(handle)
             }
             Err(e) => {
-                return Err(crate::error::js_val(&format!("XES Parse Error: {:?}", e)));
+                Err(crate::error::js_val(&format!("XES Parse Error: {:?}", e)))
             }
         }
     }

@@ -162,10 +162,10 @@ impl AutonomicAuditTrail {
         phase: AuditPhase,
         cycle_count: u64,
     ) -> bool {
-        let timestamp_ns = (std::time::SystemTime::now()
+        let timestamp_ns = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
-            .as_nanos());
+            .as_nanos();
 
         let prev_hash = if self.events.is_empty() {
             "genesis".to_string()

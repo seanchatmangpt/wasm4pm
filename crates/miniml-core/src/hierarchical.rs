@@ -64,7 +64,7 @@ pub fn hierarchical_impl(
         let mut heap = BinaryHeap::new();
         for i in 0..clusters.len() {
             for j in (i + 1)..clusters.len() {
-                let dist_sq = cluster_distance_sq(&data, n_features, &clusters[i], &clusters[j]);
+                let dist_sq = cluster_distance_sq(data, n_features, &clusters[i], &clusters[j]);
                 heap.push(MergeCandidate {
                     dist_sq,
                     cluster_i: i,

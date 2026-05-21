@@ -37,7 +37,7 @@ pub struct CvResult {
 
 /// Bootstrap result
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BootstrapResult {
+pub struct AdvancedBootstrapResult {
     /// All bootstrap scores
     pub scores: Vec<f64>,
 
@@ -85,7 +85,7 @@ pub fn stratified_k_fold(
 
     for (i, &label) in y.iter().enumerate() {
         let label_bits = label.to_bits();
-        class_indices.entry(label_bits).or_insert_with(Vec::new).push(i);
+        class_indices.entry(label_bits).or_default().push(i);
     }
 
     // Shuffle within each class if requested
@@ -558,7 +558,7 @@ pub fn compute_bootstrap_result(
     let lower = sorted_scores[lower_idx.min(n - 1)];
     let upper = sorted_scores[upper_idx.min(n - 1)];
 
-    let result = BootstrapResult {
+    let result = AdvancedBootstrapResult {
         scores,
         mean,
         std_error,
@@ -634,7 +634,7 @@ mod tests {
         let scores = vec![0.8, 0.85, 0.9, 0.75, 0.95];
         let result = compute_bootstrap_result(scores, 0.95).unwrap();
 
-        // Result should be a valid BootstrapResult
+        // Result should be a valid AdvancedBootstrapResult
         assert!(result.is_object());
     }
 }

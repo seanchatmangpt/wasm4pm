@@ -185,7 +185,7 @@ fn std_dev(data: &[f64]) -> f64 {
 fn median(data: &mut [f64]) -> f64 {
     data.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
     let n = data.len();
-    if n % 2 == 0 {
+    if n.is_multiple_of(2) {
         (data[n / 2 - 1] + data[n / 2]) / 2.0
     } else {
         data[n / 2]

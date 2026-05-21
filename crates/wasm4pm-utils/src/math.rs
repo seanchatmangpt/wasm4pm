@@ -31,6 +31,17 @@ pub fn monte_carlo_tree_search_mcts(val: u64, aux: u64) -> u64 {
     }
 }
 
+/// Pure branchless OR-Join synchronization logic for YAWL-style joins.
+/// Returns 1 if the join can fire, 0 otherwise.
+/// val: current state mask (present tokens)
+/// aux: reachability mask (tokens that can still reach this join)
+#[inline(always)]
+pub fn synchronizing_merge_wcp37(val: u64, aux: u64) -> u64 {
+    let present = val != 0;
+    let no_upstream = (aux & !val) == 0;
+    (present && no_upstream) as u64
+}
+
 #[cfg(test)]
 mod uct_tests {
     use super::*;
@@ -74,15 +85,4 @@ mod uct_tests {
             }
         }
     }
-}
-
-/// Pure branchless OR-Join synchronization logic for YAWL-style joins.
-/// Returns 1 if the join can fire, 0 otherwise.
-/// val: current state mask (present tokens)
-/// aux: reachability mask (tokens that can still reach this join)
-#[inline(always)]
-pub fn synchronizing_merge_wcp37(val: u64, aux: u64) -> u64 {
-    let present = val != 0;
-    let no_upstream = (aux & !val) == 0;
-    (present && no_upstream) as u64
 }

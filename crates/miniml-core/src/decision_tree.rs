@@ -36,6 +36,12 @@ pub struct FlatTreeNode {
     pub value: Option<f64>,
 }
 
+impl Default for TreeArena {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl TreeArena {
     pub fn new() -> Self {
         Self {

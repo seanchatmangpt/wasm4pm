@@ -21,7 +21,7 @@ pub struct NeuroticState {
 
 impl NeuroticState {
     /// Creates a new default `NeuroticState` with all levels at zero.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -31,7 +31,7 @@ impl NeuroticState {
 
     /// Process a new semantic input. If it conflicts with strongly held beliefs,
     /// mistrust and anger increase. If it aligns, they decrease.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -41,27 +41,25 @@ impl NeuroticState {
         } else {
             0.0
         };
-        let mut response = String::from("neutral");
-
-        if let Some(&current_strength) = self.beliefs.get(concept) {
+        let response = if let Some(&current_strength) = self.beliefs.get(concept) {
             let conflict = (current_strength - incoming_clamped).abs();
             if conflict > 0.5 {
                 self.mistrust += 0.1 * conflict;
                 self.anger += 0.2 * conflict;
                 self.fear += 0.05 * conflict;
-                response = "defensive".to_string();
+                "defensive".to_string()
             } else {
                 self.mistrust = (self.mistrust - 0.1).max(0.0);
                 let blended = ((current_strength + incoming_clamped) / 2.0).clamp(0.0, 1.0);
                 self.beliefs.insert(concept.to_string(), blended);
-                response = "accepting".to_string();
+                "accepting".to_string()
             }
         } else {
             // Novel concept, slight mistrust increase for paranoia simulation
             self.mistrust += 0.05;
             self.beliefs.insert(concept.to_string(), incoming_clamped);
-            response = "curious".to_string();
-        }
+            "curious".to_string()
+        };
 
         // Enforce documented [0.0, 1.0] invariant.
         self.fear = self.fear.clamp(0.0, 1.0);

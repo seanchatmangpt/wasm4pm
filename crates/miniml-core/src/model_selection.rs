@@ -33,7 +33,7 @@ pub fn roc_auc_impl(y_true: &[f64], y_scores: &[f64]) -> Result<f64, MlError> {
     // because point-by-point accumulation treats ties asymmetrically.
     let mut auc = 0.0;
     let mut tp = 0.0;
-    let mut fp = 0.0;
+    let mut _fp = 0.0;
     let n = indexed.len();
     let mut i = 0;
 
@@ -62,7 +62,7 @@ pub fn roc_auc_impl(y_true: &[f64], y_scores: &[f64]) -> Result<f64, MlError> {
         auc += (2.0 * tp + group_tp) * group_fp / 2.0;
 
         tp += group_tp;
-        fp += group_fp;
+        _fp += group_fp;
         i = j;
     }
 

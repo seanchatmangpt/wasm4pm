@@ -147,7 +147,7 @@ impl DecisionNode {
 /// * `n_samples` - Number of samples for approximation
 #[wasm_bindgen]
 pub fn shap_values(
-    X: &[f64],
+    x_background: &[f64],
     x: &[f64],
     n_samples: usize,
     n_features: usize,
@@ -174,7 +174,7 @@ pub fn shap_values(
 
         // Perturb feature to background mean
         let feature_mean: f64 = (0..n_samples)
-            .map(|i| X[i * n_features + feature_idx])
+            .map(|i| x_background[i * n_features + feature_idx])
             .sum::<f64>()
             / n_samples as f64;
 

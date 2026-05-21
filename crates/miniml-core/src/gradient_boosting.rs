@@ -97,7 +97,7 @@ pub fn gradient_boosting_impl(
     }
 
     // Find unique classes
-    let mut classes: Vec<f64> = labels.iter().copied().collect();
+    let mut classes: Vec<f64> = labels.to_vec();
     classes.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
     classes.dedup();
     let n_classes = classes.len();

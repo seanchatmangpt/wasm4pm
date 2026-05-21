@@ -31,14 +31,14 @@ impl Rng {
 // ---------------------------------------------------------------------------
 
 const LANCZOS_P: [f64; 9] = [
-    0.99999999999980993,
+    0.999_999_999_999_809_9,
     676.5203681218851,
     -1259.1392167224028,
-    771.32342877765313,
-    -176.61502916214059,
+    771.323_428_777_653_1,
+    -176.615_029_162_140_6,
     12.507343278686905,
     -0.13857109526572012,
-    9.9843695780195716e-6,
+    9.984_369_578_019_572e-6,
     1.5056327351493116e-7,
 ];
 const LANCZOS_G: f64 = 7.0;
@@ -54,7 +54,7 @@ fn gamma_function_impl(x: f64) -> f64 {
             a += LANCZOS_P[i] / (x + i as f64);
         }
         let t = x + LANCZOS_G + 0.5;
-        let sqrt_2pi = 2.5066282746310005024;
+        let sqrt_2pi = 2.506_628_274_631_000_7;
         sqrt_2pi * t.powf(x + 0.5) * (-t).exp() * a
     }
 }
@@ -131,7 +131,7 @@ fn beta_cf(a: f64, b: f64, x: f64) -> f64 {
 /// Regularized incomplete beta function I_x(a,b) using continued fraction expansion.
 fn incomplete_beta_impl(x: f64, a: f64, b: f64, max_iter: usize) -> f64 {
     let _ = max_iter; // used internally by beta_cf
-    if x < 0.0 || x > 1.0 {
+    if !(0.0..=1.0).contains(&x) {
         return if x <= 0.0 { 0.0 } else { 1.0 };
     }
     if x == 0.0 || x == 1.0 {
@@ -324,7 +324,7 @@ fn normal_ppf_impl(p: f64, mean: f64, std: f64) -> f64 {
         -3.969683028665376e+01,
         2.209460984245205e+02,
         -2.759285104469687e+02,
-        1.383577518672690e+02,
+        1.383_577_518_672_69e2,
         -3.066479806614716e+01,
         2.506628277459239e+00,
     ];
@@ -383,7 +383,7 @@ fn normal_sample_impl(n: usize, mean: f64, std: f64, seed: u64) -> Result<Vec<f6
     if n == 0 { return Ok(vec![]); }
     let mut rng = Rng::new(seed);
     let mut result = Vec::with_capacity(n);
-    let pairs = (n + 1) / 2;
+    let pairs = n.div_ceil(2);
     for _ in 0..pairs {
         let u1 = rng.next_f64();
         let u2 = rng.next_f64();
@@ -423,7 +423,7 @@ fn binomial_cdf_impl(k: i64, n: i64, p: f64) -> f64 {
 /// Generate binomial samples via inverse CDF method.
 fn binomial_sample_impl(n_samples: usize, n_trials: i64, p: f64, seed: u64) -> Result<Vec<f64>, MlError> {
     if n_trials < 0 { return Err(MlError::new("n_trials must be non-negative")); }
-    if p < 0.0 || p > 1.0 { return Err(MlError::new("p must be in [0, 1]")); }
+    if !(0.0..=1.0).contains(&p) { return Err(MlError::new("p must be in [0, 1]")); }
     let mut rng = Rng::new(seed);
     let mut result = Vec::with_capacity(n_samples);
     for _ in 0..n_samples {

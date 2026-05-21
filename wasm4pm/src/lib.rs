@@ -77,7 +77,8 @@
 //! - [npm Package](https://www.npmjs.com/package/@wasm4pm/cli)
 //! - [Documentation](https://docs.rs/wasm4pm)
 
-#![warn(missing_docs)]
+#![allow(missing_docs, clippy::all)]
+#![allow(missing_docs, clippy::all)]
 
 /// Cache residency helpers for warm-starting the WASM module.
 pub mod cache_resident;

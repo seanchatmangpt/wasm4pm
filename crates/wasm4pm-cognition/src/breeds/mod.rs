@@ -218,7 +218,7 @@ impl std::error::Error for BreedError {}
 ///
 /// # Returns
 /// A `Receipt` with BLAKE3 hashes (all as hex-encoded 64-char strings)
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -275,7 +275,7 @@ pub trait CognitionBreed: Send + Sync {
 /// - Non-empty trace production (fraud detection)
 /// - Output structure validity
 /// - Multi-breed pipeline execution (Diagram 29)
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```

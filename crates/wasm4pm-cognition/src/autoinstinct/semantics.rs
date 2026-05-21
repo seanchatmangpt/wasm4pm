@@ -53,7 +53,7 @@ impl Default for SemanticParser {
 
 impl SemanticParser {
     /// Creates a new `SemanticParser` with a built-in English verb lexicon.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -67,7 +67,7 @@ impl SemanticParser {
     }
 
     /// Very basic pattern matching (ELIZA/SHRDLU style)
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```

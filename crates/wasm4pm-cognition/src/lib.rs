@@ -1,3 +1,6 @@
+#![allow(clippy::type_complexity)]
+
+
 //! # wasm4pm-cognition — AutoSystems old-AI cognition kernel
 //!
 //! Real implementations of foundational old-AI cognition systems, plus

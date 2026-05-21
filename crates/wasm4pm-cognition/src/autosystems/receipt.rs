@@ -54,7 +54,7 @@ fn identity_domain_key() -> [u8; 32] {
 
 /// Public access to the identity domain key (used by the MAC fallback).
 #[doc(hidden)]
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -76,7 +76,7 @@ pub struct ActorId {
 
 impl ActorId {
     /// Construct from raw public-key bytes.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -88,7 +88,7 @@ impl ActorId {
     }
 
     /// Domain-tagged fingerprint (hex).
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -110,7 +110,7 @@ pub struct ActorSigner {
 #[cfg(feature = "actor-ed25519")]
 impl ActorSigner {
     /// Construct from a 32-byte secret seed.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -124,7 +124,7 @@ impl ActorSigner {
     }
 
     /// Sign an arbitrary message, returning raw signature bytes.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -137,7 +137,7 @@ impl ActorSigner {
 #[cfg(feature = "actor-ed25519")]
 impl ActorId {
     /// Verify a signature against a message under this actor's public key.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -163,7 +163,7 @@ impl ActorId {
 #[cfg(all(feature = "actor-mac-fallback", not(feature = "actor-ed25519")))]
 impl ActorId {
     /// Verify a MAC tag (keyed BLAKE3) under this identity.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -240,14 +240,14 @@ pub struct ChainLink {
 
 mod hex_bytes {
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
     pub fn serialize<S: Serializer>(b: &Vec<u8>, s: S) -> Result<S::Ok, S::Error> {
         hex::encode(b).serialize(s)
     }
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -266,7 +266,7 @@ pub struct ReceiptChain {
 
 impl ReceiptChain {
     /// Empty chain.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -276,7 +276,7 @@ impl ReceiptChain {
 
     /// Convenience: append using ed25519 signer.
     #[cfg(feature = "actor-ed25519")]
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -311,7 +311,7 @@ impl ReceiptChain {
     }
 
     /// Append with a pre-computed signature (used by both real and fallback paths).
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -350,7 +350,7 @@ impl ReceiptChain {
     ///
     /// Returns false on the first inconsistency (broken hash, broken
     /// previous-pointer, or invalid signature).
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -401,7 +401,7 @@ impl ReceiptChain {
     /// Returns 32 zero bytes for an empty chain. Otherwise BLAKE3 of the
     /// concatenated link-hash hex strings — a deterministic content
     /// digest that an external trust anchor can match against.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -417,7 +417,7 @@ impl ReceiptChain {
     }
 
     /// Final replay pointer (first 16 hex chars of last link, or zero).
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -434,7 +434,7 @@ impl ReceiptChain {
     /// pre-v2 callers that did not carry an actor identity. Such links
     /// trivially pass signature verification when ed25519 is disabled or the
     /// caller treats them as anonymous.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```

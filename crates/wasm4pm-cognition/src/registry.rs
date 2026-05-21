@@ -46,7 +46,7 @@ fn now_ms() -> u64 {
 
 impl BoundedRegistry {
     /// Empty registry.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -58,7 +58,7 @@ impl BoundedRegistry {
 
     /// Insert a receipt. Purges TTL-expired entries first, then evicts the
     /// least-recently inserted entries until below `MAX_ENTRIES`.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -77,7 +77,7 @@ impl BoundedRegistry {
     }
 
     /// Retrieve a receipt by id, if present and not expired.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -94,7 +94,7 @@ impl BoundedRegistry {
     }
 
     /// Number of entries currently stored.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -103,7 +103,7 @@ impl BoundedRegistry {
     }
 
     /// Whether the registry is empty.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```

@@ -25,7 +25,7 @@ pub struct FilesystemDiscovery {
 
 impl FilesystemDiscovery {
     /// Construct a new discovery rooted at `root` with default depth 8.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -66,8 +66,10 @@ impl CandidateDiscovery for FilesystemDiscovery {
         self.walk(&self.root, 0, &mut paths)?;
         paths.sort();
 
-        let mut merged = CandidateManifest::default();
-        merged.version = "1".into();
+        let mut merged = CandidateManifest {
+            version: "1".into(),
+            ..Default::default()
+        };
         for p in paths {
             let body = std::fs::read_to_string(&p)
                 .map_err(|e| format!("read {}: {}", p.display(), e))?;
@@ -78,8 +80,8 @@ impl CandidateDiscovery for FilesystemDiscovery {
                     c.provenance = Some(p.display().to_string());
                 }
             }
-            merged.dimensions.extend(m.dimensions.into_iter());
-            merged.candidates.extend(m.candidates.into_iter());
+            merged.dimensions.extend(m.dimensions);
+            merged.candidates.extend(m.candidates);
         }
         merged.validate()?;
         Ok(merged)

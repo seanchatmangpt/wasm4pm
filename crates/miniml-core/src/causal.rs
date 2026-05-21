@@ -287,13 +287,13 @@ fn compute_p_value(ate: f64, treated_outcomes: &[f64], control_outcomes: &[f64])
 
     let t_stat = ate / se;
     // Approximate p-value using normal distribution
-    let p = if t_stat.abs() > 1.96 {
+    
+
+    if t_stat.abs() > 1.96 {
         0.05
     } else {
         0.5
-    };
-
-    p
+    }
 }
 
 /// Instrumental variables estimation

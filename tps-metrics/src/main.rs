@@ -1,3 +1,4 @@
+
 //! TPS Metrics CLI Tool
 //!
 //! Collects and analyzes Toyota Production System metrics for software development.

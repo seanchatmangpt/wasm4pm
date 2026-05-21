@@ -29,7 +29,7 @@ impl Default for SymbolicVisionSystem {
 
 impl SymbolicVisionSystem {
     /// Creates an empty `SymbolicVisionSystem` with no observed objects.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -38,7 +38,7 @@ impl SymbolicVisionSystem {
     }
 
     /// Adds a newly observed `Polyhedron` to the scene.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -47,7 +47,7 @@ impl SymbolicVisionSystem {
     }
 
     /// Find an object that has nothing supported by it (it's clear to move).
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```

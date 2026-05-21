@@ -448,12 +448,11 @@ pub fn detect_seasonality(data: &[f64]) -> Result<SeasonalityInfo, JsError> {
     let mut best_lag = 2;
     let mut best_val = f64::NEG_INFINITY;
     for lag in 2..acf.len() {
-        if lag >= 2 && lag < acf.len() - 1 {
-            if acf[lag] > acf[lag - 1] && acf[lag] > acf[lag + 1] && acf[lag] > best_val {
+        if lag >= 2 && lag < acf.len() - 1
+            && acf[lag] > acf[lag - 1] && acf[lag] > acf[lag + 1] && acf[lag] > best_val {
                 best_val = acf[lag];
                 best_lag = lag;
             }
-        }
     }
 
     Ok(SeasonalityInfo {

@@ -73,7 +73,7 @@ fn parse_frames(input: &BreedInput) -> Vec<Frame> {
         frames = default_frames();
     }
     // Longest pattern first (more specific matches before catch-all `*`).
-    frames.sort_by(|a, b| b.pattern.len().cmp(&a.pattern.len()));
+    frames.sort_by_key(|b| std::cmp::Reverse(b.pattern.len()));
     frames
 }
 

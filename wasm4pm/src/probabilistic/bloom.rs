@@ -111,7 +111,7 @@ impl<const BITS: usize> BloomFilter<BITS> {
     #[inline]
     pub fn contains(&self, hash: u64) -> bool {
         let (h1, h2) = Self::double_hash(hash);
-        let mut possible = 1u64;
+        let _possible = 1u64;
         for i in 0..self.num_hashes {
             let bit = Self::nth_hash(h1, h2, i);
             let word = bit / 64;

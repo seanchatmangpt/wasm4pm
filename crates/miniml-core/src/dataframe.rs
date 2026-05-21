@@ -6,7 +6,6 @@ use crate::error::MlError;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
-use serde_wasm_bindgen;
 
 /// Data type for DataFrame columns
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -204,16 +203,14 @@ impl DataFrame {
     /// Get summary statistics (describe)
     pub fn describe(&self) -> DataFrame {
         let mut summary_data = Vec::new();
-        let _summary_cols = vec![
-            "count".to_string(),
+        let _summary_cols = ["count".to_string(),
             "mean".to_string(),
             "std".to_string(),
             "min".to_string(),
             "25%".to_string(),
             "50%".to_string(),
             "75%".to_string(),
-            "max".to_string(),
-        ];
+            "max".to_string()];
 
         for col_idx in 0..self.n_cols {
             let col = &self.data[col_idx];

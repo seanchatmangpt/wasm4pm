@@ -453,7 +453,7 @@ impl AutoMLEngine {
         // Detect problem type
         let is_classification = y.iter().all(|&yi| {
             let rounded = yi.round();
-            (yi - rounded).abs() < 0.01 && rounded >= 0.0 && rounded <= 10.0
+            (yi - rounded).abs() < 0.01 && (0.0..=10.0).contains(&rounded)
         });
 
         let mut total_score = 0.0;
@@ -1033,15 +1033,15 @@ pub fn select_features_ga(
                 .collect();
 
             // Quick CV score using naive classification
-            let cv_score = cross_validate_score_quick(
+            
+
+            cross_validate_score_quick(
                 &subset_data,
                 &self.targets,
                 self.n_samples,
                 selected.len(),
                 3,
-            );
-
-            cv_score
+            )
         }
 
         fn dimension(&self) -> usize {

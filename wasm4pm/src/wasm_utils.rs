@@ -174,7 +174,7 @@ pub fn identify_high_variance_activities(
                 for (activity, count) in trace_counts {
                     activity_per_trace
                         .entry(activity)
-                        .or_insert_with(Vec::new)
+                        .or_default()
                         .push(count);
                 }
             }

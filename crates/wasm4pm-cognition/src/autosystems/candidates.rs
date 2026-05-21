@@ -91,7 +91,7 @@ pub struct Candidate {
 
 impl Candidate {
     /// Lookup a dimension value by key.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -100,7 +100,7 @@ impl Candidate {
     }
 
     /// Count of declared dimensions.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -129,7 +129,7 @@ impl CandidateManifest {
     /// Validate every candidate's dimensions against the declared specs.
     ///
     /// Returns the first violation encountered (if any).
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -169,7 +169,7 @@ pub trait CandidateDiscovery {
     since = "26.4.28",
     note = "Hardcoded candidates were removed. Load a manifest with ManifestDiscovery."
 )]
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```

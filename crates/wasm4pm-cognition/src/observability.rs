@@ -25,7 +25,7 @@ thread_local! {
 }
 
 /// Emit a detector span. Never panics; failures are swallowed.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -43,7 +43,7 @@ pub fn emit_detector_span(code: &str, firing: bool, severity: Severity, evidence
 }
 
 /// Drain all recorded spans (test helper).
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```

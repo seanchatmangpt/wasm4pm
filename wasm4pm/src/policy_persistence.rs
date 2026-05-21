@@ -120,7 +120,7 @@ impl PolicyCheckpoint {
         }
 
         let json = fs::read_to_string(path)?;
-        let mut checkpoint: PolicyCheckpoint =
+        let checkpoint: PolicyCheckpoint =
             serde_json::from_str(&json).map_err(|e| {
                 io::Error::new(io::ErrorKind::InvalidData, format!("JSON parse error: {}", e))
             })?;

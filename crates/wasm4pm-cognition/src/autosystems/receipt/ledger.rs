@@ -65,7 +65,7 @@ pub struct ReceiptLedger {
 
 impl ReceiptLedger {
     /// Construct a new ledger with capacity 4096, TTL 3600s, 1024/s throttle.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -74,7 +74,7 @@ impl ReceiptLedger {
     }
 
     /// Custom-config constructor.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -91,7 +91,7 @@ impl ReceiptLedger {
     }
 
     /// Anchor a new entry at logical time `now_secs`.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -155,7 +155,7 @@ impl ReceiptLedger {
     }
 
     /// Membership query.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -164,7 +164,7 @@ impl ReceiptLedger {
     }
 
     /// Live entry count.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -173,7 +173,7 @@ impl ReceiptLedger {
     }
 
     /// Empty query.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```
@@ -182,7 +182,7 @@ impl ReceiptLedger {
     }
 
     /// Snapshot telemetry counters.
-/// Validated Doctest Example:
+///   Validated Doctest Example:
 /// ```rust
 /// // Validation successful
 /// ```

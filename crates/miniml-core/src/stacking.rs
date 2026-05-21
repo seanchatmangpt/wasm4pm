@@ -6,7 +6,6 @@ use crate::error::MlError;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 use std::collections::HashMap;
-use serde_wasm_bindgen;
 
 /// Voting type for ensemble
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -247,7 +246,7 @@ impl VotingEnsemble {
 pub fn stacked_ensemble(
     base_models: Vec<String>,
     meta_model: String,
-    _X: &[f64],
+    _x: &[f64],
     y: &[f64],
     cv_folds: usize,
     n_samples: usize,

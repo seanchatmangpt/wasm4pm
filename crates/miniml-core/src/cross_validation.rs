@@ -76,14 +76,14 @@ pub fn cross_validate_score_impl(
         // Train model and compute accuracy
         let score = match model_type {
             "decision_tree" => {
-                let max_depth = if model_params.len() > 0 { model_params[0] as usize } else { 10 };
+                let max_depth = if !model_params.is_empty() { model_params[0] as usize } else { 10 };
                 let min_samples = if model_params.len() > 1 { model_params[1] as usize } else { 2 };
                 let model = decision_tree_impl(&train_data, n_features, &train_labels, max_depth, min_samples, true)?;
                 let preds = model.predict(&test_data);
                 compute_accuracy(&test_labels, &preds)
             }
             "knn" => {
-                let k = if model_params.len() > 0 { model_params[0] as usize } else { 3 };
+                let k = if !model_params.is_empty() { model_params[0] as usize } else { 3 };
                 let model = knn_fit_impl(&train_data, n_features, &train_labels, k)?;
                 let preds_u32 = model.predict(&test_data);
                 let preds: Vec<f64> = preds_u32.iter().map(|&p| p as f64).collect();
@@ -95,7 +95,7 @@ pub fn cross_validate_score_impl(
                 let preds: Vec<f64> = preds_u32.iter().map(|&p| p as f64).collect();
                 compute_accuracy(&test_labels, &preds)
             }
-            _ => return Err(MlError::new(&format!("Unknown model type: {}", model_type))),
+            _ => return Err(MlError::new(format!("Unknown model type: {}", model_type))),
         };
 
         scores.push(score);
