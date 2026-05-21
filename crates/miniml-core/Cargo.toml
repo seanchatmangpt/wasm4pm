@@ -1,7 +1,7 @@
 
 [package]
 name = "miniml"
-version = "26.4.8"
+version = "26.5.19"
 edition = "2021"
 authors = ["Sean Chatman <info@chatmangpt.com>"]
 description = "A minimal, blazing-fast WASM-powered machine learning library with SIMD acceleration"
