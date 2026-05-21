@@ -1,3 +1,4 @@
+
 //! # Branchless Prolog VM (Nanosecond Engine)
 //! 
 //! Implements a subset of the Warren Abstract Machine (WAM) using branchless 
