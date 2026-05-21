@@ -31,20 +31,25 @@ pub const FORBIDDEN_EVIDENCE_MARKERS: &[&str] = &[
 /// High-level refusal states for receipt truth verification.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ReceiptTruthRefusal {
-    ExpectedOCELMissing,
     ObservedOCELMissing,
-    ObservedOCELSynthetic,
+    ExpectedOCELMissing,
+    PathHashOnlyReceipt,
+    ObservedTraceMutationWithoutBoundary,
+    RuntimeObserverMissing,
+    ChallengeNonceMissing,
+    ChallengeNonceMismatch,
+    ObservedTraceNotChallengeBound,
+    BoundaryEvidenceMissing,
+    SummaryOnlyReceipt,
+    SelfCertifiedAlignment,
+    FixtureMutationDetected,
+    ProofClassOverclaimed,
+    // Keep these for backwards compatibility with tests temporarily
+    PlaceholderEvidenceDetected,
     ExpectedObservedCloneDetected,
     OCELCanonicalHashMismatch,
-    BoundaryEvidenceMissing,
-    PlaceholderEvidenceDetected,
-    StubEvidenceDetected,
-    ClosureOverclaimed,
-    ArtifactHashMismatch,
     ReceiptHashMismatch,
-    ReceiptChainMissing,
-    ToolCallHashMissing,
-    SyntheticExecutionPath,
+    ClosureOverclaimed,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -339,7 +344,7 @@ impl OCELReceiptLinter {
                             let ev_path = format!("{}.observed_path.observed_ocel2.events[{}]", algo_path_prefix, e_idx);
                             if ev.get("id").and_then(|v| v.as_str()).is_none() {
                                 findings.push(ReceiptFinding {
-                                    code: ReceiptTruthRefusal::ObservedOCELSynthetic,
+                                    code: ReceiptTruthRefusal::ObservedTraceMutationWithoutBoundary,
                                     json_path: format!("{}.id", ev_path),
                                     message: "Event missing 'id'".to_string(),
                                     severity: FindingSeverity::Deny,
@@ -347,7 +352,7 @@ impl OCELReceiptLinter {
                             }
                             if ev.get("activity").and_then(|v| v.as_str()).is_none() {
                                 findings.push(ReceiptFinding {
-                                    code: ReceiptTruthRefusal::ObservedOCELSynthetic,
+                                    code: ReceiptTruthRefusal::ObservedTraceMutationWithoutBoundary,
                                     json_path: format!("{}.activity", ev_path),
                                     message: "Event missing 'activity'".to_string(),
                                     severity: FindingSeverity::Deny,
@@ -356,7 +361,7 @@ impl OCELReceiptLinter {
                             // check time/timestamp
                             if ev.get("timestamp").is_none() && ev.get("time").is_none() {
                                 findings.push(ReceiptFinding {
-                                    code: ReceiptTruthRefusal::ObservedOCELSynthetic,
+                                    code: ReceiptTruthRefusal::ObservedTraceMutationWithoutBoundary,
                                     json_path: ev_path.clone(),
                                     message: "Event missing timestamp/time".to_string(),
                                     severity: FindingSeverity::Deny,
@@ -368,7 +373,7 @@ impl OCELReceiptLinter {
                                     if let Some(ref_id) = r.get("id").and_then(|id| id.as_str()) {
                                         if !known_object_ids.contains(ref_id) {
                                             findings.push(ReceiptFinding {
-                                                code: ReceiptTruthRefusal::ObservedOCELSynthetic,
+                                                code: ReceiptTruthRefusal::ObservedTraceMutationWithoutBoundary,
                                                 json_path: format!("{}.objects[{}]", ev_path, r_idx),
                                                 message: format!("Object reference '{}' is dangling", ref_id),
                                                 severity: FindingSeverity::Deny,
@@ -799,9 +804,9 @@ impl ReceiptDoctor {
                 if matches!(finding.severity, FindingSeverity::Deny) {
                     match finding.code {
                         ReceiptTruthRefusal::PlaceholderEvidenceDetected
-                        | ReceiptTruthRefusal::StubEvidenceDetected
-                        | ReceiptTruthRefusal::ObservedOCELSynthetic
-                        | ReceiptTruthRefusal::SyntheticExecutionPath => {
+                        | ReceiptTruthRefusal::SummaryOnlyReceipt
+                        | ReceiptTruthRefusal::ObservedTraceMutationWithoutBoundary
+                        | ReceiptTruthRefusal::ObservedTraceNotChallengeBound => {
                             refusal_class = RefusalClass::SyntheticEvidenceSuspected;
                             allowed_next_action = AllowedNextAction::DoNotPatchReceiptRerunObservation;
                             retry_allowed = false;
@@ -816,12 +821,12 @@ impl ReceiptDoctor {
                         }
                         ReceiptTruthRefusal::ExpectedOCELMissing
                         | ReceiptTruthRefusal::ObservedOCELMissing
-                        | ReceiptTruthRefusal::ToolCallHashMissing => {
+                        | ReceiptTruthRefusal::ChallengeNonceMismatch => {
                             refusal_class = RefusalClass::EvidenceIncomplete;
                         }
                         ReceiptTruthRefusal::OCELCanonicalHashMismatch
                         | ReceiptTruthRefusal::ReceiptHashMismatch
-                        | ReceiptTruthRefusal::ReceiptChainMissing => {
+                        | ReceiptTruthRefusal::ChallengeNonceMissing => {
                             refusal_class = RefusalClass::ReceiptNotBound;
                         }
                         ReceiptTruthRefusal::ClosureOverclaimed => {
