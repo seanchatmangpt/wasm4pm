@@ -248,6 +248,38 @@ impl SyntheticMarkerScanner {
     }
 }
 
+pub fn get_expected_ocel(algo: &serde_json::Value) -> Option<&serde_json::Value> {
+    algo.get("expected_path").and_then(|ep| {
+        ep.get("expected_ocel2")
+            .or_else(|| ep.get("expected_ocel"))
+            .or_else(|| ep.get("ocel"))
+    })
+}
+
+pub fn get_observed_ocel(algo: &serde_json::Value) -> Option<&serde_json::Value> {
+    algo.get("observed_path").and_then(|op| {
+        op.get("observed_ocel2")
+            .or_else(|| op.get("observed_ocel"))
+            .or_else(|| op.get("ocel"))
+    })
+}
+
+pub fn get_expected_ocel_hash(algo: &serde_json::Value) -> Option<&str> {
+    algo.get("expected_path").and_then(|ep| {
+        ep.get("expected_ocel2_hash")
+            .or_else(|| ep.get("expected_ocel_hash"))
+            .or_else(|| ep.get("ocel_hash"))
+    }).and_then(|h| h.as_str())
+}
+
+pub fn get_observed_ocel_hash(algo: &serde_json::Value) -> Option<&str> {
+    algo.get("observed_path").and_then(|op| {
+        op.get("observed_ocel2_hash")
+            .or_else(|| op.get("observed_ocel_hash"))
+            .or_else(|| op.get("ocel_hash"))
+    }).and_then(|h| h.as_str())
+}
+
 /// OCELReceiptLinter implementation.
 pub struct OCELReceiptLinter;
 
@@ -272,147 +304,170 @@ impl OCELReceiptLinter {
             let algo_path_prefix = format!("$.algorithms[{}]", algo_idx);
             
             let expected_path = algo.get("expected_path");
-            if expected_path.is_none() || expected_path.unwrap().is_null() {
+            let observed_path = algo.get("observed_path");
+
+            let ep_val = expected_path.and_then(|ep| {
+                if ep.is_null() { None } else { Some(ep) }
+            });
+            let op_val = observed_path.and_then(|op| {
+                if op.is_null() { None } else { Some(op) }
+            });
+
+            let expected_ocel2_val = ep_val.and_then(|ep| {
+                ep.get("expected_ocel2")
+                    .or_else(|| ep.get("expected_ocel"))
+                    .or_else(|| ep.get("ocel"))
+            });
+            let expected_has_hash = ep_val.map(|ep| {
+                ep.get("expected_ocel2_hash").is_some()
+                    || ep.get("expected_ocel_hash").is_some()
+                    || ep.get("ocel_hash").is_some()
+            }).unwrap_or(false);
+
+            let observed_ocel2_val = op_val.and_then(|op| {
+                op.get("observed_ocel2")
+                    .or_else(|| op.get("observed_ocel"))
+                    .or_else(|| op.get("ocel"))
+            });
+            let observed_has_hash = op_val.map(|op| {
+                op.get("observed_ocel2_hash").is_some()
+                    || op.get("observed_ocel_hash").is_some()
+                    || op.get("ocel_hash").is_some()
+            }).unwrap_or(false);
+
+            // Now evaluate the cases:
+            if expected_ocel2_val.is_none() {
                 findings.push(ReceiptFinding {
                     code: ReceiptTruthRefusal::ExpectedOCELMissing,
-                    json_path: format!("{}.expected_path", algo_path_prefix),
-                    message: "expected_path is missing or null".to_string(),
+                    json_path: format!("{}.expected_path.expected_ocel2", algo_path_prefix),
+                    message: "expected_path.expected_ocel2 is missing".to_string(),
                     severity: FindingSeverity::Deny,
                 });
-            } else {
-                let ep = expected_path.unwrap();
-                if ep.get("expected_ocel2").is_none() || ep.get("expected_ocel2").unwrap().is_null() {
-                    findings.push(ReceiptFinding {
-                        code: ReceiptTruthRefusal::ExpectedOCELMissing,
-                        json_path: format!("{}.expected_path.expected_ocel2", algo_path_prefix),
-                        message: "expected_path.expected_ocel2 is missing".to_string(),
-                        severity: FindingSeverity::Deny,
-                    });
-                }
             }
-
-            // Check observed path
-            let observed_path = algo.get("observed_path");
-            if observed_path.is_none() || observed_path.unwrap().is_null() {
-                findings.push(ReceiptFinding {
-                    code: ReceiptTruthRefusal::ObservedOCELMissing,
-                    json_path: format!("{}.observed_path", algo_path_prefix),
-                    message: "observed_path is missing or null".to_string(),
-                    severity: FindingSeverity::Deny,
-                });
-                continue;
-            }
-            let observed_path = observed_path.unwrap();
-
-            let ocel = observed_path.get("observed_ocel2");
-            if ocel.is_none() || ocel.unwrap().is_null() {
+            if observed_ocel2_val.is_none() {
                 findings.push(ReceiptFinding {
                     code: ReceiptTruthRefusal::ObservedOCELMissing,
                     json_path: format!("{}.observed_path.observed_ocel2", algo_path_prefix),
                     message: "observed_path.observed_ocel2 is missing".to_string(),
                     severity: FindingSeverity::Deny,
                 });
-                continue;
             }
-            let ocel = ocel.unwrap();
+            if expected_ocel2_val.is_none() && observed_ocel2_val.is_none() {
+                if expected_has_hash && observed_has_hash {
+                    findings.push(ReceiptFinding {
+                        code: ReceiptTruthRefusal::PathHashOnlyReceipt,
+                        json_path: format!("{}.observed_path", algo_path_prefix),
+                        message: "Receipt contains only hashes without backing logs".to_string(),
+                        severity: FindingSeverity::Deny,
+                    });
+                }
+                findings.push(ReceiptFinding {
+                    code: ReceiptTruthRefusal::SummaryOnlyReceipt,
+                    json_path: algo_path_prefix.clone(),
+                    message: "Summary only receipt is disallowed".to_string(),
+                    severity: FindingSeverity::Deny,
+                });
+            }
 
-            // Validate events & objects lists
-            let events = ocel.get("events").and_then(|v| v.as_array());
-            let objects = ocel.get("objects").and_then(|v| v.as_array());
+            if let Some(ocel) = observed_ocel2_val {
+                // Validate events & objects lists
+                let events = ocel.get("events").and_then(|v| v.as_array());
+                let objects = ocel.get("objects").and_then(|v| v.as_array());
 
-            match events {
-                Some(evs) => {
-                    if evs.is_empty() {
-                        findings.push(ReceiptFinding {
-                            code: ReceiptTruthRefusal::ObservedOCELMissing,
-                            json_path: format!("{}.observed_path.observed_ocel2.events", algo_path_prefix),
-                            message: "observed_path.observed_ocel2.events is empty".to_string(),
-                            severity: FindingSeverity::Deny,
-                        });
-                    } else {
-                        // Check structural validity of events
-                        let mut known_object_ids = std::collections::HashSet::new();
-                        if let Some(objs) = objects {
-                            for obj in objs {
-                                if let Some(id) = obj.get("id").and_then(|id| id.as_str()) {
-                                    known_object_ids.insert(id.to_string());
+                match events {
+                    Some(evs) => {
+                        if evs.is_empty() {
+                            findings.push(ReceiptFinding {
+                                code: ReceiptTruthRefusal::ObservedOCELMissing,
+                                json_path: format!("{}.observed_path.observed_ocel2.events", algo_path_prefix),
+                                message: "observed_path.observed_ocel2.events is empty".to_string(),
+                                severity: FindingSeverity::Deny,
+                            });
+                        } else {
+                            // Check structural validity of events
+                            let mut known_object_ids = std::collections::HashSet::new();
+                            if let Some(objs) = objects {
+                                for obj in objs {
+                                    if let Some(id) = obj.get("id").and_then(|id| id.as_str()) {
+                                        known_object_ids.insert(id.to_string());
+                                    }
                                 }
                             }
-                        }
 
-                        for (e_idx, ev) in evs.iter().enumerate() {
-                            let ev_path = format!("{}.observed_path.observed_ocel2.events[{}]", algo_path_prefix, e_idx);
-                            if ev.get("id").and_then(|v| v.as_str()).is_none() {
-                                findings.push(ReceiptFinding {
-                                    code: ReceiptTruthRefusal::ObservedTraceMutationWithoutBoundary,
-                                    json_path: format!("{}.id", ev_path),
-                                    message: "Event missing 'id'".to_string(),
-                                    severity: FindingSeverity::Deny,
-                                });
-                            }
-                            if ev.get("activity").and_then(|v| v.as_str()).is_none() {
-                                findings.push(ReceiptFinding {
-                                    code: ReceiptTruthRefusal::ObservedTraceMutationWithoutBoundary,
-                                    json_path: format!("{}.activity", ev_path),
-                                    message: "Event missing 'activity'".to_string(),
-                                    severity: FindingSeverity::Deny,
-                                });
-                            }
-                            // check time/timestamp
-                            if ev.get("timestamp").is_none() && ev.get("time").is_none() {
-                                findings.push(ReceiptFinding {
-                                    code: ReceiptTruthRefusal::ObservedTraceMutationWithoutBoundary,
-                                    json_path: ev_path.clone(),
-                                    message: "Event missing timestamp/time".to_string(),
-                                    severity: FindingSeverity::Deny,
-                                });
-                            }
-                            // Validate object refs resolve to objects
-                            if let Some(refs) = ev.get("objects").and_then(|v| v.as_array()) {
-                                for (r_idx, r) in refs.iter().enumerate() {
-                                    if let Some(ref_id) = r.get("id").and_then(|id| id.as_str()) {
-                                        if !known_object_ids.contains(ref_id) {
-                                            findings.push(ReceiptFinding {
-                                                code: ReceiptTruthRefusal::ObservedTraceMutationWithoutBoundary,
-                                                json_path: format!("{}.objects[{}]", ev_path, r_idx),
-                                                message: format!("Object reference '{}' is dangling", ref_id),
-                                                severity: FindingSeverity::Deny,
-                                            });
+                            for (e_idx, ev) in evs.iter().enumerate() {
+                                let ev_path = format!("{}.observed_path.observed_ocel2.events[{}]", algo_path_prefix, e_idx);
+                                if ev.get("id").and_then(|v| v.as_str()).is_none() {
+                                    findings.push(ReceiptFinding {
+                                        code: ReceiptTruthRefusal::ObservedTraceMutationWithoutBoundary,
+                                        json_path: format!("{}.id", ev_path),
+                                        message: "Event missing 'id'".to_string(),
+                                        severity: FindingSeverity::Deny,
+                                    });
+                                }
+                                if ev.get("type").and_then(|v| v.as_str()).is_none() && ev.get("activity").and_then(|v| v.as_str()).is_none() {
+                                    findings.push(ReceiptFinding {
+                                        code: ReceiptTruthRefusal::ObservedTraceMutationWithoutBoundary,
+                                        json_path: format!("{}.type", ev_path),
+                                        message: "Event missing 'type'".to_string(),
+                                        severity: FindingSeverity::Deny,
+                                    });
+                                }
+                                // check time/timestamp
+                                if ev.get("timestamp").is_none() && ev.get("time").is_none() {
+                                    findings.push(ReceiptFinding {
+                                        code: ReceiptTruthRefusal::ObservedTraceMutationWithoutBoundary,
+                                        json_path: ev_path.clone(),
+                                        message: "Event missing timestamp/time".to_string(),
+                                        severity: FindingSeverity::Deny,
+                                    });
+                                }
+                                // Validate object refs resolve to objects
+                                if let Some(refs) = ev.get("relationships").or_else(|| ev.get("objects")).and_then(|v| v.as_array()) {
+                                    for (r_idx, r) in refs.iter().enumerate() {
+                                        if let Some(ref_id) = r.get("objectId").or_else(|| r.get("id")).and_then(|id| id.as_str()) {
+                                            if !known_object_ids.contains(ref_id) {
+                                                findings.push(ReceiptFinding {
+                                                    code: ReceiptTruthRefusal::ObservedTraceMutationWithoutBoundary,
+                                                    json_path: format!("{}.relationships[{}]", ev_path, r_idx),
+                                                    message: format!("Object reference '{}' is dangling", ref_id),
+                                                    severity: FindingSeverity::Deny,
+                                                });
+                                            }
                                         }
                                     }
                                 }
                             }
                         }
                     }
-                }
-                None => {
-                    findings.push(ReceiptFinding {
-                        code: ReceiptTruthRefusal::ObservedOCELMissing,
-                        json_path: format!("{}.observed_path.observed_ocel2.events", algo_path_prefix),
-                        message: "observed_path.observed_ocel2.events is missing or not an array".to_string(),
-                        severity: FindingSeverity::Deny,
-                    });
-                }
-            }
-
-            match objects {
-                Some(objs) => {
-                    if objs.is_empty() {
+                    None => {
                         findings.push(ReceiptFinding {
                             code: ReceiptTruthRefusal::ObservedOCELMissing,
-                            json_path: format!("{}.observed_path.observed_ocel2.objects", algo_path_prefix),
-                            message: "observed_path.observed_ocel2.objects is empty".to_string(),
+                            json_path: format!("{}.observed_path.observed_ocel2.events", algo_path_prefix),
+                            message: "observed_path.observed_ocel2.events is missing or not an array".to_string(),
                             severity: FindingSeverity::Deny,
                         });
                     }
                 }
-                None => {
-                    findings.push(ReceiptFinding {
-                        code: ReceiptTruthRefusal::ObservedOCELMissing,
-                        json_path: format!("{}.observed_path.observed_ocel2.objects", algo_path_prefix),
-                        message: "observed_path.observed_ocel2.objects is missing or not an array".to_string(),
-                        severity: FindingSeverity::Deny,
-                    });
+
+                match objects {
+                    Some(objs) => {
+                        if objs.is_empty() {
+                            findings.push(ReceiptFinding {
+                                code: ReceiptTruthRefusal::ObservedOCELMissing,
+                                json_path: format!("{}.observed_path.observed_ocel2.objects", algo_path_prefix),
+                                message: "observed_path.observed_ocel2.objects is empty".to_string(),
+                                severity: FindingSeverity::Deny,
+                            });
+                        }
+                    }
+                    None => {
+                        findings.push(ReceiptFinding {
+                            code: ReceiptTruthRefusal::ObservedOCELMissing,
+                            json_path: format!("{}.observed_path.observed_ocel2.objects", algo_path_prefix),
+                            message: "observed_path.observed_ocel2.objects is missing or not an array".to_string(),
+                            severity: FindingSeverity::Deny,
+                        });
+                    }
                 }
             }
 
@@ -435,6 +490,22 @@ impl OCELReceiptLinter {
     }
 }
 
+fn parse_timestamp(s: &str) -> Result<chrono::DateTime<chrono::FixedOffset>, chrono::ParseError> {
+    if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(s) {
+        return Ok(dt);
+    }
+    let formatted = s.replacen(' ', "T", 1);
+    if let Ok(dt) = chrono::DateTime::parse_from_rfc3339(&formatted) {
+        return Ok(dt);
+    }
+    let with_z = if !formatted.contains('Z') && !formatted.contains('+') && !formatted.contains('-') {
+        format!("{}Z", formatted)
+    } else {
+        formatted
+    };
+    chrono::DateTime::parse_from_rfc3339(&with_z)
+}
+
 /// ExpectedObservedCloneDetector implementation.
 pub struct ExpectedObservedCloneDetector;
 
@@ -445,8 +516,8 @@ impl ExpectedObservedCloneDetector {
             for (idx, algo) in algorithms.iter().enumerate() {
                 let algo_path = format!("$.algorithms[{}]", idx);
                 
-                let expected_hash = algo.get("expected_path").and_then(|ep| ep.get("expected_ocel2_hash")).and_then(|h| h.as_str());
-                let observed_hash = algo.get("observed_path").and_then(|op| op.get("observed_ocel2_hash")).and_then(|h| h.as_str());
+                let expected_hash = get_expected_ocel_hash(algo);
+                let observed_hash = get_observed_ocel_hash(algo);
 
                 if let (Some(eh), Some(oh)) = (expected_hash, observed_hash) {
                     if eh == oh {
@@ -461,7 +532,7 @@ impl ExpectedObservedCloneDetector {
                 }
 
                 // Check structural duplication or template constant timestamps
-                if let Some(observed_ocel) = algo.get("observed_path").and_then(|op| op.get("ocel")) {
+                if let Some(observed_ocel) = get_observed_ocel(algo) {
                     if let Some(events) = observed_ocel.get("events").and_then(|evs| evs.as_array()) {
                         if !events.is_empty() {
                             let mut all_timestamps = Vec::new();
@@ -474,12 +545,92 @@ impl ExpectedObservedCloneDetector {
                             }
                             // If all timestamps are identical (meaning mock static timestamps without real elapsed time delta)
                             if !all_timestamps.is_empty() && all_timestamps.iter().all(|t| t == &all_timestamps[0]) {
-                                // But wait: if there's only 1 event, that's fine. If there are multiple, it is suspicious
                                 if all_timestamps.len() > 1 && all_timestamps[0] == "2026-05-21T19:42:52.249Z" {
                                     findings.push(ReceiptFinding {
                                         code: ReceiptTruthRefusal::ExpectedObservedCloneDetected,
                                         json_path: format!("{}.observed_path.observed_ocel2.events", algo_path),
                                         message: "Observed events contain static template timestamp constants".to_string(),
+                                        severity: FindingSeverity::Deny,
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // PRD Requirement 9 & 2: Near-Clone Structural mutation detector
+                if let (Some(expected_ocel), Some(observed_ocel)) = (
+                    get_expected_ocel(algo),
+                    get_observed_ocel(algo)
+                ) {
+                    if let (Some(expected_events), Some(observed_events)) = (
+                        expected_ocel.get("events").and_then(|evs| evs.as_array()),
+                        observed_ocel.get("events").and_then(|evs| evs.as_array())
+                    ) {
+                        if expected_events.len() == observed_events.len() && !expected_events.is_empty() {
+                            let mut sequences_match = true;
+                            
+                            for (e, o) in expected_events.iter().zip(observed_events.iter()) {
+                                let e_act = e.get("activity").or_else(|| e.get("type")).and_then(|v| v.as_str()).unwrap_or("");
+                                let o_act = o.get("activity").or_else(|| o.get("type")).and_then(|v| v.as_str()).unwrap_or("");
+                                if e_act != o_act {
+                                    sequences_match = false;
+                                    break;
+                                }
+                            }
+                            
+                            if sequences_match {
+                                let mut first_diff_opt: Option<i64> = None;
+                                let mut uniform_time_shifting = true;
+                                
+                                for i in 0..expected_events.len() {
+                                    let e_ts_str = expected_events[i].get("timestamp").or_else(|| expected_events[i].get("time")).and_then(|v| v.as_str()).unwrap_or("");
+                                    let o_ts_str = observed_events[i].get("timestamp").or_else(|| observed_events[i].get("time")).and_then(|v| v.as_str()).unwrap_or("");
+                                    
+                                    let e_dt = parse_timestamp(e_ts_str);
+                                    let o_dt = parse_timestamp(o_ts_str);
+                                    
+                                    if let (Ok(edt), Ok(odt)) = (e_dt, o_dt) {
+                                        let diff_ms = odt.timestamp_millis() - edt.timestamp_millis();
+                                        if let Some(first_diff) = first_diff_opt {
+                                            if (diff_ms - first_diff).abs() > 1000 { // allow up to 1s jitter
+                                                uniform_time_shifting = false;
+                                                break;
+                                            }
+                                        } else {
+                                            first_diff_opt = Some(diff_ms);
+                                        }
+                                    } else {
+                                        uniform_time_shifting = false;
+                                        break;
+                                    }
+                                }
+                                
+                                // Check if there is runner boundary evidence in the observed log
+                                let mut has_runner_boundary_events = false;
+                                for o in observed_events {
+                                    let o_act = o.get("activity").or_else(|| o.get("type")).and_then(|v| v.as_str()).unwrap_or("");
+                                    if o_act.contains("runner") || o_act.starts_with("ui.") || o_act.starts_with("zoela.runner.") || o_act.starts_with("wpm.") {
+                                        has_runner_boundary_events = true;
+                                        break;
+                                    }
+                                }
+                                
+                                let has_boundary_block = algo.get("boundary_evidence").is_some() 
+                                    || algo.get("observed_path").and_then(|op| op.get("boundary_evidence")).is_some()
+                                    || receipt.get("boundary_evidence").is_some();
+                                
+                                if uniform_time_shifting {
+                                    findings.push(ReceiptFinding {
+                                        code: ReceiptTruthRefusal::ExpectedObservedCloneDetected,
+                                        json_path: format!("{}.observed_path.observed_ocel2.events", algo_path),
+                                        message: "Isomorphic expected vs. observed trace clone detected".to_string(),
+                                        severity: FindingSeverity::Deny,
+                                    });
+                                    findings.push(ReceiptFinding {
+                                        code: ReceiptTruthRefusal::FixtureMutationDetected,
+                                        json_path: format!("{}.observed_path.observed_ocel2.events", algo_path),
+                                        message: "Fixture mutation detected: observed events are isomorphic near-clone of expected events".to_string(),
                                         severity: FindingSeverity::Deny,
                                     });
                                 }
@@ -519,13 +670,13 @@ impl BoundaryEvidenceVerifier {
                 }
 
                 // Check nested observed path ocel events for mandatory execution markers
-                if let Some(observed_ocel) = algo.get("observed_path").and_then(|op| op.get("ocel")) {
+                if let Some(observed_ocel) = get_observed_ocel(algo) {
                     if let Some(events) = observed_ocel.get("events").and_then(|evs| evs.as_array()) {
                         // Check if it has real import or completed/hashed events
                         let mut has_import_comp = false;
                         let mut has_algo_comp = false;
                         for ev in events {
-                            if let Some(activity) = ev.get("activity").and_then(|a| a.as_str()) {
+                            if let Some(activity) = ev.get("type").or_else(|| ev.get("activity")).and_then(|a| a.as_str()) {
                                 if activity == "wpm.input.import.completed" {
                                     has_import_comp = true;
                                 }
@@ -539,11 +690,28 @@ impl BoundaryEvidenceVerifier {
                         }
                     }
                 }
+                
+                // Explicitly check for the actual boundary_evidence field block as defined by PRD Requirement 5
+                let mut has_explicit_boundary = false;
+                if let Some(boundary_evidence) = algo.get("boundary_evidence") {
+                    if !boundary_evidence.is_null() && boundary_evidence.get("exit_code").is_some() && boundary_evidence.get("command").is_some() {
+                        has_explicit_boundary = true;
+                    }
+                }
 
-                if !has_boundary {
+                let proof_class = receipt.get("proof_class").and_then(|p| p.as_str());
+                let is_chicago = proof_class == Some("ChicagoProof.UIToUI");
+
+                let passes = if is_chicago {
+                    has_boundary && has_explicit_boundary
+                } else {
+                    has_boundary || has_explicit_boundary
+                };
+
+                if !passes {
                     findings.push(ReceiptFinding {
                         code: ReceiptTruthRefusal::BoundaryEvidenceMissing,
-                        json_path: format!("{}.observed_path", algo_path),
+                        json_path: format!("{}.boundary_evidence", algo_path),
                         message: "Observed path lacks boundary evidence events or fields".to_string(),
                         severity: FindingSeverity::Deny,
                     });
@@ -605,7 +773,7 @@ impl ClosureOverclaimDetector {
                     let mut has_artifact_emitted = false;
                     let mut has_task_closed = false;
                     
-                    if let Some(observed_ocel) = algo.get("observed_path").and_then(|op| op.get("ocel")) {
+                    if let Some(observed_ocel) = get_observed_ocel(algo) {
                         if let Some(events) = observed_ocel.get("events").and_then(|evs| evs.as_array()) {
                             for ev in events {
                                 if let Some(activity) = ev.get("activity").and_then(|a| a.as_str()) {
@@ -653,13 +821,12 @@ impl CanonicalHashVerifier {
     pub fn verify(receipt: &serde_json::Value) -> Vec<ReceiptFinding> {
         let mut findings = Vec::new();
 
-        // 1. Verify individual algorithms' observed_ocel2_hash matches canonical ocel serialization
+        // 1. Verify individual algorithms' expected and observed ocel hashes match canonical ocel serialization
         if let Some(algorithms) = receipt.get("algorithms").and_then(|v| v.as_array()) {
             for (idx, algo) in algorithms.iter().enumerate() {
                 let algo_path = format!("$.algorithms[{}]", idx);
-                if let Some(observed_path) = algo.get("observed_path") {
-                    if let Some(ocel) = observed_path.get("ocel") {
-                        if let Some(stored_hash) = observed_path.get("observed_ocel2_hash").and_then(|h| h.as_str()) {
+                if let Some(ocel) = get_observed_ocel(algo) {
+                    if let Some(stored_hash) = get_observed_ocel_hash(algo) {
                             // Check that stored hash is not placeholder
                             if stored_hash.is_empty() || stored_hash.contains("placeholder") {
                                 findings.push(ReceiptFinding {
@@ -687,11 +854,43 @@ impl CanonicalHashVerifier {
                                     severity: FindingSeverity::Deny,
                                 });
                             }
-                        }
+                    }
+                }
+
+                if let Some(ocel) = get_expected_ocel(algo) {
+                    if let Some(stored_hash) = get_expected_ocel_hash(algo) {
+                            // Check that stored hash is not placeholder
+                            if stored_hash.is_empty() || stored_hash.contains("placeholder") {
+                                findings.push(ReceiptFinding {
+                                    code: ReceiptTruthRefusal::PlaceholderEvidenceDetected,
+                                    json_path: format!("{}.expected_path.expected_ocel2_hash", algo_path),
+                                    message: "Placeholder expected_ocel2_hash detected".to_string(),
+                                    severity: FindingSeverity::Deny,
+                                });
+                                continue;
+                            }
+
+                            // Recompute using serde_json to_string (minified)
+                            let serialized = serde_json::to_string(ocel).unwrap_or_default();
+                            let blake3_computed = compute_blake3_hash(&serialized);
+                            let sha256_computed = compute_sha256_hash(&serialized);
+
+                            if stored_hash != blake3_computed && stored_hash != sha256_computed {
+                                findings.push(ReceiptFinding {
+                                    code: ReceiptTruthRefusal::OCELCanonicalHashMismatch,
+                                    json_path: format!("{}.expected_path.expected_ocel2_hash", algo_path),
+                                    message: format!(
+                                        "OCEL canonical hash mismatch. Stored: '{}', Computed BLAKE3: '{}', SHA256: '{}'",
+                                        stored_hash, blake3_computed, sha256_computed
+                                    ),
+                                    severity: FindingSeverity::Deny,
+                                });
+                            }
                     }
                 }
             }
         }
+
 
         // 2. Verify root receipt_hash matches canonical receipt (excluding receipt_hash)
         if let Some(stored_receipt_hash) = receipt.get("receipt_hash").and_then(|h| h.as_str()) {
@@ -771,6 +970,12 @@ impl ReceiptDoctor {
 
         // 6. Hash validation check
         findings.extend(CanonicalHashVerifier::verify(receipt));
+
+        // 7. PRD Additions
+        findings.extend(RuntimeObserverEnvelopeVerifier::verify(receipt));
+        findings.extend(ChallengeNonceVerifier::verify(receipt));
+        findings.extend(ProofClassHierarchyVerifier::verify(receipt));
+        findings.extend(SelfCertifiedAlignmentVerifier::verify(receipt));
 
         // State is Refused if there are any Deny findings
         let has_deny = findings.iter().any(|f| matches!(f.severity, FindingSeverity::Deny));
@@ -1232,6 +1437,7 @@ mod tests {
             "version": "26.5.21",
             "commit": "2f65dc9dd706203462ef92bc4815f24bec61159f",
             "hash_algorithm": "BLAKE3",
+            "signature": "verifier_sig",
             "all_real": true,
             "input": {
                 "event_log_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb"
@@ -1288,6 +1494,7 @@ mod tests {
             "version": "26.5.21",
             "commit": "2f65dc9dd706203462ef92bc4815f24bec61159f",
             "hash_algorithm": "BLAKE3",
+            "signature": "verifier_sig",
             "all_real": true,
             "input": {
                 "event_log_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb"
@@ -1436,6 +1643,23 @@ mod tests {
 
     #[test]
     fn test_admits_created_only_with_real_boundary_evidence_and_artifact_missing() {
+        let expected_ocel = json!({
+            "schema": "schema1",
+            "events": [
+                {
+                    "id": "evt_exp1",
+                    "activity": "wpm.input.import.started",
+                    "timestamp": "2026-05-21T19:42:50.000Z",
+                    "objects": []
+                }
+            ],
+            "objects": [
+                { "id": "log1", "type": "Log" }
+            ]
+        });
+        let expected_ocel_serialized = serde_json::to_string(&expected_ocel).unwrap();
+        let expected_ocel_hash = compute_blake3_hash(&expected_ocel_serialized);
+
         let ocel = json!({
             "schema": "schema1",
             "events": [
@@ -1467,6 +1691,7 @@ mod tests {
             "version": "26.5.21",
             "commit": "2f65dc9dd706203462ef92bc4815f24bec61159f",
             "hash_algorithm": "BLAKE3",
+            "signature": "verifier_sig",
             "input": {
                 "event_log_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb"
             },
@@ -1478,7 +1703,8 @@ mod tests {
                     "result_hash": "343a0b9e",
                     "expected_path": {
                         "route_id": "route1",
-                        "expected_ocel2_hash": "1cb17f11"
+                        "expected_ocel2": expected_ocel,
+                        "expected_ocel2_hash": expected_ocel_hash
                     },
                     "observed_path": {
                         "ocel": ocel,
@@ -1498,6 +1724,23 @@ mod tests {
 
     #[test]
     fn test_admits_closed_with_real_ocel_artifact_alignment_and_hashes() {
+        let expected_ocel = json!({
+            "schema": "schema1",
+            "events": [
+                {
+                    "id": "evt_exp1",
+                    "activity": "wpm.input.import.started",
+                    "timestamp": "2026-05-21T19:42:50.000Z",
+                    "objects": []
+                }
+            ],
+            "objects": [
+                { "id": "log1", "type": "Log" }
+            ]
+        });
+        let expected_ocel_serialized = serde_json::to_string(&expected_ocel).unwrap();
+        let expected_ocel_hash = compute_blake3_hash(&expected_ocel_serialized);
+
         let mut ocel = json!({
             "schema": "schema1",
             "events": [
@@ -1530,6 +1773,7 @@ mod tests {
             "version": "26.5.21",
             "commit": "2f65dc9dd706203462ef92bc4815f24bec61159f",
             "hash_algorithm": "BLAKE3",
+            "signature": "verifier_sig",
             "all_real": true,
             "input": {
                 "event_log_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb"
@@ -1542,8 +1786,8 @@ mod tests {
                     "result_hash": "343a0b9e",
                     "expected_path": {
                         "route_id": "route1",
-                        // Make expected hash different to avoid clone detection
-                        "expected_ocel2_hash": "different_expected_ocel2_hash"
+                        "expected_ocel2": expected_ocel,
+                        "expected_ocel2_hash": expected_ocel_hash
                     },
                     "observed_path": {
                         "ocel": ocel,
@@ -1572,5 +1816,307 @@ mod tests {
             println!("FINDINGS: {:#?}", report.findings);
         }
         assert_eq!(report.state, ReceiptDoctorState::Admitted);
+    }
+
+    #[test]
+    fn test_refuses_proof_class_overclaimed() {
+        let receipt = json!({
+            "receipt_type": "Wasm4pmExecutionReceipt",
+            "receipt_schema": "Wasm4pmExecutionReceipt.v1",
+            "package": "wasm4pm",
+            "version": "26.5.21",
+            "commit": "2f65dc9dd706203462ef92bc4815f24bec61159f",
+            "hash_algorithm": "BLAKE3",
+            "proof_class": "ChicagoProof.UIToUI",
+            "input": {
+                "event_log_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb"
+            },
+            "algorithms": []
+        });
+        let report = ReceiptDoctor::audit(&receipt);
+        assert_eq!(report.state, ReceiptDoctorState::Refused);
+        let has_error = report.findings.iter().any(|f| {
+            f.code == ReceiptTruthRefusal::ProofClassOverclaimed && matches!(f.severity, FindingSeverity::Deny)
+        });
+        assert!(has_error);
+    }
+
+    #[test]
+    fn test_refuses_runtime_observer_missing_fields() {
+        let receipt = json!({
+            "receipt_type": "Wasm4pmExecutionReceipt",
+            "receipt_schema": "Wasm4pmExecutionReceipt.v1",
+            "package": "wasm4pm",
+            "version": "26.5.21",
+            "commit": "2f65dc9dd706203462ef92bc4815f24bec61159f",
+            "hash_algorithm": "BLAKE3",
+            "proof_class": "ChicagoProof.UIToUI",
+            "runtime_observer": {
+                "runner_id": "runner1"
+            },
+            "input": {
+                "event_log_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb"
+            },
+            "algorithms": []
+        });
+        let report = ReceiptDoctor::audit(&receipt);
+        assert_eq!(report.state, ReceiptDoctorState::Refused);
+        let has_error = report.findings.iter().any(|f| {
+            f.code == ReceiptTruthRefusal::RuntimeObserverMissing && matches!(f.severity, FindingSeverity::Deny)
+        });
+        assert!(has_error);
+    }
+
+    #[test]
+    fn test_refuses_challenge_nonce_missing_and_mismatch() {
+        let receipt_missing = json!({
+            "receipt_type": "Wasm4pmExecutionReceipt",
+            "receipt_schema": "Wasm4pmExecutionReceipt.v1",
+            "package": "wasm4pm",
+            "version": "26.5.21",
+            "commit": "2f65dc9dd706203462ef92bc4815f24bec61159f",
+            "hash_algorithm": "BLAKE3",
+            "proof_class": "ChicagoProof.UIToUI",
+            "runtime_observer": {
+                "runner_id": "runner1",
+                "runtime_session_id": "session1"
+            },
+            "input": {
+                "event_log_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb"
+            },
+            "algorithms": []
+        });
+        let report = ReceiptDoctor::audit(&receipt_missing);
+        assert_eq!(report.state, ReceiptDoctorState::Refused);
+        assert!(report.findings.iter().any(|f| f.code == ReceiptTruthRefusal::ChallengeNonceMissing));
+
+        let receipt_mismatch = json!({
+            "receipt_type": "Wasm4pmExecutionReceipt",
+            "receipt_schema": "Wasm4pmExecutionReceipt.v1",
+            "package": "wasm4pm",
+            "version": "26.5.21",
+            "commit": "2f65dc9dd706203462ef92bc4815f24bec61159f",
+            "hash_algorithm": "BLAKE3",
+            "proof_class": "ChicagoProof.UIToUI",
+            "challenge_nonce": "nonce123",
+            "runtime_observer": {
+                "runner_id": "runner1",
+                "runtime_session_id": "session1"
+            },
+            "input": {
+                "event_log_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb"
+            },
+            "algorithms": [
+                {
+                    "id": "dfg",
+                    "registry_present": true,
+                    "dispatched": true,
+                    "result_hash": "343a0b9e",
+                    "expected_path": {
+                        "route_id": "route1",
+                        "expected_ocel2_hash": "1cb17f11"
+                    },
+                    "observed_path": {
+                        "ocel": {
+                            "schema": "schema1",
+                            "events": [
+                                {
+                                    "id": "evt1",
+                                    "activity": "wpm.algorithm.completed",
+                                    "timestamp": "2026-05-21T19:42:52.248Z",
+                                    "attributes": {
+                                        "challenge_nonce": "nonce999"
+                                    },
+                                    "objects": []
+                                }
+                            ],
+                            "objects": []
+                        },
+                        "observed_ocel2_hash": "123",
+                        "observed_result_hash": "343a0b9e"
+                    }
+                }
+            ]
+        });
+        let report2 = ReceiptDoctor::audit(&receipt_mismatch);
+        assert_eq!(report2.state, ReceiptDoctorState::Refused);
+        assert!(report2.findings.iter().any(|f| f.code == ReceiptTruthRefusal::ChallengeNonceMismatch));
+    }
+
+    #[test]
+    fn test_refuses_self_certified_alignment() {
+        let receipt = json!({
+            "receipt_type": "Wasm4pmExecutionReceipt",
+            "receipt_schema": "Wasm4pmExecutionReceipt.v1",
+            "package": "wasm4pm",
+            "version": "26.5.21",
+            "commit": "2f65dc9dd706203462ef92bc4815f24bec61159f",
+            "hash_algorithm": "BLAKE3",
+            "proof_class": "ChicagoProof.UIToUI",
+            "challenge_nonce": "nonce123",
+            "runtime_observer": {
+                "runner_id": "runner1",
+                "runtime_session_id": "session1"
+            },
+            "input": {
+                "event_log_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb"
+            },
+            "algorithms": [
+                {
+                    "id": "dfg",
+                    "registry_present": true,
+                    "dispatched": true,
+                    "result_hash": "343a0b9e",
+                    "expected_path": {
+                        "route_id": "route1",
+                        "expected_ocel2_hash": "1cb17f11"
+                    },
+                    "observed_path": {
+                        "ocel": {
+                            "schema": "schema1",
+                            "events": [
+                                {
+                                    "id": "evt1",
+                                    "activity": "wpm.algorithm.completed",
+                                    "timestamp": "2026-05-21T19:42:52.248Z",
+                                    "attributes": {
+                                        "challenge_nonce": "nonce123"
+                                    },
+                                    "objects": []
+                                }
+                            ],
+                            "objects": []
+                        },
+                        "observed_ocel2_hash": "123",
+                        "observed_result_hash": "343a0b9e"
+                    },
+                    "alignment": {
+                        "expected_vs_observed": "Pass"
+                    }
+                }
+            ]
+        });
+        let report = ReceiptDoctor::audit(&receipt);
+        assert_eq!(report.state, ReceiptDoctorState::Refused);
+        assert!(report.findings.iter().any(|f| f.code == ReceiptTruthRefusal::SelfCertifiedAlignment));
+    }
+}
+
+pub struct ProofClassHierarchyVerifier;
+impl ProofClassHierarchyVerifier {
+    pub fn verify(receipt: &serde_json::Value) -> Vec<ReceiptFinding> {
+        let mut findings = Vec::new();
+        if let Some(proof_class) = receipt.get("proof_class").and_then(|p| p.as_str()) {
+            if proof_class == "ChicagoProof.UIToUI" {
+                // Check if RuntimeObserver is missing
+                if receipt.get("runtime_observer").is_none() {
+                    findings.push(ReceiptFinding {
+                        code: ReceiptTruthRefusal::ProofClassOverclaimed,
+                        json_path: "$.proof_class".to_string(),
+                        message: "proof_class is ChicagoProof.UIToUI but runtime_observer is missing".to_string(),
+                        severity: FindingSeverity::Deny,
+                    });
+                }
+            }
+        }
+        findings
+    }
+}
+
+pub struct RuntimeObserverEnvelopeVerifier;
+impl RuntimeObserverEnvelopeVerifier {
+    pub fn verify(receipt: &serde_json::Value) -> Vec<ReceiptFinding> {
+        let mut findings = Vec::new();
+        if let Some(ro) = receipt.get("runtime_observer") {
+            if ro.get("runner_id").is_none() || ro.get("runtime_session_id").is_none() {
+                findings.push(ReceiptFinding {
+                    code: ReceiptTruthRefusal::RuntimeObserverMissing,
+                    json_path: "$.runtime_observer".to_string(),
+                    message: "runtime_observer is missing required runner_id or session_nonce".to_string(),
+                    severity: FindingSeverity::Deny,
+                });
+            }
+        }
+        findings
+    }
+}
+
+pub struct ChallengeNonceVerifier;
+impl ChallengeNonceVerifier {
+    pub fn verify(receipt: &serde_json::Value) -> Vec<ReceiptFinding> {
+        let mut findings = Vec::new();
+        if let Some(nonce) = receipt.get("challenge_nonce").and_then(|n| n.as_str()) {
+            // Need to verify it exists in boundary_evidence and observed_ocel2
+            let mut found_in_ocel = false;
+            
+            if let Some(algorithms) = receipt.get("algorithms").and_then(|v| v.as_array()) {
+                for algo in algorithms {
+                    if let Some(observed_ocel) = get_observed_ocel(algo) {
+                        if let Some(events) = observed_ocel.get("events").and_then(|evs| evs.as_array()) {
+                            for ev in events {
+                                if let Some(attrs) = ev.get("attributes").and_then(|a| a.as_object()) {
+                                    if let Some(n) = attrs.get("challenge_nonce").and_then(|v| v.as_str()) {
+                                        if n == nonce {
+                                            found_in_ocel = true;
+                                        } else {
+                                            findings.push(ReceiptFinding {
+                                                code: ReceiptTruthRefusal::ChallengeNonceMismatch,
+                                                json_path: format!("$.algorithms"),
+                                                message: "Challenge nonce mismatch in event log".to_string(),
+                                                severity: FindingSeverity::Deny,
+                                            });
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            if !found_in_ocel && receipt.get("algorithms").is_some() {
+                findings.push(ReceiptFinding {
+                    code: ReceiptTruthRefusal::ObservedTraceNotChallengeBound,
+                    json_path: "$.algorithms".to_string(),
+                    message: "Challenge nonce not found in observed trace".to_string(),
+                    severity: FindingSeverity::Deny,
+                });
+            }
+        } else if receipt.get("proof_class").and_then(|p| p.as_str()) == Some("ChicagoProof.UIToUI") {
+            findings.push(ReceiptFinding {
+                code: ReceiptTruthRefusal::ChallengeNonceMissing,
+                json_path: "$.challenge_nonce".to_string(),
+                message: "ChicagoProof.UIToUI requires challenge_nonce".to_string(),
+                severity: FindingSeverity::Deny,
+            });
+        }
+        findings
+    }
+}
+
+pub struct SelfCertifiedAlignmentVerifier;
+impl SelfCertifiedAlignmentVerifier {
+    pub fn verify(receipt: &serde_json::Value) -> Vec<ReceiptFinding> {
+        let mut findings = Vec::new();
+        let has_signature = receipt.get("signature").is_some() || receipt.get("authority_signature").is_some();
+
+        if !has_signature {
+            if let Some(algorithms) = receipt.get("algorithms").and_then(|v| v.as_array()) {
+                for (idx, algo) in algorithms.iter().enumerate() {
+                    if let Some(alignment) = algo.get("alignment") {
+                        if let Some(state) = alignment.get("expected_vs_observed").and_then(|s| s.as_str()) {
+                            if state.to_lowercase() == "pass" || state.to_lowercase() == "passed" {
+                                findings.push(ReceiptFinding {
+                                    code: ReceiptTruthRefusal::SelfCertifiedAlignment,
+                                    json_path: format!("$.algorithms[{}].alignment.expected_vs_observed", idx),
+                                    message: "Alignment state 'Pass' cannot be self-certified by the receipt producer.".to_string(),
+                                    severity: FindingSeverity::Deny,
+                                });
+                            }
+                        }
+                    }
+                }
+            }
+        }
+        findings
     }
 }

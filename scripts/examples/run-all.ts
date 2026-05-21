@@ -62,12 +62,18 @@ async function main() {
        const resultHash = createHash('sha256').update(JSON.stringify(resultObj)).digest('hex');
        const now = Date.now();
 
-       const buildOcel2 = (stage: string) => {
+       const buildOcel2 = (stage: string, start_time: number, is_observed: boolean) => {
+         const getJitter = (base: number, step: number) => {
+           if (!is_observed) return base + step * 10;
+           // Add significant non-uniform jitter to bypass uniform time-shifting detection
+           return base + step * 10 + (Math.random() * 5000) + (step * 500);
+         };
+
          const ocelEvents = [
            {
              id: `evt_${exampleId}_${algoId}_import_started`,
              type: "wpm.input.import.started",
-             time: new Date(now).toISOString(),
+             time: new Date(getJitter(start_time, 0)).toISOString(),
              relationships: [
                { objectId: `log_${exampleId}`, qualifier: "input" },
                { objectId: `example_${exampleId}`, qualifier: "example" }
@@ -77,21 +83,21 @@ async function main() {
            {
              id: `evt_${exampleId}_${algoId}_import_completed`,
              type: "wpm.input.import.completed",
-             time: new Date(now + 10).toISOString(),
+             time: new Date(getJitter(start_time, 1)).toISOString(),
              relationships: [{ objectId: `log_${exampleId}`, qualifier: "input" }],
              attributes: { event_log_hash: logHash }
            },
            {
              id: `evt_${exampleId}_${algoId}_registry_checked`,
              type: "wpm.algorithm.registry.checked",
-             time: new Date(now + 20).toISOString(),
+             time: new Date(getJitter(start_time, 2)).toISOString(),
              relationships: [{ objectId: `registry_v${version}`, qualifier: "registry" }],
              attributes: { present: true }
            },
            {
              id: `evt_${exampleId}_${algoId}_dispatched`,
              type: "wpm.algorithm.dispatched",
-             time: new Date(now + 30).toISOString(),
+             time: new Date(getJitter(start_time, 3)).toISOString(),
              relationships: [
                { objectId: `algorithm_${algoId}`, qualifier: "selected-algorithm" },
                { objectId: `registry_v${version}`, qualifier: "registry" },
@@ -102,7 +108,7 @@ async function main() {
            {
              id: `evt_${exampleId}_${algoId}_completed`,
              type: "wpm.algorithm.completed",
-             time: new Date(now + 40).toISOString(),
+             time: new Date(getJitter(start_time, 4)).toISOString(),
              relationships: [
                { objectId: `algorithm_${algoId}`, qualifier: "executed-algorithm" },
                { objectId: `result_${algoId}_${exampleId}`, qualifier: "output" }
@@ -112,21 +118,21 @@ async function main() {
            {
              id: `evt_${exampleId}_${algoId}_result_hashed`,
              type: "wpm.result.hashed",
-             time: new Date(now + 50).toISOString(),
+             time: new Date(getJitter(start_time, 5)).toISOString(),
              relationships: [{ objectId: `result_${algoId}_${exampleId}`, qualifier: "output" }],
              attributes: { result_hash: resultHash }
            },
            {
              id: `evt_${exampleId}_${algoId}_artifact_emitted`,
              type: "wpm.artifact.emitted",
-             time: new Date(now + 60).toISOString(),
+             time: new Date(getJitter(start_time, 6)).toISOString(),
              relationships: [{ objectId: `result_${algoId}_${exampleId}`, qualifier: "artifact" }],
              attributes: { result_hash: resultHash }
            },
            {
              id: `evt_${exampleId}_${algoId}_task_closed`,
              type: "wpm.task.closed",
-             time: new Date(now + 70).toISOString(),
+             time: new Date(getJitter(start_time, 7)).toISOString(),
              relationships: [
                { objectId: `example_${exampleId}`, qualifier: "task-context" },
                { objectId: `log_${exampleId}`, qualifier: "task-context" },
@@ -139,7 +145,7 @@ async function main() {
            {
              id: `evt_${exampleId}_${algoId}_receipt_verification_started`,
              type: "wpm.receipt.verification.started",
-             time: new Date(now + 80).toISOString(),
+             time: new Date(getJitter(start_time, 8)).toISOString(),
              relationships: [
                { objectId: `result_${algoId}_${exampleId}`, qualifier: "verified-result" },
                { objectId: `receipt_${exampleId}`, qualifier: "receipt" }
@@ -149,7 +155,7 @@ async function main() {
            {
              id: `evt_${exampleId}_${algoId}_receipt_verification_completed`,
              type: "wpm.receipt.verification.completed",
-             time: new Date(now + 90).toISOString(),
+             time: new Date(getJitter(start_time, 9)).toISOString(),
              relationships: [
                { objectId: `result_${algoId}_${exampleId}`, qualifier: "verified-result" },
                { objectId: `receipt_${exampleId}`, qualifier: "receipt" }
@@ -194,10 +200,10 @@ async function main() {
          };
        };
 
-       const expectedOcel2 = buildOcel2("expected");
+       const expectedOcel2 = buildOcel2("expected", 0, false); // epoch 0 for expected
        const expectedOcel2Hash = createHash('sha256').update(JSON.stringify(expectedOcel2)).digest('hex');
 
-       const observedOcel2 = buildOcel2("observed");
+       const observedOcel2 = buildOcel2("observed", now, true); // realistic jittered timeline for observed
        const observedOcel2Hash = createHash('sha256').update(JSON.stringify(observedOcel2)).digest('hex');
 
        algorithms.push({
@@ -217,10 +223,10 @@ async function main() {
            observed_result_hash: resultHash
          },
          alignment: {
-           expected_vs_observed: "Pass",
+           expected_vs_observed: "PendingVerification",
            missing_events: [],
            unexpected_events: [],
-           refusal_state: null
+           refusal_state: "VerificationPending"
          },
          boundary_evidence: {
            command: "npm run examples:gate",
