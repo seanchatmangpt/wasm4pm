@@ -1,1 +1,2 @@
-?? artifacts/releases/
+ M artifacts/releases/v26.5.21/git-status.txt
+ M artifacts/releases/v26.5.21/version-scan.txt

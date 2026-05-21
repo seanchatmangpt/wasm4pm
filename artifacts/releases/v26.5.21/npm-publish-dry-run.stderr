@@ -636,19 +636,21 @@ npm notice 1.9kB   artifacts/release/algorithm-behavior-receipts/streaming_log.r
 npm notice 1.9kB   artifacts/release/algorithm-behavior-receipts/transition_system.receipt.json                                                                   
 npm notice 1.9kB   artifacts/release/algorithm-behavior-receipts/working_together_network.receipt.json                                                            
 npm notice 1.9kB   artifacts/release/algorithm-behavior-receipts/yawl_export.receipt.json                                                                         
-npm notice 964B    artifacts/releases/v26.5.21/cargo-clippy.stderr                                                                                                
+npm notice 72B     artifacts/releases/v26.5.21/cargo-clippy.stderr                                                                                                
 npm notice 0B      artifacts/releases/v26.5.21/cargo-clippy.stdout                                                                                                
-npm notice 7.2kB   artifacts/releases/v26.5.21/cargo-test-ghf.stderr                                                                                              
+npm notice 401B    artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr                                                                                       
+npm notice 0B      artifacts/releases/v26.5.21/cargo-publish-dry-run.stdout                                                                                       
+npm notice 7.1kB   artifacts/releases/v26.5.21/cargo-test-ghf.stderr                                                                                              
 npm notice 0B      artifacts/releases/v26.5.21/cargo-test-ghf.stdout                                                                                              
 npm notice 0B      artifacts/releases/v26.5.21/examples-gate.stderr                                                                                               
 npm notice 5.0kB   artifacts/releases/v26.5.21/examples-gate.stdout                                                                                               
 npm notice 41B     artifacts/releases/v26.5.21/git-head.txt                                                                                                       
-npm notice 23B     artifacts/releases/v26.5.21/git-status.txt                                                                                                     
+npm notice 94B     artifacts/releases/v26.5.21/git-status.txt                                                                                                     
 npm notice 0B      artifacts/releases/v26.5.21/npm-publish-dry-run.stderr                                                                                         
 npm notice 0B      artifacts/releases/v26.5.21/npm-publish-dry-run.stdout                                                                                         
 npm notice 0B      artifacts/releases/v26.5.21/receipt-verify.stderr                                                                                              
 npm notice 10.4kB  artifacts/releases/v26.5.21/receipt-verify.stdout                                                                                              
-npm notice 13.2kB  artifacts/releases/v26.5.21/version-scan.txt                                                                                                   
+npm notice 20.9kB  artifacts/releases/v26.5.21/version-scan.txt                                                                                                   
 npm notice 18.4kB  autonomic-observability-gaps-audit.json                                                                                                        
 npm notice 20.5MB  bench_data/bpi2020_travel.xes                                                                                                                  
 npm notice 10.5kB  bench_data/ocel20_example.jsonocel                                                                                                             
@@ -822,7 +824,7 @@ npm notice 3.7kB   crates/wasm4pm-algos/src/dfg.rs
 npm notice 4.3kB   crates/wasm4pm-algos/src/heuristic.rs                                                                                                          
 npm notice 641B    crates/wasm4pm-algos/src/lib.rs                                                                                                                
 npm notice 3.4kB   crates/wasm4pm-algos/src/streaming.rs                                                                                                          
-npm notice 650B    crates/wasm4pm-cli/Cargo.toml                                                                                                                  
+npm notice 692B    crates/wasm4pm-cli/Cargo.toml                                                                                                                  
 npm notice 6.6kB   crates/wasm4pm-cli/README.md                                                                                                                   
 npm notice 4.4kB   crates/wasm4pm-cli/src/commands/agent.rs                                                                                                       
 npm notice 3.2kB   crates/wasm4pm-cli/src/commands/audit.rs                                                                                                       
@@ -840,7 +842,7 @@ npm notice 3.6kB   crates/wasm4pm-cli/src/io.rs
 npm notice 155B    crates/wasm4pm-cli/src/lib.rs                                                                                                                  
 npm notice 5.9kB   crates/wasm4pm-cli/src/main.rs                                                                                                                 
 npm notice 2.2kB   crates/wasm4pm-cli/tests/cli_tests.rs                                                                                                          
-npm notice 1.4kB   crates/wasm4pm-cognition/Cargo.toml                                                                                                            
+npm notice 1.5kB   crates/wasm4pm-cognition/Cargo.toml                                                                                                            
 npm notice 4.5kB   crates/wasm4pm-cognition/Makefile.toml                                                                                                         
 npm notice 822B    crates/wasm4pm-cognition/package.json                                                                                                          
 npm notice 608B    crates/wasm4pm-cognition/pkg/package.json                                                                                                      
@@ -2364,7 +2366,7 @@ npm notice 2.2kB   examples/out/finance_audit.receipt.json
 npm notice 2.2kB   examples/out/kids_safety.receipt.json                                                                                                          
 npm notice 2.2kB   examples/out/prayer_pipeline.receipt.json                                                                                                      
 npm notice 2.2kB   examples/out/sunday_andon.receipt.json                                                                                                         
-npm notice 2.2kB   examples/out/supply_chain_port.receipt.json                                                                                                    
+npm notice 2.3kB   examples/out/supply_chain_port.receipt.json                                                                                                    
 npm notice 2.2kB   examples/out/volunteer_serving.receipt.json                                                                                                    
 npm notice 2.7kB   examples/prediction-next-activity.ts                                                                                                           
 npm notice 6.4kB   examples/README.md                                                                                                                             
@@ -4753,8 +4755,8 @@ npm notice version:       26.5.21
 npm notice filename:      wasm4pm-monorepo-26.5.21.tgz            
 npm notice package size:  30.7 MB                                 
 npm notice unpacked size: 394.3 MB                                
-npm notice shasum:        3391f2ffa689924bca5c68a783c01b4ddd5c1c4c
-npm notice integrity:     sha512-hD2FHUU8PmoV0[...]JfI0eaI9upEMA==
-npm notice total files:   4746                                    
+npm notice shasum:        695d5e3e9a6ba0ce1f0295cfc40f7d8c63487eb2
+npm notice integrity:     sha512-Mr2DLztaxwhDp[...]Cn7M1HGY8S0xw==
+npm notice total files:   4748                                    
 npm notice 
 npm notice Publishing to https://registry.npmjs.org/ with tag latest and public access (dry-run)

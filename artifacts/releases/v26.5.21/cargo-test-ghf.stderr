@@ -1,64 +1,5 @@
-    Blocking waiting for file lock on package cache
-   Compiling serde_json v1.0.145
-   Compiling serde v1.0.228
-   Compiling indexmap v2.14.0
-   Compiling ref-cast v1.0.25
-   Compiling wasm4pm-macros v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-macros)
-   Compiling synstructure v0.13.2
-   Compiling stable_deref_trait v1.2.1
-   Compiling zerovec-derive v0.11.3
-   Compiling displaydoc v0.2.5
-   Compiling toml_datetime v1.1.1+spec-1.1.0
-   Compiling serde_spanned v1.1.1
-   Compiling target-triple v1.0.0
-   Compiling writeable v0.6.3
-   Compiling litemap v0.8.2
-   Compiling libz-sys v1.1.28
-   Compiling openssl-sys v0.9.112
-   Compiling utf8_iter v1.0.4
-   Compiling icu_normalizer_data v2.2.0
-   Compiling icu_properties_data v2.2.0
-   Compiling libssh2-sys v0.3.1
-   Compiling toml v1.1.2+spec-1.1.0
-   Compiling libgit2-sys v0.16.2+1.7.2
-   Compiling percent-encoding v2.3.2
-   Compiling form_urlencoded v1.2.2
-   Compiling smallvec v1.15.1
-   Compiling chrono v0.4.41
-   Compiling uuid v1.16.0
-   Compiling ciborium v0.2.2
-   Compiling bincode v1.3.3
-   Compiling halfbrown v0.2.5
-   Compiling tracing-subscriber v0.3.23
-   Compiling wasm-bindgen v0.2.108
-   Compiling tinytemplate v1.2.1
-   Compiling naga v0.19.2
-   Compiling insta v1.47.2
-   Compiling zerofrom-derive v0.1.7
-   Compiling yoke-derive v0.8.2
-   Compiling value-trait v0.8.1
-   Compiling wasm4pm-utils v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-utils)
-   Compiling prolog8 v26.5.21 (/Users/sac/wasm4pm/crates/prolog8)
-   Compiling criterion v0.5.1
-   Compiling simd-json v0.13.11
-   Compiling trybuild v1.0.116
-   Compiling js-sys v0.3.85
-   Compiling console_error_panic_hook v0.1.7
-   Compiling wasm4pm-types v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-types)
-   Compiling zerofrom v0.1.7
-   Compiling yoke v0.8.2
-   Compiling wasm4pm-cognition v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-cognition)
-   Compiling zerovec v0.11.6
-   Compiling zerotrie v0.2.4
-   Compiling serde-wasm-bindgen v0.6.5
-   Compiling wasm-bindgen-futures v0.4.45
-   Compiling wasm-bindgen-test v0.3.45
-   Compiling wasm4pm-algos v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-algos)
-   Compiling miniml v26.5.21 (/Users/sac/wasm4pm/crates/miniml-core)
    Compiling wasm4pm v26.5.21 (/Users/sac/wasm4pm/wasm4pm)
-   Compiling tinystr v0.8.3
-   Compiling potential_utf v0.1.5
-   Compiling icu_collections v2.2.0
+   Compiling wasm4pm-cli v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-cli)
 warning: variable does not need to be mutable
    --> crates/wasm4pm-cognition/tests/strips_gps_level_10.rs:111:9
     |
@@ -69,107 +10,158 @@ warning: variable does not need to be mutable
     |
     = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
 
-   Compiling icu_locale_core v2.2.0
 warning: `wasm4pm-cognition` (test "strips_gps_level_10") generated 1 warning (run `cargo fix --test "strips_gps_level_10" -p wasm4pm-cognition` to apply 1 suggestion)
-   Compiling icu_provider v2.2.0
-   Compiling icu_normalizer v2.2.0
-   Compiling icu_properties v2.2.0
-   Compiling idna_adapter v1.2.1
-   Compiling idna v1.1.0
-   Compiling url v2.5.8
-warning: unused variable: `transformed`
-   --> crates/miniml-core/src/robust_scaler.rs:101:13
+warning: unused imports: `Level`, `info`, and `span`
+  --> wasm4pm/tests/discovery_otel_validation_template.rs:13:19
+   |
+13 |     use tracing::{info, span, Level};
+   |                   ^^^^  ^^^^  ^^^^^
+   |
+   = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: function `create_test_log` is never used
+  --> wasm4pm/tests/discovery_otel_validation_template.rs:18:8
+   |
+18 |     fn create_test_log() -> String {
+   |        ^^^^^^^^^^^^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: struct `OtelCapture` is never constructed
+  --> wasm4pm/tests/discovery_otel_validation_template.rs:73:12
+   |
+73 |     struct OtelCapture {
+   |            ^^^^^^^^^^^
+
+warning: struct `OtelSpan` is never constructed
+  --> wasm4pm/tests/discovery_otel_validation_template.rs:78:12
+   |
+78 |     struct OtelSpan {
+   |            ^^^^^^^^
+
+warning: associated items `new`, `record_span`, `has_span_with_name`, `has_span_with_target`, `has_attributes`, and `span_targets` are never used
+   --> wasm4pm/tests/discovery_otel_validation_template.rs:86:12
     |
-101 |         let transformed = scaler.fit_transform(&data).unwrap();
-    |             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_transformed`
+ 85 |     impl OtelCapture {
+    |     ---------------- associated items in this implementation
+ 86 |         fn new() -> Self {
+    |            ^^^
+...
+ 93 |         fn record_span(&self, name: String, level: String, target: String, attributes: std::collections::HashMap<String, String>) {
+    |            ^^^^^^^^^^^
+...
+104 |         fn has_span_with_name(&self, name: &str) -> bool {
+    |            ^^^^^^^^^^^^^^^^^^
+...
+110 |         fn has_span_with_target(&self, target: &str) -> bool {
+    |            ^^^^^^^^^^^^^^^^^^^^
+...
+116 |         fn has_attributes(&self, target: &str, required_attrs: &[&str]) -> bool {
+    |            ^^^^^^^^^^^^^^
+...
+128 |         fn span_targets(&self) -> Vec<String> {
+    |            ^^^^^^^^^^^^
+
+warning: function `assert_attribute_numeric` is never used
+   --> wasm4pm/tests/discovery_otel_validation_template.rs:300:8
+    |
+300 |     fn assert_attribute_numeric(attr: &str, value: &str) {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^
+
+warning: `wasm4pm` (test "discovery_otel_validation_template") generated 6 warnings (run `cargo fix --test "discovery_otel_validation_template" -p wasm4pm` to apply 1 suggestion)
+warning: unused imports: `AttributeValue` and `XESEditableAttribute`
+ --> wasm4pm/tests/global_adversarial.rs:3:56
+  |
+3 | use wasm4pm_types::event_log::{EventLog, Trace, Event, AttributeValue, XESEditableAttribute};
+  |                                                        ^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^
+  |
+  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `fake::Fake`
+ --> wasm4pm/tests/global_adversarial.rs:4:5
+  |
+4 | use fake::Fake;
+  |     ^^^^^^^^^^
+
+warning: function `attr` is never used
+  --> wasm4pm/tests/declare_all_constraints_test.rs:18:4
+   |
+18 | fn attr(k: &str, v: &str) -> (String, AttributeValue) {
+   |    ^^^^
+   |
+   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+warning: `wasm4pm` (test "declare_all_constraints_test") generated 1 warning
+warning: unused variable: `features`
+   --> wasm4pm/tests/rl_failure_mode_detection_tests.rs:126:9
+    |
+126 |     let features = &[0.5; 8];
+    |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_features`
     |
     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
 
-   Compiling git2 v0.18.3
-warning: function `make_join_df` is never used
-   --> crates/miniml-core/src/dataframe.rs:652:8
+error[E0061]: this function takes 1 argument but 8 arguments were supplied
+   --> wasm4pm/tests/rl_edge_case_audit.rs:74:17
     |
-652 |     fn make_join_df(ids: Vec<f64>, vals: Vec<f64>, val_col: &str) -> DataFrame {
-    |        ^^^^^^^^^^^^
+ 74 |         let r = compute_reward_with_momentum(2, 1, 0, true, true, false, 0, momentum);
+    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ - expected `RewardParameters`, found integer
     |
-    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-   Compiling tps-metrics v26.5.21 (/Users/sac/wasm4pm/tps-metrics)
-warning: `miniml` (lib test) generated 2 warnings (run `cargo fix --lib -p miniml --tests` to apply 1 suggestion)
-error[E0422]: cannot find struct, variant or union type `TokenReplayResult` in this scope
-   --> wasm4pm/src/conformance_reporting.rs:172:32
+note: function defined here
+   --> wasm4pm/src/rl_orchestrator.rs:333:8
     |
-172 |             case_fitness: vec![TokenReplayResult {
-    |                                ^^^^^^^^^^^^^^^^^ not found in this scope
+333 | pub fn compute_reward_with_momentum(params: RewardParameters) -> f32 {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: remove the extra arguments
     |
-help: consider importing this struct
-    |
-167 +     use crate::models::TokenReplayResult;
+ 74 -         let r = compute_reward_with_momentum(2, 1, 0, true, true, false, 0, momentum);
+ 74 +         let r = compute_reward_with_momentum(/* RewardParameters */);
     |
 
-error[E0422]: cannot find struct, variant or union type `TokenReplayResult` in this scope
-   --> wasm4pm/src/conformance_reporting.rs:209:32
+error[E0061]: this function takes 1 argument but 8 arguments were supplied
+   --> wasm4pm/tests/rl_edge_case_audit.rs:78:28
     |
-209 |             case_fitness: vec![TokenReplayResult {
-    |                                ^^^^^^^^^^^^^^^^^ not found in this scope
+ 78 |             let r_capped = compute_reward_with_momentum(2, 1, 0, true, true, false, 0, 10);
+    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ - expected `RewardParameters`, found integer
     |
-help: consider importing this struct
+note: function defined here
+   --> wasm4pm/src/rl_orchestrator.rs:333:8
     |
-167 +     use crate::models::TokenReplayResult;
+333 | pub fn compute_reward_with_momentum(params: RewardParameters) -> f32 {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: remove the extra arguments
+    |
+ 78 -             let r_capped = compute_reward_with_momentum(2, 1, 0, true, true, false, 0, 10);
+ 78 +             let r_capped = compute_reward_with_momentum(/* RewardParameters */);
     |
 
-warning: unused import: `HashMap`
-   --> wasm4pm/src/playout.rs:451:28
+error[E0061]: this function takes 1 argument but 8 arguments were supplied
+   --> wasm4pm/tests/rl_edge_case_audit.rs:158:18
     |
-451 |     use std::collections::{HashMap, BTreeMap};
-    |                            ^^^^^^^
+158 |     let r_best = compute_reward_with_momentum(
+    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+159 |         2,    // prev_health
+    |         - expected `RewardParameters`, found integer
     |
-    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+note: function defined here
+   --> wasm4pm/src/rl_orchestrator.rs:333:8
+    |
+333 | pub fn compute_reward_with_momentum(params: RewardParameters) -> f32 {
+    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+help: remove the extra arguments
+    |
+159 -         2,    // prev_health
+160 -         1,    // curr_health (improved)
+161 -         0,    // spc_alert_count
+162 -         true, // guard_pass
+163 -         true, // circuit_allowed
+164 -         false, // latency_budget_exceeded
+165 -         0,    // rework_ratio_q
+166 -         10,   // consecutive_successes (max momentum)
+159 +         /* RewardParameters */,   // consecutive_successes (max momentum)
+    |
 
-warning: unused import: `CircuitState`
-    --> wasm4pm/src/self_healing.rs:1088:55
-     |
-1088 |     use super::{CircuitBreaker, CircuitBreakerConfig, CircuitState, reset_clock, advance_clock};
-     |                                                       ^^^^^^^^^^^^
-
-error[E0308]: mismatched types
-   --> wasm4pm/src/autoprocess.rs:930:39
-    |
-930 |         let q_before = agent.q_lookup(state_id, action_idx);
-    |                              -------- ^^^^^^^^ expected `usize`, found `u32`
-    |                              |
-    |                              arguments to this method are incorrect
-    |
-note: method defined here
-   --> wasm4pm/src/autoprocess.rs:251:12
-    |
-251 |     pub fn q_lookup(&self, state_id: usize, action_id: usize) -> f32 {
-    |            ^^^^^^^^        ---------------
-help: you can convert a `u32` to a `usize` and panic if the converted value doesn't fit
-    |
-930 |         let q_before = agent.q_lookup(state_id.try_into().unwrap(), action_idx);
-    |                                               ++++++++++++++++++++
-
-error[E0308]: mismatched types
-   --> wasm4pm/src/autoprocess.rs:937:38
-    |
-937 |         let q_after = agent.q_lookup(state_id, action_idx);
-    |                             -------- ^^^^^^^^ expected `usize`, found `u32`
-    |                             |
-    |                             arguments to this method are incorrect
-    |
-note: method defined here
-   --> wasm4pm/src/autoprocess.rs:251:12
-    |
-251 |     pub fn q_lookup(&self, state_id: usize, action_id: usize) -> f32 {
-    |            ^^^^^^^^        ---------------
-help: you can convert a `u32` to a `usize` and panic if the converted value doesn't fit
-    |
-937 |         let q_after = agent.q_lookup(state_id.try_into().unwrap(), action_idx);
-    |                                              ++++++++++++++++++++
-
-Some errors have detailed explanations: E0308, E0422.
-For more information about an error, try `rustc --explain E0308`.
-warning: `wasm4pm` (lib test) generated 2 warnings
-error: could not compile `wasm4pm` (lib test) due to 4 previous errors; 2 warnings emitted
+For more information about this error, try `rustc --explain E0061`.
+error: could not compile `wasm4pm` (test "rl_edge_case_audit") due to 3 previous errors
 warning: build failed, waiting for other jobs to finish...
+warning: `wasm4pm` (test "rl_failure_mode_detection_tests") generated 1 warning (run `cargo fix --test "rl_failure_mode_detection_tests" -p wasm4pm` to apply 1 suggestion)
+warning: `wasm4pm` (test "global_adversarial") generated 2 warnings (run `cargo fix --test "global_adversarial" -p wasm4pm` to apply 2 suggestions)

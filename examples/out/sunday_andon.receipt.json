@@ -8,62 +8,62 @@
       "id": "alpha_plus_plus",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "bfb893f29f01334e9ec446d53e25c3e92ec75d92e9db49b58a3a8b01fa62da75",
-      "duration_ms": 14.510453535867997
+      "result_hash": "32571ffde97bd014fac26db6d4e3f97b5315b5bdf8bdc6758338f09e8b52b38f",
+      "duration_ms": 22.439449230718086
     },
     {
       "id": "heuristic_miner",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "6a5a7a849ea5a5cdb3a5f52cec67b330c44ba6ea31043c0aa77de2ef0b1d5a58",
-      "duration_ms": 41.589031584711456
+      "result_hash": "d52678ebcd7c87bb97b70b531708688fc0a7c90e786864fd529e5d53b26bc0e8",
+      "duration_ms": 34.165529845486056
     },
     {
       "id": "inductive_miner",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "cedbbc5e643a1c979e95e0d0507870d15332fbc2331e26a98eda03352e784693",
-      "duration_ms": 28.16381165593897
+      "result_hash": "aa8c02b5c3b93eae2a51c484b062811c5b091842905a3a96858f5f4ae29198f8",
+      "duration_ms": 51.04407183330919
     },
     {
       "id": "genetic_algorithm",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "413ef13cb90ea07bd311188da07de728093b18361b28ca01d97f5ff81d356b71",
-      "duration_ms": 41.880959087786124
+      "result_hash": "3569807ba390e77bd5d1da15f0a675bd70ed6572914d1c31ddc4dfaf3d11e383",
+      "duration_ms": 27.06148979191881
     },
     {
       "id": "pso",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "34275d5e7cbf059fc93d1b7193d8dc28505b1cc30e5bebfb456622ee164981cb",
-      "duration_ms": 55.60015254518196
+      "result_hash": "20f9204150caa30f7104f15b9a651b6db582f56c76ccb4bcdeefa3407bbddc23",
+      "duration_ms": 25.66361089474164
     },
     {
       "id": "a_star",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "b35da7e82dac7553bf91e123624a7f0c1c84470433e41d07bbfca33b1403f1e5",
-      "duration_ms": 57.39724828238357
+      "result_hash": "2fcb86381a899b1aecb4ec981c6849d428dd33eb8b9492319998be943b2b7b32",
+      "duration_ms": 34.8306779258531
     },
     {
       "id": "hill_climbing",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "310f0ca82ca47e2b75e5cf3477131e50b13630090a5bf35cb2656fe2e818fed0",
-      "duration_ms": 30.76704170379117
+      "result_hash": "ff299e2a570f418026def7512ca910dac87c6c7244881b6519e647a19112ce7e",
+      "duration_ms": 40.59975327297823
     },
     {
       "id": "aco",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "cca2fbdaa5dab75af63c5e7deb959b060e1051f291ca4415c6f476d818c4c7a0",
-      "duration_ms": 46.73965420788709
+      "result_hash": "72e1d793778a234063429fea19fd007582b94a43d9ac1b28513ac570f50987b6",
+      "duration_ms": 28.164668943165562
     }
   ],
   "algorithm_count": 8,
   "all_real": true,
-  "created_at": "2026-05-21T18:58:00.599Z",
+  "created_at": "2026-05-21T19:01:14.531Z",
   "previous_receipt_hash": null,
-  "receipt_hash": "b2e926853683ee901e12cec8ea6a0a372ee569a32c739cb2e6c97fd25a9935e2"
+  "receipt_hash": "2009f808bc5d994b22fab985ff615aef89a7110f16cfecad0632cc0de96815b7"
 }
