@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/contracts",
-  "version": "26.5.19",
+  "version": "26.5.21",
   "description": "Runtime contracts, receipts, and hash verification",
   "type": "module",
   "main": "./dist/index.js",

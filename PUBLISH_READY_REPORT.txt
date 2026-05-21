@@ -1,11 +1,11 @@
 # Publish Readiness Report (wasm4pm)
-**Version:** 26.5.19
+**Version:** 26.5.21
 **Date:** May 20, 2026
 
 ## Executive Summary
 All 10 parallel sub-agents have completed their domain-isolated checks and verified the publish readiness of the `wasm4pm` monorepo.
 - `cargo fmt` and `npm run format` passed across all domains.
-- `Cargo.toml` and `package.json` files correctly reflect version `26.5.19`.
+- `Cargo.toml` and `package.json` files correctly reflect version `26.5.21`.
 - The final Release Certificate binds correctly to the 60 proven algorithms and the generated evidence matrices.
 - The state is marked as **PrePublishOnly** / **Closed** as all verification scripts passed.
 
@@ -20,12 +20,12 @@ All 10 parallel sub-agents have completed their domain-isolated checks and verif
 - **Agent 4 (NPM Core):** Linted, formatted, and verified tarballs for `@wasm4pm/core`, `@wasm4pm/contracts`, and `@wasm4pm/config`.
 - **Agent 5 (NPM Logic):** Linted, formatted, and verified tarballs for `@wasm4pm/observability`, `@wasm4pm/ml`, and `@wasm4pm/planner`.
 - **Agent 6 (NPM App):** Linted, formatted, and verified tarballs for `@wasm4pm/swarm`, `@wasm4pm/testing`, and `@wasm4pm/engine`.
-- **Agent 7 (NPM Root):** Linted, formatted, and verified tarballs for `@wasm4pm/agents`, `@wasm4pm/cognition`, `@wasm4pm/cli`, and `wasm4pm`. All package versions exactly match 26.5.19.
+- **Agent 7 (NPM Root):** Linted, formatted, and verified tarballs for `@wasm4pm/agents`, `@wasm4pm/cognition`, `@wasm4pm/cli`, and `wasm4pm`. All package versions exactly match 26.5.21.
 
 ### Release Evidence & Verification (Agents 8-10)
 - **Agent 8 (Behavior Evidence):** Executed `npm run release:algorithm-reachability` and `npm run release:algorithm-behavior`. Proved 60/60 reachability and behavior matrix receipts.
 - **Agent 9 (Integration Validation):** Executed `npm run examples:gate`, `npm run cli:parity`, and `npm run prepublish:pack-smoke`. All pass.
-- **Agent 10 (Release Certificate):** Generated and verified `RELEASE_CERTIFICATE.v26.5.19.json`. Executed `npm run release:verify-algorithm-behavior` and `npm run release:forbidden` cleanly. The certificate hash is `8636a3be98c552e55c87d8e6e121ba38755296c711a18692b7383d644a468703`.
+- **Agent 10 (Release Certificate):** Generated and verified `RELEASE_CERTIFICATE.v26.5.21.json`. Executed `npm run release:verify-algorithm-behavior` and `npm run release:forbidden` cleanly. The certificate hash is `8636a3be98c552e55c87d8e6e121ba38755296c711a18692b7383d644a468703`.
 
 ## Current State
 **State:** `PrePublishOnly`

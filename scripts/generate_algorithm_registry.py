@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-generate_algorithm_registry.py — generates algorithm-registry.json for wasm4pm v26.5.19
+generate_algorithm_registry.py — generates algorithm-registry.json for wasm4pm v26.5.21
 
 Usage:
   python3 scripts/generate_algorithm_registry.py \
     --src-dir wasm4pm/src \
     --tests-dir wasm4pm/tests \
     --criterion-dir target/criterion \
-    --output target/wasm4pm-v26.5.19/algorithm-registry.json \
-    --version 26.5.19
+    --output target/wasm4pm-v26.5.21/algorithm-registry.json \
+    --version 26.5.21
 
 Run from the repo root.
 """
@@ -229,8 +229,8 @@ def parse_args():
     p.add_argument("--src-dir", default="wasm4pm/src")
     p.add_argument("--tests-dir", default="wasm4pm/tests")
     p.add_argument("--criterion-dir", default="target/criterion")
-    p.add_argument("--output", default="target/wasm4pm-v26.5.19/algorithm-registry.json")
-    p.add_argument("--version", default="26.5.19")
+    p.add_argument("--output", default="target/wasm4pm-v26.5.21/algorithm-registry.json")
+    p.add_argument("--version", default="26.5.21")
     return p.parse_args()
 
 

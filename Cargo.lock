@@ -1275,7 +1275,7 @@ dependencies = [
 
 [[package]]
 name = "miniml"
-version = "26.5.19"
+version = "26.5.21"
 dependencies = [
  "base64",
  "bincode",
@@ -1558,7 +1558,7 @@ dependencies = [
 
 [[package]]
 name = "prolog8"
-version = "26.5.19"
+version = "26.5.21"
 dependencies = [
  "blake3",
  "js-sys",
@@ -2214,7 +2214,7 @@ checksum = "756daf9b1013ebe47a8776667b466417e2d4c5679d441c26230efd9ef78692db"
 
 [[package]]
 name = "tps-metrics"
-version = "26.5.19"
+version = "26.5.21"
 dependencies = [
  "anyhow",
  "chrono",
@@ -2521,7 +2521,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm"
-version = "26.5.19"
+version = "26.5.21"
 dependencies = [
  "bcinr",
  "blake3",
@@ -2567,7 +2567,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-algos"
-version = "26.5.19"
+version = "26.5.21"
 dependencies = [
  "bcinr",
  "criterion",
@@ -2581,7 +2581,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-cli"
-version = "26.5.19"
+version = "26.5.21"
 dependencies = [
  "anyhow",
  "assert_cmd",
@@ -2601,7 +2601,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-cognition"
-version = "26.5.19"
+version = "26.5.21"
 dependencies = [
  "blake3",
  "ed25519-dalek",
@@ -2624,7 +2624,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-macros"
-version = "26.5.19"
+version = "26.5.21"
 dependencies = [
  "proc-macro2",
  "quote",
@@ -2633,7 +2633,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-types"
-version = "26.5.19"
+version = "26.5.21"
 dependencies = [
  "blake3",
  "chrono",
@@ -2649,7 +2649,7 @@ dependencies = [
 
 [[package]]
 name = "wasm4pm-utils"
-version = "26.5.19"
+version = "26.5.21"
 dependencies = [
  "hashbrown 0.17.0",
  "itertools 0.14.0",

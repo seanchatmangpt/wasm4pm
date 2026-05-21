@@ -1,69 +1,69 @@
 {
   "example_id": "cg_belonging",
   "package": "wasm4pm",
-  "version": "26.5.19",
+  "version": "26.5.21",
   "event_log_hash": "84e2393eeecc465bbc6d5b1af253beb0745e88f5dc6997d96a968744a185711e",
   "algorithms": [
     {
       "id": "hill_climbing",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "796ed9390161c82d9044922f9f75bb2238702fd41260ff5aa03a993be835525f",
-      "duration_ms": 18.36551141458627
+      "result_hash": "e2cccb0c5e1cee4fb1f9595de51099d053979d3772d387dccfdabe57c1fea030",
+      "duration_ms": 39.98417007372161
     },
     {
       "id": "aco",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "14329aee95ef9e8a38d3eef50b61004be4c0aaac6e5cb8d12cf8d16e31b38ef2",
-      "duration_ms": 39.01806786929608
+      "result_hash": "26b42a27dd296f2e43763bf17f3e08a8bc0d2d5f132de515cf889d8197b9842a",
+      "duration_ms": 48.13305396378603
     },
     {
       "id": "simulated_annealing",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "e75117738fa13379a8a5883ac5a85367e2d650fd37dde45ce68bd74f242caa4b",
-      "duration_ms": 53.02467932132352
+      "result_hash": "142875ab628911c813819ace0163cf4ce16ad85a08a34f598c61dedc76f329d0",
+      "duration_ms": 20.745712689610762
     },
     {
       "id": "declare",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "79f985e9347d63d53b599328f9a5adc5bb4df66f2fb512bc8e0c3b8ba089a3c9",
-      "duration_ms": 48.575181675937515
+      "result_hash": "10ae167d971f8f84438341845dcb64fe67a80bdbaa243ec31fbb468278ec32cf",
+      "duration_ms": 29.638565571726563
     },
     {
       "id": "optimized_dfg",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "136c9882503a5430997a9968a17004344a38ffd14aeaf84eb5186c004ea83e7d",
-      "duration_ms": 15.609524376679431
+      "result_hash": "429bc27672f51f70eade0cecd0d1ee52141c367a69b1d2ac64f34380b8f1b528",
+      "duration_ms": 53.96697698580114
     },
     {
       "id": "ilp",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "01e68d27eb512a3ca00072c65a5d2d6091ec70643e1fd1b3035f7623cd861773",
-      "duration_ms": 36.54913288641339
+      "result_hash": "941505856039f4346c36e1fed0bb232dc01f2744feabb1e290934d6cb4fb4860",
+      "duration_ms": 35.29914388656732
     },
     {
       "id": "simd_streaming_dfg",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "532bd6cb8df54b260841fd43fbe1dde94dc46bfaec68f2fd0b2f7e2224bbf73e",
-      "duration_ms": 11.655695288771176
+      "result_hash": "ee62e11a2154d10635db50d52028d359b4d5e676dde833cce49e0f0e80be382f",
+      "duration_ms": 33.26746638186107
     },
     {
       "id": "hierarchical_dfg",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "c9edcab36fea3f6684160a4d66d4d59f448daf81c872ba01913769fe4a8bfbec",
-      "duration_ms": 22.204406827421078
+      "result_hash": "64e89584521677c9d35117a05ea97efa06aeb8b61e2b319376498e9e0fce387e",
+      "duration_ms": 31.683714391476755
     }
   ],
   "algorithm_count": 8,
   "all_real": true,
-  "created_at": "2026-05-21T07:42:45.840Z",
+  "created_at": "2026-05-21T18:53:54.059Z",
   "previous_receipt_hash": null,
-  "receipt_hash": "f1b03746d97383123fe06c60160cfe02291c27589ee1d837d25d510a2ebb430d"
+  "receipt_hash": "4593a127fc755057e348f26722fc4cd23a167958b615a751b67e9de265c5dcad"
 }

@@ -8,8 +8,8 @@ hashes found files, and emits a dataset registry JSON.
 Usage:
     python3 scripts/generate_dataset_registry.py \
         --src-dir wasm4pm/src --tests-dir wasm4pm/tests \
-        --output wasm4pm/target/wasm4pm-v26.5.19/real-data-dataset-registry.json \
-        --version 26.5.19
+        --output wasm4pm/target/wasm4pm-v26.5.21/real-data-dataset-registry.json \
+        --version 26.5.21
 """
 
 import argparse
@@ -302,7 +302,7 @@ def main() -> None:
     parser.add_argument("--src-dir",    default="wasm4pm/src",   help="Source directory (unused, reserved)")
     parser.add_argument("--tests-dir",  default="wasm4pm/tests",  help="Tests directory to scan (also scans wasm4pm/benches)")
     parser.add_argument("--output",     required=True,            help="Output JSON path")
-    parser.add_argument("--version",    default="26.5.19",        help="Version string")
+    parser.add_argument("--version",    default="26.5.21",        help="Version string")
     args = parser.parse_args()
 
     repo_root = Path.cwd()

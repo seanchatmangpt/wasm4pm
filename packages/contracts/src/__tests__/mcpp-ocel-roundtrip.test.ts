@@ -522,7 +522,7 @@ describe('REGRESSION: real mcpp fixture events are rejected by fromMcppJsonlStri
   // Read the first line of the a2a-capture fixture (real production format)
   const fixturePath = join(
     process.env['HOME'] ?? '/Users/sac',
-    'mcpp/fixtures/launch/v26.5.19/a2a-capture.ocel.jsonl',
+    'mcpp/fixtures/launch/v26.5.21/a2a-capture.ocel.jsonl',
   );
 
   let firstLine: string | null = null;

@@ -4,7 +4,7 @@ set -euo pipefail
 
 cd "$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 
-VERSION="${VERSION:-26.5.19}"
+VERSION="${VERSION:-26.5.21}"
 OUTPUT_DIR="wasm4pm/target/wasm4pm-v${VERSION}"
 mkdir -p "$OUTPUT_DIR"
 

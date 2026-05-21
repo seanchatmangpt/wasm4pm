@@ -9,7 +9,7 @@
  * the mcpp marketplace/passport system without requiring the mcpp runtime to
  * be running. All assertions are derived from:
  *   - Receipt schema (packages/contracts/src/receipt.ts, schema_version "1.0")
- *   - mcpp CROSSRT probe taxonomy (docs/CROSS_RUNTIME_VALIDATION.md, v26.5.19 Slice κ)
+ *   - mcpp CROSSRT probe taxonomy (docs/CROSS_RUNTIME_VALIDATION.md, v26.5.21 Slice κ)
  *   - mcpp MCPP_VERSION = "1.0" (packages/config/src/mcpp-bridge.ts)
  *
  * No mcpp imports — pure contract testing against wasm4pm types.
@@ -93,7 +93,7 @@ function receiptToAdmission(receipt: Receipt): MarketplaceAdmission {
 // ── X01–X10 probe implementation ──────────────────────────────────────────────
 
 /**
- * X01–X10 cross-runtime probe taxonomy from mcpp v26.5.19 Slice κ.
+ * X01–X10 cross-runtime probe taxonomy from mcpp v26.5.21 Slice κ.
  *
  * Each probe answers a yes/no question about a wasm4pm Receipt.
  * The probe IDs are remapped to wasm4pm receipt semantics:

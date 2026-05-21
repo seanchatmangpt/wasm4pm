@@ -36,7 +36,7 @@ describe('Gap 1 — simd_streaming_dfg dispatches to discover_dfg_simd (not disc
     const calls = { dfg: 0, simd: 0 };
     const wasm: KernelWasmModule = {
       init: vi.fn(),
-      get_version: vi.fn(() => '26.5.19'),
+      get_version: vi.fn(() => '26.5.21'),
       load_eventlog_from_xes: vi.fn((_xes: string) => 'log_handle_test'),
       delete_object: vi.fn(),
       clear_all_objects: vi.fn(),
@@ -247,7 +247,7 @@ describe('Gap 3 — Social network mining algorithms are registered and dispatch
 
     const wasm: KernelWasmModule = {
       init: vi.fn(),
-      get_version: vi.fn(() => '26.5.19'),
+      get_version: vi.fn(() => '26.5.21'),
       load_eventlog_from_xes: vi.fn((_xes: string) => 'handle'),
       delete_object: vi.fn(),
       clear_all_objects: vi.fn(),
@@ -325,7 +325,7 @@ describe('Gap 3 — Social network mining algorithms are registered and dispatch
     let capturedKey = '';
     const wasm: KernelWasmModule = {
       init: vi.fn(),
-      get_version: vi.fn(() => '26.5.19'),
+      get_version: vi.fn(() => '26.5.21'),
       load_eventlog_from_xes: vi.fn((_xes: string) => 'h'),
       delete_object: vi.fn(),
       clear_all_objects: vi.fn(),

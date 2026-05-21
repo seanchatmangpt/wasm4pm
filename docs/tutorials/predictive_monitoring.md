@@ -2,24 +2,34 @@
 
 ## Learning Objectives
 In this tutorial, you will:
-1. Load a historical event log.
-2. Train a predictive model for "Remaining Time".
-3. Run predictions on live, incomplete cases.
+1. Understand the six perspectivas of process prediction.
+2. Estimate the remaining time for an in-flight case.
+3. Predict the next most likely activity for a running trace.
 
-## Step 1: Training the Model
-We will use the ML regression capability to learn the duration patterns of our historical cases.
+## Step 1: Remaining Time Prediction
+To predict when a running case will finish, use the `remaining-time` task. You must supply the current trace as a comma-separated `--prefix`.
+
 ```bash
-wpm predict train --target remaining-time -i history.xes --save-model my_model.bin
+# Predict remaining time for a case that has finished "Register" and "Approve"
+wpm predict remaining-time -i data/small-example.xes --prefix "Register,Approve"
 ```
 
-## Step 2: Predicting Live Cases
-Now, feed a streaming or incomplete trace to predict its remaining time.
+The output will provide an estimate in hours, backed by a Weibull survival model.
+
+## Step 2: Next Activity Prediction
+To see what the next step should be, use the `next-activity` task.
+
 ```bash
-wpm predict run --model my_model.bin -i live_cases.xes
+# Get the top-5 most likely next activities
+wpm predict next-activity -i data/small-example.xes --prefix "Register" --top-k 5
 ```
 
-## Step 3: Evaluating Accuracy
-Inspect the Root Mean Square Error (RMSE) of your predictions.
+This uses an n-gram language model (default order: 2) to compute probabilities for all possible continuations.
+
+## Step 3: Drift Detection
+Predictive monitoring also includes identifying if the process has changed over time.
+
 ```bash
-wpm predict eval --model my_model.bin -i test.xes
+# Detect concept drift in a log window of 20 traces
+wpm predict drift -i data/small-example.xes --drift-window 20
 ```

@@ -7,10 +7,10 @@ hardcoded baseline anchors. Emits both JSON and Markdown benchmark reports.
 
 Usage:
     python3 scripts/generate_benchmark_report.py \
-        --registry wasm4pm/target/wasm4pm-v26.5.19/algorithm-registry.json \
-        --output-json wasm4pm/target/wasm4pm-v26.5.19/benchmark-report.json \
-        --output-md wasm4pm/target/wasm4pm-v26.5.19/benchmark-report.md \
-        --version 26.5.19
+        --registry wasm4pm/target/wasm4pm-v26.5.21/algorithm-registry.json \
+        --output-json wasm4pm/target/wasm4pm-v26.5.21/benchmark-report.json \
+        --output-md wasm4pm/target/wasm4pm-v26.5.21/benchmark-report.md \
+        --version 26.5.21
 """
 
 import argparse
@@ -514,7 +514,7 @@ def main() -> None:
     parser.add_argument("--criterion",   default=None,  help="Path to criterion results dir or JSON")
     parser.add_argument("--output-json", required=True, help="Output JSON path")
     parser.add_argument("--output-md",   required=True, help="Output Markdown path")
-    parser.add_argument("--version",     default="26.5.19", help="Version string")
+    parser.add_argument("--version",     default="26.5.21", help="Version string")
     args = parser.parse_args()
 
     repo_root       = Path.cwd()

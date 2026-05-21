@@ -29,7 +29,7 @@ bench-full:
 	BENCH_FULL=1 cargo bench $(CORE_BENCHES)
 
 # ── Real-Data Substrate Certificate ──────────────────────────────────────────
-VERSION    := 26.5.19
+VERSION    := 26.5.21
 CERT_DIR   := target/wasm4pm-v$(VERSION)
 
 REAL_DATA_TESTS := \

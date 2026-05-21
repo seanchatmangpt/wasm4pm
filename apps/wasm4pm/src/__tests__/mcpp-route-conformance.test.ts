@@ -679,7 +679,7 @@ describe('C6: Bridge integration — mcpp native JSONL bridges to wasm4pm OCEL f
   });
 
   it('mcpp route-fixture.ocel.jsonl bridges to valid ocel: events', () => {
-    const fixturePath = '/Users/sac/mcpp/fixtures/launch/v26.5.19/route-fixture.ocel.jsonl';
+    const fixturePath = '/Users/sac/mcpp/fixtures/launch/v26.5.21/route-fixture.ocel.jsonl';
 
     if (!fsSync.existsSync(fixturePath)) {
       return; // Skip if mcpp repo not present

@@ -1,4 +1,4 @@
-//! Fake/stub audit tests for wasm4pm v26.5.19.
+//! Fake/stub audit tests for wasm4pm v26.5.21.
 //!
 //! These tests verify that known fake/stub surfaces have been correctly remediated:
 //!   - ensemble.rs: renamed ensemble_discover → dfg_threshold_sweep
@@ -49,7 +49,7 @@ fn test_dfg_threshold_sweep_is_pure_rust_dfg_stub() {
 
 #[test]
 fn test_ensemble_module_no_longer_exposes_ensemble_discover_symbol() {
-    // After the v26.5.19 rename, the public API of ensemble.rs is dfg_threshold_sweep.
+    // After the v26.5.21 rename, the public API of ensemble.rs is dfg_threshold_sweep.
     // This test verifies the rename happened by checking the module exports the
     // new name (compile-time check via use statement).
     // NOTE: If this test FAILS TO COMPILE, the rename in ensemble.rs has not been applied.

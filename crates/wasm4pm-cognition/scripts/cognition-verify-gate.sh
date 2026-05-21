@@ -14,7 +14,7 @@ set -uo pipefail
 ROOT="$(git rev-parse --show-toplevel)"
 cd "$ROOT"
 
-declare -A V_STATUS
+V_STATUS=()
 
 # ── V1: Breed registry complete ───────────────────────────────────────────────
 # 9 breeds required: frame cbr dendral strips prolog production_rules gps soar hearsay

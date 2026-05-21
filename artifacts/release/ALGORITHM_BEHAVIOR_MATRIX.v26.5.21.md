@@ -1,4 +1,4 @@
-# ALGORITHM_BEHAVIOR_MATRIX.v26.5.19
+# ALGORITHM_BEHAVIOR_MATRIX.v26.5.21
 
 | Algorithm | Positive Case | Negative Case | Invariant | CLI | WASM | Receipt | Status |
 |-----------|--------------:|--------------:|----------:|----:|-----:|--------:|-------:|

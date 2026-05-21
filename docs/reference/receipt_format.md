@@ -15,7 +15,7 @@ Every successful run generates a deterministic, unforgeable receipt.
   "status": "success",
   "algorithm": { 
       "name": "ilp", 
-      "version": "26.5.19" 
+      "version": "26.5.21" 
   },
   "adversarial_gates": {
       "passed": 24,

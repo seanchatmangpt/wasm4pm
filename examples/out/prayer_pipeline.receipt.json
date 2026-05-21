@@ -1,69 +1,69 @@
 {
   "example_id": "prayer_pipeline",
   "package": "wasm4pm",
-  "version": "26.5.19",
+  "version": "26.5.21",
   "event_log_hash": "3adbffc69f88c3c0c454262de8ee79e791993139acff50ffe7d2ad09950c19bb",
   "algorithms": [
     {
       "id": "dfg",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "b42ea6e7357fdf82462569516369a7ca463909c24f624b2f3cadcd2e74ce8164",
-      "duration_ms": 20.63370647107184
+      "result_hash": "37ff97a233bc5f6b6655f9f2cff6ea7a1fbb613d4b7f847895f289a191d269ad",
+      "duration_ms": 41.3926012207506
     },
     {
       "id": "process_skeleton",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "9afb547526732fb657886a98bac5f84eea01236593ab677ee8657e7df26b4609",
-      "duration_ms": 10.348213578621104
+      "result_hash": "49f26d0c4d724a61b456bd05f3fad8e07c6059d4f48e88a7acb8d035416fa0d0",
+      "duration_ms": 25.761749226218452
     },
     {
       "id": "alpha_plus_plus",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "40915d9faaee60d064c1655c56b4ae1991b12ceaa0458ec084b8d4cefeae8568",
-      "duration_ms": 23.347908573531654
+      "result_hash": "83d37a807894b4cb46aefc0ac35db39012f5298f2f66c04f0d82aebe981efe72",
+      "duration_ms": 11.690864391419044
     },
     {
       "id": "heuristic_miner",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "e1bb634da41a1fe6a4222267b1c32969694413c224465692ca108b5c706e2600",
-      "duration_ms": 46.89401730613783
+      "result_hash": "6f571e6b011f7ca72e455dd92dc8c3e3ec227aa982f175b8635693287b91be15",
+      "duration_ms": 29.6647300550335
     },
     {
       "id": "inductive_miner",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "64af2f50265d6d459f7eb3d0cd7a46516048b9bd7384599220fe3050259b2a0a",
-      "duration_ms": 16.751810622802463
+      "result_hash": "b9fe8fdb7e89675a22d3e050ca8b3cf170f7eaa6623210949b50866c22476a7a",
+      "duration_ms": 15.822607543923453
     },
     {
       "id": "genetic_algorithm",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "9d40f658fdbbca3dd375823320179aff836cb3ddb5173c03a87c51ff12a43ca7",
-      "duration_ms": 15.485472138539095
+      "result_hash": "5190177b71457def8a1ad6ee5e19f097940c52676117a2f2b7e8ee0bc420b8ea",
+      "duration_ms": 56.347323529822056
     },
     {
       "id": "pso",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "166840e58b223c69c93a4f399bd4c685970021046c6dccb05f3db138b501d164",
-      "duration_ms": 38.73404430229367
+      "result_hash": "b02eeb0510304952aeab4dde6db28eec62ace7f6cf610833eb35fe6a1503dc80",
+      "duration_ms": 56.32312128517794
     },
     {
       "id": "a_star",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "d7098fa4a6fcdb1d9747a47000850e43bdaadc3b4677277968a914df1621e486",
-      "duration_ms": 26.147386228052437
+      "result_hash": "7ee96108663b0364a8ffcc7496647103865211bafd236b55e22e450d72895fb2",
+      "duration_ms": 37.74429056844597
     }
   ],
   "algorithm_count": 8,
   "all_real": true,
-  "created_at": "2026-05-21T07:42:45.838Z",
+  "created_at": "2026-05-21T18:53:54.045Z",
   "previous_receipt_hash": null,
-  "receipt_hash": "d34be8a8bd494904a6998202317e544fe453e1068bed239529a5b6f77b1020d4"
+  "receipt_hash": "d8026715532a3be63010f1a2dccd5e1dea47f4844be527d655770227e5a299bd"
 }
