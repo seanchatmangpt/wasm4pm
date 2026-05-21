@@ -41,6 +41,7 @@ pub mod evidence;
 pub mod log_adapter;
 pub mod observability;
 pub mod registry;
+pub mod ghf;
 
 #[cfg(feature = "wasm")]
 pub mod wasm;

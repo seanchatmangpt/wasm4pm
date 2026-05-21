@@ -1,167 +1,765 @@
+   Compiling prolog8 v26.5.21 (/Users/sac/wasm4pm/crates/prolog8)
    Compiling wasm4pm v26.5.21 (/Users/sac/wasm4pm/wasm4pm)
    Compiling wasm4pm-cli v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-cli)
-warning: variable does not need to be mutable
-   --> crates/wasm4pm-cognition/tests/strips_gps_level_10.rs:111:9
-    |
-111 |     let mut input = blocks_world_with_frames();
-    |         ----^^^^^
-    |         |
-    |         help: remove this `mut`
-    |
-    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
-
-warning: `wasm4pm-cognition` (test "strips_gps_level_10") generated 1 warning (run `cargo fix --test "strips_gps_level_10" -p wasm4pm-cognition` to apply 1 suggestion)
-warning: unused imports: `Level`, `info`, and `span`
-  --> wasm4pm/tests/discovery_otel_validation_template.rs:13:19
+error[E0433]: cannot find `agentic` in `wasm4pm`
+  --> wasm4pm/tests/agentic_wasm_export_tests.rs:12:14
    |
-13 |     use tracing::{info, span, Level};
-   |                   ^^^^  ^^^^  ^^^^^
+12 | use wasm4pm::agentic::prelude::*;
+   |              ^^^^^^^ could not find `agentic` in `wasm4pm`
+   |
+note: found an item that was configured out
+  --> src/lib.rs:570:6
+   |
+   = note: the item is gated behind the `cloud` feature
+
+warning: unused import: `calculate_rework_score`
+  --> wasm4pm/tests/prediction_naive_baseline_tests.rs:15:37
+   |
+15 | use wasm4pm::prediction_additions::{calculate_rework_score, extract_prefix_features};
+   |                                     ^^^^^^^^^^^^^^^^^^^^^^
    |
    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
 
-warning: function `create_test_log` is never used
-  --> wasm4pm/tests/discovery_otel_validation_template.rs:18:8
-   |
-18 |     fn create_test_log() -> String {
-   |        ^^^^^^^^^^^^^^^
-   |
-   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-warning: struct `OtelCapture` is never constructed
-  --> wasm4pm/tests/discovery_otel_validation_template.rs:73:12
-   |
-73 |     struct OtelCapture {
-   |            ^^^^^^^^^^^
-
-warning: struct `OtelSpan` is never constructed
-  --> wasm4pm/tests/discovery_otel_validation_template.rs:78:12
-   |
-78 |     struct OtelSpan {
-   |            ^^^^^^^^
-
-warning: associated items `new`, `record_span`, `has_span_with_name`, `has_span_with_target`, `has_attributes`, and `span_targets` are never used
-   --> wasm4pm/tests/discovery_otel_validation_template.rs:86:12
-    |
- 85 |     impl OtelCapture {
-    |     ---------------- associated items in this implementation
- 86 |         fn new() -> Self {
-    |            ^^^
-...
- 93 |         fn record_span(&self, name: String, level: String, target: String, attributes: std::collections::HashMap<String, String>) {
-    |            ^^^^^^^^^^^
-...
-104 |         fn has_span_with_name(&self, name: &str) -> bool {
-    |            ^^^^^^^^^^^^^^^^^^
-...
-110 |         fn has_span_with_target(&self, target: &str) -> bool {
-    |            ^^^^^^^^^^^^^^^^^^^^
-...
-116 |         fn has_attributes(&self, target: &str, required_attrs: &[&str]) -> bool {
-    |            ^^^^^^^^^^^^^^
-...
-128 |         fn span_targets(&self) -> Vec<String> {
-    |            ^^^^^^^^^^^^
-
-warning: function `assert_attribute_numeric` is never used
-   --> wasm4pm/tests/discovery_otel_validation_template.rs:300:8
-    |
-300 |     fn assert_attribute_numeric(attr: &str, value: &str) {
-    |        ^^^^^^^^^^^^^^^^^^^^^^^^
-
-warning: `wasm4pm` (test "discovery_otel_validation_template") generated 6 warnings (run `cargo fix --test "discovery_otel_validation_template" -p wasm4pm` to apply 1 suggestion)
-warning: unused imports: `AttributeValue` and `XESEditableAttribute`
- --> wasm4pm/tests/global_adversarial.rs:3:56
+error[E0432]: unresolved import `wasm4pm::rl_orchestrator`
+ --> crates/wasm4pm-cli/src/commands/agent.rs:5:14
   |
-3 | use wasm4pm_types::event_log::{EventLog, Trace, Event, AttributeValue, XESEditableAttribute};
-  |                                                        ^^^^^^^^^^^^^^  ^^^^^^^^^^^^^^^^^^^^
+5 | use wasm4pm::rl_orchestrator::AgentType;
+  |              ^^^^^^^^^^^^^^^ could not find `rl_orchestrator` in `wasm4pm`
   |
-  = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
-
-warning: unused import: `fake::Fake`
- --> wasm4pm/tests/global_adversarial.rs:4:5
+note: found an item that was configured out
+ --> src/lib.rs:545:6
   |
-4 | use fake::Fake;
-  |     ^^^^^^^^^^
+  = note: the item is gated behind the `cloud` feature
 
-warning: function `attr` is never used
-  --> wasm4pm/tests/declare_all_constraints_test.rs:18:4
-   |
-18 | fn attr(k: &str, v: &str) -> (String, AttributeValue) {
-   |    ^^^^
-   |
-   = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+error[E0432]: unresolved import `wasm4pm::RL_ORCHESTRATOR`
+ --> crates/wasm4pm-cli/src/commands/agent.rs:6:5
+  |
+6 | use wasm4pm::RL_ORCHESTRATOR;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^ no `RL_ORCHESTRATOR` in the root
+  |
+note: found an item that was configured out
+ --> src/lib.rs:575:10
+  |
+  = note: the item is gated behind the `cloud` feature
 
-warning: `wasm4pm` (test "declare_all_constraints_test") generated 1 warning
-warning: unused variable: `features`
-   --> wasm4pm/tests/rl_failure_mode_detection_tests.rs:126:9
+error[E0432]: unresolved import `wasm4pm::autonomic_execute_cycle`
+ --> crates/wasm4pm-cli/src/commands/autoprocess.rs:6:5
+  |
+6 | use wasm4pm::autonomic_execute_cycle;
+  |     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ no `autonomic_execute_cycle` in the root
+  |
+note: found an item that was configured out
+ --> src/lib.rs:859:6
+  |
+  = note: the item is gated behind the `cloud` feature
+
+error[E0432]: unresolved import `wasm4pm::SPC_HISTORY`
+ --> crates/wasm4pm-cli/src/commands/spc.rs:5:5
+  |
+5 | use wasm4pm::SPC_HISTORY;
+  |     ^^^^^^^^^^^^^^^^^^^^ no `SPC_HISTORY` in the root
+  |
+note: found an item that was configured out
+ --> src/lib.rs:586:10
+  |
+  = note: the item is gated behind the `cloud` feature
+
+error[E0277]: the trait bound `wasm4pm::models::DirectlyFollowsGraph: serde::Serialize` is not satisfied
+    --> wasm4pm/tests/algorithm_determinism_template.rs:127:38
+     |
+ 127 |     let json = serde_json::to_string(dfg).expect("failed to serialize DFG");
+     |                --------------------- ^^^ the trait `serde_core::ser::Serialize` is not implemented for `wasm4pm::models::DirectlyFollowsGraph`
+     |                |
+     |                required by a bound introduced by this call
+     |
+     = note: for local types consider adding `#[derive(serde::Serialize)]` to your `wasm4pm::models::DirectlyFollowsGraph` type
+     = note: for types from other crates check whether the crate offers a `serde` feature flag
+note: there are multiple different versions of crate `serde_core` in the dependency graph
+    --> /Users/sac/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_core-1.0.228/src/ser/mod.rs:234:1
+     |
+ 234 | pub trait Serialize {
+     | ------------------- this is the found trait
+     |
+    ::: /Users/sac/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_core-1.0.228/src/ser/mod.rs:234:1
+     |
+ 234 | pub trait Serialize {
+     | ^^^^^^^^^^^^^^^^^^^ this is the expected trait
+     = help: you can use `cargo tree` to explore your dependency tree
+     = help: the following other types implement trait `serde_core::ser::Serialize`:
+               &'a T
+               &'a mut T
+               ()
+               (T,)
+               (T0, T1)
+               (T0, T1, T2)
+               (T0, T1, T2, T3)
+               (T0, T1, T2, T3, T4)
+             and 129 others
+note: required by a bound in `serde_json::to_string`
+    --> /Users/sac/.cargo/registry/src/index.crates.io-1949cf8c6b5b557f/serde_json-1.0.145/src/ser.rs:2247:17
+     |
+2245 | pub fn to_string<T>(value: &T) -> Result<String>
+     |        --------- required by a bound in this function
+2246 | where
+2247 |     T: ?Sized + Serialize,
+     |                 ^^^^^^^^^ required by this bound in `to_string`
+
+error[E0433]: cannot find `rl_orchestrator` in `wasm4pm`
+   --> crates/wasm4pm-cli/src/commands/agent.rs:153:26
     |
-126 |     let features = &[0.5; 8];
-    |         ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_features`
+153 |         *orch = wasm4pm::rl_orchestrator::RlOrchestrator::new();
+    |                          ^^^^^^^^^^^^^^^ could not find `rl_orchestrator` in `wasm4pm`
+    |
+note: found an item that was configured out
+   --> src/lib.rs:545:6
+    |
+    = note: the item is gated behind the `cloud` feature
+
+error[E0432]: unresolved import `wasm4pm::rl_orchestrator`
+  --> wasm4pm/tests/jtbd_bpi2020_tests.rs:13:14
+   |
+13 | use wasm4pm::rl_orchestrator::RlOrchestrator;
+   |              ^^^^^^^^^^^^^^^ could not find `rl_orchestrator` in `wasm4pm`
+   |
+note: found an item that was configured out
+  --> src/lib.rs:545:6
+   |
+   = note: the item is gated behind the `cloud` feature
+
+error[E0432]: unresolved import `wasm4pm::reinforcement`
+  --> wasm4pm/tests/determinism_validation_tests.rs:26:14
+   |
+26 | use wasm4pm::reinforcement::{
+   |              ^^^^^^^^^^^^^ could not find `reinforcement` in `wasm4pm`
+   |
+note: found an item that was configured out
+  --> src/lib.rs:541:6
+   |
+   = note: the item is gated behind the `cloud` feature
+
+error[E0432]: unresolved import `wasm4pm::rl_orchestrator`
+ --> wasm4pm/tests/rl_bellman_q_deltas_tests.rs:8:14
+  |
+8 | use wasm4pm::rl_orchestrator::{RlOrchestrator, compute_reward};
+  |              ^^^^^^^^^^^^^^^ could not find `rl_orchestrator` in `wasm4pm`
+  |
+note: found an item that was configured out
+ --> src/lib.rs:545:6
+  |
+  = note: the item is gated behind the `cloud` feature
+
+error[E0432]: unresolved import `wasm4pm::rl_orchestrator`
+  --> wasm4pm/tests/determinism_validation_tests.rs:30:14
+   |
+30 | use wasm4pm::rl_orchestrator::{compute_health_state, compute_reward, AgentType, RlOrchestrator};
+   |              ^^^^^^^^^^^^^^^ could not find `rl_orchestrator` in `wasm4pm`
+   |
+note: found an item that was configured out
+  --> src/lib.rs:545:6
+   |
+   = note: the item is gated behind the `cloud` feature
+
+warning: variable does not need to be mutable
+  --> wasm4pm/tests/algorithm_determinism_template.rs:66:13
+   |
+66 |         let mut trace = models::Trace {
+   |             ----^^^^^
+   |             |
+   |             help: remove this `mut`
+   |
+   = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+warning: variable does not need to be mutable
+  --> wasm4pm/tests/algorithm_determinism_template.rs:79:13
+   |
+79 |         let mut trace = models::Trace {
+   |             ----^^^^^
+   |             |
+   |             help: remove this `mut`
+
+warning: variable does not need to be mutable
+  --> wasm4pm/tests/algorithm_determinism_template.rs:92:13
+   |
+92 |         let mut trace = models::Trace {
+   |             ----^^^^^
+   |             |
+   |             help: remove this `mut`
+
+warning: unused variable: `log`
+   --> wasm4pm/tests/algorithm_determinism_template.rs:159:9
+    |
+159 |     let log = make_simple_test_log();
+    |         ^^^ help: if this is intentional, prefix it with an underscore: `_log`
     |
     = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
 
-error[E0061]: this function takes 1 argument but 8 arguments were supplied
-   --> wasm4pm/tests/rl_edge_case_audit.rs:74:17
+warning: unused variable: `log`
+   --> wasm4pm/tests/algorithm_determinism_template.rs:169:9
     |
- 74 |         let r = compute_reward_with_momentum(2, 1, 0, true, true, false, 0, momentum);
-    |                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ - expected `RewardParameters`, found integer
-    |
-note: function defined here
-   --> wasm4pm/src/rl_orchestrator.rs:333:8
-    |
-333 | pub fn compute_reward_with_momentum(params: RewardParameters) -> f32 {
-    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-help: remove the extra arguments
-    |
- 74 -         let r = compute_reward_with_momentum(2, 1, 0, true, true, false, 0, momentum);
- 74 +         let r = compute_reward_with_momentum(/* RewardParameters */);
-    |
+169 |     let log = make_simple_test_log();
+    |         ^^^ help: if this is intentional, prefix it with an underscore: `_log`
 
-error[E0061]: this function takes 1 argument but 8 arguments were supplied
-   --> wasm4pm/tests/rl_edge_case_audit.rs:78:28
+warning: unused variable: `fitness1`
+   --> wasm4pm/tests/algorithm_determinism_template.rs:225:16
     |
- 78 |             let r_capped = compute_reward_with_momentum(2, 1, 0, true, true, false, 0, 10);
-    |                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ - expected `RewardParameters`, found integer
-    |
-note: function defined here
-   --> wasm4pm/src/rl_orchestrator.rs:333:8
-    |
-333 | pub fn compute_reward_with_momentum(params: RewardParameters) -> f32 {
-    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-help: remove the extra arguments
-    |
- 78 -             let r_capped = compute_reward_with_momentum(2, 1, 0, true, true, false, 0, 10);
- 78 +             let r_capped = compute_reward_with_momentum(/* RewardParameters */);
-    |
+225 |     let (dfg1, fitness1) = genetic_discovery::discover_aco_algorithm_from_log(&log, "concept:name", 15, 10)
+    |                ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_fitness1`
 
-error[E0061]: this function takes 1 argument but 8 arguments were supplied
-   --> wasm4pm/tests/rl_edge_case_audit.rs:158:18
+warning: unused variable: `fitness2`
+   --> wasm4pm/tests/algorithm_determinism_template.rs:227:16
     |
-158 |     let r_best = compute_reward_with_momentum(
-    |                  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-159 |         2,    // prev_health
-    |         - expected `RewardParameters`, found integer
-    |
-note: function defined here
-   --> wasm4pm/src/rl_orchestrator.rs:333:8
-    |
-333 | pub fn compute_reward_with_momentum(params: RewardParameters) -> f32 {
-    |        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-help: remove the extra arguments
-    |
-159 -         2,    // prev_health
-160 -         1,    // curr_health (improved)
-161 -         0,    // spc_alert_count
-162 -         true, // guard_pass
-163 -         true, // circuit_allowed
-164 -         false, // latency_budget_exceeded
-165 -         0,    // rework_ratio_q
-166 -         10,   // consecutive_successes (max momentum)
-159 +         /* RewardParameters */,   // consecutive_successes (max momentum)
-    |
+227 |     let (dfg2, fitness2) = genetic_discovery::discover_aco_algorithm_from_log(&log, "concept:name", 15, 10)
+    |                ^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_fitness2`
 
-For more information about this error, try `rustc --explain E0061`.
-error: could not compile `wasm4pm` (test "rl_edge_case_audit") due to 3 previous errors
+For more information about this error, try `rustc --explain E0277`.
+warning: `wasm4pm` (test "algorithm_determinism_template") generated 7 warnings
+error: could not compile `wasm4pm` (test "algorithm_determinism_template") due to 1 previous error; 7 warnings emitted
 warning: build failed, waiting for other jobs to finish...
-warning: `wasm4pm` (test "rl_failure_mode_detection_tests") generated 1 warning (run `cargo fix --test "rl_failure_mode_detection_tests" -p wasm4pm` to apply 1 suggestion)
-warning: `wasm4pm` (test "global_adversarial") generated 2 warnings (run `cargo fix --test "global_adversarial" -p wasm4pm` to apply 2 suggestions)
+For more information about this error, try `rustc --explain E0432`.
+error: could not compile `wasm4pm` (test "rl_bellman_q_deltas_tests") due to 1 previous error
+error: could not compile `wasm4pm` (test "determinism_validation_tests") due to 2 previous errors
+error[E0308]: mismatched types
+  --> wasm4pm/tests/choice_graph_paper.rs:86:39
+   |
+86 |     let root = arena.add_choice_graph(cg);
+   |                      ---------------- ^^ expected `wasm4pm::wasm4pm_types::ChoiceGraph`, found `wasm4pm_types::ChoiceGraph`
+   |                      |
+   |                      arguments to this method are incorrect
+   |
+note: there are multiple different versions of crate `wasm4pm_types` in the dependency graph
+  --> /Users/sac/.cargo/registry/src/-f923c0e820869554/wasm4pm-types-26.5.21/src/choice_graph.rs:29:1
+   |
+29 | pub struct ChoiceGraph {
+   | ^^^^^^^^^^^^^^^^^^^^^^ this is the expected type
+   |
+  ::: crates/wasm4pm-types/src/choice_graph.rs:29:1
+   |
+29 | pub struct ChoiceGraph {
+   | ---------------------- this is the found type
+   = help: you can use `cargo tree` to explore your dependency tree
+note: method defined here
+  --> src/powl_arena.rs:560:11
+
+error[E0308]: mismatched types
+   --> wasm4pm/tests/choice_graph_paper.rs:153:39
+    |
+153 |     let root = arena.add_choice_graph(cg);
+    |                      ---------------- ^^ expected `wasm4pm::wasm4pm_types::ChoiceGraph`, found `wasm4pm_types::ChoiceGraph`
+    |                      |
+    |                      arguments to this method are incorrect
+    |
+note: there are multiple different versions of crate `wasm4pm_types` in the dependency graph
+   --> /Users/sac/.cargo/registry/src/-f923c0e820869554/wasm4pm-types-26.5.21/src/choice_graph.rs:29:1
+    |
+ 29 | pub struct ChoiceGraph {
+    | ^^^^^^^^^^^^^^^^^^^^^^ this is the expected type
+    |
+   ::: crates/wasm4pm-types/src/choice_graph.rs:29:1
+    |
+ 29 | pub struct ChoiceGraph {
+    | ---------------------- this is the found type
+    = help: you can use `cargo tree` to explore your dependency tree
+note: method defined here
+   --> src/powl_arena.rs:560:11
+
+error[E0308]: mismatched types
+   --> wasm4pm/tests/choice_graph_paper.rs:232:45
+    |
+232 |     let cg_root = arena_cg.add_choice_graph(cg);
+    |                            ---------------- ^^ expected `wasm4pm::wasm4pm_types::ChoiceGraph`, found `wasm4pm_types::ChoiceGraph`
+    |                            |
+    |                            arguments to this method are incorrect
+    |
+note: there are multiple different versions of crate `wasm4pm_types` in the dependency graph
+   --> /Users/sac/.cargo/registry/src/-f923c0e820869554/wasm4pm-types-26.5.21/src/choice_graph.rs:29:1
+    |
+ 29 | pub struct ChoiceGraph {
+    | ^^^^^^^^^^^^^^^^^^^^^^ this is the expected type
+    |
+   ::: crates/wasm4pm-types/src/choice_graph.rs:29:1
+    |
+ 29 | pub struct ChoiceGraph {
+    | ---------------------- this is the found type
+    = help: you can use `cargo tree` to explore your dependency tree
+note: method defined here
+   --> src/powl_arena.rs:560:11
+
+For more information about this error, try `rustc --explain E0308`.
+error: could not compile `wasm4pm` (test "choice_graph_paper") due to 3 previous errors
+error: could not compile `wasm4pm` (test "jtbd_bpi2020_tests") due to 1 previous error
+Some errors have detailed explanations: E0432, E0433.
+For more information about an error, try `rustc --explain E0432`.
+error: could not compile `wasm4pm-cli` (bin "wpm") due to 5 previous errors
+error: could not compile `wasm4pm-cli` (bin "wpm" test) due to 5 previous errors
+warning: `wasm4pm` (test "prediction_naive_baseline_tests") generated 1 warning (run `cargo fix --test "prediction_naive_baseline_tests" -p wasm4pm` to apply 1 suggestion)
+error[E0425]: cannot find value `DefaultPromptBindingCompiler` in this scope
+  --> wasm4pm/tests/agentic_wasm_export_tests.rs:70:20
+   |
+70 |     let compiler = DefaultPromptBindingCompiler;
+   |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `DefaultEvidenceSufficiencyChecker` in this scope
+  --> wasm4pm/tests/agentic_wasm_export_tests.rs:71:19
+   |
+71 |     let checker = DefaultEvidenceSufficiencyChecker;
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `DefaultEscalationEngine` in this scope
+  --> wasm4pm/tests/agentic_wasm_export_tests.rs:72:18
+   |
+72 |     let engine = DefaultEscalationEngine;
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find type `TaskContext` in this scope
+  --> wasm4pm/tests/agentic_wasm_export_tests.rs:74:15
+   |
+74 |     let task: TaskContext = serde_json::from_str(&minimal_task_json("prop1")).unwrap();
+   |               ^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `DefaultPromptBindingCompiler` in this scope
+  --> wasm4pm/tests/agentic_wasm_export_tests.rs:94:20
+   |
+94 |     let compiler = DefaultPromptBindingCompiler;
+   |                    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `DefaultEvidenceSufficiencyChecker` in this scope
+  --> wasm4pm/tests/agentic_wasm_export_tests.rs:95:19
+   |
+95 |     let checker = DefaultEvidenceSufficiencyChecker;
+   |                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `DefaultEscalationEngine` in this scope
+  --> wasm4pm/tests/agentic_wasm_export_tests.rs:96:18
+   |
+96 |     let engine = DefaultEscalationEngine;
+   |                  ^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `DefaultJtbdRunner` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:112:18
+    |
+112 |     let runner = DefaultJtbdRunner;
+    |                  ^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `DefaultHandoffValidator` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:124:21
+    |
+124 |     let validator = DefaultHandoffValidator;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `HandoffRequest` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:129:15
+    |
+129 |     let req = HandoffRequest {
+    |               ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `TaskContext` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:132:15
+    |
+132 |         task: TaskContext {
+    |               ^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `PolicyEnvelope` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:134:21
+    |
+134 |             policy: PolicyEnvelope {
+    |                     ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `DefaultHandoffValidator` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:152:21
+    |
+152 |     let validator = DefaultHandoffValidator;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `HandoffRequest` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:157:15
+    |
+157 |     let req = HandoffRequest {
+    |               ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `TaskContext` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:160:15
+    |
+160 |         task: TaskContext {
+    |               ^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `PolicyEnvelope` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:162:21
+    |
+162 |             policy: PolicyEnvelope {
+    |                     ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `DefaultHandoffValidator` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:179:21
+    |
+179 |     let validator = DefaultHandoffValidator;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `HandoffRequest` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:184:15
+    |
+184 |     let req = HandoffRequest {
+    |               ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `TaskContext` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:187:15
+    |
+187 |         task: TaskContext {
+    |               ^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `PolicyEnvelope` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:189:21
+    |
+189 |             policy: PolicyEnvelope {
+    |                     ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `DefaultHandoffValidator` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:206:21
+    |
+206 |     let validator = DefaultHandoffValidator;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find type `HandoffRequest` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:207:14
+    |
+207 |     let req: HandoffRequest = serde_json::from_str(&minimal_handoff_json("Executor")).unwrap();
+    |              ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `DefaultCounterfactualEvaluator` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:223:21
+    |
+223 |     let evaluator = DefaultCounterfactualEvaluator;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `TaskContext` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:249:20
+    |
+249 |         let task = TaskContext {
+    |                    ^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `PolicyEnvelope` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:251:21
+    |
+251 |             policy: PolicyEnvelope {
+    |                     ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `EvidenceEnvelope` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:255:23
+    |
+255 |             evidence: EvidenceEnvelope {
+    |                       ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `DefaultCounterfactualEvaluator` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:278:21
+    |
+278 |     let evaluator = DefaultCounterfactualEvaluator;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `TaskContext` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:279:16
+    |
+279 |     let task = TaskContext {
+    |                ^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `DefaultCounterfactualEvaluator` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:292:21
+    |
+292 |     let evaluator = DefaultCounterfactualEvaluator;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `TaskContext` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:298:16
+    |
+298 |     let task = TaskContext {
+    |                ^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `PolicyEnvelope` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:300:17
+    |
+300 |         policy: PolicyEnvelope {
+    |                 ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `EvidenceEnvelope` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:304:19
+    |
+304 |         evidence: EvidenceEnvelope {
+    |                   ^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find type `TaskContext` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:336:19
+    |
+336 |     let original: TaskContext = serde_json::from_str(&minimal_task_json("rt-1")).unwrap();
+    |                   ^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find type `TaskContext` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:338:24
+    |
+338 |     let round_tripped: TaskContext = serde_json::from_str(&serialized).unwrap();
+    |                        ^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find type `HandoffRequest` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:345:19
+    |
+345 |     let original: HandoffRequest = serde_json::from_str(&minimal_handoff_json("Planner")).unwrap();
+    |                   ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find type `HandoffRequest` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:347:24
+    |
+347 |     let round_tripped: HandoffRequest = serde_json::from_str(&serialized).unwrap();
+    |                        ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `JtbdCase` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:354:20
+    |
+354 |     let original = JtbdCase {
+    |                    ^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find type `JtbdCase` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:365:24
+    |
+365 |     let round_tripped: JtbdCase = serde_json::from_str(&serialized).unwrap();
+    |                        ^^^^^^^^ not found in this scope
+
+error[E0425]: cannot find value `DefaultCounterfactualEvaluator` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:372:21
+    |
+372 |     let evaluator = DefaultCounterfactualEvaluator;
+    |                     ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `TaskContext` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:378:16
+    |
+378 |     let task = TaskContext {
+    |                ^^^^^^^^^^^ not found in this scope
+
+error[E0422]: cannot find struct, variant or union type `PolicyEnvelope` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:380:17
+    |
+380 |         policy: PolicyEnvelope {
+    |                 ^^^^^^^^^^^^^^ not found in this scope
+
+error[E0433]: cannot find type `TaskContext` in this scope
+  --> wasm4pm/tests/agentic_wasm_export_tests.rs:98:16
+   |
+98 |     let task = TaskContext::default();
+   |                ^^^^^^^^^^^ use of undeclared type `TaskContext`
+
+error[E0433]: cannot find type `AgentRole` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:127:20
+    |
+127 |     blocked.insert(AgentRole::Executor);
+    |                    ^^^^^^^^^ use of undeclared type `AgentRole`
+
+error[E0433]: cannot find type `AgentRole` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:131:18
+    |
+131 |         to_role: AgentRole::Executor,
+    |                  ^^^^^^^^^ use of undeclared type `AgentRole`
+
+error[E0433]: cannot find type `DecisionDisposition` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:145:38
+    |
+145 |     assert_eq!(decision.disposition, DecisionDisposition::Deny);
+    |                                      ^^^^^^^^^^^^^^^^^^^ use of undeclared type `DecisionDisposition`
+
+error[E0433]: cannot find type `ActionClass` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:155:20
+    |
+155 |     allowed.insert(ActionClass::Read); // only Read; no Delegate
+    |                    ^^^^^^^^^^^ use of undeclared type `ActionClass`
+
+error[E0433]: cannot find type `AgentRole` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:159:18
+    |
+159 |         to_role: AgentRole::Planner,
+    |                  ^^^^^^^^^ use of undeclared type `AgentRole`
+
+error[E0433]: cannot find type `AgentRole` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:182:21
+    |
+182 |     required.insert(AgentRole::Validator);
+    |                     ^^^^^^^^^ use of undeclared type `AgentRole`
+
+error[E0433]: cannot find type `AgentRole` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:186:18
+    |
+186 |         to_role: AgentRole::Executor, // not in required set
+    |                  ^^^^^^^^^ use of undeclared type `AgentRole`
+
+error[E0433]: cannot find type `DecisionDisposition` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:200:38
+    |
+200 |     assert_eq!(decision.disposition, DecisionDisposition::Escalate);
+    |                                      ^^^^^^^^^^^^^^^^^^^ use of undeclared type `DecisionDisposition`
+
+error[E0433]: cannot find type `ActionClass` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:212:41
+    |
+212 |     assert_eq!(transition.action_class, ActionClass::Delegate);
+    |                                         ^^^^^^^^^^^ use of undeclared type `ActionClass`
+
+error[E0433]: cannot find type `ActionClass` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:226:9
+    |
+226 |         ActionClass::Execute,
+    |         ^^^^^^^^^^^ use of undeclared type `ActionClass`
+
+error[E0433]: cannot find type `ActionClass` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:227:9
+    |
+227 |         ActionClass::Validate,
+    |         ^^^^^^^^^^^ use of undeclared type `ActionClass`
+
+error[E0433]: cannot find type `ActionClass` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:228:9
+    |
+228 |         ActionClass::Delegate,
+    |         ^^^^^^^^^^^ use of undeclared type `ActionClass`
+
+error[E0433]: cannot find type `ActionClass` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:229:9
+    |
+229 |         ActionClass::Escalate,
+    |         ^^^^^^^^^^^ use of undeclared type `ActionClass`
+
+error[E0433]: cannot find type `ActionClass` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:230:9
+    |
+230 |         ActionClass::Read,
+    |         ^^^^^^^^^^^ use of undeclared type `ActionClass`
+
+error[E0433]: cannot find type `ActionClass` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:231:9
+    |
+231 |         ActionClass::Write,
+    |         ^^^^^^^^^^^ use of undeclared type `ActionClass`
+
+error[E0433]: cannot find type `ActionClass` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:232:9
+    |
+232 |         ActionClass::Summarize,
+    |         ^^^^^^^^^^^ use of undeclared type `ActionClass`
+
+error[E0433]: cannot find type `ActionClass` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:233:9
+    |
+233 |         ActionClass::GenerateArtifact,
+    |         ^^^^^^^^^^^ use of undeclared type `ActionClass`
+
+error[E0433]: cannot find type `ActionClass` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:234:9
+    |
+234 |         ActionClass::Notify,
+    |         ^^^^^^^^^^^ use of undeclared type `ActionClass`
+
+error[E0433]: cannot find type `DriftStatus` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:238:9
+    |
+238 |         DriftStatus::Stable,
+    |         ^^^^^^^^^^^ use of undeclared type `DriftStatus`
+
+error[E0433]: cannot find type `DriftStatus` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:239:9
+    |
+239 |         DriftStatus::Watch,
+    |         ^^^^^^^^^^^ use of undeclared type `DriftStatus`
+
+error[E0433]: cannot find type `DriftStatus` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:240:9
+    |
+240 |         DriftStatus::ShiftDetected,
+    |         ^^^^^^^^^^^ use of undeclared type `DriftStatus`
+
+error[E0433]: cannot find type `DriftStatus` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:241:9
+    |
+241 |         DriftStatus::TrendDetected,
+    |         ^^^^^^^^^^^ use of undeclared type `DriftStatus`
+
+error[E0433]: cannot find type `DriftStatus` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:242:9
+    |
+242 |         DriftStatus::OutOfControl,
+    |         ^^^^^^^^^^^ use of undeclared type `DriftStatus`
+
+error[E0433]: cannot find type `DriftStatus` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:243:9
+    |
+243 |         DriftStatus::Unknown,
+    |         ^^^^^^^^^^^ use of undeclared type `DriftStatus`
+
+error[E0433]: cannot find type `ActionClass` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:294:20
+    |
+294 |     allowed.insert(ActionClass::Execute); // delta=-1 → improves health
+    |                    ^^^^^^^^^^^ use of undeclared type `ActionClass`
+
+error[E0433]: cannot find type `ActionClass` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:295:20
+    |
+295 |     allowed.insert(ActionClass::Read);    // delta=0 → no change
+    |                    ^^^^^^^^^^^ use of undeclared type `ActionClass`
+
+error[E0433]: cannot find type `ActionClass` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:296:20
+    |
+296 |     allowed.insert(ActionClass::Escalate); // guard_pass=false → lower reward
+    |                    ^^^^^^^^^^^ use of undeclared type `ActionClass`
+
+error[E0433]: cannot find type `DriftStatus` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:305:27
+    |
+305 |             drift_status: DriftStatus::Watch,
+    |                           ^^^^^^^^^^^ use of undeclared type `DriftStatus`
+
+error[E0433]: cannot find type `ConfidenceBand` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:306:30
+    |
+306 |             confidence_band: ConfidenceBand::High,
+    |                              ^^^^^^^^^^^^^^ use of undeclared type `ConfidenceBand`
+
+error[E0433]: cannot find type `AgentRole` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:358:29
+    |
+358 |         expected_role: Some(AgentRole::Explorer),
+    |                             ^^^^^^^^^ use of undeclared type `AgentRole`
+
+error[E0433]: cannot find type `SwarmTopology` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:359:33
+    |
+359 |         expected_topology: Some(SwarmTopology::Pipeline),
+    |                                 ^^^^^^^^^^^^^ use of undeclared type `SwarmTopology`
+
+error[E0433]: cannot find type `DecisionDisposition` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:360:36
+    |
+360 |         expected_disposition: Some(DecisionDisposition::Allow),
+    |                                    ^^^^^^^^^^^^^^^^^^^ use of undeclared type `DecisionDisposition`
+
+error[E0433]: cannot find type `ArtifactFamily` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:361:34
+    |
+361 |         expected_artifacts: vec![ArtifactFamily::TaskPrompt],
+    |                                  ^^^^^^^^^^^^^^ use of undeclared type `ArtifactFamily`
+
+error[E0433]: cannot find type `ActionClass` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:374:20
+    |
+374 |     allowed.insert(ActionClass::Execute);
+    |                    ^^^^^^^^^^^ use of undeclared type `ActionClass`
+
+error[E0433]: cannot find type `ActionClass` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:375:20
+    |
+375 |     allowed.insert(ActionClass::Escalate);
+    |                    ^^^^^^^^^^^ use of undeclared type `ActionClass`
+
+error[E0433]: cannot find type `ActionClass` in this scope
+   --> wasm4pm/tests/agentic_wasm_export_tests.rs:376:20
+    |
+376 |     allowed.insert(ActionClass::Validate);
+    |                    ^^^^^^^^^^^ use of undeclared type `ActionClass`
+
+Some errors have detailed explanations: E0422, E0425, E0433.
+For more information about an error, try `rustc --explain E0422`.
+error: could not compile `wasm4pm` (test "agentic_wasm_export_tests") due to 79 previous errors
