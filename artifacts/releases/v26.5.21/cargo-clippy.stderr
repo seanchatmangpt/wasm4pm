@@ -1,0 +1,14 @@
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Blocking waiting for file lock on package cache
+    Checking wasm4pm-types v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-types)
+    Checking prolog8 v26.5.21 (/Users/sac/wasm4pm/crates/prolog8)
+    Checking miniml v26.5.21 (/Users/sac/wasm4pm/crates/miniml-core)
+    Checking wasm4pm-utils v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-utils)
+    Checking wasm4pm-macros v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-macros)
+    Checking tps-metrics v26.5.21 (/Users/sac/wasm4pm/tps-metrics)
+    Checking wasm4pm-cognition v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-cognition)
+    Checking wasm4pm-algos v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-algos)
+    Checking wasm4pm v26.5.21 (/Users/sac/wasm4pm/wasm4pm)
+    Checking wasm4pm-cli v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-cli)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 15.10s

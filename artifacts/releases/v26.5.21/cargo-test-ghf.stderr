@@ -1,0 +1,175 @@
+    Blocking waiting for file lock on package cache
+   Compiling serde_json v1.0.145
+   Compiling serde v1.0.228
+   Compiling indexmap v2.14.0
+   Compiling ref-cast v1.0.25
+   Compiling wasm4pm-macros v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-macros)
+   Compiling synstructure v0.13.2
+   Compiling stable_deref_trait v1.2.1
+   Compiling zerovec-derive v0.11.3
+   Compiling displaydoc v0.2.5
+   Compiling toml_datetime v1.1.1+spec-1.1.0
+   Compiling serde_spanned v1.1.1
+   Compiling target-triple v1.0.0
+   Compiling writeable v0.6.3
+   Compiling litemap v0.8.2
+   Compiling libz-sys v1.1.28
+   Compiling openssl-sys v0.9.112
+   Compiling utf8_iter v1.0.4
+   Compiling icu_normalizer_data v2.2.0
+   Compiling icu_properties_data v2.2.0
+   Compiling libssh2-sys v0.3.1
+   Compiling toml v1.1.2+spec-1.1.0
+   Compiling libgit2-sys v0.16.2+1.7.2
+   Compiling percent-encoding v2.3.2
+   Compiling form_urlencoded v1.2.2
+   Compiling smallvec v1.15.1
+   Compiling chrono v0.4.41
+   Compiling uuid v1.16.0
+   Compiling ciborium v0.2.2
+   Compiling bincode v1.3.3
+   Compiling halfbrown v0.2.5
+   Compiling tracing-subscriber v0.3.23
+   Compiling wasm-bindgen v0.2.108
+   Compiling tinytemplate v1.2.1
+   Compiling naga v0.19.2
+   Compiling insta v1.47.2
+   Compiling zerofrom-derive v0.1.7
+   Compiling yoke-derive v0.8.2
+   Compiling value-trait v0.8.1
+   Compiling wasm4pm-utils v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-utils)
+   Compiling prolog8 v26.5.21 (/Users/sac/wasm4pm/crates/prolog8)
+   Compiling criterion v0.5.1
+   Compiling simd-json v0.13.11
+   Compiling trybuild v1.0.116
+   Compiling js-sys v0.3.85
+   Compiling console_error_panic_hook v0.1.7
+   Compiling wasm4pm-types v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-types)
+   Compiling zerofrom v0.1.7
+   Compiling yoke v0.8.2
+   Compiling wasm4pm-cognition v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-cognition)
+   Compiling zerovec v0.11.6
+   Compiling zerotrie v0.2.4
+   Compiling serde-wasm-bindgen v0.6.5
+   Compiling wasm-bindgen-futures v0.4.45
+   Compiling wasm-bindgen-test v0.3.45
+   Compiling wasm4pm-algos v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-algos)
+   Compiling miniml v26.5.21 (/Users/sac/wasm4pm/crates/miniml-core)
+   Compiling wasm4pm v26.5.21 (/Users/sac/wasm4pm/wasm4pm)
+   Compiling tinystr v0.8.3
+   Compiling potential_utf v0.1.5
+   Compiling icu_collections v2.2.0
+warning: variable does not need to be mutable
+   --> crates/wasm4pm-cognition/tests/strips_gps_level_10.rs:111:9
+    |
+111 |     let mut input = blocks_world_with_frames();
+    |         ----^^^^^
+    |         |
+    |         help: remove this `mut`
+    |
+    = note: `#[warn(unused_mut)]` (part of `#[warn(unused)]`) on by default
+
+   Compiling icu_locale_core v2.2.0
+warning: `wasm4pm-cognition` (test "strips_gps_level_10") generated 1 warning (run `cargo fix --test "strips_gps_level_10" -p wasm4pm-cognition` to apply 1 suggestion)
+   Compiling icu_provider v2.2.0
+   Compiling icu_normalizer v2.2.0
+   Compiling icu_properties v2.2.0
+   Compiling idna_adapter v1.2.1
+   Compiling idna v1.1.0
+   Compiling url v2.5.8
+warning: unused variable: `transformed`
+   --> crates/miniml-core/src/robust_scaler.rs:101:13
+    |
+101 |         let transformed = scaler.fit_transform(&data).unwrap();
+    |             ^^^^^^^^^^^ help: if this is intentional, prefix it with an underscore: `_transformed`
+    |
+    = note: `#[warn(unused_variables)]` (part of `#[warn(unused)]`) on by default
+
+   Compiling git2 v0.18.3
+warning: function `make_join_df` is never used
+   --> crates/miniml-core/src/dataframe.rs:652:8
+    |
+652 |     fn make_join_df(ids: Vec<f64>, vals: Vec<f64>, val_col: &str) -> DataFrame {
+    |        ^^^^^^^^^^^^
+    |
+    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
+
+   Compiling tps-metrics v26.5.21 (/Users/sac/wasm4pm/tps-metrics)
+warning: `miniml` (lib test) generated 2 warnings (run `cargo fix --lib -p miniml --tests` to apply 1 suggestion)
+error[E0422]: cannot find struct, variant or union type `TokenReplayResult` in this scope
+   --> wasm4pm/src/conformance_reporting.rs:172:32
+    |
+172 |             case_fitness: vec![TokenReplayResult {
+    |                                ^^^^^^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+167 +     use crate::models::TokenReplayResult;
+    |
+
+error[E0422]: cannot find struct, variant or union type `TokenReplayResult` in this scope
+   --> wasm4pm/src/conformance_reporting.rs:209:32
+    |
+209 |             case_fitness: vec![TokenReplayResult {
+    |                                ^^^^^^^^^^^^^^^^^ not found in this scope
+    |
+help: consider importing this struct
+    |
+167 +     use crate::models::TokenReplayResult;
+    |
+
+warning: unused import: `HashMap`
+   --> wasm4pm/src/playout.rs:451:28
+    |
+451 |     use std::collections::{HashMap, BTreeMap};
+    |                            ^^^^^^^
+    |
+    = note: `#[warn(unused_imports)]` (part of `#[warn(unused)]`) on by default
+
+warning: unused import: `CircuitState`
+    --> wasm4pm/src/self_healing.rs:1088:55
+     |
+1088 |     use super::{CircuitBreaker, CircuitBreakerConfig, CircuitState, reset_clock, advance_clock};
+     |                                                       ^^^^^^^^^^^^
+
+error[E0308]: mismatched types
+   --> wasm4pm/src/autoprocess.rs:930:39
+    |
+930 |         let q_before = agent.q_lookup(state_id, action_idx);
+    |                              -------- ^^^^^^^^ expected `usize`, found `u32`
+    |                              |
+    |                              arguments to this method are incorrect
+    |
+note: method defined here
+   --> wasm4pm/src/autoprocess.rs:251:12
+    |
+251 |     pub fn q_lookup(&self, state_id: usize, action_id: usize) -> f32 {
+    |            ^^^^^^^^        ---------------
+help: you can convert a `u32` to a `usize` and panic if the converted value doesn't fit
+    |
+930 |         let q_before = agent.q_lookup(state_id.try_into().unwrap(), action_idx);
+    |                                               ++++++++++++++++++++
+
+error[E0308]: mismatched types
+   --> wasm4pm/src/autoprocess.rs:937:38
+    |
+937 |         let q_after = agent.q_lookup(state_id, action_idx);
+    |                             -------- ^^^^^^^^ expected `usize`, found `u32`
+    |                             |
+    |                             arguments to this method are incorrect
+    |
+note: method defined here
+   --> wasm4pm/src/autoprocess.rs:251:12
+    |
+251 |     pub fn q_lookup(&self, state_id: usize, action_id: usize) -> f32 {
+    |            ^^^^^^^^        ---------------
+help: you can convert a `u32` to a `usize` and panic if the converted value doesn't fit
+    |
+937 |         let q_after = agent.q_lookup(state_id.try_into().unwrap(), action_idx);
+    |                                              ++++++++++++++++++++
+
+Some errors have detailed explanations: E0308, E0422.
+For more information about an error, try `rustc --explain E0308`.
+warning: `wasm4pm` (lib test) generated 2 warnings
+error: could not compile `wasm4pm` (lib test) due to 4 previous errors; 2 warnings emitted
+warning: build failed, waiting for other jobs to finish...

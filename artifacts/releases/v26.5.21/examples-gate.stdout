@@ -1,0 +1,95 @@
+
+> wasm4pm-monorepo@26.5.21 examples:gate
+> tsx scripts/examples/run-all.ts
+
+--- Running Examples Gate for v26.5.21 ---
+
+[RUNNING] prayer_pipeline...
+[VERIFIED] dfg result conformed for prayer_pipeline
+[VERIFIED] process_skeleton result conformed for prayer_pipeline
+[VERIFIED] alpha_plus_plus result conformed for prayer_pipeline
+[VERIFIED] heuristic_miner result conformed for prayer_pipeline
+[VERIFIED] inductive_miner result conformed for prayer_pipeline
+[VERIFIED] genetic_algorithm result conformed for prayer_pipeline
+[VERIFIED] pso result conformed for prayer_pipeline
+[VERIFIED] a_star result conformed for prayer_pipeline
+[RECEIPT EMITTED] prayer_pipeline -> /Users/sac/wasm4pm/examples/out/prayer_pipeline.receipt.json
+
+[RUNNING] cg_belonging...
+[VERIFIED] hill_climbing result conformed for cg_belonging
+[VERIFIED] aco result conformed for cg_belonging
+[VERIFIED] simulated_annealing result conformed for cg_belonging
+[VERIFIED] declare result conformed for cg_belonging
+[VERIFIED] optimized_dfg result conformed for cg_belonging
+[VERIFIED] ilp result conformed for cg_belonging
+[VERIFIED] simd_streaming_dfg result conformed for cg_belonging
+[VERIFIED] hierarchical_dfg result conformed for cg_belonging
+[RECEIPT EMITTED] cg_belonging -> /Users/sac/wasm4pm/examples/out/cg_belonging.receipt.json
+
+[RUNNING] kids_safety...
+[VERIFIED] streaming_log result conformed for kids_safety
+[VERIFIED] smart_engine result conformed for kids_safety
+[VERIFIED] ml_classify result conformed for kids_safety
+[VERIFIED] ml_cluster result conformed for kids_safety
+[VERIFIED] ml_forecast result conformed for kids_safety
+[VERIFIED] ml_anomaly result conformed for kids_safety
+[VERIFIED] ml_regress result conformed for kids_safety
+[VERIFIED] ml_pca result conformed for kids_safety
+[RECEIPT EMITTED] kids_safety -> /Users/sac/wasm4pm/examples/out/kids_safety.receipt.json
+
+[RUNNING] volunteer_serving...
+[VERIFIED] transition_system result conformed for volunteer_serving
+[VERIFIED] log_to_trie result conformed for volunteer_serving
+[VERIFIED] causal_graph result conformed for volunteer_serving
+[VERIFIED] performance_spectrum result conformed for volunteer_serving
+[VERIFIED] batches result conformed for volunteer_serving
+[VERIFIED] correlation_miner result conformed for volunteer_serving
+[VERIFIED] generalization result conformed for volunteer_serving
+[VERIFIED] etconformance_precision result conformed for volunteer_serving
+[RECEIPT EMITTED] volunteer_serving -> /Users/sac/wasm4pm/examples/out/volunteer_serving.receipt.json
+
+[RUNNING] sunday_andon...
+[VERIFIED] alpha_plus_plus result conformed for sunday_andon
+[VERIFIED] heuristic_miner result conformed for sunday_andon
+[VERIFIED] inductive_miner result conformed for sunday_andon
+[VERIFIED] genetic_algorithm result conformed for sunday_andon
+[VERIFIED] pso result conformed for sunday_andon
+[VERIFIED] a_star result conformed for sunday_andon
+[VERIFIED] hill_climbing result conformed for sunday_andon
+[VERIFIED] aco result conformed for sunday_andon
+[RECEIPT EMITTED] sunday_andon -> /Users/sac/wasm4pm/examples/out/sunday_andon.receipt.json
+
+[RUNNING] benevolence_route...
+[VERIFIED] simulated_annealing result conformed for benevolence_route
+[VERIFIED] declare result conformed for benevolence_route
+[VERIFIED] optimized_dfg result conformed for benevolence_route
+[VERIFIED] ilp result conformed for benevolence_route
+[VERIFIED] simd_streaming_dfg result conformed for benevolence_route
+[VERIFIED] hierarchical_dfg result conformed for benevolence_route
+[VERIFIED] streaming_log result conformed for benevolence_route
+[VERIFIED] smart_engine result conformed for benevolence_route
+[RECEIPT EMITTED] benevolence_route -> /Users/sac/wasm4pm/examples/out/benevolence_route.receipt.json
+
+[RUNNING] finance_audit...
+[VERIFIED] ml_classify result conformed for finance_audit
+[VERIFIED] ml_cluster result conformed for finance_audit
+[VERIFIED] ml_forecast result conformed for finance_audit
+[VERIFIED] ml_anomaly result conformed for finance_audit
+[VERIFIED] ml_regress result conformed for finance_audit
+[VERIFIED] ml_pca result conformed for finance_audit
+[VERIFIED] transition_system result conformed for finance_audit
+[VERIFIED] log_to_trie result conformed for finance_audit
+[RECEIPT EMITTED] finance_audit -> /Users/sac/wasm4pm/examples/out/finance_audit.receipt.json
+
+[RUNNING] supply_chain_port...
+[VERIFIED] causal_graph result conformed for supply_chain_port
+[VERIFIED] performance_spectrum result conformed for supply_chain_port
+[VERIFIED] batches result conformed for supply_chain_port
+[VERIFIED] correlation_miner result conformed for supply_chain_port
+[VERIFIED] generalization result conformed for supply_chain_port
+[VERIFIED] etconformance_precision result conformed for supply_chain_port
+[VERIFIED] alignments result conformed for supply_chain_port
+[VERIFIED] complexity_metrics result conformed for supply_chain_port
+[RECEIPT EMITTED] supply_chain_port -> /Users/sac/wasm4pm/examples/out/supply_chain_port.receipt.json
+
+[SUCCESS] All 8 examples passed with receipts.
