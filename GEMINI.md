@@ -190,17 +190,18 @@ When claiming release readiness, show actual output for:
 - git status --short
 - git rev-parse HEAD
 - node -p "require('./package.json').version"
-- pnpm run release:full
-- pnpm run release:algorithm-behavior
-- pnpm run release:verify-algorithm-behavior
-- pnpm run examples:gate
-- pnpm run examples:verify-receipts
-- pnpm run cli:parity
-- pnpm run prepublish:pack-smoke
-- pnpm run release:pack-contents
-- pnpm run release:certificate
+- npm run release:full
+- npm run release:algorithm-behavior
+- npm run release:verify-algorithm-behavior
+- npm run examples:gate
+- tsx scripts/release/verify-receipt-authenticity.ts
+- npm run cli:parity
+- bash scripts/release/verify-pack-smoke.sh ${VERSION}
+- npm run release:certificate
 - npm pack --dry-run
 - npm publish --dry-run
+- cargo check && cargo test --lib --workspace
+- cargo publish --dry-run --allow-dirty --workspace
 
 Also show actual files from disk:
 
@@ -211,6 +212,10 @@ Also show actual files from disk:
 - representative positive behavior receipt
 - representative structured-failure receipt
 - representative invariant receipt
+
+## Boundary Proof Verification (Ostar Doctor & Auditor)
+
+Before claiming release readiness, you MUST prove that the verifiers actually work by intentionally corrupting an artifact (e.g. modifying a receipt hash) and verifying that the `release:verify-algorithm-behavior` and/or `verify-receipt-authenticity.ts` scripts correctly reject the corrupted state. This prevents "Receipt Theater".
 
 ## Blocker Handling
 
@@ -251,6 +256,8 @@ Expected:
 wasm4pm@<version>
 
 The release certificate, reachability evidence, behavior evidence, example receipts, npm pack output, and post-publish receipt must all use the same package identity.
+
+For Cargo (Rust), all workspace members MUST use the exact same version string as the root `Cargo.toml` (which must match `package.json`) to ensure dependency consistency during `cargo publish`. Any mismatch in path dependency versions is a state of `PackageIdentityMismatch`.
 
 If any artifact uses a different package identity, state is PackageIdentityMismatch.
 
