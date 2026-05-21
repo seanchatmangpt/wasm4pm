@@ -20,3 +20,5 @@ Welcome to the unified documentation source of truth. Every document here is gro
 - [Architecture Overview](../docs/explanation/architecture_overview.md)
 - [Old AI vs. LLM Doctrine](../docs/explanation/old_ai_vs_llms.md)
 - [Combinatorial Maximalism](../docs/explanation/combinatorial_maximalism_closure_discipline.md)
+- [Receipt Truth Verification](../docs/explanation/prd_ard_receipt_truth_verification.md)
+

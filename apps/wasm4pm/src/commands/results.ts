@@ -561,11 +561,11 @@ export const results = defineCommand({
           let ocelMissing = false;
           if (matchedReceipt) {
              const r = matchedReceipt as any;
-             if (!r.observed_path || !r.observed_path.ocel) {
+             if (!r.observed_path || !r.observed_path.observed_ocel2) {
                 ocelMissing = true;
              } else if (r.algorithms && Array.isArray(r.algorithms)) {
                 for (const algo of r.algorithms) {
-                   if (!algo.observed_path || !algo.observed_path.ocel) {
+                   if (!algo.observed_path || !algo.observed_path.observed_ocel2) {
                       ocelMissing = true;
                       break;
                    }

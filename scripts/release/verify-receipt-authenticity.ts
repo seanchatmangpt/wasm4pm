@@ -57,21 +57,24 @@ async function main() {
     }
 
     for (const algo of receipt.algorithms) {
-       if (!algo.observed_path || !algo.observed_path.ocel) {
+       if (!algo.observed_path || !algo.observed_path.observed_ocel2) {
           throw new Error(`Missing embedded OCEL path in algorithm ${algo.id} in ${file}`);
        }
-       if (!algo.expected_path || !algo.expected_path.required_events) {
-          throw new Error(`Missing expected path events in algorithm ${algo.id} in ${file}`);
+       if (!algo.expected_path || !algo.expected_path.expected_ocel2) {
+          throw new Error(`Missing expected OCEL path in algorithm ${algo.id} in ${file}`);
+       }
+       if (!algo.boundary_evidence || typeof algo.boundary_evidence.exit_code !== 'number') {
+          throw new Error(`Missing boundary evidence in algorithm ${algo.id} in ${file}`);
        }
        
        // Verify canonical OCEL hash matches
-       const canonicalOcelHash = createHash('sha256').update(JSON.stringify(algo.observed_path.ocel)).digest('hex');
-       if (canonicalOcelHash !== algo.observed_path.observed_ocel_hash) {
-          throw new Error(`OCEL path mismatch in algorithm ${algo.id} in ${file}. Expected hash: ${algo.observed_path.observed_ocel_hash}, Got: ${canonicalOcelHash}`);
+       const canonicalOcelHash = createHash('sha256').update(JSON.stringify(algo.observed_path.observed_ocel2)).digest('hex');
+       if (canonicalOcelHash !== algo.observed_path.observed_ocel2_hash) {
+          throw new Error(`OCEL path mismatch in algorithm ${algo.id} in ${file}. Expected hash: ${algo.observed_path.observed_ocel2_hash}, Got: ${canonicalOcelHash}`);
        }
     }
 
-    // Verify no placeholders
+    // Verify no placeholders (this will throw if it finds placeholder text)
     verifyNoPlaceholders(receipt, filePath);
 
     // Recompute receipt_hash

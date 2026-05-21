@@ -49,10 +49,12 @@ describe('Embedded OCEL Execution Receipts', () => {
       status: 'success',
       timestamp: new Date().toISOString(),
       observed_path: {
-        ocel: {
-          schema: 'wasm4pm.ExecutionOCEL.v1',
+        observed_ocel2: {
+          ocel: '2.0',
           events: [],
-          objects: []
+          objects: [],
+          eventTypes: [],
+          objectTypes: []
         }
       }
     };

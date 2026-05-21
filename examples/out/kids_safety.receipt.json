@@ -3,8 +3,14 @@
   "receipt_schema": "Wasm4pmExecutionReceipt.v1",
   "package": "wasm4pm",
   "version": "26.5.21",
-  "commit": "2b4dcfcbbb8da544e48f083c44d40b01a76ba53d",
+  "commit": "0e3c26263bc1f6115ffa0232ba9aa270f06dfd92",
   "hash_algorithm": "BLAKE3",
+  "time_basis": "LogicalMonotonicClock",
+  "canonicalization": {
+    "name": "CanonicalOCEL2ForWasm4pm",
+    "version": 1,
+    "hash_algorithm": "BLAKE3"
+  },
   "example_id": "kids_safety",
   "input": {
     "event_log_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565",
@@ -16,56 +22,108 @@
       "id": "streaming_log",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "750918b33ba71088ac1a9e5cc6f85df55a4bec5c0566f858e5c89f5b0fc1753a",
-      "duration_ms": 54.772,
+      "result_hash": "1b1635f188a6542465828b085c56fa4d3d64b66513a00b0bb5b6e526521a8312",
+      "duration_ms": 32.687,
       "expected_path": {
         "route_id": "wpm.example.kids_safety.streaming_log.v1",
-        "expected_ocel_hash": "61f02d8a8fae66fba3d2d850f981969ee205e1f6d6186ff7283512f08059e648",
-        "required_events": [
-          "wpm.input.import.started",
-          "wpm.input.import.completed",
-          "wpm.algorithm.registry.checked",
-          "wpm.algorithm.dispatched",
-          "wpm.algorithm.completed",
-          "wpm.result.hashed",
-          "wpm.artifact.emitted",
-          "wpm.task.closed",
-          "wpm.receipt.verified"
-        ]
-      },
-      "observed_path": {
-        "ocel": {
-          "schema": "wasm4pm.ExecutionOCEL.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
           "events": [
             {
-              "id": "evt_import_started",
-              "activity": "wpm.input.import.started",
-              "timestamp": "2026-05-21T22:09:42.729Z",
-              "objects": [
+              "id": "evt_kids_safety_streaming_log_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:09.946Z",
+              "relationships": [
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 },
                 {
-                  "id": "example_kids_safety",
-                  "type": "Example",
+                  "objectId": "example_kids_safety",
                   "qualifier": "example"
                 }
               ],
               "attributes": {
                 "format": "xes",
-                "activity_key": "concept:name"
+                "activity_key": "concept:name",
+                "stage": "expected"
               }
             },
             {
-              "id": "evt_import_completed",
-              "activity": "wpm.input.import.completed",
-              "timestamp": "2026-05-21T22:09:42.739Z",
-              "objects": [
+              "id": "evt_kids_safety_streaming_log_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:09.956Z",
+              "relationships": [
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 }
               ],
@@ -74,13 +132,12 @@
               }
             },
             {
-              "id": "evt_algorithm_registry_checked",
-              "activity": "wpm.algorithm.registry.checked",
-              "timestamp": "2026-05-21T22:09:42.749Z",
-              "objects": [
+              "id": "evt_kids_safety_streaming_log_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:09.966Z",
+              "relationships": [
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 }
               ],
@@ -89,23 +146,20 @@
               }
             },
             {
-              "id": "evt_algorithm_dispatched",
-              "activity": "wpm.algorithm.dispatched",
-              "timestamp": "2026-05-21T22:09:42.759Z",
-              "objects": [
+              "id": "evt_kids_safety_streaming_log_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:09.976Z",
+              "relationships": [
                 {
-                  "id": "algorithm_streaming_log",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_streaming_log",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 },
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 }
               ],
@@ -115,64 +169,75 @@
               }
             },
             {
-              "id": "evt_algorithm_completed",
-              "activity": "wpm.algorithm.completed",
-              "timestamp": "2026-05-21T22:09:42.769Z",
-              "objects": [
+              "id": "evt_kids_safety_streaming_log_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:09.986Z",
+              "relationships": [
                 {
-                  "id": "algorithm_streaming_log",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_streaming_log",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "id": "result_streaming_log_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_streaming_log_kids_safety",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "750918b33ba71088ac1a9e5cc6f85df55a4bec5c0566f858e5c89f5b0fc1753a",
-                "duration_ms": 54.772
+                "result_hash": "1b1635f188a6542465828b085c56fa4d3d64b66513a00b0bb5b6e526521a8312",
+                "duration_ms": 32.687
               }
             },
             {
-              "id": "evt_result_hashed",
-              "activity": "wpm.result.hashed",
-              "timestamp": "2026-05-21T22:09:42.779Z",
-              "objects": [
+              "id": "evt_kids_safety_streaming_log_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:09.996Z",
+              "relationships": [
                 {
-                  "id": "result_streaming_log_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_streaming_log_kids_safety",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "750918b33ba71088ac1a9e5cc6f85df55a4bec5c0566f858e5c89f5b0fc1753a"
+                "result_hash": "1b1635f188a6542465828b085c56fa4d3d64b66513a00b0bb5b6e526521a8312"
               }
             },
             {
-              "id": "evt_artifact_emitted",
-              "activity": "wpm.artifact.emitted",
-              "timestamp": "2026-05-21T22:09:42.789Z",
-              "objects": [
+              "id": "evt_kids_safety_streaming_log_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.006Z",
+              "relationships": [
                 {
-                  "id": "result_streaming_log_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_streaming_log_kids_safety",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "750918b33ba71088ac1a9e5cc6f85df55a4bec5c0566f858e5c89f5b0fc1753a"
+                "result_hash": "1b1635f188a6542465828b085c56fa4d3d64b66513a00b0bb5b6e526521a8312"
               }
             },
             {
-              "id": "evt_task_closed",
-              "activity": "wpm.task.closed",
-              "timestamp": "2026-05-21T22:09:42.799Z",
-              "objects": [
+              "id": "evt_kids_safety_streaming_log_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.016Z",
+              "relationships": [
                 {
-                  "id": "receipt_kids_safety",
-                  "type": "Receipt",
+                  "objectId": "example_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_streaming_log",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_streaming_log_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
                   "qualifier": "task-context"
                 }
               ],
@@ -181,18 +246,34 @@
               }
             },
             {
-              "id": "evt_receipt_verified",
-              "activity": "wpm.receipt.verified",
-              "timestamp": "2026-05-21T22:09:42.809Z",
-              "objects": [
+              "id": "evt_kids_safety_streaming_log_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.026Z",
+              "relationships": [
                 {
-                  "id": "result_streaming_log_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_streaming_log_kids_safety",
                   "qualifier": "verified-result"
                 },
                 {
-                  "id": "receipt_kids_safety",
-                  "type": "Receipt",
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_kids_safety_streaming_log_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.036Z",
+              "relationships": [
+                {
+                  "objectId": "result_streaming_log_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
                   "qualifier": "receipt"
                 }
               ],
@@ -204,94 +285,455 @@
           "objects": [
             {
               "id": "example_kids_safety",
-              "type": "Example"
+              "type": "Example",
+              "attributes": {}
             },
             {
               "id": "log_kids_safety",
-              "type": "EventLog"
+              "type": "EventLog",
+              "attributes": {}
             },
             {
               "id": "algorithm_streaming_log",
-              "type": "Algorithm"
+              "type": "Algorithm",
+              "attributes": {}
             },
             {
               "id": "registry_v26.5.21",
-              "type": "AlgorithmRegistry"
+              "type": "AlgorithmRegistry",
+              "attributes": {}
             },
             {
               "id": "result_streaming_log_kids_safety",
-              "type": "AlgorithmResult"
+              "type": "AlgorithmResult",
+              "attributes": {}
             },
             {
               "id": "receipt_kids_safety",
-              "type": "Receipt"
+              "type": "Receipt",
+              "attributes": {}
             }
           ]
         },
-        "observed_ocel_hash": "7b79881a14a0cd5d0a71af117e46268871385c036971451d592e78901eb7d7dc",
-        "observed_result_hash": "750918b33ba71088ac1a9e5cc6f85df55a4bec5c0566f858e5c89f5b0fc1753a"
+        "expected_ocel2_hash": "b9ddb2635808824bfc737d51482b19a87ef07cae86fd2121ebbfb043fb4451a2"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_kids_safety_streaming_log_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:09.946Z",
+              "relationships": [
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_kids_safety",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_kids_safety_streaming_log_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:09.956Z",
+              "relationships": [
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565"
+              }
+            },
+            {
+              "id": "evt_kids_safety_streaming_log_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:09.966Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_kids_safety_streaming_log_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:09.976Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_streaming_log",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_kids_safety_streaming_log_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:09.986Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_streaming_log",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_streaming_log_kids_safety",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "1b1635f188a6542465828b085c56fa4d3d64b66513a00b0bb5b6e526521a8312",
+                "duration_ms": 32.687
+              }
+            },
+            {
+              "id": "evt_kids_safety_streaming_log_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:09.996Z",
+              "relationships": [
+                {
+                  "objectId": "result_streaming_log_kids_safety",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "1b1635f188a6542465828b085c56fa4d3d64b66513a00b0bb5b6e526521a8312"
+              }
+            },
+            {
+              "id": "evt_kids_safety_streaming_log_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.006Z",
+              "relationships": [
+                {
+                  "objectId": "result_streaming_log_kids_safety",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "1b1635f188a6542465828b085c56fa4d3d64b66513a00b0bb5b6e526521a8312"
+              }
+            },
+            {
+              "id": "evt_kids_safety_streaming_log_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.016Z",
+              "relationships": [
+                {
+                  "objectId": "example_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_streaming_log",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_streaming_log_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_kids_safety_streaming_log_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.026Z",
+              "relationships": [
+                {
+                  "objectId": "result_streaming_log_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_kids_safety_streaming_log_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.036Z",
+              "relationships": [
+                {
+                  "objectId": "result_streaming_log_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_kids_safety",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_kids_safety",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_streaming_log",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_streaming_log_kids_safety",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_kids_safety",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "379633d48878a9d1e65525678625efbfb23f5d4f664a33f46474441b8589d21f",
+        "observed_result_hash": "1b1635f188a6542465828b085c56fa4d3d64b66513a00b0bb5b6e526521a8312"
       },
       "alignment": {
         "expected_vs_observed": "Pass",
         "missing_events": [],
         "unexpected_events": [],
         "refusal_state": null
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565",
+        "output_artifact_hash": "1b1635f188a6542465828b085c56fa4d3d64b66513a00b0bb5b6e526521a8312",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
     {
       "id": "smart_engine",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "d31b9d2434df6c911165a85741699212c6b1bf54fbcf83ebc6d3e0e1fbcbe944",
-      "duration_ms": 27.06,
+      "result_hash": "5976feb536d7dd2265dec64c01e791903f0b94f576652182a9f167f472e157a2",
+      "duration_ms": 41.693,
       "expected_path": {
         "route_id": "wpm.example.kids_safety.smart_engine.v1",
-        "expected_ocel_hash": "ebc8335c227ca4843ce21275b822ce67ba098138eceb799b8b376141546cff62",
-        "required_events": [
-          "wpm.input.import.started",
-          "wpm.input.import.completed",
-          "wpm.algorithm.registry.checked",
-          "wpm.algorithm.dispatched",
-          "wpm.algorithm.completed",
-          "wpm.result.hashed",
-          "wpm.artifact.emitted",
-          "wpm.task.closed",
-          "wpm.receipt.verified"
-        ]
-      },
-      "observed_path": {
-        "ocel": {
-          "schema": "wasm4pm.ExecutionOCEL.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
           "events": [
             {
-              "id": "evt_import_started",
-              "activity": "wpm.input.import.started",
-              "timestamp": "2026-05-21T22:09:42.729Z",
-              "objects": [
+              "id": "evt_kids_safety_smart_engine_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:09.946Z",
+              "relationships": [
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 },
                 {
-                  "id": "example_kids_safety",
-                  "type": "Example",
+                  "objectId": "example_kids_safety",
                   "qualifier": "example"
                 }
               ],
               "attributes": {
                 "format": "xes",
-                "activity_key": "concept:name"
+                "activity_key": "concept:name",
+                "stage": "expected"
               }
             },
             {
-              "id": "evt_import_completed",
-              "activity": "wpm.input.import.completed",
-              "timestamp": "2026-05-21T22:09:42.739Z",
-              "objects": [
+              "id": "evt_kids_safety_smart_engine_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:09.956Z",
+              "relationships": [
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 }
               ],
@@ -300,13 +742,12 @@
               }
             },
             {
-              "id": "evt_algorithm_registry_checked",
-              "activity": "wpm.algorithm.registry.checked",
-              "timestamp": "2026-05-21T22:09:42.749Z",
-              "objects": [
+              "id": "evt_kids_safety_smart_engine_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:09.966Z",
+              "relationships": [
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 }
               ],
@@ -315,23 +756,20 @@
               }
             },
             {
-              "id": "evt_algorithm_dispatched",
-              "activity": "wpm.algorithm.dispatched",
-              "timestamp": "2026-05-21T22:09:42.759Z",
-              "objects": [
+              "id": "evt_kids_safety_smart_engine_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:09.976Z",
+              "relationships": [
                 {
-                  "id": "algorithm_smart_engine",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_smart_engine",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 },
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 }
               ],
@@ -341,64 +779,75 @@
               }
             },
             {
-              "id": "evt_algorithm_completed",
-              "activity": "wpm.algorithm.completed",
-              "timestamp": "2026-05-21T22:09:42.769Z",
-              "objects": [
+              "id": "evt_kids_safety_smart_engine_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:09.986Z",
+              "relationships": [
                 {
-                  "id": "algorithm_smart_engine",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_smart_engine",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "id": "result_smart_engine_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_smart_engine_kids_safety",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "d31b9d2434df6c911165a85741699212c6b1bf54fbcf83ebc6d3e0e1fbcbe944",
-                "duration_ms": 27.06
+                "result_hash": "5976feb536d7dd2265dec64c01e791903f0b94f576652182a9f167f472e157a2",
+                "duration_ms": 41.693
               }
             },
             {
-              "id": "evt_result_hashed",
-              "activity": "wpm.result.hashed",
-              "timestamp": "2026-05-21T22:09:42.779Z",
-              "objects": [
+              "id": "evt_kids_safety_smart_engine_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:09.996Z",
+              "relationships": [
                 {
-                  "id": "result_smart_engine_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_smart_engine_kids_safety",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "d31b9d2434df6c911165a85741699212c6b1bf54fbcf83ebc6d3e0e1fbcbe944"
+                "result_hash": "5976feb536d7dd2265dec64c01e791903f0b94f576652182a9f167f472e157a2"
               }
             },
             {
-              "id": "evt_artifact_emitted",
-              "activity": "wpm.artifact.emitted",
-              "timestamp": "2026-05-21T22:09:42.789Z",
-              "objects": [
+              "id": "evt_kids_safety_smart_engine_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.006Z",
+              "relationships": [
                 {
-                  "id": "result_smart_engine_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_smart_engine_kids_safety",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "d31b9d2434df6c911165a85741699212c6b1bf54fbcf83ebc6d3e0e1fbcbe944"
+                "result_hash": "5976feb536d7dd2265dec64c01e791903f0b94f576652182a9f167f472e157a2"
               }
             },
             {
-              "id": "evt_task_closed",
-              "activity": "wpm.task.closed",
-              "timestamp": "2026-05-21T22:09:42.799Z",
-              "objects": [
+              "id": "evt_kids_safety_smart_engine_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.016Z",
+              "relationships": [
                 {
-                  "id": "receipt_kids_safety",
-                  "type": "Receipt",
+                  "objectId": "example_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_smart_engine",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_smart_engine_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
                   "qualifier": "task-context"
                 }
               ],
@@ -407,18 +856,34 @@
               }
             },
             {
-              "id": "evt_receipt_verified",
-              "activity": "wpm.receipt.verified",
-              "timestamp": "2026-05-21T22:09:42.809Z",
-              "objects": [
+              "id": "evt_kids_safety_smart_engine_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.026Z",
+              "relationships": [
                 {
-                  "id": "result_smart_engine_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_smart_engine_kids_safety",
                   "qualifier": "verified-result"
                 },
                 {
-                  "id": "receipt_kids_safety",
-                  "type": "Receipt",
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_kids_safety_smart_engine_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.036Z",
+              "relationships": [
+                {
+                  "objectId": "result_smart_engine_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
                   "qualifier": "receipt"
                 }
               ],
@@ -430,94 +895,455 @@
           "objects": [
             {
               "id": "example_kids_safety",
-              "type": "Example"
+              "type": "Example",
+              "attributes": {}
             },
             {
               "id": "log_kids_safety",
-              "type": "EventLog"
+              "type": "EventLog",
+              "attributes": {}
             },
             {
               "id": "algorithm_smart_engine",
-              "type": "Algorithm"
+              "type": "Algorithm",
+              "attributes": {}
             },
             {
               "id": "registry_v26.5.21",
-              "type": "AlgorithmRegistry"
+              "type": "AlgorithmRegistry",
+              "attributes": {}
             },
             {
               "id": "result_smart_engine_kids_safety",
-              "type": "AlgorithmResult"
+              "type": "AlgorithmResult",
+              "attributes": {}
             },
             {
               "id": "receipt_kids_safety",
-              "type": "Receipt"
+              "type": "Receipt",
+              "attributes": {}
             }
           ]
         },
-        "observed_ocel_hash": "0d53dda9044e5e1eaebe31baffa1315f1fcea877755ab4fca819f05792f492b0",
-        "observed_result_hash": "d31b9d2434df6c911165a85741699212c6b1bf54fbcf83ebc6d3e0e1fbcbe944"
+        "expected_ocel2_hash": "50302eba39bc0c8f803eeb9d5814c63e208ecde8f8e925c8d85ad3d681edda95"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_kids_safety_smart_engine_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:09.946Z",
+              "relationships": [
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_kids_safety",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_kids_safety_smart_engine_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:09.956Z",
+              "relationships": [
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565"
+              }
+            },
+            {
+              "id": "evt_kids_safety_smart_engine_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:09.966Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_kids_safety_smart_engine_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:09.976Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_smart_engine",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_kids_safety_smart_engine_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:09.986Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_smart_engine",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_smart_engine_kids_safety",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5976feb536d7dd2265dec64c01e791903f0b94f576652182a9f167f472e157a2",
+                "duration_ms": 41.693
+              }
+            },
+            {
+              "id": "evt_kids_safety_smart_engine_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:09.996Z",
+              "relationships": [
+                {
+                  "objectId": "result_smart_engine_kids_safety",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5976feb536d7dd2265dec64c01e791903f0b94f576652182a9f167f472e157a2"
+              }
+            },
+            {
+              "id": "evt_kids_safety_smart_engine_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.006Z",
+              "relationships": [
+                {
+                  "objectId": "result_smart_engine_kids_safety",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5976feb536d7dd2265dec64c01e791903f0b94f576652182a9f167f472e157a2"
+              }
+            },
+            {
+              "id": "evt_kids_safety_smart_engine_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.016Z",
+              "relationships": [
+                {
+                  "objectId": "example_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_smart_engine",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_smart_engine_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_kids_safety_smart_engine_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.026Z",
+              "relationships": [
+                {
+                  "objectId": "result_smart_engine_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_kids_safety_smart_engine_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.036Z",
+              "relationships": [
+                {
+                  "objectId": "result_smart_engine_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_kids_safety",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_kids_safety",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_smart_engine",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_smart_engine_kids_safety",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_kids_safety",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "fb41279a1f002d00c3c73105f5d8b04c085848f5e1c5fb2427d311073038abc7",
+        "observed_result_hash": "5976feb536d7dd2265dec64c01e791903f0b94f576652182a9f167f472e157a2"
       },
       "alignment": {
         "expected_vs_observed": "Pass",
         "missing_events": [],
         "unexpected_events": [],
         "refusal_state": null
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565",
+        "output_artifact_hash": "5976feb536d7dd2265dec64c01e791903f0b94f576652182a9f167f472e157a2",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
     {
       "id": "ml_classify",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "540b6e152642b34dd78387767041035e376e19024589d6bf138a39d8ff4dbc7d",
-      "duration_ms": 24.916,
+      "result_hash": "ecd921830f3f28e084c39045b908eb3667b0fdf417ce03eb9ae5f1b114bba14a",
+      "duration_ms": 29.603,
       "expected_path": {
         "route_id": "wpm.example.kids_safety.ml_classify.v1",
-        "expected_ocel_hash": "e612a749ba9ba10771fdcd89b2f5259b98bf6bc7384de1ad2bc1bbf13877ee0e",
-        "required_events": [
-          "wpm.input.import.started",
-          "wpm.input.import.completed",
-          "wpm.algorithm.registry.checked",
-          "wpm.algorithm.dispatched",
-          "wpm.algorithm.completed",
-          "wpm.result.hashed",
-          "wpm.artifact.emitted",
-          "wpm.task.closed",
-          "wpm.receipt.verified"
-        ]
-      },
-      "observed_path": {
-        "ocel": {
-          "schema": "wasm4pm.ExecutionOCEL.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
           "events": [
             {
-              "id": "evt_import_started",
-              "activity": "wpm.input.import.started",
-              "timestamp": "2026-05-21T22:09:42.729Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_classify_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:09.946Z",
+              "relationships": [
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 },
                 {
-                  "id": "example_kids_safety",
-                  "type": "Example",
+                  "objectId": "example_kids_safety",
                   "qualifier": "example"
                 }
               ],
               "attributes": {
                 "format": "xes",
-                "activity_key": "concept:name"
+                "activity_key": "concept:name",
+                "stage": "expected"
               }
             },
             {
-              "id": "evt_import_completed",
-              "activity": "wpm.input.import.completed",
-              "timestamp": "2026-05-21T22:09:42.739Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_classify_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:09.956Z",
+              "relationships": [
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 }
               ],
@@ -526,13 +1352,12 @@
               }
             },
             {
-              "id": "evt_algorithm_registry_checked",
-              "activity": "wpm.algorithm.registry.checked",
-              "timestamp": "2026-05-21T22:09:42.749Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_classify_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:09.966Z",
+              "relationships": [
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 }
               ],
@@ -541,23 +1366,20 @@
               }
             },
             {
-              "id": "evt_algorithm_dispatched",
-              "activity": "wpm.algorithm.dispatched",
-              "timestamp": "2026-05-21T22:09:42.759Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_classify_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:09.976Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_classify",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_classify",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 },
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 }
               ],
@@ -567,64 +1389,75 @@
               }
             },
             {
-              "id": "evt_algorithm_completed",
-              "activity": "wpm.algorithm.completed",
-              "timestamp": "2026-05-21T22:09:42.769Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_classify_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:09.986Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_classify",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_classify",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "id": "result_ml_classify_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_classify_kids_safety",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "540b6e152642b34dd78387767041035e376e19024589d6bf138a39d8ff4dbc7d",
-                "duration_ms": 24.916
+                "result_hash": "ecd921830f3f28e084c39045b908eb3667b0fdf417ce03eb9ae5f1b114bba14a",
+                "duration_ms": 29.603
               }
             },
             {
-              "id": "evt_result_hashed",
-              "activity": "wpm.result.hashed",
-              "timestamp": "2026-05-21T22:09:42.779Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_classify_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:09.996Z",
+              "relationships": [
                 {
-                  "id": "result_ml_classify_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_classify_kids_safety",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "540b6e152642b34dd78387767041035e376e19024589d6bf138a39d8ff4dbc7d"
+                "result_hash": "ecd921830f3f28e084c39045b908eb3667b0fdf417ce03eb9ae5f1b114bba14a"
               }
             },
             {
-              "id": "evt_artifact_emitted",
-              "activity": "wpm.artifact.emitted",
-              "timestamp": "2026-05-21T22:09:42.789Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_classify_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.006Z",
+              "relationships": [
                 {
-                  "id": "result_ml_classify_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_classify_kids_safety",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "540b6e152642b34dd78387767041035e376e19024589d6bf138a39d8ff4dbc7d"
+                "result_hash": "ecd921830f3f28e084c39045b908eb3667b0fdf417ce03eb9ae5f1b114bba14a"
               }
             },
             {
-              "id": "evt_task_closed",
-              "activity": "wpm.task.closed",
-              "timestamp": "2026-05-21T22:09:42.799Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_classify_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.016Z",
+              "relationships": [
                 {
-                  "id": "receipt_kids_safety",
-                  "type": "Receipt",
+                  "objectId": "example_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_classify",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_classify_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
                   "qualifier": "task-context"
                 }
               ],
@@ -633,18 +1466,34 @@
               }
             },
             {
-              "id": "evt_receipt_verified",
-              "activity": "wpm.receipt.verified",
-              "timestamp": "2026-05-21T22:09:42.809Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_classify_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.026Z",
+              "relationships": [
                 {
-                  "id": "result_ml_classify_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_classify_kids_safety",
                   "qualifier": "verified-result"
                 },
                 {
-                  "id": "receipt_kids_safety",
-                  "type": "Receipt",
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_classify_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.036Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_classify_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
                   "qualifier": "receipt"
                 }
               ],
@@ -656,94 +1505,455 @@
           "objects": [
             {
               "id": "example_kids_safety",
-              "type": "Example"
+              "type": "Example",
+              "attributes": {}
             },
             {
               "id": "log_kids_safety",
-              "type": "EventLog"
+              "type": "EventLog",
+              "attributes": {}
             },
             {
               "id": "algorithm_ml_classify",
-              "type": "Algorithm"
+              "type": "Algorithm",
+              "attributes": {}
             },
             {
               "id": "registry_v26.5.21",
-              "type": "AlgorithmRegistry"
+              "type": "AlgorithmRegistry",
+              "attributes": {}
             },
             {
               "id": "result_ml_classify_kids_safety",
-              "type": "AlgorithmResult"
+              "type": "AlgorithmResult",
+              "attributes": {}
             },
             {
               "id": "receipt_kids_safety",
-              "type": "Receipt"
+              "type": "Receipt",
+              "attributes": {}
             }
           ]
         },
-        "observed_ocel_hash": "b0c0c256c8a4b95da22a85e2bf6b845a2f4d63ab3abf9a86e2921f0e2f7f4b8e",
-        "observed_result_hash": "540b6e152642b34dd78387767041035e376e19024589d6bf138a39d8ff4dbc7d"
+        "expected_ocel2_hash": "0640d0df2ec70df39307075bd1db5cd0466739600dbdf8c6e8e662809ce38a53"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_kids_safety_ml_classify_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:09.946Z",
+              "relationships": [
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_kids_safety",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_classify_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:09.956Z",
+              "relationships": [
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_classify_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:09.966Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_classify_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:09.976Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_classify",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_classify_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:09.986Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_classify",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ml_classify_kids_safety",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ecd921830f3f28e084c39045b908eb3667b0fdf417ce03eb9ae5f1b114bba14a",
+                "duration_ms": 29.603
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_classify_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:09.996Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_classify_kids_safety",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ecd921830f3f28e084c39045b908eb3667b0fdf417ce03eb9ae5f1b114bba14a"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_classify_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.006Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_classify_kids_safety",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ecd921830f3f28e084c39045b908eb3667b0fdf417ce03eb9ae5f1b114bba14a"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_classify_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.016Z",
+              "relationships": [
+                {
+                  "objectId": "example_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_classify",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_classify_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_classify_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.026Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_classify_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_classify_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.036Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_classify_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_kids_safety",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_kids_safety",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ml_classify",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ml_classify_kids_safety",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_kids_safety",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "1b975c0c0dd497d0dc83be4c53cb8aa574635734cf9a356164009e5c282249d6",
+        "observed_result_hash": "ecd921830f3f28e084c39045b908eb3667b0fdf417ce03eb9ae5f1b114bba14a"
       },
       "alignment": {
         "expected_vs_observed": "Pass",
         "missing_events": [],
         "unexpected_events": [],
         "refusal_state": null
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565",
+        "output_artifact_hash": "ecd921830f3f28e084c39045b908eb3667b0fdf417ce03eb9ae5f1b114bba14a",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
     {
       "id": "ml_cluster",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "96a62ed92b2478e1d1dba9eb71fdda8f545ec0d4f761b1f8c11018d968714bbd",
-      "duration_ms": 14.078,
+      "result_hash": "b82b33b5332767830cd88a9020490958e91fbba8bf599c3ab3367e364c137c1e",
+      "duration_ms": 30.307,
       "expected_path": {
         "route_id": "wpm.example.kids_safety.ml_cluster.v1",
-        "expected_ocel_hash": "46fd7c688ba3d09f55e1fb129cc308ecb02994b3f0034dddd4bd52c8edcd06bc",
-        "required_events": [
-          "wpm.input.import.started",
-          "wpm.input.import.completed",
-          "wpm.algorithm.registry.checked",
-          "wpm.algorithm.dispatched",
-          "wpm.algorithm.completed",
-          "wpm.result.hashed",
-          "wpm.artifact.emitted",
-          "wpm.task.closed",
-          "wpm.receipt.verified"
-        ]
-      },
-      "observed_path": {
-        "ocel": {
-          "schema": "wasm4pm.ExecutionOCEL.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
           "events": [
             {
-              "id": "evt_import_started",
-              "activity": "wpm.input.import.started",
-              "timestamp": "2026-05-21T22:09:42.729Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_cluster_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:09.946Z",
+              "relationships": [
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 },
                 {
-                  "id": "example_kids_safety",
-                  "type": "Example",
+                  "objectId": "example_kids_safety",
                   "qualifier": "example"
                 }
               ],
               "attributes": {
                 "format": "xes",
-                "activity_key": "concept:name"
+                "activity_key": "concept:name",
+                "stage": "expected"
               }
             },
             {
-              "id": "evt_import_completed",
-              "activity": "wpm.input.import.completed",
-              "timestamp": "2026-05-21T22:09:42.739Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_cluster_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:09.956Z",
+              "relationships": [
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 }
               ],
@@ -752,13 +1962,12 @@
               }
             },
             {
-              "id": "evt_algorithm_registry_checked",
-              "activity": "wpm.algorithm.registry.checked",
-              "timestamp": "2026-05-21T22:09:42.749Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_cluster_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:09.966Z",
+              "relationships": [
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 }
               ],
@@ -767,23 +1976,20 @@
               }
             },
             {
-              "id": "evt_algorithm_dispatched",
-              "activity": "wpm.algorithm.dispatched",
-              "timestamp": "2026-05-21T22:09:42.759Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_cluster_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:09.976Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_cluster",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_cluster",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 },
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 }
               ],
@@ -793,64 +1999,75 @@
               }
             },
             {
-              "id": "evt_algorithm_completed",
-              "activity": "wpm.algorithm.completed",
-              "timestamp": "2026-05-21T22:09:42.769Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_cluster_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:09.986Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_cluster",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_cluster",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "id": "result_ml_cluster_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_cluster_kids_safety",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "96a62ed92b2478e1d1dba9eb71fdda8f545ec0d4f761b1f8c11018d968714bbd",
-                "duration_ms": 14.078
+                "result_hash": "b82b33b5332767830cd88a9020490958e91fbba8bf599c3ab3367e364c137c1e",
+                "duration_ms": 30.307
               }
             },
             {
-              "id": "evt_result_hashed",
-              "activity": "wpm.result.hashed",
-              "timestamp": "2026-05-21T22:09:42.779Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_cluster_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:09.996Z",
+              "relationships": [
                 {
-                  "id": "result_ml_cluster_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_cluster_kids_safety",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "96a62ed92b2478e1d1dba9eb71fdda8f545ec0d4f761b1f8c11018d968714bbd"
+                "result_hash": "b82b33b5332767830cd88a9020490958e91fbba8bf599c3ab3367e364c137c1e"
               }
             },
             {
-              "id": "evt_artifact_emitted",
-              "activity": "wpm.artifact.emitted",
-              "timestamp": "2026-05-21T22:09:42.789Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_cluster_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.006Z",
+              "relationships": [
                 {
-                  "id": "result_ml_cluster_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_cluster_kids_safety",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "96a62ed92b2478e1d1dba9eb71fdda8f545ec0d4f761b1f8c11018d968714bbd"
+                "result_hash": "b82b33b5332767830cd88a9020490958e91fbba8bf599c3ab3367e364c137c1e"
               }
             },
             {
-              "id": "evt_task_closed",
-              "activity": "wpm.task.closed",
-              "timestamp": "2026-05-21T22:09:42.799Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_cluster_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.016Z",
+              "relationships": [
                 {
-                  "id": "receipt_kids_safety",
-                  "type": "Receipt",
+                  "objectId": "example_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_cluster",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_cluster_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
                   "qualifier": "task-context"
                 }
               ],
@@ -859,18 +2076,34 @@
               }
             },
             {
-              "id": "evt_receipt_verified",
-              "activity": "wpm.receipt.verified",
-              "timestamp": "2026-05-21T22:09:42.809Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_cluster_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.026Z",
+              "relationships": [
                 {
-                  "id": "result_ml_cluster_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_cluster_kids_safety",
                   "qualifier": "verified-result"
                 },
                 {
-                  "id": "receipt_kids_safety",
-                  "type": "Receipt",
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_cluster_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.036Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_cluster_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
                   "qualifier": "receipt"
                 }
               ],
@@ -882,94 +2115,455 @@
           "objects": [
             {
               "id": "example_kids_safety",
-              "type": "Example"
+              "type": "Example",
+              "attributes": {}
             },
             {
               "id": "log_kids_safety",
-              "type": "EventLog"
+              "type": "EventLog",
+              "attributes": {}
             },
             {
               "id": "algorithm_ml_cluster",
-              "type": "Algorithm"
+              "type": "Algorithm",
+              "attributes": {}
             },
             {
               "id": "registry_v26.5.21",
-              "type": "AlgorithmRegistry"
+              "type": "AlgorithmRegistry",
+              "attributes": {}
             },
             {
               "id": "result_ml_cluster_kids_safety",
-              "type": "AlgorithmResult"
+              "type": "AlgorithmResult",
+              "attributes": {}
             },
             {
               "id": "receipt_kids_safety",
-              "type": "Receipt"
+              "type": "Receipt",
+              "attributes": {}
             }
           ]
         },
-        "observed_ocel_hash": "66e69bafe297fc47721e0824bceddbbe425d445ce4ccc9381ffbb284f054eebb",
-        "observed_result_hash": "96a62ed92b2478e1d1dba9eb71fdda8f545ec0d4f761b1f8c11018d968714bbd"
+        "expected_ocel2_hash": "d6d4455eb5b680090d0c9ce4083f0ad12467858fede5adcfa3d2370639c43cf7"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_kids_safety_ml_cluster_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:09.946Z",
+              "relationships": [
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_kids_safety",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_cluster_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:09.956Z",
+              "relationships": [
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_cluster_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:09.966Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_cluster_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:09.976Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_cluster",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_cluster_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:09.986Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_cluster",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ml_cluster_kids_safety",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "b82b33b5332767830cd88a9020490958e91fbba8bf599c3ab3367e364c137c1e",
+                "duration_ms": 30.307
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_cluster_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:09.996Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_cluster_kids_safety",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "b82b33b5332767830cd88a9020490958e91fbba8bf599c3ab3367e364c137c1e"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_cluster_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.006Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_cluster_kids_safety",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "b82b33b5332767830cd88a9020490958e91fbba8bf599c3ab3367e364c137c1e"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_cluster_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.016Z",
+              "relationships": [
+                {
+                  "objectId": "example_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_cluster",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_cluster_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_cluster_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.026Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_cluster_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_cluster_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.036Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_cluster_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_kids_safety",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_kids_safety",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ml_cluster",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ml_cluster_kids_safety",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_kids_safety",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "bd593355016af4ae97085a07759e9df590edd3e1d1f0c1871d106c99d733ca1c",
+        "observed_result_hash": "b82b33b5332767830cd88a9020490958e91fbba8bf599c3ab3367e364c137c1e"
       },
       "alignment": {
         "expected_vs_observed": "Pass",
         "missing_events": [],
         "unexpected_events": [],
         "refusal_state": null
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565",
+        "output_artifact_hash": "b82b33b5332767830cd88a9020490958e91fbba8bf599c3ab3367e364c137c1e",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
     {
       "id": "ml_forecast",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "fc784ddfa5884233089a97100767d67536f0b2376ca0d6a626d3ee9ba0fe7c84",
-      "duration_ms": 40.407,
+      "result_hash": "b7650b6e1c727ef023a392ec12147d1ddeee5c77be13fffad919ee4c5334e50c",
+      "duration_ms": 43.413,
       "expected_path": {
         "route_id": "wpm.example.kids_safety.ml_forecast.v1",
-        "expected_ocel_hash": "9b2eb0ad847654db9fde26063fed900a6e8ead227f7e188cd228495a899bac2f",
-        "required_events": [
-          "wpm.input.import.started",
-          "wpm.input.import.completed",
-          "wpm.algorithm.registry.checked",
-          "wpm.algorithm.dispatched",
-          "wpm.algorithm.completed",
-          "wpm.result.hashed",
-          "wpm.artifact.emitted",
-          "wpm.task.closed",
-          "wpm.receipt.verified"
-        ]
-      },
-      "observed_path": {
-        "ocel": {
-          "schema": "wasm4pm.ExecutionOCEL.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
           "events": [
             {
-              "id": "evt_import_started",
-              "activity": "wpm.input.import.started",
-              "timestamp": "2026-05-21T22:09:42.729Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_forecast_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:09.946Z",
+              "relationships": [
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 },
                 {
-                  "id": "example_kids_safety",
-                  "type": "Example",
+                  "objectId": "example_kids_safety",
                   "qualifier": "example"
                 }
               ],
               "attributes": {
                 "format": "xes",
-                "activity_key": "concept:name"
+                "activity_key": "concept:name",
+                "stage": "expected"
               }
             },
             {
-              "id": "evt_import_completed",
-              "activity": "wpm.input.import.completed",
-              "timestamp": "2026-05-21T22:09:42.739Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_forecast_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:09.956Z",
+              "relationships": [
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 }
               ],
@@ -978,13 +2572,12 @@
               }
             },
             {
-              "id": "evt_algorithm_registry_checked",
-              "activity": "wpm.algorithm.registry.checked",
-              "timestamp": "2026-05-21T22:09:42.749Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_forecast_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:09.966Z",
+              "relationships": [
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 }
               ],
@@ -993,23 +2586,20 @@
               }
             },
             {
-              "id": "evt_algorithm_dispatched",
-              "activity": "wpm.algorithm.dispatched",
-              "timestamp": "2026-05-21T22:09:42.759Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_forecast_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:09.976Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_forecast",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_forecast",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 },
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 }
               ],
@@ -1019,64 +2609,75 @@
               }
             },
             {
-              "id": "evt_algorithm_completed",
-              "activity": "wpm.algorithm.completed",
-              "timestamp": "2026-05-21T22:09:42.769Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_forecast_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:09.986Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_forecast",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_forecast",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "id": "result_ml_forecast_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_forecast_kids_safety",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "fc784ddfa5884233089a97100767d67536f0b2376ca0d6a626d3ee9ba0fe7c84",
-                "duration_ms": 40.407
+                "result_hash": "b7650b6e1c727ef023a392ec12147d1ddeee5c77be13fffad919ee4c5334e50c",
+                "duration_ms": 43.413
               }
             },
             {
-              "id": "evt_result_hashed",
-              "activity": "wpm.result.hashed",
-              "timestamp": "2026-05-21T22:09:42.779Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_forecast_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:09.996Z",
+              "relationships": [
                 {
-                  "id": "result_ml_forecast_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_forecast_kids_safety",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "fc784ddfa5884233089a97100767d67536f0b2376ca0d6a626d3ee9ba0fe7c84"
+                "result_hash": "b7650b6e1c727ef023a392ec12147d1ddeee5c77be13fffad919ee4c5334e50c"
               }
             },
             {
-              "id": "evt_artifact_emitted",
-              "activity": "wpm.artifact.emitted",
-              "timestamp": "2026-05-21T22:09:42.789Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_forecast_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.006Z",
+              "relationships": [
                 {
-                  "id": "result_ml_forecast_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_forecast_kids_safety",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "fc784ddfa5884233089a97100767d67536f0b2376ca0d6a626d3ee9ba0fe7c84"
+                "result_hash": "b7650b6e1c727ef023a392ec12147d1ddeee5c77be13fffad919ee4c5334e50c"
               }
             },
             {
-              "id": "evt_task_closed",
-              "activity": "wpm.task.closed",
-              "timestamp": "2026-05-21T22:09:42.799Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_forecast_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.016Z",
+              "relationships": [
                 {
-                  "id": "receipt_kids_safety",
-                  "type": "Receipt",
+                  "objectId": "example_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_forecast",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_forecast_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
                   "qualifier": "task-context"
                 }
               ],
@@ -1085,18 +2686,34 @@
               }
             },
             {
-              "id": "evt_receipt_verified",
-              "activity": "wpm.receipt.verified",
-              "timestamp": "2026-05-21T22:09:42.809Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_forecast_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.026Z",
+              "relationships": [
                 {
-                  "id": "result_ml_forecast_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_forecast_kids_safety",
                   "qualifier": "verified-result"
                 },
                 {
-                  "id": "receipt_kids_safety",
-                  "type": "Receipt",
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_forecast_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.036Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_forecast_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
                   "qualifier": "receipt"
                 }
               ],
@@ -1108,94 +2725,455 @@
           "objects": [
             {
               "id": "example_kids_safety",
-              "type": "Example"
+              "type": "Example",
+              "attributes": {}
             },
             {
               "id": "log_kids_safety",
-              "type": "EventLog"
+              "type": "EventLog",
+              "attributes": {}
             },
             {
               "id": "algorithm_ml_forecast",
-              "type": "Algorithm"
+              "type": "Algorithm",
+              "attributes": {}
             },
             {
               "id": "registry_v26.5.21",
-              "type": "AlgorithmRegistry"
+              "type": "AlgorithmRegistry",
+              "attributes": {}
             },
             {
               "id": "result_ml_forecast_kids_safety",
-              "type": "AlgorithmResult"
+              "type": "AlgorithmResult",
+              "attributes": {}
             },
             {
               "id": "receipt_kids_safety",
-              "type": "Receipt"
+              "type": "Receipt",
+              "attributes": {}
             }
           ]
         },
-        "observed_ocel_hash": "65457ef765a6e0d456aa813427d4071dae221048f87d4c8006161ae1d18bd797",
-        "observed_result_hash": "fc784ddfa5884233089a97100767d67536f0b2376ca0d6a626d3ee9ba0fe7c84"
+        "expected_ocel2_hash": "b67a21fcb859f9f8af2dacdbba85d402b215eb2faaeb4c3fb31924154b03043a"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_kids_safety_ml_forecast_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:09.946Z",
+              "relationships": [
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_kids_safety",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_forecast_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:09.956Z",
+              "relationships": [
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_forecast_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:09.966Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_forecast_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:09.976Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_forecast",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_forecast_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:09.986Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_forecast",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ml_forecast_kids_safety",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "b7650b6e1c727ef023a392ec12147d1ddeee5c77be13fffad919ee4c5334e50c",
+                "duration_ms": 43.413
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_forecast_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:09.996Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_forecast_kids_safety",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "b7650b6e1c727ef023a392ec12147d1ddeee5c77be13fffad919ee4c5334e50c"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_forecast_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.006Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_forecast_kids_safety",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "b7650b6e1c727ef023a392ec12147d1ddeee5c77be13fffad919ee4c5334e50c"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_forecast_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.016Z",
+              "relationships": [
+                {
+                  "objectId": "example_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_forecast",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_forecast_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_forecast_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.026Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_forecast_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_forecast_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.036Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_forecast_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_kids_safety",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_kids_safety",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ml_forecast",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ml_forecast_kids_safety",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_kids_safety",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "d52923a33ff9d1d6d8a70c41caabb70d8391028dd5f3c0e034c2bc09d79b3924",
+        "observed_result_hash": "b7650b6e1c727ef023a392ec12147d1ddeee5c77be13fffad919ee4c5334e50c"
       },
       "alignment": {
         "expected_vs_observed": "Pass",
         "missing_events": [],
         "unexpected_events": [],
         "refusal_state": null
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565",
+        "output_artifact_hash": "b7650b6e1c727ef023a392ec12147d1ddeee5c77be13fffad919ee4c5334e50c",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
     {
       "id": "ml_anomaly",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "3ea53b1a3df6a7546288cb5db3c1ece5b333f8d5091184acf0ea510672fe6014",
-      "duration_ms": 14.714,
+      "result_hash": "13a807ade2be78c6577f55c588cfc1aaba5ef10fd110ba29817d06113d54cead",
+      "duration_ms": 32.549,
       "expected_path": {
         "route_id": "wpm.example.kids_safety.ml_anomaly.v1",
-        "expected_ocel_hash": "d97de6a7afddf22a44d0237a478d4505827ccf94b87da0ed2aa2606d243b0462",
-        "required_events": [
-          "wpm.input.import.started",
-          "wpm.input.import.completed",
-          "wpm.algorithm.registry.checked",
-          "wpm.algorithm.dispatched",
-          "wpm.algorithm.completed",
-          "wpm.result.hashed",
-          "wpm.artifact.emitted",
-          "wpm.task.closed",
-          "wpm.receipt.verified"
-        ]
-      },
-      "observed_path": {
-        "ocel": {
-          "schema": "wasm4pm.ExecutionOCEL.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
           "events": [
             {
-              "id": "evt_import_started",
-              "activity": "wpm.input.import.started",
-              "timestamp": "2026-05-21T22:09:42.729Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_anomaly_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:09.946Z",
+              "relationships": [
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 },
                 {
-                  "id": "example_kids_safety",
-                  "type": "Example",
+                  "objectId": "example_kids_safety",
                   "qualifier": "example"
                 }
               ],
               "attributes": {
                 "format": "xes",
-                "activity_key": "concept:name"
+                "activity_key": "concept:name",
+                "stage": "expected"
               }
             },
             {
-              "id": "evt_import_completed",
-              "activity": "wpm.input.import.completed",
-              "timestamp": "2026-05-21T22:09:42.739Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_anomaly_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:09.956Z",
+              "relationships": [
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 }
               ],
@@ -1204,13 +3182,12 @@
               }
             },
             {
-              "id": "evt_algorithm_registry_checked",
-              "activity": "wpm.algorithm.registry.checked",
-              "timestamp": "2026-05-21T22:09:42.749Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_anomaly_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:09.966Z",
+              "relationships": [
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 }
               ],
@@ -1219,23 +3196,20 @@
               }
             },
             {
-              "id": "evt_algorithm_dispatched",
-              "activity": "wpm.algorithm.dispatched",
-              "timestamp": "2026-05-21T22:09:42.759Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_anomaly_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:09.976Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_anomaly",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_anomaly",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 },
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 }
               ],
@@ -1245,64 +3219,75 @@
               }
             },
             {
-              "id": "evt_algorithm_completed",
-              "activity": "wpm.algorithm.completed",
-              "timestamp": "2026-05-21T22:09:42.769Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_anomaly_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:09.986Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_anomaly",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_anomaly",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "id": "result_ml_anomaly_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_anomaly_kids_safety",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "3ea53b1a3df6a7546288cb5db3c1ece5b333f8d5091184acf0ea510672fe6014",
-                "duration_ms": 14.714
+                "result_hash": "13a807ade2be78c6577f55c588cfc1aaba5ef10fd110ba29817d06113d54cead",
+                "duration_ms": 32.549
               }
             },
             {
-              "id": "evt_result_hashed",
-              "activity": "wpm.result.hashed",
-              "timestamp": "2026-05-21T22:09:42.779Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_anomaly_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:09.996Z",
+              "relationships": [
                 {
-                  "id": "result_ml_anomaly_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_anomaly_kids_safety",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "3ea53b1a3df6a7546288cb5db3c1ece5b333f8d5091184acf0ea510672fe6014"
+                "result_hash": "13a807ade2be78c6577f55c588cfc1aaba5ef10fd110ba29817d06113d54cead"
               }
             },
             {
-              "id": "evt_artifact_emitted",
-              "activity": "wpm.artifact.emitted",
-              "timestamp": "2026-05-21T22:09:42.789Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_anomaly_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.006Z",
+              "relationships": [
                 {
-                  "id": "result_ml_anomaly_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_anomaly_kids_safety",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "3ea53b1a3df6a7546288cb5db3c1ece5b333f8d5091184acf0ea510672fe6014"
+                "result_hash": "13a807ade2be78c6577f55c588cfc1aaba5ef10fd110ba29817d06113d54cead"
               }
             },
             {
-              "id": "evt_task_closed",
-              "activity": "wpm.task.closed",
-              "timestamp": "2026-05-21T22:09:42.799Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_anomaly_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.016Z",
+              "relationships": [
                 {
-                  "id": "receipt_kids_safety",
-                  "type": "Receipt",
+                  "objectId": "example_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_anomaly",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_anomaly_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
                   "qualifier": "task-context"
                 }
               ],
@@ -1311,18 +3296,34 @@
               }
             },
             {
-              "id": "evt_receipt_verified",
-              "activity": "wpm.receipt.verified",
-              "timestamp": "2026-05-21T22:09:42.809Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_anomaly_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.026Z",
+              "relationships": [
                 {
-                  "id": "result_ml_anomaly_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_anomaly_kids_safety",
                   "qualifier": "verified-result"
                 },
                 {
-                  "id": "receipt_kids_safety",
-                  "type": "Receipt",
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_anomaly_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.036Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_anomaly_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
                   "qualifier": "receipt"
                 }
               ],
@@ -1334,94 +3335,455 @@
           "objects": [
             {
               "id": "example_kids_safety",
-              "type": "Example"
+              "type": "Example",
+              "attributes": {}
             },
             {
               "id": "log_kids_safety",
-              "type": "EventLog"
+              "type": "EventLog",
+              "attributes": {}
             },
             {
               "id": "algorithm_ml_anomaly",
-              "type": "Algorithm"
+              "type": "Algorithm",
+              "attributes": {}
             },
             {
               "id": "registry_v26.5.21",
-              "type": "AlgorithmRegistry"
+              "type": "AlgorithmRegistry",
+              "attributes": {}
             },
             {
               "id": "result_ml_anomaly_kids_safety",
-              "type": "AlgorithmResult"
+              "type": "AlgorithmResult",
+              "attributes": {}
             },
             {
               "id": "receipt_kids_safety",
-              "type": "Receipt"
+              "type": "Receipt",
+              "attributes": {}
             }
           ]
         },
-        "observed_ocel_hash": "5d37ff52824c38ed737066bc8eaa4abc1e4cba1b6cf81abe1a48b63e40db57fd",
-        "observed_result_hash": "3ea53b1a3df6a7546288cb5db3c1ece5b333f8d5091184acf0ea510672fe6014"
+        "expected_ocel2_hash": "d100967be507f69bbc2fe5ec9cedeba02f0e3b6e2c7e0db269d99626ca38b5ad"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_kids_safety_ml_anomaly_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:09.946Z",
+              "relationships": [
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_kids_safety",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_anomaly_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:09.956Z",
+              "relationships": [
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_anomaly_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:09.966Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_anomaly_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:09.976Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_anomaly",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_anomaly_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:09.986Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_anomaly",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ml_anomaly_kids_safety",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "13a807ade2be78c6577f55c588cfc1aaba5ef10fd110ba29817d06113d54cead",
+                "duration_ms": 32.549
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_anomaly_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:09.996Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_anomaly_kids_safety",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "13a807ade2be78c6577f55c588cfc1aaba5ef10fd110ba29817d06113d54cead"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_anomaly_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.006Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_anomaly_kids_safety",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "13a807ade2be78c6577f55c588cfc1aaba5ef10fd110ba29817d06113d54cead"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_anomaly_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.016Z",
+              "relationships": [
+                {
+                  "objectId": "example_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_anomaly",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_anomaly_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_anomaly_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.026Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_anomaly_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_anomaly_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.036Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_anomaly_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_kids_safety",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_kids_safety",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ml_anomaly",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ml_anomaly_kids_safety",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_kids_safety",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "28e6011f994945832f1e22240c97bd02ac0e85a77b77a380b666f0e571135eaa",
+        "observed_result_hash": "13a807ade2be78c6577f55c588cfc1aaba5ef10fd110ba29817d06113d54cead"
       },
       "alignment": {
         "expected_vs_observed": "Pass",
         "missing_events": [],
         "unexpected_events": [],
         "refusal_state": null
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565",
+        "output_artifact_hash": "13a807ade2be78c6577f55c588cfc1aaba5ef10fd110ba29817d06113d54cead",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
     {
       "id": "ml_regress",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "c9dd4e98bb680eed9c9c6d522b30cd3011e196dc780fda5bd49ad286b7f9efee",
-      "duration_ms": 19.537,
+      "result_hash": "751391efcc63896511cfa3646ef252ad6752add90f6b09910e61d6347b697720",
+      "duration_ms": 13.028,
       "expected_path": {
         "route_id": "wpm.example.kids_safety.ml_regress.v1",
-        "expected_ocel_hash": "051a99dd5006918be53f90a0fa0186f89effcfa7eb7adae1ee926e3d4fe00d6e",
-        "required_events": [
-          "wpm.input.import.started",
-          "wpm.input.import.completed",
-          "wpm.algorithm.registry.checked",
-          "wpm.algorithm.dispatched",
-          "wpm.algorithm.completed",
-          "wpm.result.hashed",
-          "wpm.artifact.emitted",
-          "wpm.task.closed",
-          "wpm.receipt.verified"
-        ]
-      },
-      "observed_path": {
-        "ocel": {
-          "schema": "wasm4pm.ExecutionOCEL.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
           "events": [
             {
-              "id": "evt_import_started",
-              "activity": "wpm.input.import.started",
-              "timestamp": "2026-05-21T22:09:42.729Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_regress_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:09.947Z",
+              "relationships": [
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 },
                 {
-                  "id": "example_kids_safety",
-                  "type": "Example",
+                  "objectId": "example_kids_safety",
                   "qualifier": "example"
                 }
               ],
               "attributes": {
                 "format": "xes",
-                "activity_key": "concept:name"
+                "activity_key": "concept:name",
+                "stage": "expected"
               }
             },
             {
-              "id": "evt_import_completed",
-              "activity": "wpm.input.import.completed",
-              "timestamp": "2026-05-21T22:09:42.739Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_regress_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:09.957Z",
+              "relationships": [
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 }
               ],
@@ -1430,13 +3792,12 @@
               }
             },
             {
-              "id": "evt_algorithm_registry_checked",
-              "activity": "wpm.algorithm.registry.checked",
-              "timestamp": "2026-05-21T22:09:42.749Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_regress_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:09.967Z",
+              "relationships": [
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 }
               ],
@@ -1445,23 +3806,20 @@
               }
             },
             {
-              "id": "evt_algorithm_dispatched",
-              "activity": "wpm.algorithm.dispatched",
-              "timestamp": "2026-05-21T22:09:42.759Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_regress_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:09.977Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_regress",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_regress",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 },
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 }
               ],
@@ -1471,64 +3829,75 @@
               }
             },
             {
-              "id": "evt_algorithm_completed",
-              "activity": "wpm.algorithm.completed",
-              "timestamp": "2026-05-21T22:09:42.769Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_regress_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:09.987Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_regress",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_regress",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "id": "result_ml_regress_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_regress_kids_safety",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "c9dd4e98bb680eed9c9c6d522b30cd3011e196dc780fda5bd49ad286b7f9efee",
-                "duration_ms": 19.537
+                "result_hash": "751391efcc63896511cfa3646ef252ad6752add90f6b09910e61d6347b697720",
+                "duration_ms": 13.028
               }
             },
             {
-              "id": "evt_result_hashed",
-              "activity": "wpm.result.hashed",
-              "timestamp": "2026-05-21T22:09:42.779Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_regress_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:09.997Z",
+              "relationships": [
                 {
-                  "id": "result_ml_regress_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_regress_kids_safety",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "c9dd4e98bb680eed9c9c6d522b30cd3011e196dc780fda5bd49ad286b7f9efee"
+                "result_hash": "751391efcc63896511cfa3646ef252ad6752add90f6b09910e61d6347b697720"
               }
             },
             {
-              "id": "evt_artifact_emitted",
-              "activity": "wpm.artifact.emitted",
-              "timestamp": "2026-05-21T22:09:42.789Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_regress_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.007Z",
+              "relationships": [
                 {
-                  "id": "result_ml_regress_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_regress_kids_safety",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "c9dd4e98bb680eed9c9c6d522b30cd3011e196dc780fda5bd49ad286b7f9efee"
+                "result_hash": "751391efcc63896511cfa3646ef252ad6752add90f6b09910e61d6347b697720"
               }
             },
             {
-              "id": "evt_task_closed",
-              "activity": "wpm.task.closed",
-              "timestamp": "2026-05-21T22:09:42.799Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_regress_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.017Z",
+              "relationships": [
                 {
-                  "id": "receipt_kids_safety",
-                  "type": "Receipt",
+                  "objectId": "example_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_regress",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_regress_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
                   "qualifier": "task-context"
                 }
               ],
@@ -1537,18 +3906,34 @@
               }
             },
             {
-              "id": "evt_receipt_verified",
-              "activity": "wpm.receipt.verified",
-              "timestamp": "2026-05-21T22:09:42.809Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_regress_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.027Z",
+              "relationships": [
                 {
-                  "id": "result_ml_regress_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_regress_kids_safety",
                   "qualifier": "verified-result"
                 },
                 {
-                  "id": "receipt_kids_safety",
-                  "type": "Receipt",
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_regress_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.037Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_regress_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
                   "qualifier": "receipt"
                 }
               ],
@@ -1560,94 +3945,455 @@
           "objects": [
             {
               "id": "example_kids_safety",
-              "type": "Example"
+              "type": "Example",
+              "attributes": {}
             },
             {
               "id": "log_kids_safety",
-              "type": "EventLog"
+              "type": "EventLog",
+              "attributes": {}
             },
             {
               "id": "algorithm_ml_regress",
-              "type": "Algorithm"
+              "type": "Algorithm",
+              "attributes": {}
             },
             {
               "id": "registry_v26.5.21",
-              "type": "AlgorithmRegistry"
+              "type": "AlgorithmRegistry",
+              "attributes": {}
             },
             {
               "id": "result_ml_regress_kids_safety",
-              "type": "AlgorithmResult"
+              "type": "AlgorithmResult",
+              "attributes": {}
             },
             {
               "id": "receipt_kids_safety",
-              "type": "Receipt"
+              "type": "Receipt",
+              "attributes": {}
             }
           ]
         },
-        "observed_ocel_hash": "97ff0e38f1098be71dd3f268d7429915db2f7d96604c57584370a41a4cda0e9f",
-        "observed_result_hash": "c9dd4e98bb680eed9c9c6d522b30cd3011e196dc780fda5bd49ad286b7f9efee"
+        "expected_ocel2_hash": "599fd497bb6326e0e32d82b96efee20844e2910f636d1ccb1550b18c0d47f555"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_kids_safety_ml_regress_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:09.947Z",
+              "relationships": [
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_kids_safety",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_regress_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:09.957Z",
+              "relationships": [
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_regress_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:09.967Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_regress_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:09.977Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_regress",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_regress_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:09.987Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_regress",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ml_regress_kids_safety",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "751391efcc63896511cfa3646ef252ad6752add90f6b09910e61d6347b697720",
+                "duration_ms": 13.028
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_regress_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:09.997Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_regress_kids_safety",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "751391efcc63896511cfa3646ef252ad6752add90f6b09910e61d6347b697720"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_regress_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.007Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_regress_kids_safety",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "751391efcc63896511cfa3646ef252ad6752add90f6b09910e61d6347b697720"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_regress_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.017Z",
+              "relationships": [
+                {
+                  "objectId": "example_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_regress",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_regress_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_regress_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.027Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_regress_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_regress_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.037Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_regress_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_kids_safety",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_kids_safety",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ml_regress",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ml_regress_kids_safety",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_kids_safety",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "2f95bb4aa53cd94494a460deca4f6fd28f3111a8ac60c614f39e758fcbdf4067",
+        "observed_result_hash": "751391efcc63896511cfa3646ef252ad6752add90f6b09910e61d6347b697720"
       },
       "alignment": {
         "expected_vs_observed": "Pass",
         "missing_events": [],
         "unexpected_events": [],
         "refusal_state": null
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565",
+        "output_artifact_hash": "751391efcc63896511cfa3646ef252ad6752add90f6b09910e61d6347b697720",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
     {
       "id": "ml_pca",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "c9fbcc77bd36bbee71cb5027e191743429a90d9bee23a9a6a5d4f5d68f68e5c0",
-      "duration_ms": 57.604,
+      "result_hash": "0f7c45e00c678b8f7e9c6746bb9b959cf7430218c4c778a02c1ba07212e624e7",
+      "duration_ms": 51.949,
       "expected_path": {
         "route_id": "wpm.example.kids_safety.ml_pca.v1",
-        "expected_ocel_hash": "39521664fd8e2079c3517ca6591e508e5853d96b34bc8a3f82115161a1ceec76",
-        "required_events": [
-          "wpm.input.import.started",
-          "wpm.input.import.completed",
-          "wpm.algorithm.registry.checked",
-          "wpm.algorithm.dispatched",
-          "wpm.algorithm.completed",
-          "wpm.result.hashed",
-          "wpm.artifact.emitted",
-          "wpm.task.closed",
-          "wpm.receipt.verified"
-        ]
-      },
-      "observed_path": {
-        "ocel": {
-          "schema": "wasm4pm.ExecutionOCEL.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
           "events": [
             {
-              "id": "evt_import_started",
-              "activity": "wpm.input.import.started",
-              "timestamp": "2026-05-21T22:09:42.729Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_pca_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:09.947Z",
+              "relationships": [
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 },
                 {
-                  "id": "example_kids_safety",
-                  "type": "Example",
+                  "objectId": "example_kids_safety",
                   "qualifier": "example"
                 }
               ],
               "attributes": {
                 "format": "xes",
-                "activity_key": "concept:name"
+                "activity_key": "concept:name",
+                "stage": "expected"
               }
             },
             {
-              "id": "evt_import_completed",
-              "activity": "wpm.input.import.completed",
-              "timestamp": "2026-05-21T22:09:42.739Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_pca_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:09.957Z",
+              "relationships": [
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 }
               ],
@@ -1656,13 +4402,12 @@
               }
             },
             {
-              "id": "evt_algorithm_registry_checked",
-              "activity": "wpm.algorithm.registry.checked",
-              "timestamp": "2026-05-21T22:09:42.749Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_pca_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:09.967Z",
+              "relationships": [
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 }
               ],
@@ -1671,23 +4416,20 @@
               }
             },
             {
-              "id": "evt_algorithm_dispatched",
-              "activity": "wpm.algorithm.dispatched",
-              "timestamp": "2026-05-21T22:09:42.759Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_pca_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:09.977Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_pca",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_pca",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 },
                 {
-                  "id": "log_kids_safety",
-                  "type": "EventLog",
+                  "objectId": "log_kids_safety",
                   "qualifier": "input"
                 }
               ],
@@ -1697,64 +4439,75 @@
               }
             },
             {
-              "id": "evt_algorithm_completed",
-              "activity": "wpm.algorithm.completed",
-              "timestamp": "2026-05-21T22:09:42.769Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_pca_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:09.987Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_pca",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_pca",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "id": "result_ml_pca_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_pca_kids_safety",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "c9fbcc77bd36bbee71cb5027e191743429a90d9bee23a9a6a5d4f5d68f68e5c0",
-                "duration_ms": 57.604
+                "result_hash": "0f7c45e00c678b8f7e9c6746bb9b959cf7430218c4c778a02c1ba07212e624e7",
+                "duration_ms": 51.949
               }
             },
             {
-              "id": "evt_result_hashed",
-              "activity": "wpm.result.hashed",
-              "timestamp": "2026-05-21T22:09:42.779Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_pca_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:09.997Z",
+              "relationships": [
                 {
-                  "id": "result_ml_pca_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_pca_kids_safety",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "c9fbcc77bd36bbee71cb5027e191743429a90d9bee23a9a6a5d4f5d68f68e5c0"
+                "result_hash": "0f7c45e00c678b8f7e9c6746bb9b959cf7430218c4c778a02c1ba07212e624e7"
               }
             },
             {
-              "id": "evt_artifact_emitted",
-              "activity": "wpm.artifact.emitted",
-              "timestamp": "2026-05-21T22:09:42.789Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_pca_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.007Z",
+              "relationships": [
                 {
-                  "id": "result_ml_pca_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_pca_kids_safety",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "c9fbcc77bd36bbee71cb5027e191743429a90d9bee23a9a6a5d4f5d68f68e5c0"
+                "result_hash": "0f7c45e00c678b8f7e9c6746bb9b959cf7430218c4c778a02c1ba07212e624e7"
               }
             },
             {
-              "id": "evt_task_closed",
-              "activity": "wpm.task.closed",
-              "timestamp": "2026-05-21T22:09:42.799Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_pca_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.017Z",
+              "relationships": [
                 {
-                  "id": "receipt_kids_safety",
-                  "type": "Receipt",
+                  "objectId": "example_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_pca",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_pca_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
                   "qualifier": "task-context"
                 }
               ],
@@ -1763,18 +4516,34 @@
               }
             },
             {
-              "id": "evt_receipt_verified",
-              "activity": "wpm.receipt.verified",
-              "timestamp": "2026-05-21T22:09:42.809Z",
-              "objects": [
+              "id": "evt_kids_safety_ml_pca_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.027Z",
+              "relationships": [
                 {
-                  "id": "result_ml_pca_kids_safety",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_pca_kids_safety",
                   "qualifier": "verified-result"
                 },
                 {
-                  "id": "receipt_kids_safety",
-                  "type": "Receipt",
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_pca_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.037Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_pca_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
                   "qualifier": "receipt"
                 }
               ],
@@ -1786,44 +4555,352 @@
           "objects": [
             {
               "id": "example_kids_safety",
-              "type": "Example"
+              "type": "Example",
+              "attributes": {}
             },
             {
               "id": "log_kids_safety",
-              "type": "EventLog"
+              "type": "EventLog",
+              "attributes": {}
             },
             {
               "id": "algorithm_ml_pca",
-              "type": "Algorithm"
+              "type": "Algorithm",
+              "attributes": {}
             },
             {
               "id": "registry_v26.5.21",
-              "type": "AlgorithmRegistry"
+              "type": "AlgorithmRegistry",
+              "attributes": {}
             },
             {
               "id": "result_ml_pca_kids_safety",
-              "type": "AlgorithmResult"
+              "type": "AlgorithmResult",
+              "attributes": {}
             },
             {
               "id": "receipt_kids_safety",
-              "type": "Receipt"
+              "type": "Receipt",
+              "attributes": {}
             }
           ]
         },
-        "observed_ocel_hash": "d4e36a90ee3141d62821eafde021bc50bb66078e42d7ac8e34ef47bfb8d9ebd9",
-        "observed_result_hash": "c9fbcc77bd36bbee71cb5027e191743429a90d9bee23a9a6a5d4f5d68f68e5c0"
+        "expected_ocel2_hash": "bac7b8ea8e1348694a1de98c5cf97a0e9b2d451648ddf88de22dcef95b058375"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_kids_safety_ml_pca_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:09.947Z",
+              "relationships": [
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_kids_safety",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_pca_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:09.957Z",
+              "relationships": [
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_pca_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:09.967Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_pca_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:09.977Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_pca",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_pca_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:09.987Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_pca",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ml_pca_kids_safety",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "0f7c45e00c678b8f7e9c6746bb9b959cf7430218c4c778a02c1ba07212e624e7",
+                "duration_ms": 51.949
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_pca_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:09.997Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_pca_kids_safety",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "0f7c45e00c678b8f7e9c6746bb9b959cf7430218c4c778a02c1ba07212e624e7"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_pca_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.007Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_pca_kids_safety",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "0f7c45e00c678b8f7e9c6746bb9b959cf7430218c4c778a02c1ba07212e624e7"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_pca_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.017Z",
+              "relationships": [
+                {
+                  "objectId": "example_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_pca",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_pca_kids_safety",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_pca_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.027Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_pca_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_kids_safety_ml_pca_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.037Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_pca_kids_safety",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_kids_safety",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_kids_safety",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_kids_safety",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ml_pca",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ml_pca_kids_safety",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_kids_safety",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "51109b762a10a1cdf9e7209ebc37a096deb33d3d08dd186873ffaddd33b956a4",
+        "observed_result_hash": "0f7c45e00c678b8f7e9c6746bb9b959cf7430218c4c778a02c1ba07212e624e7"
       },
       "alignment": {
         "expected_vs_observed": "Pass",
         "missing_events": [],
         "unexpected_events": [],
         "refusal_state": null
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565",
+        "output_artifact_hash": "0f7c45e00c678b8f7e9c6746bb9b959cf7430218c4c778a02c1ba07212e624e7",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     }
   ],
   "algorithm_count": 8,
-  "all_real": true,
-  "created_at": "2026-05-21T22:09:42.748Z",
+  "created_at": "2026-05-21T22:46:09.964Z",
   "previous_receipt_hash": null,
-  "receipt_hash": "e7d6903703d49cc6eab163e4689950400cdabb37117b5e5366839f8e4028ca70"
+  "receipt_hash": "17b47ad4a81624f8b737ec6e001a6ab17e6eb12b725b6bf5cd5bd04e5bdf434f"
 }

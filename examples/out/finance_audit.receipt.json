@@ -3,8 +3,14 @@
   "receipt_schema": "Wasm4pmExecutionReceipt.v1",
   "package": "wasm4pm",
   "version": "26.5.21",
-  "commit": "2b4dcfcbbb8da544e48f083c44d40b01a76ba53d",
+  "commit": "0e3c26263bc1f6115ffa0232ba9aa270f06dfd92",
   "hash_algorithm": "BLAKE3",
+  "time_basis": "LogicalMonotonicClock",
+  "canonicalization": {
+    "name": "CanonicalOCEL2ForWasm4pm",
+    "version": 1,
+    "hash_algorithm": "BLAKE3"
+  },
   "example_id": "finance_audit",
   "input": {
     "event_log_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1",
@@ -16,56 +22,108 @@
       "id": "ml_classify",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "5b13da6b5bf1b10635c4fbab2176fdb051a28ff82d791d58a548cfbd2c57168c",
-      "duration_ms": 24.482,
+      "result_hash": "973d9f0e3c075402295889175b61b7553e635cb498e68fbad4eb87b71e2dea5c",
+      "duration_ms": 20.049,
       "expected_path": {
         "route_id": "wpm.example.finance_audit.ml_classify.v1",
-        "expected_ocel_hash": "00d9320891ad33be3fcd5c31e66ca49088b397c8973edf4c9f64759ba0a41ad7",
-        "required_events": [
-          "wpm.input.import.started",
-          "wpm.input.import.completed",
-          "wpm.algorithm.registry.checked",
-          "wpm.algorithm.dispatched",
-          "wpm.algorithm.completed",
-          "wpm.result.hashed",
-          "wpm.artifact.emitted",
-          "wpm.task.closed",
-          "wpm.receipt.verified"
-        ]
-      },
-      "observed_path": {
-        "ocel": {
-          "schema": "wasm4pm.ExecutionOCEL.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
           "events": [
             {
-              "id": "evt_import_started",
-              "activity": "wpm.input.import.started",
-              "timestamp": "2026-05-21T22:09:42.805Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_classify_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:10.021Z",
+              "relationships": [
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 },
                 {
-                  "id": "example_finance_audit",
-                  "type": "Example",
+                  "objectId": "example_finance_audit",
                   "qualifier": "example"
                 }
               ],
               "attributes": {
                 "format": "xes",
-                "activity_key": "concept:name"
+                "activity_key": "concept:name",
+                "stage": "expected"
               }
             },
             {
-              "id": "evt_import_completed",
-              "activity": "wpm.input.import.completed",
-              "timestamp": "2026-05-21T22:09:42.815Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_classify_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:10.031Z",
+              "relationships": [
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 }
               ],
@@ -74,13 +132,12 @@
               }
             },
             {
-              "id": "evt_algorithm_registry_checked",
-              "activity": "wpm.algorithm.registry.checked",
-              "timestamp": "2026-05-21T22:09:42.825Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_classify_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:10.041Z",
+              "relationships": [
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 }
               ],
@@ -89,23 +146,20 @@
               }
             },
             {
-              "id": "evt_algorithm_dispatched",
-              "activity": "wpm.algorithm.dispatched",
-              "timestamp": "2026-05-21T22:09:42.835Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_classify_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:10.051Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_classify",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_classify",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 },
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 }
               ],
@@ -115,64 +169,75 @@
               }
             },
             {
-              "id": "evt_algorithm_completed",
-              "activity": "wpm.algorithm.completed",
-              "timestamp": "2026-05-21T22:09:42.845Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_classify_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:10.061Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_classify",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_classify",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "id": "result_ml_classify_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_classify_finance_audit",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "5b13da6b5bf1b10635c4fbab2176fdb051a28ff82d791d58a548cfbd2c57168c",
-                "duration_ms": 24.482
+                "result_hash": "973d9f0e3c075402295889175b61b7553e635cb498e68fbad4eb87b71e2dea5c",
+                "duration_ms": 20.049
               }
             },
             {
-              "id": "evt_result_hashed",
-              "activity": "wpm.result.hashed",
-              "timestamp": "2026-05-21T22:09:42.855Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_classify_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:10.071Z",
+              "relationships": [
                 {
-                  "id": "result_ml_classify_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_classify_finance_audit",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "5b13da6b5bf1b10635c4fbab2176fdb051a28ff82d791d58a548cfbd2c57168c"
+                "result_hash": "973d9f0e3c075402295889175b61b7553e635cb498e68fbad4eb87b71e2dea5c"
               }
             },
             {
-              "id": "evt_artifact_emitted",
-              "activity": "wpm.artifact.emitted",
-              "timestamp": "2026-05-21T22:09:42.865Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_classify_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.081Z",
+              "relationships": [
                 {
-                  "id": "result_ml_classify_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_classify_finance_audit",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "5b13da6b5bf1b10635c4fbab2176fdb051a28ff82d791d58a548cfbd2c57168c"
+                "result_hash": "973d9f0e3c075402295889175b61b7553e635cb498e68fbad4eb87b71e2dea5c"
               }
             },
             {
-              "id": "evt_task_closed",
-              "activity": "wpm.task.closed",
-              "timestamp": "2026-05-21T22:09:42.875Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_classify_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.091Z",
+              "relationships": [
                 {
-                  "id": "receipt_finance_audit",
-                  "type": "Receipt",
+                  "objectId": "example_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_classify",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_classify_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
                   "qualifier": "task-context"
                 }
               ],
@@ -181,18 +246,34 @@
               }
             },
             {
-              "id": "evt_receipt_verified",
-              "activity": "wpm.receipt.verified",
-              "timestamp": "2026-05-21T22:09:42.885Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_classify_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.101Z",
+              "relationships": [
                 {
-                  "id": "result_ml_classify_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_classify_finance_audit",
                   "qualifier": "verified-result"
                 },
                 {
-                  "id": "receipt_finance_audit",
-                  "type": "Receipt",
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_classify_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.111Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_classify_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
                   "qualifier": "receipt"
                 }
               ],
@@ -204,94 +285,455 @@
           "objects": [
             {
               "id": "example_finance_audit",
-              "type": "Example"
+              "type": "Example",
+              "attributes": {}
             },
             {
               "id": "log_finance_audit",
-              "type": "EventLog"
+              "type": "EventLog",
+              "attributes": {}
             },
             {
               "id": "algorithm_ml_classify",
-              "type": "Algorithm"
+              "type": "Algorithm",
+              "attributes": {}
             },
             {
               "id": "registry_v26.5.21",
-              "type": "AlgorithmRegistry"
+              "type": "AlgorithmRegistry",
+              "attributes": {}
             },
             {
               "id": "result_ml_classify_finance_audit",
-              "type": "AlgorithmResult"
+              "type": "AlgorithmResult",
+              "attributes": {}
             },
             {
               "id": "receipt_finance_audit",
-              "type": "Receipt"
+              "type": "Receipt",
+              "attributes": {}
             }
           ]
         },
-        "observed_ocel_hash": "0184341b9d7a127931ba7f08320d5f0820d1808d7e226da12f7d809dd8fe1bd5",
-        "observed_result_hash": "5b13da6b5bf1b10635c4fbab2176fdb051a28ff82d791d58a548cfbd2c57168c"
+        "expected_ocel2_hash": "49208f812431cd61d755e5fcebdccfda46ba01b0490b2531ef42c1a2ed38826a"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_finance_audit_ml_classify_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:10.021Z",
+              "relationships": [
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_finance_audit",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_classify_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:10.031Z",
+              "relationships": [
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_classify_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:10.041Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_classify_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:10.051Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_classify",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_classify_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:10.061Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_classify",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ml_classify_finance_audit",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "973d9f0e3c075402295889175b61b7553e635cb498e68fbad4eb87b71e2dea5c",
+                "duration_ms": 20.049
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_classify_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:10.071Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_classify_finance_audit",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "973d9f0e3c075402295889175b61b7553e635cb498e68fbad4eb87b71e2dea5c"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_classify_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.081Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_classify_finance_audit",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "973d9f0e3c075402295889175b61b7553e635cb498e68fbad4eb87b71e2dea5c"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_classify_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.091Z",
+              "relationships": [
+                {
+                  "objectId": "example_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_classify",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_classify_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_classify_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.101Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_classify_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_classify_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.111Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_classify_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_finance_audit",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_finance_audit",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ml_classify",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ml_classify_finance_audit",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_finance_audit",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "dca0fda8d8abe3cd69dec3d15cc54e376b40b4ef6704b524d013321bf7c7c478",
+        "observed_result_hash": "973d9f0e3c075402295889175b61b7553e635cb498e68fbad4eb87b71e2dea5c"
       },
       "alignment": {
         "expected_vs_observed": "Pass",
         "missing_events": [],
         "unexpected_events": [],
         "refusal_state": null
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1",
+        "output_artifact_hash": "973d9f0e3c075402295889175b61b7553e635cb498e68fbad4eb87b71e2dea5c",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
     {
       "id": "ml_cluster",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "5a053f72426d45d22dc0cb31e19fdf3a789be1f632c407d5357d7fdc2a390018",
-      "duration_ms": 16.108,
+      "result_hash": "f6b1a38966225738649f2c02e8d3f230b1b795528a7d0a88c52aeae747bf4ba3",
+      "duration_ms": 16.574,
       "expected_path": {
         "route_id": "wpm.example.finance_audit.ml_cluster.v1",
-        "expected_ocel_hash": "be33cacf03f24bc58b5725d60116d91fbd1894a5cc17e6af5ec0637bbf2407b2",
-        "required_events": [
-          "wpm.input.import.started",
-          "wpm.input.import.completed",
-          "wpm.algorithm.registry.checked",
-          "wpm.algorithm.dispatched",
-          "wpm.algorithm.completed",
-          "wpm.result.hashed",
-          "wpm.artifact.emitted",
-          "wpm.task.closed",
-          "wpm.receipt.verified"
-        ]
-      },
-      "observed_path": {
-        "ocel": {
-          "schema": "wasm4pm.ExecutionOCEL.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
           "events": [
             {
-              "id": "evt_import_started",
-              "activity": "wpm.input.import.started",
-              "timestamp": "2026-05-21T22:09:42.805Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_cluster_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:10.021Z",
+              "relationships": [
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 },
                 {
-                  "id": "example_finance_audit",
-                  "type": "Example",
+                  "objectId": "example_finance_audit",
                   "qualifier": "example"
                 }
               ],
               "attributes": {
                 "format": "xes",
-                "activity_key": "concept:name"
+                "activity_key": "concept:name",
+                "stage": "expected"
               }
             },
             {
-              "id": "evt_import_completed",
-              "activity": "wpm.input.import.completed",
-              "timestamp": "2026-05-21T22:09:42.815Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_cluster_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:10.031Z",
+              "relationships": [
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 }
               ],
@@ -300,13 +742,12 @@
               }
             },
             {
-              "id": "evt_algorithm_registry_checked",
-              "activity": "wpm.algorithm.registry.checked",
-              "timestamp": "2026-05-21T22:09:42.825Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_cluster_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:10.041Z",
+              "relationships": [
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 }
               ],
@@ -315,23 +756,20 @@
               }
             },
             {
-              "id": "evt_algorithm_dispatched",
-              "activity": "wpm.algorithm.dispatched",
-              "timestamp": "2026-05-21T22:09:42.835Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_cluster_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:10.051Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_cluster",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_cluster",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 },
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 }
               ],
@@ -341,64 +779,75 @@
               }
             },
             {
-              "id": "evt_algorithm_completed",
-              "activity": "wpm.algorithm.completed",
-              "timestamp": "2026-05-21T22:09:42.845Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_cluster_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:10.061Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_cluster",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_cluster",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "id": "result_ml_cluster_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_cluster_finance_audit",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "5a053f72426d45d22dc0cb31e19fdf3a789be1f632c407d5357d7fdc2a390018",
-                "duration_ms": 16.108
+                "result_hash": "f6b1a38966225738649f2c02e8d3f230b1b795528a7d0a88c52aeae747bf4ba3",
+                "duration_ms": 16.574
               }
             },
             {
-              "id": "evt_result_hashed",
-              "activity": "wpm.result.hashed",
-              "timestamp": "2026-05-21T22:09:42.855Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_cluster_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:10.071Z",
+              "relationships": [
                 {
-                  "id": "result_ml_cluster_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_cluster_finance_audit",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "5a053f72426d45d22dc0cb31e19fdf3a789be1f632c407d5357d7fdc2a390018"
+                "result_hash": "f6b1a38966225738649f2c02e8d3f230b1b795528a7d0a88c52aeae747bf4ba3"
               }
             },
             {
-              "id": "evt_artifact_emitted",
-              "activity": "wpm.artifact.emitted",
-              "timestamp": "2026-05-21T22:09:42.865Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_cluster_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.081Z",
+              "relationships": [
                 {
-                  "id": "result_ml_cluster_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_cluster_finance_audit",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "5a053f72426d45d22dc0cb31e19fdf3a789be1f632c407d5357d7fdc2a390018"
+                "result_hash": "f6b1a38966225738649f2c02e8d3f230b1b795528a7d0a88c52aeae747bf4ba3"
               }
             },
             {
-              "id": "evt_task_closed",
-              "activity": "wpm.task.closed",
-              "timestamp": "2026-05-21T22:09:42.875Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_cluster_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.091Z",
+              "relationships": [
                 {
-                  "id": "receipt_finance_audit",
-                  "type": "Receipt",
+                  "objectId": "example_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_cluster",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_cluster_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
                   "qualifier": "task-context"
                 }
               ],
@@ -407,18 +856,34 @@
               }
             },
             {
-              "id": "evt_receipt_verified",
-              "activity": "wpm.receipt.verified",
-              "timestamp": "2026-05-21T22:09:42.885Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_cluster_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.101Z",
+              "relationships": [
                 {
-                  "id": "result_ml_cluster_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_cluster_finance_audit",
                   "qualifier": "verified-result"
                 },
                 {
-                  "id": "receipt_finance_audit",
-                  "type": "Receipt",
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_cluster_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.111Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_cluster_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
                   "qualifier": "receipt"
                 }
               ],
@@ -430,94 +895,455 @@
           "objects": [
             {
               "id": "example_finance_audit",
-              "type": "Example"
+              "type": "Example",
+              "attributes": {}
             },
             {
               "id": "log_finance_audit",
-              "type": "EventLog"
+              "type": "EventLog",
+              "attributes": {}
             },
             {
               "id": "algorithm_ml_cluster",
-              "type": "Algorithm"
+              "type": "Algorithm",
+              "attributes": {}
             },
             {
               "id": "registry_v26.5.21",
-              "type": "AlgorithmRegistry"
+              "type": "AlgorithmRegistry",
+              "attributes": {}
             },
             {
               "id": "result_ml_cluster_finance_audit",
-              "type": "AlgorithmResult"
+              "type": "AlgorithmResult",
+              "attributes": {}
             },
             {
               "id": "receipt_finance_audit",
-              "type": "Receipt"
+              "type": "Receipt",
+              "attributes": {}
             }
           ]
         },
-        "observed_ocel_hash": "2ba14696050346ccbc4036f7fd17ee51c09e5d795cac9d7f7166d6e327661986",
-        "observed_result_hash": "5a053f72426d45d22dc0cb31e19fdf3a789be1f632c407d5357d7fdc2a390018"
+        "expected_ocel2_hash": "d0d664ea255e4d37b67e7b781f6c36800601cc1b4caf0d040993489eb1931606"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_finance_audit_ml_cluster_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:10.021Z",
+              "relationships": [
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_finance_audit",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_cluster_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:10.031Z",
+              "relationships": [
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_cluster_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:10.041Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_cluster_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:10.051Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_cluster",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_cluster_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:10.061Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_cluster",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ml_cluster_finance_audit",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "f6b1a38966225738649f2c02e8d3f230b1b795528a7d0a88c52aeae747bf4ba3",
+                "duration_ms": 16.574
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_cluster_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:10.071Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_cluster_finance_audit",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "f6b1a38966225738649f2c02e8d3f230b1b795528a7d0a88c52aeae747bf4ba3"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_cluster_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.081Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_cluster_finance_audit",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "f6b1a38966225738649f2c02e8d3f230b1b795528a7d0a88c52aeae747bf4ba3"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_cluster_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.091Z",
+              "relationships": [
+                {
+                  "objectId": "example_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_cluster",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_cluster_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_cluster_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.101Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_cluster_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_cluster_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.111Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_cluster_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_finance_audit",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_finance_audit",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ml_cluster",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ml_cluster_finance_audit",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_finance_audit",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "3da66fa2babeef9352b558359b6ee22fc2f9262ecf3f8e3048d86eb308198e3c",
+        "observed_result_hash": "f6b1a38966225738649f2c02e8d3f230b1b795528a7d0a88c52aeae747bf4ba3"
       },
       "alignment": {
         "expected_vs_observed": "Pass",
         "missing_events": [],
         "unexpected_events": [],
         "refusal_state": null
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1",
+        "output_artifact_hash": "f6b1a38966225738649f2c02e8d3f230b1b795528a7d0a88c52aeae747bf4ba3",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
     {
       "id": "ml_forecast",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "0e487c4a12dc1993bca2c12acc1041dfc3e75e11783cd19486204543d78c4adc",
-      "duration_ms": 26.56,
+      "result_hash": "8f6633700fadaaecff8d7d93e4fb58f9eeaa324a1d68dba5713a4a9be5974126",
+      "duration_ms": 35.608,
       "expected_path": {
         "route_id": "wpm.example.finance_audit.ml_forecast.v1",
-        "expected_ocel_hash": "68330e2d92033adf753b880e6222f7cbc000c567a054e42769697a4b161ea682",
-        "required_events": [
-          "wpm.input.import.started",
-          "wpm.input.import.completed",
-          "wpm.algorithm.registry.checked",
-          "wpm.algorithm.dispatched",
-          "wpm.algorithm.completed",
-          "wpm.result.hashed",
-          "wpm.artifact.emitted",
-          "wpm.task.closed",
-          "wpm.receipt.verified"
-        ]
-      },
-      "observed_path": {
-        "ocel": {
-          "schema": "wasm4pm.ExecutionOCEL.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
           "events": [
             {
-              "id": "evt_import_started",
-              "activity": "wpm.input.import.started",
-              "timestamp": "2026-05-21T22:09:42.805Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_forecast_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:10.021Z",
+              "relationships": [
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 },
                 {
-                  "id": "example_finance_audit",
-                  "type": "Example",
+                  "objectId": "example_finance_audit",
                   "qualifier": "example"
                 }
               ],
               "attributes": {
                 "format": "xes",
-                "activity_key": "concept:name"
+                "activity_key": "concept:name",
+                "stage": "expected"
               }
             },
             {
-              "id": "evt_import_completed",
-              "activity": "wpm.input.import.completed",
-              "timestamp": "2026-05-21T22:09:42.815Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_forecast_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:10.031Z",
+              "relationships": [
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 }
               ],
@@ -526,13 +1352,12 @@
               }
             },
             {
-              "id": "evt_algorithm_registry_checked",
-              "activity": "wpm.algorithm.registry.checked",
-              "timestamp": "2026-05-21T22:09:42.825Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_forecast_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:10.041Z",
+              "relationships": [
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 }
               ],
@@ -541,23 +1366,20 @@
               }
             },
             {
-              "id": "evt_algorithm_dispatched",
-              "activity": "wpm.algorithm.dispatched",
-              "timestamp": "2026-05-21T22:09:42.835Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_forecast_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:10.051Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_forecast",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_forecast",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 },
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 }
               ],
@@ -567,64 +1389,75 @@
               }
             },
             {
-              "id": "evt_algorithm_completed",
-              "activity": "wpm.algorithm.completed",
-              "timestamp": "2026-05-21T22:09:42.845Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_forecast_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:10.061Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_forecast",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_forecast",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "id": "result_ml_forecast_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_forecast_finance_audit",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "0e487c4a12dc1993bca2c12acc1041dfc3e75e11783cd19486204543d78c4adc",
-                "duration_ms": 26.56
+                "result_hash": "8f6633700fadaaecff8d7d93e4fb58f9eeaa324a1d68dba5713a4a9be5974126",
+                "duration_ms": 35.608
               }
             },
             {
-              "id": "evt_result_hashed",
-              "activity": "wpm.result.hashed",
-              "timestamp": "2026-05-21T22:09:42.855Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_forecast_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:10.071Z",
+              "relationships": [
                 {
-                  "id": "result_ml_forecast_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_forecast_finance_audit",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "0e487c4a12dc1993bca2c12acc1041dfc3e75e11783cd19486204543d78c4adc"
+                "result_hash": "8f6633700fadaaecff8d7d93e4fb58f9eeaa324a1d68dba5713a4a9be5974126"
               }
             },
             {
-              "id": "evt_artifact_emitted",
-              "activity": "wpm.artifact.emitted",
-              "timestamp": "2026-05-21T22:09:42.865Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_forecast_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.081Z",
+              "relationships": [
                 {
-                  "id": "result_ml_forecast_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_forecast_finance_audit",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "0e487c4a12dc1993bca2c12acc1041dfc3e75e11783cd19486204543d78c4adc"
+                "result_hash": "8f6633700fadaaecff8d7d93e4fb58f9eeaa324a1d68dba5713a4a9be5974126"
               }
             },
             {
-              "id": "evt_task_closed",
-              "activity": "wpm.task.closed",
-              "timestamp": "2026-05-21T22:09:42.875Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_forecast_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.091Z",
+              "relationships": [
                 {
-                  "id": "receipt_finance_audit",
-                  "type": "Receipt",
+                  "objectId": "example_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_forecast",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_forecast_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
                   "qualifier": "task-context"
                 }
               ],
@@ -633,18 +1466,34 @@
               }
             },
             {
-              "id": "evt_receipt_verified",
-              "activity": "wpm.receipt.verified",
-              "timestamp": "2026-05-21T22:09:42.885Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_forecast_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.101Z",
+              "relationships": [
                 {
-                  "id": "result_ml_forecast_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_forecast_finance_audit",
                   "qualifier": "verified-result"
                 },
                 {
-                  "id": "receipt_finance_audit",
-                  "type": "Receipt",
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_forecast_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.111Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_forecast_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
                   "qualifier": "receipt"
                 }
               ],
@@ -656,94 +1505,455 @@
           "objects": [
             {
               "id": "example_finance_audit",
-              "type": "Example"
+              "type": "Example",
+              "attributes": {}
             },
             {
               "id": "log_finance_audit",
-              "type": "EventLog"
+              "type": "EventLog",
+              "attributes": {}
             },
             {
               "id": "algorithm_ml_forecast",
-              "type": "Algorithm"
+              "type": "Algorithm",
+              "attributes": {}
             },
             {
               "id": "registry_v26.5.21",
-              "type": "AlgorithmRegistry"
+              "type": "AlgorithmRegistry",
+              "attributes": {}
             },
             {
               "id": "result_ml_forecast_finance_audit",
-              "type": "AlgorithmResult"
+              "type": "AlgorithmResult",
+              "attributes": {}
             },
             {
               "id": "receipt_finance_audit",
-              "type": "Receipt"
+              "type": "Receipt",
+              "attributes": {}
             }
           ]
         },
-        "observed_ocel_hash": "9062b10f7ebf7cb7ad7c9afe08780a01a5fb1af94a598efe0769d730321a679d",
-        "observed_result_hash": "0e487c4a12dc1993bca2c12acc1041dfc3e75e11783cd19486204543d78c4adc"
+        "expected_ocel2_hash": "120012f4ae119b78530211e98707abc6e3c6540c523018b7f16cba11cc9cbca0"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_finance_audit_ml_forecast_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:10.021Z",
+              "relationships": [
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_finance_audit",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_forecast_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:10.031Z",
+              "relationships": [
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_forecast_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:10.041Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_forecast_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:10.051Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_forecast",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_forecast_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:10.061Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_forecast",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ml_forecast_finance_audit",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "8f6633700fadaaecff8d7d93e4fb58f9eeaa324a1d68dba5713a4a9be5974126",
+                "duration_ms": 35.608
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_forecast_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:10.071Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_forecast_finance_audit",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "8f6633700fadaaecff8d7d93e4fb58f9eeaa324a1d68dba5713a4a9be5974126"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_forecast_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.081Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_forecast_finance_audit",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "8f6633700fadaaecff8d7d93e4fb58f9eeaa324a1d68dba5713a4a9be5974126"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_forecast_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.091Z",
+              "relationships": [
+                {
+                  "objectId": "example_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_forecast",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_forecast_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_forecast_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.101Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_forecast_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_forecast_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.111Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_forecast_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_finance_audit",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_finance_audit",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ml_forecast",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ml_forecast_finance_audit",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_finance_audit",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "251025ce2d404616c29550debbf42448cc02a91b8ee1bea6cb480671b7d9a9bd",
+        "observed_result_hash": "8f6633700fadaaecff8d7d93e4fb58f9eeaa324a1d68dba5713a4a9be5974126"
       },
       "alignment": {
         "expected_vs_observed": "Pass",
         "missing_events": [],
         "unexpected_events": [],
         "refusal_state": null
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1",
+        "output_artifact_hash": "8f6633700fadaaecff8d7d93e4fb58f9eeaa324a1d68dba5713a4a9be5974126",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
     {
       "id": "ml_anomaly",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "81a50beaea5f0285007ebb1d116ccbd6ffb28a9212266f35f68eb2fa9f39c162",
-      "duration_ms": 36.105,
+      "result_hash": "0b0b1d7b90c3f631841810e89934495993b6e47cdf3f9b15ed9aea64a294830b",
+      "duration_ms": 14.737,
       "expected_path": {
         "route_id": "wpm.example.finance_audit.ml_anomaly.v1",
-        "expected_ocel_hash": "8146c1730ceb23cb169c0716e114d425eaa5e645f04a02fe8b4f43ec47f1ae31",
-        "required_events": [
-          "wpm.input.import.started",
-          "wpm.input.import.completed",
-          "wpm.algorithm.registry.checked",
-          "wpm.algorithm.dispatched",
-          "wpm.algorithm.completed",
-          "wpm.result.hashed",
-          "wpm.artifact.emitted",
-          "wpm.task.closed",
-          "wpm.receipt.verified"
-        ]
-      },
-      "observed_path": {
-        "ocel": {
-          "schema": "wasm4pm.ExecutionOCEL.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
           "events": [
             {
-              "id": "evt_import_started",
-              "activity": "wpm.input.import.started",
-              "timestamp": "2026-05-21T22:09:42.805Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_anomaly_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:10.022Z",
+              "relationships": [
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 },
                 {
-                  "id": "example_finance_audit",
-                  "type": "Example",
+                  "objectId": "example_finance_audit",
                   "qualifier": "example"
                 }
               ],
               "attributes": {
                 "format": "xes",
-                "activity_key": "concept:name"
+                "activity_key": "concept:name",
+                "stage": "expected"
               }
             },
             {
-              "id": "evt_import_completed",
-              "activity": "wpm.input.import.completed",
-              "timestamp": "2026-05-21T22:09:42.815Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_anomaly_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:10.032Z",
+              "relationships": [
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 }
               ],
@@ -752,13 +1962,12 @@
               }
             },
             {
-              "id": "evt_algorithm_registry_checked",
-              "activity": "wpm.algorithm.registry.checked",
-              "timestamp": "2026-05-21T22:09:42.825Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_anomaly_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:10.042Z",
+              "relationships": [
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 }
               ],
@@ -767,23 +1976,20 @@
               }
             },
             {
-              "id": "evt_algorithm_dispatched",
-              "activity": "wpm.algorithm.dispatched",
-              "timestamp": "2026-05-21T22:09:42.835Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_anomaly_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:10.052Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_anomaly",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_anomaly",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 },
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 }
               ],
@@ -793,64 +1999,75 @@
               }
             },
             {
-              "id": "evt_algorithm_completed",
-              "activity": "wpm.algorithm.completed",
-              "timestamp": "2026-05-21T22:09:42.845Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_anomaly_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:10.062Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_anomaly",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_anomaly",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "id": "result_ml_anomaly_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_anomaly_finance_audit",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "81a50beaea5f0285007ebb1d116ccbd6ffb28a9212266f35f68eb2fa9f39c162",
-                "duration_ms": 36.105
+                "result_hash": "0b0b1d7b90c3f631841810e89934495993b6e47cdf3f9b15ed9aea64a294830b",
+                "duration_ms": 14.737
               }
             },
             {
-              "id": "evt_result_hashed",
-              "activity": "wpm.result.hashed",
-              "timestamp": "2026-05-21T22:09:42.855Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_anomaly_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:10.072Z",
+              "relationships": [
                 {
-                  "id": "result_ml_anomaly_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_anomaly_finance_audit",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "81a50beaea5f0285007ebb1d116ccbd6ffb28a9212266f35f68eb2fa9f39c162"
+                "result_hash": "0b0b1d7b90c3f631841810e89934495993b6e47cdf3f9b15ed9aea64a294830b"
               }
             },
             {
-              "id": "evt_artifact_emitted",
-              "activity": "wpm.artifact.emitted",
-              "timestamp": "2026-05-21T22:09:42.865Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_anomaly_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.082Z",
+              "relationships": [
                 {
-                  "id": "result_ml_anomaly_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_anomaly_finance_audit",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "81a50beaea5f0285007ebb1d116ccbd6ffb28a9212266f35f68eb2fa9f39c162"
+                "result_hash": "0b0b1d7b90c3f631841810e89934495993b6e47cdf3f9b15ed9aea64a294830b"
               }
             },
             {
-              "id": "evt_task_closed",
-              "activity": "wpm.task.closed",
-              "timestamp": "2026-05-21T22:09:42.875Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_anomaly_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.092Z",
+              "relationships": [
                 {
-                  "id": "receipt_finance_audit",
-                  "type": "Receipt",
+                  "objectId": "example_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_anomaly",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_anomaly_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
                   "qualifier": "task-context"
                 }
               ],
@@ -859,18 +2076,34 @@
               }
             },
             {
-              "id": "evt_receipt_verified",
-              "activity": "wpm.receipt.verified",
-              "timestamp": "2026-05-21T22:09:42.885Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_anomaly_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.102Z",
+              "relationships": [
                 {
-                  "id": "result_ml_anomaly_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_anomaly_finance_audit",
                   "qualifier": "verified-result"
                 },
                 {
-                  "id": "receipt_finance_audit",
-                  "type": "Receipt",
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_anomaly_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.112Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_anomaly_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
                   "qualifier": "receipt"
                 }
               ],
@@ -882,94 +2115,455 @@
           "objects": [
             {
               "id": "example_finance_audit",
-              "type": "Example"
+              "type": "Example",
+              "attributes": {}
             },
             {
               "id": "log_finance_audit",
-              "type": "EventLog"
+              "type": "EventLog",
+              "attributes": {}
             },
             {
               "id": "algorithm_ml_anomaly",
-              "type": "Algorithm"
+              "type": "Algorithm",
+              "attributes": {}
             },
             {
               "id": "registry_v26.5.21",
-              "type": "AlgorithmRegistry"
+              "type": "AlgorithmRegistry",
+              "attributes": {}
             },
             {
               "id": "result_ml_anomaly_finance_audit",
-              "type": "AlgorithmResult"
+              "type": "AlgorithmResult",
+              "attributes": {}
             },
             {
               "id": "receipt_finance_audit",
-              "type": "Receipt"
+              "type": "Receipt",
+              "attributes": {}
             }
           ]
         },
-        "observed_ocel_hash": "3d4a0c2a8cee44387740f5b50079f2736298b114d7a467044f60890b9ac6b1ba",
-        "observed_result_hash": "81a50beaea5f0285007ebb1d116ccbd6ffb28a9212266f35f68eb2fa9f39c162"
+        "expected_ocel2_hash": "60687e2f62bd6f93084b042a2e51d48bf2bcd450a9764375cd0fcc6986f8cbaf"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_finance_audit_ml_anomaly_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:10.022Z",
+              "relationships": [
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_finance_audit",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_anomaly_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:10.032Z",
+              "relationships": [
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_anomaly_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:10.042Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_anomaly_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:10.052Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_anomaly",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_anomaly_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:10.062Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_anomaly",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ml_anomaly_finance_audit",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "0b0b1d7b90c3f631841810e89934495993b6e47cdf3f9b15ed9aea64a294830b",
+                "duration_ms": 14.737
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_anomaly_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:10.072Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_anomaly_finance_audit",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "0b0b1d7b90c3f631841810e89934495993b6e47cdf3f9b15ed9aea64a294830b"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_anomaly_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.082Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_anomaly_finance_audit",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "0b0b1d7b90c3f631841810e89934495993b6e47cdf3f9b15ed9aea64a294830b"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_anomaly_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.092Z",
+              "relationships": [
+                {
+                  "objectId": "example_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_anomaly",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_anomaly_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_anomaly_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.102Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_anomaly_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_anomaly_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.112Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_anomaly_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_finance_audit",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_finance_audit",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ml_anomaly",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ml_anomaly_finance_audit",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_finance_audit",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "242c22f0f89d98ffb6c7701c0142d74e3782fed7acfc6307efe4dda40349b55f",
+        "observed_result_hash": "0b0b1d7b90c3f631841810e89934495993b6e47cdf3f9b15ed9aea64a294830b"
       },
       "alignment": {
         "expected_vs_observed": "Pass",
         "missing_events": [],
         "unexpected_events": [],
         "refusal_state": null
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1",
+        "output_artifact_hash": "0b0b1d7b90c3f631841810e89934495993b6e47cdf3f9b15ed9aea64a294830b",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
     {
       "id": "ml_regress",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "867efac2744195a4bdf43209a7f52c2bb7ac75a2c8060437de7877586c850213",
-      "duration_ms": 52.195,
+      "result_hash": "ffa0d3788083d4a576c47770cbfe61921b5cc3e1ba3597d5d6e9748f3c3e9cc9",
+      "duration_ms": 20.309,
       "expected_path": {
         "route_id": "wpm.example.finance_audit.ml_regress.v1",
-        "expected_ocel_hash": "db5c8339e8967168685b8cd0b3260bd4accfb9e0a813d484b636c7b207a9d71a",
-        "required_events": [
-          "wpm.input.import.started",
-          "wpm.input.import.completed",
-          "wpm.algorithm.registry.checked",
-          "wpm.algorithm.dispatched",
-          "wpm.algorithm.completed",
-          "wpm.result.hashed",
-          "wpm.artifact.emitted",
-          "wpm.task.closed",
-          "wpm.receipt.verified"
-        ]
-      },
-      "observed_path": {
-        "ocel": {
-          "schema": "wasm4pm.ExecutionOCEL.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
           "events": [
             {
-              "id": "evt_import_started",
-              "activity": "wpm.input.import.started",
-              "timestamp": "2026-05-21T22:09:42.805Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_regress_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:10.022Z",
+              "relationships": [
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 },
                 {
-                  "id": "example_finance_audit",
-                  "type": "Example",
+                  "objectId": "example_finance_audit",
                   "qualifier": "example"
                 }
               ],
               "attributes": {
                 "format": "xes",
-                "activity_key": "concept:name"
+                "activity_key": "concept:name",
+                "stage": "expected"
               }
             },
             {
-              "id": "evt_import_completed",
-              "activity": "wpm.input.import.completed",
-              "timestamp": "2026-05-21T22:09:42.815Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_regress_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:10.032Z",
+              "relationships": [
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 }
               ],
@@ -978,13 +2572,12 @@
               }
             },
             {
-              "id": "evt_algorithm_registry_checked",
-              "activity": "wpm.algorithm.registry.checked",
-              "timestamp": "2026-05-21T22:09:42.825Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_regress_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:10.042Z",
+              "relationships": [
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 }
               ],
@@ -993,23 +2586,20 @@
               }
             },
             {
-              "id": "evt_algorithm_dispatched",
-              "activity": "wpm.algorithm.dispatched",
-              "timestamp": "2026-05-21T22:09:42.835Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_regress_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:10.052Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_regress",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_regress",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 },
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 }
               ],
@@ -1019,64 +2609,75 @@
               }
             },
             {
-              "id": "evt_algorithm_completed",
-              "activity": "wpm.algorithm.completed",
-              "timestamp": "2026-05-21T22:09:42.845Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_regress_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:10.062Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_regress",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_regress",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "id": "result_ml_regress_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_regress_finance_audit",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "867efac2744195a4bdf43209a7f52c2bb7ac75a2c8060437de7877586c850213",
-                "duration_ms": 52.195
+                "result_hash": "ffa0d3788083d4a576c47770cbfe61921b5cc3e1ba3597d5d6e9748f3c3e9cc9",
+                "duration_ms": 20.309
               }
             },
             {
-              "id": "evt_result_hashed",
-              "activity": "wpm.result.hashed",
-              "timestamp": "2026-05-21T22:09:42.855Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_regress_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:10.072Z",
+              "relationships": [
                 {
-                  "id": "result_ml_regress_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_regress_finance_audit",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "867efac2744195a4bdf43209a7f52c2bb7ac75a2c8060437de7877586c850213"
+                "result_hash": "ffa0d3788083d4a576c47770cbfe61921b5cc3e1ba3597d5d6e9748f3c3e9cc9"
               }
             },
             {
-              "id": "evt_artifact_emitted",
-              "activity": "wpm.artifact.emitted",
-              "timestamp": "2026-05-21T22:09:42.865Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_regress_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.082Z",
+              "relationships": [
                 {
-                  "id": "result_ml_regress_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_regress_finance_audit",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "867efac2744195a4bdf43209a7f52c2bb7ac75a2c8060437de7877586c850213"
+                "result_hash": "ffa0d3788083d4a576c47770cbfe61921b5cc3e1ba3597d5d6e9748f3c3e9cc9"
               }
             },
             {
-              "id": "evt_task_closed",
-              "activity": "wpm.task.closed",
-              "timestamp": "2026-05-21T22:09:42.875Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_regress_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.092Z",
+              "relationships": [
                 {
-                  "id": "receipt_finance_audit",
-                  "type": "Receipt",
+                  "objectId": "example_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_regress",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_regress_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
                   "qualifier": "task-context"
                 }
               ],
@@ -1085,18 +2686,34 @@
               }
             },
             {
-              "id": "evt_receipt_verified",
-              "activity": "wpm.receipt.verified",
-              "timestamp": "2026-05-21T22:09:42.885Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_regress_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.102Z",
+              "relationships": [
                 {
-                  "id": "result_ml_regress_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_regress_finance_audit",
                   "qualifier": "verified-result"
                 },
                 {
-                  "id": "receipt_finance_audit",
-                  "type": "Receipt",
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_regress_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.112Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_regress_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
                   "qualifier": "receipt"
                 }
               ],
@@ -1108,94 +2725,455 @@
           "objects": [
             {
               "id": "example_finance_audit",
-              "type": "Example"
+              "type": "Example",
+              "attributes": {}
             },
             {
               "id": "log_finance_audit",
-              "type": "EventLog"
+              "type": "EventLog",
+              "attributes": {}
             },
             {
               "id": "algorithm_ml_regress",
-              "type": "Algorithm"
+              "type": "Algorithm",
+              "attributes": {}
             },
             {
               "id": "registry_v26.5.21",
-              "type": "AlgorithmRegistry"
+              "type": "AlgorithmRegistry",
+              "attributes": {}
             },
             {
               "id": "result_ml_regress_finance_audit",
-              "type": "AlgorithmResult"
+              "type": "AlgorithmResult",
+              "attributes": {}
             },
             {
               "id": "receipt_finance_audit",
-              "type": "Receipt"
+              "type": "Receipt",
+              "attributes": {}
             }
           ]
         },
-        "observed_ocel_hash": "9b0e01737a91ed0a6c6915ee799cd23729325cad893ab5f76796c46ed551be73",
-        "observed_result_hash": "867efac2744195a4bdf43209a7f52c2bb7ac75a2c8060437de7877586c850213"
+        "expected_ocel2_hash": "92c54836738719107905c428fb3083cd4946680e45cbd7c67e66e148f9d44dd9"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_finance_audit_ml_regress_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:10.022Z",
+              "relationships": [
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_finance_audit",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_regress_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:10.032Z",
+              "relationships": [
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_regress_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:10.042Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_regress_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:10.052Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_regress",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_regress_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:10.062Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_regress",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ml_regress_finance_audit",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ffa0d3788083d4a576c47770cbfe61921b5cc3e1ba3597d5d6e9748f3c3e9cc9",
+                "duration_ms": 20.309
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_regress_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:10.072Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_regress_finance_audit",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ffa0d3788083d4a576c47770cbfe61921b5cc3e1ba3597d5d6e9748f3c3e9cc9"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_regress_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.082Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_regress_finance_audit",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ffa0d3788083d4a576c47770cbfe61921b5cc3e1ba3597d5d6e9748f3c3e9cc9"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_regress_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.092Z",
+              "relationships": [
+                {
+                  "objectId": "example_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_regress",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_regress_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_regress_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.102Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_regress_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_regress_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.112Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_regress_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_finance_audit",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_finance_audit",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ml_regress",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ml_regress_finance_audit",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_finance_audit",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "65aea5d194aae60c00070b2c3580d2caaff72a20a8ed1510f3f9d876e8939132",
+        "observed_result_hash": "ffa0d3788083d4a576c47770cbfe61921b5cc3e1ba3597d5d6e9748f3c3e9cc9"
       },
       "alignment": {
         "expected_vs_observed": "Pass",
         "missing_events": [],
         "unexpected_events": [],
         "refusal_state": null
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1",
+        "output_artifact_hash": "ffa0d3788083d4a576c47770cbfe61921b5cc3e1ba3597d5d6e9748f3c3e9cc9",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
     {
       "id": "ml_pca",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "8639f4ec4a1fbe2173d530930ea7f886b1ea2d57f59d9e5f71723c0c65da2148",
-      "duration_ms": 34.648,
+      "result_hash": "06c800337f012c26cc908ce6da3eb15eb66630181358fca938351c8749b964e9",
+      "duration_ms": 17.677,
       "expected_path": {
         "route_id": "wpm.example.finance_audit.ml_pca.v1",
-        "expected_ocel_hash": "86d3638ff99a7851b9ea091229a8e56850b5de8e047c8e25830fa0eb0d743675",
-        "required_events": [
-          "wpm.input.import.started",
-          "wpm.input.import.completed",
-          "wpm.algorithm.registry.checked",
-          "wpm.algorithm.dispatched",
-          "wpm.algorithm.completed",
-          "wpm.result.hashed",
-          "wpm.artifact.emitted",
-          "wpm.task.closed",
-          "wpm.receipt.verified"
-        ]
-      },
-      "observed_path": {
-        "ocel": {
-          "schema": "wasm4pm.ExecutionOCEL.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
           "events": [
             {
-              "id": "evt_import_started",
-              "activity": "wpm.input.import.started",
-              "timestamp": "2026-05-21T22:09:42.805Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_pca_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:10.022Z",
+              "relationships": [
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 },
                 {
-                  "id": "example_finance_audit",
-                  "type": "Example",
+                  "objectId": "example_finance_audit",
                   "qualifier": "example"
                 }
               ],
               "attributes": {
                 "format": "xes",
-                "activity_key": "concept:name"
+                "activity_key": "concept:name",
+                "stage": "expected"
               }
             },
             {
-              "id": "evt_import_completed",
-              "activity": "wpm.input.import.completed",
-              "timestamp": "2026-05-21T22:09:42.815Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_pca_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:10.032Z",
+              "relationships": [
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 }
               ],
@@ -1204,13 +3182,12 @@
               }
             },
             {
-              "id": "evt_algorithm_registry_checked",
-              "activity": "wpm.algorithm.registry.checked",
-              "timestamp": "2026-05-21T22:09:42.825Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_pca_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:10.042Z",
+              "relationships": [
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 }
               ],
@@ -1219,23 +3196,20 @@
               }
             },
             {
-              "id": "evt_algorithm_dispatched",
-              "activity": "wpm.algorithm.dispatched",
-              "timestamp": "2026-05-21T22:09:42.835Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_pca_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:10.052Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_pca",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_pca",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 },
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 }
               ],
@@ -1245,64 +3219,75 @@
               }
             },
             {
-              "id": "evt_algorithm_completed",
-              "activity": "wpm.algorithm.completed",
-              "timestamp": "2026-05-21T22:09:42.845Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_pca_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:10.062Z",
+              "relationships": [
                 {
-                  "id": "algorithm_ml_pca",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_ml_pca",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "id": "result_ml_pca_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_pca_finance_audit",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "8639f4ec4a1fbe2173d530930ea7f886b1ea2d57f59d9e5f71723c0c65da2148",
-                "duration_ms": 34.648
+                "result_hash": "06c800337f012c26cc908ce6da3eb15eb66630181358fca938351c8749b964e9",
+                "duration_ms": 17.677
               }
             },
             {
-              "id": "evt_result_hashed",
-              "activity": "wpm.result.hashed",
-              "timestamp": "2026-05-21T22:09:42.855Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_pca_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:10.072Z",
+              "relationships": [
                 {
-                  "id": "result_ml_pca_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_pca_finance_audit",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "8639f4ec4a1fbe2173d530930ea7f886b1ea2d57f59d9e5f71723c0c65da2148"
+                "result_hash": "06c800337f012c26cc908ce6da3eb15eb66630181358fca938351c8749b964e9"
               }
             },
             {
-              "id": "evt_artifact_emitted",
-              "activity": "wpm.artifact.emitted",
-              "timestamp": "2026-05-21T22:09:42.865Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_pca_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.082Z",
+              "relationships": [
                 {
-                  "id": "result_ml_pca_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_pca_finance_audit",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "8639f4ec4a1fbe2173d530930ea7f886b1ea2d57f59d9e5f71723c0c65da2148"
+                "result_hash": "06c800337f012c26cc908ce6da3eb15eb66630181358fca938351c8749b964e9"
               }
             },
             {
-              "id": "evt_task_closed",
-              "activity": "wpm.task.closed",
-              "timestamp": "2026-05-21T22:09:42.875Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_pca_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.092Z",
+              "relationships": [
                 {
-                  "id": "receipt_finance_audit",
-                  "type": "Receipt",
+                  "objectId": "example_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_pca",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_pca_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
                   "qualifier": "task-context"
                 }
               ],
@@ -1311,18 +3296,34 @@
               }
             },
             {
-              "id": "evt_receipt_verified",
-              "activity": "wpm.receipt.verified",
-              "timestamp": "2026-05-21T22:09:42.885Z",
-              "objects": [
+              "id": "evt_finance_audit_ml_pca_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.102Z",
+              "relationships": [
                 {
-                  "id": "result_ml_pca_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_ml_pca_finance_audit",
                   "qualifier": "verified-result"
                 },
                 {
-                  "id": "receipt_finance_audit",
-                  "type": "Receipt",
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_pca_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.112Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_pca_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
                   "qualifier": "receipt"
                 }
               ],
@@ -1334,94 +3335,455 @@
           "objects": [
             {
               "id": "example_finance_audit",
-              "type": "Example"
+              "type": "Example",
+              "attributes": {}
             },
             {
               "id": "log_finance_audit",
-              "type": "EventLog"
+              "type": "EventLog",
+              "attributes": {}
             },
             {
               "id": "algorithm_ml_pca",
-              "type": "Algorithm"
+              "type": "Algorithm",
+              "attributes": {}
             },
             {
               "id": "registry_v26.5.21",
-              "type": "AlgorithmRegistry"
+              "type": "AlgorithmRegistry",
+              "attributes": {}
             },
             {
               "id": "result_ml_pca_finance_audit",
-              "type": "AlgorithmResult"
+              "type": "AlgorithmResult",
+              "attributes": {}
             },
             {
               "id": "receipt_finance_audit",
-              "type": "Receipt"
+              "type": "Receipt",
+              "attributes": {}
             }
           ]
         },
-        "observed_ocel_hash": "352b5bbb113d01ef989a4ffebab297e9fd71eb9e06947ae893d1782f168dfefd",
-        "observed_result_hash": "8639f4ec4a1fbe2173d530930ea7f886b1ea2d57f59d9e5f71723c0c65da2148"
+        "expected_ocel2_hash": "196fcc61bb65aa351e8b5b78906e19a90b104684ee2c2c9a3e366b290f0fcc66"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_finance_audit_ml_pca_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:10.022Z",
+              "relationships": [
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_finance_audit",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_pca_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:10.032Z",
+              "relationships": [
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_pca_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:10.042Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_pca_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:10.052Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_pca",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_pca_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:10.062Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_ml_pca",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_ml_pca_finance_audit",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "06c800337f012c26cc908ce6da3eb15eb66630181358fca938351c8749b964e9",
+                "duration_ms": 17.677
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_pca_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:10.072Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_pca_finance_audit",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "06c800337f012c26cc908ce6da3eb15eb66630181358fca938351c8749b964e9"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_pca_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.082Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_pca_finance_audit",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "06c800337f012c26cc908ce6da3eb15eb66630181358fca938351c8749b964e9"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_pca_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.092Z",
+              "relationships": [
+                {
+                  "objectId": "example_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_ml_pca",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_ml_pca_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_pca_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.102Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_pca_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_finance_audit_ml_pca_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.112Z",
+              "relationships": [
+                {
+                  "objectId": "result_ml_pca_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_finance_audit",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_finance_audit",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_ml_pca",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_ml_pca_finance_audit",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_finance_audit",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "a2b64dbda25d65be07f6237d51438d6bcced859992c35e3b3b4e747afc2edfcb",
+        "observed_result_hash": "06c800337f012c26cc908ce6da3eb15eb66630181358fca938351c8749b964e9"
       },
       "alignment": {
         "expected_vs_observed": "Pass",
         "missing_events": [],
         "unexpected_events": [],
         "refusal_state": null
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1",
+        "output_artifact_hash": "06c800337f012c26cc908ce6da3eb15eb66630181358fca938351c8749b964e9",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
     {
       "id": "transition_system",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "ff2b30974527ccc60a2d8ed351d203c78ee5877f9431c49e8cf685964a32405e",
-      "duration_ms": 53.88,
+      "result_hash": "9f95155f316ebf8d82331e175ec73cf4ccf9354e96addbe1151a47e68b98e5ff",
+      "duration_ms": 20.483,
       "expected_path": {
         "route_id": "wpm.example.finance_audit.transition_system.v1",
-        "expected_ocel_hash": "e725b6863aa42ee867b1fff7afd5c8b16f5fca0cb4bbdc66de235850b30b05d0",
-        "required_events": [
-          "wpm.input.import.started",
-          "wpm.input.import.completed",
-          "wpm.algorithm.registry.checked",
-          "wpm.algorithm.dispatched",
-          "wpm.algorithm.completed",
-          "wpm.result.hashed",
-          "wpm.artifact.emitted",
-          "wpm.task.closed",
-          "wpm.receipt.verified"
-        ]
-      },
-      "observed_path": {
-        "ocel": {
-          "schema": "wasm4pm.ExecutionOCEL.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
           "events": [
             {
-              "id": "evt_import_started",
-              "activity": "wpm.input.import.started",
-              "timestamp": "2026-05-21T22:09:42.805Z",
-              "objects": [
+              "id": "evt_finance_audit_transition_system_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:10.022Z",
+              "relationships": [
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 },
                 {
-                  "id": "example_finance_audit",
-                  "type": "Example",
+                  "objectId": "example_finance_audit",
                   "qualifier": "example"
                 }
               ],
               "attributes": {
                 "format": "xes",
-                "activity_key": "concept:name"
+                "activity_key": "concept:name",
+                "stage": "expected"
               }
             },
             {
-              "id": "evt_import_completed",
-              "activity": "wpm.input.import.completed",
-              "timestamp": "2026-05-21T22:09:42.815Z",
-              "objects": [
+              "id": "evt_finance_audit_transition_system_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:10.032Z",
+              "relationships": [
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 }
               ],
@@ -1430,13 +3792,12 @@
               }
             },
             {
-              "id": "evt_algorithm_registry_checked",
-              "activity": "wpm.algorithm.registry.checked",
-              "timestamp": "2026-05-21T22:09:42.825Z",
-              "objects": [
+              "id": "evt_finance_audit_transition_system_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:10.042Z",
+              "relationships": [
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 }
               ],
@@ -1445,23 +3806,20 @@
               }
             },
             {
-              "id": "evt_algorithm_dispatched",
-              "activity": "wpm.algorithm.dispatched",
-              "timestamp": "2026-05-21T22:09:42.835Z",
-              "objects": [
+              "id": "evt_finance_audit_transition_system_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:10.052Z",
+              "relationships": [
                 {
-                  "id": "algorithm_transition_system",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_transition_system",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 },
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 }
               ],
@@ -1471,64 +3829,75 @@
               }
             },
             {
-              "id": "evt_algorithm_completed",
-              "activity": "wpm.algorithm.completed",
-              "timestamp": "2026-05-21T22:09:42.845Z",
-              "objects": [
+              "id": "evt_finance_audit_transition_system_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:10.062Z",
+              "relationships": [
                 {
-                  "id": "algorithm_transition_system",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_transition_system",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "id": "result_transition_system_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_transition_system_finance_audit",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "ff2b30974527ccc60a2d8ed351d203c78ee5877f9431c49e8cf685964a32405e",
-                "duration_ms": 53.88
+                "result_hash": "9f95155f316ebf8d82331e175ec73cf4ccf9354e96addbe1151a47e68b98e5ff",
+                "duration_ms": 20.483
               }
             },
             {
-              "id": "evt_result_hashed",
-              "activity": "wpm.result.hashed",
-              "timestamp": "2026-05-21T22:09:42.855Z",
-              "objects": [
+              "id": "evt_finance_audit_transition_system_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:10.072Z",
+              "relationships": [
                 {
-                  "id": "result_transition_system_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_transition_system_finance_audit",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "ff2b30974527ccc60a2d8ed351d203c78ee5877f9431c49e8cf685964a32405e"
+                "result_hash": "9f95155f316ebf8d82331e175ec73cf4ccf9354e96addbe1151a47e68b98e5ff"
               }
             },
             {
-              "id": "evt_artifact_emitted",
-              "activity": "wpm.artifact.emitted",
-              "timestamp": "2026-05-21T22:09:42.865Z",
-              "objects": [
+              "id": "evt_finance_audit_transition_system_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.082Z",
+              "relationships": [
                 {
-                  "id": "result_transition_system_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_transition_system_finance_audit",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "ff2b30974527ccc60a2d8ed351d203c78ee5877f9431c49e8cf685964a32405e"
+                "result_hash": "9f95155f316ebf8d82331e175ec73cf4ccf9354e96addbe1151a47e68b98e5ff"
               }
             },
             {
-              "id": "evt_task_closed",
-              "activity": "wpm.task.closed",
-              "timestamp": "2026-05-21T22:09:42.875Z",
-              "objects": [
+              "id": "evt_finance_audit_transition_system_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.092Z",
+              "relationships": [
                 {
-                  "id": "receipt_finance_audit",
-                  "type": "Receipt",
+                  "objectId": "example_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_transition_system",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_transition_system_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
                   "qualifier": "task-context"
                 }
               ],
@@ -1537,18 +3906,34 @@
               }
             },
             {
-              "id": "evt_receipt_verified",
-              "activity": "wpm.receipt.verified",
-              "timestamp": "2026-05-21T22:09:42.885Z",
-              "objects": [
+              "id": "evt_finance_audit_transition_system_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.102Z",
+              "relationships": [
                 {
-                  "id": "result_transition_system_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_transition_system_finance_audit",
                   "qualifier": "verified-result"
                 },
                 {
-                  "id": "receipt_finance_audit",
-                  "type": "Receipt",
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_finance_audit_transition_system_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.112Z",
+              "relationships": [
+                {
+                  "objectId": "result_transition_system_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
                   "qualifier": "receipt"
                 }
               ],
@@ -1560,94 +3945,455 @@
           "objects": [
             {
               "id": "example_finance_audit",
-              "type": "Example"
+              "type": "Example",
+              "attributes": {}
             },
             {
               "id": "log_finance_audit",
-              "type": "EventLog"
+              "type": "EventLog",
+              "attributes": {}
             },
             {
               "id": "algorithm_transition_system",
-              "type": "Algorithm"
+              "type": "Algorithm",
+              "attributes": {}
             },
             {
               "id": "registry_v26.5.21",
-              "type": "AlgorithmRegistry"
+              "type": "AlgorithmRegistry",
+              "attributes": {}
             },
             {
               "id": "result_transition_system_finance_audit",
-              "type": "AlgorithmResult"
+              "type": "AlgorithmResult",
+              "attributes": {}
             },
             {
               "id": "receipt_finance_audit",
-              "type": "Receipt"
+              "type": "Receipt",
+              "attributes": {}
             }
           ]
         },
-        "observed_ocel_hash": "e4b2f24af5fe86b6b0e7c034f198048fbfd89982bc1f885745b74e573e0d5f10",
-        "observed_result_hash": "ff2b30974527ccc60a2d8ed351d203c78ee5877f9431c49e8cf685964a32405e"
+        "expected_ocel2_hash": "eb236a35fea6c01f558ffa82928e539880a76a079368d9b3cd77fea5a6416b51"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_finance_audit_transition_system_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:10.022Z",
+              "relationships": [
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_finance_audit",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_finance_audit_transition_system_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:10.032Z",
+              "relationships": [
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1"
+              }
+            },
+            {
+              "id": "evt_finance_audit_transition_system_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:10.042Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_finance_audit_transition_system_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:10.052Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_transition_system",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_finance_audit_transition_system_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:10.062Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_transition_system",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_transition_system_finance_audit",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "9f95155f316ebf8d82331e175ec73cf4ccf9354e96addbe1151a47e68b98e5ff",
+                "duration_ms": 20.483
+              }
+            },
+            {
+              "id": "evt_finance_audit_transition_system_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:10.072Z",
+              "relationships": [
+                {
+                  "objectId": "result_transition_system_finance_audit",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "9f95155f316ebf8d82331e175ec73cf4ccf9354e96addbe1151a47e68b98e5ff"
+              }
+            },
+            {
+              "id": "evt_finance_audit_transition_system_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.082Z",
+              "relationships": [
+                {
+                  "objectId": "result_transition_system_finance_audit",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "9f95155f316ebf8d82331e175ec73cf4ccf9354e96addbe1151a47e68b98e5ff"
+              }
+            },
+            {
+              "id": "evt_finance_audit_transition_system_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.092Z",
+              "relationships": [
+                {
+                  "objectId": "example_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_transition_system",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_transition_system_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_finance_audit_transition_system_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.102Z",
+              "relationships": [
+                {
+                  "objectId": "result_transition_system_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_finance_audit_transition_system_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.112Z",
+              "relationships": [
+                {
+                  "objectId": "result_transition_system_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_finance_audit",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_finance_audit",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_transition_system",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_transition_system_finance_audit",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_finance_audit",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "1ab93ae356f6292f5ee13c402fccb76260cfcc0f52edf5d8173cb3d8d53010b0",
+        "observed_result_hash": "9f95155f316ebf8d82331e175ec73cf4ccf9354e96addbe1151a47e68b98e5ff"
       },
       "alignment": {
         "expected_vs_observed": "Pass",
         "missing_events": [],
         "unexpected_events": [],
         "refusal_state": null
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1",
+        "output_artifact_hash": "9f95155f316ebf8d82331e175ec73cf4ccf9354e96addbe1151a47e68b98e5ff",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     },
     {
       "id": "log_to_trie",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "0f2735b759f9e0425d06233da9326564ec67198fc73e38b4e09753d04380f796",
-      "duration_ms": 15.947,
+      "result_hash": "7c4b67c2fce32c7862cdbb68ea843f5effa142391191c5c379f282869b89ae45",
+      "duration_ms": 34.898,
       "expected_path": {
         "route_id": "wpm.example.finance_audit.log_to_trie.v1",
-        "expected_ocel_hash": "637e0f6c1b4e8ed7d0d287173f2e196409e836fa76684257dd081ac2dfa3d124",
-        "required_events": [
-          "wpm.input.import.started",
-          "wpm.input.import.completed",
-          "wpm.algorithm.registry.checked",
-          "wpm.algorithm.dispatched",
-          "wpm.algorithm.completed",
-          "wpm.result.hashed",
-          "wpm.artifact.emitted",
-          "wpm.task.closed",
-          "wpm.receipt.verified"
-        ]
-      },
-      "observed_path": {
-        "ocel": {
-          "schema": "wasm4pm.ExecutionOCEL.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
           "events": [
             {
-              "id": "evt_import_started",
-              "activity": "wpm.input.import.started",
-              "timestamp": "2026-05-21T22:09:42.805Z",
-              "objects": [
+              "id": "evt_finance_audit_log_to_trie_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:10.022Z",
+              "relationships": [
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 },
                 {
-                  "id": "example_finance_audit",
-                  "type": "Example",
+                  "objectId": "example_finance_audit",
                   "qualifier": "example"
                 }
               ],
               "attributes": {
                 "format": "xes",
-                "activity_key": "concept:name"
+                "activity_key": "concept:name",
+                "stage": "expected"
               }
             },
             {
-              "id": "evt_import_completed",
-              "activity": "wpm.input.import.completed",
-              "timestamp": "2026-05-21T22:09:42.815Z",
-              "objects": [
+              "id": "evt_finance_audit_log_to_trie_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:10.032Z",
+              "relationships": [
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 }
               ],
@@ -1656,13 +4402,12 @@
               }
             },
             {
-              "id": "evt_algorithm_registry_checked",
-              "activity": "wpm.algorithm.registry.checked",
-              "timestamp": "2026-05-21T22:09:42.825Z",
-              "objects": [
+              "id": "evt_finance_audit_log_to_trie_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:10.042Z",
+              "relationships": [
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 }
               ],
@@ -1671,23 +4416,20 @@
               }
             },
             {
-              "id": "evt_algorithm_dispatched",
-              "activity": "wpm.algorithm.dispatched",
-              "timestamp": "2026-05-21T22:09:42.835Z",
-              "objects": [
+              "id": "evt_finance_audit_log_to_trie_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:10.052Z",
+              "relationships": [
                 {
-                  "id": "algorithm_log_to_trie",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_log_to_trie",
                   "qualifier": "selected-algorithm"
                 },
                 {
-                  "id": "registry_v26.5.21",
-                  "type": "AlgorithmRegistry",
+                  "objectId": "registry_v26.5.21",
                   "qualifier": "registry"
                 },
                 {
-                  "id": "log_finance_audit",
-                  "type": "EventLog",
+                  "objectId": "log_finance_audit",
                   "qualifier": "input"
                 }
               ],
@@ -1697,64 +4439,75 @@
               }
             },
             {
-              "id": "evt_algorithm_completed",
-              "activity": "wpm.algorithm.completed",
-              "timestamp": "2026-05-21T22:09:42.845Z",
-              "objects": [
+              "id": "evt_finance_audit_log_to_trie_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:10.062Z",
+              "relationships": [
                 {
-                  "id": "algorithm_log_to_trie",
-                  "type": "Algorithm",
+                  "objectId": "algorithm_log_to_trie",
                   "qualifier": "executed-algorithm"
                 },
                 {
-                  "id": "result_log_to_trie_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_log_to_trie_finance_audit",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "0f2735b759f9e0425d06233da9326564ec67198fc73e38b4e09753d04380f796",
-                "duration_ms": 15.947
+                "result_hash": "7c4b67c2fce32c7862cdbb68ea843f5effa142391191c5c379f282869b89ae45",
+                "duration_ms": 34.898
               }
             },
             {
-              "id": "evt_result_hashed",
-              "activity": "wpm.result.hashed",
-              "timestamp": "2026-05-21T22:09:42.855Z",
-              "objects": [
+              "id": "evt_finance_audit_log_to_trie_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:10.072Z",
+              "relationships": [
                 {
-                  "id": "result_log_to_trie_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_log_to_trie_finance_audit",
                   "qualifier": "output"
                 }
               ],
               "attributes": {
-                "result_hash": "0f2735b759f9e0425d06233da9326564ec67198fc73e38b4e09753d04380f796"
+                "result_hash": "7c4b67c2fce32c7862cdbb68ea843f5effa142391191c5c379f282869b89ae45"
               }
             },
             {
-              "id": "evt_artifact_emitted",
-              "activity": "wpm.artifact.emitted",
-              "timestamp": "2026-05-21T22:09:42.865Z",
-              "objects": [
+              "id": "evt_finance_audit_log_to_trie_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.082Z",
+              "relationships": [
                 {
-                  "id": "result_log_to_trie_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_log_to_trie_finance_audit",
                   "qualifier": "artifact"
                 }
               ],
               "attributes": {
-                "result_hash": "0f2735b759f9e0425d06233da9326564ec67198fc73e38b4e09753d04380f796"
+                "result_hash": "7c4b67c2fce32c7862cdbb68ea843f5effa142391191c5c379f282869b89ae45"
               }
             },
             {
-              "id": "evt_task_closed",
-              "activity": "wpm.task.closed",
-              "timestamp": "2026-05-21T22:09:42.875Z",
-              "objects": [
+              "id": "evt_finance_audit_log_to_trie_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.092Z",
+              "relationships": [
                 {
-                  "id": "receipt_finance_audit",
-                  "type": "Receipt",
+                  "objectId": "example_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_log_to_trie",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_log_to_trie_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
                   "qualifier": "task-context"
                 }
               ],
@@ -1763,18 +4516,34 @@
               }
             },
             {
-              "id": "evt_receipt_verified",
-              "activity": "wpm.receipt.verified",
-              "timestamp": "2026-05-21T22:09:42.885Z",
-              "objects": [
+              "id": "evt_finance_audit_log_to_trie_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.102Z",
+              "relationships": [
                 {
-                  "id": "result_log_to_trie_finance_audit",
-                  "type": "AlgorithmResult",
+                  "objectId": "result_log_to_trie_finance_audit",
                   "qualifier": "verified-result"
                 },
                 {
-                  "id": "receipt_finance_audit",
-                  "type": "Receipt",
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_finance_audit_log_to_trie_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.112Z",
+              "relationships": [
+                {
+                  "objectId": "result_log_to_trie_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
                   "qualifier": "receipt"
                 }
               ],
@@ -1786,44 +4555,352 @@
           "objects": [
             {
               "id": "example_finance_audit",
-              "type": "Example"
+              "type": "Example",
+              "attributes": {}
             },
             {
               "id": "log_finance_audit",
-              "type": "EventLog"
+              "type": "EventLog",
+              "attributes": {}
             },
             {
               "id": "algorithm_log_to_trie",
-              "type": "Algorithm"
+              "type": "Algorithm",
+              "attributes": {}
             },
             {
               "id": "registry_v26.5.21",
-              "type": "AlgorithmRegistry"
+              "type": "AlgorithmRegistry",
+              "attributes": {}
             },
             {
               "id": "result_log_to_trie_finance_audit",
-              "type": "AlgorithmResult"
+              "type": "AlgorithmResult",
+              "attributes": {}
             },
             {
               "id": "receipt_finance_audit",
-              "type": "Receipt"
+              "type": "Receipt",
+              "attributes": {}
             }
           ]
         },
-        "observed_ocel_hash": "39b10fde951a99eac5b99f95e76d61578f93716cf65dab2727b2f63286334d61",
-        "observed_result_hash": "0f2735b759f9e0425d06233da9326564ec67198fc73e38b4e09753d04380f796"
+        "expected_ocel2_hash": "fde42fac61f19c4d89e7eb295dd1133362fedce8990d6ac7dc9f5ff940c38356"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_finance_audit_log_to_trie_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-21T22:46:10.022Z",
+              "relationships": [
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_finance_audit",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_finance_audit_log_to_trie_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-21T22:46:10.032Z",
+              "relationships": [
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1"
+              }
+            },
+            {
+              "id": "evt_finance_audit_log_to_trie_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-21T22:46:10.042Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_finance_audit_log_to_trie_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-21T22:46:10.052Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_log_to_trie",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_finance_audit_log_to_trie_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-21T22:46:10.062Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_log_to_trie",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_log_to_trie_finance_audit",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "7c4b67c2fce32c7862cdbb68ea843f5effa142391191c5c379f282869b89ae45",
+                "duration_ms": 34.898
+              }
+            },
+            {
+              "id": "evt_finance_audit_log_to_trie_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-21T22:46:10.072Z",
+              "relationships": [
+                {
+                  "objectId": "result_log_to_trie_finance_audit",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "7c4b67c2fce32c7862cdbb68ea843f5effa142391191c5c379f282869b89ae45"
+              }
+            },
+            {
+              "id": "evt_finance_audit_log_to_trie_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-21T22:46:10.082Z",
+              "relationships": [
+                {
+                  "objectId": "result_log_to_trie_finance_audit",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "7c4b67c2fce32c7862cdbb68ea843f5effa142391191c5c379f282869b89ae45"
+              }
+            },
+            {
+              "id": "evt_finance_audit_log_to_trie_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-21T22:46:10.092Z",
+              "relationships": [
+                {
+                  "objectId": "example_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_log_to_trie",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_log_to_trie_finance_audit",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_finance_audit_log_to_trie_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-21T22:46:10.102Z",
+              "relationships": [
+                {
+                  "objectId": "result_log_to_trie_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_finance_audit_log_to_trie_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-21T22:46:10.112Z",
+              "relationships": [
+                {
+                  "objectId": "result_log_to_trie_finance_audit",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_finance_audit",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_finance_audit",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_finance_audit",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_log_to_trie",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_log_to_trie_finance_audit",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_finance_audit",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "f46a5945e10808d6c0d5d3fe25bff531ef286d8a339306fd703a6dbf811cfebe",
+        "observed_result_hash": "7c4b67c2fce32c7862cdbb68ea843f5effa142391191c5c379f282869b89ae45"
       },
       "alignment": {
         "expected_vs_observed": "Pass",
         "missing_events": [],
         "unexpected_events": [],
         "refusal_state": null
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "23ff18329d736fcb786bcef0095c81a6f45980009ae36d3a780efb1518e635f1",
+        "output_artifact_hash": "7c4b67c2fce32c7862cdbb68ea843f5effa142391191c5c379f282869b89ae45",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     }
   ],
   "algorithm_count": 8,
-  "all_real": true,
-  "created_at": "2026-05-21T22:09:42.821Z",
+  "created_at": "2026-05-21T22:46:10.039Z",
   "previous_receipt_hash": null,
-  "receipt_hash": "720616ac44c9e887d0279424a76b398ffd3df09e55ed205ac14de34dcc8fa047"
+  "receipt_hash": "9f5321ad73b5fb364c25f0e87f2e8975dafaedcb632c3ca323214d9f76758ea4"
 }

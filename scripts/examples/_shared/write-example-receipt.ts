@@ -2,29 +2,48 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { createHash } from 'node:crypto';
 
-export interface WpmOcelObjectRef {
-  id: string;
-  type: string;
-  qualifier?: string;
+export interface Ocel20EventType {
+  name: string;
+  attributes: Record<string, any>[];
 }
 
-export interface WpmOcelEvent {
+export interface Ocel20ObjectType {
+  name: string;
+  attributes: Record<string, any>[];
+}
+
+export interface Ocel20Object {
   id: string;
-  activity: string;
-  timestamp: string;
-  objects: WpmOcelObjectRef[];
+  type: string;
   attributes: Record<string, any>;
 }
 
-export interface WpmOcelObject {
+export interface Ocel20Event {
   id: string;
   type: string;
+  time: string;
+  attributes: Record<string, any>;
+  relationships: { objectId: string; qualifier: string }[];
 }
 
-export interface Wasm4pmReceiptOcelSlice {
-  schema: string;
-  events: WpmOcelEvent[];
-  objects: WpmOcelObject[];
+export interface Wasm4pmReceiptOcel2 {
+  ocel: string;
+  eventTypes: Ocel20EventType[];
+  objectTypes: Ocel20ObjectType[];
+  events: Ocel20Event[];
+  objects: Ocel20Object[];
+}
+
+export interface BoundaryEvidence {
+  command: string;
+  args_hash: string;
+  exit_code: number;
+  stdout_hash: string;
+  stderr_hash: string;
+  input_artifact_hash: string;
+  output_artifact_hash: string;
+  registry_hash: string;
+  binary_or_build_hash: string;
 }
 
 export interface AlgorithmReceipt {
@@ -35,12 +54,12 @@ export interface AlgorithmReceipt {
   duration_ms: number;
   expected_path: {
     route_id: string;
-    expected_ocel_hash: string;
-    required_events: string[];
+    expected_ocel2: Wasm4pmReceiptOcel2;
+    expected_ocel2_hash: string;
   };
   observed_path: {
-    ocel: Wasm4pmReceiptOcelSlice;
-    observed_ocel_hash: string;
+    observed_ocel2: Wasm4pmReceiptOcel2;
+    observed_ocel2_hash: string;
     observed_result_hash: string | null;
   };
   alignment: {
@@ -49,6 +68,7 @@ export interface AlgorithmReceipt {
     unexpected_events: string[];
     refusal_state: string | null;
   };
+  boundary_evidence: BoundaryEvidence;
 }
 
 export interface ExampleReceipt {
@@ -58,6 +78,12 @@ export interface ExampleReceipt {
   version: string;
   commit: string;
   hash_algorithm: string;
+  time_basis: string;
+  canonicalization: {
+    name: string;
+    version: number;
+    hash_algorithm: string;
+  };
   example_id: string;
   input: {
     event_log_hash: string;
@@ -66,7 +92,6 @@ export interface ExampleReceipt {
   };
   algorithms: AlgorithmReceipt[];
   algorithm_count: number;
-  all_real: boolean;
   created_at: string;
   previous_receipt_hash: string | null;
   receipt_hash: string;
