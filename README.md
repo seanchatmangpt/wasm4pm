@@ -13,7 +13,7 @@ wasm4pm is built with **Combinatorial Maximalism**. Every release is sealed with
 - **Adversarial Gates:** 8 runtime detectors (Stub, Authority, Replay, etc.) prevent false-pass patterns.
 - **BLAKE3 Receipts:** Every CLI and cognition run produces a verifiable cryptographic receipt.
 
-[Get Started](docs/tutorials/getting_started.md) | [CLI Reference](docs/reference/cli_commands.md) | [WASM API](docs_quarantine/WASM_API.md) | [Architecture](docs/explanation/architecture_overview.md)
+[Get Started](docs/tutorials/getting_started.md) | [CLI Reference](docs/reference/cli_commands.md) | [WASM API](docs_quarantine/ARCHIVE/WASM_API.md) | [Architecture](docs/explanation/architecture_overview.md)
 
 ---
 
@@ -99,13 +99,13 @@ We follow the [Diátaxis framework](https://diataxis.fr/).
 
 - **🎓 Tutorials:** [Getting Started](docs/tutorials/getting_started.md), [Predictive Monitoring](docs/tutorials/predictive_monitoring.md), [Cognition Contracts](docs/tutorials/cognition_contracts.md)
 - **🛠️ How-To Guides:** [OTEL Configuration](docs/how-to/configure_observability.md), [Edge Deployment](docs/how-to/edge_deployment.md), [Concept Drift](docs/how-to/concept_drift.md)
-- **📚 Reference:** [CLI Commands](docs/reference/cli_commands.md), [Configuration Schema](docs/reference/configuration_schema.md), [WASM API Catalog](docs_quarantine/WASM_API.md)
-- **🧠 Explanation:** [Architecture Overview](docs/explanation/architecture_overview.md), [Old AI vs. LLM Doctrine](docs/explanation/old_ai_vs_llms.md), [Combinatorial Maximalism](docs/quarantine/explanation/combinatorial_maximalism_closure_discipline.md)
+- **📚 Reference:** [CLI Commands](docs/reference/cli_commands.md), [Configuration Schema](docs/reference/configuration_schema.md), [WASM API Catalog](docs_quarantine/ARCHIVE/WASM_API.md)
+- **🧠 Explanation:** [Architecture Overview](docs/explanation/architecture_overview.md), [Old AI vs. LLM Doctrine](docs/explanation/old_ai_vs_llms.md), [Combinatorial Maximalism](docs_quarantine/ARCHIVE/explanation/combinatorial_maximalism_closure_discipline.md)
 
 ### Additional Resources
-- [Testing Doctrine](docs_quarantine/TESTING.md)
-- [Adversarial Test Plan](docs_quarantine/ADVERSARIAL_TEST_PLAN.md)
-- [Claude Code Integration](docs_quarantine/CLAUDE.md)
+- [Testing Doctrine](docs_quarantine/ARCHIVE/TESTING.md)
+- [Adversarial Test Plan](docs_quarantine/ARCHIVE/ADVERSARIAL_TEST_PLAN.md)
+- [Claude Code Integration](docs_quarantine/ARCHIVE/CLAUDE.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
 
 ## Contact
