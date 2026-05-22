@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! Integration tests for the four `#[wasm_bindgen]` agentic WASM exports.
 //!
 //! These tests verify the three required properties (per the task brief):

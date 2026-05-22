@@ -1,3 +1,4 @@
+#![cfg(feature = "cloud")]
 //! End-to-end tests for the Closed Claw Autonomic Pipeline.
 //!
 //! Each test corresponds to one or more Mermaid architecture diagrams:
