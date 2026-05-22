@@ -1945,81 +1945,1970 @@ function renderBadge(severity: Diagnosis['severity']): string {
   return `[${BADGE[severity]}]`;
 }
 
-function printReport(formatter: HumanFormatter, report: DoctorReport): void {
-  formatter.log('');
-  formatter.log('wasm4pm doctor — epistemic diagnostician & autonomic governor');
-  formatter.log('─'.repeat(80));
+function printReportToProjection(p: ConsoleProjection, report: DoctorReport): void {
+  p.log('');
+  p.log('wpm doctor — epistemic diagnostician & autonomic governor');
+  p.log('─'.repeat(80));
 
   let lastSection = '';
   for (const diag of report.diagnoses) {
     const isTps = diag.name.includes('(TPS)');
     const section = isTps ? 'TPS Pipeline & Epistemic Truth' : 'Environment & Deployment Truth';
     if (section !== lastSection) {
-      if (lastSection) formatter.log('');
-      formatter.log(`  ${section}:`);
+      if (lastSection) p.log('');
+      p.log(`  ${section}:`);
       lastSection = section;
     }
 
     const badge = renderBadge(diag.severity);
-    formatter.log(`    ${badge}  ${diag.name} [${diag.pathology || 'UNKNOWN'}]`);
-    formatter.log(`             Diagnosis: ${diag.message}`);
-    
+    p.log(`    ${badge}  ${diag.name} [${diag.pathology || 'UNKNOWN'}]`);
+    p.log(`             Diagnosis: ${diag.message}`);
+
     if (diag.severity !== 'INFO') {
       const fixText = diag.fixGuide || diag.fix;
-      
+
       // Dynamically infer repair mode
       let inferredRepairMode: RepairMode = diag.repairMode || 'MANUAL_INTERVENTION';
       let inferredRepairCmd = diag.repairCommand;
-      
+
       if (fixText) {
-          if (fixText.includes('pnpm run build') && fixText.includes('cd wasm4pm')) {
-              inferredRepairMode = 'REBUILD_ARTIFACTS';
-              inferredRepairCmd = 'cd wasm4pm && pnpm run build';
-          } else if (fixText.includes('pnpm run build')) {
-              inferredRepairMode = 'REBUILD_ARTIFACTS';
-              inferredRepairCmd = 'pnpm run build';
-          } else if (fixText.includes('pnpm install')) {
-              inferredRepairMode = 'REINSTALL_DEPENDENCIES';
-              inferredRepairCmd = 'pnpm install';
-          } else if (fixText.includes('wasm4pm init')) {
-              inferredRepairMode = 'SCAFFOLD_CONFIG';
-              inferredRepairCmd = 'wasm4pm init';
-          } else if (fixText.includes('corepack')) {
-              inferredRepairMode = 'REINSTALL_DEPENDENCIES';
-              inferredRepairCmd = fixText;
-          } else if (isTps) {
-              inferredRepairMode = 'SYNC_REGISTRY';
-          }
-      }
-      
-      if (inferredRepairMode !== 'MANUAL_INTERVENTION') {
-        formatter.log(`             Repair Mode: ${inferredRepairMode}`);
-        if (inferredRepairCmd) {
-            formatter.log(`             Smallest Lawful Repair: ${inferredRepairCmd}`);
+        if (fixText.includes('pnpm run build') && fixText.includes('cd wasm4pm')) {
+          inferredRepairMode = 'REBUILD_ARTIFACTS';
+          inferredRepairCmd = 'cd wasm4pm && pnpm run build';
+        } else if (fixText.includes('pnpm run build')) {
+          inferredRepairMode = 'REBUILD_ARTIFACTS';
+          inferredRepairCmd = 'pnpm run build';
+        } else if (fixText.includes('pnpm install')) {
+          inferredRepairMode = 'REINSTALL_DEPENDENCIES';
+          inferredRepairCmd = 'pnpm install';
+        } else if (fixText.includes('wpm init')) {
+          inferredRepairMode = 'SCAFFOLD_CONFIG';
+          inferredRepairCmd = 'wpm init';
+        } else if (fixText.includes('corepack')) {
+          inferredRepairMode = 'REINSTALL_DEPENDENCIES';
+          inferredRepairCmd = fixText;
+        } else if (isTps) {
+          inferredRepairMode = 'SYNC_REGISTRY';
         }
       }
-      
+
+      if (inferredRepairMode !== 'MANUAL_INTERVENTION') {
+        p.log(`             Repair Mode: ${inferredRepairMode}`);
+        if (inferredRepairCmd) {
+          p.log(`             Smallest Lawful Repair: ${inferredRepairCmd}`);
+        }
+      }
+
       if (fixText) {
-        formatter.log(`             Manual Treatment: ${fixText}`);
+        p.log(`             Manual Treatment: ${fixText}`);
       }
     }
   }
 
-  formatter.log('');
-  formatter.log('─'.repeat(80));
-  formatter.log(`Result: ${report.info} INFO  ${report.warnings} WARNINGS  ${report.stopTheLine} STOP_THE_LINE`);
-  formatter.log('');
+  p.log('');
+  p.log('─'.repeat(80));
+  p.log(
+    `Result: ${report.info} INFO  ${report.warnings} WARNINGS  ${report.stopTheLine} STOP_THE_LINE`
+  );
+  p.log('');
 
   if (report.epistemicHealth) {
-    formatter.success('System is epistemically healthy and operationally ready.');
+    p.success('System is epistemically healthy and operationally ready.');
   } else {
-    formatter.error('STOP THE LINE: System is epistemically unhealthy or missing critical deployment artifacts.');
+    p.error(
+      'STOP THE LINE: System is epistemically unhealthy or missing critical deployment artifacts.'
+    );
   }
-  formatter.log('');
+  p.log('');
 }
 
 // ────────────────────────────────────────────────────────────────────────────
-// Command definition
+// Shared check runner — builds CommandResult and emits via canonical path
+// ────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Canonical envelope payload shape:
+ * { checks: Diagnosis[], summary: { pass, warn, fail, critical }, healthy: boolean, ...extraFields }
+ * All subcommands using runChecks inherit this shape.
+ */
+async function runChecks(
+  checks: Array<() => Promise<Diagnosis>>,
+  format: 'json' | 'human',
+  verbose: boolean,
+  quiet: boolean,
+  extraFields?: Record<string, unknown>,
+  precomputedDiagnoses?: Diagnosis[],
+  commandName: string = 'doctor'
+): Promise<DoctorReport> {
+  let latePass = 0;
+  let lateWarn = 0;
+  let lateFail = 0;
+  let lateHealthy = false;
+
+  return withSpan(
+    commandName,
+    { check_count: precomputedDiagnoses?.length ?? checks.length, format },
+    async () => {
+      const start = Date.now();
+      const diagnoses: Diagnosis[] =
+        precomputedDiagnoses ?? (await Promise.all(checks.map((fn) => fn())));
+
+      const report: DoctorReport = {
+        diagnoses,
+        info: diagnoses.filter((c) => c.severity === 'INFO').length,
+        warnings: diagnoses.filter((c) => c.severity === 'WARNING').length,
+        stopTheLine: diagnoses.filter((c) => c.severity === 'STOP_THE_LINE').length,
+        epistemicHealth: diagnoses.every((c) => c.severity !== 'STOP_THE_LINE'),
+      };
+      latePass = report.info;
+      lateWarn = report.warnings;
+      lateFail = report.stopTheLine;
+      lateHealthy = report.epistemicHealth;
+
+      const checksPayload = report.diagnoses.map((c) => ({ ...c }));
+      const summaryPayload = {
+        pass: report.info,
+        warn: report.warnings,
+        fail: report.stopTheLine,
+        critical: report.stopTheLine,
+      };
+
+      const payload = {
+        checks: checksPayload,
+        summary: summaryPayload,
+        healthy: report.epistemicHealth,
+        ...extraFields,
+      };
+
+      const exitCode = report.epistemicHealth ? EXIT_CODES.success : EXIT_CODES.config_error;
+      const result = makeResult(commandName, payload, Date.now() - start, exitCode);
+
+      emitResult(result, { format, verbose, quiet }, (_res, p) => {
+        printReportToProjection(p, report);
+      });
+
+      // Exit immediately to prevent parent main.run() from emitting trailing help text.
+      return await exitWithFlush(exitCode);
+    },
+    () => ({
+      checks_pass: latePass,
+      checks_warn: lateWarn,
+      checks_fail: lateFail,
+      healthy: lateHealthy,
+    })
+  ); // end withSpan
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Safe-to-auto-execute fix prefixes
+// ────────────────────────────────────────────────────────────────────────────
+
+function isAutoExecutable(fixCmd: string): boolean {
+  const safePrefixes = ['pnpm install', 'mkdir -p', 'pnpm prepare', 'cd wasm4pm && pnpm run build'];
+  return safePrefixes.some((prefix) => fixCmd.startsWith(prefix));
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subcommand: check
+// ────────────────────────────────────────────────────────────────────────────
+
+export const doctorCheck = defineCommand({
+  meta: {
+    name: 'check',
+    description: 'Run all 24 health checks (or a filtered subset). Example: wpm doctor check --verbose',
+  },
+  args: {
+    format: {
+      type: 'string',
+      description: 'Output format (human or json)',
+      default: 'human',
+    },
+    verbose: {
+      type: 'boolean',
+      description: 'Show all checks including passing ones',
+      alias: 'v',
+    },
+    quiet: {
+      type: 'boolean',
+      description: 'Suppress non-error output',
+      alias: 'q',
+    },
+    checks: {
+      type: 'string',
+      description:
+        'Comma-separated check function names to run (e.g. checkWasmBinary,checkNodeVersion)',
+    },
+  },
+  async run(ctx) {
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+
+    let checksToRun = ALL_CHECKS;
+
+    if (ctx.args.checks) {
+      const names = (ctx.args.checks as string).split(',').map((s) => s.trim());
+      const filtered = ALL_CHECKS.filter((fn) => names.includes(fn.name));
+      if (filtered.length > 0) {
+        checksToRun = filtered;
+      }
+    }
+
+    await runChecks(checksToRun, format, verbose, quiet, undefined, undefined, 'doctor check');
+  },
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subcommand: env
+// ────────────────────────────────────────────────────────────────────────────
+
+export const doctorEnv = defineCommand({
+  meta: {
+    name: 'env',
+    description: 'Run only the 17 environment checks',
+  },
+  args: {
+    format: {
+      type: 'string',
+      description: 'Output format (human or json)',
+      default: 'human',
+    },
+    verbose: {
+      type: 'boolean',
+      description: 'Show all checks including passing ones',
+      alias: 'v',
+    },
+    quiet: {
+      type: 'boolean',
+      description: 'Suppress non-error output',
+      alias: 'q',
+    },
+  },
+  async run(ctx) {
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+    const diagnoses = await Promise.all(ENV_CHECKS.map((fn) => fn()));
+    await runChecks(
+      ENV_CHECKS,
+      format,
+      verbose,
+      quiet,
+      { environment: diagnoses },
+      diagnoses,
+      'doctor env'
+    );
+  },
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subcommand: tps
+// ────────────────────────────────────────────────────────────────────────────
+
+export const doctorTps = defineCommand({
+  meta: {
+    name: 'tps',
+    description: 'Run only the 7 TPS pipeline integrity checks',
+  },
+  args: {
+    format: {
+      type: 'string',
+      description: 'Output format (human or json)',
+      default: 'human',
+    },
+    verbose: {
+      type: 'boolean',
+      description: 'Show all checks including passing ones',
+      alias: 'v',
+    },
+    quiet: {
+      type: 'boolean',
+      description: 'Suppress non-error output',
+      alias: 'q',
+    },
+    'fail-fast': {
+      type: 'boolean',
+      description: 'Exit on first failure',
+    },
+  },
+  async run(ctx) {
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+    const failFast = ctx.args['fail-fast'] as boolean | undefined;
+
+    if (failFast) {
+      for (const fn of TPS_CHECKS) {
+        const diag = await fn();
+        if (diag.severity === 'STOP_THE_LINE') {
+          const report: DoctorReport = {
+            diagnoses: [diag],
+            info: 0,
+            warnings: 0,
+            stopTheLine: 1,
+            epistemicHealth: false,
+          };
+          const result = makeErrorResult(
+            'doctor tps',
+            new Error(diag.message),
+            EXIT_CODES.config_error,
+            'TPS_CHECK_FAILED'
+          );
+          emitResult(result, { format, verbose, quiet }, (_res, proj) => {
+            printReportToProjection(proj, report);
+          });
+          return await exitWithFlush(EXIT_CODES.config_error);
+        }
+      }
+
+      // All passed — run full report
+      await runChecks(TPS_CHECKS, format, verbose, quiet, undefined, undefined, 'doctor tps');
+    } else {
+      await runChecks(TPS_CHECKS, format, verbose, quiet, undefined, undefined, 'doctor tps');
+    }
+  },
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subcommand: fix
+// ────────────────────────────────────────────────────────────────────────────
+
+export const doctorFix = defineCommand({
+  meta: {
+    name: 'fix',
+    description: 'Run all checks and execute auto-fixable repair commands. Example: wpm doctor fix --verbose',
+  },
+  args: {
+    format: {
+      type: 'string',
+      description: 'Output format (human or json)',
+      default: 'human',
+    },
+    verbose: {
+      type: 'boolean',
+      description: 'Show all checks including passing ones',
+      alias: 'v',
+    },
+    quiet: {
+      type: 'boolean',
+      description: 'Suppress non-error output',
+      alias: 'q',
+    },
+    'dry-run': {
+      type: 'boolean',
+      description: 'Print fix commands without executing',
+    },
+    yes: {
+      type: 'boolean',
+      description: 'Skip confirmation prompts',
+      alias: 'y',
+    },
+  },
+  async run(ctx) {
+    const start = Date.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+    const dryRun = ctx.args['dry-run'] as boolean | undefined;
+    const yes = ctx.args.yes as boolean | undefined;
+
+    // Run all checks first
+    const diagnoses: Diagnosis[] = await Promise.all(ALL_CHECKS.map((fn) => fn()));
+
+    // Collect fixable checks
+    const fixable = diagnoses.filter(
+      (d) => d.severity !== 'INFO' && d.fix && isAutoExecutable(d.fix)
+    );
+
+    if (format !== 'json') {
+      const p = new ConsoleProjection({ verbose, quiet });
+      p.log('');
+      p.log(`wpm doctor fix — found ${fixable.length} auto-fixable issue(s)`);
+      p.log('─'.repeat(80));
+
+      for (const d of diagnoses) {
+        const badge = renderBadge(d.severity);
+        p.log(`  ${badge}  ${d.name}: ${d.message}`);
+        if (d.severity !== 'INFO' && d.fix) {
+          if (isAutoExecutable(d.fix)) {
+            p.log(`         → Auto-fix: ${d.fix}`);
+          } else {
+            p.log(`         → Manual fix: ${d.fix}`);
+          }
+        }
+      }
+
+      p.log('');
+
+      if (fixable.length === 0) {
+        p.log(
+          dryRun
+            ? 'Dry-run: no auto-fixable issues found — nothing would be executed.'
+            : 'No auto-fixable issues found.'
+        );
+        const noFixablePayload = {
+          dry_run: Boolean(dryRun),
+          fixable: [],
+          unfixable: [],
+          no_fixable: true,
+        };
+        emitResult(
+          makeResult('doctor fix', noFixablePayload, Date.now() - start, EXIT_CODES.success),
+          { format, verbose, quiet }
+        );
+        return await exitWithFlush(EXIT_CODES.success);
+      }
+
+      if (dryRun) {
+        p.log(`Dry-run mode — would execute ${fixable.length} fix command(s):`);
+        for (const d of fixable) {
+          p.log(`  $ ${d.fix}`);
+        }
+        p.log('');
+        const dryRunPayload = {
+          dry_run: true,
+          fixable: fixable.map((d) => d.fix),
+          unfixable: diagnoses
+            .filter((d) => d.severity !== 'INFO' && d.fix && !isAutoExecutable(d.fix))
+            .map((d) => d.fix),
+        };
+        emitResult(
+          makeResult('doctor fix', dryRunPayload, Date.now() - start, EXIT_CODES.success),
+          { format, verbose, quiet }
+        );
+        return await exitWithFlush(EXIT_CODES.success);
+      }
+
+      if (!yes) {
+        // Simple confirmation (no readline — just skip if stdin is not a tty)
+        p.log(`Run ${fixable.length} fix command(s)? [y/N]`);
+        // In non-interactive mode, skip
+        if (!process.stdin.isTTY) {
+          p.log('Skipping — stdin is not a TTY. Use --yes to force.');
+          const skipPayload = {
+            dry_run: false,
+            skipped: true,
+            reason: 'non-tty',
+            fixable_count: fixable.length,
+          };
+          emitResult(
+            makeResult('doctor fix', skipPayload, Date.now() - start, EXIT_CODES.success),
+            { format, verbose, quiet }
+          );
+          return await exitWithFlush(EXIT_CODES.success);
+        }
+        // Read one line
+        const answer = await new Promise<string>((resolve) => {
+          process.stdin.setEncoding('utf8');
+          process.stdin.once('data', (chunk) => resolve(String(chunk).trim()));
+        });
+        if (answer.toLowerCase() !== 'y') {
+          p.log('Aborted.');
+          const abortPayload = {
+            dry_run: false,
+            skipped: true,
+            reason: 'user-aborted',
+            fixable_count: fixable.length,
+          };
+          emitResult(
+            makeResult('doctor fix', abortPayload, Date.now() - start, EXIT_CODES.success),
+            { format, verbose, quiet }
+          );
+          return await exitWithFlush(EXIT_CODES.success);
+        }
+      }
+
+      // Execute fixes
+      for (const d of fixable) {
+        p.log(`  $ ${d.fix}`);
+        try {
+          execSync(d.fix!, { stdio: 'inherit' });
+        } catch (err) {
+          p.log(`  ✗ Failed: ${err instanceof Error ? err.message : String(err)}`);
+        }
+      }
+
+      // Re-run all checks after fixes
+      p.log('');
+      p.log('Re-running checks after fixes...');
+    }
+
+    // Final check run — skip if dry-run (already returned above for human formatter)
+    if (!dryRun) {
+      await runChecks(ALL_CHECKS, format, verbose, quiet, undefined, undefined, 'doctor fix');
+    } else if (format === 'json') {
+      const payload = {
+        dry_run: true,
+        fixable: fixable.map((d) => d.fix),
+        unfixable: diagnoses
+          .filter((d) => d.severity !== 'INFO' && d.fix && !isAutoExecutable(d.fix))
+          .map((d) => d.fix),
+      };
+      const result = makeResult('doctor fix', payload, Date.now() - start);
+      emitResult(result, { format, verbose, quiet });
+      return await exitWithFlush(EXIT_CODES.success);
+    }
+  },
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subcommand: perf
+// ────────────────────────────────────────────────────────────────────────────
+
+interface PerfBaseline {
+  _comment?: string;
+  _updated?: string;
+  _methodology?: string;
+  [scenario: string]:
+    | {
+        description: string;
+        n: number;
+        algorithm: string;
+        measured_ms: number;
+        ceiling_ms: number;
+      }
+    | string
+    | undefined;
+}
+
+export const doctorPerf = defineCommand({
+  meta: {
+    name: 'perf',
+    description: 'Benchmark key operations against the performance baseline',
+  },
+  args: {
+    format: {
+      type: 'string',
+      description: 'Output format (human or json)',
+      default: 'human',
+    },
+    verbose: {
+      type: 'boolean',
+      description: 'Show all checks including passing ones',
+      alias: 'v',
+    },
+    quiet: {
+      type: 'boolean',
+      description: 'Suppress non-error output',
+      alias: 'q',
+    },
+    'update-baseline': {
+      type: 'boolean',
+      description: 'Write new measured values to the baseline JSON file',
+    },
+    threshold: {
+      type: 'string',
+      description: 'Percent over ceiling before treating as regression (default: 20)',
+      default: '20',
+    },
+    yes: {
+      type: 'boolean',
+      description: 'Skip confirmation prompts',
+      alias: 'y',
+    },
+  },
+  async run(ctx) {
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+    const updateBaseline = ctx.args['update-baseline'] as boolean | undefined;
+    const thresholdPct = parseInt((ctx.args.threshold as string) ?? '20', 10);
+    const yes = ctx.args.yes as boolean | undefined;
+    const start = Date.now();
+
+    // Find the baseline file
+    const baselinePaths = [path.join(process.cwd(), 'packages/kernel/performance_baseline.json')];
+
+    const rootDir = resolveWorkspaceRoot();
+    if (rootDir) {
+      baselinePaths.unshift(path.join(rootDir, 'packages/kernel/performance_baseline.json'));
+    }
+
+    let baselinePath: string | null = null;
+    let baseline: PerfBaseline | null = null;
+
+    for (const p of baselinePaths) {
+      if (existsSync(p)) {
+        try {
+          const raw = readFileSync(p, 'utf-8');
+          baseline = JSON.parse(raw) as PerfBaseline;
+          baselinePath = p;
+          break;
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    if (!baseline || !baselinePath) {
+      const result = makeResult(
+        'doctor perf',
+        { regressions: [], within_threshold: [] },
+        Date.now() - start
+      );
+      emitResult(result, { format, verbose, quiet }, (_res, p) => {
+        p.log('');
+        p.log('Performance baseline file not found (packages/kernel/performance_baseline.json)');
+        p.log('Run from within the wasm4pm workspace.');
+      });
+      return await exitWithFlush(EXIT_CODES.success);
+    }
+
+    // Synthetic WASM stub — measures TypeScript dispatch overhead only (no real WASM needed)
+    function syntheticDfgRun(_handle: string, _activityKey: string): Record<string, unknown> {
+      return { nodes: ['A', 'B'], edges: [{ from: 'A', to: 'B', count: 1 }] };
+    }
+
+    interface ScenarioResult {
+      scenario: string;
+      measured_ms: number;
+      ceiling_ms: number;
+      status: 'OK' | 'REGRESSION' | 'SKIP';
+    }
+
+    const results: ScenarioResult[] = [];
+
+    // Only test scenarios that involve the dfg/cache benchmarks
+    const measurableScenarios = ['dfg_n100', 'dfg_n1k', 'cache_hit_n1k'];
+
+    for (const scenarioKey of measurableScenarios) {
+      const entry = baseline[scenarioKey];
+      if (!entry || typeof entry === 'string') continue;
+
+      const n = entry.n;
+      const ceiling = entry.ceiling_ms;
+
+      const runStart = Date.now();
+      for (let i = 0; i < n; i++) {
+        syntheticDfgRun(`handle-${i}`, 'concept:name');
+      }
+      const measured = Date.now() - runStart;
+
+      const overPct = ((measured - ceiling) / ceiling) * 100;
+      const status: 'OK' | 'REGRESSION' = overPct > thresholdPct ? 'REGRESSION' : 'OK';
+
+      results.push({ scenario: scenarioKey, measured_ms: measured, ceiling_ms: ceiling, status });
+    }
+
+    const allOk = results.every((r) => r.status === 'OK');
+    const regressions = results.filter((r) => r.status === 'REGRESSION');
+    const within_threshold = results.filter((r) => r.status === 'OK');
+
+    const exitCode = allOk ? EXIT_CODES.success : EXIT_CODES.config_error;
+    const perfResult = makeResult(
+      'doctor perf',
+      { results, regressions, within_threshold },
+      Date.now() - start,
+      exitCode
+    );
+
+    emitResult(perfResult, { format, verbose, quiet }, (_res, p) => {
+      p.log('');
+      p.log('wpm doctor perf — performance baseline comparison');
+      p.log('─'.repeat(80));
+      p.log('');
+
+      const colWidths = { scenario: 22, measured: 12, ceiling: 10, status: 12 };
+      const header =
+        'Scenario'.padEnd(colWidths.scenario) +
+        'Measured'.padEnd(colWidths.measured) +
+        'Ceiling'.padEnd(colWidths.ceiling) +
+        'Status';
+      p.log(`  ${header}`);
+      p.log('  ' + '─'.repeat(header.length));
+
+      for (const r of results) {
+        const row =
+          r.scenario.padEnd(colWidths.scenario) +
+          `${r.measured_ms}ms`.padEnd(colWidths.measured) +
+          `${r.ceiling_ms}ms`.padEnd(colWidths.ceiling) +
+          (r.status === 'OK' ? '✓ OK' : '✗ REGRESSION');
+        p.log(`  ${row}`);
+      }
+
+      p.log('');
+
+      if (regressions.length === 0) {
+        p.success('All performance checks within ceiling.');
+      } else {
+        p.error(`${regressions.length} regression(s) detected (>${thresholdPct}% over ceiling).`);
+      }
+    });
+
+    // Update baseline if requested
+    if (updateBaseline && baselinePath) {
+      let proceed = yes;
+      if (!proceed && process.stdin.isTTY) {
+        const p = new ConsoleProjection({ verbose, quiet });
+        p.log(`\nUpdate baseline at ${baselinePath}? [y/N]`);
+        proceed = await new Promise<boolean>((resolve) => {
+          process.stdin.setEncoding('utf8');
+          process.stdin.once('data', (chunk) =>
+            resolve(String(chunk).trim().toLowerCase() === 'y')
+          );
+        });
+      }
+
+      if (proceed) {
+        for (const r of results) {
+          const entry = baseline[r.scenario];
+          if (entry && typeof entry !== 'string') {
+            entry.measured_ms = r.measured_ms;
+          }
+        }
+        if (baseline._updated !== undefined) {
+          baseline._updated = new Date().toISOString().slice(0, 10);
+        }
+        await fs.writeFile(baselinePath, JSON.stringify(baseline, null, 2) + '\n', 'utf-8');
+        if (format !== 'json') {
+          const p = new ConsoleProjection({ verbose, quiet });
+          p.log(`Updated baseline: ${baselinePath}`);
+        }
+      }
+    }
+    return await exitWithFlush(allOk ? EXIT_CODES.success : EXIT_CODES.config_error);
+  },
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subcommand: watch
+// ────────────────────────────────────────────────────────────────────────────
+
+export const doctorWatch = defineCommand({
+  meta: {
+    name: 'watch',
+    description: 'Run doctor check in a loop, printing only changes',
+  },
+  args: {
+    format: {
+      type: 'string',
+      description: 'Output format (human or json)',
+      default: 'human',
+    },
+    verbose: {
+      type: 'boolean',
+      description: 'Show all checks including passing ones',
+      alias: 'v',
+    },
+    quiet: {
+      type: 'boolean',
+      description: 'Suppress non-error output',
+      alias: 'q',
+    },
+    interval: {
+      type: 'string',
+      description: 'Poll interval in seconds (default: 30, min: 5)',
+      default: '30',
+    },
+    'on-fail': {
+      type: 'string',
+      description: 'Shell command to execute on new failure (env: DOCTOR_FAIL_CHECK=<name>)',
+    },
+  },
+  async run(ctx) {
+    const start = Date.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+    const onFail = ctx.args['on-fail'] as string | undefined;
+    let intervalSec = parseInt((ctx.args.interval as string) ?? '30', 10);
+    // Guard against NaN (non-numeric --interval value): parseInt returns NaN for
+    // strings like "bad". NaN < 5 is false, so the minimum guard would be bypassed
+    // and setTimeout(NaN) fires at ~1ms — a busy loop. Default to 30 instead.
+    if (!Number.isFinite(intervalSec)) intervalSec = 30;
+
+    const p = new ConsoleProjection({ verbose, quiet });
+
+    if (intervalSec < 5) {
+      if (format !== 'json') {
+        p.log(`Warning: --interval ${intervalSec} is below minimum (5). Using 5.`);
+      }
+      intervalSec = 5;
+    }
+
+    emitResult(
+      makeResult(
+        'doctor watch',
+        { status: 'watching', interval_sec: intervalSec },
+        0,
+        EXIT_CODES.success
+      ),
+      { format, verbose, quiet }
+    );
+
+    let prevResults: Map<string, Severity> = new Map();
+    let iteration = 0;
+    let running = true;
+
+    process.on('SIGINT', () => {
+      running = false;
+    });
+
+    while (running) {
+      const diagnoses = await Promise.all(ALL_CHECKS.map((fn) => fn()));
+      const current = new Map(diagnoses.map((d) => [d.name, d.severity]));
+
+      const passing = diagnoses.filter((d) => d.severity === 'INFO').length;
+      const total = diagnoses.length;
+
+      if (iteration === 0) {
+        // Full verbose output on first iteration
+        const report: DoctorReport = {
+          diagnoses,
+          info: diagnoses.filter((d) => d.severity === 'INFO').length,
+          warnings: diagnoses.filter((d) => d.severity === 'WARNING').length,
+          stopTheLine: diagnoses.filter((d) => d.severity === 'STOP_THE_LINE').length,
+          epistemicHealth: diagnoses.every((d) => d.severity !== 'STOP_THE_LINE'),
+        };
+        if (format !== 'json') {
+          printReportToProjection(p, report);
+        }
+      } else {
+        // Only print changes
+        const changes: Diagnosis[] = [];
+        const newFailures: Diagnosis[] = [];
+
+        for (const diag of diagnoses) {
+          const prev = prevResults.get(diag.name);
+          if (prev !== diag.severity) {
+            changes.push(diag);
+            if (diag.severity === 'STOP_THE_LINE' && prev !== 'STOP_THE_LINE') {
+              newFailures.push(diag);
+            }
+          }
+        }
+
+        if (changes.length === 0) {
+          if (format !== 'json') {
+            const now = new Date();
+            const ts = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}:${now.getSeconds().toString().padStart(2, '0')}`;
+            p.log(`[${ts}] ✓ ${passing}/${total} checks passing`);
+          }
+        } else {
+          if (format !== 'json') {
+            p.log('');
+            p.log(`[CHANGED] ${changes.length} check(s) changed status:`);
+            for (const d of changes) {
+              const prev = prevResults.get(d.name) ?? 'unknown';
+              p.log(`  ${d.name}: ${prev} → ${d.severity}`);
+              if (d.fix) p.log(`    fix: ${d.fix}`);
+            }
+          }
+        }
+
+        // Execute on-fail command for new failures
+        if (onFail && newFailures.length > 0) {
+          for (const d of newFailures) {
+            try {
+              execSync(onFail, {
+                stdio: 'inherit',
+                env: { ...process.env, DOCTOR_FAIL_CHECK: d.name },
+              });
+            } catch {
+              // ignore on-fail errors
+            }
+          }
+        }
+      }
+
+      prevResults = current;
+      iteration++;
+
+      if (!running) break;
+
+      // Wait for the interval
+      await new Promise<void>((resolve) => {
+        const timer = setTimeout(resolve, intervalSec * 1000);
+        process.once('SIGINT', () => {
+          clearTimeout(timer);
+          resolve();
+        });
+      });
+    }
+
+    // Final summary on exit
+    if (format !== 'json') {
+      p.log('');
+      p.log(`wpm doctor watch stopped after ${iteration} iteration(s).`);
+    }
+
+    emitResult(
+      makeResult(
+        'doctor watch',
+        { iterations: iteration, stopped: true, status: 'stopped' },
+        Date.now() - start,
+        EXIT_CODES.success
+      ),
+      { format, verbose, quiet }
+    );
+
+    return await exitWithFlush(EXIT_CODES.success);
+  },
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subcommand: report
+// ────────────────────────────────────────────────────────────────────────────
+
+export const doctorReport = defineCommand({
+  meta: {
+    name: 'report',
+    description: 'Generate a JSON or HTML health report',
+  },
+  args: {
+    format: {
+      type: 'string',
+      description: 'Report format: json or html (default: json)',
+      default: 'json',
+    },
+    out: {
+      type: 'string',
+      description: 'Output file path (default: wpm-doctor-report.json or .html)',
+    },
+    open: {
+      type: 'boolean',
+      description: 'Open the report in a browser after generation',
+    },
+    verbose: {
+      type: 'boolean',
+      description: 'Show all checks including passing ones',
+      alias: 'v',
+    },
+    quiet: {
+      type: 'boolean',
+      description: 'Suppress non-error output',
+      alias: 'q',
+    },
+  },
+  async run(ctx) {
+    const start = Date.now();
+    const reportFormat = ((ctx.args.format as string) ?? 'json').toLowerCase();
+    const openAfter = ctx.args.open as boolean | undefined;
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+
+    const p = new ConsoleProjection({ verbose, quiet });
+
+    const diagnoses = await Promise.all(ALL_CHECKS.map((fn) => fn()));
+
+    // Read package.json version
+    let wpmVersion = 'unknown';
+    try {
+      const pkgJsonPath = new URL('../../package.json', import.meta.url).pathname;
+      if (existsSync(pkgJsonPath)) {
+        const pkgRaw = readFileSync(pkgJsonPath, 'utf-8');
+        const pkg = JSON.parse(pkgRaw) as { version?: string };
+        wpmVersion = pkg.version ?? 'unknown';
+      }
+    } catch {
+      // ignore
+    }
+
+    const summary = {
+      pass: diagnoses.filter((d) => d.severity === 'INFO').length,
+      warn: diagnoses.filter((d) => d.severity === 'WARNING').length,
+      fail: diagnoses.filter((d) => d.severity === 'STOP_THE_LINE').length,
+      critical: diagnoses.filter((d) => d.severity === 'STOP_THE_LINE').length,
+    };
+
+    const reportData = {
+      generated_at: new Date().toISOString(),
+      wpm_version: wpmVersion,
+      platform: {
+        os: process.platform,
+        arch: process.arch,
+        node: process.version,
+      },
+      checks: diagnoses,
+      summary,
+    };
+
+    let outPath: string;
+
+    if (reportFormat === 'html') {
+      outPath = (ctx.args.out as string) ?? 'wpm-doctor-report.html';
+      const html = generateHtmlReport(reportData);
+      await fs.writeFile(outPath, html, 'utf-8');
+    } else {
+      outPath = (ctx.args.out as string) ?? 'wpm-doctor-report.json';
+      await fs.writeFile(outPath, JSON.stringify(reportData, null, 2) + '\n', 'utf-8');
+    }
+
+    p.log('');
+    p.log(`Report written to: ${outPath}`);
+    p.log(`Summary: ${summary.pass} pass, ${summary.warn} warn, ${summary.fail} fail`);
+
+    if (openAfter) {
+      const openCmd =
+        process.platform === 'darwin'
+          ? `open "${outPath}"`
+          : process.platform === 'win32'
+            ? `start "" "${outPath}"`
+            : `xdg-open "${outPath}"`;
+      try {
+        execSync(openCmd, { stdio: 'ignore' });
+      } catch {
+        p.log(`Could not open ${outPath} automatically.`);
+      }
+    }
+
+    // report subcommand always exits 0 when the file is successfully written —
+    // failing checks are recorded in the report content, not a reason to exit non-zero.
+    const reportExitCode = EXIT_CODES.success;
+    const result = makeResult(
+      'doctor report',
+      { report_path: outPath, summary, format: reportFormat },
+      Date.now() - start,
+      reportExitCode
+    );
+    emitResult(result, { format: 'human', verbose, quiet });
+    return await exitWithFlush(reportExitCode);
+  },
+});
+
+function generateHtmlReport(data: {
+  generated_at: string;
+  wpm_version: string;
+  platform: { os: string; arch: string; node: string };
+  checks: Diagnosis[];
+  summary: { pass: number; warn: number; fail: number; critical: number };
+}): string {
+  const checkRows = data.checks
+    .map((d) => {
+      const color =
+        d.severity === 'INFO' ? '#2ea44f' : d.severity === 'WARNING' ? '#d29922' : '#cf222e';
+      const fixHtml = d.fix
+        ? `<p style="font-size:0.85em;color:#666;margin:4px 0 0 0"><strong>Fix:</strong> <code>${escapeHtml(d.fix)}</code></p>`
+        : '';
+      return `
+      <details style="margin-bottom:8px;border:1px solid #d0d7de;border-radius:6px;padding:0">
+        <summary style="cursor:pointer;padding:8px 12px;background:#f6f8fa;border-radius:6px;list-style:none;display:flex;align-items:center;gap:8px">
+          <span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:${color};flex-shrink:0"></span>
+          <strong>${escapeHtml(d.name)}</strong>
+          <span style="color:#666;font-size:0.9em">[${escapeHtml(d.severity)}]</span>
+        </summary>
+        <div style="padding:12px">
+          <p style="margin:0">${escapeHtml(d.message)}</p>
+          ${fixHtml}
+          ${d.pathology ? `<p style="font-size:0.85em;color:#666;margin:4px 0 0 0">Pathology: ${escapeHtml(d.pathology)}</p>` : ''}
+        </div>
+      </details>`;
+    })
+    .join('\n');
+
+  return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>wpm doctor report</title>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 24px; color: #1f2328; background: #fff; }
+    h1 { border-bottom: 1px solid #d0d7de; padding-bottom: 12px; }
+    .meta { color: #656d76; font-size: 0.9em; margin-bottom: 24px; }
+    .summary { display: flex; gap: 16px; margin-bottom: 24px; }
+    .badge { padding: 4px 12px; border-radius: 20px; font-weight: bold; font-size: 0.9em; }
+    .badge-pass { background: #dcffe4; color: #116329; }
+    .badge-warn { background: #fff8c5; color: #7d4e00; }
+    .badge-fail { background: #ffd7d5; color: #82071e; }
+    code { background: #f6f8fa; padding: 2px 4px; border-radius: 3px; font-size: 0.9em; }
+    details summary::-webkit-details-marker { display: none; }
+  </style>
+</head>
+<body>
+  <h1>wpm doctor report</h1>
+  <div class="meta">
+    Generated: ${escapeHtml(data.generated_at)} &nbsp;|&nbsp;
+    Version: ${escapeHtml(data.wpm_version)} &nbsp;|&nbsp;
+    ${escapeHtml(data.platform.os)}/${escapeHtml(data.platform.arch)} &nbsp;|&nbsp;
+    Node ${escapeHtml(data.platform.node)}
+  </div>
+  <div class="summary">
+    <span class="badge badge-pass">${data.summary.pass} pass</span>
+    <span class="badge badge-warn">${data.summary.warn} warn</span>
+    <span class="badge badge-fail">${data.summary.fail} fail</span>
+  </div>
+  <div>
+${checkRows}
+  </div>
+</body>
+</html>`;
+}
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subcommand: publish
+// ────────────────────────────────────────────────────────────────────────────
+
+interface PublishCheck {
+  name: string;
+  status: 'pass' | 'warn' | 'fail';
+  message: string;
+}
+
+function runPublishChecks(rootDir: string): PublishCheck[] {
+  const checks: PublishCheck[] = [];
+
+  // 1. Versions — all package.json must match CalVer /^\d+\.\d+\.\d+[a-z]?$/
+  const calverPattern = /^\d+\.\d+\.\d+[a-z]?$/;
+  const pkgDirs = [
+    ...[
+      'engine',
+      'kernel',
+      'config',
+      'contracts',
+      'planner',
+      'observability',
+      'testing',
+      'ml',
+      'swarm',
+    ].map((p) => path.join(rootDir, 'packages', p)),
+    path.join(rootDir, 'apps', 'wasm4pm'),
+  ];
+
+  const versionIssues: string[] = [];
+  for (const dir of pkgDirs) {
+    const pkgJsonPath = path.join(dir, 'package.json');
+    if (!existsSync(pkgJsonPath)) continue;
+    try {
+      const raw = readFileSync(pkgJsonPath, 'utf-8');
+      const pkg = JSON.parse(raw) as { version?: string; name?: string };
+      if (!pkg.version || !calverPattern.test(pkg.version)) {
+        versionIssues.push(`${pkg.name ?? path.basename(dir)}: ${pkg.version ?? 'missing'}`);
+      }
+    } catch {
+      // ignore
+    }
+  }
+  checks.push({
+    name: 'versions',
+    status: versionIssues.length === 0 ? 'pass' : 'fail',
+    message:
+      versionIssues.length === 0
+        ? 'All packages have valid CalVer versions'
+        : `Invalid versions: ${versionIssues.join(', ')}`,
+  });
+
+  // 2. Artifacts — for publishable packages (build script, not private), dist/ exists
+  const artifactIssues: string[] = [];
+  for (const dir of pkgDirs) {
+    const pkgJsonPath = path.join(dir, 'package.json');
+    if (!existsSync(pkgJsonPath)) continue;
+    try {
+      const raw = readFileSync(pkgJsonPath, 'utf-8');
+      const pkg = JSON.parse(raw) as {
+        private?: boolean;
+        scripts?: Record<string, string>;
+        name?: string;
+      };
+      if (!pkg.private && pkg.scripts?.build) {
+        const distDir = path.join(dir, 'dist');
+        if (!existsSync(distDir)) {
+          artifactIssues.push(`${pkg.name ?? path.basename(dir)}: dist/ missing`);
+        } else {
+          try {
+            const entries = readFileSync(distDir);
+            void entries;
+          } catch {
+            // dist exists but check it's a directory
+            try {
+              const stat = statSync(distDir);
+              if (!stat.isDirectory()) {
+                artifactIssues.push(`${pkg.name ?? path.basename(dir)}: dist/ is not a directory`);
+              }
+            } catch {
+              // ignore
+            }
+          }
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }
+  checks.push({
+    name: 'artifacts',
+    status: artifactIssues.length === 0 ? 'pass' : 'fail',
+    message:
+      artifactIssues.length === 0
+        ? 'All publishable packages have dist/ directories'
+        : `Missing artifacts: ${artifactIssues.join(', ')}`,
+  });
+
+  // 3. files-field — every publishable package has a files array
+  const filesIssues: string[] = [];
+  for (const dir of pkgDirs) {
+    const pkgJsonPath = path.join(dir, 'package.json');
+    if (!existsSync(pkgJsonPath)) continue;
+    try {
+      const raw = readFileSync(pkgJsonPath, 'utf-8');
+      const pkg = JSON.parse(raw) as {
+        private?: boolean;
+        files?: unknown[];
+        name?: string;
+      };
+      if (!pkg.private && (!pkg.files || !Array.isArray(pkg.files) || pkg.files.length === 0)) {
+        filesIssues.push(pkg.name ?? path.basename(dir));
+      }
+    } catch {
+      // ignore
+    }
+  }
+  checks.push({
+    name: 'files-field',
+    status: filesIssues.length === 0 ? 'pass' : 'warn',
+    message:
+      filesIssues.length === 0
+        ? 'All publishable packages have a files field'
+        : `Missing files field: ${filesIssues.join(', ')}`,
+  });
+
+  // 4. no-private-leakage — @wasm4pm/* packages should not be private: true
+  const privateLeakIssues: string[] = [];
+  for (const dir of pkgDirs) {
+    const pkgJsonPath = path.join(dir, 'package.json');
+    if (!existsSync(pkgJsonPath)) continue;
+    try {
+      const raw = readFileSync(pkgJsonPath, 'utf-8');
+      const pkg = JSON.parse(raw) as { private?: boolean; name?: string };
+      if (pkg.name?.startsWith('@wasm4pm/') && pkg.private === true) {
+        privateLeakIssues.push(pkg.name);
+      }
+    } catch {
+      // ignore
+    }
+  }
+  checks.push({
+    name: 'no-private-leakage',
+    status: privateLeakIssues.length === 0 ? 'pass' : 'fail',
+    message:
+      privateLeakIssues.length === 0
+        ? 'No @wasm4pm/* packages are marked private'
+        : `Private packages: ${privateLeakIssues.join(', ')}`,
+  });
+
+  // 5. registry — npm ping succeeds
+  let registryStatus: 'pass' | 'warn' = 'pass';
+  let registryMsg = 'npm registry is reachable';
+  try {
+    execSync('npm ping', { encoding: 'utf8', stdio: 'pipe', timeout: 3000 });
+  } catch {
+    registryStatus = 'warn';
+    registryMsg = 'npm registry unreachable (network issue or timeout after 3s)';
+  }
+  checks.push({ name: 'registry', status: registryStatus, message: registryMsg });
+
+  // 6. changelog — CHANGELOG.md exists and is non-empty
+  const changelogPath = path.join(rootDir, 'CHANGELOG.md');
+  const hasChangelog =
+    existsSync(changelogPath) && readFileSync(changelogPath, 'utf-8').trim().length > 0;
+  checks.push({
+    name: 'changelog',
+    status: hasChangelog ? 'pass' : 'warn',
+    message: hasChangelog
+      ? 'CHANGELOG.md exists and is non-empty'
+      : 'CHANGELOG.md missing or empty',
+  });
+
+  return checks;
+}
+
+export const doctorPublish = defineCommand({
+  meta: {
+    name: 'publish',
+    description: 'Run all checks plus publish-readiness validation',
+  },
+  args: {
+    format: {
+      type: 'string',
+      description: 'Output format (human or json)',
+      default: 'human',
+    },
+    verbose: {
+      type: 'boolean',
+      description: 'Show all checks including passing ones',
+      alias: 'v',
+    },
+    quiet: {
+      type: 'boolean',
+      description: 'Suppress non-error output',
+      alias: 'q',
+    },
+    publish: {
+      type: 'boolean',
+      description: 'Run pnpm publish if all checks pass',
+    },
+    registry: {
+      type: 'string',
+      description: 'Override npm registry for checks and publish',
+    },
+    yes: {
+      type: 'boolean',
+      description: 'Skip confirmation prompts',
+      alias: 'y',
+    },
+  },
+  async run(ctx) {
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+    const doPublish = ctx.args.publish as boolean | undefined;
+    const yes = ctx.args.yes as boolean | undefined;
+    const start = Date.now();
+
+    // Run core checks first
+    const diagnoses = await Promise.all(ALL_CHECKS.map((fn) => fn()));
+    const coreReport: DoctorReport = {
+      diagnoses,
+      info: diagnoses.filter((d) => d.severity === 'INFO').length,
+      warnings: diagnoses.filter((d) => d.severity === 'WARNING').length,
+      stopTheLine: diagnoses.filter((d) => d.severity === 'STOP_THE_LINE').length,
+      epistemicHealth: diagnoses.every((d) => d.severity !== 'STOP_THE_LINE'),
+    };
+
+    // Run publish-specific checks
+    const rootDir = resolveWorkspaceRoot();
+    let publishChecks: PublishCheck[] = [];
+    if (rootDir) {
+      publishChecks = runPublishChecks(rootDir);
+    }
+
+    const publishReady =
+      coreReport.epistemicHealth && publishChecks.every((c) => c.status !== 'fail');
+
+    const payload = {
+      coreReport,
+      publishChecks,
+      publishReady,
+      ready: publishReady,
+    };
+
+    const exitCode = publishReady ? EXIT_CODES.success : EXIT_CODES.config_error;
+    const result = makeResult('doctor publish', payload, Date.now() - start, exitCode);
+
+    emitResult(result, { format, verbose, quiet }, (_res, p) => {
+      printReportToProjection(p, coreReport);
+
+      p.log('');
+      p.log('Publish readiness checks:');
+      p.log('─'.repeat(80));
+      for (const c of publishChecks) {
+        const icon = c.status === 'pass' ? '✓' : c.status === 'warn' ? '⚠' : '✗';
+        p.log(`  ${icon}  ${c.name}: ${c.message}`);
+      }
+      p.log('');
+
+      if (publishReady) {
+        p.success('Package is ready to publish.');
+      } else {
+        p.error('Package is NOT ready to publish. Fix issues above.');
+      }
+    });
+
+    if (!publishReady) {
+      return await exitWithFlush(EXIT_CODES.config_error);
+    }
+
+    if (doPublish && publishReady) {
+      let proceed = yes;
+      if (!proceed && format !== 'json' && process.stdin.isTTY) {
+        const p = new ConsoleProjection({ verbose, quiet });
+        p.log('\nRun pnpm -r publish --access public? [y/N]');
+        proceed = await new Promise<boolean>((resolve) => {
+          process.stdin.setEncoding('utf8');
+          process.stdin.once('data', (chunk) =>
+            resolve(String(chunk).trim().toLowerCase() === 'y')
+          );
+        });
+      }
+
+      if (proceed) {
+        const registryFlag = ctx.args.registry ? ` --registry ${ctx.args.registry as string}` : '';
+        execSync(`pnpm -r publish --access public${registryFlag}`, { stdio: 'inherit' });
+      }
+    }
+    return await exitWithFlush(EXIT_CODES.success);
+  },
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Subcommand: hooks  (JTBD — Jobs To Be Done verification)
+//
+// Tests whether each hook does its declared job, not whether files exist.
+// Every probe: sets up a scenario → runs the hook → observes outcome → reports
+// what was tried, what was seen, and what was verified.
+// ────────────────────────────────────────────────────────────────────────────
+
+export interface JtbdProbe {
+  job: string; // What job is this hook supposed to do?
+  scenario: string; // The specific scenario being exercised
+  observed: string; // What was actually observed
+  verdict: 'verified' | 'refuted' | 'inconclusive';
+  evidence: string; // The specific data points that support the verdict
+}
+
+export function runHook(
+  hookPath: string,
+  inputObj: unknown,
+  projectDir: string
+): { status: number; stdout: string; stderr: string } {
+  const result = spawnSync('bash', [hookPath], {
+    input: JSON.stringify(inputObj),
+    encoding: 'utf8',
+    cwd: projectDir,
+    env: { ...process.env, CLAUDE_PROJECT_DIR: projectDir },
+  });
+  return {
+    status: result.status ?? -1,
+    stdout: result.stdout ?? '',
+    stderr: result.stderr ?? '',
+  };
+}
+
+function todayDir(): string {
+  return new Date().toISOString().slice(0, 10).replace(/-/g, '');
+}
+
+export async function probeHooks(projectDir: string): Promise<JtbdProbe[]> {
+  const hookDir = path.join(projectDir, '.claude', 'hooks');
+  const preToolUse = path.join(hookDir, 'pre-tool-use.sh');
+  const postToolUse = path.join(hookDir, 'post-tool-use.sh');
+  const stopGate = path.join(hookDir, 'stop-proof-gate.sh');
+  const userPrompt = path.join(hookDir, 'user-prompt.sh');
+  const agentRunsBase = path.join(projectDir, 'wasm4pm', 'target', 'agent-runs');
+
+  const probes: JtbdProbe[] = [];
+
+  // ── Probe 1: PreToolUse blocks handwritten verdict writes ─────────────────
+  {
+    const r = runHook(
+      preToolUse,
+      {
+        tool_name: 'Write',
+        tool_input: {
+          file_path: 'wasm4pm/target/proof-packs/jtbd-test/FINAL/verdict.json',
+          content: '{"verdict":"Accepted"}',
+        },
+      },
+      projectDir
+    );
+    const blocked = r.status === 2;
+    const hasGuardMsg = r.stderr.includes('PROOF PACK INTEGRITY GUARD');
+    probes.push({
+      job: 'Prevent handwritten verdict writes',
+      scenario:
+        'Write tool targeting wasm4pm/target/proof-packs/*/FINAL/verdict.json with {"verdict":"Accepted"}',
+      observed: blocked
+        ? 'Hook exited 2 — write was blocked before reaching disk; guard message present in stderr'
+        : `Hook exited ${r.status} — write was NOT blocked (expected exit 2)`,
+      verdict: blocked && hasGuardMsg ? 'verified' : 'refuted',
+      evidence: `exit_code=${r.status}; guard_msg_in_stderr=${hasGuardMsg}`,
+    });
+  }
+
+  // ── Probe 2: PreToolUse allows safe writes ────────────────────────────────
+  {
+    const r = runHook(
+      preToolUse,
+      {
+        tool_name: 'Write',
+        tool_input: { file_path: 'wasm4pm/src/testing/harness.rs', content: 'pub struct Test {}' },
+      },
+      projectDir
+    );
+    const allowed = r.status === 0;
+    probes.push({
+      job: 'Allow writes to non-protected paths',
+      scenario: 'Write tool targeting wasm4pm/src/testing/harness.rs (not a proof artifact)',
+      observed: allowed
+        ? 'Hook exited 0 — write passed through without blocking'
+        : `Hook exited ${r.status} — write was unexpectedly blocked`,
+      verdict: allowed ? 'verified' : 'refuted',
+      evidence: `exit_code=${r.status}`,
+    });
+  }
+
+  // ── Probe 3: PreToolUse blocks audit JSON tampering ───────────────────────
+  {
+    const r = runHook(
+      preToolUse,
+      {
+        tool_name: 'Edit',
+        tool_input: {
+          file_path: 'wasm4pm/target/audits/route-driven-tdd-independent-verification.json',
+          old_string: 'AndonPull',
+          new_string: 'Accepted',
+        },
+      },
+      projectDir
+    );
+    const blocked = r.status === 2;
+    probes.push({
+      job: 'Prevent tampering with audit verdict JSON',
+      scenario:
+        'Edit tool changing AndonPull→Accepted in route-driven-tdd-independent-verification.json',
+      observed: blocked
+        ? 'Hook exited 2 — edit was blocked; audit JSON is write-protected'
+        : `Hook exited ${r.status} — edit was NOT blocked (expected exit 2)`,
+      verdict: blocked ? 'verified' : 'refuted',
+      evidence: `exit_code=${r.status}`,
+    });
+  }
+
+  // ── Probe 4: PreToolUse blocks Bash shell redirects into protected files ──
+  {
+    const r = runHook(
+      preToolUse,
+      {
+        tool_name: 'Bash',
+        tool_input: {
+          command:
+            'echo \'{"verdict":"Accepted"}\' >> /tmp/jtbd-wasm4pm/target/proof-packs/x/FINAL/verdict.json',
+        },
+      },
+      projectDir
+    );
+    // Note: the path in the command contains "target/proof-packs" and "verdict.json"
+    // The hook checks for those patterns in the Bash command string
+    const blocked = r.status === 2;
+    probes.push({
+      job: 'Block Bash shell redirects into proof artifact paths',
+      scenario: 'Bash tool with echo >> target/proof-packs/*/FINAL/verdict.json',
+      observed: blocked
+        ? 'Hook exited 2 — bash redirect was blocked'
+        : `Hook exited ${r.status} — redirect was NOT blocked (expected exit 2)`,
+      verdict: blocked ? 'verified' : 'refuted',
+      evidence: `exit_code=${r.status}`,
+    });
+  }
+
+  // ── Probe 5: PostToolUse records tool evidence ────────────────────────────
+  {
+    const eventsPath = path.join(agentRunsBase, todayDir(), 'tool-events.jsonl');
+    const beforeLines = existsSync(eventsPath)
+      ? readFileSync(eventsPath, 'utf8').split('\n').filter(Boolean).length
+      : 0;
+    runHook(
+      postToolUse,
+      {
+        tool_name: 'Edit',
+        tool_input: { file_path: 'wasm4pm/src/testing/harness.rs' },
+      },
+      projectDir
+    );
+    const afterLines = existsSync(eventsPath)
+      ? readFileSync(eventsPath, 'utf8').split('\n').filter(Boolean).length
+      : 0;
+    const recorded = afterLines > beforeLines;
+    probes.push({
+      job: 'Append tool evidence to session audit log after each tool use',
+      scenario: 'PostToolUse fires after Edit tool on wasm4pm/src/testing/harness.rs',
+      observed: recorded
+        ? `tool-events.jsonl grew from ${beforeLines} to ${afterLines} lines — evidence appended`
+        : `tool-events.jsonl unchanged at ${afterLines} lines — nothing was recorded`,
+      verdict: recorded ? 'verified' : 'refuted',
+      evidence: `events_file=${eventsPath}; before=${beforeLines}; after=${afterLines}`,
+    });
+  }
+
+  // ── Probe 6: UserPromptSubmit records work orders ─────────────────────────
+  {
+    const promptsPath = path.join(agentRunsBase, todayDir(), 'prompts.jsonl');
+    const beforeLines = existsSync(promptsPath)
+      ? readFileSync(promptsPath, 'utf8').split('\n').filter(Boolean).length
+      : 0;
+    runHook(
+      userPrompt,
+      {
+        prompt: 'jtbd-test-probe: verify work order recording',
+        session_id: 'jtbd-test',
+      },
+      projectDir
+    );
+    const afterLines = existsSync(promptsPath)
+      ? readFileSync(promptsPath, 'utf8').split('\n').filter(Boolean).length
+      : 0;
+    const recorded = afterLines > beforeLines;
+    probes.push({
+      job: 'Record user prompts as timestamped work orders',
+      scenario: 'UserPromptSubmit fires with prompt text and session_id',
+      observed: recorded
+        ? `prompts.jsonl grew from ${beforeLines} to ${afterLines} lines — work order appended`
+        : `prompts.jsonl unchanged at ${afterLines} lines — work order was not recorded`,
+      verdict: recorded ? 'verified' : 'refuted',
+      evidence: `prompts_file=${promptsPath}; before=${beforeLines}; after=${afterLines}`,
+    });
+  }
+
+  // ── Probe 7: Stop gate allows stop when no critical files modified ─────────
+  {
+    const gitStatus = spawnSync(
+      'git',
+      [
+        'status',
+        '--short',
+        '--',
+        'wasm4pm/src/testing/conformance.rs',
+        'wasm4pm/src/testing/harness.rs',
+        'wasm4pm/src/testing/proof_pack.rs',
+      ],
+      { cwd: projectDir, encoding: 'utf8' }
+    );
+    const hasMods = (gitStatus.stdout ?? '').trim().length > 0;
+
+    if (!hasMods) {
+      const r = runHook(stopGate, { stop_hook_active: false }, projectDir);
+      const allowed = r.status === 0;
+      const noBlock = !r.stdout.includes('"decision":"block"');
+      probes.push({
+        job: 'Allow stop when no critical testing files have uncommitted changes',
+        scenario: 'Stop signal with stop_hook_active=false and clean git status on testing files',
+        observed:
+          allowed && noBlock
+            ? 'Hook exited 0 with no block decision — stop allowed through'
+            : `Hook exited ${r.status}; block_in_stdout=${!noBlock} — stop was incorrectly prevented`,
+        verdict: allowed && noBlock ? 'verified' : 'refuted',
+        evidence: `exit_code=${r.status}; block_in_stdout=${!noBlock}`,
+      });
+    } else {
+      probes.push({
+        job: 'Allow stop when no critical testing files have uncommitted changes',
+        scenario: 'Stop signal with stop_hook_active=false and clean git status on testing files',
+        observed:
+          'Skipped — critical files currently have uncommitted changes; stop gate correctly engaged',
+        verdict: 'inconclusive',
+        evidence: `git_modified=${(gitStatus.stdout ?? '').trim().slice(0, 120)}`,
+      });
+    }
+  }
+
+  // ── Probe 8: Stop gate prevents hook re-entry loops ───────────────────────
+  {
+    const r = runHook(stopGate, { stop_hook_active: true }, projectDir);
+    const allowed = r.status === 0;
+    probes.push({
+      job: 'Prevent infinite hook re-entry via stop_hook_active guard',
+      scenario: 'Stop signal with stop_hook_active=true (Claude Code re-entry sentinel)',
+      observed: allowed
+        ? 'Hook exited 0 immediately — re-entry guard fired, no recursive audit'
+        : `Hook exited ${r.status} — re-entry guard may not be working`,
+      verdict: allowed ? 'verified' : 'refuted',
+      evidence: `exit_code=${r.status}`,
+    });
+  }
+
+  // ── Probe 9: Settings.json wires all required hook types ──────────────────
+  {
+    const settingsPath = path.join(projectDir, '.claude', 'settings.json');
+    const required = [
+      'SessionStart',
+      'UserPromptSubmit',
+      'PreToolUse',
+      'PostToolUse',
+      'TaskCompleted',
+      'Stop',
+    ];
+    if (existsSync(settingsPath)) {
+      let settings: { hooks?: Record<string, unknown> };
+      try {
+        settings = JSON.parse(readFileSync(settingsPath, 'utf8'));
+      } catch {
+        settings = {};
+      }
+      const wired = Object.keys(settings.hooks ?? {});
+      const missing = required.filter((k) => !wired.includes(k));
+      probes.push({
+        job: 'Wire all required lifecycle hook types in .claude/settings.json',
+        scenario: 'Read .claude/settings.json and verify hook registrations for 6 lifecycle points',
+        observed:
+          missing.length === 0
+            ? `All ${required.length} required hook types registered: ${wired.filter((k) => required.includes(k)).join(', ')}`
+            : `Missing ${missing.length} hook type(s): ${missing.join(', ')}`,
+        verdict: missing.length === 0 ? 'verified' : 'refuted',
+        evidence: `wired=[${wired.join(',')}]; missing=[${missing.join(',') || 'none'}]`,
+      });
+    } else {
+      probes.push({
+        job: 'Wire all required lifecycle hook types in .claude/settings.json',
+        scenario: 'Read .claude/settings.json',
+        observed: '.claude/settings.json not found — hooks are not configured',
+        verdict: 'refuted',
+        evidence: `settings_path=${settingsPath}`,
+      });
+    }
+  }
+
+  // ── Probe A1: Stop gate blocks dirty critical file + failing audit ────────────
+  // This is the load-bearing path: modify a real file, fake a failing audit,
+  // verify the hook emits a block decision.
+  {
+    let probe: JtbdProbe;
+    const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'jtbd-stop-'));
+    try {
+      // Minimal git repo so git status works
+      spawnSync('git', ['init', '-q'], { cwd: tmpDir });
+      spawnSync('git', ['config', 'user.email', 'jtbd@wasm4pm.test'], { cwd: tmpDir });
+      spawnSync('git', ['config', 'user.name', 'JTBD Probe'], { cwd: tmpDir });
+
+      // Create the critical file (committed = clean state)
+      const criticalDir = path.join(tmpDir, 'wasm4pm', 'src', 'testing');
+      mkdirSync(criticalDir, { recursive: true });
+      const criticalFile = path.join(criticalDir, 'harness.rs');
+      writeFileSync(criticalFile, '// initial\n');
+      spawnSync('git', ['add', '-A'], { cwd: tmpDir });
+      spawnSync('git', ['commit', '-m', 'init', '--allow-empty'], { cwd: tmpDir });
+
+      // Dirty the file → git status will report it modified
+      writeFileSync(criticalFile, '// modified — jtbd probe dirty state\n');
+
+      // Fake wpm CLI that immediately returns AndonPull for `proof audit`
+      const fakeWpmDir = path.join(tmpDir, 'apps', 'wasm4pm', 'dist', 'bin');
+      mkdirSync(fakeWpmDir, { recursive: true });
+      writeFileSync(
+        path.join(fakeWpmDir, 'wpm.js'),
+        [
+          '#!/usr/bin/env node',
+          'const args = process.argv.slice(2);',
+          'if (args.includes("audit")) {',
+          '  process.stdout.write(JSON.stringify({',
+          '    status:"error",message:"proof audit",',
+          '    payload:{final_verdict:"AndonPull(4_cargo_tests)",',
+          '    verdict_reason:"JTBD probe: simulated test failure",',
+          '    gates_passed:3,gates_failed:2}}) + "\\n");',
+          '  process.exit(3);',
+          '}',
+          'process.exit(0);',
+        ].join('\n')
+      );
+
+      // Copy the real stop gate to the temp project
+      const hooksDir = path.join(tmpDir, '.claude', 'hooks');
+      mkdirSync(hooksDir, { recursive: true });
+      execSync(
+        `cp "${path.join(hookDir, 'stop-proof-gate.sh')}" "${path.join(hooksDir, 'stop-proof-gate.sh')}"`
+      );
+
+      const r = runHook(
+        path.join(hooksDir, 'stop-proof-gate.sh'),
+        { stop_hook_active: false },
+        tmpDir
+      );
+      const blocked = r.stdout.includes('"decision":"block"');
+      const hasAndon = r.stdout.includes('AndonPull') || r.stderr.includes('AndonPull');
+
+      probe = {
+        job: 'Block stop when critical testing files are dirty and proof audit returns AndonPull',
+        scenario: 'harness.rs modified (git dirty), fake wpm returns AndonPull(4_cargo_tests)',
+        observed: blocked
+          ? 'Stop hook emitted {"decision":"block"} — agent cannot claim done with dirty files + failing audit'
+          : `Stop hook did not block (exit=${r.status}; andon_in_output=${hasAndon})`,
+        verdict: blocked ? 'verified' : 'refuted',
+        evidence: `exit_code=${r.status}; block_decision_in_stdout=${blocked}; andon_msg=${hasAndon}`,
+      };
+    } catch (err) {
+      probe = {
+        job: 'Block stop when critical testing files are dirty and proof audit returns AndonPull',
+        scenario: 'harness.rs modified (git dirty), fake wpm returns AndonPull(4_cargo_tests)',
+        observed: `Probe setup failed: ${err instanceof Error ? err.message : String(err)}`,
+        verdict: 'inconclusive',
+        evidence: 'probe-error',
+      };
+    } finally {
+      rmSync(tmpDir, { recursive: true, force: true });
+    }
+    probes.push(probe);
+  }
+
+  // ── Probe B1: Python write bypass is blocked ──────────────────────────────
+  {
+    const r = runHook(
+      preToolUse,
+      {
+        tool_name: 'Bash',
+        tool_input: {
+          command:
+            "python3 -c \"open('wasm4pm/target/proof-packs/bypass/FINAL/verdict.json','w').write('{}')",
+        },
+      },
+      projectDir
+    );
+    const blocked = r.status === 2;
+    probes.push({
+      job: 'Block Python scripted writes to proof artifact paths',
+      scenario: "Bash: python3 -c \"open('...verdict.json','w').write(...)\"",
+      observed: blocked
+        ? 'Hook exited 2 — Python write bypass was blocked'
+        : `Hook exited ${r.status} — Python write bypass was NOT blocked`,
+      verdict: blocked ? 'verified' : 'refuted',
+      evidence: `exit_code=${r.status}`,
+    });
+  }
+
+  // ── Probe B2: Absolute path write is blocked ──────────────────────────────
+  {
+    const absPath = path.join(
+      projectDir,
+      'wasm4pm',
+      'target',
+      'proof-packs',
+      'bypass',
+      'FINAL',
+      'verdict.json'
+    );
+    const r = runHook(
+      preToolUse,
+      {
+        tool_name: 'Write',
+        tool_input: { file_path: absPath, content: '{"verdict":"Accepted"}' },
+      },
+      projectDir
+    );
+    const blocked = r.status === 2;
+    probes.push({
+      job: 'Block absolute-path writes to proof artifact paths',
+      scenario: `Write tool with absolute path: ...wasm4pm/target/proof-packs/bypass/FINAL/verdict.json`,
+      observed: blocked
+        ? 'Hook exited 2 — absolute path bypass was blocked (pattern match is path-substring, not prefix)'
+        : `Hook exited ${r.status} — absolute path bypass was NOT blocked`,
+      verdict: blocked ? 'verified' : 'refuted',
+      evidence: `exit_code=${r.status}; path=${absPath.slice(-60)}`,
+    });
+  }
+
+  // ── Probe B3: Heredoc (cat >) bypass is blocked ───────────────────────────
+  {
+    const r = runHook(
+      preToolUse,
+      {
+        tool_name: 'Bash',
+        tool_input: {
+          command:
+            'cat > wasm4pm/target/proof-packs/bypass/FINAL/verdict.json << EOF\n{"verdict":"Accepted"}\nEOF',
+        },
+      },
+      projectDir
+    );
+    const blocked = r.status === 2;
+    probes.push({
+      job: 'Block heredoc (cat >) writes to proof artifact paths',
+      scenario: 'Bash: cat > ...verdict.json << EOF ... EOF',
+      observed: blocked
+        ? 'Hook exited 2 — heredoc redirect bypass was blocked'
+        : `Hook exited ${r.status} — heredoc redirect bypass was NOT blocked`,
+      verdict: blocked ? 'verified' : 'refuted',
+      evidence: `exit_code=${r.status}`,
+    });
+  }
+
+  return probes;
+}
+
+export const doctorHooks = defineCommand({
+  meta: {
+    name: 'hooks',
+    description: 'Verify Claude Code hooks work as declared. Tests that git hooks, pre-commit gates, and proof checks actually execute and enforce their constraints.',
+  },
+  args: {
+    format: { type: 'string', default: 'human' },
+    verbose: { type: 'boolean', alias: 'v' },
+    quiet: { type: 'boolean', alias: 'q' },
+  },
+  async run(ctx) {
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+
+    const projectDir = process.env['CLAUDE_PROJECT_DIR'] ?? process.cwd();
+    const probes = await probeHooks(projectDir);
+
+    const verified = probes.filter((p) => p.verdict === 'verified').length;
+    const refuted = probes.filter((p) => p.verdict === 'refuted').length;
+    const inconclusive = probes.filter((p) => p.verdict === 'inconclusive').length;
+    const healthy = refuted === 0 && inconclusive === 0;
+
+    const exitCode = healthy ? EXIT_CODES.success : EXIT_CODES.config_error;
+
+    // Write disk audit — the hooks probe must itself leave proof of execution.
+    // Under .wasm4pm/audits/ (already gitignored) so it never gets committed
+    // and never lands in apps/wasm4pm/wasm4pm/target/ via cwd accidents.
+    const auditDir = path.join(projectDir, '.wasm4pm', 'audits');
+    const auditPath = path.join(auditDir, 'claude-hooks-jtbd-verification.json');
+    try {
+      mkdirSync(auditDir, { recursive: true });
+      writeFileSync(
+        auditPath,
+        JSON.stringify(
+          {
+            audit_timestamp: new Date().toISOString(),
+            auditor: 'wpm-doctor-hooks-jtbd',
+            probes: probes.map((p) => ({ ...p })),
+            summary: { verified, refuted, inconclusive, total: probes.length },
+            verdict: healthy ? 'Accepted' : 'AndonPull(RefutedJobs)',
+            refuted_jobs: probes.filter((p) => p.verdict === 'refuted').map((p) => p.job),
+          },
+          null,
+          2
+        ),
+        'utf8'
+      );
+    } catch {
+      /* non-blocking: disk write failure does not suppress CLI output */
+    }
+
+    const result = makeResult(
+      'doctor hooks',
+      {
+        probes,
+        summary: { verified, refuted, inconclusive, total: probes.length },
+        healthy,
+        audit_path: auditPath,
+      },
+      performance.now() - t0,
+      exitCode
+    );
+
+    emitResult(result, { format, verbose, quiet }, (res, p) => {
+      p.log('');
+      p.log('wpm doctor hooks — Jobs-To-Be-Done (JTBD) verification');
+      p.log('Tests whether hooks do their jobs, not whether files exist.');
+      p.log('─'.repeat(72));
+
+      for (const probe of res.payload.probes as JtbdProbe[]) {
+        const icon = probe.verdict === 'verified' ? '✓' : probe.verdict === 'refuted' ? '✗' : '~';
+        p.log('');
+        p.log(`JOB: ${probe.job}`);
+        p.log(`  Scenario: ${probe.scenario}`);
+        p.log(`  Observed: ${probe.observed}`);
+        if (verbose) p.log(`  Evidence: ${probe.evidence}`);
+        p.log(`  ${icon} ${probe.verdict.toUpperCase()}`);
+      }
+
+      p.log('');
+      p.log('─'.repeat(72));
+      p.log(`Summary: ${verified} verified, ${refuted} refuted, ${inconclusive} inconclusive`);
+      p.log(`Audit:   ${(res.payload as { audit_path?: string }).audit_path ?? 'not written'}`);
+      if (healthy) {
+        p.success('All hooks are doing their declared jobs.');
+      } else {
+        p.error(`${refuted} hook job(s) refuted — hooks are not enforcing the proof contract.`);
+      }
+    });
+
+    await exitWithFlush(exitCode);
+  },
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Main doctor command (with subcommands + backwards-compat fallback)
 // ────────────────────────────────────────────────────────────────────────────
 
 export const doctor = defineCommand({

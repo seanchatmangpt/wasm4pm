@@ -382,6 +382,14 @@ export class Kernel {
   ): Promise<KernelResult> {
     this.assertInitialized();
 
+    if (!eventLogHandle || typeof eventLogHandle !== 'string' || eventLogHandle.trim() === '') {
+      throw new KernelError('Invalid event log handle', 'MALFORMED_EVENT_LOG' as any);
+    }
+    const activityKey = (params.activity_key as string) ?? 'concept:name';
+    if (!activityKey || typeof activityKey !== 'string' || activityKey.trim() === '') {
+      throw new KernelError('Missing activity key field', 'MISSING_ACTIVITY_FIELD' as any);
+    }
+
     const metadata = this.registry.get(algorithmName);
     if (!metadata) {
       throw new KernelError(
@@ -389,7 +397,7 @@ export class Kernel {
           .list()
           .map((a) => a.id)
           .join(', ')}`,
-        'ALGORITHM_NOT_FOUND',
+        'ALGORITHM_NOT_FOUND' as any,
         { context: { algorithmName } }
       );
     }
@@ -427,7 +435,7 @@ export class Kernel {
       return cached;
     }
 
-    const activityKey = (params.activity_key as string) ?? 'concept:name';
+    // `activityKey` is already validated and extracted above.
 
     // ── Compute adaptive timeout ───────────────────────────────────────────
     // Timeout is based on log size, complexity, and algorithm tier.
@@ -726,7 +734,7 @@ export class Kernel {
 
       case 'simd_streaming_dfg': {
         const fn = this.wasm.discover_dfg_simd_handle || this.wasm.discover_dfg_simd;
-        if (!fn) throw new Error('discover_dfg_simd_handle is not available');
+        if (!fn) throw new KernelError('discover_dfg_simd_handle is not available', 'ALGORITHM_NOT_FOUND' as any);
         const handle = fn.call(this.wasm, eventLogHandle, activityKey);
         return parseWasmHandle(handle);
       }
@@ -1068,7 +1076,7 @@ export class Kernel {
 
       case 'ocel_dfg': {
         if (!this.wasm.discover_ocel_dfg) {
-          throw new Error('discover_ocel_dfg is not available (requires feature-ocel)');
+          throw new KernelError('discover_ocel_dfg is not available (requires feature-ocel)', 'ALGORITHM_NOT_FOUND' as any);
         }
         const raw = this.wasm.discover_ocel_dfg(eventLogHandle);
         return parseWasmHandle(raw);
@@ -1076,7 +1084,7 @@ export class Kernel {
 
       case 'ocel_dfg_per_type': {
         if (!this.wasm.discover_ocel_dfg_per_type) {
-          throw new Error('discover_ocel_dfg_per_type is not available (requires feature-ocel)');
+          throw new KernelError('discover_ocel_dfg_per_type is not available (requires feature-ocel)', 'ALGORITHM_NOT_FOUND' as any);
         }
         const raw = this.wasm.discover_ocel_dfg_per_type(eventLogHandle);
         return parseWasmHandle(raw);
@@ -1084,7 +1092,7 @@ export class Kernel {
 
       case 'ocel_petri_net': {
         const fn = this.wasm.discover_oc_petri_net;
-        if (!fn) throw new Error('discover_oc_petri_net is not available (requires feature-ocel)');
+        if (!fn) throw new KernelError('discover_oc_petri_net is not available (requires feature-ocel)', 'ALGORITHM_NOT_FOUND' as any);
         const algorithm = (params.algorithm as string) ?? 'inductive';
         fn.call(this.wasm, eventLogHandle, algorithm);
         return { handle: `ocel_petri_net_${Date.now()}` };
@@ -1092,14 +1100,14 @@ export class Kernel {
 
       case 'ocel_ocla': {
         const fn = this.wasm.discover_ocla_wasm;
-        if (!fn) throw new Error('discover_ocla_wasm is not available (requires feature-ocel)');
+        if (!fn) throw new KernelError('discover_ocla_wasm is not available (requires feature-ocel)', 'ALGORITHM_NOT_FOUND' as any);
         fn.call(this.wasm, eventLogHandle);
         return { handle: `ocel_ocla_${Date.now()}` };
       }
 
       case 'ocel_oc_declare': {
         const fn = this.wasm.discover_oc_declare_wasm;
-        if (!fn) throw new Error('discover_oc_declare_wasm is not available (requires feature-ocel)');
+        if (!fn) throw new KernelError('discover_oc_declare_wasm is not available (requires feature-ocel)', 'ALGORITHM_NOT_FOUND' as any);
         const thresh = (params.noise_threshold as number) ?? 0.1;
         await fn.call(this.wasm, eventLogHandle, thresh);
         return { handle: `ocel_oc_declare_${Date.now()}` };
@@ -1107,7 +1115,7 @@ export class Kernel {
 
       case 'ocel_encode': {
         const fn = this.wasm.encode_ocel_as_text;
-        if (!fn) throw new Error('encode_ocel_as_text is not available (requires feature-ocel)');
+        if (!fn) throw new KernelError('encode_ocel_as_text is not available (requires feature-ocel)', 'ALGORITHM_NOT_FOUND' as any);
         await fn.call(this.wasm, eventLogHandle);
         return { handle: `ocel_encode_${Date.now()}` };
       }
@@ -1186,7 +1194,7 @@ export class Kernel {
             metadata: { result: parseWasmOutput(res) }
           } as any;
         }
-        throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`);
+        throw new KernelError(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`, 'ALGORITHM_NOT_FOUND' as any);
       }
 
       case 'ml_cluster': {
@@ -1198,7 +1206,7 @@ export class Kernel {
             metadata: { result: parseWasmOutput(res) }
           } as any;
         }
-        throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`);
+        throw new KernelError(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`, 'ALGORITHM_NOT_FOUND' as any);
       }
 
       case 'ml_forecast': {
@@ -1210,7 +1218,7 @@ export class Kernel {
             metadata: { result: parseWasmOutput(res) }
           } as any;
         }
-        throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`);
+        throw new KernelError(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`, 'ALGORITHM_NOT_FOUND' as any);
       }
 
       case 'ml_anomaly': {
@@ -1222,7 +1230,7 @@ export class Kernel {
             metadata: { result: parseWasmOutput(res) }
           } as any;
         }
-        throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`);
+        throw new KernelError(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`, 'ALGORITHM_NOT_FOUND' as any);
       }
 
       case 'ml_regress': {
@@ -1234,7 +1242,7 @@ export class Kernel {
             metadata: { result: parseWasmOutput(res) }
           } as any;
         }
-        throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`);
+        throw new KernelError(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`, 'ALGORITHM_NOT_FOUND' as any);
       }
 
       case 'ml_pca': {
@@ -1246,7 +1254,7 @@ export class Kernel {
             metadata: { result: parseWasmOutput(res) }
           } as any;
         }
-        throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`);
+        throw new KernelError(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`, 'ALGORITHM_NOT_FOUND' as any);
       }
 
       // ─── Prediction (Stubs preserved for high-level package requirement) ─
@@ -1260,7 +1268,7 @@ export class Kernel {
         );
 
       default:
-        throw new Error(`Unsupported algorithm: ${algorithmId}`);
+        throw new KernelError(`Unsupported algorithm: ${algorithmId}`, 'ALGORITHM_NOT_FOUND' as any);
     }
   }
 

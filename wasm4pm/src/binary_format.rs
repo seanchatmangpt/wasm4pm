@@ -473,16 +473,24 @@ impl<'a> BinaryLogView<'a> {
         }
 
         let offsets_start = self.header.section_offsets[1] as usize;
-        let offset_a = self.read_u64_at(offsets_start + index * 8) as usize;
-        let offset_b = self.read_u64_at(offsets_start + (index + 1) * 8) as usize;
+        let offset_a = self.read_u64_at(offsets_start + index * 8)? as usize;
+        let offset_b = self.read_u64_at(offsets_start + (index + 1) * 8)? as usize;
 
         let events_start = self.header.section_offsets[2] as usize;
-        let event_ids = &self.data[events_start + offset_a * 4..events_start + offset_b * 4];
+        let e_end = events_start + offset_b * 4;
+        if e_end > self.data.len() {
+            return Err("Events data out of bounds".to_string());
+        }
+        let event_ids = &self.data[events_start + offset_a * 4..e_end];
 
         let has_timestamps = (self.header.flags & FLAG_HAS_TIMESTAMPS) != 0;
         let timestamps = if has_timestamps {
             let ts_start = self.header.section_offsets[3] as usize;
-            Some(&self.data[ts_start + offset_a * 8..ts_start + offset_b * 8])
+            let ts_end = ts_start + offset_b * 8;
+            if ts_end > self.data.len() {
+                return Err("Timestamps data out of bounds".to_string());
+            }
+            Some(&self.data[ts_start + offset_a * 8..ts_end])
         } else {
             None
         };
@@ -494,8 +502,11 @@ impl<'a> BinaryLogView<'a> {
     }
 
     /// Read a u64 LE value at a given byte offset.
-    fn read_u64_at(&self, offset: usize) -> u64 {
-        u64::from_le_bytes(self.data[offset..offset + 8].try_into().unwrap())
+    fn read_u64_at(&self, offset: usize) -> Result<u64, String> {
+        if offset + 8 > self.data.len() {
+            return Err("Out of bounds read".to_string());
+        }
+        Ok(u64::from_le_bytes(self.data[offset..offset + 8].try_into().unwrap()))
     }
 
     /// Convert to an `OwnedColumnarLog` compatible with the cache layer.

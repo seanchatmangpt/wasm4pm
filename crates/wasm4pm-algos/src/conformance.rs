@@ -83,15 +83,16 @@ pub fn check_conformance_token_replay(
             if i + 1 < activities.len() {
                 let next = &activities[i + 1];
                 let place = format!("p_{}_{}", activity, next);
-                let available = marking.get(&place).copied().unwrap_or(0);
-                if available > 0 {
-                    *marking.get_mut(&place).unwrap() -= 1;
-                    consumed += 1;
-                } else {
-                    // No token available on this edge — the edge is not in the model
-                    missing += 1;
-                    consumed += 1;
+                if let Some(count) = marking.get_mut(&place) {
+                    if *count > 0 {
+                        *count -= 1;
+                        consumed += 1;
+                        continue;
+                    }
                 }
+                // No token available on this edge — the edge is not in the model
+                missing += 1;
+                consumed += 1;
             }
         }
 

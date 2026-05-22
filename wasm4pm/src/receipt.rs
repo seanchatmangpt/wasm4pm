@@ -475,7 +475,7 @@ impl OCELReceiptLinter {
             if let Some(alignment) = algo.get("alignment") {
                 let status_val = alignment.get("expected_vs_observed").and_then(|v| v.as_str()).unwrap_or("");
                 let refusal_state = alignment.get("refusal_state");
-                if status_val != "Pass" && (refusal_state.is_none() || refusal_state.unwrap().is_null()) {
+                if status_val != "Pass" && refusal_state.map_or(true, |r| r.is_null()) {
                     findings.push(ReceiptFinding {
                         code: ReceiptTruthRefusal::ClosureOverclaimed,
                         json_path: format!("{}.alignment.refusal_state", algo_path_prefix),
@@ -733,7 +733,7 @@ impl ClosureOverclaimDetector {
         let receipt_hash = receipt.get("receipt_hash").and_then(|v| v.as_str());
 
         if all_real {
-            if receipt_hash.is_none() || receipt_hash.unwrap().is_empty() || receipt_hash.unwrap().contains("placeholder") {
+            if receipt_hash.map_or(true, |h| h.is_empty() || h.contains("placeholder")) {
                 findings.push(ReceiptFinding {
                     code: ReceiptTruthRefusal::ClosureOverclaimed,
                     json_path: "$.receipt_hash".to_string(),

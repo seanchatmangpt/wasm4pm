@@ -65,7 +65,7 @@ pub fn build_edge_counts(log: &EventLog, activity_key: &str) -> ColumnarEdgeCoun
         // Start / end activities — safe to read vocab here, no closure holds a borrow
         let first_name = vocab[ids[0] as usize].clone();
         *start_activities.entry(first_name).or_insert(0) += 1;
-        let last_name = vocab[*ids.last().unwrap() as usize].clone();
+        let last_name = vocab[*ids.last().expect("checked ids.is_empty()") as usize].clone();
         *end_activities.entry(last_name).or_insert(0) += 1;
 
         // Count directly-follows edges

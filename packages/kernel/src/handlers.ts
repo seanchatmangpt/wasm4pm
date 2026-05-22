@@ -7,6 +7,7 @@
 import { randomBytes } from 'node:crypto';
 import { PlanStepType, type PlanStep } from '@wasm4pm/planner';
 import { getRegistry } from './registry.js';
+import { KernelError, classifyRustError } from './errors.js';
 
 /**
  * Drift window entry returned by WASM detect_drift.
@@ -514,6 +515,10 @@ export async function implementAlgorithmStep(
 ): Promise<AlgorithmStepOutput> {
   const startTime = Date.now();
 
+  if (!eventLogHandle || typeof eventLogHandle !== 'string' || eventLogHandle.trim() === '') {
+    throw new KernelError('Invalid event log handle', 'MALFORMED_EVENT_LOG' as any);
+  }
+
   // Extract algorithm type from step type
   const algorithmId = stepTypeToAlgorithmId(step.type as PlanStepType);
 
@@ -522,12 +527,13 @@ export async function implementAlgorithmStep(
   const metadata = registry.get(algorithmId);
 
   if (!metadata) {
-    throw new Error(
+    throw new KernelError(
       `Algorithm not found in registry: ${algorithmId} (step type: ${step.type}). ` +
         `Available algorithms: ${registry
           .list()
           .map((a) => a.id)
-          .join(', ')}`
+          .join(', ')}`,
+      'ALGORITHM_NOT_FOUND' as any
     );
   }
 
@@ -538,9 +544,10 @@ export async function implementAlgorithmStep(
   // Validate required parameters
   for (const paramDef of metadata.parameters) {
     if (paramDef.required && !(paramDef.name in params)) {
-      throw new Error(
+      throw new KernelError(
         `Missing required parameter "${paramDef.name}" for algorithm "${metadata.name}". ` +
-          `Expected type: ${paramDef.type}`
+          `Expected type: ${paramDef.type}`,
+        'INVALID_PARAMETER' as any
       );
     }
   }
@@ -709,9 +716,10 @@ export async function implementAlgorithmStep(
         const logJson = params.log_json as string;
 
         if (!logJson) {
-          throw new Error(
+          throw new KernelError(
             `POWL discovery requires log_json parameter. ` +
-              `Use Kernel.run_powl() instead of Kernel.run() for POWL discovery.`
+              `Use Kernel.run_powl() instead of Kernel.run() for POWL discovery.`,
+            'INVALID_PARAMETER' as any
           );
         }
 
@@ -1032,19 +1040,21 @@ export async function implementAlgorithmStep(
       }
 
       default:
-        throw new Error(
+        throw new KernelError(
           `Unsupported algorithm: ${algorithmId}. ` +
             `Available: ${registry
               .list()
               .map((a) => a.id)
-              .join(', ')}`
+              .join(', ')}`,
+          'ALGORITHM_NOT_FOUND' as any
         );
     }
 
     // Validate output
     if (!modelHandle || typeof modelHandle !== 'string') {
-      throw new Error(
-        `Invalid model handle returned by WASM function. Expected string, got: ${typeof modelHandle}`
+      throw new KernelError(
+        `Invalid model handle returned by WASM function. Expected string, got: ${typeof modelHandle}`,
+        'ALGORITHM_FAILED' as any
       );
     }
 
@@ -1076,23 +1086,31 @@ export async function implementAlgorithmStep(
     // GAP-FIX #1: Emit error span for observability (FM-5 proof, chicago-tdd Rank-1)
     emitAlgorithmSpan(metadata?.id ?? algorithmId, 'ERROR', executionTimeMs, errorMessage);
 
-    // Provide helpful error messages
+    const errorCode = classifyRustError(errorMessage);
+    const context = { cause: error instanceof Error ? error : undefined };
+
     if (errorMessage.includes('not found')) {
-      throw new Error(
+      throw new KernelError(
         `WASM function for algorithm "${algorithmId}" not found. ` +
-          `Check that WASM module is properly initialized and contains this function.`
+          `Check that WASM module is properly initialized and contains this function.`,
+        'ALGORITHM_FAILED',
+        context
       );
     }
 
     if (errorMessage.includes('not an EventLog')) {
-      throw new Error(
+      throw new KernelError(
         `Invalid event log handle: "${eventLogHandle}". ` +
-          `Make sure an event log was loaded before running discovery algorithms.`
+          `Make sure an event log was loaded before running discovery algorithms.`,
+        'INVALID_MODEL_HANDLE' as any,
+        context
       );
     }
 
-    throw new Error(
-      `Failed to execute algorithm "${algorithmId}" (${metadata.name}): ${errorMessage}`
+    throw new KernelError(
+      `Failed to execute algorithm "${algorithmId}" (${metadata?.name ?? algorithmId}): ${errorMessage}`,
+      errorCode as any,
+      context
     );
   }
 }

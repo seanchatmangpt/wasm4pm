@@ -8,6 +8,7 @@ import { verifyChallenge } from './receipt/verify-challenge.js';
 import { canonicalizeOcel2 } from './receipt/canonicalize-ocel2.js';
 import { producerSafeReport } from './receipt/producer-safe-report.js';
 import { operatorPrivateReport } from './receipt/operator-private-report.js';
+import { truthforge } from './receipt/truthforge.js';
 
 export const receipt = defineCommand({
   meta: {
@@ -24,5 +25,6 @@ export const receipt = defineCommand({
     'canonicalize-ocel2': canonicalizeOcel2,
     'producer-safe-report': producerSafeReport,
     'operator-private-report': operatorPrivateReport,
+    'truthforge': truthforge,
   },
 });

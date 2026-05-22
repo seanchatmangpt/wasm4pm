@@ -12,6 +12,14 @@ import { withSpan } from './_otel.js';
 
 type RunResult = { ok: boolean; output: string; command: string };
 
+
+function safeReadJson<T = any>(filePath: string, fallback: T): T {
+  try {
+    return JSON.parse(readFileSync(filePath, 'utf8')) as T;
+  } catch {
+    return fallback;
+  }
+}
 function tryExec(cmd: string, cwd?: string): RunResult {
   try {
     const output = execSync(cmd, {
@@ -267,7 +275,7 @@ const verifyCmd = defineCommand({
     if (!existsSync(verdictPath)) {
       checks.push({ check: 'FINAL/verdict.json exists', ok: false, detail: 'file missing' });
     } else {
-      const verdictContent = JSON.parse(readFileSync(verdictPath, 'utf8'));
+      const verdictContent = safeReadJson(verdictPath, {});
       const verdictValue = verdictContent.verdict as string | undefined;
       checks.push({
         check: 'FINAL/verdict.json has verdict field',
@@ -286,7 +294,7 @@ const verifyCmd = defineCommand({
       });
     } else {
       try {
-        const receipt = JSON.parse(readFileSync(receiptPath, 'utf8')) as Record<string, unknown>;
+        const receipt = safeReadJson(receiptPath, {}) as Record<string, unknown>;
         const approved = ['wpm proof collect', 'wpm proof audit', 'wpm proof promote'];
         const producer = receipt['producer'] as string | undefined;
         const ok = approved.includes(producer ?? '');
@@ -307,7 +315,7 @@ const verifyCmd = defineCommand({
     // 3. ARTIFACT_PROOF/file-hashes.json: recompute BLAKE3 of every listed file
     const hashesPath = join(packDir, 'ARTIFACT_PROOF', 'file-hashes.json');
     if (existsSync(hashesPath)) {
-      const recorded: Record<string, string> = JSON.parse(readFileSync(hashesPath, 'utf8'));
+      const recorded: Record<string, string> = safeReadJson(hashesPath, {});
       for (const [relPath, expectedHash] of Object.entries(recorded)) {
         const absPath = join(packDir, relPath);
         if (!existsSync(absPath)) {
@@ -343,7 +351,7 @@ const verifyCmd = defineCommand({
     const dimsPath = join(packDir, 'VERIFIED_PROOF', 'proof-dimensions.json');
     const notMeasured: string[] = [];
     if (existsSync(dimsPath)) {
-      const dims = JSON.parse(readFileSync(dimsPath, 'utf8'));
+      const dims = safeReadJson(dimsPath, {});
       const dimensions = dims.dimensions as Record<string, string> | undefined;
       if (dimensions) {
         for (const [name, status] of Object.entries(dimensions)) {
@@ -443,7 +451,7 @@ const show = defineCommand({
       return exitWithFlush(EXIT_CODES.source_error);
     }
 
-    const verdict = JSON.parse(readFileSync(verdictPath, 'utf8'));
+    const verdict = safeReadJson(verdictPath, {});
     const exitCode =
       verdict.verdict === 'Accepted' ? EXIT_CODES.success : EXIT_CODES.execution_error;
 
@@ -616,7 +624,7 @@ const audit = defineCommand({
         const tamperVerdictPath = join(tamperPackDir, 'FINAL', 'verdict.json');
         if (existsSync(tamperHashesPath) && existsSync(tamperVerdictPath)) {
           try {
-            const recorded = JSON.parse(readFileSync(tamperHashesPath, 'utf8'));
+            const recorded = safeReadJson(tamperHashesPath, {});
             const recordedHash = recorded['FINAL/verdict.json'] as string;
             const actualHash = blake3File(tamperVerdictPath);
             gate5Ok = recordedHash !== actualHash;
@@ -650,7 +658,7 @@ const audit = defineCommand({
             const vp = join(realPacksDir, entry, 'FINAL', 'verdict.json');
             if (existsSync(vp)) {
               try {
-                const v = JSON.parse(readFileSync(vp, 'utf8'));
+                const v = safeReadJson(vp, {});
                 if (v.verdict === 'Accepted') fraudulentPacks.push(entry);
               } catch {
                 /* ignore parse errors */
@@ -836,7 +844,7 @@ function verifyPackSync(packDir: string): {
   if (!existsSync(verdictPath)) {
     checks.push({ check: 'FINAL/verdict.json exists', ok: false, detail: 'file missing' });
   } else {
-    verdictContent = JSON.parse(readFileSync(verdictPath, 'utf8')) as Record<string, unknown>;
+    verdictContent = safeReadJson(verdictPath, {}) as Record<string, unknown>;
     const verdictValue = verdictContent['verdict'] as string | undefined;
     checks.push({
       check: 'FINAL/verdict.json has verdict field',
@@ -851,7 +859,7 @@ function verifyPackSync(packDir: string): {
     checks.push({ check: 'FINAL/PRODUCER_RECEIPT.json exists', ok: false, detail: 'missing' });
   } else {
     try {
-      const receipt = JSON.parse(readFileSync(receiptPath, 'utf8')) as Record<string, unknown>;
+      const receipt = safeReadJson(receiptPath, {}) as Record<string, unknown>;
       const approved = ['wpm proof collect', 'wpm proof audit', 'wpm proof promote'];
       const producer = receipt['producer'] as string | undefined;
       const ok = approved.includes(producer ?? '');
@@ -872,7 +880,7 @@ function verifyPackSync(packDir: string): {
   // 3. ARTIFACT_PROOF/file-hashes.json — BLAKE3 recompute
   const hashesPath = join(packDir, 'ARTIFACT_PROOF', 'file-hashes.json');
   if (existsSync(hashesPath)) {
-    const recorded: Record<string, string> = JSON.parse(readFileSync(hashesPath, 'utf8')) as Record<
+    const recorded: Record<string, string> = safeReadJson(hashesPath, {}) as Record<
       string,
       string
     >;
@@ -905,7 +913,7 @@ function verifyPackSync(packDir: string): {
   const dimsPath = join(packDir, 'VERIFIED_PROOF', 'proof-dimensions.json');
   const notMeasured: string[] = [];
   if (existsSync(dimsPath)) {
-    const dims = JSON.parse(readFileSync(dimsPath, 'utf8')) as {
+    const dims = safeReadJson(dimsPath, {}) as {
       dimensions?: Record<string, string>;
     };
     const dimensions = dims.dimensions ?? {};

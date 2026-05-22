@@ -297,12 +297,17 @@ impl PatternDispatcher {
     pub fn dispatch(&self, context: &PatternContext) -> PatternResult {
         let index = context.pattern_type as usize;
 
-        // Strict bounds-checking assertion before unsafe access
-        assert!(index < 44, "Pattern dispatch table bounds check failed");
+        if index >= 44 {
+            return PatternResult {
+                success: false,
+                output_mask: 0,
+                ticks_used: 1,
+                next_pattern: None,
+            };
+        }
 
         // Direct index into dispatch table (no branches)
-        // SAFETY: PatternType repr(u8) values are 1-43, array is 0-43.
-        // Invariant maintained by PatternType enum and validate_pattern.
+        // SAFETY: Bounds checked above.
         let handler = unsafe { *self.dispatch_table.get_unchecked(index) };
         handler(context)
     }
