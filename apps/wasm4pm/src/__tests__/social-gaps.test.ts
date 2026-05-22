@@ -15,9 +15,9 @@
  *   SG-5   network_type IS a payload field — canonical snake_case discriminator
  *          ("handover", "working_together", "similar_task") distinct from metric string
  *   SG-6   payload.taskSpecialization field — present and is object when ok
- *   SG-7   similar-task stub: payload.network.nodes === [] and edges === []
- *   SG-8   similar-task payload.metric is "similar-task"
- *   SG-9   similar-task payload.similarTaskWarning is true
+ *   SG-7   similar-task refuses with NOT_IMPLEMENTED (exit 3)
+ *   SG-8   similar-task JSON error code is NOT_IMPLEMENTED
+ *   SG-9   similar-task error message mentions WASM / not implemented
  *   SG-10  Empty log (no org:resource): graceful exit 0 with empty network
  *   SG-11  Custom --resource-key that doesn't exist in log: empty network, exit 0
  *   SG-12  bottleneckResources items have { resource: string, share: number }
@@ -33,8 +33,7 @@
  *   SG-22  withSpan emits "social" as command name attribute
  *          (validates OTEL span name via OtelCapture infrastructure)
  *   SG-23  taskSpecialization values have herfindahl_index and diversity fields
- *   SG-24  similar-task exits 0 (success), not 3, because stub network is computed
- *          in TypeScript without WASM — no execution_error expected
+ *   SG-24  similar-task exits 3 (execution_error / NOT_IMPLEMENTED), not 0
  *   SG-25  positional input path + --metric working-together (no -i flag): works
  */
 
@@ -371,19 +370,9 @@ describe('SG-5: network_type is a payload field that canonically identifies the 
     expect(env.payload?.network_type).toBe('working_together');
   }, TIMEOUT_MS);
 
-  it('network_type is "similar_task" for similar-task run', async () => {
-    const result = await runCli(
-      ['social', '-i', xesPath, '--metric', 'similar-task', '--format', 'json', '--no-save'],
-      { timeout: TIMEOUT_MS }
-    );
-    const env = parseEnvelope(result.stdout);
-    if (env.status !== 'ok') return;
-    expect(env.payload?.network_type).toBe('similar_task');
-  }, TIMEOUT_MS);
-
-  it('network_type is always one of the three valid canonical values', async () => {
-    const validTypes = ['handover', 'working_together', 'similar_task'];
-    for (const metric of ['handover', 'working-together', 'similar-task']) {
+  it('network_type is always one of the two valid canonical values for implemented metrics', async () => {
+    const validTypes = ['handover', 'working_together'];
+    for (const metric of ['handover', 'working-together']) {
       const result = await runCli(
         ['social', '-i', xesPath, '--metric', metric, '--format', 'json', '--no-save'],
         { timeout: TIMEOUT_MS }
@@ -449,61 +438,41 @@ describe('SG-6/SG-23: payload.taskSpecialization is present and well-formed', ()
 // SG-7, SG-8, SG-9, SG-24: similar-task stub contract
 // ---------------------------------------------------------------------------
 
-describe('SG-7/SG-8/SG-9/SG-24: similar-task stub contract', () => {
-  it('similar-task payload.network.nodes is an empty array (stub returns [])', async () => {
+describe('SG-7/SG-8/SG-9/SG-24: similar-task correct refusal', () => {
+  it('similar-task exits 3 (NOT_IMPLEMENTED)', async () => {
+    const result = await runCli(
+      ['social', '-i', xesPath, '--metric', 'similar-task', '--format', 'json', '--no-save'],
+      { timeout: TIMEOUT_MS }
+    );
+    expect(result.exitCode).toBe(EXIT_CODES.execution_error);
+  }, TIMEOUT_MS);
+
+  it('similar-task JSON error code is NOT_IMPLEMENTED', async () => {
     const result = await runCli(
       ['social', '-i', xesPath, '--metric', 'similar-task', '--format', 'json', '--no-save'],
       { timeout: TIMEOUT_MS }
     );
     const env = parseEnvelope(result.stdout);
-    if (env.status !== 'ok') return;
-    const nodes = (env.payload?.network as { nodes: unknown[] } | undefined)?.nodes;
-    expect(Array.isArray(nodes)).toBe(true);
-    expect(nodes).toHaveLength(0);
+    expect(env.status).toBe('error');
+    expect(env.error?.code).toBe('NOT_IMPLEMENTED');
   }, TIMEOUT_MS);
 
-  it('similar-task payload.network.edges is an empty array', async () => {
+  it('similar-task error message mentions not implemented', async () => {
     const result = await runCli(
       ['social', '-i', xesPath, '--metric', 'similar-task', '--format', 'json', '--no-save'],
       { timeout: TIMEOUT_MS }
     );
     const env = parseEnvelope(result.stdout);
-    if (env.status !== 'ok') return;
-    const edges = (env.payload?.network as { edges: unknown[] } | undefined)?.edges;
-    expect(Array.isArray(edges)).toBe(true);
-    expect(edges).toHaveLength(0);
+    expect(env.error?.message?.toLowerCase()).toMatch(/not implemented|wasm/);
   }, TIMEOUT_MS);
 
-  it('similar-task payload.metric is "similar-task"', async () => {
+  it('similar-task payload is null on error', async () => {
     const result = await runCli(
       ['social', '-i', xesPath, '--metric', 'similar-task', '--format', 'json', '--no-save'],
       { timeout: TIMEOUT_MS }
     );
     const env = parseEnvelope(result.stdout);
-    if (env.status !== 'ok') return;
-    expect(env.payload?.metric).toBe('similar-task');
-  }, TIMEOUT_MS);
-
-  it('similar-task payload.similarTaskWarning is true', async () => {
-    const result = await runCli(
-      ['social', '-i', xesPath, '--metric', 'similar-task', '--format', 'json', '--no-save'],
-      { timeout: TIMEOUT_MS }
-    );
-    const env = parseEnvelope(result.stdout);
-    if (env.status !== 'ok') return;
-    expect(env.payload?.similarTaskWarning).toBe(true);
-  }, TIMEOUT_MS);
-
-  it('similar-task exits 0 (success) — stub is computed in TypeScript, no WASM call made', async () => {
-    // The stub for similar-task is { nodes: [], edges: [] } hard-coded in social.ts
-    // inside withLogSession, which only calls WASM for load_eventlog_from_xes.
-    // If WASM is available, similar-task must exit 0 (not 3).
-    // We check: exit is 0 OR 3 (if WASM is completely absent).
-    const result = await runCli(
-      ['social', '-i', xesPath, '--metric', 'similar-task', '--format', 'json', '--no-save'],
-      { timeout: TIMEOUT_MS }
-    );
-    expect([EXIT_CODES.success, EXIT_CODES.execution_error]).toContain(result.exitCode);
+    expect(env.payload).toBeNull();
   }, TIMEOUT_MS);
 });
 

@@ -968,12 +968,15 @@ async function checkAlgorithmRegistry(): Promise<Diagnosis> {
 
     const missing = expected.filter((name) => typeof mod[name] !== 'function');
 
+    const { getRegistry } = await import('wasm4pm');
+    const kernelCount = getRegistry().list().length;
+
     if (missing.length === 0) {
       return {
         name: 'Algorithm registry',
         pathology: 'ENVIRONMENT_FAULT',
         severity: 'INFO',
-        message: `All ${expected.length} core WASM exports verified (kernel registry has more)`,
+        message: `All ${expected.length} core WASM exports verified (${kernelCount} algorithms in kernel registry)`,
       };
     }
 

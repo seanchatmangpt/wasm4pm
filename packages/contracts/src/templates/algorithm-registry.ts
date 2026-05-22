@@ -32,7 +32,7 @@ export const ALGORITHM_IDS = [
   'correlation_miner',
   // Wave 1 Conformance & Quality
   'generalization',
-  'petri_net_reduction',
+  // petri_net_reduction: removed from kernel — no wasm_bindgen export
   'etconformance_precision',
   'alignments',
   'complexity_metrics',
@@ -81,7 +81,6 @@ export const ALGORITHM_ID_TO_STEP_TYPE: Record<string, string> = {
   correlation_miner: 'discover_correlation_miner',
   // Wave 1 Conformance & Quality
   generalization: 'discover_generalization',
-  petri_net_reduction: 'discover_petri_net_reduction',
   etconformance_precision: 'discover_etconformance_precision',
   alignments: 'discover_alignment_fitness',
   complexity_metrics: 'discover_complexity_metrics',
@@ -128,7 +127,6 @@ export const ALGORITHM_OUTPUT_TYPES: Record<string, string> = {
   correlation_miner: 'correlation_graph',
   // Wave 1 Conformance & Quality
   generalization: 'tree',
-  petri_net_reduction: 'petrinet',
   etconformance_precision: 'conformance_report',
   alignments: 'alignment_report',
   complexity_metrics: 'complexity_report',
@@ -175,7 +173,6 @@ export const ALGORITHM_CLI_ALIASES: Record<string, string> = {
   correlation_miner: 'correlation',
   // Wave 1 Conformance & Quality
   generalization: 'generalization',
-  petri_net_reduction: 'reduce-pn',
   etconformance_precision: 'etconformance',
   alignments: 'alignment',
   complexity_metrics: 'complexity',
@@ -222,7 +219,6 @@ export const ALGORITHM_DISPLAY_NAMES: Record<string, string> = {
   correlation_miner: 'Correlation Miner',
   // Wave 1 Conformance & Quality
   generalization: 'Generalization Metrics',
-  petri_net_reduction: 'Petri Net Reduction',
   etconformance_precision: 'ETConformance Precision',
   alignments: 'Alignment Fitness',
   complexity_metrics: 'Complexity Metrics',
@@ -297,7 +293,6 @@ export function getProfileAlgorithms(profile: string): string[] {
       'alignments',
       'correlation_miner',
       'complexity_metrics',
-      'petri_net_reduction',
       'monte_carlo_simulation',
       'playout',
       ...ML_ALGORITHMS,
@@ -309,4 +304,44 @@ export function getProfileAlgorithms(profile: string): string[] {
     ml: ML_ALGORITHMS,
   };
   return map[profile.toLowerCase()] ?? map['balanced']!;
+}
+
+/** Normalize algorithm tokens for fuzzy ID/alias matching. */
+function normalizeAlgorithmToken(value: string): string {
+  return value.trim().toLowerCase().replace(/[+_]/g, '-');
+}
+
+/**
+ * Resolve a user-provided algorithm name (registry ID or CLI alias) to a registry ID.
+ *
+ * Resolution order:
+ * 1. Exact registry ID match
+ * 2. Reverse CLI alias lookup (`heuristic` → `heuristic_miner`)
+ * 3. Normalized token match (`alpha-plus-plus` ↔ `alpha_plus_plus`)
+ */
+export function resolveAlgorithmId(
+  input: string,
+  registryIds: readonly string[]
+): string | undefined {
+  const trimmed = input.trim();
+  if (!trimmed) return undefined;
+
+  if (registryIds.includes(trimmed)) {
+    return trimmed;
+  }
+
+  const normalizedInput = normalizeAlgorithmToken(trimmed);
+
+  for (const [registryId, alias] of Object.entries(ALGORITHM_CLI_ALIASES)) {
+    if (
+      normalizeAlgorithmToken(alias) === normalizedInput ||
+      normalizeAlgorithmToken(registryId) === normalizedInput
+    ) {
+      if (registryIds.includes(registryId)) {
+        return registryId;
+      }
+    }
+  }
+
+  return registryIds.find((id) => normalizeAlgorithmToken(id) === normalizedInput);
 }

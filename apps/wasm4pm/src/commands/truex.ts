@@ -2,6 +2,8 @@ import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { EXIT_CODES } from '../exit-codes.js';
+import { emitResult, makeErrorResult, makeResult } from '../output.js';
+import { exitWithFlush } from '../otel/exit.js';
 import { withSpan } from './_otel.js';
 
 export const truex = defineCommand({
@@ -20,62 +22,102 @@ export const truex = defineCommand({
       description: 'Path to the Truex Envelope JSON payload',
       required: true,
     },
+    format: {
+      type: 'string',
+      description: 'Output format: human or json (default: human)',
+      default: 'human',
+    },
+    verbose: {
+      type: 'boolean',
+      description: 'Enable verbose output',
+      alias: 'v',
+    },
+    quiet: {
+      type: 'boolean',
+      description: 'Suppress non-error output',
+      alias: 'q',
+    },
   },
   async run(ctx) {
-    if (ctx.args.action !== 'verify') {
-      console.error(`Unknown action: ${ctx.args.action}. Supported: verify`);
-      process.exit(EXIT_CODES.invalid_argument);
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+    const action = ctx.args.action as string;
+    const targetPath = ctx.args.payload as string;
+
+    if (action !== 'verify') {
+      const result = makeErrorResult(
+        'truex',
+        `Unknown action: ${action}. Supported: verify`,
+        EXIT_CODES.config_error,
+        'INVALID_ACTION',
+        'Use: wpm truex verify <envelope.json>'
+      );
+      emitResult(result, { format, verbose, quiet });
+      return await exitWithFlush(result.exit_code);
     }
-    const targetPath = ctx.args.payload;
-    return withSpan('truex', { targetPath }, async () => {
+
+    return withSpan('truex', { targetPath, action }, async () => {
+      const t0 = performance.now();
       try {
         const { WasmLoader } = await import('@wasm4pm/engine');
         const loader = WasmLoader.getInstance();
         await loader.init();
-        const wasm = loader.get() as Record<string, any>;
+        const wasm = loader.get() as Record<string, (payload: string) => string>;
 
         const fullPath = path.resolve(process.cwd(), targetPath);
-        console.log(`[WASM Verifier] Reading envelope from: ${fullPath}`);
-        
         const payload = await fs.readFile(fullPath, 'utf8');
-        console.log(`[DEBUG] WASM keys:`, Object.keys(wasm));
-        
-        const t0 = performance.now();
+
+        const verifyStart = performance.now();
         const resultJson = wasm.truex_verify_receipt(payload);
-        const result = JSON.parse(resultJson);
-        const status = result.status;
-        
-        const t1 = performance.now();
-        const duration = (t1 - t0).toFixed(2);
-        
+        const parsed = JSON.parse(resultJson) as Record<string, unknown>;
+        const status = parsed.status as string;
+        const elapsedMs = Math.round(performance.now() - verifyStart);
+
         if (status === 'ReceiptAdmitted') {
-          console.log(`\n======================================================`);
-          console.log(` ✅ RECEIPT VERIFIED (WASM)`);
-          console.log(`    Status:            ${status}`);
-          console.log(`    Equivalence Class: ${result.equivalence_class}`);
-          console.log(`    Time:              ${duration}ms`);
-          console.log(`======================================================\n`);
-          process.exit(0);
-        } else {
-          console.error(`\n======================================================`);
-          console.error(` ❌ RECEIPT FORGED OR REFUSED (INTEGRITY COMPROMISED)`);
-          console.error(`    Status:            ${status}`);
-          if (result.equivalence_class) {
-            console.error(`    Equivalence Class: ${result.equivalence_class}`);
-          }
-          if (result.computed_batch_hash) {
-            console.error(`    Computed Batch Hash:   ${result.computed_batch_hash}`);
-          }
-          if (result.computed_receipt_hash) {
-            console.error(`    Computed Receipt Hash: ${result.computed_receipt_hash}`);
-          }
-          console.error(`    Time:   ${duration}ms`);
-          console.error(`======================================================\n`);
-          process.exit(EXIT_CODES.execution_error);
+          const result = makeResult(
+            'truex',
+            {
+              status,
+              equivalence_class: parsed.equivalence_class,
+              elapsed_ms: elapsedMs,
+              envelope_path: fullPath,
+            },
+            Date.now() - t0,
+            EXIT_CODES.success
+          );
+          emitResult(result, { format, verbose, quiet }, (_res, p) => {
+            p.success('Receipt verified (WASM)');
+            p.log(`  Status:            ${status}`);
+            p.log(`  Equivalence Class: ${String(parsed.equivalence_class ?? '')}`);
+            p.log(`  Time:              ${elapsedMs}ms`);
+          });
+          return await exitWithFlush(EXIT_CODES.success);
         }
-      } catch (err: any) {
-        console.error(`\n❌ [Verifier Error] Failed to process payload: ${err.message || err}`);
-        process.exit(EXIT_CODES.execution_error);
+
+        const result = makeErrorResult(
+          'truex',
+          `Receipt refused: ${status}` +
+            (parsed.equivalence_class ? ` (${String(parsed.equivalence_class)})` : ''),
+          EXIT_CODES.execution_error,
+          'RECEIPT_REFUSED',
+          'Inspect envelope integrity and canonical OCEL 2.0 profile compliance.'
+        );
+        emitResult(result, { format, verbose, quiet }, (_res, p) => {
+          p.error('Receipt forged or refused (integrity compromised)');
+          p.log(`  Status: ${status}`);
+        });
+        return await exitWithFlush(EXIT_CODES.execution_error);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        const result = makeErrorResult(
+          'truex',
+          `Failed to process envelope: ${message}`,
+          EXIT_CODES.execution_error,
+          'VERIFIER_ERROR'
+        );
+        emitResult(result, { format, verbose, quiet });
+        return await exitWithFlush(result.exit_code);
       }
     });
   },

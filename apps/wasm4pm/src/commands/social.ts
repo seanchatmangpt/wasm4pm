@@ -15,7 +15,7 @@ import { exitWithFlush } from '../otel/exit.js';
 export const social = defineCommand({
   meta: {
     name: 'social',
-    description: 'Mine social networks from event logs (handover, working together, similar tasks). Example: wpm social log.xes',
+    description: 'Mine social networks from event logs (handover, working-together). Example: wpm social log.xes',
   },
   args: {
     input: {
@@ -30,7 +30,7 @@ export const social = defineCommand({
     },
     metric: {
       type: 'string',
-      description: 'Social network metric: handover, working-together, centrality, clustering, or community',
+      description: 'Social network metric: handover or working-together (similar-task not yet implemented)',
       default: 'handover',
     },
     'centrality-type': {
@@ -134,6 +134,18 @@ export const social = defineCommand({
             return await exitWithFlush(result.exit_code);
           }
 
+          if (metric === 'similar-task') {
+            const result = makeErrorResult(
+              'social',
+              'similar-task network mining is not implemented in the WASM binary yet',
+              EXIT_CODES.execution_error,
+              'NOT_IMPLEMENTED',
+              'Use --metric handover or --metric working-together until discover_similar_task_network is exported'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
+          }
+
           // Validate --min-weight: must be a non-negative finite number
           const minWeightRaw = String(ctx.args['min-weight'] ?? '0');
           const minWeight = Number(minWeightRaw);
@@ -161,17 +173,13 @@ export const social = defineCommand({
               const wasm = wasmBase as Record<string, any>;
 
               let rawNetwork: unknown;
-              let similarTaskWarning = false;
+              const similarTaskWarning = false;
               switch (metric) {
                 case 'handover':
                   rawNetwork = wasm.discover_handover_network(logHandle, resourceKey);
                   break;
                 case 'working-together':
                   rawNetwork = wasm.discover_working_together_network(logHandle, resourceKey);
-                  break;
-                case 'similar-task':
-                  rawNetwork = { nodes: [], edges: [] };
-                  similarTaskWarning = true;
                   break;
                 default: {
                   // metric was validated above; this branch is unreachable but kept for

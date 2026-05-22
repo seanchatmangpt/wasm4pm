@@ -35,7 +35,7 @@ describe('wpm conformance — log-to-model conformance checking CLI', () => {
       expect(result.stderr || result.stdout).toMatch(/model|required|argument/i);
     });
 
-    it('should accept model from file', async () => {
+    it('should refuse model from file until WASM model store is wired', async () => {
       const modelFile = env.tmpDir + '/test-model.pnml';
       const fs = require('fs');
       fs.writeFileSync(modelFile, '<model/>'); // Minimal PNML
@@ -43,7 +43,8 @@ describe('wpm conformance — log-to-model conformance checking CLI', () => {
       const result = await runCli(['conformance', '--input', 'test.xes', '--model', modelFile], {
         env: env.env,
       });
-      expect([1, 2, 3]).toContain(result.exitCode);
+      expect(result.exitCode).toBe(1);
+      expect(result.stdout + result.stderr).toMatch(/INVALID_MODEL_HANDLE|not supported yet/i);
     });
 
     it('should accept model from discovery algorithm', async () => {

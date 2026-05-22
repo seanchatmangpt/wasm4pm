@@ -312,24 +312,21 @@ export const conformance = defineCommand({
               const modelPath = ctx.args.model as string | undefined;
 
               if (modelPath) {
-                // Load provided model from file, store it, and get a handle
-                try {
-                  await fs.access(modelPath);
-                  const modelContent = await fs.readFile(modelPath, 'utf-8');
-                  JSON.parse(modelContent);
-                  // Note: For now, we assume the model file is a Petri Net JSON
-                  // In the future, we could store it via WASM API
-                  petriNetHandle = `model_${Date.now()}`;
-                } catch {
-                  const result = makeErrorResult(
-                    'conformance',
-                    new Error(`Model file not found or invalid: ${modelPath}`),
-                    EXIT_CODES.source_error,
-                    'SOURCE_ERROR'
-                  );
-                  emitResult(result, { format, verbose, quiet });
-                  return await exitWithFlush(result.exit_code);
-                }
+                // External model files are not yet registered in the WASM model store.
+                // Refuse rather than fabricate a handle (would produce false conformance).
+                const result = makeErrorResult(
+                  'conformance',
+                  new Error(
+                    `Loading models from --model is not supported yet. ` +
+                      `Omit --model to auto-discover a Petri net from the log, ` +
+                      `or use PNML import via the kernel API when available.`
+                  ),
+                  EXIT_CODES.config_error,
+                  'INVALID_MODEL_HANDLE',
+                  'Run without --model: wpm conformance -i <log.xes>'
+                );
+                emitResult(result, { format, verbose, quiet });
+                return await exitWithFlush(result.exit_code);
               } else {
                 // Auto-discover a Petri Net using Alpha++
                 const discoveryResult = withWasmSpan(

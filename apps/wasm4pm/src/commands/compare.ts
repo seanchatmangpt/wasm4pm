@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty';
-import { ALGORITHM_CLI_ALIASES } from '@wasm4pm/contracts';
+import { ALGORITHM_CLI_ALIASES, resolveAlgorithmId } from '@wasm4pm/contracts';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
@@ -16,7 +16,8 @@ import {
 import { exitWithFlush } from '../otel/exit.js';
 
 /**
- * Algorithms supported by `wpm compare`.
+ * Discovery algorithms supported by `wpm compare` (side-by-side benchmark subset).
+ * Use `wpm run -a <id>` for the full kernel registry (~60 algorithms including OCEL, ML, drift).
  * Each entry describes how to invoke the discovery function via the WASM module.
  */
 const ALGORITHMS = [
@@ -37,6 +38,18 @@ const ALGORITHMS = [
 ] as const;
 
 type Algorithm = (typeof ALGORITHMS)[number];
+
+const COMPARE_REGISTRY_IDS = Object.keys(ALGORITHM_CLI_ALIASES).filter((registryId) =>
+  ALGORITHMS.includes(ALGORITHM_CLI_ALIASES[registryId] as Algorithm)
+);
+
+/** Resolve user input to a compare-supported CLI alias key. */
+function resolveCompareAlgorithm(input: string): Algorithm | undefined {
+  const registryId = resolveAlgorithmId(input, COMPARE_REGISTRY_IDS);
+  if (!registryId) return undefined;
+  const alias = ALGORITHM_CLI_ALIASES[registryId] as Algorithm;
+  return ALGORITHMS.includes(alias) ? alias : undefined;
+}
 
 /**
  * Static registry of Van der Aalst quality dimensions per algorithm.
@@ -430,7 +443,8 @@ export const compare = defineCommand({
   meta: {
     name: 'compare',
     description:
-      'Run multiple discovery algorithms on the same log side-by-side. Compare execution time, model size (nodes/edges), and quality metrics. ' +
+      'Run multiple discovery algorithms on the same log side-by-side (14 discovery aliases; use wpm run -a for the full registry). ' +
+      'Compare execution time, model size (nodes/edges), and quality metrics. ' +
       'Example: wpm compare dfg,heuristic,genetic -i process.xes',
   },
   args: {
@@ -530,15 +544,11 @@ export const compare = defineCommand({
             return await exitWithFlush(result.exit_code);
           }
 
-          // Resolve kernel IDs to CLI aliases, then validate
-          const resolved = rawAlgos.map((a) => ALGORITHM_CLI_ALIASES[a] ?? a);
-          const invalid = resolved.filter((a) => !ALGORITHMS.includes(a as Algorithm));
+          // Resolve registry IDs or CLI aliases to compare-supported keys
+          const resolved = rawAlgos.map((a) => resolveCompareAlgorithm(a));
+          const invalid = resolved.filter((a): a is undefined => a === undefined);
           if (invalid.length > 0) {
-            // rawAlgos entries that did not resolve — show what the user typed
-            const invalidRaw = rawAlgos.filter((a) => {
-              const cli = ALGORITHM_CLI_ALIASES[a] ?? a;
-              return !ALGORITHMS.includes(cli as Algorithm);
-            });
+            const invalidRaw = rawAlgos.filter((a, i) => resolved[i] === undefined);
             const result = makeErrorResult(
               'compare',
               new Error(
@@ -554,10 +564,12 @@ export const compare = defineCommand({
             return await exitWithFlush(result.exit_code);
           }
 
+          const resolvedAlgos = resolved as Algorithm[];
+
           // Deduplicate algorithms — dfg,dfg is a config error: a comparison needs distinct algorithms
           const seen = new Set<string>();
           const duplicates: string[] = [];
-          for (const a of resolved) {
+          for (const a of resolvedAlgos) {
             if (seen.has(a)) {
               duplicates.push(a);
             } else {
@@ -580,11 +592,11 @@ export const compare = defineCommand({
             return await exitWithFlush(result.exit_code);
           }
 
-          if (resolved.length < 2) {
+          if (resolvedAlgos.length < 2) {
             const result = makeErrorResult(
               'compare',
               new Error(
-                `At least two algorithms are required for comparison (got ${resolved.length}).\n\n` +
+                `At least two algorithms are required for comparison (got ${resolvedAlgos.length}).\n\n` +
                   `Usage:  wpm compare dfg,heuristic -i log.xes\n` +
                   `        wpm compare dfg heuristic inductive -i log.xes\n\n` +
                   `Quick picks: dfg, heuristic, inductive, ilp, genetic\n` +
@@ -597,7 +609,7 @@ export const compare = defineCommand({
             return await exitWithFlush(result.exit_code);
           }
 
-          const algos = resolved as Algorithm[];
+          const algos = resolvedAlgos;
 
           const inputPath = ctx.args.input as string;
           const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';

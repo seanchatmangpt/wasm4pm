@@ -147,7 +147,15 @@ export const explain = defineCommand({
           const level = (ctx.args.level || 'detailed') as 'brief' | 'detailed' | 'academic';
 
           if (ctx.args.model) {
-            explanationContent = `Model explanation for: ${ctx.args.model}\n\nPlaceholder content (awaiting planner integration)`;
+            const result = makeErrorResult(
+              'explain',
+              'Model-file explanation is not implemented yet',
+              EXIT_CODES.config_error,
+              'NOT_IMPLEMENTED',
+              'Use wpm explain <algorithm> for algorithm guidance, or wpm interpret for metric help'
+            );
+            emitResult(result, { format, verbose, quiet });
+            return await exitWithFlush(result.exit_code);
           } else if (ctx.args.config) {
             try {
               const configPath = ctx.args.config || process.cwd();
