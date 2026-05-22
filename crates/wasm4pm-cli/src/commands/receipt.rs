@@ -391,7 +391,7 @@ fn truthforge(args: &TruthforgeArgs) -> Result<()> {
         }
         let report = ReceiptDoctor::audit(&mutated);
         let caught = report.findings.iter().any(|f| {
-            matches!(f.code, wasm4pm::receipt::ReceiptTruthRefusal::PlaceholderEvidenceDetected | wasm4pm::receipt::ReceiptTruthRefusal::PlaceholderEvidenceDetected)
+            matches!(f.code, wasm4pm::receipt::ReceiptTruthRefusal::ChallengeNonceMismatch | wasm4pm::receipt::ReceiptTruthRefusal::ChallengeNonceMissing | wasm4pm::receipt::ReceiptTruthRefusal::ObservedTraceNotChallengeBound)
         });
         mutation_results.push(("Challenge Nonce Tamper", caught, report.findings.iter().map(|f| format!("{:?}", f.code)).collect::<Vec<_>>().join(", ")));
     }
