@@ -314,7 +314,7 @@ fn canonicalize_value(v: &serde_json::Value) -> serde_json::Value {
             serde_json::Value::Object(sorted_map)
         }
         serde_json::Value::Array(arr) => {
-            let canonical_arr: Vec<serde_json::Value> = arr.iter().map(|item| canonicalize_value(item)).collect();
+            let canonical_arr: Vec<serde_json::Value> = arr.iter().map(canonicalize_value).collect();
             serde_json::Value::Array(canonical_arr)
         }
         _ => v.clone(),
@@ -391,9 +391,9 @@ fn truthforge(args: &TruthforgeArgs) -> Result<()> {
         }
         let report = ReceiptDoctor::audit(&mutated);
         let caught = report.findings.iter().any(|f| {
-            matches!(f.code, wasm4pm::receipt::ReceiptTruthRefusal::PlaceholderEvidenceDetected 
-                | wasm4pm::receipt::ReceiptTruthRefusal::PlaceholderEvidenceDetected
-                | wasm4pm::receipt::ReceiptTruthRefusal::PlaceholderEvidenceDetected)
+            matches!(f.code, wasm4pm::receipt::ReceiptTruthRefusal::ChallengeNonceMismatch 
+                | wasm4pm::receipt::ReceiptTruthRefusal::ChallengeNonceMissing
+                | wasm4pm::receipt::ReceiptTruthRefusal::ObservedTraceNotChallengeBound)
         });
         mutation_results.push(("Challenge Nonce Tamper", caught, report.findings.iter().map(|f| format!("{:?}", f.code)).collect::<Vec<_>>().join(", ")));
     }
@@ -416,7 +416,7 @@ fn truthforge(args: &TruthforgeArgs) -> Result<()> {
         let caught = report.findings.iter().any(|f| {
             matches!(f.code, wasm4pm::receipt::ReceiptTruthRefusal::ClosureOverclaimed 
                 | wasm4pm::receipt::ReceiptTruthRefusal::BoundaryEvidenceMissing
-                | wasm4pm::receipt::ReceiptTruthRefusal::ClosureOverclaimed)
+                | wasm4pm::receipt::ReceiptTruthRefusal::ProofClassOverclaimed)
         });
         mutation_results.push(("Proof Class Overclaim", caught, report.findings.iter().map(|f| format!("{:?}", f.code)).collect::<Vec<_>>().join(", ")));
     }
@@ -430,7 +430,6 @@ fn truthforge(args: &TruthforgeArgs) -> Result<()> {
         let report = ReceiptDoctor::audit(&mutated);
         let caught = report.findings.iter().any(|f| {
             matches!(f.code, wasm4pm::receipt::ReceiptTruthRefusal::BoundaryEvidenceMissing
-                | wasm4pm::receipt::ReceiptTruthRefusal::PlaceholderEvidenceDetected
                 | wasm4pm::receipt::ReceiptTruthRefusal::PlaceholderEvidenceDetected)
         });
         mutation_results.push(("Mock/Placeholder Injection", caught, report.findings.iter().map(|f| format!("{:?}", f.code)).collect::<Vec<_>>().join(", ")));
