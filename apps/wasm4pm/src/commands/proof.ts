@@ -275,7 +275,7 @@ const verifyCmd = defineCommand({
     if (!existsSync(verdictPath)) {
       checks.push({ check: 'FINAL/verdict.json exists', ok: false, detail: 'file missing' });
     } else {
-      const verdictContent = safeReadJson(verdictPath, {});
+      const verdictContent = safeReadJson(verdictPath, {}) as Record<string, unknown>;
       const verdictValue = verdictContent.verdict as string | undefined;
       checks.push({
         check: 'FINAL/verdict.json has verdict field',
@@ -351,7 +351,7 @@ const verifyCmd = defineCommand({
     const dimsPath = join(packDir, 'VERIFIED_PROOF', 'proof-dimensions.json');
     const notMeasured: string[] = [];
     if (existsSync(dimsPath)) {
-      const dims = safeReadJson(dimsPath, {});
+      const dims = safeReadJson(dimsPath, {}) as Record<string, unknown>;
       const dimensions = dims.dimensions as Record<string, string> | undefined;
       if (dimensions) {
         for (const [name, status] of Object.entries(dimensions)) {
@@ -451,7 +451,7 @@ const show = defineCommand({
       return exitWithFlush(EXIT_CODES.source_error);
     }
 
-    const verdict = safeReadJson(verdictPath, {});
+    const verdict = safeReadJson(verdictPath, {}) as Record<string, unknown>;
     const exitCode =
       verdict.verdict === 'Accepted' ? EXIT_CODES.success : EXIT_CODES.execution_error;
 
@@ -464,8 +464,8 @@ const show = defineCommand({
     emitResult(result, { format, verbose, quiet }, (res, projection) => {
       projection.info('');
       projection.info(`Pack:    ${res.payload.pack_dir}`);
-      projection.info(`Run ID:  ${res.payload.run_id ?? 'unknown'}`);
-      projection.info(`Verdict: ${res.payload.verdict}`);
+      projection.info(`Run ID:  ${(res.payload as Record<string, unknown>).run_id ?? 'unknown'}`);
+      projection.info(`Verdict: ${(res.payload as Record<string, unknown>).verdict}`);
     });
 
     await exitWithFlush(exitCode);
@@ -624,7 +624,7 @@ const audit = defineCommand({
         const tamperVerdictPath = join(tamperPackDir, 'FINAL', 'verdict.json');
         if (existsSync(tamperHashesPath) && existsSync(tamperVerdictPath)) {
           try {
-            const recorded = safeReadJson(tamperHashesPath, {});
+            const recorded = safeReadJson(tamperHashesPath, {}) as Record<string, string>;
             const recordedHash = recorded['FINAL/verdict.json'] as string;
             const actualHash = blake3File(tamperVerdictPath);
             gate5Ok = recordedHash !== actualHash;
@@ -658,7 +658,7 @@ const audit = defineCommand({
             const vp = join(realPacksDir, entry, 'FINAL', 'verdict.json');
             if (existsSync(vp)) {
               try {
-                const v = safeReadJson(vp, {});
+                const v = safeReadJson(vp, {}) as Record<string, unknown>;
                 if (v.verdict === 'Accepted') fraudulentPacks.push(entry);
               } catch {
                 /* ignore parse errors */

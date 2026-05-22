@@ -86,15 +86,13 @@ export function emitResult<T>(
 
   switch (options.format) {
     case 'json':
-      if (!options.quiet) {
-        process.stdout.write(JSON.stringify(result, null, 2) + '\n');
-      }
+      // Machine-readable JSON is always emitted when requested — even with --quiet.
+      // Hooks (e.g. stop-proof-gate.sh) rely on `wpm … --format json --quiet`.
+      process.stdout.write(JSON.stringify(result, null, 2) + '\n');
       break;
 
     case 'jsonl':
-      if (!options.quiet) {
-        process.stdout.write(JSON.stringify(result) + '\n');
-      }
+      process.stdout.write(JSON.stringify(result) + '\n');
       break;
 
     case 'sarif':

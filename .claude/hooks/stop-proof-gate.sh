@@ -45,7 +45,8 @@ fi
 # Critical files are modified. Locate wpm CLI.
 WPM_BIN=""
 if [ -f "apps/wasm4pm/dist/bin/wpm.js" ]; then
-  WPM_BIN="node apps/wasm4pm/dist/bin/wpm.js"
+  # Node 20+ requires --experimental-wasm-modules to load wasm4pm_bg.wasm via ESM import.
+  WPM_BIN="node --experimental-wasm-modules apps/wasm4pm/dist/bin/wpm.js"
 fi
 
 if [ -z "$WPM_BIN" ]; then
@@ -58,14 +59,19 @@ fi
 # Run proof audit. This internally runs cargo test — it takes ~30s.
 # That is intentional: the proof gate must be expensive to make fake routes costly.
 AUDIT_TMP=$(mktemp /tmp/proof-audit-XXXXXX.json)
-trap 'rm -f "$AUDIT_TMP"' EXIT
+
+AUDIT_STDERR=$(mktemp /tmp/proof-audit-err-XXXXXX.log)
+trap 'rm -f "$AUDIT_TMP" "$AUDIT_STDERR"' EXIT
 
 AUDIT_EXIT=0
-$WPM_BIN proof audit --format json --quiet > "$AUDIT_TMP" 2>&1 || AUDIT_EXIT=$?
+$WPM_BIN proof audit --format json --quiet > "$AUDIT_TMP" 2>"$AUDIT_STDERR" || AUDIT_EXIT=$?
+
+# Extract first JSON object (skip any leading non-JSON lines from loaders/warnings)
+AUDIT_JSON=$(awk '/^\{/{found=1} found' "$AUDIT_TMP" 2>/dev/null)
 
 if [ $AUDIT_EXIT -eq 0 ]; then
   # Validate the output actually contains an Accepted verdict — exit 0 alone is not enough.
-  AUDIT_VERDICT=$(jq -r '.payload.final_verdict // empty' "$AUDIT_TMP" 2>/dev/null)
+  AUDIT_VERDICT=$(echo "$AUDIT_JSON" | jq -r '.payload.final_verdict // empty' 2>/dev/null)
   if [ "$AUDIT_VERDICT" = "Accepted" ]; then
     exit 0
   fi
@@ -76,10 +82,17 @@ if [ $AUDIT_EXIT -eq 0 ]; then
 fi
 
 # Audit returned AndonPull (exit code 3) or error. Parse reason.
-VERDICT=$(jq -r '.payload.final_verdict // "AndonPull(Unknown)"' "$AUDIT_TMP" 2>/dev/null || echo "AndonPull(ParseError)")
-REASON=$(jq -r '.payload.verdict_reason // "Proof gate failed — run wpm proof audit --verbose for details"' "$AUDIT_TMP" 2>/dev/null || echo "Cannot parse audit output")
-GATES_FAILED=$(jq -r '.payload.gates_failed // "?"' "$AUDIT_TMP" 2>/dev/null || echo "?")
-GATES_PASSED=$(jq -r '.payload.gates_passed // "?"' "$AUDIT_TMP" 2>/dev/null || echo "?")
+if [ -z "$AUDIT_JSON" ]; then
+  VERDICT="AndonPull(ParseError)"
+  REASON="Cannot parse audit output (empty or non-JSON stdout). stderr: $(head -3 "$AUDIT_STDERR" 2>/dev/null | tr '\n' ' ')"
+  GATES_FAILED="?"
+  GATES_PASSED="?"
+else
+  VERDICT=$(echo "$AUDIT_JSON" | jq -r '.payload.final_verdict // "AndonPull(Unknown)"' 2>/dev/null || echo "AndonPull(ParseError)")
+  REASON=$(echo "$AUDIT_JSON" | jq -r '.payload.verdict_reason // "Proof gate failed — run wpm proof audit --verbose for details"' 2>/dev/null || echo "Cannot parse audit output")
+  GATES_FAILED=$(echo "$AUDIT_JSON" | jq -r '.payload.gates_failed // "?"' 2>/dev/null || echo "?")
+  GATES_PASSED=$(echo "$AUDIT_JSON" | jq -r '.payload.gates_passed // "?"' 2>/dev/null || echo "?")
+fi
 
 BLOCK_REASON="wpm proof audit: ${VERDICT}
 Gates: ${GATES_PASSED} passed, ${GATES_FAILED} failed

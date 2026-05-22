@@ -43,6 +43,7 @@ import { wasmServer } from './commands/wasm-server.js';
 import { timeout } from './commands/timeout.js';
 import { receipt } from './commands/receipt.js';
 import { truex } from './commands/truex.js';
+import { cell } from './commands/cell.js';
 import cache from './commands/cache.js';
 import deduplicate from './commands/deduplicate.js';
 import models from './commands/models.js';
@@ -100,7 +101,7 @@ ${BOLD}QUICK START${RESET}
   ${CYAN}wpm doctor${RESET}                                          Diagnose environment, WASM, and config issues
 
 ${BOLD}DISCOVERY${RESET}
-  ${GREEN}wpm run${RESET} <log.xes>                   Discover a process model (default: heuristic miner)
+  ${GREEN}wpm run${RESET} <log.xes>                   Discover a process model (default: config algorithm, else profile default)
   ${GREEN}wpm run${RESET} <log.xes> --algorithm dfg   Use a specific algorithm
   ${GREEN}wpm compare${RESET} dfg,heuristic -i <log>  Compare algorithms side-by-side with sparklines
   ${GREEN}wpm diff${RESET} <log1.xes> <log2.xes>      Compare two logs — activities, edges, Jaccard distance
@@ -271,6 +272,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     verify,
     proof,
     truex,
+    cell,
     cognition,
     completions,
     claude,
@@ -327,4 +329,6 @@ export {
   interpret,
   exitCodes,
   receipt,
+  cell,
+  truex,
 };
