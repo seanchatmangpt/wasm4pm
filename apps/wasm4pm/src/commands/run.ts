@@ -34,164 +34,27 @@ export interface RunOptions {
   quiet?: boolean;
 }
 
-/** All algorithms supported by wpm run, mapped to their WASM discovery functions. */
-export const ALGORITHMS = [
-  'dfg',
-  'alpha',
-  'heuristic',
-  'inductive',
-  'ilp',
-  'genetic',
-  'pso',
-  'astar',
-  'hill-climbing',
-  'simulated-annealing',
-  'ant-colony',
-  'declare',
-  'skeleton',
-  'dfg-optimized',
-  'simd-dfg',
-  'hierarchical-dfg',
-  'smart-engine',
-] as const;
+import { Kernel } from 'wasm4pm';
 
-export type Algorithm = (typeof ALGORITHMS)[number];
+/** All algorithms supported by wpm run, sourced dynamically from the registry. */
+export const ALGORITHMS = getRegistry().list().map(a => a.id);
+
+export type Algorithm = string;
 
 /**
- * Invoke the appropriate WASM discovery function for the given algorithm.
+ * Invoke the appropriate WASM discovery function for the given algorithm dynamically via Kernel.
  * Wraps each discovery call in an OTEL span for observability.
  */
-export function runDiscovery(
+export async function runDiscovery(
   wasm: Record<string, any>,
   algo: Algorithm,
   logHandle: string,
   activityKey: string
-): { raw: unknown; elapsedMs: number } {
+): Promise<{ raw: unknown; elapsedMs: number }> {
   const t0 = performance.now();
-  let raw: unknown;
-
-  switch (algo) {
-    case 'dfg':
-      raw = withWasmSpan('discover_dfg', { algorithm: algo, activity_key: activityKey }, () =>
-        wasm.discover_dfg(logHandle, activityKey)
-      );
-      break;
-    case 'alpha':
-      raw = withWasmSpan(
-        'discover_alpha_plus_plus',
-        { algorithm: algo, activity_key: activityKey },
-        () => wasm.discover_alpha_plus_plus(logHandle, activityKey, 0.0)
-      );
-      break;
-    case 'heuristic':
-      raw = withWasmSpan(
-        'discover_heuristic_miner',
-        { algorithm: algo, activity_key: activityKey, dependency_threshold: 0.5 },
-        () => wasm.discover_heuristic_miner(logHandle, activityKey, 0.5)
-      );
-      break;
-    case 'inductive':
-      raw = withWasmSpan(
-        'discover_inductive_miner',
-        { algorithm: algo, activity_key: activityKey },
-        () => wasm.discover_inductive_miner(logHandle, activityKey)
-      );
-      break;
-    case 'ilp':
-      raw = withWasmSpan('discover_ilp_petri_net', { algorithm: algo, activity_key: activityKey }, () =>
-        wasm.discover_ilp_petri_net(logHandle, activityKey)
-      );
-      break;
-    case 'genetic':
-      raw = withWasmSpan(
-        'discover_genetic_algorithm',
-        { algorithm: algo, activity_key: activityKey, population_size: 20, generations: 20 },
-        () => wasm.discover_genetic_algorithm(logHandle, activityKey, 20, 20)
-      );
-      break;
-    case 'pso':
-      raw = withWasmSpan(
-        'discover_pso_algorithm',
-        { algorithm: algo, activity_key: activityKey, population_size: 20, iterations: 20 },
-        () => wasm.discover_pso_algorithm(logHandle, activityKey, 20, 20)
-      );
-      break;
-    case 'astar':
-      raw = withWasmSpan(
-        'discover_astar',
-        { algorithm: algo, activity_key: activityKey, max_iterations: 500 },
-        () => wasm.discover_astar(logHandle, activityKey, 500)
-      );
-      break;
-    case 'hill-climbing':
-      raw = withWasmSpan(
-        'discover_hill_climbing',
-        { algorithm: algo, activity_key: activityKey },
-        () => wasm.discover_hill_climbing(logHandle, activityKey)
-      );
-      break;
-    case 'simulated-annealing':
-      raw = withWasmSpan(
-        'discover_simulated_annealing',
-        { algorithm: algo, activity_key: activityKey, temperature: 1.0, cooling_rate: 0.95 },
-        () => wasm.discover_simulated_annealing(logHandle, activityKey, 1.0, 0.95)
-      );
-      break;
-    case 'ant-colony':
-      raw = withWasmSpan(
-        'discover_ant_colony',
-        { algorithm: algo, activity_key: activityKey, num_ants: 20, iterations: 20 },
-        () => wasm.discover_ant_colony(logHandle, activityKey, 20, 20)
-      );
-      break;
-    case 'declare':
-      raw = withWasmSpan('discover_declare', { algorithm: algo, activity_key: activityKey }, () =>
-        wasm.discover_declare(logHandle, activityKey)
-      );
-      break;
-    case 'skeleton':
-      raw = withWasmSpan(
-        'extract_process_skeleton',
-        { algorithm: algo, activity_key: activityKey },
-        () => wasm.extract_process_skeleton(logHandle, activityKey)
-      );
-      break;
-    case 'dfg-optimized':
-      raw = withWasmSpan('discover_dfg', { algorithm: algo, activity_key: activityKey }, () =>
-        wasm.discover_dfg(logHandle, activityKey)
-      );
-      break;
-    case 'simd-dfg':
-      raw = withWasmSpan(
-        'discover_dfg_simd',
-        { algorithm: algo, activity_key: activityKey, threshold: 0.0 },
-        () => wasm.discover_dfg_simd(logHandle, activityKey, 0.0)
-      );
-      break;
-    case 'hierarchical-dfg':
-      raw = withWasmSpan(
-        'discover_dfg_hierarchical',
-        { algorithm: algo, activity_key: activityKey, max_depth: 3 },
-        () => wasm.discover_dfg_hierarchical(logHandle, activityKey, 3)
-      );
-      break;
-    case 'smart-engine':
-      raw = withWasmSpan(
-        'smart_engine_run',
-        { algorithm: algo, activity_key: activityKey, mode: 'auto' },
-        () => wasm.smart_engine_run(logHandle, activityKey, 'auto', '')
-      );
-      break;
-    default: {
-      const _never: never = algo;
-      const validList = ALGORITHMS.join(', ');
-      throw new Error(
-        `Unknown algorithm: "${_never}". Valid algorithms: ${validList}.\n` +
-        `Run 'wpm algorithms' for full list with descriptions.`
-      );
-    }
-  }
-
+  const kernel = new Kernel(wasm as any);
+  await kernel.init();
+  const raw = await kernel.runRaw(algo, logHandle, activityKey, {});
   const elapsedMs = performance.now() - t0;
   return { raw, elapsedMs };
 }
@@ -653,7 +516,7 @@ export const run = defineCommand({
 
                 for (const algo of chain) {
                   try {
-                    const result = runDiscovery(wasm, algo, logHandle, activityKey);
+                    const result = await runDiscovery(wasm, algo, logHandle, activityKey);
                     raw = result.raw;
                     elapsedMs = result.elapsedMs;
                     resolvedAlgoFinal = algo;

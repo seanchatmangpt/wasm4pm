@@ -454,7 +454,7 @@ export class Kernel {
 
     try {
       wasmResult = await wrapKernelCall(
-        () => this.dispatchAlgorithm(algorithmName, eventLogHandle, activityKey, params),
+        () => this.runRaw(algorithmName, eventLogHandle, activityKey, params),
         { algorithm: algorithmName }
       );
     } catch (err) {
@@ -650,18 +650,18 @@ export class Kernel {
   }
 
   /**
-   * Dispatch to the correct WASM function based on algorithm ID
+   * Dispatch to the correct WASM function based on algorithm ID, returning raw JSON/object.
    */
-  private async dispatchAlgorithm(
+  public async runRaw(
     algorithmId: string,
     eventLogHandle: string,
     activityKey: string,
     params: Record<string, unknown>
-  ): Promise<{ handle: string }> {
+  ): Promise<any> {
     switch (algorithmId) {
       case 'dfg': {
         const dfgJson = this.wasm.discover_dfg(eventLogHandle, activityKey);
-        if (dfgJson instanceof Promise || (dfgJson && typeof (dfgJson as any).then === 'function')) {
+        if ((dfgJson as any) instanceof Promise || (dfgJson && typeof (dfgJson as any).then === 'function')) {
           return (dfgJson as any).then((resolvedDfgJson: string) => {
             const handle = this.wasm.store_dfg_from_json
               ? this.wasm.store_dfg_from_json(resolvedDfgJson)
@@ -681,7 +681,7 @@ export class Kernel {
           activityKey,
           (params.num_chunks as number) ?? 4
         );
-        if (dfgJson instanceof Promise || (dfgJson && typeof (dfgJson as any).then === 'function')) {
+        if ((dfgJson as any) instanceof Promise || (dfgJson && typeof (dfgJson as any).then === 'function')) {
           return (dfgJson as any).then((resolvedDfgJson: string) => {
             const handle = this.wasm.store_dfg_from_json
               ? this.wasm.store_dfg_from_json(resolvedDfgJson)
@@ -697,7 +697,7 @@ export class Kernel {
 
       case 'streaming_log': {
         const dfgJson = this.wasm.discover_dfg(eventLogHandle, activityKey);
-        if (dfgJson instanceof Promise || (dfgJson && typeof (dfgJson as any).then === 'function')) {
+        if ((dfgJson as any) instanceof Promise || (dfgJson && typeof (dfgJson as any).then === 'function')) {
           return (dfgJson as any).then((resolvedDfgJson: string) => {
             const handle = this.wasm.store_dfg_from_json
               ? this.wasm.store_dfg_from_json(resolvedDfgJson)
@@ -840,7 +840,7 @@ export class Kernel {
           activityKey,
           (params.support_threshold as number) ?? 0.8
         );
-        if (decJson instanceof Promise || (decJson && typeof (decJson as any).then === 'function')) {
+        if ((decJson as any) instanceof Promise || (decJson && typeof (decJson as any).then === 'function')) {
           return (decJson as any).then((resolvedDecJson: string) => {
             const handle = this.wasm.store_declare_from_json
               ? this.wasm.store_declare_from_json(resolvedDecJson)
