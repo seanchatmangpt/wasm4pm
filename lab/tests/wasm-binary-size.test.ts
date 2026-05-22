@@ -117,9 +117,12 @@ describe('WASM binary size regression guard', () => {
   });
 
   it('JS glue file is at least 50KB (not an empty stub)', () => {
-    if (!fs.existsSync(WASM_JS)) return;
-    const size = fs.statSync(WASM_JS).size;
-    console.info(`[size-guard] JS glue: ${size.toLocaleString()} bytes`);
+    const targetJs = fs.existsSync(path.join(PKG_DIR, 'wasm4pm_bg.js'))
+      ? path.join(PKG_DIR, 'wasm4pm_bg.js')
+      : WASM_JS;
+    if (!fs.existsSync(targetJs)) return;
+    const size = fs.statSync(targetJs).size;
+    console.info(`[size-guard] JS glue: ${size.toLocaleString()} bytes (${path.basename(targetJs)})`);
     expect(size, `JS glue too small (${size} bytes) — may be an empty stub`).toBeGreaterThanOrEqual(50_000);
   });
 

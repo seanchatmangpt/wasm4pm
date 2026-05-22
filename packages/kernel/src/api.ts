@@ -88,6 +88,12 @@ export interface KernelResult {
 
   /** Deterministic hash of the output */
   hash: string;
+
+  /** 
+   * A token-efficient, highly condensed representation of this result,
+   * optimized specifically for insertion into an LLM context window.
+   */
+  toLLMContext(): string;
 }
 
 /** Partial result emitted during streaming */
@@ -123,12 +129,124 @@ export interface KernelStats {
   uptimeMs: number;
 }
 
-export interface KernelWasmModule extends WasmModule {
+export interface KernelWasmModule extends Omit<WasmModule,
+  | 'discover_dfg'
+  | 'discover_ocel_dfg'
+  | 'discover_ocel_dfg_per_type'
+  | 'discover_alpha_plus_plus'
+  | 'discover_heuristic_miner'
+  | 'discover_inductive_miner'
+  | 'discover_genetic_algorithm'
+  | 'discover_pso_algorithm'
+  | 'discover_astar'
+  | 'discover_hill_climbing'
+  | 'discover_ilp_petri_net'
+  | 'discover_ant_colony'
+  | 'discover_simulated_annealing'
+  | 'discover_declare'
+  | 'extract_process_skeleton'
+  | 'discover_powl_from_log'
+  | 'discover_powl_from_log_config'
+  | 'discover_transition_system'
+  | 'discover_prefix_tree'
+  | 'discover_causal_graph'
+  | 'discover_performance_spectrum'
+  | 'discover_batches'
+  | 'discover_correlation'
+  | 'generalization'
+  | 'reduce_petri_net'
+  | 'wasm_compute_precision'
+  | 'compute_optimal_alignments'
+  | 'measure_complexity'
+  | 'from_pnml'
+  | 'read_bpmn'
+  | 'powl_to_process_tree'
+  | 'powl_to_yawl_string'
+  | 'play_out'
+  | 'monte_carlo_simulation'
+  | 'discover_ml_classify'
+  | 'discover_ml_cluster'
+  | 'discover_ml_forecast'
+  | 'discover_ml_pca'
+  | 'discover_ml_anomaly'
+  | 'discover_ml_regress'
+  | 'discover_oc_petri_net'
+  | 'discover_ocla_wasm'
+  | 'discover_oc_declare_wasm'
+  | 'encode_ocel_as_text'
+  | 'flatten_ocel_to_eventlog'
+  | 'discover_alpha_ppp_wasm'
+  | 'discover_handover_network'
+  | 'discover_working_together_network'
+  | 'discover_dfg_simd'
+> {
   /** Delete an object handle from WASM memory */
   delete_object?(handle: string): void;
 
   /** Clear all objects from WASM memory */
   clear_all_objects?(): void;
+
+  store_dfg_from_json?(dfg_json: string): string;
+  store_declare_from_json?(declare_json: string): string;
+  discover_dfg_simd_handle?(eventlog_handle: string, activity_key: string): string;
+  discover_dfg_hierarchical?(eventlog_handle: string, activity_key: string, num_chunks: number): string;
+  discover_dfg_hierarchical_by_events?(eventlog_handle: string, activity_key: string, max_chunk_events: number): string;
+  discover_transition_system_from_handle?(eventlog_handle: string, activity_key: string, window: number, direction: string): any;
+  discover_causal_alpha?(eventlog_handle: string, activity_key: string): any;
+  discover_causal_heuristic?(eventlog_handle: string, activity_key: string, threshold: number): any;
+  discover_batches_wasm?(eventlog_handle: string, activity_key: string, timestamp_key: string): any;
+  discover_performance_spectrum_wasm?(eventlog_handle: string, activity_key: string, timestamp_key: string, target_activity: string): any;
+  discover_prefix_tree?(eventlog_handle: string, activity_key: string): any;
+  discover_correlation?(eventlog_handle: string, activity_key: string, timestamp_key: string): any;
+  discover_ml_classify?(eventlog_handle: string, activity_key: string): any;
+  discover_ml_cluster?(eventlog_handle: string, activity_key: string): any;
+  discover_ml_forecast?(eventlog_handle: string, activity_key: string): any;
+  discover_ml_anomaly?(eventlog_handle: string, activity_key: string): any;
+  discover_ml_regress?(eventlog_handle: string, activity_key: string): any;
+  discover_ml_pca?(eventlog_handle: string, activity_key: string): any;
+  discover_optimized_dfg?(eventlog_handle: string, activity_key: string): string;
+
+  discover_dfg(eventlog_handle: string, activity_key: string): string;
+  discover_ocel_dfg?(ocel_handle: string): string;
+  discover_ocel_dfg_per_type?(ocel_handle: string): string;
+  discover_alpha_plus_plus(eventlog_handle: string, activity_key: string, min_support: number): string;
+  discover_heuristic_miner(eventlog_handle: string, activity_key: string, dependency_threshold: number): string;
+  discover_inductive_miner(eventlog_handle: string, activity_key: string, noise_threshold: number): string;
+  discover_genetic_algorithm(eventlog_handle: string, activity_key: string, population_size: number, generations: number): string;
+  discover_pso_algorithm(eventlog_handle: string, activity_key: string, swarm_size: number, iterations: number): string;
+  discover_astar(eventlog_handle: string, activity_key: string, max_iterations: number): string;
+  discover_hill_climbing(eventlog_handle: string, activity_key: string, max_iterations: number): string;
+  discover_ilp_petri_net(eventlog_handle: string, activity_key: string): string;
+  discover_ant_colony(eventlog_handle: string, activity_key: string, colony_size: number, iterations: number): string;
+  discover_simulated_annealing(eventlog_handle: string, activity_key: string, initial_temperature: number, cooling_rate: number): string;
+  discover_declare(eventlog_handle: string, activity_key: string, support_threshold: number): string;
+  extract_process_skeleton(eventlog_handle: string, activity_key: string, min_frequency: number): string;
+  discover_powl_from_log(log_json: string, variant: string): { root: number; node_count: number; repr: string; variant: string };
+  discover_powl_from_log_config(log_json: string, activity_key: string, variant: string, min_trace_count: number, noise_threshold: number): any;
+  discover_transition_system(eventlog_handle: string, window: number, direction: string): string;
+  discover_causal_graph(eventlog_handle: string, activity_key: string, method: string, dependency_threshold: number): string;
+  discover_performance_spectrum(eventlog_handle: string, activity_key: string, timestamp_key: string): string;
+  discover_batches(eventlog_handle: string, activity_key: string, timestamp_key: string, batch_threshold: number): string;
+  generalization(eventlog_handle: string, petri_net_handle: string, activity_key: string): string;
+  reduce_petri_net(petri_net_handle: string): string;
+  wasm_compute_precision(eventlog_handle: string, petri_net_handle: string, activity_key: string): string;
+  compute_optimal_alignments(eventlog_handle: string, petri_net_handle: string, activity_key: string, cost_config: string): string;
+  measure_complexity(powl_handle: string): string;
+  from_pnml(pnml_xml: string): string;
+  read_bpmn(bpmn_xml: string): string;
+  powl_to_process_tree(powl_handle: string): string;
+  powl_to_yawl_string(powl_string: string): string;
+  play_out(model_handle: string, num_traces: number, max_trace_length: number): string;
+  monte_carlo_simulation(log_handle: string, powl_handle: string, root_id: string, config_json: string): string;
+  discover_oc_petri_net?(ocel_handle: string, algorithm: string): string;
+  discover_ocla_wasm?(ocel_handle: string): string;
+  discover_oc_declare_wasm?(ocel_handle: string, noise_threshold: number): string;
+  flatten_ocel_to_eventlog?(ocel_handle: string, object_type: string): string;
+  discover_alpha_ppp_wasm?(log_handle: string, activity_key: string, absolute_thresh: number, causal_thresh: number): string;
+  discover_handover_network?(log_handle: string, resource_key: string): string;
+  discover_working_together_network?(log_handle: string, resource_key: string): string;
+  discover_dfg_simd?(eventlog_handle: string, activity_key: string): string;
+  encode_ocel_as_text?(ocel_handle: string): string;
 }
 
 /**
@@ -157,7 +275,16 @@ export type FeedbackCapture = (options: {
   metadata?: Record<string, unknown>;
 }) => Promise<void>;
 
+export interface DiscoveryParams {
+  activity_key?: string;
+  timestamp_key?: string;
+  case_id_key?: string;
+  noise_threshold?: number;
+  [key: string]: unknown;
+}
+
 export class Kernel {
+  private static _instance: Kernel | null = null;
   private wasm: KernelWasmModule;
   private registry: AlgorithmRegistry;
   private _initialized = false;
@@ -169,6 +296,22 @@ export class Kernel {
   private _spanSink: SpanSink = DEFAULT_SINK;
   private _feedbackCapture: FeedbackCapture | undefined;
   private _smartEngineHandle: string | undefined;
+
+  /**
+   * Retrieves or initializes a global singleton instance of the Kernel.
+   * Note: This requires the consumer to have initialized the WasmLoader elsewhere,
+   * or it will attempt to initialize a default empty WASM module if none provided.
+   */
+  static async getInstance(wasmModule?: KernelWasmModule): Promise<Kernel> {
+    if (!Kernel._instance) {
+      if (!wasmModule) {
+        throw new Error('Kernel.getInstance() requires a WasmModule on first initialization');
+      }
+      Kernel._instance = new Kernel(wasmModule);
+      await Kernel._instance.init();
+    }
+    return Kernel._instance;
+  }
 
   constructor(wasmModule: KernelWasmModule, options?: { spanSink?: SpanSink; feedbackCapture?: FeedbackCapture }) {
     this.wasm = wasmModule;
@@ -270,6 +413,14 @@ export class Kernel {
   ): Promise<KernelResult> {
     this.assertInitialized();
 
+    if (!eventLogHandle || typeof eventLogHandle !== 'string' || eventLogHandle.trim() === '') {
+      throw new KernelError('Invalid event log handle', 'MALFORMED_EVENT_LOG' as any);
+    }
+    const activityKey = (params.activity_key as string) ?? 'concept:name';
+    if (!activityKey || typeof activityKey !== 'string' || activityKey.trim() === '') {
+      throw new KernelError('Missing activity key field', 'MISSING_ACTIVITY_FIELD' as any);
+    }
+
     const metadata = this.registry.get(algorithmName);
     if (!metadata) {
       throw new KernelError(
@@ -277,7 +428,7 @@ export class Kernel {
           .list()
           .map((a) => a.id)
           .join(', ')}`,
-        'ALGORITHM_NOT_FOUND',
+        'ALGORITHM_NOT_FOUND' as any,
         { context: { algorithmName } }
       );
     }
@@ -315,7 +466,7 @@ export class Kernel {
       return cached;
     }
 
-    const activityKey = (params.activity_key as string) ?? 'concept:name';
+    // `activityKey` is already validated and extracted above.
 
     // ── Compute adaptive timeout ───────────────────────────────────────────
     // Timeout is based on log size, complexity, and algorithm tier.
@@ -342,7 +493,7 @@ export class Kernel {
 
     try {
       wasmResult = await wrapKernelCall(
-        () => this.dispatchAlgorithm(algorithmName, eventLogHandle, activityKey, params),
+        () => this.runRaw(algorithmName, eventLogHandle, activityKey, params),
         { algorithm: algorithmName }
       );
     } catch (err) {
@@ -394,6 +545,10 @@ export class Kernel {
           outputType: metadata.outputType,
         }
       ),
+      toLLMContext: () => {
+         const paramStr = Object.entries(params).map(([k, v]) => `${k}=${v}`).join(', ');
+         return `<process_model algo="${algorithmName}" type="${metadata.outputType}" duration_ms="${durationMs.toFixed(1)}" hash="${result.hash}">\n  <params>${paramStr}</params>\n  <handle>${wasmResult.handle}</handle>\n</process_model>`;
+      }
     };
 
     // Validate structural integrity before caching
@@ -443,6 +598,42 @@ export class Kernel {
   }
 
   /**
+   * Discover a process model.
+   * Semantic facade over `run()` for discovery algorithms.
+   * 
+   * @example
+   * ```ts
+   * const result = await kernel.discover('inductive_miner', logHandle, { noise_threshold: 0.2 });
+   * console.log(result.handle);
+   * ```
+   */
+  async discover(
+    algorithmName: string,
+    eventLogHandle: string,
+    params: DiscoveryParams = {}
+  ): Promise<KernelResult> {
+    return this.run(algorithmName, eventLogHandle, params);
+  }
+
+  /**
+   * Predict an outcome or metric.
+   * Semantic facade over `run()` for prediction algorithms.
+   * 
+   * @example
+   * ```ts
+   * const result = await kernel.predict('next_activity', logHandle, { prefix: "A,B,C" });
+   * console.log(result.handle);
+   * ```
+   */
+  async predict(
+    algorithmName: string,
+    eventLogHandle: string,
+    params: DiscoveryParams = {}
+  ): Promise<KernelResult> {
+    return this.run(algorithmName, eventLogHandle, params);
+  }
+
+  /**
    * Stream algorithm results (for algorithms that support incremental output)
    * Falls back to single-shot run with progress simulation for non-streaming algorithms
    */
@@ -477,12 +668,14 @@ export class Kernel {
   freeHandle(handle: string): void {
     if (!this._handles.has(handle)) return;
 
-    try {
-      if (this.wasm.delete_object) {
-        this.wasm.delete_object(handle);
+    if (!handle.startsWith('virtual_')) {
+      try {
+        if (this.wasm.delete_object) {
+          this.wasm.delete_object(handle);
+        }
+      } catch {
+        // Best-effort: handle may already be freed
       }
-    } catch {
-      // Best-effort: handle may already be freed
     }
 
     this._handles.delete(handle);
@@ -536,19 +729,66 @@ export class Kernel {
   }
 
   /**
-   * Dispatch to the correct WASM function based on algorithm ID
+   * Dispatch to the correct WASM function based on algorithm ID, returning raw JSON/object.
    */
-  private async dispatchAlgorithm(
+  public async runRaw(
     algorithmId: string,
     eventLogHandle: string,
     activityKey: string,
     params: Record<string, unknown>
-  ): Promise<{ handle: string }> {
+  ): Promise<any> {
     switch (algorithmId) {
-      case 'dfg':
-      case 'hierarchical_dfg':
-      case 'streaming_log':
-        return this.wasm.discover_dfg(eventLogHandle, activityKey);
+      case 'dfg': {
+        const dfgJson = this.wasm.discover_dfg(eventLogHandle, activityKey);
+        if ((dfgJson as any) instanceof Promise || (dfgJson && typeof (dfgJson as any).then === 'function')) {
+          return (dfgJson as any).then((resolvedDfgJson: string) => {
+            const handle = this.wasm.store_dfg_from_json
+              ? this.wasm.store_dfg_from_json(resolvedDfgJson)
+              : resolvedDfgJson;
+            return parseWasmHandle(handle);
+          });
+        }
+        const handle = this.wasm.store_dfg_from_json
+          ? this.wasm.store_dfg_from_json(dfgJson)
+          : dfgJson;
+        return parseWasmHandle(handle);
+      }
+
+      case 'hierarchical_dfg': {
+        const dfgJson = this.wasm.discover_dfg_hierarchical!(
+          eventLogHandle,
+          activityKey,
+          (params.num_chunks as number) ?? 4
+        );
+        if ((dfgJson as any) instanceof Promise || (dfgJson && typeof (dfgJson as any).then === 'function')) {
+          return (dfgJson as any).then((resolvedDfgJson: string) => {
+            const handle = this.wasm.store_dfg_from_json
+              ? this.wasm.store_dfg_from_json(resolvedDfgJson)
+              : resolvedDfgJson;
+            return parseWasmHandle(handle);
+          });
+        }
+        const handle = this.wasm.store_dfg_from_json
+          ? this.wasm.store_dfg_from_json(dfgJson)
+          : dfgJson;
+        return parseWasmHandle(handle);
+      }
+
+      case 'streaming_log': {
+        const dfgJson = this.wasm.discover_dfg(eventLogHandle, activityKey);
+        if ((dfgJson as any) instanceof Promise || (dfgJson && typeof (dfgJson as any).then === 'function')) {
+          return (dfgJson as any).then((resolvedDfgJson: string) => {
+            const handle = this.wasm.store_dfg_from_json
+              ? this.wasm.store_dfg_from_json(resolvedDfgJson)
+              : resolvedDfgJson;
+            return parseWasmHandle(handle);
+          });
+        }
+        const handle = this.wasm.store_dfg_from_json
+          ? this.wasm.store_dfg_from_json(dfgJson)
+          : dfgJson;
+        return parseWasmHandle(handle);
+      }
 
       case 'smart_engine': {
         const engineHandle = await this.getSmartEngine();
@@ -557,180 +797,253 @@ export class Kernel {
           ? this.wasm.smart_engine_run(engineHandle, (params.algorithm as string) ?? 'dfg', JSON.stringify(traces))
           : await this.wasm.discover_dfg(eventLogHandle, activityKey);
 
-        // If it's a discovery-style algorithm, the smart engine might return a handle or JSON.
-        // The Kernel contract expects a handle for discovery algorithms.
         if (typeof resultJson === 'string' && resultJson.startsWith('{')) {
-          // It's JSON (analytics), we need to store it and return a "virtual" handle
-          // or just pass it through if the caller expects JSON.
-          // For now, let's assume smart_engine is used as a discovery wrapper.
-          return { handle: resultJson }; // This is a bit of a hack, but fits the 'discover' return type
+          return { handle: resultJson };
         }
         return typeof resultJson === 'string' ? { handle: resultJson } : resultJson;
       }
 
-      // SIMD-accelerated DFG — dispatches to the dedicated vectorised WASM export,
-      // not the standard discover_dfg. A practitioner who selects this algorithm
-      // explicitly wants the ~500x throughput uplift; silently downgrading to the
-      // standard DFG defeats the purpose.
-      case 'simd_streaming_dfg':
-        return this.wasm.discover_dfg_simd!(eventLogHandle, activityKey);
+      case 'simd_streaming_dfg': {
+        const fn = this.wasm.discover_dfg_simd_handle || this.wasm.discover_dfg_simd;
+        if (!fn) throw new KernelError('discover_dfg_simd_handle is not available', 'ALGORITHM_NOT_FOUND' as any);
+        const handle = fn.call(this.wasm, eventLogHandle, activityKey);
+        return parseWasmHandle(handle);
+      }
 
-      case 'process_skeleton':
-        return this.wasm.extract_process_skeleton(
+      case 'process_skeleton': {
+        const raw = this.wasm.extract_process_skeleton(
           eventLogHandle,
           activityKey,
           (params.min_frequency as number) ?? 2
         );
+        return parseWasmHandle(raw);
+      }
 
-      case 'alpha_plus_plus':
-        if (this.wasm.discover_alpha_ppp_wasm) {
-          return await this.wasm.discover_alpha_ppp_wasm(
-            eventLogHandle,
-            activityKey,
-            0, // absolute_df_clean_thresh (min_support handles this at high level)
-            (params.causal_threshold as number) ?? 0.8
-          );
-        }
-        return await this.wasm.discover_alpha_plus_plus(
+      case 'alpha_plus_plus': {
+        const raw = this.wasm.discover_alpha_plus_plus(
           eventLogHandle,
           activityKey,
           (params.min_support as number) ?? 0.0
         );
+        return parseWasmHandle(raw);
+      }
 
-      case 'heuristic_miner':
-        return this.wasm.discover_heuristic_miner(
+      case 'heuristic_miner': {
+        const raw = this.wasm.discover_heuristic_miner(
           eventLogHandle,
           activityKey,
           (params.dependency_threshold as number) ?? 0.5
         );
+        return parseWasmHandle(raw);
+      }
 
-      case 'inductive_miner':
-        return this.wasm.discover_inductive_miner(
+      case 'inductive_miner': {
+        const json = this.wasm.discover_inductive_miner(
           eventLogHandle,
           activityKey,
           (params.noise_threshold as number) ?? 0.2
         );
+        const virtualHandle = `virtual_inductive_miner_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`;
+        return {
+          handle: virtualHandle,
+          metadata: { result: parseWasmOutput(json) }
+        } as any;
+      }
 
-      case 'genetic_algorithm':
-        return this.wasm.discover_genetic_algorithm(
+      case 'genetic_algorithm': {
+        const raw = this.wasm.discover_genetic_algorithm(
           eventLogHandle,
           activityKey,
           (params.population_size as number) ?? 50,
           (params.generations as number) ?? 100
         );
+        return parseWasmHandle(raw);
+      }
 
-      case 'pso':
-        return this.wasm.discover_pso_algorithm(
+      case 'pso': {
+        const raw = this.wasm.discover_pso_algorithm(
           eventLogHandle,
           activityKey,
           (params.swarm_size as number) ?? 30,
           (params.iterations as number) ?? 50
         );
+        return parseWasmHandle(raw);
+      }
 
-      case 'a_star':
-        return this.wasm.discover_astar(
+      case 'a_star': {
+        const raw = this.wasm.discover_astar(
           eventLogHandle,
           activityKey,
           (params.max_iterations as number) ?? 10000
         );
+        return parseWasmHandle(raw);
+      }
 
-      case 'hill_climbing':
-        return this.wasm.discover_hill_climbing(
+      case 'hill_climbing': {
+        const raw = this.wasm.discover_hill_climbing(
           eventLogHandle,
           activityKey,
           (params.max_iterations as number) ?? 100
         );
+        return parseWasmHandle(raw);
+      }
 
-      case 'ilp':
-        return this.wasm.discover_ilp_petri_net(eventLogHandle, activityKey);
+      case 'ilp': {
+        const raw = this.wasm.discover_ilp_petri_net(eventLogHandle, activityKey);
+        return parseWasmHandle(raw);
+      }
 
-      case 'aco':
-        return this.wasm.discover_ant_colony(
+      case 'aco': {
+        const raw = this.wasm.discover_ant_colony(
           eventLogHandle,
           activityKey,
           (params.colony_size as number) ?? 40,
           (params.iterations as number) ?? 100
         );
+        return parseWasmHandle(raw);
+      }
 
-      case 'simulated_annealing':
-        return this.wasm.discover_simulated_annealing(
+      case 'simulated_annealing': {
+        const raw = this.wasm.discover_simulated_annealing(
           eventLogHandle,
           activityKey,
           (params.initial_temperature as number) ?? 100,
           (params.cooling_rate as number) ?? 0.95
         );
+        return parseWasmHandle(raw);
+      }
 
-      case 'declare':
-        return this.wasm.discover_declare(
+      case 'declare': {
+        const decJson = this.wasm.discover_declare(
           eventLogHandle,
           activityKey,
           (params.support_threshold as number) ?? 0.8
         );
+        if ((decJson as any) instanceof Promise || (decJson && typeof (decJson as any).then === 'function')) {
+          return (decJson as any).then((resolvedDecJson: string) => {
+            const handle = this.wasm.store_declare_from_json
+              ? this.wasm.store_declare_from_json(resolvedDecJson)
+              : resolvedDecJson;
+            return parseWasmHandle(handle);
+          });
+        }
+        const handle = this.wasm.store_declare_from_json
+          ? this.wasm.store_declare_from_json(decJson)
+          : decJson;
+        return parseWasmHandle(handle);
+      }
 
-      case 'optimized_dfg':
-        return this.wasm.discover_dfg(eventLogHandle, activityKey);
+      case 'optimized_dfg': {
+        const fn = this.wasm.discover_optimized_dfg || this.wasm.discover_dfg;
+        const raw = fn.call(this.wasm, eventLogHandle, activityKey);
+        return parseWasmHandle(raw);
+      }
 
       // ─── Wave 1 Migration: Discovery algorithms ───────────────────────
 
-      case 'transition_system':
-        return this.wasm.discover_transition_system(
+      case 'transition_system': {
+        const res = this.wasm.discover_transition_system_from_handle!(
           eventLogHandle,
+          activityKey,
           (params.window as number) ?? 1,
           (params.direction as string) ?? 'forward'
         );
+        const virtualHandle = `virtual_transition_system_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`;
+        return {
+          handle: virtualHandle,
+          metadata: { result: parseWasmOutput(res) }
+        } as any;
+      }
 
-      case 'log_to_trie':
-        return this.wasm.discover_prefix_tree(eventLogHandle, activityKey);
+      case 'log_to_trie': {
+        const res = this.wasm.discover_prefix_tree!(eventLogHandle, activityKey);
+        const virtualHandle = `virtual_log_to_trie_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`;
+        return {
+          handle: virtualHandle,
+          metadata: { result: parseWasmOutput(res) }
+        } as any;
+      }
 
-      case 'causal_graph':
-        return this.wasm.discover_causal_graph(
-          eventLogHandle,
-          activityKey,
-          (params.method as string) ?? 'heuristic',
-          (params.dependency_threshold as number) ?? 0.5
-        );
+      case 'causal_graph': {
+        const res = ((params.method as string) ?? 'heuristic') === 'heuristic'
+          ? this.wasm.discover_causal_heuristic!(
+              eventLogHandle,
+              activityKey,
+              (params.dependency_threshold as number) ?? 0.5
+            )
+          : this.wasm.discover_causal_alpha!(eventLogHandle, activityKey);
+        const virtualHandle = `virtual_causal_graph_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`;
+        return {
+          handle: virtualHandle,
+          metadata: { result: parseWasmOutput(res) }
+        } as any;
+      }
 
-      case 'performance_spectrum':
-        return this.wasm.discover_performance_spectrum(
-          eventLogHandle,
-          activityKey,
-          (params.timestamp_key as string) ?? 'time:timestamp'
-        );
-
-      case 'batches':
-        return this.wasm.discover_batches(
+      case 'performance_spectrum': {
+        const res = this.wasm.discover_performance_spectrum_wasm!(
           eventLogHandle,
           activityKey,
           (params.timestamp_key as string) ?? 'time:timestamp',
-          (params.batch_threshold as number) ?? 86400000
+          (params.target_activity as string) ?? ''
         );
+        const virtualHandle = `virtual_performance_spectrum_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`;
+        return {
+          handle: virtualHandle,
+          metadata: { result: parseWasmOutput(res) }
+        } as any;
+      }
 
-      case 'correlation_miner':
-        return this.wasm.discover_correlation(
+      case 'batches': {
+        const res = this.wasm.discover_batches_wasm!(
           eventLogHandle,
           activityKey,
           (params.timestamp_key as string) ?? 'time:timestamp'
         );
+        const virtualHandle = `virtual_batches_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`;
+        return {
+          handle: virtualHandle,
+          metadata: { result: parseWasmOutput(res) }
+        } as any;
+      }
+
+      case 'correlation_miner': {
+        const res = this.wasm.discover_correlation!(
+          eventLogHandle,
+          activityKey,
+          (params.timestamp_key as string) ?? 'time:timestamp'
+        );
+        const virtualHandle = `virtual_correlation_miner_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`;
+        return {
+          handle: virtualHandle,
+          metadata: { result: parseWasmOutput(res) }
+        } as any;
+      }
 
       // ─── Wave 1 Migration: Conformance algorithms ──────────────────────
 
-      case 'generalization':
-        return this.wasm.generalization(
+      case 'generalization': {
+        const raw = this.wasm.generalization(
           eventLogHandle,
           (params.petri_net_handle as string)!,
           activityKey
         );
+        return parseWasmHandle(raw);
+      }
 
-      case 'petri_net_reduction':
-        return this.wasm.reduce_petri_net((params.petri_net_handle as string)!);
+      case 'petri_net_reduction': {
+        const raw = this.wasm.reduce_petri_net((params.petri_net_handle as string)!);
+        return parseWasmHandle(raw);
+      }
 
       case 'etconformance_precision':
-      case 'precision':
-        return this.wasm.wasm_compute_precision(
+      case 'precision': {
+        const raw = this.wasm.wasm_compute_precision(
           eventLogHandle,
           (params.petri_net_handle as string)!,
           activityKey
         );
+        return parseWasmHandle(raw);
+      }
 
       case 'compute_simplicity': {
         this.wasm.wasm_compute_simplicity(
@@ -747,43 +1060,54 @@ export class Kernel {
           log_move_cost: (params.log_move_cost as number) ?? 1,
           model_move_cost: (params.model_move_cost as number) ?? 1,
         });
-        return this.wasm.compute_optimal_alignments(
+        const raw = this.wasm.compute_optimal_alignments(
           eventLogHandle,
           (params.petri_net_handle as string)!,
           activityKey,
           costConfig
         );
+        return parseWasmHandle(raw);
       }
 
       // ─── Wave 1 Migration: Quality metrics ───────────────────────────────
 
-      case 'complexity_metrics':
-        return this.wasm.measure_complexity((params.powl_handle as string)!);
+      case 'complexity_metrics': {
+        const raw = this.wasm.measure_complexity((params.powl_handle as string)!);
+        return parseWasmHandle(raw);
+      }
 
       // ─── Wave 1 Migration: Model conversion ────────────────────────────
 
-      case 'pnml_import':
-        return this.wasm.from_pnml((params.pnml_xml as string)!);
+      case 'pnml_import': {
+        const raw = this.wasm.from_pnml((params.pnml_xml as string)!);
+        return parseWasmHandle(raw);
+      }
 
-      case 'bpmn_import':
-        return this.wasm.read_bpmn((params.bpmn_xml as string)!);
+      case 'bpmn_import': {
+        const raw = this.wasm.read_bpmn((params.bpmn_xml as string)!);
+        return parseWasmHandle(raw);
+      }
 
-      case 'powl_to_process_tree':
-        return this.wasm.powl_to_process_tree((params.powl_handle as string)!);
+      case 'powl_to_process_tree': {
+        const raw = this.wasm.powl_to_process_tree((params.powl_handle as string)!);
+        return parseWasmHandle(raw);
+      }
 
       case 'yawl_export': {
         const xml = await this.wasm.powl_to_yawl_string((params.powl_string as string)!);
-        return { handle: `yawl_${Date.now()}`, ...JSON.parse(xml) };
+        return { handle: `yawl_${Date.now()}`, ...parseWasmOutput<any>(xml) };
       }
 
       // ─── Wave 1 Migration: Simulation ──────────────────────────────────
 
-      case 'playout':
-        return this.wasm.play_out(
+      case 'playout': {
+        const raw = this.wasm.play_out(
           (params.model_handle as string)!,
           (params.num_traces as number) ?? 100,
           (params.max_trace_length as number) ?? 100
         );
+        return parseWasmHandle(raw);
+      }
 
       case 'monte_carlo_simulation': {
         const mcConfig = {
@@ -794,51 +1118,52 @@ export class Kernel {
           simulation_time_ms: 60000,
           random_seed: 42,
         };
-        return this.wasm.monte_carlo_simulation(
-          (params.model_handle as string)!, // log_handle
-          '', // powl_handle (not used in current implementation)
-          '', // root_id (not used in current implementation)
+        const raw = this.wasm.monte_carlo_simulation(
+          (params.model_handle as string)!,
+          '',
+          '',
           JSON.stringify(mcConfig)
         );
+        return parseWasmHandle(raw);
       }
 
-      // ─── Social network mining (van der Aalst organisational perspective) ──
-      // Surfaces the two social network WASM exports that were previously dead
-      // (exported from Rust but unreachable from TypeScript). The organisational
-      // perspective is a first-class van der Aalst dimension: who does what, and
-      // how do resources hand over work to each other?
-
-      case 'handover_network':
-        return this.wasm.discover_handover_network!(
+      case 'handover_network': {
+        const raw = this.wasm.discover_handover_network!(
           eventLogHandle,
           (params.resource_key as string) ?? 'org:resource'
         );
+        return parseWasmHandle(raw);
+      }
 
-      case 'working_together_network':
-        return this.wasm.discover_working_together_network!(
+      case 'working_together_network': {
+        const raw = this.wasm.discover_working_together_network!(
           eventLogHandle,
           (params.resource_key as string) ?? 'org:resource'
         );
+        return parseWasmHandle(raw);
+      }
 
       // ─── OCEL (Object-Centric Event Log) algorithms ──────────────────────
 
       case 'ocel_dfg': {
         if (!this.wasm.discover_ocel_dfg) {
-          throw new Error('discover_ocel_dfg is not available (requires feature-ocel)');
+          throw new KernelError('discover_ocel_dfg is not available (requires feature-ocel)', 'ALGORITHM_NOT_FOUND' as any);
         }
-        return await this.wasm.discover_ocel_dfg(eventLogHandle);
+        const raw = this.wasm.discover_ocel_dfg(eventLogHandle);
+        return parseWasmHandle(raw);
       }
 
       case 'ocel_dfg_per_type': {
         if (!this.wasm.discover_ocel_dfg_per_type) {
-          throw new Error('discover_ocel_dfg_per_type is not available (requires feature-ocel)');
+          throw new KernelError('discover_ocel_dfg_per_type is not available (requires feature-ocel)', 'ALGORITHM_NOT_FOUND' as any);
         }
-        return await this.wasm.discover_ocel_dfg_per_type(eventLogHandle);
+        const raw = this.wasm.discover_ocel_dfg_per_type(eventLogHandle);
+        return parseWasmHandle(raw);
       }
 
       case 'ocel_petri_net': {
         const fn = this.wasm.discover_oc_petri_net;
-        if (!fn) throw new Error('discover_oc_petri_net is not available (requires feature-ocel)');
+        if (!fn) throw new KernelError('discover_oc_petri_net is not available (requires feature-ocel)', 'ALGORITHM_NOT_FOUND' as any);
         const algorithm = (params.algorithm as string) ?? 'inductive';
         fn.call(this.wasm, eventLogHandle, algorithm);
         return { handle: `ocel_petri_net_${Date.now()}` };
@@ -846,14 +1171,14 @@ export class Kernel {
 
       case 'ocel_ocla': {
         const fn = this.wasm.discover_ocla_wasm;
-        if (!fn) throw new Error('discover_ocla_wasm is not available (requires feature-ocel)');
+        if (!fn) throw new KernelError('discover_ocla_wasm is not available (requires feature-ocel)', 'ALGORITHM_NOT_FOUND' as any);
         fn.call(this.wasm, eventLogHandle);
         return { handle: `ocel_ocla_${Date.now()}` };
       }
 
       case 'ocel_oc_declare': {
         const fn = this.wasm.discover_oc_declare_wasm;
-        if (!fn) throw new Error('discover_oc_declare_wasm is not available (requires feature-ocel)');
+        if (!fn) throw new KernelError('discover_oc_declare_wasm is not available (requires feature-ocel)', 'ALGORITHM_NOT_FOUND' as any);
         const thresh = (params.noise_threshold as number) ?? 0.1;
         await fn.call(this.wasm, eventLogHandle, thresh);
         return { handle: `ocel_oc_declare_${Date.now()}` };
@@ -861,7 +1186,7 @@ export class Kernel {
 
       case 'ocel_encode': {
         const fn = this.wasm.encode_ocel_as_text;
-        if (!fn) throw new Error('encode_ocel_as_text is not available (requires feature-ocel)');
+        if (!fn) throw new KernelError('encode_ocel_as_text is not available (requires feature-ocel)', 'ALGORITHM_NOT_FOUND' as any);
         await fn.call(this.wasm, eventLogHandle);
         return { handle: `ocel_encode_${Date.now()}` };
       }
@@ -874,7 +1199,7 @@ export class Kernel {
           activityKey,
           (params.window_size as number) ?? 50
         );
-        return { handle: `drift_${Date.now()}`, metadata: { result: JSON.parse(json) } } as any;
+        return { handle: `drift_${Date.now()}`, metadata: { result: parseWasmOutput(json) } } as any;
       }
 
       case 'compute_ewma': {
@@ -882,17 +1207,17 @@ export class Kernel {
           (params.values_json as string)!,
           (params.alpha as number) ?? 0.3
         );
-        return { handle: `ewma_${Date.now()}`, metadata: { result: JSON.parse(json) } } as any;
+        return { handle: `ewma_${Date.now()}`, metadata: { result: parseWasmOutput(json) } } as any;
       }
 
       case 'analyze_variant_complexity': {
         const json = this.wasm.analyze_variant_complexity!(eventLogHandle, activityKey);
-        return { handle: `complexity_${Date.now()}`, metadata: { result: JSON.parse(json) } } as any;
+        return { handle: `complexity_${Date.now()}`, metadata: { result: parseWasmOutput(json) } } as any;
       }
 
       case 'compute_activity_transition_matrix': {
         const json = this.wasm.compute_activity_transition_matrix!(eventLogHandle, activityKey);
-        return { handle: `transition_matrix_${Date.now()}`, metadata: { result: JSON.parse(json) } } as any;
+        return { handle: `transition_matrix_${Date.now()}`, metadata: { result: parseWasmOutput(json) } } as any;
       }
 
       case 'analyze_process_speedup': {
@@ -901,71 +1226,107 @@ export class Kernel {
           (params.timestamp_key as string) ?? 'time:timestamp',
           (params.window_size as number) ?? 10
         );
-        return { handle: `speedup_${Date.now()}`, metadata: { result: JSON.parse(json) } } as any;
+        return { handle: `speedup_${Date.now()}`, metadata: { result: parseWasmOutput(json) } } as any;
       }
 
       case 'compute_trace_similarity_matrix': {
         const json = this.wasm.compute_trace_similarity_matrix!(eventLogHandle, activityKey);
-        return { handle: `similarity_${Date.now()}`, metadata: { result: JSON.parse(json) } } as any;
+        return { handle: `similarity_${Date.now()}`, metadata: { result: parseWasmOutput(json) } } as any;
       }
 
       case 'automl_classify': {
         const json = await this.wasm.discover_automl_classify!(eventLogHandle, activityKey);
-        return { handle: `automl_classify_${Date.now()}`, metadata: { result: JSON.parse(json) } } as any;
+        return { handle: `automl_classify_${Date.now()}`, metadata: { result: parseWasmOutput(json) } } as any;
       }
 
       case 'automl_forecast': {
         const json = await this.wasm.discover_automl_forecast!(eventLogHandle, activityKey);
-        return { handle: `automl_forecast_${Date.now()}`, metadata: { result: JSON.parse(json) } } as any;
+        return { handle: `automl_forecast_${Date.now()}`, metadata: { result: parseWasmOutput(json) } } as any;
       }
 
       case 'automl_regress': {
         const json = await this.wasm.discover_ml_regress_automl!(eventLogHandle, activityKey);
-        return { handle: `automl_regress_${Date.now()}`, metadata: { result: JSON.parse(json) } } as any;
+        return { handle: `automl_regress_${Date.now()}`, metadata: { result: parseWasmOutput(json) } } as any;
       }
 
       case 'agentic_pipeline': {
         const json = await this.wasm.run_agentic_pipeline!((params.task_json as string) ?? '{}');
-        return { handle: `agentic_pipeline_${Date.now()}`, metadata: { result: JSON.parse(json) } } as any;
+        return { handle: `agentic_pipeline_${Date.now()}`, metadata: { result: parseWasmOutput(json) } } as any;
       }
 
       // ─── ML algorithms (Restored WASM paths) ─────────────────────────────
 
-      case 'ml_classify':
+      case 'ml_classify': {
         if (this.wasm.discover_ml_classify) {
-          return await this.wasm.discover_ml_classify(eventLogHandle, activityKey);
+          const res = await this.wasm.discover_ml_classify(eventLogHandle, activityKey);
+          const virtualHandle = `virtual_ml_classify_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`;
+          return {
+            handle: virtualHandle,
+            metadata: { result: parseWasmOutput(res) }
+          } as any;
         }
-        throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`);
+        throw new KernelError(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`, 'ALGORITHM_NOT_FOUND' as any);
+      }
 
-      case 'ml_cluster':
+      case 'ml_cluster': {
         if (this.wasm.discover_ml_cluster) {
-          return await this.wasm.discover_ml_cluster(eventLogHandle, activityKey);
+          const res = await this.wasm.discover_ml_cluster(eventLogHandle, activityKey);
+          const virtualHandle = `virtual_ml_cluster_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`;
+          return {
+            handle: virtualHandle,
+            metadata: { result: parseWasmOutput(res) }
+          } as any;
         }
-        throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`);
+        throw new KernelError(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`, 'ALGORITHM_NOT_FOUND' as any);
+      }
 
-      case 'ml_forecast':
+      case 'ml_forecast': {
         if (this.wasm.discover_ml_forecast) {
-          return await this.wasm.discover_ml_forecast(eventLogHandle, activityKey);
+          const res = await this.wasm.discover_ml_forecast(eventLogHandle, activityKey);
+          const virtualHandle = `virtual_ml_forecast_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`;
+          return {
+            handle: virtualHandle,
+            metadata: { result: parseWasmOutput(res) }
+          } as any;
         }
-        throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`);
+        throw new KernelError(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`, 'ALGORITHM_NOT_FOUND' as any);
+      }
 
-      case 'ml_anomaly':
+      case 'ml_anomaly': {
         if (this.wasm.discover_ml_anomaly) {
-          return await this.wasm.discover_ml_anomaly(eventLogHandle, activityKey);
+          const res = await this.wasm.discover_ml_anomaly(eventLogHandle, activityKey);
+          const virtualHandle = `virtual_ml_anomaly_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`;
+          return {
+            handle: virtualHandle,
+            metadata: { result: parseWasmOutput(res) }
+          } as any;
         }
-        throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`);
+        throw new KernelError(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`, 'ALGORITHM_NOT_FOUND' as any);
+      }
 
-      case 'ml_regress':
+      case 'ml_regress': {
         if (this.wasm.discover_ml_regress) {
-          return await this.wasm.discover_ml_regress(eventLogHandle, activityKey);
+          const res = await this.wasm.discover_ml_regress(eventLogHandle, activityKey);
+          const virtualHandle = `virtual_ml_regress_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`;
+          return {
+            handle: virtualHandle,
+            metadata: { result: parseWasmOutput(res) }
+          } as any;
         }
-        throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`);
+        throw new KernelError(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`, 'ALGORITHM_NOT_FOUND' as any);
+      }
 
-      case 'ml_pca':
+      case 'ml_pca': {
         if (this.wasm.discover_ml_pca) {
-          return await this.wasm.discover_ml_pca(eventLogHandle, activityKey);
+          const res = await this.wasm.discover_ml_pca(eventLogHandle, activityKey);
+          const virtualHandle = `virtual_ml_pca_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`;
+          return {
+            handle: virtualHandle,
+            metadata: { result: parseWasmOutput(res) }
+          } as any;
         }
-        throw new Error(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`);
+        throw new KernelError(`ML algorithm '${algorithmId}' requires the @wasm4pm/ml package.`, 'ALGORITHM_NOT_FOUND' as any);
+      }
 
       // ─── Prediction (Stubs preserved for high-level package requirement) ─
 
@@ -978,7 +1339,7 @@ export class Kernel {
         );
 
       default:
-        throw new Error(`Unsupported algorithm: ${algorithmId}`);
+        throw new KernelError(`Unsupported algorithm: ${algorithmId}`, 'ALGORITHM_NOT_FOUND' as any);
     }
   }
 
@@ -1010,5 +1371,39 @@ export class Kernel {
  * const dfg = parseWasmOutput<{ nodes: string[] }>(wasm.discover_dfg(handle, key));
  */
 export function parseWasmOutput<T = unknown>(raw: unknown): T {
-  return (typeof raw === 'string' ? JSON.parse(raw) : raw) as T;
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (
+      (trimmed.startsWith('{') && trimmed.endsWith('}')) ||
+      (trimmed.startsWith('[') && trimmed.endsWith(']')) ||
+      (trimmed.startsWith('"') && trimmed.endsWith('"'))
+    ) {
+      try {
+        return JSON.parse(trimmed) as T;
+      } catch {
+        return raw as unknown as T;
+      }
+    }
+    return raw as unknown as T;
+  }
+  return raw as T;
+}
+
+/**
+ * Handle WASM outputs that are expected to represent a handle.
+ * If the output is a plain string handle, it wraps it in an object: `{ handle }`.
+ * If it is a Promise, it resolves recursively.
+ */
+export function parseWasmHandle(raw: unknown): any {
+  if (raw instanceof Promise || (raw && typeof (raw as any).then === 'function')) {
+    return (raw as any).then((resolved: unknown) => parseWasmHandle(resolved));
+  }
+  const parsed = parseWasmOutput<any>(raw);
+  if (typeof parsed === 'string') {
+    return { handle: parsed };
+  }
+  if (parsed && typeof parsed === 'object' && 'handle' in parsed) {
+    return parsed as { handle: string };
+  }
+  return { handle: String(parsed) };
 }

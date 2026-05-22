@@ -333,7 +333,8 @@ ${STANDARD_EXIT_CODE_DOCS}`,
                       stats,
                     });
 
-                    const { raw, elapsedMs } = runDiscovery(wasm, algo, handle, activityKey);
+                    const result = await runDiscovery(wasm, algo, handle, activityKey);
+                    let { raw, elapsedMs } = result;
                     const model = typeof raw === 'string' ? JSON.parse(raw) : raw;
                     const elapsed = Date.now() - t0;
 

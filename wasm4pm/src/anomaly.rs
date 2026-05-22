@@ -200,9 +200,10 @@ pub fn score_log_anomalies(
                 for r in results.iter_mut() {
                     if let Some(score) = r["score"].as_f64() {
                         let z = if std_dev > 1e-12 { (score - mean) / std_dev } else { 0.0 };
-                        let obj = r.as_object_mut().expect("results entry is an object");
-                        obj.insert("z_score".to_string(), json!(z));
-                        obj.insert("is_outlier".to_string(), json!(z > 2.0));
+                        if let Some(obj) = r.as_object_mut() {
+                            obj.insert("z_score".to_string(), json!(z));
+                            obj.insert("is_outlier".to_string(), json!(z > 2.0));
+                        }
                     }
                 }
             }

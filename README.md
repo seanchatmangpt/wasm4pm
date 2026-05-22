@@ -4,35 +4,64 @@ A process mining platform with a real Rust cognition kernel. 60 high-performance
 
 The doctrine: **Old AI is the factory. LLMs are the brochure.**
 
+## Why wasm4pm? (Competitive Edge)
+
+| Feature | wasm4pm | Celonis (SaaS) | PM4Py (Python) |
+|---------|---------|----------------|----------------|
+| **Execution Speed** | **Instant (Rust/WASM)** | Network-bound | Slow (Python GIL) |
+| **Data Privacy** | **100% Local (Zero Egress)** | Cloud/SaaS Egress | Local |
+| **Event Log Standard** | **Native OCEL 2.0 & XES** | Proprietary / XES | XES |
+| **Integrity Auditing** | **Adversarial Receipt Doctor** | Black-box | None |
+| **Deployment** | **Browser, Edge, CLI, Node** | Cloud only | Server / Docker |
+
 ## Verified Integrity
 
 wasm4pm is built with **Combinatorial Maximalism**. Every release is sealed with a **Release Certificate** that binds to the current commit and recomputes all evidence hashes.
 
+- **Adversarial Receipt Doctor (`wpm receipt doctor`):** 13 stringent Truth Refusal gates prevent simulated execution fraud by cryptographically binding OCEL 2.0 event paths to runtime runner evidence.
+- **BLAKE3 Receipts:** Every CLI and cognition run produces a verifiable cryptographic receipt (`wpm results --verify`).
 - **Zero Suppression:** The Rust kernel passes `cargo clippy --workspace -- -D warnings` with zero `allow` attributes or suppressions.
 - **Naturally Clean:** 100% of public items are documented to satisfy the `missing_docs` gate.
-- **Adversarial Gates:** 8 runtime detectors (Stub, Authority, Replay, etc.) prevent false-pass patterns.
-- **BLAKE3 Receipts:** Every CLI and cognition run produces a verifiable cryptographic receipt.
 
-[Get Started](docs/tutorials/getting_started.md) | [CLI Reference](docs/reference/cli_commands.md) | [WASM API](docs_quarantine/WASM_API.md) | [Architecture](docs/explanation/architecture_overview.md)
+[Get Started](docs/tutorials/getting_started.md) | [CLI Reference](docs/reference/cli_commands.md) | [WASM API](docs_quarantine/ARCHIVE/WASM_API.md) | [Architecture](docs/explanation/architecture_overview.md)
 
 ---
 
-## Quick Start (3 minutes)
+## Quick Start (Time to Value)
 
-### 1. Run process discovery
+### 1. Installation
 
+Install the CLI globally:
 ```bash
-# Discover a model from a sample event log (included in data/)
-wpm run data/small-example.xes
+npm install -g wasm4pm-cli
 ```
 
-Results save to `.wasm4pm/results/` automatically.
+Or add the library to your Node/TypeScript project:
+```bash
+npm install wasm4pm
+```
 
-### 2. View the results
+### 2. Discover a model in 3 lines of code
+
+```typescript
+import { Kernel } from 'wasm4pm';
+import fs from 'fs';
+
+// 1. Initialize the WASM kernel
+const kernel = await Kernel.getInstance();
+
+// 2. Discover an Object-Centric Directly-Follows Graph
+const result = await kernel.discover('ocel_dfg', 'data/object-log.json.ocel');
+
+// 3. View your model
+console.log(result.model);
+```
+
+### 3. Or use the CLI instantly
 
 ```bash
-# Show all saved results
-wpm results
+# Discover a model from a sample event log
+wpm run data/small-example.xes
 
 # Inspect the most recent result (with receipt hash validation)
 wpm results --last --verify
@@ -60,6 +89,16 @@ Optimized binaries for every environment:
 | `edge` | ~1.5MB | CDN workers / Edge compute |
 | `fog` | ~2.0MB | IoT gateways / Fog nodes |
 | `browser` | ~2.7MB | Web + Node.js (default) |
+
+**To compile a custom profile:**
+```bash
+# Build the extreme-size mobile profile using wasm-opt -Oz
+npm run build:mobile --workspace=wasm4pm
+
+# Or build manually with specific cargo features:
+cargo build --target wasm32-unknown-unknown --profile release --no-default-features --features "mobile"
+wasm-opt -Oz -o wasm4pm_bg.wasm target/wasm32-unknown-unknown/release/wasm4pm.wasm
+```
 
 ---
 
@@ -99,13 +138,13 @@ We follow the [Diátaxis framework](https://diataxis.fr/).
 
 - **🎓 Tutorials:** [Getting Started](docs/tutorials/getting_started.md), [Predictive Monitoring](docs/tutorials/predictive_monitoring.md), [Cognition Contracts](docs/tutorials/cognition_contracts.md)
 - **🛠️ How-To Guides:** [OTEL Configuration](docs/how-to/configure_observability.md), [Edge Deployment](docs/how-to/edge_deployment.md), [Concept Drift](docs/how-to/concept_drift.md)
-- **📚 Reference:** [CLI Commands](docs/reference/cli_commands.md), [Configuration Schema](docs/reference/configuration_schema.md), [WASM API Catalog](docs_quarantine/WASM_API.md)
-- **🧠 Explanation:** [Architecture Overview](docs/explanation/architecture_overview.md), [Old AI vs. LLM Doctrine](docs/explanation/old_ai_vs_llms.md), [Combinatorial Maximalism](docs/quarantine/explanation/combinatorial_maximalism_closure_discipline.md)
+- **📚 Reference:** [CLI Commands](docs/reference/cli_commands.md), [Configuration Schema](docs/reference/configuration_schema.md), [WASM API Catalog](docs_quarantine/ARCHIVE/WASM_API.md)
+- **🧠 Explanation:** [Architecture Overview](docs/explanation/architecture_overview.md), [Old AI vs. LLM Doctrine](docs/explanation/old_ai_vs_llms.md), [Combinatorial Maximalism](docs_quarantine/ARCHIVE/explanation/combinatorial_maximalism_closure_discipline.md)
 
 ### Additional Resources
-- [Testing Doctrine](docs_quarantine/TESTING.md)
-- [Adversarial Test Plan](docs_quarantine/ADVERSARIAL_TEST_PLAN.md)
-- [Claude Code Integration](docs_quarantine/CLAUDE.md)
+- [Testing Doctrine](docs_quarantine/ARCHIVE/TESTING.md)
+- [Adversarial Test Plan](docs_quarantine/ARCHIVE/ADVERSARIAL_TEST_PLAN.md)
+- [Claude Code Integration](docs_quarantine/ARCHIVE/CLAUDE.md)
 - [Contributing Guidelines](CONTRIBUTING.md)
 
 ## Contact

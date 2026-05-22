@@ -1,0 +1,4 @@
+{
+  "stdout": "Success",
+  "stderr": "YOLO mode is enabled. All tool calls will be automatically approved.\nYOLO mode is enabled. All tool calls will be automatically approved.\nRipgrep is not available. Falling back to GrepTool.\nMCP issues detected. Run /mcp list for status.\n[ERROR] [ImportProcessor] Failed to import wasm4pm/kernel: ENOENT: no such file or directory, access '/Users/sac/wasm4pm/wasm4pm/kernel'\n[ERROR] [ImportProcessor] Failed to import wasm4pm/*: ENOENT: no such file or directory, access '/Users/sac/wasm4pm/wasm4pm/*'\n[ERROR] [ImportProcessor] Failed to import wasm4pm/kernel: ENOENT: no such file or directory, access '/Users/sac/wasm4pm/wasm4pm/kernel'\n[ERROR] [ImportProcessor] Failed to import wasm4pm/*: ENOENT: no such file or directory, access '/Users/sac/wasm4pm/wasm4pm/*'"
+}

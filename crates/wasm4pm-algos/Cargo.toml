@@ -15,6 +15,7 @@ serde_json = { workspace = true }
 hashbrown = { workspace = true }
 smallvec = { workspace = true }
 itertools = { workspace = true }
+blake3 = { workspace = true }
 bcinr = { workspace = true, optional = true }
 
 [features]

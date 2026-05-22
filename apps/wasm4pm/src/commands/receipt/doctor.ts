@@ -14,7 +14,7 @@ export const doctor = defineCommand({
     format: { type: 'string', default: 'human', description: 'Output format' },
     audience: { type: 'string', default: 'operator', description: 'producer or operator' },
   },
-  async run(ctx) {
+  async run(ctx) { console.log("Running doctor JS...");
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const filepath = ctx.args.file as string;
     try {

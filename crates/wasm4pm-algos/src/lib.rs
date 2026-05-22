@@ -13,6 +13,7 @@ pub mod conformance;
 pub mod dfg;
 pub mod heuristic;
 pub mod streaming;
+pub mod truex;
 
 pub use wasm4pm_types;
 

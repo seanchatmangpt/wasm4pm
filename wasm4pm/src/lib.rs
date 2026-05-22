@@ -3247,3 +3247,34 @@ pub fn run_agentic_jtbd_suite(cases_json: &str) -> Result<String, JsValue> {
     serde_json::to_string(&output)
         .map_err(|e| crate::error::js_val(&format!("serialization failed: {e}")))
 }
+
+#[cfg(feature = "cloud")]
+#[wasm_bindgen]
+pub fn truex_verify_receipt(envelope_json: &str) -> Result<String, JsValue> {
+    let envelope: serde_json::Value = serde_json::from_str(envelope_json)
+        .map_err(|e| crate::error::js_val(&format!("Invalid JSON: {e}")))?;
+
+    let (result, batch, receipt) = wasm4pm_algos::truex::verify_receipt(&envelope);
+
+    let status = match result {
+        wasm4pm_algos::truex::VerificationResult::ReceiptAdmitted => "ReceiptAdmitted",
+        wasm4pm_algos::truex::VerificationResult::ReceiptForged => "ReceiptForged",
+        wasm4pm_algos::truex::VerificationResult::ReceiptLaundered => "ReceiptLaundered",
+        wasm4pm_algos::truex::VerificationResult::BoundaryMissing => "BoundaryMissing",
+        wasm4pm_algos::truex::VerificationResult::SummaryOnlyProof => "SummaryOnlyProof",
+        wasm4pm_algos::truex::VerificationResult::CanonicalizationMismatch => "CanonicalizationMismatch",
+        wasm4pm_algos::truex::VerificationResult::ReplayDetected => "ReplayDetected",
+        wasm4pm_algos::truex::VerificationResult::InvalidTransition => "InvalidTransition",
+        wasm4pm_algos::truex::VerificationResult::IncompletePath => "IncompletePath",
+        wasm4pm_algos::truex::VerificationResult::VerifierMismatch => "VerifierMismatch",
+    };
+
+    let out = serde_json::json!({
+        "status": status,
+        "equivalence_class": "EquivalentUnderProfileV1",
+        "computed_batch_hash": batch,
+        "computed_receipt_hash": receipt
+    });
+
+    Ok(serde_json::to_string(&out).unwrap())
+}

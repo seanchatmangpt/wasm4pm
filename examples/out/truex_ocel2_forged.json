@@ -1,0 +1,199 @@
+{
+  "truex_profile": "truex.ocel2.receipt.v1",
+  "trace_id": "b04fe629005a0601cea1c1c1b7263983",
+  "span_id": "b04fe629005a0601",
+  "session_id": "APP_SESSION_991",
+  "device_id": "DEVICE_A22",
+  "admission_status": "ReceiptAdmitted",
+  "expected_path_hash": "5548b5fcac3109bcc176bad6f91e1408cbef34e87b1cba6cdf55a672f64b5694",
+  "ocel2_batch_hash": "5c92a1fa12dfbe991edc73a20c86ec497e236d1a4f91f039ae719cabbbb5b0b4",
+  "receipt_hash": "88347915246a4937b4536b79b654b53d732e451fda528c17b5227d9f04afab1c",
+  "ocel2": {
+    "eventTypes": {
+      "Mutation": {
+        "attributes": [
+          "causality",
+          "actor"
+        ]
+      },
+      "ReceiptDecision": {
+        "attributes": [
+          "decision",
+          "reason"
+        ]
+      }
+    },
+    "objectTypes": {
+      "User": {
+        "attributes": [
+          "role"
+        ]
+      },
+      "Order": {
+        "attributes": [
+          "currency"
+        ]
+      },
+      "Session": {
+        "attributes": [
+          "platform"
+        ]
+      },
+      "Receipt": {
+        "attributes": [
+          "hash"
+        ]
+      }
+    },
+    "events": [
+      {
+        "ocel:id": "evt_1779425362745_k0jdn",
+        "ocel:type": "Mutation",
+        "ocel:timestamp": "2026-05-22T04:49:22.745Z",
+        "ocel:attributes": {
+          "causality": "User tapped 'Add to Cart'",
+          "actor": "USER_999"
+        }
+      },
+      {
+        "ocel:id": "evt_1779425362745_kjwnl",
+        "ocel:type": "Mutation",
+        "ocel:timestamp": "2026-05-22T04:49:22.745Z",
+        "ocel:attributes": {
+          "causality": "User entered Shipping Address",
+          "actor": "USER_442"
+        }
+      },
+      {
+        "ocel:id": "evt_1779425362746_s8sl1",
+        "ocel:type": "Mutation",
+        "ocel:timestamp": "2026-05-22T04:49:22.746Z",
+        "ocel:attributes": {
+          "causality": "User tapped 'Checkout'",
+          "actor": "USER_442"
+        }
+      },
+      {
+        "ocel:id": "evt_1779425362746_a6gw3",
+        "ocel:type": "Mutation",
+        "ocel:timestamp": "2026-05-22T04:49:22.746Z",
+        "ocel:attributes": {
+          "causality": "Webhook: Payment Success",
+          "actor": "USER_442"
+        }
+      }
+    ],
+    "objects": [
+      {
+        "ocel:id": "USER_442",
+        "ocel:type": "User",
+        "ocel:attributes": {
+          "role": "Customer"
+        }
+      },
+      {
+        "ocel:id": "APP_SESSION_991",
+        "ocel:type": "Session",
+        "ocel:attributes": {
+          "platform": "iOS"
+        }
+      },
+      {
+        "ocel:id": "ORD_8841",
+        "ocel:type": "Order",
+        "ocel:attributes": {
+          "currency": "USD"
+        }
+      }
+    ],
+    "event-object": [
+      {
+        "ocel:event-id": "evt_1779425362745_k0jdn",
+        "ocel:object-id": "USER_442",
+        "ocel:qualifier": "initiated"
+      },
+      {
+        "ocel:event-id": "evt_1779425362745_k0jdn",
+        "ocel:object-id": "ORD_8841",
+        "ocel:qualifier": "mutated"
+      },
+      {
+        "ocel:event-id": "evt_1779425362745_k0jdn",
+        "ocel:object-id": "APP_SESSION_991",
+        "ocel:qualifier": "context"
+      },
+      {
+        "ocel:event-id": "evt_1779425362745_kjwnl",
+        "ocel:object-id": "USER_442",
+        "ocel:qualifier": "initiated"
+      },
+      {
+        "ocel:event-id": "evt_1779425362745_kjwnl",
+        "ocel:object-id": "ORD_8841",
+        "ocel:qualifier": "mutated"
+      },
+      {
+        "ocel:event-id": "evt_1779425362745_kjwnl",
+        "ocel:object-id": "APP_SESSION_991",
+        "ocel:qualifier": "context"
+      },
+      {
+        "ocel:event-id": "evt_1779425362746_s8sl1",
+        "ocel:object-id": "USER_442",
+        "ocel:qualifier": "initiated"
+      },
+      {
+        "ocel:event-id": "evt_1779425362746_s8sl1",
+        "ocel:object-id": "ORD_8841",
+        "ocel:qualifier": "mutated"
+      },
+      {
+        "ocel:event-id": "evt_1779425362746_s8sl1",
+        "ocel:object-id": "APP_SESSION_991",
+        "ocel:qualifier": "context"
+      },
+      {
+        "ocel:event-id": "evt_1779425362746_a6gw3",
+        "ocel:object-id": "USER_442",
+        "ocel:qualifier": "initiated"
+      },
+      {
+        "ocel:event-id": "evt_1779425362746_a6gw3",
+        "ocel:object-id": "ORD_8841",
+        "ocel:qualifier": "mutated"
+      },
+      {
+        "ocel:event-id": "evt_1779425362746_a6gw3",
+        "ocel:object-id": "APP_SESSION_991",
+        "ocel:qualifier": "context"
+      }
+    ],
+    "object-object": [],
+    "objectChanges": [
+      {
+        "ocel:object-id": "ORD_8841",
+        "ocel:time": "2026-05-22T04:49:22.745Z",
+        "ocel:field": "cartTotal",
+        "ocel:value": 150
+      },
+      {
+        "ocel:object-id": "ORD_8841",
+        "ocel:time": "2026-05-22T04:49:22.745Z",
+        "ocel:field": "shippingAddress",
+        "ocel:value": "123 Truex Lane"
+      },
+      {
+        "ocel:object-id": "ORD_8841",
+        "ocel:time": "2026-05-22T04:49:22.746Z",
+        "ocel:field": "checkoutStatus",
+        "ocel:value": "processing"
+      },
+      {
+        "ocel:object-id": "ORD_8841",
+        "ocel:time": "2026-05-22T04:49:22.746Z",
+        "ocel:field": "checkoutStatus",
+        "ocel:value": "paid"
+      }
+    ]
+  }
+}

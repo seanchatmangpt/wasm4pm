@@ -60,67 +60,67 @@ function buildPerfStub(): KernelWasmModule & {
   // Build the WASM-conforming facade first, then attach the test-private counter
   // via Object.assign to avoid TS2353 (unknown property in satisfies check).
   const wasmFacade = {
-    async init() {},
+    init(): any { return Promise.resolve(); },
 
     load_eventlog_from_xes(_xes: string): string {
       logCounter++;
       return `perf_log_${logCounter}`;
     },
 
-    async discover_dfg(logHandle: string, _activityKey: string) {
+    discover_dfg(logHandle: string, _activityKey: string): string {
       dispatchCount++;
-      return { handle: `dfg_${logHandle}_${dispatchCount}` };
+      return `dfg_${logHandle}_${dispatchCount}`;
     },
 
-    async discover_heuristic_miner(
+    discover_heuristic_miner(
       logHandle: string,
       _activityKey: string,
       _threshold: number
-    ) {
+    ): string {
       dispatchCount++;
-      return { handle: `heuristic_${logHandle}_${dispatchCount}` };
+      return `heuristic_${logHandle}_${dispatchCount}`;
     },
 
-    async discover_alpha_plus_plus(logHandle: string, _activityKey: string, _minSupport: number) {
+    discover_alpha_plus_plus(logHandle: string, _activityKey: string, _minSupport: number): string {
       dispatchCount++;
-      return { handle: `alpha_${logHandle}_${dispatchCount}` };
+      return `alpha_${logHandle}_${dispatchCount}`;
     },
 
     // Remaining interface members — no-ops for this test suite.
-    async discover_inductive_miner(h: string, _k: string, _n: number) {
-      return { handle: `im_${h}` };
+    discover_inductive_miner(h: string, _k: string, _n: number): string {
+      return `im_${h}`;
     },
-    async discover_genetic_algorithm(h: string, _k: string, _p: number, _g: number) {
-      return { handle: `ga_${h}` };
+    discover_genetic_algorithm(h: string, _k: string, _p: number, _g: number): string {
+      return `ga_${h}`;
     },
-    async discover_pso_algorithm(h: string, _k: string, _s: number, _i: number) {
-      return { handle: `pso_${h}` };
+    discover_pso_algorithm(h: string, _k: string, _s: number, _i: number): string {
+      return `pso_${h}`;
     },
-    async discover_astar(h: string, _k: string, _m: number) {
-      return { handle: `as_${h}` };
+    discover_astar(h: string, _k: string, _m: number): string {
+      return `as_${h}`;
     },
-    async discover_hill_climbing(h: string, _k: string, _m: number) {
-      return { handle: `hc_${h}` };
+    discover_hill_climbing(h: string, _k: string, _m: number): string {
+      return `hc_${h}`;
     },
-    async discover_ilp_petri_net(h: string, _k: string) {
-      return { handle: `ilp_${h}` };
+    discover_ilp_petri_net(h: string, _k: string): string {
+      return `ilp_${h}`;
     },
-    async discover_ant_colony(h: string, _k: string, _c: number, _i: number) {
-      return { handle: `aco_${h}` };
+    discover_ant_colony(h: string, _k: string, _c: number, _i: number): string {
+      return `aco_${h}`;
     },
-    async discover_simulated_annealing(h: string, _k: string, _t: number, _c: number) {
-      return { handle: `sa_${h}` };
+    discover_simulated_annealing(h: string, _k: string, _t: number, _c: number): string {
+      return `sa_${h}`;
     },
-    async discover_declare(h: string, _k: string, _s: number) {
-      return { handle: `dc_${h}` };
+    discover_declare(h: string, _k: string, _s: number): string {
+      return `dc_${h}`;
     },
-    async extract_process_skeleton(h: string, _k: string, _f: number) {
-      return { handle: `sk_${h}` };
+    extract_process_skeleton(h: string, _k: string, _f: number): string {
+      return `sk_${h}`;
     },
-    async discover_powl_from_log(_j: string, v: string) {
+    discover_powl_from_log(_j: string, v: string) {
       return { root: 0, node_count: 1, repr: '()', variant: v };
     },
-    async discover_powl_from_log_config(_j: string, k: string, v: string, _m: number, _n: number) {
+    discover_powl_from_log_config(_j: string, k: string, v: string, _m: number, _n: number) {
       return {
         root: 0,
         node_count: 1,
@@ -129,53 +129,53 @@ function buildPerfStub(): KernelWasmModule & {
         config: { activity_key: k, min_trace_count: 1, noise_threshold: 0.2 },
       };
     },
-    async discover_transition_system(_h: string, _w: number, _d: string) {
-      return { handle: 'ts' };
+    discover_transition_system(_h: string, _w: number, _d: string): string {
+      return 'ts';
     },
-    async discover_prefix_tree(_h: string, _k: string) {
-      return { handle: 'pt' };
+    discover_prefix_tree(_h: string, _k: string): string {
+      return 'pt';
     },
-    async discover_causal_graph(_h: string, _k: string, _m: string, _t: number) {
-      return { handle: 'cg' };
+    discover_causal_graph(_h: string, _k: string, _m: string, _t: number): string {
+      return 'cg';
     },
-    async discover_performance_spectrum(_h: string, _k: string, _t: string) {
-      return { handle: 'ps' };
+    discover_performance_spectrum(_h: string, _k: string, _t: string): string {
+      return 'ps';
     },
-    async discover_batches(_h: string, _k: string, _t: string, _b: number) {
-      return { handle: 'bt' };
+    discover_batches(_h: string, _k: string, _t: string, _b: number): string {
+      return 'bt';
     },
-    async discover_correlation(_h: string, _k: string, _t: string) {
-      return { handle: 'co' };
+    discover_correlation(_h: string, _k: string, _t: string): string {
+      return 'co';
     },
-    async generalization(_h: string, _p: string, _k: string) {
-      return { handle: 'gn' };
+    generalization(_h: string, _p: string, _k: string): string {
+      return 'gn';
     },
-    async reduce_petri_net(_p: string) {
-      return { handle: 'rp' };
+    reduce_petri_net(_p: string): string {
+      return 'rp';
     },
-    async wasm_compute_precision(_h: string, _p: string, _k: string) {
-      return { handle: 'pr' };
+    wasm_compute_precision(_h: string, _p: string, _k: string): string {
+      return 'pr';
     },
     wasm_compute_simplicity(_p: number, _t: number, _a: number): number {
       return 0.9;
     },
-    async compute_optimal_alignments(_h: string, _p: string, _k: string, _c: string) {
-      return { handle: 'al' };
+    compute_optimal_alignments(_h: string, _p: string, _k: string, _c: string): string {
+      return 'al';
     },
-    async measure_complexity(_p: string) {
-      return { handle: 'mc' };
+    measure_complexity(_p: string): string {
+      return 'mc';
     },
-    async from_pnml(_x: string) {
-      return { handle: 'pn' };
+    from_pnml(_x: string): string {
+      return 'pn';
     },
-    async read_bpmn(_x: string) {
-      return { handle: 'bp' };
+    read_bpmn(_x: string): string {
+      return 'bp';
     },
-    async powl_to_process_tree(_h: string) { return { handle: 'powl2tree' }; },
-    async powl_to_yawl_string(_s: string): Promise<string> { return '{}'; },
-    async play_out(_m: string, _n: number, _l: number) { return { handle: 'po' }; },
-    async monte_carlo_simulation(_l: string, _p: string, _r: string, _c: string) {
-      return { handle: 'mo' };
+    powl_to_process_tree(_h: string): string { return 'powl2tree'; },
+    powl_to_yawl_string(_s: string): string { return '{}'; },
+    play_out(_m: string, _n: number, _l: number): string { return 'po'; },
+    monte_carlo_simulation(_l: string, _p: string, _r: string, _c: string): string {
+      return 'mo';
     },
     extract_case_features(_h: string, _k: string, _t: string, _c: string): string {
       return '[]';
@@ -188,10 +188,10 @@ function buildPerfStub(): KernelWasmModule & {
     compute_activity_transition_matrix(_h: string, _k: string): string { return '{}'; },
     analyze_process_speedup(_h: string, _t: string, _w: number): string { return '{}'; },
     compute_trace_similarity_matrix(_h: string, _k: string): string { return '[]'; },
-    async discover_handover_network(_h: string, _k: string) { return { handle: 'hn' }; },
-    async discover_working_together_network(_h: string, _k: string) { return { handle: 'wt' }; },
-    async discover_dfg_simd(_h: string, _k: string) {
-      return { handle: 'simd_dfg' };
+    discover_handover_network(_h: string, _k: string): string { return 'hn'; },
+    discover_working_together_network(_h: string, _k: string): string { return 'wt'; },
+    discover_dfg_simd(_h: string, _k: string): string {
+      return 'simd_dfg';
     },
     delete_object(_h: string) {},
     clear_all_objects() {},

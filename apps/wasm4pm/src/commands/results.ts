@@ -210,7 +210,17 @@ export async function savePredictionResult(
 ): Promise<string | null> {
   try {
     const dir = path.resolve(process.cwd(), RESULTS_DIR);
-    await fs.mkdir(dir, { recursive: true });
+    try {
+      await fs.mkdir(dir, { recursive: true });
+    } catch (err: any) {
+      if (err.code === 'EACCES' || err.code === 'EROFS') {
+        const msg = `Permission denied when writing to ${dir}. ` +
+                    `You are running in a restricted filesystem (e.g. read-only container or Docker). ` +
+                    `Please set WASM4PM_HOME or run in a writable directory.`;
+        throw new Error(msg);
+      }
+      throw err;
+    }
 
     const now = new Date();
     const filename = buildResultFilename(task, now);

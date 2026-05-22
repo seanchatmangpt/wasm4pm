@@ -122,7 +122,8 @@ async function handleCommand(
         break;
       }
       try {
-        const { raw, elapsedMs } = runDiscovery(wasm, algo, state.handle, state.activityKey);
+        const result = await runDiscovery(wasm, algo, state.handle, state.activityKey);
+        let { raw, elapsedMs } = result;
         state.lastModel = raw;
         out(`  ${bold(algo)} → ${summarizeModel(raw)}  ${dim(`(${elapsedMs.toFixed(1)}ms)`)}`);
       } catch (e) {

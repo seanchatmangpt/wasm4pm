@@ -49,54 +49,54 @@ function buildOcelCapableStub(): KernelWasmModule & { ocelCallCounts: Record<str
   function inc(name: string): void {
     ocelCallCounts[name] = (ocelCallCounts[name] ?? 0) + 1;
   }
-  function handle(alg: string, h: string): { handle: string } {
+  function handle(alg: string, h: string): string {
     inc(alg);
-    return { handle: `${alg}_result_for_${h}` };
+    return `${alg}_result_for_${h}`;
   }
 
   const stub: KernelWasmModule = {
-    async init() {},
+    init(): any { return Promise.resolve(); },
 
     // Minimal XES stubs so the kernel can function at all
-    async discover_dfg(h, _k) { return handle('dfg', h); },
-    async discover_dfg_simd(h, _k) { return handle('simd_dfg', h); },
-    async extract_process_skeleton(h, _k, _f) { return handle('skeleton', h); },
-    async discover_alpha_plus_plus(h, _k, _s) { return handle('alpha', h); },
-    async discover_heuristic_miner(h, _k, _t) { return handle('heuristic', h); },
-    async discover_inductive_miner(h, _k, _n) { return handle('inductive', h); },
-    async discover_genetic_algorithm(h, _k, _p, _g) { return handle('genetic', h); },
-    async discover_pso_algorithm(h, _k, _s, _i) { return handle('pso', h); },
-    async discover_astar(h, _k, _m) { return handle('astar', h); },
-    async discover_hill_climbing(h, _k, _m) { return handle('hill', h); },
-    async discover_ilp_petri_net(h, _k) { return handle('ilp', h); },
-    async discover_ant_colony(h, _k, _c, _i) { return handle('aco', h); },
-    async discover_simulated_annealing(h, _k, _t, _c) { return handle('sa', h); },
-    async discover_declare(h, _k, _s) { return handle('declare', h); },
-    async discover_transition_system(h, _w, _d) { return handle('ts', h); },
-    async discover_prefix_tree(h, _k) { return handle('pt', h); },
-    async discover_causal_graph(h, _k, _m, _t) { return handle('cg', h); },
-    async discover_performance_spectrum(h, _k, _t) { return handle('ps', h); },
-    async discover_batches(h, _k, _t, _b) { return handle('batches', h); },
-    async discover_correlation(h, _k, _t) { return handle('corr', h); },
-    async generalization(h, _p, _k) { return handle('gen', h); },
-    async reduce_petri_net(_p) { return handle('reduce', _p); },
-    async wasm_compute_precision(h, _p, _k) { return handle('prec', h); },
+    discover_dfg(h, _k) { return handle('dfg', h); },
+    discover_dfg_simd(h, _k) { return handle('simd_dfg', h); },
+    extract_process_skeleton(h, _k, _f) { return handle('skeleton', h); },
+    discover_alpha_plus_plus(h, _k, _s) { return handle('alpha', h); },
+    discover_heuristic_miner(h, _k, _t) { return handle('heuristic', h); },
+    discover_inductive_miner(h, _k, _n) { return handle('inductive', h); },
+    discover_genetic_algorithm(h, _k, _p, _g) { return handle('genetic', h); },
+    discover_pso_algorithm(h, _k, _s, _i) { return handle('pso', h); },
+    discover_astar(h, _k, _m) { return handle('astar', h); },
+    discover_hill_climbing(h, _k, _m) { return handle('hill', h); },
+    discover_ilp_petri_net(h, _k) { return handle('ilp', h); },
+    discover_ant_colony(h, _k, _c, _i) { return handle('aco', h); },
+    discover_simulated_annealing(h, _k, _t, _c) { return handle('sa', h); },
+    discover_declare(h, _k, _s) { return handle('declare', h); },
+    discover_transition_system(h, _w, _d) { return handle('ts', h); },
+    discover_prefix_tree(h, _k) { return handle('pt', h); },
+    discover_causal_graph(h, _k, _m, _t) { return handle('cg', h); },
+    discover_performance_spectrum(h, _k, _t) { return handle('ps', h); },
+    discover_batches(h, _k, _t, _b) { return handle('batches', h); },
+    discover_correlation(h, _k, _t) { return handle('corr', h); },
+    generalization(h, _p, _k) { return handle('gen', h); },
+    reduce_petri_net(_p) { return handle('reduce', _p); },
+    wasm_compute_precision(h, _p, _k) { return handle('prec', h); },
     wasm_compute_simplicity(_p, _t, _a): number { return 0.9; },
-    async compute_optimal_alignments(h, _p, _k, _c) { return handle('align', h); },
-    async measure_complexity(_p) { return handle('complexity', _p); },
-    async from_pnml(_x) { return handle('pnml', _x); },
-    async read_bpmn(_x) { return handle('bpmn', _x); },
-    async powl_to_process_tree(_h) { return handle('powl2tree', _h); },
-    async powl_to_yawl_string(_s: string): Promise<string> { return '{}'; },
-    async play_out(_m: string, _n: number, _l: number) { return handle('playout', _m); },
-    async monte_carlo_simulation(_l: string, _p: string, _r: string, _c: string) { return handle('montecarlo', _l); },
-    async discover_handover_network(h: string, _k: string) { return handle('handover', h); },
-    async discover_working_together_network(h: string, _k: string) { return handle('wt', h); },
-    async discover_powl_from_log(_j, v) {
+    compute_optimal_alignments(h, _p, _k, _c) { return handle('align', h); },
+    measure_complexity(_p) { return handle('complexity', _p); },
+    from_pnml(_x) { return handle('pnml', _x); },
+    read_bpmn(_x) { return handle('bpmn', _x); },
+    powl_to_process_tree(_h) { return handle('powl2tree', _h); },
+    powl_to_yawl_string(_s: string): string { return '{}'; },
+    play_out(_m: string, _n: number, _l: number) { return handle('playout', _m); },
+    monte_carlo_simulation(_l: string, _p: string, _r: string, _c: string) { return handle('montecarlo', _l); },
+    discover_handover_network(h: string, _k: string) { return handle('handover', h); },
+    discover_working_together_network(h: string, _k: string) { return handle('wt', h); },
+    discover_powl_from_log(_j, v) {
       inc('powl_log');
       return { root: 0, node_count: 1, repr: '()', variant: v };
     },
-    async discover_powl_from_log_config(_j, k, v, m, n) {
+    discover_powl_from_log_config(_j, k, v, m, n) {
       inc('powl_config');
       return {
         root: 0, node_count: 1, repr: '()', variant: v,
@@ -124,38 +124,26 @@ function buildOcelCapableStub(): KernelWasmModule & { ocelCallCounts: Record<str
       inc('load_ocel_from_json');
       return `ocel_handle_for_${content.length}`;
     },
-    async discover_oc_petri_net(ocel_handle: string, algorithm: string): Promise<{ handle: string }> {
+    discover_oc_petri_net(ocel_handle: string, algorithm: string): string {
       inc('discover_oc_petri_net');
-      return { handle: `oc_petri_net_${ocel_handle}_${algorithm}` };
+      return `oc_petri_net_${ocel_handle}_${algorithm}`;
     },
-    async encode_ocel_as_text(ocel_handle: string): Promise<string> {
+    encode_ocel_as_text(ocel_handle: string): string {
       inc('encode_ocel_as_text');
       return `text_encoding_of_${ocel_handle}`;
     },
-    async flatten_ocel_to_eventlog(ocel_handle: string, object_type: string): Promise<string> {
+    flatten_ocel_to_eventlog(ocel_handle: string, object_type: string): string {
       inc('flatten_ocel_to_eventlog');
       return `flattened_${ocel_handle}_${object_type}`;
     },
-    async discover_ocel_dfg(ocel_handle: string): Promise<{ handle: string }> {
+    discover_ocel_dfg(ocel_handle: string): string {
       inc('discover_ocel_dfg');
-      return { handle: `ocel_dfg_result_${ocel_handle}` };
+      return `ocel_dfg_result_${ocel_handle}`;
     },
-    async discover_ocel_dfg_per_type(ocel_handle: string): Promise<{ handle: string }> {
+    discover_ocel_dfg_per_type(ocel_handle: string): string {
       inc('discover_ocel_dfg_per_type');
-      return { handle: `ocel_dfg_per_type_result_${ocel_handle}` };
+      return `ocel_dfg_per_type_result_${ocel_handle}`;
     },
-  };
-
-  // Add the discover_ocel_dfg and discover_ocel_dfg_per_type functions that are
-  // accessed via dynamic property lookup in api.ts (they are not on KernelWasmModule type
-  // but are accessed as (wasm as Record<string, fn>)['discover_ocel_dfg'])
-  (stub as unknown as Record<string, unknown>)['discover_ocel_dfg'] = (h: string): { handle: string } => {
-    inc('discover_ocel_dfg');
-    return { handle: `ocel_dfg_result_${h}` };
-  };
-  (stub as unknown as Record<string, unknown>)['discover_ocel_dfg_per_type'] = (h: string): { handle: string } => {
-    inc('discover_ocel_dfg_per_type');
-    return { handle: `ocel_dfg_per_type_result_${h}` };
   };
 
   return Object.assign(stub, { ocelCallCounts });
@@ -167,47 +155,47 @@ function buildOcelCapableStub(): KernelWasmModule & { ocelCallCounts: Record<str
  */
 function buildOcelAbsentStub(): KernelWasmModule {
   const stub: KernelWasmModule = {
-    async init() {},
-    async discover_dfg(h, _k) { return { handle: `dfg_result_${h}` }; },
-    async discover_dfg_simd(h, _k) { return { handle: `simd_${h}` }; },
-    async extract_process_skeleton(h, _k, _f) { return { handle: `skel_${h}` }; },
-    async discover_alpha_plus_plus(h, _k, _s) { return { handle: `alpha_${h}` }; },
-    async discover_heuristic_miner(h, _k, _t) { return { handle: `heuristic_${h}` }; },
-    async discover_inductive_miner(h, _k, _n) { return { handle: `inductive_${h}` }; },
-    async discover_genetic_algorithm(h, _k, _p, _g) { return { handle: `genetic_${h}` }; },
-    async discover_pso_algorithm(h, _k, _s, _i) { return { handle: `pso_${h}` }; },
-    async discover_astar(h, _k, _m) { return { handle: `astar_${h}` }; },
-    async discover_hill_climbing(h, _k, _m) { return { handle: `hill_${h}` }; },
-    async discover_ilp_petri_net(h, _k) { return { handle: `ilp_${h}` }; },
-    async discover_ant_colony(h, _k, _c, _i) { return { handle: `aco_${h}` }; },
-    async discover_simulated_annealing(h, _k, _t, _c) { return { handle: `sa_${h}` }; },
-    async discover_declare(h, _k, _s) { return { handle: `declare_${h}` }; },
-    async discover_transition_system(h, _w, _d) { return { handle: `ts_${h}` }; },
-    async discover_prefix_tree(h, _k) { return { handle: `pt_${h}` }; },
-    async discover_causal_graph(h, _k, _m, _t) { return { handle: `cg_${h}` }; },
-    async discover_performance_spectrum(h, _k, _t) { return { handle: `ps_${h}` }; },
-    async discover_batches(h, _k, _t, _b) { return { handle: `batches_${h}` }; },
-    async discover_correlation(h, _k, _t) { return { handle: `corr_${h}` }; },
-    async generalization(h, _p, _k) { return { handle: `gen_${h}` }; },
-    async reduce_petri_net(_p) { return { handle: `reduce_${_p}` }; },
-    async wasm_compute_precision(h, _p, _k) { return { handle: `prec_${h}` }; },
+    init(): any { return Promise.resolve(); },
+    discover_dfg(h, _k) { return `dfg_result_${h}`; },
+    discover_dfg_simd(h, _k) { return `simd_${h}`; },
+    extract_process_skeleton(h, _k, _f) { return `skel_${h}`; },
+    discover_alpha_plus_plus(h, _k, _s) { return `alpha_${h}`; },
+    discover_heuristic_miner(h, _k, _t) { return `heuristic_${h}`; },
+    discover_inductive_miner(h, _k, _n) { return `inductive_${h}`; },
+    discover_genetic_algorithm(h, _k, _p, _g) { return `genetic_${h}`; },
+    discover_pso_algorithm(h, _k, _s, _i) { return `pso_${h}`; },
+    discover_astar(h, _k, _m) { return `astar_${h}`; },
+    discover_hill_climbing(h, _k, _m) { return `hill_${h}`; },
+    discover_ilp_petri_net(h, _k) { return `ilp_${h}`; },
+    discover_ant_colony(h, _k, _c, _i) { return `aco_${h}`; },
+    discover_simulated_annealing(h, _k, _t, _c) { return `sa_${h}`; },
+    discover_declare(h, _k, _s) { return `declare_${h}`; },
+    discover_transition_system(h, _w, _d) { return `ts_${h}`; },
+    discover_prefix_tree(h, _k) { return `pt_${h}`; },
+    discover_causal_graph(h, _k, _m, _t) { return `cg_${h}`; },
+    discover_performance_spectrum(h, _k, _t) { return `ps_${h}`; },
+    discover_batches(h, _k, _t, _b) { return `batches_${h}`; },
+    discover_correlation(h, _k, _t) { return `corr_${h}`; },
+    generalization(h, _p, _k) { return `gen_${h}`; },
+    reduce_petri_net(_p) { return `reduce_${_p}`; },
+    wasm_compute_precision(h, _p, _k) { return `prec_${h}`; },
     wasm_compute_simplicity(_p, _t, _a): number { return 0.9; },
-    async compute_optimal_alignments(h, _p, _k, _c) { return { handle: `align_${h}` }; },
-    async measure_complexity(_p) { return { handle: `complexity_${_p}` }; },
-    async from_pnml(_x) { return { handle: `pnml_${_x.length}` }; },
-    async read_bpmn(_x) { return { handle: `bpmn_${_x.length}` }; },
-    async powl_to_process_tree(_h) { return { handle: `powl2tree_${_h}` }; },
-    async powl_to_yawl_string(_s): Promise<string> { return '{}'; },
-    async play_out(_m, _n, _l) { return { handle: `playout_${_m}` }; },
-    async monte_carlo_simulation(_l, _p, _r, _c) { return { handle: `montecarlo_${_l}` }; },
+    compute_optimal_alignments(h, _p, _k, _c) { return `align_${h}`; },
+    measure_complexity(_p) { return `complexity_${_p}`; },
+    from_pnml(_x) { return `pnml_${_x.length}`; },
+    read_bpmn(_x) { return `bpmn_${_x.length}`; },
+    powl_to_process_tree(_h) { return `powl2tree_${_h}`; },
+    powl_to_yawl_string(_s): string { return '{}'; },
+    play_out(_m, _n, _l) { return `playout_${_m}`; },
+    monte_carlo_simulation(_l, _p, _r, _c) { return `montecarlo_${_l}`; },
     extract_case_features(_h, _k, _t, _c): string { return '{"traces":[]}'; },
     detect_drift(_h, _k, _w): string { return '{"drifts":[]}'; },
-    async discover_handover_network(h, _k) { return { handle: `handover_${h}` }; },
-    async discover_working_together_network(h, _k) { return { handle: `wt_${h}` }; },
-    async discover_powl_from_log(_j, v) {
+    discover_handover_network(h, _k) { return `handover_${h}`; },
+    discover_working_together_network(h, _k) { return `wt_${h}`; },
+    discover_powl_from_log(_j, v) {
       return { root: 0, node_count: 1, repr: '()', variant: v };
     },
-    async discover_powl_from_log_config(_j, k, v, m, n) {
+    discover_powl_from_log_config(_j, k, v, m, n) {
       return {
         root: 0, node_count: 1, repr: '()', variant: v,
         config: { activity_key: k, min_trace_count: m, noise_threshold: n },
@@ -579,7 +567,7 @@ describe('G5: KernelWasmModule OCEL optional field semantics (Rank 2 — domain 
     expect(typeof ocelStub.discover_oc_petri_net).toBe('function');
     const result = await ocelStub.discover_oc_petri_net!('ocel_handle_xyz', 'inductive');
     expect(result).toBeDefined();
-    expect(result.handle).toBeDefined();
+    expect(typeof result).toBe('string');
   });
 
   it('encode_ocel_as_text is optional and returns a non-empty string in OCEL-capable stub', async () => {

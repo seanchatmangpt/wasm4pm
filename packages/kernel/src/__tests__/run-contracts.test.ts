@@ -36,46 +36,46 @@ function buildStub(): KernelWasmModule & { callCounts: Record<string, number> } 
   function inc(name: string): void {
     callCounts[name] = (callCounts[name] ?? 0) + 1;
   }
-  function handle(alg: string, logHandle: string): { handle: string } {
+  function handle(alg: string, logHandle: string): string {
     inc(alg);
-    return { handle: `${alg}_result_for_${logHandle}_call${callCounts[alg]}` };
+    return `${alg}_result_for_${logHandle}_call${callCounts[alg]}`;
   }
 
   const stub: KernelWasmModule = {
-    async init() {},
+    init(): any { return Promise.resolve(); },
 
-    async discover_dfg(h, _k) { return handle('dfg', h); },
-    async discover_dfg_simd(h, _k) { return handle('simd_dfg', h); },
-    async extract_process_skeleton(h, _k, _f) { return handle('skeleton', h); },
-    async discover_alpha_plus_plus(h, _k, _s) { return handle('alpha', h); },
-    async discover_heuristic_miner(h, _k, _t) { return handle('heuristic', h); },
-    async discover_inductive_miner(h, _k, _n) { return handle('inductive', h); },
-    async discover_genetic_algorithm(h, _k, _p, _g) { return handle('genetic', h); },
-    async discover_pso_algorithm(h, _k, _s, _i) { return handle('pso', h); },
-    async discover_astar(h, _k, _m) { return handle('astar', h); },
-    async discover_hill_climbing(h, _k, _m) { return handle('hill', h); },
-    async discover_ilp_petri_net(h, _k) { return handle('ilp', h); },
-    async discover_ant_colony(h, _k, _c, _i) { return handle('aco', h); },
-    async discover_simulated_annealing(h, _k, _t, _c) { return handle('sa', h); },
-    async discover_declare(h, _k, _s) { return handle('declare', h); },
-    async discover_transition_system(h, _w, _d) { return handle('ts', h); },
-    async discover_prefix_tree(h, _k) { return handle('pt', h); },
-    async discover_causal_graph(h, _k, _m, _t) { return handle('cg', h); },
-    async discover_performance_spectrum(h, _k, _t) { return handle('ps', h); },
-    async discover_batches(h, _k, _t, _b) { return handle('batches', h); },
-    async discover_correlation(h, _k, _t) { return handle('corr', h); },
-    async generalization(h, _p, _k) { return handle('gen', h); },
-    async reduce_petri_net(_p) { return handle('reduce', _p); },
-    async wasm_compute_precision(h, _p, _k) { return handle('prec', h); },
+    discover_dfg(h, _k) { return handle('dfg', h); },
+    discover_dfg_simd(h, _k) { return handle('simd_dfg', h); },
+    extract_process_skeleton(h, _k, _f) { return handle('skeleton', h); },
+    discover_alpha_plus_plus(h, _k, _s) { return handle('alpha', h); },
+    discover_heuristic_miner(h, _k, _t) { return handle('heuristic', h); },
+    discover_inductive_miner(h, _k, _n) { return handle('inductive', h); },
+    discover_genetic_algorithm(h, _k, _p, _g) { return handle('genetic', h); },
+    discover_pso_algorithm(h, _k, _s, _i) { return handle('pso', h); },
+    discover_astar(h, _k, _m) { return handle('astar', h); },
+    discover_hill_climbing(h, _k, _m) { return handle('hill', h); },
+    discover_ilp_petri_net(h, _k) { return handle('ilp', h); },
+    discover_ant_colony(h, _k, _c, _i) { return handle('aco', h); },
+    discover_simulated_annealing(h, _k, _t, _c) { return handle('sa', h); },
+    discover_declare(h, _k, _s) { return handle('declare', h); },
+    discover_transition_system(h, _w, _d) { return handle('ts', h); },
+    discover_prefix_tree(h, _k) { return handle('pt', h); },
+    discover_causal_graph(h, _k, _m, _t) { return handle('cg', h); },
+    discover_performance_spectrum(h, _k, _t) { return handle('ps', h); },
+    discover_batches(h, _k, _t, _b) { return handle('batches', h); },
+    discover_correlation(h, _k, _t) { return handle('corr', h); },
+    generalization(h, _p, _k) { return handle('gen', h); },
+    reduce_petri_net(_p) { return handle('reduce', _p); },
+    wasm_compute_precision(h, _p, _k) { return handle('prec', h); },
     wasm_compute_simplicity(_p, _t, _a): number { inc('simplicity'); return 0.9; },
-    async compute_optimal_alignments(h, _p, _k, _c) { return handle('align', h); },
-    async measure_complexity(_p) { return handle('complexity', _p); },
-    async from_pnml(_x) { return handle('pnml', _x); },
-    async read_bpmn(_x) { return handle('bpmn', _x); },
-    async powl_to_process_tree(_h) { return handle('powl2tree', _h); },
-    async powl_to_yawl_string(_s): Promise<string> { inc('yawl'); return '{}'; },
-    async play_out(_m, _n, _l) { return handle('playout', _m); },
-    async monte_carlo_simulation(_l, _p, _r, _c) { return handle('montecarlo', _l); },
+    compute_optimal_alignments(h, _p, _k, _c) { return handle('align', h); },
+    measure_complexity(_p) { return handle('complexity', _p); },
+    from_pnml(_x) { return handle('pnml', _x); },
+    read_bpmn(_x) { return handle('bpmn', _x); },
+    powl_to_process_tree(_h) { return handle('powl2tree', _h); },
+    powl_to_yawl_string(_s): string { inc('yawl'); return '{}'; },
+    play_out(_m, _n, _l) { return handle('playout', _m); },
+    monte_carlo_simulation(_l, _p, _r, _c) { return handle('montecarlo', _l); },
     extract_case_features(_h: string, _k: string, _t: string, _c: string): string { inc('case_feat'); return '[]'; },
     detect_drift(_h: string, _k: string, _w: number): string { inc('drift'); return '{"drifts":[]}'; },
     compute_ewma(_v: string, _a: number): string { return '{"smoothed":[]}'; },
@@ -83,15 +83,15 @@ function buildStub(): KernelWasmModule & { callCounts: Record<string, number> } 
     compute_activity_transition_matrix(_h: string, _k: string): string { return '{}'; },
     analyze_process_speedup(_h: string, _t: string, _w: number): string { return '{}'; },
     compute_trace_similarity_matrix(_h: string, _k: string): string { return '[]'; },
-    async discover_ocel_dfg(_h) { return handle('ocel_dfg', _h); },
-    async discover_ocel_dfg_per_type(_h) { return handle('ocel_per', _h); },
-    async discover_handover_network(h, _k) { return handle('handover', h); },
-    async discover_working_together_network(h, _k) { return handle('wt', h); },
-    async discover_powl_from_log(_j, v) {
+    discover_ocel_dfg(_h) { return handle('ocel_dfg', _h); },
+    discover_ocel_dfg_per_type(_h) { return handle('ocel_per', _h); },
+    discover_handover_network(h, _k) { return handle('handover', h); },
+    discover_working_together_network(h, _k) { return handle('wt', h); },
+    discover_powl_from_log(_j, v) {
       inc('powl_log');
       return { root: 0, node_count: 1, repr: '()', variant: v };
     },
-    async discover_powl_from_log_config(_j, k, v, m, n) {
+    discover_powl_from_log_config(_j, k, v, m, n) {
       inc('powl_config');
       return {
         root: 0,
@@ -103,6 +103,14 @@ function buildStub(): KernelWasmModule & { callCounts: Record<string, number> } 
     },
     delete_object(_h) { inc('delete'); },
     clear_all_objects() { inc('clear'); },
+    store_dfg_from_json(dfg_json) {
+      inc('store_dfg_from_json');
+      return dfg_json;
+    },
+    store_declare_from_json(dec_json) {
+      inc('store_declare_from_json');
+      return dec_json;
+    },
   };
 
   return Object.assign(stub, { callCounts });

@@ -42,6 +42,7 @@ import { feedback } from './commands/feedback.js';
 import { wasmServer } from './commands/wasm-server.js';
 import { timeout } from './commands/timeout.js';
 import { receipt } from './commands/receipt.js';
+import { truex } from './commands/truex.js';
 import cache from './commands/cache.js';
 import deduplicate from './commands/deduplicate.js';
 import models from './commands/models.js';
@@ -269,6 +270,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     benchmark,
     verify,
     proof,
+    truex,
     cognition,
     completions,
     claude,
