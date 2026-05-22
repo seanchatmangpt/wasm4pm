@@ -4,52 +4,53 @@
  *
  * Bridges raw WASM errors from wasm4pm into the contracts TypedError system.
  * Provides classification, context enrichment, and recovery guidance.
- */
+ import type { ErrorCode, TypedError } from '@wasm4pm/contracts';
+ import { createTypedError, TYPED_ERROR_CODES } from '@wasm4pm/contracts';
+ import { diagnoseError } from './introspection/diagnostics.js';
 
-import type { ErrorCode, TypedError } from '@wasm4pm/contracts';
-import { createTypedError, TYPED_ERROR_CODES } from '@wasm4pm/contracts';
+ /** Kernel-specific error codes extending the contracts error system */
+ export type KernelErrorCode = ErrorCode | 'KERNEL_VERSION_MISMATCH' | 'KERNEL_NOT_INITIALIZED';
 
-/** Kernel-specific error codes extending the contracts error system */
-export type KernelErrorCode = ErrorCode | 'KERNEL_VERSION_MISMATCH' | 'KERNEL_NOT_INITIALIZED';
+ /**
+  * KernelError — extends Error with structured context for kernel operations
+  */
+ export class KernelError extends Error {
+   readonly code: KernelErrorCode;
+   readonly context: Record<string, unknown>;
+   readonly recoverable: boolean;
+   readonly timestamp: Date;
+   readonly cause: Error | undefined;
+   readonly suggestions: string[];
 
-/**
- * KernelError — extends Error with structured context for kernel operations
- */
-export class KernelError extends Error {
-  readonly code: KernelErrorCode;
-  readonly context: Record<string, unknown>;
-  readonly recoverable: boolean;
-  readonly timestamp: Date;
+   constructor(
+     message: string,
+     code: KernelErrorCode,
+     options?: {
+       cause?: Error;
+       context?: Record<string, unknown>;
+       recoverable?: boolean;
+     }
+   ) {
+     super(message);
+     this.name = 'KernelError';
+     this.code = code;
+     this.cause = options?.cause;
+     this.context = options?.context ?? {};
+     this.recoverable = options?.recoverable ?? false;
+     this.timestamp = new Date();
+     this.suggestions = diagnoseError(this).suggestions;
+     Object.setPrototypeOf(this, KernelError.prototype);
+   }
 
-  readonly cause: Error | undefined;
-
-  constructor(
-    message: string,
-    code: KernelErrorCode,
-    options?: {
-      cause?: Error;
-      context?: Record<string, unknown>;
-      recoverable?: boolean;
-    }
-  ) {
-    super(message);
-    this.name = 'KernelError';
-    this.code = code;
-    this.cause = options?.cause;
-    this.context = options?.context ?? {};
-    this.recoverable = options?.recoverable ?? false;
-    this.timestamp = new Date();
-    Object.setPrototypeOf(this, KernelError.prototype);
-  }
-
-  toJSON(): Record<string, unknown> {
-    return {
-      name: this.name,
-      code: this.code,
-      message: this.message,
-      context: this.context,
-      recoverable: this.recoverable,
-      timestamp: this.timestamp.toISOString(),
+   toJSON(): Record<string, unknown> {
+     return {
+       name: this.name,
+       code: this.code,
+       message: this.message,
+       context: this.context,
+       recoverable: this.recoverable,
+       timestamp: this.timestamp.toISOString(),
+       suggestions: this.suggestions,
     };
   }
 }

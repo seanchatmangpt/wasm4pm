@@ -76,10 +76,21 @@ export function saveCommandReceipt(receipt: CommandReceipt, dirRel = '.wasm4pm/r
     console.warn('[receipt] schema violation:', (e as Error).message);
   }
   const dir = path.resolve(dirRel);
-  fs.mkdirSync(dir, { recursive: true });
-  const file = path.join(dir, `${receipt.run_id}.json`);
-  const json = JSON.stringify(receipt, null, 2) + '\n';
-  fs.writeFileSync(file, json);
-  atomicWriteSync(path.join(dir, 'latest.json'), json);
-  return file;
+  try {
+    fs.mkdirSync(dir, { recursive: true });
+    const file = path.join(dir, `${receipt.run_id}.json`);
+    const json = JSON.stringify(receipt, null, 2) + '\n';
+    fs.writeFileSync(file, json);
+    atomicWriteSync(path.join(dir, 'latest.json'), json);
+    return file;
+  } catch (err: any) {
+    if (err.code === 'EACCES' || err.code === 'EROFS') {
+      const msg = `Permission denied when writing to ${dir}. ` +
+                  `You are running in a restricted filesystem (e.g. read-only container or Docker). ` +
+                  `Please set WASM4PM_HOME or PMC_CONFIG_PATH to a writable directory. ` +
+                  `Example: export WASM4PM_HOME=/tmp`;
+      throw new Error(msg);
+    }
+    throw err;
+  }
 }

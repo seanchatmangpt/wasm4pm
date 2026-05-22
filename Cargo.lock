@@ -2562,6 +2562,7 @@ dependencies = [
  "wasm-bindgen",
  "wasm-bindgen-futures",
  "wasm-bindgen-test",
+ "wasm4pm-algos",
  "wasm4pm-cognition",
  "wasm4pm-macros",
  "wasm4pm-types",
@@ -2572,6 +2573,7 @@ name = "wasm4pm-algos"
 version = "26.5.21"
 dependencies = [
  "bcinr",
+ "blake3",
  "criterion",
  "hashbrown 0.17.0",
  "itertools 0.14.0",

@@ -88,6 +88,12 @@ export interface KernelResult {
 
   /** Deterministic hash of the output */
   hash: string;
+
+  /** 
+   * A token-efficient, highly condensed representation of this result,
+   * optimized specifically for insertion into an LLM context window.
+   */
+  toLLMContext(): string;
 }
 
 /** Partial result emitted during streaming */
@@ -269,7 +275,16 @@ export type FeedbackCapture = (options: {
   metadata?: Record<string, unknown>;
 }) => Promise<void>;
 
+export interface DiscoveryParams {
+  activity_key?: string;
+  timestamp_key?: string;
+  case_id_key?: string;
+  noise_threshold?: number;
+  [key: string]: unknown;
+}
+
 export class Kernel {
+  private static _instance: Kernel | null = null;
   private wasm: KernelWasmModule;
   private registry: AlgorithmRegistry;
   private _initialized = false;
@@ -281,6 +296,22 @@ export class Kernel {
   private _spanSink: SpanSink = DEFAULT_SINK;
   private _feedbackCapture: FeedbackCapture | undefined;
   private _smartEngineHandle: string | undefined;
+
+  /**
+   * Retrieves or initializes a global singleton instance of the Kernel.
+   * Note: This requires the consumer to have initialized the WasmLoader elsewhere,
+   * or it will attempt to initialize a default empty WASM module if none provided.
+   */
+  static async getInstance(wasmModule?: KernelWasmModule): Promise<Kernel> {
+    if (!Kernel._instance) {
+      if (!wasmModule) {
+        throw new Error('Kernel.getInstance() requires a WasmModule on first initialization');
+      }
+      Kernel._instance = new Kernel(wasmModule);
+      await Kernel._instance.init();
+    }
+    return Kernel._instance;
+  }
 
   constructor(wasmModule: KernelWasmModule, options?: { spanSink?: SpanSink; feedbackCapture?: FeedbackCapture }) {
     this.wasm = wasmModule;
@@ -514,6 +545,10 @@ export class Kernel {
           outputType: metadata.outputType,
         }
       ),
+      toLLMContext: () => {
+         const paramStr = Object.entries(params).map(([k, v]) => `${k}=${v}`).join(', ');
+         return `<process_model algo="${algorithmName}" type="${metadata.outputType}" duration_ms="${durationMs.toFixed(1)}" hash="${result.hash}">\n  <params>${paramStr}</params>\n  <handle>${wasmResult.handle}</handle>\n</process_model>`;
+      }
     };
 
     // Validate structural integrity before caching
@@ -560,6 +595,42 @@ export class Kernel {
 
     this._resultCache.set(cacheKey, result);
     return result;
+  }
+
+  /**
+   * Discover a process model.
+   * Semantic facade over `run()` for discovery algorithms.
+   * 
+   * @example
+   * ```ts
+   * const result = await kernel.discover('inductive_miner', logHandle, { noise_threshold: 0.2 });
+   * console.log(result.handle);
+   * ```
+   */
+  async discover(
+    algorithmName: string,
+    eventLogHandle: string,
+    params: DiscoveryParams = {}
+  ): Promise<KernelResult> {
+    return this.run(algorithmName, eventLogHandle, params);
+  }
+
+  /**
+   * Predict an outcome or metric.
+   * Semantic facade over `run()` for prediction algorithms.
+   * 
+   * @example
+   * ```ts
+   * const result = await kernel.predict('next_activity', logHandle, { prefix: "A,B,C" });
+   * console.log(result.handle);
+   * ```
+   */
+  async predict(
+    algorithmName: string,
+    eventLogHandle: string,
+    params: DiscoveryParams = {}
+  ): Promise<KernelResult> {
+    return this.run(algorithmName, eventLogHandle, params);
   }
 
   /**

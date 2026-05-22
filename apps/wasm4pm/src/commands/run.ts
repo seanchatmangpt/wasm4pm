@@ -63,7 +63,13 @@ export const run = defineCommand({
   meta: {
     name: 'run',
     description:
-      'Discover a process model from an XES event log. Ex: wpm run process.xes  |  wpm run log.xes --algorithm genetic --with-quality\n\n' +
+      'Discover a process model from an event log (XES, CSV, or OCEL 2.0).\n\n' +
+      'EXAMPLES:\n' +
+      '  wpm run log.xes                               # Default discovery (Heuristic Miner)\n' +
+      '  wpm run log.xes -a inductive                  # Discover using Inductive Miner\n' +
+      '  wpm run log.ocel.json -a ocel_dfg             # Object-centric DFG discovery\n' +
+      '  wpm run log.xes --with-quality                # Compute fitness & precision after discovery\n' +
+      '  wpm run log.xes -o result.json                # Save output to a specific file\n\n' +
       STANDARD_EXIT_CODE_DOCS,
   },
   args: {
@@ -268,7 +274,7 @@ export const run = defineCommand({
           }
 
           // Accept kernel registry IDs (heuristic_miner) or CLI aliases (heuristic)
-          const resolvedAlgo: Algorithm | undefined =
+          let resolvedAlgo: Algorithm | undefined =
             (ALGORITHM_CLI_ALIASES[rawAlgo] as Algorithm | undefined) ??
             (() => {
               const algoLower = rawAlgo.toLowerCase().replace(/[+_]/g, '-');
@@ -293,7 +299,7 @@ export const run = defineCommand({
                   `Common algorithms: ${discoveryAliases}\n` +
                   `Run 'wpm algorithms' to list all ${cliAliases.length} available algorithms.`
               ),
-              EXIT_CODES.source_error,
+              EXIT_CODES.config_error,
               'ALGORITHM_NOT_FOUND'
             );
             emitResult(result, emitOptions);
@@ -308,7 +314,14 @@ export const run = defineCommand({
             const result = makeErrorResult(
               'run',
               new Error(
-                'Input file required.\n\nUsage:  wpm run <log.xes>\n        wpm run <log.xes> --algorithm heuristic\n\nRun "wpm --help" to see all commands.'
+                'No input file provided.\n\n' +
+                '  To get started, provide an event log (XES or OCEL):\n' +
+                '    wpm run path/to/process.xes\n' +
+                '    wpm run data.ocel.json --algorithm ocel_dfg\n\n' +
+                '  Need a sample dataset? Run:\n' +
+                '    wpm examples\n\n' +
+                '  For full documentation, run:\n' +
+                '    wpm run --help'
               ),
               EXIT_CODES.source_error,
               'INPUT_REQUIRED'
@@ -318,6 +331,39 @@ export const run = defineCommand({
           }
 
           const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
+
+          try {
+            const stats = await fs.stat(inputPath);
+            const MAX_MEMORY_SIZE_MB = 500;
+            if (stats.size > MAX_MEMORY_SIZE_MB * 1024 * 1024) {
+              const result = makeErrorResult(
+                'run',
+                new Error(
+                  `File size exceeds in-memory parsing limits (${(stats.size / 1024 / 1024).toFixed(1)}MB > ${MAX_MEMORY_SIZE_MB}MB).\n\n` +
+                  `  V8 will likely crash with ERR_STRING_TOO_LONG if loaded directly.\n\n` +
+                  `  To process massive logs, use the streaming pipeline:\n` +
+                  `    wpm batch ${inputPath} --workers 4\n\n` +
+                  `  Or increase Node memory: NODE_OPTIONS="--max-old-space-size=8192" wpm run ${inputPath}`
+                ),
+                EXIT_CODES.source_error,
+                'FILE_TOO_LARGE'
+              );
+              emitResult(result, emitOptions);
+              return await exitWithFlush(result.exit_code);
+            }
+          } catch (e: any) {
+             if (e.code === 'ENOENT') {
+                const result = makeErrorResult(
+                  'run',
+                  new Error(`File not found: ${inputPath}`),
+                  EXIT_CODES.source_error,
+                  'FILE_NOT_FOUND'
+                );
+                emitResult(result, emitOptions);
+                return await exitWithFlush(result.exit_code);
+             }
+             // Let other fs errors bubble up or be handled by the normal flow
+          }
 
           // Preflight: only accept supported input extensions.
           const lowerInput = inputPath.toLowerCase();
@@ -334,15 +380,22 @@ export const run = defineCommand({
             const ext = path.extname(inputPath) || '(no extension)';
             const result = makeErrorResult(
               'run',
-              new Error(
-                `Unsupported file extension '${ext}' — wpm run accepts: .xes, .xes.gz, .json, .ocel.json\n\n` +
-                  `  Given: ${inputPath}\n\n` +
-                  `  For XES event logs: wpm run process.xes\n` +
-                  `  For OCEL 2.0 logs:  wpm run log.ocel.json\n\n` +
-                  `  XES is the IEEE standard for process mining event logs.\n` +
-                  `  OCEL is the IEEE standard for object-centric event logs.\n` +
-                  `  See: https://www.xes-standard.org/ and https://www.ocel-standard.org/`
-              ),
+              new Error(`Unsupported file extension '${ext}' — wpm run accepts: .xes, .xes.gz, .json, .ocel.json
+
+  Given: ${inputPath}
+
+  For XES event logs: wpm run process.xes
+  For OCEL 2.0 logs: wpm run object-log.json --format ocel
+
+  XES is the IEEE standard for process mining event logs.
+  OCEL is the IEEE standard for object-centric event logs.
+  See: https://www.xes-standard.org/ and https://www.ocel-standard.org/
+
+  Need a sample dataset? Run:
+    wpm examples
+
+  To inspect your file's structure, run:
+    wpm validate ${inputPath}`),
               EXIT_CODES.source_error,
               'UNSUPPORTED_EXTENSION'
             );
@@ -717,8 +770,14 @@ export const run = defineCommand({
                         2
                       )
                     );
-                  } catch {
-                    /* non-fatal */
+                  } catch (err: any) {
+                    if (err.code === 'EACCES' || err.code === 'EROFS') {
+                      const msg = `Permission denied when writing to ${baselinePath}. ` +
+                                  `You are running in a restricted filesystem (e.g. read-only container or Docker). ` +
+                                  `Please set WASM4PM_HOME or PMC_CONFIG_PATH to a writable directory.`;
+                      throw new Error(msg);
+                    }
+                    throw err;
                   }
                 }
 
@@ -891,14 +950,19 @@ export const run = defineCommand({
                   const outputDir = path.dirname(ctx.args.output);
                   await fs.mkdir(outputDir, { recursive: true });
                   await fs.writeFile(ctx.args.output, JSON.stringify(payload, null, 2));
-                } catch (error) {
+                } catch (error: any) {
+                  let extraHint = `Check that the destination directory exists and is writable: chmod 755 ${path.dirname(ctx.args.output as string)}`;
+                  if (error?.code === 'EACCES' || error?.code === 'EROFS') {
+                    extraHint = `Permission denied (${error.code}). If you are running in a container, please check volume mounts and permissions.`;
+                  }
+                  
                   const message = error instanceof Error ? error.message : String(error);
                   const errResult = makeErrorResult(
                     'run',
                     new Error(
                       `Failed to write output to '${ctx.args.output}': ${message}\n\n` +
                         `The process model was discovered successfully — only the file write failed.\n` +
-                        `Check that the destination directory exists and is writable: chmod 755 ${path.dirname(ctx.args.output as string)}`
+                        extraHint
                     ),
                     EXIT_CODES.partial_failure,
                     'SINK_WRITE_FAILED'
@@ -1006,6 +1070,33 @@ export const run = defineCommand({
                       `Quality metrics require a Petri net model. Algorithm '${p.algorithm}' does not produce one.`
                     );
                   }
+                }
+
+                // 1000x Auto-Insight Generation
+                const qInsight = p.quality as { fitness?: number; precision?: number } | undefined;
+                const fit = qInsight?.fitness;
+                const nodeCount = summary ? parseInt(summary['Nodes'] || summary['Places'] || '0') : 0;
+                if (logStatsData && (fit !== undefined || nodeCount > 0)) {
+                  let story = "Insight: ";
+                  if (fit !== undefined) {
+                    if (fit >= 0.9) story += `Discovered a highly standardized process (Fitness: ${(fit * 100).toFixed(0)}%). `;
+                    else if (fit >= 0.7) story += `Discovered a semi-structured process (Fitness: ${(fit * 100).toFixed(0)}%). `;
+                    else story += `Discovered an unstructured "spaghetti" process (Fitness: ${(fit * 100).toFixed(0)}%). `;
+                  } else {
+                    story += `Discovered a process model with ${logStatsData.unique_variants || 'multiple'} execution variants. `;
+                  }
+                  
+                  const variantRatio = logStatsData.unique_variants && logStatsData.total_cases 
+                     ? logStatsData.unique_variants / logStatsData.total_cases 
+                     : 0;
+                  
+                  if (nodeCount > 0) {
+                     if (nodeCount > 30 || variantRatio > 0.5) story += `The graph contains ${nodeCount} structural nodes and high variant diversity, indicating significant complexity.`;
+                     else story += `The graph contains ${nodeCount} structural nodes, indicating a manageable complexity level.`;
+                  }
+                  
+                  projection.log('');
+                  projection.info(`\x1b[36m${story}\x1b[0m`);
                 }
 
                 // First-run UX hints
@@ -1444,11 +1535,15 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
       const outputDir = path.dirname(String(ctx.args['output']));
       await fs.mkdir(outputDir, { recursive: true });
       await fs.writeFile(String(ctx.args['output']), JSON.stringify(payload, null, 2));
-    } catch (writeError) {
+    } catch (writeError: any) {
+      let extraHint = ``;
+      if (writeError?.code === 'EACCES' || writeError?.code === 'EROFS') {
+        extraHint = `\n\nPermission denied (${writeError.code}). If you are running in a container, please check volume mounts and permissions.`;
+      }
       const msg = writeError instanceof Error ? writeError.message : String(writeError);
       const errResult = makeErrorResult(
         'run',
-        new Error(`Failed to write output: ${msg}`),
+        new Error(`Failed to write output: ${msg}${extraHint}`),
         EXIT_CODES.partial_failure,
         'SINK_WRITE_FAILED'
       );
