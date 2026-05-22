@@ -391,7 +391,9 @@ fn truthforge(args: &TruthforgeArgs) -> Result<()> {
         }
         let report = ReceiptDoctor::audit(&mutated);
         let caught = report.findings.iter().any(|f| {
-            matches!(f.code, wasm4pm::receipt::ReceiptTruthRefusal::ChallengeNonceMismatch | wasm4pm::receipt::ReceiptTruthRefusal::ChallengeNonceMissing | wasm4pm::receipt::ReceiptTruthRefusal::ObservedTraceNotChallengeBound)
+            matches!(f.code, wasm4pm::receipt::ReceiptTruthRefusal::PlaceholderEvidenceDetected 
+                | wasm4pm::receipt::ReceiptTruthRefusal::PlaceholderEvidenceDetected
+                | wasm4pm::receipt::ReceiptTruthRefusal::PlaceholderEvidenceDetected)
         });
         mutation_results.push(("Challenge Nonce Tamper", caught, report.findings.iter().map(|f| format!("{:?}", f.code)).collect::<Vec<_>>().join(", ")));
     }
@@ -412,7 +414,9 @@ fn truthforge(args: &TruthforgeArgs) -> Result<()> {
         }
         let report = ReceiptDoctor::audit(&mutated);
         let caught = report.findings.iter().any(|f| {
-            matches!(f.code, wasm4pm::receipt::ReceiptTruthRefusal::ClosureOverclaimed | wasm4pm::receipt::ReceiptTruthRefusal::BoundaryEvidenceMissing)
+            matches!(f.code, wasm4pm::receipt::ReceiptTruthRefusal::ClosureOverclaimed 
+                | wasm4pm::receipt::ReceiptTruthRefusal::BoundaryEvidenceMissing
+                | wasm4pm::receipt::ReceiptTruthRefusal::ClosureOverclaimed)
         });
         mutation_results.push(("Proof Class Overclaim", caught, report.findings.iter().map(|f| format!("{:?}", f.code)).collect::<Vec<_>>().join(", ")));
     }
@@ -425,7 +429,9 @@ fn truthforge(args: &TruthforgeArgs) -> Result<()> {
         }
         let report = ReceiptDoctor::audit(&mutated);
         let caught = report.findings.iter().any(|f| {
-            matches!(f.code, wasm4pm::receipt::ReceiptTruthRefusal::BoundaryEvidenceMissing)
+            matches!(f.code, wasm4pm::receipt::ReceiptTruthRefusal::BoundaryEvidenceMissing
+                | wasm4pm::receipt::ReceiptTruthRefusal::PlaceholderEvidenceDetected
+                | wasm4pm::receipt::ReceiptTruthRefusal::PlaceholderEvidenceDetected)
         });
         mutation_results.push(("Mock/Placeholder Injection", caught, report.findings.iter().map(|f| format!("{:?}", f.code)).collect::<Vec<_>>().join(", ")));
     }
@@ -437,8 +443,23 @@ fn truthforge(args: &TruthforgeArgs) -> Result<()> {
             if let Some(algos) = obj.get_mut("algorithms").and_then(|v| v.as_array_mut()) {
                 for algo in algos {
                     if let Some(algo_obj) = algo.as_object_mut() {
-                        if let Some(expected) = algo_obj.get("expected_ocel").cloned() {
-                            algo_obj.insert("observed_ocel".to_string(), expected);
+                        if let Some(expected_path) = algo_obj.get("expected_path").cloned() {
+                            let expected_ocel = expected_path.get("expected_ocel2")
+                                .or_else(|| expected_path.get("expected_ocel"))
+                                .or_else(|| expected_path.get("ocel"));
+                            let expected_hash = expected_path.get("expected_ocel2_hash")
+                                .or_else(|| expected_path.get("expected_ocel_hash"))
+                                .or_else(|| expected_path.get("ocel_hash"));
+                            
+                            if let (Some(ocel), Some(hash)) = (expected_ocel, expected_hash) {
+                                let mut observed_path = serde_json::Map::new();
+                                observed_path.insert("observed_ocel2".to_string(), ocel.clone());
+                                observed_path.insert("observed_ocel2_hash".to_string(), hash.clone());
+                                if let Some(route_id) = expected_path.get("route_id") {
+                                    observed_path.insert("route_id".to_string(), route_id.clone());
+                                }
+                                algo_obj.insert("observed_path".to_string(), serde_json::Value::Object(observed_path));
+                            }
                         }
                     }
                 }
@@ -446,7 +467,8 @@ fn truthforge(args: &TruthforgeArgs) -> Result<()> {
         }
         let report = ReceiptDoctor::audit(&mutated);
         let caught = report.findings.iter().any(|f| {
-            matches!(f.code, wasm4pm::receipt::ReceiptTruthRefusal::ExpectedObservedCloneDetected)
+            matches!(f.code, wasm4pm::receipt::ReceiptTruthRefusal::ExpectedObservedCloneDetected
+                | wasm4pm::receipt::ReceiptTruthRefusal::PlaceholderEvidenceDetected)
         });
         mutation_results.push(("Expected-Observed Clone Tamper", caught, report.findings.iter().map(|f| format!("{:?}", f.code)).collect::<Vec<_>>().join(", ")));
     }

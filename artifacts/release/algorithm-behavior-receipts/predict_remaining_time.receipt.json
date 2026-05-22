@@ -16,8 +16,8 @@
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
       "result_hash": "d87de583a5480a8fb924ee642549d6a348832a91cd9a1be680944c3541176391",
-      "duration_ms": 0.011333000000007587,
-      "receipt_hash": "dae673dbe7851c5c1fff4069cf78b7e8fc482df3758a07bfcdd62a34ba6f24c0"
+      "duration_ms": 0.011125000000006935,
+      "receipt_hash": "827a4bcb2788e7289cf71215a0a9d00720fcf24229e42689218eea8de70e4b60"
     }
   ],
   "negative_cases": [
@@ -49,5 +49,5 @@
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "e7bdc8acae564f9d746a3c9c27da17f71ed1de285fa64099cc70819eeb409c7e"
+  "algorithm_evidence_hash": "cb8406bf6ce28d85234575cc929d15d60bff8852896031fc2a08c601a5ac87c0"
 }

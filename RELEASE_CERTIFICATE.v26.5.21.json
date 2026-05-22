@@ -2,31 +2,31 @@
   "package": {
     "name": "wasm4pm",
     "version": "26.5.21",
-    "git_commit": "92aab9639056d3c08f8ca8f87cbc7d3a0248e47e"
+    "git_commit": "a7d23a505f11e0ab7f447fc697f3d06d7764e8c4"
   },
   "reachability": {
     "algorithm_count": 60,
     "algorithms_reachable": 60,
-    "reachability_hash": "eacf60d6b5f0fd6b1ecc22ccf0ef2e473e59186ff0f0fc82cdd07c3b070b0929"
+    "reachability_hash": "8bed7eaa794e555365722842bcea7617cf012f3e6e86f87ce4fe95980475a883"
   },
   "behavior": {
     "algorithm_count": 60,
     "positive_case_count": 60,
     "negative_case_count": 120,
     "invariant_case_count": 60,
-    "behavior_evidence_hash": "8a3408f1511adcd6c17afa64b024dfb17c959469cc702c3a9d8c181a837da320",
+    "behavior_evidence_hash": "88c31e6a6f711e1305cb0bb47c27d5b550b1134599482c3e1ee247b7568dcc68",
     "all_failed_correctly": true
   },
   "examples": {
     "example_count": 8,
     "examples_total_executions": 64,
-    "manifest_hash": "b35f517dc8aa754f20d77ee4defaada503251b569bf5c54b9d40834675283682"
+    "manifest_hash": "8c4d6cce31fb682aa4e9b7b7e3c9623e7e4b1fb8f9df70b5a8625f7ebe89e3a5"
   },
   "package_artifact": {
     "tarball_name": "wasm4pm-26.5.21.tgz",
-    "tarball_integrity": "sha512-n0x3VSCIbD6PkTtjYoR77RftJ6mc4sSS95LlGk1O3ylF8dLOk138YpLqmHx8JYl/za2vjI7Yyro7Byc6i28i+w==",
+    "tarball_integrity": "sha512-RoNnS/fMkF7mvhz1e/UCAEs/tLo9qFpeyeEoHKwvSUPEhhyLV7KEeKPXZ20rV+jhjhVOuKJ9D3TW+/vh6xNm3w==",
     "pack_smoke_tarball_path": "packages/kernel/wasm4pm-26.5.21.tgz",
     "wasm_bundle_hash": "05d935fa807ab8fdf5ec31ccd38789a06f65f103e032574ad8c919df93dc82c7"
   },
-  "timestamp": "2026-05-22T01:07:35.865Z"
+  "timestamp": "2026-05-22T02:45:54.560Z"
 }
