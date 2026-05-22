@@ -66,6 +66,8 @@ enum Commands {
     Man,
     /// Forensics toolkit for receipt verification and adversarial audits.
     Receipt(commands::receipt::ReceiptArgs),
+    /// Lean Six Sigma process waste and efficiency audit.
+    Lean(commands::lean::LeanArgs),
 }
 
 fn main() {
@@ -109,6 +111,9 @@ fn try_main() -> anyhow::Result<()> {
         }
         Commands::Receipt(args) => {
             commands::receipt::run(args)?;
+        }
+        Commands::Lean(args) => {
+            commands::lean::run(args)?;
         }
     }
 
