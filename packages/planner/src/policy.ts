@@ -110,6 +110,12 @@ export function selectAlgorithmByBudget(
     if (qualityFloor === 'fast' || qualityFloor === 'balanced') {
       return ['dfg', 'simd_streaming_dfg'];
     }
+    // sub_ms + quality/research: latency constraint wins — use the best algorithm
+    // that still fits in sub-millisecond budget.  DFG is the only realistic choice;
+    // quality floor cannot be honoured at sub_ms — callers must accept this trade-off.
+    if (qualityFloor === 'quality' || qualityFloor === 'research') {
+      return ['dfg', 'simd_streaming_dfg'];
+    }
   }
 
   // low_ms + fast: fast discovery algorithms
@@ -120,6 +126,18 @@ export function selectAlgorithmByBudget(
   // low_ms + balanced: heuristic and alpha (faster than genetic)
   if (latencyBudget === 'low_ms' && qualityFloor === 'balanced') {
     return ['inductive_miner', 'alpha_plus_plus'];
+  }
+
+  // low_ms + quality: inductive miner is the best quality algorithm that reliably
+  // fits within a low-millisecond budget for typical event logs.
+  if (latencyBudget === 'low_ms' && qualityFloor === 'quality') {
+    return ['inductive_miner', 'heuristic_miner'];
+  }
+
+  // low_ms + research: prefer inductive miner; pm4py algorithms cannot be guaranteed
+  // at low_ms so we fall back to WASM algorithms.
+  if (latencyBudget === 'low_ms' && qualityFloor === 'research') {
+    return ['inductive_miner'];
   }
 
   // high_ms + balanced: inductive and simulated annealing

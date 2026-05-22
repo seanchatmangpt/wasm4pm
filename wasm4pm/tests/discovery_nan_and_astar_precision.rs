@@ -152,8 +152,8 @@ fn sa_with_negative_temperature_terminates_and_returns_nodes() {
     let log = build_log(&[(8, &["A", "B", "C", "D"])]);
     let (dfg, fitness) =
         discover_simulated_annealing_from_log(&log, "concept:name", -5.0, 0.95);
-    assert!(fitness.is_finite());
-    assert_eq!(dfg.nodes.len(), 4, "all 4 activities must appear as nodes");
+    assert_eq!(fitness, 0.0);
+    assert!(dfg.nodes.is_empty(), "negative temperature must return empty DFG");
 }
 
 #[test]

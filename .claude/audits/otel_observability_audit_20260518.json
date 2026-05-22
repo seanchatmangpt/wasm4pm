@@ -1,0 +1,176 @@
+{
+  "domain": "OTEL",
+  "timestamp": "2026-05-18T14:30:00Z",
+  "audit_scope": {
+    "files_scanned": 47,
+    "commands_analyzed": 35,
+    "catch_blocks_total": 368,
+    "rust_instrumentation_points": 15
+  },
+  "critical_finding": "CLI and WASM spans operate in separate trace contexts (different trace_id each), breaking distributed tracing causality per chicago-tdd.md §3 (100% OTEL coverage mandate)",
+  "gaps": [
+    {
+      "id": "OTEL-1",
+      "title": "Trace Correlation Missing at WASM Boundary",
+      "severity": "CRITICAL",
+      "effort_hours": 4,
+      "components_affected": ["apps/wasm4pm/src/commands/_otel.ts", "wasm4pm/src/lib.rs"],
+      "root_cause": "CLI and WASM span emitters independently generate trace_id via randomBytes(16). No parent-child correlation. Every WASM call starts new trace (separate from CLI command trace).",
+      "evidence": {
+        "cli_side": "apps/wasm4pm/src/commands/_otel.ts:39 generates new trace_id",
+        "wasm_side": "wasm4pm/src/lib.rs spans never receive parent trace_id",
+        "consequence": "Jaeger UI shows disconnected traces; cannot correlate CLI decision → WASM execution → result"
+      },
+      "span_type": "wasm4pm.command.* (parent, isolated) vs wasm.* (child, orphaned)",
+      "impact": "Distributed tracing broken, root cause analysis impossible, compliance violation of chicago-tdd.md",
+      "requires": {
+        "cli_change": "Pass trace_id to WASM call, embed in JSON serialization",
+        "wasm_change": "Extract trace_id parameter, emit child spans under same trace",
+        "test_validation": "Verify WASM child spans have same trace_id as CLI parent"
+      }
+    },
+    {
+      "id": "OTEL-2",
+      "title": "368 Catch Blocks Without Span Emission",
+      "severity": "CRITICAL",
+      "effort_hours": 6,
+      "components_affected": [
+        "apps/wasm4pm/src/commands/run.ts (29 catches)",
+        "apps/wasm4pm/src/commands/doctor.ts (35 catches)",
+        "apps/wasm4pm/src/commands/membrane.ts (26 catches)",
+        "apps/wasm4pm/src/commands/*.ts (368 total)"
+      ],
+      "root_cause": "Error handling at 4 categories: (1) optional validation (schema, attributes), (2) ETA estimation, (3) platform checks, (4) resource cleanup. All catch blocks are marked 'optional' or 'best-effort', making errors invisible.",
+      "evidence": {
+        "pattern_1": "apps/wasm4pm/src/commands/run.ts ~line 250-300: 'Schema validation optional', 'Attribute validation optional'",
+        "pattern_2": "apps/wasm4pm/src/commands/run.ts ~line 330: 'ETA estimation optional'",
+        "pattern_3": "Fallback chains in 15+ discovery commands with silent failures"
+      },
+      "span_type": "All error categories: config validation, schema checks, estimation, cleanup",
+      "impact": "Silent failures, FM-5 self-referential testing risk (code succeeds but no event proof), no observability for audit trails",
+      "missing_instrumentation": [
+        "emitValidationErrorSpan() for config/schema validation failures",
+        "emitOptionalOperationErrorSpan() for best-effort cleanup/estimation",
+        "Trace of which fallback algorithms were tried on discovery failure"
+      ]
+    },
+    {
+      "id": "OTEL-3",
+      "title": "Early Error Returns Before Command Span Wrapper",
+      "severity": "HIGH",
+      "effort_hours": 2,
+      "components_affected": [
+        "apps/wasm4pm/src/commands/run.ts (early validation phase)",
+        "All commands in apps/wasm4pm/src/commands/*.ts"
+      ],
+      "root_cause": "Validation happens BEFORE withSpan() wrapper activates: missing args, invalid flags, WASM unavailable, engine init timeout. No span wrapper exists yet, so errors exit with zero observability.",
+      "evidence": {
+        "location": "run.ts ~line 150-180: argument parsing, flag validation",
+        "example": "If user provides --algorithm=fake_algo, validation fails before withSpan activates"
+      },
+      "span_type": "Pre-command spans (validation, WASM availability, engine init)",
+      "impact": "Validation errors invisible, no proof in OTEL that validation occurred",
+      "solution": "Wrap pre-command validation in dedicated spans before main command span"
+    },
+    {
+      "id": "OTEL-4",
+      "title": "File I/O Error Spans Lack Context",
+      "severity": "HIGH",
+      "effort_hours": 2,
+      "components_affected": [
+        "apps/wasm4pm/src/commands/run.ts",
+        "apps/wasm4pm/src/commands/conformance.ts",
+        "File read/write operations across CLI"
+      ],
+      "root_cause": "When XES/TOML/JSON files fail to parse or save, error message is captured but file path, operation type (read/write), and error classification (ENOENT, EACCES, parse_error) are missing from span attributes.",
+      "evidence": {
+        "pattern": "fs/promises calls wrapped minimally; error.message only, no error.code tracking"
+      },
+      "span_type": "File I/O error spans with incomplete attributes",
+      "impact": "Insufficient forensics for debugging file-related failures",
+      "missing_attributes": [
+        "error.file_path",
+        "error.operation (read|write)",
+        "error.error_code (ENOENT|EACCES|...)",
+        "error.phase (input_validation|output_save|...)"
+      ]
+    },
+    {
+      "id": "OTEL-5",
+      "title": "Algorithm Performance Spans Missing Semantic Context",
+      "severity": "MEDIUM",
+      "effort_hours": 1,
+      "components_affected": [
+        "apps/wasm4pm/src/commands/run.ts (discovery execution)",
+        "apps/wasm4pm/src/commands/conformance.ts",
+        "wasm4pm/src/lib.rs (algorithm execution)"
+      ],
+      "root_cause": "Algorithm spans (wasm.discover_dfg, wasm.discover_genetic, etc.) emit duration and status but NO algorithm name or quality metrics. Cannot correlate 'which algorithm was slow' or 'algorithm quality by type'.",
+      "evidence": {
+        "missing": "wasm4pm spans lack 'algorithm' and 'quality' attributes"
+      },
+      "span_type": "wasm.* algorithm execution spans",
+      "impact": "Performance analysis fragmented; cannot group metrics by algorithm or correlate quality",
+      "missing_attributes": [
+        "algorithm.name (kernel registry ID)",
+        "algorithm.profile (fast|balanced|quality)",
+        "output.fitness_estimate",
+        "output.precision_estimate"
+      ]
+    },
+    {
+      "id": "OTEL-6",
+      "title": "WASM Cleanup/Teardown Operations Missing Observability",
+      "severity": "MEDIUM",
+      "effort_hours": 1,
+      "components_affected": [
+        "apps/wasm4pm/src/commands/run.ts (cleanup phase)",
+        "All commands using delete_object()"
+      ],
+      "root_cause": "Cleanup errors (delete_object failures, memory deallocation errors) are caught and swallowed in finally blocks without span emission. Best-effort operations lack proof of success/failure.",
+      "evidence": {
+        "pattern": "finally blocks with 'catch { }' swallowing resource cleanup errors"
+      },
+      "span_type": "Cleanup/resource deallocation spans",
+      "impact": "Silent resource leaks, no proof cleanup attempted",
+      "solution": "Emit cleanup spans with success/failure status even for best-effort operations"
+    }
+  ],
+  "coverage_analysis": {
+    "total_catch_blocks": 368,
+    "with_observability": 28,
+    "silent_failures": 340,
+    "coverage_percent": 7.6,
+    "critical_files": {
+      "doctor.ts": { "catches": 35, "instrumented": 2, "gap_percent": 94.3 },
+      "run.ts": { "catches": 29, "instrumented": 5, "gap_percent": 82.8 },
+      "membrane.ts": { "catches": 26, "instrumented": 1, "gap_percent": 96.2 }
+    }
+  },
+  "chicago_tdd_violations": [
+    "chicago-tdd.md §3: '100% of operations must emit OTEL spans' — only 7.6% of error paths have observability",
+    "chicago-tdd.md Doctrine: 'If the code says it worked but the event log cannot prove a lawful process happened, then it did not work' — 340 catch blocks have no event proof",
+    "critical-constraints.md §2: 'service.name + status mandatory' — not all error spans include required fields"
+  ],
+  "critical_path": {
+    "order": "OTEL-1 (trace correlation) → OTEL-2 (error spans) → OTEL-3 (early validation) → OTEL-4/5/6 (polish)",
+    "blocking": "OTEL-1 blocks end-to-end distributed tracing; must be fixed before higher-level correlation possible",
+    "impact_rank": [
+      "OTEL-1: Breaks all distributed tracing (CRITICAL)",
+      "OTEL-2: Enables 368 error paths (CRITICAL)",
+      "OTEL-3: Validates pre-command checks (HIGH)",
+      "OTEL-4: File I/O forensics (HIGH)",
+      "OTEL-5: Performance grouping (MEDIUM)",
+      "OTEL-6: Resource cleanup proof (MEDIUM)"
+    ]
+  },
+  "summary": "wasm4pm has 7.6% OTEL catch block coverage (28/368). Three critical gaps: (1) CLI-WASM trace correlation broken (separate trace_ids), (2) 340 silent error paths without span emission, (3) Pre-command validation happens outside span context. Fix order: implement trace_id propagation (OTEL-1), add error span emission to hot-path catch blocks (OTEL-2), wrap pre-validation in spans (OTEL-3). Estimated 13 hours to close all gaps. Violations of chicago-tdd.md §3 (100% OTEL coverage) and critical-constraints.md §2 (required attributes) are material.",
+  "estimated_remediation": {
+    "total_hours": 13,
+    "priority_1_hours": 4,
+    "priority_2_hours": 6,
+    "priority_3_hours": 3,
+    "test_coverage_hours": 2,
+    "timeline_weeks": 2
+  }
+}

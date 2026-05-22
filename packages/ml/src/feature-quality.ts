@@ -1,174 +1,160 @@
 /**
- * Feature quality assessment for ML pipelines.
+ * Feature Quality Assessment Module
  *
- * Detects problematic features before training:
- * - Zero-variance columns (no predictive power)
- * - Multicollinearity (r > 0.95)
- * - Missing values
- * - Skewed distributions
+ * Evaluates numeric feature matrices for:
+ * - Zero-variance columns (waste dimensions)
+ * - Multicollinearity (correlated features corrupt regression)
+ * - Insufficient samples
  *
- * Quality score: 0-1, where 1 = all features valid and diverse.
+ * Returns quality score (0-1) + actionable warnings.
  */
 
-import type { FeatureMatrix } from './types.js';
-
-export interface FeatureQualityIssue {
-  type: 'zero_variance' | 'high_correlation' | 'missing_values' | 'skewed';
-  featureName: string;
-  severity: 'critical' | 'warning';
-  description: string;
-}
-
-export interface FeatureQualityReport {
-  score: number; // 0-1
-  issues: FeatureQualityIssue[];
+export interface QualityReport {
+  qualityScore: number; // 0-1, higher is better
+  zeroVarianceColumns: number;
+  correlatedPairs: Array<{ col1: number; col2: number; correlation: number }>;
+  warnings: string[];
   recommendations: string[];
-  validFeatureCount: number;
-  totalFeatureCount: number;
-  hasProblematicFeatures: boolean;
 }
 
-function computeVariance(values: number[]): number {
-  if (values.length === 0) return 0;
-  const mean = values.reduce((a, b) => a + b, 0) / values.length;
-  const sumSquaredDiff = values.reduce((a, x) => a + (x - mean) ** 2, 0);
-  return sumSquaredDiff / values.length;
+/**
+ * Compute variance (standard deviation squared) for a column.
+ */
+function computeVariance(column: number[]): number {
+  if (column.length === 0) return 0;
+  const mean = column.reduce((a, b) => a + b, 0) / column.length;
+  const sumSquaredDiff = column.reduce((sum, val) => sum + Math.pow(val - mean, 2), 0);
+  return sumSquaredDiff / column.length;
 }
 
+/**
+ * Compute Pearson correlation coefficient between two columns.
+ */
 function computeCorrelation(col1: number[], col2: number[]): number {
-  if (col1.length === 0) return 0;
+  if (col1.length !== col2.length || col1.length === 0) return 0;
 
   const mean1 = col1.reduce((a, b) => a + b, 0) / col1.length;
   const mean2 = col2.reduce((a, b) => a + b, 0) / col2.length;
 
-  let numerator = 0;
-  let sum1Sq = 0;
-  let sum2Sq = 0;
+  let covariance = 0;
+  let sumSq1 = 0;
+  let sumSq2 = 0;
 
   for (let i = 0; i < col1.length; i++) {
-    const d1 = col1[i] - mean1;
-    const d2 = col2[i] - mean2;
-    numerator += d1 * d2;
-    sum1Sq += d1 * d1;
-    sum2Sq += d2 * d2;
+    const dev1 = col1[i] - mean1;
+    const dev2 = col2[i] - mean2;
+    covariance += dev1 * dev2;
+    sumSq1 += dev1 * dev1;
+    sumSq2 += dev2 * dev2;
   }
 
-  const denom = Math.sqrt(sum1Sq * sum2Sq);
-  if (denom === 0) return 0;
-
-  return Math.abs(numerator / denom);
+  const denom = Math.sqrt(sumSq1 * sumSq2);
+  return denom === 0 ? 0 : covariance / denom;
 }
 
-function detectMissingValues(col: number[]): number {
-  return col.filter((x) => !Number.isFinite(x)).length;
-}
+/**
+ * Assess feature quality for a numeric feature matrix.
+ *
+ * Quality scoring (0-1):
+ * - Start at 1.0
+ * - If >20% columns are zero-variance: -0.4
+ * - If max correlation > 0.95: -0.2 per pair (capped at -0.3)
+ * - If <10 samples: -0.1
+ *
+ * @param features - Numeric feature matrix (rows = samples, cols = features)
+ * @returns QualityReport with score, warnings, and recommendations
+ */
+export function assessFeatureQuality(features: number[][]): QualityReport {
+  const warnings: string[] = [];
+  const recommendations: string[] = [];
+  let qualityScore = 1.0;
 
-export function assessFeatureQuality(
-  features: FeatureMatrix,
-): FeatureQualityReport {
-  const issues: FeatureQualityIssue[] = [];
-  const { data, featureNames } = features;
-
-  if (!data || data.length === 0 || !data[0]) {
+  // Edge case: empty or single-sample data
+  if (!features || features.length === 0) {
+    warnings.push('No features provided');
     return {
-      score: 0,
-      issues: [
-        {
-          type: 'zero_variance',
-          featureName: 'all',
-          severity: 'critical',
-          description: 'No data provided',
-        },
-      ],
-      recommendations: ['Ensure feature matrix is non-empty'],
-      validFeatureCount: 0,
-      totalFeatureCount: featureNames.length,
-      hasProblematicFeatures: true,
+      qualityScore: 0,
+      zeroVarianceColumns: 0,
+      correlatedPairs: [],
+      warnings,
+      recommendations: ['Provide valid feature data with at least 3 samples'],
     };
   }
 
-  const numRows = data.length;
-  const numCols = data[0].length;
+  const numRows = features.length;
+  const numCols = features[0]?.length ?? 0;
 
-  // Extract columns (transpose)
-  const columns: number[][] = [];
-  for (let col = 0; col < numCols; col++) {
-    const column: number[] = [];
-    for (let row = 0; row < numRows; row++) {
-      column.push(data[row][col]);
-    }
-    columns.push(column);
+  if (numCols === 0) {
+    warnings.push('No feature columns found');
+    return {
+      qualityScore: 0,
+      zeroVarianceColumns: 0,
+      correlatedPairs: [],
+      warnings,
+      recommendations: ['Provide feature matrix with at least one column'],
+    };
   }
 
-  // Check for zero variance
-  for (let i = 0; i < columns.length; i++) {
-    const variance = computeVariance(columns[i]);
-    if (variance < 1e-10) {
-      issues.push({
-        type: 'zero_variance',
-        featureName: featureNames[i] || `feature_${i}`,
-        severity: 'critical',
-        description: `Variance = ${variance.toFixed(6)} (zero or near-zero)`,
-      });
-    }
+  // Transpose to analyze columns
+  const columns: number[][] = Array(numCols)
+    .fill(null)
+    .map((_, colIdx) => features.map((row) => row[colIdx]));
+
+  // Check variance
+  const variances = columns.map(computeVariance);
+  const zeroVarianceCount = variances.filter((v) => v < 1e-10).length;
+  const zeroVarianceRatio = zeroVarianceCount / numCols;
+
+  if (zeroVarianceCount > 0) {
+    warnings.push(`${zeroVarianceCount} zero-variance column(s) detected`);
+    recommendations.push(`Remove or engineer ${zeroVarianceCount} feature(s) with zero variance`);
   }
 
-  // Check for missing values
-  for (let i = 0; i < columns.length; i++) {
-    const missingCount = detectMissingValues(columns[i]);
-    if (missingCount > numRows * 0.2) {
-      issues.push({
-        type: 'missing_values',
-        featureName: featureNames[i] || `feature_${i}`,
-        severity: 'warning',
-        description: `${missingCount}/${numRows} missing values (${((missingCount / numRows) * 100).toFixed(1)}%)`,
-      });
-    }
+  if (zeroVarianceRatio > 0.2) {
+    qualityScore -= 0.4;
+    warnings.push(`>20% columns are zero-variance (${(zeroVarianceRatio * 100).toFixed(1)}%)`);
   }
 
-  // Check for multicollinearity (pairwise correlations)
-  const correlationWarnings = new Set<string>();
-  for (let i = 0; i < columns.length; i++) {
-    for (let j = i + 1; j < columns.length; j++) {
-      const corr = computeCorrelation(columns[i], columns[j]);
+  // Check correlations
+  const correlatedPairs: Array<{ col1: number; col2: number; correlation: number }> = [];
+  let correlationPenalty = 0;
+
+  for (let i = 0; i < numCols; i++) {
+    for (let j = i + 1; j < numCols; j++) {
+      const corr = Math.abs(computeCorrelation(columns[i], columns[j]));
       if (corr > 0.95) {
-        const pair = `${featureNames[i] || `feature_${i}`} & ${featureNames[j] || `feature_${j}`}`;
-        if (!correlationWarnings.has(pair)) {
-          issues.push({
-            type: 'high_correlation',
-            featureName: featureNames[i] || `feature_${i}`,
-            severity: 'warning',
-            description: `High correlation (r=${corr.toFixed(3)}) with ${featureNames[j] || `feature_${j}`}`,
-          });
-          correlationWarnings.add(pair);
-        }
+        correlatedPairs.push({ col1: i, col2: j, correlation: corr });
+        correlationPenalty -= 0.2;
       }
     }
   }
 
-  const validFeatureCount = numCols - issues.filter((x) => x.severity === 'critical').length;
-  const score = Math.max(0, 1 - (issues.length * 0.1 + (numCols - validFeatureCount) * 0.3));
+  // Cap correlation penalty at -0.3
+  if (correlationPenalty < -0.3) {
+    correlationPenalty = -0.3;
+  }
+  qualityScore += correlationPenalty;
 
-  const recommendations: string[] = [];
-  if (issues.some((x) => x.type === 'zero_variance')) {
-    recommendations.push('Remove zero-variance features before training');
+  if (correlatedPairs.length > 0) {
+    warnings.push(`${correlatedPairs.length} highly correlated feature pair(s) (r > 0.95)`);
+    recommendations.push('Remove or combine highly correlated features to improve stability');
   }
-  if (issues.some((x) => x.type === 'high_correlation')) {
-    recommendations.push('Consider removing one feature from each highly correlated pair');
+
+  // Check sample size
+  if (numRows < 10) {
+    qualityScore -= 0.1;
+    warnings.push(`Only ${numRows} samples (recommend ≥10 for model stability)`);
+    recommendations.push(`Gather more data; current sample is too small for reliable ML`);
   }
-  if (issues.some((x) => x.type === 'missing_values')) {
-    recommendations.push('Impute or remove features with >20% missing values');
-  }
-  if (validFeatureCount === 0) {
-    recommendations.push('No valid features remain; provide more/better input data');
-  }
+
+  // Clamp score to [0, 1]
+  qualityScore = Math.max(0, Math.min(1, qualityScore));
 
   return {
-    score,
-    issues,
+    qualityScore,
+    zeroVarianceColumns: zeroVarianceCount,
+    correlatedPairs,
+    warnings,
     recommendations,
-    validFeatureCount,
-    totalFeatureCount: numCols,
-    hasProblematicFeatures: issues.length > 0,
   };
 }

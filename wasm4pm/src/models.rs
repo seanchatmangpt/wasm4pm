@@ -15,11 +15,17 @@
 
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Deserializer, Serialize};
-use std::collections::HashMap;
+use std::collections::{HashMap, BTreeMap};
 
 /// Parse an ISO 8601 / RFC 3339 timestamp string into milliseconds since Unix epoch.
-/// Handles formats: "2024-01-01T10:00:00+00:00", "2024-01-01T10:00:00Z",
-///                  "2024-01-01T10:00:00.123+00:00", "2024-01-01T10:00:00" (naive UTC)
+///
+/// Handles formats:
+/// - `2024-01-01T10:00:00+00:00`
+/// - `2024-01-01T10:00:00Z`
+/// - `2024-01-01T10:00:00.123+00:00`
+/// - `2024-01-01T10:00:00` (naive UTC)
+///
+/// Returns `None` if the string cannot be parsed as a valid date-time.
 pub fn parse_timestamp_ms(s: &str) -> Option<i64> {
     use chrono::{DateTime, NaiveDateTime, TimeZone, Utc};
     // Try RFC 3339 / ISO 8601 with offset first
@@ -44,20 +50,30 @@ pub fn parse_timestamp_ms(s: &str) -> Option<i64> {
     None
 }
 
-/// Attribute value types for event data
+/// Attribute value types for event data.
+///
+/// Mirrors the XES standard attribute types.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 #[serde(tag = "tag", content = "value")]
 pub enum AttributeValue {
+    /// UTF-8 string value.
     String(String),
+    /// 64-bit signed integer value.
     Int(i64),
+    /// 64-bit floating point value.
     Float(f64),
-    Date(String), // ISO 8601
+    /// ISO 8601 formatted date string.
+    Date(String),
+    /// Boolean value.
     Boolean(bool),
+    /// List of attribute values.
     List(Vec<AttributeValue>),
+    /// Nested container of named attribute values.
     Container(HashMap<String, AttributeValue>),
 }
 
 impl AttributeValue {
+    /// Return a reference to the inner string if this is a `String` variant.
     #[inline]
     pub fn as_string(&self) -> Option<&str> {
         match self {
@@ -66,6 +82,7 @@ impl AttributeValue {
         }
     }
 
+    /// Return the inner integer if this is an `Int` variant.
     #[inline]
     pub fn as_i64(&self) -> Option<i64> {
         match self {
@@ -74,6 +91,7 @@ impl AttributeValue {
         }
     }
 
+    /// Return the inner float if this is a `Float` variant.
     #[inline]
     pub fn as_f64(&self) -> Option<f64> {
         match self {
@@ -82,6 +100,7 @@ impl AttributeValue {
         }
     }
 
+    /// Return the inner boolean if this is a `Boolean` variant.
     #[inline]
     pub fn as_bool(&self) -> Option<bool> {
         match self {
@@ -91,15 +110,10 @@ impl AttributeValue {
     }
 }
 
+/// Type alias for a collection of named attributes.
 pub type Attributes = HashMap<String, AttributeValue>;
 
-/// Custom deserializer for OCEL attributes that handles both:
-///
-/// - HashMap format: `{"key1": value1, "key2": value2}`
-/// - Array format: `[{"name": "key1", "value": value1}, ...]`
-///
-/// Deserialize OCEL type lists that can be either `["Invoice", "Payment"]` (legacy)
-/// or `[{"name": "Invoice", "attributes": [...]}, ...]` (OCEL 2.0 standard).
+/// Custom deserializer for OCEL type names.
 fn deserialize_ocel_type_names<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
 where
     D: Deserializer<'de>,
@@ -120,6 +134,7 @@ where
     })
 }
 
+/// Custom deserializer for OCEL attributes.
 fn deserialize_ocel_attributes<'de, D>(deserializer: D) -> Result<Attributes, D::Error>
 where
     D: Deserializer<'de>,
@@ -147,8 +162,6 @@ where
         where
             A: de::SeqAccess<'de>,
         {
-            // Use serde_json::Value for raw value to handle any JSON type (string, number, bool)
-            // rather than requiring the internally-tagged AttributeValue format.
             #[derive(Deserialize)]
             struct NamedAttribute {
                 name: String,
@@ -186,9 +199,10 @@ where
     deserializer.deserialize_any(AttributesVisitor)
 }
 
-/// Event within a trace
+/// A single event within a trace.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Event {
+    /// Attributes associated with this event (e.g., activity name, timestamp).
     pub attributes: Attributes,
 }
 
@@ -199,6 +213,7 @@ impl Default for Event {
 }
 
 impl Event {
+    /// Create a new event with empty attributes.
     #[must_use]
     pub fn new() -> Self {
         Event {
@@ -207,10 +222,12 @@ impl Event {
     }
 }
 
-/// Trace (case) of events
+/// A trace representing a single process instance (case).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Trace {
+    /// Attributes associated with the case (e.g., case ID, customer ID).
     pub attributes: Attributes,
+    /// Ordered sequence of events in this case.
     pub events: Vec<Event>,
 }
 
@@ -221,6 +238,7 @@ impl Default for Trace {
 }
 
 impl Trace {
+    /// Create a new trace with empty attributes and events.
     #[must_use]
     pub fn new() -> Self {
         Trace {
@@ -230,11 +248,75 @@ impl Trace {
     }
 }
 
-/// Event log (case-centric)
+/// An event log containing a collection of traces.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct EventLog {
+    /// Global attributes for the event log.
     pub attributes: Attributes,
+    /// List of traces (cases) in the log.
     pub traces: Vec<Trace>,
+}
+
+fn convert_attribute_value(val: wasm4pm_types::AttributeValue) -> Option<AttributeValue> {
+    match val {
+        wasm4pm_types::AttributeValue::String(s) => Some(AttributeValue::String(s)),
+        wasm4pm_types::AttributeValue::Date(d) => Some(AttributeValue::Date(d.to_rfc3339())),
+        wasm4pm_types::AttributeValue::Int(i) => Some(AttributeValue::Int(i)),
+        wasm4pm_types::AttributeValue::Float(f) => Some(AttributeValue::Float(f)),
+        wasm4pm_types::AttributeValue::Boolean(b) => Some(AttributeValue::Boolean(b)),
+        wasm4pm_types::AttributeValue::ID(id) => Some(AttributeValue::String(id.to_string())),
+        wasm4pm_types::AttributeValue::List(l) => {
+            let mut list = Vec::new();
+            for attr in l {
+                if let Some(cv) = convert_attribute_value(attr.value) {
+                    list.push(cv);
+                }
+            }
+            Some(AttributeValue::List(list))
+        },
+        wasm4pm_types::AttributeValue::Container(c) => {
+            let mut map = HashMap::new();
+            for attr in c {
+                if let Some(cv) = convert_attribute_value(attr.value) {
+                    map.insert(attr.key, cv);
+                }
+            }
+            Some(AttributeValue::Container(map))
+        },
+        wasm4pm_types::AttributeValue::None() => None,
+    }
+}
+
+fn convert_attributes(attrs: wasm4pm_types::Attributes) -> HashMap<String, AttributeValue> {
+    let mut map = HashMap::new();
+    for attr in attrs {
+        if let Some(cv) = convert_attribute_value(attr.value) {
+            map.insert(attr.key, cv);
+        }
+    }
+    map
+}
+
+impl From<wasm4pm_types::EventLog> for EventLog {
+    fn from(log: wasm4pm_types::EventLog) -> Self {
+        let mut traces = Vec::with_capacity(log.traces.len());
+        for trace in log.traces {
+            let mut events = Vec::with_capacity(trace.events.len());
+            for event in trace.events {
+                events.push(Event {
+                    attributes: convert_attributes(event.attributes),
+                });
+            }
+            traces.push(Trace {
+                attributes: convert_attributes(trace.attributes),
+                events,
+            });
+        }
+        EventLog {
+            attributes: convert_attributes(log.attributes),
+            traces,
+        }
+    }
 }
 
 /// Columnar, integer-encoded view of an event log.
@@ -263,11 +345,6 @@ impl<'a> ColumnarLog<'a> {
     /// This is a zero-copy view — the owned data stays alive behind the reference.
     #[must_use]
     pub fn from_owned(owned: &'a crate::cache::OwnedColumnarLog) -> Self {
-        // SAFETY: We transmute the borrowed slices to extend the lifetime.
-        // This is safe because `owned` is guaranteed to outlive the returned
-        // ColumnarLog (the lifetime 'a is tied to the &owned parameter).
-        // The events/trace_offsets data is immutable once created.
-
         ColumnarLog {
             events: owned.events.clone(),
             trace_offsets: owned.trace_offsets.clone(),
@@ -340,10 +417,6 @@ impl<'a> ColumnarLog<'a> {
                 }
             }
 
-            // General repetition check (if needed, but L1/L2 cover most "rework")
-            // The previous implementation used a HashSet for any repetition.
-            // Let's stick to the roadmap's focus on L1/L2.
-
             if has_rework {
                 count += 1;
             }
@@ -353,6 +426,7 @@ impl<'a> ColumnarLog<'a> {
 }
 
 impl EventLog {
+    /// Create a new event log with empty attributes and traces.
     #[must_use]
     pub fn new() -> Self {
         EventLog {
@@ -361,11 +435,13 @@ impl EventLog {
         }
     }
 
+    /// Return the total number of events across all traces.
     #[inline]
     pub fn event_count(&self) -> usize {
         self.traces.iter().map(|t| t.events.len()).sum()
     }
 
+    /// Return the total number of traces (cases) in the log.
     #[inline]
     pub fn case_count(&self) -> usize {
         self.traces.len()
@@ -470,83 +546,117 @@ impl EventLog {
         for t in 0..col.trace_offsets.len().saturating_sub(1) {
             let start = col.trace_offsets[t];
             let end = col.trace_offsets[t + 1];
-            // Sequential read over flat integer array — maximally cache-friendly
             for i in start..end.saturating_sub(1) {
                 *counts
                     .entry((col.events[i], col.events[i + 1]))
                     .or_insert(0) += 1;
             }
         }
-
         counts
             .into_iter()
-            .map(|((f, t), freq)| {
+            .map(|((from, to), count)| {
                 (
-                    col.vocab[f as usize].to_owned(),
-                    col.vocab[t as usize].to_owned(),
-                    freq,
+                    col.vocab[from as usize].to_string(),
+                    col.vocab[to as usize].to_string(),
+                    count,
                 )
             })
             .collect()
     }
+
+    /// Get all traces as activity sequences.
+    #[inline]
+    pub fn get_traces(&self, activity_key: &str) -> Vec<Vec<String>> {
+        let col = self.to_columnar(activity_key);
+        let mut traces = Vec::with_capacity(col.trace_offsets.len().saturating_sub(1));
+
+        for t in 0..col.trace_offsets.len().saturating_sub(1) {
+            let start = col.trace_offsets[t];
+            let end = col.trace_offsets[t + 1];
+            let mut sequence = Vec::with_capacity(end - start);
+            for i in start..end {
+                sequence.push(col.vocab[col.events[i] as usize].to_string());
+            }
+            traces.push(sequence);
+        }
+        traces
+    }
 }
 
-/// OCEL Object Attribute definition
+/// OCEL Object Attribute definition.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OCELObjectAttribute {
+    /// Name of the object attribute.
     pub name: String,
+    /// Type of the object attribute (e.g., "string", "float").
     pub attribute_type: String,
 }
 
-/// OCEL Event Attribute definition
+/// OCEL Event Attribute definition.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OCELEventAttribute {
+    /// Name of the event attribute.
     pub name: String,
+    /// Type of the event attribute (e.g., "string", "float").
     pub attribute_type: String,
 }
 
-/// OCEL Event-Object Reference (OCEL 2.0)
+/// OCEL Event-Object Reference (OCEL 2.0).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OCELEventObjectRef {
+    /// ID of the referenced object.
     #[serde(rename = "objectId", alias = "object_id")]
     pub object_id: String,
-    pub qualifier: String, // e.g., "item", "customer", "resource"
+    /// Qualifier for the relationship (e.g., "item", "customer").
+    pub qualifier: String,
 }
 
-/// OCEL Object Attribute Change (OCEL 2.0)
+/// OCEL Object Attribute Change (OCEL 2.0).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OCELObjectAttributeChange {
+    /// Timestamp when the attribute changed.
     pub timestamp: String,
+    /// Name of the attribute that changed.
     pub attribute_name: String,
+    /// New value of the attribute.
     pub value: AttributeValue,
 }
 
-/// OCEL Object Relation (OCEL 2.0)
+/// OCEL Object Relation (OCEL 2.0).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OCELObjectRelation {
+    /// ID of the source object.
     pub source_id: String,
+    /// ID of the target object.
     pub target_id: String,
-    pub qualifier: String, // e.g., "belongs-to", "created-by"
+    /// Qualifier for the relationship (e.g., "belongs-to").
+    pub qualifier: String,
 }
 
-/// OCEL Event
+/// A single event in an Object-Centric Event Log.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OCELEvent {
+    /// Unique identifier for the event.
     pub id: String,
+    /// Type of the event (activity).
     #[serde(rename = "type", alias = "event_type")]
     pub event_type: String,
+    /// ISO 8601 timestamp of the event.
     #[serde(rename = "time", alias = "timestamp")]
-    pub timestamp: String, // ISO 8601
+    pub timestamp: String,
+    /// Event attributes.
     #[serde(default, deserialize_with = "deserialize_ocel_attributes")]
     pub attributes: HashMap<String, AttributeValue>,
+    /// List of object IDs directly associated with this event (OCEL 1.0).
     #[serde(default)]
     pub object_ids: Vec<String>,
+    /// Structured relationships to objects (OCEL 2.0).
     #[serde(rename = "relationships", alias = "object_refs", default)]
     pub object_refs: Vec<OCELEventObjectRef>,
 }
 
 impl OCELEvent {
-    /// Extract object IDs from both object_ids and object_refs
+    /// Extract all associated object IDs from both `object_ids` and `object_refs`.
     pub fn all_object_ids(&self) -> impl Iterator<Item = &str> {
         self.object_ids
             .iter()
@@ -554,7 +664,7 @@ impl OCELEvent {
             .chain(self.object_refs.iter().map(|r| r.object_id.as_str()))
     }
 
-    /// Extract object IDs from object_refs only (deprecated, use all_object_ids)
+    /// Extract object IDs from object_refs only (deprecated, use all_object_ids).
     #[deprecated(since = "0.6.0", note = "use all_object_ids() instead")]
     pub fn get_object_ids(&self) -> Vec<String> {
         self.object_refs
@@ -564,44 +674,57 @@ impl OCELEvent {
     }
 }
 
-/// OCEL Object Relation Reference (for embedded relations in objects)
+/// OCEL Object Relation Reference (for embedded relations in objects).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OCELObjectRelRef {
+    /// ID of the referenced object.
     #[serde(rename = "objectId", alias = "object_id")]
     pub object_id: String,
+    /// Qualifier for the relationship.
     pub qualifier: String,
 }
 
-/// OCEL Object
+/// A single object in an Object-Centric Event Log.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OCELObject {
+    /// Unique identifier for the object.
     pub id: String,
+    /// Type of the object.
     #[serde(rename = "type", alias = "object_type")]
     pub object_type: String,
+    /// Initial object attributes.
     #[serde(default, deserialize_with = "deserialize_ocel_attributes")]
     pub attributes: HashMap<String, AttributeValue>,
+    /// History of attribute changes (OCEL 2.0).
     #[serde(default)]
     pub changes: Vec<OCELObjectAttributeChange>,
+    /// Embedded relationships to other objects.
     #[serde(rename = "relationships", default)]
     pub embedded_relations: Vec<OCELObjectRelRef>,
 }
 
-/// Object-Centric Event Log
+/// An Object-Centric Event Log (OCEL).
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct OCEL {
+    /// List of all event types (activities) in the log.
     #[serde(rename = "eventTypes", alias = "event_types", default, deserialize_with = "deserialize_ocel_type_names")]
     pub event_types: Vec<String>,
+    /// List of all object types in the log.
     #[serde(rename = "objectTypes", alias = "object_types", default, deserialize_with = "deserialize_ocel_type_names")]
     pub object_types: Vec<String>,
+    /// All events in the log.
     #[serde(default)]
     pub events: Vec<OCELEvent>,
+    /// All objects in the log.
     #[serde(default)]
     pub objects: Vec<OCELObject>,
+    /// Global object-to-object relations.
     #[serde(default)]
     pub object_relations: Vec<OCELObjectRelation>,
 }
 
 impl OCEL {
+    /// Create a new empty OCEL.
     #[must_use]
     pub fn new() -> Self {
         OCEL {
@@ -613,15 +736,18 @@ impl OCEL {
         }
     }
 
+    /// Return the total number of events in the log.
     pub fn event_count(&self) -> usize {
         self.events.len()
     }
 
+    /// Return the total number of objects in the log.
     pub fn object_count(&self) -> usize {
         self.objects.len()
     }
 
     /// Normalize object relations: merge embedded relations from objects into global object_relations.
+    ///
     /// Call this after deserialization if the OCEL 2.0 JSON contained relations in objects.
     pub fn normalize_relations(&mut self) {
         let mut all_relations = self.object_relations.clone();
@@ -638,53 +764,59 @@ impl OCEL {
     }
 }
 
-/// Petri Net place
+/// A place in a Petri Net.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PetriNetPlace {
+    /// Unique identifier for the place.
     pub id: String,
+    /// Human-readable label for the place.
     pub label: String,
+    /// Initial marking (token count) for this place.
     pub marking: Option<usize>,
 }
 
-/// Petri Net transition
+/// A transition in a Petri Net.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PetriNetTransition {
+    /// Unique identifier for the transition.
     pub id: String,
+    /// Human-readable label (activity name).
     pub label: String,
+    /// Whether this is an invisible transition (silent step).
     pub is_invisible: Option<bool>,
 }
 
-/// Arc in a Petri Net
+/// An arc in a Petri Net connecting a place to a transition or vice versa.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PetriNetArc {
+    /// ID of the source element (place or transition).
     pub from: String,
+    /// ID of the target element (place or transition).
     pub to: String,
+    /// Weight of the arc (number of tokens moved).
     pub weight: Option<usize>,
 }
 
-/// A Petri Net process model with places, transitions, and arcs.
+/// A Petri Net process model.
 ///
 /// Petri Nets provide a formal and precise representation of process workflows,
 /// supporting concurrency, synchronization, and conflict resolution.
-/// Discovered by algorithms such as Alpha++, Inductive Miner, ILP, and Genetic Algorithm.
-///
-/// # Fields
-///
-/// - `places` — State positions (conditions) in the net
-/// - `transitions` — Actions/events that change state
-/// - `arcs` — Connections between places and transitions
-/// - `initial_marking` — Initial token distribution (place → token count)
-/// - `final_markings` — Accepting final markings (list of place → token count maps)
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct PetriNet {
+    /// All places in the net.
     pub places: Vec<PetriNetPlace>,
+    /// All transitions in the net.
     pub transitions: Vec<PetriNetTransition>,
+    /// All arcs in the net.
     pub arcs: Vec<PetriNetArc>,
+    /// Initial marking mapping place ID to token count.
     pub initial_marking: HashMap<String, usize>,
+    /// List of accepting final markings (place ID to token count).
     pub final_markings: Vec<HashMap<String, usize>>,
 }
 
 impl PetriNet {
+    /// Create a new empty Petri Net.
     #[must_use]
     pub fn new() -> Self {
         PetriNet {
@@ -697,81 +829,80 @@ impl PetriNet {
     }
 }
 
-/// Directly-Follows relation
+/// A single directly-follows edge in a DFG.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DirectlyFollowsRelation {
+    /// ID of the source activity.
     pub from: String,
+    /// ID of the target activity.
     pub to: String,
+    /// Number of times this relation appears in the log.
     pub frequency: usize,
 }
 
 /// A Directly-Follows Graph (DFG) representing process flow.
 ///
-/// The DFG is the fundamental process model showing which activities
-/// directly follow each other in the event log, along with frequencies.
-/// It is the fastest discovery algorithm and serves as the foundation
-/// for more advanced process models.
-///
-/// # Fields
-///
-/// - `nodes` — Activities with occurrence frequencies
-/// - `edges` — Directly-follows relations with frequencies
-/// - `start_activities` — Activities that start traces (name → count)
-/// - `end_activities` — Activities that end traces (name → count)
+/// The DFG shows which activities directly follow each other in the event log.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DirectlyFollowsGraph {
+    /// Activities in the graph with their occurrence frequencies.
     pub nodes: Vec<DFGNode>,
+    /// Directed edges representing directly-follows relations.
     pub edges: Vec<DirectlyFollowsRelation>,
-    pub start_activities: HashMap<String, usize>,
-    pub end_activities: HashMap<String, usize>,
+    /// Activities that start traces, with their frequencies.
+    pub start_activities: BTreeMap<String, usize>,
+    /// Activities that end traces, with their frequencies.
+    pub end_activities: BTreeMap<String, usize>,
 }
 
+/// A node in a Directly-Follows Graph.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DFGNode {
+    /// Unique identifier for the activity.
     pub id: String,
+    /// Human-readable name of the activity.
     pub label: String,
+    /// Total number of times this activity occurs in the log.
     pub frequency: usize,
 }
 
 impl DirectlyFollowsGraph {
+    /// Create a new empty Directly-Follows Graph.
     #[must_use]
     pub fn new() -> Self {
         DirectlyFollowsGraph {
             nodes: Vec::new(),
             edges: Vec::new(),
-            start_activities: HashMap::new(),
-            end_activities: HashMap::new(),
+            start_activities: BTreeMap::new(),
+            end_activities: BTreeMap::new(),
         }
     }
 }
 
-/// DECLARE constraint
+/// A single DECLARE constraint.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeclareConstraint {
+    /// Template name (e.g., "Response", "Precedence").
     pub template: String,
+    /// Activities involved in the constraint.
     pub activities: Vec<String>,
+    /// Percentage of traces that satisfy the constraint.
     pub support: f64,
+    /// Probability that the constraint holds given the trigger activity.
     pub confidence: f64,
 }
 
-/// A DECLARE model containing constraint-based process rules.
-///
-/// Unlike procedural models (Petri Nets, DFGs), DECLARE uses declarative
-/// constraints (e.g., "activity B must eventually follow activity A")
-/// to specify allowed behavior. This is particularly useful for flexible
-/// processes where not all execution paths can be enumerated.
-///
-/// # Fields
-///
-/// - `constraints` — List of DECLARE constraints with support/confidence metrics
-/// - `activities` — All activities referenced in the model
+/// A DECLARE model containing declarative process rules.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct DeclareModel {
+    /// List of constraints with support and confidence metrics.
     pub constraints: Vec<DeclareConstraint>,
+    /// List of all activities referenced in the model.
     pub activities: Vec<String>,
 }
 
 impl DeclareModel {
+    /// Create a new empty DECLARE model.
     #[must_use]
     pub fn new() -> Self {
         DeclareModel {
@@ -781,76 +912,90 @@ impl DeclareModel {
     }
 }
 
-/// Token replay deviation
+/// Deviation detected during token-based replay.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TokenReplayDeviation {
+    /// Index of the event in the trace where the deviation occurred.
     pub event_index: usize,
+    /// Name of the activity being replayed.
     pub activity: String,
+    /// Type of deviation (e.g., "missing_token", "remaining_token").
     pub deviation_type: String,
 }
 
-/// Token replay result for a case
+/// Result of token-based replay for a single case.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct TokenReplayResult {
+    /// Identifier of the case.
     pub case_id: String,
+    /// Whether the trace perfectly conforms to the model.
     pub is_conforming: bool,
+    /// Fitness score for the trace [0.0, 1.0].
     pub trace_fitness: f64,
+    /// Number of tokens that were missing during replay.
     pub tokens_missing: usize,
+    /// Number of tokens remaining in the net after replay.
     pub tokens_remaining: usize,
+    /// List of specific deviations found.
     pub deviations: Vec<TokenReplayDeviation>,
 }
 
-/// Conformance checking result
+/// Overall result of conformance checking.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct ConformanceResult {
+    /// Individual replay results for each case.
     pub case_fitness: Vec<TokenReplayResult>,
+    /// Average fitness across all cases.
     pub avg_fitness: f64,
+    /// Number of cases that perfectly conform to the model.
     pub conforming_cases: usize,
+    /// Total number of cases checked.
     pub total_cases: usize,
 }
 
-/// Streaming conformance deviation for a single trace
+/// Deviation detected in a streaming context.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StreamingConformanceDeviation {
+    /// Position in the sequence where the deviation occurred.
     pub position: usize,
+    /// Preceding activity name.
     pub from_activity: String,
+    /// Succeeding activity name.
     pub to_activity: String,
 }
 
-/// Streaming conformance result for a single closed trace
+/// Result of streaming conformance checking for a single trace.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StreamingConformanceTraceResult {
+    /// Identifier of the case.
     pub case_id: String,
+    /// Whether the trace conforms to the reference DFG.
     pub is_conforming: bool,
+    /// List of directly-follows deviations found.
     pub deviations: Vec<StreamingConformanceDeviation>,
+    /// Fitness score for the trace [0.0, 1.0].
     pub fitness: f64,
 }
 
 /// Streaming DFG-based conformance checker.
-///
-/// Checks each trace against a reference DFG as events arrive.  When a trace
-/// is closed (`streaming_conformance_close_trace`) the activity sequence is
-/// replayed against the DFG edge-set and any missing directly-follows pairs
-/// are reported as deviations.  Memory is proportional to open concurrent
-/// traces, not total events seen.
 #[derive(Debug, Clone)]
 pub struct StreamingConformanceChecker {
-    /// Valid directly-follows pairs from the reference DFG
+    /// Valid directly-follows pairs from the reference DFG.
     pub dfg_edges: std::collections::HashSet<(String, String)>,
-    /// Start activities from the reference DFG
+    /// Start activities from the reference DFG.
     pub start_activities: std::collections::HashSet<String>,
-    /// End activities from the reference DFG
+    /// End activities from the reference DFG.
     pub end_activities: std::collections::HashSet<String>,
-    /// Open traces: case_id → activity sequence
+    /// Open traces: case_id → activity sequence.
     pub open_traces: HashMap<String, Vec<String>>,
-    /// Accumulated results for closed traces
+    /// Accumulated results for closed traces.
     pub results: Vec<StreamingConformanceTraceResult>,
-    /// Total events processed
+    /// Total events processed by this checker.
     pub event_count: usize,
 }
 
 impl StreamingConformanceChecker {
-    /// Create a new checker from a `DirectlyFollowsGraph`.
+    /// Create a new checker from a reference `DirectlyFollowsGraph`.
     #[must_use]
     pub fn from_dfg(dfg: &DirectlyFollowsGraph) -> Self {
         let dfg_edges: std::collections::HashSet<(String, String)> = dfg
@@ -881,8 +1026,9 @@ impl StreamingConformanceChecker {
             .push(activity.to_string());
     }
 
-    /// Close a trace: check conformance and return result.
-    /// Returns `None` if the case was never opened.
+    /// Close a trace: check conformance and return the final result.
+    ///
+    /// Returns `None` if the case ID was not found in open traces.
     pub fn close_trace(&mut self, case_id: &str) -> Option<StreamingConformanceTraceResult> {
         let activities = self.open_traces.remove(case_id)?;
         let result = self.check_trace(case_id, &activities);
@@ -940,11 +1086,12 @@ impl StreamingConformanceChecker {
 /// Temporal profile: per-pair mean and standard-deviation of time differences (ms).
 #[derive(Debug, Clone)]
 pub struct TemporalProfile {
-    /// (from_activity, to_activity) → (mean_ms, std_ms, count)
+    /// Mapping of (from, to) activity pairs to their timing statistics (mean, std, count).
     pub pairs: HashMap<(String, String), (f64, f64, usize)>,
 }
 
 impl TemporalProfile {
+    /// Create a new empty temporal profile.
     #[must_use]
     pub fn new() -> Self {
         TemporalProfile {
@@ -953,15 +1100,17 @@ impl TemporalProfile {
     }
 }
 
-/// N-gram predictor: maps activity prefixes of length n to next-activity distributions.
+/// N-gram predictor for next-activity forecasting.
 #[derive(Debug, Clone)]
 pub struct NGramPredictor {
+    /// The 'n' in n-gram (length of history considered).
     pub n: usize,
-    /// prefix → HashMap<next_activity, count>
+    /// Mapping of activity prefix sequences to next-activity occurrence counts.
     pub counts: HashMap<Vec<String>, HashMap<String, usize>>,
 }
 
 impl NGramPredictor {
+    /// Create a new N-gram predictor with history length `n`.
     #[must_use]
     pub fn new(n: usize) -> Self {
         NGramPredictor {
@@ -989,10 +1138,6 @@ impl NGramPredictor {
         result
     }
 }
-
-// ---------------------------------------------------------------------------
-// Default implementations
-// ---------------------------------------------------------------------------
 
 impl Default for EventLog {
     fn default() -> Self {
@@ -1030,18 +1175,19 @@ impl Default for TemporalProfile {
     }
 }
 
-// ---------------------------------------------------------------------------
-// Process Tree (Inductive Miner output)
-// ---------------------------------------------------------------------------
-
+/// A node in a process tree representation of a workflow.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct ProcessTreeNode {
-    pub node_type: String,     // "sequence", "xor", "parallel", "loop", "leaf"
-    pub label: Option<String>, // Activity name (leaf only)
+    /// Type of node (e.g., "sequence", "xor", "parallel", "loop", "leaf").
+    pub node_type: String,
+    /// Activity name for leaf nodes.
+    pub label: Option<String>,
+    /// Child nodes for control structure operators.
     pub children: Vec<ProcessTreeNode>,
 }
 
 impl ProcessTreeNode {
+    /// Create a leaf node for a specific activity.
     pub fn leaf(activity: String) -> Self {
         Self {
             node_type: "leaf".to_string(),
@@ -1050,6 +1196,7 @@ impl ProcessTreeNode {
         }
     }
 
+    /// Create a sequence operator node.
     pub fn sequence(children: Vec<ProcessTreeNode>) -> Self {
         Self {
             node_type: "sequence".to_string(),
@@ -1058,6 +1205,7 @@ impl ProcessTreeNode {
         }
     }
 
+    /// Create an exclusive-choice (XOR) operator node.
     pub fn xor(children: Vec<ProcessTreeNode>) -> Self {
         Self {
             node_type: "xor".to_string(),
@@ -1066,6 +1214,7 @@ impl ProcessTreeNode {
         }
     }
 
+    /// Create a parallel (AND) operator node.
     pub fn parallel(children: Vec<ProcessTreeNode>) -> Self {
         Self {
             node_type: "parallel".to_string(),
@@ -1074,6 +1223,7 @@ impl ProcessTreeNode {
         }
     }
 
+    /// Create a loop operator node.
     pub fn loop_node(body: ProcessTreeNode, redo: ProcessTreeNode) -> Self {
         Self {
             node_type: "loop".to_string(),
@@ -1082,6 +1232,7 @@ impl ProcessTreeNode {
         }
     }
 
+    /// Create a flower node (allows any behavior).
     pub fn flower() -> Self {
         Self {
             node_type: "flower".to_string(),
@@ -1090,6 +1241,7 @@ impl ProcessTreeNode {
         }
     }
 
+    /// Return the total number of nodes in this subtree.
     pub fn count_nodes(&self) -> usize {
         1 + self.children.iter().map(|c| c.count_nodes()).sum::<usize>()
     }

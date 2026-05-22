@@ -5,6 +5,7 @@ import chokidar from 'chokidar';
 import { getFormatter, HumanFormatter, JSONFormatter } from '../../output.js';
 import { EXIT_CODES } from '../../exit-codes.js';
 import { exitWithFlush } from '../../otel/exit.js';
+import { withSpanRaw } from '../_otel.js';
 
 /** Minimal receipt summary emitted on every re-run. */
 export interface WatchReceipt {
@@ -146,6 +147,10 @@ export const watch = defineCommand({
     const formatArg = (ctx.args.format as string) || 'human';
     const isVerbose = ctx.args.verbose as boolean | undefined;
     const isQuiet = ctx.args.quiet as boolean | undefined;
+    return withSpanRaw(
+      'wasm4pm.command.cognition.watch',
+      { 'cognition.contract': contractName, 'cognition.debounce_ms': debounceMs, 'cognition.format': formatArg },
+      async () => {
 
     const formatter = getFormatter({
       format: formatArg as 'human' | 'json',
@@ -296,5 +301,7 @@ export const watch = defineCommand({
     await new Promise<never>(() => {
       /* intentionally never resolves — lifecycle managed by SIGINT handler */
     });
+      },
+    );
   },
 });

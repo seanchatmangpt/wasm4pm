@@ -60,10 +60,10 @@ pub fn to_js<T: serde::Serialize>(val: &T) -> Result<JsValue, JsValue> {
     #[cfg(not(target_arch = "wasm32"))]
     {
         // On native targets (criterion benchmarks) js_val is not callable.
-        // Benchmarks only call .unwrap() and discard the value, so return zeroed value.
+        // Benchmarks only call .unwrap() and discard the value, so return null value.
         // Serialization is validated but the output is discarded.
         let _ = serde_json::to_string(val);
-        Ok(unsafe { std::mem::zeroed() })
+        Ok(JsValue::null())
     }
 }
 
@@ -134,6 +134,19 @@ pub fn get_activities(eventlog_handle: &str, activity_key: &str) -> Result<JsVal
         Some(StoredObject::EventLog(log)) => {
             let activities = log.get_activities(activity_key);
             to_js(&activities)
+        }
+        Some(_) => Err(js_val("Object is not an EventLog")),
+        None => Err(js_val("EventLog not found")),
+    })
+}
+
+/// Get all traces from EventLog as a list of activity sequences
+#[wasm_bindgen]
+pub fn get_traces(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
+    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+        Some(StoredObject::EventLog(log)) => {
+            let traces = log.get_traces(activity_key);
+            to_js(&traces)
         }
         Some(_) => Err(js_val("Object is not an EventLog")),
         None => Err(js_val("EventLog not found")),

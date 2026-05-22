@@ -1,87 +1,83 @@
 use crate::dense_kernel::KBitSet;
 use std::cmp::min;
 
-/// Computes all SCCs of a generic K-Tier graph using Tarjan's $O(V+E)$ algorithm.
-/// Optimized for sparse Directly Follows Graphs (DFG).
-#[allow(clippy::needless_range_loop)]
-pub fn compute_sccs_generic<const WORDS: usize>(adj: &[KBitSet<WORDS>]) -> Vec<KBitSet<WORDS>> {
-    let max_nodes = WORDS * 64;
-    let mut sccs = Vec::new();
+/// Tarjan's algorithm state context.
+struct Tarjan<'a, const W: usize> {
+    adj: &'a [KBitSet<W>],
+    index: i32,
+    stack: Vec<usize>,
+    on_stack: Vec<bool>,
+    indices: Vec<i32>,
+    lowlink: Vec<i32>,
+    sccs: Vec<KBitSet<W>>,
+    max_nodes: usize,
+}
 
-    let mut index = 0;
-    let mut stack = Vec::new();
-    let mut on_stack = vec![false; max_nodes];
-    let mut indices = vec![-1; max_nodes];
-    let mut lowlink = vec![-1; max_nodes];
+impl<'a, const W: usize> Tarjan<'a, W> {
+    fn new(adj: &'a [KBitSet<W>], max_nodes: usize) -> Self {
+        Self {
+            adj,
+            index: 0,
+            stack: Vec::new(),
+            on_stack: vec![false; max_nodes],
+            indices: vec![-1; max_nodes],
+            lowlink: vec![-1; max_nodes],
+            sccs: Vec::new(),
+            max_nodes,
+        }
+    }
 
-    #[allow(clippy::too_many_arguments)]
-    fn strong_connect<const W: usize>(
-        v: usize,
-        adj: &[KBitSet<W>],
-        index: &mut i32,
-        stack: &mut Vec<usize>,
-        on_stack: &mut [bool],
-        indices: &mut [i32],
-        lowlink: &mut [i32],
-        sccs: &mut Vec<KBitSet<W>>,
-        max_nodes: usize,
-    ) {
-        indices[v] = *index;
-        lowlink[v] = *index;
-        *index += 1;
-        stack.push(v);
-        on_stack[v] = true;
+    fn strong_connect(&mut self, v: usize) {
+        self.indices[v] = self.index;
+        self.lowlink[v] = self.index;
+        self.index += 1;
+        self.stack.push(v);
+        self.on_stack[v] = true;
 
         // Explore neighbors
-        for w in 0..max_nodes {
-            if adj[v].contains(w) {
-                if indices[w] == -1 {
-                    strong_connect(
-                        w, adj, index, stack, on_stack, indices, lowlink, sccs, max_nodes,
-                    );
-                    lowlink[v] = min(lowlink[v], lowlink[w]);
-                } else if on_stack[w] {
-                    lowlink[v] = min(lowlink[v], indices[w]);
+        for w in 0..self.max_nodes {
+            if self.adj[v].contains(w) {
+                if self.indices[w] == -1 {
+                    self.strong_connect(w);
+                    self.lowlink[v] = min(self.lowlink[v], self.lowlink[w]);
+                } else if self.on_stack[w] {
+                    self.lowlink[v] = min(self.lowlink[v], self.indices[w]);
                 }
             }
         }
 
         // If v is a root node, pop the stack and generate an SCC
-        if lowlink[v] == indices[v] {
+        if self.lowlink[v] == self.indices[v] {
             let mut scc_mask = KBitSet::<W>::zero();
             loop {
-                let w = stack.pop().unwrap();
-                on_stack[w] = false;
+                let w = self.stack.pop().expect("Stack should not be empty");
+                self.on_stack[w] = false;
                 let _ = scc_mask.set(w);
                 if w == v {
                     break;
                 }
             }
-            sccs.push(scc_mask);
+            self.sccs.push(scc_mask);
         }
     }
+}
+
+/// Computes all SCCs of a generic K-Tier graph using Tarjan's $O(V+E)$ algorithm.
+/// Optimized for sparse Directly Follows Graphs (DFG).
+pub fn compute_sccs_generic<const WORDS: usize>(adj: &[KBitSet<WORDS>]) -> Vec<KBitSet<WORDS>> {
+    let max_nodes = WORDS * 64;
+    let mut ctx = Tarjan::new(adj, max_nodes);
 
     for i in 0..max_nodes {
-        if indices[i] == -1 {
-            strong_connect(
-                i,
-                adj,
-                &mut index,
-                &mut stack,
-                &mut on_stack,
-                &mut indices,
-                &mut lowlink,
-                &mut sccs,
-                max_nodes,
-            );
+        if ctx.indices[i] == -1 {
+            ctx.strong_connect(i);
         }
     }
 
-    sccs
+    ctx.sccs
 }
 
 /// A truly branchless version of compute_sccs using mask calculus.
-#[allow(clippy::needless_range_loop)]
 pub fn compute_sccs_branchless<const WORDS: usize>(adj: &[KBitSet<WORDS>]) -> Vec<KBitSet<WORDS>> {
     let max_nodes = WORDS * 64;
     let mut sccs = Vec::new();
@@ -92,22 +88,22 @@ pub fn compute_sccs_branchless<const WORDS: usize>(adj: &[KBitSet<WORDS>]) -> Ve
     // 1. Transitive Closure (Truly Branchless)
     for k in 0..max_nodes {
         let k_mask = r[k];
-        for i in 0..max_nodes {
-            // bit = r[i] contains k
-            let bit = (r[i].words[k >> 6] >> (k & 63)) & 1;
+        for row in r.iter_mut().take(max_nodes) {
+            // bit = row contains k
+            let bit = (row.words[k >> 6] >> (k & 63)) & 1;
             let mask = bit.wrapping_neg();
             for w in 0..WORDS {
-                r[i].words[w] |= k_mask.words[w] & mask;
+                row.words[w] |= k_mask.words[w] & mask;
             }
         }
     }
 
     // 2. Transpose Reachability (Branchless)
     let mut rt = vec![KBitSet::<WORDS>::zero(); max_nodes];
-    for i in 0..max_nodes {
-        for j in 0..max_nodes {
-            let bit = (r[i].words[j >> 6] >> (j & 63)) & 1;
-            rt[j].words[i >> 6] |= bit << (i & 63);
+    for (i, row) in r.iter().enumerate().take(max_nodes) {
+        for (j, trans_row) in rt.iter_mut().enumerate().take(max_nodes) {
+            let bit = (row.words[j >> 6] >> (j & 63)) & 1;
+            trans_row.words[i >> 6] |= bit << (i & 63);
         }
     }
 

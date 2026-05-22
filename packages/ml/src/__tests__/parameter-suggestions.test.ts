@@ -121,7 +121,7 @@ describe('pickBestAlgorithm', () => {
 
   it('picks best classification algorithm', () => {
     const best = pickBestAlgorithm('classification', dataset);
-    expect(['knn', 'logistic_regression', 'decision_tree', 'naive_bayes']).toContain(best);
+    expect(['knn', 'logistic_regression', 'decision_tree', 'naive_bayes', 'gradient_boosting']).toContain(best);
   });
 
   it('picks best regression algorithm', () => {

@@ -60,7 +60,7 @@ export class ReceiptBuilder {
    * @param config Configuration object
    * @returns This builder for chaining
    */
-  setConfig(config: Record<string, any>): this {
+  setConfig(config: Record<string, unknown>): this {
     this.configHash = hashData(config);
     return this;
   }
@@ -70,7 +70,7 @@ export class ReceiptBuilder {
    * @param data Input data
    * @returns This builder for chaining
    */
-  setInput(data: any): this {
+  setInput(data: unknown): this {
     this.inputHash = hashData(data);
     return this;
   }
@@ -80,7 +80,7 @@ export class ReceiptBuilder {
    * @param plan Execution plan object
    * @returns This builder for chaining
    */
-  setPlan(plan: Record<string, any>): this {
+  setPlan(plan: Record<string, unknown>): this {
     this.planHash = hashData(plan);
     return this;
   }
@@ -90,7 +90,7 @@ export class ReceiptBuilder {
    * @param output Output data
    * @returns This builder for chaining
    */
-  setOutput(output: any): this {
+  setOutput(output: unknown): this {
     this.outputHash = hashData(output);
     return this;
   }
@@ -213,7 +213,7 @@ export class ReceiptBuilder {
    * @throws Error if any required field is missing
    */
   private validate(): void {
-    const required: [string, any][] = [
+    const required: [string, unknown][] = [
       ['run_id', this.runId],
       ['config_hash', this.configHash],
       ['input_hash', this.inputHash],

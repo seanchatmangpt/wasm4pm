@@ -6,6 +6,7 @@ import { EXIT_CODES } from '../../exit-codes.js';
 import { ReceiptChain } from '@wasm4pm/cognition';
 import { loadReceipt, mapWasmError } from './_shared.js';
 import { exitWithFlush } from '../../otel/exit.js';
+import { withSpanRaw } from '../_otel.js';
 
 export const verify = defineCommand({
   meta: { name: 'verify', description: 'Verify adversarial gates on receipt(s)' },
@@ -23,51 +24,62 @@ export const verify = defineCommand({
     const format = (ctx.args.format as 'json' | 'human' | 'sarif' | 'jsonl') ?? 'human';
     const verbose = !!ctx.args.verbose;
     const quiet = !!ctx.args.quiet;
-    try {
-      const ids: string[] = (() => {
-        const list = (ctx.args.receipts as string | undefined)?.split(',').map((s) => s.trim()).filter(Boolean) ?? [];
-        const single = ctx.args['receipt-id'] as string | undefined;
-        if (single) list.push(single);
-        return Array.from(new Set(list));
-      })();
-      if (ids.length === 0) {
-        const err = new Error('at least one of --receipts or --receipt-id is required');
-        (err as Error & { code?: string }).code = 'RECEIPT_ID_REQUIRED';
-        throw err;
-      }
-      const dir = ctx.args['ledger-dir'] as string;
-      const findings: Array<{ receipt_id: string; chain_valid: boolean; reason?: string }> = [];
-      for (const id of ids) {
-        const data = loadReceipt(id, dir) as Record<string, unknown>;
-        const chain = new ReceiptChain();
-        const links = (data?.links as unknown[] | undefined) ?? [];
-        chain.links = links as ReceiptChain['links'];
-        const ok = chain.verifyChain();
-        findings.push({
-          receipt_id: id,
-          chain_valid: ok,
-          reason: ok ? undefined : 'chain hash mismatch',
-        });
-      }
-      const failing = findings.filter((f) => !f.chain_valid);
-      const exitCode = failing.length === 0 ? EXIT_CODES.success : EXIT_CODES.execution_error;
-      const result = makeResult(
-        'cognition verify',
-        { count: ids.length, findings, failing_count: failing.length },
-        performance.now() - t0,
-        exitCode,
-      );
-      emitResult(result, { format, verbose, quiet }, (res, p) => {
-        const pl = res.payload as { count: number; failing_count: number };
-        if (pl.failing_count === 0) p.success(`Verified ${pl.count} receipt(s) — all chains valid`);
-        else p.warn(`${pl.failing_count}/${pl.count} receipt(s) failed verification`);
-      });
-      return await exitWithFlush(exitCode);
-    } catch (err) {
-      const { code, exitCode } = mapWasmError(err);
-      const result = makeErrorResult('cognition verify', err, exitCode, code);
-      emitResult(result, { format, verbose, quiet });
-      return await exitWithFlush(exitCode);
-    }
+    let failingCount = 0;
+    let receiptCount = 0;
+    return withSpanRaw(
+      'wasm4pm.command.cognition.verify',
+      { 'cognition.format': format, 'cognition.ledger_dir': ctx.args['ledger-dir'] as string },
+      async () => {
+        try {
+          const ids: string[] = (() => {
+            const list = (ctx.args.receipts as string | undefined)?.split(',').map((s) => s.trim()).filter(Boolean) ?? [];
+            const single = ctx.args['receipt-id'] as string | undefined;
+            if (single) list.push(single);
+            return Array.from(new Set(list));
+          })();
+          if (ids.length === 0) {
+            const err = new Error('at least one of --receipts or --receipt-id is required');
+            (err as Error & { code?: string }).code = 'RECEIPT_ID_REQUIRED';
+            throw err;
+          }
+          receiptCount = ids.length;
+          const dir = ctx.args['ledger-dir'] as string;
+          const findings: Array<{ receipt_id: string; chain_valid: boolean; reason?: string }> = [];
+          for (const id of ids) {
+            const data = loadReceipt(id, dir) as Record<string, unknown>;
+            const chain = new ReceiptChain();
+            const links = (data?.links as unknown[] | undefined) ?? [];
+            chain.links = links as ReceiptChain['links'];
+            const ok = chain.verifyChain();
+            findings.push({
+              receipt_id: id,
+              chain_valid: ok,
+              reason: ok ? undefined : 'chain hash mismatch',
+            });
+          }
+          const failing = findings.filter((f) => !f.chain_valid);
+          failingCount = failing.length;
+          const exitCode = failing.length === 0 ? EXIT_CODES.success : EXIT_CODES.execution_error;
+          const result = makeResult(
+            'cognition verify',
+            { count: ids.length, findings, failing_count: failing.length },
+            performance.now() - t0,
+            exitCode,
+          );
+          emitResult(result, { format, verbose, quiet }, (res, p) => {
+            const pl = res.payload as { count: number; failing_count: number };
+            if (pl.failing_count === 0) p.success(`Verified ${pl.count} receipt(s) — all chains valid`);
+            else p.warn(`${pl.failing_count}/${pl.count} receipt(s) failed verification`);
+          });
+          return await exitWithFlush(exitCode);
+        } catch (err) {
+          const { code, exitCode } = mapWasmError(err);
+          const result = makeErrorResult('cognition verify', err, exitCode, code);
+          emitResult(result, { format, verbose, quiet });
+          return await exitWithFlush(exitCode);
+        }
+      },
+      () => ({ 'cognition.receipt_count': receiptCount, 'cognition.failing_count': failingCount }),
+    );
   },
 });

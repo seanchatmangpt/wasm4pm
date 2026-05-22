@@ -2,11 +2,10 @@
 //!
 //! Supports JSON (human-readable) and binary (compact) formats.
 
-use crate::error::MlError;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
-use serde_wasm_bindgen;
+use base64::{engine::general_purpose, Engine as _};
 
 /// Training metadata for provenance tracking
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -189,13 +188,13 @@ pub fn load_model_binary(bytes: &[u8]) -> Result<JsValue, JsError> {
 /// Encode binary model to base64 (for storage in IndexedDB, localStorage, etc.)
 #[wasm_bindgen]
 pub fn encode_model_base64(binary: &[u8]) -> String {
-    base64::encode(binary)
+    general_purpose::STANDARD.encode(binary)
 }
 
 /// Decode base64 to binary model
 #[wasm_bindgen]
 pub fn decode_model_base64(encoded: &str) -> Result<Vec<u8>, JsError> {
-    base64::decode(encoded)
+    general_purpose::STANDARD.decode(encoded)
         .map_err(|e| JsError::new(&format!("Failed to decode base64: {}", e)))
 }
 

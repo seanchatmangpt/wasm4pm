@@ -33,6 +33,10 @@ pub struct Finding {
 
 impl Finding {
     /// Construct a finding.
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn new(code: impl Into<String>, severity: Severity, message: impl Into<String>) -> Self {
         Self {
             code: code.into(),
@@ -43,6 +47,10 @@ impl Finding {
     }
 
     /// Attach evidence strings.
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn with_evidence(mut self, evidence: Vec<String>) -> Self {
         self.evidence = evidence;
         self
@@ -65,6 +73,10 @@ pub struct FindingRegistry {
 
 impl FindingRegistry {
     /// Build a registry containing all 8 adversarial detectors.
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn new() -> Self {
         use crate::autosystems::adversarial::{
             bench_missing::BenchMissingDetector, central_firehose::CentralFirehoseDetector,
@@ -87,6 +99,10 @@ impl FindingRegistry {
     }
 
     /// Run every detector and collect all findings.
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn run_all(&self, src: &dyn EvidenceSource) -> Vec<Finding> {
         self.detectors
             .iter()

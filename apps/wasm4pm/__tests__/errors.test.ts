@@ -84,7 +84,7 @@ describe('SystemError', () => {
 });
 
 describe('handleError', () => {
-  let exitSpy: ReturnType<typeof vi.spyOn>;
+  let exitSpy: ReturnType<typeof vi.spyOn> & any;
 
   beforeEach(() => {
     exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {}) as any);

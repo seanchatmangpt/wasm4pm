@@ -1,12 +1,12 @@
 # Software Bill of Materials (SBOM)
 
-**Version:** 26.5.13
-**Generated:** 2026-05-13T20:33:19Z
-**Git Commit:** 4f6e20ab
+**Version:** 26.5.19
+**Generated:** 2026-05-19T23:06:41Z
+**Git Commit:** bfb869c8
 
 ## Overview
 
-This SBOM describes the software components, dependencies, and licenses used in wasm4pm v26.5.13.
+This SBOM describes the software components, dependencies, and licenses used in wasm4pm v26.5.19.
 
 ## Key Dependencies
 
@@ -36,7 +36,7 @@ No known critical vulnerabilities. Run `cargo audit` for security checks.
 
 ## Files
 
-- `sbom-26.5.13.json` - CycloneDX format SBOM
+- `sbom-26.5.19.json` - CycloneDX format SBOM
 - `npm-dependencies.json` - npm package tree
 - `cargo-dependencies.json` - Rust crate tree
 - `SBOM_SUMMARY.md` - This summary

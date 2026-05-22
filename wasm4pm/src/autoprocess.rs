@@ -53,16 +53,25 @@ mod perception_lut {
     pub const CP_MULT: u32 = 1; // 1
 }
 
-/// Circuit breaker states
+/// Circuit breaker states for the autonomic loop.
+///
+/// The circuit breaker protects the target system from death spirals and
+/// cascading failures by blocking actions when failure thresholds are exceeded.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
 pub enum CircuitState {
-    Closed = 0,   // Normal operation
-    HalfOpen = 1, // Testing after timeout
-    Open = 2,     // Blocking requests
+    /// Normal operation — requests are allowed.
+    Closed = 0,
+    /// Testing recovery — a limited number of requests are allowed to probe if the system has recovered.
+    HalfOpen = 1,
+    /// Blocking mode — requests are blocked to allow the system to recover.
+    Open = 2,
 }
 
 impl From<u8> for CircuitState {
+    /// Converts a raw u8 value to a `CircuitState`.
+    ///
+    /// Values 0 and 1 map to `Closed` and `HalfOpen` respectively; any other value maps to `Open`.
     fn from(v: u8) -> Self {
         match v {
             0 => CircuitState::Closed,
@@ -73,14 +82,20 @@ impl From<u8> for CircuitState {
     }
 }
 
-/// Guard rule evaluation result (can be extended for future rules)
+/// Guard rule evaluation result.
+///
+/// Guards check for state validity and prevent dangerous transitions (e.g., sudden death spirals)
+/// before an action is dispatched.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct GuardEval {
+    /// Whether the guard rules passed.
     pub pass: bool,
+    /// A bitmask or count of rule violations detected.
     pub rule_violations: u32,
 }
 
 impl GuardEval {
+    /// Creates a successful guard evaluation result.
     pub fn new_pass() -> Self {
         Self {
             pass: true,
@@ -88,6 +103,7 @@ impl GuardEval {
         }
     }
 
+    /// Creates a failed guard evaluation result with the specified violation details.
     pub fn new_fail(violations: u32) -> Self {
         Self {
             pass: false,
@@ -141,22 +157,31 @@ impl DecisionReason {
 
 /// AutoProcess decision output.
 ///
-/// `reason` exposes the *why* of the action selection — see [`DecisionReason`].
-/// The `agent_confidence` field (LinUCB UCB score) remains informational.
+/// This struct captures the result of a single autonomic cycle's decision phase,
+/// including the selected action, the encoded state ID, and the protection status.
 #[derive(Debug, Clone)]
 pub struct Decision {
+    /// The RL action selected for dispatch.
     pub action: RlAction,
+    /// The u32 encoding of the 8D perception state.
     pub state_id: u32,
+    /// The Q-value associated with the selected (state, action) pair.
     pub q_value: f32,
+    /// Whether the selected action passed the guard rules.
     pub guard_allowed: bool,
+    /// Whether the circuit breaker allowed the dispatch of this action.
     pub circuit_allowed: bool,
-    /// LinUCB UCB score (for informational purposes).
+    /// LinUCB UCB score, used for agent selection and confidence monitoring.
     pub agent_confidence: f32,
-    /// Typed reason explaining why this action was chosen. See [`DecisionReason`].
+    /// Typed reason explaining why this action was chosen (exploration, exploitation, or protection).
     pub reason: DecisionReason,
 }
 
-/// AutoProcessAgent — branchless autonomic loop
+/// AutoProcessAgent — branchless autonomic loop implementation.
+///
+/// This agent implements a high-performance, nanosecond-scale MAPE-K loop.
+/// It uses a binned Q-table for reinforcement learning, a step-driven circuit
+/// breaker for protection, and branchless arithmetic for state perception.
 pub struct AutoProcessAgent {
     /// Q-table storage: 368,640 states × 5 actions × 4 bytes (f32) = ~9.2 MB
     q_table: Box<[f32; QTABLE_SIZE]>,
@@ -222,12 +247,30 @@ pub struct AutoProcessAgent {
 }
 
 impl AutoProcessAgent {
-    /// Create a new AutoProcessAgent with default parameters
+    /// Look up a Q-value for a given state and action.
+    pub fn q_lookup(&self, state_id: usize, action_id: usize) -> f32 {
+        let idx = state_id * ACTION_SPACE_SIZE + action_id;
+        if idx < QTABLE_SIZE {
+            self.q_table[idx]
+        } else {
+            0.0
+        }
+    }
+
+    /// Creates a new `AutoProcessAgent` with default parameters.
+    ///
+    /// Defaults: α=0.1, γ=0.99, circuit_threshold=3, circuit_timeout=100.
     pub fn new() -> Self {
         Self::with_config(0.1, 0.99, 3, 100)
     }
 
-    /// Create with custom learning parameters
+    /// Creates an `AutoProcessAgent` with custom learning and protection parameters.
+    ///
+    /// # Arguments
+    /// * `learning_rate` - The α parameter for Bellman updates.
+    /// * `discount_factor` - The γ parameter for Bellman updates.
+    /// * `circuit_threshold` - Number of consecutive failures before opening the circuit.
+    /// * `circuit_timeout_steps` - Number of steps to wait before transitioning from Open to HalfOpen.
     pub fn with_config(
         learning_rate: f32,
         discount_factor: f32,
@@ -235,7 +278,7 @@ impl AutoProcessAgent {
         circuit_timeout_steps: u64,
     ) -> Self {
         let mut agent = Self {
-            q_table: Box::new([0.0_f32; QTABLE_SIZE]),
+            q_table: vec![0.0_f32; QTABLE_SIZE].into_boxed_slice().try_into().unwrap(),
             circuit_state: CircuitState::Closed,
             circuit_failure_count: 0,
             circuit_threshold,
@@ -276,14 +319,18 @@ impl AutoProcessAgent {
         }
     }
 
-    /// Set the drain cadence (drain_every parameter)
-    /// 0 = immediate updates (no queue)
-    /// n > 0 = drain every n cycles
+    /// Set the drain cadence for the deferred Bellman queue.
+    ///
+    /// * `0`: Immediate updates (no queueing).
+    /// * `n > 0`: Buffer updates and apply them every `n` cycles.
     pub fn set_drain_cadence(&mut self, n: u8) {
         self.drain_every = n;
     }
 
-    /// Decay epsilon by epsilon_decay factor (called at end of cycle)
+    /// Decay epsilon by the `epsilon_decay` factor.
+    ///
+    /// This should be called at the end of each cycle to transition the agent
+    /// from exploration to exploitation over time. Epsilon is clamped to `epsilon_min`.
     #[inline(always)]
     pub fn decay_epsilon(&mut self) {
         self.epsilon = (self.epsilon * self.epsilon_decay).max(self.epsilon_min);
@@ -293,15 +340,10 @@ impl AutoProcessAgent {
     // PERCEPTION: Encode 8D state to u32 state_id (branchless)
     // =========================================================================
 
-    /// Encode RlState to state_id using precomputed multipliers
+    /// Encode an `RlState` to a u32 `state_id` using precomputed multipliers.
     ///
-    /// Computation (all bitwise/arithmetic, no branches):
-    /// ```text
-    /// state_id = h*122400 + er*15300 + ac*1912 + sa*456 + d*152 + rr*19 + cs*8 + cp
-    /// ```
-    ///
-    /// All indices validated to [0, max_range) at RlState construction,
-    /// so this is safe from overflow.
+    /// This is a high-performance branchless operation. The 8D state space is
+    /// flattened into a single linear index.
     #[inline(always)]
     pub fn encode_state(&self, state: &RlState) -> u32 {
         let h = state.health_level as u32;
@@ -327,34 +369,10 @@ impl AutoProcessAgent {
     // DECISION: Q-table lookup + LinUCB agent selection
     // =========================================================================
 
-    /// Look up Q-value for (state, action) pair
-    ///
-    /// Direct array indexing (no search, no branching).
-    /// state_id must be < 368,640 (ensured by encode_state).
-    /// action index is 0..4 (enum constraint).
-    #[inline(always)]
-    fn q_lookup(&self, state_id: u32, action_idx: usize) -> f32 {
-        let q_idx = (state_id as usize)
-            .wrapping_mul(ACTION_SPACE_SIZE)
-            .wrapping_add(action_idx);
-
-        // Bounds check (should always pass if state_id valid)
-        if q_idx < QTABLE_SIZE {
-            self.q_table[q_idx]
-        } else {
-            0.0
-        }
-    }
-
     /// Look up Q-value and return corresponding action with ε-greedy exploration.
     ///
-    /// ε-greedy: with probability ε, pick random action; otherwise pick argmax Q(s,a).
-    /// Uses internal RNG and epsilon field for true exploration.
-    ///
-    /// Equivalent to [`Self::select_action_epsilon_greedy_with_reason`] with
-    /// the reason discarded. Kept for backward compatibility; new code should
-    /// prefer the `_with_reason` variant so the **Decision** stage of the
-    /// autonomic loop is observable.
+    /// This variant is kept for backward compatibility. New code should use
+    /// `select_action_epsilon_greedy_with_reason`.
     #[inline(always)]
     pub fn select_action_epsilon_greedy(
         &mut self,
@@ -366,12 +384,10 @@ impl AutoProcessAgent {
         (action, q, idx)
     }
 
-    /// Like [`Self::select_action_epsilon_greedy`] but also returns the
-    /// [`DecisionReason`] explaining whether ε-greedy explored or exploited.
+    /// Select an action using ε-greedy exploration and return the selection rationale.
     ///
-    /// Use this when constructing telemetry / OTEL spans so callers can
-    /// distinguish a random exploration draw (`DecisionReason::Explored`)
-    /// from a Q-table argmax pick (`DecisionReason::Exploited`).
+    /// With probability ε, a random action is picked (Explored). Otherwise, the
+    /// action with the highest Q-value is selected (Exploited).
     #[inline(always)]
     pub fn select_action_epsilon_greedy_with_reason(
         &mut self,
@@ -389,7 +405,7 @@ impl AutoProcessAgent {
             let mut best_action_idx: usize = 0;
 
             for a in 0..ACTION_SPACE_SIZE {
-                let q = self.q_lookup(state_id, a);
+                let q = self.q_lookup(state_id as usize, a as usize);
                 let is_better = q > max_q;
                 max_q = if is_better { q } else { max_q };
                 best_action_idx = if is_better { a } else { best_action_idx };
@@ -397,19 +413,15 @@ impl AutoProcessAgent {
             (best_action_idx, DecisionReason::Exploited)
         };
 
-        let q_val = self.q_lookup(state_id, selected_idx);
+        let q_val = self.q_lookup(state_id as usize, selected_idx as usize);
         let action = RlAction::from_index(selected_idx).unwrap_or(RlAction::Continue);
 
         (action, q_val, selected_idx as u32, reason)
     }
 
-    /// Estimate agent confidence using LinUCB upper confidence bound
+    /// Estimate agent confidence using the LinUCB upper confidence bound formula.
     ///
-    /// Simplified UCB formula (for 8D context):
-    /// UCB(a) ≈ Q(a) + sqrt(feature_magnitude) / sqrt(visit_count + 1)
-    ///
-    /// For speed, we use precomputed sqrt LUT and estimate visit_count from
-    /// Q-value magnitude.
+    /// Uses a precomputed square root lookup table for performance.
     #[inline(always)]
     pub fn linucb_ucb_estimate(&self, q_value: f32, features: &[f32; 8]) -> f32 {
         // Estimate feature magnitude: L2 norm quantized to [0..127]
@@ -430,15 +442,12 @@ impl AutoProcessAgent {
     // PROTECTION: Circuit breaker + guard rules
     // =========================================================================
 
-    /// Evaluate guard rules (branchless)
+    /// Evaluate guard rules to prevent dangerous state transitions.
     ///
-    /// Guard rules check state validity and prevent invalid state transitions.
-    /// Branchless implementation using bitwise operations.
-    ///
-    /// Rules:
-    /// 1. Health must be in [0, 4]
-    /// 2. Action must be in [0, 4]
-    /// 3. Cannot transition from health < 3 to health == 4 in a single step (death spiral check)
+    /// Checks include:
+    /// 1. Health range validity.
+    /// 2. Action index validity.
+    /// 3. Death spiral prevention (no sudden transition to Failed state from healthy).
     #[inline(always)]
     pub fn evaluate_guard(&self, state: &RlState, action: RlAction, prev_health: u8) -> GuardEval {
         let mut violations = 0u32;
@@ -463,20 +472,9 @@ impl AutoProcessAgent {
         }
     }
 
-    /// Advance circuit breaker state machine one step (drives time-based
-    /// transitions only).
+    /// Advance the circuit breaker state machine by one step.
     ///
-    /// Responsibilities (post CB-1 fix):
-    /// - **Open → HalfOpen** when `circuit_timeout_steps` have elapsed since
-    ///   the breaker opened. This is the *only* transition that requires a
-    ///   caller to advance the clock.
-    /// - **Closed → Open** is handled in [`Self::record_action_result`]
-    ///   immediately upon hitting the failure threshold, so it does **not**
-    ///   depend on `advance_circuit_breaker` being called. The Closed branch
-    ///   here remains as a defensive idempotent guard.
-    /// - **HalfOpen** transitions are signal-driven via `record_action_result`.
-    ///
-    /// All state transitions are branchless via bit manipulation.
+    /// This drives time-based transitions (e.g., Open to HalfOpen after a timeout).
     #[inline(always)]
     pub fn advance_circuit_breaker(&mut self) {
         self.step_counter += 1;
@@ -505,20 +503,11 @@ impl AutoProcessAgent {
         }
     }
 
-    /// Record action success/failure to update circuit breaker state.
+    /// Record the result of an action to update the circuit breaker's health metrics.
     ///
-    /// - Success: HalfOpen → Closed, reset failure count.
-    /// - Failure: Increment count, **and immediately trip Closed → Open** if
-    ///   the threshold is reached. HalfOpen failures trip back to Open on the
-    ///   first failure (single probe failure ends recovery attempt).
-    ///
-    /// CB-1 fix (see `.claude/rules/ml-rl-testing.md`): previously the
-    /// Closed → Open transition was deferred until the next
-    /// [`Self::advance_circuit_breaker`] tick. If a caller recorded results
-    /// without driving the step machine, the breaker stayed Closed
-    /// indefinitely — exactly the caller-driven-step-counter bug pattern.
-    /// Tripping immediately here means fail-fast behaviour regardless of
-    /// whether the caller advances the clock.
+    /// A failure will increment the failure count and may immediately trip the
+    /// circuit to Open. A success will reset the failure count and transition
+    /// the circuit from HalfOpen to Closed.
     #[inline(always)]
     pub fn record_action_result(&mut self, success: bool) {
         if success {
@@ -547,7 +536,7 @@ impl AutoProcessAgent {
         }
     }
 
-    /// Check if circuit breaker allows request execution
+    /// Returns `true` if the circuit breaker currently allows requests to proceed.
     #[inline(always)]
     pub fn circuit_allows_request(&self) -> bool {
         matches!(
@@ -600,7 +589,7 @@ impl AutoProcessAgent {
         }
     }
 
-    /// Drain all buffered Bellman transitions and apply updates
+    /// Drain all buffered Bellman transitions and apply updates to the Q-table.
     pub fn drain_bellman_queue(&mut self) {
         for i in 0..self.queue_len {
             let idx = i as usize;
@@ -609,17 +598,16 @@ impl AutoProcessAgent {
             let mut max_next_q = f32::NEG_INFINITY;
             let next_base = (trans.next_state_id as usize) * ACTION_SPACE_SIZE;
 
-            // Unsafe: we trust next_state_id is bounds checked during encoding
+            // Strict bounds-checking assertion before unsafe access
+            assert!(next_base + ACTION_SPACE_SIZE <= QTABLE_SIZE, "Q-table bounds check failed for next_state_id");
             unsafe {
-                if next_base + ACTION_SPACE_SIZE <= QTABLE_SIZE {
-                    let s = self
-                        .q_table
-                        .get_unchecked(next_base..next_base + ACTION_SPACE_SIZE);
-                    let m01 = if s[0] > s[1] { s[0] } else { s[1] };
-                    let m23 = if s[2] > s[3] { s[2] } else { s[3] };
-                    let m = if m01 > m23 { m01 } else { m23 };
-                    max_next_q = if m > s[4] { m } else { s[4] };
-                }
+                let s = self
+                    .q_table
+                    .get_unchecked(next_base..next_base + ACTION_SPACE_SIZE);
+                let m01 = if s[0] > s[1] { s[0] } else { s[1] };
+                let m23 = if s[2] > s[3] { s[2] } else { s[3] };
+                let m = if m01 > m23 { m01 } else { m23 };
+                max_next_q = if m > s[4] { m } else { s[4] };
             }
 
             let target =
@@ -629,12 +617,12 @@ impl AutoProcessAgent {
                 .wrapping_mul(ACTION_SPACE_SIZE)
                 .wrapping_add(trans.action_idx as usize);
 
+            // Strict bounds-checking assertion before unsafe access
+            assert!(q_idx < QTABLE_SIZE, "Q-table bounds check failed for q_idx");
             unsafe {
-                if q_idx < QTABLE_SIZE {
-                    let current_q = *self.q_table.get_unchecked(q_idx);
-                    let delta = target - current_q;
-                    *self.q_table.get_unchecked_mut(q_idx) = current_q + self.learning_rate * delta;
-                }
+                let current_q = *self.q_table.get_unchecked(q_idx);
+                let delta = target - current_q;
+                *self.q_table.get_unchecked_mut(q_idx) = current_q + self.learning_rate * delta;
             }
         }
         self.queue_head = 0;
@@ -645,13 +633,9 @@ impl AutoProcessAgent {
     // OPTIMIZATION: Bellman update to Q-table
     // =========================================================================
 
-    /// Perform Bellman Q-learning update directly (non-deferred path)
+    /// Perform a direct Bellman Q-learning update (non-deferred path).
     ///
-    /// Q(s,a) ← Q(s,a) + α[r + γ max_a' Q(s',a') - Q(s,a)]
-    ///
-    /// Branchless except for the max_a' operation.
-    /// Terminal state check (done flag) is branchless.
-    /// Uses unrolled 5-element max reduction for faster Q-max computation.
+    /// Formula: Q(s,a) ← Q(s,a) + α[r + γ max_a' Q(s',a') - Q(s,a)]
     #[inline(never)]
     pub fn bellman_update_direct(
         &mut self,
@@ -662,21 +646,20 @@ impl AutoProcessAgent {
         done: bool,
     ) {
         let next_base = (next_state_id as usize) * ACTION_SPACE_SIZE;
+        
+        // Strict bounds-checking assertion before unsafe access
+        assert!(next_base + ACTION_SPACE_SIZE <= QTABLE_SIZE, "Q-table bounds check failed for next_state_id");
         let max_next_q = unsafe {
-            if next_base + ACTION_SPACE_SIZE <= QTABLE_SIZE {
-                let s = self
-                    .q_table
-                    .get_unchecked(next_base..next_base + ACTION_SPACE_SIZE);
-                let m01 = if s[0] > s[1] { s[0] } else { s[1] };
-                let m23 = if s[2] > s[3] { s[2] } else { s[3] };
-                let m = if m01 > m23 { m01 } else { m23 };
-                if m > s[4] {
-                    m
-                } else {
-                    s[4]
-                }
+            let s = self
+                .q_table
+                .get_unchecked(next_base..next_base + ACTION_SPACE_SIZE);
+            let m01 = if s[0] > s[1] { s[0] } else { s[1] };
+            let m23 = if s[2] > s[3] { s[2] } else { s[3] };
+            let m = if m01 > m23 { m01 } else { m23 };
+            if m > s[4] {
+                m
             } else {
-                0.0
+                s[4]
             }
         };
 
@@ -688,12 +671,12 @@ impl AutoProcessAgent {
             .wrapping_mul(ACTION_SPACE_SIZE)
             .wrapping_add(action_idx);
 
+        // Strict bounds-checking assertion before unsafe access
+        assert!(q_idx < QTABLE_SIZE, "Q-table bounds check failed for q_idx");
         unsafe {
-            if q_idx < QTABLE_SIZE {
-                let current_q = *self.q_table.get_unchecked(q_idx);
-                let delta = target - current_q;
-                *self.q_table.get_unchecked_mut(q_idx) = current_q + self.learning_rate * delta;
-            }
+            let current_q = *self.q_table.get_unchecked(q_idx);
+            let delta = target - current_q;
+            *self.q_table.get_unchecked_mut(q_idx) = current_q + self.learning_rate * delta;
         }
     }
 
@@ -701,10 +684,15 @@ impl AutoProcessAgent {
     // ORCHESTRATION: Full cycle (Perception → Decision → Protection → Optimization)
     // =========================================================================
 
-    /// Run one complete autonomic cycle
+    /// Run one complete autonomic cycle.
     ///
-    /// Returns the decision, including selected action and protection status.
-    #[allow(clippy::too_many_arguments)]
+    /// This method orchestrates the full MAPE-K loop:
+    /// 1. Perception: Encode current and next state.
+    /// 2. Decision: Select action via ε-greedy exploration.
+    /// 3. Protection: Evaluate guards and update circuit breaker.
+    /// 4. Optimization: Apply Bellman update.
+    ///
+    /// Returns a `Decision` struct containing the results.
     pub fn run_cycle(
         &mut self,
         state: &RlState,
@@ -781,7 +769,7 @@ impl AutoProcessAgent {
         }
     }
 
-    /// Create a new AutoProcessAgent with immediate Bellman updates (for testing)
+    /// Create a new AutoProcessAgent with immediate Bellman updates (for testing).
     #[cfg(test)]
     pub fn new_immediate() -> Self {
         let mut agent = Self::new();
@@ -789,27 +777,27 @@ impl AutoProcessAgent {
         agent
     }
 
-    /// Get mutable reference to Q-table for testing/inspection
+    /// Returns a mutable reference to the Q-table.
     pub fn q_table_mut(&mut self) -> &mut [f32; QTABLE_SIZE] {
         &mut self.q_table
     }
 
-    /// Get immutable reference to Q-table for testing/inspection
+    /// Returns an immutable reference to the Q-table.
     pub fn q_table(&self) -> &[f32; QTABLE_SIZE] {
         &self.q_table
     }
 
-    /// Get current circuit breaker state
+    /// Returns the current circuit breaker state.
     pub fn circuit_state(&self) -> CircuitState {
         self.circuit_state
     }
 
-    /// Get current step counter
+    /// Returns the current step counter.
     pub fn step_count(&self) -> u64 {
         self.step_counter
     }
 
-    /// Reset circuit breaker to Closed state
+    /// Resets the circuit breaker to the Closed state and clears failure counts.
     pub fn reset_circuit_breaker(&mut self) {
         self.circuit_state = CircuitState::Closed;
         self.circuit_failure_count = 0;
@@ -939,14 +927,14 @@ mod tests {
         let done = false;
 
         // Before update: Q[0,0] = 0
-        let q_before = agent.q_lookup(state_id, action_idx);
+        let q_before = agent.q_lookup(state_id as usize, action_idx);
         assert_eq!(q_before, 0.0);
 
         // Perform Bellman update
         agent.bellman_update_direct(state_id, action_idx, reward, next_state_id, done);
 
         // After update: Q[0,0] should increase
-        let q_after = agent.q_lookup(state_id, action_idx);
+        let q_after = agent.q_lookup(state_id as usize, action_idx);
         assert!(
             q_after > q_before,
             "Q-value should increase with positive reward"

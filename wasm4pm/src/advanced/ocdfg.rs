@@ -30,8 +30,7 @@ impl OCDirectlyFollowsGraph {
         }
 
         // 3. For each object type, build a DFG
-        for obj_type_def in &ocel.object_types {
-            let ot = &obj_type_def.name;
+        for ot in &ocel.object_types {
             let mut dfg = DirectlyFollowsGraph::new();
             let mut activity_freq: HashMap<String, usize> = HashMap::new();
             let mut edge_freq: HashMap<(String, String), usize> = HashMap::new();
@@ -84,8 +83,8 @@ impl OCDirectlyFollowsGraph {
                 });
             }
 
-            dfg.start_activities = start_acts;
-            dfg.end_activities = end_acts;
+            dfg.start_activities = start_acts.into_iter().collect();
+            dfg.end_activities = end_acts.into_iter().collect();
 
             dfgs.insert(ot.clone(), dfg);
         }

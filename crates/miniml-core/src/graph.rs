@@ -111,7 +111,7 @@ pub fn community_detection_impl(adjacency: &[f64], n_nodes: usize, max_iter: usi
         }
         if !changed { break; }
     }
-    let mut unique_labels: Vec<usize> = labels.iter().copied().collect(); unique_labels.sort(); unique_labels.dedup();
+    let mut unique_labels: Vec<usize> = labels.to_vec(); unique_labels.sort(); unique_labels.dedup();
     let mut label_map: HashMap<usize, usize> = HashMap::new();
     for (new_label, &old_label) in unique_labels.iter().enumerate() { label_map.insert(old_label, new_label); }
     let normalized: Vec<f64> = labels.iter().map(|&l| *label_map.get(&l).unwrap_or(&0) as f64).collect();

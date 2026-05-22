@@ -21,7 +21,8 @@ mod global_adversarial {
 
         // 2. Poisoned null bytes or whitespace in handle
         let log = EventLog::new(vec![], Vec::new());
-        let handle = state.store_object(StoredObject::EventLog(log.into())).unwrap();
+        let wasm4pm_log: wasm4pm::models::EventLog = log.into();
+        let handle = state.store_object(StoredObject::EventLog(wasm4pm_log)).unwrap();
         
         let poisoned = format!("{}\0", handle);
         assert!(state.get_object(&poisoned).unwrap().is_none());
@@ -65,7 +66,8 @@ mod global_adversarial {
     fn test_global_zombie_handles() {
         let state = get_or_init_state();
         let log = EventLog::new(vec![], Vec::new());
-        let handle = state.store_object(StoredObject::EventLog(log.into())).unwrap();
+        let wasm4pm_log: wasm4pm::models::EventLog = log.into();
+        let handle = state.store_object(StoredObject::EventLog(wasm4pm_log)).unwrap();
         
         state.clear_all().unwrap();
         
@@ -86,8 +88,8 @@ mod global_adversarial {
                 events.push(Event::new(Vec::new()));
             }
             let log = EventLog::new(vec![Trace::new("case".to_string(), events)], Vec::new());
-            
-            let handle = state.store_object(StoredObject::EventLog(log.into())).unwrap();
+            let wasm4pm_log: wasm4pm::models::EventLog = log.into();
+            let handle = state.store_object(StoredObject::EventLog(wasm4pm_log)).unwrap();
             assert!(state.get_object(&handle).unwrap().is_some());
             state.delete_object(&handle).unwrap();
         }

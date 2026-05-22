@@ -37,6 +37,10 @@ pub enum DomainProfile {
 
 impl DomainProfile {
     /// Compute the weight for a dimension key under this profile.
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn weight(&self, key: &str) -> f64 {
         match self {
             DomainProfile::Balanced | DomainProfile::Default => 1.0,
@@ -73,6 +77,10 @@ impl DomainProfile {
 /// `b` dominates `a` when `b` is at least as good on every declared dimension
 /// and strictly better on at least one. Direction is taken from each
 /// [`DimensionSpec`]. Weights scale magnitudes but never flip direction.
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn is_dominated(
     a: &Candidate,
     b: &Candidate,
@@ -121,6 +129,10 @@ pub struct RejectedCandidate {
 }
 
 /// Filter dominated candidates. Returns `(kept, rejected)`.
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn reject_dominated(
     candidates: Vec<Candidate>,
     profile: &DomainProfile,

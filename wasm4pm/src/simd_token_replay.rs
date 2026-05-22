@@ -388,7 +388,7 @@ fn make_dfg(edges: &[(&str, &str)]) -> DirectlyFollowsGraph {
                 },
             )
             .collect(),
-        start_activities: std::collections::HashMap::new(),
-        end_activities: std::collections::HashMap::new(),
+        start_activities: std::collections::BTreeMap::new(),
+        end_activities: std::collections::BTreeMap::new(),
     }
 }

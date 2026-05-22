@@ -1,0 +1,5 @@
+ M artifacts/releases/v26.5.21/git-status.txt
+ M crates/wasm4pm-cognition/src/lib.rs
+?? crates/wasm4pm-cognition/src/ghf.rs
+?? crates/wasm4pm-cognition/tests/ghf_fleet_sentinel_test.rs
+?? release-gate.sh

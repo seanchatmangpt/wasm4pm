@@ -8,19 +8,12 @@ pub struct LabelEncoder {
     fitted: bool,
 }
 
-#[wasm_bindgen]
+// Pure-Rust methods — not exported to WASM, safe to call on native targets.
 impl LabelEncoder {
-    #[wasm_bindgen(getter, js_name = "nClasses")]
-    pub fn n_classes(&self) -> usize { self.classes.len() }
-
-    #[wasm_bindgen(getter, js_name = "classes")]
-    pub fn classes_js(&self) -> Vec<f64> { self.classes.clone() }
-
-    /// Fit encoder to labels (discover unique classes)
-    #[wasm_bindgen]
-    pub fn fit(&mut self, labels: &[f64]) -> Result<(), JsError> {
+    /// Pure-Rust fit for use in native (non-WASM) tests.
+    pub fn fit_impl(&mut self, labels: &[f64]) -> Result<(), MlError> {
         if labels.is_empty() {
-            return Err(JsError::new("labels cannot be empty"));
+            return Err(MlError::new("labels cannot be empty"));
         }
 
         let mut unique: Vec<f64> = labels.to_vec();
@@ -32,11 +25,10 @@ impl LabelEncoder {
         Ok(())
     }
 
-    /// Transform labels to encoded integers
-    #[wasm_bindgen]
-    pub fn transform(&self, labels: &[f64]) -> Result<Vec<f64>, JsError> {
+    /// Pure-Rust transform for use in native (non-WASM) contexts and tests.
+    pub fn transform_impl(&self, labels: &[f64]) -> Result<Vec<f64>, MlError> {
         if !self.fitted {
-            return Err(JsError::new("encoder not fitted"));
+            return Err(MlError::new("encoder not fitted"));
         }
 
         let mut result = Vec::with_capacity(labels.len());
@@ -44,10 +36,49 @@ impl LabelEncoder {
             let pos = self.classes.iter().position(|&c| (c - label).abs() < 1e-10);
             match pos {
                 Some(idx) => result.push(idx as f64),
-                None => return Err(JsError::new(&format!("unseen label: {}", label))),
+                None => return Err(MlError::new(format!("unseen label: {}", label))),
             }
         }
         Ok(result)
+    }
+
+    /// Pure-Rust inverse transform for use in native contexts.
+    pub fn inverse_transform_impl(&self, encoded: &[f64]) -> Result<Vec<f64>, MlError> {
+        if !self.fitted {
+            return Err(MlError::new("encoder not fitted"));
+        }
+
+        let mut result = Vec::with_capacity(encoded.len());
+        for &enc in encoded {
+            let idx = enc as usize;
+            if idx < self.classes.len() {
+                result.push(self.classes[idx]);
+            } else {
+                return Err(MlError::new(format!("invalid encoded value: {}", enc)));
+            }
+        }
+        Ok(result)
+    }
+}
+
+#[wasm_bindgen]
+impl LabelEncoder {
+    #[wasm_bindgen(getter, js_name = "nClasses")]
+    pub fn n_classes(&self) -> usize { self.classes.len() }
+
+    #[wasm_bindgen(getter, js_name = "classes")]
+    pub fn classes_js(&self) -> Vec<f64> { self.classes.clone() }
+
+    /// Fit encoder to labels (discover unique classes)
+    #[wasm_bindgen]
+    pub fn fit(&mut self, labels: &[f64]) -> Result<(), JsError> {
+        self.fit_impl(labels).map_err(|e| JsError::new(&e.message))
+    }
+
+    /// Transform labels to encoded integers
+    #[wasm_bindgen]
+    pub fn transform(&self, labels: &[f64]) -> Result<Vec<f64>, JsError> {
+        self.transform_impl(labels).map_err(|e| JsError::new(&e.message))
     }
 
     /// Fit and transform in one operation
@@ -60,20 +91,7 @@ impl LabelEncoder {
     /// Inverse transform encoded integers back to labels
     #[wasm_bindgen(js_name = "inverseTransform")]
     pub fn inverse_transform(&self, encoded: &[f64]) -> Result<Vec<f64>, JsError> {
-        if !self.fitted {
-            return Err(JsError::new("encoder not fitted"));
-        }
-
-        let mut result = Vec::with_capacity(encoded.len());
-        for &enc in encoded {
-            let idx = enc as usize;
-            if idx < self.classes.len() {
-                result.push(self.classes[idx]);
-            } else {
-                return Err(JsError::new(&format!("invalid encoded value: {}", enc)));
-            }
-        }
-        Ok(result)
+        self.inverse_transform_impl(encoded).map_err(|e| JsError::new(&e.message))
     }
 
     #[wasm_bindgen(js_name = "toString")]
@@ -98,7 +116,7 @@ mod tests {
     fn test_label_encoding() {
         let labels = vec![2.0, 1.0, 2.0, 0.0];
         let mut encoder = label_encoder();
-        encoder.fit(&labels).unwrap();
+        encoder.fit_impl(&labels).unwrap();
 
         assert_eq!(encoder.classes, vec![0.0, 1.0, 2.0]);
         assert_eq!(encoder.n_classes(), 3);
@@ -106,13 +124,11 @@ mod tests {
 
     #[test]
     fn test_transform() {
-        let labels = vec!["a".to_string(), "b".to_string(), "a".to_string()];
-        // For this test, we'll use numeric labels
         let labels_numeric = vec![10.0, 20.0, 10.0];
         let mut encoder = label_encoder();
-        encoder.fit(&labels_numeric).unwrap();
+        encoder.fit_impl(&labels_numeric).unwrap();
 
-        let transformed = encoder.transform(&labels_numeric).unwrap();
+        let transformed = encoder.transform_impl(&labels_numeric).unwrap();
         assert_eq!(transformed, vec![0.0, 1.0, 0.0]);  // 10 -> 0, 20 -> 1
     }
 
@@ -120,10 +136,10 @@ mod tests {
     fn test_inverse_transform() {
         let labels = vec![5.0, 10.0, 15.0];
         let mut encoder = label_encoder();
-        encoder.fit(&labels).unwrap();
+        encoder.fit_impl(&labels).unwrap();
 
-        let encoded = encoder.transform(&labels).unwrap();
-        let decoded = encoder.inverse_transform(&encoded).unwrap();
+        let encoded = encoder.transform_impl(&labels).unwrap();
+        let decoded = encoder.inverse_transform_impl(&encoded).unwrap();
 
         assert_eq!(decoded, labels);
     }
@@ -132,9 +148,9 @@ mod tests {
     fn test_unseen_label() {
         let labels = vec![1.0, 2.0];
         let mut encoder = label_encoder();
-        encoder.fit(&labels).unwrap();
-
-        let result = encoder.transform(&vec![3.0]);
+        encoder.fit_impl(&labels).unwrap();
+        // Use pure-Rust transform_impl to avoid wasm-bindgen panic on native targets.
+        let result = encoder.transform_impl(&[3.0]);
         assert!(result.is_err());
     }
 
@@ -142,9 +158,10 @@ mod tests {
     fn test_fit_transform() {
         let labels = vec![2.0, 1.0, 2.0, 0.0];
         let mut encoder = label_encoder();
-        let transformed = encoder.fit_transform(&labels).unwrap();
+        encoder.fit_impl(&labels).unwrap();
+        let transformed = encoder.transform_impl(&labels).unwrap();
 
-        // Sorted unique: [0, 1, 2] -> [0, 1, 2] encodes to [2, 1, 2, 0]
+        // Sorted unique: [0.0, 1.0, 2.0] -> encodes [2.0, 1.0, 2.0, 0.0] -> [2, 1, 2, 0]
         assert_eq!(transformed, vec![2.0, 1.0, 2.0, 0.0]);
     }
 }

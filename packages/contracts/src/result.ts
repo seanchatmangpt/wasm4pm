@@ -65,10 +65,40 @@ export function err(error: string): Err {
  * Check if result is Ok
  *
  * @param result Result to check
- * @returns true if Ok, false if Err
+ * @returns true if Ok, false if Err or ErrorResult
  */
 export function isOk<T>(result: Result<T>): result is Ok<T> {
   return result.type === 'ok';
+}
+
+/**
+ * Check if result is a simple string Err
+ *
+ * @param result Result to check
+ * @returns true if Err (string error), false otherwise
+ */
+export function isErr<T>(result: Result<T>): result is Err {
+  return result.type === 'err';
+}
+
+/**
+ * Check if result is a structured ErrorResult (carries ErrorInfo with exit_code and remediation)
+ *
+ * Documented in ERROR_SYSTEM.md and CONTRACTS.md but previously missing from the implementation.
+ *
+ * @param result Result to check
+ * @returns true if ErrorResult (structured error), false otherwise
+ *
+ * @example
+ * ```ts
+ * const result: Result<Config> = error(createError('CONFIG_MISSING', '...'));
+ * if (isError(result)) {
+ *   process.exit(result.error.exit_code); // type-safe: result.error is ErrorInfo
+ * }
+ * ```
+ */
+export function isError<T>(result: Result<T>): result is ErrorResult {
+  return result.type === 'error';
 }
 
 /**
@@ -84,6 +114,47 @@ export function isOk<T>(result: Result<T>): result is Ok<T> {
  */
 export function error(errorInfo: ErrorDetails): ErrorResult {
   return { type: 'error', error: errorInfo };
+}
+
+/**
+ * Check if result is any kind of failure (either simple Err or structured ErrorResult).
+ *
+ * Equivalent to `isErr(r) || isError(r)` but expressed as a single readable guard.
+ * Use when you need to branch on "did it fail?" without caring which error variant.
+ *
+ * @param result Result to check
+ * @returns true if Err or ErrorResult, false if Ok
+ *
+ * @example
+ * ```ts
+ * const result: Result<Config> = resolveConfig();
+ * if (isFailure(result)) {
+ *   // result is Err | ErrorResult — we know it failed but don't need the specific variant
+ *   process.exit(1);
+ * }
+ * ```
+ */
+export function isFailure<T>(result: Result<T>): result is Err | ErrorResult {
+  return result.type === 'err' || result.type === 'error';
+}
+
+/**
+ * Unwrap a result, returning the value on Ok or a fallback on any failure.
+ *
+ * Does NOT throw. Safe to use in contexts where a default is always acceptable.
+ *
+ * @param result Result to unwrap
+ * @param fallback Value to return when result is Err or ErrorResult
+ * @returns The success value or the fallback
+ *
+ * @example
+ * ```ts
+ * const config = unwrapOr(resolveConfig(), defaultConfig);
+ * ```
+ */
+export function unwrapOr<T>(result: Result<T>, fallback: T): T {
+  if (isOk(result)) return result.value;
+  return fallback;
 }
 
 // ============================================================================

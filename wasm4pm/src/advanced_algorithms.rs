@@ -76,14 +76,42 @@ pub fn discover_heuristic_miner(
     activity_key: &str,
     dependency_threshold: f64,
 ) -> Result<JsValue, JsValue> {
+    tracing::info!(
+        target: "wasm4pm.discovery.heuristic_miner",
+        algorithm = "heuristic_miner",
+        activity_key = activity_key,
+        dependency_threshold = dependency_threshold,
+        "Heuristic Miner discovery started"
+    );
+
     let log = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
+        Some(StoredObject::EventLog(log)) => {
+            tracing::info!(
+                target: "wasm4pm.discovery.heuristic_miner",
+                checkpoint = "feature_extraction",
+                log_size = log.traces.len(),
+                activity_count = log.get_activities(activity_key).len(),
+                "Log loaded and analyzed"
+            );
+            Ok(log.clone())
+        },
         Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
         None => Err(crate::error::js_val("EventLog not found")),
     })?;
+
     let dfg = discover_heuristic_miner_from_log(&log, activity_key, dependency_threshold);
     let n_nodes = dfg.nodes.len();
     let n_edges = dfg.edges.len();
+
+    tracing::info!(
+        target: "wasm4pm.discovery.heuristic_miner",
+        checkpoint = "result_generation",
+        node_count = n_nodes,
+        edge_count = n_edges,
+        complexity = if n_nodes > 0 { n_edges as f64 / n_nodes as f64 } else { 0.0 },
+        "DFG model constructed"
+    );
+
     let handle = get_or_init_state()
         .store_object(StoredObject::DirectlyFollowsGraph(dfg))
         .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
@@ -149,7 +177,7 @@ pub fn analyze_infrequent_paths(
                 // Hash the u32 sequence
                 #[cfg(feature = "bcinr")]
                 let path_hash: u64 = trace_ids.iter().fold(0u64, |h, &id| {
-                    bcinr::sketch::fnv1a_64(&(h ^ (id as u64)).to_le_bytes())
+                    crate::bcinr_compat::sketch::fnv1a_64(&(h ^ (id as u64)).to_le_bytes())
                 });
 
                 #[cfg(not(feature = "bcinr"))]

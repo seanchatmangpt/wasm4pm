@@ -45,13 +45,22 @@ export interface StateAtom {
   predicate: string;
   value: string;
 }
+export interface TraceStep {
+  step: number;
+  kind: string;
+  detail: string;
+  depth: number;
+}
+
 
 // =============================================================================
 // Breed catalogue (returned by cognition_show)
 // =============================================================================
 
+export type BreedId = 'eliza' | 'cbr' | 'dendral' | 'strips' | 'prolog' | 'mycin' | 'gps' | 'soar' | 'hearsay';
+
 export interface BreedDescriptor {
-  id: string;
+  id: BreedId;
   name: string;
   year: number;
 }
@@ -74,16 +83,42 @@ export interface BreedInput {
   state: StateAtom[];
 }
 
+/**
+ * A single inference step recorded by a breed during `run()`.
+ *
+ * Mirrors Rust `TraceStep` from `crates/wasm4pm-cognition/src/breeds/mod.rs`.
+ * Trace steps are append-only evidence that a real algorithm executed.
+ * An empty trace is a fraud signal: the breed did no work.
+ */
+export interface TraceStep {
+  /** Monotonic step index (0-based). */
+  step: number;
+  /** Step kind (e.g. "fire-rule", "unify", "eliminate", "post-hypothesis"). */
+  kind: string;
+  /** Step detail (rule id, action id, candidate id, etc.). */
+  detail: string;
+  /** Recursion depth at the time of the step. */
+  depth: number;
+}
+
 export interface BreedOutput {
-  breed: string;
+  breed: BreedId;
   candidates: Candidate[];
   facts: Fact[];
   selected?: string;
   explanation: string;
+  /**
+   * Append-only inference trace emitted by Rust `BreedOutput.inference_trace`.
+   *
+   * Source of truth: `crates/wasm4pm-cognition/src/breeds/mod.rs` — field has
+   * `#[serde(default)]` so it is always present (defaults to `[]`).
+   * Real algorithms produce non-empty traces; an empty trace is a fraud signal.
+   */
+  inference_trace: TraceStep[];
 }
 
 export interface Receipt {
-  breed: string;
+  breed: BreedId;
   input_hash: string;
   output_hash: string;
   combined_hash: string;
@@ -126,7 +161,7 @@ export interface Finding {
  */
 export interface ContractResult {
   status: 'ok';
-  breed: string;
+  breed: BreedId;
   run_id: string;
   output_hash: string;
   replay_pointer: string;

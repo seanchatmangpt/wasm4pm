@@ -34,7 +34,7 @@ describe('Init Command (filesystem oracle)', () => {
   it('creates wasm4pm.toml with [execution] block in cwd', async () => {
     const result = await runCli(['init', '--config-format', 'toml', '--quiet'], { cwd: tmpDir });
 
-    expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+    expect(result.exitCode).toBe(EXIT_CODES.success);
 
     const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
     await fsp.access(tomlPath);
@@ -44,7 +44,7 @@ describe('Init Command (filesystem oracle)', () => {
 
   it('creates wasm4pm.json with valid execution.profile when configFormat=json', async () => {
     const result = await runCli(['init', '--config-format', 'json', '--quiet'], { cwd: tmpDir });
-    expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
+    expect(result.exitCode).toBe(EXIT_CODES.success);
 
     const jsonPath = path.join(tmpDir, 'wasm4pm.json');
     await fsp.access(jsonPath);
@@ -54,7 +54,7 @@ describe('Init Command (filesystem oracle)', () => {
 
   it('rejects invalid configFormat with CONFIG_ERROR (1) and writes no config file', async () => {
     const result = await runCli(['init', '--config-format', 'yaml', '--quiet'], { cwd: tmpDir });
-    expect(result.exitCode).toBe(EXIT_CODES.CONFIG_ERROR);
+    expect(result.exitCode).toBe(EXIT_CODES.config_error);
 
     // No wasm4pm.toml or wasm4pm.json should have been written.
     expect(fs.existsSync(path.join(tmpDir, 'wasm4pm.toml'))).toBe(false);

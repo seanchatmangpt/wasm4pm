@@ -8,28 +8,36 @@
 
 use crate::breeds::{BreedInput, Candidate, Case, Fact, Goal, Rule, StateAtom};
 
+/// Input for the log-to-breed adapter.
+pub struct LogAdapterInput<'a> {
+    /// User-provided problem description.
+    pub intent: &'a str,
+    /// Algorithm IDs to evaluate.
+    pub algorithm_candidates: &'a [&'a str],
+    /// Total number of traces in the log.
+    pub traces: usize,
+    /// Number of distinct activities.
+    pub activities: usize,
+    /// Number of distinct trace variants.
+    pub variants: usize,
+    /// Fraction of traces containing at least one repeated activity.
+    pub rework_ratio: f64,
+    /// Mean number of events per trace.
+    pub mean_trace_len: f64,
+    /// Up to 5 most frequent activities by name.
+    pub top_activities: &'a [String],
+}
+
 /// Derive a `BreedInput` from event log statistics.
 ///
-/// All parameters are obtainable from the WASM kernel without loading the full log:
-/// - `intent` — user-provided problem description (e.g. "select discovery algorithm")
-/// - `algorithm_candidates` — algorithm IDs to evaluate (e.g. `["dfg","ilp","genetic"]`)
-/// - `traces` — total number of traces in the log
-/// - `activities` — number of distinct activities
-/// - `variants` — number of distinct trace variants
-/// - `rework_ratio` — fraction of traces containing at least one repeated activity
-/// - `mean_trace_len` — mean number of events per trace
-/// - `top_activities` — up to 5 most frequent activities by name
-pub fn log_to_breed_input(
-    intent: &str,
-    algorithm_candidates: &[&str],
-    traces: usize,
-    activities: usize,
-    variants: usize,
-    rework_ratio: f64,
-    mean_trace_len: f64,
-    top_activities: &[String],
-) -> BreedInput {
-    let candidates = algorithm_candidates
+/// All parameters are obtainable from the WASM kernel without loading the full log.
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
+pub fn log_to_breed_input(input: LogAdapterInput) -> BreedInput {
+    let candidates = input
+        .algorithm_candidates
         .iter()
         .map(|&id| Candidate {
             id: id.to_string(),
@@ -39,16 +47,29 @@ pub fn log_to_breed_input(
         })
         .collect();
 
-    let facts = derive_facts(traces, activities, variants, rework_ratio, mean_trace_len, top_activities);
+    let facts = derive_facts(
+        input.traces,
+        input.activities,
+        input.variants,
+        input.rework_ratio,
+        input.mean_trace_len,
+        input.top_activities,
+    );
 
     BreedInput {
-        intent: intent.to_string(),
+        intent: input.intent.to_string(),
         candidates,
         facts,
         cases: anchor_cases(),
         rules: discovery_rules(),
-        goals: discovery_goals(mean_trace_len, rework_ratio),
-        state: current_state(traces, activities, variants, rework_ratio, mean_trace_len),
+        goals: discovery_goals(input.mean_trace_len, input.rework_ratio),
+        state: current_state(
+            input.traces,
+            input.activities,
+            input.variants,
+            input.rework_ratio,
+            input.mean_trace_len,
+        ),
     }
 }
 

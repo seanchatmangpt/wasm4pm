@@ -51,7 +51,7 @@ impl<const REGISTERS: usize> HyperLogLog<REGISTERS> {
     pub fn add_key(&mut self, key: u64) {
         #[cfg(feature = "bcinr")]
         {
-            self.add(bcinr::sketch::fnv1a_64(&key.to_le_bytes()));
+            self.add(crate::bcinr_compat::sketch::fnv1a_64(&key.to_le_bytes()));
         }
         #[cfg(not(feature = "bcinr"))]
         {

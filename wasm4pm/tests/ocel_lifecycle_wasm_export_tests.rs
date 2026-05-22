@@ -23,15 +23,14 @@
 //!
 //! NOTE: These tests exercise the pure-Rust paths that back the WASM exports.
 //! The WASM exports themselves (handle-based state, JsValue return) can only be
-//! fully tested in a Node.js environment.  Integration via `wasm4pm/src/client.js`
-//! covers that layer.
+//! fully tested in a Node.js environment.
 
 #[cfg(feature = "feature-ocel")]
 mod ocel_lifecycle_wasm_export_tests {
     use std::collections::HashMap;
     use wasm4pm::models::{OCELEvent, OCELObject, OCEL};
     use wasm4pm::ocel_io::validate_ocel_object_lifecycles;
-    use wasm4pm::advanced::OCDirectlyFollowsGraph;
+    use wasm4pm::advanced::ocdfg::OCDirectlyFollowsGraph;
 
     // -------------------------------------------------------------------------
     // Helpers
@@ -93,19 +92,15 @@ mod ocel_lifecycle_wasm_export_tests {
              This would have been returned as {{}} by the old to_js() call on wasm32.",
         );
 
-        // Verify the Order DFG is present
         assert!(
             ocdfg.dfgs.contains_key("Order"),
             "OC-DFG must contain a DFG for object type 'Order'",
         );
 
-        // Verify the DFG has nodes (activities)
         let order_dfg = &ocdfg.dfgs["Order"];
         assert!(
             !order_dfg.nodes.is_empty(),
-            "Order DFG must have at least one node (activity), got 0. \
-             Empty nodes would cause to_js_str() to return {{\"dfgs\":{{\"Order\":{{\"nodes\":[],\"edges\":[]}}}}}}, \
-             not the serde_wasm_bindgen {{}} empty-object bug.",
+            "Order DFG must have at least one node (activity), got 0.",
         );
     }
 
@@ -123,7 +118,6 @@ mod ocel_lifecycle_wasm_export_tests {
         let json_str = serde_json::to_string(&ocdfg)
             .expect("OCDirectlyFollowsGraph must serialise without error");
 
-        // Must not be the empty-object string that serde_wasm_bindgen produces
         assert_ne!(
             json_str, "{}",
             "Serialised OC-DFG must not be the empty-object '{{}}' — \
@@ -145,7 +139,6 @@ mod ocel_lifecycle_wasm_export_tests {
     // -------------------------------------------------------------------------
     #[test]
     fn lifecycle_validation_valid_ocel_zero_violations() {
-        // Timestamps in non-decreasing order: e1 (09:00) → e2 (10:00)
         let ocel = make_ocel_two_events(
             "order1",
             "Order",
@@ -157,8 +150,7 @@ mod ocel_lifecycle_wasm_export_tests {
         assert_eq!(
             violations.len(),
             0,
-            "Valid OCEL with non-decreasing timestamps must produce 0 violations, \
-             got {}. Validate that validate_ocel_object_lifecycles is not spuriously firing.",
+            "Valid OCEL with non-decreasing timestamps must produce 0 violations, got {}.",
             violations.len(),
         );
     }
@@ -171,11 +163,10 @@ mod ocel_lifecycle_wasm_export_tests {
     // -------------------------------------------------------------------------
     #[test]
     fn lifecycle_validation_inverted_timestamps_produces_violation() {
-        // e1 arrives first in the log (idx=0) but timestamp is LATER than e2
         let ocel = make_ocel_two_events(
             "order1",
             "Order",
-            "2024-01-01T10:00:00Z", // e1 arrives first, later timestamp  ← violation
+            "2024-01-01T10:00:00Z", // e1 arrives first, later timestamp  <- violation
             "2024-01-01T09:00:00Z", // e2 arrives second, earlier timestamp
         );
         let violations = validate_ocel_object_lifecycles(&ocel);
@@ -183,21 +174,17 @@ mod ocel_lifecycle_wasm_export_tests {
         assert_eq!(
             violations.len(),
             1,
-            "OCEL with exactly one inverted timestamp pair must produce exactly 1 violation, \
-             got {}. \
-             object_id=order1, e1.ts > e2.ts but e1 arrives before e2 in log order.",
+            "OCEL with exactly one inverted timestamp pair must produce exactly 1 violation, got {}.",
             violations.len(),
         );
 
-        // Verify violation fields (Rank 2 domain contract)
         let v = &violations[0];
         assert_eq!(v.object_id, "order1", "Violation object_id mismatch");
-        assert_eq!(v.event_a_id, "e1", "First event in violation must be e1 (arrives first)");
-        assert_eq!(v.event_b_id, "e2", "Second event in violation must be e2 (arrives second)");
+        assert_eq!(v.event_a_id, "e1", "First event in violation must be e1");
+        assert_eq!(v.event_b_id, "e2", "Second event in violation must be e2");
         assert!(
             v.timestamp_a_ms > v.timestamp_b_ms,
-            "Violation timestamps must satisfy t_a > t_b (inversion). \
-             Got t_a={} t_b={}",
+            "Violation timestamps must satisfy t_a > t_b (inversion). Got t_a={} t_b={}",
             v.timestamp_a_ms,
             v.timestamp_b_ms,
         );
@@ -205,15 +192,14 @@ mod ocel_lifecycle_wasm_export_tests {
 
     // -------------------------------------------------------------------------
     // Test 5: Lifecycle validation JSON report structure
-    // Verifies the JSON format that `validate_ocel_object_lifecycles_wasm` would
-    // emit — using serde_json directly to confirm the shape.
+    // Verifies the JSON format that `validate_ocel_object_lifecycles_wasm` emits.
     // -------------------------------------------------------------------------
     #[test]
     fn lifecycle_validation_json_report_shape() {
         let ocel = make_ocel_two_events(
             "order1",
             "Order",
-            "2024-01-01T10:00:00Z", // invalid: later ts arrives first
+            "2024-01-01T10:00:00Z",
             "2024-01-01T09:00:00Z",
         );
         let violations = validate_ocel_object_lifecycles(&ocel);
@@ -237,7 +223,6 @@ mod ocel_lifecycle_wasm_export_tests {
             "violations": violations_json,
         });
 
-        // Rank 2 domain contract: `valid` must be false when there are violations
         assert_eq!(
             report["valid"].as_bool(),
             Some(false),
@@ -253,16 +238,9 @@ mod ocel_lifecycle_wasm_export_tests {
             "JSON report `violations` array must be non-empty",
         );
 
-        // Confirm the report serialises to a valid JSON string (as the WASM export does)
         let json_str = serde_json::to_string(&report)
             .expect("Lifecycle report must serialise without error");
-        assert!(
-            json_str.contains("valid"),
-            "Serialised report must contain 'valid' key",
-        );
-        assert!(
-            json_str.contains("violation_count"),
-            "Serialised report must contain 'violation_count' key",
-        );
+        assert!(json_str.contains("valid"), "Report must contain 'valid' key");
+        assert!(json_str.contains("violation_count"), "Report must contain 'violation_count' key");
     }
 }

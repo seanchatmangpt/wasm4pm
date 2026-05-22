@@ -1,0 +1,331 @@
+./RELEASE_CERTIFICATE.v26.5.21.json:    "version": "26.5.21",
+./RELEASE_CERTIFICATE.v26.5.21.json:    "tarball_name": "wasm4pm-26.5.21.tgz",
+./RELEASE_CERTIFICATE.v26.5.21.json:    "pack_smoke_tarball_path": "packages/kernel/wasm4pm-26.5.21.tgz",
+./benchmark_audit.md:# wasm4pm Benchmark Audit — v26.5.21
+./scripts/substrate-cert.sh:REAL_DATA_REPORT="${REAL_DATA_REPORT:-wasm4pm/target/wasm4pm-v26.5.21/real-data-report.json}"
+./scripts/substrate-cert.sh:FAKE_AUDIT="${FAKE_AUDIT:-wasm4pm/target/wasm4pm-v26.5.21/fake-stub-audit.json}"
+./scripts/substrate-cert.sh:OUTPUT_FILE="${OUTPUT_FILE:-wasm4pm/target/wasm4pm-v26.5.21/substrate-certificate.json}"
+./scripts/substrate-cert.sh:RELEASE="${RELEASE:-26.5.21}"
+./scripts/generate_blue_ocean_summary.py:        --report wasm4pm/target/wasm4pm-v26.5.15/benchmark-report.json \
+./scripts/generate_blue_ocean_summary.py:        --output wasm4pm/target/wasm4pm-v26.5.15/executive-blue-ocean-summary.md
+./Cargo.toml:version = "26.5.21"
+./Cargo.toml:wasm4pm-types = { version = "26.5.21", path = "crates/wasm4pm-types" }
+./Cargo.toml:wasm4pm-algos = { version = "26.5.21", path = "crates/wasm4pm-algos" }
+./Cargo.toml:wasm4pm-utils = { version = "26.5.21", path = "crates/wasm4pm-utils" }
+./Cargo.toml:wasm4pm-cognition = { version = "26.5.21", path = "crates/wasm4pm-cognition" }
+./Cargo.toml:wasm4pm-macros = { version = "26.5.21", path = "crates/wasm4pm-macros" }
+./Cargo.toml:prolog8 = { version = "26.5.21", path = "crates/prolog8" }
+./Cargo.toml:miniml = { version = "26.5.21", path = "crates/miniml-core" }
+./artifacts/release/ALGORITHM_BEHAVIOR_MATRIX.v26.5.21.md:# ALGORITHM_BEHAVIOR_MATRIX.v26.5.21
+./scripts/generate_capability_matrix.py:generate_capability_matrix.py — generates capability-matrix.json for wasm4pm v26.5.21
+./scripts/generate_capability_matrix.py:    --output target/wasm4pm-v26.5.21/capability-matrix.json \
+./scripts/generate_capability_matrix.py:    --version 26.5.21
+./scripts/generate_capability_matrix.py:    p.add_argument("--output", default="target/wasm4pm-v26.5.21/capability-matrix.json")
+./scripts/generate_capability_matrix.py:    p.add_argument("--version", default="26.5.21")
+./CONFIG_AUDIT_FOOTGUNS.md:**Recommended Milestone:** 26.5.20 or 26.5.25 (within current release cycle)
+./apps/wasm4pm/package.json:  "version": "26.5.21",
+./scripts/parse_criterion_output.py:parse_criterion_output.py — parses Criterion benchmark output for wasm4pm v26.5.21
+./scripts/parse_criterion_output.py:    --output target/wasm4pm-v26.5.21/criterion-results.json
+./scripts/parse_criterion_output.py:    p.add_argument("--output", default="target/wasm4pm-v26.5.21/criterion-results.json")
+./scripts/generate_algorithm_registry.py:generate_algorithm_registry.py — generates algorithm-registry.json for wasm4pm v26.5.21
+./scripts/generate_algorithm_registry.py:    --output target/wasm4pm-v26.5.21/algorithm-registry.json \
+./scripts/generate_algorithm_registry.py:    --version 26.5.21
+./scripts/generate_algorithm_registry.py:    p.add_argument("--output", default="target/wasm4pm-v26.5.21/algorithm-registry.json")
+./scripts/generate_algorithm_registry.py:    p.add_argument("--version", default="26.5.21")
+./CHANGELOG.md:## [26.5.21] - 2026-05-21
+./CHANGELOG.md:v26.5.21 is a receipt-backed validation release focused on closing the examples gate, verifying platform examples, and strengthening GHF receipt validation.
+./CHANGELOG.md:## [26.5.19] - 2026-05-19
+./CHANGELOG.md:- Updated documentation and README.md for the v26.5.19 release.
+./CHANGELOG.md:## [26.5.15] - 2026-05-15 — Proof-Gate v2, Adversarial Admissibility v2, 21-Hook Coverage, Advanced Algorithms
+./CHANGELOG.md:- **`actions/upload-artifact@v3` → `@v4`** across 3 workflow files (deprecated by GitHub 2024-04-16; had fail-fasted every CI run since v26.5.13).
+./CHANGELOG.md:## [26.5.13] - 2026-05-13 — POWL 2.0, Cell8 Proof Gates, OTEL Phases A–C
+./CHANGELOG.md:- All 16 version-carrying manifests aligned to 26.5.13 (root + wasm4pm + apps/wasm4pm + 11 packages/* + Cargo workspace + cli.ts banner)
+./crates/wasm4pm-cognition/Cargo.toml:prolog8 = { version = "26.5.21", path = "../prolog8" }
+./crates/wasm4pm-cli/Cargo.toml:wasm4pm-algos = { version = "26.5.21", path = "../wasm4pm-algos" }
+./crates/wasm4pm-cli/Cargo.toml:wasm4pm = { version = "26.5.21", path = "../../wasm4pm", features = ["cloud"] }
+./artifacts/release/ALGORITHM_BEHAVIOR_EVIDENCE.v26.5.21.json:  "version": "26.5.21",
+./artifacts/release/ALGORITHM_REACHABILITY_EVIDENCE.v26.5.21.json:  "version": "26.5.21",
+./ontology/public-alignment.ttl:  dcterms:identifier "RELEASE_CERTIFICATE.v26.5.21.json" ;
+./ontology/public-alignment.ttl:  dcterms:title "Release certificate for wasm4pm v26.5.21" ;
+./ontology/public-alignment.ttl:  dcterms:identifier "ALGORITHM_BEHAVIOR_EVIDENCE.v26.5.21.json" ;
+./artifacts/releases/v26.5.21/git-status.txt: M artifacts/releases/v26.5.21/git-status.txt
+./PUBLISH_READY_REPORT.txt:**Version:** 26.5.21
+./PUBLISH_READY_REPORT.txt:- `Cargo.toml` and `package.json` files correctly reflect version `26.5.21`.
+./PUBLISH_READY_REPORT.txt:- **Agent 7 (NPM Root):** Linted, formatted, and verified tarballs for `@wasm4pm/agents`, `@wasm4pm/cognition`, `@wasm4pm/cli`, and `wasm4pm`. All package versions exactly match 26.5.21.
+./PUBLISH_READY_REPORT.txt:- **Agent 10 (Release Certificate):** Generated and verified `RELEASE_CERTIFICATE.v26.5.21.json`. Executed `npm run release:verify-algorithm-behavior` and `npm run release:forbidden` cleanly. The certificate hash is `8636a3be98c552e55c87d8e6e121ba38755296c711a18692b7383d644a468703`.
+./docs/reference/receipt_format.md:      "version": "26.5.21" 
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice 📦  wasm4pm-monorepo@26.5.21
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice 3.8kB   .github/sbom/sbom-26.5.13.json                                                                                                                 
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice 3.8kB   .github/sbom/sbom-26.5.19.json                                                                                                                 
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice 1.2kB   RELEASE_CERTIFICATE.v26.5.21.json                                                                                                              
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice 125.3kB artifacts/release/ALGORITHM_BEHAVIOR_EVIDENCE.v26.5.21.json                                                                                    
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice 5.2kB   artifacts/release/ALGORITHM_BEHAVIOR_MATRIX.v26.5.21.md                                                                                        
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice 8.7kB   artifacts/release/ALGORITHM_REACHABILITY_EVIDENCE.v26.5.21.json                                                                                
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice 72B     artifacts/releases/v26.5.21/cargo-clippy.stderr                                                                                                
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice 0B      artifacts/releases/v26.5.21/cargo-clippy.stdout                                                                                                
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice 401B    artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr                                                                                       
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice 0B      artifacts/releases/v26.5.21/cargo-publish-dry-run.stdout                                                                                       
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice 7.1kB   artifacts/releases/v26.5.21/cargo-test-ghf.stderr                                                                                              
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice 0B      artifacts/releases/v26.5.21/cargo-test-ghf.stdout                                                                                              
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice 0B      artifacts/releases/v26.5.21/examples-gate.stderr                                                                                               
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice 5.0kB   artifacts/releases/v26.5.21/examples-gate.stdout                                                                                               
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice 41B     artifacts/releases/v26.5.21/git-head.txt                                                                                                       
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice 94B     artifacts/releases/v26.5.21/git-status.txt                                                                                                     
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice 0B      artifacts/releases/v26.5.21/npm-publish-dry-run.stderr                                                                                         
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice 0B      artifacts/releases/v26.5.21/npm-publish-dry-run.stdout                                                                                         
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice 0B      artifacts/releases/v26.5.21/receipt-verify.stderr                                                                                              
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice 10.4kB  artifacts/releases/v26.5.21/receipt-verify.stdout                                                                                              
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice 20.9kB  artifacts/releases/v26.5.21/version-scan.txt                                                                                                   
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice version:       26.5.21                                 
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stderr:npm notice filename:      wasm4pm-monorepo-26.5.21.tgz            
+./packages/kernel/src/__tests__/manifest-bridge.test.ts:    // Version should be semver-like or CalVer-like (e.g. "26.5.21" or "0.1.0")
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Packaging miniml v26.5.21 (/Users/sac/wasm4pm/crates/miniml-core)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Packaging prolog8 v26.5.21 (/Users/sac/wasm4pm/crates/prolog8)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Packaging tps-metrics v26.5.21 (/Users/sac/wasm4pm/tps-metrics)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Packaging wasm4pm-cognition v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-cognition)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Packaging wasm4pm-macros v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-macros)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Packaging wasm4pm-types v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-types)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Packaging wasm4pm v26.5.21 (/Users/sac/wasm4pm/wasm4pm)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Packaging wasm4pm-algos v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-algos)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Packaging wasm4pm-cli v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-cli)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Packaging wasm4pm-utils v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-utils)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Verifying miniml v26.5.21 (/Users/sac/wasm4pm/crates/miniml-core)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Compiling miniml v26.5.21 (/Users/sac/wasm4pm/target/package/miniml-26.5.21)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Verifying prolog8 v26.5.21 (/Users/sac/wasm4pm/crates/prolog8)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Compiling prolog8 v26.5.21 (/Users/sac/wasm4pm/target/package/prolog8-26.5.21)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Verifying tps-metrics v26.5.21 (/Users/sac/wasm4pm/tps-metrics)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Compiling tps-metrics v26.5.21 (/Users/sac/wasm4pm/target/package/tps-metrics-26.5.21)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Verifying wasm4pm-cognition v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-cognition)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Unpacking prolog8 v26.5.21 (registry `/Users/sac/wasm4pm/target/package/tmp-registry`)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Compiling prolog8 v26.5.21
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Compiling wasm4pm-cognition v26.5.21 (/Users/sac/wasm4pm/target/package/wasm4pm-cognition-26.5.21)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Verifying wasm4pm-macros v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-macros)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Compiling wasm4pm-macros v26.5.21 (/Users/sac/wasm4pm/target/package/wasm4pm-macros-26.5.21)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Verifying wasm4pm-types v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-types)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Compiling wasm4pm-types v26.5.21 (/Users/sac/wasm4pm/target/package/wasm4pm-types-26.5.21)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Verifying wasm4pm v26.5.21 (/Users/sac/wasm4pm/wasm4pm)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Unpacking wasm4pm-types v26.5.21 (registry `/Users/sac/wasm4pm/target/package/tmp-registry`)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Compiling wasm4pm-types v26.5.21
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Compiling wasm4pm v26.5.21 (/Users/sac/wasm4pm/target/package/wasm4pm-26.5.21)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Verifying wasm4pm-algos v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-algos)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Compiling wasm4pm-types v26.5.21
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Compiling wasm4pm-algos v26.5.21 (/Users/sac/wasm4pm/target/package/wasm4pm-algos-26.5.21)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Verifying wasm4pm-cli v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-cli)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Unpacking wasm4pm v26.5.21 (registry `/Users/sac/wasm4pm/target/package/tmp-registry`)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Unpacking wasm4pm-algos v26.5.21 (registry `/Users/sac/wasm4pm/target/package/tmp-registry`)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Compiling wasm4pm-types v26.5.21
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Compiling wasm4pm-algos v26.5.21
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Compiling wasm4pm v26.5.21
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Compiling wasm4pm-cli v26.5.21 (/Users/sac/wasm4pm/target/package/wasm4pm-cli-26.5.21)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Verifying wasm4pm-utils v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-utils)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Compiling wasm4pm-utils v26.5.21 (/Users/sac/wasm4pm/target/package/wasm4pm-utils-26.5.21)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Uploading miniml v26.5.21 (/Users/sac/wasm4pm/crates/miniml-core)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Uploading prolog8 v26.5.21 (/Users/sac/wasm4pm/crates/prolog8)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Uploading tps-metrics v26.5.21 (/Users/sac/wasm4pm/tps-metrics)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Uploading wasm4pm-macros v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-macros)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Uploading wasm4pm-types v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-types)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Uploading wasm4pm-utils v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-utils)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Uploading wasm4pm-algos v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-algos)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Uploading wasm4pm-cognition v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-cognition)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Uploading wasm4pm v26.5.21 (/Users/sac/wasm4pm/wasm4pm)
+./artifacts/releases/v26.5.21/cargo-publish-dry-run.stderr:   Uploading wasm4pm-cli v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-cli)
+./artifacts/releases/v26.5.21/version-scan.txt:./RELEASE_CERTIFICATE.v26.5.21.json:    "version": "26.5.21",
+./artifacts/releases/v26.5.21/version-scan.txt:./RELEASE_CERTIFICATE.v26.5.21.json:    "tarball_name": "wasm4pm-26.5.21.tgz",
+./artifacts/releases/v26.5.21/version-scan.txt:./RELEASE_CERTIFICATE.v26.5.21.json:    "pack_smoke_tarball_path": "packages/kernel/wasm4pm-26.5.21.tgz",
+./artifacts/releases/v26.5.21/version-scan.txt:./benchmark_audit.md:# wasm4pm Benchmark Audit — v26.5.21
+./artifacts/releases/v26.5.21/version-scan.txt:./scripts/substrate-cert.sh:REAL_DATA_REPORT="${REAL_DATA_REPORT:-wasm4pm/target/wasm4pm-v26.5.21/real-data-report.json}"
+./artifacts/releases/v26.5.21/version-scan.txt:./scripts/substrate-cert.sh:FAKE_AUDIT="${FAKE_AUDIT:-wasm4pm/target/wasm4pm-v26.5.21/fake-stub-audit.json}"
+./artifacts/releases/v26.5.21/version-scan.txt:./scripts/substrate-cert.sh:OUTPUT_FILE="${OUTPUT_FILE:-wasm4pm/target/wasm4pm-v26.5.21/substrate-certificate.json}"
+./artifacts/releases/v26.5.21/version-scan.txt:./scripts/substrate-cert.sh:RELEASE="${RELEASE:-26.5.21}"
+./artifacts/releases/v26.5.21/version-scan.txt:./scripts/generate_blue_ocean_summary.py:        --report wasm4pm/target/wasm4pm-v26.5.15/benchmark-report.json \
+./artifacts/releases/v26.5.21/version-scan.txt:./scripts/generate_blue_ocean_summary.py:        --output wasm4pm/target/wasm4pm-v26.5.15/executive-blue-ocean-summary.md
+./artifacts/releases/v26.5.21/version-scan.txt:./Cargo.toml:version = "26.5.21"
+./artifacts/releases/v26.5.21/version-scan.txt:./Cargo.toml:wasm4pm-types = { version = "26.5.21", path = "crates/wasm4pm-types" }
+./artifacts/releases/v26.5.21/version-scan.txt:./Cargo.toml:wasm4pm-algos = { version = "26.5.21", path = "crates/wasm4pm-algos" }
+./artifacts/releases/v26.5.21/version-scan.txt:./Cargo.toml:wasm4pm-utils = { version = "26.5.21", path = "crates/wasm4pm-utils" }
+./artifacts/releases/v26.5.21/version-scan.txt:./Cargo.toml:wasm4pm-cognition = { version = "26.5.21", path = "crates/wasm4pm-cognition" }
+./artifacts/releases/v26.5.21/version-scan.txt:./Cargo.toml:wasm4pm-macros = { version = "26.5.21", path = "crates/wasm4pm-macros" }
+./artifacts/releases/v26.5.21/version-scan.txt:./Cargo.toml:prolog8 = { version = "26.5.21", path = "crates/prolog8" }
+./artifacts/releases/v26.5.21/version-scan.txt:./Cargo.toml:miniml = { version = "26.5.21", path = "crates/miniml-core" }
+./artifacts/releases/v26.5.21/version-scan.txt:./artifacts/release/ALGORITHM_BEHAVIOR_MATRIX.v26.5.21.md:# ALGORITHM_BEHAVIOR_MATRIX.v26.5.21
+./artifacts/releases/v26.5.21/version-scan.txt:./scripts/generate_capability_matrix.py:generate_capability_matrix.py — generates capability-matrix.json for wasm4pm v26.5.21
+./artifacts/releases/v26.5.21/version-scan.txt:./scripts/generate_capability_matrix.py:    --output target/wasm4pm-v26.5.21/capability-matrix.json \
+./artifacts/releases/v26.5.21/version-scan.txt:./scripts/generate_capability_matrix.py:    --version 26.5.21
+./artifacts/releases/v26.5.21/version-scan.txt:./scripts/generate_capability_matrix.py:    p.add_argument("--output", default="target/wasm4pm-v26.5.21/capability-matrix.json")
+./artifacts/releases/v26.5.21/version-scan.txt:./scripts/generate_capability_matrix.py:    p.add_argument("--version", default="26.5.21")
+./artifacts/releases/v26.5.21/version-scan.txt:./CONFIG_AUDIT_FOOTGUNS.md:**Recommended Milestone:** 26.5.20 or 26.5.25 (within current release cycle)
+./artifacts/releases/v26.5.21/version-scan.txt:./apps/wasm4pm/package.json:  "version": "26.5.21",
+./artifacts/releases/v26.5.21/version-scan.txt:./scripts/parse_criterion_output.py:parse_criterion_output.py — parses Criterion benchmark output for wasm4pm v26.5.21
+./artifacts/releases/v26.5.21/version-scan.txt:./scripts/parse_criterion_output.py:    --output target/wasm4pm-v26.5.21/criterion-results.json
+./artifacts/releases/v26.5.21/version-scan.txt:./scripts/parse_criterion_output.py:    p.add_argument("--output", default="target/wasm4pm-v26.5.21/criterion-results.json")
+./artifacts/releases/v26.5.21/version-scan.txt:./scripts/generate_algorithm_registry.py:generate_algorithm_registry.py — generates algorithm-registry.json for wasm4pm v26.5.21
+./artifacts/releases/v26.5.21/version-scan.txt:./scripts/generate_algorithm_registry.py:    --output target/wasm4pm-v26.5.21/algorithm-registry.json \
+./artifacts/releases/v26.5.21/version-scan.txt:./scripts/generate_algorithm_registry.py:    --version 26.5.21
+./artifacts/releases/v26.5.21/version-scan.txt:./scripts/generate_algorithm_registry.py:    p.add_argument("--output", default="target/wasm4pm-v26.5.21/algorithm-registry.json")
+./artifacts/releases/v26.5.21/version-scan.txt:./scripts/generate_algorithm_registry.py:    p.add_argument("--version", default="26.5.21")
+./artifacts/releases/v26.5.21/version-scan.txt:./CHANGELOG.md:## [26.5.21] - 2026-05-21
+./artifacts/releases/v26.5.21/version-scan.txt:./CHANGELOG.md:v26.5.21 is a receipt-backed validation release focused on closing the examples gate, verifying platform examples, and strengthening GHF receipt validation.
+./artifacts/releases/v26.5.21/version-scan.txt:./CHANGELOG.md:## [26.5.19] - 2026-05-19
+./artifacts/releases/v26.5.21/version-scan.txt:./CHANGELOG.md:- Updated documentation and README.md for the v26.5.19 release.
+./artifacts/releases/v26.5.21/version-scan.txt:./CHANGELOG.md:## [26.5.15] - 2026-05-15 — Proof-Gate v2, Adversarial Admissibility v2, 21-Hook Coverage, Advanced Algorithms
+./artifacts/releases/v26.5.21/version-scan.txt:./CHANGELOG.md:- **`actions/upload-artifact@v3` → `@v4`** across 3 workflow files (deprecated by GitHub 2024-04-16; had fail-fasted every CI run since v26.5.13).
+./artifacts/releases/v26.5.21/version-scan.txt:./CHANGELOG.md:## [26.5.13] - 2026-05-13 — POWL 2.0, Cell8 Proof Gates, OTEL Phases A–C
+./artifacts/releases/v26.5.21/version-scan.txt:./CHANGELOG.md:- All 16 version-carrying manifests aligned to 26.5.13 (root + wasm4pm + apps/wasm4pm + 11 packages/* + Cargo workspace + cli.ts banner)
+./artifacts/releases/v26.5.21/version-scan.txt:./crates/wasm4pm-cognition/Cargo.toml:prolog8 = { version = "26.5.21", path = "../prolog8" }
+./artifacts/releases/v26.5.21/version-scan.txt:./crates/wasm4pm-cli/Cargo.toml:wasm4pm-algos = { version = "26.5.21", path = "../wasm4pm-algos" }
+./artifacts/releases/v26.5.21/version-scan.txt:./crates/wasm4pm-cli/Cargo.toml:wasm4pm = { version = "26.5.21", path = "../../wasm4pm", features = ["cloud"] }
+./artifacts/releases/v26.5.21/version-scan.txt:./artifacts/release/ALGORITHM_BEHAVIOR_EVIDENCE.v26.5.21.json:  "version": "26.5.21",
+./artifacts/releases/v26.5.21/version-scan.txt:./artifacts/release/ALGORITHM_REACHABILITY_EVIDENCE.v26.5.21.json:  "version": "26.5.21",
+./artifacts/releases/v26.5.21/version-scan.txt:./ontology/public-alignment.ttl:  dcterms:identifier "RELEASE_CERTIFICATE.v26.5.21.json" ;
+./artifacts/releases/v26.5.21/version-scan.txt:./ontology/public-alignment.ttl:  dcterms:title "Release certificate for wasm4pm v26.5.21" ;
+./artifacts/releases/v26.5.21/version-scan.txt:./ontology/public-alignment.ttl:  dcterms:identifier "ALGORITHM_BEHAVIOR_EVIDENCE.v26.5.21.json" ;
+./artifacts/releases/v26.5.21/version-scan.txt:./artifacts/releases/v26.5.21/git-status.txt: M artifacts/releases/v26.5.21/git-status.txt
+./artifacts/releases/v26.5.21/version-scan.txt:./PUBLISH_READY_REPORT.txt:**Version:** 26.5.21
+./artifacts/releases/v26.5.21/version-scan.txt:./PUBLISH_READY_REPORT.txt:- `Cargo.toml` and `package.json` files correctly reflect version `26.5.21`.
+./artifacts/releases/v26.5.21/version-scan.txt:./PUBLISH_READY_REPORT.txt:- **Agent 7 (NPM Root):** Linted, formatted, and verified tarballs for `@wasm4pm/agents`, `@wasm4pm/cognition`, `@wasm4pm/cli`, and `wasm4pm`. All package versions exactly match 26.5.21.
+./artifacts/releases/v26.5.21/version-scan.txt:./PUBLISH_READY_REPORT.txt:- **Agent 10 (Release Certificate):** Generated and verified `RELEASE_CERTIFICATE.v26.5.21.json`. Executed `npm run release:verify-algorithm-behavior` and `npm run release:forbidden` cleanly. The certificate hash is `8636a3be98c552e55c87d8e6e121ba38755296c711a18692b7383d644a468703`.
+./artifacts/releases/v26.5.21/version-scan.txt:./docs/reference/receipt_format.md:      "version": "26.5.21" 
+./scripts/generate-capability-matrix.sh:VERSION="${VERSION:-26.5.21}"
+./artifacts/releases/v26.5.21/RELEASE_RECEIPT.json:  "release": "v26.5.21",
+./artifacts/releases/v26.5.21/receipt-verify.stdout:[1mwpm[0m (wasm4pm) v26.5.21  —  Process Mining CLI  [2m(wasm4pm)[0m
+./release-gate.sh:RELEASE="26.5.21"
+./artifacts/releases/v26.5.21/examples-gate.stdout:> wasm4pm-monorepo@26.5.21 examples:gate
+./artifacts/releases/v26.5.21/examples-gate.stdout:--- Running Examples Gate for v26.5.21 ---
+./artifacts/releases/v26.5.21/cargo-test-ghf.stderr:   Compiling wasm4pm v26.5.21 (/Users/sac/wasm4pm/wasm4pm)
+./artifacts/releases/v26.5.21/cargo-test-ghf.stderr:   Compiling wasm4pm-cli v26.5.21 (/Users/sac/wasm4pm/crates/wasm4pm-cli)
+./artifacts/releases/v26.5.21/npm-publish-dry-run.stdout:+ wasm4pm-monorepo@26.5.21
+./scripts/generate_benchmark_report.py:        --registry wasm4pm/target/wasm4pm-v26.5.21/algorithm-registry.json \
+./scripts/generate_benchmark_report.py:        --output-json wasm4pm/target/wasm4pm-v26.5.21/benchmark-report.json \
+./scripts/generate_benchmark_report.py:        --output-md wasm4pm/target/wasm4pm-v26.5.21/benchmark-report.md \
+./scripts/generate_benchmark_report.py:        --version 26.5.21
+./scripts/generate_benchmark_report.py:    parser.add_argument("--version",     default="26.5.21", help="Version string")
+./scripts/generate_dataset_registry.py:        --output wasm4pm/target/wasm4pm-v26.5.21/real-data-dataset-registry.json \
+./scripts/generate_dataset_registry.py:        --version 26.5.21
+./scripts/generate_dataset_registry.py:    parser.add_argument("--version",    default="26.5.21",        help="Version string")
+./CHANGELOG_RELEASE.md:# Release Notes - v26.5.19
+./CHANGELOG_RELEASE.md:release(v26.5.19): fix 8 test failures, correct feature gating for mobile/ml/streaming builds
+./CHANGELOG_RELEASE.md:release(v26.5.19): fix 8 test failures, correct feature gating for mobile/ml/streaming builds
+./CHANGELOG_RELEASE.md:release(v26.5.19): fix 8 test failures, correct feature gating for mobile/ml/streaming builds
+./CHANGELOG_RELEASE.md:## [26.5.19] - 2026-05-19
+./CHANGELOG_RELEASE.md:- Updated documentation and README.md for the v26.5.19 release.
+./CHANGELOG_RELEASE.md:## [26.5.15] - 2026-05-15 — Proof-Gate v2, Adversarial Admissibility v2, 21-Hook Coverage, Advanced Algorithms
+./crates/miniml-core/Cargo.toml:version = "26.5.21"
+./packages/kernel/src/version-resolver.ts:const PACKAGE_VERSION = '26.5.21';
+./Cargo.lock:version = "26.5.21"
+./Cargo.lock:version = "26.5.21"
+./Cargo.lock:version = "26.5.21"
+./Cargo.lock:version = "26.5.21"
+./Cargo.lock:version = "26.5.21"
+./Cargo.lock:version = "26.5.21"
+./Cargo.lock:version = "26.5.21"
+./Cargo.lock:version = "26.5.21"
+./Cargo.lock:version = "26.5.21"
+./Cargo.lock:version = "26.5.21"
+./package.json:  "version": "26.5.21",
+./wasm4pm/Cargo.toml:wasm4pm-cognition = { version = "26.5.21", path = "../crates/wasm4pm-cognition", default-features = false, optional = true }
+./wasm4pm/Cargo.toml:wasm4pm-macros = { version = "26.5.21", path = "../crates/wasm4pm-macros" }
+./wasm4pm/Cargo.toml:miniml = { version = "26.5.21", path = "../crates/miniml-core" }
+./package-lock.json:  "version": "26.5.21",
+./package-lock.json:      "version": "26.5.21",
+./package-lock.json:      "version": "26.5.21",
+./package-lock.json:      "version": "26.5.19",
+./package-lock.json:      "version": "26.5.21",
+./package-lock.json:      "version": "26.5.21",
+./package-lock.json:      "version": "26.5.21",
+./package-lock.json:      "version": "26.5.21",
+./package-lock.json:      "version": "26.5.21",
+./package-lock.json:      "version": "26.5.21",
+./package-lock.json:      "version": "26.5.21",
+./package-lock.json:      "version": "26.5.21",
+./package-lock.json:      "version": "26.5.21",
+./package-lock.json:      "version": "26.5.21",
+./package-lock.json:      "version": "26.5.21",
+./package-lock.json:      "version": "26.5.21",
+./package-lock.json:      "version": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "a_star": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "aco": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "alignments": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "alpha_plus_plus": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "batches": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "bpmn_import": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "causal_graph": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "complexity_metrics": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "correlation_miner": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "declare": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "dfg": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "etconformance_precision": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "generalization": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "genetic_algorithm": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "handover_network": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "heuristic_miner": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "hierarchical_dfg": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "hill_climbing": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "ilp": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "inductive_miner": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "log_to_trie": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "ml_anomaly": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "ml_classify": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "ml_cluster": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "ml_forecast": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "ml_pca": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "ml_regress": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "monte_carlo_simulation": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "optimized_dfg": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "performance_spectrum": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "playout": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "pnml_import": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "powl_to_process_tree": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "process_skeleton": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "pso": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "simd_streaming_dfg": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "simulated_annealing": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "smart_engine": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "streaming_log": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "transition_system": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "working_together_network": "26.5.21",
+./packages/kernel/src/algorithm-versions.json:  "yawl_export": "26.5.21"
+./wasm4pm/package.json:  "version": "26.5.21",
+./packages/kernel/package.json:  "version": "26.5.21",
+./packages/examples-zoe-la/package.json:  "version": "26.5.21",
+./packages/kernel/__tests__/gap-fixes.test.ts:      get_version: vi.fn(() => '26.5.21'),
+./packages/kernel/__tests__/gap-fixes.test.ts:      get_version: vi.fn(() => '26.5.21'),
+./packages/kernel/__tests__/gap-fixes.test.ts:      get_version: vi.fn(() => '26.5.21'),
+./examples/out/finance_audit.receipt.json:  "version": "26.5.21",
+./examples/out/supply_chain_port.receipt.json:  "version": "26.5.21",
+./examples/out/sunday_andon.receipt.json:  "version": "26.5.21",
+./examples/out/cg_belonging.receipt.json:  "version": "26.5.21",
+./examples/out/kids_safety.receipt.json:  "version": "26.5.21",
+./examples/out/volunteer_serving.receipt.json:  "version": "26.5.21",
+./examples/out/prayer_pipeline.receipt.json:  "version": "26.5.21",
+./examples/out/benevolence_route.receipt.json:  "version": "26.5.21",
+./wasm4pm/Makefile:VERSION    := 26.5.21
+./wasm4pm/Makefile:# BENCHMARK SUITE TARGETS (v26.5.15+)
+./packages/ml/package.json:  "version": "26.5.21",
+./apps/wasm4pm/src/__tests__/mcpp-route-conformance.test.ts:    const fixturePath = '/Users/sac/mcpp/fixtures/launch/v26.5.21/route-fixture.ocel.jsonl';
+./docs_quarantine/ARCHIVE/wasm4pm_docs/WASM_BOUNDARY.md:**Version:** v26.5.19  
+./docs_quarantine/ARCHIVE/wasm4pm_docs/WASM_BOUNDARY.md:| `dfg_threshold_sweep` | `#[ignore]` tests only | Renamed from `ensemble_discover` in v26.5.19 |
+./packages/engine/package.json:  "version": "26.5.21",
+./wasm4pm/tests/fake_stub_audit_tests.rs://! Fake/stub audit tests for wasm4pm v26.5.21.
+./wasm4pm/tests/fake_stub_audit_tests.rs:    // After the v26.5.21 rename, the public API of ensemble.rs is dfg_threshold_sweep.
+./wasm4pm/tests/substrate_certificate_tests.rs://! Substrate certificate tests for wasm4pm v26.5.21.
+./wasm4pm/tests/substrate_certificate_tests.rs:    "/target/wasm4pm-v26.5.21/substrate-certificate.json"
+./wasm4pm/tests/substrate_certificate_tests.rs:    "/target/wasm4pm-v26.5.21/capability-matrix.json"
+./packages/testing/package.json:  "version": "26.5.21",
+./docs_quarantine/ARCHIVE/DEFINITION_OF_DONE.md:*Version: 26.5.13*
+./docs_quarantine/ARCHIVE/DEFINITION_OF_DONE.md:- [x] All four files set to the release version (e.g., `26.5.13`)
+./docs_quarantine/ARCHIVE/DEFINITION_OF_DONE.md:## 6. v26.5.13 Release Gate
+./docs_quarantine/ARCHIVE/DEFINITION_OF_DONE.md:- [x] `node apps/wasm4pm/dist/bin/wpm.js --version` prints `26.5.13`
+./docs_quarantine/ARCHIVE/DEFINITION_OF_DONE.md:- [x] Commit message: `release(v26.5.13): thesis-benchmark-numbers`
+./docs_quarantine/ARCHIVE/DEFINITION_OF_DONE.md:- [x] Git tag `v26.5.13` created on merge commit
+./packages/observability/src/otel.ts:export const OBSERVABILITY_SCOPE_VERSION = '26.5.15';
+./packages/observability/package.json:  "version": "26.5.21",
+./packages/config/package.json:  "version": "26.5.21",
+./packages/planner/package.json:  "version": "26.5.21",
+./packages/cognition/package.json:  "version": "26.5.21",
+./packages/agents/package.json:  "version": "26.5.21",
+./packages/swarm/package.json:  "version": "26.5.21",
+./packages/contracts/src/__tests__/result.test.ts:  kernel_version: '26.5.13',
+./packages/swarm/src/__tests__/marketplace-passport.test.ts: *   - mcpp CROSSRT probe taxonomy (docs/CROSS_RUNTIME_VALIDATION.md, v26.5.21 Slice κ)
+./packages/swarm/src/__tests__/marketplace-passport.test.ts: * X01–X10 cross-runtime probe taxonomy from mcpp v26.5.21 Slice κ.
+./packages/contracts/package.json:  "version": "26.5.21",
+./packages/contracts/src/__tests__/mcpp-ocel-roundtrip.test.ts:    'mcpp/fixtures/launch/v26.5.21/a2a-capture.ocel.jsonl',

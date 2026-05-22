@@ -28,7 +28,7 @@ describe('EXIT_CODES contract', () => {
     const codes = Object.values(EXIT_CODES);
     const codeSet = new Set(codes);
     for (let i = 0; i <= 5; i++) {
-      expect(codeSet.has(i)).toBe(true);
+      expect(codeSet.has(i as any)).toBe(true);
     }
     expect(codeSet.size).toBe(codes.length);
     const nonZero = codes.filter((c) => c !== 0);
@@ -93,8 +93,13 @@ describe('Error classes', () => {
   ];
 
   it('each class produces correct exit code and is instanceof Wasm4pmError and Error', () => {
-    for (const { cls, code } of errorClasses) {
-      const err = new cls('test message');
+    for (const { cls, code, name } of errorClasses) {
+      let err: Wasm4pmError;
+      if (name === 'PartialFailureError') {
+        err = new (cls as any)('test message', [], []);
+      } else {
+        err = new (cls as any)('test message');
+      }
       expect(err.exitCode).toBe(code);
       expect(err).toBeInstanceOf(Wasm4pmError);
       expect(err).toBeInstanceOf(Error);
@@ -123,8 +128,8 @@ describe('Error classes', () => {
 // ---------------------------------------------------------------------------
 
 describe('handleError exit code mapping', () => {
-  let exitSpy: ReturnType<typeof vi.spyOn>;
-  let consoleSpy: ReturnType<typeof vi.spyOn>;
+  let exitSpy: ReturnType<typeof vi.spyOn> & any;
+  let consoleSpy: ReturnType<typeof vi.spyOn> & any;
 
   beforeEach(() => {
     exitSpy = vi.spyOn(process, 'exit').mockImplementation((() => {}) as any);

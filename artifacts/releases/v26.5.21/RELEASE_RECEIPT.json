@@ -1,0 +1,13 @@
+{
+  "receipt_type": "ReleaseCandidateReceipt",
+  "release": "v26.5.21",
+  "commit": "2f65dc9dd706203462ef92bc4815f24bec61159f",
+  "examples_gate": "passed",
+  "examples_passed": 8,
+  "receipts_verified": true,
+  "cargo_clippy_deny_warnings": true,
+  "npm_publish_dry_run": "passed",
+  "cargo_publish_dry_run": "passed",
+  "version_skew_scan": "passed",
+  "closure_state": "ReleaseCandidateAdmitted"
+}

@@ -37,6 +37,4 @@ export async function shutdownOtel(): Promise<void> {
 export async function exitWithFlush(code: number): Promise<never> {
   await shutdownOtel();
   process.exit(code);
-  // unreachable
-  throw new Error('unreachable: process.exit returned');
 }

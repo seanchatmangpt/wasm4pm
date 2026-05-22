@@ -3,6 +3,7 @@
  */
 
 import { describe, it, expect, beforeEach } from 'vitest';
+import { ConvergenceMaxIterationsError } from '../../src/types.js';
 
 // Import after resetting module state
 let spawnWorker: typeof import('../../src/worker-registry.ts').spawnWorker;
@@ -549,5 +550,210 @@ describe('sendDirective', () => {
     const result = sendDirective('ghost', { type: 'run' });
     // sendDirective enqueues without checking existence
     expect(result.deliveredTo).toEqual(['ghost']);
+  });
+});
+
+// ─── ConvergenceMaxIterationsError ───────────────────────────────────────────
+
+describe('ConvergenceMaxIterationsError', () => {
+  it('should be an instance of Error', () => {
+    const err = new ConvergenceMaxIterationsError(10, 5, 0.4);
+    expect(err).toBeInstanceOf(Error);
+    expect(err).toBeInstanceOf(ConvergenceMaxIterationsError);
+    expect(err.name).toBe('ConvergenceMaxIterationsError');
+  });
+
+  it('should carry structured fields', () => {
+    const err = new ConvergenceMaxIterationsError(12, 8, 0.75);
+    expect(err.iterationsRun).toBe(12);
+    expect(err.maxIterations).toBe(8);
+    expect(err.finalAgreementRate).toBe(0.75);
+  });
+
+  it('should format a readable message', () => {
+    const err = new ConvergenceMaxIterationsError(10, 5, 0.5);
+    expect(err.message).toContain('maxIterations exceeded');
+    expect(err.message).toContain('10');
+    expect(err.message).toContain('5');
+    expect(err.message).toContain('50.0%');
+  });
+});
+
+// ─── checkSwarmConvergence edge cases ────────────────────────────────────────
+
+describe('checkSwarmConvergence — single worker convergence', () => {
+  it('should converge when one worker produces identical hashes for convergenceRuns', () => {
+    const results = [
+      { workerId: 'w0', algorithmId: 'dfg', resultHash: 'stable-hash', result: {}, runAt: '', durationMs: 0 },
+    ];
+    const history = new Map<string, string[]>();
+
+    // First call — fills ring buffer slot 1 of 2
+    const r1 = checkSwarmConvergence(results, history, 2);
+    expect(r1.converged).toBe(false);
+
+    // Second call — ring buffer now has 2 identical hashes → stable
+    const r2 = checkSwarmConvergence(results, history, 2);
+    expect(r2.converged).toBe(true);
+    expect(r2.stableWorkers).toContain('w0/dfg');
+  });
+});
+
+describe('checkSwarmConvergence — empty workers array', () => {
+  it('should return converged=false and agreementRate=0 with no division by zero', () => {
+    const history = new Map<string, string[]>();
+    const report = checkSwarmConvergence([], history, 2);
+
+    expect(report.converged).toBe(false);
+    expect(report.agreementRate).toBe(0);
+    expect(report.stableWorkers).toHaveLength(0);
+    expect(report.unstableWorkers).toHaveLength(0);
+  });
+});
+
+// ─── Gap 1: Worker failure isolation ─────────────────────────────────────────
+// WorkerResult.failed and WorkerResult.error must exist as optional fields
+// so that a failing worker can be represented without aborting the whole swarm.
+
+describe('WorkerResult — failure isolation fields', () => {
+  it('should accept a WorkerResult with failed=true and an error message', () => {
+    const failed: import('../../src/types.js').WorkerResult = {
+      workerId: 'w-fail',
+      algorithmId: 'dfg',
+      resultHash: 'FAILED',
+      result: null,
+      runAt: new Date().toISOString(),
+      durationMs: 0,
+      resultType: 'discovery',
+      error: 'Worker state not found for ID: w-fail',
+      failed: true,
+    };
+
+    expect(failed.failed).toBe(true);
+    expect(failed.error).toBe('Worker state not found for ID: w-fail');
+    expect(failed.resultHash).toBe('FAILED');
+  });
+
+  it('should treat WorkerResult without failed flag as healthy', () => {
+    const healthy: import('../../src/types.js').WorkerResult = {
+      workerId: 'w-ok',
+      algorithmId: 'dfg',
+      resultHash: 'abc123',
+      result: { nodes: [], edges: [] },
+      runAt: new Date().toISOString(),
+      durationMs: 42,
+    };
+
+    expect(healthy.failed).toBeUndefined();
+    expect(healthy.error).toBeUndefined();
+  });
+
+  it('checkSwarmConvergence should treat FAILED hash as stable when repeated — callers must check failedWorkers separately', () => {
+    // A worker that fails always emits hash='FAILED'. Two rounds of 'FAILED' → stable ring buffer.
+    // The swarm reports this in failedWorkers so the caller can filter them.
+    const failedResults = [
+      { workerId: 'w-fail', algorithmId: 'dfg', resultHash: 'FAILED', result: null, runAt: '', durationMs: 0, failed: true as const },
+      { workerId: 'w-ok',   algorithmId: 'dfg', resultHash: 'real-hash', result: {}, runAt: '', durationMs: 10 },
+    ];
+    const history = new Map<string, string[]>();
+
+    checkSwarmConvergence(failedResults, history, 2);
+    const r2 = checkSwarmConvergence(failedResults, history, 2);
+
+    // Both workers have stable ring buffers after 2 rounds with identical hashes.
+    // The runSwarm() layer detects failures via result.failed and populates failedWorkers.
+    expect(r2.converged).toBe(true);
+    expect(r2.stableWorkers).toHaveLength(2);
+  });
+});
+
+// ─── Gap 2: Convergence visibility — SwarmArtifact carries failure metadata ──
+
+describe('SwarmArtifact — convergence visibility fields', () => {
+  it('should expose failedWorkers and healthyWorkerCount on the artifact type', () => {
+    const artifact: import('../../src/types.js').SwarmArtifact = {
+      episodes: [],
+      finalWorkerResults: [],
+      converged: false,
+      convergenceTimeout: true,
+      failedWorkers: ['w-fail-1', 'w-fail-2'],
+      healthyWorkerCount: 3,
+    };
+
+    expect(artifact.failedWorkers).toEqual(['w-fail-1', 'w-fail-2']);
+    expect(artifact.healthyWorkerCount).toBe(3);
+    expect(artifact.convergenceTimeout).toBe(true);
+  });
+
+  it('should represent a fully converged healthy swarm', () => {
+    const artifact: import('../../src/types.js').SwarmArtifact = {
+      episodes: [],
+      finalWorkerResults: [
+        { workerId: 'w0', algorithmId: 'dfg', resultHash: 'h1', result: {}, runAt: '', durationMs: 5 },
+        { workerId: 'w1', algorithmId: 'dfg', resultHash: 'h1', result: {}, runAt: '', durationMs: 6 },
+      ],
+      converged: true,
+      failedWorkers: [],
+      healthyWorkerCount: 2,
+    };
+
+    expect(artifact.converged).toBe(true);
+    expect(artifact.failedWorkers).toHaveLength(0);
+    expect(artifact.healthyWorkerCount).toBe(2);
+  });
+});
+
+// ─── Gap 3: Convergence threshold configurability ─────────────────────────────
+// checkConvergence already accepts a threshold parameter. These tests document
+// the domain contract for the [swarm].convergence_threshold config field value
+// that flows through to checkConvergence.
+
+describe('checkConvergence — threshold as domain contract', () => {
+  const makeResults = (hashes: string[]) =>
+    hashes.map((h, i) => ({
+      workerId: `w${i}`,
+      algorithmId: 'dfg',
+      resultHash: h,
+      result: {},
+      runAt: '',
+      durationMs: 0,
+    }));
+
+  it('threshold=1.0 (unanimous) requires all workers to agree', () => {
+    const results = makeResults(['h1', 'h1', 'h2']);
+    const report = checkConvergence(results, 'dfg', 1.0);
+    expect(report.converged).toBe(false);
+    expect(report.consensusRatio).toBeCloseTo(2 / 3);
+  });
+
+  it('threshold=0.6 accepts a 2/3 majority as converged', () => {
+    // 2/3 ≈ 0.6667, which is ≥ 0.6
+    const results = makeResults(['h1', 'h1', 'h2']);
+    const report = checkConvergence(results, 'dfg', 0.6);
+    expect(report.converged).toBe(true);
+    expect(report.dominantHash).toBe('h1');
+    expect(report.dissentingWorkers).toEqual(['w2']);
+  });
+
+  it('threshold=0.5 accepts a simple majority', () => {
+    // 4 workers: 3×h1, 1×h2 → ratio 0.75 ≥ 0.5
+    const results = makeResults(['h1', 'h1', 'h1', 'h2']);
+    const report = checkConvergence(results, 'dfg', 0.5);
+    expect(report.converged).toBe(true);
+    expect(report.consensusRatio).toBeCloseTo(3 / 4);
+  });
+
+  it('threshold boundary: exactly meeting threshold converges', () => {
+    // 4 workers, 3 agree → ratio = 0.75, threshold = 0.75 → converged
+    const results = makeResults(['h1', 'h1', 'h1', 'h2']);
+    const report = checkConvergence(results, 'dfg', 0.75);
+    expect(report.converged).toBe(true);
+  });
+
+  it('threshold boundary: one above threshold does not converge', () => {
+    // 4 workers, 3 agree → ratio = 0.75, threshold = 0.76 → NOT converged
+    const results = makeResults(['h1', 'h1', 'h1', 'h2']);
+    const report = checkConvergence(results, 'dfg', 0.76);
+    expect(report.converged).toBe(false);
   });
 });

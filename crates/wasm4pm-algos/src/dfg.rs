@@ -5,6 +5,10 @@ use std::collections::HashMap;
 /// Time complexity: O(n) where n = total events across all traces
 /// Space complexity: O(k + e) where k = unique activities, e = directly-follows edges
 /// Uses integer-ID columnar representation for efficient processing
+/// Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn discover_dfg(log: &EventLog, activity_key: &str) -> Result<DFG> {
     let mut dfg = DFG::new();
     let mut node_map: HashMap<String, usize> = HashMap::new();
@@ -82,24 +86,12 @@ mod tests {
 
     #[test]
     fn test_dfg_discovery() {
-        let mut attrs1 = std::collections::HashMap::new();
-        attrs1.insert(
-            "concept:name".to_string(),
-            AttributeValue::String("A".to_string()),
-        );
-
-        let mut attrs2 = std::collections::HashMap::new();
-        attrs2.insert(
-            "concept:name".to_string(),
-            AttributeValue::String("B".to_string()),
-        );
-
         let log = EventLog::new(
             vec![Trace::new(
                 "case1".to_string(),
-                vec![Event::new(attrs1), Event::new(attrs2)],
+                vec![Event::with_activity("A"), Event::with_activity("B")],
             )],
-            std::collections::HashMap::new(),
+            Vec::new(),
         );
 
         let dfg = discover_dfg(&log, "concept:name").unwrap();

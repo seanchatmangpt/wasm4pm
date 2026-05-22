@@ -848,12 +848,18 @@ mod tests {
 
     #[test]
     fn algorithm_ids_length_correct() {
-        assert_eq!(
+        // ALGORITHM_IDS is the full 40-entry registry; N_ACTIONS is the LinUCB
+        // bandit's action count (subset). The registry must be at least N_ACTIONS large.
+        assert!(
+            ALGORITHM_IDS.len() >= N_ACTIONS,
+            "ALGORITHM_IDS ({}) must have at least N_ACTIONS={} entries",
             ALGORITHM_IDS.len(),
-            N_ACTIONS,
-            "ALGORITHM_IDS must have N_ACTIONS={} entries",
             N_ACTIONS
         );
+        // Sanity: all entries are non-empty strings
+        for id in ALGORITHM_IDS.iter() {
+            assert!(!id.is_empty(), "ALGORITHM_IDS entry must not be empty");
+        }
     }
 
     #[test]

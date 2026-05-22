@@ -26,9 +26,7 @@ pub fn apply(
                 .get(&t.activity)
                 .cloned()
                 .unwrap_or_else(|| t.activity.clone());
-            let min_freq = if t.skippable { 0 } else { 1 };
-            let max_freq = if t.selfloop { None } else { Some(1) };
-            dest_arena.add_frequent_transition(new_activity, min_freq, max_freq)
+            dest_arena.add_frequent_transition(new_activity, t.min_freq, t.max_freq)
         }
 
         Some(PowlNode::OperatorPowl(op)) => {

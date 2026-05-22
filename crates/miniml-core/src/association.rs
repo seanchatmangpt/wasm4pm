@@ -321,11 +321,10 @@ fn generate_candidates(frequent: &[HashSet<usize>], k: usize) -> Vec<HashSet<usi
     for i in 0..frequent.len() {
         for j in (i + 1)..frequent.len() {
             let union: HashSet<usize> = frequent[i].union(&frequent[j]).copied().collect();
-            if union.len() == k {
-                if all_subsets_frequent(&union, frequent, k - 1) {
+            if union.len() == k
+                && all_subsets_frequent(&union, frequent, k - 1) {
                     candidates.push(union);
                 }
-            }
         }
     }
     candidates
@@ -353,9 +352,9 @@ fn all_subsets(items: &[usize]) -> Vec<Vec<usize>> {
     let total = 1usize << n;
     for mask in 1..total.saturating_sub(1) {
         let mut subset = Vec::new();
-        for i in 0..n {
+        for (i, &item) in items.iter().enumerate() {
             if mask & (1 << i) != 0 {
-                subset.push(items[i]);
+                subset.push(item);
             }
         }
         subsets.push(subset);

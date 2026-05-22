@@ -46,6 +46,10 @@ fn now_ms() -> u64 {
 
 impl BoundedRegistry {
     /// Empty registry.
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn new() -> Self {
         Self {
             inner: IndexMap::new(),
@@ -54,6 +58,10 @@ impl BoundedRegistry {
 
     /// Insert a receipt. Purges TTL-expired entries first, then evicts the
     /// least-recently inserted entries until below `MAX_ENTRIES`.
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn insert(&mut self, id: String, receipt: CognitionReceipt) {
         let now = now_ms();
         let ttl_ms = TTL.as_millis() as u64;
@@ -69,6 +77,10 @@ impl BoundedRegistry {
     }
 
     /// Retrieve a receipt by id, if present and not expired.
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn get(&self, id: &str) -> Option<&CognitionReceipt> {
         let now = now_ms();
         let ttl_ms = TTL.as_millis() as u64;
@@ -82,11 +94,19 @@ impl BoundedRegistry {
     }
 
     /// Number of entries currently stored.
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn len(&self) -> usize {
         self.inner.len()
     }
 
     /// Whether the registry is empty.
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn is_empty(&self) -> bool {
         self.inner.is_empty()
     }

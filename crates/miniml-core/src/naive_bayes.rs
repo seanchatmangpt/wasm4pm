@@ -98,8 +98,8 @@ pub fn naive_bayes_impl(data: &[f64], n_features: usize, labels: &[f64]) -> Resu
     let mut counts = vec![0usize; n_classes];
 
     // Compute means
-    for i in 0..n {
-        let c = classes.iter().position(|&cls| cls == labels[i] as u32).unwrap();
+    for (i, &label) in labels.iter().enumerate().take(n) {
+        let c = classes.iter().position(|&cls| cls == label as u32).unwrap();
         counts[c] += 1;
         for j in 0..n_features {
             means[c * n_features + j] += mat_get(data, n_features, i, j);
@@ -112,8 +112,8 @@ pub fn naive_bayes_impl(data: &[f64], n_features: usize, labels: &[f64]) -> Resu
     }
 
     // Compute variances
-    for i in 0..n {
-        let c = classes.iter().position(|&cls| cls == labels[i] as u32).unwrap();
+    for (i, &label) in labels.iter().enumerate().take(n) {
+        let c = classes.iter().position(|&cls| cls == label as u32).unwrap();
         for j in 0..n_features {
             let diff = mat_get(data, n_features, i, j) - means[c * n_features + j];
             variances[c * n_features + j] += diff * diff;

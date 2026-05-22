@@ -6,6 +6,14 @@ pub struct DefaultRoleSelector;
 
 impl RoleSelector for DefaultRoleSelector {
     fn select_role(&self, task: &TaskContext) -> Result<RoleDecision, AgenticError> {
+        let _span = tracing::debug_span!(
+            "agentic.select_role",
+            task_id = %task.task_id,
+            phase = ?task.phase,
+            risk = ?task.risk_level,
+        )
+        .entered();
+
         // Phase → primary role mapping
         let (primary_role, candidates) = match &task.phase {
             WorkflowPhase::Intake => (
@@ -87,11 +95,101 @@ impl RoleSelector for DefaultRoleSelector {
             format!("risk:{:?}", task.risk_level),
         ];
 
+        tracing::debug!(
+            target: "agentic.select_role",
+            task_id = %task.task_id,
+            role = ?selected_role,
+            confidence = ?confidence_band,
+            "role selected"
+        );
+
         Ok(RoleDecision {
             selected_role,
             candidate_roles,
             confidence_band,
             reason_codes,
         })
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn task(phase: WorkflowPhase, risk: RiskLevel) -> TaskContext {
+        TaskContext {
+            task_id: "t1".to_string(),
+            phase,
+            risk_level: risk,
+            ..Default::default()
+        }
+    }
+
+    #[test]
+    fn intake_low_risk_selects_explorer() {
+        let sel = DefaultRoleSelector;
+        let d = sel
+            .select_role(&task(WorkflowPhase::Intake, RiskLevel::Low))
+            .unwrap();
+        assert_eq!(d.selected_role, AgentRole::Explorer);
+        assert!(matches!(d.confidence_band, ConfidenceBand::High));
+    }
+
+    #[test]
+    fn critical_triage_escalates_to_escalator() {
+        let sel = DefaultRoleSelector;
+        let d = sel
+            .select_role(&task(WorkflowPhase::Triage, RiskLevel::Critical))
+            .unwrap();
+        assert_eq!(d.selected_role, AgentRole::Escalator);
+    }
+
+    #[test]
+    fn validate_phase_selects_validator() {
+        let sel = DefaultRoleSelector;
+        let d = sel
+            .select_role(&task(WorkflowPhase::Validate, RiskLevel::Medium))
+            .unwrap();
+        assert_eq!(d.selected_role, AgentRole::Validator);
+    }
+
+    #[test]
+    fn reason_codes_include_phase_and_risk() {
+        let sel = DefaultRoleSelector;
+        let d = sel
+            .select_role(&task(WorkflowPhase::Execute, RiskLevel::High))
+            .unwrap();
+        assert!(d.reason_codes.iter().any(|r| r.starts_with("phase:")));
+        assert!(d.reason_codes.iter().any(|r| r.starts_with("risk:")));
+    }
+
+    #[test]
+    fn custom_phase_yields_medium_confidence() {
+        let sel = DefaultRoleSelector;
+        let d = sel
+            .select_role(&task(
+                WorkflowPhase::Custom("unusual".to_string()),
+                RiskLevel::Low,
+            ))
+            .unwrap();
+        assert!(matches!(d.confidence_band, ConfidenceBand::Medium));
+    }
+
+    #[test]
+    fn candidate_roles_always_lead_with_selected_role() {
+        let sel = DefaultRoleSelector;
+        for phase in [
+            WorkflowPhase::Intake,
+            WorkflowPhase::Plan,
+            WorkflowPhase::Execute,
+            WorkflowPhase::Complete,
+        ] {
+            let d = sel.select_role(&task(phase, RiskLevel::Low)).unwrap();
+            assert_eq!(
+                d.candidate_roles.first(),
+                Some(&d.selected_role),
+                "selected_role must lead candidate_roles"
+            );
+        }
     }
 }

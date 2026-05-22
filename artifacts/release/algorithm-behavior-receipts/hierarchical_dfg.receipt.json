@@ -1,0 +1,53 @@
+{
+  "algorithm_id": "hierarchical_dfg",
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
+  "registry_present": true,
+  "ts_dispatch_present": true,
+  "cli_present": true,
+  "wasm_export_present": true,
+  "positive_cases": [
+    {
+      "case_id": "hierarchical_dfg.valid_minimal_log",
+      "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
+      "status": "passed",
+      "result_hash": "212a0e18976748cdfeb19f873132e2108b17c3c0fed447704ffbe231d6536c82",
+      "duration_ms": 0.012208999999998582,
+      "receipt_hash": "d389d8672e1fa52c31844fe5b77431c61b3c0632c6504f7357bb3541ef22e8fa"
+    }
+  ],
+  "negative_cases": [
+    {
+      "case_id": "hierarchical_dfg.MalformedLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
+      "status": "failed_correctly",
+      "error_code": "EMPTY_EVENT_LOG",
+      "no_panic": true,
+      "no_false_success": true,
+      "receipt_hash": "d5be6a83c0f2327ae3ff87206e2b1a5d95dc7bd5d5bc1d1094ccac59a6d0f09a"
+    },
+    {
+      "case_id": "hierarchical_dfg.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
+      "status": "failed_correctly",
+      "error_code": "EMPTY_EVENT_LOG",
+      "no_panic": true,
+      "no_false_success": true,
+      "receipt_hash": "5363b82c623e5fc7400c7d8cecfc2614c4b68b4055c546dd27fdf44de7210aed"
+    }
+  ],
+  "invariant_cases": [
+    {
+      "case_id": "hierarchical_dfg.DeterministicSameInputCase",
+      "status": "passed",
+      "first_result_hash": "212a0e18976748cdfeb19f873132e2108b17c3c0fed447704ffbe231d6536c82",
+      "second_result_hash": "212a0e18976748cdfeb19f873132e2108b17c3c0fed447704ffbe231d6536c82",
+      "stable": true
+    }
+  ],
+  "algorithm_evidence_hash": "54b3fc4071659ec20b1437a8267e811f5cc316a95757adb09c6f59a3a99c4c01"
+}

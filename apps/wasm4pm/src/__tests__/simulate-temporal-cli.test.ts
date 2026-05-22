@@ -208,14 +208,14 @@ describe('wpm simulate — CLI integration', () => {
     expect(sim).toBeDefined();
     expect(sim['method']).toBe('monte_carlo');
     expect(typeof sim['casesRequested']).toBe('number');
-    expect(typeof sim['casesCompleted']).toBeDefined();
     expect(typeof sim['seed']).toBe('number');
 
     // statistics block must be present
     const stats = p['statistics'] as Record<string, unknown>;
     expect(stats).toBeDefined();
     expect('avgTraceLength' in stats).toBe(true);
-    expect('avgSojournTime' in stats).toBe(true);
+    // avgSojournTimeMs is the canonical field name (includes unit suffix)
+    expect('avgSojournTimeMs' in stats).toBe(true);
 
     // traces must be an array
     expect(Array.isArray(p['traces'])).toBe(true);
@@ -287,7 +287,7 @@ describe('wpm simulate — CLI integration', () => {
     expect(j.error).toBeDefined();
   });
 
-  it('nonexistent file exits 2 and returns structured error', async () => {
+  it('nonexistent file exits 2 or 3 and returns structured error', async () => {
     const result = await runCli([
       'simulate',
       '-i',

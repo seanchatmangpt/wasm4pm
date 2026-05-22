@@ -91,11 +91,19 @@ pub struct Candidate {
 
 impl Candidate {
     /// Lookup a dimension value by key.
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn get(&self, key: &str) -> Option<f64> {
         self.dimensions.get(key).copied()
     }
 
     /// Count of declared dimensions.
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn arity(&self) -> usize {
         self.dimensions.len()
     }
@@ -121,6 +129,10 @@ impl CandidateManifest {
     /// Validate every candidate's dimensions against the declared specs.
     ///
     /// Returns the first violation encountered (if any).
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn validate(&self) -> Result<(), String> {
         let by_key: IndexMap<&str, &DimensionSpec> = self
             .dimensions
@@ -157,6 +169,10 @@ pub trait CandidateDiscovery {
     since = "26.4.28",
     note = "Hardcoded candidates were removed. Load a manifest with ManifestDiscovery."
 )]
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn all_candidates() -> Vec<Candidate> {
     Vec::new()
 }

@@ -19,7 +19,8 @@ export class JsonWriter {
   private readonly BUFFER_SIZE = 100;
   private readonly FLUSH_INTERVAL_MS = 1000;
   private flushTimer?: NodeJS.Timeout;
-  private flushErrors: Array<{ timestamp: Date; error: any }> = [];
+  private flushErrors: Array<{ timestamp: Date; error: unknown }> = [];
+  private flushAttempts = 0;
 
   private initPromise: Promise<void> | undefined;
 
@@ -107,6 +108,7 @@ export class JsonWriter {
   private async doFlush(): Promise<void> {
     const events = this.buffer.splice(0, this.BUFFER_SIZE);
     if (events.length === 0) return;
+    this.flushAttempts++;
 
     const lines = events.map((e) => JSON.stringify(e)).join('\n') + '\n';
 
@@ -130,20 +132,52 @@ export class JsonWriter {
     }
   }
 
-  private recordFlushError(error: any): void {
+  private recordFlushError(error: unknown): void {
     this.flushErrors.push({ timestamp: new Date(), error });
     if (this.flushErrors.length > 50) this.flushErrors.shift();
   }
 
-  public getFlushErrors(): Array<{ timestamp: Date; error: any }> {
+  public getFlushErrors(): Array<{ timestamp: Date; error: unknown }> {
     return [...this.flushErrors];
+  }
+
+  /**
+   * Return structured diagnostic summary of flush health.
+   * error_rate is computed as errors / total flush attempts (0 when no attempts).
+   * healthy is true when error_rate < 0.1 (fewer than 10% of flushes failed).
+   */
+  public getFlushSummary(): {
+    total_errors: number;
+    last_error?: { timestamp: string; message: string };
+    error_rate: number;
+    healthy: boolean;
+  } {
+    const errors = this.flushErrors;
+    const total_errors = errors.length;
+    const error_rate = this.flushAttempts > 0 ? total_errors / this.flushAttempts : 0;
+
+    let last_error: { timestamp: string; message: string } | undefined;
+    if (total_errors > 0) {
+      const last = errors[errors.length - 1];
+      last_error = {
+        timestamp: last.timestamp.toISOString(),
+        message: last.error instanceof Error ? last.error.message : String(last.error),
+      };
+    }
+
+    return {
+      total_errors,
+      last_error,
+      error_rate,
+      healthy: error_rate < 0.1,
+    };
   }
 
   /**
    * Redact secrets from event data
    * Removes sensitive fields like passwords, tokens, keys
    */
-  public static redactSecrets(data: Record<string, any>): Record<string, any> {
+  public static redactSecrets(data: Record<string, unknown>): Record<string, unknown> {
     const sensitiveFields = [
       'password',
       'token',
@@ -156,18 +190,18 @@ export class JsonWriter {
       'secretKey',
     ];
 
-    const redacted = { ...data };
+    const redacted: Record<string, unknown> = { ...data };
 
     for (const key of Object.keys(redacted)) {
       const lowerKey = key.toLowerCase();
       if (sensitiveFields.some((field) => lowerKey.includes(field))) {
         if (typeof redacted[key] === 'object' && redacted[key] !== null) {
-          redacted[key] = JsonWriter.redactSecrets(redacted[key]);
+          redacted[key] = JsonWriter.redactSecrets(redacted[key] as Record<string, unknown>);
         } else {
           redacted[key] = '[REDACTED]';
         }
       } else if (typeof redacted[key] === 'object' && redacted[key] !== null) {
-        redacted[key] = JsonWriter.redactSecrets(redacted[key]);
+        redacted[key] = JsonWriter.redactSecrets(redacted[key] as Record<string, unknown>);
       }
     }
 

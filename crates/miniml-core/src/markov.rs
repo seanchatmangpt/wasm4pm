@@ -11,7 +11,7 @@ use crate::matrix::Rng;
 pub struct MarkovChain {
     n_states: usize,
     transition_matrix: Vec<f64>, // row-major n_states x n_states
-    initial_distribution: Vec<f64>,
+    _initial_distribution: Vec<f64>,
 }
 
 #[wasm_bindgen]
@@ -161,20 +161,20 @@ pub fn markov_chain_impl(
     for i in 0..n_states {
         let row_sum: f64 = (0..n_states).map(|j| transition_matrix[i * n_states + j]).sum();
         if (row_sum - 1.0).abs() > 0.01 {
-            return Err(MlError::new(&format!("Row {} of transition matrix sums to {} (expected 1.0)", i, row_sum)));
+            return Err(MlError::new(format!("Row {} of transition matrix sums to {} (expected 1.0)", i, row_sum)));
         }
     }
 
     // Validate initial distribution sums to ~1.0
     let init_sum: f64 = initial_distribution.iter().sum();
     if (init_sum - 1.0).abs() > 0.01 {
-        return Err(MlError::new(&format!("initial_distribution sums to {} (expected 1.0)", init_sum)));
+        return Err(MlError::new(format!("initial_distribution sums to {} (expected 1.0)", init_sum)));
     }
 
     Ok(MarkovChain {
         n_states,
         transition_matrix: transition_matrix.to_vec(),
-        initial_distribution: initial_distribution.to_vec(),
+        _initial_distribution: initial_distribution.to_vec(),
     })
 }
 
@@ -371,7 +371,7 @@ pub fn hmm_forward_impl(
             c += new_alpha[j];
         }
         if c == 0.0 {
-            return Err(MlError::new(&format!("Zero probability at t={}", t)));
+            return Err(MlError::new(format!("Zero probability at t={}", t)));
         }
         scale[t] = c;
         for v in new_alpha.iter_mut() {
@@ -498,9 +498,9 @@ pub fn hmm_viterbi_impl(
     // Backtrace
     let mut path = vec![0usize; t_len];
     let mut max_val = neg_inf;
-    for i in 0..n_states {
-        if delta[i] > max_val {
-            max_val = delta[i];
+    for (i, &val) in delta.iter().enumerate() {
+        if val > max_val {
+            max_val = val;
             path[t_len - 1] = i;
         }
     }
@@ -565,11 +565,11 @@ pub fn hmm_train_baum_welch_impl(
 
         // Compute gamma: gamma[t][i] = P(state_i at time t | observations)
         let mut gamma = vec![vec![0.0; n_states]; t_len];
-        for t in 0..t_len {
+        for gamma_t in gamma.iter_mut().take(t_len) {
             let sum: f64 = (0..n_states).map(|i| alpha[i] * beta[i]).sum();
             if sum > 0.0 {
                 for i in 0..n_states {
-                    gamma[t][i] = alpha[i] * beta[i] / sum;
+                    gamma_t[i] = alpha[i] * beta[i] / sum;
                 }
             }
         }
@@ -597,9 +597,7 @@ pub fn hmm_train_baum_welch_impl(
 
         // M-step
         // Update initial probs
-        for i in 0..n_states {
-            initial[i] = gamma[0][i];
-        }
+        initial[..n_states].copy_from_slice(&gamma[0][..n_states]);
 
         // Update transition probs
         for i in 0..n_states {

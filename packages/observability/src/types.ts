@@ -21,10 +21,11 @@ export interface CliEvent {
  */
 export interface JsonEvent {
   timestamp: string; // ISO 8601
+  level: 'info' | 'warn' | 'error' | 'debug'; // Severity level — required for machine filtering
   component: string; // e.g., "engine", "planner", "connector"
   event_type: string; // e.g., "execution_start", "trace_processed"
   run_id?: string; // UUID of the execution run
-  data: Record<string, any>; // Arbitrary structured data
+  data: Record<string, unknown>; // Arbitrary structured data
 }
 
 /**
@@ -39,15 +40,15 @@ export interface OtelEvent {
   kind?: 'INTERNAL' | 'SERVER' | 'CLIENT' | 'PRODUCER' | 'CONSUMER';
   start_time: number; // Unix timestamp in nanoseconds
   end_time?: number; // Unix timestamp in nanoseconds
-  status?: {
+  status: {
     code: 'UNSET' | 'OK' | 'ERROR';
     message?: string;
   };
-  attributes: Record<string, any>; // OTEL attributes - MUST include service.name
+  attributes: Record<string, unknown>; // OTEL attributes - MUST include service.name
   events?: Array<{
     name: string;
     timestamp: number;
-    attributes?: Record<string, any>;
+    attributes?: Record<string, unknown>;
   }>;
 }
 

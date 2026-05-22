@@ -19,7 +19,7 @@ import type {
   BudgetEnvelope,
   ConformanceResult,
   AnalysisTask,
-} from '@wasm4pm/kernel';
+} from 'wasm4pm';
 
 /**
  * NullBackend: Fail-open sentinel backend.

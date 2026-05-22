@@ -1,0 +1,106 @@
+{
+  "audit_date": "2026-05-19",
+  "audit_scope": "wasm4pm ML pipeline (packages/ml/, apps/wasm4pm/src/ml-runner.ts, crates/wasm4pm-cognition/)",
+  "files_examined": 12,
+  "gaps_identified": 6,
+  "gaps": [
+    {
+      "gap_id": "G-ML-001",
+      "file": "packages/ml/src/classifiers.ts",
+      "line": 87,
+      "description": "Cross-validation results report only accuracy metric; per-class metrics (precision, recall, F1) are missing. Chicago TDD Rank-2 domain contract: classification quality requires more than aggregate accuracy.",
+      "severity": "MEDIUM",
+      "current_behavior": "stratifiedKFold() returns per-fold accuracy scores only. No per-class breakdown available for imbalanced datasets.",
+      "recommendation": "Extend KFoldResult interface to include per-class metrics: { accuracy, precision_per_class: Map<class, number>, recall_per_class, f1_per_class, confusion_matrix }. Compute from fold-level predictions.",
+      "impact": "Users cannot detect class-specific degradation (e.g., minority class accuracy low despite high overall accuracy). Regression risk on imbalanced data.",
+      "affected_code": [
+        "classifiers.ts:87-120 (stratifiedKFold() return type)",
+        "types.ts:46-73 (ClassificationResult interface)",
+        "ml-runner.ts:480-510 (quality summary for classify task)"
+      ]
+    },
+    {
+      "gap_id": "G-ML-002",
+      "file": "packages/ml/src/feature-quality.ts",
+      "line": 105,
+      "description": "Zero-variance and multicollinear features are detected but not automatically removed. Recommendations are text-only; no mechanism to filter feature matrix in-place.",
+      "severity": "MEDIUM",
+      "current_behavior": "assessFeatureQuality() detects { zeroVarianceColumns: 3, correlatedPairs: [{col1, col2, correlation}] } and warns. Caller must manually inspect and decide.",
+      "recommendation": "Add optional removeProblematicFeatures(matrix, quality_report, strategy) function with strategies: 'none', 'zero_variance_only', 'zero_and_correlated'. Return { matrix_cleaned, columns_removed, impact_summary }.",
+      "impact": "Noisy features degrade model quality; users with high correlation must manually engineer. Automation missing.",
+      "affected_code": [
+        "feature-quality.ts:150-160 (return QualityReport, no removal)",
+        "bridge.ts:37-80 (buildFeatureMatrix no post-build cleanup)",
+        "ml-runner.ts:454-470 (quality check, then proceed without remediation)"
+      ]
+    },
+    {
+      "gap_id": "G-ML-003",
+      "file": "packages/ml/src/algorithm-selector.ts",
+      "line": 65,
+      "description": "Algorithm selector uses heuristics (log size, feature count, variance) but does not validate recommendations empirically against baseline performance data. No grid search or hyperparameter sensitivity analysis.",
+      "severity": "LOW",
+      "current_behavior": "suggestAlgorithm() returns { method: 'knn', confidence: 0.75, rationale: '...' } based on log characteristics. Confidence is heuristic-derived, not empirically calibrated.",
+      "recommendation": "Add optional calibration step: Run recommendation on a curated benchmark set (algorithm-baselines.json fixture). Measure actual accuracy improvement vs. default method. Recalibrate confidence thresholds annually.",
+      "impact": "Recommendations may be overconfident on new data distributions. No feedback loop to improve selector over time.",
+      "affected_code": [
+        "algorithm-selector.ts:65-120 (suggestClassificationAlgorithm heuristic logic)",
+        "algorithm-selector.ts:140-180 (suggestClusteringAlgorithm heuristic logic)",
+        "packages/testing/fixtures/algorithm-baselines.json (exists but not used in selector evaluation)"
+      ]
+    },
+    {
+      "gap_id": "G-ML-004",
+      "file": "packages/ml/src/parameter-suggestions.ts",
+      "line": 45,
+      "description": "Parameter suggestion functions use hardcoded heuristics (e.g., suggestClusteringK() = sqrt(n/2)) without sensitivity analysis or hyperparameter search. No mechanism to tune k, epsilon, or other critical parameters per dataset.",
+      "severity": "MEDIUM",
+      "current_behavior": "suggestClusteringK() returns fixed formula refined by log characteristics. No grid search (k=2..10 with silhouette scoring).",
+      "recommendation": "Add optional gridSearchClusteringK(data, range=[2,10], metric='silhouette') function. Score each k via silhouette or Davies-Bouldin index. Return { best_k, scores_per_k, elbow_point }. Integrate into ml-runner with flag --tune-k.",
+      "impact": "Users get fixed default k; suboptimal clustering on logs with different structure. High-variance datasets need adaptive k selection.",
+      "affected_code": [
+        "parameter-suggestions.ts:45-80 (suggestClusteringK hardcoded sqrt formula)",
+        "clustering.ts:30-60 (kmeans instantiation with fixed k)",
+        "ml-runner.ts:360-380 (cluster task dispatch with no tuning flag)"
+      ]
+    },
+    {
+      "gap_id": "G-ML-005",
+      "file": "packages/ml/src/algorithm-selection-extended.ts",
+      "line": 92,
+      "description": "Feature scaling recommendations (StandardScaler vs MinMaxScaler) are made per-algorithm but not validated for actual impact. BASELINE_ACCURACY_IMPROVEMENT hardcoded empirical data may not apply to user logs.",
+      "severity": "LOW",
+      "current_behavior": "suggestScalingForAlgorithm() returns scaling recommendation based on algorithm type. Empirical improvement baseline is fixed (e.g., 'knn': 0.12). No per-domain calibration.",
+      "recommendation": "Add optional validation: Run recommended scaling on sample (10% of training data), measure actual improvement vs. no scaling. Return { suggested_scaling, predicted_improvement: 0.12, actual_improvement: 0.08, delta: -0.04 } with confidence adjustment.",
+      "impact": "Feature scaling recommendations may not transfer to new domains. Users cannot verify prediction before committing to scaling.",
+      "affected_code": [
+        "algorithm-selection-extended.ts:92-110 (BASELINE_ACCURACY_IMPROVEMENT hardcoded)",
+        "ml-runner.ts:420-450 (no validation of scaling impact before applying)"
+      ]
+    },
+    {
+      "gap_id": "G-ML-006",
+      "file": "wasm4pm/src/automl_envelope.rs",
+      "line": 166,
+      "description": "AutoML envelope extracts 5 features (event_density, activity_diversity, trace_length_variance, rework_ratio, concept_drift_indicator) but feature values have unbounded ranges. event_density can be [0, ∞), while others normalized to [0,1]. No feature importance ranking; which features drive anomaly scoring?",
+      "severity": "LOW",
+      "current_behavior": "extract_motion_features() returns raw feature values with mixed scales. risk_score = sum of scaled features. No transparency on which features dominate anomaly decisions.",
+      "recommendation": "Normalize all features to [0,1] after extraction (min-max scaling per feature over training set). Add feature_importance: Map<feature_name, weight> to AutomlEnvelopeModel. Log which features triggered 'anomalous' verdict.",
+      "impact": "Feature interpretation difficult; users cannot understand why traces marked anomalous. Risk score lacks statistical grounding.",
+      "affected_code": [
+        "automl_envelope.rs:166-200 (extract_motion_features unbounded event_density)",
+        "automl_envelope.rs:240-280 (risk_score computation, no importance weighting)",
+        "automl_envelope.rs:320-350 (no feature importance output)"
+      ]
+    }
+  ],
+  "summary": "6 gaps identified across ML pipeline. 4 MEDIUM severity (per-class metrics missing, automatic feature removal, hyperparameter tuning, parameter suggestions hardcoded), 2 LOW severity (selector validation, feature scaling validation, automl transparency). All gaps have actionable recommendations. Most critical: G-ML-001 (classification metrics) and G-ML-004 (hyperparameter search) directly impact model quality assessment and reproducibility.",
+  "iteration_context": "Iteration 5 AutoML Audit gaps (G1-G4) have been substantially remediated. Current gaps (G-ML-001 to G-ML-006) are refinements and enhancements beyond the core implementation.",
+  "chicago_tdd_impact": "G-ML-001 violates Rank-2 domain contract (classification quality requires per-class metrics for imbalanced datasets). G-ML-004 blocks Rank-1 oracle for hyperparameter optimization (grid search is foundational to ML validation).",
+  "recommended_priority": [
+    "HIGH: G-ML-001 (per-class metrics for classification)",
+    "HIGH: G-ML-004 (grid search for clustering/regression)",
+    "MEDIUM: G-ML-002 (automatic feature removal)",
+    "LOW: G-ML-003, G-ML-005, G-ML-006 (empirical validation and transparency enhancements)"
+  ]
+}

@@ -32,7 +32,7 @@ export interface ProfileCapabilities {
 }
 
 const PROFILE_SIZES: Record<DeploymentProfile, string> = {
-  browser: '~2.7MB',
+  browser: '~2.7MB', // full-featured default (wasm-pack bundler target)
   fog: '~2.0MB',
   edge: '~1.5MB',
   iot: '~1.0MB',
@@ -44,7 +44,7 @@ const PROFILE_SIZES: Record<DeploymentProfile, string> = {
  *
  * @example
  * ```typescript
- * import { getAlgorithmMetadata } from '@wasm4pm/kernel/introspection';
+ * import { getAlgorithmMetadata } from 'wasm4pm/introspection';
  * const meta = getAlgorithmMetadata('dfg');
  * console.log(meta?.speedTier);  // 5
  * ```

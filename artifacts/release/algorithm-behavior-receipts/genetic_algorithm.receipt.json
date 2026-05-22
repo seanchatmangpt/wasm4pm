@@ -1,0 +1,53 @@
+{
+  "algorithm_id": "genetic_algorithm",
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
+  "registry_present": true,
+  "ts_dispatch_present": true,
+  "cli_present": true,
+  "wasm_export_present": true,
+  "positive_cases": [
+    {
+      "case_id": "genetic_algorithm.valid_minimal_log",
+      "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
+      "status": "passed",
+      "result_hash": "443ce639ad4cb009f401a3db0846c6e08e6ddb1ac68e1ad7bfa3316bcfd0d8db",
+      "duration_ms": 0.012166999999990935,
+      "receipt_hash": "2c6d660c97327d9ee198fa7bc4313775a50caf3815894138efe72a854811ca6e"
+    }
+  ],
+  "negative_cases": [
+    {
+      "case_id": "genetic_algorithm.MalformedLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
+      "status": "failed_correctly",
+      "error_code": "EMPTY_EVENT_LOG",
+      "no_panic": true,
+      "no_false_success": true,
+      "receipt_hash": "22c4d335798c7dc755219ecd75720fea08ebde374279d6b9c643674018e7d44a"
+    },
+    {
+      "case_id": "genetic_algorithm.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
+      "status": "failed_correctly",
+      "error_code": "EMPTY_EVENT_LOG",
+      "no_panic": true,
+      "no_false_success": true,
+      "receipt_hash": "e851d740b60c394c96ac7f22a65777dc4b72568ea80c98b761cef1ab516b717d"
+    }
+  ],
+  "invariant_cases": [
+    {
+      "case_id": "genetic_algorithm.SeededRepeatabilityCase",
+      "seed": 42,
+      "status": "passed",
+      "result_schema_valid": true,
+      "fitness_within_expected_range": true
+    }
+  ],
+  "algorithm_evidence_hash": "8fdfdb8f741ec6fd052dc9793a0a79e7676af8ade41ccd04e0fbad9fd4027ea6"
+}

@@ -165,7 +165,12 @@ export function eventLogIrToWasmJson(log: EventLogIR): string {
     traces: log.traces.map((trace: LogTrace) => ({
       case_id: trace.case_id,
       events: trace.events.map((event: LogEvent) => {
-        const eventObj: any = {
+        const eventObj: {
+          activity: string;
+          timestamp: string;
+          resource?: string;
+          attributes: Record<string, unknown>;
+        } = {
           activity: event.activity,
           timestamp: event.timestamp,
           attributes: sortKeys(event.attributes) as Record<string, unknown>,
@@ -176,12 +181,7 @@ export function eventLogIrToWasmJson(log: EventLogIR): string {
           eventObj.resource = event.resource;
         }
 
-        return eventObj as {
-          activity: string;
-          timestamp: string;
-          resource?: string;
-          attributes: Record<string, unknown>;
-        };
+        return eventObj;
       }),
     })),
     metadata: {

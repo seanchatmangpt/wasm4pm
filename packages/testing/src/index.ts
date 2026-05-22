@@ -12,6 +12,15 @@ export * from './mocks/index.js';
 // Harnesses
 export * from './harness/index.js';
 
+// Re-export SwarmCoordinationHarness from @wasm4pm/swarm for convenience
+export { SwarmCoordinationHarness, createSwarmCoordinationHarness } from '@wasm4pm/swarm';
+export type {
+  ConsensusVerificationResult,
+  DivergenceReport,
+  ConvergenceTimingResult,
+  FailureIsolationResult,
+} from '@wasm4pm/swarm';
+
 // Certification
 export * from './certification.js';
 
@@ -49,3 +58,14 @@ export type {
   AlignmentConfig,
 } from './conformance/token-replay.js';
 export * from './utils/index.js';
+
+// Performance Baseline Measurement
+export {
+  generateTestEventLogs,
+  measureAlgorithm,
+  formatMeasurement,
+  generateSummaryTable,
+  colorCodeLatency,
+  getMemorySnapshot,
+} from './perf-baseline.js';
+export type { TestEventLog, MemorySnapshot, Measurement, BenchmarkResult } from './perf-baseline.js';

@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, beforeAll } from 'vitest';
-import wasm4pm from 'wasm4pm';
+import * as wasm4pm from 'wasm4pm';
 import {
   generateDriftedLog,
   generateReworkLog,

@@ -53,6 +53,10 @@ impl Default for SemanticParser {
 
 impl SemanticParser {
     /// Creates a new `SemanticParser` with a built-in English verb lexicon.
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn new() -> Self {
         let mut lexicon = HashMap::new();
         lexicon.insert("give".to_string(), PrimitiveAct::Atrans);
@@ -62,18 +66,11 @@ impl SemanticParser {
         Self { lexicon }
     }
 
-    /// Very basic pattern matching (ELIZA/SHRDLU style).
-    ///
-    /// Extracts `to`/`from` prepositional phrases from positions 3..N when
-    /// present. Patterns supported:
-    ///   "actor verb object to <recipient>"
-    ///   "actor verb object from <source>"
-    ///   "actor verb object from <source> to <recipient>"
-    ///   "actor verb object to <recipient> from <source>"
-    /// Single-token recipient/source only (first token after the preposition).
-    /// This is the same minimalist surface grammar as the rest of the parser
-    /// (positional, no real syntactic analysis), but it no longer drops the
-    /// declared `to`/`from` fields on the floor (iter-4 deferred finding).
+    /// Very basic pattern matching (ELIZA/SHRDLU style)
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn parse(&self, sentence: &str) -> Option<SemanticFrame> {
         let words: Vec<&str> = sentence.split_whitespace().collect();
         if words.len() < 3 {

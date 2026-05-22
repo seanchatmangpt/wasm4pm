@@ -6,7 +6,6 @@ use crate::error::MlError;
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
-use serde_wasm_bindgen;
 
 /// Data type for DataFrame columns
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -146,8 +145,8 @@ impl DataFrame {
 
         for row_idx in 0..self.n_rows {
             if predicate(row_idx) {
-                for col_idx in 0..self.n_cols {
-                    new_data[col_idx].push(self.data[col_idx][row_idx]);
+                for (new_col, self_col) in new_data.iter_mut().zip(self.data.iter()) {
+                    new_col.push(self_col[row_idx]);
                 }
             }
         }
@@ -186,9 +185,9 @@ impl DataFrame {
 
         // Create sorted data
         let mut new_data = vec![vec![]; self.n_cols];
-        for col_idx in 0..self.n_cols {
+        for (new_col, self_col) in new_data.iter_mut().zip(self.data.iter()) {
             for &row_idx in &indices {
-                new_data[col_idx].push(self.data[col_idx][row_idx]);
+                new_col.push(self_col[row_idx]);
             }
         }
 
@@ -204,16 +203,14 @@ impl DataFrame {
     /// Get summary statistics (describe)
     pub fn describe(&self) -> DataFrame {
         let mut summary_data = Vec::new();
-        let mut summary_cols = vec![
-            "count".to_string(),
+        let _summary_cols = ["count".to_string(),
             "mean".to_string(),
             "std".to_string(),
             "min".to_string(),
             "25%".to_string(),
             "50%".to_string(),
             "75%".to_string(),
-            "max".to_string(),
-        ];
+            "max".to_string()];
 
         for col_idx in 0..self.n_cols {
             let col = &self.data[col_idx];
@@ -475,10 +472,10 @@ pub fn join_dataframes_impl(
             }
             // Add right-only rows (no match in left)
             for (right_row, &key) in right_df.data[right_idx].iter().enumerate() {
-                if left_map.get(&key.to_bits()).is_none() {
+                if !left_map.contains_key(&key.to_bits()) {
                     // Left columns get NaN
-                    for col_idx in 0..left_df.n_cols {
-                        new_data[col_idx].push(f64::NAN);
+                    for col in new_data.iter_mut().take(left_df.n_cols) {
+                        col.push(f64::NAN);
                     }
                     // Right columns get actual values
                     let mut data_offset = left_df.n_cols;
@@ -555,10 +552,12 @@ mod tests {
 
     #[test]
     fn test_dataframe_select() {
+        // DataFrame is column-major: data[col_idx] = values for that column across all rows.
+        // data[0] = col "a" = [1,2,3], data[1] = col "b" = [4,5,6], data[2] = col "c" = [7,8,9]
         let data = vec![
-            vec![1.0, 2.0, 3.0],
-            vec![4.0, 5.0, 6.0],
-            vec![7.0, 8.0, 9.0],
+            vec![1.0, 2.0, 3.0], // column "a"
+            vec![4.0, 5.0, 6.0], // column "b"
+            vec![7.0, 8.0, 9.0], // column "c"
         ];
         let columns = vec!["a".to_string(), "b".to_string(), "c".to_string()];
 
@@ -567,62 +566,79 @@ mod tests {
 
         assert_eq!(selected.n_cols, 2);
         assert_eq!(selected.columns, vec!["a", "c"]);
-        assert_eq!(selected.data[0], vec![1.0, 4.0, 7.0]);
-        assert_eq!(selected.data[1], vec![3.0, 6.0, 9.0]);
+        // selected.data[0] = column "a" values, selected.data[1] = column "c" values
+        assert_eq!(selected.data[0], vec![1.0, 2.0, 3.0]);
+        assert_eq!(selected.data[1], vec![7.0, 8.0, 9.0]);
     }
 
     #[test]
     fn test_dataframe_filter() {
+        // Column-major: data[col_idx] = all row values for that column.
+        // data[0] = col "a" = [1,2,3] (rows 0,1,2)
         let data = vec![
-            vec![1.0, 2.0, 3.0],
-            vec![4.0, 5.0, 6.0],
-            vec![7.0, 8.0, 9.0],
+            vec![1.0, 2.0, 3.0], // column "a"
+            vec![4.0, 5.0, 6.0], // column "b"
+            vec![7.0, 8.0, 9.0], // column "c"
         ];
         let columns = vec!["a".to_string(), "b".to_string(), "c".to_string()];
 
         let df = DataFrame::new(data, columns);
+        // Keep rows where row_idx % 2 == 0 → rows 0 and 2
         let filtered = df.filter(|row_idx| row_idx % 2 == 0);
 
         assert_eq!(filtered.n_rows, 2);
-        assert_eq!(filtered.data[0], vec![1.0, 7.0]);
+        // filtered.data[0] = col "a" values for rows 0 and 2 = [1.0, 3.0]
+        assert_eq!(filtered.data[0], vec![1.0, 3.0]);
     }
 
     #[test]
     fn test_dataframe_sort() {
+        // Column-major: data[0]=col"a"=[3,2,1], data[1]=col"b"=[6,5,4], data[2]=col"c"=[9,8,7]
+        // Rows: (3,6,9), (2,5,8), (1,4,7)
+        // Sort ascending by "c": row with c=7 < c=8 < c=9 → order: row2, row1, row0
         let data = vec![
-            vec![3.0, 2.0, 1.0],
-            vec![6.0, 5.0, 4.0],
-            vec![9.0, 8.0, 7.0],
+            vec![3.0, 2.0, 1.0], // column "a"
+            vec![6.0, 5.0, 4.0], // column "b"
+            vec![9.0, 8.0, 7.0], // column "c"
         ];
         let columns = vec!["a".to_string(), "b".to_string(), "c".to_string()];
 
         let df = DataFrame::new(data, columns);
         let sorted = df.sort("c", true).unwrap();
 
-        assert_eq!(sorted.data[2], vec![1.0, 4.0, 7.0]);
+        // After sort by "c" ascending: rows reordered as [row2, row1, row0]
+        // sorted.data[2] = col "c" sorted = [7.0, 8.0, 9.0]
+        assert_eq!(sorted.data[2], vec![7.0, 8.0, 9.0]);
+        // sorted.data[0] = col "a" in same row order = [1.0, 2.0, 3.0]
+        assert_eq!(sorted.data[0], vec![1.0, 2.0, 3.0]);
     }
 
     #[test]
     fn test_dataframe_describe() {
+        // Column-major: data[0]=col"a"=[1,4], data[1]=col"b"=[2,5], data[2]=col"c"=[3,6]
+        // 3 columns, each with 2 rows.
         let data = vec![
-            vec![1.0, 2.0, 3.0],
-            vec![4.0, 5.0, 6.0],
+            vec![1.0, 4.0], // column "a": rows [1, 4]
+            vec![2.0, 5.0], // column "b": rows [2, 5]
+            vec![3.0, 6.0], // column "c": rows [3, 6]
         ];
         let columns = vec!["a".to_string(), "b".to_string(), "c".to_string()];
 
         let df = DataFrame::new(data, columns);
         let summary = df.describe();
 
-        assert_eq!(summary.n_cols, 8); // 8 summary statistics
-        assert_eq!(summary.n_rows, 3); // 3 columns
+        assert_eq!(summary.n_cols, 8); // 8 summary statistics per column
+        assert_eq!(summary.n_rows, 3); // one summary row per original column
         assert_eq!(summary.columns, vec!["a", "b", "c"]);
     }
 
     #[test]
     fn test_dataframe_agg() {
+        // Column-major: data[0]=col"a"=[1,4], data[1]=col"b"=[2,5], data[2]=col"c"=[3,6]
         let data = vec![
-            vec![1.0, 2.0, 3.0],
-            vec![4.0, 5.0, 6.0],
+            vec![1.0, 4.0], // column "a": mean = 2.5
+            vec![2.0, 5.0], // column "b": mean = 3.5
+            vec![3.0, 6.0], // column "c": mean = 4.5
         ];
         let columns = vec!["a".to_string(), "b".to_string(), "c".to_string()];
 

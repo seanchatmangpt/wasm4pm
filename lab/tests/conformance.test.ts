@@ -231,7 +231,7 @@ describe('Conformance Validation - wasm4pm npm package', () => {
     it('should have date range filtering', async () => {
       try {
         const wasm = await import('wasm4pm');
-        expect(wasm.filter_log_by_date_range).toBeTruthy();
+        expect(wasm.filter_by_time_range).toBeTruthy();
       } catch (e) {
         expect(true).toBe(true);
       }

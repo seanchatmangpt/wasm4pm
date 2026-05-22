@@ -4,7 +4,7 @@
  * Maintains metadata, profiles, and execution configuration for all 15+ discovery algorithms
  */
 
-import { PlanStepType } from '@wasm4pm/planner';
+import type { PlanStepType as _PlanStepType } from '@wasm4pm/planner';
 
 /**
  * Complexity class for O(n) analysis
@@ -19,11 +19,48 @@ export type ComplexityClass =
   | 'NP-Hard';
 
 /**
- * Speed tier: 0-100 (lower = faster)
- * 0-10: instant (<1ms), 10-30: very fast (1-10ms), 30-50: fast (10-100ms)
- * 50-70: moderate (100ms-1s), 70-85: slow (1-10s), 85-100: very slow (10s+)
+ * Log characteristics for algorithm suitability matching
  */
-export type SpeedTier = number; // 0-100
+export interface LogCharacteristics {
+  /** Algorithm performs well on high-variance logs with many trace variants */
+  highVarianceOptimal?: boolean;
+
+  /** Algorithm performs well on logs with many distinct activities */
+  highActivityOptimal?: boolean;
+
+  /** Noise resistance score (0-100, higher is better) */
+  noiseResistance?: number;
+
+  /** Algorithm includes built-in rework detection */
+  reworkDetector?: boolean;
+}
+
+/**
+ * Log statistics for algorithm selection
+ */
+export interface LogStats {
+  /** Total number of events in the log */
+  eventCount: number;
+
+  /** Number of distinct traces */
+  traceCount: number;
+
+  /** Number of distinct activities */
+  activityCount: number;
+
+  /** Number of unique trace variants */
+  variantCount: number;
+
+  /** Estimated noise level (0-1, higher = more noise) */
+  estimatedNoiseLevel?: number;
+}
+
+/**
+ * Speed tier: ordinal rank where lower = faster (1 = fastest, 80 = slowest registered).
+ * Range spans [1 (simd_streaming_dfg) … 80 (ilp)] across the browser profile.
+ * Do NOT change to a formula-derived value — ordering contracts are tested as Rank 2 domain invariants.
+ */
+export type SpeedTier = number; // 1-80
 
 /**
  * Quality tier: 0-100 (higher = better model quality)
@@ -38,12 +75,19 @@ export type QualityTier = number; // 0-100
 export type ExecutionProfile = 'fast' | 'balanced' | 'quality' | 'stream';
 
 /**
- * Deployment profile: WASM build configuration (matches wasm-pack build profiles)
- * - mobile: Minimal features for mobile devices (~500KB, ~82% reduction)
- * - iot:    Basic discovery + conformance for IoT devices (~1.0MB, ~64% reduction)
- * - edge:   Advanced algorithms for CDN/edge servers (~1.5MB, ~46% reduction)
- * - fog:    Full features except POWL for fog gateways (~2.0MB, ~28% reduction)
- * - browser: ALL features, default profile for web browsers and servers (~2.78MB)
+ * Deployment profile: WASM build configuration.
+ *
+ * Profile hierarchy (smallest binary → largest):
+ *   mobile (~500KB) ⊆ iot (~1MB) ⊆ edge (~1.5MB) ⊆ fog (~2MB) ⊆ browser (~2.7MB)
+ *
+ * - mobile: Minimal features for mobile devices (~500KB)
+ * - iot: Minimal features for IoT devices (~1.0MB)
+ * - edge: Advanced algorithms for edge servers (~1.5MB)
+ * - fog: Full features except POWL for fog computing (~2.0MB)
+ * - browser: Full feature set, all algorithms (~2.7MB, DEFAULT wasm-pack target)
+ *
+ * Note: 'browser' is the FULL-FEATURED profile — not a size-constrained target.
+ * The name comes from the wasm-pack --target bundler option, not a capability limit.
  */
 export type DeploymentProfile = 'mobile' | 'iot' | 'edge' | 'fog' | 'browser';
 
@@ -95,6 +139,9 @@ export interface AlgorithmMetadata {
 
   /** References or academic papers */
   references?: string[];
+
+  /** Log characteristics this algorithm is optimized for */
+  logCharacteristics?: LogCharacteristics;
 }
 
 /**
@@ -153,6 +200,9 @@ export class AlgorithmRegistry {
       estimatedMemoryMB: 20,
       robustToNoise: true,
       scalesWell: true,
+      logCharacteristics: {
+        noiseResistance: 60,
+      },
     });
 
     // Process Skeleton
@@ -180,16 +230,16 @@ export class AlgorithmRegistry {
       scalesWell: true,
     });
 
-    // Alpha++ (improved Alpha algorithm)
+    // Alpha+++ (Improved Alpha algorithm)
     this.registerWithInferredProfiles({
       id: 'alpha_plus_plus',
-      name: 'Alpha++ (Improved Alpha)',
+      name: 'Alpha+++ (Triple Plus)',
       description:
-        'Alpha++ algorithm (de Medeiros et al. 2004). Extends the original Alpha algorithm with explicit handling of length-1 loops (self-loops) and length-2 loops, reclassifying parallel short-loop pairs as causal. Produces a proper Petri net with source/sink places and maximal (A,B) place candidates.',
+        'Advanced Alpha+++ algorithm. Extends the original Alpha algorithm with explicit handling of length-1 loops, length-2 loops, and parallel short-loop pairs. Produces a proper Petri net with source/sink places.',
       outputType: 'petrinet',
       complexity: 'O(n²)',
       speedTier: 20,
-      qualityTier: 45,
+      qualityTier: 50,
       parameters: [
         {
           name: 'activity_key',
@@ -201,10 +251,16 @@ export class AlgorithmRegistry {
         {
           name: 'min_support',
           type: 'number',
-          description:
-            'Minimum support threshold [0,1] for filtering rare directly-follows relations. 0.0 = no filtering.',
+          description: 'Minimum support threshold [0,1]',
           required: false,
           default: 0.0,
+        },
+        {
+          name: 'causal_threshold',
+          type: 'number',
+          description: 'Causal dependency threshold for Alpha+++ [0,1]',
+          required: false,
+          default: 0.8,
         },
       ],
       supportedProfiles: ['balanced', 'quality'],
@@ -247,6 +303,10 @@ export class AlgorithmRegistry {
       estimatedMemoryMB: 150,
       robustToNoise: true,
       scalesWell: true,
+      logCharacteristics: {
+        highVarianceOptimal: true,
+        noiseResistance: 75,
+      },
     });
 
     // Inductive Miner
@@ -282,6 +342,10 @@ export class AlgorithmRegistry {
       estimatedMemoryMB: 180,
       robustToNoise: true,
       scalesWell: true,
+      logCharacteristics: {
+        highVarianceOptimal: false,
+        noiseResistance: 50,
+      },
     });
 
     // Genetic Algorithm
@@ -326,6 +390,10 @@ export class AlgorithmRegistry {
       estimatedMemoryMB: 250,
       robustToNoise: true,
       scalesWell: false,
+      logCharacteristics: {
+        highVarianceOptimal: true,
+        noiseResistance: 85,
+      },
     });
 
     // PSO (Particle Swarm Optimization)
@@ -764,8 +832,60 @@ export class AlgorithmRegistry {
     });
 
     // ── ML Analysis ──────────────────────────────────────────
+    // Note: these algorithms are backed by the @wasm4pm/ml TypeScript package,
+    // not direct WASM exports. The WASM binary also exposes discover_ml_classify,
+    // discover_ml_forecast, discover_ml_regress, discover_ml_pca, but the canonical
+    // path is through @wasm4pm/ml (which uses wasm.extract_case_features + native TS).
+    // The Phase 4 audit incorrectly removed these; they are re-added here.
 
-    // ml_classify: REMOVED — no WASM export (Phase 4 audit)
+    this.registerWithInferredProfiles({
+      id: 'ml_classify',
+      name: 'ML Trace Classification',
+      description:
+        'Classify traces by outcome using k-NN, logistic regression, decision tree, or naive Bayes.',
+      outputType: 'ml_result',
+      complexity: 'O(n²)',
+      speedTier: 30,
+      qualityTier: 55,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity key',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'method',
+          type: 'select',
+          description: 'Classification method',
+          required: false,
+          default: 'knn',
+          options: ['knn', 'logistic_regression', 'decision_tree', 'naive_bayes'],
+        },
+        {
+          name: 'k',
+          type: 'number',
+          description: 'k-NN neighbours',
+          required: false,
+          default: 5,
+          min: 1,
+          max: 50,
+        },
+        {
+          name: 'target_key',
+          type: 'string',
+          description: 'Target categorical column (e.g. outcome)',
+          required: false,
+          default: 'outcome',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 20,
+      estimatedMemoryMB: 50,
+      robustToNoise: true,
+      scalesWell: true,
+    });
 
     this.registerWithInferredProfiles({
       id: 'ml_cluster',
@@ -817,7 +937,46 @@ export class AlgorithmRegistry {
       scalesWell: true,
     });
 
-    // ml_forecast: REMOVED — no WASM export (Phase 4 audit)
+    this.registerWithInferredProfiles({
+      id: 'ml_forecast',
+      name: 'ML Throughput Forecasting',
+      description:
+        'Forecast future process throughput using linear trend, autocorrelation seasonality, and optional exponential overlay.',
+      outputType: 'ml_result',
+      complexity: 'O(n)',
+      speedTier: 25,
+      qualityTier: 50,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity key',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'forecast_periods',
+          type: 'number',
+          description: 'Number of future periods to forecast',
+          required: false,
+          default: 5,
+          min: 1,
+          max: 100,
+        },
+        {
+          name: 'use_exponential',
+          type: 'boolean',
+          description: 'Also fit exponential model (y = a·e^bx)',
+          required: false,
+          default: false,
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 10,
+      estimatedMemoryMB: 20,
+      robustToNoise: true,
+      scalesWell: true,
+    });
 
     this.registerWithInferredProfiles({
       id: 'ml_anomaly',
@@ -852,9 +1011,86 @@ export class AlgorithmRegistry {
       scalesWell: true,
     });
 
-    // ml_regress: REMOVED — no WASM export (Phase 4 audit)
+    this.registerWithInferredProfiles({
+      id: 'ml_regress',
+      name: 'ML Remaining Time Regression',
+      description:
+        'Predict remaining case cycle time using linear, polynomial, or exponential regression on trace features.',
+      outputType: 'ml_result',
+      complexity: 'O(n)',
+      speedTier: 25,
+      qualityTier: 50,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity key',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'method',
+          type: 'select',
+          description: 'Regression method',
+          required: false,
+          default: 'linear_regression',
+          options: ['linear_regression', 'polynomial_regression', 'exponential_regression'],
+        },
+        {
+          name: 'target_key',
+          type: 'string',
+          description: 'Numeric target column (e.g. remaining_time)',
+          required: false,
+          default: 'remaining_time',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 15,
+      estimatedMemoryMB: 30,
+      robustToNoise: true,
+      scalesWell: true,
+    });
 
-    // ml_pca: REMOVED — no WASM export (Phase 4 audit)
+    this.registerWithInferredProfiles({
+      id: 'ml_pca',
+      name: 'ML PCA Feature Reduction',
+      description:
+        'Reduce trace feature dimensionality using Principal Component Analysis (Jacobi eigendecomposition).',
+      outputType: 'ml_result',
+      complexity: 'O(n³)',
+      speedTier: 25,
+      qualityTier: 55,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity key',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'n_components',
+          type: 'number',
+          description: 'Number of principal components to keep',
+          required: false,
+          default: 2,
+          min: 1,
+          max: 20,
+        },
+        {
+          name: 'normalize',
+          type: 'boolean',
+          description: 'Min-max normalise columns before PCA',
+          required: false,
+          default: true,
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 20,
+      estimatedMemoryMB: 40,
+      robustToNoise: false,
+      scalesWell: false,
+    });
 
     // ─── Wave 1 Migration: Discovery algorithms ───────────────────────────
 
@@ -1365,6 +1601,618 @@ export class AlgorithmRegistry {
       robustToNoise: true,
       scalesWell: false,
     });
+
+    // ─── Social Network Mining (van der Aalst organisational perspective) ──
+    // These two WASM exports (discover_handover_network, discover_working_together_network)
+    // existed in Rust but were completely unreachable from TypeScript — dead exports.
+    // The organisational perspective is a first-class van der Aalst dimension.
+
+    this.registerWithInferredProfiles({
+      id: 'handover_network',
+      name: 'Handover-of-Work Network',
+      description:
+        'Mine organisational handover-of-work networks from event logs (van der Aalst social network mining). ' +
+        'Produces a weighted graph where edge weight = number of direct handovers between resource pairs. ' +
+        'WASM export: discover_handover_network(log_handle, resource_key).',
+      outputType: 'analytics',
+      complexity: 'O(n²)',
+      speedTier: 40,
+      qualityTier: 60,
+      parameters: [
+        {
+          name: 'resource_key',
+          type: 'string',
+          description: 'Event attribute key for the resource/performer (e.g. "org:resource")',
+          required: true,
+          default: 'org:resource',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 15,
+      estimatedMemoryMB: 40,
+      robustToNoise: true,
+      scalesWell: true,
+      references: ['van der Aalst et al. (2005) Mining Social Networks from Event Logs'],
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'working_together_network',
+      name: 'Working-Together Network',
+      description:
+        'Mine working-together social networks: edges represent resources that handled the same case. ' +
+        'Complements handover-of-work by capturing collaboration rather than sequential handoff. ' +
+        'WASM export: discover_working_together_network(log_handle, resource_key).',
+      outputType: 'analytics',
+      complexity: 'O(n²)',
+      speedTier: 45,
+      qualityTier: 60,
+      parameters: [
+        {
+          name: 'resource_key',
+          type: 'string',
+          description: 'Event attribute key for the resource/performer (e.g. "org:resource")',
+          required: true,
+          default: 'org:resource',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 18,
+      estimatedMemoryMB: 45,
+      robustToNoise: true,
+      scalesWell: true,
+      references: ['van der Aalst et al. (2005) Mining Social Networks from Event Logs'],
+    });
+
+    // ─── OCEL (Object-Centric Event Log) algorithms ────────────────────────
+    //
+    // These algorithms operate on OCEL handles (loaded via load_ocel_from_json).
+    // They are only available in WASM builds with feature-ocel (fog and browser profiles).
+    // Input: an OCEL handle (NOT a conventional XES event log handle).
+
+    this.registerWithInferredProfiles({
+      id: 'ocel_dfg',
+      name: 'OC-DFG (Aggregate)',
+      description:
+        'Discover an aggregate Object-Centric Directly-Follows Graph (OC-DFG) across all object types. ' +
+        'Produces a single DFG where each node is an activity and edges reflect directly-follows relations ' +
+        'observed across all object types in the OCEL. ' +
+        'WASM export: discover_ocel_dfg(ocel_handle). Requires feature-ocel.',
+      outputType: 'dfg',
+      complexity: 'O(n)',
+      speedTier: 5,
+      qualityTier: 30,
+      parameters: [],
+      supportedProfiles: ['fast', 'balanced', 'quality'],
+      estimatedDurationMs: 1,
+      estimatedMemoryMB: 30,
+      robustToNoise: true,
+      scalesWell: true,
+      references: ['van der Aalst (2019) Object-Centric Process Mining'],
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'ocel_dfg_per_type',
+      name: 'OC-DFG Per Object Type',
+      description:
+        'Discover per-object-type Directly-Follows Graphs from an OCEL. Returns a map from ' +
+        'object_type to DFG, allowing separate process views for each object type (e.g. Order, Item). ' +
+        'This is the canonical OC-DFG projection for object-centric process mining. ' +
+        'WASM export: discover_ocel_dfg_per_type(ocel_handle). Requires feature-ocel.',
+      outputType: 'dfg',
+      complexity: 'O(n)',
+      speedTier: 8,
+      qualityTier: 40,
+      parameters: [],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 2,
+      estimatedMemoryMB: 40,
+      robustToNoise: true,
+      scalesWell: true,
+      references: ['van der Aalst (2019) Object-Centric Process Mining'],
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'ocel_petri_net',
+      name: 'OC-Petri Net Discovery',
+      description:
+        'Discover an Object-Centric Petri Net (OC-Petri net) from an OCEL. The OC-Petri net captures ' +
+        'concurrency and synchronization between different object types. ' +
+        'WASM export: discover_oc_petri_net(ocel_handle, algorithm). Requires feature-ocel.',
+      outputType: 'petrinet',
+      complexity: 'O(n²)',
+      speedTier: 35,
+      qualityTier: 65,
+      parameters: [
+        {
+          name: 'algorithm',
+          type: 'select',
+          description: 'Discovery algorithm variant',
+          required: false,
+          default: 'inductive',
+          options: ['inductive', 'alpha', 'heuristic'],
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 20,
+      estimatedMemoryMB: 80,
+      robustToNoise: true,
+      scalesWell: false,
+      references: ['van der Aalst (2019) Object-Centric Process Mining'],
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'ocel_encode',
+      name: 'OCEL Text Encoding',
+      description:
+        'Encode an OCEL as a compact human-readable text representation suitable for LLM context, ' +
+        'process inspection, and diff display. ' +
+        'WASM export: encode_ocel_as_text(ocel_handle). Requires feature-ocel.',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 5,
+      qualityTier: 20,
+      parameters: [],
+      supportedProfiles: ['fast', 'balanced', 'quality', 'stream'],
+      estimatedDurationMs: 0.5,
+      estimatedMemoryMB: 10,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'ocel_ocla',
+      name: 'OC-Language Abstraction',
+      description:
+        'Discover Object-Centric Language Abstraction (OCLA) from an OCEL. Captures the language ' +
+        'of events per object type and their interactions. ' +
+        'WASM export: discover_ocla_wasm(ocel_handle). Requires feature-ocel.',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 10,
+      qualityTier: 40,
+      parameters: [],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 5,
+      estimatedMemoryMB: 50,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'ocel_oc_declare',
+      name: 'OC-Declare',
+      description:
+        'Discover Object-Centric Declare constraints from an OCEL. Identifies temporal constraints ' +
+        'that hold across different object types. ' +
+        'WASM export: discover_oc_declare_wasm(ocel_handle, noise_threshold). Requires feature-ocel.',
+      outputType: 'declare',
+      complexity: 'O(n²)',
+      speedTier: 40,
+      qualityTier: 60,
+      parameters: [
+        {
+          name: 'noise_threshold',
+          type: 'number',
+          description: 'Minimum support for OC-Declare constraints (0-1)',
+          required: false,
+          default: 0.1,
+          min: 0,
+          max: 1,
+        },
+      ],
+      supportedProfiles: ['quality'],
+      estimatedDurationMs: 50,
+      estimatedMemoryMB: 150,
+      robustToNoise: true,
+      scalesWell: false,
+    });
+
+    // Prediction APIs
+    this.registerWithInferredProfiles({
+      id: 'predict_next_activity',
+      name: 'Next Activity Prediction',
+      description:
+        'Predict the most likely next activity in a process using n-gram (Markov chain) models. ' +
+        'Build model with build_ngram_predictor(), predict with predict_next_activity(). ' +
+        'Returns activity predictions with probabilities.',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 15,
+      qualityTier: 50,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'n',
+          type: 'number',
+          description: 'N-gram order (context window size)',
+          required: false,
+          default: 2,
+          min: 2,
+          max: 5,
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 5,
+      estimatedMemoryMB: 30,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'predict_remaining_time',
+      name: 'Remaining Time Prediction',
+      description:
+        'Predict remaining time to case completion using statistical bucket models and Weibull distribution. ' +
+        'Build model with build_remaining_time_model(), predict with predict_case_duration(). ' +
+        'Returns remaining milliseconds with confidence score.',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 20,
+      qualityTier: 55,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'timestamp_key',
+          type: 'string',
+          description: 'Event attribute key for timestamps',
+          required: true,
+          default: 'time:timestamp',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 10,
+      estimatedMemoryMB: 40,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'predict_outcome',
+      name: 'Outcome Prediction',
+      description:
+        'Predict case outcome (success/anomaly) using anomaly scoring against DFG model and boundary coverage analysis. ' +
+        'Build models with discover_dfg() and build_ngram_predictor(), score with score_anomaly() and compute_boundary_coverage(). ' +
+        'Returns anomaly score and coverage metrics.',
+      outputType: 'analytics',
+      complexity: 'O(n²)',
+      speedTier: 25,
+      qualityTier: 55,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Event attribute key for activity names',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'anomaly_threshold',
+          type: 'number',
+          description: 'Score threshold for anomaly detection (0-1)',
+          required: false,
+          default: 0.7,
+          min: 0,
+          max: 1,
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 15,
+      estimatedMemoryMB: 50,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    // ─── Advanced Analytics (Wave 2) ────────────────────────────────────────
+
+    this.registerWithInferredProfiles({
+      id: 'detect_drift',
+      name: 'Process Drift Detection',
+      description:
+        'Detect concept drift in a process by comparing activity distributions across sliding windows. ' +
+        'WASM export: detect_drift(log_handle, activity_key, window_size).',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 15,
+      qualityTier: 70,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity key',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'window_size',
+          type: 'number',
+          description: 'Sliding window size (number of traces)',
+          required: false,
+          default: 50,
+          min: 10,
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 10,
+      estimatedMemoryMB: 40,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'compute_ewma',
+      name: 'EWMA Smoothing',
+      description:
+        'Compute Exponentially Weighted Moving Average (EWMA) for a series of values. ' +
+        'WASM export: compute_ewma(values_json, alpha).',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 5,
+      qualityTier: 30,
+      parameters: [
+        {
+          name: 'values_json',
+          type: 'string',
+          description: 'JSON array of numeric values',
+          required: true,
+        },
+        {
+          name: 'alpha',
+          type: 'number',
+          description: 'Smoothing factor (0-1)',
+          required: false,
+          default: 0.3,
+          min: 0,
+          max: 1,
+        },
+      ],
+      supportedProfiles: ['fast', 'balanced', 'quality', 'stream'],
+      estimatedDurationMs: 2,
+      estimatedMemoryMB: 10,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'analyze_variant_complexity',
+      name: 'Variant Complexity Analysis',
+      description:
+        'Measure variant entropy and diversity in the event log. ' +
+        'WASM export: analyze_variant_complexity(log_handle, activity_key).',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 10,
+      qualityTier: 40,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity key',
+          required: true,
+          default: 'concept:name',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 5,
+      estimatedMemoryMB: 30,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'compute_activity_transition_matrix',
+      name: 'Activity Transition Matrix',
+      description:
+        'Compute activity transition matrix (Markov chain) for the process. ' +
+        'WASM export: compute_activity_transition_matrix(log_handle, activity_key).',
+      outputType: 'analytics',
+      complexity: 'O(n²)',
+      speedTier: 20,
+      qualityTier: 50,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity key',
+          required: true,
+          default: 'concept:name',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 10,
+      estimatedMemoryMB: 60,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'analyze_process_speedup',
+      name: 'Process Speedup Analysis',
+      description:
+        'Identify where process accelerates/decelerates over time using timestamp deltas. ' +
+        'WASM export: analyze_process_speedup(log_handle, timestamp_key, window_size).',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 15,
+      qualityTier: 60,
+      parameters: [
+        {
+          name: 'timestamp_key',
+          type: 'string',
+          description: 'Timestamp key',
+          required: true,
+          default: 'time:timestamp',
+        },
+        {
+          name: 'window_size',
+          type: 'number',
+          description: 'Window size for speedup detection',
+          required: false,
+          default: 10,
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 15,
+      estimatedMemoryMB: 50,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'compute_trace_similarity_matrix',
+      name: 'Trace Similarity Matrix',
+      description:
+        'Compute pairwise trace similarity matrix using Levenshtein distance on activity sequences. ' +
+        'WASM export: compute_trace_similarity_matrix(log_handle, activity_key).',
+      outputType: 'analytics',
+      complexity: 'O(n²)',
+      speedTier: 50,
+      qualityTier: 70,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity key',
+          required: true,
+          default: 'concept:name',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 100,
+      estimatedMemoryMB: 200,
+      robustToNoise: true,
+      scalesWell: false,
+    });
+
+    // ─── Agentic & AutoML (Wave 3) ──────────────────────────────────────────
+
+    this.registerWithInferredProfiles({
+      id: 'automl_classify',
+      name: 'AutoML Classification',
+      description:
+        'Auto-optimize classification model (RF/XGB) for trace outcome prediction. ' +
+        'WASM export: discover_automl_classify(log_handle, activity_key).',
+      outputType: 'analytics',
+      complexity: 'O(n log n)',
+      speedTier: 40,
+      qualityTier: 90,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Target activity key',
+          required: true,
+          default: 'concept:name',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 500,
+      estimatedMemoryMB: 300,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'automl_forecast',
+      name: 'AutoML Throughput Forecast',
+      description:
+        'Auto-optimize time-series forecasting model for process throughput. ' +
+        'WASM export: discover_automl_forecast(log_handle, activity_key).',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 30,
+      qualityTier: 85,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'Activity key',
+          required: true,
+          default: 'concept:name',
+        },
+      ],
+      supportedProfiles: ['balanced', 'quality'],
+      estimatedDurationMs: 300,
+      estimatedMemoryMB: 200,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'smart_engine',
+      name: 'Smart Discovery Engine',
+      description:
+        'Agentic discovery engine with LRU caching, convergence monitoring, and fused multi-pass execution. ' +
+        'WASM export: smart_engine_run(handle, algorithm, traces_json).',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 5,
+      qualityTier: 80,
+      parameters: [
+        {
+          name: 'activity_key',
+          type: 'string',
+          description: 'The event attribute key used as the activity name (e.g., concept:name)',
+          required: true,
+          default: 'concept:name',
+        },
+        {
+          name: 'algorithm',
+          type: 'string',
+          description: 'The base algorithm to optimize (e.g., dfg, inductive)',
+          required: false,
+          default: 'dfg',
+        },
+        {
+          name: 'cache_capacity',
+          type: 'number',
+          description: 'LRU cache size',
+          required: false,
+          default: 100,
+        },
+      ],
+      supportedProfiles: ['fast', 'balanced', 'quality', 'stream'],
+      estimatedDurationMs: 5,
+      estimatedMemoryMB: 50,
+      robustToNoise: true,
+      scalesWell: true,
+    });
+
+    this.registerWithInferredProfiles({
+      id: 'agentic_pipeline',
+      name: 'Agentic Process Pipeline',
+      description:
+        'End-to-end agentic lifecycle: perception, decision, protection, and Bellman-optimized policy. ' +
+        'WASM export: run_agentic_pipeline(task_json). Requires feature-cloud.',
+      outputType: 'analytics',
+      complexity: 'O(n)',
+      speedTier: 1,
+      qualityTier: 95,
+      parameters: [
+        {
+          name: 'task_json',
+          type: 'string',
+          description: 'JSON-encoded TaskContext',
+          required: true,
+        },
+      ],
+      supportedProfiles: ['fast', 'balanced', 'quality'],
+      estimatedDurationMs: 1,
+      estimatedMemoryMB: 10,
+      robustToNoise: true,
+      scalesWell: true,
+    });
   }
 
   /**
@@ -1387,11 +2235,16 @@ export class AlgorithmRegistry {
 
   /**
    * Infer deployment profiles from supported execution profiles.
-   * Maps each execution profile to the WASM build tiers that ship it.
-   * - fast:     mobile, iot (smallest footprint tiers)
-   * - balanced: iot, edge, fog, browser
-   * - quality:  edge, fog, browser (full-feature tiers)
-   * - stream:   mobile, iot, edge, fog, browser (all tiers support streaming DFG)
+   *
+   * Profile hierarchy (smallest → largest binary):
+   *   mobile (~500KB) ⊆ iot (~1MB) ⊆ edge (~1.5MB) ⊆ fog (~2MB) ⊆ browser (~2.7MB)
+   *
+   * - fast profile   → mobile, iot, browser       (basic DFG runs everywhere)
+   * - balanced profile → edge, fog, browser        (heuristic/alpha require edge+)
+   * - quality profile  → fog, browser              (genetic/ILP require fog+)
+   * - stream profile   → mobile, iot, edge, fog, browser (streaming is universal)
+   *
+   * Result: 'browser' always has the superset — it is the full-featured build.
    */
   private inferDeploymentProfiles(profiles: ExecutionProfile[]): DeploymentProfile[] {
     const result = new Set<DeploymentProfile>();
@@ -1401,15 +2254,14 @@ export class AlgorithmRegistry {
         case 'fast':
           result.add('mobile');
           result.add('iot');
+          result.add('browser');
           break;
         case 'balanced':
-          result.add('iot');
           result.add('edge');
           result.add('fog');
           result.add('browser');
           break;
         case 'quality':
-          result.add('edge');
           result.add('fog');
           result.add('browser');
           break;
@@ -1483,6 +2335,29 @@ export class AlgorithmRegistry {
   }
 
   /**
+   * Get algorithms that handle the given input format.
+   *
+   * 'ocel' returns all algorithms whose IDs start with 'ocel_' — these require
+   * an OCEL handle (loaded via load_ocel_from_json) rather than a flat XES handle.
+   * They are only available in fog and browser deployment profiles (feature-ocel).
+   *
+   * 'xes' returns all algorithms that operate on conventional XES event log handles.
+   *
+   * This method is the canonical way for the CLI and planner to filter algorithms
+   * by input format, enabling the PM lifecycle loop to guide practitioners to the
+   * right algorithm for their log type.
+   */
+  getForInputFormat(inputFormat: 'ocel' | 'xes'): AlgorithmMetadata[] {
+    return Array.from(this.algorithms.values()).filter((a) => {
+      if (inputFormat === 'ocel') {
+        return a.id.startsWith('ocel_');
+      }
+      // xes: everything that is NOT an OCEL-specific algorithm
+      return !a.id.startsWith('ocel_');
+    });
+  }
+
+  /**
    * Build deployment profile map from algorithm registrations
    */
   private buildDeploymentProfileMap(): void {
@@ -1521,7 +2396,6 @@ export class AlgorithmRegistry {
     // For very small logs, prefer speed
     // For medium logs, balance speed and quality
     // For large logs, prefer algorithms that scale well
-    const isSmallLog = logSize < 1000;
     const isLargeLog = logSize > 100000;
 
     let candidates = algorithms;
@@ -1544,6 +2418,209 @@ export class AlgorithmRegistry {
 
     return candidates[0];
   }
+
+  /**
+   * Recommend the best discovery algorithm for a given log size and execution profile.
+   *
+   * Implements the Van der Aalst quality/speed tradeoff:
+   *   - fast   → dfg always (linear time, suits any log size)
+   *   - quality → genetic_algorithm when feasible, heuristic_miner as speed guard for large logs
+   *   - balanced → size-aware heuristic: inductive for small/simple logs, heuristic for medium,
+   *               dfg when the log is too large to afford O(n²) algorithms
+   *
+   * Returns a registered algorithm ID that callers can pass directly to `run()`.
+   */
+  getBestAlgorithmForLogSize(logSize: {
+    traces: number;
+    activities: number;
+    profile: 'fast' | 'balanced' | 'quality';
+  }): string {
+    const { traces, activities, profile } = logSize;
+
+    // Quality profile: use best available, but guard against extreme log sizes
+    if (profile === 'quality') {
+      if (traces > 10_000) return 'heuristic_miner'; // speed guard — genetic too slow
+      return 'genetic_algorithm'; // best quality when feasible
+    }
+
+    // Fast profile: always dfg — linear time, fits any log size
+    if (profile === 'fast') return 'dfg';
+
+    // Balanced: heuristic tradeoff — dfg at scale, inductive for small clean logs, heuristic otherwise
+    if (traces > 50_000 || activities > 200) return 'dfg';
+    if (traces > 10_000) return 'heuristic_miner';
+    if (activities < 20 && traces < 5_000) return 'inductive_miner';
+    return 'heuristic_miner';
+  }
+
+  /**
+   * Suggest algorithms suitable for specific log characteristics.
+   *
+   * Filters registered algorithms by matching their logCharacteristics against
+   * the observed log statistics. Returns algorithms ranked by suitability score.
+   *
+   * @param logStats Log statistics (event count, trace count, activities, variants, noise level)
+   * @param profile Execution profile to filter by (optional)
+   * @returns Array of algorithm IDs sorted by suitability (best first), or empty if no matches
+   *
+   * Example:
+   *   const stats = { eventCount: 10000, traceCount: 100, activityCount: 50, variantCount: 45 };
+   *   const suggestions = registry.suggestByLogCharacteristics(stats, 'quality');
+   *   // Returns: ['genetic_algorithm', 'heuristic_miner', ...] (algorithms optimized for high variance)
+   */
+  suggestByLogCharacteristics(logStats: LogStats, profile?: ExecutionProfile): string[] {
+    const { traceCount, activityCount, variantCount, estimatedNoiseLevel = 0 } = logStats;
+
+    // Detect log characteristics
+    const isHighVariance = variantCount / Math.max(traceCount, 1) > 0.7; // >70% unique variants
+    const isHighActivity = activityCount > 50;
+    const isNoisy = estimatedNoiseLevel > 0.3;
+
+    // Get candidate algorithms
+    let candidates = profile
+      ? this.getForProfile(profile)
+      : Array.from(this.algorithms.values());
+
+    // Score algorithms based on match with log characteristics
+    const scored = candidates
+      .map((algo) => {
+        let score = 0;
+
+        if (!algo.logCharacteristics) return { id: algo.id, score: 0 }; // 0 score = no metadata
+
+        // Match high variance preference
+        if (isHighVariance && algo.logCharacteristics.highVarianceOptimal === true) {
+          score += 30;
+        } else if (!isHighVariance && algo.logCharacteristics.highVarianceOptimal === false) {
+          score += 20;
+        }
+
+        // Match high activity preference
+        if (isHighActivity && algo.logCharacteristics.highActivityOptimal === true) {
+          score += 20;
+        } else if (!isHighActivity && algo.logCharacteristics.highActivityOptimal === false) {
+          score += 10;
+        }
+
+        // Match noise resistance
+        if (isNoisy && algo.logCharacteristics.noiseResistance !== undefined) {
+          score += Math.min(algo.logCharacteristics.noiseResistance / 100, 1) * 50;
+        } else if (!isNoisy && algo.logCharacteristics.noiseResistance !== undefined) {
+          // Even clean logs benefit from some noise resistance
+          score += Math.min(algo.logCharacteristics.noiseResistance / 100, 1) * 10;
+        }
+
+        // Bonus for rework detection on high-variance logs
+        if (isHighVariance && algo.logCharacteristics.reworkDetector === true) {
+          score += 15;
+        }
+
+        return { id: algo.id, score };
+      })
+      .filter((s) => s.score > 0)
+      .sort((a, b) => b.score - a.score);
+
+    return scored.map((s) => s.id);
+  }
+}
+
+/**
+ * JSON Schema representation of an algorithm parameter
+ */
+interface JsonSchemaProperty {
+  type: string | string[];
+  description: string;
+  default?: unknown;
+  enum?: unknown[];
+  minimum?: number;
+  maximum?: number;
+}
+
+/**
+ * Full JSON Schema for a single algorithm
+ */
+interface AlgorithmJsonSchema {
+  $schema: string;
+  title: string;
+  description: string;
+  type: 'object';
+  properties: Record<string, JsonSchemaProperty>;
+  required: string[];
+  additionalProperties: boolean;
+}
+
+/**
+ * Convert algorithm metadata to JSON Schema format.
+ *
+ * Maps AlgorithmParameter types to JSON Schema types:
+ *   - 'number' → 'number'
+ *   - 'string' → 'string'
+ *   - 'boolean' → 'boolean'
+ *   - 'select' → 'string' with enum
+ *
+ * Includes range constraints (min/max) and default values.
+ */
+export function algorithmToJsonSchema(metadata: AlgorithmMetadata): AlgorithmJsonSchema {
+  const properties: Record<string, JsonSchemaProperty> = {};
+  const required: string[] = [];
+
+  for (const param of metadata.parameters) {
+    const jsonType = param.type === 'select' ? 'string' : param.type;
+    const prop: JsonSchemaProperty = {
+      type: jsonType,
+      description: param.description,
+    };
+
+    if (param.default !== undefined) {
+      prop.default = param.default;
+    }
+
+    if (param.type === 'select' && param.options) {
+      prop.enum = param.options;
+    }
+
+    if (param.type === 'number') {
+      if (param.min !== undefined) {
+        prop.minimum = param.min;
+      }
+      if (param.max !== undefined) {
+        prop.maximum = param.max;
+      }
+    }
+
+    properties[param.name] = prop;
+
+    if (param.required) {
+      required.push(param.name);
+    }
+  }
+
+  return {
+    $schema: 'http://json-schema.org/draft-07/schema#',
+    title: metadata.name,
+    description: metadata.description,
+    type: 'object',
+    properties,
+    required,
+    additionalProperties: false,
+  };
+}
+
+/**
+ * Export entire registry to JSON Schema format (one schema per algorithm)
+ *
+ * Returns an object where each key is an algorithm ID and the value is its JSON Schema.
+ * Suitable for external tools to introspect available algorithms and their parameters.
+ */
+export function registryToJsonSchema(): Record<string, AlgorithmJsonSchema> {
+  const registry = getRegistry();
+  const schemas: Record<string, AlgorithmJsonSchema> = {};
+
+  for (const algo of registry.list()) {
+    schemas[algo.id] = algorithmToJsonSchema(algo);
+  }
+
+  return schemas;
 }
 
 /**

@@ -268,7 +268,7 @@ fn e2e_autonomic_loop_complete_pipeline() {
 
     // Step 6: Verify reward computation directly
     // Best case: health improves, no alerts, guards pass
-    let best_reward = compute_reward(2, 0, 0, true, true, false);
+    let best_reward = compute_reward(2, 0, 0, true, true, false, 0);
     assert!(
         best_reward > 0.0,
         "Best-case reward should be positive (got {})",
@@ -276,7 +276,7 @@ fn e2e_autonomic_loop_complete_pipeline() {
     );
 
     // Worst case: health degrades, many alerts, guards fail
-    let worst_reward = compute_reward(0, 4, 100, false, false, false);
+    let worst_reward = compute_reward(0, 4, 100, false, false, false, 0);
     assert!(
         worst_reward < 0.0,
         "Worst-case reward should be negative (got {})",
@@ -380,6 +380,7 @@ fn e2e_reward_computation_bounds() {
                             guard_pass,
                             circuit_allowed,
                             false,
+                            0,
                         );
 
                         // Reward must always be finite

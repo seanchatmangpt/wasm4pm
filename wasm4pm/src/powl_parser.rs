@@ -365,7 +365,9 @@ fn extract_bool_value<'a>(s: &'a str, key: &str) -> Result<&'a str, String> {
 }
 
 fn node_label_matches(token: &str, label: &str) -> bool {
-    token.trim() == label.trim() || token.trim().trim_matches('\'') == label.trim()
+    let t = token.trim().trim_matches('\'');
+    let l = label.trim().trim_matches('\'');
+    t == l
 }
 
 fn extract_braced_content<'a>(s: &'a str, key: &str) -> Result<&'a str, String> {

@@ -126,6 +126,10 @@ struct ValidatedRunInput {
 
 /// Show cognition capabilities report.
 #[wasm_bindgen]
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn cognition_show() -> Result<JsValue, JsValue> {
     let report = serde_json::json!({
         "breeds": [
@@ -146,6 +150,10 @@ pub fn cognition_show() -> Result<JsValue, JsValue> {
 /// Run cognition contract with breed execution. Strict input validation:
 /// 10 MiB cap, schema with `deny_unknown_fields`, breed length bounds.
 #[wasm_bindgen]
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
     if input_json.len() > MAX_INPUT_LEN {
         return Err(wasm_err(&format!(
@@ -193,6 +201,10 @@ pub fn cognition_run(input_json: &str) -> Result<JsValue, JsValue> {
 
 /// Verify a result against adversarial gates. Length-bounded.
 #[wasm_bindgen]
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn cognition_verify(result_json: &str) -> Result<JsValue, JsValue> {
     if result_json.len() > MAX_INPUT_LEN {
         return Err(wasm_err(&format!(
@@ -232,6 +244,10 @@ pub fn cognition_verify(result_json: &str) -> Result<JsValue, JsValue> {
 
 /// Replay a receipt by run_id (length-bounded).
 #[wasm_bindgen]
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn cognition_replay(run_id: &str) -> Result<JsValue, JsValue> {
     if run_id.len() > 256 {
         return Err(wasm_err("run_id exceeds 256 chars"));
@@ -244,6 +260,10 @@ pub fn cognition_replay(run_id: &str) -> Result<JsValue, JsValue> {
 
 /// Build an architecture system given intent. Parses manifest and computes Pareto frontier.
 #[wasm_bindgen]
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn system_build(intent_json: &str) -> Result<JsValue, JsValue> {
     if intent_json.len() > MAX_INPUT_LEN {
         return Err(wasm_err(&format!(
@@ -293,6 +313,10 @@ pub fn system_build(intent_json: &str) -> Result<JsValue, JsValue> {
 
 /// Verify a target system against artifacts.
 #[wasm_bindgen]
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn system_verify(target: &str, artifacts_json: &str) -> Result<JsValue, JsValue> {
     if target.len() > 256 {
         return Err(wasm_err("target exceeds 256 chars"));

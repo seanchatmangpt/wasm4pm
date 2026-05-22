@@ -2,11 +2,12 @@ import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import { createInterface } from 'node:readline/promises';
 import { WasmLoader } from '@wasm4pm/engine';
-import { getRegistry } from '@wasm4pm/kernel';
+import { getRegistry } from 'wasm4pm';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
-import { withSpan } from './_otel.js';
+import { emitResult, makeErrorResult } from '../output.js';
 import { runDiscovery, ALGORITHMS, type Algorithm } from './run.js';
+import { withSpan, withSpanRaw } from './_otel.js';
 
 const BANNER = `
   wpm repl — Interactive Process Mining  (WASM loaded once, commands run in milliseconds)
@@ -100,7 +101,14 @@ async function handleCommand(
           out(`  loaded ${filePath} in ${elapsed}ms`);
         }
       } catch (e) {
-        err(`  load failed: ${e instanceof Error ? e.message : String(e)}`);
+        const result = makeErrorResult(
+          'repl load',
+          e instanceof Error ? e : new Error(String(e)),
+          EXIT_CODES.source_error,
+          'LOAD_FAILED'
+        );
+        emitResult(result, { format: 'human' });
+        await exitWithFlush(EXIT_CODES.source_error);
       }
       break;
     }
@@ -118,7 +126,14 @@ async function handleCommand(
         state.lastModel = raw;
         out(`  ${bold(algo)} → ${summarizeModel(raw)}  ${dim(`(${elapsedMs.toFixed(1)}ms)`)}`);
       } catch (e) {
-        err(`  discovery failed: ${e instanceof Error ? e.message : String(e)}`);
+        const result = makeErrorResult(
+          'repl run',
+          e instanceof Error ? e : new Error(String(e)),
+          EXIT_CODES.execution_error,
+          'DISCOVERY_FAILED'
+        );
+        emitResult(result, { format: 'human' });
+        await exitWithFlush(EXIT_CODES.execution_error);
       }
       break;
     }
@@ -146,7 +161,14 @@ async function handleCommand(
         const parsed = typeof result === 'string' ? JSON.parse(result) : result;
         out(`  predict ${task} → ${JSON.stringify(parsed).slice(0, 200)}  ${dim(`(${elapsed}ms)`)}`);
       } catch (e) {
-        err(`  prediction failed: ${e instanceof Error ? e.message : String(e)}`);
+        const result = makeErrorResult(
+          'repl predict',
+          e instanceof Error ? e : new Error(String(e)),
+          EXIT_CODES.execution_error,
+          'PREDICTION_FAILED'
+        );
+        emitResult(result, { format: 'human' });
+        await exitWithFlush(EXIT_CODES.execution_error);
       }
       break;
     }
@@ -162,7 +184,14 @@ async function handleCommand(
         }
         out(`  fitness:   ${(fitness * 100).toFixed(1)}%`);
       } catch (e) {
-        err(`  quality failed: ${e instanceof Error ? e.message : String(e)}`);
+        const result = makeErrorResult(
+          'repl quality',
+          e instanceof Error ? e : new Error(String(e)),
+          EXIT_CODES.execution_error,
+          'QUALITY_ANALYSIS_FAILED'
+        );
+        emitResult(result, { format: 'human' });
+        await exitWithFlush(EXIT_CODES.execution_error);
       }
       break;
     }
@@ -178,7 +207,14 @@ async function handleCommand(
         const variantCount = Array.isArray(variants?.top_variants) ? (variants.top_variants as unknown[]).length : '?';
         out(`  traces=${traceCount}  events=${stats.total_events ?? '?'}  avg_events/trace=${Number(stats.avg_events_per_case ?? 0).toFixed(1)}  variants≥${variantCount}`);
       } catch (e) {
-        err(`  stats failed: ${e instanceof Error ? e.message : String(e)}`);
+        const result = makeErrorResult(
+          'repl stats',
+          e instanceof Error ? e : new Error(String(e)),
+          EXIT_CODES.execution_error,
+          'STATS_ANALYSIS_FAILED'
+        );
+        emitResult(result, { format: 'human' });
+        await exitWithFlush(EXIT_CODES.execution_error);
       }
       break;
     }
@@ -188,9 +224,9 @@ async function handleCommand(
       const tierFilter = args.indexOf('--tier') >= 0 ? args[args.indexOf('--tier') + 1] : null;
       const registry = getRegistry();
       const all = registry.list();
-      const classified = all.map((a) => ({
-        ...a,
-        tier: a.speedTier <= 10 ? 'stream' : a.speedTier <= 30 ? 'fast' : a.speedTier <= 55 ? 'balanced' : 'quality',
+      const classified = all.map((algo) => ({
+        ...algo,
+        tier: algo.speedTier <= 10 ? 'stream' : algo.speedTier <= 30 ? 'fast' : algo.speedTier <= 55 ? 'balanced' : 'quality',
       }));
       const filtered = tierFilter ? classified.filter((a) => a.tier === tierFilter) : classified;
       out('');
@@ -245,7 +281,7 @@ async function handleCommand(
 export const repl = defineCommand({
   meta: {
     name: 'repl',
-    description: 'Interactive process mining session — WASM loads once, all commands run in milliseconds',
+    description: 'Interactive process mining session — WASM loads once, all commands run in milliseconds. Example: wpm repl -i log.xes',
   },
   args: {
     load: {
@@ -264,52 +300,67 @@ export const repl = defineCommand({
     },
   },
   async run(ctx) {
-    return withSpan('repl', { algorithm: String(ctx.args.algorithm ?? ''), input: String(ctx.args.load ?? '') }, async () => {
-    // Init WASM once — all subsequent commands reuse the loaded module
-    const loader = WasmLoader.getInstance();
-    await loader.init();
-    const wasm = loader.get() as Record<string, (...args: unknown[]) => unknown>;
+    return withSpan('repl', {
+      algorithm: (ctx.args.algorithm as string | undefined) ?? 'heuristic',
+      'activity.key': (ctx.args.key as string | undefined) ?? 'concept:name',
+    }, async () => {
+      // Init WASM once — all subsequent commands reuse the loaded module
+      const loader = WasmLoader.getInstance();
+      await loader.init();
+      const wasm = loader.get() as Record<string, (...args: unknown[]) => unknown>;
 
-    const state: ReplState = {
-      handle: null,
-      logPath: null,
-      algo: ((ctx.args.algorithm as Algorithm | undefined) ?? 'heuristic'),
-      activityKey: (ctx.args.key as string | undefined) ?? 'concept:name',
-      lastModel: null,
-      history: [],
-    };
+      const state: ReplState = {
+        handle: null,
+        logPath: null,
+        algo: ((ctx.args.algorithm as Algorithm | undefined) ?? 'heuristic'),
+        activityKey: (ctx.args.key as string | undefined) ?? 'concept:name',
+        lastModel: null,
+        history: [],
+      };
 
-    // Pre-load log if --load was provided
-    if (ctx.args.load) {
-      await handleCommand(`load ${ctx.args.load}`, state, wasm);
-    }
+      // Pre-load log if --load was provided
+      if (ctx.args.load) {
+        await withSpanRaw('repl.command', { 'repl.cmd': 'load' }, async () => {
+          await handleCommand(`load ${ctx.args.load}`, state, wasm);
+        });
+      }
 
-    process.stdout.write(BANNER);
-    out(`  ${dim(`algorithm: ${state.algo}  |  key: ${state.activityKey}  |  type 'help' for commands`)}`);
-    out('');
+      process.stdout.write(BANNER);
+      out(`  ${dim(`algorithm: ${state.algo}  |  key: ${state.activityKey}  |  type 'help' for commands`)}`);
+      out('');
 
-    const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: process.stdin.isTTY });
+      const rl = createInterface({ input: process.stdin, output: process.stdout, terminal: process.stdin.isTTY });
 
-    const prompt = (): void => {
-      const logLabel = state.logPath ? dim(` [${state.logPath.split('/').pop()}]`) : '';
-      process.stdout.write(`wpm${logLabel}> `);
-    };
-
-    prompt();
-
-    for await (const line of rl) {
-      const trimmed = line.trim();
-      if (trimmed) state.history.push(trimmed);
-
-      const cont = await handleCommand(trimmed, state, wasm);
-      if (!cont) break;
+      const prompt = (): void => {
+        const logLabel = state.logPath ? dim(` [${state.logPath.split('/').pop()}]`) : '';
+        process.stdout.write(`wpm${logLabel}> `);
+      };
 
       prompt();
-    }
 
-    rl.close();
-    out('\n  goodbye');
-    return await exitWithFlush(EXIT_CODES.success);
-    }); // end withSpan
+      let commandCount = 0;
+      for await (const line of rl) {
+        const trimmed = line.trim();
+        if (trimmed) state.history.push(trimmed);
+
+        const cmd = trimmed.split(/\s+/)[0]?.toLowerCase() ?? '';
+        let cont = true;
+        if (trimmed) {
+          commandCount++;
+          cont = await withSpanRaw('repl.command', { 'repl.cmd': cmd, 'repl.seq': commandCount }, async () => {
+            return handleCommand(trimmed, state, wasm);
+          });
+        } else {
+          cont = await handleCommand(trimmed, state, wasm);
+        }
+        if (!cont) break;
+
+        prompt();
+      }
+
+      rl.close();
+      out('\n  goodbye');
+      return await exitWithFlush(EXIT_CODES.success);
+    });
   },
 });

@@ -36,9 +36,26 @@ pub fn discover_inductive_miner(
     eventlog_handle: &str,
     activity_key: &str,
 ) -> Result<JsValue, JsValue> {
+    tracing::info!(
+        target: "wasm4pm.discovery.inductive_miner",
+        algorithm = "inductive_miner",
+        activity_key = activity_key,
+        "Inductive Miner discovery started"
+    );
+
     let tree = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let activities = log.get_activities(activity_key);
+            let activity_count = activities.len();
+
+            tracing::info!(
+                target: "wasm4pm.discovery.inductive_miner",
+                checkpoint = "feature_extraction",
+                log_size = log.traces.len(),
+                activity_count = activity_count,
+                "Log loaded and activity vocabulary built"
+            );
+
             let mut sorted_acts: Vec<_> = activities.to_vec();
             sorted_acts.sort(); // Deterministic ordering
 
@@ -49,6 +66,14 @@ pub fn discover_inductive_miner(
     })?;
 
     let nodes = tree.count_nodes();
+
+    tracing::info!(
+        target: "wasm4pm.discovery.inductive_miner",
+        checkpoint = "result_generation",
+        node_count = nodes,
+        "Process tree constructed"
+    );
+
     let result = json!({
         "algorithm": "inductive_miner",
         "root": tree,
@@ -312,9 +337,25 @@ pub fn discover_simulated_annealing(
     temperature: f64,
     cooling_rate: f64,
 ) -> Result<JsValue, JsValue> {
+    tracing::info!(
+        target: "wasm4pm.discovery.simulated_annealing",
+        algorithm = "simulated_annealing",
+        activity_key = activity_key,
+        temperature = temperature,
+        cooling_rate = cooling_rate,
+        "Simulated Annealing discovery started"
+    );
+
     let (best_dfg, best_fitness) =
         get_or_init_state().with_object(eventlog_handle, |obj| match obj {
             Some(StoredObject::EventLog(log)) => {
+                tracing::info!(
+                    target: "wasm4pm.discovery.simulated_annealing",
+                    checkpoint = "feature_extraction",
+                    log_size = log.traces.len(),
+                    activity_count = log.get_activities(activity_key).len(),
+                    "Log loaded and analyzed"
+                );
                 Ok(discover_simulated_annealing_from_log(
                     log,
                     activity_key,
@@ -326,6 +367,18 @@ pub fn discover_simulated_annealing(
             None => Err(crate::error::js_val("EventLog not found")),
         })?;
 
+    let node_count = best_dfg.nodes.len();
+    let edge_count = best_dfg.edges.len();
+
+    tracing::info!(
+        target: "wasm4pm.discovery.simulated_annealing",
+        checkpoint = "result_generation",
+        node_count = node_count,
+        edge_count = edge_count,
+        fitness = best_fitness,
+        "DFG model optimized"
+    );
+
     let handle = get_or_init_state()
         .store_object(StoredObject::DirectlyFollowsGraph(best_dfg.clone()))
         .map_err(|_e| crate::error::js_val("Failed to store DFG"))?;
@@ -333,8 +386,8 @@ pub fn discover_simulated_annealing(
     to_js_str(&json!({
         "handle": handle,
         "algorithm": "simulated_annealing",
-        "nodes": best_dfg.nodes.len(),
-        "edges": best_dfg.edges.len(),
+        "nodes": node_count,
+        "edges": edge_count,
         "fitness": best_fitness,
     }))
 }
@@ -348,6 +401,14 @@ pub fn discover_simulated_annealing_from_log(
     cooling_rate: f64,
 ) -> (DirectlyFollowsGraph, f64) {
     use std::collections::HashSet as HS;
+
+    if temperature <= 0.0 {
+        return (DirectlyFollowsGraph::new(), 0.0); // invalid temperature
+    }
+    if cooling_rate <= 0.0 || cooling_rate >= 1.0 || !cooling_rate.is_finite() {
+        return (DirectlyFollowsGraph::new(), 0.0); // cooling_rate must be in (0, 1)
+    }
+
     let col_owned = log.to_columnar_owned(activity_key);
     let col = ColumnarLog::from_owned(&col_owned);
 

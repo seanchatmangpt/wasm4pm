@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 use crate::error::MlError;
-use crate::matrix::{validate_matrix, mat_get};
+use crate::matrix::validate_matrix;
 
 /// AdaBoost Classifier - Adaptive Boosting
 /// Ensemble of weighted weak learners (decision stumps)
@@ -10,7 +10,6 @@ pub struct AdaBoostClassifier {
     stump_thresholds: Vec<f64>,
     stump_predictions: Vec<f64>,  // -1 or 1 for left/right
     alphas: Vec<f64>,
-    n_classes: usize,
     n_features: usize,
 }
 
@@ -155,7 +154,6 @@ pub fn adaboost_impl(
         stump_thresholds,
         stump_predictions,
         alphas,
-        n_classes: 2,
         n_features,
     })
 }

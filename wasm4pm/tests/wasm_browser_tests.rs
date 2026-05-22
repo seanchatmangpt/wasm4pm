@@ -75,7 +75,7 @@ fn browser_load_xes_and_discover_dfg() {
         dfg_json.is_ok(),
         "discover_dfg() must succeed in browser"
     );
-    let dfg_str = dfg_json.unwrap();
+    let dfg_str = format!("{:?}", dfg_json.unwrap());
     assert!(
         dfg_str.contains("nodes") || dfg_str.contains("edges"),
         "DFG result must contain nodes or edges: got {dfg_str}"
@@ -100,7 +100,7 @@ fn browser_load_xes_delete_then_reject() {
     // After deletion, further use of the handle must fail gracefully
     let dfg = wasm4pm::discover_dfg(&handle, "concept:name");
     assert!(
-        dfg.is_err() || dfg.as_ref().map(|s| s.contains("error")).unwrap_or(false),
+        dfg.is_err(),
         "Using a deleted handle must return an error"
     );
 }

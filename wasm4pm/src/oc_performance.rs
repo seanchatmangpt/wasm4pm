@@ -90,7 +90,6 @@ fn build_performance_dfgs(ocel: &OCEL) -> FxHashMap<String, PerformanceDFG> {
 
     // Single-pass aggregation: build (obj_type, obj_id) → events index
     // This eliminates the N+1 pattern of initializing then populating separately
-    #[allow(clippy::type_complexity)]
     let mut type_events: FxHashMap<&str, FxHashMap<String, Vec<(usize, &str, Option<i64>)>>> =
         FxHashMap::default();
 
@@ -233,20 +232,15 @@ pub fn analyze_oc_performance(ocel_handle: &str, _timestamp_key: &str) -> Result
 ///
 /// Returns: JSON `{ "Order": { "min_ms": …, "max_ms": …, … }, "Item": { … } }`
 #[cfg(feature = "ocel")]
-#[wasm_bindgen]
-pub fn oc_performance_analysis(ocel_handle: &str) -> Result<JsValue, JsValue> {
-    let ocel = get_ocel(ocel_handle)?;
-
+pub fn oc_performance_analysis_inner(ocel: &OCEL) -> serde_json::Value {
     let mut result = serde_json::Map::new();
 
-    // Pre-compute object_id → object_type lookup for O(1) access
     let obj_to_type: FxHashMap<String, &str> = ocel
         .objects
         .iter()
         .map(|obj| (obj.id.clone(), obj.object_type.as_str()))
         .collect();
 
-    // Single-pass aggregation: build (obj_type, obj_id) → timestamps index
     let mut type_timestamps: FxHashMap<&str, FxHashMap<String, Vec<Option<i64>>>> =
         FxHashMap::default();
 
@@ -264,7 +258,6 @@ pub fn oc_performance_analysis(ocel_handle: &str) -> Result<JsValue, JsValue> {
         }
     }
 
-    // Process each object type using the pre-built index
     for obj_type in &ocel.object_types {
         let events_by_object = type_timestamps
             .remove(obj_type.as_str())
@@ -272,7 +265,6 @@ pub fn oc_performance_analysis(ocel_handle: &str) -> Result<JsValue, JsValue> {
 
         let mut durations: Vec<f64> = Vec::new();
         for timestamps in events_by_object.values() {
-            // Sort; timestamps come from sorted events but ensure order
             let mut sorted_ts: Vec<i64> = timestamps.iter().filter_map(|t| *t).collect();
             sorted_ts.sort();
             for pair in sorted_ts.windows(2) {
@@ -283,6 +275,14 @@ pub fn oc_performance_analysis(ocel_handle: &str) -> Result<JsValue, JsValue> {
         result.insert(obj_type.clone(), compute_duration_stats(&durations));
     }
 
+    serde_json::Value::Object(result)
+}
+
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn oc_performance_analysis(ocel_handle: &str) -> Result<JsValue, JsValue> {
+    let ocel = get_ocel(ocel_handle)?;
+    let result = oc_performance_analysis_inner(&ocel);
     to_js(&result)
 }
 
@@ -389,33 +389,18 @@ mod tests {
     #[test]
     fn test_oc_performance_basic() {
         let ocel = create_test_ocel();
-        let handle = get_or_init_state()
-            .store_object(StoredObject::OCEL(ocel))
-            .expect("Failed to store OCEL");
-
-        let result = oc_performance_analysis(&handle);
-        assert!(result.is_ok(), "Performance analysis should succeed");
-    }
-
-    #[test]
-    #[ignore = "oc_performance_analysis uses JsValue which panics in test environment"]
-    fn test_oc_performance_invalid_handle() {
-        let result = oc_performance_analysis("invalid_handle");
-        assert!(result.is_err(), "Should fail on invalid handle");
-    }
-
-    #[test]
-    #[ignore = "serde_wasm_bindgen requires WASM context"]
-    fn test_oc_performance_returns_json() {
-        let ocel = create_test_ocel();
-        let handle = get_or_init_state()
-            .store_object(StoredObject::OCEL(ocel))
-            .expect("Failed to store OCEL");
-
-        let result = oc_performance_analysis(&handle).expect("Performance analysis failed");
-        let json = serde_wasm_bindgen::from_value::<serde_json::Value>(result)
-            .expect("Should return valid JSON");
-        assert!(json.is_object());
+        // Call inner pure-Rust function directly — no JsValue/WASM context needed
+        let result = oc_performance_analysis_inner(&ocel);
+        assert!(result.is_object(), "Result must be a JSON object");
+        let obj = result.as_object().unwrap();
+        assert!(obj.contains_key("Order"), "Result must contain 'Order' key");
+        let order = &obj["Order"];
+        assert!(order["mean_ms"].is_f64());
+        assert!(order["count"].is_number());
+        // 1 inter-event gap of 1 hour = 3_600_000 ms
+        assert_eq!(order["count"].as_u64().unwrap(), 1);
+        let mean = order["mean_ms"].as_f64().unwrap();
+        assert!((mean - 3_600_000.0).abs() < 1.0, "mean should be 1h = 3600000ms, got {}", mean);
     }
 
     #[test]
@@ -427,13 +412,25 @@ mod tests {
             objects: vec![],
             object_relations: vec![],
         };
+        // Empty OCEL: result should be an empty JSON object
+        let result = oc_performance_analysis_inner(&ocel);
+        assert!(result.is_object());
+        assert_eq!(result.as_object().unwrap().len(), 0, "Empty OCEL should produce empty result");
+    }
 
-        let handle = get_or_init_state()
-            .store_object(StoredObject::OCEL(ocel))
-            .expect("Failed to store OCEL");
+    #[test]
+    fn test_compute_duration_stats_empty() {
+        let stats = compute_duration_stats(&[]);
+        assert_eq!(stats["count"].as_u64().unwrap(), 0);
+        assert_eq!(stats["mean_ms"].as_f64().unwrap(), 0.0);
+    }
 
-        let result = oc_performance_analysis(&handle);
-        // Should handle empty OCEL gracefully
-        assert!(result.is_ok());
+    #[test]
+    fn test_compute_duration_stats_values() {
+        let stats = compute_duration_stats(&[1000.0, 2000.0, 3000.0, 4000.0]);
+        assert_eq!(stats["count"].as_u64().unwrap(), 4);
+        assert_eq!(stats["min_ms"].as_f64().unwrap(), 1000.0);
+        assert_eq!(stats["max_ms"].as_f64().unwrap(), 4000.0);
+        assert_eq!(stats["mean_ms"].as_f64().unwrap(), 2500.0);
     }
 }

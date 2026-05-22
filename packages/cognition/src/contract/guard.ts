@@ -22,7 +22,7 @@ const isObj = (v: unknown): v is Record<string, unknown> =>
 function reject(op: string, reason: string): never {
   throw new CognitionError(
     `${op}: WASM output rejected by field-contract guard: ${reason}`,
-    'OUTPUT_PARSE_FAILED',
+    'OUTPUT_SHAPE_INVALID',
   );
 }
 
@@ -76,7 +76,7 @@ export function assertSystemBuildResult(raw: unknown): SystemBuildResult {
   return raw as unknown as SystemBuildResult;
 }
 
-/** `system_verify` output per `wasm.rs:331-336`. Legacy 'ok' tolerated. */
+/** `system_verify` output per `wasm.rs:331-336`. Rust emits only 'verified' or 'has_findings'. */
 export function assertSystemVerifyResult(raw: unknown): SystemVerifyResult {
   if (!isObj(raw)) reject('system_verify', `expected object`);
   if (!isStr(raw.target)) reject('system_verify', `target must be string`);

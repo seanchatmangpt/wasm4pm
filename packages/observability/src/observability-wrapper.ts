@@ -7,7 +7,7 @@
 import { ObservabilityLayer } from './observability.js';
 import { SecretRedaction } from './secret-redaction.js';
 import { createRequiredFields } from './fields.js';
-import { generateTraceId, generateSpanId } from './context.js';
+import { generateTraceId, generateSpanId, type SpanContext } from './context.js';
 import {
   CliEvent,
   JsonEvent,
@@ -67,7 +67,7 @@ export class ObservabilityWrapper {
     try {
       const redactedEvent = {
         ...event,
-        data: SecretRedaction.redactObject(event.data),
+        data: SecretRedaction.redactObject(event.data) as Record<string, unknown>,
       };
       this.layer.emitJson(redactedEvent);
       this.emitCount++;
@@ -89,7 +89,7 @@ export class ObservabilityWrapper {
     try {
       const redactedEvent = {
         ...event,
-        attributes: SecretRedaction.redactObject(event.attributes),
+        attributes: SecretRedaction.redactObject(event.attributes) as Record<string, unknown>,
       };
       this.layer.emitOtel(redactedEvent);
       this.emitCount++;
@@ -251,7 +251,7 @@ export class ObservabilityWrapper {
     return {
       startSpan: (
         name: string,
-        options?: { kind?: SpanKind; parent?: any; attributes?: Record<string, unknown> }
+        options?: { kind?: SpanKind; parent?: SpanContext; attributes?: Record<string, unknown> }
       ) => {
         const traceId = options?.parent?.traceId || generateTraceId();
         const parentSpanId = options?.parent?.spanId;
@@ -273,7 +273,7 @@ export class ObservabilityWrapper {
               kind: span.kind,
               start_time: span.startTimeNs,
               end_time: span.endTimeNs,
-              status: span.status as any,
+              status: span.status ?? { code: 'UNSET' as const },
               attributes: span.attributes,
             });
           }

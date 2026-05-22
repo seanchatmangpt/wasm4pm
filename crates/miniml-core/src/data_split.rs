@@ -44,29 +44,27 @@ pub fn train_test_split_impl(
     result.push(n_features as f64);
 
     // X_train
-    for i in 0..n_train {
-        let row = indices[i];
+    for &row in indices.iter().take(n_train) {
         for j in 0..n_features {
             result.push(data[row * n_features + j]);
         }
     }
 
     // X_test
-    for i in n_train..n {
-        let row = indices[i];
+    for &row in indices.iter().take(n).skip(n_train) {
         for j in 0..n_features {
             result.push(data[row * n_features + j]);
         }
     }
 
     // y_train
-    for i in 0..n_train {
-        result.push(labels[indices[i]]);
+    for &idx in indices.iter().take(n_train) {
+        result.push(labels[idx]);
     }
 
     // y_test
-    for i in n_train..n {
-        result.push(labels[indices[i]]);
+    for &idx in indices.iter().take(n).skip(n_train) {
+        result.push(labels[idx]);
     }
 
     Ok(result)

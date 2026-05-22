@@ -237,7 +237,7 @@ describe('wpm autoprocess persistence (E2E)', () => {
         testEnv.tempDir
       );
 
-      assertExitCode(result1, EXIT_CODES.SUCCESS);
+      assertExitCode(result1, EXIT_CODES.success);
       const json1 = assertJsonOutput(result1);
       expect((json1 as any).status).toBe('success');
 
@@ -253,7 +253,7 @@ describe('wpm autoprocess persistence (E2E)', () => {
         testEnv.tempDir
       );
 
-      assertExitCode(result2, EXIT_CODES.SUCCESS);
+      assertExitCode(result2, EXIT_CODES.success);
       const json2 = assertJsonOutput(result2);
       expect((json2 as any).status).toBe('success');
 
@@ -275,29 +275,29 @@ describe('wpm autoprocess persistence (E2E)', () => {
         testEnv.tempDir
       );
 
-      assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
+      assertExitCode(result, EXIT_CODES.source_error);
     }, { timeout: 30000 });
 
-    it('should return JSON error response on SOURCE_ERROR', async () => {
+    it('should return JSON error response on source_error', async () => {
       const result = await runWasm4pm(
         ['autoprocess', '/nonexistent/path.xes', '--format', 'json'],
         testEnv.tempDir
       );
 
-      assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
+      assertExitCode(result, EXIT_CODES.source_error);
 
       const json = assertJsonOutput(result);
       expect(json).toHaveProperty('status');
       expect((json as any).status).toBe('error');
     }, { timeout: 30000 });
 
-    it('should include readable error message on SOURCE_ERROR', async () => {
+    it('should include readable error message on source_error', async () => {
       const result = await runWasm4pm(
         ['autoprocess', '/nonexistent/missing.xes', '--format', 'json'],
         testEnv.tempDir
       );
 
-      assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
+      assertExitCode(result, EXIT_CODES.source_error);
 
       // Either stdout or stderr should contain error info
       const output = result.stdout + result.stderr;

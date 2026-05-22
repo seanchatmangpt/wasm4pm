@@ -76,14 +76,14 @@ fn calc_wma(data: &[f64], window: usize) -> Vec<f64> {
     // Calculate weight sum: 1 + 2 + ... + window = window * (window + 1) / 2
     let weight_sum = (window * (window + 1)) as f64 / 2.0;
 
-    for i in (window - 1)..n {
+    for (i, val) in result.iter_mut().enumerate().take(n).skip(window - 1) {
         let mut weighted_sum = 0.0;
         let start_idx = i + 1 - window; // Safe: i >= window - 1
         for j in 0..window {
             let weight = (j + 1) as f64;
             weighted_sum += weight * data[start_idx + j];
         }
-        result[i] = weighted_sum / weight_sum;
+        *val = weighted_sum / weight_sum;
     }
 
     result
@@ -448,12 +448,11 @@ pub fn detect_seasonality(data: &[f64]) -> Result<SeasonalityInfo, JsError> {
     let mut best_lag = 2;
     let mut best_val = f64::NEG_INFINITY;
     for lag in 2..acf.len() {
-        if lag >= 2 && lag < acf.len() - 1 {
-            if acf[lag] > acf[lag - 1] && acf[lag] > acf[lag + 1] && acf[lag] > best_val {
+        if lag >= 2 && lag < acf.len() - 1
+            && acf[lag] > acf[lag - 1] && acf[lag] > acf[lag + 1] && acf[lag] > best_val {
                 best_val = acf[lag];
                 best_lag = lag;
             }
-        }
     }
 
     Ok(SeasonalityInfo {

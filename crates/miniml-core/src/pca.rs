@@ -69,11 +69,11 @@ pub fn pca_impl(data: &[f64], n_features: usize, n_components: usize) -> Result<
     // Compute mean
     let mut mean = vec![0.0; n_features];
     for i in 0..n {
-        for j in 0..n_features {
-            mean[j] += mat_get(data, n_features, i, j);
+        for (j, m) in mean.iter_mut().enumerate().take(n_features) {
+            *m += mat_get(data, n_features, i, j);
         }
     }
-    for j in 0..n_features { mean[j] /= n as f64; }
+    for m in mean.iter_mut().take(n_features) { *m /= n as f64; }
 
     // Center data
     let mut centered = vec![0.0; n * n_features];

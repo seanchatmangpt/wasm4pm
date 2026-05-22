@@ -45,7 +45,7 @@ pub struct BayesianLinearModel {
     coefficient_std: Vec<f64>,
     intercept: f64,
     intercept_std: f64,
-    posterior_samples: Vec<f64>,
+    _posterior_samples: Vec<f64>,
 }
 
 #[wasm_bindgen]
@@ -126,7 +126,7 @@ where
     let mut samples = Vec::with_capacity(n_samples);
     let mut current = initial;
     let mut current_log_post = log_likelihood(current) + log_prior(current);
-    let mut accepted = 0usize;
+    let mut _accepted = 0usize;
 
     for i in 0..total {
         let proposal = current + box_muller(&mut rng) * proposal_sd;
@@ -137,7 +137,7 @@ where
             current = proposal;
             current_log_post = proposal_log_post;
             if i >= burn_in {
-                accepted += 1;
+                _accepted += 1;
             }
         }
 
@@ -154,7 +154,7 @@ where
     let variance: f64 = samples.iter().map(|x| (x - mean) * (x - mean)).sum::<f64>() / (n as f64 - 1.0).max(1.0);
     let std = variance.sqrt();
 
-    let ci_lower = samples[((0.025 * n as f64) as usize).max(0)];
+    let ci_lower = samples[(0.025 * n as f64) as usize ];
     let ci_upper = samples[((0.975 * n as f64) as usize).min(n - 1)];
 
     Ok(BayesianResult {
@@ -255,7 +255,7 @@ pub fn bayesian_linear_regression_impl(
 
     // Generate posterior samples for prediction intervals (optional)
     let mut posterior_samples = Vec::with_capacity(n.min(1000));
-    let mut rng = Rng::new(42);
+    let _rng = Rng::new(42);
     for _ in 0..n.min(1000) {
         posterior_samples.push(intercept);
     }
@@ -265,7 +265,7 @@ pub fn bayesian_linear_regression_impl(
         coefficient_std,
         intercept,
         intercept_std,
-        posterior_samples,
+        _posterior_samples: posterior_samples,
     })
 }
 
@@ -360,7 +360,7 @@ fn validate_matrix(data: &[f64], n_features: usize) -> Result<usize, MlError> {
     if data.is_empty() {
         return Err(MlError::new("data must not be empty"));
     }
-    if data.len() % n_features != 0 {
+    if !data.len().is_multiple_of(n_features) {
         return Err(MlError::new("data length must be divisible by n_features"));
     }
     Ok(data.len() / n_features)

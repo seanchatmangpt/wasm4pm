@@ -4,20 +4,23 @@
 //!
 //! ## Control Chart Monitoring
 //!
-//! [`check_western_electric_rules`] detects three classes of special causes against a
+//! [`check_western_electric_rules`] detects four classes of special causes against a
 //! trailing window of [`ChartData`] observations:
 //!
 //! | Rule | Signal |
 //! |------|--------|
-//! | Rule 1 | Single point beyond UCL or LCL |
+//! | Rule 1 | Single point beyond UCL or LCL (beyond 3σ) |
 //! | Rule 2 | 9 consecutive points on the same side of the center line |
 //! | Rule 3 | 6 consecutive strictly monotone points |
+//! | Rule 4 | 2 of 3 consecutive points beyond 2σ on the same side |
 //!
 //! ## Process Capability
 //!
 //! [`ProcessCapability::calculate`] computes Cp, Cpk, DPMO, and sigma level from
 //! a sample and specification limits. [`dpmo_to_sigma`] applies the standard 1.5σ
 //! long-term shift: 3.4 DPMO → 6.0σ.
+
+use tracing::{debug, info};
 
 // ---------------------------------------------------------------------------
 // Types (ported from knhk internal/chart.rs)
@@ -61,7 +64,7 @@ pub enum TrendDirection {
 #[derive(Debug, Clone, PartialEq)]
 #[allow(dead_code)]
 pub enum SpecialCause {
-    /// Rule 1: Point beyond UCL or LCL.
+    /// Rule 1: Point beyond UCL or LCL (beyond 3σ).
     OutOfControl { value: f64, ucl: f64, lcl: f64 },
     /// Rule 2: N consecutive points on same side of CL.
     Shift {
@@ -73,6 +76,8 @@ pub enum SpecialCause {
         direction: TrendDirection,
         count: usize,
     },
+    /// Rule 4: 2 of 3 consecutive points beyond 2σ on the same side of CL.
+    TwoOfThree { direction: ShiftDirection },
 }
 
 // ---------------------------------------------------------------------------
@@ -83,9 +88,10 @@ pub enum SpecialCause {
 /// trailing window of chart data.
 ///
 /// Rules evaluated:
-/// 1. Point beyond UCL or LCL.
+/// 1. Point beyond UCL or LCL (beyond 3σ).
 /// 2. 9 consecutive points on same side of center line.
 /// 3. 6 consecutive points increasing or decreasing.
+/// 4. 2 of 3 consecutive points beyond 2σ on the same side of CL.
 ///
 /// Returns all signals found (may be empty).
 ///
@@ -121,6 +127,12 @@ pub enum SpecialCause {
 #[allow(dead_code)]
 pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
     let mut alerts = Vec::new();
+    let buffer_size = data.len();
+
+    // Emit warm-up event when buffer reaches critical size for rules 2-4
+    if buffer_size == 9 {
+        debug!(buffer_size = buffer_size, status = "ok", service_name = "wpm", "spc.warm_up_complete");
+    }
 
     // Rule 1: Point beyond UCL or LCL (applies to any buffer size, any single point).
     //
@@ -131,8 +143,18 @@ pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
     // first-class defect, not a discrepancy. Treat any non-finite value as an
     // out-of-control signal so the autonomic loop notices and degrades safely.
     if let Some(latest) = data.last() {
-        let invalid = !latest.value.is_finite();
-        if invalid || latest.value > latest.ucl || latest.value < latest.lcl {
+        if !latest.value.is_finite() || latest.value > latest.ucl || latest.value < latest.lcl {
+            debug!(
+                rule = 1,
+                value = latest.value,
+                ucl = latest.ucl,
+                lcl = latest.lcl,
+                alert_level = 3,
+                status = "error",
+                service_name = "wpm",
+                rule_fired = "rule_1",
+                "SPC Rule 1 fired: point beyond control limits"
+            );
             alerts.push(SpecialCause::OutOfControl {
                 value: latest.value,
                 ucl: latest.ucl,
@@ -141,8 +163,9 @@ pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
         }
     }
 
-    // Rules 2 and 3 require at least 9 points
+    // Rules 2, 3, and 4 require at least 9 points (Rule 4 needs 3, but we guard uniformly)
     if data.len() < 9 {
+        debug!(buffer_size, "SPC rules 2-4 not yet active, insufficient buffer");
         return alerts;
     }
 
@@ -161,6 +184,16 @@ pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
         ];
         let key = (above as usize) | ((below as usize) << 1);
         if let Some(dir) = SHIFT_DIR[key] {
+            info!(
+                rule = 2,
+                shift_direction = ?dir,
+                count = 9,
+                alert_level = 2,
+                status = "error",
+                service_name = "wpm",
+                rule_fired = "rule_2",
+                "SPC Rule 2 fired: 9 consecutive points on same side of center line"
+            );
             alerts.push(SpecialCause::Shift { direction: dir, count: 9 });
         }
     }
@@ -180,8 +213,94 @@ pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
         ];
         let key = (incr as usize) | ((decr as usize) << 1);
         if let Some(dir) = TREND_DIR[key] {
+            info!(
+                rule = 3,
+                trend_direction = ?dir,
+                count = 6,
+                alert_level = 2,
+                status = "error",
+                service_name = "wpm",
+                rule_fired = "rule_3",
+                "SPC Rule 3 fired: 6 consecutive monotone points"
+            );
             alerts.push(SpecialCause::Trend { direction: dir, count: 6 });
         }
+    }
+
+    // Rule 4: 2 of 3 consecutive points beyond 2σ on the same side of CL.
+    //
+    // The 2σ boundary is derived from the control limits stored in ChartData:
+    //   sigma = (ucl - cl) / 3.0
+    //   upper_2sigma = cl + 2.0 * sigma  (i.e. cl + (ucl - cl) * 2/3)
+    //   lower_2sigma = cl - 2.0 * sigma  (i.e. cl - (ucl - cl) * 2/3)
+    //
+    // We scan the last 3 points. If ≥2 are beyond the 2σ line above CL, or ≥2 are
+    // beyond the 2σ line below CL, the rule fires.
+    if recent.len() >= 3 {
+        let last_3 = &recent[recent.len() - 3..];
+
+        // Count how many of the last 3 points are beyond 2σ above or below CL.
+        let beyond_2sigma_above = last_3.iter().filter(|d| {
+            let sigma = (d.ucl - d.cl) / 3.0;
+            sigma > 0.0 && d.value > d.cl + 2.0 * sigma
+        }).count();
+
+        let beyond_2sigma_below = last_3.iter().filter(|d| {
+            let sigma = (d.ucl - d.cl) / 3.0;
+            sigma > 0.0 && d.value < d.cl - 2.0 * sigma
+        }).count();
+
+        if beyond_2sigma_above >= 2 {
+            info!(
+                rule = 4,
+                direction = ?ShiftDirection::Above,
+                count = beyond_2sigma_above,
+                alert_level = 2,
+                status = "error",
+                service_name = "wpm",
+                rule_fired = "rule_4",
+                "SPC Rule 4 fired: 2+ of 3 points beyond 2σ above center line"
+            );
+            alerts.push(SpecialCause::TwoOfThree { direction: ShiftDirection::Above });
+        } else if beyond_2sigma_below >= 2 {
+            info!(
+                rule = 4,
+                direction = ?ShiftDirection::Below,
+                count = beyond_2sigma_below,
+                alert_level = 2,
+                status = "error",
+                service_name = "wpm",
+                rule_fired = "rule_4",
+                "SPC Rule 4 fired: 2+ of 3 points beyond 2σ below center line"
+            );
+            alerts.push(SpecialCause::TwoOfThree { direction: ShiftDirection::Below });
+        }
+    }
+
+    // Log summary of alerts detected
+    if !alerts.is_empty() {
+        debug!(
+            alert_count = alerts.len(),
+            rule_fired = ?alerts
+                .iter()
+                .map(|a| match a {
+                    SpecialCause::OutOfControl { .. } => "rule_1",
+                    SpecialCause::Shift { .. } => "rule_2",
+                    SpecialCause::Trend { .. } => "rule_3",
+                    SpecialCause::TwoOfThree { .. } => "rule_4",
+                })
+                .collect::<Vec<_>>(),
+            status = "error",
+            service_name = "wpm",
+            "SPC check completed with alerts"
+        );
+    } else {
+        debug!(
+            alert_count = 0,
+            status = "ok",
+            service_name = "wpm",
+            "SPC check completed: no alerts"
+        );
     }
 
     alerts
@@ -235,10 +354,12 @@ impl ProcessCapability {
     #[allow(dead_code)]
     pub fn calculate(data: &[f64], usl: f64, lsl: f64) -> Result<Self, CapabilityError> {
         if data.is_empty() {
+            debug!(status = "error", service_name = "wpm", reason = "empty_data", "process_capability.calculate failed");
             return Err(CapabilityError::EmptyData);
         }
 
         if usl <= lsl {
+            debug!(status = "error", service_name = "wpm", reason = "invalid_limits", "process_capability.calculate failed");
             return Err(CapabilityError::InvalidLimits);
         }
 
@@ -248,6 +369,15 @@ impl ProcessCapability {
         if std_dev == 0.0 {
             // All data points are identical.
             let is_within_limits = data.iter().all(|&x| x >= lsl && x <= usl);
+            debug!(
+                mean = mean,
+                cp = if is_within_limits { f64::INFINITY } else { 0.0 },
+                cpk = if is_within_limits { f64::INFINITY } else { 0.0 },
+                sigma_level = if is_within_limits { 6.0 } else { 0.0 },
+                status = if is_within_limits { "ok" } else { "error" },
+                service_name = "wpm",
+                "process_capability.calculate zero variance"
+            );
             return Ok(Self {
                 cp: if is_within_limits { f64::INFINITY } else { 0.0 },
                 cpk: if is_within_limits { f64::INFINITY } else { 0.0 },
@@ -278,6 +408,18 @@ impl ProcessCapability {
 
         let dpmo = p_defective * 1_000_000.0;
         let sigma_level = dpmo_to_sigma(dpmo);
+
+        debug!(
+            cp = cp,
+            cpk = cpk,
+            sigma_level = sigma_level,
+            dpmo = dpmo,
+            mean = mean,
+            std_dev = std_dev,
+            status = "ok",
+            service_name = "wpm",
+            "process_capability.calculate completed"
+        );
 
         Ok(Self {
             cp,

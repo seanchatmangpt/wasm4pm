@@ -1,0 +1,116 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-05-18T00:00:00Z",
+  "platform": {
+    "os": "darwin",
+    "arch": "x86_64",
+    "node_version": "20.x"
+  },
+  "baselines": {
+    "soft_recovery_degraded_to_ready": {
+      "description": "Recovery from degraded state to ready state (soft recovery via WasmLoader.softReset)",
+      "target_ms": 50,
+      "margin_percent": 5,
+      "threshold_ms": 52.5,
+      "p50_ms": 15,
+      "p95_ms": 45,
+      "p99_ms": 48,
+      "notes": "Preserves compiled WASM binary; only clears engine state and error buffers"
+    },
+    "fast_recovery_failed_to_ready": {
+      "description": "Recovery from failed state to ready state (fast recovery via WasmLoader.softReset)",
+      "target_ms": 800,
+      "margin_percent": 5,
+      "threshold_ms": 840,
+      "p50_ms": 200,
+      "p95_ms": 700,
+      "p99_ms": 790,
+      "notes": "Direct state transition; WASM already compiled so no fetch/compile overhead"
+    },
+    "cold_start_bootstrap_to_ready": {
+      "description": "Cold start from uninitialized to ready (full bootstrap with WASM load)",
+      "target_ms": 5000,
+      "margin_percent": 5,
+      "threshold_ms": 5250,
+      "p50_ms": 2500,
+      "p95_ms": 4800,
+      "p99_ms": 4950,
+      "notes": "Dominated by WASM binary fetch/load/compile; includes kernel init"
+    },
+    "circuit_breaker_open_to_closed": {
+      "description": "Circuit breaker state recovery (open → half-open → closed)",
+      "target_ms": 500,
+      "margin_percent": 5,
+      "threshold_ms": 525,
+      "p50_ms": 100,
+      "p95_ms": 450,
+      "p99_ms": 490,
+      "notes": "Depends on clock advancement and probe success; typically very fast"
+    }
+  },
+  "regression_thresholds": {
+    "critical": {
+      "degradation_percent": 20,
+      "action": "Automatic CI failure; blocks merge"
+    },
+    "warning": {
+      "degradation_percent": 10,
+      "action": "Logged as warning; allows merge with maintainer review"
+    }
+  },
+  "recovery_paths_tested": [
+    {
+      "name": "degraded → ready",
+      "mechanism": "WasmLoader.softReset()",
+      "state_transitions": ["degraded", "ready"],
+      "operations": [
+        "Clear error buffer",
+        "Reset status tracker",
+        "Validate WASM module",
+        "Update lifecycle state"
+      ]
+    },
+    {
+      "name": "failed → ready",
+      "mechanism": "Direct state transition with WASM rollback",
+      "state_transitions": ["failed", "ready"],
+      "operations": [
+        "Preserve compiled WASM binary",
+        "Clear all error state",
+        "Reinitialize kernel",
+        "Transition to ready"
+      ]
+    },
+    {
+      "name": "bootstrapping → ready",
+      "mechanism": "Full bootstrap with WASM load",
+      "state_transitions": ["uninitialized", "bootstrapping", "ready"],
+      "operations": [
+        "Load WASM binary from network/disk",
+        "Compile WASM module",
+        "Initialize kernel",
+        "Validate all systems",
+        "Transition to ready"
+      ]
+    },
+    {
+      "name": "circuit_open → closed",
+      "mechanism": "Circuit breaker state machine",
+      "state_transitions": ["closed", "open", "half_open", "closed"],
+      "operations": [
+        "Detect failure threshold",
+        "Transition to open",
+        "Wait for timeout",
+        "Transition to half_open",
+        "Probe request",
+        "Return to closed"
+      ]
+    }
+  ],
+  "sla_commitments": {
+    "mttr_requirement": "<1 second for any production recovery",
+    "p99_requirement": "<2 seconds for any recovery path",
+    "degradation_tolerance": "5% from baseline (regression detection gate)",
+    "measurement_period": "Every CI/CD pipeline run"
+  }
+}

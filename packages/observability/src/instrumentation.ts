@@ -40,7 +40,13 @@ export type EventType =
   | 'DriftDetected'
   // Conformance events
   | 'ConformanceCheckStarted'
-  | 'ConformanceCheckCompleted';
+  | 'ConformanceCheckCompleted'
+  // Cache observability events
+  | 'ConformanceCacheHit'
+  | 'ConformanceCacheMiss'
+  | 'DedupHit'
+  // Feedback events
+  | 'FeedbackCaptured';
 
 /**
  * State change event
@@ -137,7 +143,7 @@ export interface ErrorEventData {
   errorCode: string;
   errorMessage: string;
   severity: 'info' | 'warning' | 'error' | 'fatal';
-  context?: Record<string, any>;
+  context?: Record<string, unknown>;
   requiredAttrs: RequiredOtelAttributes;
 }
 
@@ -308,6 +314,33 @@ export interface ConformanceCheckEvent {
 }
 
 /**
+ * Recovery event — emitted by engine.recover() and engine.fastRecoverFromFailed().
+ *
+ * Span names:
+ *   RecoveryStarted   → `engine.recovery_started`
+ *   RecoveryCompleted → `engine.recovery_completed`
+ *
+ * Required attributes:
+ *   recovery.type        — 'soft' (degraded→ready) | 'fast' (failed→ready) | 'full' (failed→bootstrap→ready)
+ *   recovery.from_state  — the state recovery is leaving
+ *   recovery.duration_ms — wall-clock elapsed (only on RecoveryCompleted)
+ *   recovery.mttr_ms     — current mean MTTR across all recorded recoveries (RecoveryCompleted only)
+ */
+export interface RecoveryEvent {
+  type: 'RecoveryStarted' | 'RecoveryCompleted';
+  traceId: string;
+  spanId: string;
+  parentSpanId?: string;
+  runId: string;
+  recoveryType: 'soft' | 'fast' | 'full';
+  fromState: string;
+  durationMs?: number;
+  mttrMs?: number;
+  status: 'OK' | 'ERROR' | 'UNSET';
+  requiredAttrs: RequiredOtelAttributes;
+}
+
+/**
  * ML analysis event
  */
 export interface MlAnalysisEvent {
@@ -339,6 +372,96 @@ export interface MlAnalysisEvent {
     cpuDurationNs?: number;
     wallDurationNs?: number;
   };
+  requiredAttrs: RequiredOtelAttributes;
+}
+
+/**
+ * Multi-objective decision event — emitted when autonomic system makes decision
+ * with health, quality, and performance objectives.
+ *
+ * Span name: `autonomic.decision.multi_objective`
+ * Span kind: INTERNAL
+ */
+export interface MultiObjectiveDecisionEvent {
+  type: 'MultiObjectiveDecisionEvent';
+  traceId: string;
+  spanId: string;
+  parentSpanId?: string;
+  runId: string;
+  primaryObjective: 'health' | 'quality' | 'performance';
+  decisionConfidence: number; // 0-1
+  objectiveScores: {
+    healthScore: number;
+    qualityScore: number;
+    performanceScore: number;
+  };
+  preferenceWeights: {
+    healthWeight: number;
+    qualityWeight: number;
+    performanceWeight: number;
+  };
+  compositeScore: number; // weighted average
+  durationMs?: number;
+  status: 'OK' | 'ERROR' | 'UNSET';
+  rationale: string;
+  requiredAttrs: RequiredOtelAttributes;
+}
+
+/**
+ * Protection activation event — emitted when circuit breaker or SPC protection triggers
+ *
+ * Span name: `autonomic.protection.activation`
+ * Span kind: INTERNAL
+ */
+export interface ProtectionActivationEvent {
+  type: 'ProtectionActivationEvent';
+  traceId: string;
+  spanId: string;
+  parentSpanId?: string;
+  runId: string;
+  degradationLevel: 'NONE' | 'QUALITY' | 'PERFORMANCE' | 'AVAILABILITY';
+  triggerReasons: {
+    spcAlertsDetected: boolean;
+    circuitBreakerOpen: boolean;
+    resourceConstraint: boolean;
+    latencyViolation: boolean;
+  };
+  openCircuitBreakers: string[]; // algorithm names with open circuits
+  activeSpcAlerts: number;
+  degradationRationale: string;
+  durationMs?: number;
+  status: 'OK' | 'ERROR' | 'UNSET';
+  requiredAttrs: RequiredOtelAttributes;
+}
+
+/**
+ * Optimization result event — emitted after RL optimization loop completes
+ * with algorithm selection and profile recommendations.
+ *
+ * Span name: `autonomic.optimization.result`
+ * Span kind: INTERNAL
+ */
+export interface OptimizationResultEvent {
+  type: 'OptimizationResultEvent';
+  traceId: string;
+  spanId: string;
+  parentSpanId?: string;
+  runId: string;
+  recommendedAlgorithm: string;
+  algorithmCostBenefitScore: number;
+  recommendedProfile: string;
+  profileCostScore: number;
+  timeTradeoffScore: number;
+  resourceTradeoffScore: number;
+  overallOptimizationScore: number;
+  estimatedCycleTimeMs: number;
+  actionTaken: string; // e.g., 'Continue', 'Scale', 'Retry'
+  agentName: string; // which RL agent made decision
+  cumulativeReward: number;
+  cycleCount: number;
+  durationMs?: number;
+  status: 'OK' | 'ERROR' | 'UNSET';
+  rationale: string;
   requiredAttrs: RequiredOtelAttributes;
 }
 
@@ -475,6 +598,14 @@ export class Instrumentation {
       requiredAttrs,
     };
 
+    const profile = requiredAttrs['execution.profile'];
+    const attrs = {
+      'service.name': 'wasm4pm',
+      ...requiredAttrs,
+      'algorithm.name': algorithmName,
+      'algorithm.step_id': options?.stepId || 'unspecified',
+      'algorithm.profile': profile,
+    };
     const otelEvent: OtelEvent = {
       trace_id: traceId,
       span_id: spanId,
@@ -483,13 +614,7 @@ export class Instrumentation {
       kind: 'INTERNAL',
       start_time: now,
       status: { code: 'UNSET' },
-      attributes: {
-        'service.name': 'wasm4pm',
-        ...requiredAttrs,
-        'algorithm.name': algorithmName,
-        'algorithm.step_id': options?.stepId || 'unspecified',
-        'algorithm.profile': requiredAttrs['execution.profile'],
-      },
+      attributes: attrs,
     };
 
     return { event, otelEvent };
@@ -717,6 +842,7 @@ export class Instrumentation {
 
     const jsonEvent: JsonEvent = {
       timestamp: new Date().toISOString(),
+      level: 'info',
       component: 'engine',
       event_type: 'progress',
       run_id: requiredAttrs['run.id'],
@@ -740,7 +866,7 @@ export class Instrumentation {
     requiredAttrs: RequiredOtelAttributes,
     options?: {
       severity?: 'info' | 'warning' | 'error' | 'fatal';
-      context?: Record<string, any>;
+      context?: Record<string, unknown>;
       parentSpanId?: string;
     }
   ): { event: ErrorEventData; otelEvent: OtelEvent; jsonEvent: JsonEvent } {
@@ -791,6 +917,7 @@ export class Instrumentation {
 
     const jsonEvent: JsonEvent = {
       timestamp: new Date().toISOString(),
+      level: severity === 'warning' ? 'warn' : severity === 'info' ? 'info' : 'error',
       component: 'engine',
       event_type: 'error',
       run_id: requiredAttrs['run.id'],
@@ -1399,6 +1526,148 @@ export class Instrumentation {
   }
 
   // ─────────────────────────────────────────────────────────────────────
+  //  Cache and feedback observability
+  // ─────────────────────────────────────────────────────────────────────
+
+  /**
+   * Create a conformance cache hit event.
+   * Span name: `conformance.cache_hit`
+   * Emitted when `getCachedFitness()` returns a cached result.
+   *
+   * Required attributes (beyond service.name):
+   *   cache.log_hash    — hex digest of the log
+   *   cache.model_hash  — hex digest of the model
+   *   cache.precision_available — whether precision is populated
+   *   cache.age_ms      — milliseconds since the entry was stored
+   */
+  static createConformanceCacheHitEvent(
+    logHash: string,
+    modelHash: string,
+    precisionAvailable: boolean,
+    ageMs: number
+  ): OtelEvent {
+    const now = Date.now() * 1_000_000;
+    return {
+      trace_id: '0'.repeat(32),
+      span_id: this.generateSpanId(),
+      name: 'conformance.cache_hit',
+      kind: 'INTERNAL',
+      start_time: now,
+      end_time: now,
+      status: { code: 'OK' },
+      attributes: {
+        'service.name': 'wasm4pm',
+        'cache.log_hash': logHash,
+        'cache.model_hash': modelHash,
+        'cache.precision_available': precisionAvailable,
+        'cache.age_ms': ageMs,
+      },
+    };
+  }
+
+  /**
+   * Create a conformance cache miss event.
+   * Span name: `conformance.cache_miss`
+   * Emitted when `getCachedFitness()` returns null.
+   *
+   * Required attributes (beyond service.name):
+   *   cache.log_hash   — hex digest of the log
+   *   cache.model_hash — hex digest of the model
+   *   cache.reason     — 'not_found' | 'expired'
+   */
+  static createConformanceCacheMissEvent(
+    logHash: string,
+    modelHash: string,
+    reason: 'not_found' | 'expired'
+  ): OtelEvent {
+    const now = Date.now() * 1_000_000;
+    return {
+      trace_id: '0'.repeat(32),
+      span_id: this.generateSpanId(),
+      name: 'conformance.cache_miss',
+      kind: 'INTERNAL',
+      start_time: now,
+      end_time: now,
+      status: { code: 'OK' },
+      attributes: {
+        'service.name': 'wasm4pm',
+        'cache.log_hash': logHash,
+        'cache.model_hash': modelHash,
+        'cache.miss_reason': reason,
+      },
+    };
+  }
+
+  /**
+   * Create a result deduplication hit event.
+   * Span name: `kernel.result_dedup_hit`
+   * Emitted when `getExistingResult()` returns a cached result.
+   *
+   * Required attributes (beyond service.name):
+   *   dedup.log_path   — path to the log file
+   *   dedup.algorithm  — algorithm name
+   *   dedup.age_ms     — milliseconds since the result was stored
+   */
+  static createDedupHitEvent(
+    logPath: string,
+    algorithm: string,
+    ageMs: number
+  ): OtelEvent {
+    const now = Date.now() * 1_000_000;
+    return {
+      trace_id: '0'.repeat(32),
+      span_id: this.generateSpanId(),
+      name: 'kernel.result_dedup_hit',
+      kind: 'INTERNAL',
+      start_time: now,
+      end_time: now,
+      status: { code: 'OK' },
+      attributes: {
+        'service.name': 'wasm4pm',
+        'dedup.log_path': logPath,
+        'dedup.algorithm': algorithm,
+        'dedup.age_ms': ageMs,
+      },
+    };
+  }
+
+  /**
+   * Create a feedback-captured event.
+   * Span name: `feedback.captured`
+   * Emitted when `captureFeedback()` successfully writes a feedback record.
+   *
+   * Required attributes (beyond service.name):
+   *   feedback.algorithm       — algorithm ID
+   *   feedback.log_size_bucket — e.g. '100-1K'
+   *   feedback.fitness         — token-replay fitness score
+   *   feedback.execution_time_ms — algorithm execution time
+   */
+  static createFeedbackCapturedEvent(
+    algorithm: string,
+    logSizeBucket: string,
+    fitness: number,
+    executionTimeMs: number
+  ): OtelEvent {
+    const now = Date.now() * 1_000_000;
+    return {
+      trace_id: '0'.repeat(32),
+      span_id: this.generateSpanId(),
+      name: 'feedback.captured',
+      kind: 'INTERNAL',
+      start_time: now,
+      end_time: now,
+      status: { code: 'OK' },
+      attributes: {
+        'service.name': 'wasm4pm',
+        'feedback.algorithm': algorithm,
+        'feedback.log_size_bucket': logSizeBucket,
+        'feedback.fitness': fitness,
+        'feedback.execution_time_ms': executionTimeMs,
+      },
+    };
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
   //  Generic non-blocking wrapper
   // ─────────────────────────────────────────────────────────────────────
 
@@ -1499,6 +1768,105 @@ export class Instrumentation {
       /* never block on OTEL */
     }
     return result;
+  }
+
+  // ─────────────────────────────────────────────────────────────────────
+  //  Recovery instrumentation
+  // ─────────────────────────────────────────────────────────────────────
+
+  /**
+   * Create a RecoveryStarted event with a dedicated OTEL span.
+   * Span name: `engine.recovery_started`
+   *
+   * @param recoveryType 'soft' = degraded→ready, 'fast' = failed→ready, 'full' = failed→bootstrap→ready
+   * @param fromState    The state the engine is recovering from ('degraded' or 'failed')
+   */
+  static createRecoveryStartedEvent(
+    traceId: string,
+    recoveryType: 'soft' | 'fast' | 'full',
+    fromState: string,
+    requiredAttrs: RequiredOtelAttributes,
+    options?: { parentSpanId?: string }
+  ): { event: RecoveryEvent; otelEvent: OtelEvent } {
+    const spanId = this.generateSpanId();
+    const now = Date.now() * 1000000;
+
+    const event: RecoveryEvent = {
+      type: 'RecoveryStarted',
+      traceId,
+      spanId,
+      parentSpanId: options?.parentSpanId,
+      runId: requiredAttrs['run.id'],
+      recoveryType,
+      fromState,
+      status: 'UNSET',
+      requiredAttrs,
+    };
+
+    const otelEvent: OtelEvent = {
+      trace_id: traceId,
+      span_id: spanId,
+      parent_span_id: options?.parentSpanId,
+      name: 'engine.recovery_started',
+      kind: 'INTERNAL',
+      start_time: now,
+      status: { code: 'UNSET' },
+      attributes: {
+        'service.name': 'wasm4pm',
+        ...requiredAttrs,
+        'recovery.type': recoveryType,
+        'recovery.from_state': fromState,
+      },
+    };
+
+    return { event, otelEvent };
+  }
+
+  /**
+   * Create a RecoveryCompleted event with a dedicated OTEL span.
+   * Span name: `engine.recovery_completed`
+   *
+   * @param spanId       The span ID from the matching RecoveryStarted event (for correlation)
+   * @param recoveryType 'soft' | 'fast' | 'full'
+   * @param fromState    State the engine recovered from
+   * @param durationMs   Wall-clock elapsed milliseconds for this recovery
+   * @param mttrMs       Current mean MTTR across all recorded recoveries
+   */
+  static createRecoveryCompletedEvent(
+    traceId: string,
+    spanId: string,
+    recoveryType: 'soft' | 'fast' | 'full',
+    fromState: string,
+    requiredAttrs: RequiredOtelAttributes,
+    options?: {
+      durationMs?: number;
+      mttrMs?: number;
+      status?: 'OK' | 'ERROR';
+      errorMessage?: string;
+      parentSpanId?: string;
+    }
+  ): OtelEvent {
+    const now = Date.now() * 1000000;
+    const status = options?.status || 'OK';
+
+    return {
+      trace_id: traceId,
+      span_id: spanId,
+      parent_span_id: options?.parentSpanId,
+      name: 'engine.recovery_completed',
+      kind: 'INTERNAL',
+      start_time: now - (options?.durationMs || 0) * 1000000,
+      end_time: now,
+      status: { code: status, message: options?.errorMessage },
+      attributes: {
+        'service.name': 'wasm4pm',
+        ...requiredAttrs,
+        'recovery.type': recoveryType,
+        'recovery.from_state': fromState,
+        'recovery.duration_ms': options?.durationMs || 0,
+        ...(options?.mttrMs !== undefined && { 'recovery.mttr_ms': options.mttrMs }),
+      },
+    };
   }
 
   /**

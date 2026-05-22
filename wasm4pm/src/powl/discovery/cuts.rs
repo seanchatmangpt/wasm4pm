@@ -305,7 +305,6 @@ fn tarjan_sccs(graph: &[Vec<usize>]) -> Vec<Vec<usize>> {
     let mut sccs: Vec<Vec<usize>> = Vec::new();
     let mut index_counter = 0;
 
-    #[allow(clippy::too_many_arguments)]
     fn strongconnect(
         v: usize,
         graph: &[Vec<usize>],
@@ -370,6 +369,7 @@ fn tarjan_sccs(graph: &[Vec<usize>]) -> Vec<Vec<usize>> {
         }
     }
 
+    sccs.reverse();
     sccs
 }
 

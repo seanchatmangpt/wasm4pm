@@ -92,6 +92,7 @@ interface ConformanceResult {
   required_stage_coverage: number;
   receipt_coverage: number;
   object_lifecycle_validity: number;
+  observed_count: number;
   verdict: 'Accepted' | 'AndonPull';
   andon_reason?: string;
   details: Array<{ dimension: string; ok: boolean; detail: string }>;
@@ -1070,6 +1071,7 @@ export function checkPowl2Conformance(
     required_stage_coverage: stageCoverage,
     receipt_coverage: receiptCoverage === -1 ? 0 : receiptCoverage,
     object_lifecycle_validity: objectLifecycleValidity === -1 ? 0 : objectLifecycleValidity,
+    observed_count: safeOcel.ocel_events.length,
     verdict,
     andon_reason: andonReason,
     details,
@@ -1079,7 +1081,7 @@ export function checkPowl2Conformance(
 // ── ingest subcommand ─────────────────────────────────────────────────────────
 
 const ingest = defineCommand({
-  meta: { name: 'ingest', description: 'Parse a stack trace into TraceGraph JSON-LD' },
+  meta: { name: 'ingest', description: 'Parse a stack trace into TraceGraph JSON-LD. Example: wpm trace ingest --from rust --input stack.txt' },
   args: {
     from: {
       type: 'string',

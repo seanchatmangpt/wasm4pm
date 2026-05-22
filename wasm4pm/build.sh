@@ -36,15 +36,15 @@ rm -rf pkg/
 
 # Build for bundler target (recommended for modern bundlers)
 echo -e "${YELLOW}Building for bundler target...${NC}"
-wasm-pack build --target bundler
+RUSTFLAGS="-C target-feature=+simd128" wasm-pack build --target bundler
 
 # Build for nodejs target
 echo -e "${YELLOW}Building for nodejs target...${NC}"
-wasm-pack build --target nodejs --out-dir pkg-nodejs
+RUSTFLAGS="-C target-feature=+simd128" wasm-pack build --target nodejs --out-dir pkg-nodejs
 
 # Build for web target
 echo -e "${YELLOW}Building for web target...${NC}"
-wasm-pack build --target web --out-dir pkg-web
+RUSTFLAGS="-C target-feature=+simd128" wasm-pack build --target web --out-dir pkg-web
 
 echo -e "${GREEN}Build complete!${NC}"
 echo ""

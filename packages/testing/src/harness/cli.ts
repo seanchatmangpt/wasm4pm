@@ -22,6 +22,7 @@ export interface CliTestEnv {
   tempDir: string;
   configPath: string;
   outputDir: string;
+  env?: Record<string, string>;
   cleanup: () => Promise<void>;
 }
 
@@ -34,12 +35,6 @@ export interface CliTestEnv {
  * envelope's `error.code` field.
  */
 export const EXIT_CODES = {
-  SUCCESS: 0,
-  CONFIG_ERROR: 1,
-  SOURCE_ERROR: 2,
-  EXECUTION_ERROR: 3,
-  PARTIAL_FAILURE: 4,
-  SYSTEM_ERROR: 5,
   success: 0,
   config_error: 1,
   source_error: 2,
@@ -68,11 +63,19 @@ export async function createCliTestEnv(configContent?: string): Promise<CliTestE
     tempDir,
     configPath,
     outputDir,
+    env: {},
     cleanup: async () => {
       try {
+        // Remove test temp directory
         await fs.rm(tempDir, { recursive: true, force: true });
       } catch {
         // best effort
+      }
+      try {
+        // Remove global .wasm4pm/ artifacts (results, receipts, cache) to prevent cross-test pollution
+        await fs.rm('.wasm4pm', { recursive: true, force: true });
+      } catch {
+        // best effort — .wasm4pm may not exist
       }
     },
   };
@@ -119,12 +122,14 @@ export function runCli(
 
   return new Promise((resolve) => {
     const start = Date.now();
+    // Build minimal env to avoid vitest's process.env interference with child process stdout
+    const env = { PATH: process.env.PATH || '', HOME: process.env.HOME || '', ...(options?.env || {}) };
     const child = execFile(
       exec,
       fullArgs,
       {
         cwd: options?.cwd,
-        env: { ...process.env, ...options?.env },
+        env,
         timeout,
         maxBuffer: 10 * 1024 * 1024,
       },
@@ -139,7 +144,7 @@ export function runCli(
     // Handle process timeout
     child.on('error', () => {
       resolve({
-        exitCode: EXIT_CODES.SYSTEM_ERROR,
+        exitCode: EXIT_CODES.system_error,
         stdout: '',
         stderr: 'Process failed to start',
         durationMs: Date.now() - start,

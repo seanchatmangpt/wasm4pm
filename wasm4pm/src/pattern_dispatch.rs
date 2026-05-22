@@ -25,10 +25,11 @@ fn elapsed_ticks(start: u64) -> u64 {
 
 /// All 43 W3C workflow patterns (van der Aalst categorization)
 #[repr(u8)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[allow(dead_code)]
 pub enum PatternType {
     // Basic Control Flow Patterns (1-5)
+    #[default]
     Sequence = 1,
     ParallelSplit = 2,
     Synchronization = 3,
@@ -197,6 +198,7 @@ pub struct PatternDispatcher {
 /// Pattern execution context
 #[repr(C, align(64))]
 #[allow(dead_code)]
+#[derive(Default)]
 pub struct PatternContext {
     pub pattern_type: PatternType,
     pub pattern_id: u32,
@@ -295,8 +297,8 @@ impl PatternDispatcher {
     pub fn dispatch(&self, context: &PatternContext) -> PatternResult {
         let index = context.pattern_type as usize;
 
-        // Bounds check is eliminated by compiler if we trust input
-        debug_assert!(index > 0 && index < 44);
+        // Strict bounds-checking assertion before unsafe access
+        assert!(index < 44, "Pattern dispatch table bounds check failed");
 
         // Direct index into dispatch table (no branches)
         // SAFETY: PatternType repr(u8) values are 1-43, array is 0-43.

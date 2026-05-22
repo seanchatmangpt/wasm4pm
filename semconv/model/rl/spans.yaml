@@ -1,0 +1,130 @@
+groups:
+  # Shared RL agent identity attributes — referenced by decision and update groups
+  - id: rl.agent
+    type: attribute_group
+    brief: Reinforcement-learning agent identity attributes shared across RL spans.
+    attributes:
+      - id: rl.agent.type
+        type: string
+        stability: development
+        brief: RL agent type
+        requirement_level: required
+        examples: ['QLearning', 'SARSA', 'DoubleQLearning', 'ExpectedSARSA', 'REINFORCE']
+      - id: rl.agent.id
+        type: string
+        stability: development
+        brief: Stable identifier for this agent instance
+        requirement_level: required
+        examples: ['q-learning-0', 'sarsa-1', 'reinforce-2']
+
+  - id: rl.agent.decision
+    type: attribute_group
+    brief: Reinforcement-learning agent decision attributes (rl.agent.decision span).
+    attributes:
+      - ref: rl.agent.type
+        requirement_level: required
+      - ref: rl.agent.id
+        requirement_level: required
+      - id: rl.action.selected
+        type: string
+        stability: development
+        brief: Action index or name chosen by the agent
+        requirement_level: required
+        examples: ['0', '1', 'scale_up', 'no_op']
+      - id: rl.state.health_level
+        type: int
+        stability: development
+        brief: Health level state dimension (0=Normal, 1=Degraded, 2=Warning, 3=Critical, 4=Failed)
+        requirement_level: required
+      - id: rl.state.circuit_state
+        type: string
+        stability: development
+        brief: Circuit breaker state dimension
+        requirement_level: required
+        examples: ['Closed', 'HalfOpen', 'Open']
+      - id: rl.exploration.epsilon
+        type: double
+        stability: development
+        brief: Current epsilon for epsilon-greedy exploration (if applicable)
+        requirement_level: opt_in
+      - id: rl.exploration.is_explore
+        type: boolean
+        stability: development
+        brief: True if the selected action was exploratory (not greedy)
+        requirement_level: opt_in
+      - id: rl.decision.duration_ms
+        type: int
+        stability: development
+        brief: Agent decision wall-clock duration in milliseconds
+        requirement_level: recommended
+
+  - id: rl.policy.update
+    type: attribute_group
+    brief: Q-learning / TD policy update attributes (rl.policy.update span).
+    attributes:
+      - ref: rl.agent.type
+        requirement_level: required
+      - ref: rl.agent.id
+        requirement_level: required
+      - id: rl.update.reward
+        type: double
+        stability: development
+        brief: Scalar reward signal received
+        requirement_level: required
+      - id: rl.update.td_error
+        type: double
+        stability: development
+        brief: Temporal difference error (delta)
+        requirement_level: required
+      - id: rl.update.q_before
+        type: double
+        stability: development
+        brief: Q(s,a) value before the Bellman update
+        requirement_level: required
+      - id: rl.update.q_after
+        type: double
+        stability: development
+        brief: Q(s,a) value after the Bellman update
+        requirement_level: required
+      - id: rl.update.terminal
+        type: boolean
+        stability: development
+        brief: True when the next state is the terminal state (no bootstrapping)
+        requirement_level: required
+      - id: rl.convergence.delta
+        type: double
+        stability: development
+        brief: Absolute change |q_after - q_before| — convergence proxy
+        requirement_level: recommended
+      - id: rl.update.duration_ms
+        type: int
+        stability: development
+        brief: Policy update wall-clock duration in milliseconds
+        requirement_level: recommended
+
+  - id: rl.agent.switch
+    type: attribute_group
+    brief: LinUCB agent selection / switch attributes (rl.agent.switch span).
+    attributes:
+      - id: rl.agent.from
+        type: string
+        stability: development
+        brief: Agent type being switched away from
+        requirement_level: required
+        examples: ['QLearning', 'SARSA', 'REINFORCE']
+      - id: rl.agent.to
+        type: string
+        stability: development
+        brief: Agent type being switched to
+        requirement_level: required
+        examples: ['QLearning', 'SARSA', 'REINFORCE']
+      - id: rl.linucb.score
+        type: double
+        stability: development
+        brief: Upper-confidence-bound score used for agent selection
+        requirement_level: opt_in
+      - id: rl.cycle.count
+        type: int
+        stability: development
+        brief: Number of autonomic cycles completed at switch time
+        requirement_level: opt_in

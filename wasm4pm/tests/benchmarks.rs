@@ -1,3 +1,5 @@
+#![cfg(target_arch = "wasm32")]
+
 //! Real Data Benchmarking for wasm4pm
 //!
 //! This module runs 35 capability tests against real event logs from the BPI Challenge

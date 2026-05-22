@@ -53,10 +53,14 @@ export interface SwarmConvergenceReport {
   totalChecked: number;
   /**
    * Human-readable explanation of why convergence was (or was not) reached.
-   * Optional during PR-2 transition — populated by the new convergence path
-   * but left absent on the legacy code paths until they're upgraded.
+   * Examples:
+   *   "3/3 workers agree on hash abc123... (unanimous)"
+   *   "2/3 workers agree on hash abc123... (threshold 0.80 met)"
+   *   "no workers produced results for algorithm dfg"
+   *   "2/4 workers agree on hash abc123... (threshold 0.80 not met — need 3/4)"
+   *   "1/3 stable after 2 rounds (need all 3)"
    */
-  convergenceReason?: string;
+  convergenceReason: string;
 }
 
 export interface SwarmConfig {
@@ -99,9 +103,9 @@ export interface SwarmArtifact {
   /** True when all episodes were exhausted without convergence (no throwOnTimeout). */
   convergenceTimeout?: boolean;
   /** Workers that failed in the final episode (error-isolated, did not abort the swarm). */
-  failedWorkers?: string[];
+  failedWorkers: string[];
   /** Number of healthy (non-failed) workers in the final episode. */
-  healthyWorkerCount?: number;
+  healthyWorkerCount: number;
 }
 
 /**

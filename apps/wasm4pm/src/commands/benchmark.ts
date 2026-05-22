@@ -10,6 +10,22 @@ import { exitWithFlush } from '../otel/exit.js';
 const parse = (r: unknown): unknown =>
   typeof r === 'string' ? JSON.parse(r) : r;
 
+/** Signals that a user-supplied file was not found — maps to source_error (exit 2). */
+class SourceNotFoundError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'SourceNotFoundError';
+  }
+}
+
+/** Signals that a user-supplied corpus line contains invalid JSON — maps to source_error (exit 2). */
+class CorpusParseError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = 'CorpusParseError';
+  }
+}
+
 type BenchmarkTrace = {
   trace_id: string;
   name: string;
@@ -25,6 +41,7 @@ type BenchmarkResult = {
   final_verdict: string;
   expected_verdict: string;
   failure_reason?: string;
+  elapsed_ms?: number;
 };
 
 type RunAllResult = {
@@ -112,6 +129,19 @@ const benchmarkBuild = defineCommand({
 });
 
 // ---------------------------------------------------------------------------
+// Visual helpers
+// ---------------------------------------------------------------------------
+
+/** Render a 16-char pass-rate bar using filled/empty block characters. */
+function passRateBar(passed: number, total: number): string {
+  const rate = total === 0 ? 0 : passed / total;
+  const filled = Math.round(rate * 16);
+  const bar = '█'.repeat(filled) + '░'.repeat(16 - filled);
+  const pct = Math.round(rate * 100);
+  return `Pass rate: ${bar}  ${pct}%  (${passed}/${total})`;
+}
+
+// ---------------------------------------------------------------------------
 // Shared runner
 // ---------------------------------------------------------------------------
 
@@ -124,11 +154,11 @@ async function runBenchmarks(
   const wasm = loader.get() as Record<string, unknown>;
 
   if (corpus) {
-    if (!existsSync(corpus)) throw new Error(`Corpus not found: ${corpus}`);
+    if (!existsSync(corpus)) throw new SourceNotFoundError(`Corpus not found: ${corpus}`);
     const lines = readFileSync(corpus, 'utf8').split('\n').filter((l) => l.trim());
     const traces: BenchmarkTrace[] = lines.map((l, i) => {
       try { return JSON.parse(l) as BenchmarkTrace; }
-      catch { throw new Error(`Line ${i + 1}: invalid JSON`); }
+      catch { throw new CorpusParseError(`Line ${i + 1}: invalid JSON`); }
     });
 
     // When classify_motion is unavailable, synthesize per-trace failures so the
@@ -156,19 +186,22 @@ async function runBenchmarks(
     const results: BenchmarkResult[] = filteredTraces
       .map((t) => {
         try {
+          const tTrace = performance.now();
           const raw = (wasm.classify_motion as (j: string) => unknown)(JSON.stringify(t.motion));
+          const elapsed_ms = Math.round(performance.now() - tTrace);
           const receipt = parse(raw) as { verdict: string };
           const actual = receipt.verdict ?? 'Unknown';
           const pass = actual.toLowerCase() === t.expected_verdict.toLowerCase();
           return {
             trace_id: t.trace_id, name: t.name, pass, final_verdict: actual,
-            expected_verdict: t.expected_verdict,
+            expected_verdict: t.expected_verdict, elapsed_ms,
             failure_reason: pass ? undefined : `Expected ${t.expected_verdict}, got ${actual}`,
           };
         } catch (e) {
           return {
             trace_id: t.trace_id, name: t.name, pass: false,
-            final_verdict: 'Error', expected_verdict: t.expected_verdict, failure_reason: String(e),
+            final_verdict: 'Error', expected_verdict: t.expected_verdict,
+            failure_reason: String(e),
           };
         }
       });
@@ -178,7 +211,14 @@ async function runBenchmarks(
   }
 
   if (typeof wasm.run_all_benchmarks !== 'function') {
-    throw new Error('run_all_benchmarks not available — requires fog or browser profile');
+    throw new Error(
+      'Built-in benchmarks not available in this WASM build.\n\n' +
+      'This feature requires the "fog" or "browser" deployment profile.\n' +
+      'Current profile likely: mobile, iot, or edge.\n\n' +
+      'To enable: rebuild with `npm run build:fog` or `npm run build:browser`,\n' +
+      'then rebuild the CLI with `cd apps/wasm4pm && npm run build`.\n\n' +
+      'Or provide a custom corpus with `wpm benchmark replay --corpus <file.jsonl>`'
+    );
   }
   const raw = (wasm.run_all_benchmarks as () => unknown)();
   const r = parse(raw) as RunAllResult;
@@ -219,29 +259,47 @@ const benchmarkReplay = defineCommand({
 
       emitResult(result, { format, verbose, quiet }, (res, projection) => {
         const pad = (s: string, n: number) => s.padEnd(n);
+        const hasTiming = res.payload.results.some((r) => r.elapsed_ms !== undefined);
+        const dividerWidth = hasTiming ? 84 : 72;
+        const hdr = hasTiming
+          ? `${pad('Trace ID', 28)} ${pad('Verdict', 22)} ${pad('Expected', 20)} ${'Pass'} ${'Time'}`
+          : `${pad('Trace ID', 28)} ${pad('Verdict', 22)} Expected              Pass`;
         projection.info('\nBenchmark Results');
-        projection.info('─'.repeat(72));
-        projection.info(`${pad('Trace ID', 28)} ${pad('Verdict', 22)} Expected              Pass`);
-        projection.info('─'.repeat(72));
+        projection.info('─'.repeat(dividerWidth));
+        projection.info(hdr);
+        projection.info('─'.repeat(dividerWidth));
         for (const r of res.payload.results) {
           const ok = r.pass ? '✓' : '✗';
-          const line = `${pad(r.trace_id, 28)} ${pad(r.final_verdict, 22)} ${pad(r.expected_verdict, 20)} ${ok}`;
+          const timingCol = hasTiming
+            ? ` ${r.elapsed_ms !== undefined ? `${r.elapsed_ms}ms` : '—'}`
+            : '';
+          const line = `${pad(r.trace_id, 28)} ${pad(r.final_verdict, 22)} ${pad(r.expected_verdict, 20)} ${ok}${timingCol}`;
           if (r.pass) projection.info(line);
           else projection.warn(line);
           if (!r.pass && verbose && r.failure_reason) projection.warn(`  → ${r.failure_reason}`);
         }
-        projection.info('─'.repeat(72));
-        const pct = Math.round((passed / (total || 1)) * 100);
-        const summary = `${passed}/${total} passed (${pct}%)`;
-        if (failed === 0) projection.success(summary);
-        else projection.warn(summary);
+        projection.info('─'.repeat(dividerWidth));
+        projection.info(passRateBar(res.payload.passed, res.payload.total));
+        if (res.payload.failed > 0) {
+          projection.warn('\nFailures:');
+          for (const r of res.payload.results.filter((x) => !x.pass)) {
+            const reason = r.failure_reason ?? 'unknown';
+            projection.warn(
+              `  ✗ ${r.trace_id.padEnd(20)} expected: ${r.expected_verdict.padEnd(8)} got: ${r.final_verdict.padEnd(8)} (${reason})`
+            );
+          }
+        }
+        if (res.payload.failed === 0) projection.success(`All ${res.payload.total} traces passed`);
       });
 
       return await exitWithFlush(EXIT_CODES.success);
     } catch (e) {
-      const result = makeErrorResult('benchmark replay', e, EXIT_CODES.execution_error);
+      const exitCode = (e instanceof SourceNotFoundError || e instanceof CorpusParseError)
+        ? EXIT_CODES.source_error
+        : EXIT_CODES.execution_error;
+      const result = makeErrorResult('benchmark replay', e, exitCode);
       emitResult(result, { format, verbose, quiet });
-      return await exitWithFlush(EXIT_CODES.execution_error);
+      return await exitWithFlush(exitCode);
     }
     });
   },
@@ -289,13 +347,20 @@ const benchmarkVerify = defineCommand({
       }, performance.now() - t0, exitCode);
 
       emitResult(result, { format, verbose, quiet }, (res, projection) => {
+        projection.info(passRateBar(res.payload.passed, res.payload.total));
         if (res.payload.failed === 0) {
           projection.success(`Benchmark verify: ${res.payload.passed}/${res.payload.total} passed`);
         } else {
-          projection.error(`Benchmark verify FAILED: ${res.payload.failed}/${res.payload.total} traces did not match expected verdict`);
+          projection.error(
+            `Benchmark verify FAILED: ${res.payload.failed}/${res.payload.total} traces did not match expected verdict`
+          );
           if (verbose || !quiet) {
+            projection.warn('\nFailures:');
             for (const r of res.payload.results.filter((x) => !x.pass)) {
-              projection.warn(`  ✗ ${r.trace_id}: expected ${r.expected_verdict}, got ${r.final_verdict}`);
+              const reason = r.failure_reason ?? 'unknown';
+              projection.warn(
+                `  ✗ ${r.trace_id.padEnd(20)} expected: ${r.expected_verdict.padEnd(8)} got: ${r.final_verdict.padEnd(8)} (${reason})`
+              );
             }
           }
         }
@@ -303,6 +368,10 @@ const benchmarkVerify = defineCommand({
 
       return await exitWithFlush(exitCode);
     } catch (e) {
+      // verify treats a missing corpus as a run-time command failure (exit 3),
+      // not a source_error (exit 2) — the test corpus is an operational artefact,
+      // not a user-supplied input file.  CorpusParseError also stays execution_error
+      // since a corrupt verify corpus is an environment problem, not user input.
       const result = makeErrorResult('benchmark verify', e, EXIT_CODES.execution_error);
       emitResult(result, { format, verbose, quiet });
       return await exitWithFlush(EXIT_CODES.execution_error);
@@ -500,7 +569,7 @@ const benchmarkCalibrate = defineCommand({
 export const benchmark = defineCommand({
   meta: {
     name: 'benchmark',
-    description: 'Benchmark corpus management and verification',
+    description: 'Benchmark corpus management and verification. Example: wpm benchmark verify --corpus data/benchmarks.jsonl',
   },
   async run() {
     process.stdout.write(`

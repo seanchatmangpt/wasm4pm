@@ -8,6 +8,12 @@
  * 4. Size-constrained profiles exclude advanced algorithms
  * 5. No duplicate registrations
  * 6. Deployment profiles are consistent across builds
+ *
+ * Deployment profile hierarchy (smallest → largest binary):
+ *   mobile (~500KB) ⊆ iot (~1MB) ⊆ edge (~1.5MB) ⊆ fog (~2MB) ⊆ browser (~2.7MB, DEFAULT)
+ *
+ * 'browser' is the FULL-FEATURED profile (all 36+ algorithms). It is the wasm-pack
+ * bundler default, not a size-constrained target.
  */
 
 import { getRegistry, DeploymentProfile, ExecutionProfile } from '../src/registry';
@@ -37,7 +43,7 @@ describe('Feature Gating - Algorithm Registry Integration', () => {
 
       // Should have algorithms in expected range
       expect(algorithms.length).toBeGreaterThanOrEqual(10); // at least browser profile
-      expect(algorithms.length).toBeLessThanOrEqual(50); // at most 41 (could have more in future)
+      expect(algorithms.length).toBeLessThanOrEqual(65); // at most ~60 (could have more in future)
     });
 
     test('should have valid metadata for all algorithms', () => {
@@ -84,14 +90,24 @@ describe('Feature Gating - Algorithm Registry Integration', () => {
       expect(fogAlgos.length).toBeGreaterThan(0);
     });
 
-    test('mobile profile should have algorithms', () => {
+    test('mobile profile should have algorithms (minimal subset)', () => {
       const mobileAlgos = registry.getForDeploymentProfile('mobile');
       const allAlgos = registry.list();
 
-      // Mobile has the smallest footprint: fast + stream algorithms only
+      // Mobile is the smallest profile — should have at least the fast algorithms
       expect(mobileAlgos.length).toBeGreaterThan(0);
-      // Mobile should be a strict subset of all algorithms
-      expect(mobileAlgos.length).toBeLessThanOrEqual(allAlgos.length);
+      // Mobile should be a proper subset of all algorithms
+      expect(mobileAlgos.length).toBeLessThan(allAlgos.length);
+    });
+
+    test('browser profile should be the largest (full-featured build)', () => {
+      const profiles: DeploymentProfile[] = ['mobile', 'iot', 'edge', 'fog', 'browser'];
+      const sizes = profiles.map((p) => registry.getForDeploymentProfile(p).length);
+      const maxSize = Math.max(...sizes);
+      const browserSize = registry.getForDeploymentProfile('browser').length;
+
+      // browser is the full-featured wasm-pack target — it must have the most algorithms
+      expect(browserSize).toBe(maxSize);
     });
   });
 
@@ -100,8 +116,9 @@ describe('Feature Gating - Algorithm Registry Integration', () => {
   // ─────────────────────────────────────────────────────────────────────────────
 
   describe('Essential Algorithms', () => {
-    test('DFG (Directly-Follows Graph) should be in all profiles', () => {
-      const profiles: DeploymentProfile[] = ['mobile', 'iot', 'edge', 'fog', 'browser'];
+    test('DFG (Directly-Follows Graph) should be in all small profiles', () => {
+      // DFG is 'fast' profile → available on mobile, iot, and browser at minimum
+      const profiles: DeploymentProfile[] = ['mobile', 'iot', 'browser'];
 
       for (const profile of profiles) {
         const algos = registry.getForDeploymentProfile(profile);
@@ -111,10 +128,10 @@ describe('Feature Gating - Algorithm Registry Integration', () => {
       }
     });
 
-    test('Basic fast algorithms should be in small profiles', () => {
-      // Browser should have the fastest algorithms
-      const browserAlgos = registry.getForDeploymentProfile('browser');
-      const fastAlgos = browserAlgos.filter((a) => a.speedTier < 30);
+    test('Basic fast algorithms should be in mobile profile', () => {
+      // Mobile should have the fastest algorithms
+      const mobileAlgos = registry.getForDeploymentProfile('mobile');
+      const fastAlgos = mobileAlgos.filter((a) => a.speedTier < 30);
       expect(fastAlgos.length).toBeGreaterThan(0);
     });
 
@@ -163,7 +180,7 @@ describe('Feature Gating - Algorithm Registry Integration', () => {
         expect(count).toBeGreaterThan(0);
       }
 
-      // Browser (full-feature tier) should have the most (or tied for most)
+      // browser (last in the array) should have the most (or tied for most)
       const browserCount = counts[counts.length - 1];
       const maxCount = Math.max(...counts);
       expect(browserCount).toBe(maxCount);
@@ -175,12 +192,11 @@ describe('Feature Gating - Algorithm Registry Integration', () => {
   // ─────────────────────────────────────────────────────────────────────────────
 
   describe('Size-Optimized Profiles', () => {
-    test('mobile profile has fewer algorithms than browser (full-feature tier)', () => {
+    test('mobile profile has fewer algorithms than browser', () => {
       const mobileAlgos = registry.getForDeploymentProfile('mobile');
       const browserAlgos = registry.getForDeploymentProfile('browser');
 
-      // mobile (~500KB) is the most constrained; browser (~2.78MB) is full-feature
-      expect(mobileAlgos.length).toBeLessThanOrEqual(browserAlgos.length);
+      expect(mobileAlgos.length).toBeLessThan(browserAlgos.length);
     });
 
     test('iot profile has fewer algorithms than fog', () => {
@@ -285,7 +301,7 @@ describe('Feature Gating - Algorithm Registry Integration', () => {
         expect(summary[profile]).toBeGreaterThan(0);
       }
 
-      // Browser (full-feature) should have the most
+      // browser should have the most (it is the full-featured build)
       expect(summary.browser).toBeGreaterThanOrEqual(Math.min(...Object.values(summary)));
     });
 

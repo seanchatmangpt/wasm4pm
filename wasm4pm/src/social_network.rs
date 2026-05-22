@@ -1,5 +1,6 @@
 use crate::models::EventLog;
 use crate::state::{get_or_init_state, StoredObject};
+use crate::network_metrics::{NetworkEdge, NetworkNode, SocialNetwork};
 use serde_json::json;
 /// Priority 8 — Social network / organisational mining.
 ///
@@ -130,4 +131,229 @@ pub fn discover_working_together_network(
         None => Err(crate::error::js_val("EventLog handle not found")),
     })?;
     Ok(crate::error::js_val(&discover_working_together_network_from_log(&log, resource_key)))
+}
+
+/// Compute network centrality metrics (degree, betweenness, closeness).
+///
+/// Returns JSON with keys: `degree`, `betweenness`, `closeness`, all as maps
+/// from resource ID to centrality score (0-1).
+#[wasm_bindgen]
+pub fn compute_network_metrics(
+    log_handle: &str,
+    resource_key: &str,
+) -> Result<JsValue, JsValue> {
+    let log = get_or_init_state().with_object(log_handle, |obj| match obj {
+        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
+    })?;
+
+    // Build network from handover relationships
+    let mut handovers: std::collections::HashMap<(String, String), usize> =
+        std::collections::HashMap::new();
+    let mut all_resources: std::collections::HashSet<String> =
+        std::collections::HashSet::new();
+
+    for trace in &log.traces {
+        let resources: Vec<Option<String>> = trace
+            .events
+            .iter()
+            .map(|e| {
+                e.attributes
+                    .get(resource_key)
+                    .and_then(|v| v.as_string())
+                    .map(str::to_owned)
+            })
+            .collect();
+
+        for r in resources.iter().filter_map(|r| r.as_ref()) {
+            all_resources.insert(r.clone());
+        }
+
+        for i in 0..resources.len().saturating_sub(1) {
+            if let (Some(r1), Some(r2)) = (&resources[i], &resources[i + 1]) {
+                if r1 != r2 {
+                    *handovers.entry((r1.clone(), r2.clone())).or_insert(0) += 1;
+                }
+            }
+        }
+    }
+
+    let nodes: Vec<NetworkNode> = all_resources
+        .iter()
+        .map(|id| NetworkNode {
+            id: id.clone(),
+            label: Some(id.clone()),
+            workload: None,
+        })
+        .collect();
+
+    let edges: Vec<NetworkEdge> = handovers
+        .iter()
+        .map(|((from, to), weight)| NetworkEdge {
+            from: from.clone(),
+            to: to.clone(),
+            weight: *weight,
+        })
+        .collect();
+
+    let network = SocialNetwork { nodes, edges };
+
+    let degree = network.degree_centrality();
+    let betweenness = network.betweenness_centrality();
+    let closeness = network.closeness_centrality();
+
+    let result = json!({
+        "degree": degree,
+        "betweenness": betweenness,
+        "closeness": closeness,
+    });
+
+    Ok(crate::error::js_val(&serde_json::to_string(&result)
+        .unwrap_or_else(|_| r#"{"degree":{},"betweenness":{},"closeness":{}}"#.to_string())))
+}
+
+/// Compute clustering coefficient (local and global).
+#[wasm_bindgen]
+pub fn compute_clustering_coefficient(
+    log_handle: &str,
+    resource_key: &str,
+) -> Result<JsValue, JsValue> {
+    let log = get_or_init_state().with_object(log_handle, |obj| match obj {
+        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
+    })?;
+
+    // Build network from working-together relationships
+    let mut co_occur: std::collections::HashMap<(String, String), usize> =
+        std::collections::HashMap::new();
+    let mut all_resources: std::collections::HashSet<String> =
+        std::collections::HashSet::new();
+
+    for trace in &log.traces {
+        let resources: std::collections::HashSet<String> = trace
+            .events
+            .iter()
+            .filter_map(|e| {
+                e.attributes
+                    .get(resource_key)
+                    .and_then(|v| v.as_string())
+                    .map(str::to_owned)
+            })
+            .collect();
+
+        for r in &resources {
+            all_resources.insert(r.clone());
+        }
+
+        let mut sorted: Vec<String> = resources.into_iter().collect();
+        sorted.sort();
+        for i in 0..sorted.len() {
+            for j in i + 1..sorted.len() {
+                let key = (sorted[i].clone(), sorted[j].clone());
+                *co_occur.entry(key).or_insert(0) += 1;
+            }
+        }
+    }
+
+    let nodes: Vec<NetworkNode> = all_resources
+        .iter()
+        .map(|id| NetworkNode {
+            id: id.clone(),
+            label: Some(id.clone()),
+            workload: None,
+        })
+        .collect();
+
+    let edges: Vec<NetworkEdge> = co_occur
+        .iter()
+        .map(|((from, to), weight)| NetworkEdge {
+            from: from.clone(),
+            to: to.clone(),
+            weight: *weight,
+        })
+        .collect();
+
+    let network = SocialNetwork { nodes, edges };
+    let (global_coeff, local_coeffs) = network.clustering_coefficient();
+
+    let result = json!({
+        "global": global_coeff,
+        "local": local_coeffs,
+    });
+
+    Ok(crate::error::js_val(&serde_json::to_string(&result)
+        .unwrap_or_else(|_| r#"{"global":0,"local":{}}"#.to_string())))
+}
+
+/// Detect communities in the network using Louvain algorithm.
+#[wasm_bindgen]
+pub fn detect_communities(
+    log_handle: &str,
+    resource_key: &str,
+) -> Result<JsValue, JsValue> {
+    let log = get_or_init_state().with_object(log_handle, |obj| match obj {
+        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
+        Some(_) => Err(crate::error::js_val("Handle is not an EventLog")),
+        None => Err(crate::error::js_val("EventLog handle not found")),
+    })?;
+
+    // Build network from working-together relationships
+    let mut co_occur: std::collections::HashMap<(String, String), usize> =
+        std::collections::HashMap::new();
+    let mut all_resources: std::collections::HashSet<String> =
+        std::collections::HashSet::new();
+
+    for trace in &log.traces {
+        let resources: std::collections::HashSet<String> = trace
+            .events
+            .iter()
+            .filter_map(|e| {
+                e.attributes
+                    .get(resource_key)
+                    .and_then(|v| v.as_string())
+                    .map(str::to_owned)
+            })
+            .collect();
+
+        for r in &resources {
+            all_resources.insert(r.clone());
+        }
+
+        let mut sorted: Vec<String> = resources.into_iter().collect();
+        sorted.sort();
+        for i in 0..sorted.len() {
+            for j in i + 1..sorted.len() {
+                let key = (sorted[i].clone(), sorted[j].clone());
+                *co_occur.entry(key).or_insert(0) += 1;
+            }
+        }
+    }
+
+    let nodes: Vec<NetworkNode> = all_resources
+        .iter()
+        .map(|id| NetworkNode {
+            id: id.clone(),
+            label: Some(id.clone()),
+            workload: None,
+        })
+        .collect();
+
+    let edges: Vec<NetworkEdge> = co_occur
+        .iter()
+        .map(|((from, to), weight)| NetworkEdge {
+            from: from.clone(),
+            to: to.clone(),
+            weight: *weight,
+        })
+        .collect();
+
+    let network = SocialNetwork { nodes, edges };
+    let communities = network.community_detection();
+
+    let result = json!(communities);
+
+    Ok(crate::error::js_val(&serde_json::to_string(&result)
+        .unwrap_or_else(|_| r#"{}"#.to_string())))
 }

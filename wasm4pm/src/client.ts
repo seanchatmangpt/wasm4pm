@@ -71,7 +71,7 @@ export function parseWasm4pmError(error: unknown): Wasm4pmModuleError {
  */
 export class ProcessMiningClient {
   private initialized: boolean = false;
-  private wasmModule: typeof WasmModule | null = null;
+  private wasmModule: any = null;
   private objects: Map<string, any> = new Map();
 
   /**
@@ -240,7 +240,7 @@ export class ProcessMiningClient {
 export class EventLogHandle {
   constructor(
     private handle: EventLogHandleId,
-    private wasmModule: typeof WasmModule
+    private wasmModule: any
   ) {}
 
   /**
@@ -841,7 +841,7 @@ export class EventLogHandle {
 export class OCELHandle {
   constructor(
     private handle: OCELHandleId,
-    private wasmModule: typeof WasmModule
+    private wasmModule: any
   ) {}
 
   /**
@@ -950,7 +950,7 @@ export class OCELHandle {
 export class DFGHandle {
   constructor(
     private handle: DFGHandleId,
-    private wasmModule: typeof WasmModule
+    private wasmModule: any
   ) {}
 
   /**
@@ -982,7 +982,7 @@ export class DFGHandle {
 export class PetriNetHandle {
   constructor(
     private handle: PetriNetHandleId,
-    private wasmModule: typeof WasmModule
+    private wasmModule: any
   ) {}
 
   /**
@@ -1021,7 +1021,7 @@ export class PetriNetHandle {
 export class DeclareModelHandle {
   constructor(
     private handle: DeclareHandleId,
-    private wasmModule: typeof WasmModule
+    private wasmModule: any
   ) {}
 
   /**
@@ -1059,7 +1059,7 @@ export class DeclareModelHandle {
 export class OCPetriNetHandle {
   constructor(
     private handle: OCPetriNetHandleId,
-    private wasmModule: typeof WasmModule
+    private wasmModule: any
   ) {}
 
   /**
@@ -1110,7 +1110,7 @@ export class OCPetriNetHandle {
 export class TemporalProfileHandle {
   constructor(
     private handle: TemporalProfileHandleId,
-    private wasmModule: typeof WasmModule
+    private wasmModule: any
   ) {}
 
   getId(): TemporalProfileHandleId {
@@ -1149,7 +1149,7 @@ export class TemporalProfileHandle {
 export class NGramPredictorHandle {
   constructor(
     private handle: NGramPredictorHandleId,
-    private wasmModule: typeof WasmModule
+    private wasmModule: any
   ) {}
 
   getId(): NGramPredictorHandleId {
@@ -1193,7 +1193,7 @@ export class NGramPredictorHandle {
    * @param activities - array of activity names in the trace
    */
   scoreTraceLikelihood(activities: string[]): any {
-    return this.wasmModule.score_trace_likelihood(this.handle, JSON.stringify(activities));
+    return (this.wasmModule as any).score_trace_likelihood(this.handle, JSON.stringify(activities));
   }
 
   /**
@@ -1202,7 +1202,10 @@ export class NGramPredictorHandle {
    * @param activities - array of activity names in the trace
    */
   computeTraceLikelihood(activities: string[]): any {
-    return this.wasmModule.compute_trace_likelihood(this.handle, JSON.stringify(activities));
+    return (this.wasmModule as any).compute_trace_likelihood(
+      this.handle,
+      JSON.stringify(activities)
+    );
   }
 
   delete(): void {
@@ -1223,7 +1226,7 @@ export class NGramPredictorHandle {
 export class RemainingTimeModelHandle {
   constructor(
     private handle: string,
-    private wasmModule: typeof WasmModule
+    private wasmModule: any
   ) {}
 
   getId(): string {
@@ -1236,7 +1239,7 @@ export class RemainingTimeModelHandle {
    * @param prefix - array of activity names observed so far
    */
   predictCaseDuration(prefix: string[]): any {
-    return this.wasmModule.predict_case_duration(this.handle, JSON.stringify(prefix));
+    return (this.wasmModule as any).predict_case_duration(this.handle, JSON.stringify(prefix));
   }
 
   /**
@@ -1245,7 +1248,7 @@ export class RemainingTimeModelHandle {
    * @param elapsedMs - milliseconds elapsed since case start
    */
   predictHazardRate(elapsedMs: number): any {
-    return this.wasmModule.predict_hazard_rate(this.handle, elapsedMs);
+    return (this.wasmModule as any).predict_hazard_rate(this.handle, elapsedMs);
   }
 
   delete(): void {
@@ -1259,7 +1262,7 @@ export class RemainingTimeModelHandle {
 export class StreamingDFGHandle {
   constructor(
     private handle: StreamingDFGHandleId,
-    private wasmModule: typeof WasmModule
+    private wasmModule: any
   ) {}
 
   getId(): StreamingDFGHandleId {
@@ -1270,7 +1273,7 @@ export class StreamingDFGHandle {
    * Add a single event to the streaming DFG
    */
   addEvent(caseId: string, activity: string): any {
-    return this.wasmModule.streaming_dfg_add_event(this.handle, caseId, activity);
+    return (this.wasmModule as any).streaming_dfg_add_event(this.handle, caseId, activity);
   }
 
   /**
@@ -1278,42 +1281,42 @@ export class StreamingDFGHandle {
    * @param eventsJson - JSON string of [{case_id, activity}, ...]
    */
   addBatch(eventsJson: string): any {
-    return this.wasmModule.streaming_dfg_add_batch(this.handle, eventsJson);
+    return (this.wasmModule as any).streaming_dfg_add_batch(this.handle, eventsJson);
   }
 
   /**
    * Close a trace (mark case as complete)
    */
   closeTrace(caseId: string): any {
-    return this.wasmModule.streaming_dfg_close_trace(this.handle, caseId);
+    return (this.wasmModule as any).streaming_dfg_close_trace(this.handle, caseId);
   }
 
   /**
    * Flush all open traces (close them without explicit close)
    */
   flushOpen(): any {
-    return this.wasmModule.streaming_dfg_flush_open(this.handle);
+    return (this.wasmModule as any).streaming_dfg_flush_open(this.handle);
   }
 
   /**
    * Take a snapshot of the current DFG state
    */
   snapshot(): any {
-    return this.wasmModule.streaming_dfg_snapshot(this.handle);
+    return (this.wasmModule as any).streaming_dfg_snapshot(this.handle);
   }
 
   /**
    * Finalize the streaming DFG and produce the final result
    */
   finalize(): any {
-    return this.wasmModule.streaming_dfg_finalize(this.handle);
+    return (this.wasmModule as any).streaming_dfg_finalize(this.handle);
   }
 
   /**
    * Get current statistics
    */
   stats(): any {
-    return this.wasmModule.streaming_dfg_stats(this.handle);
+    return (this.wasmModule as any).streaming_dfg_stats(this.handle);
   }
 
   delete(): void {
@@ -1327,7 +1330,7 @@ export class StreamingDFGHandle {
 export class StreamingConformanceHandle {
   constructor(
     private handle: StreamingConformanceHandleId,
-    private wasmModule: typeof WasmModule
+    private wasmModule: any
   ) {}
 
   getId(): StreamingConformanceHandleId {
@@ -1338,28 +1341,28 @@ export class StreamingConformanceHandle {
    * Add a single event for conformance checking
    */
   addEvent(caseId: string, activity: string): any {
-    return this.wasmModule.streaming_conformance_add_event(this.handle, caseId, activity);
+    return (this.wasmModule as any).streaming_conformance_add_event(this.handle, caseId, activity);
   }
 
   /**
    * Close a trace (mark case as complete)
    */
   closeTrace(caseId: string): any {
-    return this.wasmModule.streaming_conformance_close_trace(this.handle, caseId);
+    return (this.wasmModule as any).streaming_conformance_close_trace(this.handle, caseId);
   }
 
   /**
    * Get current conformance statistics
    */
   stats(): any {
-    return this.wasmModule.streaming_conformance_stats(this.handle);
+    return (this.wasmModule as any).streaming_conformance_stats(this.handle);
   }
 
   /**
    * Finalize and produce final conformance results
    */
   finalize(): any {
-    return this.wasmModule.streaming_conformance_finalize(this.handle);
+    return (this.wasmModule as any).streaming_conformance_finalize(this.handle);
   }
 
   delete(): void {

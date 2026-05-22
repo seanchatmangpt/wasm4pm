@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 use crate::error::MlError;
-use crate::matrix::{validate_matrix, euclidean_dist_sq, Rng};
+use crate::matrix::{validate_matrix, Rng};
 
 /// K-Means++ Clustering (improved initialization)
 /// Returns cluster assignments and final centroids
@@ -37,7 +37,7 @@ pub fn kmeans_plus_impl(
     for _iter in 0..max_iter {
         let mut changed = false;
 
-        for i in 0..n {
+        for (i, assignment) in assignments.iter_mut().enumerate().take(n) {
             let mut best_cluster = 0;
             let mut best_dist = f64::INFINITY;
 
@@ -49,10 +49,10 @@ pub fn kmeans_plus_impl(
                 }
             }
 
-            if assignments[i] != best_cluster {
+            if *assignment != best_cluster {
                 changed = true;
             }
-            assignments[i] = best_cluster;
+            *assignment = best_cluster;
         }
 
         // Update centroids
@@ -66,10 +66,10 @@ pub fn kmeans_plus_impl(
             counts[cluster] += 1;
         }
 
-        for c in 0..n_clusters {
-            if counts[c] > 0 {
-                for f in 0..n_features {
-                    new_centroids[c][f] /= counts[c] as f64;
+        for (c, count) in counts.iter().enumerate().take(n_clusters) {
+            if *count > 0 {
+                for val in new_centroids[c].iter_mut().take(n_features) {
+                    *val /= *count as f64;
                 }
             }
         }
@@ -120,7 +120,7 @@ fn initialize_centroids_plus_plus(
         let mut min_distances = vec![0.0f64; n_samples];
         let mut total_dist = 0.0;
 
-        for i in 0..n_samples {
+        for (i, dist) in min_distances.iter_mut().enumerate().take(n_samples) {
             let mut min_dist_sq = f64::INFINITY;
 
             for centroid in &centroids {
@@ -130,7 +130,7 @@ fn initialize_centroids_plus_plus(
                 }
             }
 
-            min_distances[i] = min_dist_sq;
+            *dist = min_dist_sq;
             total_dist += min_dist_sq;
         }
 

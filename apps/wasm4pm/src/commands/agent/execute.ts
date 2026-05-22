@@ -48,9 +48,10 @@ export const execute = defineCommand({
     },
   },
   async run(ctx) {
+    const agentName = String(ctx.args.agent ?? '');
     return withSpanRaw('wasm4pm.command.agent.execute', {
       command: 'agent', subcommand: 'execute',
-      agent: String(ctx.args.agent ?? ''),
+      agent_id: agentName,
       input: String(ctx.args.input ?? ''),
     }, async () => {
     const t0 = performance.now();
@@ -60,7 +61,6 @@ export const execute = defineCommand({
 
     try {
       const orchestrator = new AgentOrchestrator();
-      const agentName = ctx.args.agent as string;
 
       const agentResult = await orchestrator.executeAgent(agentName, {
         artifact_id: 'cli-execution',
@@ -106,9 +106,20 @@ export const execute = defineCommand({
 
       return await exitWithFlush(result.exit_code);
     } catch (error) {
+      let errorMessage = error instanceof Error ? error.message : String(error);
+
+      // Add deployment profile hint for algorithm availability errors
+      if (
+        errorMessage.includes('algorithm') &&
+        (errorMessage.includes('not found') || errorMessage.includes('not available'))
+      ) {
+        errorMessage += '\n\nNote: Some algorithms require fog or browser deployment profiles.\n' +
+          'Rebuild with: npm run build:browser (or build:fog)';
+      }
+
       const result = makeErrorResult(
         'agent execute',
-        error,
+        new Error(errorMessage),
         EXIT_CODES.execution_error,
         'AGENT_EXECUTE_ERROR'
       );

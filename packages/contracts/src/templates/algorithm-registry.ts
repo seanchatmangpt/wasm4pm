@@ -19,6 +19,7 @@ export const ALGORITHM_IDS = [
   'a_star',
   'aco',
   'optimized_dfg',
+  'simd_streaming_dfg',
   'pso',
   'genetic_algorithm',
   'ilp',
@@ -67,6 +68,7 @@ export const ALGORITHM_ID_TO_STEP_TYPE: Record<string, string> = {
   a_star: 'discover_a_star',
   aco: 'discover_aco',
   optimized_dfg: 'discover_optimized_dfg',
+  simd_streaming_dfg: 'discover_simd_streaming_dfg',
   pso: 'discover_pso',
   genetic_algorithm: 'discover_genetic',
   ilp: 'discover_ilp',
@@ -81,7 +83,6 @@ export const ALGORITHM_ID_TO_STEP_TYPE: Record<string, string> = {
   generalization: 'discover_generalization',
   petri_net_reduction: 'discover_petri_net_reduction',
   etconformance_precision: 'discover_etconformance_precision',
-  alignment_fitness: 'discover_alignment_fitness',
   alignments: 'discover_alignment_fitness',
   complexity_metrics: 'discover_complexity_metrics',
   // Wave 1 Import/Export
@@ -114,6 +115,7 @@ export const ALGORITHM_OUTPUT_TYPES: Record<string, string> = {
   a_star: 'petrinet',
   aco: 'petrinet',
   optimized_dfg: 'dfg',
+  simd_streaming_dfg: 'dfg',
   pso: 'petrinet',
   genetic_algorithm: 'petrinet',
   ilp: 'petrinet',
@@ -128,7 +130,6 @@ export const ALGORITHM_OUTPUT_TYPES: Record<string, string> = {
   generalization: 'tree',
   petri_net_reduction: 'petrinet',
   etconformance_precision: 'conformance_report',
-  alignment_fitness: 'alignment_report',
   alignments: 'alignment_report',
   complexity_metrics: 'complexity_report',
   // Wave 1 Import/Export
@@ -161,6 +162,7 @@ export const ALGORITHM_CLI_ALIASES: Record<string, string> = {
   a_star: 'astar',
   aco: 'ant-colony',
   optimized_dfg: 'dfg-optimized',
+  simd_streaming_dfg: 'simd-dfg',
   pso: 'pso',
   genetic_algorithm: 'genetic',
   ilp: 'ilp',
@@ -175,7 +177,6 @@ export const ALGORITHM_CLI_ALIASES: Record<string, string> = {
   generalization: 'generalization',
   petri_net_reduction: 'reduce-pn',
   etconformance_precision: 'etconformance',
-  alignment_fitness: 'alignment',
   alignments: 'alignment',
   complexity_metrics: 'complexity',
   // Wave 1 Import/Export
@@ -208,6 +209,7 @@ export const ALGORITHM_DISPLAY_NAMES: Record<string, string> = {
   a_star: 'A* Search',
   aco: 'Ant Colony Optimization',
   optimized_dfg: 'Optimized DFG',
+  simd_streaming_dfg: 'SIMD Streaming DFG',
   pso: 'Particle Swarm Optimization',
   genetic_algorithm: 'Genetic Algorithm',
   ilp: 'ILP',
@@ -222,7 +224,6 @@ export const ALGORITHM_DISPLAY_NAMES: Record<string, string> = {
   generalization: 'Generalization Metrics',
   petri_net_reduction: 'Petri Net Reduction',
   etconformance_precision: 'ETConformance Precision',
-  alignment_fitness: 'Alignment Fitness',
   alignments: 'Alignment Fitness',
   complexity_metrics: 'Complexity Metrics',
   // Wave 1 Import/Export
@@ -245,10 +246,33 @@ export const ALGORITHM_DISPLAY_NAMES: Record<string, string> = {
 /**
  * Returns the primary algorithm IDs for a given execution profile.
  * Profile → algorithm selection derived from wasm4pm:supportedIn ontology triples.
+ *
+ * fast    → dfg + process_skeleton only (O(n), sub-millisecond, as specified in CLAUDE.md)
+ * balanced → heuristic/alpha + conformance/quality analysis + all 6 ML algorithms
+ *            (kernel registry declares ML algorithms as supportedProfiles: ['balanced', 'quality'])
+ * quality → genetic/ilp + full analysis suite + all 6 ML algorithms
+ * stream  → simd_streaming_dfg only (streaming-safe, single algorithm)
+ *
+ * Note: ML algorithms (ml_classify … ml_pca) appear here because the kernel registry
+ * marks them with supportedProfiles: ['balanced', 'quality'].  The explicit
+ * config.ml.tasks path is still honoured for opt-in ML on any profile; the planner
+ * deduplicates so that a task listed both here and in config.ml.tasks appears exactly once.
  */
 export function getProfileAlgorithms(profile: string): string[] {
+  // The 6 ML algorithm IDs supported by @wasm4pm/ml and the kernel registry.
+  const ML_ALGORITHMS = [
+    'ml_classify',
+    'ml_cluster',
+    'ml_forecast',
+    'ml_anomaly',
+    'ml_regress',
+    'ml_pca',
+  ];
+
   const map: Record<string, string[]> = {
-    fast: ['process_skeleton', 'dfg', 'transition_system', 'log_to_trie', 'causal_graph'],
+    // fast: only the two truly O(n) graph-construction algorithms (CLAUDE.md: "dfg/skeleton")
+    fast: ['process_skeleton', 'dfg'],
+    // balanced: heuristic/alpha discovery + conformance analysis + all ML
     balanced: [
       'alpha_plus_plus',
       'heuristic_miner',
@@ -259,7 +283,9 @@ export function getProfileAlgorithms(profile: string): string[] {
       'batches',
       'generalization',
       'etconformance_precision',
+      ...ML_ALGORITHMS,
     ],
+    // quality: best-quality discovery + full analysis suite + all ML
     quality: [
       'simulated_annealing',
       'a_star',
@@ -274,11 +300,13 @@ export function getProfileAlgorithms(profile: string): string[] {
       'petri_net_reduction',
       'monte_carlo_simulation',
       'playout',
+      ...ML_ALGORITHMS,
     ],
-    stream: ['dfg'],
+    // stream: single SIMD-accelerated DFG, no ML (streaming pipelines are latency-sensitive)
+    stream: ['simd_streaming_dfg'],
     ensemble: ['dfg', 'heuristic_miner', 'inductive_miner', 'genetic_algorithm'],
     auto: ['dfg', 'heuristic_miner', 'inductive_miner', 'genetic_algorithm', 'ilp'],
-    ml: ['ml_classify', 'ml_cluster', 'ml_forecast', 'ml_anomaly', 'ml_regress', 'ml_pca'],
+    ml: ML_ALGORITHMS,
   };
   return map[profile.toLowerCase()] ?? map['balanced']!;
 }

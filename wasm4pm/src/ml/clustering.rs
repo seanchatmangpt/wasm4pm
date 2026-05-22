@@ -50,21 +50,30 @@ pub fn discover_ml_cluster(eventlog_handle: &str, activity_key: &str) -> Result<
     }))
 }
 
-/// Output of [`kmeans_internal`] — exposed for tests and AutoML.
+/// Output of the K-Means clustering algorithm.
+///
+/// Contains the discovered centroids, cluster assignments for each input feature,
+/// and performance metrics like inertia and silhouette score.
 pub struct KmeansResult {
+    /// The number of clusters discovered.
     pub k: usize,
+    /// The centroids of the discovered clusters.
     pub centroids: Vec<[f64; 2]>,
+    /// Cluster index assigned to each input feature.
     pub assignments: Vec<usize>,
-    /// Within-cluster sum of squares (WCSS / inertia).
+    /// Within-cluster sum of squares (WCSS / inertia). A measure of cluster tightness.
     pub inertia: f64,
-    /// Mean silhouette score in `[-1, 1]`. `0.0` when `k < 2` or `n <= k`.
+    /// Mean silhouette score in `[-1, 1]`. Measures how similar an object is to its own cluster compared to others.
     pub silhouette: f64,
+    /// The number of iterations until convergence.
     pub iterations: usize,
 }
 
-/// Branchless K-Means on 2-D points. Convergence is deterministic for identical input.
+/// Branchless K-Means implementation on 2-D points.
 ///
-/// `k` is clamped to `min(k, n)`. The empty-input case is handled by the caller.
+/// Convergence is deterministic for identical input. `k` is clamped to `min(k, n)`.
+/// This implementation uses branchless arithmetic for the assignment step to ensure
+/// high performance.
 pub fn kmeans_internal(features: &[[f64; 2]], k_request: usize) -> KmeansResult {
     let n = features.len();
     let k = k_request.min(n).max(1);

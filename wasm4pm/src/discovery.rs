@@ -59,8 +59,12 @@ pub fn discover_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFoll
             .or_insert(0) += 1;
     }
 
+    let mut sorted_edges: Vec<_> = edge_counts.into_iter().collect();
+    // Sort by source then target index to ensure deterministic order (Gap-1)
+    sorted_edges.sort_unstable_by_key(|&((f, t), _)| (f, t));
+
     dfg.edges.extend(
-        edge_counts
+        sorted_edges
             .into_iter()
             .map(|((f, t), freq)| DirectlyFollowsRelation {
                 from: col.vocab[f as usize].to_owned(),
@@ -83,7 +87,43 @@ pub fn discover_dfg(eventlog_handle: &str, activity_key: &str) -> Result<JsValue
             format!("EventLog '{}' not found", eventlog_handle),
         )),
     })?;
-    to_js_str(&discover_dfg_from_log(&log, activity_key))
+
+    let log_size = log.traces.len();
+
+    tracing::info!(
+        target: "wasm4pm.discovery.dfg",
+        algorithm = "dfg",
+        log_size = log_size,
+        activity_key = activity_key,
+        "DFG discovery started"
+    );
+
+    // Feature extraction checkpoint
+    let activity_count = log.get_activities(activity_key).len();
+    tracing::info!(
+        target: "wasm4pm.discovery.dfg",
+        checkpoint = "feature_extraction",
+        activity_count = activity_count,
+        "Activity vocabulary extracted"
+    );
+
+    let dfg = discover_dfg_from_log(&log, activity_key);
+
+    // Result generation checkpoint
+    let node_count = dfg.nodes.len();
+    let edge_count = dfg.edges.len();
+    let complexity = if node_count > 0 { edge_count as f64 / node_count as f64 } else { 0.0 };
+
+    tracing::info!(
+        target: "wasm4pm.discovery.dfg",
+        checkpoint = "result_generation",
+        node_count = node_count,
+        edge_count = edge_count,
+        complexity = complexity,
+        "DFG discovery completed"
+    );
+
+    to_js_str(&dfg)
 }
 
 /// Pure-Rust OCEL DFG discovery: returns DirectlyFollowsGraph without wasm-bindgen.
@@ -139,14 +179,17 @@ pub fn discover_ocel_dfg_pure(ocel: &OCEL) -> DirectlyFollowsGraph {
                 .or_insert(0) += 1;
         }
     }
-    for ((from, to), freq) in edge_map {
+
+    let mut sorted_edges: Vec<_> = edge_map.into_iter().collect();
+    sorted_edges.sort_unstable_by_key(|((f, t), _)| (f.clone(), t.clone()));
+
+    for ((from, to), frequency) in sorted_edges {
         dfg.edges.push(DirectlyFollowsRelation {
             from,
             to,
-            frequency: freq,
+            frequency,
         });
     }
-
     // Collect start/end event types using .first()/.last() to eliminate
     // manual bounds checks and the len()-1 index expression.
     for obj_id in events_by_object.keys() {
@@ -380,6 +423,13 @@ impl TraceProfile {
 /// Discover DECLARE constraints from an EventLog
 #[wasm_bindgen]
 pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
+    tracing::info!(
+        target: "wasm4pm.discovery.declare",
+        algorithm = "declare",
+        activity_key = activity_key,
+        "DECLARE discovery started"
+    );
+
     get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
             let mut model = DeclareModel::new();
@@ -398,9 +448,24 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
             let n = col.vocab.len();
             let total_cases = col.trace_offsets.len().saturating_sub(1);
 
+            tracing::info!(
+                target: "wasm4pm.discovery.declare",
+                checkpoint = "feature_extraction",
+                activity_count = n,
+                trace_count = total_cases,
+                "Activity vocabulary and case counts extracted"
+            );
+
             model.activities = col.vocab.iter().map(|s| s.to_string()).collect();
 
             if n == 0 || total_cases == 0 {
+                tracing::info!(
+                    target: "wasm4pm.discovery.declare",
+                    checkpoint = "empty_log",
+                    activity_count = n,
+                    trace_count = total_cases,
+                    "Empty log detected"
+                );
                 return to_js_str(&model);
             }
 
@@ -423,6 +488,13 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                 }
                 traces_profiles.push(profile);
             }
+
+            tracing::info!(
+                target: "wasm4pm.discovery.declare",
+                checkpoint = "profile_building",
+                profiles_count = traces_profiles.len(),
+                "Trace profiles built"
+            );
 
             // Phase 2: Iterate over activity pairs and count template matches
             let mut activity_counts = vec![0u32; n];
@@ -591,6 +663,15 @@ pub fn discover_declare(eventlog_handle: &str, activity_key: &str) -> Result<JsV
                     }
                 }
             }
+
+            let constraint_count = model.constraints.len();
+            tracing::info!(
+                target: "wasm4pm.discovery.declare",
+                checkpoint = "result_generation",
+                constraint_count = constraint_count,
+                activity_count = n,
+                "DECLARE discovery completed"
+            );
 
             to_js_str(&model)
         }

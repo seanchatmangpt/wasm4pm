@@ -1,78 +1,82 @@
+/// Typestate-based gate validator for verifying proof-of-correctness.
+///
+/// This implementation uses strict Rust typestates to ensure that results can only
+/// be exported if the required proof gates have been passed.
+///
 /// PROOF-OF-CONCEPT ONLY — gated by `poc_gate_validator` feature.
-///
-/// Uses an in-memory `Mutex<HashSet<ProofGate>>` as a fake gate store.
-/// NOT connected to the SPARQL receipt store and MUST NOT be used on any
-/// production proof-admission path.
-///
-/// For production gate checks, use `proof_gate_registry`.
 use crate::proof_gate_registry::ProofGate;
-use std::sync::Mutex;
 use std::collections::HashSet;
 
-/// Thread-safe gate state for tracking passed proof gates
-static PASSED_GATES: Mutex<Option<HashSet<ProofGate>>> = Mutex::new(None);
-
-/// Initialize gate state for a test run
-pub fn init_gates() {
-    if let Ok(mut gates) = PASSED_GATES.lock() {
-        *gates = Some(HashSet::new());
-    }
+/// A run that has not yet been verified against required gates.
+#[derive(Debug, Default, Clone)]
+pub struct UnverifiedRun {
+    passed_gates: HashSet<ProofGate>,
 }
 
-/// Mark a gate as passed
-pub fn mark_gate_passed(gate: ProofGate) {
-    if let Ok(mut gates_opt) = PASSED_GATES.lock() {
-        if let Some(ref mut gates) = *gates_opt {
-            gates.insert(gate);
+/// A run that has successfully passed the required gates.
+#[derive(Debug, Clone)]
+pub struct VerifiedRun {
+    passed_gates: HashSet<ProofGate>,
+}
+
+impl UnverifiedRun {
+    /// Start a new unverified run.
+    pub fn new() -> Self {
+        Self {
+            passed_gates: HashSet::new(),
+        }
+    }
+
+    /// Mark a gate as passed in this run.
+    pub fn mark_gate_passed(&mut self, gate: ProofGate) {
+        self.passed_gates.insert(gate);
+    }
+
+    /// Check if a gate has passed in this run.
+    pub fn gate_passed(&self, gate: ProofGate) -> bool {
+        self.passed_gates.contains(&gate)
+    }
+
+    /// Returns list of all passed gates.
+    pub fn passed_gates(&self) -> Vec<ProofGate> {
+        self.passed_gates.iter().copied().collect()
+    }
+
+    /// Consumes the UnverifiedRun and returns a VerifiedRun if all required gates passed.
+    ///
+    /// Required gate: `gate_test_suite_passes`
+    pub fn verify(self) -> Result<VerifiedRun, String> {
+        if self.passed_gates.contains(&ProofGate::gate_test_suite_passes) {
+            Ok(VerifiedRun {
+                passed_gates: self.passed_gates,
+            })
+        } else {
+            Err(format!(
+                "Cannot verify run: {} gate not passed. Required gates: {}",
+                ProofGate::gate_test_suite_passes,
+                ProofGate::pipeline_order()
+                    .iter()
+                    .map(|g| g.label())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            ))
         }
     }
 }
 
-/// Check if a gate has passed
-pub fn gate_passed(gate: ProofGate) -> bool {
-    PASSED_GATES
-        .lock()
-        .ok()
-        .and_then(|gates_opt| gates_opt.as_ref().map(|gates| gates.contains(&gate)))
-        .unwrap_or(false)
-}
-
-/// Returns list of all passed gates
-pub fn passed_gates() -> Vec<ProofGate> {
-    PASSED_GATES
-        .lock()
-        .ok()
-        .and_then(|gates_opt| gates_opt.as_ref().map(|gates| gates.iter().copied().collect()))
-        .unwrap_or_default()
-}
-
-/// Verify that test_suite_passes gate has been reached before export
-/// Returns Ok(()) if gate passed, or Err with diagnostic message
-#[inline]
-pub fn verify_export_gate() -> Result<(), String> {
-    if gate_passed(ProofGate::gate_test_suite_passes) {
-        Ok(())
-    } else {
-        Err(format!(
-            "Cannot export results: {} gate not passed. Required gates: {}",
-            ProofGate::gate_test_suite_passes,
-            ProofGate::pipeline_order()
-                .iter()
-                .map(|g| g.label())
-                .collect::<Vec<_>>()
-                .join(", ")
-        ))
+impl VerifiedRun {
+    /// Returns list of all passed gates.
+    pub fn passed_gates(&self) -> Vec<ProofGate> {
+        self.passed_gates.iter().copied().collect()
     }
-}
 
-/// Optional trait for algorithms that must pass gates before export
-pub trait GatedExport {
-    fn verify_export_allowed(&self) -> Result<(), String>;
-}
-
-impl GatedExport for () {
-    fn verify_export_allowed(&self) -> Result<(), String> {
-        verify_export_gate()
+    /// Export results (only possible from a VerifiedRun).
+    pub fn export_results(&self) -> String {
+        format!(
+            "Exporting results verified with {} gates: {:?}",
+            self.passed_gates.len(),
+            self.passed_gates
+        )
     }
 }
 
@@ -81,22 +85,25 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_gate_lifecycle() {
-        init_gates();
-        assert!(!gate_passed(ProofGate::gate_test_suite_passes));
+    fn test_typestate_lifecycle() {
+        let mut run = UnverifiedRun::new();
+        assert!(!run.gate_passed(ProofGate::gate_test_suite_passes));
 
-        mark_gate_passed(ProofGate::gate_test_suite_passes);
-        assert!(gate_passed(ProofGate::gate_test_suite_passes));
+        run.mark_gate_passed(ProofGate::gate_test_suite_passes);
+        assert!(run.gate_passed(ProofGate::gate_test_suite_passes));
 
-        assert_eq!(passed_gates().len(), 1);
+        let verified_run = run.verify().expect("Should pass verification");
+        assert_eq!(verified_run.passed_gates().len(), 1);
+        println!("{}", verified_run.export_results());
     }
 
     #[test]
-    fn test_verify_export_requires_gate() {
-        init_gates();
-        assert!(verify_export_gate().is_err());
+    fn test_verify_requires_gate() {
+        let run = UnverifiedRun::new();
+        assert!(run.verify().is_err());
 
-        mark_gate_passed(ProofGate::gate_test_suite_passes);
-        assert!(verify_export_gate().is_ok());
+        let mut run = UnverifiedRun::new();
+        run.mark_gate_passed(ProofGate::gate_test_suite_passes);
+        assert!(run.verify().is_ok());
     }
 }

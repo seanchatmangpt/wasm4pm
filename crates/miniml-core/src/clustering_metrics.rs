@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 use crate::error::MlError;
-use crate::matrix::{euclidean_dist_sq, mat_get};
+use crate::matrix::mat_get;
 
 /// Davies-Bouldin Index - lower is better (cluster separation vs compactness)
 #[wasm_bindgen(js_name = "daviesBouldinScore")]
@@ -52,20 +52,20 @@ pub fn davies_bouldin_impl(
         // Compute centroid
         let mut centroid = vec![0.0f64; n_features];
         for &idx in &cluster_points {
-            for f in 0..n_features {
-                centroid[f] += mat_get(data, n_features, idx, f);
+            for (f, val) in centroid.iter_mut().enumerate().take(n_features) {
+                *val += mat_get(data, n_features, idx, f);
             }
         }
-        for f in 0..n_features {
-            centroid[f] /= cluster_points.len() as f64;
+        for val in centroid.iter_mut().take(n_features) {
+            *val /= cluster_points.len() as f64;
         }
 
         // Compute average distance to centroid
         let mut avg_dist = 0.0;
         for &idx in &cluster_points {
             let mut dist_sq = 0.0;
-            for f in 0..n_features {
-                let diff = mat_get(data, n_features, idx, f) - centroid[f];
+            for (f, &c_val) in centroid.iter().enumerate().take(n_features) {
+                let diff = mat_get(data, n_features, idx, f) - c_val;
                 dist_sq += diff * diff;
             }
             avg_dist += dist_sq.sqrt();
@@ -87,8 +87,8 @@ pub fn davies_bouldin_impl(
 
             // Distance between centroids
             let mut dist_sq = 0.0;
-            for f in 0..n_features {
-                let diff = centroids[i][f] - centroids[j][f];
+            for (&c1, &c2) in centroids[i].iter().zip(centroids[j].iter()).take(n_features) {
+                let diff = c1 - c2;
                 dist_sq += diff * diff;
             }
 
@@ -140,12 +140,12 @@ pub fn calinski_harabasz_impl(
     // Compute global centroid
     let mut global_centroid = vec![0.0f64; n_features];
     for i in 0..n {
-        for f in 0..n_features {
-            global_centroid[f] += mat_get(data, n_features, i, f);
+        for (f, val) in global_centroid.iter_mut().enumerate().take(n_features) {
+            *val += mat_get(data, n_features, i, f);
         }
     }
-    for f in 0..n_features {
-        global_centroid[f] /= n as f64;
+    for val in global_centroid.iter_mut().take(n_features) {
+        *val /= n as f64;
     }
 
     // Compute between-cluster dispersion (BGSS) and within-cluster dispersion (WGSS)
@@ -167,18 +167,18 @@ pub fn calinski_harabasz_impl(
         // Cluster centroid
         let mut cluster_centroid = vec![0.0f64; n_features];
         for &idx in &cluster_points {
-            for f in 0..n_features {
-                cluster_centroid[f] += mat_get(data, n_features, idx, f);
+            for (f, val) in cluster_centroid.iter_mut().enumerate().take(n_features) {
+                *val += mat_get(data, n_features, idx, f);
             }
         }
-        for f in 0..n_features {
-            cluster_centroid[f] /= cluster_points.len() as f64;
+        for val in cluster_centroid.iter_mut().take(n_features) {
+            *val /= cluster_points.len() as f64;
         }
 
         // Between-cluster: cluster size * distance from cluster centroid to global centroid
         let mut dist_to_global_sq = 0.0;
-        for f in 0..n_features {
-            let diff = cluster_centroid[f] - global_centroid[f];
+        for (&c_val, &g_val) in cluster_centroid.iter().zip(global_centroid.iter()).take(n_features) {
+            let diff = c_val - g_val;
             dist_to_global_sq += diff * diff;
         }
         bgss += cluster_points.len() as f64 * dist_to_global_sq;
@@ -186,8 +186,8 @@ pub fn calinski_harabasz_impl(
         // Within-cluster: sum of squared distances to cluster centroid
         for &idx in &cluster_points {
             let mut dist_sq = 0.0;
-            for f in 0..n_features {
-                let diff = mat_get(data, n_features, idx, f) - cluster_centroid[f];
+            for (f, &c_val) in cluster_centroid.iter().enumerate().take(n_features) {
+                let diff = mat_get(data, n_features, idx, f) - c_val;
                 dist_sq += diff * diff;
             }
             wgss += dist_sq;

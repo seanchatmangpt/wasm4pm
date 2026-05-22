@@ -14,7 +14,7 @@ pub fn silhouette_score_impl(data: &[f64], n_features: usize, labels: &[f64]) ->
     }
 
     // Find unique clusters
-    let mut clusters: Vec<f64> = labels.iter().copied().collect();
+    let mut clusters: Vec<f64> = labels.to_vec();
     clusters.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
     clusters.dedup();
 
@@ -24,15 +24,15 @@ pub fn silhouette_score_impl(data: &[f64], n_features: usize, labels: &[f64]) ->
 
     // Precompute cluster assignments for O(1) lookup
     let mut cluster_indices: Vec<Vec<usize>> = vec![Vec::new(); clusters.len()];
-    for i in 0..n {
-        let c = clusters.iter().position(|&cls| (cls - labels[i]).abs() < 1e-10).unwrap();
+    for (i, &label) in labels.iter().enumerate().take(n) {
+        let c = clusters.iter().position(|&cls| (cls - label).abs() < 1e-10).unwrap();
         cluster_indices[c].push(i);
     }
 
     let mut total_silhouette = 0.0;
 
-    for i in 0..n {
-        let ci = clusters.iter().position(|&cls| (cls - labels[i]).abs() < 1e-10).unwrap();
+    for (i, &label) in labels.iter().enumerate().take(n) {
+        let ci = clusters.iter().position(|&cls| (cls - label).abs() < 1e-10).unwrap();
         let same_cluster = &cluster_indices[ci];
 
         // a(i) = mean distance to other points in same cluster

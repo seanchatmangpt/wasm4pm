@@ -20,6 +20,26 @@ import { withSpanRaw } from './_otel.js';
 import { saveCommandReceipt, blake3Hex, newReceipt } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
 
+/** User argument is invalid — maps to config_error (exit 1). */
+class PowlConfigError extends Error {
+  readonly code: string;
+  constructor(message: string, code = 'POWL_CONFIG_ERROR') {
+    super(message);
+    this.name = 'PowlConfigError';
+    this.code = code;
+  }
+}
+
+/** Source file is missing or unreadable — maps to source_error (exit 2). */
+class PowlSourceError extends Error {
+  readonly code: string;
+  constructor(message: string, code = 'POWL_SOURCE_ERROR') {
+    super(message);
+    this.name = 'PowlSourceError';
+    this.code = code;
+  }
+}
+
 const POWL_SUBCOMMANDS = [
   'parse',
   'simplify',
@@ -32,6 +52,7 @@ const POWL_SUBCOMMANDS = [
   'discover',
   'get-children',
   'node-info',
+  'freq-analysis',
 ] as const;
 type PowlSubcommand = (typeof POWL_SUBCOMMANDS)[number];
 
@@ -42,14 +63,9 @@ type PowlSubcommand = (typeof POWL_SUBCOMMANDS)[number];
  * receipt. Read subs are pure analysis and emit only an OTEL span — saving a
  * receipt for them was a forgery (asymmetric proof) and has been removed.
  */
-const POWL_WRITE_SUBS = new Set<PowlSubcommand>([
-  'simplify',
-  'convert',
-  'import',
-  'discover',
-]);
+const POWL_WRITE_SUBS = new Set<PowlSubcommand>(['simplify', 'convert', 'import', 'discover']);
 
-const CONVERT_TARGETS = ['petri-net', 'process-tree', 'bpmn'] as const;
+const CONVERT_TARGETS = ['petri-net', 'process-tree', 'bpmn', 'svg'] as const;
 type ConvertTarget = (typeof CONVERT_TARGETS)[number];
 
 const IMPORT_SOURCES = ['process-tree', 'petri-net'] as const;
@@ -59,7 +75,7 @@ export const powl = defineCommand({
   meta: {
     name: 'powl',
     description:
-      'POWL model analysis — parse, convert, simplify, diff, complexity, footprints, conformance, import, discover, get-children, node-info',
+      'POWL model analysis — parse, convert, simplify, diff, complexity, footprints, conformance, import, discover, get-children, node-info, freq-analysis. Example: wpm powl parse \"*( A , B )\"',
   },
   args: {
     subcommand: {
@@ -132,6 +148,14 @@ export const powl = defineCommand({
       type: 'string',
       description: 'Noise threshold for fall-through (default: 0.0)',
     },
+    'input-format': {
+      type: 'string',
+      description: 'Input log format: xes or ocel (for discover; default: auto-detect)',
+    },
+    'ocel-variant': {
+      type: 'string',
+      description: 'OCEL discovery variant: flattening or oc_powl (default: flattening)',
+    },
   },
   async run(ctx) {
     const t0 = performance.now();
@@ -140,13 +164,14 @@ export const powl = defineCommand({
     const quiet = Boolean(ctx.args.quiet);
     const subcommand = ctx.args.subcommand as string;
 
-    // Validate sub before opening a span — invalid sub is a usage error,
-    // not a powl execution.
+    // Validate sub before opening a span — invalid sub is a usage error (config_error),
+    // not a source_error. Passing an unknown subcommand is equivalent to passing an
+    // unknown flag — exit 1.
     if (!POWL_SUBCOMMANDS.includes(subcommand as PowlSubcommand)) {
       const result = makeErrorResult(
         'powl',
         `Unknown operation: "${subcommand}". Valid: ${POWL_SUBCOMMANDS.join(', ')}`,
-        EXIT_CODES.source_error,
+        EXIT_CODES.config_error,
         'INVALID_SUBCOMMAND'
       );
       emitResult(result, { format, verbose, quiet });
@@ -195,13 +220,7 @@ export const powl = defineCommand({
           const wasm = loader.get();
 
           // Execute subcommand
-          const payload = await executePowlCommand(
-            wasm,
-            sub,
-            modelStr,
-            modelInput ?? '',
-            ctx.args
-          );
+          const payload = await executePowlCommand(wasm, sub, modelStr, modelInput ?? '', ctx.args);
 
           // Persist — receipts only for WRITE subs (Surface Q).
           // Read subs (parse/diff/complexity/footprints/conformance/get-children/node-info)
@@ -226,7 +245,12 @@ export const powl = defineCommand({
             }
           }
 
-          const result = makeResult(`powl ${sub}`, payload, performance.now() - t0, EXIT_CODES.success);
+          const result = makeResult(
+            `powl ${sub}`,
+            payload,
+            performance.now() - t0,
+            EXIT_CODES.success
+          );
           emitResult(result, { format, verbose, quiet }, (res, projection) => {
             const data = res.payload as typeof payload;
             projection.success(`POWL ${sub} complete`);
@@ -237,11 +261,22 @@ export const powl = defineCommand({
           });
           return await exitWithFlush(result.exit_code);
         } catch (error) {
-          const result = makeErrorResult('powl', error, EXIT_CODES.execution_error);
+          const exitCode =
+            error instanceof PowlConfigError
+              ? EXIT_CODES.config_error
+              : error instanceof PowlSourceError
+                ? EXIT_CODES.source_error
+                : EXIT_CODES.execution_error;
+          // Forward the typed error code when the error carries one (PowlConfigError, PowlSourceError).
+          const errorCode =
+            error instanceof PowlConfigError || error instanceof PowlSourceError
+              ? (error as PowlConfigError | PowlSourceError).code
+              : 'COMMAND_ERROR';
+          const result = makeErrorResult('powl', error, exitCode, errorCode);
           emitResult(result, { format, verbose, quiet });
           return await exitWithFlush(result.exit_code);
         }
-      },
+      }
     );
   },
 });
@@ -338,8 +373,15 @@ async function executePowlCommand(
 
     case 'convert': {
       const target = args.to as string;
-      if (!target || !CONVERT_TARGETS.includes(target as ConvertTarget)) {
-        return await exitWithFlush(EXIT_CODES.source_error);
+      if (!target) {
+        throw new PowlConfigError(
+          `Missing required argument: --to. Valid targets: ${CONVERT_TARGETS.join(', ')}`
+        );
+      }
+      if (!CONVERT_TARGETS.includes(target as ConvertTarget)) {
+        throw new PowlConfigError(
+          `Unknown convert target: "${target}". Valid targets: ${CONVERT_TARGETS.join(', ')}`
+        );
       }
       switch (target as ConvertTarget) {
         case 'petri-net': {
@@ -354,18 +396,28 @@ async function executePowlCommand(
           const raw: string = wasm.powl_to_bpmn(modelStr);
           return { target, output: raw };
         }
+        case 'svg': {
+          const raw: string = wasm.powl_to_svg(modelStr);
+          return { target, output: raw };
+        }
       }
-      throw new Error(`Unhandled convert target: ${target}`);
+      throw new PowlConfigError(`Unhandled convert target: ${target}`);
     }
 
     case 'diff': {
       const model2Input = args.model2 as string;
       if (!model2Input) {
-        return await exitWithFlush(EXIT_CODES.source_error);
+        throw new PowlSourceError(
+          'Missing required argument: --model2 (second POWL model for diff)',
+          'MISSING_MODEL2'
+        );
       }
       const model2 = await resolveModelInput(model2Input);
       if (!model2) {
-        return await exitWithFlush(EXIT_CODES.source_error);
+        throw new PowlSourceError(
+          `Cannot resolve second model: ${model2Input}`,
+          'MISSING_MODEL2'
+        );
       }
       const raw: string = wasm.diff_models(modelStr, model2);
       return normalizeResult(raw);
@@ -384,35 +436,47 @@ async function executePowlCommand(
     case 'conformance': {
       const logPath = args.log as string;
       if (!logPath) {
-        return await exitWithFlush(EXIT_CODES.source_error);
+        throw new PowlSourceError('Missing required argument: --log (path to XES event log)');
       }
       let logContent: string;
       try {
         await fs.access(logPath);
         logContent = await fs.readFile(logPath, 'utf-8');
       } catch {
-        return await exitWithFlush(EXIT_CODES.source_error);
+        throw new PowlSourceError(`Cannot read XES log file: "${logPath}"`);
       }
       const confActivityKey = (args['activity-key'] as string) || 'concept:name';
-      const logHandle: string = wasm.load_eventlog_from_xes(logContent);
+      let logHandle: string;
+      try {
+        logHandle = wasm.load_eventlog_from_xes(logContent);
+      } catch (e) {
+        throw new PowlSourceError(
+          `Cannot parse XES log "${logPath}": ${e instanceof Error ? e.message : String(e)}`
+        );
+      }
       const modelsLogJson: string = wasm.export_eventlog_to_json(logHandle);
       wasm.delete_object(logHandle);
       const logJson: string = convertModelsLogToPowlLog(modelsLogJson, confActivityKey);
       const raw: string = wasm.token_replay_fitness(modelStr, logJson);
+      // token_replay_fitness returns FitnessResult:
+      //   { percentage, avg_trace_fitness, avg_trace_precision, perfectly_fitting_traces,
+      //     total_traces, trace_results: [{ case_id, fitness, precision, ... }] }
       return JSON.parse(raw);
     }
 
     case 'import': {
       const source = args.from as string;
       if (!source || !IMPORT_SOURCES.includes(source as ImportSource)) {
-        throw new Error(`Unknown source format: "${source}". Valid: ${IMPORT_SOURCES.join(', ')}`);
+        throw new PowlConfigError(
+          `Unknown source format: "${source}". Valid: ${IMPORT_SOURCES.join(', ')}`
+        );
       }
       let fileContent: string;
       try {
         await fs.access(rawInput);
         fileContent = await fs.readFile(rawInput, 'utf-8');
       } catch {
-        throw new Error(`Cannot read file: ${rawInput}`);
+        throw new PowlSourceError(`Cannot read file: ${rawInput}`);
       }
       switch (source as ImportSource) {
         case 'process-tree': {
@@ -424,17 +488,17 @@ async function executePowlCommand(
           return normalizeResult(raw);
         }
       }
-      throw new Error(`Unhandled import source: ${source}`);
+      throw new PowlConfigError(`Unhandled import source: ${source}`);
     }
 
     case 'get-children': {
-      const index = args.index as string;
+      const index = Number(args.index ?? 0);
       const raw = wasm.get_children(modelStr, index);
       return normalizeResult(raw);
     }
 
     case 'node-info': {
-      const index = args.index as string;
+      const index = Number(args.index ?? 0);
       const raw = wasm.node_info_json(modelStr, index);
       return JSON.parse(raw);
     }
@@ -442,25 +506,46 @@ async function executePowlCommand(
     case 'discover': {
       const input = args.input as string;
       if (!input) {
-        throw new Error('Input log required: use --input or -i');
+        throw new PowlSourceError('Input log required: use --input or -i');
       }
       const variant = (args.variant as string) || 'decision_graph_cyclic';
       const activityKey = (args['activity-key'] as string) || 'concept:name';
       const minTraceCount = (args['min-trace-count'] as number) || 1;
       const noiseThreshold = (args['noise-threshold'] as number) || 0.0;
+      const inputFormat = (args['input-format'] as string) || '';
+      const ocelVariant = (args['ocel-variant'] as string) || 'flattening';
 
+      // Auto-detect format or use explicit --input-format
       let logJson: string;
       if (input.endsWith('.xes')) {
-        const xesContent = await fs.readFile(input, 'utf-8');
+        let xesContent: string;
+        try {
+          xesContent = await fs.readFile(input, 'utf-8');
+        } catch (e) {
+          throw new Error(
+            `Cannot read XES log file: "${input}": ${e instanceof Error ? e.message : String(e)}`
+          );
+        }
         const logHandle: string = wasm.load_eventlog_from_xes(xesContent);
         logJson = wasm.export_eventlog_to_json(logHandle);
         wasm.delete_object(logHandle);
       } else {
-        logJson = await fs.readFile(input, 'utf-8');
+        try {
+          logJson = await fs.readFile(input, 'utf-8');
+        } catch (e) {
+          throw new Error(
+            `Cannot read log file: "${input}": ${e instanceof Error ? e.message : String(e)}`
+          );
+        }
       }
 
+      // Use config path when any non-default option was explicitly provided.
+      // Note: citsy always populates all declared args (they are never absent from
+      // Object.keys(args)), so we test actual *values* rather than key presence.
+      const useConfig =
+        activityKey !== 'concept:name' || minTraceCount !== 1 || noiseThreshold !== 0.0;
       let raw;
-      if (Object.keys(args).some((k) => ['min-trace-count', 'noise-threshold'].includes(k))) {
+      if (useConfig) {
         raw = wasm.discover_powl_from_log_config(
           logJson,
           activityKey,
@@ -473,6 +558,11 @@ async function executePowlCommand(
       }
 
       return normalizeResult(raw);
+    }
+
+    case 'freq-analysis': {
+      const raw: string = wasm.powl_freq_analysis(modelStr);
+      return JSON.parse(raw);
     }
 
     default:
@@ -519,82 +609,280 @@ function formatHumanOutput(
 
     case 'diff': {
       projection.log('');
-      projection.log(`  Severity: ${result.severity}`);
+      const sevGlyph: Record<string, string> = {
+        None: '[=]',
+        Minor: '[~]',
+        Moderate: '[!]',
+        Breaking: '[X]',
+      };
+      const sev = String(result.severity ?? 'None');
+      projection.log(`  Severity: ${sevGlyph[sev] ?? '[?]'} ${sev}`);
       projection.log(`  Behaviorally equivalent: ${result.behaviourally_equivalent}`);
-      projection.log(`  Trace length delta: ${result.min_trace_length_delta}`);
-
+      if ((result.min_trace_length_delta as number) !== 0) {
+        projection.log(`  Trace length delta: ${result.min_trace_length_delta}`);
+      }
       if (result.added_activities && (result.added_activities as string[]).length > 0) {
-        projection.log(`  Added activities: ${(result.added_activities as string[]).join(', ')}`);
+        projection.log(
+          `  Added activities:    ${(result.added_activities as string[]).join(', ')}`
+        );
       }
       if (result.removed_activities && (result.removed_activities as string[]).length > 0) {
-        projection.log(`  Removed activities: ${(result.removed_activities as string[]).join(', ')}`);
+        projection.log(
+          `  Removed activities:  ${(result.removed_activities as string[]).join(', ')}`
+        );
       }
-      if (result.always_changes && (result.always_changes as Array<Record<string, unknown>>).length > 0) {
-        projection.log(`  Always-changes:`);
+      if (
+        result.always_changes &&
+        (result.always_changes as Array<Record<string, unknown>>).length > 0
+      ) {
+        projection.log('  Mandatory/optional changes:');
         for (const ac of result.always_changes as Array<Record<string, unknown>>) {
-          const type = Object.keys(ac)[0];
-          projection.log(`    ${type}: ${ac[type]}`);
+          const chType = Object.keys(ac)[0] as string;
+          const chAct = ac[chType] as string;
+          if (chType === 'BecameMandatory') {
+            projection.log(`    + mandatory: ${chAct}`);
+          } else if (chType === 'BecameOptional') {
+            projection.log(`    - optional:  ${chAct}`);
+          } else {
+            projection.log(`    ${chType}: ${chAct}`);
+          }
         }
       }
-      if (result.order_changes && (result.order_changes as Array<Record<string, unknown>>).length > 0) {
-        projection.log(`  Order changes: ${(result.order_changes as unknown[]).length}`);
+      if (
+        result.order_changes &&
+        (result.order_changes as Array<Record<string, unknown>>).length > 0
+      ) {
+        projection.log('  Ordering constraint changes:');
+        for (const oc of result.order_changes as Array<Record<string, unknown>>) {
+          const chType = Object.keys(oc)[0] as string;
+          const val = oc[chType];
+          if (chType === 'SequenceAdded') {
+            const p = val as [string, string];
+            projection.log(`    + sequence:  ${p[0]} --> ${p[1]}`);
+          } else if (chType === 'SequenceRemoved') {
+            const p = val as [string, string];
+            projection.log(`    - sequence:  ${p[0]} --> ${p[1]}`);
+          } else if (chType === 'ParallelAdded') {
+            const p = val as [string, string];
+            projection.log(`    + parallel:  ${p[0]} || ${p[1]}`);
+          } else if (chType === 'ParallelRemoved') {
+            const p = val as [string, string];
+            projection.log(`    - parallel:  ${p[0]} || ${p[1]}`);
+          } else if (chType === 'StartAdded') {
+            projection.log(`    + start:     ${val}`);
+          } else if (chType === 'StartRemoved') {
+            projection.log(`    - start:     ${val}`);
+          } else if (chType === 'EndAdded') {
+            projection.log(`    + end:       ${val}`);
+          } else if (chType === 'EndRemoved') {
+            projection.log(`    - end:       ${val}`);
+          } else {
+            projection.log(`    ${chType}: ${JSON.stringify(val)}`);
+          }
+        }
       }
-      if (result.structure_changes && (result.structure_changes as Array<Record<string, unknown>>).length > 0) {
-        projection.log(`  Structure changes: ${(result.structure_changes as unknown[]).length}`);
+      if (
+        result.structure_changes &&
+        (result.structure_changes as Array<Record<string, unknown>>).length > 0
+      ) {
+        projection.log('  Structure changes:');
+        for (const sc of result.structure_changes as Array<Record<string, unknown>>) {
+          projection.log(`    @ ${sc['location']}: ${sc['from']} => ${sc['to']}`);
+        }
       }
       projection.log('');
       break;
     }
 
     case 'complexity': {
+      // Van der Aalst maintainability thresholds:
+      //   cyclomatic: simple <5, moderate 5-10, complex >10
+      //   cognitive:  simple <10, moderate 10-25, complex >25
+      const cyc = result.cyclomatic as number;
+      const cog = result.cognitive as number;
+      const cfc = result.cfc as number;
+      const cycBand = cyc < 5 ? 'simple' : cyc <= 10 ? 'moderate' : 'complex';
+      const cogBand = cog < 10 ? 'simple' : cog <= 25 ? 'moderate' : 'complex';
+      const cycBar =
+        '[' +
+        '#'.repeat(Math.min(5, Math.floor(cyc / 2))) +
+        '.'.repeat(Math.max(0, 5 - Math.floor(cyc / 2))) +
+        ']';
       projection.log('');
       projection.log(`  Activities:      ${result.activity_count}`);
-      projection.log(`  Cyclomatic:      ${result.cyclomatic}`);
-      projection.log(`  CFC:             ${result.cfc}`);
-      projection.log(`  Cognitive:       ${result.cognitive}`);
+      projection.log(`  Node count:      ${result.node_count}`);
+      projection.log(`  Nesting depth:   ${result.nesting_depth}`);
+      projection.log(
+        `  Branching factor:${typeof result.branching_factor === 'number' ? ` ${(result.branching_factor as number).toFixed(2)}` : ' n/a'}`
+      );
+      projection.log('');
+      projection.log(
+        `  Cyclomatic:      ${cyc.toString().padStart(3)}  ${cycBar}  ${cycBand}  (simple<5, moderate<=10, complex>10)`
+      );
+      // Process-mining interpretation: cyclomatic complexity N means there are
+      // N independent control-flow paths through the model. Each additional
+      // independent path is a potential new trace variant in the event log.
+      // High cyclomatic complexity is a leading indicator of variant explosion —
+      // a log with many variants is harder to replay conformantly and harder
+      // for stakeholders to understand (Van der Aalst, 2016, §6.2).
+      if (cyc > 1) {
+        const variantRisk = cyc < 5 ? 'low' : cyc <= 10 ? 'moderate' : 'high';
+        projection.log(
+          `    ^ ${cyc} independent control-flow path${cyc === 1 ? '' : 's'} — ${variantRisk} variant-explosion risk.` +
+            (cyc > 10
+              ? ` With ${cyc} paths, conformance checking cost grows exponentially;` +
+                ` consider simplifying before running token replay.`
+              : '')
+        );
+      }
+      projection.log(`  CFC:             ${cfc.toString().padStart(3)}`);
+      projection.log(
+        `  Cognitive:       ${cog.toString().padStart(3)}  ${cogBand}  (simple<10, moderate<=25, complex>25)`
+      );
       if (result.halstead) {
         const h = result.halstead as Record<string, unknown>;
-        projection.log(`  Halstead volume: ${h.volume}`);
-        projection.log(`  Halstead effort: ${h.effort}`);
+        projection.log('');
+        projection.log(
+          `  Halstead volume: ${typeof h.volume === 'number' ? (h.volume as number).toFixed(1) : h.volume}`
+        );
+        projection.log(
+          `  Halstead effort: ${typeof h.effort === 'number' ? (h.effort as number).toFixed(1) : h.effort}`
+        );
+        projection.log(
+          `  Halstead vocab:  ${h.vocabulary}  (${h.n1} operators + ${h.n2} operands)`
+        );
       }
       projection.log('');
       break;
     }
 
     case 'footprints': {
+      // Normalize set fields — WASM may serialize a HashSet as array or object keys
+      const toSorted = (v: unknown): string[] => {
+        if (Array.isArray(v)) return (v as string[]).slice().sort();
+        if (v !== null && typeof v === 'object') return Object.keys(v as object).sort();
+        return [];
+      };
+      // Pairs: HashSet<(String,String)> serializes as [[a,b],...] array of 2-tuples
+      const toPairs = (v: unknown): Array<[string, string]> => {
+        if (!Array.isArray(v)) return [];
+        return (v as unknown[]).filter(
+          (p): p is [string, string] =>
+            Array.isArray(p) &&
+            p.length === 2 &&
+            typeof p[0] === 'string' &&
+            typeof p[1] === 'string'
+        );
+      };
+      const acts = toSorted(result.activities);
+      const startActs = toSorted(result.start_activities);
+      const endActs = toSorted(result.end_activities);
+      const alwaysActs = toSorted(result.activities_always_happening);
+      const seqPairs = toPairs(result.sequence);
+      const parPairs = toPairs(result.parallel);
       projection.log('');
-      projection.log(`  Activities: ${JSON.stringify(result.activities)}`);
-      projection.log(`  Start activities: ${JSON.stringify(result.start_activities)}`);
-      projection.log(`  End activities:   ${JSON.stringify(result.end_activities)}`);
-      projection.log(`  Always happening: ${JSON.stringify(result.activities_always_happening)}`);
-      projection.log(`  Sequences: ${(result.sequence as unknown[])?.length ?? 0}`);
-      projection.log(`  Parallels:  ${(result.parallel as unknown[])?.length ?? 0}`);
-      projection.log(`  Min trace length: ${result.min_trace_length}`);
+      projection.log(`  Activities (${acts.length}):        ${acts.join(', ')}`);
+      projection.log(`  Start activities (${startActs.length}):   ${startActs.join(', ')}`);
+      projection.log(`  End activities (${endActs.length}):       ${endActs.join(', ')}`);
+      if (alwaysActs.length > 0) {
+        projection.log(`  Always happening (${alwaysActs.length}):   ${alwaysActs.join(', ')}`);
+      }
+      projection.log(`  Min trace length:           ${result.min_trace_length}`);
       projection.log('');
+      if (seqPairs.length > 0) {
+        projection.log(`  Sequence ordering (${seqPairs.length} pairs):`);
+        const sorted = seqPairs
+          .slice()
+          .sort((a, b) => (a[0] < b[0] ? -1 : a[0] > b[0] ? 1 : a[1] < b[1] ? -1 : 1));
+        for (const [a, b] of sorted) {
+          projection.log(`    ${a.padEnd(30)} -->  ${b}`);
+        }
+        projection.log('');
+      }
+      if (parPairs.length > 0) {
+        // Parallel pairs are bidirectional — deduplicate: show only a < b
+        const seen = new Set<string>();
+        const deduped: Array<[string, string]> = [];
+        for (const [a, b] of parPairs) {
+          const key = a < b ? `${a}|${b}` : `${b}|${a}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            deduped.push(a < b ? [a, b] : [b, a]);
+          }
+        }
+        deduped.sort((x, y) => (x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : 0));
+        projection.log(`  Parallel (concurrent) (${deduped.length} pairs):`);
+        for (const [a, b] of deduped) {
+          projection.log(`    ${a.padEnd(30)} ||   ${b}`);
+        }
+        projection.log('');
+      }
       break;
     }
 
     case 'conformance': {
+      // Van der Aalst: fitness AND precision must both be shown together —
+      // presenting fitness alone misleads the practitioner (flower model trap).
+      const fitPct = ((result.percentage as number) * 100).toFixed(1);
+      const precPct =
+        typeof result.avg_trace_precision === 'number'
+          ? ((result.avg_trace_precision as number) * 100).toFixed(1)
+          : 'n/a';
+      // ASCII proportion glyph: ▓ = fitted, ░ = missing
+      const barWidth = 20;
+      const fitFilled = Math.round((result.percentage as number) * barWidth);
+      const fitBar = '▓'.repeat(fitFilled) + '░'.repeat(barWidth - fitFilled);
+      const precVal =
+        typeof result.avg_trace_precision === 'number' ? (result.avg_trace_precision as number) : 0;
+      const precFilled = Math.round(precVal * barWidth);
+      const precBar = '▓'.repeat(precFilled) + '░'.repeat(barWidth - precFilled);
       projection.log('');
+      projection.log(`  Fitness:             ${fitPct.padStart(6)}%  [${fitBar}]  (token replay)`);
       projection.log(
-        `  Fitness:                    ${((result.percentage as number) * 100).toFixed(1)}%`
+        `  Precision:           ${precPct.padStart(6)}%  [${precBar}]  (token replay)`
       );
       projection.log(
-        `  Avg trace fitness:          ${((result.avg_trace_fitness as number) * 100).toFixed(1)}%`
+        `  Avg trace fitness:   ${((result.avg_trace_fitness as number) * 100).toFixed(1).padStart(6)}%`
       );
       projection.log(
-        `  Perfectly fitting traces:    ${result.perfectly_fitting_traces} / ${result.total_traces}`
+        `  Perfectly fitting:   ${result.perfectly_fitting_traces} / ${result.total_traces} traces`
       );
-      if (result.trace_results && (result.trace_results as Array<Record<string, unknown>>).length > 0) {
+      // Deviation summary — show count before the per-trace list so the
+      // practitioner immediately sees scope without scrolling through all rows.
+      const traceResults = (result.trace_results as Array<Record<string, unknown>>) ?? [];
+      if (traceResults.length > 0) {
+        const deviatingTraces = traceResults.filter(
+          (tr) => tr.missing_tokens !== 0 || tr.remaining_tokens !== 0
+        );
+        const deviatingCount = deviatingTraces.length;
+        const totalCount = traceResults.length;
+        if (deviatingCount === 0) {
+          projection.log(
+            '  Deviation summary:   all traces conform — no missing or remaining tokens.'
+          );
+        } else {
+          const pct = ((deviatingCount / totalCount) * 100).toFixed(0);
+          projection.log(
+            `  Deviation summary:   ${deviatingCount} / ${totalCount} traces deviate (${pct}%).` +
+              (deviatingCount === totalCount
+                ? ' All traces deviate — model may be too restrictive or log has systematic rework.'
+                : deviatingCount / totalCount > 0.5
+                  ? ' Majority deviating — check for missing activities or model under-fit.'
+                  : '')
+          );
+        }
+        projection.log('');
         projection.log('  Per-trace results:');
-        for (const tr of result.trace_results as Array<Record<string, unknown>>) {
+        for (const tr of traceResults) {
           const caseId = String(tr.case_id ?? '?');
           const fit = ((tr.fitness as number) * 100).toFixed(1);
+          const prec =
+            typeof tr.precision === 'number' ? ((tr.precision as number) * 100).toFixed(1) : 'n/a';
           const missing = tr.missing_tokens ?? 0;
           const remaining = tr.remaining_tokens ?? 0;
           const marker = tr.missing_tokens === 0 && tr.remaining_tokens === 0 ? '✓' : '✗';
           projection.log(
-            `    ${marker} ${caseId.padEnd(20)} fitness=${fit}%  missing=${missing} remaining=${remaining}`
+            `    ${marker} ${caseId.padEnd(20)} fitness=${fit}%  prec=${prec}%  missing=${missing} remaining=${remaining}`
           );
         }
       }
@@ -636,6 +924,65 @@ function formatHumanOutput(
         projection.log(`    Activity key:     ${config.activity_key}`);
         projection.log(`    Min trace count:  ${config.min_trace_count}`);
         projection.log(`    Noise threshold: ${config.noise_threshold}`);
+      }
+      projection.log('');
+      break;
+    }
+
+    case 'freq-analysis': {
+      // Van der Aalst: frequency semantics are a first-class quality dimension
+      // for TaggedPOWL. Showing min/max together avoids the "skippable bool only"
+      // trap that hides the exact repetition contract.
+      const total = result.total_frequent_transitions as number;
+      const skippable = result.skippable_count as number;
+      const repeatable = result.repeatable_count as number;
+      const unbounded = result.unbounded_count as number;
+      const freqMinMin = result.freq_min_min;
+      const freqMaxMax = result.freq_max_max;
+      const nodes = (result.nodes as Array<Record<string, unknown>>) ?? [];
+
+      const fmtRange = (min: unknown, max: unknown): string => {
+        const maxStr = max === null || max === undefined ? '∞' : String(max);
+        return `[${min}, ${maxStr}]`;
+      };
+
+      projection.log('');
+      projection.log(`  Frequent transitions:  ${total}`);
+      if (total === 0) {
+        projection.log('  (No FrequentTransition nodes — all activities have fixed freq [1,1])');
+        projection.log('');
+        break;
+      }
+
+      // Summary bar: proportion glyph for skippable / repeatable / unbounded
+      const barW = 10;
+      const skipBar =
+        '▓'.repeat(Math.round((skippable / total) * barW)) +
+        '░'.repeat(barW - Math.round((skippable / total) * barW));
+      const repBar =
+        '▓'.repeat(Math.round((repeatable / total) * barW)) +
+        '░'.repeat(barW - Math.round((repeatable / total) * barW));
+
+      projection.log(`  Skippable (min=0):     ${skippable} / ${total}  [${skipBar}]`);
+      projection.log(`  Repeatable (max>1|∞):  ${repeatable} / ${total}  [${repBar}]`);
+      projection.log(`  Unbounded (max=∞):     ${unbounded} / ${total}`);
+      projection.log(
+        `  Overall freq range:    ${fmtRange(freqMinMin, freqMaxMax)}  (min of mins, max of maxes)`
+      );
+      projection.log('');
+
+      // Per-node table — reference: TaggedPOWL.pretty() format
+      projection.log(`  Per-node frequency ranges:`);
+      const colW = Math.max(...nodes.map((n) => String(n.activity).length), 8) + 2;
+      for (const node of nodes) {
+        const act = String(node.activity).padEnd(colW);
+        const range = fmtRange(node.min_freq, node.max_freq);
+        const flags: string[] = [];
+        if (node.is_skippable) flags.push('skippable');
+        if (node.is_repeatable) flags.push('repeatable');
+        if (node.is_unbounded) flags.push('unbounded');
+        const flagStr = flags.length > 0 ? `  (${flags.join(', ')})` : '';
+        projection.log(`    ${act}  freq=${range}${flagStr}`);
       }
       projection.log('');
       break;

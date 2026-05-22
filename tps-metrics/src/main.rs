@@ -1,3 +1,4 @@
+
 //! TPS Metrics CLI Tool
 //!
 //! Collects and analyzes Toyota Production System metrics for software development.
@@ -222,7 +223,7 @@ fn print_overall_summary(
     }
 
     total_metrics += 1;
-    if andon.compiler_warnings == 0 {
+    if andon.deferred_defect_markers == 0 {
         passing_metrics += 1;
     }
 

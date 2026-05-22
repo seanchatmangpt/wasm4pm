@@ -148,7 +148,8 @@ describe('Prediction drift sub-section', () => {
     expect(cfg.prediction!.drift.ewma_alpha).toBe(0.4);
     expect(cfg.prediction!.drift.threshold).toBe(0.6);
 
-    const defaults = validate({ ...minimal, prediction: { enabled: true } });
+    // prediction.enabled=true requires at least one task; include 'drift' to test defaults
+    const defaults = validate({ ...minimal, prediction: { enabled: true, tasks: ['drift'] } });
     expect(defaults.prediction!.drift.ewma_alpha).toBe(0.2);
     expect(defaults.prediction!.drift.threshold).toBe(0.3);
 
@@ -235,6 +236,7 @@ describe('Environment variables — ML / RL / drift', () => {
       configSearchPaths: [tmpDir],
       env: {
         WASM4PM_PREDICTION_ENABLED: 'true',
+        WASM4PM_PREDICTION_TASKS: 'drift',
         WASM4PM_PREDICTION_DRIFT_THRESHOLD: '0.45',
         WASM4PM_PREDICTION_DRIFT_EWMA_ALPHA: '0.1',
       },

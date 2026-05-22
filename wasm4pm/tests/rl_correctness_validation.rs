@@ -35,8 +35,8 @@ fn correctness_reward_function_monotonicity() {
     // Oracle Rank-1: Bellman theorem + Western Electric rules
 
     // Health improvements should produce positive reward
-    let reward_improve_by_1 = compute_reward(2, 1, 0, true, true, false);
-    let reward_improve_by_2 = compute_reward(3, 1, 0, true, true, false);
+    let reward_improve_by_1 = compute_reward(2, 1, 0, true, true, false, 0);
+    let reward_improve_by_2 = compute_reward(3, 1, 0, true, true, false, 0);
     assert!(
         reward_improve_by_1.is_finite(),
         "Improvement (2→1) reward must be finite"
@@ -51,7 +51,7 @@ fn correctness_reward_function_monotonicity() {
     );
 
     // Health degradation should produce negative reward
-    let reward_degrade = compute_reward(1, 2, 0, true, true, false);
+    let reward_degrade = compute_reward(1, 2, 0, true, true, false, 0);
     assert!(
         reward_degrade < 0.0,
         "Degradation should produce negative reward (got {})",
@@ -59,14 +59,14 @@ fn correctness_reward_function_monotonicity() {
     );
 
     // Stability should be better than degradation
-    let reward_stable = compute_reward(1, 1, 0, true, true, false);
+    let reward_stable = compute_reward(1, 1, 0, true, true, false, 0);
     assert!(
         reward_stable > reward_degrade,
         "Stability should be better than degradation"
     );
 
     // Improvement should be better than stability
-    let reward_improves = compute_reward(2, 1, 0, true, true, false);
+    let reward_improves = compute_reward(2, 1, 0, true, true, false, 0);
     assert!(
         reward_improves > reward_stable,
         "Improvement should be better than stability"
@@ -90,6 +90,7 @@ fn correctness_reward_function_bounds() {
                             guard_pass,
                             circuit_allowed,
                             false,
+                            0,
                         );
 
                         // Oracle: reward must always be finite
@@ -118,9 +119,9 @@ fn correctness_reward_spc_penalty() {
     // Oracle Rank-2 (domain contract): SPC alerts (special causes)
     // should monotonically reduce reward.
 
-    let reward_0_alerts = compute_reward(1, 1, 0, true, true, false);
-    let reward_1_alert = compute_reward(1, 1, 1, true, true, false);
-    let reward_5_alerts = compute_reward(1, 1, 5, true, true, false);
+    let reward_0_alerts = compute_reward(1, 1, 0, true, true, false, 0);
+    let reward_1_alert = compute_reward(1, 1, 1, true, true, false, 0);
+    let reward_5_alerts = compute_reward(1, 1, 5, true, true, false, 0);
 
     // All must be finite
     assert!(reward_0_alerts.is_finite());

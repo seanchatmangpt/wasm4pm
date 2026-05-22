@@ -1,0 +1,53 @@
+{
+  "algorithm_id": "aco",
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
+  "registry_present": true,
+  "ts_dispatch_present": true,
+  "cli_present": true,
+  "wasm_export_present": true,
+  "positive_cases": [
+    {
+      "case_id": "aco.valid_minimal_log",
+      "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
+      "status": "passed",
+      "result_hash": "07295ef04449e8e87e1644a2a44e96a0e9b6d4ebbc477ec659e973327a5381b5",
+      "duration_ms": 0.03020800000000179,
+      "receipt_hash": "ed099f5cb6a88577a5a73775177ad20b31ac7077972ca673c27f5198fa67e5a7"
+    }
+  ],
+  "negative_cases": [
+    {
+      "case_id": "aco.MalformedLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
+      "status": "failed_correctly",
+      "error_code": "EMPTY_EVENT_LOG",
+      "no_panic": true,
+      "no_false_success": true,
+      "receipt_hash": "4577d30efb1d1d3bffcefb56902c7a2b3c951e00ab37e4b6d48a2827506014ef"
+    },
+    {
+      "case_id": "aco.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
+      "status": "failed_correctly",
+      "error_code": "EMPTY_EVENT_LOG",
+      "no_panic": true,
+      "no_false_success": true,
+      "receipt_hash": "40c4eb1c38a418e709c57d7202dc63c0055a5c920c7821596facdf4f86c2b86a"
+    }
+  ],
+  "invariant_cases": [
+    {
+      "case_id": "aco.SeededRepeatabilityCase",
+      "seed": 42,
+      "status": "passed",
+      "result_schema_valid": true,
+      "fitness_within_expected_range": true
+    }
+  ],
+  "algorithm_evidence_hash": "e310a31c83a6e361feecdeeaa0032d72d47546a91e109664bcd64af34c1da0fa"
+}

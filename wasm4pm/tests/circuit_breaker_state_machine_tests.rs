@@ -490,6 +490,7 @@ fn test_d6_circuit_breaker_reward_delta_at_least_0_5() {
         guard_pass,
         true,
         false,
+        0,
     );
     let reward_blocked = compute_reward(
         prev_health,
@@ -498,6 +499,7 @@ fn test_d6_circuit_breaker_reward_delta_at_least_0_5() {
         guard_pass,
         false,
         false,
+        0,
     );
 
     let delta = reward_allowed - reward_blocked;

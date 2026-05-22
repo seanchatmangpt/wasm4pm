@@ -2,7 +2,6 @@
 //!
 //! Provides stratified K-fold, group K-fold, time series CV, nested CV, LOOCV, and bootstrapping.
 
-use crate::error::MlError;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 use std::collections::HashMap;
@@ -38,7 +37,7 @@ pub struct CvResult {
 
 /// Bootstrap result
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct BootstrapResult {
+pub struct AdvancedBootstrapResult {
     /// All bootstrap scores
     pub scores: Vec<f64>,
 
@@ -86,7 +85,7 @@ pub fn stratified_k_fold(
 
     for (i, &label) in y.iter().enumerate() {
         let label_bits = label.to_bits();
-        class_indices.entry(label_bits).or_insert_with(Vec::new).push(i);
+        class_indices.entry(label_bits).or_default().push(i);
     }
 
     // Shuffle within each class if requested
@@ -108,7 +107,7 @@ pub fn stratified_k_fold(
     let mut folds: Vec<Vec<usize>> = vec![Vec::new(); n_folds];
 
     for (_, indices) in class_indices.iter() {
-        let n_class = indices.len();
+        let _n_class = indices.len();
 
         for (fold_idx, &idx) in indices.iter().enumerate() {
             let fold = fold_idx % n_folds;
@@ -121,7 +120,7 @@ pub fn stratified_k_fold(
 
     for fold_idx in 0..n_folds {
         let mut train_indices = Vec::new();
-        let mut val_indices = folds[fold_idx].clone();
+        let val_indices = folds[fold_idx].clone();
 
         for (i, fold) in folds.iter().enumerate() {
             if i != fold_idx {
@@ -217,7 +216,7 @@ pub fn group_k_fold(
 
     for fold_idx in 0..n_folds {
         let mut train_indices = Vec::new();
-        let mut val_indices = folds[fold_idx].clone();
+        let val_indices = folds[fold_idx].clone();
 
         for (i, fold) in folds.iter().enumerate() {
             if i != fold_idx {
@@ -559,7 +558,7 @@ pub fn compute_bootstrap_result(
     let lower = sorted_scores[lower_idx.min(n - 1)];
     let upper = sorted_scores[upper_idx.min(n - 1)];
 
-    let result = BootstrapResult {
+    let result = AdvancedBootstrapResult {
         scores,
         mean,
         std_error,
@@ -571,7 +570,9 @@ pub fn compute_bootstrap_result(
         .map_err(|e| JsError::new(&format!("Serialization failed: {}", e)))
 }
 
-#[cfg(test)]
+// These tests call js_sys::Array and serde_wasm_bindgen::to_value which are wasm32-only.
+// They run correctly under `wasm-pack test` but panic on native cargo test targets.
+#[cfg(all(test, target_arch = "wasm32"))]
 mod tests {
     use super::*;
 
@@ -633,7 +634,7 @@ mod tests {
         let scores = vec![0.8, 0.85, 0.9, 0.75, 0.95];
         let result = compute_bootstrap_result(scores, 0.95).unwrap();
 
-        // Result should be a valid BootstrapResult
+        // Result should be a valid AdvancedBootstrapResult
         assert!(result.is_object());
     }
 }

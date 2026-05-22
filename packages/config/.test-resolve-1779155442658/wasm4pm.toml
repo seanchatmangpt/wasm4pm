@@ -1,0 +1,7 @@
+version = "1.0.0"
+[source]
+kind = "file"
+[watch]
+enabled = true
+poll_interval = 500
+checkpoint_dir = "/tmp/ckpts"

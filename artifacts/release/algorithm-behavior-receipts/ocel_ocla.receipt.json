@@ -1,0 +1,53 @@
+{
+  "algorithm_id": "ocel_ocla",
+  "category": "discovery",
+  "profiles": [
+    "fast",
+    "balanced",
+    "quality"
+  ],
+  "registry_present": true,
+  "ts_dispatch_present": true,
+  "cli_present": true,
+  "wasm_export_present": true,
+  "positive_cases": [
+    {
+      "case_id": "ocel_ocla.valid_minimal_log",
+      "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
+      "status": "passed",
+      "result_hash": "5696fc675e8bd544fd32ff5ddb45fbce903294c04ee05e31410f28d8947d394b",
+      "duration_ms": 0.01187500000000341,
+      "receipt_hash": "1c666f6bcc2b9e5bc199120bbb8924462112a00b3e80c94aafdb52b6b6613e2e"
+    }
+  ],
+  "negative_cases": [
+    {
+      "case_id": "ocel_ocla.MalformedLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
+      "status": "failed_correctly",
+      "error_code": "EMPTY_EVENT_LOG",
+      "no_panic": true,
+      "no_false_success": true,
+      "receipt_hash": "47e38992257a8f47faab1d6c5ca6c58531186ebafd3f9b16cd8117a86e3ed1fe"
+    },
+    {
+      "case_id": "ocel_ocla.EmptyLogCase",
+      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
+      "status": "failed_correctly",
+      "error_code": "EMPTY_EVENT_LOG",
+      "no_panic": true,
+      "no_false_success": true,
+      "receipt_hash": "5fbaaf3673cccd6f69551b1df6f8e01e9838b6a597d515e576cc03867e9ced5f"
+    }
+  ],
+  "invariant_cases": [
+    {
+      "case_id": "ocel_ocla.DeterministicSameInputCase",
+      "status": "passed",
+      "first_result_hash": "5696fc675e8bd544fd32ff5ddb45fbce903294c04ee05e31410f28d8947d394b",
+      "second_result_hash": "5696fc675e8bd544fd32ff5ddb45fbce903294c04ee05e31410f28d8947d394b",
+      "stable": true
+    }
+  ],
+  "algorithm_evidence_hash": "7296e3de5d97278c9aaa1de6085c6aca816c99e9ba2b4188772da502b457b290"
+}

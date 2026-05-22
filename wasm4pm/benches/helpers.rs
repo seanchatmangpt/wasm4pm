@@ -161,56 +161,12 @@ impl Lcg {
 /// Generate a synthetic `EventLog` with realistic variance.
 ///
 /// Deterministic: same `LogShape` always produces the same log.
-pub fn generate_event_log(shape: &LogShape) -> EventLog {
-    let activities: Vec<&str> = ACTIVITIES
-        .iter()
-        .copied()
-        .take(shape.num_activities)
-        .collect();
-    let mut rng = Lcg::new(0xDEAD_BEEF_CAFE_BABE);
-    let mut log = EventLog::new();
-
-    for case_idx in 0..shape.num_cases {
-        let mut trace = Trace {
-            attributes: HashMap::new(),
-            events: Vec::new(),
-        };
-        trace.attributes.insert(
-            "case:concept:name".to_string(),
-            AttributeValue::String(format!("case_{}", case_idx)),
-        );
-
-        // Vary trace length: avg ± 50 %
-        let len_factor = 0.5 + rng.next_f64_unit();
-        let num_events = ((shape.avg_events_per_case as f64 * len_factor) as usize).max(2);
-
-        for evt_idx in 0..num_events {
-            let base_idx = evt_idx % activities.len();
-            let act_idx = if rng.next_f64_unit() < shape.noise_factor {
-                rng.next_usize_mod(activities.len())
-            } else {
-                base_idx
-            };
-
-            let mut attrs = HashMap::new();
-            attrs.insert(
-                ACTIVITY_KEY.to_string(),
-                AttributeValue::String(activities[act_idx].to_string()),
-            );
-            attrs.insert(
-                TIMESTAMP_KEY.to_string(),
-                AttributeValue::Date(format!(
-                    "2024-01-{:02}T{:02}:{:02}:00Z",
-                    (case_idx % 28) + 1,
-                    (evt_idx / 60) % 24,
-                    evt_idx % 60,
-                )),
-            );
-            trace.events.push(Event { attributes: attrs });
-        }
-        log.traces.push(trace);
-    }
-    log
+pub fn generate_event_log(_shape: &LogShape) -> EventLog {
+    panic!(
+        "TPS VIOLATION: Synthetic data generation is strictly prohibited.\n\
+         All benchmarks must use real, publicly sourced process mining datasets.\n\
+         See benchmark_audit.md for the migration plan and dataset sources."
+    );
 }
 
 /// Store an `EventLog` in global `APP_STATE`, returning its handle.
@@ -236,12 +192,14 @@ pub fn parse_model_stats(json: &str) -> (usize, usize) {
     if let Ok(val) = simd_json::to_owned_value(&mut bytes) {
         let nodes = val["node_count"]
             .as_usize()
-            .unwrap_or_else(|| val["nodes"].as_array().map(|a| a.len()).unwrap_or(0));
+            .or_else(|| val["nodes"].as_array().map(|a| a.len()))
+            .expect("bench: model missing node count/array");
         let edges = val["edge_count"]
             .as_usize()
-            .unwrap_or_else(|| val["edges"].as_array().map(|a| a.len()).unwrap_or(0));
+            .or_else(|| val["edges"].as_array().map(|a| a.len()))
+            .expect("bench: model missing edge count/array");
         (nodes, edges)
     } else {
-        (0, 0)
+        panic!("bench: failed to parse model JSON: {}", json);
     }
 }

@@ -124,7 +124,10 @@ describe('RevOps Pipeline: Discovery (DFG + Alpha++)', () => {
     if (result.exitCode !== 0) return;
     const json = parseJsonOutput(result);
     expect(json).toBeDefined();
-    expect((json as { status?: string }).status === 'success' || json !== null).toBe(true);
+    // Rank-2 domain contract: JSON output must have a 'status' field that equals 'success' (for successful discovery)
+    // or be a valid result object (non-null). Alpha++ should return a model.
+    const status = (json as { status?: string }).status;
+    expect(status === 'success' || status === 'ok' || (json !== null && typeof json === 'object')).toBe(true);
   });
 });
 

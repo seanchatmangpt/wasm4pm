@@ -325,6 +325,27 @@ export function validatePlan(executionPlan: ExecutionPlan): ValidationError[] {
     }
   }
 
+  // Check for orphan nodes in the graph — a node that has no incoming AND no outgoing
+  // edges is unreachable from the source (bootstrap) and cannot reach the sink (cleanup).
+  // Such nodes indicate a broken plan where a step is disconnected from the execution flow.
+  // Only applies when the graph has more than one node (single-node plans are trivially valid).
+  if (executionPlan.graph.nodes.length > 1) {
+    const nodesWithEdges = new Set<string>();
+    for (const [source, target] of executionPlan.graph.edges) {
+      nodesWithEdges.add(source);
+      nodesWithEdges.add(target);
+    }
+    for (const nodeId of executionPlan.graph.nodes) {
+      if (!nodesWithEdges.has(nodeId)) {
+        errors.push({
+          path: 'graph.nodes',
+          message: `Orphan node detected (no incoming or outgoing edges, unreachable from execution flow): ${nodeId}`,
+          severity: 'error',
+        });
+      }
+    }
+  }
+
   // Validate configuration
   if (!executionPlan.config || typeof executionPlan.config !== 'object') {
     errors.push({

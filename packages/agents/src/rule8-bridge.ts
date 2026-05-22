@@ -22,7 +22,7 @@
  * import { auditEntriesToCatalog } from '@wasm4pm/agents';
  *
  * const { catalog, facts, internTable } = auditEntriesToCatalog(entries);
- * // Pass catalog + facts to prolog8_query via @wasm4pm/kernel
+ * // Pass catalog + facts to prolog8_query via wasm4pm
  * ```
  *
  * ## Prolog8 query example
@@ -63,7 +63,7 @@ import type { AuditEntry } from './types.js';
 /**
  * Output of `auditEntriesToCatalog()`.
  *
- * - `catalog`    — Ready to pass to `prolog8_query` (via `@wasm4pm/kernel`).
+ * - `catalog`    — Ready to pass to `prolog8_query` (via `wasm4pm`).
  * - `facts`      — Unit-clause Rule8Json array (one per AuditEntry, body_len=0).
  * - `internTable` — The shared TermInternTable for further term lookups.
  */
@@ -108,7 +108,7 @@ export const AUDIT_PRED_LABEL = 'audit_entry' as const;
  * @example
  * ```ts
  * const { catalog, facts } = auditEntriesToCatalog(auditStore.query({ limit: 100 }));
- * // catalog and facts are ready for prolog8_query via @wasm4pm/kernel
+ * // catalog and facts are ready for prolog8_query via wasm4pm
  * ```
  */
 export function auditEntriesToCatalog(

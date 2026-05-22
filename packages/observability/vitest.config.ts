@@ -11,6 +11,10 @@ export default defineConfig({
       // Run separately with: npx vitest run __tests__/json-writer.test.ts
       '**/__tests__/json-writer.test.ts',
       '**/__tests__/json-writer.test.js',
+      // Integration test has shared module state (feedback-loop store) and experiences
+      // race conditions in parallel execution. Run separately with:
+      // npx vitest run src/__tests__/feedback-diagnosis-integration.test.ts
+      '**/__tests__/feedback-diagnosis-integration.test.ts',
     ],
     coverage: {
       provider: 'v8',

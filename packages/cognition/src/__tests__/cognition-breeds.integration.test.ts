@@ -79,7 +79,7 @@ describe('prolog breed integration', () => {
     expect(result.output.selected).toBe('alice');
     // Trace evidence: rule must have been loaded.
     // (inference_trace is part of BreedOutput from Rust; defaulted to [])
-    const trace = result.output.inference_trace ?? [];
+    const trace = result.output.inference_trace;
     expect(trace.length).toBeGreaterThan(0);
   });
 });

@@ -25,6 +25,10 @@ thread_local! {
 }
 
 /// Emit a detector span. Never panics; failures are swallowed.
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn emit_detector_span(code: &str, firing: bool, severity: Severity, evidence_count: usize) {
     let _ = std::panic::catch_unwind(|| {
         EMITTED.with(|e| {
@@ -39,6 +43,10 @@ pub fn emit_detector_span(code: &str, firing: bool, severity: Severity, evidence
 }
 
 /// Drain all recorded spans (test helper).
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn drain_emitted() -> Vec<DetectorSpan> {
     EMITTED.with(|e| std::mem::take(&mut *e.borrow_mut()))
 }

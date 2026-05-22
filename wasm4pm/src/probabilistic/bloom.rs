@@ -60,8 +60,8 @@ impl<const BITS: usize> BloomFilter<BITS> {
     fn double_hash(key: u64) -> (u64, u64) {
         #[cfg(feature = "bcinr")]
         {
-            let h1 = bcinr::sketch::fnv1a_64(&key.to_le_bytes());
-            let h2 = bcinr::sketch::fnv1a_64(&(h1.rotate_left(17)).to_le_bytes());
+            let h1 = crate::bcinr_compat::sketch::fnv1a_64(&key.to_le_bytes());
+            let h2 = crate::bcinr_compat::sketch::fnv1a_64(&(h1.rotate_left(17)).to_le_bytes());
             (h1, h2)
         }
         #[cfg(not(feature = "bcinr"))]
@@ -111,7 +111,8 @@ impl<const BITS: usize> BloomFilter<BITS> {
     #[inline]
     pub fn contains(&self, hash: u64) -> bool {
         let (h1, h2) = Self::double_hash(hash);
-        let _possible = 1u64;
+        #[cfg(feature = "bcinr")]
+        let mut possible = 1u64;
         for i in 0..self.num_hashes {
             let bit = Self::nth_hash(h1, h2, i);
             let word = bit / 64;

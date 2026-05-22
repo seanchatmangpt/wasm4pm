@@ -38,10 +38,18 @@ const XES_SIMPLE   = path.resolve(__dirname, '../fixtures/sample-logs/simple.xes
 const XES_STANDARD = path.resolve(__dirname, '../fixtures/sample-xes-1.0.xes');
 
 function wpm(...args: string[]) {
+  const env = {
+    ...process.env,
+    NO_COLOR: '1',
+    FORCE_COLOR: '0',
+    NODE_ENV: 'production',
+  };
+  delete env.TEST;
+  delete env.VITEST;
   return spawnSync('node', [WPM_BIN, ...args], {
     encoding: 'utf8',
     timeout: 30_000,
-    env: { ...process.env, NO_COLOR: '1', FORCE_COLOR: '0', NODE_ENV: 'production' },
+    env,
   });
 }
 

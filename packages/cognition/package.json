@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/cognition",
-  "version": "26.5.15",
+  "version": "26.5.21",
   "description": "Old-AI cognition kernel for AutoSystems: frames, rules, constraints, search, scoring, verify, receipt, contract",
   "type": "module",
   "main": "./dist/index.js",
@@ -36,7 +36,7 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@wasm4pm/contracts": "workspace:*",
+    "@wasm4pm/contracts": "*",
     "wasm4pm-cognition": "file:../../crates/wasm4pm-cognition/pkg"
   },
   "devDependencies": {

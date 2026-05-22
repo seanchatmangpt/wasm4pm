@@ -247,10 +247,37 @@ pub fn detect_drift(
                 if let Some(prev) = &previous_activities {
                     let distance = jaccard_distance(&current_activities, prev);
                     if distance > DEFAULT_DRIFT_THRESHOLD {
+                        // Compute appeared (in current but not prev) and disappeared (in prev but not current)
+                        let mut appeared: Vec<&str> = current_activities
+                            .difference(prev)
+                            .map(String::as_str)
+                            .collect();
+                        appeared.sort_unstable();
+                        let mut disappeared: Vec<&str> = prev
+                            .difference(&current_activities)
+                            .map(String::as_str)
+                            .collect();
+                        disappeared.sort_unstable();
+                        let suggestion = if !disappeared.is_empty() {
+                            format!(
+                                "Activity '{}' disappeared — re-run discovery or check for process change",
+                                disappeared[0]
+                            )
+                        } else if !appeared.is_empty() {
+                            format!(
+                                "Activity '{}' appeared — new path detected, consider model update",
+                                appeared[0]
+                            )
+                        } else {
+                            "Frequency shift detected — inspect directly-follows graph".to_string()
+                        };
                         drifts.push(json!({
                             "position": idx * window_size,
                             "distance": distance,
                             "type": "concept_drift",
+                            "appeared": appeared,
+                            "disappeared": disappeared,
+                            "suggestion": suggestion,
                         }));
                     }
                 }

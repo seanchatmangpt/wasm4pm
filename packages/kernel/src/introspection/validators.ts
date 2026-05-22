@@ -7,7 +7,7 @@
  * Domain oracle: Validation rules are derived from ml-rl-testing.md (Rank 2: domain contract).
  */
 
-import { z } from 'zod';
+import { z, ZodError, type ZodIssue } from 'zod';
 import { type PredictionPerspective } from '../prediction/types.js';
 
 /**
@@ -211,13 +211,13 @@ export class Validators {
       // If we got here, basic validation passed
       const parsed = featureMatrixSchema.parse(value);
       return { success: true, data: parsed };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
         errors: [
           {
             path: 'validation',
-            message: error.message || 'Validation failed',
+            message: error instanceof Error ? error.message : 'Validation failed',
           },
         ],
       };
@@ -240,20 +240,31 @@ export class Validators {
     try {
       const parsed = predictionTaskConfigSchema.parse(value);
       return { success: true, data: parsed };
-    } catch (error: any) {
-      const errors = [];
-      if (error.issues) {
+    } catch (error: unknown) {
+      const errors: Array<{ path: string; message: string; hint?: string }> = [];
+      if (error instanceof ZodError) {
         errors.push(
-          ...error.issues.map((issue: any) => ({
+          ...error.issues.map((issue: ZodIssue) => ({
             path: issue.path.join('.') || 'root',
             message: issue.message,
-            hint: `Expected ${issue.expected}, got ${issue.received}`,
+            hint:
+              'expected' in issue && issue.expected !== undefined
+                ? `Expected ${String(issue.expected)}, got ${'received' in issue ? String(issue.received) : 'unknown'}`
+                : undefined,
           }))
         );
       }
       return {
         success: false,
-        errors: errors.length > 0 ? errors : [{ path: 'unknown', message: error.message }],
+        errors:
+          errors.length > 0
+            ? errors
+            : [
+                {
+                  path: 'unknown',
+                  message: error instanceof Error ? error.message : String(error),
+                },
+              ],
       };
     }
   }
@@ -273,10 +284,10 @@ export class Validators {
     try {
       const parsed = algorithmConfigSchema.parse(value);
       return { success: true, data: parsed };
-    } catch (error: any) {
+    } catch (error: unknown) {
       return {
         success: false,
-        errors: [{ path: 'root', message: error.message }],
+        errors: [{ path: 'root', message: error instanceof Error ? error.message : String(error) }],
       };
     }
   }
@@ -370,7 +381,7 @@ export class Validators {
  *
  * @example
  * ```typescript
- * import { getConfigValidators } from '@wasm4pm/kernel/introspection';
+ * import { getConfigValidators } from 'wasm4pm/introspection';
  *
  * const validators = getConfigValidators();
  * const result = validators.validateFeatureMatrix(data);

@@ -1,0 +1,107 @@
+{
+  "ocel_version": "2.0",
+  "ocel_global_log": {
+    "ocel_attribute_names": [
+      "frame_index"
+    ]
+  },
+  "ocel_events": [
+    {
+      "event_id": "e0",
+      "activity": "plan",
+      "timestamp": "2026-05-16T10:00:00.000Z",
+      "objects": [
+        {
+          "id": "work-1",
+          "type": "Work"
+        },
+        {
+          "id": "receipt-1",
+          "type": "Receipt"
+        }
+      ],
+      "attributes": {
+        "frame_index": 0
+      }
+    },
+    {
+      "event_id": "e1",
+      "activity": "execute",
+      "timestamp": "2026-05-16T10:01:00.000Z",
+      "objects": [
+        {
+          "id": "work-1",
+          "type": "Work"
+        },
+        {
+          "id": "receipt-2",
+          "type": "Receipt"
+        }
+      ],
+      "attributes": {
+        "frame_index": 1
+      }
+    },
+    {
+      "event_id": "e2",
+      "activity": "close",
+      "timestamp": "2026-05-16T10:02:00.000Z",
+      "objects": [
+        {
+          "id": "work-1",
+          "type": "Work"
+        },
+        {
+          "id": "receipt-3",
+          "type": "Receipt"
+        }
+      ],
+      "attributes": {
+        "frame_index": 2
+      }
+    }
+  ],
+  "ocel_objects": [
+    {
+      "id": "work-1",
+      "type": "Work",
+      "attributes": {}
+    },
+    {
+      "id": "receipt-1",
+      "type": "Receipt",
+      "attributes": {
+        "run_id": "plan-receipt-1",
+        "config_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "plan_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "output_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "status": "success"
+      }
+    },
+    {
+      "id": "receipt-2",
+      "type": "Receipt",
+      "attributes": {
+        "run_id": "execute-receipt-2",
+        "config_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "plan_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "output_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "status": "success"
+      }
+    },
+    {
+      "id": "receipt-3",
+      "type": "Receipt",
+      "attributes": {
+        "run_id": "close-receipt-3",
+        "config_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "input_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "plan_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "output_hash": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+        "status": "success"
+      }
+    }
+  ]
+}

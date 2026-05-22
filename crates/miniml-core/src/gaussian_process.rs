@@ -9,7 +9,7 @@ use crate::error::MlError;
 #[wasm_bindgen]
 pub struct GPModel {
     x_train: Vec<f64>,
-    y_train: Vec<f64>,
+    _y_train: Vec<f64>,
     alpha: Vec<f64>,     // (K + noise*I)^{-1} * y
     l_matrix: Vec<f64>,  // Cholesky of (K + noise*I)
     n_features: usize,
@@ -126,7 +126,7 @@ pub fn gp_fit_impl(
 
     Ok(GPModel {
         x_train: data.to_vec(),
-        y_train: targets.to_vec(),
+        _y_train: targets.to_vec(),
         alpha,
         l_matrix,
         n_features,
@@ -295,7 +295,7 @@ fn cholesky_decompose(a: &[f64], n: usize) -> Result<Vec<f64>, MlError> {
 }
 
 /// Solve L * L^T * x = b given the Cholesky factor L of A.
-fn cholesky_solve(l: &[f64], original_a: &[f64], b: &[f64], n: usize) -> Vec<f64> {
+fn cholesky_solve(l: &[f64], _original_a: &[f64], b: &[f64], n: usize) -> Vec<f64> {
     // Forward substitution: L * y = b
     let mut y = vec![0.0; n];
     for i in 0..n {

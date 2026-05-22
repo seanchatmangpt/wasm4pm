@@ -18,7 +18,7 @@
 
 import { describe, it, expect, beforeEach } from 'vitest';
 import { FederationController, FederationCircuitBreaker } from './federation.js';
-import type { MiningBackend, EventLogIR, ResultEnvelope, ModelIR } from '@wasm4pm/kernel';
+import type { MiningBackend, EventLogIR, ResultEnvelope, ModelIR } from 'wasm4pm';
 import type { BudgetEnvelope } from '@wasm4pm/contracts';
 
 /**

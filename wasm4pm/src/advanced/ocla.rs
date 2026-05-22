@@ -38,6 +38,11 @@ impl OCLanguageAbstraction {
             if let Some(obj_type) = obj_to_type.get(&obj_id) {
                 if event_indices.is_empty() { continue; }
 
+                // Bounds check: ensure all indices exist in events array
+                if event_indices.iter().any(|&idx| idx >= ocel.events.len()) {
+                    continue; // Skip invalid indices
+                }
+
                 // Group events by object instance and sort by timestamp
                 let mut sorted_indices = event_indices;
                 sorted_indices.sort_by_key(|&idx| &ocel.events[idx].timestamp);

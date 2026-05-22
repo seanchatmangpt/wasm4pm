@@ -235,7 +235,7 @@ impl CognitionBreed for Gps {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::breeds::{Fact, Goal, Rule, StateAtom};
+    use crate::breeds::{Goal, Rule, StateAtom};
 
     /// Rank-2 (domain contract): the empty plan is a valid plan for goals
     /// that are already satisfied. The caller must be able to distinguish

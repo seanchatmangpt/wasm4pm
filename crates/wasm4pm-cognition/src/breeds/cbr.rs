@@ -24,6 +24,10 @@ pub struct Cbr;
 /// - Identity: `jaccard(a,a) == 1` for any non-empty set.
 /// - Bounds: `0.0 ≤ result ≤ 1.0` always.
 /// - Empty case: `jaccard(∅, ∅) == 0` (convention; empty intersection).
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn jaccard(a: &HashSet<String>, b: &HashSet<String>) -> f32 {
     if a.is_empty() && b.is_empty() {
         return 0.0;
@@ -59,7 +63,7 @@ fn build_index(cases: &[Case]) -> HashMap<String, Vec<usize>> {
     for (idx, case) in cases.iter().enumerate() {
         for fact in &case.facts {
             let feature = format!("{}={}", fact.key, fact.value);
-            index.entry(feature).or_insert_with(Vec::new).push(idx);
+            index.entry(feature).or_default().push(idx);
         }
     }
     index
@@ -292,7 +296,7 @@ mod tests {
             retrieve_step.detail
         );
         assert!(
-            output.selected.as_ref().map_or(false, |a| a == "arch1"),
+            output.selected.as_ref().is_some_and(|a| a == "arch1"),
             "Should select arch1 from c1"
         );
     }

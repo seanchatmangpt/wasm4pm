@@ -71,29 +71,11 @@ export function hashConfig(config: BaseConfig): string {
 }
 
 /**
- * Verify configuration hash for determinism checking.
- * @internal
- */
-function verifyConfigHash(config: BaseConfig, expectedHash: string): boolean {
-  return hashConfig(config) === expectedHash;
-}
-
-/**
  * Short 8-char fingerprint suitable for logging/UI.
  * @internal
  */
 export function fingerprintConfig(config: BaseConfig): string {
   return hashConfig(config).slice(0, 8);
-}
-
-/**
- * Hash an arbitrary config section.
- * @internal
- */
-function hashConfigSection(section: unknown): string {
-  const normalized = stableStringify(section);
-  const digest = blake3(normalized);
-  return digest.toString('hex');
 }
 
 /**
@@ -117,9 +99,11 @@ export function diffConfigs(config1: BaseConfig, config2: BaseConfig): ConfigDif
     const aObj = typeof a === 'object' && a !== null && !Array.isArray(a);
     const bObj = typeof b === 'object' && b !== null && !Array.isArray(b);
     if (aObj && bObj) {
-      const keys = new Set([...Object.keys(a as any), ...Object.keys(b as any)]);
+      const aRec = a as Record<string, unknown>;
+      const bRec = b as Record<string, unknown>;
+      const keys = new Set([...Object.keys(aRec), ...Object.keys(bRec)]);
       for (const key of keys) {
-        walk((a as any)[key], (b as any)[key], prefix ? `${prefix}.${key}` : key);
+        walk(aRec[key], bRec[key], prefix ? `${prefix}.${key}` : key);
       }
     } else if (a !== b) {
       differences.push({ path: prefix, before: a, after: b });

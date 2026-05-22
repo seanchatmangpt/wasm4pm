@@ -13,7 +13,11 @@ pub fn r2_score_impl(y_true: &[f64], y_pred: &[f64]) -> Result<f64, MlError> {
     let ss_res: f64 = y_true.iter().zip(y_pred.iter()).map(|(t, p)| (t - p).powi(2)).sum();
 
     if ss_tot == 0.0 {
-        return Ok(1.0); // Perfect fit already
+        // All true values are identical (zero variance). If predictions also match
+        // perfectly (ss_res == 0), R² = 1. Otherwise the metric is undefined
+        // (division by zero) — return 0.0 to signal "no variance to explain",
+        // consistent with sklearn's behaviour (returns 0.0 for this edge case).
+        return Ok(if ss_res == 0.0 { 1.0 } else { 0.0 });
     }
 
     Ok(1.0 - ss_res / ss_tot)
@@ -79,7 +83,7 @@ pub fn median_absolute_error(y_true: &[f64], y_pred: &[f64]) -> Result<f64, JsEr
         .collect();
     errors.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
 
-    let median = if errors.len() % 2 == 0 {
+    let median = if errors.len().is_multiple_of(2) {
         (errors[errors.len() / 2 - 1] + errors[errors.len() / 2]) / 2.0
     } else {
         errors[errors.len() / 2]
@@ -122,6 +126,26 @@ mod tests {
         let y_pred = vec![1.5, 1.5, 1.5, 1.5]; // Mean = 2.5, predictions are constant
         let r2 = r2_score_impl(&y_true, &y_pred).unwrap();
         assert!(r2 < 0.0); // Negative R² is possible
+    }
+
+    #[test]
+    fn test_r2_zero_variance_perfect_prediction() {
+        // All targets identical, predictions also match → R² = 1.0
+        let y_true = vec![5.0, 5.0, 5.0];
+        let y_pred = vec![5.0, 5.0, 5.0];
+        let r2 = r2_score_impl(&y_true, &y_pred).unwrap();
+        assert!((r2 - 1.0).abs() < 1e-10, "Expected R²=1.0 for perfect zero-variance case, got {}", r2);
+    }
+
+    #[test]
+    fn test_r2_zero_variance_wrong_prediction() {
+        // All targets identical but predictions wrong: ss_tot=0, ss_res>0 → R² = 0.0
+        // (returns 0.0 not 1.0, consistent with sklearn for undefined-R² edge case)
+        let y_true = vec![5.0, 5.0, 5.0];
+        let y_pred = vec![4.0, 4.0, 4.0];
+        let r2 = r2_score_impl(&y_true, &y_pred).unwrap();
+        assert!((r2 - 0.0).abs() < 1e-10,
+            "Expected R²=0.0 for zero-variance wrong-prediction case, got {}", r2);
     }
 
     #[test]

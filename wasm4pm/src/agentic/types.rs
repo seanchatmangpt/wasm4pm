@@ -318,3 +318,128 @@ impl fmt::Display for AgenticError {
 }
 
 impl std::error::Error for AgenticError {}
+
+/// Structured error context — wraps an `AgenticError` with the agent identity,
+/// action being attempted, task being processed, and (optional) cycle number.
+///
+/// When a multi-step agentic pipeline fails (role_selector → task_decomposer →
+/// handoff_validator → evidence_sufficiency), the caller receives the context of
+/// which step failed, not just the generic error variant.
+///
+/// # Example
+///
+/// ```rust
+/// use wasm4pm::agentic::types::{AgenticError, AgenticContext};
+///
+/// let ctx = AgenticContext::new(
+///     AgenticError::PolicyViolation,
+///     "handoff_validator",
+///     "validate_handoff",
+///     Some("task-42"),
+///     None,
+/// );
+/// assert!(ctx.to_string().contains("handoff_validator"));
+/// assert!(ctx.to_string().contains("task-42"));
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+pub struct AgenticContext {
+    /// The underlying error variant.
+    pub error: AgenticError,
+    /// Which concrete implementor raised the error (e.g. "handoff_validator").
+    pub agent: String,
+    /// Which trait method was being called (e.g. "validate_handoff").
+    pub action: String,
+    /// The task ID being processed, if available.
+    pub task_id: Option<String>,
+    /// The autonomic cycle count, if available.
+    pub cycle: Option<u64>,
+}
+
+impl AgenticContext {
+    pub fn new(
+        error: AgenticError,
+        agent: impl Into<String>,
+        action: impl Into<String>,
+        task_id: Option<impl Into<String>>,
+        cycle: Option<u64>,
+    ) -> Self {
+        Self {
+            error,
+            agent: agent.into(),
+            action: action.into(),
+            task_id: task_id.map(Into::into),
+            cycle,
+        }
+    }
+}
+
+impl fmt::Display for AgenticContext {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "agentic error in {}::{}", self.agent, self.action)?;
+        if let Some(task_id) = &self.task_id {
+            write!(f, " (task={task_id})")?;
+        }
+        if let Some(cycle) = self.cycle {
+            write!(f, " (cycle={cycle})")?;
+        }
+        write!(f, ": {}", self.error)
+    }
+}
+
+impl std::error::Error for AgenticContext {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        Some(&self.error)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn agentic_context_display_includes_agent_action_task_cycle() {
+        let ctx = AgenticContext::new(
+            AgenticError::PolicyViolation,
+            "handoff_validator",
+            "validate_handoff",
+            Some("task-42"),
+            Some(7),
+        );
+        let s = ctx.to_string();
+        assert!(s.contains("handoff_validator"), "missing agent: {s}");
+        assert!(s.contains("validate_handoff"), "missing action: {s}");
+        assert!(s.contains("task-42"), "missing task_id: {s}");
+        assert!(s.contains('7'), "missing cycle: {s}");
+        assert!(s.contains("policy violation"), "missing error: {s}");
+    }
+
+    #[test]
+    fn agentic_context_without_task_and_cycle() {
+        let ctx = AgenticContext::new(
+            AgenticError::MissingEvidence,
+            "evidence_checker",
+            "is_sufficient",
+            None::<String>,
+            None,
+        );
+        let s = ctx.to_string();
+        assert!(s.contains("evidence_checker"));
+        assert!(s.contains("missing evidence"));
+        assert!(!s.contains("task="));
+        assert!(!s.contains("cycle="));
+    }
+
+    #[test]
+    fn agentic_context_error_source_is_inner() {
+        use std::error::Error;
+        let ctx = AgenticContext::new(
+            AgenticError::InvalidTransition,
+            "handoff",
+            "validate",
+            None::<String>,
+            None,
+        );
+        let source = ctx.source().expect("should have source");
+        assert_eq!(source.to_string(), "invalid transition");
+    }
+}

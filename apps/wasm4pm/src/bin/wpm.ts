@@ -45,6 +45,12 @@ process.exit = ((code?: number): never => {
  * so spans are not lost when handlers bypass this `finally`.
  */
 async function bootstrap(): Promise<void> {
+  // Support --no-color flag by setting NO_COLOR env var (honored by consola and most CLI tools)
+  // Check raw argv to avoid depending on CLI parser
+  if (process.argv.includes('--no-color')) {
+    process.env.NO_COLOR = '1';
+  }
+
   await initOtel();
   try {
     await runMain(main);

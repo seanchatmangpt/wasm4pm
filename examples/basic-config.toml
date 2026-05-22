@@ -1,101 +1,365 @@
 # wasm4pm Configuration (TOML Format)
-# Version: 26.4.5
-# This is the default configuration template for wasm4pm projects
+# Version: 26.5.18
+# Schema: 1 (current)
+#
+# This is the canonical configuration template for wasm4pm projects.
+# Five-layer resolution order (highest to lowest priority):
+#   1. CLI arguments
+#   2. This TOML config file (wasm4pm.toml)
+#   3. JSON config file (wasm4pm.json)
+#   4. Environment variables (WASM4PM_* prefix)
+#   5. Defaults
+#
+# Reference: packages/config/src/schema.ts (canonical source of truth)
 
-[engine]
-# Execution profile: fast, balanced (default), quality, stream
+schemaVersion = 1
+version = "26.5.18"
+
+# =============================================================================
+# [source] — Event log input
+# =============================================================================
+# kind: file, stream, http
+# For kind=file: set path to XES/JSON log
+# For kind=http: set url to remote log endpoint
+[source]
+kind = "file"
+path = "event-log.xes"
+# url = "http://example.com/logs/process.xes"  # Alternative for kind=http
+
+
+# =============================================================================
+# [sink] — Output destination
+# =============================================================================
+# kind: stdout (default), file, http
+# For kind=file: set path to output file
+# For kind=http: set url to remote sink endpoint
+[sink]
+kind = "stdout"
+# path = ".wasm4pm/results/output.json"  # Alternative for kind=file
+# url = "http://example.com/results"      # Alternative for kind=http
+
+
+# =============================================================================
+# [algorithm] — Discovery algorithm & parameters
+# =============================================================================
+# name: any registered algorithm (dfg, alpha_plus_plus, genetic_algorithm, ilp, etc.)
+# parameters: algorithm-specific config (optional, depends on algorithm)
+#
+# Common algorithms (by profile):
+#   fast:     dfg, simd_streaming_dfg, process_skeleton
+#   balanced: heuristic_miner, inductive_miner, alpha_plus_plus, hill_climbing
+#   quality:  genetic_algorithm, ilp, a_star, aco, pso, simulated_annealing
+#
+# Full list: packages/kernel/src/registry.ts
+[algorithm]
+name = "dfg"
+# For genetic algorithm (profile=quality):
+# parameters.population_size = 50
+# parameters.generations = 100
+#
+# For PSO (profile=quality):
+# parameters.particles = 30
+# parameters.iterations = 50
+#
+# For simulated annealing (profile=quality):
+# parameters.temperature = 1.0
+# parameters.cooling_rate = 0.95
+# parameters.iterations = 100
+
+
+# =============================================================================
+# [execution] — Algorithm runtime behavior
+# =============================================================================
+# profile: fast, balanced (default), quality, stream
+#   - fast:      Prioritizes speed; uses lightweight algorithms (DFG, skeleton)
+#   - balanced:  Balanced trade-off (heuristic, inductive, alpha++)
+#   - quality:   Prioritizes quality; uses expensive algorithms (genetic, ILP, A*)
+#   - stream:    Streaming mode; suited for continuous / unbounded logs
+#
+# timeout: Execution timeout in milliseconds (optional, defaults to 300000 = 5 min)
+# maxMemory: Maximum memory in bytes (optional, defaults to 2048 MB = 2^31)
+[execution]
 profile = "balanced"
+timeout = 300000      # 5 minutes
+maxMemory = 2147483648  # 2 GB (2^31 bytes)
 
-# Log level: debug, info (default), warn, error
-log_level = "info"
 
-# Maximum memory in MB
-max_memory_mb = 2048
-
-# Execution timeout in seconds
-timeout_seconds = 300
-
-# Enable/disable verbose output
-verbose = false
-
-[discovery]
-# Default discovery algorithm if not specified in CLI
-# Options: dfg, alpha++, genetic, pso, astar, ilp, declare, etc.
-default_algorithm = "dfg"
-
-# Genetic algorithm parameters (used when profile = "quality")
-genetic_populations = 50
-genetic_generations = 100
-
-# PSO (Particle Swarm Optimization) parameters
-pso_particles = 30
-pso_iterations = 50
-
-# A* Search parameters
-astar_max_depth = 20
-
-# ILP Optimization timeout (seconds)
-ilp_timeout_seconds = 60
-
-# Hill Climbing iterations
-hill_climbing_iterations = 100
-
-# Ant Colony Optimization parameters
-aco_ants = 20
-aco_iterations = 50
-
-[output]
-# Output format: human (default), json
-format = "human"
-
-# Output destination: stdout (default), stderr, or file path
-destination = "stdout"
-
-# Pretty-print JSON output (if format = json)
-pretty = true
-
-[watch]
-# File pattern to match (glob pattern)
-pattern = "*.xes"
-
-# Poll interval in milliseconds
-poll_interval_ms = 5000
-
-# Enable watch mode by default
-enabled = false
-
+# =============================================================================
+# [observability] — Logging, metrics, OTEL instrumentation
+# =============================================================================
+# logLevel: debug, info (default), warn, error
+# metricsEnabled: Enable runtime metrics collection (spans, counters, etc.)
+#
+# [observability.otel] — OpenTelemetry configuration
+#   enabled: Master switch for OTEL instrumentation
+#   exporter: otlp (default), console, none
+#   endpoint: OTLP receiver (http://localhost:4318, etc.)
+#   required: Fail if OTEL is unreachable (default: false)
+#   headers: Custom HTTP headers for OTLP (optional)
 [observability]
-# Enable observability/logging
-enabled = true
+logLevel = "info"
+metricsEnabled = true
 
-# Log level
-level = "info"
+[observability.otel]
+enabled = false
+exporter = "otlp"
+endpoint = "http://localhost:4318"
+required = false
+# headers.Authorization = "Bearer token-here"  # Optional custom headers
 
-# Log sinks: console (default), file, http
-sinks = ["console"]
 
-# File sink configuration (if sinks includes "file")
-file_path = "./wasm4pm.log"
-file_max_size_mb = 100
-file_max_files = 5
+# =============================================================================
+# [watch] — File watcher mode
+# =============================================================================
+# enabled: Enable watch mode (re-run on file change)
+# poll_interval: Polling interval in milliseconds (default: 1000)
+# checkpoint_dir: Directory to store watch state (optional)
+[watch]
+enabled = false
+poll_interval = 1000
+# checkpoint_dir = ".wasm4pm/watch-state"
 
-# HTTP sink configuration (if sinks includes "http")
-http_endpoint = "http://localhost:3000/logs"
-http_batch_size = 10
-http_flush_interval_ms = 5000
 
-[metadata]
-# Project name
-project_name = "my-process-mining-project"
+# =============================================================================
+# [output] — CLI output formatting
+# =============================================================================
+# format: human (default), json
+# destination: stdout (default), stderr, or file path
+# pretty: Pretty-print JSON (default: true)
+# colorize: Colorize human output (default: true)
+[output]
+format = "human"
+destination = "stdout"
+pretty = true
+colorize = true
 
-# Project description
-description = "Process mining analysis using wasm4pm"
 
-# Author/team
-author = "Your Name"
+# =============================================================================
+# [prediction] — Predictive mining tasks & parameters
+# =============================================================================
+# enabled: Master switch for prediction tasks
+# activityKey: Event log attribute name for activities (default: "concept:name")
+# ngramOrder: N-gram order for next-activity prediction; range [2, 5] (default: 2)
+# driftWindowSize: Sliding window size for drift detection in traces (default: 10)
+# tasks: Array of enabled prediction tasks
+#
+# Available tasks (6 perspectives):
+#   - next-activity:   Predict next activity in the process
+#   - remaining-time:  Predict remaining time to case completion
+#   - outcome:         Predict case outcome (anomaly score, boundary coverage)
+#   - drift:           Detect concept drift (EWMA, Jaccard window)
+#   - features:        Extract case features (prefix, rework score)
+#   - resource:        Predict resource assignment (M/M/1 queue, UCB1)
+#
+# [prediction.drift] — Drift-detection parameters
+#   ewma_alpha: EWMA smoothing factor in (0, 1]; higher = more reactive (default: 0.2)
+#   threshold: Drift score threshold in (0, 1] (default: 0.3)
+[prediction]
+enabled = false
+activityKey = "concept:name"
+ngramOrder = 2
+driftWindowSize = 10
+tasks = []
+# Example: tasks = ["next-activity", "remaining-time", "drift"]
 
-# Environment: development, staging, production
-environment = "development"
+[prediction.drift]
+ewma_alpha = 0.2
+threshold = 0.3
 
-# Tags for organization
-tags = ["process-mining", "discovery"]
+
+# =============================================================================
+# [ml] — Machine Learning analysis tasks & algorithms
+# =============================================================================
+# enabled: Master switch for ML analysis
+# tasks: Array of ML tasks to enable (classify, cluster, forecast, anomaly, regress, pca)
+#
+# Two config layouts supported (for backward compatibility):
+#   Layout 1 (nested, recommended): Define per-task sub-sections [ml.classify], [ml.cluster], etc.
+#   Layout 2 (flat, legacy): Use top-level `method`, `k`, `eps` fields (deprecated, will be migrated)
+#
+# Per-task sub-sections allow fine-grained control:
+#   [ml.classify]  — Decision tree, k-NN, Naive Bayes, logistic regression
+#   [ml.cluster]   — K-means, DBSCAN, hierarchical clustering
+#   [ml.forecast]  — Linear, exponential, polynomial regression
+#   [ml.anomaly]   — EMA, isolation forest, Z-score detection
+#   [ml.regress]   — Linear, polynomial, ridge regression
+#   [ml.pca]       — Principal component analysis
+[ml]
+enabled = false
+tasks = []
+# Example: tasks = ["classify", "cluster", "forecast"]
+
+# Classification sub-section
+# model: decision_tree (default), naive_bayes, logistic_regression, knn
+# targetKey: Event log attribute for classification target (default: "outcome")
+# k: Number of neighbors (for knn, ignored otherwise; default: 5)
+[ml.classify]
+model = "decision_tree"
+targetKey = "outcome"
+k = 5
+
+# Clustering sub-section
+# method: kmeans (default), dbscan, hierarchical
+# k: Number of clusters for kmeans/hierarchical (default: 5)
+# eps: DBSCAN epsilon neighbourhood radius (default: 1.0)
+[ml.cluster]
+method = "kmeans"
+k = 5
+eps = 1.0
+
+# Forecasting sub-section
+# method: linear (default), exponential, polynomial
+# periods: Number of periods to forecast (default: 5)
+# polynomialDegree: Degree of polynomial (1-8, ignored unless method=polynomial; default: 2)
+[ml.forecast]
+method = "linear"
+periods = 5
+polynomialDegree = 2
+
+# Anomaly detection sub-section
+# method: ema (default), isolation_forest, zscore
+# alpha: EMA smoothing factor in (0, 1] (default: 0.3)
+# threshold: Anomaly score threshold; higher = stricter (default: 2.5)
+[ml.anomaly]
+method = "ema"
+alpha = 0.3
+threshold = 2.5
+
+# Regression sub-section
+# method: linear (default), polynomial, ridge
+# targetKey: Regression target attribute (default: "outcome")
+# lambda: L2 regularization strength for ridge (default: 0.0)
+[ml.regress]
+method = "linear"
+targetKey = "outcome"
+lambda = 0.0
+
+# PCA (Principal Component Analysis) sub-section
+# nComponents: Number of components to retain (default: 2)
+[ml.pca]
+nComponents = 2
+
+
+# =============================================================================
+# [rl] — Reinforcement Learning orchestrator & autonomic healing
+# =============================================================================
+# enabled: Master switch for RL agent orchestrator
+# agents: Array of active agents (one or more)
+#   Available: QLearning, SARSA, DoubleQLearning, ExpectedSARSA, REINFORCE
+# learning_rate: TD learning rate α in (0, 1]; default: 0.1
+# discount_factor: Discount factor γ in [0, 1]; default: 0.99
+# epsilon: ε-greedy exploration rate in [0, 1]; default: 0.1
+#
+# [rl.convergence] — Convergence detection for policy stabilization
+#   min_cycles: Minimum cycles before convergence checks (default: 50)
+#   target_reward_improvement: Min mean-reward delta considered "still improving" (default: 0.05)
+#   window_size: Trailing window for mean-reward computation (default: 10)
+#
+# LinUCB contextual bandit agent selection:
+#   gpu_enabled: Enable GPU dispatch (requires `feature-gpu`; default: false)
+#   linucb_lambda: Regularization coefficient λ (default: 1.0)
+#   ucb1_exploration: UCB exploration bonus α; default: √2 ≈ 1.4142
+[rl]
+enabled = false
+agents = ["QLearning"]
+learning_rate = 0.1
+discount_factor = 0.99
+epsilon = 0.1
+
+[rl.convergence]
+min_cycles = 50
+target_reward_improvement = 0.05
+window_size = 10
+
+# LinUCB contextual bandit for algorithm selection
+# gpu_enabled = false  # Requires feature-gpu
+# linucb_lambda = 1.0
+# ucb1_exploration = 1.4142  # sqrt(2)
+
+
+# =============================================================================
+# [membrane] — AutoMembrane 5-layer conformance membrane (MCPP)
+# =============================================================================
+# enabled: Master switch for conformance checking
+# custody_actions: List of actions requiring pre-execution conformance gates
+#
+# [membrane.thresholds] — Conformance thresholds
+#   actor_anomaly_escalate: Escalate when anomaly score > threshold (default: 0.7)
+#   actor_anomaly_warn: Warn when anomaly score > threshold (default: 0.4)
+#   route_match_allow: Allow when route match >= threshold (default: 0.5)
+#   automl_escalate: Escalate AutoML violations > threshold (default: 0.9)
+#   automl_warn: Warn on AutoML violations > threshold (default: 0.7)
+#
+# [membrane.drift] — Drift bands (stable < moderate < high < severe)
+#   stable_threshold: Below this = stable (default: 0.10)
+#   moderate_threshold: Stable to moderate boundary (default: 0.25)
+#   high_threshold: Moderate to high boundary (default: 0.50)
+#   severe_threshold: High to severe boundary (default: 0.75)
+#
+# [membrane.envelopes] — Envelope persistence
+#   persist: Save envelopes to disk (default: true)
+#   path: Directory for envelope files (default: ".wasm4pm/envelopes")
+[membrane]
+enabled = false
+custody_actions = ["approve", "release", "transfer"]
+
+[membrane.thresholds]
+actor_anomaly_escalate = 0.7
+actor_anomaly_warn = 0.4
+route_match_allow = 0.5
+automl_escalate = 0.9
+automl_warn = 0.7
+
+[membrane.drift]
+stable_threshold = 0.10
+moderate_threshold = 0.25
+high_threshold = 0.50
+severe_threshold = 0.75
+
+[membrane.envelopes]
+persist = true
+path = ".wasm4pm/envelopes"
+
+
+# =============================================================================
+# Common Environment Variable Mappings (WASM4PM_* prefix)
+# =============================================================================
+# Override any config section via environment variables (Layer 4 priority).
+# Examples:
+#
+# WASM4PM_PROFILE=quality               # execution.profile
+# WASM4PM_ALGORITHM=genetic_algorithm   # algorithm.name
+# WASM4PM_OUTPUT_FORMAT=json            # output.format
+# WASM4PM_LOG_LEVEL=debug               # observability.logLevel
+# WASM4PM_WATCH=true                    # watch.enabled
+# WASM4PM_OTEL_ENABLED=true             # observability.otel.enabled
+# WASM4PM_OTEL_ENDPOINT=http://localhost:4318
+# WASM4PM_PREDICTION_ENABLED=true       # prediction.enabled
+# WASM4PM_PREDICTION_TASKS=next-activity,drift
+# WASM4PM_PREDICTION_ACTIVITY_KEY=concept:name
+# WASM4PM_PREDICTION_NGRAM_ORDER=3
+# WASM4PM_ML_ENABLED=true               # ml.enabled
+# WASM4PM_ML_ALGORITHMS=classify,cluster
+# WASM4PM_RL_ENABLED=true               # rl.enabled
+# WASM4PM_RL_AGENTS=QLearning,SARSA
+# WASM4PM_RL_LEARNING_RATE=0.05
+# WASM4PM_RL_DISCOUNT_FACTOR=0.95
+# WASM4PM_RL_EPSILON=0.2
+
+
+# =============================================================================
+# Section Defaults (Applied if omitted from config)
+# =============================================================================
+# [source]              → kind: file
+# [sink]                → kind: stdout
+# [algorithm]           → name: dfg, parameters: {}
+# [execution]           → profile: balanced, timeout: 300000, maxMemory: 2147483648
+# [observability]       → logLevel: info, metricsEnabled: false
+# [output]              → format: human, destination: stdout, pretty: true, colorize: true
+# [prediction]          → enabled: false, ngramOrder: 2, driftWindowSize: 10, tasks: []
+# [ml]                  → enabled: false, tasks: []
+# [rl]                  → enabled: false, agents: [QLearning], epsilon: 0.1
+# [membrane]            → enabled: false
+#
+# All optional sections can be omitted entirely; defaults will be applied.
+# Required sections: [source] (must have kind), [algorithm] (must have name)

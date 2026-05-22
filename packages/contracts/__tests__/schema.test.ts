@@ -214,6 +214,34 @@ describe('Plan schema', () => {
     expect(errors.some((e) => e.includes('nonexistent'))).toBe(true);
   });
 
+  it('validatePlanDAG reports cycle even when there are also dangling edge references', () => {
+    // Gap closure: previously cycle detection was gated on `errors.length === 0`,
+    // so a plan with BOTH a dangling reference AND a cycle only reported the dangling
+    // reference.  After the fix, cycle detection runs on the valid-node subgraph
+    // (edges referencing known nodes only) so the cycle is still caught.
+    //
+    // Construct a plan that has:
+    //   - three valid nodes forming a cycle: A → B → C → A
+    //   - one dangling edge: A → ghost (ghost not in nodes)
+    const nodes = [
+      makeNode('A', 'source'),
+      makeNode('B', 'algorithm'),
+      makeNode('C', 'sink'),
+    ];
+    const edges = [
+      { from: 'A', to: 'B' },
+      { from: 'B', to: 'C' },
+      { from: 'C', to: 'A' }, // cycle
+      { from: 'A', to: 'ghost' }, // dangling
+    ];
+    const plan: Plan = { ...validPlan, nodes, edges };
+    const errors = validatePlanDAG(plan);
+
+    // Both defects must be reported
+    expect(errors.some((e) => e.includes('ghost'))).toBe(true);
+    expect(errors.some((e) => e.includes('cycle'))).toBe(true);
+  });
+
   it('JSON schema has required structure', () => {
     expect(PLAN_JSON_SCHEMA.$id).toContain('plan');
     expect(PLAN_JSON_SCHEMA.required).toContain('nodes');

@@ -1,0 +1,4906 @@
+{
+  "receipt_type": "Wasm4pmExecutionReceipt",
+  "receipt_schema": "Wasm4pmExecutionReceipt.v1",
+  "package": "wasm4pm",
+  "version": "26.5.21",
+  "commit": "d14384a4a23a86f393c1d18162e7b0c721d18b86",
+  "hash_algorithm": "BLAKE3",
+  "time_basis": "LogicalMonotonicClock",
+  "canonicalization": {
+    "name": "CanonicalOCEL2ForWasm4pm",
+    "version": 1,
+    "hash_algorithm": "BLAKE3"
+  },
+  "example_id": "supply_chain_port",
+  "input": {
+    "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5",
+    "event_log_format": "xes",
+    "activity_key": "concept:name"
+  },
+  "algorithms": [
+    {
+      "id": "causal_graph",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "06f203f8ebce05eb710d1423a2f54e77e0942d54b102db7335ac8f0393c3fb13",
+      "duration_ms": 49.285,
+      "expected_path": {
+        "route_id": "wpm.example.supply_chain_port.causal_graph.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_supply_chain_port_causal_graph_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_causal_graph_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_causal_graph_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_causal_graph_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_causal_graph",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_causal_graph_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_causal_graph",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_causal_graph_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "06f203f8ebce05eb710d1423a2f54e77e0942d54b102db7335ac8f0393c3fb13",
+                "duration_ms": 49.285
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_causal_graph_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_causal_graph_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "06f203f8ebce05eb710d1423a2f54e77e0942d54b102db7335ac8f0393c3fb13"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_causal_graph_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_causal_graph_supply_chain_port",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "06f203f8ebce05eb710d1423a2f54e77e0942d54b102db7335ac8f0393c3fb13"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_causal_graph_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_causal_graph",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_causal_graph_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_causal_graph_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_causal_graph_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_causal_graph_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_causal_graph_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_causal_graph",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_causal_graph_supply_chain_port",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "bbf6269cdf51128344e5c52815ca4d8055f2c8ae57c15016287efd463238805b"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_supply_chain_port_causal_graph_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-22T00:40:47.789Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_causal_graph_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-22T00:40:47.739Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_causal_graph_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-22T00:40:50.339Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_causal_graph_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-22T00:40:52.307Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_causal_graph",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_causal_graph_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-22T00:40:51.885Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_causal_graph",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_causal_graph_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "06f203f8ebce05eb710d1423a2f54e77e0942d54b102db7335ac8f0393c3fb13",
+                "duration_ms": 49.285
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_causal_graph_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-22T00:40:53.527Z",
+              "relationships": [
+                {
+                  "objectId": "result_causal_graph_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "06f203f8ebce05eb710d1423a2f54e77e0942d54b102db7335ac8f0393c3fb13"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_causal_graph_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-22T00:40:51.931Z",
+              "relationships": [
+                {
+                  "objectId": "result_causal_graph_supply_chain_port",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "06f203f8ebce05eb710d1423a2f54e77e0942d54b102db7335ac8f0393c3fb13"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_causal_graph_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-22T00:40:52.556Z",
+              "relationships": [
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_causal_graph",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_causal_graph_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_causal_graph_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-22T00:40:52.193Z",
+              "relationships": [
+                {
+                  "objectId": "result_causal_graph_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_causal_graph_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-22T00:40:55.698Z",
+              "relationships": [
+                {
+                  "objectId": "result_causal_graph_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_causal_graph",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_causal_graph_supply_chain_port",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "fd6e39023a4074a94ae2359eb11fac51615d25f2dbcd7c3d9dc0c8903aec2ea9",
+        "observed_result_hash": "06f203f8ebce05eb710d1423a2f54e77e0942d54b102db7335ac8f0393c3fb13"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5",
+        "output_artifact_hash": "06f203f8ebce05eb710d1423a2f54e77e0942d54b102db7335ac8f0393c3fb13",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "performance_spectrum",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "d276a0c3cc2629a6765f18e01d8245953b8a17c6e2af0b8796dbd3f0997f59b7",
+      "duration_ms": 24.968,
+      "expected_path": {
+        "route_id": "wpm.example.supply_chain_port.performance_spectrum.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_supply_chain_port_performance_spectrum_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_performance_spectrum_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_performance_spectrum_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_performance_spectrum_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_performance_spectrum",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_performance_spectrum_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_performance_spectrum",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_performance_spectrum_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "d276a0c3cc2629a6765f18e01d8245953b8a17c6e2af0b8796dbd3f0997f59b7",
+                "duration_ms": 24.968
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_performance_spectrum_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_performance_spectrum_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "d276a0c3cc2629a6765f18e01d8245953b8a17c6e2af0b8796dbd3f0997f59b7"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_performance_spectrum_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_performance_spectrum_supply_chain_port",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "d276a0c3cc2629a6765f18e01d8245953b8a17c6e2af0b8796dbd3f0997f59b7"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_performance_spectrum_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_performance_spectrum",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_performance_spectrum_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_performance_spectrum_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_performance_spectrum_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_performance_spectrum_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_performance_spectrum_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_performance_spectrum",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_performance_spectrum_supply_chain_port",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "f3c699365720be6126b077cab47f9bd86634fc4cb14e593f2d5eb2775af565cb"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_supply_chain_port_performance_spectrum_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-22T00:40:49.756Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_performance_spectrum_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-22T00:40:49.204Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_performance_spectrum_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-22T00:40:51.884Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_performance_spectrum_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-22T00:40:53.550Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_performance_spectrum",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_performance_spectrum_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-22T00:40:54.074Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_performance_spectrum",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_performance_spectrum_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "d276a0c3cc2629a6765f18e01d8245953b8a17c6e2af0b8796dbd3f0997f59b7",
+                "duration_ms": 24.968
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_performance_spectrum_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-22T00:40:50.700Z",
+              "relationships": [
+                {
+                  "objectId": "result_performance_spectrum_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "d276a0c3cc2629a6765f18e01d8245953b8a17c6e2af0b8796dbd3f0997f59b7"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_performance_spectrum_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-22T00:40:54.365Z",
+              "relationships": [
+                {
+                  "objectId": "result_performance_spectrum_supply_chain_port",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "d276a0c3cc2629a6765f18e01d8245953b8a17c6e2af0b8796dbd3f0997f59b7"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_performance_spectrum_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-22T00:40:51.282Z",
+              "relationships": [
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_performance_spectrum",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_performance_spectrum_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_performance_spectrum_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-22T00:40:53.365Z",
+              "relationships": [
+                {
+                  "objectId": "result_performance_spectrum_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_performance_spectrum_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-22T00:40:53.876Z",
+              "relationships": [
+                {
+                  "objectId": "result_performance_spectrum_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_performance_spectrum",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_performance_spectrum_supply_chain_port",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "3b82acc9f6d47cf3663bcde6c1aa59bd8196328b843b0c8df5ffcdaaaf7c3fc2",
+        "observed_result_hash": "d276a0c3cc2629a6765f18e01d8245953b8a17c6e2af0b8796dbd3f0997f59b7"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5",
+        "output_artifact_hash": "d276a0c3cc2629a6765f18e01d8245953b8a17c6e2af0b8796dbd3f0997f59b7",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "batches",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "8520f6480badb289cb3f23b212a40eab08ed15b69e6b3bb8eb968e5bdacbe275",
+      "duration_ms": 27.673,
+      "expected_path": {
+        "route_id": "wpm.example.supply_chain_port.batches.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_supply_chain_port_batches_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_batches_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_batches_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_batches_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_batches",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_batches_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_batches",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_batches_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "8520f6480badb289cb3f23b212a40eab08ed15b69e6b3bb8eb968e5bdacbe275",
+                "duration_ms": 27.673
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_batches_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_batches_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "8520f6480badb289cb3f23b212a40eab08ed15b69e6b3bb8eb968e5bdacbe275"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_batches_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_batches_supply_chain_port",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "8520f6480badb289cb3f23b212a40eab08ed15b69e6b3bb8eb968e5bdacbe275"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_batches_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_batches",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_batches_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_batches_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_batches_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_batches_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_batches_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_batches",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_batches_supply_chain_port",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "5a6a263920d53e2e62ee9c2f3a4468c0c126cb3bfb38ebca1afc6805df9b8510"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_supply_chain_port_batches_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-22T00:40:51.444Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_batches_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-22T00:40:51.724Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_batches_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-22T00:40:52.497Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_batches_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-22T00:40:48.640Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_batches",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_batches_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-22T00:40:51.696Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_batches",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_batches_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "8520f6480badb289cb3f23b212a40eab08ed15b69e6b3bb8eb968e5bdacbe275",
+                "duration_ms": 27.673
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_batches_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-22T00:40:52.217Z",
+              "relationships": [
+                {
+                  "objectId": "result_batches_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "8520f6480badb289cb3f23b212a40eab08ed15b69e6b3bb8eb968e5bdacbe275"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_batches_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-22T00:40:54.288Z",
+              "relationships": [
+                {
+                  "objectId": "result_batches_supply_chain_port",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "8520f6480badb289cb3f23b212a40eab08ed15b69e6b3bb8eb968e5bdacbe275"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_batches_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-22T00:40:52.627Z",
+              "relationships": [
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_batches",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_batches_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_batches_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-22T00:40:51.610Z",
+              "relationships": [
+                {
+                  "objectId": "result_batches_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_batches_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-22T00:40:56.351Z",
+              "relationships": [
+                {
+                  "objectId": "result_batches_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_batches",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_batches_supply_chain_port",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "abd87dbeaab4bdf1b3b40d7a393d474d268fe943a89bc3bac774649fa70f676a",
+        "observed_result_hash": "8520f6480badb289cb3f23b212a40eab08ed15b69e6b3bb8eb968e5bdacbe275"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5",
+        "output_artifact_hash": "8520f6480badb289cb3f23b212a40eab08ed15b69e6b3bb8eb968e5bdacbe275",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "correlation_miner",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "73badf7372a53a2a61970a4b2ef1c2c5a1f11a1ed7c96d1e27f713cd7f18ff84",
+      "duration_ms": 22.091,
+      "expected_path": {
+        "route_id": "wpm.example.supply_chain_port.correlation_miner.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_supply_chain_port_correlation_miner_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_correlation_miner_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_correlation_miner_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_correlation_miner_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_correlation_miner",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_correlation_miner_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_correlation_miner",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_correlation_miner_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "73badf7372a53a2a61970a4b2ef1c2c5a1f11a1ed7c96d1e27f713cd7f18ff84",
+                "duration_ms": 22.091
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_correlation_miner_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_correlation_miner_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "73badf7372a53a2a61970a4b2ef1c2c5a1f11a1ed7c96d1e27f713cd7f18ff84"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_correlation_miner_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_correlation_miner_supply_chain_port",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "73badf7372a53a2a61970a4b2ef1c2c5a1f11a1ed7c96d1e27f713cd7f18ff84"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_correlation_miner_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_correlation_miner",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_correlation_miner_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_correlation_miner_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_correlation_miner_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_correlation_miner_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_correlation_miner_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_correlation_miner",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_correlation_miner_supply_chain_port",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "4919f06981161556fcf41f4ea3c27f46e03e076b31a12f5cecdd32dfbf6a19b5"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_supply_chain_port_correlation_miner_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-22T00:40:50.122Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_correlation_miner_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-22T00:40:50.326Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_correlation_miner_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-22T00:40:50.289Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_correlation_miner_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-22T00:40:53.045Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_correlation_miner",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_correlation_miner_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-22T00:40:50.988Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_correlation_miner",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_correlation_miner_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "73badf7372a53a2a61970a4b2ef1c2c5a1f11a1ed7c96d1e27f713cd7f18ff84",
+                "duration_ms": 22.091
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_correlation_miner_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-22T00:40:51.986Z",
+              "relationships": [
+                {
+                  "objectId": "result_correlation_miner_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "73badf7372a53a2a61970a4b2ef1c2c5a1f11a1ed7c96d1e27f713cd7f18ff84"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_correlation_miner_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-22T00:40:51.877Z",
+              "relationships": [
+                {
+                  "objectId": "result_correlation_miner_supply_chain_port",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "73badf7372a53a2a61970a4b2ef1c2c5a1f11a1ed7c96d1e27f713cd7f18ff84"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_correlation_miner_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-22T00:40:54.436Z",
+              "relationships": [
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_correlation_miner",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_correlation_miner_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_correlation_miner_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-22T00:40:51.175Z",
+              "relationships": [
+                {
+                  "objectId": "result_correlation_miner_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_correlation_miner_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-22T00:40:54.594Z",
+              "relationships": [
+                {
+                  "objectId": "result_correlation_miner_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_correlation_miner",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_correlation_miner_supply_chain_port",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "c3d6ace803d27eaed72857911ded456668130d52a28a9e9bdd795c2b0a46f959",
+        "observed_result_hash": "73badf7372a53a2a61970a4b2ef1c2c5a1f11a1ed7c96d1e27f713cd7f18ff84"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5",
+        "output_artifact_hash": "73badf7372a53a2a61970a4b2ef1c2c5a1f11a1ed7c96d1e27f713cd7f18ff84",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "generalization",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "631b8383d962adb88fc410bf10d6884e5c181df1aadb7ffb56f19d1879d7ceca",
+      "duration_ms": 29.674,
+      "expected_path": {
+        "route_id": "wpm.example.supply_chain_port.generalization.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_supply_chain_port_generalization_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_generalization_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_generalization_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_generalization_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_generalization",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_generalization_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_generalization",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_generalization_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "631b8383d962adb88fc410bf10d6884e5c181df1aadb7ffb56f19d1879d7ceca",
+                "duration_ms": 29.674
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_generalization_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_generalization_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "631b8383d962adb88fc410bf10d6884e5c181df1aadb7ffb56f19d1879d7ceca"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_generalization_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_generalization_supply_chain_port",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "631b8383d962adb88fc410bf10d6884e5c181df1aadb7ffb56f19d1879d7ceca"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_generalization_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_generalization",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_generalization_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_generalization_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_generalization_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_generalization_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_generalization_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_generalization",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_generalization_supply_chain_port",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "da795c8c6642769373572efd2633b2bddebdab85281ce902227e0e344e1169d8"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_supply_chain_port_generalization_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-22T00:40:48.150Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_generalization_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-22T00:40:52.155Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_generalization_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-22T00:40:50.360Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_generalization_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-22T00:40:51.229Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_generalization",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_generalization_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-22T00:40:52.552Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_generalization",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_generalization_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "631b8383d962adb88fc410bf10d6884e5c181df1aadb7ffb56f19d1879d7ceca",
+                "duration_ms": 29.674
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_generalization_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-22T00:40:53.635Z",
+              "relationships": [
+                {
+                  "objectId": "result_generalization_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "631b8383d962adb88fc410bf10d6884e5c181df1aadb7ffb56f19d1879d7ceca"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_generalization_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-22T00:40:51.294Z",
+              "relationships": [
+                {
+                  "objectId": "result_generalization_supply_chain_port",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "631b8383d962adb88fc410bf10d6884e5c181df1aadb7ffb56f19d1879d7ceca"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_generalization_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-22T00:40:53.552Z",
+              "relationships": [
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_generalization",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_generalization_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_generalization_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-22T00:40:54.250Z",
+              "relationships": [
+                {
+                  "objectId": "result_generalization_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_generalization_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-22T00:40:53.122Z",
+              "relationships": [
+                {
+                  "objectId": "result_generalization_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_generalization",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_generalization_supply_chain_port",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "372bc9af31e1876c84ea41c5c6991ac9e88d45f2b54fdc4cc21d8e05fce3d467",
+        "observed_result_hash": "631b8383d962adb88fc410bf10d6884e5c181df1aadb7ffb56f19d1879d7ceca"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5",
+        "output_artifact_hash": "631b8383d962adb88fc410bf10d6884e5c181df1aadb7ffb56f19d1879d7ceca",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "etconformance_precision",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "5197d5f71fd1796468d20d4ed12d647815ed8473f0cfbb669e62eb559084bfc8",
+      "duration_ms": 46.778,
+      "expected_path": {
+        "route_id": "wpm.example.supply_chain_port.etconformance_precision.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_supply_chain_port_etconformance_precision_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_etconformance_precision_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_etconformance_precision_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_etconformance_precision_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_etconformance_precision",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_etconformance_precision_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_etconformance_precision",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_etconformance_precision_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5197d5f71fd1796468d20d4ed12d647815ed8473f0cfbb669e62eb559084bfc8",
+                "duration_ms": 46.778
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_etconformance_precision_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_etconformance_precision_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5197d5f71fd1796468d20d4ed12d647815ed8473f0cfbb669e62eb559084bfc8"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_etconformance_precision_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_etconformance_precision_supply_chain_port",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5197d5f71fd1796468d20d4ed12d647815ed8473f0cfbb669e62eb559084bfc8"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_etconformance_precision_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_etconformance_precision",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_etconformance_precision_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_etconformance_precision_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_etconformance_precision_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_etconformance_precision_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_etconformance_precision_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_etconformance_precision",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_etconformance_precision_supply_chain_port",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "15c5626804ea197e75b9ebecc9d5e5fc6300b8bf0ba1f1f90ebefed2ec59c244"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_supply_chain_port_etconformance_precision_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-22T00:40:50.636Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_etconformance_precision_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-22T00:40:51.624Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_etconformance_precision_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-22T00:40:49.497Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_etconformance_precision_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-22T00:40:50.393Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_etconformance_precision",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_etconformance_precision_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-22T00:40:51.323Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_etconformance_precision",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_etconformance_precision_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5197d5f71fd1796468d20d4ed12d647815ed8473f0cfbb669e62eb559084bfc8",
+                "duration_ms": 46.778
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_etconformance_precision_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-22T00:40:53.527Z",
+              "relationships": [
+                {
+                  "objectId": "result_etconformance_precision_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5197d5f71fd1796468d20d4ed12d647815ed8473f0cfbb669e62eb559084bfc8"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_etconformance_precision_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-22T00:40:52.424Z",
+              "relationships": [
+                {
+                  "objectId": "result_etconformance_precision_supply_chain_port",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5197d5f71fd1796468d20d4ed12d647815ed8473f0cfbb669e62eb559084bfc8"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_etconformance_precision_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-22T00:40:50.645Z",
+              "relationships": [
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_etconformance_precision",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_etconformance_precision_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_etconformance_precision_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-22T00:40:55.761Z",
+              "relationships": [
+                {
+                  "objectId": "result_etconformance_precision_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_etconformance_precision_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-22T00:40:53.757Z",
+              "relationships": [
+                {
+                  "objectId": "result_etconformance_precision_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_etconformance_precision",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_etconformance_precision_supply_chain_port",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "4ff0e108c4c3e89b1e0bbacee67c93572ad129efccf97887e00671d57ae37e93",
+        "observed_result_hash": "5197d5f71fd1796468d20d4ed12d647815ed8473f0cfbb669e62eb559084bfc8"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5",
+        "output_artifact_hash": "5197d5f71fd1796468d20d4ed12d647815ed8473f0cfbb669e62eb559084bfc8",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "alignments",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "c16ed13ecf4e6faac9b7db24e8b57cbda9259b0a169e558219b315eac8ea1826",
+      "duration_ms": 10.389,
+      "expected_path": {
+        "route_id": "wpm.example.supply_chain_port.alignments.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_supply_chain_port_alignments_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_alignments_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_alignments_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_alignments_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_alignments",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_alignments_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_alignments",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_alignments_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "c16ed13ecf4e6faac9b7db24e8b57cbda9259b0a169e558219b315eac8ea1826",
+                "duration_ms": 10.389
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_alignments_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_alignments_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "c16ed13ecf4e6faac9b7db24e8b57cbda9259b0a169e558219b315eac8ea1826"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_alignments_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_alignments_supply_chain_port",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "c16ed13ecf4e6faac9b7db24e8b57cbda9259b0a169e558219b315eac8ea1826"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_alignments_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_alignments",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_alignments_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_alignments_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_alignments_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_alignments_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_alignments_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_alignments",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_alignments_supply_chain_port",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "288a9b094a9c37eb7cf280204a47317895e2c321f255b0cc39a4dfae3a6de39d"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_supply_chain_port_alignments_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-22T00:40:50.193Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_alignments_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-22T00:40:52.266Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_alignments_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-22T00:40:49.700Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_alignments_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-22T00:40:52.839Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_alignments",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_alignments_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-22T00:40:51.362Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_alignments",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_alignments_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "c16ed13ecf4e6faac9b7db24e8b57cbda9259b0a169e558219b315eac8ea1826",
+                "duration_ms": 10.389
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_alignments_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-22T00:40:52.253Z",
+              "relationships": [
+                {
+                  "objectId": "result_alignments_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "c16ed13ecf4e6faac9b7db24e8b57cbda9259b0a169e558219b315eac8ea1826"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_alignments_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-22T00:40:54.150Z",
+              "relationships": [
+                {
+                  "objectId": "result_alignments_supply_chain_port",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "c16ed13ecf4e6faac9b7db24e8b57cbda9259b0a169e558219b315eac8ea1826"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_alignments_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-22T00:40:52.764Z",
+              "relationships": [
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_alignments",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_alignments_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_alignments_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-22T00:40:54.943Z",
+              "relationships": [
+                {
+                  "objectId": "result_alignments_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_alignments_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-22T00:40:54.244Z",
+              "relationships": [
+                {
+                  "objectId": "result_alignments_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_alignments",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_alignments_supply_chain_port",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "edfde1fa494350843a0735004b9b8e7ad6a66973d29e8fa516e952de830a1102",
+        "observed_result_hash": "c16ed13ecf4e6faac9b7db24e8b57cbda9259b0a169e558219b315eac8ea1826"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5",
+        "output_artifact_hash": "c16ed13ecf4e6faac9b7db24e8b57cbda9259b0a169e558219b315eac8ea1826",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "complexity_metrics",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "5c72efa20ae08fbc56cada27e8f5ef0b53e460129d6c142bd3745453602836b8",
+      "duration_ms": 43.919,
+      "expected_path": {
+        "route_id": "wpm.example.supply_chain_port.complexity_metrics.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_supply_chain_port_complexity_metrics_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_complexity_metrics_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_complexity_metrics_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_complexity_metrics_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_complexity_metrics",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_complexity_metrics_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_complexity_metrics",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_complexity_metrics_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5c72efa20ae08fbc56cada27e8f5ef0b53e460129d6c142bd3745453602836b8",
+                "duration_ms": 43.919
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_complexity_metrics_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_complexity_metrics_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5c72efa20ae08fbc56cada27e8f5ef0b53e460129d6c142bd3745453602836b8"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_complexity_metrics_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_complexity_metrics_supply_chain_port",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5c72efa20ae08fbc56cada27e8f5ef0b53e460129d6c142bd3745453602836b8"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_complexity_metrics_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_complexity_metrics",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_complexity_metrics_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_complexity_metrics_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_complexity_metrics_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_complexity_metrics_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_complexity_metrics_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_complexity_metrics",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_complexity_metrics_supply_chain_port",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "2bbba8d3ef7eecd1cff3cf326200bf90d9dbe3701ac930a8a2d45341c50b14c1"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_supply_chain_port_complexity_metrics_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-22T00:40:49.799Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_complexity_metrics_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-22T00:40:49.514Z",
+              "relationships": [
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_complexity_metrics_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-22T00:40:48.268Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_complexity_metrics_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-22T00:40:50.854Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_complexity_metrics",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_complexity_metrics_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-22T00:40:52.834Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_complexity_metrics",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_complexity_metrics_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5c72efa20ae08fbc56cada27e8f5ef0b53e460129d6c142bd3745453602836b8",
+                "duration_ms": 43.919
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_complexity_metrics_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-22T00:40:51.857Z",
+              "relationships": [
+                {
+                  "objectId": "result_complexity_metrics_supply_chain_port",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5c72efa20ae08fbc56cada27e8f5ef0b53e460129d6c142bd3745453602836b8"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_complexity_metrics_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-22T00:40:52.245Z",
+              "relationships": [
+                {
+                  "objectId": "result_complexity_metrics_supply_chain_port",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "5c72efa20ae08fbc56cada27e8f5ef0b53e460129d6c142bd3745453602836b8"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_complexity_metrics_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-22T00:40:51.021Z",
+              "relationships": [
+                {
+                  "objectId": "example_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_complexity_metrics",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_complexity_metrics_supply_chain_port",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_complexity_metrics_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-22T00:40:52.722Z",
+              "relationships": [
+                {
+                  "objectId": "result_complexity_metrics_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_supply_chain_port_complexity_metrics_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-22T00:40:52.453Z",
+              "relationships": [
+                {
+                  "objectId": "result_complexity_metrics_supply_chain_port",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_supply_chain_port",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_supply_chain_port",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_supply_chain_port",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_complexity_metrics",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_complexity_metrics_supply_chain_port",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_supply_chain_port",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "a02a71f6988ce9a52aa586549a71b3974e5b2b74889925c7b8ec2c36af7c30e3",
+        "observed_result_hash": "5c72efa20ae08fbc56cada27e8f5ef0b53e460129d6c142bd3745453602836b8"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "fb9ade30c9c9d6ff75d19e189e8f696aa3bfd9a46fe83258d0e40570864e2fb5",
+        "output_artifact_hash": "5c72efa20ae08fbc56cada27e8f5ef0b53e460129d6c142bd3745453602836b8",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    }
+  ],
+  "algorithm_count": 8,
+  "created_at": "2026-05-22T00:40:47.054Z",
+  "previous_receipt_hash": null,
+  "receipt_hash": "befa4bde9a7263eb643d3f47a021557bcabbafec7893f2a5c28a7ca793aecac0"
+}

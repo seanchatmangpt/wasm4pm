@@ -7,10 +7,30 @@
  */
 
 // Bridge utilities
-export { buildFeatureMatrix, encodeLabels } from './bridge.js';
+export { buildFeatureMatrix, encodeLabels, selectTopFeatures, normalizeFeatures } from './bridge.js';
 
-// Classification & regression
-export { classifyTraces, regressRemainingTime } from './classifiers.js';
+// Feature extractors
+export { extractRemainingTimeFeatures } from './features-remaining-time.js';
+export { extractDriftFeatures, detectAnomalousDriftWindows } from './features-drift.js';
+
+// Classification & regression (includes runCrossValidation for advanced usage)
+export { classifyTraces, regressRemainingTime, runCrossValidation } from './classifiers.js';
+
+// Cross-validation framework
+export {
+  stratifiedKFold,
+  holdoutSplit,
+  computeAccuracy,
+  computeRMSE,
+  computeMAE,
+  computeRSquared,
+  kFoldCrossValidation,
+  holdoutValidation,
+  holdoutRegressionValidation,
+  type KFoldResult,
+  type HoldoutResult,
+  type RegressionCVResult,
+} from './cross-validation.js';
 
 // Clustering
 export { clusterTraces } from './clustering.js';
@@ -24,13 +44,101 @@ export { detectEnhancedAnomalies } from './anomaly.js';
 // Dimensionality reduction
 export { reduceFeaturesPCA } from './reduction.js';
 
-// Feature quality assessment
-export { assessFeatureQuality } from './feature-quality.js';
-export type { FeatureQualityReport, FeatureQualityIssue } from './feature-quality.js';
-
 // Parameter suggestions
-export { suggestParameters, pickBestAlgorithm } from './parameter-suggestions.js';
-export type { ParameterSuggestions, AlgorithmSuggestion } from './parameter-suggestions.js';
+export {
+  suggestClusteringK,
+  suggestPCAComponents,
+  suggestAnomalyThreshold,
+  suggestKnnK,
+  suggestDecisionTreeDepth,
+  suggestPolynomialDegree,
+  suggestForecastHorizon,
+  suggestClassificationAlgorithm,
+  detectLogCharacteristics,
+  type LogCharacteristicsDetection,
+} from './parameter-suggestions.js';
+
+// Feature quality assessment
+export { assessFeatureQuality, type QualityReport } from './feature-quality.js';
+
+// Overfitting detection
+export {
+  analyzeOverfitting,
+  hasOverfittingConcerns,
+  getOverfittingSeverity,
+  type OverfittingIndicator,
+  type OverfittingAnalysis,
+} from './overfitting-detector.js';
+
+// Preprocessing guards (5 critical checks)
+export {
+  filterZeroVarianceColumns,
+  imputeMissingValues,
+  capOutliers,
+  scaleFeatures,
+  validateSampleFeatureRatio,
+  preprocessFeatures,
+  type PreprocessingReport,
+} from './preprocessing.js';
+
+// Ensemble voting (deterministic tie-breaking, Rank-1 oracle)
+export {
+  deterministic_ensemble_vote,
+  ensemble_vote_with_confidence,
+  verify_voting_determinism,
+  categorize_vote_distribution,
+  type VoteCount,
+} from './ensemble-voting.js';
+
+// Feature importance ranking
+export {
+  rankFeatureImportance,
+  computeCorrelationImportance,
+  computeMutualInformationImportance,
+  computePermutationImportance,
+  type FeatureImportance,
+  type FeatureImportanceResult,
+} from './feature-importance.js';
+
+// Algorithm selection (Tier 3 AUTOML Gap-14)
+export {
+  selectAlgorithm,
+  selectClassificationAlgorithm,
+  selectClusteringAlgorithm,
+  selectForecastingAlgorithm,
+  selectRegressionAlgorithm,
+  selectPcaDimensionality,
+  computeMulticollinearity,
+  type FeatureMatrixCharacteristics,
+} from './algorithm-selection.js';
+
+export {
+  recommendAlgorithm,
+  selectBestAlgorithmForTask,
+  type AlgorithmRecommendation,
+} from './algorithm-selector.js';
+
+// Hyperparameter search (Tier 3 AUTOML Gap-15/16)
+export {
+  gridSearch,
+  expandGrid,
+  getBestParams,
+  type ParamGrid,
+  type ParamValue,
+  type GridSearchResult,
+} from './hyperparameter-search.js';
+
+// Bootstrap confidence intervals (Tier 3 AUTOML Gap-17)
+export {
+  bootstrapCI,
+  bootstrapRegressionCI,
+  seededRng,
+  accuracy,
+  mae,
+  rmse,
+  f1,
+  type BootstrapCIResult,
+} from './confidence-intervals.js';
 
 // Types
 export type {

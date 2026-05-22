@@ -12,6 +12,7 @@ use std::collections::HashMap;
 use std::hash::Hash;
 
 use fastrand::Rng;
+use tracing::{debug, span, Level};
 
 // ---------------------------------------------------------------------------
 // Internal helpers (alloc-free hot-path utilities)
@@ -135,15 +136,30 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
     /// epsilon-greedy action selection
     #[allow(dead_code)]
     pub fn select_action(&self, state: &S) -> A {
+        let span = span!(Level::DEBUG, "autonomic.rl.action_selection",
+            epsilon = self.exploration_rate,
+            algorithm = "q_learning"
+        );
+        let _guard = span.enter();
+
         // Explore with probability epsilon
-        if self.rng.borrow_mut().f32() < self.exploration_rate {
+        let rand_val = self.rng.borrow_mut().f32();
+        let is_exploration = rand_val < self.exploration_rate;
+
+        let selected_action = if is_exploration {
             // Random action
             let idx = self.rng.borrow_mut().usize(..A::ACTION_COUNT);
-            A::from_index(idx).unwrap()
+            let action = A::from_index(idx).unwrap();
+            debug!(action_idx = idx, exploitation = false, "epsilon-greedy: exploration selected");
+            action
         } else {
             // Greedy: select action with max Q-value
-            self.best_action(state)
-        }
+            let action = self.best_action(state);
+            debug!(exploitation = true, "epsilon-greedy: greedy action selected");
+            action
+        };
+
+        selected_action
     }
 
     /// Get action with highest Q-value (alloc-free).
@@ -164,6 +180,7 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
     /// target reduces to `r` (Bellman equation for absorbing states).
     #[allow(dead_code)]
     pub fn update(&self, state: &S, action: &A, reward: f32, next_state: &S, done: bool) {
+        let action_idx = action.to_index();
         let mut q_table = self.q_table.borrow_mut();
 
         // Compute max Q(s', a') without cloning the row.
@@ -177,24 +194,68 @@ impl<S: WorkflowState, A: WorkflowAction> QLearning<S, A> {
         };
 
         // Initialize Q(s) on demand.
-        let action_idx = action.to_index();
         let row = q_table
             .entry(state.clone())
             .or_insert_with(|| vec![0.0; A::ACTION_COUNT]);
         let current_q = row[action_idx];
         let target = reward + self.discount_factor * max_next_q;
-        row[action_idx] = current_q + self.learning_rate * (target - current_q);
+        let delta = self.learning_rate * (target - current_q);
+        let new_q = current_q + delta;
+        row[action_idx] = new_q;
+
+        // Emit OTEL span for Bellman update
+        let span = span!(Level::DEBUG, "autonomic.rl.q_update",
+            algorithm = "q_learning",
+            old_q = current_q,
+            new_q = new_q,
+            delta = delta,
+            reward = reward,
+            max_next_q = max_next_q,
+            is_terminal = done,
+            learning_rate = self.learning_rate,
+            discount_factor = self.discount_factor
+        );
+        let _guard = span.enter();
+
+        debug!(
+            old_q = current_q,
+            new_q = new_q,
+            delta = delta,
+            "Q-value updated via Bellman equation"
+        );
 
         *self.total_reward.borrow_mut() += reward;
     }
 
+    /// Compute L2 norm of Q-table weights for convergence analysis.
+    /// Used by LinUCB for convergence detection.
+    #[allow(dead_code)]
+    pub fn compute_weight_norm(&self) -> f32 {
+        let q_table = self.q_table.borrow();
+        let mut norm_sq = 0.0f32;
+        for q_values in q_table.values() {
+            for &q in q_values.iter() {
+                norm_sq += q * q;
+            }
+        }
+        norm_sq.sqrt()
+    }
+
     #[allow(dead_code)]
     pub fn decay_exploration(&mut self) {
+        let old_rate = self.exploration_rate;
         self.exploration_rate *= self.exploration_decay;
+        debug!(
+            old_epsilon = old_rate,
+            new_epsilon = self.exploration_rate,
+            decay_factor = self.exploration_decay,
+            "exploration rate decayed"
+        );
     }
 
     /// Set exploration rate manually (used by MAPE-K action dispatch).
     pub fn set_exploration_rate(&mut self, rate: f32) {
+        debug!(old_epsilon = self.exploration_rate, new_epsilon = rate, "exploration rate set");
         self.exploration_rate = rate;
     }
 
@@ -345,6 +406,7 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
     /// in the presence of exploration noise.
     #[allow(dead_code)]
     pub fn update(&self, state: &S, action: &A, reward: f32, next_state: &S, next_action: &A) {
+        let action_idx = action.to_index();
         let mut q_table = self.q_table.borrow_mut();
 
         let next_q = q_table
@@ -352,23 +414,60 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
             .map(|q_vals| q_vals[next_action.to_index()])
             .unwrap_or(0.0);
 
-        let action_idx = action.to_index();
         let row = q_table
             .entry(state.clone())
             .or_insert_with(|| vec![0.0; A::ACTION_COUNT]);
         let current_q = row[action_idx];
         let target = reward + self.discount_factor * next_q;
-        row[action_idx] = current_q + self.learning_rate * (target - current_q);
+        let delta = self.learning_rate * (target - current_q);
+        let new_q = current_q + delta;
+        row[action_idx] = new_q;
+
+        // Emit OTEL span for on-policy SARSA update
+        let span = span!(Level::DEBUG, "autonomic.rl.q_update",
+            algorithm = "sarsa",
+            old_q = current_q,
+            new_q = new_q,
+            delta = delta,
+            reward = reward,
+            next_q = next_q,
+            learning_rate = self.learning_rate,
+            discount_factor = self.discount_factor
+        );
+        let _guard = span.enter();
+
+        debug!(
+            old_q = current_q,
+            new_q = new_q,
+            delta = delta,
+            next_action_idx = next_action.to_index(),
+            "SARSA Q-value updated (on-policy)"
+        );
     }
 
     #[allow(dead_code)]
     pub fn epsilon_greedy_action(&self, state: &S, epsilon: f32) -> A {
-        if self.rng.borrow_mut().f32() < epsilon {
+        let span = span!(Level::DEBUG, "autonomic.rl.action_selection",
+            epsilon = epsilon,
+            algorithm = "sarsa"
+        );
+        let _guard = span.enter();
+
+        let rand_val = self.rng.borrow_mut().f32();
+        let is_exploration = rand_val < epsilon;
+
+        let selected_action = if is_exploration {
             let idx = self.rng.borrow_mut().usize(..A::ACTION_COUNT);
-            A::from_index(idx).unwrap()
+            let action = A::from_index(idx).unwrap();
+            debug!(action_idx = idx, exploitation = false, "epsilon-greedy: exploration selected");
+            action
         } else {
-            self.greedy_action(state)
-        }
+            let action = self.greedy_action(state);
+            debug!(exploitation = true, "epsilon-greedy: greedy action selected");
+            action
+        };
+
+        selected_action
     }
 
     fn greedy_action(&self, state: &S) -> A {
@@ -380,13 +479,34 @@ impl<S: WorkflowState, A: WorkflowAction> SARSAAgent<S, A> {
         A::from_index(best_idx).unwrap()
     }
 
+    /// Compute L2 norm of Q-table weights for convergence analysis.
+    #[allow(dead_code)]
+    pub fn compute_weight_norm(&self) -> f32 {
+        let q_table = self.q_table.borrow();
+        let mut norm_sq = 0.0f32;
+        for q_values in q_table.values() {
+            for &q in q_values.iter() {
+                norm_sq += q * q;
+            }
+        }
+        norm_sq.sqrt()
+    }
+
     #[allow(dead_code)]
     pub fn decay_exploration(&mut self) {
+        let old_rate = self.exploration_rate;
         self.exploration_rate *= self.exploration_decay;
+        debug!(
+            old_epsilon = old_rate,
+            new_epsilon = self.exploration_rate,
+            decay_factor = self.exploration_decay,
+            "exploration rate decayed"
+        );
     }
 
     /// Set exploration rate manually (used by MAPE-K action dispatch).
     pub fn set_exploration_rate(&mut self, rate: f32) {
+        debug!(old_epsilon = self.exploration_rate, new_epsilon = rate, "exploration rate set");
         self.exploration_rate = rate;
     }
 
@@ -602,29 +722,84 @@ impl<S: WorkflowState, A: WorkflowAction> DoubleQLearning<S, A> {
 
         let target = reward + self.discount_factor * bootstrap;
 
-        if update_a_first {
+        let (current, new_q) = if update_a_first {
             let row = qa
                 .entry(state.clone())
                 .or_insert_with(|| vec![0.0; A::ACTION_COUNT]);
             let current = row[action_idx];
-            row[action_idx] = current + self.learning_rate * (target - current);
+            let delta = self.learning_rate * (target - current);
+            let new_val = current + delta;
+            row[action_idx] = new_val;
+            (current, new_val)
         } else {
             let row = qb
                 .entry(state.clone())
                 .or_insert_with(|| vec![0.0; A::ACTION_COUNT]);
             let current = row[action_idx];
-            row[action_idx] = current + self.learning_rate * (target - current);
-        }
+            let delta = self.learning_rate * (target - current);
+            let new_val = current + delta;
+            row[action_idx] = new_val;
+            (current, new_val)
+        };
+
+        // Emit OTEL span for Double Q-Learning update
+        let span = span!(Level::DEBUG, "autonomic.rl.q_update",
+            algorithm = "double_q_learning",
+            old_q = current,
+            new_q = new_q,
+            delta = new_q - current,
+            reward = reward,
+            bootstrap_value = bootstrap,
+            table_updated = if update_a_first { "Q_A" } else { "Q_B" },
+            learning_rate = self.learning_rate,
+            discount_factor = self.discount_factor
+        );
+        let _guard = span.enter();
+
+        debug!(
+            old_q = current,
+            new_q = new_q,
+            delta = new_q - current,
+            table = if update_a_first { "Q_A" } else { "Q_B" },
+            "Double Q-value updated (decoupled selection)"
+        );
     }
 
     #[allow(dead_code)]
     pub fn decay_exploration(&mut self) {
+        let old_rate = self.exploration_rate;
         self.exploration_rate *= self.exploration_decay;
+        debug!(
+            old_epsilon = old_rate,
+            new_epsilon = self.exploration_rate,
+            decay_factor = self.exploration_decay,
+            "exploration rate decayed"
+        );
     }
 
     /// Set exploration rate manually (used by MAPE-K action dispatch).
     pub fn set_exploration_rate(&mut self, rate: f32) {
+        debug!(old_epsilon = self.exploration_rate, new_epsilon = rate, "exploration rate set");
         self.exploration_rate = rate;
+    }
+
+    /// Compute combined L2 norm of both Q-tables for convergence analysis.
+    #[allow(dead_code)]
+    pub fn compute_weight_norm(&self) -> f32 {
+        let qa = self.q_a.borrow();
+        let qb = self.q_b.borrow();
+        let mut norm_sq = 0.0f32;
+        for q_values in qa.values() {
+            for &q in q_values.iter() {
+                norm_sq += q * q;
+            }
+        }
+        for q_values in qb.values() {
+            for &q in q_values.iter() {
+                norm_sq += q * q;
+            }
+        }
+        norm_sq.sqrt()
     }
 
     #[allow(dead_code)]
@@ -810,16 +985,61 @@ impl<S: WorkflowState, A: WorkflowAction> ExpectedSARSAAgent<S, A> {
             .or_insert_with(|| vec![0.0; A::ACTION_COUNT]);
         let current_q = row[action_idx];
         let target = reward + self.discount_factor * expected_next;
-        row[action_idx] = current_q + self.learning_rate * (target - current_q);
+        let delta = self.learning_rate * (target - current_q);
+        let new_q = current_q + delta;
+        row[action_idx] = new_q;
+
+        // Emit OTEL span for Expected SARSA update
+        let span = span!(Level::DEBUG, "autonomic.rl.q_update",
+            algorithm = "expected_sarsa",
+            old_q = current_q,
+            new_q = new_q,
+            delta = delta,
+            reward = reward,
+            expected_bootstrap = expected_next,
+            is_terminal = done,
+            learning_rate = self.learning_rate,
+            discount_factor = self.discount_factor
+        );
+        let _guard = span.enter();
+
+        debug!(
+            old_q = current_q,
+            new_q = new_q,
+            delta = delta,
+            expected_bootstrap = expected_next,
+            "Expected SARSA Q-value updated (low-variance)"
+        );
+    }
+
+    /// Compute L2 norm of Q-table weights for convergence analysis.
+    #[allow(dead_code)]
+    pub fn compute_weight_norm(&self) -> f32 {
+        let q_table = self.q_table.borrow();
+        let mut norm_sq = 0.0f32;
+        for q_values in q_table.values() {
+            for &q in q_values.iter() {
+                norm_sq += q * q;
+            }
+        }
+        norm_sq.sqrt()
     }
 
     #[allow(dead_code)]
     pub fn decay_exploration(&mut self) {
+        let old_rate = self.exploration_rate;
         self.exploration_rate *= self.exploration_decay;
+        debug!(
+            old_epsilon = old_rate,
+            new_epsilon = self.exploration_rate,
+            decay_factor = self.exploration_decay,
+            "exploration rate decayed"
+        );
     }
 
     /// Set exploration rate manually (used by MAPE-K action dispatch).
     pub fn set_exploration_rate(&mut self, rate: f32) {
+        debug!(old_epsilon = self.exploration_rate, new_epsilon = rate, "exploration rate set");
         self.exploration_rate = rate;
     }
 
@@ -956,6 +1176,12 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
     /// Avoids any allocation on visited states by indexing the row in place.
     #[allow(dead_code)]
     pub fn select_action(&self, state: &S) -> A {
+        let span = span!(Level::DEBUG, "autonomic.rl.action_selection",
+            algorithm = "reinforce",
+            policy_type = "softmax"
+        );
+        let _guard = span.enter();
+
         let theta = self.theta.borrow();
         let mut rng = self.rng.borrow_mut();
 
@@ -989,7 +1215,9 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
                 }
             }
         }
-        A::from_index(best_idx).unwrap()
+        let selected = A::from_index(best_idx).unwrap();
+        debug!(action_idx = best_idx, gumbel_value = best_val, "softmax policy action selected");
+        selected
     }
 
     /// Update policy weights from a complete episode trajectory.
@@ -1010,6 +1238,14 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
             return;
         }
 
+        let span = span!(Level::DEBUG, "autonomic.rl.policy_gradient_update",
+            algorithm = "reinforce",
+            trajectory_length = n,
+            learning_rate = self.learning_rate,
+            discount_factor = self.discount_factor
+        );
+        let _guard = span.enter();
+
         // Compute discounted returns G_t for each timestep (backwards pass).
         let mut returns: Vec<f32> = vec![0.0; n];
         let mut g = 0.0;
@@ -1017,6 +1253,14 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
             g = trajectory[i].2 + self.discount_factor * g;
             returns[i] = g;
         }
+
+        let total_return: f32 = returns.iter().sum();
+        debug!(
+            trajectory_length = n,
+            total_return = total_return,
+            mean_return = total_return / n as f32,
+            "episode trajectory processed"
+        );
 
         let mut theta = self.theta.borrow_mut();
         // Reuse a single softmax scratch buffer across the trajectory.
@@ -1039,11 +1283,21 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
             let inv_sum = 1.0 / sum;
             let g_t = returns[t];
             let lr = self.learning_rate;
+            let old_weight = weights[action_idx];
             for (j, w) in weights.iter_mut().enumerate() {
                 let pi_j = softmax[j] * inv_sum;
                 let indicator = if j == action_idx { 1.0 } else { 0.0 };
                 *w += lr * g_t * (indicator - pi_j);
             }
+            let new_weight = weights[action_idx];
+            debug!(
+                timestep = t,
+                action_idx = action_idx,
+                old_weight = old_weight,
+                new_weight = new_weight,
+                return_g_t = g_t,
+                "policy weight gradient update"
+            );
         }
     }
 
@@ -1061,6 +1315,19 @@ impl<S: WorkflowState, A: WorkflowAction> ReinforceAgent<S, A> {
             .get(state)
             .cloned()
             .unwrap_or_else(|| vec![0.0; A::ACTION_COUNT])
+    }
+
+    /// Compute L2 norm of policy weights for convergence analysis.
+    #[allow(dead_code)]
+    pub fn compute_weight_norm(&self) -> f32 {
+        let theta = self.theta.borrow();
+        let mut norm_sq = 0.0f32;
+        for weights in theta.values() {
+            for &w in weights.iter() {
+                norm_sq += w * w;
+            }
+        }
+        norm_sq.sqrt()
     }
 
     /// Set exploration rate manually (REINFORCE is on-policy, so this is a no-op).
@@ -1149,6 +1416,7 @@ pub trait AgentMeta {
     fn exploration_rate(&self) -> f32;
     fn decay_exploration(&mut self);
     fn set_exploration_rate(&mut self, rate: f32);
+    fn set_learning_rate(&mut self, rate: f32);
 }
 
 // ---------------------------------------------------------------------------
@@ -1176,6 +1444,9 @@ impl<S: WorkflowState, A: WorkflowAction> AgentMeta for QLearning<S, A> {
     }
     fn set_exploration_rate(&mut self, rate: f32) {
         self.exploration_rate = rate;
+    }
+    fn set_learning_rate(&mut self, rate: f32) {
+        self.learning_rate = rate;
     }
 }
 
@@ -1223,6 +1494,9 @@ impl<S: WorkflowState, A: WorkflowAction> AgentMeta for SARSAAgent<S, A> {
     fn set_exploration_rate(&mut self, rate: f32) {
         self.exploration_rate = rate;
     }
+    fn set_learning_rate(&mut self, rate: f32) {
+        self.learning_rate = rate;
+    }
 }
 
 impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for DoubleQLearning<S, A> {
@@ -1247,6 +1521,9 @@ impl<S: WorkflowState, A: WorkflowAction> AgentMeta for DoubleQLearning<S, A> {
     fn set_exploration_rate(&mut self, rate: f32) {
         self.exploration_rate = rate;
     }
+    fn set_learning_rate(&mut self, rate: f32) {
+        self.learning_rate = rate;
+    }
 }
 
 impl<S: WorkflowState, A: WorkflowAction> Agent<S, A> for ExpectedSARSAAgent<S, A> {
@@ -1270,6 +1547,9 @@ impl<S: WorkflowState, A: WorkflowAction> AgentMeta for ExpectedSARSAAgent<S, A>
     }
     fn set_exploration_rate(&mut self, rate: f32) {
         self.exploration_rate = rate;
+    }
+    fn set_learning_rate(&mut self, rate: f32) {
+        self.learning_rate = rate;
     }
 }
 
@@ -1296,6 +1576,9 @@ impl<S: WorkflowState, A: WorkflowAction> AgentMeta for ReinforceAgent<S, A> {
     }
     fn set_exploration_rate(&mut self, _rate: f32) {
         // No-op: REINFORCE uses softmax temperature, not ε-greedy
+    }
+    fn set_learning_rate(&mut self, rate: f32) {
+        self.learning_rate = rate;
     }
 }
 

@@ -165,6 +165,8 @@ fn circuit_breaker_handles_clock_skew_after_state_restore() {
         success_count: 0,
         // Pretend the breaker tripped 1 hour in the "future".
         last_state_change_ms: base.saturating_add(3_600_000),
+        last_transition_reason: "failure_threshold_exceeded".to_string(),
+        transition_count: 1,
     };
     let mut cb = CircuitBreaker::from_state_json(json_state);
     assert_eq!(cb.state(), CircuitState::Open);
@@ -201,6 +203,8 @@ fn circuit_breaker_open_to_half_open_at_exact_timeout() {
         failure_count: 5,
         success_count: 0,
         last_state_change_ms: now_ms().saturating_sub(1_000), // exactly at timeout
+        last_transition_reason: "failure_threshold_exceeded".to_string(),
+        transition_count: 1,
     };
     let mut cb = CircuitBreaker::from_state_json(json_state);
     let allowed = cb.allow_request();

@@ -1,5 +1,5 @@
 /**
- * @wasm4pm/kernel — prediction subsystem
+ * wasm4pm — prediction subsystem
  *
  * Unified orchestration layer for the six Van der Aalst-aligned prediction
  * perspectives (next_activity, remaining_time, outcome, drift, features,
@@ -20,7 +20,7 @@
  * import {
  *   PredictionDispatcher,
  *   PredictionRequest,
- * } from '@wasm4pm/kernel/prediction';
+ * } from 'wasm4pm/prediction';
  *
  * const dispatcher = new PredictionDispatcher();
  * const response = dispatcher.execute({

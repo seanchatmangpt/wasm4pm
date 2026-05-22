@@ -271,8 +271,11 @@ fn load_dataset(candidates: &[&str], label: &'static str) -> AutonomicDataset {
         })
         .next()
         .unwrap_or_else(|| {
-            eprintln!("WARN: {} not found — using synthetic fallback", label);
-            generate_synthetic_fallback()
+            panic!(
+                "Required dataset '{}' not found at any of: {:?}\n\
+                 Download from https://data.4tu.nl/ (Sepsis/RoadTraffic)",
+                label, candidates
+            )
         });
 
     let event_count = log.traces.iter().map(|t| t.events.len()).sum::<usize>() as u64;

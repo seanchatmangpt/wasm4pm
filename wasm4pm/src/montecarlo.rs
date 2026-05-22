@@ -43,12 +43,27 @@ pub struct LogNormalParams {
 }
 
 /// Result of Monte Carlo simulation.
+///
+/// Distribution statistics (P5/P50/P95/std) are computed over per-case sojourn times
+/// collected during the simulation loop and sorted at the end.
 #[derive(Clone, Debug, Serialize, Deserialize)]
 pub struct MonteCarloReport {
     pub completed_cases: usize,
     pub total_sojourn_time_ms: f64,
     pub total_waiting_time_ms: f64,
     pub total_service_time_ms: f64,
+    /// Mean case sojourn time in ms (total_sojourn / completed_cases).
+    pub avg_sojourn_time_ms: f64,
+    /// Mean trace length in activities per case.
+    pub avg_trace_length: f64,
+    /// Sample standard deviation of per-case sojourn times in ms (n-1 denominator).
+    pub sojourn_time_std_ms: f64,
+    /// 5th percentile of per-case sojourn times in ms.
+    pub sojourn_time_p5_ms: f64,
+    /// 50th percentile (median) of per-case sojourn times in ms.
+    pub sojourn_time_p50_ms: f64,
+    /// 95th percentile of per-case sojourn times in ms.
+    pub sojourn_time_p95_ms: f64,
     pub activity_statistics: HashMap<String, ActivityStats>,
     pub resource_utilization: HashMap<String, f64>,
 }
@@ -113,6 +128,22 @@ impl ResourcePool {
     }
 }
 
+/// Compute percentile of an already-sorted slice via linear interpolation.
+/// `p` is in [0, 100].
+fn percentile_sorted(sorted: &[f64], p: f64) -> f64 {
+    if sorted.is_empty() {
+        return 0.0;
+    }
+    if sorted.len() == 1 {
+        return sorted[0];
+    }
+    let rank = p / 100.0 * (sorted.len() - 1) as f64;
+    let lo = rank.floor() as usize;
+    let hi = (lo + 1).min(sorted.len() - 1);
+    let frac = rank - lo as f64;
+    sorted[lo] * (1.0 - frac) + sorted[hi] * frac
+}
+
 /// Run Monte Carlo simulation.
 pub fn run_monte_carlo_simulation(
     log: &EventLog,
@@ -125,6 +156,9 @@ pub fn run_monte_carlo_simulation(
     let mut total_sojourn_time_ms = 0.0f64;
     let mut total_waiting_time_ms = 0.0f64;
     let mut total_service_time_ms = 0.0f64;
+    // Collect per-case sojourn times so we can compute P5/P50/P95/std after the loop.
+    let mut per_case_sojourn_ms: Vec<f64> = Vec::with_capacity(completed_cases);
+    let mut total_trace_length: usize = 0;
     let mut activity_stats: HashMap<String, ActivityStats> = HashMap::new();
     let mut resource_pools: HashMap<String, ResourcePool> = _config
         .resource_capacity
@@ -240,6 +274,8 @@ pub fn run_monte_carlo_simulation(
         total_sojourn_time_ms += sojourn_time;
         total_waiting_time_ms += trace_wait_time;
         total_service_time_ms += trace_service_time;
+        per_case_sojourn_ms.push(sojourn_time);
+        total_trace_length += trace.len();
     }
 
     // Calculate final resource utilization
@@ -256,11 +292,47 @@ pub fn run_monte_carlo_simulation(
         }
     }
 
+    // Compute distribution statistics over per-case sojourn times
+    let n = per_case_sojourn_ms.len();
+    let avg_sojourn_time_ms = if n > 0 {
+        total_sojourn_time_ms / n as f64
+    } else {
+        0.0
+    };
+    let avg_trace_length = if n > 0 {
+        total_trace_length as f64 / n as f64
+    } else {
+        0.0
+    };
+
+    let sojourn_time_std_ms = if n > 1 {
+        let variance = per_case_sojourn_ms
+            .iter()
+            .map(|&x| (x - avg_sojourn_time_ms).powi(2))
+            .sum::<f64>()
+            / (n - 1) as f64;
+        variance.sqrt()
+    } else {
+        0.0
+    };
+
+    per_case_sojourn_ms
+        .sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
+    let sojourn_time_p5_ms = percentile_sorted(&per_case_sojourn_ms, 5.0);
+    let sojourn_time_p50_ms = percentile_sorted(&per_case_sojourn_ms, 50.0);
+    let sojourn_time_p95_ms = percentile_sorted(&per_case_sojourn_ms, 95.0);
+
     Ok(MonteCarloReport {
         completed_cases,
         total_sojourn_time_ms,
         total_waiting_time_ms,
         total_service_time_ms,
+        avg_sojourn_time_ms,
+        avg_trace_length,
+        sojourn_time_std_ms,
+        sojourn_time_p5_ms,
+        sojourn_time_p50_ms,
+        sojourn_time_p95_ms,
         activity_statistics: activity_stats,
         resource_utilization,
     })
@@ -359,6 +431,11 @@ mod tests {
         let report = result.unwrap();
         assert_eq!(report.completed_cases, 10);
         assert!(report.total_sojourn_time_ms > 0.0);
+        // Distribution fields must be consistent
+        assert!(report.avg_sojourn_time_ms > 0.0);
+        assert!(report.avg_trace_length > 0.0);
+        assert!(report.sojourn_time_p5_ms <= report.sojourn_time_p50_ms);
+        assert!(report.sojourn_time_p50_ms <= report.sojourn_time_p95_ms);
     }
 
     #[test]
@@ -378,5 +455,17 @@ mod tests {
         pool.update(100.0);
         let util = pool.utilization(100.0);
         assert!(util > 0.0 && util <= 1.0);
+    }
+
+    #[test]
+    fn test_percentile_sorted() {
+        let data = vec![1.0, 2.0, 3.0, 4.0, 5.0];
+        assert!((percentile_sorted(&data, 0.0) - 1.0).abs() < 1e-9);
+        assert!((percentile_sorted(&data, 50.0) - 3.0).abs() < 1e-9);
+        assert!((percentile_sorted(&data, 100.0) - 5.0).abs() < 1e-9);
+        // Empty slice
+        assert_eq!(percentile_sorted(&[], 50.0), 0.0);
+        // Single element
+        assert_eq!(percentile_sorted(&[42.0], 95.0), 42.0);
     }
 }

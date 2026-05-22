@@ -5,8 +5,14 @@ import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
 import { discriminate, toUniformStats, DiscoveryShapeError } from '../discriminator.js';
 import * as fs from 'node:fs';
-import { withSpan } from './_otel.js';
-import { saveCommandReceipt, blake3Hex, newReceipt, type CommandReceipt } from '../receipts/_shared.js';
+import { withSpan, withSpanRaw } from './_otel.js';
+import { AnalysisSpans } from '@wasm4pm/observability';
+import {
+  saveCommandReceipt,
+  blake3Hex,
+  newReceipt,
+  type CommandReceipt,
+} from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
 
 /**
@@ -33,25 +39,162 @@ const ALGORITHMS = [
 type Algorithm = (typeof ALGORITHMS)[number];
 
 /**
- * Registry quality tier (0-100) for each algorithm supported by compare.
- * Sourced from packages/kernel/src/registry.ts qualityTier values.
- * Higher = better expected model quality (fitness-precision trade-off).
+ * Static registry of Van der Aalst quality dimensions per algorithm.
+ *
+ * speedTier  — 0-100, lower = faster (from kernel registry)
+ * qualityTier — 0-100, higher = better model quality (from kernel registry)
+ *
+ * These are design-time proxies derived from the kernel registry.
+ * For live fitness/precision scores run `wpm quality <log.xes>`.
+ *
+ * Use-case guidance follows van der Aalst's four-quadrant model:
+ *   exploration  — quick first look, no publication intent
+ *   daily        — routine operational analysis
+ *   conformance  — model-to-log compliance checking
+ *   publication  — final model for academic/executive reporting
  */
-const QUALITY_TIERS: Record<Algorithm, number> = {
-  dfg: 30,
-  alpha: 45,
-  heuristic: 50,
-  inductive: 55,
-  ilp: 90,
-  genetic: 80,
-  pso: 75,
-  astar: 70,
-  'hill-climbing': 55,
-  'simulated-annealing': 65,
-  'ant-colony': 75,
-  declare: 50,
-  skeleton: 25,
-  'dfg-optimized': 85,
+interface AlgorithmProfile {
+  speedTier: number; // 0-100, lower is faster
+  qualityTier: number; // 0-100, higher is better
+  /** Van der Aalst precision tendency: how tightly the model constrains behaviour */
+  precisionProxy: 'low' | 'medium' | 'high';
+  /** Van der Aalst fitness tendency: how well the model replays the log */
+  fitnessProxy: 'low' | 'medium' | 'high';
+  /** Van der Aalst generalization tendency */
+  generalizationProxy: 'low' | 'medium' | 'high';
+  /** Van der Aalst simplicity tendency */
+  simplicityProxy: 'low' | 'medium' | 'high';
+  /** Recommended use cases, ordered from most to least appropriate */
+  useCases: string[];
+}
+
+const ALGO_PROFILES: Record<Algorithm, AlgorithmProfile> = {
+  dfg: {
+    speedTier: 5,
+    qualityTier: 30,
+    precisionProxy: 'low',
+    fitnessProxy: 'high',
+    generalizationProxy: 'high',
+    simplicityProxy: 'high',
+    useCases: ['exploration / quick first look', 'streaming / large logs'],
+  },
+  skeleton: {
+    speedTier: 3,
+    qualityTier: 25,
+    precisionProxy: 'low',
+    fitnessProxy: 'medium',
+    generalizationProxy: 'high',
+    simplicityProxy: 'high',
+    useCases: ['exploration / quick first look', 'backbone extraction'],
+  },
+  alpha: {
+    speedTier: 20,
+    qualityTier: 45,
+    precisionProxy: 'medium',
+    fitnessProxy: 'medium',
+    generalizationProxy: 'medium',
+    simplicityProxy: 'medium',
+    useCases: ['academic baseline', 'simple sequential processes'],
+  },
+  heuristic: {
+    speedTier: 25,
+    qualityTier: 50,
+    precisionProxy: 'medium',
+    fitnessProxy: 'high',
+    generalizationProxy: 'medium',
+    simplicityProxy: 'medium',
+    useCases: ['daily operational analysis', 'noisy real-world logs'],
+  },
+  inductive: {
+    speedTier: 30,
+    qualityTier: 55,
+    precisionProxy: 'medium',
+    fitnessProxy: 'high',
+    generalizationProxy: 'high',
+    simplicityProxy: 'medium',
+    useCases: ['daily operational analysis', 'conformance checking', 'sound model required'],
+  },
+  'hill-climbing': {
+    speedTier: 40,
+    qualityTier: 55,
+    precisionProxy: 'medium',
+    fitnessProxy: 'medium',
+    generalizationProxy: 'medium',
+    simplicityProxy: 'medium',
+    useCases: ['balanced analysis', 'medium-complexity logs'],
+  },
+  declare: {
+    speedTier: 35,
+    qualityTier: 50,
+    precisionProxy: 'medium',
+    fitnessProxy: 'medium',
+    generalizationProxy: 'high',
+    simplicityProxy: 'low',
+    useCases: ['flexible/unstructured processes', 'constraint mining'],
+  },
+  'simulated-annealing': {
+    speedTier: 55,
+    qualityTier: 65,
+    precisionProxy: 'medium',
+    fitnessProxy: 'high',
+    generalizationProxy: 'medium',
+    simplicityProxy: 'medium',
+    useCases: ['quality analysis', 'iterative improvement'],
+  },
+  astar: {
+    speedTier: 60,
+    qualityTier: 70,
+    precisionProxy: 'high',
+    fitnessProxy: 'high',
+    generalizationProxy: 'medium',
+    simplicityProxy: 'medium',
+    useCases: ['conformance checking', 'quality analysis'],
+  },
+  'ant-colony': {
+    speedTier: 65,
+    qualityTier: 75,
+    precisionProxy: 'high',
+    fitnessProxy: 'high',
+    generalizationProxy: 'medium',
+    simplicityProxy: 'low',
+    useCases: ['quality analysis', 'publication / final model'],
+  },
+  pso: {
+    speedTier: 70,
+    qualityTier: 75,
+    precisionProxy: 'high',
+    fitnessProxy: 'high',
+    generalizationProxy: 'medium',
+    simplicityProxy: 'low',
+    useCases: ['quality analysis', 'publication / final model'],
+  },
+  genetic: {
+    speedTier: 75,
+    qualityTier: 80,
+    precisionProxy: 'high',
+    fitnessProxy: 'high',
+    generalizationProxy: 'medium',
+    simplicityProxy: 'low',
+    useCases: ['publication / final model', 'quality-over-speed scenarios'],
+  },
+  'dfg-optimized': {
+    speedTier: 70,
+    qualityTier: 85,
+    precisionProxy: 'high',
+    fitnessProxy: 'high',
+    generalizationProxy: 'medium',
+    simplicityProxy: 'medium',
+    useCases: ['publication / final model', 'optimized DFG with best fitness'],
+  },
+  ilp: {
+    speedTier: 80,
+    qualityTier: 90,
+    precisionProxy: 'high',
+    fitnessProxy: 'high',
+    generalizationProxy: 'low',
+    simplicityProxy: 'low',
+    useCases: ['publication / final model', 'maximum quality required'],
+  },
 };
 
 interface ModelStats {
@@ -62,7 +205,103 @@ interface ModelStats {
   density: number;
   complexity: number;
   elapsedMs: number;
+  /**
+   * Alias for `elapsedMs` — satisfies the JSON contract field name `duration_ms`.
+   * Both fields are present so consumers can use either name.
+   */
+  duration_ms: number;
+  /**
+   * Shape/type of the model returned by this algorithm:
+   * 'dfg' | 'petrinet' | 'tree' | 'declare' | 'unknown' (on error).
+   * Lets consumers distinguish Petri net from DFG without inspecting raw output.
+   */
+  output_type: 'dfg' | 'petrinet' | 'tree' | 'declare' | 'unknown';
+  /** Number of nodes (alias: node_count) */
+  node_count: number;
+  /** Number of edges (alias: edge_count) */
+  edge_count: number;
+  /** Quality tier from ALGO_PROFILES (0-100) */
   qualityTier: number;
+  /** Speed tier from ALGO_PROFILES (0-100, lower = faster) */
+  speedTier: number;
+  /**
+   * Always true — signals that qualityTier is a design-time registry proxy,
+   * not a live fitness/precision score computed from the log.
+   * For authoritative Van der Aalst scores run `wpm quality <log.xes>`.
+   */
+  quality_tier_is_proxy: true;
+}
+
+/**
+ * A recommendation of which algorithm to use, derived from the comparison results.
+ * Recommendations are grounded in Van der Aalst's four quality dimensions.
+ */
+interface AlgorithmRecommendation {
+  /** Fastest algorithm (lowest elapsedMs among successful runs). */
+  fastest: { algorithm: Algorithm; elapsedMs: number; rationale: string };
+  /** Highest quality algorithm (highest qualityTier among successful runs). */
+  highestQuality: { algorithm: Algorithm; qualityTier: number; rationale: string };
+  /** Best quality/speed tradeoff — highest qualityTier-per-ms ratio. */
+  bestTradeoff: { algorithm: Algorithm; qualityPerMs: number; rationale: string };
+  /** Plain-language speed-vs-quality narrative for the practitioner. */
+  tradeoffNarrative: string;
+}
+
+/**
+ * Derive a winner recommendation from a set of model stats.
+ * Only considers successful runs (nodes >= 0).
+ * Returns null if there are fewer than 2 successful runs.
+ *
+ * Quality is measured by qualityTier (Van der Aalst proxy: higher = better
+ * fitness+precision balance). Edge count alone is NOT a quality proxy — a
+ * flower model has maximum edges but zero precision.
+ */
+function deriveRecommendation(stats: ModelStats[]): AlgorithmRecommendation | null {
+  const valid = stats.filter((s) => s.nodes >= 0 && s.elapsedMs > 0);
+  if (valid.length < 2) return null;
+
+  // Fastest by wall-clock time
+  const fastest = valid.reduce((a, b) => (a.elapsedMs <= b.elapsedMs ? a : b));
+
+  // Highest quality by registry quality tier
+  const highestQuality = valid.reduce((a, b) => (a.qualityTier >= b.qualityTier ? a : b));
+
+  // Best tradeoff: qualityTier per ms (quality gained per unit time)
+  const withRatio = valid.map((s) => ({ ...s, qualityPerMs: s.qualityTier / s.elapsedMs }));
+  const bestTradeoff = withRatio.reduce((a, b) => (a.qualityPerMs >= b.qualityPerMs ? a : b));
+
+  // Speed-vs-quality narrative: compare fastest vs highest quality
+  let tradeoffNarrative: string;
+  if (fastest.algorithm === highestQuality.algorithm) {
+    tradeoffNarrative = `${fastest.algorithm} is both the fastest and highest quality in this comparison.`;
+  } else {
+    const speedup = highestQuality.elapsedMs / fastest.elapsedMs;
+    const qualityGain = highestQuality.qualityTier - fastest.qualityTier;
+    const pct = Math.round((qualityGain / Math.max(fastest.qualityTier, 1)) * 100);
+    tradeoffNarrative =
+      `Fastest: ${fastest.algorithm} (${fastest.elapsedMs.toFixed(1)} ms, quality tier ${fastest.qualityTier}/100). ` +
+      `Highest quality: ${highestQuality.algorithm} (${highestQuality.elapsedMs.toFixed(1)} ms, quality tier ${highestQuality.qualityTier}/100). ` +
+      `${highestQuality.algorithm} is ${speedup.toFixed(1)}x slower but scores ${pct}% higher on the Van der Aalst quality scale.`;
+  }
+
+  return {
+    fastest: {
+      algorithm: fastest.algorithm,
+      elapsedMs: fastest.elapsedMs,
+      rationale: `Lowest wall-clock time (${fastest.elapsedMs.toFixed(1)} ms, quality tier ${fastest.qualityTier}/100) — use for exploration and quick-look analysis`,
+    },
+    highestQuality: {
+      algorithm: highestQuality.algorithm,
+      qualityTier: highestQuality.qualityTier,
+      rationale: `Highest quality tier (${highestQuality.qualityTier}/100, ${highestQuality.elapsedMs.toFixed(1)} ms) — use for publication and conformance checking`,
+    },
+    bestTradeoff: {
+      algorithm: bestTradeoff.algorithm,
+      qualityPerMs: Math.round(bestTradeoff.qualityPerMs * 100) / 100,
+      rationale: `Best quality/time ratio (${bestTradeoff.qualityTier}/100 quality in ${bestTradeoff.elapsedMs.toFixed(1)} ms) — use for daily operational analysis`,
+    },
+    tradeoffNarrative,
+  };
 }
 
 /**
@@ -116,10 +355,14 @@ function runDiscovery(
       raw = wasm['discover_declare'](logHandle, activityKey);
       break;
     case 'skeleton':
-      raw = wasm['extract_process_skeleton'](logHandle, activityKey);
+      // min_frequency=1 includes all directly-follows relations (no filtering)
+      raw = wasm['extract_process_skeleton'](logHandle, activityKey, 1);
       break;
     case 'dfg-optimized':
-      raw = wasm['discover_dfg'](logHandle, activityKey);
+      // discover_dfg_filtered prunes edges below the frequency threshold — the
+      // "optimized" variant filters out low-frequency noise (threshold=2 keeps edges
+      // seen at least twice, reducing spurious arcs in large logs).
+      raw = wasm['discover_dfg_filtered'](logHandle, activityKey, 2);
       break;
     default: {
       // Exhaustiveness guard — TypeScript ensures this is unreachable
@@ -162,7 +405,10 @@ function extractModelMetrics(
  * Width = 8 chars, filled with block characters.
  */
 function sparkBar(value: number, min: number, max: number, width = 8): string {
-  if (max <= min) return '░'.repeat(width);
+  // When all compared values are equal (max == min), every algorithm is tied at the
+  // same level. Rendering all-░ (minimum) is misleading — the values are not minimal,
+  // they are identical. Render all-▓ (maximum) to signal "tied at ceiling" clearly.
+  if (max <= min) return '▓'.repeat(width);
   const ratio = Math.max(0, Math.min(1, (value - min) / (max - min)));
   const filled = Math.round(ratio * width);
   return '▓'.repeat(filled) + '░'.repeat(width - filled);
@@ -184,7 +430,8 @@ export const compare = defineCommand({
   meta: {
     name: 'compare',
     description:
-      'Run two or more algorithms on the same XES log and print a side-by-side comparison table',
+      'Run multiple discovery algorithms on the same log side-by-side. Compare execution time, model size (nodes/edges), and quality metrics. ' +
+      'Example: wpm compare dfg,heuristic,genetic -i process.xes',
   },
   args: {
     algorithms: {
@@ -194,7 +441,7 @@ export const compare = defineCommand({
     },
     input: {
       type: 'string',
-      description: 'Path to XES event log file',
+      description: 'Path to XES event log file — use -i as shorthand',
       required: true,
       alias: 'i',
     },
@@ -210,17 +457,21 @@ export const compare = defineCommand({
     },
     verbose: {
       type: 'boolean',
-      description: 'Enable verbose output',
+      description: 'Enable verbose output — use -v as shorthand',
       alias: 'v',
     },
     quiet: {
       type: 'boolean',
-      description: 'Suppress non-error output',
+      description: 'Suppress non-error output — use -q as shorthand',
       alias: 'q',
     },
     'cache-stats': {
       type: 'boolean',
       description: 'Print cache hit/miss statistics after comparison',
+    },
+    'no-save': {
+      type: 'boolean',
+      description: 'Do not auto-save the receipt to .wasm4pm/receipts/',
     },
   },
   async run(ctx) {
@@ -228,6 +479,23 @@ export const compare = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
     const emitOptions = { format, verbose, quiet };
+
+    // Pre-WASM validation: reject unknown format values before loading WASM.
+    // Doing this early avoids wasting time on WASM initialisation for a config error.
+    if (format !== 'json' && format !== 'human') {
+      const result = makeErrorResult(
+        'compare',
+        new Error(
+          `Invalid --format value: '${format}'. Must be 'human' or 'json'.\n\n` +
+            `Usage:  wpm compare dfg,heuristic -i log.xes --format json`
+        ),
+        EXIT_CODES.config_error,
+        'INVALID_FORMAT'
+      );
+      // Emit as JSON regardless of the bad format so the envelope is machine-readable.
+      emitResult(result, { format: 'json', verbose, quiet });
+      return await exitWithFlush(result.exit_code);
+    }
 
     return withSpan(
       'compare',
@@ -237,225 +505,476 @@ export const compare = defineCommand({
         format,
       },
       async () => {
-    try {
-      // Parse algorithms from the single positional (citty collects remaining args as string)
-      const rawAlgos = (ctx.args.algorithms as string)
-        .split(/[\s,]+/)
-        .map((s) => s.trim().toLowerCase())
-        .filter(Boolean);
+        try {
+          // Parse algorithms from the single positional (citty collects remaining args as string)
+          const rawAlgos = (ctx.args.algorithms as string)
+            .split(/[\s,]+/)
+            .map((s) => s.trim().toLowerCase())
+            .filter(Boolean);
 
-      // Resolve kernel IDs to CLI aliases, then validate
-      const resolved = rawAlgos.map((a) => ALGORITHM_CLI_ALIASES[a] ?? a);
-      const invalid = resolved.filter((a) => !ALGORITHMS.includes(a as Algorithm));
-      if (invalid.length > 0) {
-        const result = makeErrorResult(
-          'compare',
-          new Error(`Unknown algorithm(s): ${invalid.join(', ')}. Available: ${Object.keys(ALGORITHM_CLI_ALIASES).join(', ')}`),
-          EXIT_CODES.source_error,
-          'UNKNOWN_ALGORITHMS'
-        );
-        emitResult(result, emitOptions);
-        return await exitWithFlush(result.exit_code);
-      }
-
-      if (resolved.length < 2) {
-        const result = makeErrorResult(
-          'compare',
-          new Error('Please specify at least two algorithms to compare.'),
-          EXIT_CODES.source_error,
-          'TOO_FEW_ALGORITHMS'
-        );
-        emitResult(result, emitOptions);
-        return await exitWithFlush(result.exit_code);
-      }
-
-      const algos = resolved as Algorithm[];
-
-      const inputPath = ctx.args.input as string;
-      const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
-
-      await withLogSession(
-        { inputPath, activityKey, commandName: 'compare', emitOptions },
-        async (wasmBase, logHandle) => {
-        const wasm = wasmBase as Record<string, CallableFunction>;
-
-        // Get shared metrics (variants, density, complexity) once from the log
-        const sharedMetrics = extractModelMetrics(wasm, logHandle, activityKey);
-
-        // Run each algorithm
-        const t0 = performance.now();
-        const stats: ModelStats[] = [];
-        for (const algo of algos) {
-          const { raw, elapsedMs } = runDiscovery(wasm, algo, logHandle, activityKey);
-          const { nodes, edges } = toUniformStats(discriminate(raw, algo));
-          stats.push({
-            algorithm: algo,
-            nodes,
-            edges,
-            variants: sharedMetrics.variants,
-            density: sharedMetrics.density,
-            complexity: sharedMetrics.complexity,
-            elapsedMs,
-            qualityTier: QUALITY_TIERS[algo],
-          });
-        }
-        const totalElapsedMs = performance.now() - t0;
-
-        // Build canonical result payload
-        const payload = {
-          input: inputPath,
-          activityKey,
-          algorithms: stats,
-        };
-
-        // Handle --cache-stats (fetch before emitting)
-        let cacheStats: Record<string, unknown> | null = null;
-        if (ctx.args['cache-stats']) {
-          if (typeof wasm.get_cache_stats !== 'function') {
-            const errResult = makeErrorResult('compare', new Error('Cache statistics requested but not available in WASM module'), EXIT_CODES.execution_error, 'CACHE_STATS_UNAVAILABLE');
-            emitResult(errResult, emitOptions);
-            return await exitWithFlush(errResult.exit_code);
+          // Empty or separator-only input (e.g. "" or ",") — config error
+          if (rawAlgos.length === 0) {
+            const result = makeErrorResult(
+              'compare',
+              new Error(
+                `No algorithms specified.\n\n` +
+                  `Usage:  wpm compare dfg,heuristic -i log.xes\n` +
+                  `        wpm compare dfg heuristic inductive -i log.xes\n\n` +
+                  `Quick picks: dfg, heuristic, inductive, ilp, genetic\n` +
+                  `Run 'wpm algorithms' to list all available algorithms.`
+              ),
+              EXIT_CODES.config_error,
+              'NO_ALGORITHMS'
+            );
+            emitResult(result, emitOptions);
+            return await exitWithFlush(result.exit_code);
           }
-          const statsRaw = wasm.get_cache_stats();
-          cacheStats = (typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw) as Record<string, unknown>;
-        }
 
-        const cmdResult = makeResult('compare', payload, totalElapsedMs, EXIT_CODES.success);
+          // Resolve kernel IDs to CLI aliases, then validate
+          const resolved = rawAlgos.map((a) => ALGORITHM_CLI_ALIASES[a] ?? a);
+          const invalid = resolved.filter((a) => !ALGORITHMS.includes(a as Algorithm));
+          if (invalid.length > 0) {
+            // rawAlgos entries that did not resolve — show what the user typed
+            const invalidRaw = rawAlgos.filter((a) => {
+              const cli = ALGORITHM_CLI_ALIASES[a] ?? a;
+              return !ALGORITHMS.includes(cli as Algorithm);
+            });
+            const result = makeErrorResult(
+              'compare',
+              new Error(
+                `Unknown algorithm(s): ${invalidRaw.join(', ')}.\n\n` +
+                  `  Available CLI aliases: ${ALGORITHMS.join(', ')}\n\n` +
+                  `  Usage:  wpm compare dfg,heuristic,genetic -i log.xes\n` +
+                  `  Run 'wpm algorithms' to list all available algorithms with descriptions.`
+              ),
+              EXIT_CODES.source_error,
+              'UNKNOWN_ALGORITHMS'
+            );
+            emitResult(result, emitOptions);
+            return await exitWithFlush(result.exit_code);
+          }
 
-        // Persist BLAKE3 receipt for proof-of-execution
-        if (!ctx.args['no-save']) {
-          try {
-            const inputBytes = fs.readFileSync(inputPath);
-            const receipt: CommandReceipt = {
-              ...newReceipt('compare'),
-              input_hash: blake3Hex(inputBytes),
-              output_hash: blake3Hex(JSON.stringify(payload)),
-              status: 'success',
-              summary: {
-                algorithms: algos,
+          // Deduplicate algorithms — dfg,dfg is a config error: a comparison needs distinct algorithms
+          const seen = new Set<string>();
+          const duplicates: string[] = [];
+          for (const a of resolved) {
+            if (seen.has(a)) {
+              duplicates.push(a);
+            } else {
+              seen.add(a);
+            }
+          }
+          if (duplicates.length > 0) {
+            const result = makeErrorResult(
+              'compare',
+              new Error(
+                `Duplicate algorithm(s) specified: ${duplicates.join(', ')}.\n\n` +
+                  `Each algorithm must appear at most once — a comparison needs distinct algorithms.\n\n` +
+                  `Usage:  wpm compare dfg,heuristic -i log.xes\n` +
+                  `Run 'wpm algorithms' to list all available algorithms.`
+              ),
+              EXIT_CODES.config_error,
+              'DUPLICATE_ALGORITHMS'
+            );
+            emitResult(result, emitOptions);
+            return await exitWithFlush(result.exit_code);
+          }
+
+          if (resolved.length < 2) {
+            const result = makeErrorResult(
+              'compare',
+              new Error(
+                `At least two algorithms are required for comparison (got ${resolved.length}).\n\n` +
+                  `Usage:  wpm compare dfg,heuristic -i log.xes\n` +
+                  `        wpm compare dfg heuristic inductive -i log.xes\n\n` +
+                  `Quick picks: dfg, heuristic, inductive, ilp, genetic\n` +
+                  `Run 'wpm algorithms' to list all available algorithms.`
+              ),
+              EXIT_CODES.source_error,
+              'TOO_FEW_ALGORITHMS'
+            );
+            emitResult(result, emitOptions);
+            return await exitWithFlush(result.exit_code);
+          }
+
+          const algos = resolved as Algorithm[];
+
+          const inputPath = ctx.args.input as string;
+          const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
+
+          await withLogSession(
+            { inputPath, activityKey, commandName: 'compare', emitOptions },
+            async (wasmBase, logHandle) => {
+              const wasm = wasmBase as Record<string, CallableFunction>;
+
+              // Get shared metrics (variants, density, complexity) once from the log.
+              // If metrics are unavailable (e.g. WASM version mismatch), fall back to
+              // sentinel values so the comparison still runs.
+              let sharedMetrics: { variants: number; density: number; complexity: number };
+              try {
+                sharedMetrics = extractModelMetrics(wasm, logHandle, activityKey);
+              } catch {
+                sharedMetrics = { variants: -1, density: -1, complexity: -1 };
+              }
+
+              // Run each algorithm individually. Errors are isolated per-algorithm so
+              // a single failure produces a sentinel row rather than aborting the batch.
+              const t0 = performance.now();
+              const stats: ModelStats[] = [];
+              const algorithmErrors: string[] = [];
+              await withSpanRaw(
+                `wasm4pm.${AnalysisSpans.compareStart(algos.length)}`,
+                { algorithms: algos.join(','), activityKey, log: inputPath },
+                async () => {
+                  for (const algo of algos) {
+                    try {
+                      const { raw, elapsedMs } = runDiscovery(wasm, algo, logHandle, activityKey);
+                      const shape = discriminate(raw, algo);
+                      const { nodes, edges } = toUniformStats(shape);
+                      const profile = ALGO_PROFILES[algo];
+                      stats.push({
+                        algorithm: algo,
+                        nodes,
+                        edges,
+                        node_count: nodes,
+                        edge_count: edges,
+                        output_type: shape.kind,
+                        variants: sharedMetrics.variants,
+                        density: sharedMetrics.density,
+                        complexity: sharedMetrics.complexity,
+                        elapsedMs,
+                        duration_ms: elapsedMs,
+                        qualityTier: profile.qualityTier,
+                        speedTier: profile.speedTier,
+                        quality_tier_is_proxy: true,
+                      });
+                    } catch (err) {
+                      // Record the failure; push a sentinel row so output is always complete
+                      const msg = err instanceof Error ? err.message : String(err);
+                      algorithmErrors.push(`${algo}: ${msg}`);
+                      const profile = ALGO_PROFILES[algo];
+                      stats.push({
+                        algorithm: algo,
+                        nodes: -1,
+                        edges: -1,
+                        node_count: -1,
+                        edge_count: -1,
+                        output_type: 'unknown' as const,
+                        variants: sharedMetrics.variants,
+                        density: sharedMetrics.density,
+                        complexity: sharedMetrics.complexity,
+                        elapsedMs: 0,
+                        duration_ms: 0,
+                        qualityTier: profile.qualityTier,
+                        speedTier: profile.speedTier,
+                        quality_tier_is_proxy: true,
+                      });
+                    }
+                  }
+                },
+                () => ({
+                  algo_count: algos.length,
+                  error_count: algorithmErrors.length,
+                  elapsed_ms: Math.round(performance.now() - t0),
+                })
+              );
+              const totalElapsedMs = performance.now() - t0;
+
+              // Derive winner recommendations before building payload
+              const recommendation = deriveRecommendation(stats);
+
+              // Derive a single "winner" string — the algorithm with the highest qualityTier
+              // among successful runs, or null if fewer than 2 runs succeeded.
+              const winner: string | null =
+                recommendation !== null ? recommendation.highestQuality.algorithm : null;
+
+              // Build canonical result payload. Include algorithm_errors only when some
+              // runs failed so consumers can distinguish partial from full success.
+              const payload: {
+                status: 'ok';
+                input: string;
+                activityKey: string;
+                /** Array of algorithm name strings that were compared. */
+                algorithms: string[];
+                /** Per-algorithm comparison results (one entry per algorithm). */
+                comparisons: ModelStats[];
+                /** Algorithm with the highest quality tier, or null if fewer than 2 succeeded. */
+                winner: string | null;
+                recommendation: AlgorithmRecommendation | null;
+                algorithm_errors?: string[];
+              } = {
+                status: 'ok' as const,
+                input: inputPath,
                 activityKey,
-                elapsedMs: Math.round(totalElapsedMs * 100) / 100,
-              },
-            };
-            saveCommandReceipt(receipt);
-          } catch {
-            /* receipt write must never break the command */
-          }
-        }
+                algorithms: algos,
+                comparisons: stats,
+                winner,
+                recommendation,
+              };
+              if (algorithmErrors.length > 0) {
+                payload.algorithm_errors = algorithmErrors;
+              }
 
-      emitResult(cmdResult, emitOptions, (res, projection) => {
-        const p = res.payload as typeof payload;
-        const s = p.algorithms;
+              // Handle --cache-stats (fetch before emitting)
+              let cacheStats: Record<string, unknown> | null = null;
+              if (ctx.args['cache-stats']) {
+                if (typeof wasm.get_cache_stats !== 'function') {
+                  const errResult = makeErrorResult(
+                    'compare',
+                    new Error('Cache statistics requested but not available in WASM module'),
+                    EXIT_CODES.execution_error,
+                    'CACHE_STATS_UNAVAILABLE'
+                  );
+                  emitResult(errResult, emitOptions);
+                  return await exitWithFlush(errResult.exit_code);
+                }
+                const statsRaw = wasm.get_cache_stats();
+                cacheStats = (
+                  typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw
+                ) as Record<string, unknown>;
+              }
 
-        projection.info(`Comparing algorithms: ${algos.join(', ')}`);
-        projection.log('');
-        projection.success(`Algorithm comparison — ${p.input}`);
-        projection.log(
-          `  Activity key: ${p.activityKey}  |  Log variants: ${sharedMetrics.variants}`
-        );
-        projection.log('');
+              // Partial failure (exit 4) when at least one algorithm produced a sentinel row;
+              // full success (exit 0) when all algorithms ran cleanly.
+              const resultExitCode =
+                algorithmErrors.length > 0 ? EXIT_CODES.partial_failure : EXIT_CODES.success;
+              const cmdResult = makeResult('compare', payload, totalElapsedMs, resultExitCode);
 
-        // Compute ranges for sparklines
-        const validStats = s.filter((st) => st.nodes >= 0);
-        const minNodes = Math.min(...validStats.map((st) => st.nodes));
-        const maxNodes = Math.max(...validStats.map((st) => st.nodes));
-        const minEdges = Math.min(...validStats.map((st) => st.edges));
-        const maxEdges = Math.max(...validStats.map((st) => st.edges));
-        const minTime = Math.min(...validStats.map((st) => st.elapsedMs));
-        const maxTime = Math.max(...validStats.map((st) => st.elapsedMs));
+              // Persist BLAKE3 receipt for proof-of-execution
+              if (!ctx.args['no-save']) {
+                try {
+                  const inputBytes = fs.readFileSync(inputPath);
+                  const receipt: CommandReceipt = {
+                    ...newReceipt('compare'),
+                    input_hash: blake3Hex(inputBytes),
+                    output_hash: blake3Hex(JSON.stringify(payload)),
+                    status: algorithmErrors.length > 0 ? 'partial' : 'success',
+                    summary: {
+                      algorithms: algos,
+                      activityKey,
+                      elapsedMs: Math.round(totalElapsedMs * 100) / 100,
+                      ...(algorithmErrors.length > 0 ? { errors: algorithmErrors } : {}),
+                    },
+                  };
+                  saveCommandReceipt(receipt);
+                } catch {
+                  /* receipt write must never break the command */
+                }
+              }
 
-        // Quality tier range for sparklines
-        const minQuality = Math.min(...validStats.map((st) => st.qualityTier));
-        const maxQuality = Math.max(...validStats.map((st) => st.qualityTier));
+              emitResult(cmdResult, emitOptions, (res, projection) => {
+                const p = res.payload as typeof payload;
+                const s = p.comparisons;
 
-        // Table header includes QTier so fitness-precision trade-off is visible at a glance
-        projection.log(
-          `  ${'Algorithm'.padEnd(20)}  ${'QTier'.padStart(5)}  ${'Nodes'.padStart(6)}  ${'Edges'.padStart(6)}  ${'Time(ms)'.padStart(9)}  ${'Quality'.padEnd(10)}  ${'Time'.padEnd(10)}`
-        );
-        projection.log(
-          `  ${'─'.repeat(20)}  ${'─'.repeat(5)}  ${'─'.repeat(6)}  ${'─'.repeat(6)}  ${'─'.repeat(9)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}`
-        );
+                projection.info(`Comparing algorithms: ${algos.join(', ')}`);
+                projection.log('');
 
-        for (const st of s) {
-          const algoCol = col(st.algorithm, 20);
-          if (st.nodes < 0) {
-            projection.log(
-              `  ${algoCol}  ${'ERROR'.padStart(5)}  ${'─'.padStart(6)}  ${'─'.padStart(6)}  ${'─'.padStart(9)}`
-            );
-            continue;
-          }
-          const qtierStr = numCol(st.qualityTier, 5);
-          const nodesStr = numCol(st.nodes, 6);
-          const edgesStr = numCol(st.edges, 6);
-          const timeStr = numCol(st.elapsedMs, 9, 1);
-          const qualityBar = sparkBar(st.qualityTier, minQuality, maxQuality).padEnd(10);
-          const timeBar = sparkBar(st.elapsedMs, minTime, maxTime).padEnd(10);
-          projection.log(
-            `  ${algoCol}  ${qtierStr}  ${nodesStr}  ${edgesStr}  ${timeStr}  ${qualityBar}  ${timeBar}`
+                // Compute ranges for sparklines (must be before header so we know success count)
+                const validStats = s.filter((st) => st.nodes >= 0);
+
+                // BUG-2 FIX: Show warning/error header when 0 algorithms succeeded rather than
+                // unconditionally emitting a green ✔ even when all runs failed.
+                if (validStats.length === 0) {
+                  projection.error(`Algorithm comparison — ${p.input} (all algorithms failed)`);
+                } else if (validStats.length < s.length) {
+                  projection.warn(`Algorithm comparison — ${p.input} (partial: ${validStats.length}/${s.length} succeeded)`);
+                } else {
+                  projection.success(`Algorithm comparison — ${p.input}`);
+                }
+                projection.log(
+                  `  Activity key: ${p.activityKey}  |  Log variants: ${sharedMetrics.variants}`
+                );
+                projection.log('');
+                const minNodes = Math.min(...validStats.map((st) => st.nodes));
+                const maxNodes = Math.max(...validStats.map((st) => st.nodes));
+                const minEdges = Math.min(...validStats.map((st) => st.edges));
+                const maxEdges = Math.max(...validStats.map((st) => st.edges));
+                const minTime = Math.min(...validStats.map((st) => st.elapsedMs));
+                const maxTime = Math.max(...validStats.map((st) => st.elapsedMs));
+                const minQuality = Math.min(...validStats.map((st) => st.qualityTier));
+                const maxQuality = Math.max(...validStats.map((st) => st.qualityTier));
+
+                // Table header — includes Quality* column so all four Van der Aalst
+                // proxies are visible at a glance alongside structural metrics.
+                // The * signals that Quality* is a design-time proxy, not a live score.
+                projection.log(
+                  `  ${'Algorithm'.padEnd(20)}  ${'Nodes'.padStart(6)}  ${'Edges'.padStart(6)}  ${'Time(ms)'.padStart(9)}  ${'Quality*'.padStart(8)}  ${'Nodes'.padEnd(10)}  ${'Edges'.padEnd(10)}  ${'Time'.padEnd(10)}  ${'Quality*'.padEnd(10)}`
+                );
+                projection.log(
+                  `  ${'─'.repeat(20)}  ${'─'.repeat(6)}  ${'─'.repeat(6)}  ${'─'.repeat(9)}  ${'─'.repeat(8)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}  ${'(bar)'.padEnd(10)}`
+                );
+
+                for (const st of s) {
+                  const algoCol = col(st.algorithm, 20);
+                  if (st.nodes < 0) {
+                    projection.log(
+                      `  ${algoCol}  ${'ERROR'.padStart(6)}  ${'─'.padStart(6)}  ${'─'.padStart(9)}  ${'─'.padStart(8)}`
+                    );
+                    continue;
+                  }
+                  const nodesStr = numCol(st.nodes, 6);
+                  const edgesStr = numCol(st.edges, 6);
+                  const timeStr = numCol(st.elapsedMs, 9, 1);
+                  const qualStr = numCol(st.qualityTier, 8);
+                  const nodesBar = sparkBar(st.nodes, minNodes, maxNodes).padEnd(10);
+                  const edgesBar = sparkBar(st.edges, minEdges, maxEdges).padEnd(10);
+                  const timeBar = sparkBar(st.elapsedMs, minTime, maxTime).padEnd(10);
+                  const qualBar = sparkBar(st.qualityTier, minQuality, maxQuality).padEnd(10);
+                  projection.log(
+                    `  ${algoCol}  ${nodesStr}  ${edgesStr}  ${timeStr}  ${qualStr}  ${nodesBar}  ${edgesBar}  ${timeBar}  ${qualBar}`
+                  );
+                }
+
+                projection.log('');
+                projection.log(
+                  '  Legend: ▓▓▓▓▓▓▓▓ = max  ░░░░░░░░ = min   bars are relative within this comparison'
+                );
+                projection.log('');
+                projection.log('  Metric guide (process mining interpretation):');
+                projection.log(
+                  '    Nodes    — number of distinct activities + gateways in the model.'
+                );
+                projection.log(
+                  '               More nodes = finer-grained model; fewer = more abstract.'
+                );
+                projection.log('    Edges    — number of directly-follows relations captured.');
+                projection.log(
+                  '               More edges = higher structural detail; also higher complexity.'
+                );
+                projection.log(
+                  '               A flower model (every activity follows every other) has maximum edges'
+                );
+                projection.log(
+                  '               but zero precision. Use wpm quality to check fitness+precision together.'
+                );
+                projection.log(
+                  '    Time(ms) — wall-clock discovery time for this log. Lower = faster iteration.'
+                );
+                projection.log(
+                  '               For large logs (>100K events) this gap compounds significantly.'
+                );
+                projection.log(
+                  '    Quality* — Van der Aalst quality tier (0-100). * = design-time registry proxy,'
+                );
+                projection.log(
+                  '               not a live fitness/precision score computed from this log.'
+                );
+                projection.log(
+                  '               Higher = better expected fitness+precision balance.'
+                );
+                projection.log(
+                  '               For authoritative scores: wpm quality <log.xes>.'
+                );
+                projection.log('');
+
+                // Partial failure notice
+                if (p.algorithm_errors && p.algorithm_errors.length > 0) {
+                  projection.log('  Algorithm errors (partial results):');
+                  for (const e of p.algorithm_errors) {
+                    projection.warn(`    ${e}`);
+                  }
+                  projection.log('');
+                }
+
+                // Winner recommendation section — Van der Aalst grounded
+                if (recommendation) {
+                  projection.log('  ─── Winner ───────────────────────────────────────────────');
+                  projection.log('');
+                  projection.log(`  Trade-off: ${recommendation.tradeoffNarrative}`);
+                  projection.log('');
+                  projection.log('  Recommendations by criterion:');
+                  projection.success(
+                    `    Fastest        → ${recommendation.fastest.algorithm.padEnd(20)}  ${recommendation.fastest.rationale}`
+                  );
+                  projection.success(
+                    `    Highest quality→ ${recommendation.highestQuality.algorithm.padEnd(20)}  ${recommendation.highestQuality.rationale}`
+                  );
+                  projection.success(
+                    `    Best tradeoff  → ${recommendation.bestTradeoff.algorithm.padEnd(20)}  ${recommendation.bestTradeoff.rationale}`
+                  );
+                  projection.log('');
+
+                  // Van der Aalst 4-dimension breakdown for top 2 algorithms
+                  // (fastest and highest quality — the practitioner's core choice)
+                  const top2 = [
+                    recommendation.fastest.algorithm,
+                    recommendation.highestQuality.algorithm,
+                  ].filter((v, i, arr) => arr.indexOf(v) === i);
+                  if (top2.length >= 1) {
+                    projection.log('  Van der Aalst 4-dimension profile (top algorithm(s)):');
+                    projection.log('');
+                    projection.log(
+                      `  ${'Algorithm'.padEnd(20)}  ${'Fitness'.padEnd(10)}  ${'Precision'.padEnd(10)}  ${'Generalize'.padEnd(12)}  ${'Simplicity'.padEnd(12)}  Recommended for`
+                    );
+                    projection.log(
+                      `  ${'─'.repeat(20)}  ${'─'.repeat(10)}  ${'─'.repeat(10)}  ${'─'.repeat(12)}  ${'─'.repeat(12)}  ${'─'.repeat(30)}`
+                    );
+                    for (const algoName of top2) {
+                      const profile = ALGO_PROFILES[algoName as Algorithm];
+                      if (!profile) continue;
+                      const useCaseLabel = profile.useCases[0] ?? 'general analysis';
+                      projection.log(
+                        `  ${col(algoName, 20)}  ${profile.fitnessProxy.padEnd(10)}  ${profile.precisionProxy.padEnd(10)}  ${profile.generalizationProxy.padEnd(12)}  ${profile.simplicityProxy.padEnd(12)}  ${useCaseLabel}`
+                      );
+                    }
+                    projection.log('');
+                  }
+
+                  // Per-algorithm use-case labels for all compared algorithms
+                  projection.log('  Recommended for (all compared algorithms):');
+                  for (const st of s) {
+                    if (st.nodes < 0) continue; // skip failed runs
+                    const profile = ALGO_PROFILES[st.algorithm];
+                    const label = profile.useCases.join(' | ');
+                    projection.log(`    ${col(st.algorithm, 20)}  ${label}`);
+                  }
+                  projection.log('');
+
+                  projection.log(
+                    '  Note: Quality* is a design-time registry proxy (quality_tier_is_proxy: true),'
+                  );
+                  projection.log(
+                    '  not a live fitness/precision score. For authoritative Van der Aalst metrics: wpm quality <log.xes>'
+                  );
+                  projection.log('');
+                }
+
+                // Cache statistics (if fetched)
+                if (cacheStats) {
+                  const hitRate =
+                    (cacheStats.parse_hits as number) + (cacheStats.parse_misses as number) > 0
+                      ? (
+                          ((cacheStats.parse_hits as number) /
+                            ((cacheStats.parse_hits as number) +
+                              (cacheStats.parse_misses as number))) *
+                          100
+                        ).toFixed(1)
+                      : 'N/A';
+                  projection.info('Cache statistics:');
+                  projection.info(`  Parse hits: ${cacheStats.parse_hits}`);
+                  projection.info(`  Parse misses: ${cacheStats.parse_misses}`);
+                  projection.info(`  Hit rate: ${hitRate}%`);
+                  projection.info(`  Columnar entries: ${cacheStats.columnar_entries}`);
+                  projection.info(`  Interner entries: ${cacheStats.interner_entries}`);
+                }
+              });
+
+              return await exitWithFlush(cmdResult.exit_code);
+            }
+          ); // end withLogSession
+        } catch (error) {
+          const code =
+            error instanceof DiscoveryShapeError ? 'DISCOVERY_SHAPE_MISMATCH' : 'COMPARISON_FAILED';
+          const result = makeErrorResult(
+            'compare',
+            error instanceof Error ? error : new Error(String(error)),
+            EXIT_CODES.execution_error,
+            code
           );
+          emitResult(result, emitOptions);
+          return await exitWithFlush(result.exit_code);
         }
-
-        projection.log('');
-        projection.log(
-          '  QTier: registry quality score 0-100 (fitness+precision trade-off, higher=better)'
-        );
-        projection.log(
-          '  Legend: ▓▓▓▓▓▓▓▓ = max  ░░░░░░░░ = min   bars are relative within this comparison'
-        );
-
-        // Recommend the best quality-speed trade-off
-        const byQuality = validStats.slice().sort((a, b) => b.qualityTier - a.qualityTier);
-        const bySpeed = validStats.slice().sort((a, b) => a.elapsedMs - b.elapsedMs);
-        if (byQuality.length > 0 && bySpeed.length > 0) {
-          const bestQuality = byQuality[0];
-          const fastest = bySpeed[0];
-          projection.log('');
-          if (bestQuality.algorithm === fastest.algorithm) {
-            projection.log(
-              `  Recommendation: ${bestQuality.algorithm} is both fastest and highest quality in this set.`
-            );
-          } else {
-            projection.log(
-              `  Recommendation: ${bestQuality.algorithm} (quality ${bestQuality.qualityTier}/100) gives the best model; ` +
-                `${fastest.algorithm} (${fastest.elapsedMs.toFixed(1)}ms) is fastest.`
-            );
-            projection.log(
-              `  Next: run wpm conformance -i <log.xes> to verify fitness of the best model.`
-            );
-          }
-        }
-        projection.log('');
-
-        // Cache statistics (if fetched)
-        if (cacheStats) {
-          const hitRate =
-            (cacheStats.parse_hits as number) + (cacheStats.parse_misses as number) > 0
-              ? (((cacheStats.parse_hits as number) / ((cacheStats.parse_hits as number) + (cacheStats.parse_misses as number))) * 100).toFixed(1)
-              : 'N/A';
-          projection.info('Cache statistics:');
-          projection.info(`  Parse hits: ${cacheStats.parse_hits}`);
-          projection.info(`  Parse misses: ${cacheStats.parse_misses}`);
-          projection.info(`  Hit rate: ${hitRate}%`);
-          projection.info(`  Columnar entries: ${cacheStats.columnar_entries}`);
-          projection.info(`  Interner entries: ${cacheStats.interner_entries}`);
-        }
-      });
-
-        return await exitWithFlush(cmdResult.exit_code);
-      });  // end withLogSession
-    } catch (error) {
-      const code =
-        error instanceof DiscoveryShapeError ? 'DISCOVERY_SHAPE_MISMATCH' : 'COMPARISON_FAILED';
-      const result = makeErrorResult(
-        'compare',
-        error instanceof Error ? error : new Error(String(error)),
-        EXIT_CODES.execution_error,
-        code
-      );
-      emitResult(result, emitOptions);
-      return await exitWithFlush(result.exit_code);
-    }
-      },
+      }
     );
   },
 });

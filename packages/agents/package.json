@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/agents",
-  "version": "26.5.15",
+  "version": "26.5.21",
   "description": "Van der Aalst process mining agents — autonomous adversarial validation",
   "type": "module",
   "main": "./dist/index.js",
@@ -28,12 +28,12 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@wasm4pm/contracts": "workspace:*",
-    "@wasm4pm/kernel": "workspace:*",
-    "@wasm4pm/engine": "workspace:*"
+    "@wasm4pm/contracts": "*",
+    "wasm4pm": "*",
+    "@wasm4pm/engine": "*"
   },
   "devDependencies": {
     "typescript": "^5.7.0",
-    "vitest": "^3.0.0"
+    "vitest": "^1.6.0"
   }
 }

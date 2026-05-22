@@ -220,7 +220,7 @@ pub fn logarithmic_regression_impl(x: &[f64], y: &[f64]) -> Result<LogarithmicMo
     // Check for non-positive x values
     for (i, &xi) in x.iter().enumerate() {
         if xi <= 0.0 {
-            return Err(MlError::new(&format!(
+            return Err(MlError::new(format!(
                 "All x values must be positive for logarithmic regression (x[{}] = {})",
                 i, xi
             )));
@@ -347,13 +347,13 @@ pub fn power_regression_impl(x: &[f64], y: &[f64]) -> Result<PowerModel, MlError
     // Check for non-positive values
     for (i, (&xi, &yi)) in x.iter().zip(y.iter()).enumerate() {
         if xi <= 0.0 {
-            return Err(MlError::new(&format!(
+            return Err(MlError::new(format!(
                 "All x values must be positive for power regression (x[{}] = {})",
                 i, xi
             )));
         }
         if yi <= 0.0 {
-            return Err(MlError::new(&format!(
+            return Err(MlError::new(format!(
                 "All y values must be positive for power regression (y[{}] = {})",
                 i, yi
             )));

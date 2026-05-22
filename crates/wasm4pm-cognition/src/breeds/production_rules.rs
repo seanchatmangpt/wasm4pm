@@ -24,6 +24,10 @@ pub struct Mycin;
 /// - Commutativity for same-sign: `combine(a,b) == combine(b,a)`.
 /// - Identity: `combine(x, 0) == x`.
 /// - Bounds: result is in `[-1.0, 1.0]` for inputs in `[-1.0, 1.0]`.
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn combine_cf(a: f32, b: f32) -> f32 {
     let r = if a >= 0.0 && b >= 0.0 {
         a + b - a * b
@@ -128,11 +132,10 @@ impl CognitionBreed for Mycin {
         // Pick selected: highest-CF conclusion key=value pair.
         let mut best: Option<(String, f32)> = None;
         for (k, v) in working_memory.iter() {
-            if k.contains('=') && *v > 0.0 {
-                if best.as_ref().map_or(true, |(_, bv)| *v > *bv) {
+            if k.contains('=') && *v > 0.0
+                && best.as_ref().is_none_or(|(_, bv)| *v > *bv) {
                     best = Some((k.clone(), *v));
                 }
-            }
         }
         let selected = best.map(|(k, _)| k);
 

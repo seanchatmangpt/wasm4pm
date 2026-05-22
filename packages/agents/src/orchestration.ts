@@ -56,6 +56,8 @@ export class AgentOrchestrator {
     options: {
       registryPath?: string;
       auditPath?: string;
+      cycleTimeoutMs?: number;
+      agentTimeoutMs?: number;
     } = {}
   ) {
     this.registry = new AgentRegistry(options.registryPath);
@@ -94,7 +96,12 @@ export class AgentOrchestrator {
           analyze,
           plan: { actions: [], critical_actions: 0, warning_actions: 0 },
           execute: { corrections: [], successful_count: 0, failed_count: 0 },
-          learn: { knowledge_updated: false, drift_scores: null, ontology_patches: 0 },
+          learn: {
+            knowledge_updated: false,
+            drift_scores: null,
+            ontology_patches: 0,
+            thresholdAuditLog: [],
+          },
           duration_ms: Date.now() - startTime,
         };
       }
@@ -409,7 +416,12 @@ export class AgentOrchestrator {
   }
 
   /**
-   * LEARN: Update knowledge base
+   * LEARN: Update knowledge base and adapt agent thresholds.
+   *
+   * Drift scores are computed from violation frequency patterns and fed back
+   * into the agent registry so that thresholds tighten for noisy agents and
+   * relax for quiet ones.  This closes the MAPE-K feedback loop: Execute
+   * results influence future Monitor/Analyze sensitivity.
    */
   learn(analyze: AnalyzeResult, execute: ExecuteResult): LearnResult {
     // Track drift by violation patterns
@@ -420,16 +432,59 @@ export class AgentOrchestrator {
       driftScores[key] = (driftScores[key] || 0) + 1;
     }
 
-    // Normalize drift scores
+    // Normalize drift scores to [0, 1]
     for (const key of Object.keys(driftScores)) {
       driftScores[key] = Math.min(driftScores[key] / 10, 1.0);
     }
 
+    // Feed drift scores back into agent registry to adapt thresholds.
+    // This is the autonomic self-improvement loop: repeated violations tighten
+    // sensitivity; prolonged silence relaxes it.
+    // The returned audit log records exactly which thresholds changed and why,
+    // providing observability for the Learn phase without relying on side-effects.
+    let thresholdAuditLog: import('./types.js').ThresholdAuditEntry[] = [];
+    if (Object.keys(driftScores).length > 0) {
+      thresholdAuditLog = this.registry.adaptThresholdsFromDrift(driftScores);
+    }
+
     return {
-      knowledge_updated: execute.corrections.length > 0,
+      knowledge_updated: execute.corrections.length > 0 || Object.keys(driftScores).length > 0,
       drift_scores: Object.keys(driftScores).length > 0 ? driftScores : null,
       ontology_patches: execute.successful_count,
+      thresholdAuditLog,
     };
+  }
+
+  /**
+   * Format the Learn phase result as human-readable lines.
+   *
+   * Returns one line per threshold change (from thresholdAuditLog) plus a
+   * summary line.  When no thresholds changed, returns a single "stable"
+   * message.  Callers (CLI renderers, test helpers) use this to present the
+   * Learn phase without re-deriving the audit log structure.
+   *
+   * Example output:
+   *   Learn      mock-interceptor: max_deviations 0 → 0 (drift 0.600 — tightened sensitivity)
+   *   Learn      No threshold adjustments (all metrics within bounds)
+   */
+  static formatLearnSummary(learn: LearnResult): string[] {
+    const lines: string[] = [];
+
+    if (learn.thresholdAuditLog.length === 0) {
+      lines.push('Learn      No threshold adjustments (all metrics within bounds)');
+    } else {
+      for (const entry of learn.thresholdAuditLog) {
+        lines.push(
+          `Learn      ${entry.agentId}: ${entry.field} ${entry.before} → ${entry.after} (drift ${entry.driftScore.toFixed(3)} — ${entry.reason})`
+        );
+      }
+    }
+
+    if (learn.ontology_patches > 0) {
+      lines.push(`Learn      ${learn.ontology_patches} ontology patch(es) applied`);
+    }
+
+    return lines;
   }
 
   // =========================================================================

@@ -1,3 +1,6 @@
+#![allow(clippy::type_complexity)]
+
+
 //! # wasm4pm-cognition — AutoSystems old-AI cognition kernel
 //!
 //! Real implementations of foundational old-AI cognition systems, plus
@@ -38,6 +41,7 @@ pub mod evidence;
 pub mod log_adapter;
 pub mod observability;
 pub mod registry;
+pub mod ghf;
 
 #[cfg(feature = "wasm")]
 pub mod wasm;

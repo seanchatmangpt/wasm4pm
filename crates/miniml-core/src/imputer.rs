@@ -1,6 +1,4 @@
 use wasm_bindgen::prelude::*;
-use crate::error::MlError;
-use crate::matrix::validate_matrix;
 
 /// Simple Imputer - Missing value imputation
 /// Uses NaN as missing value indicator
@@ -42,7 +40,7 @@ impl SimpleImputer {
                     else {
                         let mut sorted = values.clone();
                         sorted.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
-                        if sorted.len() % 2 == 0 {
+                        if sorted.len().is_multiple_of(2) {
                             (sorted[sorted.len() / 2 - 1] + sorted[sorted.len() / 2]) / 2.0
                         } else {
                             sorted[sorted.len() / 2]

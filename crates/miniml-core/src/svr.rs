@@ -60,41 +60,46 @@ impl SVRModel {
     }
 }
 
+#[wasm_bindgen]
+#[derive(Clone, Copy)]
+pub struct SVRConfig {
+    pub epsilon: f64,
+    pub c: f64,
+    pub max_iter: usize,
+    pub lr: f64,
+    pub seed: u64,
+}
+
+#[wasm_bindgen]
+impl SVRConfig {
+    #[wasm_bindgen(constructor)]
+    pub fn new(epsilon: f64, c: f64, max_iter: usize, lr: f64, seed: u64) -> SVRConfig {
+        SVRConfig { epsilon, c, max_iter, lr, seed }
+    }
+}
+
 /// Epsilon-SVR using PEGASOS-style subgradient descent.
-///
-/// The epsilon-insensitive loss ignores errors smaller than epsilon,
-/// creating a "tube" around the regression function where no penalty is incurred.
-/// The C parameter controls the trade-off between flatness and tolerance for errors
-/// outside the tube.
-///
-/// Subgradient w.r.t. w: if |residual| > epsilon: sign(residual) * x, else 0
-/// Update: w = (1 - lr/(t*c)) * w + lr * subgradient / c
-/// Normalize: w = min(1, sqrt(c)/||w||) * w
 pub fn svr_fit_impl(
     data: &[f64],
     n_features: usize,
     targets: &[f64],
-    epsilon: f64,
-    c: f64,
-    max_iter: usize,
-    lr: f64,
-    seed: u64,
+    config: SVRConfig,
 ) -> Result<SVRModel, MlError> {
     let n = validate_matrix(data, n_features)?;
     if targets.len() != n {
         return Err(MlError::new("targets length must match number of samples"));
     }
-    if epsilon < 0.0 {
+    if config.epsilon < 0.0 {
         return Err(MlError::new("epsilon must be >= 0"));
     }
-    if c <= 0.0 {
+    if config.c <= 0.0 {
         return Err(MlError::new("c must be > 0"));
     }
-    if lr <= 0.0 {
+    if config.lr <= 0.0 {
         return Err(MlError::new("learning rate must be > 0"));
     }
 
-    let mut rng = Rng::new(seed);
+    let mut rng = Rng::new(config.seed);
     let mut weights = vec![0.0f64; n_features];
     let mut bias = 0.0f64;
 
@@ -103,7 +108,7 @@ pub fn svr_fit_impl(
     let mut support_labels: Vec<f64> = Vec::new();
     let mut support_alphas: Vec<f64> = Vec::new();
 
-    for t in 1..=max_iter {
+    for t in 1..=config.max_iter {
         // Random sample selection
         let idx = rng.next_usize(n);
         let x = &data[idx * n_features..(idx + 1) * n_features];
@@ -111,8 +116,8 @@ pub fn svr_fit_impl(
 
         // Compute prediction
         let mut prediction = bias;
-        for f in 0..n_features {
-            prediction += weights[f] * x[f];
+        for (&w, &xf) in weights.iter().zip(x.iter()).take(n_features) {
+            prediction += w * xf;
         }
 
         let residual = target - prediction;
@@ -120,50 +125,50 @@ pub fn svr_fit_impl(
         // Subgradient of epsilon-insensitive loss:
         // If |residual| > epsilon: subgrad_w = sign(residual) * x
         // Else: subgrad_w = 0
-        let subgrad = if residual.abs() > epsilon {
+        let subgrad = if residual.abs() > config.epsilon {
             residual.signum()
         } else {
             0.0
         };
 
         // PEGASOS update: w = (1 - lr/(t*c)) * w + lr * subgrad * x / c
-        let shrink = 1.0 - lr / (t as f64 * c);
-        for f in 0..n_features {
-            weights[f] = shrink * weights[f] + lr * subgrad * x[f] / c;
+        let shrink = 1.0 - config.lr / (t as f64 * config.c);
+        for (w, &xf) in weights.iter_mut().zip(x.iter()).take(n_features) {
+            *w = shrink * *w + config.lr * subgrad * xf / config.c;
         }
         // Bias updated similarly but without regularization
-        bias += lr * subgrad / c;
+        bias += config.lr * subgrad / config.c;
 
         // Project weights: w = min(1, sqrt(c)/||w||) * w
         let mut norm_sq = 0.0;
-        for f in 0..n_features {
-            norm_sq += weights[f] * weights[f];
+        for &w in weights.iter().take(n_features) {
+            norm_sq += w * w;
         }
         let norm = norm_sq.sqrt();
         if norm > 0.0 {
-            let scale = (c.sqrt() / norm).min(1.0);
-            for f in 0..n_features {
-                weights[f] *= scale;
+            let scale = (config.c.sqrt() / norm).min(1.0);
+            for w in weights.iter_mut().take(n_features) {
+                *w *= scale;
             }
         }
 
         // Collect support vectors (samples with non-zero loss)
-        if residual.abs() > epsilon {
+        if residual.abs() > config.epsilon {
             // Check if already tracked
             let already = support_vectors.len() / n_features;
             let mut found = false;
             for s in 0..already {
                 let sv = &support_vectors[s * n_features..(s + 1) * n_features];
                 let mut same = true;
-                for f in 0..n_features {
-                    if (sv[f] - x[f]).abs() > 1e-12 {
+                for (&sv_f, &x_f) in sv.iter().zip(x.iter()).take(n_features) {
+                    if (sv_f - x_f).abs() > 1e-12 {
                         same = false;
                         break;
                     }
                 }
                 if same {
                     // Update alpha
-                    support_alphas[s] += lr * subgrad.abs();
+                    support_alphas[s] += config.lr * subgrad.abs();
                     found = true;
                     break;
                 }
@@ -171,7 +176,7 @@ pub fn svr_fit_impl(
             if !found {
                 support_vectors.extend_from_slice(x);
                 support_labels.push(target);
-                support_alphas.push(lr * subgrad.abs());
+                support_alphas.push(config.lr * subgrad.abs());
             }
         }
     }
@@ -183,8 +188,8 @@ pub fn svr_fit_impl(
         support_labels,
         support_alphas,
         n_features,
-        epsilon,
-        c,
+        epsilon: config.epsilon,
+        c: config.c,
     })
 }
 
@@ -193,7 +198,7 @@ pub fn svr_predict_impl(model: &SVRModel, data: &[f64]) -> Result<Vec<f64>, MlEr
     if data.is_empty() {
         return Ok(Vec::new());
     }
-    if data.len() % model.n_features != 0 {
+    if !data.len().is_multiple_of(model.n_features) {
         return Err(MlError::new("data length must be divisible by n_features"));
     }
 
@@ -216,13 +221,9 @@ pub fn svr_fit(
     data: &[f64],
     n_features: usize,
     targets: &[f64],
-    epsilon: f64,
-    c: f64,
-    max_iter: usize,
-    lr: f64,
-    seed: u64,
+    config: SVRConfig,
 ) -> Result<SVRModel, JsValue> {
-    svr_fit_impl(data, n_features, targets, epsilon, c, max_iter, lr, seed)
+    svr_fit_impl(data, n_features, targets, config)
         .map_err(|e| JsValue::from_str(&e.message))
 }
 
@@ -242,7 +243,8 @@ mod tests {
         let data = vec![0.0, 1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0];
         let targets: Vec<f64> = (0..10).map(|i| 2.0 * i as f64 + 1.0).collect();
 
-        let model = svr_fit_impl(&data, 1, &targets, 0.1, 10.0, 10000, 0.01, 42).unwrap();
+        let config = SVRConfig::new(0.1, 10.0, 10000, 0.01, 42);
+        let model = svr_fit_impl(&data, 1, &targets, config).unwrap();
         let preds = svr_predict_impl(&model, &data).unwrap();
 
         for (p, &t) in preds.iter().zip(&targets) {
@@ -260,7 +262,8 @@ mod tests {
         let data = vec![1.0, 2.0, 3.0, 4.0, 5.0];
         let targets = vec![3.0, 6.0, 9.0, 12.0, 15.0];
 
-        let model = svr_fit_impl(&data, 1, &targets, 0.5, 10.0, 10000, 0.01, 42).unwrap();
+        let config = SVRConfig::new(0.5, 10.0, 10000, 0.01, 42);
+        let model = svr_fit_impl(&data, 1, &targets, config).unwrap();
         let preds = svr_predict_impl(&model, &data).unwrap();
 
         // Predictions on training data should be within epsilon
@@ -285,7 +288,8 @@ mod tests {
         ];
         let targets = vec![3.0, 5.0, 7.0, 9.0, 11.0];
 
-        let model = svr_fit_impl(&data, 2, &targets, 0.1, 10.0, 10000, 0.01, 42).unwrap();
+        let config = SVRConfig::new(0.1, 10.0, 10000, 0.01, 42);
+        let model = svr_fit_impl(&data, 2, &targets, config).unwrap();
         let preds = svr_predict_impl(&model, &data).unwrap();
 
         for (p, &t) in preds.iter().zip(&targets) {

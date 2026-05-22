@@ -40,10 +40,15 @@ pub fn discover_automl_forecast(eventlog_handle: &str, _activity_key: &str) -> R
     }))
 }
 
+/// Result of an automated forecasting parameter search.
 pub struct AutomlForecastResult {
+    /// The smoothing factor (α) that resulted in the lowest cross-validated error.
     pub best_alpha: f64,
+    /// The minimum average Root Mean Squared Error (RMSE) achieved during the sweep.
     pub min_avg_rmse: f64,
+    /// The minimum average Mean Absolute Error (MAE) achieved during the sweep.
     pub min_avg_mae: f64,
+    /// The number of cross-validation folds used.
     pub folds: usize,
 }
 
@@ -87,6 +92,10 @@ fn eval_fold(windows: &[f64], alpha: f64, test_start: usize, test_end: usize) ->
     (sum_sq, sum_abs, n_err)
 }
 
+/// Automated hyperparameter search for forecasting parameters.
+///
+/// Sweeps across alpha [0.05, 0.95] using k-fold cross-validation.
+/// Returns the optimal alpha and associated error metrics.
 pub fn discover_automl_forecast_internal(windows: &[f64]) -> AutomlForecastResult {
     const FOLDS: usize = 5;
     let n = windows.len();
@@ -172,11 +181,18 @@ pub fn discover_automl_classify(eventlog_handle: &str, activity_key: &str) -> Re
     }))
 }
 
+/// Result of an automated classification hyperparameter search.
 pub struct AutomlClassifyResult {
+    /// The number of neighbors (K) that resulted in the highest cross-validated accuracy.
     pub best_k: usize,
+    /// The maximum average accuracy achieved during the sweep.
     pub max_avg_accuracy: f64,
 }
 
+/// Automated hyperparameter search for k-NN classification.
+///
+/// Sweeps across K [1, 15] using 5-fold cross-validation.
+/// Returns the optimal K and associated accuracy.
 pub fn discover_automl_classify_internal(features: &[[f64; 2]], labels: &[u8]) -> AutomlClassifyResult {
     const FOLDS: usize = 5;
     const MAX_K: usize = 15;

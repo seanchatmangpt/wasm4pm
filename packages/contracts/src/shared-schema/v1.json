@@ -1,0 +1,139 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://wasm4pm.dev/schemas/shared-receipt/v1",
+  "title": "SharedReceiptV1",
+  "description": "Canonical shared receipt schema bridging wasm4pm and mcpp. Resolves three type-drift risks: (1) run ID attribute name, (2) timing asymmetry, (3) hash scheme prefix.",
+  "type": "object",
+  "required": [
+    "run_id",
+    "schema_version",
+    "start_time",
+    "end_time",
+    "duration_ms",
+    "status",
+    "hashes",
+    "hash_format",
+    "otel_run_id_attribute"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "run_id": {
+      "type": "string",
+      "format": "uuid",
+      "description": "Canonical run identifier (UUID v4). Maps from wasm4pm Receipt.run_id and mcpp AcceptedResponse.run_id."
+    },
+    "schema_version": {
+      "type": "string",
+      "const": "shared/v1",
+      "description": "Schema version sentinel for this shared format."
+    },
+    "start_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Execution start (ISO 8601). Maps from wasm4pm start_time; mcpp started_at."
+    },
+    "end_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Execution end (ISO 8601). Maps from wasm4pm end_time; derived in mcpp as started_at + duration_ms."
+    },
+    "duration_ms": {
+      "type": "number",
+      "minimum": 0,
+      "description": "Wall-clock duration in milliseconds."
+    },
+    "status": {
+      "type": "string",
+      "enum": ["success", "partial", "failed", "accepted", "refused"],
+      "description": "Execution outcome. Accepts both wasm4pm values (success/partial/failed) and mcpp verdict values (accepted/refused)."
+    },
+    "hash_format": {
+      "type": "string",
+      "const": "blake3-hex-64",
+      "description": "Sentinel declaring that all hash fields in this document carry bare 64-character lowercase hex strings (no 'blake3:' prefix). Risk 3 mitigation: the prefix is stripped on ingestion from mcpp transport refs."
+    },
+    "hashes": {
+      "type": "object",
+      "description": "BLAKE3 hashes of pipeline artifacts. All values are bare 64-char hex (no prefix).",
+      "required": ["config", "input", "plan", "output", "proof_pack"],
+      "additionalProperties": false,
+      "properties": {
+        "config": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Hash of the configuration artifact."
+        },
+        "input": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Hash of the input artifact."
+        },
+        "plan": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Hash of the execution plan."
+        },
+        "output": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Hash of the output artifact."
+        },
+        "proof_pack": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Hash of the proof pack. Maps from mcpp ProofPackRef.hash (blake3: prefix stripped)."
+        }
+      }
+    },
+    "chain_predecessor": {
+      "type": "string",
+      "description": "Chain linkage: literal 'genesis' for the first receipt, or bare 64-char hex of the predecessor receipt hash. Risk 3 mitigation: the 'blake3:' prefix is stripped on ingestion from mcpp ReceiptRef.chain_predecessor.",
+      "oneOf": [
+        { "const": "genesis" },
+        { "pattern": "^[0-9a-f]{64}$" }
+      ]
+    },
+    "otel_run_id_attribute": {
+      "type": "string",
+      "enum": ["run.id", "mcpp.run_id"],
+      "description": "Risk 1 mitigation: records which OTel attribute name the originating system used. wasm4pm emits 'run.id'; mcpp emits 'mcpp.run_id'. Consumers can use this to look up the span attribute without guessing."
+    },
+    "conformance": {
+      "type": "object",
+      "description": "Conformance dimension scores (0.0–1.0). Maps from mcpp ConformanceThresholds.",
+      "additionalProperties": false,
+      "properties": {
+        "fitness": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "precision": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "lifecycle": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "cardinality": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        },
+        "receipt": {
+          "type": "number",
+          "minimum": 0.0,
+          "maximum": 1.0
+        }
+      }
+    },
+    "source": {
+      "type": "string",
+      "enum": ["wasm4pm", "mcpp"],
+      "description": "Which system produced this shared receipt, for audit and provenance purposes."
+    }
+  }
+}

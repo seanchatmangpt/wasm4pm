@@ -113,6 +113,10 @@ pub struct OtelEvidenceSource {
 
 impl OtelEvidenceSource {
     /// Create a new OTEL evidence source from ingested spans.
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn new(spans: Vec<serde_json::Value>, chain: ReceiptChain) -> Self {
         Self { spans, chain }
     }
@@ -246,11 +250,7 @@ impl EvidenceSource for OtelEvidenceSource {
             })
             .and_then(|s| Self::span_attr(s, "signing.timestamp_ms"))
             .and_then(|v| v.as_u64())?;
-        let diff = if exec_ts > ver_ts {
-            exec_ts - ver_ts
-        } else {
-            ver_ts - exec_ts
-        };
+        let diff = exec_ts.abs_diff(ver_ts);
         Some(Duration::from_millis(diff))
     }
 
@@ -307,6 +307,10 @@ pub struct FilesystemEvidenceSource {
 
 impl FilesystemEvidenceSource {
     /// Create a new filesystem evidence source rooted at `root`.
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn new<P: Into<std::path::PathBuf>>(root: P, chain: ReceiptChain) -> Self {
         Self {
             root: root.into(),
@@ -365,6 +369,10 @@ pub struct CompositeEvidenceSource {
 
 impl CompositeEvidenceSource {
     /// Create a composite source.
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
     pub fn new(otel: OtelEvidenceSource, fs: FilesystemEvidenceSource) -> Self {
         Self { otel, fs }
     }

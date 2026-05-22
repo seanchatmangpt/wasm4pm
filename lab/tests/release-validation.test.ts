@@ -33,10 +33,7 @@ const XES_SAMPLE = `<?xml version="1.0" encoding="UTF-8"?>
   <extension name="Concept" prefix="concept" uri="http://www.xes-standard.org/concept.xesext"/>
   <extension name="Time" prefix="time" uri="http://www.xes-standard.org/time.xesext"/>
   <global scope="trace"><string key="concept:name" value="undefined"/></global>
-  <global scope="event">
-    <string key="concept:name" value="undefined"/>
-    <date key="time:timestamp" value="1970-01-01T00:00:00.000+00:00"/>
-  </global>
+  <global scope="event"><string key="concept:name" value="undefined"/><date key="time:timestamp" value="1970-01-01T00:00:00.000+00:00"/></global>
   <trace><string key="concept:name" value="Case1"/>
     <event><string key="concept:name" value="Start"/><date key="time:timestamp" value="2023-01-01T10:00:00"/></event>
     <event><string key="concept:name" value="Process"/><date key="time:timestamp" value="2023-01-01T11:00:00"/></event>
@@ -88,7 +85,17 @@ beforeAll(async () => {
 // ── 1. Package Integrity After Install ───────────────────────────────────────
 
 describe('1. Package Integrity After Install', () => {
-  const pkgDir = path.resolve(__dirname, '../node_modules/wasm4pm');
+  const possiblePaths = [
+    path.resolve(__dirname, '../node_modules/wasm4pm'),
+    path.resolve(__dirname, '../../node_modules/wasm4pm'),
+  ];
+  let pkgDir = possiblePaths[0];
+  for (const p of possiblePaths) {
+    if (fs.existsSync(p)) {
+      pkgDir = p;
+      break;
+    }
+  }
 
   it('1.1 package.json is present with a valid semver version', () => {
     const pkgJsonPath = path.join(pkgDir, 'package.json');

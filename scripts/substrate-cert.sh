@@ -6,10 +6,10 @@ set -euo pipefail
 
 cd "$(git -C "$(dirname "$0")" rev-parse --show-toplevel)"
 
-REAL_DATA_REPORT="${REAL_DATA_REPORT:-wasm4pm/target/wasm4pm-v26.5.15/real-data-report.json}"
-FAKE_AUDIT="${FAKE_AUDIT:-wasm4pm/target/wasm4pm-v26.5.15/fake-stub-audit.json}"
-OUTPUT_FILE="${OUTPUT_FILE:-wasm4pm/target/wasm4pm-v26.5.15/substrate-certificate.json}"
-RELEASE="${RELEASE:-26.5.15}"
+REAL_DATA_REPORT="${REAL_DATA_REPORT:-wasm4pm/target/wasm4pm-v26.5.21/real-data-report.json}"
+FAKE_AUDIT="${FAKE_AUDIT:-wasm4pm/target/wasm4pm-v26.5.21/fake-stub-audit.json}"
+OUTPUT_FILE="${OUTPUT_FILE:-wasm4pm/target/wasm4pm-v26.5.21/substrate-certificate.json}"
+RELEASE="${RELEASE:-26.5.21}"
 
 python3 - <<PYEOF
 import json, sys, os

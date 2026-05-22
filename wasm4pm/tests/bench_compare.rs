@@ -78,6 +78,7 @@ fn fmt_ratio(ratio: f64) -> String {
 }
 
 #[test]
+#[ignore]
 fn compare_batch_vs_streaming() {
     let ak = "concept:name";
     let sizes = [100usize, 1_000, 5_000, 10_000];

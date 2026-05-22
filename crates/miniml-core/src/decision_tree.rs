@@ -21,7 +21,7 @@ pub struct TreeArena {
 
 /// Tree node enum for arena storage (internal use)
 #[derive(Clone)]
-enum TreeNode {
+pub enum TreeNode {
     Leaf(f64),
     Internal { feature: usize, threshold: f64, left: u32, right: u32 },
 }
@@ -34,6 +34,12 @@ pub struct FlatTreeNode {
     pub left_idx: Option<u32>,
     pub right_idx: Option<u32>,
     pub value: Option<f64>,
+}
+
+impl Default for TreeArena {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl TreeArena {
@@ -255,7 +261,7 @@ impl<'a> TreeBuilder<'a> {
         // Build class-to-index map once
         let unique_classes: Vec<_> = targets.iter().map(|&t| t as u32).collect();
         let class_set: HashSet<_> = unique_classes.iter().collect();
-        let class_to_idx: HashMap<_, _> =
+        let _class_to_idx: HashMap<_, _> =
             class_set.iter().enumerate().map(|(i, &c)| (c, i)).collect();
 
         let mut best_feature = 0;

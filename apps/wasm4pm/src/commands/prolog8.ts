@@ -19,7 +19,6 @@ import { defineCommand } from 'citty';
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { createRequire } from 'node:module';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
@@ -34,10 +33,8 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
  * upwards from the CLI's location.
  */
 function findProlog8Pkg(): string | null {
-  // __dirname resolves to:
-  //   src layout: apps/wasm4pm/src/commands  → 4 ups reaches workspace root
-  //   dist layout: apps/wasm4pm/dist/commands → 4 ups reaches workspace root
-  const wsRoot = path.resolve(__dirname, '../../../..');
+  // Workspace root is 3 levels above apps/wasm4pm/src/commands/
+  const wsRoot = path.resolve(__dirname, '../../../../..');
   const candidate = path.join(wsRoot, 'crates/prolog8/pkg/prolog8.js');
   if (fs.existsSync(candidate)) return candidate;
   return null;
@@ -58,10 +55,8 @@ function loadProlog8(): Prolog8Module {
         '  wasm-pack build --target nodejs --out-dir pkg'
     );
   }
-  // ESM-safe require: createRequire lets us synchronously load the wasm-pack
-  // CommonJS shim that prolog8.js emits for the nodejs target.
-  const req = createRequire(import.meta.url);
-  return req(pkgPath) as Prolog8Module;
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  return require(pkgPath) as Prolog8Module;
 }
 
 function parseResult(raw: unknown): unknown {
@@ -410,7 +405,7 @@ const PROLOG8_VALID_SUBCOMMANDS = ['show', 'query', 'replay'] as const;
 export const prolog8 = defineCommand({
   meta: {
     name: 'prolog8',
-    description: 'Byte-capped proof engine: fact admission, Horn rule chaining, BLAKE3 receipts',
+    description: 'Byte-capped proof engine: fact admission, Horn rule chaining, BLAKE3 receipts. Example: wpm prolog8 show',
   },
   args: {
     format: { type: 'string', description: 'Output format (human or json)', default: 'human' },

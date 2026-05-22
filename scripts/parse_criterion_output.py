@@ -1,13 +1,13 @@
 #!/usr/bin/env python3
 """
-parse_criterion_output.py — parses Criterion benchmark output for wasm4pm v26.5.15
+parse_criterion_output.py — parses Criterion benchmark output for wasm4pm v26.5.21
 
 Walks target/criterion/ and produces criterion-results.json with all measurements.
 
 Usage:
   python3 scripts/parse_criterion_output.py \
     --criterion-dir target/criterion \
-    --output target/wasm4pm-v26.5.15/criterion-results.json
+    --output target/wasm4pm-v26.5.21/criterion-results.json
 
 Run from the repo root.
 """
@@ -42,7 +42,7 @@ KNOWN_PREFIXES = [
 def parse_args():
     p = argparse.ArgumentParser(description="Parse Criterion benchmark output")
     p.add_argument("--criterion-dir", default="target/criterion")
-    p.add_argument("--output", default="target/wasm4pm-v26.5.15/criterion-results.json")
+    p.add_argument("--output", default="target/wasm4pm-v26.5.21/criterion-results.json")
     return p.parse_args()
 
 

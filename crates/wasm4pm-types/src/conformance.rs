@@ -49,9 +49,7 @@ impl TokenReplayResult {
 /// — passing `f64::NAN` would crash production. We coerce NaN to `lo` because
 /// "no information" is the safest conservative fitness/precision value.
 fn clamp_finite(x: f64, lo: f64, hi: f64) -> f64 {
-    if x.is_nan() {
-        lo
-    } else if x < lo {
+    if x.is_nan() || x < lo {
         lo
     } else if x > hi {
         hi

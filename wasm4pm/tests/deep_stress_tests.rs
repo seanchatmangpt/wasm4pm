@@ -7,8 +7,10 @@ use proptest::prelude::*;
 mod deep_adversarial {
     use super::*;
 
+
     /// Contract: The RL Agent must not access out-of-bounds memory even if given corrupted state IDs.
     #[test]
+    #[should_panic(expected = "Q-table bounds check failed for next_state_id")]
     fn test_adversarial_rl_bounds() {
         let mut agent = AutoProcessAgent::new();
         

@@ -7,201 +7,104 @@ Git Commit: $(git rev-parse --short HEAD)
 
 ---
 ### Gate 1: All Tests Pass
-✗ **WASM build failed:**
-    |        ^^^^^^^^^^^^^^
-    |
-    = note: `#[warn(dead_code)]` (part of `#[warn(unused)]`) on by default
-
-
-warning: creating a shared reference to mutable static
-  --> wasm4pm/src/probabilistic/wasm_bindings.rs:18:12
-   |
-18 |         if STREAMING_LOGS.is_none() {
-   |            ^^^^^^^^^^^^^^^^^^^^^^^^ shared reference to mutable static
-   |
-   = note: for more information, see <https://doc.rust-lang.org/edition-guide/rust-2024/static-mut-references.html>
-   = note: shared references to mutable statics are dangerous; it's undefined behavior if the static is mutated or if a mutable reference is created for it while the shared reference lives
-   = note: `#[warn(static_mut_refs)]` (part of `#[warn(rust_2024_compatibility)]`) on by default
-
-
-warning: creating a mutable reference to mutable static
-  --> wasm4pm/src/probabilistic/wasm_bindings.rs:31:26
-   |
-31 |     let store = unsafe { STREAMING_LOGS.as_mut().unwrap() };
-   |                          ^^^^^^^^^^^^^^^^^^^^^^^ mutable reference to mutable static
-   |
-   = note: for more information, see <https://doc.rust-lang.org/edition-guide/rust-2024/static-mut-references.html>
-   = note: mutable references to mutable statics are dangerous; it's undefined behavior if any other pointer to the static is used or if any other reference is created for the static while the mutable reference lives
-
-
-    Finished `release` profile [optimized] target(s) in 32.05s
-[INFO]: ⬇️  Installing wasm-bindgen...
-Error: invalid type: sequence, expected a string at line 3 column 19
-Caused by: invalid type: sequence, expected a string at line 3 column 19
-
-## Summary
-✗ **Some release gates FAILED** - Review above
 ✗ **Tests failed - see logs**
+ FAIL  __tests__/integration/phase3-e2e.test.ts > Phase 3: End-to-End Integration Tests > Comprehensive End-to-End Scenarios > with error recovery
+ FAIL  __tests__/integration/phase3-e2e.test.ts > Phase 3: End-to-End Integration Tests > Comprehensive End-to-End Scenarios > with output generation
+ FAIL  __tests__/integration/phase3-e2e.test.ts > Phase 3: End-to-End Integration Tests > Comprehensive End-to-End Scenarios > with receipt generation
+ FAIL  __tests__/prediction/bench.test.ts > predict_next_activity > sample — structure, probability sum ≤1, and 1k latency
+ FAIL  __tests__/prediction/bench.test.ts > predict_next_activity > BPI 2020 — single-step prediction
+ FAIL  __tests__/prediction/bench.test.ts > score_trace_likelihood > sample — negative log-probability, normal > anomalous, and 1k latency
+ FAIL  __tests__/prediction/bench.test.ts > score_trace_likelihood > BPI 2020 — score a known process sequence
+ FAIL  __tests__/prediction/bench.test.ts > predict_next_k > sample — top-3 structure and 1k latency
+ FAIL  __tests__/prediction/bench.test.ts > predict_next_k > BPI 2020 — 1 000 calls throughput
+ FAIL  __tests__/prediction/bench.test.ts > predict_beam_paths > sample — beam=3 steps=4, paths sorted by probability
+ FAIL  __tests__/prediction/bench.test.ts > predict_beam_paths > BPI 2020 — beam=5 steps=5
+ FAIL  __tests__/prediction/bench.test.ts > build_remaining_time_model > sample — build latency
+ FAIL  __tests__/prediction/bench.test.ts > build_remaining_time_model > BPI 2020 — build latency
+ FAIL  __tests__/prediction/bench.test.ts > predict_case_duration > sample — two-activity prefix and 1k latency
+ FAIL  __tests__/prediction/bench.test.ts > predict_case_duration > BPI 2020 — real prefix remaining time
+ FAIL  __tests__/prediction/bench.test.ts > predict_hazard_rate > sample — Weibull h(t) at 2h elapsed and 1k latency
+ FAIL  __tests__/prediction/bench.test.ts > score_anomaly > sample — normal trace [0,1], all-missing-edges trace is anomalous, and 1k latency
+ FAIL  __tests__/prediction/bench.test.ts > score_anomaly > BPI 2020 — known good sequence scores in [0,1]
+ FAIL  __tests__/prediction/bench.test.ts > compute_boundary_coverage > sample — prefix [Request, Review], empty prefix, and no-match prefix
+ FAIL  __tests__/prediction/bench.test.ts > compute_boundary_coverage > BPI 2020 — single-activity prefix
+ FAIL  __tests__/prediction/bench.test.ts > compute_trace_likelihood > sample — negative ll, normal > anomalous, and 1k latency
+ FAIL  __tests__/prediction/bench.test.ts > detect_drift > sample — window=2 has required properties
+ FAIL  __tests__/prediction/bench.test.ts > detect_drift > BPI 2020 — window=50 and window=100
+ FAIL  __tests__/prediction/bench.test.ts > build_transition_probabilities > sample — probabilities sum to 1 per source
+ FAIL  __tests__/prediction/bench.test.ts > build_transition_probabilities > BPI 2020 — large graph
+ FAIL  __tests__/types/types.test.ts > Type Wrapper - WasmEventLog > should create WasmEventLog, expose event_count/case_count/stats, and throw on invalid handle
+ FAIL  __tests__/state/state.test.ts > State Management - Object Storage > should store EventLog and OCEL with valid unique handles, and track object count
+ FAIL  __tests__/state/state.test.ts > State Management - Object Deletion > should delete by handle, return false for non-existent, and fail on deleted handle
+ FAIL  __tests__/state/state.test.ts > State Management - Clear All Objects > should clear all objects and work on empty state
+ FAIL  __tests__/workflow/workflow.test.ts > Process Mining WASM - Integration Tests > should initialize, load XES, track state, analyze, discover DFG, export, and list algorithms
+ FAIL  __tests__/workflow/workflow.test.ts > Streaming Conformance > should detect conforming and non-conforming traces, report stats, and finalize with summary
+RuntimeError: unreachable
+ ❯ __rustc[b7974e8690430dd9]::__rust_abort wasm:/wasm/wasm4pm.wasm-00b7a8e6:1:2083722
+ ❯ __rustc[b7974e8690430dd9]::__rust_start_panic wasm:/wasm/wasm4pm.wasm-00b7a8e6:1:2083601
+ ❯ __rustc[b7974e8690430dd9]::rust_panic wasm:/wasm/wasm4pm.wasm-00b7a8e6:1:2076629
+ ❯ std[a543996e6e7dbf1e]::panicking::panic_with_hook wasm:/wasm/wasm4pm.wasm-00b7a8e6:1:1534810
+ ❯ std[a543996e6e7dbf1e]::panicking::panic_handler::{closure#0} wasm:/wasm/wasm4pm.wasm-00b7a8e6:1:1765491
+ ❯ std[a543996e6e7dbf1e]::sys::backtrace::__rust_end_short_backtrace::<std[a543996e6e7dbf1e]::panicking::panic_handler::{closure#0}, !> wasm:/wasm/wasm4pm.wasm-00b7a8e6:1:2083095
+ ❯ __rustc[b7974e8690430dd9]::rust_begin_unwind wasm:/wasm/wasm4pm.wasm-00b7a8e6:1:2033500
+ ❯ core[c5930c85a12de822]::panicking::panic_fmt wasm:/wasm/wasm4pm.wasm-00b7a8e6:1:1975450
+ ❯ core[c5930c85a12de822]::result::unwrap_failed wasm:/wasm/wasm4pm.wasm-00b7a8e6:1:1851564
+ ❯ wasm4pm::xes_format::load_eventlog_from_xes::h4a5d63be457726d5 wasm:/wasm/wasm4pm.wasm-00b7a8e6:1:837964
 
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[191/400]⎯
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/147]⎯
 
- FAIL  __tests__/state/object-storage.test.js > State Management - Object Storage > should store OCEL and return a handle
- FAIL  __tests__/state/object-storage.test.ts > State Management - Object Storage > should store OCEL and return a handle
-TypeError: Cannot read properties of undefined (reading '__wbindgen_free')
- ❯ Module.load_ocel_from_json pkg/wasm4pm.js:4644:14
-    4642|         return getStringFromWasm0(ptr2, len2);
-    4643|     } finally {
-    4644|         wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
-       |              ^
-    4645|     }
-    4646| }
- ❯ __tests__/state/object-storage.test.ts:32:25
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[192/400]⎯
-
- FAIL  __tests__/state/object-storage.test.js > State Management - Object Storage > should generate unique handles for different objects
- FAIL  __tests__/state/object-storage.test.ts > State Management - Object Storage > should generate unique handles for different objects
-TypeError: Cannot read properties of undefined (reading '__wbindgen_free')
- ❯ Module.load_eventlog_from_xes pkg/wasm4pm.js:4561:14
-    4559|         return getStringFromWasm0(ptr2, len2);
-    4560|     } finally {
-    4561|         wasm.__wbindgen_free(deferred3_0, deferred3_1, 1);
-       |              ^
-    4562|     }
-    4563| }
- ❯ __tests__/state/object-storage.test.ts:40:26
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[193/400]⎯
-
- FAIL  __tests__/state/object-storage.test.js > State Management - Object Storage > should track object count correctly
- FAIL  __tests__/state/object-storage.test.ts > State Management - Object Storage > should track object count correctly
-TypeError: Cannot read properties of undefined (reading 'object_count')
- ❯ Module.object_count pkg/wasm4pm.js:4843:22
-    4841|  */
-    4842| export function object_count() {
-    4843|     const ret = wasm.object_count();
-       |                      ^
-    4844|     if (ret[2]) {
-    4845|         throw takeFromExternrefTable0(ret[1]);
- ❯ __tests__/state/object-storage.test.ts:47:31
-
-⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[194/400]⎯
-
- Test Files  52 failed | 14 passed | 2 skipped (68)
-      Tests  388 failed | 274 passed | 86 skipped (772)
-   Start at  20:57:25
-   Duration  1.43s (transform 1.47s, setup 672ms, collect 4.17s, tests 3.26s, environment 9ms, prepare 4.29s)
+ Test Files  11 failed | 6 passed | 2 skipped (19)
+      Tests  147 failed | 154 passed | 54 skipped (355)
+   Start at  17:26:07
+   Duration  9.96s (transform 1.02s, setup 294ms, collect 2.45s, tests 13.66s, environment 2ms, prepare 2.04s)
 
 ---
 ### Gate 2: Code Coverage (>70%)
 ⚠ **Coverage report generation failed (continuing)**
 ---
 ### Gate 3: TypeScript Type Checking
-✗ **TypeScript errors:**
-npm warn Unknown env config "publish-branch". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
-npm warn Unknown env config "node-linker". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
-npm warn Unknown env config "use-lockfile". This will stop working in the next major version of npm. See `npm help npmrc` for supported config options.
-
-> wasm4pm@26.4.16 type:check
-> tsc --noEmit
-
-__tests__/analysis.test.ts(6,23): error TS2307: Cannot find module '../pkg/wasm4pm.js' or its corresponding type declarations.
-__tests__/parity.test.ts(90,36): error TS2307: Cannot find module '@wasm4pm/wasm' or its corresponding type declarations.
+✓ **No TypeScript errors**
 ---
 ### Gate 4: Rust Code Quality (Clippy)
 ⚠ **Clippy warnings (continuing):**
-  --> wasm4pm/src/probabilistic/wasm_bindings.rs:18:12
-   |
-18 |         if STREAMING_LOGS.is_none() {
-   |            ^^^^^^^^^^^^^^^^^^^^^^^^ shared reference to mutable static
-   |
-   = note: for more information, see <https://doc.rust-lang.org/edition-guide/rust-2024/static-mut-references.html>
-   = note: shared references to mutable statics are dangerous; it's undefined behavior if the static is mutated or if a mutable reference is created for it while the shared reference lives
-   = note: `-D static-mut-refs` implied by `-D warnings`
-   = help: to override `-D warnings` add `#[allow(static_mut_refs)]`
+   = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.95.0/index.html#if_same_then_else
+   = note: `-D clippy::if-same-then-else` implied by `-D warnings`
+   = help: to override `-D warnings` add `#[allow(clippy::if_same_then_else)]`
 
-error: creating a mutable reference to mutable static
-  --> wasm4pm/src/probabilistic/wasm_bindings.rs:31:26
-   |
-31 |     let store = unsafe { STREAMING_LOGS.as_mut().unwrap() };
-   |                          ^^^^^^^^^^^^^^^^^^^^^^^ mutable reference to mutable static
-   |
-   = note: for more information, see <https://doc.rust-lang.org/edition-guide/rust-2024/static-mut-references.html>
-   = note: mutable references to mutable statics are dangerous; it's undefined behavior if any other pointer to the static is used or if any other reference is created for the static while the mutable reference lives
+error: writing `&mut Vec` instead of `&mut [_]` involves a new object where a slice will do
+   --> crates/wasm4pm-types/src/import/xes/stream_xes.rs:295:36
+    |
+295 |         current_nested_attributes: &mut Vec<Attribute>,
+    |                                    ^^^^^^^^^^^^^^^^^^^
+    |
+    = help: for further information visit https://rust-lang.github.io/rust-clippy/rust-1.95.0/index.html#ptr_arg
+    = note: `-D clippy::ptr-arg` implied by `-D warnings`
+    = help: to override `-D warnings` add `#[allow(clippy::ptr_arg)]`
+help: change this to
+    |
+295 -         current_nested_attributes: &mut Vec<Attribute>,
+295 +         current_nested_attributes: &mut [Attribute],
+    |
 
-error: could not compile `wpm` (wasm4pm) (lib) due to 26 previous errors
+error: could not compile `wasm4pm-types` (lib) due to 7 previous errors
 ---
 ### Gate 5: Code Formatting
-⚠ **Formatting issues (auto-fixable):**
-[warn] src/config.d.ts
-[warn] src/config.js
-[warn] src/errors.d.ts
-[warn] src/errors.js
-[warn] src/mcp_server.d.ts
-[warn] src/mcp_server.js
-[warn] src/pipeline.d.ts
-[warn] src/pipeline.js
-[warn] src/receipt.d.ts
-[warn] src/receipt.js
-[warn] src/types.d.ts
-[warn] src/types.js
-[warn] src/visualizations.d.ts
-[warn] src/visualizations.js
-[warn] src/watch.d.ts
-[warn] src/watch.js
-[warn] tests/fixtures/README.md
-[warn] vitest.config.d.ts
-[warn] vitest.config.js
-[warn] Code style issues found in 130 files. Run Prettier with --write to fix.
+✓ **Code is properly formatted (Prettier)**
 ---
 ### Gate 6: Security Audit (cargo audit)
 ⚠ **Security audit output:**
+     Locking 0 packages to latest compatible versions
+note: pass `--verbose` to see 64 unchanged dependencies behind latest
     Fetching advisory database from `https://github.com/RustSec/advisory-db.git`
-      Loaded 1049 security advisories (from /Users/sac/.cargo/advisory-db)
+      Loaded 1093 security advisories (from /Users/sac/.cargo/advisory-db)
     Updating crates.io index
-    Scanning Cargo.lock for vulnerabilities (258 crate dependencies)
-Crate:     paste
-Version:   1.0.15
-Warning:   unmaintained
-Title:     paste - no longer maintained
-Date:      2024-10-07
-ID:        RUSTSEC-2024-0436
-URL:       https://rustsec.org/advisories/RUSTSEC-2024-0436
-Dependency tree:
-paste 1.0.15
-├── simba 0.8.1
-│   └── nalgebra 0.32.6
-│       └── statrs 0.17.1
-│           └── wasm4pm 26.4.10
-└── metal 0.27.0
-    └── wgpu-hal 0.19.5
-        ├── wgpu-core 0.19.4
-        │   └── wgpu 0.19.4
-        │       └── wasm4pm 26.4.10
-        └── wgpu 0.19.4
-
-Crate:     rand
-Version:   0.8.5
-Warning:   unsound
-Title:     Rand is unsound with a custom logger using `rand::rng()`
-Date:      2026-04-09
-ID:        RUSTSEC-2026-0097
-URL:       https://rustsec.org/advisories/RUSTSEC-2026-0097
-Dependency tree:
-rand 0.8.5
-├── statrs 0.17.1
-│   └── wasm4pm 26.4.10
-├── rand_distr 0.4.3
-│   ├── wasm4pm 26.4.10
-│   └── nalgebra 0.32.6
-│       └── statrs 0.17.1
-├── wasm4pm 26.4.10
-└── nalgebra 0.32.6
-
-error: 2 denied warnings found!
+error: not found: Couldn't load Cargo.lock
+Caused by:
+  -> I/O operation failed: I/O operation failed: entity not found
+  -> I/O operation failed: entity not found
 ---
 ### Gate 7: OTEL Observability
-⚠ **OTEL integration optional**
+✓ **OTEL observability integrated**
 ---
 ### Gate 8: Hardcoded Secrets Check
 ⚠ **Manual review required for potential secrets**
@@ -210,7 +113,7 @@ error: 2 denied warnings found!
 ✓ **Watch mode tests exist**
 ---
 ### Gate 10: WASM Build Verification
-✗ **WASM build incomplete**
+✓ **WASM built:** pkg/wasm4pm_bg.wasm (2.9M)
 
 ## Summary
 ✗ **Some release gates FAILED** - Review above

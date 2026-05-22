@@ -4,43 +4,78 @@
  * Bridge between planner (algorithm name) and WASM module (function calls)
  */
 
+import { randomBytes } from 'node:crypto';
 import { PlanStepType, type PlanStep } from '@wasm4pm/planner';
 import { getRegistry } from './registry.js';
+
+/**
+ * Drift window entry returned by WASM detect_drift.
+ */
+interface WasmDriftWindow {
+  window_start?: number;
+  window_end?: number;
+  distance?: number;
+  detected?: boolean;
+}
+
+/**
+ * Top-level result returned by WASM detect_drift.
+ */
+interface WasmDriftResult {
+  drifts?: WasmDriftWindow[];
+  ewma?: number;
+  threshold?: number;
+}
 
 /**
  * WASM module interface - defines all discoverable WASM functions
  * Maps to the actual wasm4pm Rust module compiled to JavaScript
  */
 export interface WasmModule {
-  // Basic discovery
+  /** Initialize the WASM module */
+  init?(): Promise<void>;
+
+  /** Get wasm4pm version */
+  get_version?(): string;
+
+  /** Load an event log from an XES string and return an opaque handle */
+  load_eventlog_from_xes?(xes: string): string;
+
+  /** Load an OCEL 2.0 JSON string and return an opaque OCEL handle */
+  load_ocel_from_json?(content: string): string;
+
+  /** Load an OCEL 2.0 JSON string (WASM2 variant name) */
+  load_ocel2_from_json?(content: string): string;
+
+  /** Get all traces from an EventLog as activity sequences */
+  get_traces?(eventlog_handle: string, activity_key: string): string[];
+
+  // ─── Basic Discovery ───────────────────────────────────────────────────
+
   discover_dfg(eventlog_handle: string, activity_key: string): Promise<{ handle: string }>;
 
-  discover_ocel_dfg(ocel_handle: string): Promise<{ handle: string }>;
+  discover_ocel_dfg?(ocel_handle: string): Promise<{ handle: string }>;
 
-  discover_ocel_dfg_per_type(ocel_handle: string): Promise<{ handle: string }>;
+  discover_ocel_dfg_per_type?(ocel_handle: string): Promise<{ handle: string }>;
 
-  // Alpha++ (improved Alpha algorithm)
   discover_alpha_plus_plus(
     eventlog_handle: string,
     activity_key: string,
     min_support: number
   ): Promise<{ handle: string }>;
 
-  // Heuristic Miner
   discover_heuristic_miner(
     eventlog_handle: string,
     activity_key: string,
     dependency_threshold: number
   ): Promise<{ handle: string }>;
 
-  // Inductive Miner
   discover_inductive_miner(
     eventlog_handle: string,
     activity_key: string,
     noise_threshold: number
   ): Promise<{ handle: string }>;
 
-  // Genetic Algorithm
   discover_genetic_algorithm(
     eventlog_handle: string,
     activity_key: string,
@@ -48,7 +83,6 @@ export interface WasmModule {
     generations: number
   ): Promise<{ handle: string }>;
 
-  // PSO (Particle Swarm Optimization)
   discover_pso_algorithm(
     eventlog_handle: string,
     activity_key: string,
@@ -56,27 +90,23 @@ export interface WasmModule {
     iterations: number
   ): Promise<{ handle: string }>;
 
-  // A* Search
   discover_astar(
     eventlog_handle: string,
     activity_key: string,
     max_iterations: number
   ): Promise<{ handle: string }>;
 
-  // Hill Climbing
   discover_hill_climbing(
     eventlog_handle: string,
     activity_key: string,
     max_iterations: number
   ): Promise<{ handle: string }>;
 
-  // ILP (Integer Linear Programming)
   discover_ilp_petri_net(
     eventlog_handle: string,
     activity_key: string
   ): Promise<{ handle: string }>;
 
-  // Ant Colony Optimization
   discover_ant_colony(
     eventlog_handle: string,
     activity_key: string,
@@ -84,7 +114,6 @@ export interface WasmModule {
     iterations: number
   ): Promise<{ handle: string }>;
 
-  // Simulated Annealing
   discover_simulated_annealing(
     eventlog_handle: string,
     activity_key: string,
@@ -92,21 +121,20 @@ export interface WasmModule {
     cooling_rate: number
   ): Promise<{ handle: string }>;
 
-  // Declare (constraint-based)
   discover_declare(
     eventlog_handle: string,
     activity_key: string,
     support_threshold: number
   ): Promise<{ handle: string }>;
 
-  // Process Skeleton (minimal abstraction)
   extract_process_skeleton(
     eventlog_handle: string,
     activity_key: string,
     min_frequency: number
   ): Promise<{ handle: string }>;
 
-  // POWL Discovery - 8 inductive miner variants
+  // ─── POWL Discovery ────────────────────────────────────────────────────
+
   discover_powl_from_log(
     log_json: string,
     variant: string
@@ -220,16 +248,117 @@ export interface WasmModule {
     config_json: string
   ): Promise<{ handle: string }>;
 
-  // ── ML analysis functions ──────────────────────────────────────────
+  // ─── Analytics WASM Exports (Wave 2) ───────────────────────────────────
 
-  extract_case_features(
-    eventLogHandle: string,
-    activityKey: string,
-    timestampKey: string,
-    configJson: string
+  detect_drift?(log_handle: string, activity_key: string, window_size: number): string;
+
+  compute_ewma?(values_json: string, alpha: number): string;
+
+  analyze_variant_complexity?(log_handle: string, activity_key: string): string;
+
+  compute_activity_transition_matrix?(log_handle: string, activity_key: string): string;
+
+  analyze_process_speedup?(log_handle: string, timestamp_key: string, window_size: number): string;
+
+  compute_trace_similarity_matrix?(log_handle: string, activity_key: string): string;
+
+  extract_case_features?(
+    log_handle: string,
+    activity_key: string,
+    timestamp_key: string,
+    config_json: string
   ): string;
 
-  detect_drift(eventLogHandle: string, activityKey: string, windowSize: number): string;
+  extract_prefix_features?(
+    log_handle: string,
+    activity_key: string,
+    timestamp_key: string,
+    prefix_length: number
+  ): string;
+
+  export_features_csv?(features_json: string): string;
+
+  export_features_json?(
+    log_handle: string,
+    activity_key: string,
+    timestamp_key: string,
+    config_json: string
+  ): string;
+
+  // ─── ML analysis functions ──────────────────────────────────────────
+
+  discover_ml_classify?(log_handle: string, activity_key: string): Promise<{ handle: string }>;
+
+  discover_ml_cluster?(log_handle: string, activity_key: string): Promise<{ handle: string }>;
+
+  discover_ml_forecast?(log_handle: string, activity_key: string): Promise<{ handle: string }>;
+
+  discover_ml_pca?(log_handle: string, activity_key: string): Promise<{ handle: string }>;
+
+  discover_ml_anomaly?(log_handle: string, activity_key: string): Promise<{ handle: string }>;
+
+  discover_ml_regress?(log_handle: string, activity_key: string): Promise<{ handle: string }>;
+
+  // ─── OCEL functions ──────────────────────────────────────────────
+
+  discover_oc_petri_net?(ocel_handle: string, algorithm: string): Promise<{ handle: string }>;
+
+  discover_ocla_wasm?(ocel_handle: string): Promise<string>;
+
+  discover_oc_declare_wasm?(ocel_handle: string, noise_threshold: number): Promise<string>;
+
+  encode_ocel_as_text?(ocel_handle: string): Promise<string>;
+
+  flatten_ocel_to_eventlog?(ocel_handle: string, object_type: string): Promise<string>;
+
+  // ─── Alpha+++ ────────────────────────────────────────────────────
+
+  discover_alpha_ppp_wasm?(
+    log_handle: string,
+    activity_key: string,
+    absolute_thresh: number,
+    causal_thresh: number
+  ): Promise<{ handle: string }>;
+
+  // ── Social network mining (van der Aalst organisational perspective) ──
+
+  /** Handover-of-work network: edges = direct resource handovers within a case */
+  discover_handover_network?(log_handle: string, resource_key: string): Promise<{ handle: string }>;
+
+  /** Working-together network: edges = resources who worked on the same case */
+  discover_working_together_network?(
+    log_handle: string,
+    resource_key: string
+  ): Promise<{ handle: string }>;
+
+  // ─── SIMD-accelerated DFG ─────────────────────────────────────────────
+
+  /** SIMD-vectorised DFG discovery — ~500x throughput vs standard discover_dfg */
+  discover_dfg_simd?(eventlog_handle: string, activity_key: string): Promise<{ handle: string }>;
+
+  // ─── Smart Engine (Agentic Lifecycle) ──────────────────────────────────
+
+  smart_engine_create?(): string;
+
+  smart_engine_run?(handle: string, algorithm: string, traces_json: string): string;
+
+  smart_engine_converged?(handle: string): boolean;
+
+  smart_engine_cache_stats?(handle: string): string;
+
+  smart_engine_reset?(handle: string): void;
+
+  smart_engine_destroy?(handle: string): void;
+
+  // ─── AutoML & Agentic Pipeline ─────────────────────────────────────────
+
+  discover_automl_classify?(log_handle: string, activity_key: string): Promise<string>;
+
+  discover_automl_forecast?(log_handle: string, activity_key: string): Promise<string>;
+
+  discover_ml_regress_automl?(log_handle: string, activity_key: string): Promise<string>;
+
+  run_agentic_pipeline?(task_json: string): Promise<string>;
 }
 
 /**
@@ -274,6 +403,7 @@ function stepTypeToAlgorithmId(stepType: PlanStepType): string {
     [PlanStepType.DISCOVER_ACO]: 'aco',
     [PlanStepType.DISCOVER_SIMULATED_ANNEALING]: 'simulated_annealing',
     [PlanStepType.DISCOVER_OPTIMIZED_DFG]: 'optimized_dfg',
+    [PlanStepType.DISCOVER_SIMD_STREAMING_DFG]: 'simd_streaming_dfg',
     // Wave 1 Discovery
     [PlanStepType.DISCOVER_TRANSITION_SYSTEM]: 'transition_system',
     [PlanStepType.DISCOVER_LOG_TO_TRIE]: 'log_to_trie',
@@ -330,6 +460,41 @@ function stepTypeToAlgorithmId(stepType: PlanStepType): string {
   };
 
   return mapping[stepType] || 'unknown';
+}
+
+/**
+ * Emit a non-blocking OTEL span for algorithm execution
+ */
+function emitAlgorithmSpan(
+  algorithmId: string,
+  status: 'OK' | 'ERROR',
+  executionTimeMs: number,
+  errorMessage?: string
+) {
+  try {
+    const span = {
+      trace_id: randomBytes(8).toString('hex'),
+      span_id: randomBytes(8).toString('hex'),
+      name: `kernel.algorithm.${algorithmId}`,
+      kind: 'INTERNAL',
+      start_time: (Date.now() - executionTimeMs) * 1_000_000,
+      end_time: Date.now() * 1_000_000,
+      status: errorMessage
+        ? { code: status, message: errorMessage }
+        : { code: status },
+      attributes: {
+        'service.name': 'wasm4pm',
+        'algorithm_id': algorithmId,
+        'execution_time_ms': executionTimeMs,
+        'status': status.toLowerCase(),
+      },
+    };
+    if (typeof (globalThis as any)._wasm4pm_span_sink === 'function') {
+      (globalThis as any)._wasm4pm_span_sink(span);
+    }
+  } catch {
+    /* never block on OTEL */
+  }
 }
 
 /**
@@ -400,7 +565,11 @@ export async function implementAlgorithmStep(
 
       case 'alpha_plus_plus': {
         const minSupport = (params.min_support as number) ?? 0.0;
-        const result = await wasmModule.discover_alpha_plus_plus(eventLogHandle, activityKey, minSupport);
+        const result = await wasmModule.discover_alpha_plus_plus(
+          eventLogHandle,
+          activityKey,
+          minSupport
+        );
         modelHandle = result.handle;
         break;
       }
@@ -739,7 +908,7 @@ export async function implementAlgorithmStep(
           ],
           target: (params.target_key as string) || 'outcome',
         });
-        const rawFeatures = wasmModule.extract_case_features(
+        const rawFeatures = wasmModule.extract_case_features!(
           eventLogHandle,
           activityKey,
           'time:timestamp',
@@ -765,7 +934,7 @@ export async function implementAlgorithmStep(
             'unique_activities',
           ],
         });
-        const rawFeatures = wasmModule.extract_case_features(
+        const rawFeatures = wasmModule.extract_case_features!(
           eventLogHandle,
           activityKey,
           'time:timestamp',
@@ -783,9 +952,11 @@ export async function implementAlgorithmStep(
 
       case 'ml_forecast': {
         const { forecastSeries } = await import('@wasm4pm/ml');
-        const driftRaw = wasmModule.detect_drift(eventLogHandle, activityKey, 5);
+        const driftRaw = wasmModule.detect_drift!(eventLogHandle, activityKey, 5);
         const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
-        const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
+        const distances = ((driftResult as WasmDriftResult)?.drifts ?? []).map(
+          (d: WasmDriftWindow) => d.distance ?? 0
+        );
         const result = await forecastSeries(distances, {
           forecastPeriods: (params.forecast_periods as number) ?? 5,
           useExponential: params.use_exponential as boolean,
@@ -796,9 +967,11 @@ export async function implementAlgorithmStep(
 
       case 'ml_anomaly': {
         const { detectEnhancedAnomalies } = await import('@wasm4pm/ml');
-        const driftRaw = wasmModule.detect_drift(eventLogHandle, activityKey, 10);
+        const driftRaw = wasmModule.detect_drift!(eventLogHandle, activityKey, 10);
         const driftResult = typeof driftRaw === 'string' ? JSON.parse(driftRaw) : driftRaw;
-        const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
+        const distances = ((driftResult as WasmDriftResult)?.drifts ?? []).map(
+          (d: WasmDriftWindow) => d.distance ?? 0
+        );
         const result = await detectEnhancedAnomalies(distances, {
           smoothingMethod: params.smoothing_method as 'sma' | 'ema',
         });
@@ -818,7 +991,7 @@ export async function implementAlgorithmStep(
           ],
           target: (params.target_key as string) || 'remaining_time',
         });
-        const rawFeatures = wasmModule.extract_case_features(
+        const rawFeatures = wasmModule.extract_case_features!(
           eventLogHandle,
           activityKey,
           'time:timestamp',
@@ -844,7 +1017,7 @@ export async function implementAlgorithmStep(
             'avg_inter_event_time',
           ],
         });
-        const rawFeatures = wasmModule.extract_case_features(
+        const rawFeatures = wasmModule.extract_case_features!(
           eventLogHandle,
           activityKey,
           'time:timestamp',
@@ -877,6 +1050,9 @@ export async function implementAlgorithmStep(
 
     const executionTimeMs = Date.now() - startTime;
 
+    // GAP-FIX #1: Emit success span for observability (FM-5 proof, chicago-tdd Rank-1)
+    emitAlgorithmSpan(metadata.id, 'OK', executionTimeMs);
+
     return {
       modelHandle,
       algorithm: metadata.id,
@@ -895,6 +1071,10 @@ export async function implementAlgorithmStep(
     };
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : String(error);
+    const executionTimeMs = Date.now() - startTime;
+
+    // GAP-FIX #1: Emit error span for observability (FM-5 proof, chicago-tdd Rank-1)
+    emitAlgorithmSpan(metadata?.id ?? algorithmId, 'ERROR', executionTimeMs, errorMessage);
 
     // Provide helpful error messages
     if (errorMessage.includes('not found')) {

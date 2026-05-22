@@ -68,3 +68,13 @@ query = { file = "queries/extract-stages.rq" }
 template = { file = "templates/LIFECYCLE.md.tera" }
 output_file = "docs/LIFECYCLE.md"
 mode = "Overwrite"
+
+# ─── Combinatorial Maximalism Evidence ──────────────────────────────────────────
+
+[[generation.rules]]
+name = "cases-registry"
+description = "Manufacture the AlgorithmBehaviorRow matrix from the RDF ontology"
+query = { file = "queries/extract-cases.rq" }
+template = { file = "templates/cases.ts.tera" }
+output_file = "ts/src/cases.ts"
+mode = "Overwrite"

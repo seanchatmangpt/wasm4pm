@@ -1,3 +1,4 @@
+
 #![doc = "High-performance, branchless algorithm implementations for wasm4pm process mining."]
 #![doc = ""]
 #![doc = "This crate implements discovery, conformance, and analysis algorithms optimized for:"]
@@ -15,4 +16,4 @@ pub mod streaming;
 
 pub use wasm4pm_types;
 
-pub const VERSION: &str = "26.4.10";
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");

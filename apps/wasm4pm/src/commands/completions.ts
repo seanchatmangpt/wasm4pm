@@ -4,6 +4,8 @@ import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { withSpan } from './_otel.js';
 import { exitWithFlush } from '../otel/exit.js';
+import { EXIT_CODES } from '../exit-codes.js';
+import { withSpanRaw } from './_otel.js';
 
 const SUPPORTED_SHELLS = ['bash', 'zsh', 'fish'] as const;
 type SupportedShell = (typeof SUPPORTED_SHELLS)[number];
@@ -17,7 +19,7 @@ const SCRIPT_NAMES: Record<SupportedShell, string> = {
 export const completions = defineCommand({
   meta: {
     name: 'completions',
-    description: 'Print shell completion script for bash, zsh, or fish',
+    description: 'Print shell completion script for bash, zsh, or fish. Example: wpm completions bash | source',
   },
   args: {
     shell: {
@@ -28,34 +30,43 @@ export const completions = defineCommand({
   },
   async run({ args }) {
     const shell = args.shell as string;
-    return withSpan('completions', { shell }, async () => {
-      if (!(SUPPORTED_SHELLS as readonly string[]).includes(shell)) {
-        process.stderr.write(
-          `Unsupported shell: ${shell}. Try one of: ${SUPPORTED_SHELLS.join(' | ')}\n`
-        );
-        return await exitWithFlush(2);
-      }
+    
+    if (!(SUPPORTED_SHELLS as readonly string[]).includes(shell)) {
+      process.stderr.write(
+        `Unsupported shell: ${shell}. Try one of: ${SUPPORTED_SHELLS.join(' | ')}\n`
+      );
+      return await exitWithFlush(2);
+    }
 
-      const scriptName = SCRIPT_NAMES[shell as SupportedShell];
+    let scriptBytes = 0;
+    return withSpanRaw(
+      'wasm4pm.command.completions',
+      { 'completions.shell': shell },
+      async () => {
+        const scriptName = SCRIPT_NAMES[shell as SupportedShell];
 
-      // Resolve completions/<script> relative to the compiled output directory.
-      // __filename is apps/wasm4pm/dist/commands/completions.js at runtime.
-      // The completions/ folder is at apps/wasm4pm/completions/ (two levels up).
-      const here = dirname(fileURLToPath(import.meta.url));
-      const completionsPath = join(here, '..', '..', 'completions', scriptName);
+        // Resolve completions/<script> relative to the compiled output directory.
+        // __filename is apps/wasm4pm/dist/commands/completions.js at runtime.
+        // The completions/ folder is at apps/wasm4pm/completions/ (two levels up).
+        const here = dirname(fileURLToPath(import.meta.url));
+        const completionsPath = join(here, '..', '..', 'completions', scriptName);
 
-      let text: string;
-      try {
-        text = await readFile(completionsPath, 'utf8');
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        process.stderr.write(
-          `Failed to read completion script for ${shell}:\n  ${completionsPath}\n  ${message}\n`
-        );
-        return await exitWithFlush(5);
-      }
+        let text: string;
+        try {
+          text = await readFile(completionsPath, 'utf8');
+        } catch (err) {
+          const message = err instanceof Error ? err.message : String(err);
+          process.stderr.write(
+            `Failed to read completion script for ${shell}:\n  ${completionsPath}\n  ${message}\n`
+          );
+          return await exitWithFlush(EXIT_CODES.system_error);
+        }
 
-      process.stdout.write(text);
-    });
+        scriptBytes = Buffer.byteLength(text, 'utf8');
+        process.stdout.write(text);
+        return exitWithFlush(EXIT_CODES.success);
+      },
+      () => ({ 'completions.script_bytes': scriptBytes }),
+    );
   },
 });

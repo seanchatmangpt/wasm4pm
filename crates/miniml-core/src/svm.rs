@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 use crate::error::MlError;
-use crate::matrix::{validate_matrix, mat_get};
+use crate::matrix::validate_matrix;
 
 /// Linear SVM Classifier (using PEGASOS algorithm for WASM compatibility)
 /// Subgradient descent with hinge loss
@@ -84,7 +84,7 @@ pub fn linear_svm_impl(
         let eta = learning_rate / (1.0 + (iter as f64) * learning_rate * lambda);
 
         // Select random sample
-        let idx = (iter % n) as usize;
+        let idx = iter % n ;
         let x = &data[idx * n_features..(idx + 1) * n_features];
         let label = y[idx];
 
@@ -103,8 +103,8 @@ pub fn linear_svm_impl(
             bias += eta * label;
         } else {
             // Correctly classified: only regularization
-            for f in 0..n_features {
-                weights[f] *= 1.0 - eta * lambda;
+            for w in weights.iter_mut().take(n_features) {
+                *w *= 1.0 - eta * lambda;
             }
         }
     }

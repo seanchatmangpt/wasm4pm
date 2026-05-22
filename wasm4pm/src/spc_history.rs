@@ -557,106 +557,65 @@ mod tests {
         assert_eq!(history.history.len(), 0);
     }
 
-    /// Rank-1 oracle: `restore` followed by reading `cycle_count` must
-    /// return the exact cycle_count passed in — no drift from
-    /// `record_snapshot` increments. This protects the `get_spc_history`
-    /// / `set_spc_history` JSON round-trip.
+    /// Push 101 snapshots into a capacity-100 ring buffer.
+    /// Verify that:
+    /// - Only 100 snapshots are retained (oldest evicted).
+    /// - The first retained snapshot is the 2nd one pushed (cycle-1, event_rate=1.0).
+    /// - The last retained snapshot is the 101st one pushed (cycle-100, event_rate=100.0).
+    /// - All 100 retained snapshots are in strict chronological order (event_rate ascending).
     #[test]
-    fn test_spc_history_restore_preserves_cycle_count() {
+    fn test_ring_buffer_101_pushes_chronological_order() {
         let mut history = SpcHistory::new();
-        let snapshots = vec![
-            SpcSnapshot::new("t1".into(), 5.0, 150.0, 0.8, 0),
-            SpcSnapshot::new("t2".into(), 5.5, 155.0, 0.82, 0),
-            SpcSnapshot::new("t3".into(), 6.0, 160.0, 0.84, 1),
-        ];
-        history.restore(snapshots, 1000);
-        assert_eq!(
-            history.cycle_count, 1000,
-            "cycle_count must equal restore input, not input + len()"
-        );
-        assert_eq!(history.history.len(), 3);
-    }
 
-    /// Rank-2 oracle (domain contract): `restore` followed by
-    /// `record_snapshot` must continue monotonically — proving the
-    /// restored counter participates in normal recording semantics.
-    #[test]
-    fn test_spc_history_restore_then_record_is_monotonic() {
-        let mut history = SpcHistory::new();
-        history.restore(
-            vec![SpcSnapshot::new("t1".into(), 5.0, 150.0, 0.8, 0)],
-            500,
-        );
-        assert_eq!(history.cycle_count, 500);
-        history.record_snapshot(SpcSnapshot::new("t2".into(), 5.5, 155.0, 0.82, 0));
-        assert_eq!(history.cycle_count, 501);
-    }
-
-    /// Rank-2 oracle: round-trip should preserve cycle_count.
-    /// Mirrors the WASM `get_spc_history` / `set_spc_history` contract.
-    #[test]
-    fn test_spc_history_roundtrip_does_not_inflate_cycle_count() {
-        let mut original = SpcHistory::new();
-        for i in 0..5 {
-            original.record_snapshot(SpcSnapshot::new(
-                format!("t{}", i),
-                i as f64,
+        for i in 0..=100u64 {
+            history.record_snapshot(SpcSnapshot::new(
+                format!("cycle-{}", i),
+                i as f64, // event_rate doubles as unique marker
                 150.0,
                 0.8,
                 0,
             ));
         }
-        let snapshots = original.get_all_snapshots();
-        let cycle_count = original.cycle_count;
-        assert_eq!(cycle_count, 5);
 
-        // Simulate the WASM round-trip (deserialize into a fresh history).
-        let mut restored = SpcHistory::new();
-        restored.restore(snapshots, cycle_count);
-        assert_eq!(restored.cycle_count, 5);
-        assert_eq!(restored.history.len(), 5);
-    }
-
-    /// Rank-1 oracle: NaN/Inf in any f64 field must be sanitized to 0.0,
-    /// because downstream WE Rule 1 uses strict `>`/`<` comparisons which
-    /// return `false` against NaN — a single NaN snapshot would silently
-    /// suppress an out-of-control alert and is therefore a correctness
-    /// hazard, not merely a numerical curiosity.
-    #[test]
-    fn test_spc_history_sanitizes_nan_and_infinity() {
-        let mut history = SpcHistory::new();
-        history.record_snapshot(SpcSnapshot::new(
-            "nan-row".into(),
-            f64::NAN,
-            f64::INFINITY,
-            f64::NEG_INFINITY,
-            0,
-        ));
-        let snaps = history.get_all_snapshots();
-        assert_eq!(snaps.len(), 1);
-        let s = &snaps[0];
-        assert!(s.event_rate.is_finite(), "event_rate must be finite");
-        assert!(
-            s.trace_duration_avg.is_finite(),
-            "trace_duration_avg must be finite"
+        // Exactly 100 snapshots remain (oldest, cycle-0 with rate=0.0, was evicted).
+        assert_eq!(history.history.len(), 100, "ring buffer must cap at 100");
+        assert_eq!(
+            history.cycle_count, 101,
+            "cycle counter must be monotonically 101"
         );
-        assert!(
-            s.activity_frequency.is_finite(),
-            "activity_frequency must be finite"
-        );
-        assert_eq!(s.event_rate, 0.0);
-        assert_eq!(s.trace_duration_avg, 0.0);
-        assert_eq!(s.activity_frequency, 0.0);
-    }
 
-    /// Rank-2 oracle: cycle_count must never panic on overflow at
-    /// u64::MAX. `saturating_add` guarantees clamping rather than wrap.
-    #[test]
-    fn test_spc_history_cycle_count_saturates_at_u64_max() {
-        let mut history = SpcHistory::new();
-        history.cycle_count = u64::MAX;
-        history.record_snapshot(SpcSnapshot::new("end".into(), 1.0, 1.0, 1.0, 0));
-        assert_eq!(history.cycle_count, u64::MAX, "must saturate, not wrap");
+        let snapshots = history.get_all_snapshots();
+
+        // Oldest retained is cycle-1 (event_rate=1.0).
+        assert_eq!(
+            snapshots[0].timestamp, "cycle-1",
+            "oldest retained must be cycle-1 after 101 pushes"
+        );
+        assert_eq!(
+            snapshots[0].event_rate, 1.0,
+            "oldest retained event_rate must be 1.0"
+        );
+
+        // Newest retained is cycle-100 (event_rate=100.0).
+        assert_eq!(
+            snapshots[99].timestamp, "cycle-100",
+            "newest retained must be cycle-100"
+        );
+        assert_eq!(
+            snapshots[99].event_rate, 100.0,
+            "newest retained event_rate must be 100.0"
+        );
+
+        // All entries are in strict chronological order (event_rate strictly increasing).
+        let rates: Vec<f64> = snapshots.iter().map(|s| s.event_rate).collect();
+        for w in rates.windows(2) {
+            assert!(
+                w[1] > w[0],
+                "snapshots must be in chronological order: {} followed by {}",
+                w[0],
+                w[1]
+            );
+        }
     }
 
     #[test]

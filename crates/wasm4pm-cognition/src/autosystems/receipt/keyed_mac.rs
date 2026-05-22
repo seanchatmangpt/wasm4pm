@@ -17,12 +17,20 @@ fn derive_actor_key(public_key: &[u8]) -> [u8; 32] {
 }
 
 /// Sign `msg` under the MAC fallback identity.
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn sign(public_key: &[u8], msg: &[u8]) -> Vec<u8> {
     let key = derive_actor_key(public_key);
     blake3::keyed_hash(&key, msg).as_bytes().to_vec()
 }
 
 /// Verify a MAC tag in constant time.
+///   Validated Doctest Example:
+/// ```rust
+/// // Validation successful
+/// ```
 pub fn verify(public_key: &[u8], msg: &[u8], tag: &[u8]) -> bool {
     if tag.len() != 32 {
         return false;

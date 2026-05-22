@@ -162,14 +162,15 @@ describe('discovery commands', () => {
 
   it('compare: N results for N algorithms; each has elapsed_ms > 0; missing file → exit 2', async () => {
     // ANTI-STUB: stub returns { algorithms: [] }
-    const r = await cli(['compare', 'dfg,dfg', '--input', xesPath, '--format', 'json']);
+    // Use distinct algorithms — dfg,dfg is rejected since v26.5 (DUPLICATE_ALGORITHMS)
+    const r = await cli(['compare', 'dfg,heuristic', '--input', xesPath, '--format', 'json']);
     const j = assertEnvelope(r, 'compare');
     const algos = (j.payload as Record<string, unknown>).algorithms as Array<Record<string, unknown>>;
     expect(algos.length).toBe(2);
     for (const a of algos) expect(a.elapsed_ms ?? a.elapsedMs).toBeGreaterThan(0);
 
-    // FAILURE ORACLE
-    const rf = await cli(['compare', 'dfg,dfg', '--input', '/no/such.xes', '--format', 'json']);
+    // FAILURE ORACLE: missing input file → source_error (2)
+    const rf = await cli(['compare', 'dfg,heuristic', '--input', '/no/such.xes', '--format', 'json']);
     expect(rf.exitCode).toBe(2);
   });
 

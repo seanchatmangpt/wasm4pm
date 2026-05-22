@@ -1,6 +1,6 @@
 use wasm_bindgen::prelude::*;
 use crate::error::MlError;
-use crate::matrix::{validate_matrix, mat_get, Rng};
+use crate::matrix::validate_matrix;
 use crate::decision_tree::{decision_tree_impl, DecisionTreeModel};
 
 /// Gradient Boosting Classifier (XGBoost/LightGBM-style)
@@ -11,7 +11,6 @@ pub struct GradientBoostingClassifier {
     n_features: usize,
     n_classes: usize,
     learning_rate: f64,
-    max_depth: usize,
 }
 
 #[wasm_bindgen]
@@ -97,13 +96,13 @@ pub fn gradient_boosting_impl(
     }
 
     // Find unique classes
-    let mut classes: Vec<f64> = labels.iter().copied().collect();
+    let mut classes: Vec<f64> = labels.to_vec();
     classes.sort_unstable_by(|a, b| a.partial_cmp(b).unwrap());
     classes.dedup();
     let n_classes = classes.len();
 
     // Initialize with equal weights
-    let mut sample_weights: Vec<f64> = vec![1.0; n];
+    let _sample_weights: Vec<f64> = vec![1.0; n];
     let mut residual_labels = labels.to_vec();
     let mut trees = Vec::new();
 
@@ -111,21 +110,21 @@ pub fn gradient_boosting_impl(
         // Fit tree to current residuals
         let tree = decision_tree_impl(data, n_features, &residual_labels, max_depth, 2, true)?;
 
-        // Update residuals (gradient: move in direction that reduces loss)
-        // For classification: subtract predicted class probability from residual
+        // Update residuals (gradient: move in direction that reduces loss).
+        // Use the original labels (not residual values) to determine "correct" direction,
+        // and clamp residuals to [0, n_classes-1] so the as-usize cast never wraps to
+        // an out-of-range class index on subsequent iterations.
         let predictions = tree.predict(data);
         for j in 0..n {
             let pred_class = predictions[j] as usize;
-            if pred_class < n_classes {
-                // Simple: subtract 1.0 from the predicted class, add to true class
-                let actual_class = residual_labels[j] as usize;
-                if actual_class < n_classes {
-                    residual_labels[j] = if pred_class == actual_class {
-                        residual_labels[j] - learning_rate
-                    } else {
-                        residual_labels[j] + learning_rate
-                    };
-                }
+            // Recover original class from the original labels slice (not the drifting residual).
+            let true_class = labels[j] as usize;
+            if pred_class < n_classes && true_class < n_classes {
+                residual_labels[j] = if pred_class == true_class {
+                    (residual_labels[j] - learning_rate).max(0.0)
+                } else {
+                    (residual_labels[j] + learning_rate).min((n_classes - 1) as f64)
+                };
             }
         }
 
@@ -143,7 +142,6 @@ pub fn gradient_boosting_impl(
         n_features,
         n_classes,
         learning_rate,
-        max_depth,
     })
 }
 
@@ -186,5 +184,27 @@ mod tests {
         let labels = vec![0.0, 1.0];
         let model = gradient_boosting_impl(&data, 2, &labels, 5, 2, lr).unwrap();
         assert_eq!(model.learning_rate, lr);
+    }
+
+    #[test]
+    fn test_residuals_stay_in_class_range() {
+        // Regression guard: residual_labels must never drift outside [0, n_classes-1]
+        // so that `as usize` casts in subsequent iterations don't alias class indices.
+        // With 10 trees and lr=0.1, old code drifted labels to negatives → wrong predictions.
+        let data = vec![
+            0.0, 0.0,  1.0, 1.0,  0.0, 1.0,  1.0, 0.0,  // XOR-ish pattern
+            0.0, 0.0,  1.0, 1.0,  0.0, 1.0,  1.0, 0.0,  // duplicated for stability
+        ];
+        let labels = vec![0.0, 1.0, 1.0, 0.0, 0.0, 1.0, 1.0, 0.0];
+        let model = gradient_boosting_impl(&data, 2, &labels, 20, 3, 0.1).unwrap();
+
+        let preds = model.predict(&data);
+        // All predictions must be valid class indices (0 or 1)
+        for p in &preds {
+            assert!(*p == 0.0 || *p == 1.0, "Prediction {} is not a valid class index", p);
+        }
+        // The model should get at least half correct (better than random)
+        let correct = preds.iter().zip(labels.iter()).filter(|(p, l)| (*p - *l).abs() < 1e-10).count();
+        assert!(correct >= 4, "Expected at least 4/8 correct, got {}", correct);
     }
 }

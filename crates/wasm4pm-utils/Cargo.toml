@@ -13,7 +13,4 @@ itertools = { workspace = true }
 hashbrown = { workspace = true }
 
 [dev-dependencies]
-# Required by the existing `dense_index_proptests` and `static_pkt_tests`
-# modules. Without this dep, `cargo test -p wasm4pm-utils` fails to compile
-# (pre-existing test-infrastructure gap).
 proptest = { workspace = true }

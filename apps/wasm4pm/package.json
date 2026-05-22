@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/cli",
-  "version": "26.5.15",
+  "version": "26.5.21",
   "description": "wasm4pm — High-performance WASM-powered process mining CLI",
   "type": "module",
   "bin": {
@@ -28,17 +28,17 @@
     "clean": "rm -rf dist"
   },
   "dependencies": {
-    "@wasm4pm/agents": "workspace:*",
-    "@wasm4pm/cognition": "workspace:*",
-    "@wasm4pm/config": "workspace:*",
-    "@wasm4pm/contracts": "workspace:*",
-    "@wasm4pm/engine": "workspace:*",
-    "@wasm4pm/kernel": "workspace:*",
-    "@wasm4pm/ml": "workspace:^",
-    "@wasm4pm/observability": "workspace:^",
-    "@wasm4pm/planner": "workspace:*",
-    "@wasm4pm/swarm": "workspace:*",
-    "wasm4pm": "workspace:*",
+    "@wasm4pm/agents": "*",
+    "@wasm4pm/cognition": "*",
+    "@wasm4pm/config": "*",
+    "@wasm4pm/contracts": "*",
+    "@wasm4pm/engine": "*",
+    "wasm4pm": "*",
+    "@wasm4pm/ml": "*",
+    "@wasm4pm/observability": "*",
+    "@wasm4pm/planner": "*",
+    "@wasm4pm/swarm": "*",
+    "wasm4pm": "*",
     "ajv": "^8.12.0",
     "chokidar": "^4.0.1",
     "citty": "^0.1.6",
@@ -47,6 +47,7 @@
   "devDependencies": {
     "@faker-js/faker": "^10.4.0",
     "@types/node": "^20.10.0",
+    "@wasm4pm/testing": "*",
     "typescript": "^5.3.3",
     "vitest": "^1.1.0"
   },

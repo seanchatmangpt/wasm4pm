@@ -62,8 +62,8 @@ pub fn kaplan_meier_impl(times: &[f64], events: &[f64]) -> Result<KaplanMeierRes
     for k in 0..event_times.len() {
         let log_s = if survival_probs[k] > 0.0 { survival_probs[k].ln() } else { f64::NEG_INFINITY };
         let se = var_log_s[k].sqrt();
-        ci_lower.push((log_s - z * se).exp().max(0.0).min(1.0));
-        ci_upper.push((log_s + z * se).exp().max(0.0).min(1.0));
+        ci_lower.push((log_s - z * se).exp().clamp(0.0, 1.0));
+        ci_upper.push((log_s + z * se).exp().clamp(0.0, 1.0));
     }
     let median_survival = survival_probs.iter().position(|&sp| sp <= 0.5).map(|idx| event_times[idx]).unwrap_or(f64::NAN);
     Ok(KaplanMeierResult { times: event_times, survival: survival_probs, ci_lower, ci_upper, median_survival, n_at_risk: n_at_risk_vals })
@@ -79,7 +79,7 @@ pub fn kaplan_meier(times: &[f64], events: &[f64]) -> Result<JsValue, JsValue> {
 
 pub fn cox_proportional_hazards_impl(features: &[f64], n_features: usize, times: &[f64], events: &[f64], max_iter: usize, lr: f64) -> Result<CoxResult, MlError> {
     if features.is_empty() || n_features == 0 { return Err(MlError::new("features must not be empty and n_features must be > 0")); }
-    if features.len() % n_features != 0 { return Err(MlError::new("features length must be divisible by n_features")); }
+    if !features.len().is_multiple_of(n_features) { return Err(MlError::new("features length must be divisible by n_features")); }
     if times.len() != events.len() { return Err(MlError::new("times and events must have the same length")); }
     let n_samples = features.len() / n_features;
     if times.len() != n_samples { return Err(MlError::new("features, times, and events must have the same sample count")); }
@@ -100,7 +100,9 @@ pub fn cox_proportional_hazards_impl(features: &[f64], n_features: usize, times:
             let mut at_risk: Vec<usize> = Vec::new(); let mut event_indices: Vec<usize> = Vec::new();
             let mut j = i;
             while j < n_samples && (times[indices[j]] - t).abs() < 1e-10 { at_risk.push(indices[j]); if events[indices[j]] > 0.5 { event_indices.push(indices[j]); } j += 1; }
-            for k in j..n_samples { at_risk.push(indices[k]); }
+            for &idx in indices.iter().take(n_samples).skip(j) {
+                at_risk.push(idx);
+            }
             if event_indices.is_empty() { i = j; continue; }
             let mut sum_exp = 0.0;
             for &ar_idx in &at_risk { sum_exp += eta[ar_idx].exp(); }

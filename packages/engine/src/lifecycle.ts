@@ -30,6 +30,9 @@ export interface LifecycleEvent {
  * State machine managing engine lifecycle transitions
  * Enforces valid state transitions and emits events for lifecycle changes
  */
+/** Maximum number of transition history entries retained (ring-buffer cap). */
+const TRANSITION_HISTORY_MAX = 1000;
+
 export class StateMachine {
   private currentState: EngineState = 'uninitialized';
   private listeners: Set<(event: LifecycleEvent) => void> = new Set();
@@ -68,10 +71,18 @@ export class StateMachine {
   }
 
   /**
-   * Gets full transition history
+   * Gets full transition history (capped at TRANSITION_HISTORY_MAX entries)
    */
   getTransitionHistory(): LifecycleEvent[] {
     return [...this.transitionHistory];
+  }
+
+  /**
+   * Returns the maximum number of transition history entries retained.
+   * When the cap is exceeded the oldest entry is evicted (ring-buffer).
+   */
+  getTransitionHistoryMaxSize(): number {
+    return TRANSITION_HISTORY_MAX;
   }
 
   /**
@@ -112,6 +123,11 @@ export class StateMachine {
     this.stateEnteredAt = event.timestamp;
     this.lastTransitionTime = event.timestamp;
     this.transitionHistory.push(event);
+
+    // Cap history to prevent unbounded growth in long-running engines
+    if (this.transitionHistory.length > TRANSITION_HISTORY_MAX) {
+      this.transitionHistory.shift();
+    }
 
     // Emit event to all listeners — listener errors must not be hidden
     const listenerErrors: Error[] = [];

@@ -10,7 +10,11 @@
 //!
 //! 3. **FusedMultiPass** — single DFG construction shared across DFG-based algorithms
 //!    (heuristic, skeleton, optimized_dfg). The DFG is computed once and reused.
+//!
+//! WASM single-threaded safety: Uses RefCell instead of Mutex to avoid deadlock
+//! when algorithms recursively access shared state during execution.
 
+use std::cell::RefCell;
 use std::collections::{HashMap, VecDeque};
 use wasm_bindgen::prelude::*;
 
@@ -308,8 +312,8 @@ impl FusedMultiPass {
         let dfg = DirectlyFollowsGraph {
             nodes,
             edges,
-            start_activities: start_counts,
-            end_activities: end_counts,
+            start_activities: start_counts.into_iter().collect(),
+            end_activities: end_counts.into_iter().collect(),
         };
 
         self.dfg_log_hash = hash;
@@ -512,8 +516,8 @@ impl FusedMultiPassStreaming {
         let dfg = DirectlyFollowsGraph {
             nodes,
             edges,
-            start_activities,
-            end_activities,
+            start_activities: start_activities.into_iter().collect(),
+            end_activities: end_activities.into_iter().collect(),
         };
 
         self.inner.dfg_log_hash = hash;
@@ -709,16 +713,37 @@ impl Default for SmartEngine {
 // WASM Bindings
 // ============================================================================
 
+// SAFETY: WASM is single-threaded. RefCell is used instead of Mutex to avoid
+// deadlock risk on recursive algorithm calls. No concurrent access is possible
+// in a WASM runtime. Both Send and Sync are asserted so that once_cell::sync::Lazy
+// can hold this type in a static (Lazy<T> requires T: Send + Sync for Sync).
+struct WasmCell<T>(RefCell<T>);
+unsafe impl<T> Sync for WasmCell<T> {}
+unsafe impl<T> Send for WasmCell<T> {}
+
+impl<T> WasmCell<T> {
+    fn new(val: T) -> Self {
+        WasmCell(RefCell::new(val))
+    }
+    fn borrow(&self) -> std::cell::Ref<'_, T> {
+        self.0.borrow()
+    }
+    fn borrow_mut(&self) -> std::cell::RefMut<'_, T> {
+        self.0.borrow_mut()
+    }
+}
+
 /// Opaque handle storage for smart engine instances.
-static SMART_ENGINES: once_cell::sync::Lazy<std::sync::Mutex<HashMap<String, SmartEngine>>> =
-    once_cell::sync::Lazy::new(|| std::sync::Mutex::new(HashMap::default()));
+/// Uses RefCell for single-threaded WASM safety (no Mutex deadlock risk).
+static SMART_ENGINES: once_cell::sync::Lazy<WasmCell<HashMap<String, SmartEngine>>> =
+    once_cell::sync::Lazy::new(|| WasmCell::new(HashMap::default()));
 
 /// Global counter for generating unique engine handles.
-static ENGINE_COUNTER: once_cell::sync::Lazy<std::sync::Mutex<u64>> =
-    once_cell::sync::Lazy::new(|| std::sync::Mutex::new(0u64));
+static ENGINE_COUNTER: once_cell::sync::Lazy<WasmCell<u64>> =
+    once_cell::sync::Lazy::new(|| WasmCell::new(0u64));
 
 fn alloc_handle() -> String {
-    let mut counter = ENGINE_COUNTER.lock().unwrap();
+    let mut counter = ENGINE_COUNTER.borrow_mut();
     let id = format!("smart_{}", *counter);
     *counter += 1;
     id
@@ -729,7 +754,7 @@ fn alloc_handle() -> String {
 pub fn smart_engine_create() -> String {
     let engine = SmartEngine::new();
     let handle = alloc_handle();
-    SMART_ENGINES.lock().unwrap().insert(handle.clone(), engine);
+    SMART_ENGINES.borrow_mut().insert(handle.clone(), engine);
     handle
 }
 
@@ -748,7 +773,7 @@ pub fn smart_engine_create_with_params(
         max_iterations,
     );
     let handle = alloc_handle();
-    SMART_ENGINES.lock().unwrap().insert(handle.clone(), engine);
+    SMART_ENGINES.borrow_mut().insert(handle.clone(), engine);
     handle
 }
 
@@ -765,7 +790,7 @@ pub fn smart_engine_run(
     let traces: Vec<Vec<String>> = serde_json::from_str(traces_json)
         .map_err(|e| crate::error::js_val(&format!("Invalid traces JSON: {}", e)))?;
 
-    let mut engines = SMART_ENGINES.lock().unwrap();
+    let mut engines = SMART_ENGINES.borrow_mut();
     let engine = engines
         .get_mut(handle)
         .ok_or_else(|| crate::error::js_val(&format!("SmartEngine '{}' not found", handle)))?;
@@ -778,7 +803,7 @@ pub fn smart_engine_run(
 /// Check if the convergence monitor has detected convergence.
 #[wasm_bindgen]
 pub fn smart_engine_converged(handle: &str) -> Result<bool, JsValue> {
-    let engines = SMART_ENGINES.lock().unwrap();
+    let engines = SMART_ENGINES.borrow();
     let engine = engines
         .get(handle)
         .ok_or_else(|| crate::error::js_val(&format!("SmartEngine '{}' not found", handle)))?;
@@ -788,7 +813,7 @@ pub fn smart_engine_converged(handle: &str) -> Result<bool, JsValue> {
 /// Get cache statistics as a JSON object: `{"hits":n,"misses":n,"evictions":n}`.
 #[wasm_bindgen]
 pub fn smart_engine_cache_stats(handle: &str) -> Result<String, JsValue> {
-    let engines = SMART_ENGINES.lock().unwrap();
+    let engines = SMART_ENGINES.borrow();
     let engine = engines
         .get(handle)
         .ok_or_else(|| crate::error::js_val(&format!("SmartEngine '{}' not found", handle)))?;
@@ -802,7 +827,7 @@ pub fn smart_engine_cache_stats(handle: &str) -> Result<String, JsValue> {
 /// Feed a metric value to the convergence monitor and check if should stop.
 #[wasm_bindgen]
 pub fn smart_engine_check_convergence(handle: &str, metric: f64) -> Result<bool, JsValue> {
-    let mut engines = SMART_ENGINES.lock().unwrap();
+    let mut engines = SMART_ENGINES.borrow_mut();
     let engine = engines
         .get_mut(handle)
         .ok_or_else(|| crate::error::js_val(&format!("SmartEngine '{}' not found", handle)))?;
@@ -812,7 +837,7 @@ pub fn smart_engine_check_convergence(handle: &str, metric: f64) -> Result<bool,
 /// Reset all internal state of a smart engine.
 #[wasm_bindgen]
 pub fn smart_engine_reset(handle: &str) -> Result<(), JsValue> {
-    let mut engines = SMART_ENGINES.lock().unwrap();
+    let mut engines = SMART_ENGINES.borrow_mut();
     let engine = engines
         .get_mut(handle)
         .ok_or_else(|| crate::error::js_val(&format!("SmartEngine '{}' not found", handle)))?;
@@ -823,7 +848,7 @@ pub fn smart_engine_reset(handle: &str) -> Result<(), JsValue> {
 /// Destroy a smart engine and free its resources.
 #[wasm_bindgen]
 pub fn smart_engine_destroy(handle: &str) -> Result<(), JsValue> {
-    let mut engines = SMART_ENGINES.lock().unwrap();
+    let mut engines = SMART_ENGINES.borrow_mut();
     engines.remove(handle);
     Ok(())
 }

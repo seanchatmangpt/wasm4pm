@@ -1,0 +1,4906 @@
+{
+  "receipt_type": "Wasm4pmExecutionReceipt",
+  "receipt_schema": "Wasm4pmExecutionReceipt.v1",
+  "package": "wasm4pm",
+  "version": "26.5.21",
+  "commit": "d14384a4a23a86f393c1d18162e7b0c721d18b86",
+  "hash_algorithm": "BLAKE3",
+  "time_basis": "LogicalMonotonicClock",
+  "canonicalization": {
+    "name": "CanonicalOCEL2ForWasm4pm",
+    "version": 1,
+    "hash_algorithm": "BLAKE3"
+  },
+  "example_id": "sunday_andon",
+  "input": {
+    "event_log_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36",
+    "event_log_format": "xes",
+    "activity_key": "concept:name"
+  },
+  "algorithms": [
+    {
+      "id": "alpha_plus_plus",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "ee4570d5d68343d25dac6f259d6b7b10853c09709f7ae4774f0957d6152e2e0e",
+      "duration_ms": 45.16,
+      "expected_path": {
+        "route_id": "wpm.example.sunday_andon.alpha_plus_plus.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_sunday_andon_alpha_plus_plus_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_alpha_plus_plus_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_alpha_plus_plus_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_alpha_plus_plus_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_alpha_plus_plus",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_alpha_plus_plus_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_alpha_plus_plus",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_alpha_plus_plus_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ee4570d5d68343d25dac6f259d6b7b10853c09709f7ae4774f0957d6152e2e0e",
+                "duration_ms": 45.16
+              }
+            },
+            {
+              "id": "evt_sunday_andon_alpha_plus_plus_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_alpha_plus_plus_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ee4570d5d68343d25dac6f259d6b7b10853c09709f7ae4774f0957d6152e2e0e"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_alpha_plus_plus_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_alpha_plus_plus_sunday_andon",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ee4570d5d68343d25dac6f259d6b7b10853c09709f7ae4774f0957d6152e2e0e"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_alpha_plus_plus_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_alpha_plus_plus",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_alpha_plus_plus_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_alpha_plus_plus_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_alpha_plus_plus_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_alpha_plus_plus_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_alpha_plus_plus_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_sunday_andon",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_sunday_andon",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_alpha_plus_plus",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_alpha_plus_plus_sunday_andon",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_sunday_andon",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "6552e190eac9fbfa6eb6de5078b37b1e1f63e18d3ccc78a8fcb4ac7aca4c84bf"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_sunday_andon_alpha_plus_plus_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-22T00:40:51.278Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_alpha_plus_plus_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-22T00:40:50.537Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_alpha_plus_plus_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-22T00:40:48.066Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_alpha_plus_plus_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-22T00:40:51.974Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_alpha_plus_plus",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_alpha_plus_plus_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-22T00:40:50.968Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_alpha_plus_plus",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_alpha_plus_plus_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ee4570d5d68343d25dac6f259d6b7b10853c09709f7ae4774f0957d6152e2e0e",
+                "duration_ms": 45.16
+              }
+            },
+            {
+              "id": "evt_sunday_andon_alpha_plus_plus_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-22T00:40:53.009Z",
+              "relationships": [
+                {
+                  "objectId": "result_alpha_plus_plus_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ee4570d5d68343d25dac6f259d6b7b10853c09709f7ae4774f0957d6152e2e0e"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_alpha_plus_plus_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-22T00:40:50.736Z",
+              "relationships": [
+                {
+                  "objectId": "result_alpha_plus_plus_sunday_andon",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ee4570d5d68343d25dac6f259d6b7b10853c09709f7ae4774f0957d6152e2e0e"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_alpha_plus_plus_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-22T00:40:55.039Z",
+              "relationships": [
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_alpha_plus_plus",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_alpha_plus_plus_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_alpha_plus_plus_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-22T00:40:52.340Z",
+              "relationships": [
+                {
+                  "objectId": "result_alpha_plus_plus_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_alpha_plus_plus_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-22T00:40:55.143Z",
+              "relationships": [
+                {
+                  "objectId": "result_alpha_plus_plus_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_sunday_andon",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_sunday_andon",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_alpha_plus_plus",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_alpha_plus_plus_sunday_andon",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_sunday_andon",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "9eb9a081b90c42298e000b718d308b552b466d5d9aae3ea8ace81cb6a566ba42",
+        "observed_result_hash": "ee4570d5d68343d25dac6f259d6b7b10853c09709f7ae4774f0957d6152e2e0e"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36",
+        "output_artifact_hash": "ee4570d5d68343d25dac6f259d6b7b10853c09709f7ae4774f0957d6152e2e0e",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "heuristic_miner",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "76115cf79f31f3a1a49b69e7c488d9ae0cf491f6eaaaf20c5e0ce2202b37f4ad",
+      "duration_ms": 41.156,
+      "expected_path": {
+        "route_id": "wpm.example.sunday_andon.heuristic_miner.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_sunday_andon_heuristic_miner_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_heuristic_miner_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_heuristic_miner_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_heuristic_miner_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_heuristic_miner",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_heuristic_miner_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_heuristic_miner",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_heuristic_miner_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "76115cf79f31f3a1a49b69e7c488d9ae0cf491f6eaaaf20c5e0ce2202b37f4ad",
+                "duration_ms": 41.156
+              }
+            },
+            {
+              "id": "evt_sunday_andon_heuristic_miner_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_heuristic_miner_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "76115cf79f31f3a1a49b69e7c488d9ae0cf491f6eaaaf20c5e0ce2202b37f4ad"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_heuristic_miner_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_heuristic_miner_sunday_andon",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "76115cf79f31f3a1a49b69e7c488d9ae0cf491f6eaaaf20c5e0ce2202b37f4ad"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_heuristic_miner_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_heuristic_miner",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_heuristic_miner_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_heuristic_miner_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_heuristic_miner_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_heuristic_miner_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_heuristic_miner_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_sunday_andon",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_sunday_andon",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_heuristic_miner",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_heuristic_miner_sunday_andon",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_sunday_andon",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "20b3a0a84481bb581d0bb14cd39c1fd68a16b185b522d8aef173f52fad89eea1"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_sunday_andon_heuristic_miner_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-22T00:40:49.286Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_heuristic_miner_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-22T00:40:48.426Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_heuristic_miner_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-22T00:40:51.454Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_heuristic_miner_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-22T00:40:51.332Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_heuristic_miner",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_heuristic_miner_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-22T00:40:52.878Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_heuristic_miner",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_heuristic_miner_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "76115cf79f31f3a1a49b69e7c488d9ae0cf491f6eaaaf20c5e0ce2202b37f4ad",
+                "duration_ms": 41.156
+              }
+            },
+            {
+              "id": "evt_sunday_andon_heuristic_miner_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-22T00:40:52.622Z",
+              "relationships": [
+                {
+                  "objectId": "result_heuristic_miner_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "76115cf79f31f3a1a49b69e7c488d9ae0cf491f6eaaaf20c5e0ce2202b37f4ad"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_heuristic_miner_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-22T00:40:52.830Z",
+              "relationships": [
+                {
+                  "objectId": "result_heuristic_miner_sunday_andon",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "76115cf79f31f3a1a49b69e7c488d9ae0cf491f6eaaaf20c5e0ce2202b37f4ad"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_heuristic_miner_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-22T00:40:53.360Z",
+              "relationships": [
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_heuristic_miner",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_heuristic_miner_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_heuristic_miner_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-22T00:40:54.682Z",
+              "relationships": [
+                {
+                  "objectId": "result_heuristic_miner_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_heuristic_miner_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-22T00:40:52.722Z",
+              "relationships": [
+                {
+                  "objectId": "result_heuristic_miner_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_sunday_andon",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_sunday_andon",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_heuristic_miner",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_heuristic_miner_sunday_andon",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_sunday_andon",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "53b8ded050ee3de1f7d8cd0759b2dd6a0905e7fbf5c7bcdb727ae3640cc41dab",
+        "observed_result_hash": "76115cf79f31f3a1a49b69e7c488d9ae0cf491f6eaaaf20c5e0ce2202b37f4ad"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36",
+        "output_artifact_hash": "76115cf79f31f3a1a49b69e7c488d9ae0cf491f6eaaaf20c5e0ce2202b37f4ad",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "inductive_miner",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "e1671c41cc06a51d4f9e644327c360886dd0c5580a9339423c48714c1676d620",
+      "duration_ms": 40.972,
+      "expected_path": {
+        "route_id": "wpm.example.sunday_andon.inductive_miner.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_sunday_andon_inductive_miner_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_inductive_miner_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_inductive_miner_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_inductive_miner_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_inductive_miner",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_inductive_miner_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_inductive_miner",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_inductive_miner_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "e1671c41cc06a51d4f9e644327c360886dd0c5580a9339423c48714c1676d620",
+                "duration_ms": 40.972
+              }
+            },
+            {
+              "id": "evt_sunday_andon_inductive_miner_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_inductive_miner_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "e1671c41cc06a51d4f9e644327c360886dd0c5580a9339423c48714c1676d620"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_inductive_miner_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_inductive_miner_sunday_andon",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "e1671c41cc06a51d4f9e644327c360886dd0c5580a9339423c48714c1676d620"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_inductive_miner_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_inductive_miner",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_inductive_miner_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_inductive_miner_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_inductive_miner_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_inductive_miner_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_inductive_miner_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_sunday_andon",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_sunday_andon",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_inductive_miner",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_inductive_miner_sunday_andon",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_sunday_andon",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "d0c5543693fd8fbfd71292675f0867cc325545170e03c508839a410d33a2d8dd"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_sunday_andon_inductive_miner_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-22T00:40:47.085Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_inductive_miner_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-22T00:40:51.303Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_inductive_miner_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-22T00:40:50.426Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_inductive_miner_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-22T00:40:49.906Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_inductive_miner",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_inductive_miner_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-22T00:40:49.934Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_inductive_miner",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_inductive_miner_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "e1671c41cc06a51d4f9e644327c360886dd0c5580a9339423c48714c1676d620",
+                "duration_ms": 40.972
+              }
+            },
+            {
+              "id": "evt_sunday_andon_inductive_miner_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-22T00:40:54.314Z",
+              "relationships": [
+                {
+                  "objectId": "result_inductive_miner_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "e1671c41cc06a51d4f9e644327c360886dd0c5580a9339423c48714c1676d620"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_inductive_miner_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-22T00:40:51.125Z",
+              "relationships": [
+                {
+                  "objectId": "result_inductive_miner_sunday_andon",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "e1671c41cc06a51d4f9e644327c360886dd0c5580a9339423c48714c1676d620"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_inductive_miner_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-22T00:40:51.929Z",
+              "relationships": [
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_inductive_miner",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_inductive_miner_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_inductive_miner_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-22T00:40:55.274Z",
+              "relationships": [
+                {
+                  "objectId": "result_inductive_miner_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_inductive_miner_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-22T00:40:54.029Z",
+              "relationships": [
+                {
+                  "objectId": "result_inductive_miner_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_sunday_andon",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_sunday_andon",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_inductive_miner",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_inductive_miner_sunday_andon",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_sunday_andon",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "28fb0168af267b411d749394c252356e4850a21bd2979b6841d3264612a27366",
+        "observed_result_hash": "e1671c41cc06a51d4f9e644327c360886dd0c5580a9339423c48714c1676d620"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36",
+        "output_artifact_hash": "e1671c41cc06a51d4f9e644327c360886dd0c5580a9339423c48714c1676d620",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "genetic_algorithm",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "fa12118ec4b1b4b97a5e7c5b6dec48fa648e1b69b22e6537ac96f0150a605262",
+      "duration_ms": 53.725,
+      "expected_path": {
+        "route_id": "wpm.example.sunday_andon.genetic_algorithm.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_sunday_andon_genetic_algorithm_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_genetic_algorithm_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_genetic_algorithm_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_genetic_algorithm_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_genetic_algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_genetic_algorithm_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_genetic_algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_genetic_algorithm_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "fa12118ec4b1b4b97a5e7c5b6dec48fa648e1b69b22e6537ac96f0150a605262",
+                "duration_ms": 53.725
+              }
+            },
+            {
+              "id": "evt_sunday_andon_genetic_algorithm_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_genetic_algorithm_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "fa12118ec4b1b4b97a5e7c5b6dec48fa648e1b69b22e6537ac96f0150a605262"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_genetic_algorithm_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_genetic_algorithm_sunday_andon",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "fa12118ec4b1b4b97a5e7c5b6dec48fa648e1b69b22e6537ac96f0150a605262"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_genetic_algorithm_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_genetic_algorithm",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_genetic_algorithm_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_genetic_algorithm_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_genetic_algorithm_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_genetic_algorithm_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_genetic_algorithm_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_sunday_andon",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_sunday_andon",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_genetic_algorithm",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_genetic_algorithm_sunday_andon",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_sunday_andon",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "bc370e8b4bc0891e367773f4e2f89cafc930bb7149b4c1e8b6843b0dea766ec0"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_sunday_andon_genetic_algorithm_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-22T00:40:51.807Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_genetic_algorithm_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-22T00:40:48.420Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_genetic_algorithm_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-22T00:40:50.974Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_genetic_algorithm_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-22T00:40:49.172Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_genetic_algorithm",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_genetic_algorithm_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-22T00:40:50.291Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_genetic_algorithm",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_genetic_algorithm_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "fa12118ec4b1b4b97a5e7c5b6dec48fa648e1b69b22e6537ac96f0150a605262",
+                "duration_ms": 53.725
+              }
+            },
+            {
+              "id": "evt_sunday_andon_genetic_algorithm_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-22T00:40:52.379Z",
+              "relationships": [
+                {
+                  "objectId": "result_genetic_algorithm_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "fa12118ec4b1b4b97a5e7c5b6dec48fa648e1b69b22e6537ac96f0150a605262"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_genetic_algorithm_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-22T00:40:52.859Z",
+              "relationships": [
+                {
+                  "objectId": "result_genetic_algorithm_sunday_andon",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "fa12118ec4b1b4b97a5e7c5b6dec48fa648e1b69b22e6537ac96f0150a605262"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_genetic_algorithm_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-22T00:40:52.010Z",
+              "relationships": [
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_genetic_algorithm",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_genetic_algorithm_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_genetic_algorithm_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-22T00:40:55.756Z",
+              "relationships": [
+                {
+                  "objectId": "result_genetic_algorithm_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_genetic_algorithm_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-22T00:40:52.916Z",
+              "relationships": [
+                {
+                  "objectId": "result_genetic_algorithm_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_sunday_andon",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_sunday_andon",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_genetic_algorithm",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_genetic_algorithm_sunday_andon",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_sunday_andon",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "4fbfcee0ac6d1fe4d003d32be41d0ae75b9b20b8ba18741123e02e46635ea963",
+        "observed_result_hash": "fa12118ec4b1b4b97a5e7c5b6dec48fa648e1b69b22e6537ac96f0150a605262"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36",
+        "output_artifact_hash": "fa12118ec4b1b4b97a5e7c5b6dec48fa648e1b69b22e6537ac96f0150a605262",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "pso",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "ddc097dc70084a9bbe8f9a54f771f7fabbe20c4b399672a0efc815461d696f08",
+      "duration_ms": 16.764,
+      "expected_path": {
+        "route_id": "wpm.example.sunday_andon.pso.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_sunday_andon_pso_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_pso_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_pso_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_pso_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_pso",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_pso_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_pso",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_pso_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ddc097dc70084a9bbe8f9a54f771f7fabbe20c4b399672a0efc815461d696f08",
+                "duration_ms": 16.764
+              }
+            },
+            {
+              "id": "evt_sunday_andon_pso_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_pso_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ddc097dc70084a9bbe8f9a54f771f7fabbe20c4b399672a0efc815461d696f08"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_pso_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_pso_sunday_andon",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ddc097dc70084a9bbe8f9a54f771f7fabbe20c4b399672a0efc815461d696f08"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_pso_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_pso",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_pso_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_pso_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_pso_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_pso_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_pso_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_sunday_andon",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_sunday_andon",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_pso",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_pso_sunday_andon",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_sunday_andon",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "bf9fc781febfa4096ceb2bb7cb7915b25847a0e1496fcdf5c66c211962cbc4e3"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_sunday_andon_pso_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-22T00:40:48.133Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_pso_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-22T00:40:51.639Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_pso_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-22T00:40:48.206Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_pso_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-22T00:40:49.000Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_pso",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_pso_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-22T00:40:51.214Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_pso",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_pso_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ddc097dc70084a9bbe8f9a54f771f7fabbe20c4b399672a0efc815461d696f08",
+                "duration_ms": 16.764
+              }
+            },
+            {
+              "id": "evt_sunday_andon_pso_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-22T00:40:51.479Z",
+              "relationships": [
+                {
+                  "objectId": "result_pso_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ddc097dc70084a9bbe8f9a54f771f7fabbe20c4b399672a0efc815461d696f08"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_pso_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-22T00:40:50.970Z",
+              "relationships": [
+                {
+                  "objectId": "result_pso_sunday_andon",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ddc097dc70084a9bbe8f9a54f771f7fabbe20c4b399672a0efc815461d696f08"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_pso_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-22T00:40:51.555Z",
+              "relationships": [
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_pso",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_pso_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_pso_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-22T00:40:51.430Z",
+              "relationships": [
+                {
+                  "objectId": "result_pso_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_pso_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-22T00:40:53.259Z",
+              "relationships": [
+                {
+                  "objectId": "result_pso_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_sunday_andon",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_sunday_andon",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_pso",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_pso_sunday_andon",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_sunday_andon",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "a60b5c2e86057773a964fa2e23c371f3f276c74811e7b7293141f2b911c04322",
+        "observed_result_hash": "ddc097dc70084a9bbe8f9a54f771f7fabbe20c4b399672a0efc815461d696f08"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36",
+        "output_artifact_hash": "ddc097dc70084a9bbe8f9a54f771f7fabbe20c4b399672a0efc815461d696f08",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "a_star",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "40d0d7a35fd2e2e9148e6ac0a34cc413f163aa28801ea0da388c4ce68663e5b9",
+      "duration_ms": 43.761,
+      "expected_path": {
+        "route_id": "wpm.example.sunday_andon.a_star.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_sunday_andon_a_star_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_a_star_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_a_star_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_a_star_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_a_star",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_a_star_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_a_star",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_a_star_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "40d0d7a35fd2e2e9148e6ac0a34cc413f163aa28801ea0da388c4ce68663e5b9",
+                "duration_ms": 43.761
+              }
+            },
+            {
+              "id": "evt_sunday_andon_a_star_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_a_star_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "40d0d7a35fd2e2e9148e6ac0a34cc413f163aa28801ea0da388c4ce68663e5b9"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_a_star_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_a_star_sunday_andon",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "40d0d7a35fd2e2e9148e6ac0a34cc413f163aa28801ea0da388c4ce68663e5b9"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_a_star_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_a_star",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_a_star_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_a_star_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_a_star_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_a_star_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_a_star_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_sunday_andon",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_sunday_andon",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_a_star",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_a_star_sunday_andon",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_sunday_andon",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "abbc7473365f47d05381713ed0234c0c94fc36ac39d27adba8e6f3bf31da17bd"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_sunday_andon_a_star_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-22T00:40:50.206Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_a_star_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-22T00:40:48.164Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_a_star_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-22T00:40:51.440Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_a_star_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-22T00:40:53.023Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_a_star",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_a_star_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-22T00:40:49.679Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_a_star",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_a_star_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "40d0d7a35fd2e2e9148e6ac0a34cc413f163aa28801ea0da388c4ce68663e5b9",
+                "duration_ms": 43.761
+              }
+            },
+            {
+              "id": "evt_sunday_andon_a_star_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-22T00:40:53.447Z",
+              "relationships": [
+                {
+                  "objectId": "result_a_star_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "40d0d7a35fd2e2e9148e6ac0a34cc413f163aa28801ea0da388c4ce68663e5b9"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_a_star_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-22T00:40:51.716Z",
+              "relationships": [
+                {
+                  "objectId": "result_a_star_sunday_andon",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "40d0d7a35fd2e2e9148e6ac0a34cc413f163aa28801ea0da388c4ce68663e5b9"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_a_star_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-22T00:40:50.769Z",
+              "relationships": [
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_a_star",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_a_star_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_a_star_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-22T00:40:53.480Z",
+              "relationships": [
+                {
+                  "objectId": "result_a_star_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_a_star_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-22T00:40:53.782Z",
+              "relationships": [
+                {
+                  "objectId": "result_a_star_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_sunday_andon",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_sunday_andon",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_a_star",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_a_star_sunday_andon",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_sunday_andon",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "2042dbe76279ee89ccf06373f27f63f55100335c0e297cbbbde008bcd996b946",
+        "observed_result_hash": "40d0d7a35fd2e2e9148e6ac0a34cc413f163aa28801ea0da388c4ce68663e5b9"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36",
+        "output_artifact_hash": "40d0d7a35fd2e2e9148e6ac0a34cc413f163aa28801ea0da388c4ce68663e5b9",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "hill_climbing",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "ae105e4442679e52844007b6eb2431226e52d3dcc28a89433d1115b776ab93fb",
+      "duration_ms": 28.862,
+      "expected_path": {
+        "route_id": "wpm.example.sunday_andon.hill_climbing.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_sunday_andon_hill_climbing_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_hill_climbing_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_hill_climbing_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_hill_climbing_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_hill_climbing",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_hill_climbing_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_hill_climbing",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_hill_climbing_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ae105e4442679e52844007b6eb2431226e52d3dcc28a89433d1115b776ab93fb",
+                "duration_ms": 28.862
+              }
+            },
+            {
+              "id": "evt_sunday_andon_hill_climbing_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_hill_climbing_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ae105e4442679e52844007b6eb2431226e52d3dcc28a89433d1115b776ab93fb"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_hill_climbing_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_hill_climbing_sunday_andon",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ae105e4442679e52844007b6eb2431226e52d3dcc28a89433d1115b776ab93fb"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_hill_climbing_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_hill_climbing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_hill_climbing_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_hill_climbing_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_hill_climbing_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_hill_climbing_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_hill_climbing_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_sunday_andon",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_sunday_andon",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_hill_climbing",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_hill_climbing_sunday_andon",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_sunday_andon",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "f8182cb86e2e0a2ceb9273b0144543c45c149546c0aa2ff1030f6b986c31bbc5"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_sunday_andon_hill_climbing_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-22T00:40:47.694Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_hill_climbing_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-22T00:40:51.425Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_hill_climbing_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-22T00:40:49.953Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_hill_climbing_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-22T00:40:48.808Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_hill_climbing",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_hill_climbing_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-22T00:40:49.255Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_hill_climbing",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_hill_climbing_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ae105e4442679e52844007b6eb2431226e52d3dcc28a89433d1115b776ab93fb",
+                "duration_ms": 28.862
+              }
+            },
+            {
+              "id": "evt_sunday_andon_hill_climbing_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-22T00:40:49.760Z",
+              "relationships": [
+                {
+                  "objectId": "result_hill_climbing_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ae105e4442679e52844007b6eb2431226e52d3dcc28a89433d1115b776ab93fb"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_hill_climbing_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-22T00:40:54.620Z",
+              "relationships": [
+                {
+                  "objectId": "result_hill_climbing_sunday_andon",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "ae105e4442679e52844007b6eb2431226e52d3dcc28a89433d1115b776ab93fb"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_hill_climbing_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-22T00:40:50.593Z",
+              "relationships": [
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_hill_climbing",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_hill_climbing_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_hill_climbing_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-22T00:40:55.692Z",
+              "relationships": [
+                {
+                  "objectId": "result_hill_climbing_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_hill_climbing_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-22T00:40:52.431Z",
+              "relationships": [
+                {
+                  "objectId": "result_hill_climbing_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_sunday_andon",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_sunday_andon",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_hill_climbing",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_hill_climbing_sunday_andon",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_sunday_andon",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "a275239b202a3bb7b9614c3d7b5000f64777f39bfdec0c3b514cf405a8fe93dd",
+        "observed_result_hash": "ae105e4442679e52844007b6eb2431226e52d3dcc28a89433d1115b776ab93fb"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36",
+        "output_artifact_hash": "ae105e4442679e52844007b6eb2431226e52d3dcc28a89433d1115b776ab93fb",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    },
+    {
+      "id": "aco",
+      "registry_present": true,
+      "dispatched": true,
+      "result_hash": "590981ff3f15c1c03abc8c84c0f4e17186f0923b453974f5e3a49443e459bec1",
+      "duration_ms": 31.96,
+      "expected_path": {
+        "route_id": "wpm.example.sunday_andon.aco.v1",
+        "expected_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_sunday_andon_aco_import_started",
+              "type": "wpm.input.import.started",
+              "time": "1970-01-01T00:00:00.000Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "expected"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_aco_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "1970-01-01T00:00:00.010Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_aco_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "1970-01-01T00:00:00.020Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_aco_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "1970-01-01T00:00:00.030Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_aco",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_aco_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "1970-01-01T00:00:00.040Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_aco",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_aco_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "590981ff3f15c1c03abc8c84c0f4e17186f0923b453974f5e3a49443e459bec1",
+                "duration_ms": 31.96
+              }
+            },
+            {
+              "id": "evt_sunday_andon_aco_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "1970-01-01T00:00:00.050Z",
+              "relationships": [
+                {
+                  "objectId": "result_aco_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "590981ff3f15c1c03abc8c84c0f4e17186f0923b453974f5e3a49443e459bec1"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_aco_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "1970-01-01T00:00:00.060Z",
+              "relationships": [
+                {
+                  "objectId": "result_aco_sunday_andon",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "590981ff3f15c1c03abc8c84c0f4e17186f0923b453974f5e3a49443e459bec1"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_aco_task_closed",
+              "type": "wpm.task.closed",
+              "time": "1970-01-01T00:00:00.070Z",
+              "relationships": [
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_aco",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_aco_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_aco_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "1970-01-01T00:00:00.080Z",
+              "relationships": [
+                {
+                  "objectId": "result_aco_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_aco_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "1970-01-01T00:00:00.090Z",
+              "relationships": [
+                {
+                  "objectId": "result_aco_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_sunday_andon",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_sunday_andon",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_aco",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_aco_sunday_andon",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_sunday_andon",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "expected_ocel2_hash": "0df7266f0c1c85caf216942300bcb94d92a9d28c0a3af74dd00473e1e3a4e519"
+      },
+      "observed_path": {
+        "observed_ocel2": {
+          "ocel": "2.0",
+          "eventTypes": [
+            {
+              "name": "wpm.input.import.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.input.import.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.registry.checked",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.dispatched",
+              "attributes": []
+            },
+            {
+              "name": "wpm.algorithm.completed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.result.hashed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.artifact.emitted",
+              "attributes": []
+            },
+            {
+              "name": "wpm.task.closed",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.started",
+              "attributes": []
+            },
+            {
+              "name": "wpm.receipt.verification.completed",
+              "attributes": []
+            }
+          ],
+          "objectTypes": [
+            {
+              "name": "Example",
+              "attributes": []
+            },
+            {
+              "name": "EventLog",
+              "attributes": []
+            },
+            {
+              "name": "Algorithm",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmRegistry",
+              "attributes": []
+            },
+            {
+              "name": "AlgorithmResult",
+              "attributes": []
+            },
+            {
+              "name": "Receipt",
+              "attributes": []
+            }
+          ],
+          "events": [
+            {
+              "id": "evt_sunday_andon_aco_import_started",
+              "type": "wpm.input.import.started",
+              "time": "2026-05-22T00:40:48.989Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                },
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "example"
+                }
+              ],
+              "attributes": {
+                "format": "xes",
+                "activity_key": "concept:name",
+                "stage": "observed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_aco_import_completed",
+              "type": "wpm.input.import.completed",
+              "time": "2026-05-22T00:40:47.879Z",
+              "relationships": [
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "event_log_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_aco_registry_checked",
+              "type": "wpm.algorithm.registry.checked",
+              "time": "2026-05-22T00:40:48.583Z",
+              "relationships": [
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                }
+              ],
+              "attributes": {
+                "present": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_aco_dispatched",
+              "type": "wpm.algorithm.dispatched",
+              "time": "2026-05-22T00:40:48.729Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_aco",
+                  "qualifier": "selected-algorithm"
+                },
+                {
+                  "objectId": "registry_v26.5.21",
+                  "qualifier": "registry"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "input"
+                }
+              ],
+              "attributes": {
+                "registry_present": true,
+                "dispatched": true
+              }
+            },
+            {
+              "id": "evt_sunday_andon_aco_completed",
+              "type": "wpm.algorithm.completed",
+              "time": "2026-05-22T00:40:50.183Z",
+              "relationships": [
+                {
+                  "objectId": "algorithm_aco",
+                  "qualifier": "executed-algorithm"
+                },
+                {
+                  "objectId": "result_aco_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "590981ff3f15c1c03abc8c84c0f4e17186f0923b453974f5e3a49443e459bec1",
+                "duration_ms": 31.96
+              }
+            },
+            {
+              "id": "evt_sunday_andon_aco_result_hashed",
+              "type": "wpm.result.hashed",
+              "time": "2026-05-22T00:40:53.539Z",
+              "relationships": [
+                {
+                  "objectId": "result_aco_sunday_andon",
+                  "qualifier": "output"
+                }
+              ],
+              "attributes": {
+                "result_hash": "590981ff3f15c1c03abc8c84c0f4e17186f0923b453974f5e3a49443e459bec1"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_aco_artifact_emitted",
+              "type": "wpm.artifact.emitted",
+              "time": "2026-05-22T00:40:54.370Z",
+              "relationships": [
+                {
+                  "objectId": "result_aco_sunday_andon",
+                  "qualifier": "artifact"
+                }
+              ],
+              "attributes": {
+                "result_hash": "590981ff3f15c1c03abc8c84c0f4e17186f0923b453974f5e3a49443e459bec1"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_aco_task_closed",
+              "type": "wpm.task.closed",
+              "time": "2026-05-22T00:40:55.126Z",
+              "relationships": [
+                {
+                  "objectId": "example_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "log_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "algorithm_aco",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "result_aco_sunday_andon",
+                  "qualifier": "task-context"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "task-context"
+                }
+              ],
+              "attributes": {
+                "status": "Closed"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_aco_receipt_verification_started",
+              "type": "wpm.receipt.verification.started",
+              "time": "2026-05-22T00:40:54.116Z",
+              "relationships": [
+                {
+                  "objectId": "result_aco_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "VerificationStarted"
+              }
+            },
+            {
+              "id": "evt_sunday_andon_aco_receipt_verification_completed",
+              "type": "wpm.receipt.verification.completed",
+              "time": "2026-05-22T00:40:52.987Z",
+              "relationships": [
+                {
+                  "objectId": "result_aco_sunday_andon",
+                  "qualifier": "verified-result"
+                },
+                {
+                  "objectId": "receipt_sunday_andon",
+                  "qualifier": "receipt"
+                }
+              ],
+              "attributes": {
+                "state": "ReceiptVerified"
+              }
+            }
+          ],
+          "objects": [
+            {
+              "id": "example_sunday_andon",
+              "type": "Example",
+              "attributes": {}
+            },
+            {
+              "id": "log_sunday_andon",
+              "type": "EventLog",
+              "attributes": {}
+            },
+            {
+              "id": "algorithm_aco",
+              "type": "Algorithm",
+              "attributes": {}
+            },
+            {
+              "id": "registry_v26.5.21",
+              "type": "AlgorithmRegistry",
+              "attributes": {}
+            },
+            {
+              "id": "result_aco_sunday_andon",
+              "type": "AlgorithmResult",
+              "attributes": {}
+            },
+            {
+              "id": "receipt_sunday_andon",
+              "type": "Receipt",
+              "attributes": {}
+            }
+          ]
+        },
+        "observed_ocel2_hash": "be8b70a0d8b18d93e880a29f18f524441286ea9aebb0864dc2385177ce6582fb",
+        "observed_result_hash": "590981ff3f15c1c03abc8c84c0f4e17186f0923b453974f5e3a49443e459bec1"
+      },
+      "alignment": {
+        "expected_vs_observed": "PendingVerification",
+        "missing_events": [],
+        "unexpected_events": [],
+        "refusal_state": "VerificationPending"
+      },
+      "boundary_evidence": {
+        "command": "npm run examples:gate",
+        "args_hash": "32556b78e6f9582528db7270227d0d750b8653d52e652f2ad76ef1f0c66e9b42",
+        "exit_code": 0,
+        "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
+        "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
+        "input_artifact_hash": "ec3f5fd647b56188c504ba38fa9bb0462c90c35eb9a8a1dca0227b2cb6a9cd36",
+        "output_artifact_hash": "590981ff3f15c1c03abc8c84c0f4e17186f0923b453974f5e3a49443e459bec1",
+        "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
+        "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
+      }
+    }
+  ],
+  "algorithm_count": 8,
+  "created_at": "2026-05-22T00:40:47.005Z",
+  "previous_receipt_hash": null,
+  "receipt_hash": "8d7c32b3038f45dd0c1bd2211ba33589c5087406ff5bf2cd5bdf58096dac4e33"
+}

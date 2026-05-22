@@ -1,0 +1,3 @@
+# Adversarial Probe P13 - receipt_coverage
+
+Rejection bounds and panic conditions for P13 testing receipt_coverage.

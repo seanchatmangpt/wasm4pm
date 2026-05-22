@@ -159,4 +159,31 @@ mod tests {
         let proba = model.predict_proba(&vec![1.0, 1.0]);
         assert!((proba[0] - 2.0 / 3.0).abs() < 1e-10);
     }
+
+    /// Rank-1 (Mathematical Theorem): KNN with k=1 on an identical input
+    /// point must return the exact training label.
+    ///
+    /// Proof: d(x, x) = sqrt(Σ(xᵢ - xᵢ)²) = 0 by the identity property of
+    /// Euclidean distance. With k=1, the single nearest neighbor is the
+    /// identical point itself (distance=0 ≤ any positive distance), so the
+    /// returned class must equal the training label for that point. No
+    /// implementation can produce a different result without violating the
+    /// triangle inequality d(x,x) = 0.
+    #[test]
+    fn rank1_knn_k1_identical_input_returns_exact_label() {
+        // 3 distinct training points in 2D, each with a unique label.
+        let train = vec![1.0, 2.0, 5.0, 6.0, 9.0, 3.0];
+        let labels = vec![0.0, 1.0, 2.0];
+        let model = knn_fit_impl(&train, 2, &labels, 1).unwrap();
+
+        // Query with each training point verbatim.
+        // d(point, itself) = 0, so k=1 MUST return the same label.
+        let query = train.clone();
+        let preds = model.predict(&query);
+        assert_eq!(
+            preds,
+            vec![0, 1, 2],
+            "k=1 on identical input must return exact training label (distance=0)"
+        );
+    }
 }

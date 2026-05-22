@@ -78,9 +78,7 @@ pub fn linear_regression_impl(x: &[f64], y: &[f64]) -> Result<LinearModel, MlErr
     let mut sum_yy = 0.0;
     let mut sum_xy = 0.0;
 
-    for i in 0..n {
-        let xi = x[i];
-        let yi = y[i];
+    for (&xi, &yi) in x.iter().zip(y.iter()) {
         sum_x += xi;
         sum_y += yi;
         sum_xx += xi * xi;
@@ -145,9 +143,8 @@ pub fn linear_regression_simple(y: &[f64]) -> Result<LinearModel, JsError> {
     let mut sum_yy = 0.0;
     let mut sum_xy = 0.0;
 
-    for i in 0..n {
+    for (i, &yi) in y.iter().enumerate() {
         let xi = i as f64;
-        let yi = y[i];
         sum_y += yi;
         sum_yy += yi * yi;
         sum_xy += xi * yi;
@@ -229,5 +226,36 @@ mod tests {
         let y = vec![1.0];
 
         assert!(linear_regression_impl(&x, &y).is_err());
+    }
+
+    /// Rank-1 (Mathematical Theorem): OLS linear regression on perfectly
+    /// linear data must return a non-negative R² equal to 1.0.
+    ///
+    /// Proof: R² = 1 - SS_res / SS_tot for OLS. On a perfect linear
+    /// relationship y = ax + b, SS_res = 0 (the model fits all points
+    /// exactly), so R² = 1.0. R² for OLS is bounded in [0, 1] when
+    /// SS_tot > 0 because SS_res ≤ SS_tot (the OLS solution minimises
+    /// SS_res, so it cannot exceed the null model's SS_tot). Therefore
+    /// R² ≥ 0 is guaranteed by the optimality of OLS — any implementation
+    /// violating this has not computed OLS correctly.
+    #[test]
+    fn rank1_linear_regression_perfectly_linear_data_nonneg_r2() {
+        // y = 3x + 7 — perfect linear relationship.
+        let x: Vec<f64> = (0..20).map(|i| i as f64).collect();
+        let y: Vec<f64> = x.iter().map(|&xi| 3.0 * xi + 7.0).collect();
+
+        let model = linear_regression_impl(&x, &y).unwrap();
+
+        // Mathematical theorem: R² must be exactly 1.0 for perfect linear data.
+        assert!(
+            model.r_squared >= 0.0,
+            "OLS R² must be non-negative (got {})",
+            model.r_squared
+        );
+        assert!(
+            (model.r_squared - 1.0).abs() < 1e-10,
+            "OLS on perfectly linear data must yield R²=1 (got {})",
+            model.r_squared
+        );
     }
 }

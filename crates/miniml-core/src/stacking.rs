@@ -6,7 +6,6 @@ use crate::error::MlError;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 use std::collections::HashMap;
-use serde_wasm_bindgen;
 
 /// Voting type for ensemble
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
@@ -247,11 +246,11 @@ impl VotingEnsemble {
 pub fn stacked_ensemble(
     base_models: Vec<String>,
     meta_model: String,
-    X: &[f64],
+    _x: &[f64],
     y: &[f64],
     cv_folds: usize,
     n_samples: usize,
-    n_features: usize,
+    _n_features: usize,
 ) -> Result<JsValue, JsError> {
     let n_models = base_models.len();
 
@@ -269,8 +268,8 @@ pub fn stacked_ensemble(
 
             // Simplified: use actual values as predictions
             // In production, would get predictions from actual models
-            for i in test_start..test_end.min(n_samples) {
-                model_preds.push(y[i]);
+            for &val in y.iter().take(test_end.min(n_samples)).skip(test_start) {
+                model_preds.push(val);
             }
         }
 

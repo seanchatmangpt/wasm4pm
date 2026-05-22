@@ -3,7 +3,6 @@
 //! Provides SHAP-like feature attribution, LIME-like local explanations,
 //! decision paths for trees, confidence intervals, and counterfactuals.
 
-use crate::error::MlError;
 use serde::{Deserialize, Serialize};
 use wasm_bindgen::prelude::*;
 
@@ -148,7 +147,7 @@ impl DecisionNode {
 /// * `n_samples` - Number of samples for approximation
 #[wasm_bindgen]
 pub fn shap_values(
-    X: &[f64],
+    x_background: &[f64],
     x: &[f64],
     n_samples: usize,
     n_features: usize,
@@ -175,7 +174,7 @@ pub fn shap_values(
 
         // Perturb feature to background mean
         let feature_mean: f64 = (0..n_samples)
-            .map(|i| X[i * n_features + feature_idx])
+            .map(|i| x_background[i * n_features + feature_idx])
             .sum::<f64>()
             / n_samples as f64;
 
@@ -317,7 +316,7 @@ pub fn decision_path_impl(x: &[f64], n_features: usize) -> Result<Vec<DecisionNo
             vec![1.0 - class_prob, class_prob],
         ));
 
-        if class_prob > 0.8 || class_prob < 0.2 {
+        if !(0.2..=0.8).contains(&class_prob) {
             break;
         }
     }
@@ -463,6 +462,9 @@ mod tests {
         assert_eq!(cf.feature_indices, vec![0, 2]);
     }
 
+    // test_prediction_interval calls prediction_interval() which returns js_sys::Array —
+    // a wasm32-only type. Run this test only under wasm-pack test, not native cargo test.
+    #[cfg(target_arch = "wasm32")]
     #[test]
     fn test_prediction_interval() {
         let predictions = vec![0.5, 0.6, 0.55, 0.7, 0.45, 0.65, 0.6];

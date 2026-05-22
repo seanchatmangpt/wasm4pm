@@ -3,9 +3,12 @@
  * Provides exact field paths, allowed values, and helpful suggestions.
  */
 
-import type { z } from 'zod';
+import type { z, ZodTooSmallIssue, ZodTooBigIssue } from 'zod';
 import type { Config } from '../types.js';
-import { executionProfileSchema, mlTaskSchema, rlAgentSchema, ALGORITHM_IDS } from '../schema.js';
+import { executionProfileSchema as _executionProfileSchema, mlTaskSchema as _mlTaskSchema, rlAgentSchema as _rlAgentSchema, ALGORITHM_IDS } from '../schema.js';
+
+/** Cast once — avoids `as any` on every `.includes()` call. */
+const ALGORITHM_IDS_STR = ALGORITHM_IDS as readonly string[];
 
 export interface ValidationErrorContext {
   field: string;
@@ -50,34 +53,114 @@ export function formatDetailedZodError(error: z.ZodError, config: unknown): stri
   return lines.join('\n');
 }
 
+/** Execution profiles from the config schema */
+type ExecutionProfile = 'fast' | 'balanced' | 'quality' | 'stream';
+/** Deployment profiles from the WASM feature flags */
+type DeploymentProfile = 'mobile' | 'iot' | 'edge' | 'fog' | 'browser';
+
 /**
- * Validate algorithm compatibility with the selected deployment profile.
+ * Map a config execution profile to the corresponding WASM deployment profile.
+ * Execution profiles (fast/balanced/quality/stream) are config-layer concepts;
+ * deployment profiles (mobile/iot/edge/fog/browser) are WASM binary concepts.
+ * All execution profiles run against the browser deployment profile by default.
+ */
+function executionToDeploymentProfile(profile: ExecutionProfile): DeploymentProfile {
+  // All standard execution profiles run against the full browser WASM binary.
+  // Deployment-profile restrictions are a build-time concern, not a config-time concern.
+  switch (profile) {
+    case 'fast':
+    case 'balanced':
+    case 'quality':
+    case 'stream':
+      return 'browser';
+  }
+}
+
+/**
+ * Validate algorithm compatibility with the selected profile.
+ * Accepts both execution profiles ('fast' | 'balanced' | 'quality' | 'stream')
+ * and deployment profiles ('mobile' | 'iot' | 'edge' | 'fog' | 'browser').
  * Returns warnings if algorithm is not available in the profile.
  */
 export function validateAlgorithmProfile(
   algorithm: string,
-  profile: 'mobile' | 'iot' | 'edge' | 'fog' | 'browser'
+  profile: ExecutionProfile | DeploymentProfile
 ): { compatible: boolean; warning?: string } {
-  const profileAlgos = getAlgorithmsForProfile(profile);
+  // Map execution profiles to their corresponding deployment profile
+  const deploymentProfile: DeploymentProfile =
+    profile === 'fast' || profile === 'balanced' || profile === 'quality' || profile === 'stream'
+      ? executionToDeploymentProfile(profile)
+      : profile;
+  const profileAlgos = getAlgorithmsForProfile(deploymentProfile);
 
-  if (!ALGORITHM_IDS.includes(algorithm as any)) {
+  if (!ALGORITHM_IDS_STR.includes(algorithm)) {
     return {
       compatible: false,
       warning: `Algorithm "${algorithm}" is not registered. Available: ${ALGORITHM_IDS.slice(0, 5).join(', ')}...`,
     };
   }
 
-  if (!profileAlgos.includes(algorithm as any)) {
-    const availableInBrowser = getAlgorithmsForProfile('browser').includes(algorithm as any);
+  if (!profileAlgos.includes(algorithm)) {
+    const availableInBrowser = getAlgorithmsForProfile('browser').includes(algorithm);
     return {
       compatible: false,
       warning: availableInBrowser
-        ? `Algorithm "${algorithm}" is not available in profile "${profile}". Upgrade to "browser" profile to use it.`
+        ? `Algorithm "${algorithm}" is not available in profile "${deploymentProfile}". Upgrade to "browser" profile to use it.`
         : `Algorithm "${algorithm}" is not available in any profile.`,
     };
   }
 
   return { compatible: true };
+}
+
+/**
+ * Get algorithms available in an execution profile.
+ * Maps execution profiles (fast, balanced, quality, stream) to their algorithm lists.
+ * These lists match the feature flags and deployment constraints defined in CLAUDE.md.
+ */
+function getExecutionProfileAlgorithms(
+  profile: 'fast' | 'balanced' | 'quality' | 'stream'
+): string[] {
+  // List of algorithms excluded from each profile
+  const advancedAlgos = [
+    'genetic_algorithm',
+    'ilp',
+    'aco',
+    'pso',
+    'a_star',
+    'simulated_annealing',
+  ];
+  const ocelAlgos = ['log_to_ocel'];
+  const powlAlgos = ['powl_to_process_tree'];
+  const mlAlgos = ['ml_classify', 'ml_cluster', 'ml_forecast', 'ml_anomaly', 'ml_regress', 'ml_pca'];
+
+  if (profile === 'quality') {
+    // Quality profile: all algorithms
+    return [...ALGORITHM_IDS];
+  }
+  if (profile === 'balanced') {
+    // Balanced profile: standard discovery + ML, no advanced/ocel/powl
+    return ALGORITHM_IDS.filter(
+      (a) => !advancedAlgos.includes(a as any) && !ocelAlgos.includes(a as any) && !powlAlgos.includes(a as any)
+    );
+  }
+  if (profile === 'stream') {
+    // Stream profile: streaming-only algorithms
+    return [
+      'dfg',
+      'simd_streaming_dfg',
+      'streaming_log',
+      'hierarchical_dfg',
+      'etconformance_precision',
+      'performance_spectrum',
+    ];
+  }
+  if (profile === 'fast') {
+    // Fast profile: minimal, ultra-fast only
+    return ['dfg', 'process_skeleton', 'simd_streaming_dfg'];
+  }
+
+  return [...ALGORITHM_IDS];
 }
 
 /**
@@ -319,10 +402,10 @@ function inferConstraints(issue: z.ZodIssue): Record<string, unknown> {
   const constraints: Record<string, unknown> = {};
 
   if (issue.code === 'too_small' && 'minimum' in issue) {
-    constraints.minimum = (issue as any).minimum;
+    constraints.minimum = (issue as ZodTooSmallIssue).minimum;
   }
   if (issue.code === 'too_big' && 'maximum' in issue) {
-    constraints.maximum = (issue as any).maximum;
+    constraints.maximum = (issue as ZodTooBigIssue).maximum;
   }
 
   return constraints;
@@ -401,7 +484,7 @@ function getAlgorithmsForProfile(
 ): string[] {
   // Simplified profiles; in production, this would be derived from feature flags
   const allAlgos = ALGORITHM_IDS;
-  const advanced = [
+  const advanced: readonly string[] = [
     'genetic_algorithm',
     'ilp',
     'aco',
@@ -414,19 +497,17 @@ function getAlgorithmsForProfile(
     'ml_regress',
     'ml_pca',
   ];
-  const ocel = ['log_to_ocel'];
-  const powl = ['powl_to_process_tree'];
+  const ocel: readonly string[] = ['log_to_ocel'];
+  const powl: readonly string[] = ['powl_to_process_tree'];
 
   if (profile === 'browser') return [...allAlgos];
-  if (profile === 'fog') return allAlgos.filter((a) => !powl.includes(a as any));
+  if (profile === 'fog') return allAlgos.filter((a) => !powl.includes(a));
   if (profile === 'edge')
-    return allAlgos.filter((a) => !advanced.includes(a as any) && !ocel.includes(a as any));
+    return allAlgos.filter((a) => !advanced.includes(a) && !ocel.includes(a));
   if (profile === 'iot')
     return allAlgos.filter(
       (a) =>
-        ![...advanced, ...ocel, 'simulated_annealing', 'hill_climbing', 'declare'].includes(
-          a as any
-        )
+        ![...advanced, ...ocel, 'simulated_annealing', 'hill_climbing', 'declare'].includes(a)
     );
   if (profile === 'mobile')
     return allAlgos.filter(
@@ -439,7 +520,7 @@ function getAlgorithmsForProfile(
           'declare',
           'heuristic_miner',
           'inductive_miner',
-        ].includes(a as any)
+        ].includes(a)
     );
 
   return [...allAlgos];

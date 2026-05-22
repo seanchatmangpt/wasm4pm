@@ -1,0 +1,20 @@
+{
+  "route_id": "ai-accepted-fixture",
+  "type": "powl2",
+  "required_stages": ["plan", "execute", "close"],
+  "receipt_required": true,
+  "object_types": {
+    "Work": {
+      "created_by": ["plan"],
+      "terminated_by": ["close"]
+    },
+    "Receipt": {
+      "created_by": ["plan", "execute", "close"],
+      "schema": "schemas/receipts/proof-receipt.schema.json"
+    }
+  },
+  "model": {
+    "type": "sequence",
+    "sequence": ["plan", "execute", "close"]
+  }
+}

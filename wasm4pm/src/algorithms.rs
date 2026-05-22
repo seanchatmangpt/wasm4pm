@@ -443,9 +443,26 @@ pub fn discover_alpha_plus_plus(
     activity_key: &str,
     min_support: f64,
 ) -> Result<JsValue, JsValue> {
+    tracing::info!(
+        target: "wasm4pm.discovery.alpha_plus_plus",
+        algorithm = "alpha_plus_plus",
+        activity_key = activity_key,
+        min_support = min_support,
+        "Alpha++ discovery started"
+    );
+
     // Compute inside closure (no store — avoids mutex re-entry), store outside.
     let pn = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => alpha_plus_plus_inner(log, activity_key, min_support),
+        Some(StoredObject::EventLog(log)) => {
+            tracing::info!(
+                target: "wasm4pm.discovery.alpha_plus_plus",
+                checkpoint = "feature_extraction",
+                log_size = log.traces.len(),
+                activity_count = log.get_activities(activity_key).len(),
+                "Log loaded and analyzed"
+            );
+            alpha_plus_plus_inner(log, activity_key, min_support)
+        },
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
         None => Err(wasm_err(
             codes::INVALID_HANDLE,
@@ -456,6 +473,16 @@ pub fn discover_alpha_plus_plus(
     let n_places = pn.places.len();
     let n_transitions = pn.transitions.len();
     let n_arcs = pn.arcs.len();
+
+    tracing::info!(
+        target: "wasm4pm.discovery.alpha_plus_plus",
+        checkpoint = "result_generation",
+        place_count = n_places,
+        transition_count = n_transitions,
+        arc_count = n_arcs,
+        "Petri net model constructed"
+    );
+
     let handle = get_or_init_state()
         .store_object(StoredObject::PetriNet(pn))
         .map_err(|_e| wasm_err(codes::INTERNAL_ERROR, "Failed to store PetriNet"))?;

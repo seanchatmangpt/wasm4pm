@@ -1,3 +1,4 @@
+#![cfg(feature = "miniml")]
 use wasm4pm::drift_manager::{StreamCircuitBreaker, TraceSnapshot, CircuitState};
 use wasm4pm_types::import::xes::{XESParsingTraceStream, XESImportOptions};
 use fake::Fake;

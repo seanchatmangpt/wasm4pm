@@ -666,6 +666,11 @@ mod tests {
                 continue;
             }
 
+            // Bounds check: skip traces with invalid activity indices
+            if trace.iter().any(|&id| (id as usize) >= vocab.len()) {
+                continue;
+            }
+
             for &id in *trace {
                 dfg.nodes[id as usize].frequency += 1;
             }
@@ -683,10 +688,17 @@ mod tests {
         dfg.edges.extend(
             edge_counts
                 .into_iter()
-                .map(|((f, t), freq)| DirectlyFollowsRelation {
-                    from: vocab[f as usize].to_owned(),
-                    to: vocab[t as usize].to_owned(),
-                    frequency: freq,
+                .filter_map(|((f, t), freq)| {
+                    // Bounds check: only include edges where both activities are valid
+                    if (f as usize) < vocab.len() && (t as usize) < vocab.len() {
+                        Some(DirectlyFollowsRelation {
+                            from: vocab[f as usize].to_owned(),
+                            to: vocab[t as usize].to_owned(),
+                            frequency: freq,
+                        })
+                    } else {
+                        None
+                    }
                 }),
         );
 

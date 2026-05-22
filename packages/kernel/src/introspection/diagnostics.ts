@@ -90,7 +90,7 @@ const matrix = buildFeatureMatrix(traces, ['duration', 'cost']);
         'Use @wasm4pm/ml sample datasets for testing: `loadPublicDataset("simple")`',
       ],
       example: `
-import { loadPublicDataset } from '@wasm4pm/kernel/introspection';
+import { loadPublicDataset } from 'wasm4pm/introspection';
 const { log } = await loadPublicDataset('simple');
 console.log(log.traces.length);  // > 0 guaranteed
       `,
@@ -151,7 +151,7 @@ if (!safeData) throw new Error('Invalid features: contains NaN or Infinity');
       ],
       suggestions: [
         `Use constrained value: clamp(${value}, ${min}, ${max})`,
-        `Get example config: import { getMlRegistry } from '@wasm4pm/kernel/introspection'; const ex = getMlRegistry().getExampleConfig('${algorithmId}');`,
+        `Get example config: import { getMlRegistry } from 'wasm4pm/introspection'; const ex = getMlRegistry().getExampleConfig('${algorithmId}');`,
         `Consult domain range: ${paramName} should be in [${min}, ${max}] based on ml-rl-testing.md`,
         'Reduce value for faster execution, increase for better quality',
       ],
@@ -192,7 +192,7 @@ const safeValue = clampValue(${value}, ${min}, ${max});  // ${Math.max(min, Math
 // Current: ${details.profile} ❌
 
 // Solution: Use one of these profiles
-import { getRegistry } from '@wasm4pm/kernel';
+import { getRegistry } from '../registry.js';
 const algo = getRegistry().getAlgorithm('${details.algorithmId}');
 console.log('Try these:', algo.deploymentProfiles);  // ${details.availableInProfiles}
       `,
@@ -291,7 +291,7 @@ const config = schema.parse({ timeout: 5000 });
         'Consider starting with simpler perspective (e.g., features) that needs less data',
       ],
       example: `
-import { loadPublicDataset } from '@wasm4pm/kernel/introspection';
+import { loadPublicDataset } from 'wasm4pm/introspection';
 const { log } = await loadPublicDataset('bpi2020');
 console.log('Traces:', log.traces.length);  // >= 100 guaranteed
 
