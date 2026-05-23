@@ -3,7 +3,7 @@
   "receipt_schema": "Wasm4pmExecutionReceipt.v1",
   "package": "wasm4pm",
   "version": "26.5.21",
-  "commit": "1aac8b0ec719e50302dc27485d15f2952fd0e91d",
+  "commit": "ae747ae5c99be2dd3baf161998babd889953a98a",
   "hash_algorithm": "BLAKE3",
   "time_basis": "LogicalMonotonicClock",
   "canonicalization": {
@@ -22,8 +22,8 @@
       "id": "streaming_log",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "1ea183d9b547ec6454c0d88a04119442657b2d51f251b56cb0c1e7363cfb2749",
-      "duration_ms": 34.612,
+      "result_hash": "6514cb89378f8999ea48dd292a2bd49e0846bb721b479ed253535dc6af2f6f1c",
+      "duration_ms": 56.086,
       "expected_path": {
         "route_id": "wpm.example.kids_safety.streaming_log.v1",
         "expected_ocel2": {
@@ -183,8 +183,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1ea183d9b547ec6454c0d88a04119442657b2d51f251b56cb0c1e7363cfb2749",
-                "duration_ms": 34.612
+                "result_hash": "6514cb89378f8999ea48dd292a2bd49e0846bb721b479ed253535dc6af2f6f1c",
+                "duration_ms": 56.086
               }
             },
             {
@@ -198,7 +198,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1ea183d9b547ec6454c0d88a04119442657b2d51f251b56cb0c1e7363cfb2749"
+                "result_hash": "6514cb89378f8999ea48dd292a2bd49e0846bb721b479ed253535dc6af2f6f1c"
               }
             },
             {
@@ -212,7 +212,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1ea183d9b547ec6454c0d88a04119442657b2d51f251b56cb0c1e7363cfb2749"
+                "result_hash": "6514cb89378f8999ea48dd292a2bd49e0846bb721b479ed253535dc6af2f6f1c"
               }
             },
             {
@@ -315,7 +315,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "d62a7f2a7e5685864265143b60c98a81a627147c0e3fa67c04746e55dbd82974"
+        "expected_ocel2_hash": "cfdbbad03a81833deed0070d508146cb0497a71a5a77a31273a5aaf165a8658a"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -392,7 +392,7 @@
             {
               "id": "evt_kids_safety_streaming_log_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-05-23T02:45:28.201Z",
+              "time": "2026-05-23T02:46:09.705Z",
               "relationships": [
                 {
                   "objectId": "log_kids_safety",
@@ -412,7 +412,7 @@
             {
               "id": "evt_kids_safety_streaming_log_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-05-23T02:45:26.090Z",
+              "time": "2026-05-23T02:46:10.987Z",
               "relationships": [
                 {
                   "objectId": "log_kids_safety",
@@ -426,7 +426,7 @@
             {
               "id": "evt_kids_safety_streaming_log_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-05-23T02:45:29.341Z",
+              "time": "2026-05-23T02:46:11.116Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.5.21",
@@ -440,7 +440,7 @@
             {
               "id": "evt_kids_safety_streaming_log_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-05-23T02:45:29.013Z",
+              "time": "2026-05-23T02:46:08.218Z",
               "relationships": [
                 {
                   "objectId": "algorithm_streaming_log",
@@ -463,7 +463,7 @@
             {
               "id": "evt_kids_safety_streaming_log_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-05-23T02:45:29.469Z",
+              "time": "2026-05-23T02:46:12.992Z",
               "relationships": [
                 {
                   "objectId": "algorithm_streaming_log",
@@ -475,14 +475,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1ea183d9b547ec6454c0d88a04119442657b2d51f251b56cb0c1e7363cfb2749",
-                "duration_ms": 34.612
+                "result_hash": "6514cb89378f8999ea48dd292a2bd49e0846bb721b479ed253535dc6af2f6f1c",
+                "duration_ms": 56.086
               }
             },
             {
               "id": "evt_kids_safety_streaming_log_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-05-23T02:45:26.733Z",
+              "time": "2026-05-23T02:46:10.081Z",
               "relationships": [
                 {
                   "objectId": "result_streaming_log_kids_safety",
@@ -490,13 +490,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1ea183d9b547ec6454c0d88a04119442657b2d51f251b56cb0c1e7363cfb2749"
+                "result_hash": "6514cb89378f8999ea48dd292a2bd49e0846bb721b479ed253535dc6af2f6f1c"
               }
             },
             {
               "id": "evt_kids_safety_streaming_log_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-05-23T02:45:27.277Z",
+              "time": "2026-05-23T02:46:09.554Z",
               "relationships": [
                 {
                   "objectId": "result_streaming_log_kids_safety",
@@ -504,13 +504,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1ea183d9b547ec6454c0d88a04119442657b2d51f251b56cb0c1e7363cfb2749"
+                "result_hash": "6514cb89378f8999ea48dd292a2bd49e0846bb721b479ed253535dc6af2f6f1c"
               }
             },
             {
               "id": "evt_kids_safety_streaming_log_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-05-23T02:45:28.610Z",
+              "time": "2026-05-23T02:46:12.490Z",
               "relationships": [
                 {
                   "objectId": "example_kids_safety",
@@ -540,7 +540,7 @@
             {
               "id": "evt_kids_safety_streaming_log_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-05-23T02:45:30.687Z",
+              "time": "2026-05-23T02:46:12.819Z",
               "relationships": [
                 {
                   "objectId": "result_streaming_log_kids_safety",
@@ -558,7 +558,7 @@
             {
               "id": "evt_kids_safety_streaming_log_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-05-23T02:45:30.328Z",
+              "time": "2026-05-23T02:46:15.312Z",
               "relationships": [
                 {
                   "objectId": "result_streaming_log_kids_safety",
@@ -607,8 +607,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "444766244109c5baa04fb63f0a6e5feb09f7f3cb139d7d0af4d38b6c46ba6742",
-        "observed_result_hash": "1ea183d9b547ec6454c0d88a04119442657b2d51f251b56cb0c1e7363cfb2749"
+        "observed_ocel2_hash": "fb5b799bd0298677e35a7d18a1d2c1c85212734c0918d1469ad34176a62b6239",
+        "observed_result_hash": "6514cb89378f8999ea48dd292a2bd49e0846bb721b479ed253535dc6af2f6f1c"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -623,7 +623,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565",
-        "output_artifact_hash": "1ea183d9b547ec6454c0d88a04119442657b2d51f251b56cb0c1e7363cfb2749",
+        "output_artifact_hash": "6514cb89378f8999ea48dd292a2bd49e0846bb721b479ed253535dc6af2f6f1c",
         "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -632,8 +632,8 @@
       "id": "smart_engine",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "fb380657b8a4d79a15f586ff1d4a453751cf60832dc6bd271ad7d6f9e246acf7",
-      "duration_ms": 19.07,
+      "result_hash": "19793564f326e663f0efc5dc38aea8f2ab6e9295c6dfe99fe5d88ac358304883",
+      "duration_ms": 56.955,
       "expected_path": {
         "route_id": "wpm.example.kids_safety.smart_engine.v1",
         "expected_ocel2": {
@@ -793,8 +793,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "fb380657b8a4d79a15f586ff1d4a453751cf60832dc6bd271ad7d6f9e246acf7",
-                "duration_ms": 19.07
+                "result_hash": "19793564f326e663f0efc5dc38aea8f2ab6e9295c6dfe99fe5d88ac358304883",
+                "duration_ms": 56.955
               }
             },
             {
@@ -808,7 +808,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "fb380657b8a4d79a15f586ff1d4a453751cf60832dc6bd271ad7d6f9e246acf7"
+                "result_hash": "19793564f326e663f0efc5dc38aea8f2ab6e9295c6dfe99fe5d88ac358304883"
               }
             },
             {
@@ -822,7 +822,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "fb380657b8a4d79a15f586ff1d4a453751cf60832dc6bd271ad7d6f9e246acf7"
+                "result_hash": "19793564f326e663f0efc5dc38aea8f2ab6e9295c6dfe99fe5d88ac358304883"
               }
             },
             {
@@ -925,7 +925,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "da150995d1118bafb760dc83fcf7f53feed6da6a218ac2a0ada78cdbb40f8ccf"
+        "expected_ocel2_hash": "4e9de6d0c252f01e205799ce95ee95a34314b65017266b536310d145c5424f30"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -1002,7 +1002,7 @@
             {
               "id": "evt_kids_safety_smart_engine_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-05-23T02:45:26.798Z",
+              "time": "2026-05-23T02:46:09.534Z",
               "relationships": [
                 {
                   "objectId": "log_kids_safety",
@@ -1022,7 +1022,7 @@
             {
               "id": "evt_kids_safety_smart_engine_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-05-23T02:45:28.998Z",
+              "time": "2026-05-23T02:46:10.770Z",
               "relationships": [
                 {
                   "objectId": "log_kids_safety",
@@ -1036,7 +1036,7 @@
             {
               "id": "evt_kids_safety_smart_engine_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-05-23T02:45:29.435Z",
+              "time": "2026-05-23T02:46:08.514Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.5.21",
@@ -1050,7 +1050,7 @@
             {
               "id": "evt_kids_safety_smart_engine_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-05-23T02:45:29.148Z",
+              "time": "2026-05-23T02:46:11.177Z",
               "relationships": [
                 {
                   "objectId": "algorithm_smart_engine",
@@ -1073,7 +1073,7 @@
             {
               "id": "evt_kids_safety_smart_engine_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-05-23T02:45:28.667Z",
+              "time": "2026-05-23T02:46:10.427Z",
               "relationships": [
                 {
                   "objectId": "algorithm_smart_engine",
@@ -1085,14 +1085,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "fb380657b8a4d79a15f586ff1d4a453751cf60832dc6bd271ad7d6f9e246acf7",
-                "duration_ms": 19.07
+                "result_hash": "19793564f326e663f0efc5dc38aea8f2ab6e9295c6dfe99fe5d88ac358304883",
+                "duration_ms": 56.955
               }
             },
             {
               "id": "evt_kids_safety_smart_engine_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-05-23T02:45:26.941Z",
+              "time": "2026-05-23T02:46:10.798Z",
               "relationships": [
                 {
                   "objectId": "result_smart_engine_kids_safety",
@@ -1100,13 +1100,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "fb380657b8a4d79a15f586ff1d4a453751cf60832dc6bd271ad7d6f9e246acf7"
+                "result_hash": "19793564f326e663f0efc5dc38aea8f2ab6e9295c6dfe99fe5d88ac358304883"
               }
             },
             {
               "id": "evt_kids_safety_smart_engine_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-05-23T02:45:27.781Z",
+              "time": "2026-05-23T02:46:10.412Z",
               "relationships": [
                 {
                   "objectId": "result_smart_engine_kids_safety",
@@ -1114,13 +1114,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "fb380657b8a4d79a15f586ff1d4a453751cf60832dc6bd271ad7d6f9e246acf7"
+                "result_hash": "19793564f326e663f0efc5dc38aea8f2ab6e9295c6dfe99fe5d88ac358304883"
               }
             },
             {
               "id": "evt_kids_safety_smart_engine_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-05-23T02:45:31.918Z",
+              "time": "2026-05-23T02:46:13.299Z",
               "relationships": [
                 {
                   "objectId": "example_kids_safety",
@@ -1150,7 +1150,7 @@
             {
               "id": "evt_kids_safety_smart_engine_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-05-23T02:45:32.800Z",
+              "time": "2026-05-23T02:46:13.648Z",
               "relationships": [
                 {
                   "objectId": "result_smart_engine_kids_safety",
@@ -1168,7 +1168,7 @@
             {
               "id": "evt_kids_safety_smart_engine_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-05-23T02:45:33.015Z",
+              "time": "2026-05-23T02:46:11.879Z",
               "relationships": [
                 {
                   "objectId": "result_smart_engine_kids_safety",
@@ -1217,8 +1217,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "726670663e2f690dca5c48962569fd572173569fa1144f5427f43e9cfa90d2b2",
-        "observed_result_hash": "fb380657b8a4d79a15f586ff1d4a453751cf60832dc6bd271ad7d6f9e246acf7"
+        "observed_ocel2_hash": "f821966f004fa9846b376f4a475de71ea04672568e2caa0bf6c57d20add9fba3",
+        "observed_result_hash": "19793564f326e663f0efc5dc38aea8f2ab6e9295c6dfe99fe5d88ac358304883"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -1233,7 +1233,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565",
-        "output_artifact_hash": "fb380657b8a4d79a15f586ff1d4a453751cf60832dc6bd271ad7d6f9e246acf7",
+        "output_artifact_hash": "19793564f326e663f0efc5dc38aea8f2ab6e9295c6dfe99fe5d88ac358304883",
         "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -1242,8 +1242,8 @@
       "id": "ml_classify",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "185729c80b1776d9d6f02246d38341975439f946479619b5f4d27ed3c766222c",
-      "duration_ms": 42.714,
+      "result_hash": "87a371f386e7949cd9e5986c18ba64fa3c2e81cf8aadf618ce679abd2944ad66",
+      "duration_ms": 24.81,
       "expected_path": {
         "route_id": "wpm.example.kids_safety.ml_classify.v1",
         "expected_ocel2": {
@@ -1403,8 +1403,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "185729c80b1776d9d6f02246d38341975439f946479619b5f4d27ed3c766222c",
-                "duration_ms": 42.714
+                "result_hash": "87a371f386e7949cd9e5986c18ba64fa3c2e81cf8aadf618ce679abd2944ad66",
+                "duration_ms": 24.81
               }
             },
             {
@@ -1418,7 +1418,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "185729c80b1776d9d6f02246d38341975439f946479619b5f4d27ed3c766222c"
+                "result_hash": "87a371f386e7949cd9e5986c18ba64fa3c2e81cf8aadf618ce679abd2944ad66"
               }
             },
             {
@@ -1432,7 +1432,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "185729c80b1776d9d6f02246d38341975439f946479619b5f4d27ed3c766222c"
+                "result_hash": "87a371f386e7949cd9e5986c18ba64fa3c2e81cf8aadf618ce679abd2944ad66"
               }
             },
             {
@@ -1535,7 +1535,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "8403afbdaca7240753a71e6d67fed2bc3101cc7e94ce26e665ebd2fc49dd4736"
+        "expected_ocel2_hash": "50c82db715052d22ea30bfe69786c2c481868f4b8c1c3e7749b3133ccd83a03d"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -1612,7 +1612,7 @@
             {
               "id": "evt_kids_safety_ml_classify_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-05-23T02:45:24.236Z",
+              "time": "2026-05-23T02:46:09.463Z",
               "relationships": [
                 {
                   "objectId": "log_kids_safety",
@@ -1632,7 +1632,7 @@
             {
               "id": "evt_kids_safety_ml_classify_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-05-23T02:45:28.132Z",
+              "time": "2026-05-23T02:46:07.105Z",
               "relationships": [
                 {
                   "objectId": "log_kids_safety",
@@ -1646,7 +1646,7 @@
             {
               "id": "evt_kids_safety_ml_classify_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-05-23T02:45:29.763Z",
+              "time": "2026-05-23T02:46:10.441Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.5.21",
@@ -1660,7 +1660,7 @@
             {
               "id": "evt_kids_safety_ml_classify_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-05-23T02:45:28.315Z",
+              "time": "2026-05-23T02:46:08.257Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_classify",
@@ -1683,7 +1683,7 @@
             {
               "id": "evt_kids_safety_ml_classify_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-05-23T02:45:26.443Z",
+              "time": "2026-05-23T02:46:11.798Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_classify",
@@ -1695,14 +1695,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "185729c80b1776d9d6f02246d38341975439f946479619b5f4d27ed3c766222c",
-                "duration_ms": 42.714
+                "result_hash": "87a371f386e7949cd9e5986c18ba64fa3c2e81cf8aadf618ce679abd2944ad66",
+                "duration_ms": 24.81
               }
             },
             {
               "id": "evt_kids_safety_ml_classify_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-05-23T02:45:27.247Z",
+              "time": "2026-05-23T02:46:09.103Z",
               "relationships": [
                 {
                   "objectId": "result_ml_classify_kids_safety",
@@ -1710,13 +1710,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "185729c80b1776d9d6f02246d38341975439f946479619b5f4d27ed3c766222c"
+                "result_hash": "87a371f386e7949cd9e5986c18ba64fa3c2e81cf8aadf618ce679abd2944ad66"
               }
             },
             {
               "id": "evt_kids_safety_ml_classify_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-05-23T02:45:28.584Z",
+              "time": "2026-05-23T02:46:13.040Z",
               "relationships": [
                 {
                   "objectId": "result_ml_classify_kids_safety",
@@ -1724,13 +1724,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "185729c80b1776d9d6f02246d38341975439f946479619b5f4d27ed3c766222c"
+                "result_hash": "87a371f386e7949cd9e5986c18ba64fa3c2e81cf8aadf618ce679abd2944ad66"
               }
             },
             {
               "id": "evt_kids_safety_ml_classify_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-05-23T02:45:30.045Z",
+              "time": "2026-05-23T02:46:14.454Z",
               "relationships": [
                 {
                   "objectId": "example_kids_safety",
@@ -1760,7 +1760,7 @@
             {
               "id": "evt_kids_safety_ml_classify_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-05-23T02:45:32.896Z",
+              "time": "2026-05-23T02:46:11.330Z",
               "relationships": [
                 {
                   "objectId": "result_ml_classify_kids_safety",
@@ -1778,7 +1778,7 @@
             {
               "id": "evt_kids_safety_ml_classify_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-05-23T02:45:32.226Z",
+              "time": "2026-05-23T02:46:13.632Z",
               "relationships": [
                 {
                   "objectId": "result_ml_classify_kids_safety",
@@ -1827,8 +1827,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "de9f121a20d69c09e2d9cb30d5f3fb25b005562a38c370edad401f2492e319f3",
-        "observed_result_hash": "185729c80b1776d9d6f02246d38341975439f946479619b5f4d27ed3c766222c"
+        "observed_ocel2_hash": "123a4f63b97ef3fb834c0ec8199b35879a861d26d7d1c3ed1c8696d3407317a2",
+        "observed_result_hash": "87a371f386e7949cd9e5986c18ba64fa3c2e81cf8aadf618ce679abd2944ad66"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -1843,7 +1843,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565",
-        "output_artifact_hash": "185729c80b1776d9d6f02246d38341975439f946479619b5f4d27ed3c766222c",
+        "output_artifact_hash": "87a371f386e7949cd9e5986c18ba64fa3c2e81cf8aadf618ce679abd2944ad66",
         "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -1852,8 +1852,8 @@
       "id": "ml_cluster",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "8d1ddfd921e544cc4b9e1c0613131916dbc8bd7545f4cb62c24518900e3c8dc2",
-      "duration_ms": 39.316,
+      "result_hash": "31567a6787e63cbf53b1d245447bf4a71ec9d3538ffa04873c47f210d50f8d56",
+      "duration_ms": 47.522,
       "expected_path": {
         "route_id": "wpm.example.kids_safety.ml_cluster.v1",
         "expected_ocel2": {
@@ -2013,8 +2013,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "8d1ddfd921e544cc4b9e1c0613131916dbc8bd7545f4cb62c24518900e3c8dc2",
-                "duration_ms": 39.316
+                "result_hash": "31567a6787e63cbf53b1d245447bf4a71ec9d3538ffa04873c47f210d50f8d56",
+                "duration_ms": 47.522
               }
             },
             {
@@ -2028,7 +2028,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "8d1ddfd921e544cc4b9e1c0613131916dbc8bd7545f4cb62c24518900e3c8dc2"
+                "result_hash": "31567a6787e63cbf53b1d245447bf4a71ec9d3538ffa04873c47f210d50f8d56"
               }
             },
             {
@@ -2042,7 +2042,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "8d1ddfd921e544cc4b9e1c0613131916dbc8bd7545f4cb62c24518900e3c8dc2"
+                "result_hash": "31567a6787e63cbf53b1d245447bf4a71ec9d3538ffa04873c47f210d50f8d56"
               }
             },
             {
@@ -2145,7 +2145,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "5b9b63ee6a88525602031a57bc9daa1a038471f24aa55997e5e1592b35ddd7a9"
+        "expected_ocel2_hash": "b523ee04068570016756fcf914b044c0b1465ef1c2ee3652effa64d2a696d07e"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -2222,7 +2222,7 @@
             {
               "id": "evt_kids_safety_ml_cluster_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-05-23T02:45:24.660Z",
+              "time": "2026-05-23T02:46:07.609Z",
               "relationships": [
                 {
                   "objectId": "log_kids_safety",
@@ -2242,7 +2242,7 @@
             {
               "id": "evt_kids_safety_ml_cluster_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-05-23T02:45:26.835Z",
+              "time": "2026-05-23T02:46:10.774Z",
               "relationships": [
                 {
                   "objectId": "log_kids_safety",
@@ -2256,7 +2256,7 @@
             {
               "id": "evt_kids_safety_ml_cluster_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-05-23T02:45:28.313Z",
+              "time": "2026-05-23T02:46:11.994Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.5.21",
@@ -2270,7 +2270,7 @@
             {
               "id": "evt_kids_safety_ml_cluster_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-05-23T02:45:29.372Z",
+              "time": "2026-05-23T02:46:08.546Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_cluster",
@@ -2293,7 +2293,7 @@
             {
               "id": "evt_kids_safety_ml_cluster_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-05-23T02:45:28.989Z",
+              "time": "2026-05-23T02:46:09.765Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_cluster",
@@ -2305,14 +2305,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "8d1ddfd921e544cc4b9e1c0613131916dbc8bd7545f4cb62c24518900e3c8dc2",
-                "duration_ms": 39.316
+                "result_hash": "31567a6787e63cbf53b1d245447bf4a71ec9d3538ffa04873c47f210d50f8d56",
+                "duration_ms": 47.522
               }
             },
             {
               "id": "evt_kids_safety_ml_cluster_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-05-23T02:45:26.856Z",
+              "time": "2026-05-23T02:46:09.662Z",
               "relationships": [
                 {
                   "objectId": "result_ml_cluster_kids_safety",
@@ -2320,13 +2320,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "8d1ddfd921e544cc4b9e1c0613131916dbc8bd7545f4cb62c24518900e3c8dc2"
+                "result_hash": "31567a6787e63cbf53b1d245447bf4a71ec9d3538ffa04873c47f210d50f8d56"
               }
             },
             {
               "id": "evt_kids_safety_ml_cluster_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-05-23T02:45:28.094Z",
+              "time": "2026-05-23T02:46:09.439Z",
               "relationships": [
                 {
                   "objectId": "result_ml_cluster_kids_safety",
@@ -2334,13 +2334,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "8d1ddfd921e544cc4b9e1c0613131916dbc8bd7545f4cb62c24518900e3c8dc2"
+                "result_hash": "31567a6787e63cbf53b1d245447bf4a71ec9d3538ffa04873c47f210d50f8d56"
               }
             },
             {
               "id": "evt_kids_safety_ml_cluster_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-05-23T02:45:31.511Z",
+              "time": "2026-05-23T02:46:10.753Z",
               "relationships": [
                 {
                   "objectId": "example_kids_safety",
@@ -2370,7 +2370,7 @@
             {
               "id": "evt_kids_safety_ml_cluster_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-05-23T02:45:29.679Z",
+              "time": "2026-05-23T02:46:10.555Z",
               "relationships": [
                 {
                   "objectId": "result_ml_cluster_kids_safety",
@@ -2388,7 +2388,7 @@
             {
               "id": "evt_kids_safety_ml_cluster_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-05-23T02:45:31.628Z",
+              "time": "2026-05-23T02:46:14.692Z",
               "relationships": [
                 {
                   "objectId": "result_ml_cluster_kids_safety",
@@ -2437,8 +2437,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "cbfe521ba3a65233b1f9e55f4fccb55ab9ebb9a9bb163a984d95f64c9acb0b9c",
-        "observed_result_hash": "8d1ddfd921e544cc4b9e1c0613131916dbc8bd7545f4cb62c24518900e3c8dc2"
+        "observed_ocel2_hash": "a25ea3d3aeae23166308912dcc6c7ac537b6fd27321616ee31564939536d2384",
+        "observed_result_hash": "31567a6787e63cbf53b1d245447bf4a71ec9d3538ffa04873c47f210d50f8d56"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -2453,7 +2453,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565",
-        "output_artifact_hash": "8d1ddfd921e544cc4b9e1c0613131916dbc8bd7545f4cb62c24518900e3c8dc2",
+        "output_artifact_hash": "31567a6787e63cbf53b1d245447bf4a71ec9d3538ffa04873c47f210d50f8d56",
         "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -2462,8 +2462,8 @@
       "id": "ml_forecast",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "1fd11444ef9e7bdda5483a97d8877974a3b1d892b4d97fbe6f687a3dabfbdb6b",
-      "duration_ms": 39.005,
+      "result_hash": "b192249b5fd7cb265d2fc67851b44a2ef240922e0796a34a5676e58ddfdd6dbb",
+      "duration_ms": 25.647,
       "expected_path": {
         "route_id": "wpm.example.kids_safety.ml_forecast.v1",
         "expected_ocel2": {
@@ -2623,8 +2623,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1fd11444ef9e7bdda5483a97d8877974a3b1d892b4d97fbe6f687a3dabfbdb6b",
-                "duration_ms": 39.005
+                "result_hash": "b192249b5fd7cb265d2fc67851b44a2ef240922e0796a34a5676e58ddfdd6dbb",
+                "duration_ms": 25.647
               }
             },
             {
@@ -2638,7 +2638,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1fd11444ef9e7bdda5483a97d8877974a3b1d892b4d97fbe6f687a3dabfbdb6b"
+                "result_hash": "b192249b5fd7cb265d2fc67851b44a2ef240922e0796a34a5676e58ddfdd6dbb"
               }
             },
             {
@@ -2652,7 +2652,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1fd11444ef9e7bdda5483a97d8877974a3b1d892b4d97fbe6f687a3dabfbdb6b"
+                "result_hash": "b192249b5fd7cb265d2fc67851b44a2ef240922e0796a34a5676e58ddfdd6dbb"
               }
             },
             {
@@ -2755,7 +2755,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "22d0593ec865a928b5780e34fcf7fdc62c050f376ff400e779a3cd3b117e002c"
+        "expected_ocel2_hash": "ec597007509b5dbe5cb0b19bfef086242a19c1416c2b20d658f524f9e88c5d92"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -2832,7 +2832,7 @@
             {
               "id": "evt_kids_safety_ml_forecast_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-05-23T02:45:25.846Z",
+              "time": "2026-05-23T02:46:06.807Z",
               "relationships": [
                 {
                   "objectId": "log_kids_safety",
@@ -2852,7 +2852,7 @@
             {
               "id": "evt_kids_safety_ml_forecast_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-05-23T02:45:26.664Z",
+              "time": "2026-05-23T02:46:11.451Z",
               "relationships": [
                 {
                   "objectId": "log_kids_safety",
@@ -2866,7 +2866,7 @@
             {
               "id": "evt_kids_safety_ml_forecast_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-05-23T02:45:25.268Z",
+              "time": "2026-05-23T02:46:09.461Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.5.21",
@@ -2880,7 +2880,7 @@
             {
               "id": "evt_kids_safety_ml_forecast_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-05-23T02:45:27.169Z",
+              "time": "2026-05-23T02:46:09.469Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_forecast",
@@ -2903,7 +2903,7 @@
             {
               "id": "evt_kids_safety_ml_forecast_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-05-23T02:45:27.212Z",
+              "time": "2026-05-23T02:46:12.434Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_forecast",
@@ -2915,14 +2915,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1fd11444ef9e7bdda5483a97d8877974a3b1d892b4d97fbe6f687a3dabfbdb6b",
-                "duration_ms": 39.005
+                "result_hash": "b192249b5fd7cb265d2fc67851b44a2ef240922e0796a34a5676e58ddfdd6dbb",
+                "duration_ms": 25.647
               }
             },
             {
               "id": "evt_kids_safety_ml_forecast_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-05-23T02:45:29.517Z",
+              "time": "2026-05-23T02:46:12.180Z",
               "relationships": [
                 {
                   "objectId": "result_ml_forecast_kids_safety",
@@ -2930,13 +2930,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1fd11444ef9e7bdda5483a97d8877974a3b1d892b4d97fbe6f687a3dabfbdb6b"
+                "result_hash": "b192249b5fd7cb265d2fc67851b44a2ef240922e0796a34a5676e58ddfdd6dbb"
               }
             },
             {
               "id": "evt_kids_safety_ml_forecast_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-05-23T02:45:30.472Z",
+              "time": "2026-05-23T02:46:11.612Z",
               "relationships": [
                 {
                   "objectId": "result_ml_forecast_kids_safety",
@@ -2944,13 +2944,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "1fd11444ef9e7bdda5483a97d8877974a3b1d892b4d97fbe6f687a3dabfbdb6b"
+                "result_hash": "b192249b5fd7cb265d2fc67851b44a2ef240922e0796a34a5676e58ddfdd6dbb"
               }
             },
             {
               "id": "evt_kids_safety_ml_forecast_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-05-23T02:45:28.483Z",
+              "time": "2026-05-23T02:46:10.319Z",
               "relationships": [
                 {
                   "objectId": "example_kids_safety",
@@ -2980,7 +2980,7 @@
             {
               "id": "evt_kids_safety_ml_forecast_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-05-23T02:45:29.365Z",
+              "time": "2026-05-23T02:46:12.214Z",
               "relationships": [
                 {
                   "objectId": "result_ml_forecast_kids_safety",
@@ -2998,7 +2998,7 @@
             {
               "id": "evt_kids_safety_ml_forecast_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-05-23T02:45:32.653Z",
+              "time": "2026-05-23T02:46:11.179Z",
               "relationships": [
                 {
                   "objectId": "result_ml_forecast_kids_safety",
@@ -3047,8 +3047,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "a244ebeb5d77ead42da424499fcc87abfc847d0df4868d897bdfe18bf006f17e",
-        "observed_result_hash": "1fd11444ef9e7bdda5483a97d8877974a3b1d892b4d97fbe6f687a3dabfbdb6b"
+        "observed_ocel2_hash": "fc6e737f8820f2593266f4420f5b1b9229f9b97d19c4b05ec95a75831ab526d7",
+        "observed_result_hash": "b192249b5fd7cb265d2fc67851b44a2ef240922e0796a34a5676e58ddfdd6dbb"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -3063,7 +3063,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565",
-        "output_artifact_hash": "1fd11444ef9e7bdda5483a97d8877974a3b1d892b4d97fbe6f687a3dabfbdb6b",
+        "output_artifact_hash": "b192249b5fd7cb265d2fc67851b44a2ef240922e0796a34a5676e58ddfdd6dbb",
         "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -3072,8 +3072,8 @@
       "id": "ml_anomaly",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "a29a2050e5966d15058d1d23aceb7c5d74a7fa81fca76532ceb4f43d23410113",
-      "duration_ms": 51.324,
+      "result_hash": "23ff139239926333d132cbb79e6d39ac5f6fc8720b3b09df02bf373431646969",
+      "duration_ms": 53.994,
       "expected_path": {
         "route_id": "wpm.example.kids_safety.ml_anomaly.v1",
         "expected_ocel2": {
@@ -3233,8 +3233,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "a29a2050e5966d15058d1d23aceb7c5d74a7fa81fca76532ceb4f43d23410113",
-                "duration_ms": 51.324
+                "result_hash": "23ff139239926333d132cbb79e6d39ac5f6fc8720b3b09df02bf373431646969",
+                "duration_ms": 53.994
               }
             },
             {
@@ -3248,7 +3248,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "a29a2050e5966d15058d1d23aceb7c5d74a7fa81fca76532ceb4f43d23410113"
+                "result_hash": "23ff139239926333d132cbb79e6d39ac5f6fc8720b3b09df02bf373431646969"
               }
             },
             {
@@ -3262,7 +3262,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "a29a2050e5966d15058d1d23aceb7c5d74a7fa81fca76532ceb4f43d23410113"
+                "result_hash": "23ff139239926333d132cbb79e6d39ac5f6fc8720b3b09df02bf373431646969"
               }
             },
             {
@@ -3365,7 +3365,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "52f5a4fc19ac389155933974f7f817795da2252242f44a8510793250bfeb3196"
+        "expected_ocel2_hash": "3721caeae078a0c244eed289301fd13b0830a8e2b2aabd34d5cc3f626d4304fc"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -3442,7 +3442,7 @@
             {
               "id": "evt_kids_safety_ml_anomaly_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-05-23T02:45:26.852Z",
+              "time": "2026-05-23T02:46:10.690Z",
               "relationships": [
                 {
                   "objectId": "log_kids_safety",
@@ -3462,7 +3462,7 @@
             {
               "id": "evt_kids_safety_ml_anomaly_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-05-23T02:45:27.107Z",
+              "time": "2026-05-23T02:46:11.460Z",
               "relationships": [
                 {
                   "objectId": "log_kids_safety",
@@ -3476,7 +3476,7 @@
             {
               "id": "evt_kids_safety_ml_anomaly_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-05-23T02:45:29.024Z",
+              "time": "2026-05-23T02:46:07.661Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.5.21",
@@ -3490,7 +3490,7 @@
             {
               "id": "evt_kids_safety_ml_anomaly_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-05-23T02:45:26.711Z",
+              "time": "2026-05-23T02:46:08.950Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_anomaly",
@@ -3513,7 +3513,7 @@
             {
               "id": "evt_kids_safety_ml_anomaly_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-05-23T02:45:28.086Z",
+              "time": "2026-05-23T02:46:12.894Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_anomaly",
@@ -3525,14 +3525,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "a29a2050e5966d15058d1d23aceb7c5d74a7fa81fca76532ceb4f43d23410113",
-                "duration_ms": 51.324
+                "result_hash": "23ff139239926333d132cbb79e6d39ac5f6fc8720b3b09df02bf373431646969",
+                "duration_ms": 53.994
               }
             },
             {
               "id": "evt_kids_safety_ml_anomaly_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-05-23T02:45:26.930Z",
+              "time": "2026-05-23T02:46:10.465Z",
               "relationships": [
                 {
                   "objectId": "result_ml_anomaly_kids_safety",
@@ -3540,13 +3540,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "a29a2050e5966d15058d1d23aceb7c5d74a7fa81fca76532ceb4f43d23410113"
+                "result_hash": "23ff139239926333d132cbb79e6d39ac5f6fc8720b3b09df02bf373431646969"
               }
             },
             {
               "id": "evt_kids_safety_ml_anomaly_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-05-23T02:45:28.337Z",
+              "time": "2026-05-23T02:46:14.356Z",
               "relationships": [
                 {
                   "objectId": "result_ml_anomaly_kids_safety",
@@ -3554,13 +3554,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "a29a2050e5966d15058d1d23aceb7c5d74a7fa81fca76532ceb4f43d23410113"
+                "result_hash": "23ff139239926333d132cbb79e6d39ac5f6fc8720b3b09df02bf373431646969"
               }
             },
             {
               "id": "evt_kids_safety_ml_anomaly_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-05-23T02:45:30.376Z",
+              "time": "2026-05-23T02:46:14.076Z",
               "relationships": [
                 {
                   "objectId": "example_kids_safety",
@@ -3590,7 +3590,7 @@
             {
               "id": "evt_kids_safety_ml_anomaly_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-05-23T02:45:31.349Z",
+              "time": "2026-05-23T02:46:11.602Z",
               "relationships": [
                 {
                   "objectId": "result_ml_anomaly_kids_safety",
@@ -3608,7 +3608,7 @@
             {
               "id": "evt_kids_safety_ml_anomaly_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-05-23T02:45:31.314Z",
+              "time": "2026-05-23T02:46:13.892Z",
               "relationships": [
                 {
                   "objectId": "result_ml_anomaly_kids_safety",
@@ -3657,8 +3657,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "eb4ff2b97e6c2059c023291cc165380e4f98eeb61345dcc44111bb7076699c3c",
-        "observed_result_hash": "a29a2050e5966d15058d1d23aceb7c5d74a7fa81fca76532ceb4f43d23410113"
+        "observed_ocel2_hash": "f9d8ae4bde43b6801e062db0f645d9951c72ec16a4a62a43d19516d943657a52",
+        "observed_result_hash": "23ff139239926333d132cbb79e6d39ac5f6fc8720b3b09df02bf373431646969"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -3673,7 +3673,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565",
-        "output_artifact_hash": "a29a2050e5966d15058d1d23aceb7c5d74a7fa81fca76532ceb4f43d23410113",
+        "output_artifact_hash": "23ff139239926333d132cbb79e6d39ac5f6fc8720b3b09df02bf373431646969",
         "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -3682,8 +3682,8 @@
       "id": "ml_regress",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "5600d99f08e1ed1f54b54a06c6a315066577084f3776282690dce6ecd4138ff9",
-      "duration_ms": 22.686,
+      "result_hash": "292cf87fb854e3174fce8aed09c87458de05aec25c7d50e79bb9a65da8ad1f0e",
+      "duration_ms": 27.843,
       "expected_path": {
         "route_id": "wpm.example.kids_safety.ml_regress.v1",
         "expected_ocel2": {
@@ -3843,8 +3843,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "5600d99f08e1ed1f54b54a06c6a315066577084f3776282690dce6ecd4138ff9",
-                "duration_ms": 22.686
+                "result_hash": "292cf87fb854e3174fce8aed09c87458de05aec25c7d50e79bb9a65da8ad1f0e",
+                "duration_ms": 27.843
               }
             },
             {
@@ -3858,7 +3858,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "5600d99f08e1ed1f54b54a06c6a315066577084f3776282690dce6ecd4138ff9"
+                "result_hash": "292cf87fb854e3174fce8aed09c87458de05aec25c7d50e79bb9a65da8ad1f0e"
               }
             },
             {
@@ -3872,7 +3872,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "5600d99f08e1ed1f54b54a06c6a315066577084f3776282690dce6ecd4138ff9"
+                "result_hash": "292cf87fb854e3174fce8aed09c87458de05aec25c7d50e79bb9a65da8ad1f0e"
               }
             },
             {
@@ -3975,7 +3975,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "1b499cdb74069f1df5a9dea715c913b099d3d093d77e4986e41766ff31747cb2"
+        "expected_ocel2_hash": "d88b04087811847d27c3918974090c88d4471b7af5fc1031fd78e6a52a4f8733"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -4052,7 +4052,7 @@
             {
               "id": "evt_kids_safety_ml_regress_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-05-23T02:45:28.757Z",
+              "time": "2026-05-23T02:46:08.407Z",
               "relationships": [
                 {
                   "objectId": "log_kids_safety",
@@ -4072,7 +4072,7 @@
             {
               "id": "evt_kids_safety_ml_regress_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-05-23T02:45:25.116Z",
+              "time": "2026-05-23T02:46:08.044Z",
               "relationships": [
                 {
                   "objectId": "log_kids_safety",
@@ -4086,7 +4086,7 @@
             {
               "id": "evt_kids_safety_ml_regress_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-05-23T02:45:29.710Z",
+              "time": "2026-05-23T02:46:08.135Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.5.21",
@@ -4100,7 +4100,7 @@
             {
               "id": "evt_kids_safety_ml_regress_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-05-23T02:45:29.483Z",
+              "time": "2026-05-23T02:46:11.792Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_regress",
@@ -4123,7 +4123,7 @@
             {
               "id": "evt_kids_safety_ml_regress_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-05-23T02:45:28.848Z",
+              "time": "2026-05-23T02:46:09.421Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_regress",
@@ -4135,14 +4135,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "5600d99f08e1ed1f54b54a06c6a315066577084f3776282690dce6ecd4138ff9",
-                "duration_ms": 22.686
+                "result_hash": "292cf87fb854e3174fce8aed09c87458de05aec25c7d50e79bb9a65da8ad1f0e",
+                "duration_ms": 27.843
               }
             },
             {
               "id": "evt_kids_safety_ml_regress_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-05-23T02:45:26.852Z",
+              "time": "2026-05-23T02:46:13.192Z",
               "relationships": [
                 {
                   "objectId": "result_ml_regress_kids_safety",
@@ -4150,13 +4150,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "5600d99f08e1ed1f54b54a06c6a315066577084f3776282690dce6ecd4138ff9"
+                "result_hash": "292cf87fb854e3174fce8aed09c87458de05aec25c7d50e79bb9a65da8ad1f0e"
               }
             },
             {
               "id": "evt_kids_safety_ml_regress_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-05-23T02:45:27.157Z",
+              "time": "2026-05-23T02:46:10.027Z",
               "relationships": [
                 {
                   "objectId": "result_ml_regress_kids_safety",
@@ -4164,13 +4164,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "5600d99f08e1ed1f54b54a06c6a315066577084f3776282690dce6ecd4138ff9"
+                "result_hash": "292cf87fb854e3174fce8aed09c87458de05aec25c7d50e79bb9a65da8ad1f0e"
               }
             },
             {
               "id": "evt_kids_safety_ml_regress_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-05-23T02:45:32.525Z",
+              "time": "2026-05-23T02:46:14.730Z",
               "relationships": [
                 {
                   "objectId": "example_kids_safety",
@@ -4200,7 +4200,7 @@
             {
               "id": "evt_kids_safety_ml_regress_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-05-23T02:45:32.441Z",
+              "time": "2026-05-23T02:46:15.101Z",
               "relationships": [
                 {
                   "objectId": "result_ml_regress_kids_safety",
@@ -4218,7 +4218,7 @@
             {
               "id": "evt_kids_safety_ml_regress_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-05-23T02:45:30.435Z",
+              "time": "2026-05-23T02:46:12.789Z",
               "relationships": [
                 {
                   "objectId": "result_ml_regress_kids_safety",
@@ -4267,8 +4267,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "7ef050bb91259ec1cbdd8192ffb5f526ee59d8eb6eaca70782dff2792f6060fe",
-        "observed_result_hash": "5600d99f08e1ed1f54b54a06c6a315066577084f3776282690dce6ecd4138ff9"
+        "observed_ocel2_hash": "c6da269c2acde9d97000f70c612e3d09a052a462a99f7c854c3833b407d17517",
+        "observed_result_hash": "292cf87fb854e3174fce8aed09c87458de05aec25c7d50e79bb9a65da8ad1f0e"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -4283,7 +4283,7 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565",
-        "output_artifact_hash": "5600d99f08e1ed1f54b54a06c6a315066577084f3776282690dce6ecd4138ff9",
+        "output_artifact_hash": "292cf87fb854e3174fce8aed09c87458de05aec25c7d50e79bb9a65da8ad1f0e",
         "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
@@ -4292,8 +4292,8 @@
       "id": "ml_pca",
       "registry_present": true,
       "dispatched": true,
-      "result_hash": "4a865b7bcd53411d5836ebceef3582cf632f108027f9ed6c995dbb80c62a4b50",
-      "duration_ms": 32.979,
+      "result_hash": "4ad54e0293ff5f860f1572a5ace2f059cf3b93176b15b3e6d5efbdb39e541dd4",
+      "duration_ms": 28.54,
       "expected_path": {
         "route_id": "wpm.example.kids_safety.ml_pca.v1",
         "expected_ocel2": {
@@ -4453,8 +4453,8 @@
                 }
               ],
               "attributes": {
-                "result_hash": "4a865b7bcd53411d5836ebceef3582cf632f108027f9ed6c995dbb80c62a4b50",
-                "duration_ms": 32.979
+                "result_hash": "4ad54e0293ff5f860f1572a5ace2f059cf3b93176b15b3e6d5efbdb39e541dd4",
+                "duration_ms": 28.54
               }
             },
             {
@@ -4468,7 +4468,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "4a865b7bcd53411d5836ebceef3582cf632f108027f9ed6c995dbb80c62a4b50"
+                "result_hash": "4ad54e0293ff5f860f1572a5ace2f059cf3b93176b15b3e6d5efbdb39e541dd4"
               }
             },
             {
@@ -4482,7 +4482,7 @@
                 }
               ],
               "attributes": {
-                "result_hash": "4a865b7bcd53411d5836ebceef3582cf632f108027f9ed6c995dbb80c62a4b50"
+                "result_hash": "4ad54e0293ff5f860f1572a5ace2f059cf3b93176b15b3e6d5efbdb39e541dd4"
               }
             },
             {
@@ -4585,7 +4585,7 @@
             }
           ]
         },
-        "expected_ocel2_hash": "985a9d3d5afd8f4ef93ade2ac5072e8e4694de03081062755d0b08df79c37694"
+        "expected_ocel2_hash": "faff3cb6482ef1ed9298177855d604b6eaaeb67c9899abc2b2f74cd7266233fb"
       },
       "observed_path": {
         "observed_ocel2": {
@@ -4662,7 +4662,7 @@
             {
               "id": "evt_kids_safety_ml_pca_import_started",
               "type": "wpm.input.import.started",
-              "time": "2026-05-23T02:45:28.750Z",
+              "time": "2026-05-23T02:46:09.690Z",
               "relationships": [
                 {
                   "objectId": "log_kids_safety",
@@ -4682,7 +4682,7 @@
             {
               "id": "evt_kids_safety_ml_pca_import_completed",
               "type": "wpm.input.import.completed",
-              "time": "2026-05-23T02:45:25.848Z",
+              "time": "2026-05-23T02:46:11.146Z",
               "relationships": [
                 {
                   "objectId": "log_kids_safety",
@@ -4696,7 +4696,7 @@
             {
               "id": "evt_kids_safety_ml_pca_registry_checked",
               "type": "wpm.algorithm.registry.checked",
-              "time": "2026-05-23T02:45:25.341Z",
+              "time": "2026-05-23T02:46:10.035Z",
               "relationships": [
                 {
                   "objectId": "registry_v26.5.21",
@@ -4710,7 +4710,7 @@
             {
               "id": "evt_kids_safety_ml_pca_dispatched",
               "type": "wpm.algorithm.dispatched",
-              "time": "2026-05-23T02:45:29.073Z",
+              "time": "2026-05-23T02:46:07.843Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_pca",
@@ -4733,7 +4733,7 @@
             {
               "id": "evt_kids_safety_ml_pca_completed",
               "type": "wpm.algorithm.completed",
-              "time": "2026-05-23T02:45:28.600Z",
+              "time": "2026-05-23T02:46:12.549Z",
               "relationships": [
                 {
                   "objectId": "algorithm_ml_pca",
@@ -4745,14 +4745,14 @@
                 }
               ],
               "attributes": {
-                "result_hash": "4a865b7bcd53411d5836ebceef3582cf632f108027f9ed6c995dbb80c62a4b50",
-                "duration_ms": 32.979
+                "result_hash": "4ad54e0293ff5f860f1572a5ace2f059cf3b93176b15b3e6d5efbdb39e541dd4",
+                "duration_ms": 28.54
               }
             },
             {
               "id": "evt_kids_safety_ml_pca_result_hashed",
               "type": "wpm.result.hashed",
-              "time": "2026-05-23T02:45:29.864Z",
+              "time": "2026-05-23T02:46:10.132Z",
               "relationships": [
                 {
                   "objectId": "result_ml_pca_kids_safety",
@@ -4760,13 +4760,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "4a865b7bcd53411d5836ebceef3582cf632f108027f9ed6c995dbb80c62a4b50"
+                "result_hash": "4ad54e0293ff5f860f1572a5ace2f059cf3b93176b15b3e6d5efbdb39e541dd4"
               }
             },
             {
               "id": "evt_kids_safety_ml_pca_artifact_emitted",
               "type": "wpm.artifact.emitted",
-              "time": "2026-05-23T02:45:32.065Z",
+              "time": "2026-05-23T02:46:10.899Z",
               "relationships": [
                 {
                   "objectId": "result_ml_pca_kids_safety",
@@ -4774,13 +4774,13 @@
                 }
               ],
               "attributes": {
-                "result_hash": "4a865b7bcd53411d5836ebceef3582cf632f108027f9ed6c995dbb80c62a4b50"
+                "result_hash": "4ad54e0293ff5f860f1572a5ace2f059cf3b93176b15b3e6d5efbdb39e541dd4"
               }
             },
             {
               "id": "evt_kids_safety_ml_pca_task_closed",
               "type": "wpm.task.closed",
-              "time": "2026-05-23T02:45:31.863Z",
+              "time": "2026-05-23T02:46:13.754Z",
               "relationships": [
                 {
                   "objectId": "example_kids_safety",
@@ -4810,7 +4810,7 @@
             {
               "id": "evt_kids_safety_ml_pca_receipt_verification_started",
               "type": "wpm.receipt.verification.started",
-              "time": "2026-05-23T02:45:30.175Z",
+              "time": "2026-05-23T02:46:12.823Z",
               "relationships": [
                 {
                   "objectId": "result_ml_pca_kids_safety",
@@ -4828,7 +4828,7 @@
             {
               "id": "evt_kids_safety_ml_pca_receipt_verification_completed",
               "type": "wpm.receipt.verification.completed",
-              "time": "2026-05-23T02:45:30.616Z",
+              "time": "2026-05-23T02:46:12.607Z",
               "relationships": [
                 {
                   "objectId": "result_ml_pca_kids_safety",
@@ -4877,8 +4877,8 @@
             }
           ]
         },
-        "observed_ocel2_hash": "fe765c4149d6e59aa4e1b21bca75d5720c177bbddb374a40512ba874d51a4ca5",
-        "observed_result_hash": "4a865b7bcd53411d5836ebceef3582cf632f108027f9ed6c995dbb80c62a4b50"
+        "observed_ocel2_hash": "8c45245fcee73eec15978a4b8199edaad744713f58fc3e3aa6e8bc295ac219dd",
+        "observed_result_hash": "4ad54e0293ff5f860f1572a5ace2f059cf3b93176b15b3e6d5efbdb39e541dd4"
       },
       "alignment": {
         "expected_vs_observed": "PendingVerification",
@@ -4893,14 +4893,14 @@
         "stdout_hash": "9767a111c85ba745e817c6606eee5dd76b008a83255b94ba79c8eb5ea2f5a897",
         "stderr_hash": "3cd0c3aa6f9f9a5c46317cdef393f36a0aecc715aeab6321fc213e727626e515",
         "input_artifact_hash": "f4b4d539473c608ce7ab404851201c316e77dd45cf91a92743ba9182cbde1565",
-        "output_artifact_hash": "4a865b7bcd53411d5836ebceef3582cf632f108027f9ed6c995dbb80c62a4b50",
+        "output_artifact_hash": "4ad54e0293ff5f860f1572a5ace2f059cf3b93176b15b3e6d5efbdb39e541dd4",
         "registry_hash": "d4968e62a77fa351135f64ec495c4a64193b236173bf6eea8d61dcc640f93fb9",
         "binary_or_build_hash": "0759879105729e3c2b0d7b43fce56b423332e492afc5f06c5b9c99e43e5e0e53"
       }
     }
   ],
   "algorithm_count": 8,
-  "created_at": "2026-05-23T02:45:24.080Z",
+  "created_at": "2026-05-23T02:46:06.310Z",
   "previous_receipt_hash": null,
-  "receipt_hash": "65860616ee50d666b09684faed08bcedd774f384ee96511b0618bb7c0a25ee3c"
+  "receipt_hash": "8dc60c5209984a566cfad3a06daa4a7d5b94f10c698c305abf69019cc8eb5b1c"
 }
