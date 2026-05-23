@@ -57,6 +57,13 @@ data/Road_Traffic_Fine_Management_Process.xes
 # Agent hook evidence logs
 .claude/evidence/
 
+# Actuation probe outputs (local agent runs; not release artifacts)
+artifacts/actuation/raw_evidence/
+
+# Stray CLI output paths
+apps/wasm4pm/undefined/
+apps/wasm4pm/wasm4pm/target/
+
 # packages/agents: compiled artifacts in src/ (NodeNext shadowing fix — iter13)
 # tsconfig.json outDir is ./dist; these .js/.d.ts/.map files were committed before
 # that outDir was set and cause NodeNext resolution to pick stale artifacts over
