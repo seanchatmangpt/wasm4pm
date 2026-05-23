@@ -10,6 +10,8 @@ wpm --version
 From the repo root without a global install:
 
 ```bash
+# CLI requires the Node.js WASM target (once per clone)
+cd wasm4pm && npm run build:nodejs && cd ..
 pnpm --filter @wasm4pm/cli exec wpm run data/small-example.xes
 ```
 
