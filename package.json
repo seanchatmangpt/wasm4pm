@@ -31,6 +31,7 @@
     "release:doctor": "wpm doctor --release",
     "release:algorithm-behavior": "tsx scripts/release/algorithm-behavior/write-behavior-evidence.ts",
     "release:algorithm-reachability": "tsx scripts/release/algorithm-behavior/write-reachability-evidence.ts",
+    "release:algorithm-sweep": "tsx scripts/release/algorithm-behavior/sweep-all-algorithms.ts",
     "release:verify-algorithm-behavior": "tsx scripts/release/verify-algorithm-behavior.ts",
     "release:full": "npm run release:forbidden && npm run release:algorithm-reachability && npm run release:algorithm-behavior && npm run release:verify-algorithm-behavior && npm run examples:gate && npm run prepublish:pack-smoke && npm run release:certificate && tsx scripts/release/verify-certificate-authenticity.ts",
     "build:wasm": "npm run build:all --workspace @wasm4pm/core",

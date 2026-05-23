@@ -110,6 +110,7 @@ export type { QualityThresholdProfile } from './quality-thresholds.js';
 
 // Algorithm registry utilities
 export { levenshteinDistance, findClosestMatch } from './algorithm-registry.js';
+export { resolveAlgorithmId } from './templates/algorithm-registry.js';
 
 // mcpp/wasm4pm interop bridges
 export {

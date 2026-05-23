@@ -15,20 +15,20 @@
       "case_id": "ocel_petri_net.valid_minimal_log",
       "input_hash": "663cd7b1da01cd024291e527a46079e0e7676fcf3a81ca8f5dee070b073c5df9",
       "status": "passed",
-      "result_hash": "a74e9b85a5092c75a9787bb87f6019c4a3c733966f8edf496d9b2120261d981d",
-      "duration_ms": 0.011584000000027572,
-      "receipt_hash": "6b4e558bb961a30aaa6467bffdfb7ade1398234ae285f48c983146f6d9854975"
+      "result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "duration_ms": 0.1895829999994021,
+      "receipt_hash": "70d080bc333198ae0c2492d34dbef38d60a30258de91a4ffbc31e916511fa229"
     }
   ],
   "negative_cases": [
     {
       "case_id": "ocel_petri_net.MalformedLogCase",
-      "input_hash": "fcc88575f810852e4f9ec93ef1d19a6c2c3028429f8da0c02ae47e60e85a4f34",
+      "input_hash": "f984ccded57c4ea0d1299818fdf1dabee06d143ee733caec4e3e530df8d0e502",
       "status": "failed_correctly",
-      "error_code": "EMPTY_EVENT_LOG",
+      "error_code": "MALFORMED_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "772f1418ee608d44955b5f85e6786697bdbd0248534106f89ae6d5a4243d70b9"
+      "receipt_hash": "cb1f9044f408908135dedb46ae9c034d497a2df2054e053f6555f7289b8c1d15"
     },
     {
       "case_id": "ocel_petri_net.EmptyLogCase",
@@ -37,17 +37,17 @@
       "error_code": "EMPTY_EVENT_LOG",
       "no_panic": true,
       "no_false_success": true,
-      "receipt_hash": "d19d6e069573b8cdd68541d50a044d59aa3ce59d5d1f9a9c4e3966d1cc7efd14"
+      "receipt_hash": "6bbbc1554c26ac892b8e6d1cc534f76bdda3bd9b72b405abf2a5840bd09d06c4"
     }
   ],
   "invariant_cases": [
     {
       "case_id": "ocel_petri_net.DeterministicSameInputCase",
       "status": "passed",
-      "first_result_hash": "a74e9b85a5092c75a9787bb87f6019c4a3c733966f8edf496d9b2120261d981d",
-      "second_result_hash": "a74e9b85a5092c75a9787bb87f6019c4a3c733966f8edf496d9b2120261d981d",
+      "first_result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+      "second_result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
       "stable": true
     }
   ],
-  "algorithm_evidence_hash": "d05744143e980f3de4fac5e463c00e94180f26bbbb91031439aec518c753241b"
+  "algorithm_evidence_hash": "1a27cdec7f9d6a75c1371380f6e1b945e408a87279908580b6724732ce24912a"
 }

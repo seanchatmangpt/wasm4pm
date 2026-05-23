@@ -2150,46 +2150,6 @@ export class AlgorithmRegistry {
     });
 
     this.registerWithInferredProfiles({
-      id: 'smart_engine',
-      name: 'Smart Discovery Engine',
-      description:
-        'Agentic discovery engine with LRU caching, convergence monitoring, and fused multi-pass execution. ' +
-        'WASM export: smart_engine_run(handle, algorithm, traces_json).',
-      outputType: 'analytics',
-      complexity: 'O(n)',
-      speedTier: 5,
-      qualityTier: 80,
-      parameters: [
-        {
-          name: 'activity_key',
-          type: 'string',
-          description: 'The event attribute key used as the activity name (e.g., concept:name)',
-          required: true,
-          default: 'concept:name',
-        },
-        {
-          name: 'algorithm',
-          type: 'string',
-          description: 'The base algorithm to optimize (e.g., dfg, inductive)',
-          required: false,
-          default: 'dfg',
-        },
-        {
-          name: 'cache_capacity',
-          type: 'number',
-          description: 'LRU cache size',
-          required: false,
-          default: 100,
-        },
-      ],
-      supportedProfiles: ['fast', 'balanced', 'quality', 'stream'],
-      estimatedDurationMs: 5,
-      estimatedMemoryMB: 50,
-      robustToNoise: true,
-      scalesWell: true,
-    });
-
-    this.registerWithInferredProfiles({
       id: 'agentic_pipeline',
       name: 'Agentic Process Pipeline',
       description:

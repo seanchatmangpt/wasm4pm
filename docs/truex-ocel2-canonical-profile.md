@@ -7,7 +7,7 @@ The **Truex OCEL 2.0 Canonicalization & Receipt Profile** enforces a strict math
 
 ## 2. Canonicalization Rules (The JCS-OCEL Protocol)
 
-To compute the `ocel2_batch_hash`, an OCEL 2.0 JSON payload MUST be subjected to the following normalization transformations before SHA-256 hashing.
+To compute the `ocel2_batch_hash`, an OCEL 2.0 JSON payload MUST be subjected to the following normalization transformations before BLAKE3 hashing.
 
 ### 2.1 Timestamp Normalization
 All timestamps (`ocel:time`, `ocel:timestamp`) must conform to the ISO 8601 format, forced strictly into the UTC timezone (identified by the `Z` suffix).
@@ -47,10 +47,11 @@ The egress system MUST wrap the canonicalized `ocel2` payload inside the Truex R
   "span_id": "<w3c-span-id>",
   "session_id": "<application-session-id>",
   "device_id": "<device-identifier>",
-  "admission_status": "ReceiptAdmitted | ReceiptRefused",
-  "expected_path_hash": "<sha256-of-expected-transition-graph>",
-  "ocel2_batch_hash": "<sha256-of-canonical-ocel2-object>",
-  "receipt_hash": "<sha256-of-admission-signature>",
+  "admission_status": "ReceiptAdmitted | ReceiptForged | ReceiptLaundered | BoundaryMissing | SummaryOnlyProof | CanonicalizationMismatch | ReplayDetected | InvalidTransition | IncompletePath | VerifierMismatch",
+  "equivalence_class": "EquivalentUnderProfileV1",
+  "expected_path_hash": "<blake3-of-expected-transition-graph>",
+  "ocel2_batch_hash": "<blake3-of-canonical-ocel2-object>",
+  "receipt_hash": "<blake3-of-admission-signature>",
   "ocel2": {
     "eventTypes": {},
     "objectTypes": {},
@@ -64,17 +65,17 @@ The egress system MUST wrap the canonicalized `ocel2` payload inside the Truex R
 ```
 
 ### 3.1 Hash Derivations
-- `ocel2_batch_hash`: `SHA256(CanonicalStringify(envelope.ocel2))`
-- `receipt_hash`: `SHA256(session_id + ":" + ocel2_batch_hash + ":" + expected_path_hash)`
+- `ocel2_batch_hash`: `BLAKE3(CanonicalStringify(envelope.ocel2))`
+- `receipt_hash`: `BLAKE3(session_id + ":" + ocel2_batch_hash + ":" + expected_path_hash)`
 
 ## 4. Verification Workflow
 
-A Truex Verifier (e.g. `truex-cli`) MUST execute the following pipeline upon receipt of a Truex Envelope:
+A Truex Verifier (e.g. `wpm truex verify`) MUST execute the following pipeline upon receipt of a Truex Envelope:
 1. Extract the inner `ocel2` payload.
 2. Apply Canonicalization Rules (2.1 - 2.4).
-3. Compute `H1 = SHA256(CanonicalPayload)`.
+3. Compute `H1 = BLAKE3(CanonicalPayload)`.
 4. Assert `H1 == envelope.ocel2_batch_hash`.
-5. Compute `H2 = SHA256(session_id:H1:expected_path_hash)`.
+5. Compute `H2 = BLAKE3(session_id:H1:expected_path_hash)`.
 6. Assert `H2 == envelope.receipt_hash`.
 
-If any assertion fails, the receipt is immediately classified as **ReceiptForged**.
+If any assertion fails, the receipt is immediately classified with a strict taxonomy error (e.g., **ReceiptForged** or **CanonicalizationMismatch**). If all assertions pass, the payload is given the **ReceiptAdmitted** status and bound to the **EquivalentUnderProfileV1** semantic equivalence class.

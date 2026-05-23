@@ -416,15 +416,15 @@ function stepTypeToAlgorithmId(stepType: PlanStepType): string {
     [PlanStepType.DISCOVER_CORRELATION_MINER]: 'correlation_miner',
     [PlanStepType.DISCOVER_COMPLEXITY_METRICS]: 'complexity_metrics',
     [PlanStepType.DISCOVER_PETRI_NET_REDUCTION]: 'petri_net_reduction',
-    [PlanStepType.DISCOVER_ALIGNMENT_FITNESS]: 'alignment_fitness',
+    [PlanStepType.DISCOVER_ALIGNMENT_FITNESS]: 'alignments',
     // Wave 1 Import/Export
-    [PlanStepType.IMPORT_PNML]: 'import_pnml',
-    [PlanStepType.IMPORT_BPMN]: 'import_bpmn',
-    [PlanStepType.CONVERT_POWL_TO_PROCESS_TREE]: 'convert_powl_to_process_tree',
-    [PlanStepType.EXPORT_YAWL]: 'export_yawl',
+    [PlanStepType.IMPORT_PNML]: 'pnml_import',
+    [PlanStepType.IMPORT_BPMN]: 'bpmn_import',
+    [PlanStepType.CONVERT_POWL_TO_PROCESS_TREE]: 'powl_to_process_tree',
+    [PlanStepType.EXPORT_YAWL]: 'yawl_export',
     // Wave 1 Simulation
-    [PlanStepType.SIMULATE_PLAYOUT]: 'simulate_playout',
-    [PlanStepType.SIMULATE_MONTE_CARLO]: 'simulate_monte_carlo',
+    [PlanStepType.SIMULATE_PLAYOUT]: 'playout',
+    [PlanStepType.SIMULATE_MONTE_CARLO]: 'monte_carlo_simulation',
     // POWL Discovery
     [PlanStepType.DISCOVER_POWL]: 'powl',
     [PlanStepType.DISCOVER_POWL_TREE]: 'powl_tree',
@@ -564,9 +564,13 @@ export async function implementAlgorithmStep(
       }
 
       case 'process_skeleton': {
-        // Process skeleton is actually DFG with minimal parameters
-        const result = await wasmModule.discover_dfg(eventLogHandle, activityKey);
-        modelHandle = result.handle;
+        const minFrequency = (params.min_frequency as number) ?? 2;
+        const raw = await wasmModule.extract_process_skeleton(
+          eventLogHandle,
+          activityKey,
+          minFrequency
+        );
+        modelHandle = typeof raw === 'string' ? raw : (raw as { handle: string }).handle;
         break;
       }
 
@@ -691,9 +695,21 @@ export async function implementAlgorithmStep(
       }
 
       case 'optimized_dfg': {
-        // optimized_dfg is now an alias for standard discover_dfg
-        const result = await wasmModule.discover_dfg(eventLogHandle, activityKey);
-        modelHandle = result.handle;
+        const wasmAny = wasmModule as unknown as Record<string, (...args: unknown[]) => unknown>;
+        const fn = wasmAny.discover_optimized_dfg ?? wasmAny.discover_dfg;
+        const result = await fn(eventLogHandle, activityKey);
+        modelHandle = typeof result === 'string' ? result : (result as { handle: string }).handle;
+        break;
+      }
+
+      case 'simd_streaming_dfg': {
+        const wasmAny = wasmModule as unknown as Record<string, (...args: unknown[]) => unknown>;
+        const fn = wasmAny.discover_dfg_simd_handle ?? wasmAny.discover_dfg_simd;
+        if (!fn) {
+          throw new Error('discover_dfg_simd is not available');
+        }
+        const result = await fn(eventLogHandle, activityKey);
+        modelHandle = typeof result === 'string' ? result : (result as { handle: string }).handle;
         break;
       }
 

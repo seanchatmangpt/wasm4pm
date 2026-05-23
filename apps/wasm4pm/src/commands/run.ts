@@ -3,7 +3,7 @@ import * as fs from 'fs/promises';
 import * as path from 'path';
 import { resolveConfig as loadConfig } from '@wasm4pm/config';
 import { plan as makePlan } from '@wasm4pm/planner';
-import { ALGORITHM_CLI_ALIASES, findClosestMatch, getProfileAlgorithms } from '@wasm4pm/contracts';
+import { ALGORITHM_CLI_ALIASES, findClosestMatch, getProfileAlgorithms, resolveAlgorithmId } from '@wasm4pm/contracts';
 import { getRegistry } from 'wasm4pm';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { withLogSession } from '../with-log-session.js';
@@ -89,7 +89,7 @@ export const run = defineCommand({
     },
     algorithm: {
       type: 'string',
-      description: `Discovery algorithm — use -a as shorthand — one of: ${ALGORITHMS.join(', ')} (default: heuristic)`,
+      description: `Discovery algorithm — use -a as shorthand — one of: ${ALGORITHMS.join(', ')} (default: config algorithm.name, else profile default, else heuristic_miner)`,
       alias: 'a',
     },
     output: {
@@ -242,6 +242,7 @@ export const run = defineCommand({
           const rawAlgo: string =
             shortcutAlgo ??
             (ctx.args.algorithm as string | undefined) ??
+            config?.algorithm?.name ??
             (() => {
               const profile = config?.execution?.profile ?? 'balanced';
               // fast profile: always dfg (O(n), no overhead)
@@ -249,7 +250,7 @@ export const run = defineCommand({
               // all other profiles: first algorithm from the canonical profile registry
               // quality → simulated_annealing (index 0), balanced → alpha_plus_plus, stream → simd_streaming_dfg
               const profileAlgos = getProfileAlgorithms(profile);
-              return profileAlgos[0] ?? 'heuristic';
+              return profileAlgos[0] ?? 'heuristic_miner';
             })();
 
           // Guard: empty or whitespace-only --algorithm is a config error (not source error).
@@ -274,14 +275,7 @@ export const run = defineCommand({
           }
 
           // Accept kernel registry IDs (heuristic_miner) or CLI aliases (heuristic)
-          let resolvedAlgo: Algorithm | undefined =
-            (ALGORITHM_CLI_ALIASES[rawAlgo] as Algorithm | undefined) ??
-            (() => {
-              const algoLower = rawAlgo.toLowerCase().replace(/[+_]/g, '-');
-              return ALGORITHMS.find(
-                (a) => a === algoLower || a === algoLower.replace(/-plus-plus/, '-')
-              );
-            })();
+          const resolvedAlgo: Algorithm | undefined = resolveAlgorithmId(rawAlgo, ALGORITHMS);
 
           if (!resolvedAlgo) {
             // An unknown algorithm name is a config_error (1): the user specified an

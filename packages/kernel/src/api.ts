@@ -741,17 +741,11 @@ export class Kernel {
       case 'dfg': {
         const dfgJson = this.wasm.discover_dfg(eventLogHandle, activityKey);
         if ((dfgJson as any) instanceof Promise || (dfgJson && typeof (dfgJson as any).then === 'function')) {
-          return (dfgJson as any).then((resolvedDfgJson: string) => {
-            const handle = this.wasm.store_dfg_from_json
-              ? this.wasm.store_dfg_from_json(resolvedDfgJson)
-              : resolvedDfgJson;
-            return parseWasmHandle(handle);
-          });
+          return (dfgJson as any).then((resolvedDfgJson: string) =>
+            storeDfgDiscoveryResult(this.wasm, resolvedDfgJson)
+          );
         }
-        const handle = this.wasm.store_dfg_from_json
-          ? this.wasm.store_dfg_from_json(dfgJson)
-          : dfgJson;
-        return parseWasmHandle(handle);
+        return storeDfgDiscoveryResult(this.wasm, dfgJson);
       }
 
       case 'hierarchical_dfg': {
@@ -761,33 +755,21 @@ export class Kernel {
           (params.num_chunks as number) ?? 4
         );
         if ((dfgJson as any) instanceof Promise || (dfgJson && typeof (dfgJson as any).then === 'function')) {
-          return (dfgJson as any).then((resolvedDfgJson: string) => {
-            const handle = this.wasm.store_dfg_from_json
-              ? this.wasm.store_dfg_from_json(resolvedDfgJson)
-              : resolvedDfgJson;
-            return parseWasmHandle(handle);
-          });
+          return (dfgJson as any).then((resolvedDfgJson: string) =>
+            storeDfgDiscoveryResult(this.wasm, resolvedDfgJson)
+          );
         }
-        const handle = this.wasm.store_dfg_from_json
-          ? this.wasm.store_dfg_from_json(dfgJson)
-          : dfgJson;
-        return parseWasmHandle(handle);
+        return storeDfgDiscoveryResult(this.wasm, dfgJson);
       }
 
       case 'streaming_log': {
         const dfgJson = this.wasm.discover_dfg(eventLogHandle, activityKey);
         if ((dfgJson as any) instanceof Promise || (dfgJson && typeof (dfgJson as any).then === 'function')) {
-          return (dfgJson as any).then((resolvedDfgJson: string) => {
-            const handle = this.wasm.store_dfg_from_json
-              ? this.wasm.store_dfg_from_json(resolvedDfgJson)
-              : resolvedDfgJson;
-            return parseWasmHandle(handle);
-          });
+          return (dfgJson as any).then((resolvedDfgJson: string) =>
+            storeDfgDiscoveryResult(this.wasm, resolvedDfgJson)
+          );
         }
-        const handle = this.wasm.store_dfg_from_json
-          ? this.wasm.store_dfg_from_json(dfgJson)
-          : dfgJson;
-        return parseWasmHandle(handle);
+        return storeDfgDiscoveryResult(this.wasm, dfgJson);
       }
 
       case 'smart_engine': {
@@ -844,10 +826,11 @@ export class Kernel {
           (params.noise_threshold as number) ?? 0.2
         );
         const virtualHandle = `virtual_inductive_miner_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`;
+        const tree = parseWasmOutput<Record<string, unknown>>(json);
         return {
+          ...(tree && typeof tree === 'object' ? tree : {}),
           handle: virtualHandle,
-          metadata: { result: parseWasmOutput(json) }
-        } as any;
+        };
       }
 
       case 'genetic_algorithm': {
@@ -1079,7 +1062,12 @@ export class Kernel {
       // ─── Wave 1 Migration: Model conversion ────────────────────────────
 
       case 'pnml_import': {
-        const raw = this.wasm.from_pnml((params.pnml_xml as string)!);
+        const wasmAny = this.wasm as unknown as Record<string, (...args: unknown[]) => unknown>;
+        const fn = wasmAny.from_pnml_wasm ?? wasmAny.from_pnml;
+        if (!fn) {
+          throw new KernelError('from_pnml_wasm is not available', 'ALGORITHM_NOT_FOUND' as any);
+        }
+        const raw = fn.call(this.wasm, (params.pnml_xml as string)!);
         return parseWasmHandle(raw);
       }
 
@@ -1101,17 +1089,30 @@ export class Kernel {
       // ─── Wave 1 Migration: Simulation ──────────────────────────────────
 
       case 'playout': {
-        const raw = this.wasm.play_out(
-          (params.model_handle as string)!,
-          (params.num_traces as number) ?? 100,
-          (params.max_trace_length as number) ?? 100
+        const dfgJson = this.wasm.discover_dfg(eventLogHandle, activityKey);
+        const playParams = {
+          num_traces: (params.num_traces as number) ?? 5,
+          min_trace_length: (params.min_trace_length as number) ?? 1,
+          max_trace_length: (params.max_trace_length as number) ?? 100,
+          include_timestamps: (params.include_timestamps as boolean) ?? true,
+          start_timestamp: (params.start_timestamp as number) ?? 0,
+        };
+        const wasmAny = this.wasm as unknown as Record<string, (...args: unknown[]) => unknown>;
+        const playFn = wasmAny.play_out_dfg ?? wasmAny.play_out;
+        if (!playFn) {
+          throw new KernelError('play_out_dfg is not available', 'ALGORITHM_NOT_FOUND' as any);
+        }
+        const raw = playFn.call(
+          this.wasm,
+          typeof dfgJson === 'string' ? dfgJson : JSON.stringify(dfgJson),
+          playParams
         );
         return parseWasmHandle(raw);
       }
 
       case 'monte_carlo_simulation': {
         const mcConfig = {
-          num_cases: (params.num_simulations as number) ?? 1000,
+          num_cases: (params.num_simulations as number) ?? 100,
           inter_arrival_mean_ms: 1000.0,
           activity_service_time_ms: {},
           resource_capacity: {},
@@ -1119,7 +1120,7 @@ export class Kernel {
           random_seed: 42,
         };
         const raw = this.wasm.monte_carlo_simulation(
-          (params.model_handle as string)!,
+          eventLogHandle,
           '',
           '',
           JSON.stringify(mcConfig)
@@ -1250,8 +1251,19 @@ export class Kernel {
       }
 
       case 'agentic_pipeline': {
-        const json = await this.wasm.run_agentic_pipeline!((params.task_json as string) ?? '{}');
-        return { handle: `agentic_pipeline_${Date.now()}`, metadata: { result: parseWasmOutput(json) } } as any;
+        const wasmAny = this.wasm as unknown as Record<string, (...args: unknown[]) => unknown>;
+        const fn = wasmAny.run_agentic_pipeline;
+        if (!fn) {
+          throw new KernelError(
+            'run_agentic_pipeline is not available (requires feature-cloud WASM build)',
+            'ALGORITHM_NOT_FOUND' as any
+          );
+        }
+        const json = await fn.call(this.wasm, (params.task_json as string) ?? '{}');
+        return {
+          handle: `agentic_pipeline_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`,
+          metadata: { result: parseWasmOutput(json) },
+        } as any;
       }
 
       // ─── ML algorithms (Restored WASM paths) ─────────────────────────────
@@ -1330,13 +1342,67 @@ export class Kernel {
 
       // ─── Prediction (Stubs preserved for high-level package requirement) ─
 
-      case 'predict_next_activity':
-      case 'predict_remaining_time':
-      case 'predict_outcome':
-        throw new Error(
-          `Prediction algorithm '${algorithmId}' requires the @wasm4pm/predict package. ` +
-          `Use the CLI command: wpm predict ...`
+      case 'predict_next_activity': {
+        const wasmAny = this.wasm as unknown as Record<string, (...args: unknown[]) => unknown>;
+        const build = wasmAny.build_ngram_predictor;
+        const predict = wasmAny.predict_next_activity;
+        if (!build || !predict) {
+          throw new KernelError(
+            `Prediction algorithm '${algorithmId}' requires WASM prediction exports.`,
+            'ALGORITHM_NOT_FOUND' as any
+          );
+        }
+        const predictorHandle = build.call(this.wasm, eventLogHandle, activityKey, 2);
+        const prefix = (params.prefix_json as string) ?? '[]';
+        const raw = predict.call(this.wasm, predictorHandle, prefix);
+        return {
+          handle: `predict_next_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`,
+          metadata: { result: parseWasmOutput(raw) },
+        } as any;
+      }
+
+      case 'predict_remaining_time': {
+        const wasmAny = this.wasm as unknown as Record<string, (...args: unknown[]) => unknown>;
+        const build = wasmAny.build_remaining_time_model;
+        const predict = wasmAny.predict_case_duration;
+        if (!build || !predict) {
+          throw new KernelError(
+            `Prediction algorithm '${algorithmId}' requires WASM prediction exports.`,
+            'ALGORITHM_NOT_FOUND' as any
+          );
+        }
+        const modelHandle = build.call(
+          this.wasm,
+          eventLogHandle,
+          activityKey,
+          (params.timestamp_key as string) ?? 'time:timestamp'
         );
+        const prefix = (params.prefix_json as string) ?? '[]';
+        const raw = predict.call(this.wasm, modelHandle, prefix);
+        return {
+          handle: `predict_remaining_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`,
+          metadata: { result: parseWasmOutput(raw) },
+        } as any;
+      }
+
+      case 'predict_outcome': {
+        const wasmAny = this.wasm as unknown as Record<string, (...args: unknown[]) => unknown>;
+        const build = wasmAny.build_ngram_predictor;
+        const predict = wasmAny.predict_next_k;
+        if (!build || !predict) {
+          throw new KernelError(
+            `Prediction algorithm '${algorithmId}' requires WASM prediction exports.`,
+            'ALGORITHM_NOT_FOUND' as any
+          );
+        }
+        const predictorHandle = build.call(this.wasm, eventLogHandle, activityKey, 2);
+        const prefix = (params.prefix_json as string) ?? '[]';
+        const raw = predict.call(this.wasm, predictorHandle, prefix, 1);
+        return {
+          handle: `predict_outcome_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`,
+          metadata: { result: parseWasmOutput(raw) },
+        } as any;
+      }
 
       default:
         throw new KernelError(`Unsupported algorithm: ${algorithmId}`, 'ALGORITHM_NOT_FOUND' as any);
@@ -1360,15 +1426,47 @@ export class Kernel {
 }
 
 /**
+ * Store a discovered DFG in WASM memory while preserving discriminator-visible shape.
+ * `store_dfg_from_json` returns a handle string; the CLI discriminator needs either
+ * full `{nodes[], edges[]}` arrays or `{nodes: number, edges: number, handle}`.
+ */
+function storeDfgDiscoveryResult(wasm: KernelWasmModule, dfgJson: unknown): Record<string, unknown> {
+  const parsed = parseWasmOutput<Record<string, unknown>>(dfgJson);
+  const jsonString =
+    typeof dfgJson === 'string' ? dfgJson : JSON.stringify(parsed ?? dfgJson);
+  const stored = wasm.store_dfg_from_json ? wasm.store_dfg_from_json(jsonString) : dfgJson;
+  const handleValue = parseWasmHandle(stored);
+  const handle =
+    handleValue && typeof handleValue === 'object' && 'handle' in handleValue
+      ? String((handleValue as { handle: string }).handle)
+      : String(stored);
+
+  if (parsed && typeof parsed === 'object') {
+    if (Array.isArray(parsed.nodes) && Array.isArray(parsed.edges)) {
+      return { ...parsed, handle };
+    }
+    const nodes =
+      typeof parsed.nodes === 'number'
+        ? parsed.nodes
+        : Array.isArray(parsed.nodes)
+          ? parsed.nodes.length
+          : Array.isArray(parsed.activities)
+            ? parsed.activities.length
+            : 0;
+    const edges =
+      typeof parsed.edges === 'number'
+        ? parsed.edges
+        : Array.isArray(parsed.edges)
+          ? parsed.edges.length
+          : 0;
+    return { handle, nodes, edges };
+  }
+
+  return { handle, nodes: 0, edges: 0 };
+}
+
+/**
  * Parse a WASM function return value that may be a JSON string or already an object.
- *
- * Many wasm4pm WASM exports return `string` on wasm32 targets (serialized JSON)
- * but may return a plain object when called via test stubs or future refactors.
- * This helper normalizes both cases, eliminating the repeated
- * `typeof r === 'string' ? JSON.parse(r) : r` pattern across the codebase.
- *
- * @example
- * const dfg = parseWasmOutput<{ nodes: string[] }>(wasm.discover_dfg(handle, key));
  */
 export function parseWasmOutput<T = unknown>(raw: unknown): T {
   if (typeof raw === 'string') {

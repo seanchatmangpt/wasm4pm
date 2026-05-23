@@ -29,6 +29,7 @@ function makeResult(overrides: Partial<KernelResult> = {}): KernelResult {
     execution_ms: 12.5,
     params: { activity_key: 'concept:name' },
     hash: 'abc123def456', // @lint-allow-fakery — test fixture, intentionally short
+    toLLMContext: () => 'dfg:abc123',
     ...overrides,
   };
 }
