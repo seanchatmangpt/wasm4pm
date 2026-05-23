@@ -23,7 +23,7 @@ export type { KernelResult, PartialResult, KernelStats, KernelWasmModule } from 
 
 // Registry exports
 /**
- * getRegistry — Get the singleton algorithm registry with 38 Van der Aalst registered algorithms.
+ * getRegistry — Get the singleton algorithm registry with 60 registered algorithms.
  * @description Singleton accessor; use to enumerate algorithms, check metadata, query by profile.
  * @example const registry = getRegistry(); const dfg = registry.get('dfg');
  */

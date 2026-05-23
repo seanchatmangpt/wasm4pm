@@ -44,6 +44,7 @@
     "generate": "unrdf sync --config unrdf.toml",
     "generate:algorithms": "unrdf sync --config unrdf.toml --rule algorithm-registry && npm run build --workspace @wasm4pm/templates",
     "generate:prediction-tasks": "unrdf sync --config unrdf.toml --rule prediction-tasks && npm run build --workspace @wasm4pm/templates",
+    "docs:algorithms": "tsx scripts/docs/generate-algorithms-md.ts",
     "format": "prettier --write 'packages/*/src/**/*.ts' 'apps/*/src/**/*.ts' 'packages/*/src/**/*.json'",
     "format:check": "prettier --check 'packages/*/src/**/*.ts' 'apps/*/src/**/*.ts' 'packages/*/src/**/*.json'",
     "health": "node scripts/health.mjs",

@@ -1,8 +1,30 @@
-# wasm4pm
+# Architecture Overview
 
-A process mining platform with a real Rust cognition kernel. 60 high-performance algorithms compiled to WebAssembly. 9 old-AI breeds (ELIZA, MYCIN, STRIPS, Prolog, CBR, DENDRAL, GPS, SOAR, Hearsay-II) running natively in Rust, exposed through a thin TypeScript facade, surfaced through a single CLI binary (`wpm`).
+wasm4pm is a process mining platform with a real Rust cognition kernel. **60** high-performance algorithms compile to WebAssembly. **9** old-AI breeds (ELIZA, MYCIN, STRIPS, Prolog, CBR, DENDRAL, GPS, SOAR, Hearsay-II) run natively in Rust, exposed through a thin TypeScript facade, surfaced through a single CLI binary (`wpm`).
 
 The doctrine: **Old AI is the factory. LLMs are the brochure.**
+
+## System Layers
+
+```mermaid
+graph TB
+  CLI[wpm CLI] --> Kernel[packages/kernel]
+  Kernel --> Engine[@wasm4pm/engine]
+  Engine --> WASM[wasm4pm/pkg WASM]
+  WASM --> Rust[crates/wasm4pm-algos]
+  CLI --> Cognition[cognition breeds Rust-native]
+  CLI --> Truex[truex verify BLAKE3]
+```
+
+| Layer | Responsibility |
+|-------|----------------|
+| **`apps/wasm4pm`** | CLI commands, OTEL spans, output formatting, config resolution |
+| **`packages/kernel`** | Versioned API facade — `Kernel.discover()`, registry, receipt hashing |
+| **`packages/engine`** | WASM loader, init lifecycle, backend selection |
+| **`wasm4pm/` (Cargo)** | Algorithm implementations, Truex canonicalization, cognition kernel |
+| **`packages/contracts`** | Algorithm registry templates, alias resolution, typed failure codes |
+
+**Rule:** CLI logic must not import Rust directly. All algorithm dispatch goes through `packages/kernel/src/api.ts` so validation, OTEL, and error taxonomies apply uniformly.
 
 ## Verified Integrity
 
@@ -11,107 +33,56 @@ wasm4pm is built with **Combinatorial Maximalism**. Every release is sealed with
 - **Zero Suppression:** The Rust kernel passes `cargo clippy --workspace -- -D warnings` with zero `allow` attributes or suppressions.
 - **Naturally Clean:** 100% of public items are documented to satisfy the `missing_docs` gate.
 - **Adversarial Gates:** 8 runtime detectors (Stub, Authority, Replay, etc.) prevent false-pass patterns.
-- **BLAKE3 Receipts:** Every CLI and cognition run produces a verifiable cryptographic receipt.
+- **BLAKE3 Receipts:** CLI runs, cognition contracts, and Truex envelopes produce verifiable cryptographic receipts.
 
-[Get Started](docs/tutorials/getting_started.md) | [CLI Reference](docs/reference/cli_commands.md) | [WASM API](docs_quarantine/WASM_API.md) | [Architecture](docs/explanation/architecture_overview.md)
-
----
-
-## Quick Start (3 minutes)
-
-### 1. Run process discovery
-
-```bash
-# Discover a model from a sample event log (included in data/)
-wpm run data/small-example.xes
-```
-
-Results save to `.wasm4pm/results/` automatically.
-
-### 2. View the results
-
-```bash
-# Show all saved results
-wpm results
-
-# Inspect the most recent result (with receipt hash validation)
-wpm results --last --verify
-```
-
-### 3. Algorithm Comparison
-
-```bash
-# Compare multiple algorithms side-by-side
-wpm compare dfg,heuristic,inductive -i data/small-example.xes
-```
-
-See [docs/tutorials/getting_started.md](docs/tutorials/getting_started.md) for more examples and next steps.
-
----
+Evidence discipline: [AGENTS.md](../../AGENTS.md).
 
 ## Deployment Profiles
 
-Optimized binaries for every environment:
+Optimized WASM bundles for every environment:
 
-| Profile | Size | Use Case |
+| Profile | Size | Use case |
 |---------|------|----------|
-| `mobile` | ~500KB | Mobile devices / low bandwidth |
-| `iot` | ~1.0MB | Embedded / resource-constrained |
-| `edge` | ~1.5MB | CDN workers / Edge compute |
-| `fog` | ~2.0MB | IoT gateways / Fog nodes |
+| `mobile` | ~500KB | Mobile / low bandwidth |
+| `iot` | ~1.0MB | Embedded |
+| `edge` | ~1.5MB | CDN / edge workers |
+| `fog` | ~2.0MB | IoT gateways |
 | `browser` | ~2.7MB | Web + Node.js (default) |
 
----
+Build: `npm run build:mobile --workspace=wasm4pm`. See [Edge Deployment](../how-to/edge_deployment.md).
 
 ## Core Capabilities
 
-**wasm4pm** is a process mining platform covering discovery, conformance, and enhancement (bottleneck analysis, drift detection, predictive monitoring).
+**Discovery:** 60 registered algorithms — DFG, heuristic/inductive miners, genetic/ILP, OCEL, ML, prediction, conformance, simulation. List live: `wpm algorithms`.
 
-### 9 Cognition Breeds (Old AI)
+**Truex:** OCEL 2.0 canonicalization + BLAKE3 receipt verification via `wpm truex verify`. Profile: [Truex OCEL 2.0 Canonical Profile](../truex-ocel2-canonical-profile.md).
 
-| Breed | Origin | Algorithm |
-|-------|--------|-----------|
-| **ELIZA** | 1966 | Pattern matching with slot binding |
-| **MYCIN** | 1976 | Forward chaining + certainty factors |
-| **STRIPS** | 1971 | Goal regression planning |
-| **Prolog** | 1965 | Robinson unification + SLD resolution |
-| **CBR** | 1992 | Jaccard similarity case retrieval |
-| **DENDRAL** | 1969 | Constraint-driven enumeration |
-| **GPS** | 1963 | Means-ends gap reduction |
-| **SOAR** | 1987 | Preference-based operator selection |
-| **Hearsay-II** | 1980 | Blackboard consensus fusion |
+**Cognition:** Nine Old-AI breeds via `wpm cognition run --contract <breed>`.
 
-### Process Mining Commands (20 total)
+**Prediction:** Next-activity, remaining-time, drift via `wpm predict`.
+
+## CLI Surface
 
 | Category | Commands |
 |----------|----------|
-| **Core** | `run`, `compare`, `diff`, `watch`, `init` |
+| **Core** | `run`, `compare`, `diff`, `watch`, `init`, `algorithms` |
 | **Prediction** | `predict`, `drift-watch` |
-| **ML Analysis** | `ml`, `powl`, `quality`, `conformance`, `validate` |
-| **Simulation** | `simulate`, `temporal`, `social` |
-| **Governance** | `autoprocess`, `status`, `doctor`, `explain`, `results` |
+| **Analysis** | `ml`, `powl`, `quality`, `conformance`, `validate`, `simulate`, `temporal`, `social` |
+| **Truex** | `truex verify` |
+| **Governance** | `receipts`, `cell`, `autoprocess`, `status`, `doctor`, `explain`, `results` |
+| **Cognition** | `cognition run`, `cognition verify`, `cognition replay`, `prolog8` |
 
----
-
-## Documentation
+## Documentation Map
 
 We follow the [Diátaxis framework](https://diataxis.fr/).
 
-- **🎓 Tutorials:** [Getting Started](docs/tutorials/getting_started.md), [Predictive Monitoring](docs/tutorials/predictive_monitoring.md), [Cognition Contracts](docs/tutorials/cognition_contracts.md)
-- **🛠️ How-To Guides:** [OTEL Configuration](docs/how-to/configure_observability.md), [Edge Deployment](docs/how-to/edge_deployment.md), [Concept Drift](docs/how-to/concept_drift.md)
-- **📚 Reference:** [CLI Commands](docs/reference/cli_commands.md), [Configuration Schema](docs/reference/configuration_schema.md), [WASM API Catalog](docs_quarantine/WASM_API.md)
-- **🧠 Explanation:** [Architecture Overview](docs/explanation/architecture_overview.md), [Old AI vs. LLM Doctrine](docs/explanation/old_ai_vs_llms.md), [Combinatorial Maximalism](docs/quarantine/explanation/combinatorial_maximalism_closure_discipline.md)
+- **Tutorials:** [Getting Started](../tutorials/getting_started.md), [Truex Receipts](../tutorials/truex_receipts.md), [Predictive Monitoring](../tutorials/predictive_monitoring.md), [Cognition Contracts](../tutorials/cognition_contracts.md)
+- **How-To:** [OTEL Configuration](../how-to/configure_observability.md), [Edge Deployment](../how-to/edge_deployment.md), [Concept Drift](../how-to/concept_drift.md)
+- **Reference:** [CLI Commands](../reference/cli_commands.md), [Algorithms](../reference/algorithms.md), [Configuration Schema](../reference/configuration_schema.md), [Truex Profile](../truex-ocel2-canonical-profile.md)
+- **Explanation:** [Old AI vs. LLM Doctrine](old_ai_vs_llms.md), [Combinatorial Maximalism](combinatorial_maximalism_closure_discipline.md), [Receipt Truth Verification](prd_ard_receipt_truth_verification.md)
 
-### Additional Resources
-- [Testing Doctrine](docs_quarantine/TESTING.md)
-- [Adversarial Test Plan](docs_quarantine/ADVERSARIAL_TEST_PLAN.md)
-- [Claude Code Integration](docs_quarantine/CLAUDE.md)
-- [Contributing Guidelines](CONTRIBUTING.md)
-
-## Contact
-
-For questions or support, reach out at [info@chatmangpt.com](mailto:info@chatmangpt.com).
+Programmatic usage: [Getting Started §3](../tutorials/getting_started.md).
 
 ## License
 
-Apache-2.0 OR MIT. See [LICENSE-APACHE](LICENSE-APACHE) and [LICENSE-MIT](LICENSE-MIT).
+Apache-2.0 OR MIT. See [LICENSE-APACHE](../../LICENSE-APACHE) and [LICENSE-MIT](../../LICENSE-MIT).

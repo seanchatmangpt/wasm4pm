@@ -1,1193 +1,202 @@
 # Algorithm Reference
 
-Complete reference for all 27 algorithms in the wasm4pm kernel registry (21 discovery + 6 ML analysis).
+Complete reference for all **60** algorithms in the wasm4pm kernel registry.
 
-**Version:** v26.4.10
+**Version:** v26.5.21
 
-## Quick Reference Table
+> **Auto-generated.** Run `pnpm run docs:algorithms` from the repo root to refresh after registry changes.
 
-| Algorithm | ID | Complexity | Speed* | Quality* | Output | Robust | Scales |
-|-----------|----|-----------:|-------:|--------:|--------|:------:|:------:|
-| DFG | `dfg` | O(n) | 5 | 30 | DFG | ✓ | ✓ |
-| Skeleton | `process_skeleton` | O(n) | 3 | 25 | DFG | ✓ | ✓ |
-| Alpha++ | `alpha_plus_plus` | O(n²) | 20 | 45 | Petri | ✗ | ✗ |
-| Heuristic | `heuristic_miner` | O(n²) | 25 | 50 | DFG | ✓ | ✓ |
-| Inductive | `inductive_miner` | O(n log n) | 30 | 55 | Tree | ✓ | ✓ |
-| Genetic | `genetic_algorithm` | Exp | 75 | 80 | Petri | ✓ | ✗ |
-| PSO | `pso` | Exp | 70 | 75 | Petri | ✓ | ✗ |
-| A* | `a_star` | Exp | 60 | 70 | Petri | ✗ | ✗ |
-| Hill Climb | `hill_climbing` | O(n²) | 40 | 55 | Petri | ✓ | ✓ |
-| ILP | `ilp` | NP-Hard | 80 | 90 | Petri | ✗ | ✗ |
-| ACO | `aco` | Exp | 65 | 75 | Petri | ✓ | ✗ |
-| Sim. Ann. | `simulated_annealing` | Exp | 55 | 65 | Petri | ✓ | ✗ |
-| Declare | `declare` | O(n²) | 35 | 50 | Declare | ✓ | ✓ |
-| Opt. DFG | `optimized_dfg` | NP-Hard | 70 | 85 | DFG | ✗ | ✗ |
+## Quick Commands
 
-### ML Analysis Algorithms
-
-| Algorithm | ID | Type | Output | Use Case |
-|-----------|----|------|--------|----------|
-| ML Classify | `ml_classify` | Supervised | ClassificationResult | Outcome prediction, routing |
-| ML Cluster | `ml_cluster` | Unsupervised | ClusteringResult | Variant discovery, segmentation |
-| ML Forecast | `ml_forecast` | Time series | ForecastResult | Drift prediction, forecasting |
-| ML Anomaly | `ml_anomaly` | Detection | AnomalyResult | Deviation detection, QC |
-| ML Regress | `ml_regress` | Regression | RegressionResult | Remaining time, cost estimation |
-| ML PCA | `ml_pca` | Dimensionality | PCAResult | Visualization, noise reduction |
-
-\* Speed (0-100, lower=faster) | Quality (0-100, higher=better)
-
-## Detailed Algorithm Descriptions
-
-### 1. DFG (Directly Follows Graph)
-
-**ID**: `dfg`
-
-**Type**: Basic discovery
-
-**Algorithm**: Scans log once, builds frequency graph of directly-following activities
-
-**Complexity**: O(n)
-
-**Output**: Directly Follows Graph with nodes and edges
-
-**Parameters**:
-- `activity_key` (string, required): Event attribute for activity names (default: "concept:name")
-
-**Use Cases**:
-- Quick process overview
-- Dashboard displays
-- Streaming analysis
-- Large log exploration
-
-**Pros**:
-- ⚡ Fastest algorithm (0.5ms per 100 events)
-- 📊 Minimal memory footprint (20MB)
-- 🔄 Fully parallelizable
-- 🎯 Works with any event attribute
-
-**Cons**:
-- ❌ No loop/XOR detection
-- ❌ No complex control flow
-- ❌ No implicit start/end inference
-
-**Example**:
-```typescript
-const output = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.DISCOVER_DFG,
-    parameters: { activity_key: 'concept:name' }
-  },
-  wasm,
-  logHandle
-);
-// => DFG with all directly-following relations
+```bash
+wpm algorithms --format json | jq '.payload.algorithms | length'   # expect 60
+wpm run log.xes -a dfg
 ```
 
 ---
 
-### 2. Process Skeleton
-
-**ID**: `process_skeleton`
-
-**Type**: Basic discovery
-
-**Algorithm**: Extracts minimal skeleton (start, end, and direct flows)
-
-**Complexity**: O(n)
-
-**Output**: Minimal DFG with skeleton structure
-
-**Parameters**:
-- `activity_key` (string, required): Event attribute (default: "concept:name")
-
-**Use Cases**:
-- Real-time monitoring
-- Streaming discovery
-- Quick sanity checks
-
-**Pros**:
-- ⚡⚡ Fastest algorithm (0.3ms per 100 events)
-- 🧠 Minimal memory (10MB)
-- 🎯 Perfect for streaming
-
-**Cons**:
-- ❌ Too minimal for practical use
-- ❌ Loses most behavior information
-
-**Example**:
-```typescript
-// Skeleton is treated as DFG with minimal structure
-const output = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.DISCOVER_DFG, // Uses DFG WASM function
-    parameters: { activity_key: 'concept:name' }
-  },
-  wasm,
-  logHandle
-);
-```
-
----
-
-### 3. Alpha++ (Improved Alpha)
-
-**ID**: `alpha_plus_plus`
-
-**Type**: Petri Net discovery (improved classical algorithm)
-
-**Algorithm**: Extends classic Alpha with better noise handling and loop detection
-
-**Complexity**: O(n²)
-
-**Output**: Place-Transition Petri Net
-
-**Parameters**:
-- `activity_key` (string, required): Event attribute (default: "concept:name")
-
-**Use Cases**:
-- Formal process models
-- Verification and analysis
-- Educational purposes
-
-**Pros**:
-- 📐 Produces formal Petri nets
-- 🔄 Handles simple loops
-- 🧬 Theoretically sound
-
-**Cons**:
-- ❌ Fails on non-fitting logs
-- ❌ No noise tolerance
-- ❌ Can produce overfitting models
-
-**Typical Speed**: 5ms per 100 events
-
-**Example**:
-```typescript
-const output = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.DISCOVER_ALPHA_PLUS_PLUS,
-    parameters: { activity_key: 'concept:name' }
-  },
-  wasm,
-  logHandle
-);
-// => Petri Net model
-```
-
----
-
-### 4. Heuristic Miner
-
-**ID**: `heuristic_miner`
-
-**Type**: Petri Net discovery (lenient, noise-tolerant)
-
-**Algorithm**: Uses dependency frequency to filter edges, tolerates deviations
-
-**Complexity**: O(n²)
-
-**Output**: DFG or Petri Net with dependency relations
-
-**Parameters**:
-- `activity_key` (string, required): Event attribute (default: "concept:name")
-- `dependency_threshold` (number, 0-1, default: 0.5): Minimum dependency ratio
-
-**Dependency Formula**: `(a→b - b→a) / (a→b + b→a + 1) ≥ threshold`
-
-**Use Cases**:
-- Real-world process discovery
-- Noise handling in actual logs
-- Production systems
-- Continuous improvement
-
-**Pros**:
-- 🛡️ Handles noise well
-- 🎯 Works with real logs
-- ⚙️ Tunable threshold
-- 🔄 Supports loops
-
-**Cons**:
-- ⚠️ Not formally sound
-- ⚠️ Threshold selection matters
-- ⚠️ Can miss infrequent paths
-
-**Typical Speed**: 10ms per 100 events
-
-**Recommendation**: Start with threshold 0.5, adjust based on log quality
-
-**Example**:
-```typescript
-// Lenient (include more edges)
-const output = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.DISCOVER_HEURISTIC,
-    parameters: {
-      activity_key: 'concept:name',
-      dependency_threshold: 0.3 // Lower = more edges
-    }
-  },
-  wasm,
-  logHandle
-);
-
-// Strict (filter weak dependencies)
-const strict = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.DISCOVER_HEURISTIC,
-    parameters: {
-      activity_key: 'concept:name',
-      dependency_threshold: 0.8 // Higher = fewer edges
-    }
-  },
-  wasm,
-  logHandle
-);
-```
-
----
-
-### 5. Inductive Miner
-
-**ID**: `inductive_miner`
-
-**Type**: Process Tree discovery (recursive partitioning)
-
-**Algorithm**: Recursively partitions log by cut criteria (xor, seq, par, loop)
-
-**Complexity**: O(n log n) average
-
-**Output**: Process Tree (can convert to Petri Net)
-
-**Parameters**:
-- `activity_key` (string, required): Event attribute (default: "concept:name")
-- `noise_threshold` (number, 0-1, default: 0.2): Infrequency filter
-
-**Use Cases**:
-- Complex process structures
-- XOR/parallel gate discovery
-- Structured process models
-- Mining with noise
-
-**Pros**:
-- 📐 Discovers complex structures (XOR, parallel, loops)
-- 🛡️ Handles noise via threshold
-- 🔄 Guaranteed to produce fitting model
-- ✨ Clean, readable output
-
-**Cons**:
-- 🐢 Slower than simple methods (15ms)
-- 💾 More memory (180MB)
-- ❌ Can be overly structured
-
-**Typical Speed**: 15ms per 100 events
-
-**Memory**: ~180MB for 10k event log
-
-**Recommendation**: Best choice for complex/structured processes
-
-**Example**:
-```typescript
-const output = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.DISCOVER_INDUCTIVE,
-    parameters: {
-      activity_key: 'concept:name',
-      noise_threshold: 0.2 // Filter infrequent behaviors
-    }
-  },
-  wasm,
-  logHandle
-);
-// => Process Tree with XOR/SEQ/PAR/LOOP gates
-```
-
----
-
-### 6. Genetic Algorithm
-
-**ID**: `genetic_algorithm`
-
-**Type**: Evolutionary discovery (population-based optimization)
-
-**Algorithm**: Evolves population of models via selection, crossover, mutation
-
-**Complexity**: Exponential (configurable via population × generations)
-
-**Output**: High-quality Petri Net
-
-**Parameters**:
-- `activity_key` (string, required): Event attribute (default: "concept:name")
-- `population_size` (number, 10-500, default: 50): Population size
-- `generations` (number, 10-1000, default: 100): Evolution iterations
-
-**Use Cases**:
-- High-quality model discovery
-- Research/offline analysis
-- Complex process mining
-- When time allows
-
-**Pros**:
-- 🏆 Produces high-quality models (quality tier 80)
-- 🔬 Flexible search
-- 🧬 Can handle complex behaviors
-- 📊 Tuneable performance
-
-**Cons**:
-- 🐢 Slow (40ms per 100 events)
-- 💾 Heavy memory (250MB)
-- ⚠️ Parameter tuning required
-- ❌ May not converge
-
-**Typical Speed**: 40ms per 100 events
-
-**Memory**: ~250MB for 10k event log
-
-**Parameter Tuning**:
-- Small population (20), few generations (20) = faster, lower quality
-- Large population (100), many generations (300) = slower, higher quality
-- Sweet spot: 50-100 population, 100-200 generations
-
-**Example**:
-```typescript
-// Fast variant
-const fast = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.DISCOVER_GENETIC,
-    parameters: {
-      activity_key: 'concept:name',
-      population_size: 30,
-      generations: 50
-    }
-  },
-  wasm,
-  logHandle
-);
-
-// Quality variant
-const quality = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.DISCOVER_GENETIC,
-    parameters: {
-      activity_key: 'concept:name',
-      population_size: 100,
-      generations: 200
-    }
-  },
-  wasm,
-  logHandle
-);
-```
-
----
-
-### 7. PSO (Particle Swarm Optimization)
-
-**ID**: `pso`
-
-**Type**: Swarm-based discovery
-
-**Algorithm**: Models as particles moving in solution space, guided by best solutions
-
-**Complexity**: Exponential (configurable)
-
-**Output**: High-quality Petri Net
-
-**Parameters**:
-- `activity_key` (string, required): Event attribute (default: "concept:name")
-- `swarm_size` (number, 10-300, default: 30): Number of particles
-- `iterations` (number, 10-500, default: 50): Optimization iterations
-
-**Use Cases**:
-- High-quality discovery (alternative to genetic)
-- Better convergence than genetic in some cases
-- Quality research
-
-**Pros**:
-- 🏆 High-quality models (quality tier 75)
-- 🐝 Swarm intelligence (good exploration)
-- 📊 Slightly faster than genetic
-- 🔬 Less parameter sensitivity
-
-**Cons**:
-- 🐢 Still slow (35ms per 100 events)
-- 💾 Heavy memory (220MB)
-- ⚠️ May premature converge
-
-**Typical Speed**: 35ms per 100 events
-
-**Example**:
-```typescript
-const output = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.DISCOVER_PSO,
-    parameters: {
-      activity_key: 'concept:name',
-      swarm_size: 40,
-      iterations: 100
-    }
-  },
-  wasm,
-  logHandle
-);
-```
-
----
-
-### 8. A* Search
-
-**ID**: `a_star`
-
-**Type**: Heuristic search discovery
-
-**Algorithm**: Explores model space using heuristic guidance
-
-**Complexity**: Exponential (depends on search space)
-
-**Output**: Near-optimal Petri Net
-
-**Parameters**:
-- `activity_key` (string, required): Event attribute (default: "concept:name")
-- `max_iterations` (number, 1000-100000, default: 10000): Search depth
-
-**Use Cases**:
-- Near-optimal model discovery
-- When optimality matters
-- Smaller logs only
-
-**Pros**:
-- 🎯 Guaranteed near-optimal
-- 🧭 Guided search (faster than brute force)
-- 📐 Theoretically sound
-
-**Cons**:
-- 🐢 Slow (50ms per 100 events)
-- 💾 Memory intensive (200MB)
-- ❌ Fails on large logs
-- ⚠️ Requires good heuristics
-
-**Typical Speed**: 50ms per 100 events
-
-**Recommendation**: Use only on logs < 10k events
-
-**Example**:
-```typescript
-const output = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.DISCOVER_A_STAR,
-    parameters: {
-      activity_key: 'concept:name',
-      max_iterations: 5000
-    }
-  },
-  wasm,
-  logHandle
-);
-```
-
----
-
-### 9. Hill Climbing
-
-**ID**: `hill_climbing`
-
-**Type**: Greedy local search discovery
-
-**Algorithm**: Starts with random model, iteratively improves by local changes
-
-**Complexity**: O(n²) per iteration
-
-**Output**: Local-optimal Petri Net
-
-**Parameters**:
-- `activity_key` (string, required): Event attribute (default: "concept:name")
-- `max_iterations` (number, 10-1000, default: 100): Improvement iterations
-
-**Use Cases**:
-- Quick quality improvements
-- Balanced speed/quality
-- Medium-sized logs
-
-**Pros**:
-- ⚡ Fast (20ms per 100 events)
-- 📊 Scales reasonably (true to O(n²))
-- 🎯 Local optimization
-- 💡 Simple and predictable
-
-**Cons**:
-- 🏔️ Gets stuck in local optima
-- ⚠️ Quality varies with random start
-- ⚠️ Not guaranteed good models
-
-**Typical Speed**: 20ms per 100 events
-
-**Memory**: ~150MB for 10k event log
-
-**Example**:
-```typescript
-const output = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.DISCOVER_A_STAR,
-    parameters: {
-      activity_key: 'concept:name',
-      max_iterations: 100
-    }
-  },
-  wasm,
-  logHandle
-);
-```
-
----
-
-### 10. ILP (Integer Linear Programming)
-
-**ID**: `ilp`
-
-**Type**: Mathematical optimization discovery
-
-**Algorithm**: Formulates discovery as integer program, solves optimally
-
-**Complexity**: NP-Hard (depends on solver)
-
-**Output**: Optimal Petri Net
-
-**Parameters**:
-- `activity_key` (string, required): Event attribute (default: "concept:name")
-- `timeout_seconds` (number, 1-300, default: 30): Solver timeout
-
-**Use Cases**:
-- Best possible model quality
-- Research/academic use
-- Logs with clear structure
-- When time permits
-
-**Pros**:
-- 🏆 Optimal models (quality tier 90)
-- 📐 Mathematically rigorous
-- ✨ Clear quality guarantees
-- 🎯 Deterministic
-
-**Cons**:
-- 🐢 Very slow (20ms + solver time)
-- 💾 Very heavy memory (300MB)
-- ❌ Fails on large/complex logs
-- ⚠️ Solver may timeout
-- ⚠️ Exponential worst case
-
-**Typical Speed**: 20ms per 100 events (+ solver time)
-
-**Memory**: ~300MB for 10k event log
-
-**Solver Behavior**:
-- Finds optimal solution if time permits
-- Returns best found solution on timeout
-- Guaranteed to respect constraint model
-
-**Recommendation**: 
-- Use only on small-medium logs (< 10k events)
-- Increase timeout for complex processes
-- Monitor solver convergence
-
-**Example**:
-```typescript
-// Quick solve (30s timeout)
-const quick = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.DISCOVER_ILP,
-    parameters: {
-      activity_key: 'concept:name',
-      timeout_seconds: 30
-    }
-  },
-  wasm,
-  logHandle
-);
-
-// Deep solve (120s timeout)
-const deep = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.DISCOVER_ILP,
-    parameters: {
-      activity_key: 'concept:name',
-      timeout_seconds: 120
-    }
-  },
-  wasm,
-  logHandle
-);
-```
-
----
-
-### 11. ACO (Ant Colony Optimization)
-
-**ID**: `aco`
-
-**Type**: Swarm-based discovery
-
-**Algorithm**: Simulates ant pheromone trails to find good solutions
-
-**Complexity**: Exponential
-
-**Output**: High-quality Petri Net
-
-**Parameters**:
-- `activity_key` (string, required): Event attribute (default: "concept:name")
-- `colony_size` (number, 10-500, default: 40): Number of ants
-- `iterations` (number, 10-1000, default: 100): Iterations
-
-**Use Cases**:
-- High-quality discovery (alternative approach)
-- When genetic fails
-- Complex process structures
-
-**Pros**:
-- 🐜 Swarm intelligence (good exploration)
-- 🏆 High-quality models (quality tier 75)
-- 🔄 Good for complex behaviors
-- 🎯 No local optima escape issues
-
-**Cons**:
-- 🐢 Slow (45ms per 100 events)
-- 💾 Heavy memory (200MB)
-- ⚠️ Parameter tuning needed
-
-**Typical Speed**: 45ms per 100 events
-
-**Example**:
-```typescript
-const output = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.DISCOVER_ACO,
-    parameters: {
-      activity_key: 'concept:name',
-      colony_size: 50,
-      iterations: 150
-    }
-  },
-  wasm,
-  logHandle
-);
-```
-
----
-
-### 12. Simulated Annealing
-
-**ID**: `simulated_annealing`
-
-**Type**: Probabilistic search discovery
-
-**Algorithm**: Models cooling of metal, probability decreases with temperature
-
-**Complexity**: Exponential
-
-**Output**: Good quality Petri Net
-
-**Parameters**:
-- `activity_key` (string, required): Event attribute (default: "concept:name")
-- `initial_temperature` (number, 1-1000, default: 100): Starting temperature
-- `cooling_rate` (number, 0.8-0.99, default: 0.95): Cooling rate per iteration
-
-**Use Cases**:
-- Balanced exploration/exploitation
-- When time is limited
-- Alternative to genetic/PSO
-
-**Pros**:
-- ⚡ Faster than most evolutionary (30ms)
-- 🌡️ Temperature control (theoretical grounding)
-- 🔬 Good empirical results
-- 📊 Tunable behavior
-
-**Cons**:
-- ⚠️ Sensitive to temperature schedule
-- ⚠️ Can converge too fast/slow
-- 🐢 Still slow (30ms per 100 events)
-
-**Typical Speed**: 30ms per 100 events
-
-**Temperature Schedule Tips**:
-- Higher initial_temperature: more exploration (slower to converge)
-- Lower cooling_rate: slower cooling (more exploration)
-- Default (100, 0.95) is good starting point
-
-**Example**:
-```typescript
-// Exploratory (more iterations)
-const explore = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.DISCOVER_SIMULATED_ANNEALING,
-    parameters: {
-      activity_key: 'concept:name',
-      initial_temperature: 200,
-      cooling_rate: 0.98 // Slower cooling
-    }
-  },
-  wasm,
-  logHandle
-);
-
-// Exploitative (faster convergence)
-const exploit = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.DISCOVER_SIMULATED_ANNEALING,
-    parameters: {
-      activity_key: 'concept:name',
-      initial_temperature: 50,
-      cooling_rate: 0.90 // Faster cooling
-    }
-  },
-  wasm,
-  logHandle
-);
-```
-
----
-
-### 13. Declare (Constraint-Based)
-
-**ID**: `declare`
-
-**Type**: Constraint-based discovery
-
-**Algorithm**: Discovers logical constraints (response, precedence, etc.)
-
-**Complexity**: O(n²)
-
-**Output**: Declare model (set of constraints)
-
-**Parameters**:
-- `activity_key` (string, required): Event attribute (default: "concept:name")
-- `support_threshold` (number, 0-1, default: 0.8): Minimum constraint frequency
-
-**Use Cases**:
-- Flexible processes (healthcare, case work)
-- Processes with optional activities
-- Constraint documentation
-- Process flexibility analysis
-
-**Pros**:
-- 🔓 Models flexible processes (not just fixed flows)
-- 📋 Human-readable constraints
-- 🛡️ Handles noise (via threshold)
-- ⚙️ Works well with optional activities
-
-**Cons**:
-- ❌ Different paradigm (harder to visualize)
-- ⚠️ May generate too many constraints
-- 🐢 Moderate speed (12ms)
-
-**Typical Speed**: 12ms per 100 events
-
-**Example**:
-```typescript
-const output = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.DISCOVER_DECLARE,
-    parameters: {
-      activity_key: 'concept:name',
-      support_threshold: 0.9 // Only high-confidence constraints
-    }
-  },
-  wasm,
-  logHandle
-);
-// => Declare model with constraints like:
-//   - Response(A, B): if A occurs, B eventually follows
-//   - Precedence(B, C): B must occur before C
-//   - etc.
-```
-
----
-
-### 14. Optimized DFG (ILP-Based)
-
-**ID**: `optimized_dfg`
-
-**Type**: Mathematical optimization discovery
-
-**Algorithm**: ILP-based DFG optimization, minimal model with maximum fitness
-
-**Complexity**: NP-Hard
-
-**Output**: Optimized DFG
-
-**Parameters**:
-- `activity_key` (string, required): Event attribute (default: "concept:name")
-- `timeout_seconds` (number, 1-300, default: 15): Solver timeout
-
-**Use Cases**:
-- Best DFG quality
-- Minimal edge count with maximum coverage
-- Research use
-
-**Pros**:
-- 🏆 Highest quality DFG (quality tier 85)
-- 📉 Minimal edge count (compact model)
-- 📐 Optimal solution
-
-**Cons**:
-- 🐢 Slow (15ms + solver)
-- 💾 Memory intensive (250MB)
-- ❌ Only works on small logs
-
-**Typical Speed**: 15ms per 100 events (+ solver time)
-
-**Example**:
-```typescript
-const output = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.DISCOVER_ILP,
-    parameters: {
-      activity_key: 'concept:name',
-      timeout_seconds: 15
-    }
-  },
-  wasm,
-  logHandle
-);
-```
-
----
-
-## Algorithm Selection Decision Tree
-
-```
-Is time critical?
-├─ YES → Can afford 100+ ms?
-│  ├─ NO → Use DFG (0.5ms)
-│  └─ YES → Is log < 50k events?
-│     ├─ NO → Use Heuristic Miner (10ms)
-│     └─ YES → Use Genetic/ILP (40-20ms)
-│
-└─ NO → How complex is process?
-   ├─ SIMPLE → Use DFG (0.5ms)
-   ├─ MODERATE → Use Heuristic/Inductive (10-15ms)
-   └─ COMPLEX → Use Genetic/ILP (40-20ms)
-```
-
-## Profile Recommendations
-
-### Fast Profile
-- **Goal**: Quick analysis, < 5ms per 100 events
-- **Algorithms**: DFG, Process Skeleton
-- **Use**: Dashboards, streaming, initial exploration
-- **Quality**: Basic (enough to see flow)
-
-### Balanced Profile
-- **Goal**: Reasonable speed, good quality, 10-30ms per 100 events
-- **Algorithms**: Heuristic Miner, Inductive Miner, Alpha++
-- **Use**: Standard analysis, reports, most production use
-- **Quality**: Good (accurate for most processes)
-
-### Quality Profile
-- **Goal**: Best possible quality, time permitting, 30-80ms per 100 events
-- **Algorithms**: Genetic, PSO, ACO, ILP, A*, Simulated Annealing
-- **Use**: Research, optimization, offline analysis
-- **Quality**: High (accurate models)
-
-### Stream Profile
-- **Goal**: Real-time processing, < 1ms per 100 events
-- **Algorithms**: DFG, lightweight variants
-- **Use**: Stream processing, real-time monitoring
-- **Quality**: Minimal (just captures flow)
-
----
-
-## Performance Comparison Chart
-
-```
-Speed (ms per 100 events) vs Quality (0-100)
-
-100 ├─────────────────────────┤
-    │                         ●ILP(90)
-    │              ●PSO(75)   │
-    │           ●GA(80)       │
- 80 ├──────────────────────●AA(70) ├──────
-    │      ●ACO(75)           │
-    │                  ●SA(65)│
- 60 ├──────────────────────────┤
-    │               ●HC(55)    │
-    │  ●Ind(55)      │        │
- 40 ├──────●Heur(50)──┤───────┤
-    │                 │ ●Declare(50)
-    │             ●OptDFG(85)  │
- 20 ├──────────────────────────┤
-    │                          │
-    │   ●Skeleton(25)          │
-    ●DFG(30)                   │
-  0 └────────────────────────┤
-    0   10   20   30   40  50   60
-             Speed (ms/100 events)
-```
-
----
-
-## ML Analysis Algorithms
-
-### 15. ML Classify
-
-**ID**: `ml_classify`
-
-**Type**: Supervised classification
-
-**Algorithms**: k-nearest neighbors (kNN), logistic regression
-
-**Complexity**: O(n × k) for kNN, O(n × iterations) for logistic regression
-
-**Output**: Classification result with class labels and probabilities
-
-**Parameters**:
-- `algorithm` (string, required): "knn" or "logistic_regression"
-- `k` (number, 3-50, default: 5): Number of neighbors (kNN only)
-- `target_attribute` (string, required): Attribute to classify
-
-**Use Cases**:
-- Trace outcome prediction
-- Case routing classification
-- Activity recommendation
-
-**Example**:
-```typescript
-const output = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.ML_CLASSIFY,
-    parameters: {
-      algorithm: 'knn',
-      k: 5,
-      target_attribute: 'outcome'
-    }
-  },
-  wasm,
-  logHandle
-);
-```
-
----
-
-### 16. ML Cluster
-
-**ID**: `ml_cluster`
-
-**Type**: Unsupervised clustering
-
-**Algorithms**: k-means, DBSCAN
-
-**Complexity**: O(n × k × iterations) for k-means, O(n × log n) for DBSCAN
-
-**Output**: Cluster assignment for each trace
-
-**Parameters**:
-- `algorithm` (string, required): "kmeans" or "dbscan"
-- `k` (number, 2-20, default: 3): Number of clusters (k-means only)
-- `epsilon` (number, default: 0.5): Neighborhood radius (DBSCAN only)
-- `min_points` (number, default: 3): Minimum points for cluster (DBSCAN only)
-
-**Use Cases**:
-- Trace variant discovery
-- Process segmentation
-- Anomaly detection (outlier clusters)
-
-**Example**:
-```typescript
-const output = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.ML_CLUSTER,
-    parameters: {
-      algorithm: 'kmeans',
-      k: 3
-    }
-  },
-  wasm,
-  logHandle
-);
-```
-
----
-
-### 17. ML Forecast
-
-**ID**: `ml_forecast`
-
-**Type**: Time series forecasting
-
-**Algorithm**: Linear regression with trend analysis
-
-**Complexity**: O(n)
-
-**Output**: Forecast result with predicted values and confidence intervals
-
-**Parameters**:
-- `horizon` (number, 1-100, default: 10): Forecast horizon
-- `confidence_level` (number, 0-1, default: 0.95): Confidence interval level
-
-**Use Cases**:
-- Concept drift prediction
-- Activity frequency forecasting
-- Case completion rate projection
-
-**Example**:
-```typescript
-const output = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.ML_FORECAST,
-    parameters: {
-      horizon: 10,
-      confidence_level: 0.95
-    }
-  },
-  wasm,
-  logHandle
-);
-```
-
----
-
-### 18. ML Anomaly
-
-**ID**: `ml_anomaly`
-
-**Type**: Anomaly detection
-
-**Algorithm**: Statistical outlier detection (z-score, IQR)
-
-**Complexity**: O(n)
-
-**Output**: Anomaly scores and flagged traces
-
-**Parameters**:
-- `method` (string, required): "zscore" or "iqr"
-- `threshold` (number, default: 3.0): Anomaly threshold (z-score) or 1.5 (IQR multiplier)
-
-**Use Cases**:
-- Deviation detection
-- Quality control
-- Security audit
-
-**Example**:
-```typescript
-const output = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.ML_ANOMALY,
-    parameters: {
-      method: 'zscore',
-      threshold: 3.0
-    }
-  },
-  wasm,
-  logHandle
-);
-```
-
----
-
-### 19. ML Regress
-
-**ID**: `ml_regress`
-
-**Type**: Regression analysis
-
-**Algorithm**: Linear regression
-
-**Complexity**: O(n × features)
-
-**Output**: Regression model with coefficients and predictions
-
-**Parameters**:
-- `target_variable` (string, required): Variable to predict
-- `feature_variables` (string[], required): Predictor variables
-
-**Use Cases**:
-- Remaining time prediction
-- Cost estimation
-- Resource allocation
-
-**Example**:
-```typescript
-const output = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.ML_REGRESS,
-    parameters: {
-      target_variable: 'remaining_time',
-      feature_variables: ['activity_count', 'trace_length']
-    }
-  },
-  wasm,
-  logHandle
-);
-```
-
----
-
-### 20. ML PCA
-
-**ID**: `ml_pca`
-
-**Type**: Dimensionality reduction
-
-**Algorithm**: Principal Component Analysis (eigendecomposition)
-
-**Complexity**: O(n × features²)
-
-**Output**: Principal components and reduced feature space
-
-**Parameters**:
-- `n_components` (number, 2-50, default: 2): Number of principal components
-
-**Use Cases**:
-- Feature space visualization
-- Noise reduction
-- Preprocessing for other ML algorithms
-
-**Example**:
-```typescript
-const output = await kernel.implementAlgorithmStep(
-  {
-    type: PlanStepType.ML_PCA,
-    parameters: {
-      n_components: 2
-    }
-  },
-  wasm,
-  logHandle
-);
-```
-
----
-
-## Configuration Examples
-
-### Fast Exploration
-```typescript
-const registry = getRegistry();
-const algo = registry.suggestForProfile('fast', 100000);
-// => DFG (almost always)
-```
-
-### Production Quality
-```typescript
-const algo = registry.suggestForProfile('balanced', 50000);
-// => Heuristic Miner or Inductive (depending on structure)
-```
-
-### Research Publication
-```typescript
-const algo = registry.suggestForProfile('quality', 10000);
-// => Genetic or ILP (maximum quality)
-```
-
-### Real-time Monitoring
-```typescript
-const algo = registry.suggestForProfile('stream', 5000);
-// => DFG (fast and lightweight)
-```
-
----
-
-## References
-
-- Van der Aalst, W. M. P. (2016). Process Mining
-- Leemans, S. J. J., & Polyvyanyy, A. (2021). Stochastic Process Mining
-- Schwegmann, C. (2021). Intelligent Process Automation
-- Algorithm Papers: See ALGORITHMS_PAPERS.md
+## Core Discovery
+
+| ID | Alias | Output | Speed | Quality | Robust | Scales |
+|----|-------|--------|------:|--------:|:------:|:------:|
+| `a_star` | `astar` | dfg | 60 | 70 | ✗ | ✗ |
+| `aco` | `ant-colony` | dfg | 65 | 75 | ✓ | ✗ |
+| `alpha_plus_plus` | `alpha` | petrinet | 20 | 50 | ✗ | ✗ |
+| `declare` | `declare` | declare | 35 | 50 | ✓ | ✓ |
+| `dfg` | `dfg` | dfg | 5 | 30 | ✓ | ✓ |
+| `genetic_algorithm` | `genetic` | dfg | 75 | 80 | ✓ | ✗ |
+| `heuristic_miner` | `heuristic` | dfg | 25 | 50 | ✓ | ✓ |
+| `hill_climbing` | `hill-climbing` | dfg | 40 | 55 | ✓ | ✓ |
+| `ilp` | `ilp` | petrinet | 80 | 90 | ✗ | ✗ |
+| `inductive_miner` | `inductive` | tree | 30 | 55 | ✓ | ✓ |
+| `optimized_dfg` | `dfg-optimized` | dfg | 70 | 85 | ✗ | ✗ |
+| `process_skeleton` | `skeleton` | dfg | 3 | 25 | ✓ | ✓ |
+| `pso` | `pso` | dfg | 70 | 75 | ✓ | ✗ |
+| `simulated_annealing` | `simulated-annealing` | dfg | 55 | 65 | ✓ | ✗ |
+
+- **`a_star`** (A* Search): Heuristic search algorithm. Actually returns DFG, not Petri net (Phase 4 audit correction).
+- **`aco`** (Ant Colony Optimization (ACO)): Swarm intelligence algorithm. Actually returns DFG, not Petri net (Phase 4 audit correction).
+- **`alpha_plus_plus`** (Alpha+++ (Triple Plus)): Advanced Alpha+++ algorithm. Extends the original Alpha algorithm with explicit handling of length-1 loops, length-2 loops, and parallel short-loop pairs. Produces a proper Petri net with source/sink places.
+- **`declare`** (Declare (Constraints)): Discovers declarative (constraint-based) process models. Good for flexible processes.
+- **`dfg`** (DFG (Directly Follows Graph)): Discovers a directly-follows graph from an event log. Fastest algorithm with minimal memory overhead.
+- **`genetic_algorithm`** (Genetic Algorithm): Uses evolutionary computation. Actually returns DFG, not Petri net (Phase 4 audit correction).
+- **`heuristic_miner`** (Heuristic Miner): Discovers models from real-world logs with noise. Uses dependency threshold to filter weak dependencies.
+- **`hill_climbing`** (Hill Climbing): Greedy local search. Actually returns DFG, not Petri net (Phase 4 audit correction).
+- **`ilp`** (Integer Linear Programming (ILP)): Region-based Petri net discovery. Finds causal place candidates (1-to-1, AND-splits, AND-joins) validated by token replay, with greedy minimization. Produces precise Petri nets with explicit parallel-join/split structure.
+- **`inductive_miner`** (Inductive Miner): Recursive cut-based process tree discovery (XOR/Sequence/Parallel/Loop cuts). IM-basic: no noise filtering, all directly-follows preserved.
+- **`optimized_dfg`** (Optimized DFG (ILP)): ILP-based DFG optimization. Minimal model with best fitness.
+- **`process_skeleton`** (Process Skeleton): Discovers a minimal process skeleton with start and end activities. Very fast.
+- **`pso`** (Particle Swarm Optimization (PSO)): Swarm-based algorithm. Actually returns DFG, not Petri net (Phase 4 audit correction).
+- **`simulated_annealing`** (Simulated Annealing): Probabilistic technique. Actually returns DFG, not Petri net (Phase 4 audit correction).
+
+## Streaming & Smart Engine
+
+| ID | Alias | Output | Speed | Quality | Robust | Scales |
+|----|-------|--------|------:|--------:|:------:|:------:|
+| `hierarchical_dfg` | — | dfg | 5 | 30 | ✓ | ✓ |
+| `simd_streaming_dfg` | `simd-dfg` | dfg | 1 | 30 | ✓ | ✓ |
+| `smart_engine` | — | dfg | 3 | 45 | ✓ | ✓ |
+| `streaming_log` | — | analytics | 10 | 25 | ✓ | ✓ |
+
+- **`hierarchical_dfg`** (Hierarchical DFG): Hierarchical chunking DFG for massive event logs. Scales to 100B+ events via divide-and-conquer with bounded memory.
+- **`simd_streaming_dfg`** (SIMD Streaming DFG): SIMD-accelerated streaming directly-follows graph discovery. Approximately 500x faster than standard DFG via vectorized event processing.
+- **`smart_engine`** (Smart Engine): Smart execution engine with adaptive algorithm selection, result caching, and early termination. Output type varies based on log characteristics.
+- **`streaming_log`** (Streaming Log (Probabilistic)): Probabilistic streaming event log processor. Stateful handle-based API. Use streaming_log_create(), streaming_log_add_trace(), streaming_log_estimate_dfg(), streaming_log_free().
+
+## Discovery Analytics
+
+| ID | Alias | Output | Speed | Quality | Robust | Scales |
+|----|-------|--------|------:|--------:|:------:|:------:|
+| `analyze_process_speedup` | — | analytics | 15 | 60 | ✓ | ✓ |
+| `analyze_variant_complexity` | — | analytics | 10 | 40 | ✓ | ✓ |
+| `batches` | `batches` | analytics | 50 | 55 | ✗ | ✗ |
+| `causal_graph` | `causal-graph` | dfg | 60 | 55 | ✗ | ✓ |
+| `compute_activity_transition_matrix` | — | analytics | 20 | 50 | ✓ | ✓ |
+| `compute_trace_similarity_matrix` | — | analytics | 50 | 70 | ✓ | ✗ |
+| `correlation_miner` | `correlation` | dfg | 45 | 60 | ✗ | ✗ |
+| `log_to_trie` | `prefix-tree` | dfg | 75 | 50 | ✓ | ✓ |
+| `performance_spectrum` | `perf-spectrum` | analytics | 55 | 60 | ✗ | ✗ |
+| `transition_system` | `transition-system` | dfg | 70 | 50 | ✓ | ✓ |
+
+- **`analyze_process_speedup`** (Process Speedup Analysis): Identify where process accelerates/decelerates over time using timestamp deltas. WASM export: analyze_process_speedup(log_handle, timestamp_key, window_size).
+- **`analyze_variant_complexity`** (Variant Complexity Analysis): Measure variant entropy and diversity in the event log. WASM export: analyze_variant_complexity(log_handle, activity_key).
+- **`batches`** (Batch Detection): Detect batch patterns where cases share timestamps.
+- **`causal_graph`** (Causal Graph Discovery): Discover causal dependencies using alpha or heuristic methods.
+- **`compute_activity_transition_matrix`** (Activity Transition Matrix): Compute activity transition matrix (Markov chain) for the process. WASM export: compute_activity_transition_matrix(log_handle, activity_key).
+- **`compute_trace_similarity_matrix`** (Trace Similarity Matrix): Compute pairwise trace similarity matrix using Levenshtein distance on activity sequences. WASM export: compute_trace_similarity_matrix(log_handle, activity_key).
+- **`correlation_miner`** (Correlation Miner): Discover DFG structure without case identifiers using timestamp correlation.
+- **`log_to_trie`** (Prefix Tree Discovery): Build a prefix tree (trie) from log variants.
+- **`performance_spectrum`** (Performance Spectrum): Analyze duration statistics between activity pairs.
+- **`transition_system`** (Transition System Discovery): Build a state machine from the event log using a sliding window approach.
+
+## Conformance & Quality
+
+| ID | Alias | Output | Speed | Quality | Robust | Scales |
+|----|-------|--------|------:|--------:|:------:|:------:|
+| `alignments` | `alignment` | analytics | 20 | 90 | ✓ | ✗ |
+| `complexity_metrics` | `complexity` | analytics | 80 | 60 | ✓ | ✓ |
+| `etconformance_precision` | `etconformance` | analytics | 55 | 70 | ✓ | ✓ |
+| `generalization` | `generalization` | analytics | 65 | 65 | ✓ | ✓ |
+
+- **`alignments`** (A* Optimal Alignments): Compute optimal trace-to-model alignments using A* search.
+- **`complexity_metrics`** (POWL Complexity Metrics): Measure structural complexity of a POWL model.
+- **`etconformance_precision`** (ETConformance Precision): Measure precision via escaping-edge analysis.
+- **`generalization`** (Generalization Metric): Measure how general a Petri net model is (avoids overfitting).
+
+## Simulation
+
+| ID | Alias | Output | Speed | Quality | Robust | Scales |
+|----|-------|--------|------:|--------:|:------:|:------:|
+| `monte_carlo_simulation` | `montecarlo` | dfg | 70 | 60 | ✓ | ✗ |
+| `playout` | `playout` | analytics | 60 | 50 | ✓ | ✓ |
+
+- **`monte_carlo_simulation`** (Monte Carlo Simulation): Run Monte Carlo simulation with stochastic replay for probabilistic process analysis.
+- **`playout`** (Process Tree Playout): Simulate event log generation from a process tree or DFG.
+
+## Import / Export
+
+| ID | Alias | Output | Speed | Quality | Robust | Scales |
+|----|-------|--------|------:|--------:|:------:|:------:|
+| `bpmn_import` | `import-bpmn` | tree | 70 | 70 | ✓ | ✓ |
+| `pnml_import` | `import-pnml` | petrinet | 75 | 80 | ✓ | ✓ |
+| `powl_to_process_tree` | `powl-to-tree` | tree | 75 | 70 | ✓ | ✓ |
+| `yawl_export` | `export-yawl` | tree | 75 | 70 | ✓ | ✓ |
+
+- **`bpmn_import`** (BPMN Import): Import a BPMN 2.0 XML model and convert to POWL.
+- **`pnml_import`** (PNML Import): Import a Petri net from PNML XML format.
+- **`powl_to_process_tree`** (POWL to Process Tree): Convert a POWL model to a process tree representation.
+- **`yawl_export`** (YAWL Export): Export a POWL model to YAWL v6 XML format.
+
+## OCEL / Object-Centric
+
+| ID | Alias | Output | Speed | Quality | Robust | Scales |
+|----|-------|--------|------:|--------:|:------:|:------:|
+| `ocel_dfg` | — | dfg | 5 | 30 | ✓ | ✓ |
+| `ocel_dfg_per_type` | — | dfg | 8 | 40 | ✓ | ✓ |
+| `ocel_encode` | — | analytics | 5 | 20 | ✓ | ✓ |
+| `ocel_oc_declare` | — | declare | 40 | 60 | ✓ | ✗ |
+| `ocel_ocla` | — | analytics | 10 | 40 | ✓ | ✓ |
+| `ocel_petri_net` | — | petrinet | 35 | 65 | ✓ | ✗ |
+
+- **`ocel_dfg`** (OC-DFG (Aggregate)): Discover an aggregate Object-Centric Directly-Follows Graph (OC-DFG) across all object types. Produces a single DFG where each node is an activity and edges reflect directly-follows relations observed across all object types in the OCEL. WASM export: discover_ocel_dfg(ocel_handle). Requires feature-ocel.
+- **`ocel_dfg_per_type`** (OC-DFG Per Object Type): Discover per-object-type Directly-Follows Graphs from an OCEL. Returns a map from object_type to DFG, allowing separate process views for each object type (e.g. Order, Item). This is the canonical OC-DFG projection for object-centric process mining. WASM export: discover_ocel_dfg_per_type(ocel_handle). Requires feature-ocel.
+- **`ocel_encode`** (OCEL Text Encoding): Encode an OCEL as a compact human-readable text representation suitable for LLM context, process inspection, and diff display. WASM export: encode_ocel_as_text(ocel_handle). Requires feature-ocel.
+- **`ocel_oc_declare`** (OC-Declare): Discover Object-Centric Declare constraints from an OCEL. Identifies temporal constraints that hold across different object types. WASM export: discover_oc_declare_wasm(ocel_handle, noise_threshold). Requires feature-ocel.
+- **`ocel_ocla`** (OC-Language Abstraction): Discover Object-Centric Language Abstraction (OCLA) from an OCEL. Captures the language of events per object type and their interactions. WASM export: discover_ocla_wasm(ocel_handle). Requires feature-ocel.
+- **`ocel_petri_net`** (OC-Petri Net Discovery): Discover an Object-Centric Petri Net (OC-Petri net) from an OCEL. The OC-Petri net captures concurrency and synchronization between different object types. WASM export: discover_oc_petri_net(ocel_handle, algorithm). Requires feature-ocel.
+
+## Prediction
+
+| ID | Alias | Output | Speed | Quality | Robust | Scales |
+|----|-------|--------|------:|--------:|:------:|:------:|
+| `compute_ewma` | — | analytics | 5 | 30 | ✓ | ✓ |
+| `detect_drift` | — | analytics | 15 | 70 | ✓ | ✓ |
+| `predict_next_activity` | — | analytics | 15 | 50 | ✓ | ✓ |
+| `predict_outcome` | — | analytics | 25 | 55 | ✓ | ✓ |
+| `predict_remaining_time` | — | analytics | 20 | 55 | ✓ | ✓ |
+
+- **`compute_ewma`** (EWMA Smoothing): Compute Exponentially Weighted Moving Average (EWMA) for a series of values. WASM export: compute_ewma(values_json, alpha).
+- **`detect_drift`** (Process Drift Detection): Detect concept drift in a process by comparing activity distributions across sliding windows. WASM export: detect_drift(log_handle, activity_key, window_size).
+- **`predict_next_activity`** (Next Activity Prediction): Predict the most likely next activity in a process using n-gram (Markov chain) models. Build model with build_ngram_predictor(), predict with predict_next_activity(). Returns activity predictions with probabilities.
+- **`predict_outcome`** (Outcome Prediction): Predict case outcome (success/anomaly) using anomaly scoring against DFG model and boundary coverage analysis. Build models with discover_dfg() and build_ngram_predictor(), score with score_anomaly() and compute_boundary_coverage(). Returns anomaly score and coverage metrics.
+- **`predict_remaining_time`** (Remaining Time Prediction): Predict remaining time to case completion using statistical bucket models and Weibull distribution. Build model with build_remaining_time_model(), predict with predict_case_duration(). Returns remaining milliseconds with confidence score.
+
+## ML Analysis
+
+| ID | Alias | Output | Speed | Quality | Robust | Scales |
+|----|-------|--------|------:|--------:|:------:|:------:|
+| `automl_classify` | — | analytics | 40 | 90 | ✓ | ✓ |
+| `automl_forecast` | — | analytics | 30 | 85 | ✓ | ✓ |
+| `ml_anomaly` | `ml-anomaly` | ml_result | 30 | 55 | ✓ | ✓ |
+| `ml_classify` | `ml-classify` | ml_result | 30 | 55 | ✓ | ✓ |
+| `ml_cluster` | `ml-cluster` | ml_result | 35 | 55 | ✓ | ✓ |
+| `ml_forecast` | `ml-forecast` | ml_result | 25 | 50 | ✓ | ✓ |
+| `ml_pca` | `ml-pca` | ml_result | 25 | 55 | ✗ | ✗ |
+| `ml_regress` | `ml-regress` | ml_result | 25 | 50 | ✓ | ✓ |
+
+- **`automl_classify`** (AutoML Classification): Auto-optimize classification model (RF/XGB) for trace outcome prediction. WASM export: discover_automl_classify(log_handle, activity_key).
+- **`automl_forecast`** (AutoML Throughput Forecast): Auto-optimize time-series forecasting model for process throughput. WASM export: discover_automl_forecast(log_handle, activity_key).
+- **`ml_anomaly`** (ML Anomaly Detection): Detect anomalous process windows using peak finding and seasonal decomposition on drift distances.
+- **`ml_classify`** (ML Trace Classification): Classify traces by outcome using k-NN, logistic regression, decision tree, or naive Bayes.
+- **`ml_cluster`** (ML Trace Clustering): Cluster traces by similarity using k-means or DBSCAN.
+- **`ml_forecast`** (ML Throughput Forecasting): Forecast future process throughput using linear trend, autocorrelation seasonality, and optional exponential overlay.
+- **`ml_pca`** (ML PCA Feature Reduction): Reduce trace feature dimensionality using Principal Component Analysis (Jacobi eigendecomposition).
+- **`ml_regress`** (ML Remaining Time Regression): Predict remaining case cycle time using linear, polynomial, or exponential regression on trace features.
+
+## Social Network Analysis
+
+| ID | Alias | Output | Speed | Quality | Robust | Scales |
+|----|-------|--------|------:|--------:|:------:|:------:|
+| `handover_network` | — | analytics | 40 | 60 | ✓ | ✓ |
+| `working_together_network` | — | analytics | 45 | 60 | ✓ | ✓ |
+
+- **`handover_network`** (Handover-of-Work Network): Mine organisational handover-of-work networks from event logs (van der Aalst social network mining). Produces a weighted graph where edge weight = number of direct handovers between resource pairs. WASM export: discover_handover_network(log_handle, resource_key).
+- **`working_together_network`** (Working-Together Network): Mine working-together social networks: edges represent resources that handled the same case. Complements handover-of-work by capturing collaboration rather than sequential handoff. WASM export: discover_working_together_network(log_handle, resource_key).
+
+## Agentic
+
+| ID | Alias | Output | Speed | Quality | Robust | Scales |
+|----|-------|--------|------:|--------:|:------:|:------:|
+| `agentic_pipeline` | — | analytics | 1 | 95 | ✓ | ✓ |
+
+- **`agentic_pipeline`** (Agentic Process Pipeline): End-to-end agentic lifecycle: perception, decision, protection, and Bellman-optimized policy. WASM export: run_agentic_pipeline(task_json). Requires feature-cloud.

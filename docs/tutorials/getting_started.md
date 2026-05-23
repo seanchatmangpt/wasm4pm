@@ -84,8 +84,19 @@ console.log(JSON.parse(dfgJson));
 wpm cognition run --contract mycin --input examples/cognition/mycin/intent.json
 ```
 
+## 5. Truex — OCEL 2.0 Receipts
+
+Verify object-centric execution envelopes with cryptographic admission control:
+
+```bash
+wpm truex verify examples/out/truex_ocel2_valid.json
+```
+
+See [Truex Receipt Verification](truex_receipts.md) for admitted/refused examples and the canonical profile.
+
 ## Next Steps
 
 - [Predictive Monitoring](predictive_monitoring.md) — `wpm predict` for next-activity, remaining-time, drift
+- [Truex Receipt Verification](truex_receipts.md) — OCEL 2.0 envelope verification
 - [CLI Reference](../reference/cli_commands.md) — full command catalog
 - [README](../../README.md) — algorithm domains and deployment profiles

@@ -2,23 +2,30 @@
 
 Welcome to the unified documentation source of truth. Every document here is grounded in empirical test evidence.
 
-## 🎓 Tutorials (Learning)
-- [Getting Started](../docs/tutorials/getting_started.md)
-- [Predictive Monitoring](../docs/tutorials/predictive_monitoring.md)
-- [Cognition Contracts](../docs/tutorials/cognition_contracts.md)
+## Tutorials (Learning)
 
-## 🛠️ How-To Guides (Goals)
-- [OTEL Configuration](../docs/how-to/configure_observability.md)
-- [Edge Deployment](../docs/how-to/edge_deployment.md)
-- [Concept Drift](../docs/how-to/concept_drift.md)
+- [Getting Started](tutorials/getting_started.md)
+- [Truex Receipt Verification](tutorials/truex_receipts.md)
+- [Predictive Monitoring](tutorials/predictive_monitoring.md)
+- [Cognition Contracts](tutorials/cognition_contracts.md)
 
-## 📚 Reference (Information)
-- [CLI Commands](../docs/reference/cli_commands.md)
-- [Configuration Schema](../docs/reference/configuration_schema.md)
+## How-To Guides (Goals)
 
-## 🧠 Explanation (Understanding)
-- [Architecture Overview](../docs/explanation/architecture_overview.md)
-- [Old AI vs. LLM Doctrine](../docs/explanation/old_ai_vs_llms.md)
-- [Combinatorial Maximalism](../docs/explanation/combinatorial_maximalism_closure_discipline.md)
-- [Receipt Truth Verification](../docs/explanation/prd_ard_receipt_truth_verification.md)
+- [OTEL Configuration](how-to/configure_observability.md)
+- [Edge Deployment](how-to/edge_deployment.md)
+- [Concept Drift](how-to/concept_drift.md)
 
+## Reference (Information)
+
+- [CLI Commands](reference/cli_commands.md)
+- [Algorithms (60 registered)](reference/algorithms.md)
+- [Configuration Schema](reference/configuration_schema.md)
+- [Truex OCEL 2.0 Canonical Profile](truex-ocel2-canonical-profile.md)
+
+## Explanation (Understanding)
+
+- [Architecture Overview](explanation/architecture_overview.md)
+- [Old AI vs. LLM Doctrine](explanation/old_ai_vs_llms.md)
+- [Combinatorial Maximalism](explanation/combinatorial_maximalism_closure_discipline.md)
+- [Receipt Truth Verification](explanation/prd_ard_receipt_truth_verification.md)
+- [Truex Jobs-To-Be-Done](JTBD.md)

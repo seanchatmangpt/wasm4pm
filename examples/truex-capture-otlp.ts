@@ -1,39 +1,11 @@
 import { writeFileSync, mkdirSync, existsSync, readFileSync, rmSync } from "fs";
 import { resolve } from "path";
 import { createHash } from "crypto";
+import { hash as blake3Hash } from "blake3";
 // @ts-ignore
 import { createProxy, createContext } from "../vendors/proxyable/src/index.js";
 
-// --- CANONICAL HASHING ---
-function canonicalStringify(obj: any): string {
-  if (obj === null || typeof obj !== "object") return JSON.stringify(obj);
-  
-  if (Array.isArray(obj)) {
-    if (obj.length > 0 && typeof obj[0] === "object") {
-      const clone = [...obj];
-      if (clone[0]["ocel:id"]) {
-        clone.sort((a, b) => (a["ocel:id"] > b["ocel:id"] ? 1 : -1));
-      } else if (clone[0]["ocel:event-id"] && clone[0]["ocel:object-id"]) {
-        clone.sort((a, b) => {
-          const keyA = `${a["ocel:event-id"]}|${a["ocel:object-id"]}|${a["ocel:qualifier"]}`;
-          const keyB = `${b["ocel:event-id"]}|${b["ocel:object-id"]}|${b["ocel:qualifier"]}`;
-          return keyA > keyB ? 1 : -1;
-        });
-      } else if (clone[0]["ocel:object-id"] && clone[0]["ocel:field"]) {
-        clone.sort((a, b) => {
-          const keyA = `${a["ocel:object-id"]}|${a["ocel:timestamp"] || a["ocel:time"]}|${a["ocel:field"]}`;
-          const keyB = `${b["ocel:object-id"]}|${b["ocel:timestamp"] || b["ocel:time"]}|${b["ocel:field"]}`;
-          return keyA > keyB ? 1 : -1;
-        });
-      }
-      return `[${clone.map(canonicalStringify).join(",")}]`;
-    }
-    return `[${obj.map(canonicalStringify).join(",")}]`;
-  }
-  
-  const keys = Object.keys(obj).sort();
-  return `{${keys.map(k => `"${k}":${canonicalStringify(obj[k])}`).join(",")}}`;
-}
+import { canonicalStringify } from "./truex-canonical.js";
 
 // --- STRICT OCEL 2.0 SCHEMA ---
 interface Ocel2Log {
@@ -183,9 +155,9 @@ class TruexCapture {
     
     // Canonical Hashing
     const serializedBatch = canonicalStringify(this.ocel2State);
-    const ocel2BatchHash = createHash("sha256").update(serializedBatch).digest("hex");
+    const ocel2BatchHash = blake3Hash(serializedBatch).toString("hex");
     const receiptSeed = `${sessionId}:${ocel2BatchHash}:${EXPECTED_PATH_HASH}`;
-    const receiptHash = createHash("sha256").update(receiptSeed).digest("hex");
+    const receiptHash = blake3Hash(receiptSeed).toString("hex");
 
     const traceId = createHash("md5").update(Date.now().toString()).digest("hex");
     const spanId = traceId.substring(0, 16);

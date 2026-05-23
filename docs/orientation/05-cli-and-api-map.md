@@ -32,8 +32,8 @@ graph TD
 If developers embed `wasm4pm` natively in a Node.js or Browser context, they interact directly with the `Kernel` class.
 
 ### Main SDK Exports
-1. `Kernel.getInstance()`: Initializes the WASM module dynamically.
-2. `kernel.discover(algo, params)`: Dispatches to one of the 60 discovery engines.
+1. `new Kernel(wasm); await kernel.init()`: Initializes the WASM module.
+2. `kernel.discover(algo, logHandle, params)`: Dispatches to one of the 60 discovery engines.
 3. `kernel.truexVerify(envelope)`: The programmatic equivalent of `wpm truex verify`. Parses the JCS-OCEL payload and computes the BLAKE3 digest.
 
 ## Architecture Rules

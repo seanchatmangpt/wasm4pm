@@ -92,9 +92,10 @@ Truex verifies object-centric execution equivalence with BLAKE3 digests and a st
 
 ```bash
 wpm truex verify examples/out/truex_ocel2_valid.json
+wpm truex verify examples/out/truex_ocel2_forged.json   # structured refusal
 ```
 
-Profile: [Truex OCEL 2.0 Canonical Profile](docs/truex-ocel2-canonical-profile.md).
+Profile: [Truex OCEL 2.0 Canonical Profile](docs/truex-ocel2-canonical-profile.md). Tutorial: [Truex Receipt Verification](docs/tutorials/truex_receipts.md).
 
 ## Cognition (Old AI)
 
@@ -132,9 +133,9 @@ Build a profile: `npm run build:mobile --workspace=wasm4pm`. See [Edge Deploymen
 
 We follow the [Diátaxis framework](https://diataxis.fr/).
 
-- **Tutorials:** [Getting Started](docs/tutorials/getting_started.md) · [Predictive Monitoring](docs/tutorials/predictive_monitoring.md) · [Cognition Contracts](docs/tutorials/cognition_contracts.md)
+- **Tutorials:** [Getting Started](docs/tutorials/getting_started.md) · [Truex Receipts](docs/tutorials/truex_receipts.md) · [Predictive Monitoring](docs/tutorials/predictive_monitoring.md) · [Cognition Contracts](docs/tutorials/cognition_contracts.md)
 - **How-To:** [OTEL Configuration](docs/how-to/configure_observability.md) · [Edge Deployment](docs/how-to/edge_deployment.md) · [Concept Drift](docs/how-to/concept_drift.md)
-- **Reference:** [CLI Commands](docs/reference/cli_commands.md) · [Configuration Schema](docs/reference/configuration_schema.md)
+- **Reference:** [CLI Commands](docs/reference/cli_commands.md) · [Algorithms](docs/reference/algorithms.md) · [Configuration Schema](docs/reference/configuration_schema.md) · [Truex Profile](docs/truex-ocel2-canonical-profile.md)
 - **Explanation:** [Architecture Overview](docs/explanation/architecture_overview.md) · [Old AI vs. LLMs](docs/explanation/old_ai_vs_llms.md)
 
 Release and evidence discipline: [AGENTS.md](AGENTS.md) · [Contributing](CONTRIBUTING.md)

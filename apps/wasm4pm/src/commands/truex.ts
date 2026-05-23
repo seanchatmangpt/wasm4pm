@@ -83,7 +83,7 @@ export const truex = defineCommand({
               elapsed_ms: elapsedMs,
               envelope_path: fullPath,
             },
-            Date.now() - t0,
+            Math.round(performance.now() - t0),
             EXIT_CODES.success
           );
           emitResult(result, { format, verbose, quiet }, (_res, p) => {

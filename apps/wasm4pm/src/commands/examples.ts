@@ -58,7 +58,7 @@ const EXAMPLES_BY_CATEGORY = {
       desc: 'Add van der Aalst quality metrics',
     },
     { cmd: 'wpm status', desc: 'WASM module status & memory' },
-    { cmd: 'wpm algorithms', desc: 'List all 36+ available algorithms' },
+    { cmd: 'wpm algorithms', desc: 'List all 60 available algorithms' },
     { cmd: 'wpm results', desc: 'Browse saved discovery & prediction results' },
   ],
   'Configuration & Setup': [

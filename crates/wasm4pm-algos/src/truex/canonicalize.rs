@@ -81,3 +81,24 @@ pub fn canonical_stringify(value: &Value) -> String {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::canonical_stringify;
+    use serde_json::Value;
+
+    #[test]
+    fn valid_fixture_batch_hash_matches_envelope() {
+        let envelope: Value =
+            serde_json::from_str(include_str!("../../../../examples/out/truex_ocel2_valid.json"))
+                .expect("fixture JSON");
+        let ocel2 = envelope.get("ocel2").expect("ocel2");
+        let canonical = canonical_stringify(ocel2);
+        let computed = blake3::hash(canonical.as_bytes()).to_hex().to_string();
+        let expected = envelope
+            .get("ocel2_batch_hash")
+            .and_then(|v| v.as_str())
+            .expect("ocel2_batch_hash");
+        assert_eq!(computed, expected, "canonical len={}", canonical.len());
+    }
+}
