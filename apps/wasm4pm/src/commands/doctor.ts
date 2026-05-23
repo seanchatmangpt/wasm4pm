@@ -712,7 +712,7 @@ async function checkTypeScriptCompilation(): Promise<Diagnosis> {
     };
   }
 
-  // Run pnpm lint asynchronously with a hard 4-second cap.
+  // Run npm lint asynchronously with a hard 4-second cap.
   // Using async spawn (not spawnSync) so the event loop stays free for
   // other parallel ENV_CHECKS while lint runs in a child process.
   // 4 s keeps the total `doctor env` wall-clock under 10 s (the test SLA).
@@ -725,11 +725,15 @@ async function checkTypeScriptCompilation(): Promise<Diagnosis> {
     let stderr = '';
     let settled = false;
 
-    const child = spawn('pnpm', ['lint'], {
+    const child = spawn(
+      'npm',
+      ['run', 'lint', '--workspace', '@wasm4pm/contracts', '--workspace', '@wasm4pm/kernel', '--workspace', 'wasm4pm'],
+      {
       cwd: rootDir,
       stdio: 'pipe',
       shell: false,
-    });
+    }
+    );
 
     child.stdout?.on('data', (chunk: Buffer) => {
       stdout += chunk.toString();
@@ -750,8 +754,8 @@ async function checkTypeScriptCompilation(): Promise<Diagnosis> {
         name: 'TypeScript compilation',
         pathology: 'EPISTEMIC_FAULT',
         severity: 'WARNING',
-        message: `pnpm lint skipped — timed out after ${LINT_TIMEOUT_MS / 1000}s (run manually: pnpm lint)`,
-        fix: 'Fix per-package TypeScript errors: pnpm lint',
+        message: `npm run lint skipped — timed out after ${LINT_TIMEOUT_MS / 1000}s (run manually: npm run lint)`,
+        fix: 'Fix per-package TypeScript errors: npm run lint',
       });
     }, LINT_TIMEOUT_MS);
 
@@ -763,8 +767,8 @@ async function checkTypeScriptCompilation(): Promise<Diagnosis> {
         name: 'TypeScript compilation',
         pathology: 'EPISTEMIC_FAULT',
         severity: 'WARNING',
-        message: `pnpm lint could not run: ${err.message}`,
-        fix: 'Fix per-package TypeScript errors: pnpm lint',
+        message: `npm run lint could not run: ${err.message}`,
+        fix: 'Fix per-package TypeScript errors: npm run lint',
       });
     });
 
@@ -777,7 +781,7 @@ async function checkTypeScriptCompilation(): Promise<Diagnosis> {
           name: 'TypeScript compilation',
           pathology: 'EPISTEMIC_FAULT',
           severity: 'INFO',
-          message: 'pnpm lint passes (per-package tsc --noEmit clean)',
+          message: 'npm run lint passes on core packages (contracts, kernel, wasm4pm)',
         });
         return;
       }
@@ -789,8 +793,8 @@ async function checkTypeScriptCompilation(): Promise<Diagnosis> {
         name: 'TypeScript compilation',
         pathology: 'EPISTEMIC_FAULT',
         severity: 'WARNING',
-        message: `pnpm lint failed (${errorLines.length} error line(s)) — run: pnpm lint for details`,
-        fix: 'Fix per-package TypeScript errors: pnpm lint',
+        message: `npm run lint failed (${errorLines.length} error line(s)) — run: npm run lint for details`,
+        fix: 'Fix per-package TypeScript errors: npm run lint',
       });
     });
   });

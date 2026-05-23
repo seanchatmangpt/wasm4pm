@@ -16,7 +16,7 @@
   },
   "scripts": {
     "build": "wasm-pack build --target bundler",
-    "build:nodejs": "wasm-pack build --target nodejs",
+    "build:nodejs": "wasm-pack build --target nodejs --release --features cloud",
     "build:web": "wasm-pack build --target web",
     "build:all": "npm run build && npm run build:web && npm run build:nodejs",
     "build:profiles": "npm run build:mobile && npm run build:iot && npm run build:edge && npm run build:fog && npm run build:browser",

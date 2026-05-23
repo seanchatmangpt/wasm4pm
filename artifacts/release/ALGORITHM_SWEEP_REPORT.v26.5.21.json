@@ -1,8 +1,8 @@
 {
   "package": "wasm4pm",
   "version": "26.5.21",
-  "git_commit": "f20dce0a597576e8e633856feaf841b682cf187b",
-  "generated_at": "2026-05-23T00:06:28.838Z",
+  "git_commit": "1915700bdb43525d70a6c0f7a7ec2a290b4edf74",
+  "generated_at": "2026-05-23T02:16:15.635Z",
   "algorithm_count": 60,
   "dispatch_issues": [
     "automl_regress: api.ts case not in kernel registry",
@@ -23,7 +23,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "eac1b98cb4a746264548d11e229c7f576797bdfc4a60cf53a4a9635d94f44af4",
-        "duration_ms": 2.7688339999999982
+        "duration_ms": 2.903082999999981
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -49,7 +49,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "68809c738fed0490de161cf7561a60917b6d0a7ee34ee1709d2fa87046cb00e6",
-        "duration_ms": 0.6856669999999951
+        "duration_ms": 0.7923749999999927
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -75,7 +75,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "103502c1fcd47cb51d5cfb9bd2d49a52754504e7f22dd5001974768989572be9",
-        "duration_ms": 1.9157500000000027
+        "duration_ms": 1.9220829999999864
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -101,7 +101,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "762ca5d5e07661049c09f14ad28464bcdd50f4a217ad452552c58d8de2436cec",
-        "duration_ms": 0.46333300000000577
+        "duration_ms": 0.4795000000000016
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -127,7 +127,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "844022ad958a12ba4b96241c0878ba6983dbf603426e905c0ae77ffbeffb08dc",
-        "duration_ms": 1.2756250000000193
+        "duration_ms": 1.0152500000000089
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -152,8 +152,8 @@
       "algorithm_id": "genetic_algorithm",
       "positive": {
         "status": "passed",
-        "result_hash": "d8b863835005dfcbe78e4a7323679c0917824b8771466edddeb8f45b2d98d5a5",
-        "duration_ms": 16.659667000000013
+        "result_hash": "3bca6f7a986fde538f263cad00f7e766ef842ef472ee5af5d61b9a4ff31b25b1",
+        "duration_ms": 16.849999999999994
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -170,7 +170,7 @@
         "status": "passed",
         "stable": true,
         "first_result_hash": "6e8345acc27abfe5d3603b2ae9aa61742e1d5d26a9311473d0c7b29419309417",
-        "second_result_hash": "9c92a99b56b2b79697ca3fe431cba18dfb58af5ad09ed684e11a536b4de93177",
+        "second_result_hash": "df8a726fae5a7210855d2a1c132270420c632a5573799c4c1ad930fcaf812d06",
         "stochastic": true
       }
     },
@@ -178,8 +178,8 @@
       "algorithm_id": "pso",
       "positive": {
         "status": "passed",
-        "result_hash": "6374f9e2a04158b0c47745f0dec35dff7346749befc0d1b7591ee9aa9450247f",
-        "duration_ms": 5.6412090000000035
+        "result_hash": "dc827eac4418e06d8a7bad9ba1ea5c1e913168351b298ec2ec992baa7a0773bb",
+        "duration_ms": 5.732084000000043
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -195,8 +195,8 @@
       "invariant": {
         "status": "passed",
         "stable": true,
-        "first_result_hash": "57cd0d83f4adbfa214ab7b7451c5878605930ee159cfa24c0e69caf04a590429",
-        "second_result_hash": "3193f7d6c3ef131a633e37ec0ea2706fbf9d9ea7aa54172c7241af93f405f19c",
+        "first_result_hash": "8f44032c1f107aa7290b8b27f605d790253005428dd1837fa5eb89c4288ce0e0",
+        "second_result_hash": "aa1272d785312f0bc686534331891612512523048d0b42b6086a373c4a3e924e",
         "stochastic": true
       }
     },
@@ -205,7 +205,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "d97b0e6d1a719857408d22f5f5762418e4647dc725aee4be2bd23235d34a6219",
-        "duration_ms": 310.817125
+        "duration_ms": 315.13
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -231,7 +231,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "a49b10be6c7b0ec2dba477afe2bbaf47b510309e835468c0abc3525e092b1ea7",
-        "duration_ms": 0.4541670000000977
+        "duration_ms": 0.47733400000015536
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -257,7 +257,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "77f3aace4ebf6fcba197ff317368a49f06edf5408b7c20babe3b9fefc9ca6e33",
-        "duration_ms": 6.354542000000038
+        "duration_ms": 5.848917000000029
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -283,7 +283,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "61d08b7364cdf47015c2b45a21d2382fd6d3ab87847a4604c3c72c2fbe896ff2",
-        "duration_ms": 0.464334000000008
+        "duration_ms": 0.5131669999998394
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -309,7 +309,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-        "duration_ms": 1.296624999999949
+        "duration_ms": 1.3237079999998969
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -335,7 +335,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "bfe3660cb15fc746a5ddc47bc504f98391cfa6b622d02986186117072102fbff",
-        "duration_ms": 0.4230840000000171
+        "duration_ms": 0.4185829999998987
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -361,7 +361,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "4e42887cc2b34af5537fe0957a21fc6d9f821cc7116f637de5f5b4bf1a969525",
-        "duration_ms": 2.2695000000001073
+        "duration_ms": 2.2286669999998594
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -387,7 +387,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "c13dd62bfc5cd6a22731aae81fc17794024e0e873f06321e373286279c507bfb",
-        "duration_ms": 0.2905839999998534
+        "duration_ms": 0.34187500000007276
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -413,7 +413,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "c13dd62bfc5cd6a22731aae81fc17794024e0e873f06321e373286279c507bfb",
-        "duration_ms": 0.5394589999998516
+        "duration_ms": 0.5819169999999758
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -439,7 +439,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "eac1b98cb4a746264548d11e229c7f576797bdfc4a60cf53a4a9635d94f44af4",
-        "duration_ms": 0.11220800000000963
+        "duration_ms": 0.11129100000016479
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -465,7 +465,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-        "duration_ms": 1.1121669999999995
+        "duration_ms": 1.066000000000031
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -491,7 +491,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "1c8cd904074e988fdb611ad739a926e3ed982fd128a5d5923228d8f60d7c30d6",
-        "duration_ms": 0.2871659999998428
+        "duration_ms": 0.22295900000017355
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -517,7 +517,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "32da59456b19a2a9f710b6d50399842684f697db41d67f23f2829e2d47d3d01f",
-        "duration_ms": 0.3364169999999831
+        "duration_ms": 0.3653340000000753
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -543,7 +543,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "77151e88a9f5a8880259b6e9bcc4931df25829ff2948ad445a3f5d673adb74ac",
-        "duration_ms": 0.37075000000004366
+        "duration_ms": 0.37958400000002257
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -569,7 +569,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "efd7ad4dd7804be5efbfd340f678a54736f96721181ac6452b5e6a0b2b9dc158",
-        "duration_ms": 0.8794169999998758
+        "duration_ms": 0.8388749999999163
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -595,7 +595,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "d7b286fb5d7b2b279f7606ae2728adf718215eafd7083c763ebc53757a03ca78",
-        "duration_ms": 0.4415000000001328
+        "duration_ms": 0.43012500000008913
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -621,7 +621,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "130df53b36f6528afd89127863b9d8d99a0077c40eec58f252b206bacd773b3a",
-        "duration_ms": 0.162166999999954
+        "duration_ms": 0.1592080000000351
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -647,7 +647,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-        "duration_ms": 0.818042000000105
+        "duration_ms": 0.838832999999795
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -673,7 +673,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "149448566065550f462cce5d399f90fda00fb3df1124ffe9a409920e0fe34559",
-        "duration_ms": 0.5447919999999158
+        "duration_ms": 0.53712500000006
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -699,7 +699,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "66131f770a3e3b129dea88dda4310fea0e087310077730828f4430d260f13752",
-        "duration_ms": 0.3155829999998332
+        "duration_ms": 0.26379100000008293
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -725,7 +725,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "75a2ff87583d20f347274f7044e20c4eccfe0dc8ecc62040124e593a93ef6a18",
-        "duration_ms": 0.21237500000006548
+        "duration_ms": 0.19775000000004184
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -751,7 +751,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "ae0c796f15deeaf8c091882314dfaecdd173e45737e7295c9089471f14e5d595",
-        "duration_ms": 0.90625
+        "duration_ms": 0.8077080000000478
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -777,7 +777,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "6bebe063a10206a3e389143417b6881bb46f0dbbf1c1a6a14d268d299858f5cc",
-        "duration_ms": 1.8669589999999516
+        "duration_ms": 1.0868330000000697
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -803,7 +803,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-        "duration_ms": 1.0107499999999163
+        "duration_ms": 0.720209000000068
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -829,7 +829,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-        "duration_ms": 1.3825839999999516
+        "duration_ms": 0.721042000000125
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -855,7 +855,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-        "duration_ms": 2977.523625
+        "duration_ms": 3054.5241659999992
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -881,7 +881,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-        "duration_ms": 1.0024589999993623
+        "duration_ms": 0.9346669999995356
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -907,7 +907,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-        "duration_ms": 2.0027919999993173
+        "duration_ms": 2.2117079999989073
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -933,7 +933,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-        "duration_ms": 0.7018329999991693
+        "duration_ms": 0.7881249999991269
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -959,7 +959,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-        "duration_ms": 0.5112090000002354
+        "duration_ms": 0.5729590000009921
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -985,7 +985,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "3754194cb37bdba6093c089a64478e00d6ba367460163e9c0fce5f73c8a5392d",
-        "duration_ms": 0.3602499999997235
+        "duration_ms": 0.38058400000045367
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -1011,7 +1011,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "c9f753938b8de7f76ae1bc386c1b09d0bc14b7f555c3135cde75cad7935a3c46",
-        "duration_ms": 0.9932920000010199
+        "duration_ms": 1.1577910000014526
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -1037,7 +1037,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-        "duration_ms": 0.7938329999997222
+        "duration_ms": 0.9035000000003492
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -1063,7 +1063,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-        "duration_ms": 0.3476250000003347
+        "duration_ms": 0.4422500000000582
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -1089,7 +1089,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-        "duration_ms": 0.3203750000011496
+        "duration_ms": 0.39258300000074087
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -1115,7 +1115,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-        "duration_ms": 0.14483300000028976
+        "duration_ms": 0.16379199999937555
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -1141,7 +1141,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-        "duration_ms": 0.15187499999956344
+        "duration_ms": 0.15766700000131095
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -1167,7 +1167,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-        "duration_ms": 0.1785409999993135
+        "duration_ms": 0.177958000000217
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -1193,7 +1193,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-        "duration_ms": 0.07874999999876309
+        "duration_ms": 0.08400000000074215
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -1219,7 +1219,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-        "duration_ms": 0.21620900000016263
+        "duration_ms": 0.21925000000010186
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -1245,7 +1245,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
-        "duration_ms": 0.14574999999967986
+        "duration_ms": 0.1442910000005213
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -1271,7 +1271,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
-        "duration_ms": 0.515040999998746
+        "duration_ms": 0.3520410000000993
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -1296,8 +1296,8 @@
       "algorithm_id": "predict_remaining_time",
       "positive": {
         "status": "passed",
-        "result_hash": "00306c1437eaa1fb82e1ec44f98bf8bc282274295df71ed3d539309b7167cc28",
-        "duration_ms": 2.3472080000010465
+        "result_hash": "72d94145eadb29f4e781ee85625d1c43d497ec249ce46a191f6f9b12fa24a5e1",
+        "duration_ms": 1.2315839999992022
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -1313,8 +1313,8 @@
       "invariant": {
         "status": "passed",
         "stable": true,
-        "first_result_hash": "72d94145eadb29f4e781ee85625d1c43d497ec249ce46a191f6f9b12fa24a5e1",
-        "second_result_hash": "00306c1437eaa1fb82e1ec44f98bf8bc282274295df71ed3d539309b7167cc28",
+        "first_result_hash": "00306c1437eaa1fb82e1ec44f98bf8bc282274295df71ed3d539309b7167cc28",
+        "second_result_hash": "72d94145eadb29f4e781ee85625d1c43d497ec249ce46a191f6f9b12fa24a5e1",
         "stochastic": false
       }
     },
@@ -1323,7 +1323,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "cc0f2946916a18815780eeb30c6a4175e1d13f396ef992cb9c3ff6c06b6db709",
-        "duration_ms": 0.2506669999984297
+        "duration_ms": 0.19191700000010314
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -1349,7 +1349,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "c27faf500728ee81e7f889d059ce1564bbd66842a664b63fd847edd2f98a07ec",
-        "duration_ms": 0.16679199999998673
+        "duration_ms": 0.12058299999989686
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -1375,7 +1375,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "3df6126c24a96fcaefbc6abc736396050765d1d2aa285b9d295ed76099cb62e7",
-        "duration_ms": 0.33045900000070105
+        "duration_ms": 0.1514999999999418
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -1401,7 +1401,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "8818fc6d0333f2ccb246d976c7bc393ee9435f38415ce9a97bc1b9ecb164a19d",
-        "duration_ms": 0.4084579999998823
+        "duration_ms": 0.26700000000164437
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -1427,7 +1427,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "908037ada87e03d9639e1d693a171b4824c88053928e18979ffb7c5b007c1490",
-        "duration_ms": 0.5121669999989535
+        "duration_ms": 0.3495419999999285
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -1453,7 +1453,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "69c70bedefecdf96e982559a8bde9e3729599cb1b4e26006fa2b64587f40cb82",
-        "duration_ms": 0.1336670000000595
+        "duration_ms": 0.10004200000003038
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -1479,7 +1479,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "2f1e0cb62f93dc186df1d1db77b455825ea8d31a70acff8b77c5286cb81d8196",
-        "duration_ms": 0.4085000000013679
+        "duration_ms": 0.33250000000043656
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -1505,7 +1505,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "cb6267a6bd73b2850bc652dfc0eb827499f82c7e079e980bdc4328487dac2ee8",
-        "duration_ms": 0.2651669999995647
+        "duration_ms": 0.11279199999989942
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -1531,7 +1531,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "156f0810ac0f1d2b676a3c4b5e60d1237688352ddd7fadf828c4e8f9487363a2",
-        "duration_ms": 0.3120829999988928
+        "duration_ms": 0.2493750000012369
       },
       "negative_empty": {
         "status": "failed_correctly",
@@ -1557,7 +1557,7 @@
       "positive": {
         "status": "passed",
         "result_hash": "aa47c771350477717f888390d4ec0cee5f5e2d25d6e609cc446d6bbfb7d2199b",
-        "duration_ms": 2.9076249999998254
+        "duration_ms": 1.943041999998968
       },
       "negative_empty": {
         "status": "failed_correctly",

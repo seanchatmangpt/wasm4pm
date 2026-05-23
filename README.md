@@ -21,7 +21,7 @@ From the monorepo without a global install:
 ```bash
 # CLI requires the Node.js WASM target (once per clone)
 cd wasm4pm && npm run build:nodejs && cd ..
-pnpm --filter @wasm4pm/cli exec wpm run data/small-example.xes
+npm exec --workspace @wasm4pm/cli -- wpm run data/small-example.xes
 ```
 
 ## Quick Start
