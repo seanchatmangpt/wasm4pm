@@ -448,3 +448,15 @@ automl_experimental = []
 
 # Optional wasm4pm-types XES import module (requires wasm4pm-types/import feature)
 import = ["wasm4pm-types/import"]
+
+[[test]]
+name = "agentic_jtbd_tests"
+required-features = ["cloud"]
+
+[[test]]
+name = "agentic_wasm_export_tests"
+required-features = ["cloud"]
+
+[[test]]
+name = "e2e_agentic_pipeline"
+required-features = ["cloud"]
