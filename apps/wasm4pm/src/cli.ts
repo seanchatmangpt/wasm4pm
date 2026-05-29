@@ -48,6 +48,7 @@ import { cell } from './commands/cell.js';
 import cache from './commands/cache.js';
 import deduplicate from './commands/deduplicate.js';
 import models from './commands/models.js';
+import { suggest } from './commands/suggest.js';
 import pkg from '../package.json' with { type: 'json' };
 
 export const main = defineCommand({
@@ -104,6 +105,9 @@ ${BOLD}QUICK START${RESET}
 ${BOLD}DISCOVERY${RESET}
   ${GREEN}wpm run${RESET} <log.xes>                   Discover a process model (default: config algorithm, else profile default)
   ${GREEN}wpm run${RESET} <log.xes> --algorithm dfg   Use a specific algorithm
+  ${GREEN}wpm run${RESET} <log.xes> --auto-select      Auto-pick best algorithm for the configured profile
+  ${GREEN}wpm suggest${RESET} <log.xes>               Analyse log and recommend top algorithms for your goal
+  ${GREEN}wpm suggest${RESET} <log.xes> --goal quality Show highest-quality algorithm recommendations
   ${GREEN}wpm compare${RESET} dfg,heuristic -i <log>  Compare algorithms side-by-side with sparklines
   ${GREEN}wpm diff${RESET} <log1.xes> <log2.xes>      Compare two logs — activities, edges, Jaccard distance
 
@@ -288,6 +292,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     trace,
     prolog8,
     algorithms,
+    suggest,
     examples,
     interpret,
     'exit-codes': exitCodes,

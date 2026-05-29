@@ -106,12 +106,15 @@ export async function resolveConfig(options?: LoadConfigOptions): Promise<Config
   }
 
   // CRITICAL FIX #1: Validate algorithm-profile compatibility
+  // For deployment profiles (mobile/iot/edge/fog/browser), throw because WASM binary
+  // genuinely may not include the algorithm.
+  // For execution profiles (fast/balanced/quality/stream), warn only — the browser WASM
+  // binary includes all algorithms; execution profile is a scheduling hint, not a hard gate.
   if (validated.algorithm?.name && validated.execution?.profile) {
-    const compatResult = validateAlgorithmProfile(
-      validated.algorithm.name,
-      validated.execution.profile as 'fast' | 'balanced' | 'quality' | 'stream'
-    );
-    if (!compatResult.compatible) {
+    const execProfile = validated.execution.profile as 'fast' | 'balanced' | 'quality' | 'stream';
+    const isDeploymentProfile = !['fast', 'balanced', 'quality', 'stream'].includes(execProfile);
+    const compatResult = validateAlgorithmProfile(validated.algorithm.name, execProfile);
+    if (!compatResult.compatible && isDeploymentProfile) {
       throw new Error(compatResult.warning || 'Algorithm not compatible with profile');
     }
   }

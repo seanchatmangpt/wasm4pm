@@ -2,7 +2,7 @@ import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { resolveConfig as loadConfig } from '@wasm4pm/config';
-import { plan as makePlan } from '@wasm4pm/planner';
+import { plan as makePlan, getSuggestions } from '@wasm4pm/planner';
 import { ALGORITHM_CLI_ALIASES, findClosestMatch, getProfileAlgorithms, resolveAlgorithmId } from '@wasm4pm/contracts';
 import { getRegistry } from 'wasm4pm';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
@@ -184,6 +184,12 @@ export const run = defineCommand({
       type: 'boolean',
       description: 'Show elapsed time during discovery (for long-running algorithms)',
     },
+    'auto-select': {
+      type: 'boolean',
+      description:
+        'Automatically pick the best algorithm for the configured execution profile ' +
+        '(fast | balanced | quality | stream). Ignores --algorithm flag when set.',
+    },
   },
   async run(ctx) {
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
@@ -274,8 +280,66 @@ export const run = defineCommand({
             }
           }
 
+          // --auto-select: quick-analyse the log to pick the best algorithm for the
+          // configured execution profile.  Runs before the file I/O validation step so
+          // that we can print the selection message before any heavy work starts.
+          // We derive stats from the raw file when we later load it; here we do a cheap
+          // stat() to get a size proxy for trace estimation, then let getSuggestions()
+          // map the profile to a goal.
+          let autoSelectedAlgo: string | undefined;
+          if (ctx.args['auto-select']) {
+            try {
+              const profileToGoal: Record<string, string> = {
+                fast: 'fast',
+                balanced: 'balanced',
+                quality: 'quality',
+                stream: 'streaming',
+              };
+              const profile = config?.execution?.profile ?? 'balanced';
+              const goal = (profileToGoal[profile] ?? 'balanced') as import('@wasm4pm/planner').SuggestionGoal;
+
+              // Rough stats without loading the file: use file size to estimate event count.
+              // 1 event ≈ 250 bytes in XES is a reasonable heuristic.
+              const inputPathEarly: string | undefined =
+                (ctx.args.input as string | undefined) || (ctx.args.file as string | undefined);
+              let estTraces = 500;
+              let estEvents = 2500;
+              if (inputPathEarly) {
+                try {
+                  const statResult = await fs.stat(inputPathEarly);
+                  estEvents = Math.max(1, Math.round(statResult.size / 250));
+                  estTraces = Math.max(1, Math.round(estEvents / 5));
+                } catch {
+                  // stat failed — use defaults
+                }
+              }
+
+              const suggestions = getSuggestions(
+                { traceCount: estTraces, eventCount: estEvents, variantCount: Math.round(estTraces * 0.1) },
+                goal,
+                1,
+              );
+
+              if (suggestions[0]) {
+                autoSelectedAlgo = suggestions[0].algorithm;
+                if (!quiet && format === 'human') {
+                  process.stderr.write(
+                    `Auto-selected algorithm: ${autoSelectedAlgo} ` +
+                    `(quality=${suggestions[0].quality}, speed=${suggestions[0].speed}) ` +
+                    `for profile=${profile}\n`
+                  );
+                }
+              }
+            } catch {
+              // Auto-select is best-effort; fall through to normal resolution
+            }
+          }
+
           // Accept kernel registry IDs (heuristic_miner) or CLI aliases (heuristic)
-          const resolvedAlgo: Algorithm | undefined = resolveAlgorithmId(rawAlgo, ALGORITHMS);
+          const resolvedAlgo: Algorithm | undefined = resolveAlgorithmId(
+            autoSelectedAlgo ?? rawAlgo,
+            ALGORITHMS
+          );
 
           if (!resolvedAlgo) {
             // An unknown algorithm name is a config_error (1): the user specified an

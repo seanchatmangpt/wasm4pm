@@ -300,10 +300,11 @@ describe('16. wpm predict — extended tasks', () => {
 
   // ── error paths ────────────────────────────────────────────────────────────
 
-  it('16.16 wpm predict with unknown task exits 2 (source_error — INVALID_TASK code)', () => {
+  it('16.16 wpm predict with unknown task exits 1 (config_error — INVALID_TASK code)', () => {
     const result = wpm('predict', 'turbo-prediction-9000', '-i', XES_STANDARD, '--format', 'json', '--no-save');
-    // Unknown task validation emits exit_code=2 (source_error) with INVALID_TASK error code
-    expect(result.status).toBe(2);
+    // Unknown task validation emits exit_code=1 (config_error) with INVALID_TASK error code
+    // An invalid task name is a configuration error, not a source error.
+    expect(result.status).toBe(1);
     const out = result.stdout + result.stderr;
     expect(out).toMatch(/unknown task|valid tasks/i);
   });

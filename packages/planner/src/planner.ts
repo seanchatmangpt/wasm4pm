@@ -426,6 +426,76 @@ export function plan(config: Config): ExecutionPlan {
         )
       );
     }
+
+    // Guard: stream profile is incompatible with full-log algorithms.
+    // Streaming algorithms process events incrementally and cannot buffer the
+    // complete log required by ILP, genetic, PSO, ACO, and A* search.
+    // A user specifying profile=stream + algorithm=ilp has a contradictory config.
+    const STREAM_INCOMPATIBLE_ALGORITHMS = new Set([
+      'ilp',
+      'genetic_algorithm',
+      'pso',
+      'aco',
+      'a_star',
+      'simulated_annealing',
+      'alignments',
+    ]);
+    if (profile === 'stream' && STREAM_INCOMPATIBLE_ALGORITHMS.has(algorithmOverride)) {
+      throw new PlannerError(
+        createError(
+          'CONFIG_INVALID',
+          `Algorithm "${algorithmOverride}" requires a complete event log and is incompatible with the "stream" profile. ` +
+            `Use profile "quality" for full-log algorithms, or choose a streaming-compatible algorithm such as "dfg" or "simd_streaming_dfg".`,
+          { algorithmName: algorithmOverride, profile }
+        )
+      );
+    }
+
+    // Guard: validate algorithm parameters against known registry limits.
+    // Catches obvious misconfiguration (e.g. population_size=100000 when max=500)
+    // before any expensive work begins.
+    const algorithmParams = config.algorithm?.parameters;
+    if (algorithmParams) {
+      const ALGORITHM_PARAM_LIMITS: Record<string, Record<string, { min?: number; max?: number }>> = {
+        genetic_algorithm: { population_size: { min: 10, max: 500 }, generations: { min: 10, max: 1000 } },
+        pso: { swarm_size: { min: 10, max: 300 }, iterations: { min: 10, max: 500 } },
+        aco: { colony_size: { min: 10, max: 500 }, iterations: { min: 10, max: 1000 } },
+        a_star: { max_iterations: { min: 1000, max: 100000 } },
+        simulated_annealing: { initial_temperature: { min: 1, max: 1000 }, cooling_rate: { min: 0.8, max: 0.99 } },
+        heuristic_miner: { dependency_threshold: { min: 0, max: 1 } },
+        inductive_miner: { noise_threshold: { min: 0, max: 1 } },
+        declare: { support_threshold: { min: 0, max: 1 } },
+        alpha_plus_plus: { min_support: { min: 0, max: 1 }, causal_threshold: { min: 0, max: 1 } },
+      };
+      const limits = ALGORITHM_PARAM_LIMITS[algorithmOverride];
+      if (limits) {
+        for (const [paramName, { min, max }] of Object.entries(limits)) {
+          const value = algorithmParams[paramName];
+          if (value !== undefined && typeof value === 'number') {
+            if (min !== undefined && value < min) {
+              throw new PlannerError(
+                createError(
+                  'CONFIG_INVALID',
+                  `Parameter "${paramName}" for algorithm "${algorithmOverride}" must be >= ${min}, got ${value}.`,
+                  { algorithmName: algorithmOverride, paramName, value, min }
+                )
+              );
+            }
+            if (max !== undefined && value > max) {
+              throw new PlannerError(
+                createError(
+                  'CONFIG_INVALID',
+                  `Parameter "${paramName}" for algorithm "${algorithmOverride}" must be <= ${max}, got ${value}. ` +
+                    `Large values may cause extremely long execution times.`,
+                  { algorithmName: algorithmOverride, paramName, value, max }
+                )
+              );
+            }
+          }
+        }
+      }
+    }
+
     // Keep analysis steps, replace discovery steps with the override
     const analysisOnly = pipelineSteps.filter(
       (s) =>

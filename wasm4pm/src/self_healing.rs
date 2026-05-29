@@ -394,6 +394,16 @@ impl CircuitBreaker {
         );
         let _enter = span.enter();
 
+        // GAP-3 IMPLEMENTATION: capture state_before for circuit_state_changed and
+        // state transition correlation. This enables Jaeger queries like:
+        //   "circuit_state_changed=true AND circuit_state_before=Open" → recovery event
+        let state_before = self.state;
+        let state_before_str = match state_before {
+            CircuitState::Closed => "Closed",
+            CircuitState::HalfOpen => "HalfOpen",
+            CircuitState::Open => "Open",
+        };
+
         let elapsed = now_ms().saturating_sub(self.last_state_change_ms);
         // Per-state timeout thresholds; Closed never times out.
         let timeouts: [u64; 3] = [u64::MAX, self.config.half_open_timeout_ms, self.config.open_timeout_ms];
@@ -409,6 +419,14 @@ impl CircuitBreaker {
             self.transition_to(next_state);
         }
 
+        // state_after reflects post-transition state (set by transition_to if changed)
+        let state_after_str = match self.state {
+            CircuitState::Closed => "Closed",
+            CircuitState::HalfOpen => "HalfOpen",
+            CircuitState::Open => "Open",
+        };
+        let state_changed = (state_before as u8) != (self.state as u8);
+
         // Emit healing decision span with full rationale and operands for auditing
         let decision_reason = match (self.state, timed_out) {
             (CircuitState::Closed, _) => "closed_allows_all",
@@ -420,12 +438,20 @@ impl CircuitBreaker {
 
         tracing::debug!(
             is_allowed = allow,
-            next_state = ?next_state,
+            circuit_allowed = allow,
+            // GAP-3: state transition fields for Jaeger causality queries
+            circuit_state_before = state_before_str,
+            circuit_state_after = state_after_str,
+            circuit_state_changed = state_changed,
+            // Timeout arithmetic operands: auditors can verify timed_out = (elapsed >= threshold)
             elapsed_ms = elapsed,
             timeout_threshold_ms = timeout_threshold,
             timeout_comparison_result = timed_out,
+            failure_count = self.failure_count,
+            success_count = self.success_count,
             decision_reason = decision_reason,
             status = if allow { "ok" } else { "error" },
+            service_name = "wpm",
             "circuit breaker healing decision"
         );
 

@@ -534,15 +534,13 @@ describe('StateMachine', () => {
     expect(firedEvent.reason).toBe('Test reason');
   });
 
-  it('should track state age', (done: () => void) => {
+  it('should track state age', async () => {
     sm.transition('bootstrapping');
     const initialAge = sm.getStateAge();
 
-    setTimeout(() => {
-      const newAge = sm.getStateAge();
-      expect(newAge).toBeGreaterThan(initialAge);
-      done();
-    }, 10);
+    await new Promise((resolve) => setTimeout(resolve, 10));
+    const newAge = sm.getStateAge();
+    expect(newAge).toBeGreaterThan(initialAge);
   });
 });
 

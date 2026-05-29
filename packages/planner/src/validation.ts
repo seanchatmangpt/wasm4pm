@@ -85,6 +85,15 @@ export function validatePlan(executionPlan: ExecutionPlan): ValidationError[] {
     return errors;
   }
 
+  // Empty execution plan — no steps to execute
+  if (executionPlan.steps.length === 0) {
+    errors.push({
+      path: 'steps',
+      message: 'Execution plan has no steps: plan is empty and cannot be executed',
+      severity: 'error',
+    });
+  }
+
   if (
     !executionPlan.graph ||
     !Array.isArray(executionPlan.graph.nodes) ||
@@ -96,6 +105,15 @@ export function validatePlan(executionPlan: ExecutionPlan): ValidationError[] {
       severity: 'error',
     });
     return errors;
+  }
+
+  // Empty graph — even if steps array has content, empty graph means no execution topology
+  if (executionPlan.graph.nodes.length === 0 && executionPlan.steps.length > 0) {
+    errors.push({
+      path: 'graph.nodes',
+      message: 'Graph has no nodes but steps array is non-empty: plan topology is broken',
+      severity: 'error',
+    });
   }
 
   // Validate steps

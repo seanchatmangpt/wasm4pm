@@ -52,6 +52,10 @@ export type {
 } from './receipt.js';
 export { isReceipt, RECEIPT_JSON_SCHEMA } from './receipt.js';
 
+// Receipt validation
+export { validateReceipt, verifyReceiptHashes, verifyReceipt, detectTampering } from './validation.js';
+export type { ValidationResult } from './validation.js';
+
 // Hash functions for deterministic content hashing
 export { hashData, hashConfig, hashJsonString, normalizeForHashing, verifyHash } from './hash.js';
 

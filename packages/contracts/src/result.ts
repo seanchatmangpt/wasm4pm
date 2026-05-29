@@ -157,6 +157,44 @@ export function unwrapOr<T>(result: Result<T>, fallback: T): T {
   return fallback;
 }
 
+/**
+ * Unwrap a result, returning the value on Ok or throwing on any failure.
+ *
+ * @param result Result to unwrap
+ * @returns The success value
+ * @throws Error if result is Err or ErrorResult
+ *
+ * @example
+ * ```ts
+ * const value = unwrap(ok(42)); // returns 42
+ * unwrap(err('boom'));           // throws
+ * ```
+ */
+export function unwrap<T>(result: Result<T>): T {
+  if (isOk(result)) return result.value;
+  if (isErr(result)) throw new Error(result.error);
+  throw new Error((result as ErrorResult).error.message ?? 'Unknown error');
+}
+
+/**
+ * Extract the exit code from an ErrorResult, or return undefined for Ok/Err.
+ *
+ * Useful for mapping a structured result to a process exit code.
+ *
+ * @param result Result to inspect
+ * @returns The exit_code if ErrorResult, undefined otherwise
+ *
+ * @example
+ * ```ts
+ * const code = getExitCode(error(createError('SOURCE_NOT_FOUND', 'x'))); // 300-399
+ * getExitCode(ok(42)); // undefined
+ * ```
+ */
+export function getExitCode<T>(result: Result<T>): number | undefined {
+  if (isError(result)) return (result as ErrorResult).error.exit_code;
+  return undefined;
+}
+
 // ============================================================================
 // Section 2.3 & 2.4: Canonical Intermediate Representation Envelope Types
 // Three-Layer Architecture Contract Specification v1.0
