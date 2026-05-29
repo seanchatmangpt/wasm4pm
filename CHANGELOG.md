@@ -5,6 +5,153 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [26.5.29] - 2026-05-29
+
+### Release posture
+
+v26.5.29 is a correctness and hardening release: three path-traversal security
+fixes, a sweep of exit-code contract violations across 13 command files, Rust
+determinism fixes in the hot streaming path, OTEL pre-validation spans for
+every previously-silent early exit, and 11 new regression/smoke test files.
+
+### Security
+
+- **Path traversal guard — `wpm run -o`**: output path is now resolved and
+  rejected if it escapes the current working directory, preventing
+  `wpm run log.xes -o /etc/cron.d/pwned` class attacks.
+- **Path traversal guard — `wpm results --path`**: directory argument is
+  restricted to cwd and `.json`-only filenames; non-JSON or out-of-tree paths
+  exit `config_error (1)`.
+- **`autoprocess --config` JSON pre-validation**: the config argument is now
+  parsed and validated before being forwarded to the WASM layer, preventing
+  opaque panics from malformed JSON reaching the WASM boundary.
+
+### Bug Fixes
+
+- **Engine bootstrap error code**: `engine.ts` now distinguishes
+  `BOOTSTRAP_TIMEOUT` vs `BOOTSTRAP_FAILED` by inspecting the error message;
+  previously every failure (including `FailingKernel`) was reported as a
+  timeout. Corresponding MTTR test assertions updated.
+- **Planner auto-name sentinel**: `algorithm.name='auto'` (and empty string)
+  is now treated as "pick best for profile" rather than triggering an
+  unknown-algorithm error; removes spurious plan failures for callers that
+  pass `auto` as a placeholder.
+- **Planner duplicate ML steps**: `ml_cluster` (and other ML algorithms) no
+  longer appears twice in a plan when an ML algorithm override is combined
+  with a profile that auto-includes ML steps.
+- **Discriminator ESM case-5 guard**: handle-based DFG payloads that also
+  carry numeric `places`/`transitions` fields were previously misclassified as
+  case 5 (handle DFG) instead of case 6 (handle Petri net); guard tightened.
+  New `discriminateWithSpan()` export wraps `discriminate()` with an OTEL span.
+- **`wpm results --verify` exit codes**: tamper/hash-mismatch now exits
+  `partial_failure (4)` instead of `execution_error (3)`; integrity failure is
+  semantically distinct from a runtime crash. Empty `--verify` ref exits
+  `config_error (1)` with a helpful message.
+- **`wpm run` algorithm exit code**: unknown algorithm name exits
+  `config_error (1)` rather than `source_error (2)`; an unrecognised name is a
+  configuration mistake, not a missing source file.
+- **Receipt write errors now observable**: previously silent `catch` blocks
+  around receipt saves now emit `receipt.write.failed` OTEL spans in both
+  `run.ts` and `autoprocess.ts`.
+- **Autoprocess schema version mismatch**: on a version bump the state file is
+  backed up (`.bak`) with a clear message showing old→new version and backup
+  path; `STATE_SCHEMA_VERSION` is now exported for downstream consumers.
+- **Prolog8 subcommand banner suppression**: parent `run()` no longer prints
+  its usage banner over a subcommand's JSON output when a known subcommand is
+  detected in `rawArgs`.
+- **POWL source error propagation**: missing input files now throw
+  `PowlSourceError` so the command exits `source_error (2)` instead of
+  `execution_error (3)`.
+- **Swarm false-convergence guard**: workers whose `resultHash` is `'FAILED'`
+  are excluded from consensus checks in both `checkSwarmConvergence` and
+  `checkMlConvergence`, preventing a persistently-crashing worker from
+  triggering spurious convergence.
+- **Config hyphen normalisation**: `WASM4PM_PREDICTION_TASKS` now accepts
+  both `next-activity` and `next_activity` forms; hyphen slugs are normalised
+  to underscores in the resolver.
+- **Zod enum error truncation**: overly-long algorithm enum errors are
+  truncated to the first 5 options + count so `wpm run --algorithm bad` does
+  not print 36+ IDs on one line.
+- **Rust `ChoiceGraph` API**: call sites in integration tests updated to pass
+  `&ChoiceGraph` by reference, matching the corrected API signature.
+- **Rust `receipt.rs` dead-variable warnings**: unused variables prefixed with
+  `_` after the blanket `#![allow(clippy::all)]` was removed from `lib.rs`.
+
+### Performance
+
+- **FxHashMap in streaming hot path** (`streaming_dfg.rs`, `alignment_fitness.rs`,
+  `anomaly.rs`): `std::HashMap` replaced with `FxHashMap` for faster
+  string-keyed lookups in the algorithms called most frequently by the kernel.
+- **`streaming_dfg` snapshot sort**: edges are now sorted by `(from_id, to_id)`
+  before collection, fixing a non-determinism bug that also caused unnecessary
+  hash-map rehashing under load.
+- **`genetic_discovery.rs` determinism**: `HashSet` iteration in
+  crossover/blend functions is now sorted before consuming RNG, making
+  genetic algorithm output deterministic across WASM invocations.
+
+### Observability
+
+- **`discriminateWithSpan()`**: new export from `discriminator.ts` wraps every
+  discriminate call with an OTEL span (`service.name=wasm4pm`, `status=ok|error`);
+  used by `run.ts` to ensure output-shape validation is always traced.
+- **`validate.skipped` span**: `run.ts` now emits a `validate.skipped` span
+  instead of silently swallowing schema/attribute-check errors when
+  `--no-validate` is active.
+- **`AnalysisSpans.compareAlgo()`**: new helper in `@wasm4pm/observability`
+  emits per-algorithm spans for the `compare` command.
+- **`autoprocess` outer span**: entire `autoprocess` command body is now
+  wrapped in an outer `withSpan`, ensuring all exit paths—including early
+  validation failures—produce OTEL evidence.
+
+### Tests
+
+- **Regression: exit-code keys** (`packages/engine/src/__tests__/regression-exit-codes.test.ts`):
+  verifies `EXIT_CODES` lowercase keys exist with correct numeric values;
+  catches accidental uppercase-only exports.
+- **Regression: MTTR wall-clock** (`packages/engine/src/__tests__/unit/mttr.test.ts`):
+  formal Rank-2 domain oracle measuring `degraded→ready` (<100 ms) and
+  `failed→ready` (<1000 ms) with runtime-measured bounds (no hardcoded values).
+- **Regression: duplicate ML steps** (`packages/planner/src/__tests__/regression-duplicate-ml-steps.test.ts`):
+  verifies `ml_cluster` with `balanced` profile appears exactly once in the
+  plan steps array.
+- **Autoprocess E2E** (`apps/wasm4pm/src/__tests__/autoprocess-e2e.test.ts`):
+  covers MAPE-K cycle execution, receipt writing, and persistence round-trip.
+- **Autoprocess state migration** (`apps/wasm4pm/src/__tests__/autoprocess-e2e.test.ts`):
+  verifies `.bak` creation and message on schema version mismatch.
+- **Suggest CLI** (`apps/wasm4pm/src/__tests__/suggest-cli.test.ts`): new
+  smoke-test suite for the `wpm suggest` command.
+- **TrueX CLI** (`apps/wasm4pm/src/__tests__/truex-cli.test.ts`): new
+  smoke-test suite for the `wpm truex` command.
+- **Prolog8 smoke tests**: new smoke tests covering `show`, `query`, and
+  `replay` subcommands with degenerate-conformance fixtures.
+- **Degenerate conformance fixtures**: added `simple-model.json` and
+  `simple-model.xes` under `apps/wasm4pm/__fixtures__/degenerate-conformance/`
+  for low-complexity conformance edge-case testing.
+- **Streaming DFG determinism test** (`wasm4pm/tests/algorithm_determinism_template.rs`):
+  placeholder TODO replaced with a real determinism assertion that now passes
+  after the `snapshot()` sort fix.
+- **561 playground scenario fixes**: `EXIT_CODES` casing, scenario `status`
+  values, and `helper.cwd` support corrected across all playground scenarios
+  so the full `pnpm test` suite is green.
+- **Vacuous test cleanup** (`test: fix test timeouts, exit code assertions`):
+  flaky timing threshold in `wasm-loader-gaps.test.ts` relaxed from 500 ms to
+  2000 ms; field-contract guard test assertions updated.
+
+### DX
+
+- **Help text improvements**: `batch.ts`, `powl.ts`, `prolog8.ts`, `ml.ts`,
+  `validate.ts` all received richer `--description` text with usage examples,
+  exit-code legends, and actionable hints on error.
+- **`PROLOG8_LOAD_FAILED` error code**: new error code with build instructions
+  guides users through rebuilding the Prolog8 WASM module when it is missing.
+- **`wpm explain` normalisation**: `simd_streaming_dfg` and `hill_climbing`
+  now resolve to the correct `ALGO_META` entry; previously fell through to
+  "unknown algorithm".
+- **Performance benchmark script**: `scripts/bench.js` and
+  `scripts/perf-baseline.json` added for CI-comparable performance snapshots.
+- **README algorithm/command counts updated**: discovery count corrected to 15
+  (SIMD streaming DFG added), CLI command blurb updated to 50+.
+
 ## [26.5.21] - 2026-05-21
 
 ### Release posture
