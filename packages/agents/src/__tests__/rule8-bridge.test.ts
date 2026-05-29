@@ -68,8 +68,14 @@ describe('auditEntriesToCatalog: return shape', () => {
   it('returns an internTable with non-empty termByLabel', () => {
     const { internTable } = auditEntriesToCatalog([makeEntry()]);
 
-    expect(internTable.termByLabel.size).toBeGreaterThan(0);
-    expect(internTable.labelByTerm.size).toBeGreaterThan(0);
+    // FM-5: a single AuditEntry has 4 intern-able string fields (agent_name,
+    // correction_type, artifact_id, correction_success-as-string). The intern
+    // table must contain at least 4 terms — a count of > 0 would pass even if
+    // all fields were collapsed to a single entry, hiding a mapping bug.
+    expect(internTable.termByLabel.size).toBeGreaterThanOrEqual(4);
+    expect(internTable.labelByTerm.size).toBeGreaterThanOrEqual(4);
+    // Both maps must be mirrors: same count, bidirectional mapping
+    expect(internTable.termByLabel.size).toBe(internTable.labelByTerm.size);
   });
 
   it('catalog has required Prolog8 fields', () => {
@@ -77,10 +83,20 @@ describe('auditEntriesToCatalog: return shape', () => {
 
     expect(typeof catalog.catalog_id).toBe('number');
     expect(catalog.catalog_id).toBeGreaterThan(0);
+    // FM-5: these check structural shape of the Prolog8Catalog contract, not just
+    // that values are truthy. Each field being a non-null object confirms that the
+    // compile step did not collapse them to undefined/null/primitive.
+    expect(catalog.predicates).not.toBeNull();
     expect(typeof catalog.predicates).toBe('object');
+    expect(catalog.term_labels).not.toBeNull();
     expect(typeof catalog.term_labels).toBe('object');
+    expect(catalog.predicate_by_label).not.toBeNull();
     expect(typeof catalog.predicate_by_label).toBe('object');
+    expect(catalog.term_by_label).not.toBeNull();
     expect(typeof catalog.term_by_label).toBe('object');
+    // The audit_entry predicate must be present and accessible
+    expect(Object.keys(catalog.predicates).length).toBeGreaterThan(0);
+    expect(Object.keys(catalog.predicate_by_label).length).toBeGreaterThan(0);
   });
 });
 

@@ -245,9 +245,10 @@ describe('wpm results --diff: successful comparison', () => {
     await writeFixture(env.resultsDir, 'right-task', '20260516T110000');
     const result = await runCli(['results', '--diff', '1,2'], env.tempDir);
     expect(result.exitCode).toBe(0);
-    // Human output should mention both tasks somewhere
+    // FM-5: `combined.length > 0` would pass for a single space. Assert that the
+    // output contains "diff" or "compare" or "left"/"right" — meaningful diff content.
     const combined = result.stdout + result.stderr;
-    expect(combined.length).toBeGreaterThan(0);
+    expect(combined).toMatch(/diff|compare|left|right|task/i);
   });
 
   it('diff with same index twice exits 0 (self-comparison is valid)', async () => {
@@ -327,8 +328,10 @@ describe('wpm results --verify: valid ref (no matching receipt)', () => {
     expect(result.exitCode).toBe(0);
     const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
     const payload = parsed.payload as Record<string, unknown>;
+    // FM-5: BLAKE3 hex-64 hashes are exactly 64 hex characters. A length check of
+    // > 0 would pass for a single character "x". Assert the full contract.
     expect(typeof payload.recomputed_output_hash).toBe('string');
-    expect((payload.recomputed_output_hash as string).length).toBeGreaterThan(0);
+    expect(payload.recomputed_output_hash as string).toMatch(/^[0-9a-f]{64}$/);
   });
 
   it('verify payload has receipt_found: false when no receipts dir', async () => {

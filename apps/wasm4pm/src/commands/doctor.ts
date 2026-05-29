@@ -2709,7 +2709,10 @@ export const doctorWatch = defineCommand({
     },
     'on-fail': {
       type: 'string',
-      description: 'Shell command to execute on new failure (env: DOCTOR_FAIL_CHECK=<name>)',
+      // SECURITY: This value is passed verbatim to execSync as a shell command.
+      // It is intentionally a user-provided hook command (same trust level as a
+      // Makefile target).  Document that callers must supply only trusted values.
+      description: 'Shell command to execute on new failure (env: DOCTOR_FAIL_CHECK=<name>). WARNING: executed verbatim by the shell — supply only trusted commands.',
     },
   },
   async run(ctx) {
@@ -2718,6 +2721,10 @@ export const doctorWatch = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
     const onFail = ctx.args['on-fail'] as string | undefined;
+    // SECURITY TODO (MEDIUM): --on-fail executes an arbitrary shell string supplied by
+    // the caller.  This is by design (ci/cd hook), but should be restricted to
+    // allowlisted paths or validated against a safe pattern in future if used in
+    // automated pipelines where the value might come from untrusted config.
     let intervalSec = parseInt((ctx.args.interval as string) ?? '30', 10);
     // Guard against NaN (non-numeric --interval value): parseInt returns NaN for
     // strings like "bad". NaN < 5 is false, so the minimum guard would be bypassed

@@ -221,7 +221,10 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
       ]);
       if (result.exitCode === EXIT_CODES.success || result.exitCode === EXIT_CODES.partial_failure) {
         const json = JSON.parse(result.stdout);
-        expect(json.payload?.algorithms).toBeDefined();
+        // FM-5: toBeDefined() would pass if algorithms were [], undefined, or null.
+        // Assert the array is non-empty and each entry has the required fields.
+        expect(Array.isArray(json.payload?.algorithms)).toBe(true);
+        expect((json.payload.algorithms as unknown[]).length).toBeGreaterThan(0);
         if (json.payload.algorithms.length > 0) {
           expect(json.payload.algorithms[0]).toHaveProperty('elapsedMs');
         }
@@ -294,8 +297,12 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
       ]);
       if (result.exitCode === EXIT_CODES.success || result.exitCode === EXIT_CODES.partial_failure) {
         const json = JSON.parse(result.stdout);
-        // DFG should be faster than ILP
-        expect(json.payload?.recommendation).toBeDefined();
+        // FM-5: recommendation must be a non-null object with a fastest field —
+        // toBeDefined() would pass for any value including `{}` or `null`.
+        expect(json.payload?.recommendation).not.toBeNull();
+        expect(typeof json.payload?.recommendation).toBe('object');
+        // DFG should be the fastest recommendation
+        expect(json.payload.recommendation).toHaveProperty('fastest');
       }
     });
 
@@ -311,8 +318,11 @@ describe('wpm compare — algorithm comparison CLI (A/B testing)', () => {
       ]);
       if (result.exitCode === EXIT_CODES.success || result.exitCode === EXIT_CODES.partial_failure) {
         const json = JSON.parse(result.stdout);
-        // ILP should rank higher in quality than DFG
-        expect(json.payload?.recommendation?.highestQuality).toBeDefined();
+        // FM-5: highestQuality must be a non-null, non-empty string (algorithm name),
+        // not just any defined value. toBeDefined() would pass for `0` or `{}`.
+        const hq = json.payload?.recommendation?.highestQuality as unknown;
+        expect(typeof hq).toBe('string');
+        expect((hq as string).length).toBeGreaterThan(0);
       }
     });
   });

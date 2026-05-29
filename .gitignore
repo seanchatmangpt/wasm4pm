@@ -27,6 +27,11 @@ coverage/
 results/
 benchmarks/results/
 
+# Python
+*.pyc
+*.pyo
+__pycache__/
+
 # OS
 .DS_Store
 Thumbs.db

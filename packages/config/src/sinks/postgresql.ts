@@ -45,6 +45,22 @@ export interface PostgresqlMetrics {
 }
 
 /**
+ * Validate that a PostgreSQL identifier (table name or column name) contains only
+ * safe characters: letters, digits, and underscores, starting with a letter or
+ * underscore.  Prevents SQL injection via user-supplied table/column names.
+ *
+ * Throws if the identifier is invalid.
+ */
+function assertSafeIdentifier(identifier: string, kind: 'table' | 'column'): void {
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(identifier)) {
+    throw new Error(
+      `Invalid PostgreSQL ${kind} name: "${identifier}". ` +
+        `Only letters, digits, and underscores are allowed, starting with a letter or underscore.`
+    );
+  }
+}
+
+/**
  * PostgreSQL Sink — stores metrics in a database table
  */
 export class PostgresqlSink {
@@ -56,7 +72,10 @@ export class PostgresqlSink {
   constructor(options: PostgresqlSinkOptions) {
     this.config = options.config;
     this.pool = options.pool;
-    this.tableName = options.config.table || 'wasm4pm_runs';
+    const rawTable = options.config.table || 'wasm4pm_runs';
+    // SECURITY: validate table name before it reaches any SQL string (SQL injection guard).
+    assertSafeIdentifier(rawTable, 'table');
+    this.tableName = rawTable;
   }
 
   /**
@@ -143,6 +162,12 @@ export class PostgresqlSink {
     await this.initialize();
 
     const columns = Object.keys(metrics).sort();
+    // SECURITY: validate every column name against the safe-identifier regex before
+    // interpolating into SQL.  The PostgresqlMetrics type has an open index signature
+    // ([key: string]) so callers could supply arbitrary column names.
+    for (const col of columns) {
+      assertSafeIdentifier(col, 'column');
+    }
     const placeholders = columns
       .map((_, i) => `$${i + 1}`)
       .join(', ');

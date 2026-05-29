@@ -24,11 +24,23 @@ export class SupabaseIntegrationError extends Error {
   }
 }
 
+// SECURITY: Table names from config are interpolated into Supabase REST API
+// path segments (e.g., GET /rest/v1/<tableName>).  An attacker who controls
+// wasm4pm.toml could supply a path like "../../auth/users" to navigate outside
+// the intended table namespace.  Restrict to safe identifier characters.
+const SAFE_TABLE_NAME = z
+  .string()
+  .min(1)
+  .regex(
+    /^[a-zA-Z_][a-zA-Z0-9_]*$/,
+    'Supabase table name must start with a letter or underscore and contain only letters, digits, and underscores'
+  );
+
 export const supabaseTableNamesSchema = z
   .object({
-    commandReceipts: z.string().min(1).default('wpm_command_receipts'),
-    truexEnvelopes: z.string().min(1).default('truex_envelopes'),
-    syncQueueDeadletter: z.string().min(1).default('sync_queue_deadletter'),
+    commandReceipts: SAFE_TABLE_NAME.default('wpm_command_receipts'),
+    truexEnvelopes: SAFE_TABLE_NAME.default('truex_envelopes'),
+    syncQueueDeadletter: SAFE_TABLE_NAME.default('sync_queue_deadletter'),
   })
   .default({});
 

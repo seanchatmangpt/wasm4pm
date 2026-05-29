@@ -4,9 +4,23 @@ use serde_json::json;
 use std::collections::HashMap;
 use wasm_bindgen::prelude::*;
 
+// SECURITY: Maximum byte length for any raw input passed to WASM entry points.
+// Passing an unbounded string through the wasm_bindgen boundary allocates a copy
+// in both JS and WASM heap simultaneously.  512 MB is enough for any real-world
+// production log (largest public XES benchmark is ~150 MB) while blocking
+// adversarial inputs that would exhaust the WASM heap and crash the tab/process.
+const MAX_INPUT_BYTES: usize = 512 * 1024 * 1024; // 512 MB
+
 /// Load an EventLog from JSON string
 #[wasm_bindgen]
 pub fn load_eventlog_from_json(content: &str) -> Result<String, JsValue> {
+    if content.len() > MAX_INPUT_BYTES {
+        return Err(crate::error::js_val(&format!(
+            "Input too large: {} bytes (max {} bytes / 512 MB)",
+            content.len(),
+            MAX_INPUT_BYTES
+        )));
+    }
     let log: EventLog = serde_json::from_str(content)
         .map_err(|e| crate::error::js_val(&format!("Failed to parse EventLog JSON: {}", e)))?;
 
@@ -20,6 +34,13 @@ pub fn load_eventlog_from_json(content: &str) -> Result<String, JsValue> {
 /// Load an OCEL from JSON string
 #[wasm_bindgen]
 pub fn load_ocel_from_json(content: &str) -> Result<String, JsValue> {
+    if content.len() > MAX_INPUT_BYTES {
+        return Err(crate::error::js_val(&format!(
+            "Input too large: {} bytes (max {} bytes / 512 MB)",
+            content.len(),
+            MAX_INPUT_BYTES
+        )));
+    }
     let mut ocel: OCEL = serde_json::from_str(content)
         .map_err(|e| crate::error::js_val(&format!("Failed to parse OCEL JSON: {}", e)))?;
 
@@ -59,6 +80,13 @@ pub fn export_ocel_to_json(handle: &str) -> Result<String, JsValue> {
 /// Supports OCEL-XML structure with events, objects, and typed attributes
 #[wasm_bindgen]
 pub fn load_ocel_from_xml(content: &str) -> Result<String, JsValue> {
+    if content.len() > MAX_INPUT_BYTES {
+        return Err(crate::error::js_val(&format!(
+            "Input too large: {} bytes (max {} bytes / 512 MB)",
+            content.len(),
+            MAX_INPUT_BYTES
+        )));
+    }
     let doc = roxmltree::Document::parse(content)
         .map_err(|e| crate::error::js_val(&format!("Failed to parse XML: {}", e)))?;
 

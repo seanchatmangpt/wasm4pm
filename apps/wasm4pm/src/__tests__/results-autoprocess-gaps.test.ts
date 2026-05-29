@@ -199,9 +199,10 @@ describe('Gap 1 — results --verify: tampered file (integrity:mismatch)', () =>
     expect(r.exitCode).toBe(4);
     const parsed = JSON.parse(r.stdout) as Record<string, unknown>;
     const payload = parsed.payload as Record<string, unknown>;
-    // Both hashes must be present so the auditor can see what changed
-    expect(typeof payload.recomputed_output_hash).toBe('string');
-    expect((payload.recomputed_output_hash as string).length).toBeGreaterThan(0);
+    // Both hashes must be present so the auditor can see what changed.
+    // FM-5: BLAKE3 hex-64 hashes are exactly 64 lowercase hex characters.
+    // A `length > 0` check would pass even for "x". Assert the full contract.
+    expect(payload.recomputed_output_hash as string).toMatch(/^[0-9a-f]{64}$/);
     expect(payload.stored_output_hash).toBe(badHash);
     // They must differ (that is the whole point)
     expect(payload.recomputed_output_hash).not.toBe(payload.stored_output_hash);

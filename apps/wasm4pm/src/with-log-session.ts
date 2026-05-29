@@ -100,6 +100,36 @@ export async function withLogSession<T>(
   // - WASM parser uses a line-by-line lexer (linear time, no tree construction until after validation)
   // - This prevents XXE attacks (Billion Laughs, External Entity attacks)
   // - If this assumption is violated (TypeScript-side XML parsing added), re-audit security.
+
+  // SECURITY: Input size guard — prevent OOM from excessively large log files.
+  // Node.js reads the entire file into memory and then passes it as a UTF-8 string
+  // to the WASM module, which also allocates a copy.  A 10 GB file would exhaust
+  // the WASM heap and likely crash the process.  Reject files above 512 MB; this
+  // comfortably covers real-world production logs (largest public XES benchmark is
+  // ~150 MB) while blocking adversarial inputs.
+  const MAX_XES_BYTES = 512 * 1024 * 1024; // 512 MB
+  let xesStat: { size: number } | undefined;
+  try {
+    xesStat = await fs.stat(inputPath);
+  } catch {
+    // stat failed — fall through; readFile will fail with a descriptive error
+  }
+  if (xesStat && xesStat.size > MAX_XES_BYTES) {
+    const sizeMB = (xesStat.size / (1024 * 1024)).toFixed(1);
+    const result = makeErrorResult(
+      commandName,
+      new Error(
+        `Input file is too large: ${inputPath} (${sizeMB} MB)\n\n` +
+        `  Maximum supported size is ${MAX_XES_BYTES / (1024 * 1024)} MB.\n` +
+        `  For very large logs, split the file into smaller segments before processing.`
+      ),
+      EXIT_CODES.source_error,
+      'INPUT_TOO_LARGE'
+    );
+    emitResult(result, emitOptions);
+    process.exit(result.exit_code);
+  }
+
   const xesContent = await fs.readFile(inputPath, 'utf-8');
 
   // Assert: TypeScript does not parse the XML content

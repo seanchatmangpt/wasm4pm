@@ -358,6 +358,9 @@ describe('powl freq-analysis — Rank 3 metamorphic relations', () => {
       'powl', 'freq-analysis', `--model=${LOOP_SKIP_MODEL}`, '--format=json', '--no-save',
     ]);
     const p = parseEnvelope(result).payload!;
+    // FM-5: LOOP_SKIP_MODEL contains XOR(tau) and *(A,tau) nodes. The exact counts
+    // depend on the model definition, but both must be at least 1 per model semantics.
+    // `toBeGreaterThan(0)` is the right oracle here (exact count would be over-specified).
     expect(p.skippable_count as number).toBeGreaterThan(0);
     expect(p.unbounded_count as number).toBeGreaterThan(0);
   });

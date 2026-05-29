@@ -630,7 +630,8 @@ describe('mcpp → wasm4pm → Prolog8 audit chain: structural contract', () => 
     const cycleResult: MAPEKCycleResult = await orchestrator.runMapekCycle(
       buildMcppContext({ dryRun: false })
     );
-    expect(cycleResult.cycle_id).toBeDefined();
+    // FM-5: cycle_id must match the cycle- prefix contract (not just be non-undefined)
+    expect(cycleResult.cycle_id).toMatch(/^cycle-/);
 
     // Step 2: Query AuditStore for this artifact's entries
     const auditStore = orchestrator.getAuditStore();

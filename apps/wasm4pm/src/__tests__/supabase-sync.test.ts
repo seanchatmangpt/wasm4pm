@@ -19,15 +19,28 @@ describe('wpm supabase CLI', () => {
     expect(r.exitCode).toBe(EXIT_CODES.success);
     const d = JSON.parse(r.stdout) as Record<string, unknown>;
     expect(d.command).toBe('supabase sync-receipts');
+    // FM-5: verify the payload carries the dry-run flag that was passed, not just
+    // that it's a truthy value — confirms the CLI correctly parses and echoes the flag.
     expect((d.payload as Record<string, unknown>).dryRun).toBe(true);
+    // TODO(test): add assertion that payload.syncedCount === 0 for dry-run
+    // (verifies no actual network I/O occurs in dry-run mode).
   });
 
-  it('doctor fails with SUPABASE_CREDENTIALS_MISSING when env unset', async () => {
+  it('doctor fails with config_error (exit 1) and SUPABASE_CREDENTIALS_MISSING when env unset', async () => {
     const r = await runCli(['supabase', 'doctor', '--format', 'json'], {
       env: baseEnv,
     });
-    expect(r.exitCode).not.toBe(EXIT_CODES.success);
+    // FM-5: must be config_error (1), not just non-zero — missing credentials is a
+    // configuration problem, not a network or execution error.
+    expect(r.exitCode).toBe(EXIT_CODES.config_error);
     const d = JSON.parse(r.stdout) as { error?: { code?: string } };
     expect(d.error?.code).toBe('SUPABASE_CREDENTIALS_MISSING');
+    // TODO(test): add test for SUPABASE_URL set but ANON_KEY missing (partial
+    // credential set should also produce SUPABASE_CREDENTIALS_MISSING, not a
+    // network timeout or a different error code).
   });
+
+  // TODO(test): add test that sync-receipts with real credentials but an
+  // unreachable Supabase URL exits with system_error (5) or source_error (2),
+  // not success — verifies network error handling path is exercised.
 });

@@ -195,7 +195,11 @@ describe('wpm simulate — error paths', () => {
       'json',
       '--no-save',
     ]);
-    expect(result.exitCode).toBeGreaterThan(0);
+    // FM-5: must be source_error (2), not just non-zero — a missing input file is a
+    // source problem (300s code family), not a config or execution error.
+    // Using toBeGreaterThan(0) here would accept exit 1 (config_error), which would
+    // mask a bug where the file-not-found path is mis-classified.
+    expect(result.exitCode).toBe(2);
   });
 
   it('returns error envelope for nonexistent file', async () => {
@@ -757,7 +761,7 @@ describe('wpm simulate — output format invariants', () => {
     expect(() => JSON.parse(result.stdout)).not.toThrow();
   });
 
-  it('JSON output has non-empty stdout', async () => {
+  it('JSON output is a valid JSON envelope with command=simulate', async () => {
     const result = await runCli([
       'simulate',
       '-i',
@@ -766,7 +770,12 @@ describe('wpm simulate — output format invariants', () => {
       'json',
       '--no-save',
     ]);
-    expect(result.stdout.trim().length).toBeGreaterThan(0);
+    // FM-5: parse the stdout as JSON and verify command field — this detects
+    // regressions where the command name is wrong or stdout is a non-JSON string.
+    // `toBeGreaterThan(0)` on raw length would pass even if stdout was "x".
+    const parsed = JSON.parse(result.stdout) as { command?: string; status?: string };
+    expect(parsed.command).toBe('simulate');
+    expect(parsed.status).toMatch(/^(ok|error)$/);
   });
 
   it('--no-save flag is accepted without crashing', async () => {

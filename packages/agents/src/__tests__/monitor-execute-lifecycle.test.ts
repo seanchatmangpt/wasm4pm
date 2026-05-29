@@ -164,10 +164,15 @@ describe('Execute-phase error isolation — Rank 2 (Domain contract)', () => {
       warning_actions: 1,
     };
 
-    // Must resolve, not reject
-    await expect(
-      orchestrator.execute(plan, { artifact_id: 'ghost-agent', dry_run: false })
-    ).resolves.toBeDefined();
+    // FM-5: resolves.not.toThrow() would be cleaner, but vitest requires a value
+    // assertion in the resolves chain. What matters is that the call does NOT
+    // reject — the returned ExecuteResult shape is verified by the subsequent
+    // registry-intact test. The non-null check here confirms the promise resolved
+    // to an actual ExecuteResult, not undefined.
+    const executeResult = await orchestrator.execute(plan, { artifact_id: 'ghost-agent', dry_run: false });
+    expect(executeResult).not.toBeNull();
+    expect(typeof executeResult.successful_count).toBe('number');
+    expect(typeof executeResult.failed_count).toBe('number');
   });
 
   it('registry remains intact after executing a plan with an unknown agent', async () => {
@@ -247,7 +252,11 @@ describe('Execute-phase error isolation — Rank 2 (Domain contract)', () => {
     const disabledViolation = result.violations.find(
       (v) => v.violation_type === 'agent_disabled'
     );
+    // FM-5: toBeDefined() guard — subsequent severity/blocked checks depend on this
+    // not being undefined. A bug that omits the violation would fail here first.
     expect(disabledViolation).toBeDefined();
+    expect(disabledViolation?.severity).toBe('warning');
+    expect(disabledViolation?.blocked_manufacturing).toBe(false);
   });
 
   it('executeAgent for an unknown agent returns passed=false with agent_not_found violation', async () => {

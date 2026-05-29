@@ -570,9 +570,17 @@ describe('wpm trace ingest --from erlang', () => {
       const graph = JSON.parse(await fs.readFile(outFile, 'utf8')) as Record<string, unknown>;
       const ctx = graph['@context'] as Record<string, string> | undefined;
       expect(typeof ctx).toBe('object');
+      // FM-5: these three keys must be non-empty URI strings in the @context map —
+      // toBeDefined() verifies the keys exist (absent = undefined); the prefix IRIs
+      // are what make the output valid JSON-LD. A tighter assertion follows below
+      // but absence detection is the primary regression catch here.
       expect(ctx?.prov).toBeDefined();
       expect(ctx?.ocel).toBeDefined();
       expect(ctx?.trace).toBeDefined();
+      // Stronger: each prefix must be a string URI (not a number or boolean)
+      expect(typeof ctx?.prov).toBe('string');
+      expect(typeof ctx?.ocel).toBe('string');
+      expect(typeof ctx?.trace).toBe('string');
     });
 
     it('@id follows "trace:run-{runId}" pattern', async () => {

@@ -9,12 +9,15 @@ import { withSpan } from './_otel.js';
 export const truex = defineCommand({
   meta: {
     name: 'truex',
-    description: 'Truex OCEL 2.0 Trust Layer (Verify Receipts)',
+    description:
+      'Verify a TrueX OCEL 2.0 receipt envelope using WASM-based BLAKE3 digest validation. ' +
+      'Use --ingest to persist an admitted envelope to Supabase after verification. ' +
+      'Example: wpm truex verify envelope.json  |  wpm truex verify envelope.json --ingest',
   },
   args: {
     action: {
       type: 'positional',
-      description: 'Action to perform (e.g. verify)',
+      description: 'Action to perform — currently only "verify" is supported',
       required: true,
     },
     payload: {

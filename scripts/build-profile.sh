@@ -4,7 +4,7 @@
 # Usage:
 #   bash scripts/build-profile.sh <profile> [--no-compress] [--dry-run]
 #
-# Profiles: browser, edge, fog, iot, cloud
+# Profiles: mobile, iot, edge, fog, browser
 # Options:
 #   --no-compress : Skip Brotli compression step
 #   --dry-run     : Check without building
@@ -38,44 +38,48 @@ WASM_FILE="$OUTPUT_DIR/wasm4pm.wasm"
 WASM_OPT_FILE="$OUTPUT_DIR/wasm4pm.opt.wasm"
 WASM_BROTLI_FILE="$OUTPUT_DIR/wasm4pm.wasm.br"
 
-# Size targets (MB)
+# Size targets (MB) — match CLAUDE.md documented targets
 case "$PROFILE" in
-  cloud)   TARGET_MB=5.0 ;;
-  *)       TARGET_MB=4.0 ;;
+  mobile)  TARGET_MB=0.6 ;;
+  iot)     TARGET_MB=1.2 ;;
+  edge)    TARGET_MB=1.7 ;;
+  fog)     TARGET_MB=2.2 ;;
+  browser) TARGET_MB=3.0 ;;
+  *)       TARGET_MB=3.0 ;;
 esac
 
-# Code splitting threshold (MB)
-CODE_SPLIT_THRESHOLD=4.5
+# Code splitting threshold (MB) — only relevant for very large profiles
+CODE_SPLIT_THRESHOLD=3.5
 
 # Map profile to cargo features and wasm-opt flags
 case "$PROFILE" in
-  browser)
-    FEATURES="browser"
+  mobile)
+    FEATURES="mobile"
     WASM_OPT_LEVEL="-Oz"
-    DESCRIPTION="~18 basic discovery algorithms, hand-rolled stats, size-optimized"
-    ;;
-  edge)
-    FEATURES="edge"
-    WASM_OPT_LEVEL="-Os"
-    DESCRIPTION="~25 discovery + ML algorithms, balanced performance/size"
-    ;;
-  fog)
-    FEATURES="fog"
-    WASM_OPT_LEVEL="-O2"
-    DESCRIPTION="Full feature set (Tier 2), speed-optimized for edge gateway"
+    DESCRIPTION="~500KB target: minimal features for mobile devices (conformance-basic + hand-rolled stats)"
     ;;
   iot)
     FEATURES="iot"
     WASM_OPT_LEVEL="-Oz"
-    DESCRIPTION="Minimal feature set, extreme size optimization for IoT"
+    DESCRIPTION="~1MB target: basic discovery + conformance for IoT devices"
     ;;
-  cloud)
-    FEATURES="cloud"
-    WASM_OPT_LEVEL=""
-    DESCRIPTION="All 41 algorithms, no wasm-opt (preserve symbols for debugging)"
+  edge)
+    FEATURES="edge"
+    WASM_OPT_LEVEL="-Os"
+    DESCRIPTION="~1.5MB target: advanced discovery + streaming-basic for CDN workers / edge servers"
+    ;;
+  fog)
+    FEATURES="fog"
+    WASM_OPT_LEVEL="-O2"
+    DESCRIPTION="~2MB target: all features except POWL, full ML + streaming for fog gateways"
+    ;;
+  browser)
+    FEATURES="browser"
+    WASM_OPT_LEVEL="-Oz"
+    DESCRIPTION="~2.7MB target: all 38 algorithms, full features for web browsers (DEFAULT)"
     ;;
   *)
-    echo "ERROR: Unknown profile '$PROFILE'. Choose: browser, edge, fog, iot, cloud"
+    echo "ERROR: Unknown profile '$PROFILE'. Choose: mobile, iot, edge, fog, browser"
     exit 1
     ;;
 esac
@@ -226,9 +230,9 @@ echo ""
 # Step 5: Code Splitting for Cloud (Optional)
 # ─────────────────────────────────────────────────────────────────────────────
 
-if [ "$PROFILE" = "cloud" ] && [ $(python3 -c "print(1 if $RAW_SIZE_MB > $CODE_SPLIT_THRESHOLD else 0)") -eq 1 ]; then
+if [ $(python3 -c "print(1 if $RAW_SIZE_MB > $CODE_SPLIT_THRESHOLD else 0)") -eq 1 ]; then
   if command -v wasm-split &> /dev/null; then
-    echo "[4/5] Code splitting (binary >4.5MB detected: ${RAW_SIZE_MB} MB)..."
+    echo "[4/5] Code splitting (binary >${CODE_SPLIT_THRESHOLD}MB detected: ${RAW_SIZE_MB} MB)..."
     wasm-split "$WASM_FILE" \
       --export-prefix wasm4pm_core \
       --secondary-output "$OUTPUT_DIR/wasm4pm-advanced.wasm" \
@@ -246,7 +250,7 @@ if [ "$PROFILE" = "cloud" ] && [ $(python3 -c "print(1 if $RAW_SIZE_MB > $CODE_S
     echo "[4/5] Skipping code splitting (wasm-split not available)"
   fi
 else
-  echo "[4/5] Skipping code splitting (profile=$PROFILE, size=${RAW_SIZE_MB}MB)"
+  echo "[4/5] Skipping code splitting (size=${RAW_SIZE_MB}MB below ${CODE_SPLIT_THRESHOLD}MB threshold)"
 fi
 
 echo ""

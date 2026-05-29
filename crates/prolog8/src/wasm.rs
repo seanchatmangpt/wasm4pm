@@ -44,7 +44,12 @@ const MAX_INPUT_LEN: usize = 10 * 1024 * 1024;
 const MAX_ANSWERS: usize = 128;
 
 fn js_err(message: &str) -> JsValue {
-    JsValue::from_str(&serde_json::to_string(&json!({"error": message})).unwrap())
+    // Serializing `{"error": "<str>"}` to JSON is infallible in practice, but
+    // `.unwrap()` would panic in WASM (unrecoverable).  Use a `map_or` fallback
+    // so that even if serde_json somehow fails we still return a valid JsValue.
+    let json = serde_json::to_string(&json!({"error": message}))
+        .unwrap_or_else(|_| format!(r#"{{"error":"{}"}}"#, message));
+    JsValue::from_str(&json)
 }
 
 fn to_js_str<T: serde::Serialize>(v: &T) -> Result<JsValue, JsValue> {

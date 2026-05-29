@@ -58,9 +58,9 @@ const syncReceipts = defineCommand({
   args: {
     config: { type: 'string', description: 'Path to wasm4pm.toml / wasm4pm.json' },
     'dry-run': { type: 'boolean', description: 'List receipts without uploading', default: false },
-    format: { type: 'string', default: 'human' },
-    verbose: { type: 'boolean', alias: 'v', default: false },
-    quiet: { type: 'boolean', alias: 'q', default: false },
+    format: { type: 'string', description: 'Output format: human or json (default: human)', default: 'human' },
+    verbose: { type: 'boolean', alias: 'v', description: 'Show detailed sync progress', default: false },
+    quiet: { type: 'boolean', alias: 'q', description: 'Suppress non-error output', default: false },
   },
   async run(ctx) {
     const format = (ctx.args.format as 'human' | 'json') ?? 'human';
@@ -103,9 +103,9 @@ const syncQueue = defineCommand({
   },
   args: {
     config: { type: 'string', description: 'Path to wasm4pm.toml / wasm4pm.json' },
-    format: { type: 'string', default: 'human' },
-    verbose: { type: 'boolean', alias: 'v', default: false },
-    quiet: { type: 'boolean', alias: 'q', default: false },
+    format: { type: 'string', description: 'Output format: human or json (default: human)', default: 'human' },
+    verbose: { type: 'boolean', alias: 'v', description: 'Show detailed flush progress', default: false },
+    quiet: { type: 'boolean', alias: 'q', description: 'Suppress non-error output', default: false },
   },
   async run(ctx) {
     const format = (ctx.args.format as 'human' | 'json') ?? 'human';
@@ -138,9 +138,9 @@ const ingestTruex = defineCommand({
       required: true,
     },
     config: { type: 'string', description: 'Path to wasm4pm.toml / wasm4pm.json' },
-    format: { type: 'string', default: 'human' },
-    verbose: { type: 'boolean', alias: 'v', default: false },
-    quiet: { type: 'boolean', alias: 'q', default: false },
+    format: { type: 'string', description: 'Output format: human or json (default: human)', default: 'human' },
+    verbose: { type: 'boolean', alias: 'v', description: 'Show WASM verify details and ingest steps', default: false },
+    quiet: { type: 'boolean', alias: 'q', description: 'Suppress non-error output', default: false },
   },
   async run(ctx) {
     const format = (ctx.args.format as 'human' | 'json') ?? 'human';
@@ -199,9 +199,9 @@ const supabaseDoctor = defineCommand({
         'Run live write/Edge probes and emit supabase_runtime.receipt.json (requires service role key)',
       default: false,
     },
-    format: { type: 'string', default: 'human' },
-    verbose: { type: 'boolean', alias: 'v', default: false },
-    quiet: { type: 'boolean', alias: 'q', default: false },
+    format: { type: 'string', description: 'Output format: human or json (default: human)', default: 'human' },
+    verbose: { type: 'boolean', alias: 'v', description: 'Show detailed check results', default: false },
+    quiet: { type: 'boolean', alias: 'q', description: 'Suppress non-error output', default: false },
   },
   async run(ctx) {
     const format = (ctx.args.format as 'human' | 'json') ?? 'human';
@@ -241,7 +241,11 @@ const supabaseDoctor = defineCommand({
 export const supabase = defineCommand({
   meta: {
     name: 'supabase',
-    description: 'Sync wasm4pm receipts and TrueX envelopes to Supabase',
+    description:
+      'Sync wasm4pm command receipts and admitted TrueX envelopes to a Supabase Postgres database. ' +
+      'Subcommands: sync-receipts, sync-queue, ingest-truex, doctor. ' +
+      'Requires WASM4PM_SUPABASE_URL and WASM4PM_SUPABASE_ANON_KEY env vars (or wasm4pm.toml). ' +
+      'Example: wpm supabase sync-receipts  |  wpm supabase doctor',
   },
   subCommands: {
     'sync-receipts': syncReceipts,
