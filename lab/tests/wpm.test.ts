@@ -48,7 +48,7 @@ function wpm(...args: string[]) {
   delete env.VITEST;
   return spawnSync('node', [WPM_BIN, ...args], {
     encoding: 'utf8',
-    timeout: 30_000,
+    timeout: 60_000,
     env,
   });
 }

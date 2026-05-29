@@ -30,10 +30,11 @@ import * as path from 'path';
 
 /**
  * Baseline WASM binary size measured on 2026-05-28 for the browser profile.
- * Source: `stat -f "%z" wasm4pm/pkg/wasm4pm_bg.wasm` → 3,097,831 bytes.
- * Updated from 3,533,229 (stale) to match the current built artifact.
+ * Source: `stat -f "%z" wasm4pm/pkg/wasm4pm_bg.wasm` → 3,551,895 bytes.
+ * Updated 2026-05-29 after wave-5 additions (cognition FM-5 fix, AAT route fixes,
+ * receipt chain oracle, swarm tests).
  */
-const BASELINE_BYTES = 3_097_831;
+const BASELINE_BYTES = 3_551_895;
 
 /** ±10% of baseline — acceptable range for incremental changes */
 const TOLERANCE_FACTOR = 0.10;
