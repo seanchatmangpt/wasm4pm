@@ -37,6 +37,8 @@ export function normalizeVerboseLevel(options: EmitOptions): 0 | 1 | 2 | 3 {
 export interface CommandResult<T = unknown> {
   readonly command: string; // e.g. 'run', 'benchmark verify'
   readonly status: 'ok' | 'error';
+  /** Human-readable summary: describes the outcome for both ok and error cases. */
+  readonly message: string;
   readonly exit_code: number; // EXIT_CODES value
   readonly payload: T;
   readonly error?: {
@@ -177,11 +179,13 @@ export function makeResult<T>(
   command: string,
   payload: T,
   durationMs: number,
-  exitCode = 0
+  exitCode = 0,
+  message?: string
 ): CommandResult<T> {
   return {
     command,
     status: 'ok',
+    message: message ?? `${command} completed successfully`,
     exit_code: exitCode,
     payload,
     meta: {
@@ -256,6 +260,7 @@ export function makeErrorResult(
   return {
     command,
     status: 'error',
+    message,
     exit_code: exitCode,
     payload: null,
     error: {

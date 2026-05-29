@@ -111,9 +111,10 @@ export const swarm = defineCommand({
         'Number of parallel workers to spawn (must be >= 1; trims algorithm list to this count)',
       alias: 'w',
     },
-    'no-save': {
+    save: {
       type: 'boolean',
-      description: 'Do not auto-save the swarm result to .wasm4pm/results/',
+      description: 'Auto-save the swarm receipt to .wasm4pm/receipts/ (pass --no-save to disable)',
+      default: true,
     },
   },
   async run(ctx) {
@@ -239,8 +240,9 @@ export const swarm = defineCommand({
           const swarmResult = await runSwarm(config);
           const elapsedMs = Math.round(performance.now() - t0);
 
-          // Save receipt for audit trail (unless --no-save is specified)
-          const noSave = ctx.args['no-save'] === true;
+          // Save receipt for audit trail (unless --no-save is specified).
+          // citty maps --no-save → ctx.args.save === false (strips the 'no-' prefix).
+          const noSave = ctx.args['save'] === false;
           if (!noSave) {
             await saveSwarmReceipt(swarmResult, elapsedMs, inputPath);
           }

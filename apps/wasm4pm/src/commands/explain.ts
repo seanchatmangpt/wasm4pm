@@ -2121,7 +2121,14 @@ P(G*) ≥ P(G₀) by construction — removing low-probability edges reduces all
     // Unknown algorithm — throw a typed error so the caller can emit config_error (exit 1).
     // We use a plain Error with a recognisable code property rather than a custom class
     // so the existing catch handler in run() can inspect it without importing a new type.
-    const available = Object.keys(explanations).join(', ');
+    // Show canonical registry IDs in the error message, not internal short keys.
+    const INTERNAL_TO_CANONICAL: Record<string, string> = {
+      simd_dfg: 'simd_streaming_dfg',
+      optimized_dfg: 'optimized_dfg',
+    };
+    const available = Object.keys(explanations)
+      .map((k) => INTERNAL_TO_CANONICAL[k] ?? k)
+      .join(', ');
     const err = new Error(
       `Unknown algorithm: '${algorithm}'.\n\n` +
         `Algorithms with explanations: ${available}\n\n` +

@@ -92,7 +92,11 @@ export const validate = defineCommand({
       },
       async () => {
         const t0 = performance.now();
-        const outFmt = ((ctx.args['output-format'] as string | undefined) ?? 'human');
+        // --output-format is the canonical flag; accept --format json/human as an alias
+        // (--format is normally used for input log format, but callers may pass --format json)
+        const rawFmt = ctx.args['format'] as string | undefined;
+        const outputFormatFromAlias = rawFmt === 'json' || rawFmt === 'human' ? rawFmt : undefined;
+        const outFmt = ((ctx.args['output-format'] as string | undefined) ?? outputFormatFromAlias ?? 'human');
         const format = (outFmt === 'json' ? 'json' : 'human') as 'json' | 'human';
         const verbose = Boolean(ctx.args.verbose);
         const quiet = Boolean(ctx.args.quiet);
@@ -131,7 +135,8 @@ export const validate = defineCommand({
             return await exitWithFlush(result.exit_code);
           }
 
-          const logFormat = ((ctx.args.format as string) || 'xes');
+          // If --format was interpreted as output format alias (json/human), fall back to xes for log format
+          const logFormat = (outputFormatFromAlias ? 'xes' : ((ctx.args.format as string) || 'xes'));
           const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
           const caseIdKey = (ctx.args['case-id-key'] as string) || 'case:concept:name';
           const timestampKey = (ctx.args['timestamp-key'] as string) || 'time:timestamp';
