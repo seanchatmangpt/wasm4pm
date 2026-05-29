@@ -184,7 +184,7 @@ fn test_choice_graph_sub_model_nesting() {
     let cg = ChoiceGraph::new(nodes, edges).expect("valid 2-branch ChoiceGraph");
 
     let mut arena = PowlArena::new();
-    let root = arena.add_choice_graph(cg);
+    let root = arena.add_choice_graph(&cg);
     let pn = to_petri_net::apply(&arena, root);
 
     // Branch-1 trace: only P

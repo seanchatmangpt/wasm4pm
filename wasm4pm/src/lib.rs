@@ -1,4 +1,4 @@
-#![allow(clippy::all, dead_code, unused_variables, unused_assignments, unused_mut)]
+// Temporarily removed blanket allow to audit warnings
 //! # wasm4pm — High-Performance Process Mining in WebAssembly
 //!
 //! `wasm4pm` provides production-ready process mining algorithms compiled to WebAssembly,
