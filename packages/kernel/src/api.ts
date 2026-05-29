@@ -290,6 +290,24 @@ export interface KernelWasmModule extends Omit<WasmModule,
   streaming_heuristic_finalize?(handle: string): string;
   // Streaming info/capabilities
   streaming_info?(): string;
+
+  // ── StreamingLog probabilistic handle API ──────────────────────────────────
+  // Handle-based stateful API for bounded-memory streaming DFG estimation.
+  // Backed by CountMinSketch (edge freq), HyperLogLog (cardinality), BloomFilter (dedup).
+  //
+  // Usage:
+  //   const handle = wasm.create_streaming_log();
+  //   wasm.streaming_log_add_trace(handle, ['A', 'B', 'C']);
+  //   const dfg  = JSON.parse(wasm.streaming_log_estimate_dfg(handle));
+  //   wasm.free_streaming_log(handle);
+  create_streaming_log?(): number;
+  streaming_log_add_trace?(handle: number, activities: string[]): void;
+  streaming_log_estimate_dfg?(handle: number): string;
+  streaming_log_estimate_cardinality?(handle: number): number;
+  streaming_log_event_count?(handle: number): number;
+  streaming_log_activity_count?(handle: number): number;
+  streaming_log_memory_bytes?(handle: number): number;
+  free_streaming_log?(handle: number): void;
 }
 
 /**
@@ -806,6 +824,45 @@ export class Kernel {
       }
 
       case 'streaming_log': {
+        // streaming_log is a stateful handle-based API.
+        // Correct path: create handle → add traces one-by-one → estimate DFG → free.
+        // Previously this fell back to the batch discover_dfg which bypasses the
+        // probabilistic streaming data structures entirely.
+        if (
+          this.wasm.create_streaming_log &&
+          this.wasm.streaming_log_add_trace &&
+          this.wasm.streaming_log_estimate_dfg &&
+          this.wasm.free_streaming_log
+        ) {
+          const tracesRaw: unknown = this.wasm.get_traces
+            ? this.wasm.get_traces(eventLogHandle, activityKey)
+            : null;
+          const traces: string[][] =
+            tracesRaw != null
+              ? typeof tracesRaw === 'string'
+                ? (JSON.parse(tracesRaw) as string[][])
+                : (tracesRaw as string[][])
+              : [];
+
+          const streamHandle: number = this.wasm.create_streaming_log();
+          try {
+            for (const trace of traces) {
+              this.wasm.streaming_log_add_trace(streamHandle, trace);
+            }
+            const dfgJson = this.wasm.streaming_log_estimate_dfg(streamHandle);
+            return storeDfgDiscoveryResult(
+              this.wasm,
+              typeof dfgJson === 'string' ? dfgJson : JSON.stringify(dfgJson)
+            );
+          } finally {
+            try {
+              this.wasm.free_streaming_log(streamHandle);
+            } catch {
+              // best-effort cleanup
+            }
+          }
+        }
+        // Fallback: WASM build does not expose the streaming_log API.
         const dfgJson = this.wasm.discover_dfg(eventLogHandle, activityKey);
         if ((dfgJson as any) instanceof Promise || (dfgJson && typeof (dfgJson as any).then === 'function')) {
           return (dfgJson as any).then((resolvedDfgJson: string) =>

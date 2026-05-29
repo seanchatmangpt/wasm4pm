@@ -351,7 +351,7 @@ export class Engine {
         },
       });
     } catch (err) {
-      this.handleEngineError(err, 'BOOTSTRAP_TIMEOUT_BAD', 'Check WASM module availability and system resources', 'failed');
+      this.handleEngineError(err, 'BOOTSTRAP_FAILED', 'Check WASM module availability and system resources', 'failed');
       throw err;
     }
   }
