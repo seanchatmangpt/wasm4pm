@@ -2,7 +2,7 @@
   "package": {
     "name": "wasm4pm",
     "version": "26.5.28",
-    "git_commit": "ebb14ebc292d6531f7ac3b1e0c1a7c2fc4ab3e6f"
+    "git_commit": "7da0ca83ce9c4a17c564b396060e7080d6bbe174"
   },
   "reachability": {
     "algorithm_count": 60,
