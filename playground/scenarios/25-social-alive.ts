@@ -50,10 +50,11 @@ describe.sequential('Social Command Alive', () => {
     const result = await wpm(['social', RUNNING_EXAMPLE, '--format', 'json', '--metric', 'handover']);
 
     if (result.exitCode === 0) {
-      const output = extractJson(result.stdout);
-      expect(output.status).toBe('success');
-      expect(output.metric).toBe('handover');
-      const network = (output.network as Record<string, unknown>) || {};
+      const output = extractJson(result.stdout) as Record<string, unknown>;
+      expect(['ok', 'success']).toContain(output.status as string);
+      const payload = (output.payload ?? output) as Record<string, unknown>;
+      expect(payload.metric).toBe('handover');
+      const network = (payload.network as Record<string, unknown>) || {};
       expect(Array.isArray(network.nodes)).toBe(true);
     }
   });
@@ -63,10 +64,11 @@ describe.sequential('Social Command Alive', () => {
     const result = await wpm(['social', RUNNING_EXAMPLE, '--format', 'json', '--metric', 'working-together']);
 
     if (result.exitCode === 0) {
-      const output = extractJson(result.stdout);
-      expect(output.status).toBe('success');
-      expect(output.metric).toBe('working-together');
-      const network = (output.network as Record<string, unknown>) || {};
+      const output = extractJson(result.stdout) as Record<string, unknown>;
+      expect(['ok', 'success']).toContain(output.status as string);
+      const payload = (output.payload ?? output) as Record<string, unknown>;
+      expect(payload.metric).toBe('working-together');
+      const network = (payload.network as Record<string, unknown>) || {};
       expect(Array.isArray(network.nodes)).toBe(true);
     }
   });

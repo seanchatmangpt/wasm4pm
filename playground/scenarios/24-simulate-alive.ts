@@ -50,9 +50,10 @@ describe.sequential('Simulate Command Alive', () => {
     const result = await wpm(['simulate', RUNNING_EXAMPLE, '--format', 'json', '--cases', '50']);
 
     if (result.exitCode === 0) {
-      const output = extractJson(result.stdout);
-      expect(output.status).toBe('success');
-      const sim = (output.simulation as Record<string, unknown>) || {};
+      const output = extractJson(result.stdout) as Record<string, unknown>;
+      expect(['ok', 'success']).toContain(output.status as string);
+      const payload = (output.payload ?? output) as Record<string, unknown>;
+      const sim = (payload.simulation as Record<string, unknown>) || {};
       expect(typeof sim.casesCompleted).toBe('number');
       expect((sim.casesCompleted as number)).toBeGreaterThanOrEqual(1);
     }
@@ -63,9 +64,10 @@ describe.sequential('Simulate Command Alive', () => {
     const result = await wpm(['simulate', RUNNING_EXAMPLE, '--format', 'json', '--cases', '50']);
 
     if (result.exitCode === 0) {
-      const output = extractJson(result.stdout);
-      expect(output.status).toBe('success');
-      const stats = (output.statistics as Record<string, unknown>) || {};
+      const output = extractJson(result.stdout) as Record<string, unknown>;
+      expect(['ok', 'success']).toContain(output.status as string);
+      const payload = (output.payload ?? output) as Record<string, unknown>;
+      const stats = (payload.statistics as Record<string, unknown>) || {};
       expect(typeof stats.avgTraceLength).toBe('number');
       expect((stats.avgTraceLength as number)).toBeGreaterThanOrEqual(1);
     }

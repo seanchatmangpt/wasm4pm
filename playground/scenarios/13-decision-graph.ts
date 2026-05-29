@@ -20,7 +20,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { wpm, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { wpm } from '../helpers/cli.js';
 import type { CliTestEnv } from '@wasm4pm/testing';
 
 // ─── Test Data ───────────────────────────────────────────────────────────────
@@ -49,11 +50,12 @@ describe('13-decision-graph', () => {
 
   it('parses DecisionGraph with parallel children', async () => {
     const result = await wpm(['powl', 'parse', '--quiet', '--model', DG_PARALLEL, '--format', 'json']);
-    assertExitCode(result, EXIT_CODES.SUCCESS);
+    assertExitCode(result, EXIT_CODES.success);
     assertJsonOutput(result);
 
-    const json = JSON.parse(result.stdout);
-    expect(json.status).toBe('success');
+    // CLI wraps output in { command, status:"ok", payload:{...}, meta:{...} }
+    const envelope = JSON.parse(result.stdout);
+    const json = (envelope.payload ?? envelope) as Record<string, unknown>;
     expect(json.repr).toContain('DG=');
     expect(json.repr).toContain('A');
     expect(json.repr).toContain('B');
@@ -64,11 +66,11 @@ describe('13-decision-graph', () => {
 
   it('parses DecisionGraph with sequence order', async () => {
     const result = await wpm(['powl', 'parse', '--quiet', '--model', DG_SEQUENCE, '--format', 'json']);
-    assertExitCode(result, EXIT_CODES.SUCCESS);
+    assertExitCode(result, EXIT_CODES.success);
     assertJsonOutput(result);
 
-    const json = JSON.parse(result.stdout);
-    expect(json.status).toBe('success');
+    const envelope = JSON.parse(result.stdout);
+    const json = (envelope.payload ?? envelope) as Record<string, unknown>;
     expect(json.repr).toContain('A-->B');
     expect(json.repr).toContain('starts=[A]');
     expect(json.repr).toContain('ends=[B]');
@@ -76,21 +78,21 @@ describe('13-decision-graph', () => {
 
   it('parses DecisionGraph with empty path', async () => {
     const result = await wpm(['powl', 'parse', '--quiet', '--model', DG_EMPTY_PATH, '--format', 'json']);
-    assertExitCode(result, EXIT_CODES.SUCCESS);
+    assertExitCode(result, EXIT_CODES.success);
     assertJsonOutput(result);
 
-    const json = JSON.parse(result.stdout);
-    expect(json.status).toBe('success');
+    const envelope = JSON.parse(result.stdout);
+    const json = (envelope.payload ?? envelope) as Record<string, unknown>;
     expect(json.repr).toContain('empty=true');
   });
 
   it('converts DecisionGraph to Petri Net', async () => {
     const result = await wpm(['powl', 'convert', '--quiet', '--to', 'petri-net', '--model', DG_PARALLEL, '--format', 'json']);
-    assertExitCode(result, EXIT_CODES.SUCCESS);
+    assertExitCode(result, EXIT_CODES.success);
     assertJsonOutput(result);
 
-    const json = JSON.parse(result.stdout);
-    expect(json.status).toBe('success');
+    const envelope = JSON.parse(result.stdout);
+    const json = (envelope.payload ?? envelope) as Record<string, unknown>;
     expect(json.target).toBe('petri-net');
     expect(json.output).toContain('A');
     expect(json.output).toContain('B');
@@ -101,11 +103,11 @@ describe('13-decision-graph', () => {
 
   it('converts DecisionGraph to Process Tree', async () => {
     const result = await wpm(['powl', 'convert', '--quiet', '--to', 'process-tree', '--model', DG_SEQUENCE, '--format', 'json']);
-    assertExitCode(result, EXIT_CODES.SUCCESS);
+    assertExitCode(result, EXIT_CODES.success);
     assertJsonOutput(result);
 
-    const json = JSON.parse(result.stdout);
-    expect(json.status).toBe('success');
+    const envelope = JSON.parse(result.stdout);
+    const json = (envelope.payload ?? envelope) as Record<string, unknown>;
     expect(json.target).toBe('process-tree');
     // DecisionGraph with sequence A→B is decomposed to a Sequence process tree
     expect(json.output).toContain('Sequence');
@@ -115,32 +117,34 @@ describe('13-decision-graph', () => {
 
   it('exports DecisionGraph children via get_children', async () => {
     const result = await wpm(['powl', 'parse', '--quiet', '--model', DG_PARALLEL, '--format', 'json']);
-    assertExitCode(result, EXIT_CODES.SUCCESS);
-    const json = JSON.parse(result.stdout);
+    assertExitCode(result, EXIT_CODES.success);
+    const envelope = JSON.parse(result.stdout);
+    const json = (envelope.payload ?? envelope) as Record<string, unknown>;
     const root = json.root;
 
     const childrenResult = await wpm(['powl', 'get-children', '--quiet', '--model', DG_PARALLEL, '--index', String(root), '--format', 'json']);
-    assertExitCode(childrenResult, EXIT_CODES.SUCCESS);
+    assertExitCode(childrenResult, EXIT_CODES.success);
     assertJsonOutput(childrenResult);
 
-    const childrenJson = JSON.parse(childrenResult.stdout);
-    expect(childrenJson.status).toBe('success');
+    const childrenEnvelope = JSON.parse(childrenResult.stdout);
+    const childrenJson = (childrenEnvelope.payload ?? childrenEnvelope) as Record<string, unknown>;
     expect(Array.isArray(childrenJson.children)).toBe(true);
-    expect(childrenJson.children.length).toBe(2); // A and B
+    expect((childrenJson.children as unknown[]).length).toBe(2); // A and B
   });
 
   it('exports DecisionGraph detailed info via node_info_json', async () => {
     const result = await wpm(['powl', 'parse', '--quiet', '--model', DG_PARALLEL, '--format', 'json']);
-    assertExitCode(result, EXIT_CODES.SUCCESS);
-    const json = JSON.parse(result.stdout);
+    assertExitCode(result, EXIT_CODES.success);
+    const envelope = JSON.parse(result.stdout);
+    const json = (envelope.payload ?? envelope) as Record<string, unknown>;
     const root = json.root;
 
     const infoResult = await wpm(['powl', 'node-info', '--quiet', '--model', DG_PARALLEL, '--index', String(root), '--format', 'json']);
-    assertExitCode(infoResult, EXIT_CODES.SUCCESS);
+    assertExitCode(infoResult, EXIT_CODES.success);
     assertJsonOutput(infoResult);
 
-    const infoJson = JSON.parse(infoResult.stdout);
-    expect(infoJson.status).toBe('success');
+    const infoEnvelope = JSON.parse(infoResult.stdout);
+    const infoJson = (infoEnvelope.payload ?? infoEnvelope) as Record<string, unknown>;
     expect(infoJson.type).toBe('decision_graph');
     expect(Array.isArray(infoJson.children)).toBe(true);
     expect(Array.isArray(infoJson.edges)).toBe(true);
@@ -153,15 +157,18 @@ describe('13-decision-graph', () => {
   it('roundtrips DecisionGraph through Petri Net', async () => {
     // 1. Parse original DecisionGraph
     const parseResult = await wpm(['powl', 'parse', '--quiet', '--model', DG_SEQUENCE, '--format', 'json']);
-    assertExitCode(parseResult, EXIT_CODES.SUCCESS);
-    const parseJson = JSON.parse(parseResult.stdout);
+    assertExitCode(parseResult, EXIT_CODES.success);
+    const parseEnvelope = JSON.parse(parseResult.stdout);
+    const parseJson = (parseEnvelope.payload ?? parseEnvelope) as Record<string, unknown>;
     const originalRepr = parseJson.repr;
+    void originalRepr; // used as reference; value checked below
 
     // 2. Convert to Petri Net
     const convertResult = await wpm(['powl', 'convert', '--quiet', '--to', 'petri-net', '--model', DG_SEQUENCE, '--format', 'json']);
-    assertExitCode(convertResult, EXIT_CODES.SUCCESS);
-    const convertJson = JSON.parse(convertResult.stdout);
-    const petriNetJson = convertJson.output;
+    assertExitCode(convertResult, EXIT_CODES.success);
+    const convertEnvelope = JSON.parse(convertResult.stdout);
+    const convertJson = (convertEnvelope.payload ?? convertEnvelope) as Record<string, unknown>;
+    const petriNetJson = convertJson.output as string;
 
     // 3. Write Petri Net to temp file for import
     const tmpFile = `/tmp/tmp_petri_net_${Date.now()}.json`;
@@ -170,11 +177,11 @@ describe('13-decision-graph', () => {
     try {
       // 4. Convert Petri Net back to POWL (via import)
       const importResult = await wpm(['powl', 'import', '--quiet', '--from', 'petri-net', '--model', tmpFile, '--format', 'json']);
-      assertExitCode(importResult, EXIT_CODES.SUCCESS);
+      assertExitCode(importResult, EXIT_CODES.success);
       assertJsonOutput(importResult);
 
-      const importJson = JSON.parse(importResult.stdout);
-      expect(importJson.status).toBe('success');
+      const importEnvelope = JSON.parse(importResult.stdout);
+      const importJson = (importEnvelope.payload ?? importEnvelope) as Record<string, unknown>;
       // The re-imported model should contain A and B
       expect(importJson.repr).toContain('A');
       expect(importJson.repr).toContain('B');

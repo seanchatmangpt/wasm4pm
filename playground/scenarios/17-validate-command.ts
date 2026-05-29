@@ -22,7 +22,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { assertExitCode, wasm4pm, combinedOutput, EXIT_CODES, resolveRepo } from '../helpers/cli.js';
+import { assertExitCode, wpm, wasm4pm, combinedOutput, EXIT_CODES, resolveRepo } from '../helpers/cli.js';
 
 // Real XES fixture files
 const RUNNING_EXAMPLE = resolveRepo('wasm4pm/tests/fixtures/running-example.xes');
@@ -35,18 +35,20 @@ describe('validate command', () => {
   describe('error handling', () => {
     it('exits 2 when no input provided', async () => {
       const result = await wpm(['validate']);
-      assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
+      assertExitCode(result, EXIT_CODES.source_error);
     });
 
     it('exits 2 when input file does not exist', async () => {
       const result = await wpm(['validate', '/tmp/nonexistent-file-xyz.xes']);
-      assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
+      assertExitCode(result, EXIT_CODES.source_error);
       expect(combinedOutput(result)).toContain('not found');
     });
 
-    it('exits 1 for invalid --format value', async () => {
+    it('exits 2 for invalid --format value (source_error, not config_error)', async () => {
+      // --format controls input log format (xes/csv/ocel), not output format.
+      // 'json' is not a valid input format, so the command exits with source_error (2).
       const result = await wpm(['validate', RUNNING_EXAMPLE, '--format', 'json']);
-      assertExitCode(result, EXIT_CODES.CONFIG_ERROR);
+      assertExitCode(result, EXIT_CODES.source_error);
       expect(combinedOutput(result)).toContain('Invalid format');
     });
   });
@@ -56,29 +58,29 @@ describe('validate command', () => {
   describe('valid log — human output', () => {
     it('exits 0 for valid running-example.xes', async () => {
       const result = await wpm(['validate', RUNNING_EXAMPLE]);
-      assertExitCode(result, EXIT_CODES.SUCCESS);
+      assertExitCode(result, EXIT_CODES.success);
     });
 
     it('exits 0 for valid BPI_2020_DomesticDeclarations.xes', async () => {
       const result = await wpm(['validate', BPI_DOMESTIC]);
-      assertExitCode(result, EXIT_CODES.SUCCESS);
+      assertExitCode(result, EXIT_CODES.success);
     });
 
     it('contains Event Log Validation header', async () => {
       const result = await wpm(['validate', RUNNING_EXAMPLE]);
-      assertExitCode(result, EXIT_CODES.SUCCESS);
+      assertExitCode(result, EXIT_CODES.success);
       expect(combinedOutput(result)).toContain('Event Log Validation');
     });
 
     it('contains file path in output', async () => {
       const result = await wpm(['validate', RUNNING_EXAMPLE]);
-      assertExitCode(result, EXIT_CODES.SUCCESS);
+      assertExitCode(result, EXIT_CODES.success);
       expect(combinedOutput(result)).toContain('running-example.xes');
     });
 
     it('contains "Validation passed with warnings" verdict (WASM checks return warnings)', async () => {
       const result = await wpm(['validate', RUNNING_EXAMPLE]);
-      assertExitCode(result, EXIT_CODES.SUCCESS);
+      assertExitCode(result, EXIT_CODES.success);
       // Note: consola may filter log-level messages in test capture
       // This test verifies exit code and output existence
     });
@@ -87,15 +89,15 @@ describe('validate command', () => {
   // ── Invalid XES log ───────────────────────────────────────────────────────
 
   describe('invalid XES log', () => {
-    it('exits 0 even for invalid.xes (WASM returns warnings, not errors)', async () => {
+    it('exits 2 for invalid.xes (missing required attributes = source_error)', async () => {
       const result = await wpm(['validate', INVALID_XES]);
-      // Current behavior: validate exits 0 with warnings for all inputs
-      assertExitCode(result, EXIT_CODES.SUCCESS);
+      // invalid.xes is missing concept:name and time:timestamp — validate exits 2
+      assertExitCode(result, EXIT_CODES.source_error);
     });
 
     it('contains validation output for invalid.xes', async () => {
       const result = await wpm(['validate', INVALID_XES]);
-      assertExitCode(result, EXIT_CODES.SUCCESS);
+      // Exit code 2 is expected; output still contains the validation report
       expect(combinedOutput(result)).toContain('Event Log Validation');
     });
   });
@@ -104,19 +106,19 @@ describe('validate command', () => {
 
   it('supports -i alias for input file', async () => {
     const result = await wpm(['validate', '-i', RUNNING_EXAMPLE]);
-    assertExitCode(result, EXIT_CODES.SUCCESS);
+    assertExitCode(result, EXIT_CODES.success);
     expect(combinedOutput(result)).toContain('Event Log Validation');
   });
 
   it('supports --file alias for input file', async () => {
     const result = await wpm(['validate', '--file', RUNNING_EXAMPLE]);
-    assertExitCode(result, EXIT_CODES.SUCCESS);
+    assertExitCode(result, EXIT_CODES.success);
     expect(combinedOutput(result)).toContain('Event Log Validation');
   });
 
   it('supports --format xes flag (input format)', async () => {
     const result = await wpm(['validate', RUNNING_EXAMPLE, '--format', 'xes']);
-    assertExitCode(result, EXIT_CODES.SUCCESS);
+    assertExitCode(result, EXIT_CODES.success);
     expect(combinedOutput(result)).toContain('Event Log Validation');
   });
 });

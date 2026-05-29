@@ -22,7 +22,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { wpm, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { wpm } from '../helpers/cli.js';
 import type { CliTestEnv } from '@wasm4pm/testing';
 
 // ─── Test Data ───────────────────────────────────────────────────────────────
@@ -118,11 +119,12 @@ describe('14-powl-discovery', () => {
       'json',
       '--quiet',
     ]);
-    assertExitCode(result, EXIT_CODES.SUCCESS);
+    assertExitCode(result, EXIT_CODES.success);
     assertJsonOutput(result);
 
-    const json = JSON.parse(result.stdout);
-    expect(json.status).toBe('success');
+    // CLI wraps output in { command, status:"ok", payload:{...}, meta:{...} }
+    const envelope = JSON.parse(result.stdout);
+    const json = (envelope.payload ?? envelope) as Record<string, unknown>;
     expect(json.root).toBeDefined();
     expect(json.node_count).toBeGreaterThan(0);
     expect(json.repr).toBeDefined();
@@ -141,11 +143,11 @@ describe('14-powl-discovery', () => {
       'json',
       '--quiet',
     ]);
-    assertExitCode(result, EXIT_CODES.SUCCESS);
+    assertExitCode(result, EXIT_CODES.success);
     assertJsonOutput(result);
 
-    const json = JSON.parse(result.stdout);
-    expect(json.status).toBe('success');
+    const envelope = JSON.parse(result.stdout);
+    const json = (envelope.payload ?? envelope) as Record<string, unknown>;
     expect(json.variant).toBe('tree');
   });
 
@@ -161,11 +163,11 @@ describe('14-powl-discovery', () => {
       'json',
       '--quiet',
     ]);
-    assertExitCode(result, EXIT_CODES.SUCCESS);
+    assertExitCode(result, EXIT_CODES.success);
     assertJsonOutput(result);
 
-    const json = JSON.parse(result.stdout);
-    expect(json.status).toBe('success');
+    const envelope = JSON.parse(result.stdout);
+    const json = (envelope.payload ?? envelope) as Record<string, unknown>;
     expect(json.variant).toBe('maximal');
   });
 
@@ -185,11 +187,11 @@ describe('14-powl-discovery', () => {
       'json',
       '--quiet',
     ]);
-    assertExitCode(result, EXIT_CODES.SUCCESS);
+    assertExitCode(result, EXIT_CODES.success);
     assertJsonOutput(result);
 
-    const json = JSON.parse(result.stdout);
-    expect(json.status).toBe('success');
+    const envelope = JSON.parse(result.stdout);
+    const json = (envelope.payload ?? envelope) as Record<string, unknown>;
     expect(json.variant).toBe('decision_graph_cyclic');
     // Config is returned but may be empty — the WASM function accepts custom params
     expect(json.root).toBeDefined();
@@ -212,11 +214,11 @@ describe('14-powl-discovery', () => {
       'json',
       '--quiet',
     ]);
-    assertExitCode(result, EXIT_CODES.SUCCESS);
+    assertExitCode(result, EXIT_CODES.success);
     assertJsonOutput(result);
 
-    const json = JSON.parse(result.stdout);
-    expect(json.status).toBe('success');
+    const envelope = JSON.parse(result.stdout);
+    const json = (envelope.payload ?? envelope) as Record<string, unknown>;
     // Decision graph variant should produce nodes with partial order structure
     expect(json.repr).toBeDefined();
   });
@@ -237,11 +239,11 @@ describe('14-powl-discovery', () => {
       'json',
       '--quiet',
     ]);
-    assertExitCode(result, EXIT_CODES.SUCCESS);
+    assertExitCode(result, EXIT_CODES.success);
     assertJsonOutput(result);
 
-    const json = JSON.parse(result.stdout);
-    expect(json.status).toBe('success');
+    const envelope = JSON.parse(result.stdout);
+    const json = (envelope.payload ?? envelope) as Record<string, unknown>;
     expect(json.variant).toBe('tree');
   });
 
@@ -254,7 +256,7 @@ describe('14-powl-discovery', () => {
       '--format',
       'human',
     ]);
-    assertExitCode(result, EXIT_CODES.SUCCESS);
+    assertExitCode(result, EXIT_CODES.success);
     // Human format uses consola which may buffer in child process;
     // verify it exits cleanly (JSON format tests cover output content)
   });
@@ -269,7 +271,8 @@ describe('14-powl-discovery', () => {
       'json',
       '--quiet',
     ]);
-    assertExitCode(result, EXIT_CODES.EXECUTION_ERROR);
+    // File not found → execution_error (3)
+    assertExitCode(result, EXIT_CODES.execution_error);
   });
 
   it('errors when input argument missing', async () => {
@@ -280,6 +283,7 @@ describe('14-powl-discovery', () => {
       'json',
       '--quiet',
     ]);
-    assertExitCode(result, EXIT_CODES.EXECUTION_ERROR);
+    // Missing --input → source_error (2)
+    assertExitCode(result, EXIT_CODES.source_error);
   });
 });

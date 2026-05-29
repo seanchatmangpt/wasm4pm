@@ -11,8 +11,6 @@ import * as url from 'url';
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 export const WASM4PM = path.resolve(__dirname, '../../apps/wasm4pm/dist/bin/wpm.js');
-/** @deprecated Use WASM4PM instead. */
-export const WASM4PM = WASM4PM;
 
 /** Spawn the wasm4pm (wpm) CLI as a child process, capturing stdout/stderr/exitCode. */
 export function wpm(

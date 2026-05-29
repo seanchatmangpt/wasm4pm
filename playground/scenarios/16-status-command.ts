@@ -20,7 +20,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { assertExitCode, wasm4pm, extractJson, EXIT_CODES } from '../helpers/cli.js';
+import { assertExitCode, wpm, wasm4pm, extractJson, EXIT_CODES } from '../helpers/cli.js';
 
 describe('status command', () => {
   // ── JSON output ───────────────────────────────────────────────────────────
@@ -28,15 +28,17 @@ describe('status command', () => {
   describe('JSON output', () => {
     it('exits 0 and returns valid JSON', async () => {
       const result = await wpm(['status', '--format', 'json']);
-      assertExitCode(result, EXIT_CODES.SUCCESS);
+      assertExitCode(result, EXIT_CODES.success);
       const json = extractJson(result.stdout);
       expect(json).toBeDefined();
     });
 
     it('contains engine section with wasmLoaded=true', async () => {
       const result = await wpm(['status', '--format', 'json']);
-      const json = extractJson(result.stdout);
-      const engine = json.engine as Record<string, unknown>;
+      // CLI wraps output: { command, status:"ok", payload:{ engine, system, memory, ... } }
+      const envelope = extractJson(result.stdout);
+      const payload = (envelope.payload ?? envelope) as Record<string, unknown>;
+      const engine = payload.engine as Record<string, unknown>;
 
       expect(engine).toBeDefined();
       expect(engine.wasmLoaded).toBe(true);
@@ -46,8 +48,9 @@ describe('status command', () => {
 
     it('contains system section with platform info', async () => {
       const result = await wpm(['status', '--format', 'json']);
-      const json = extractJson(result.stdout);
-      const system = json.system as Record<string, unknown>;
+      const envelope = extractJson(result.stdout);
+      const payload = (envelope.payload ?? envelope) as Record<string, unknown>;
+      const system = payload.system as Record<string, unknown>;
 
       expect(system).toBeDefined();
       expect(typeof system.platform).toBe('string');
@@ -59,8 +62,9 @@ describe('status command', () => {
 
     it('contains memory section with numeric fields in MB', async () => {
       const result = await wpm(['status', '--format', 'json']);
-      const json = extractJson(result.stdout);
-      const memory = json.memory as Record<string, unknown>;
+      const envelope = extractJson(result.stdout);
+      const payload = (envelope.payload ?? envelope) as Record<string, unknown>;
+      const memory = payload.memory as Record<string, unknown>;
 
       expect(memory).toBeDefined();
       expect(typeof memory.heapUsed).toBe('number');
@@ -74,8 +78,9 @@ describe('status command', () => {
 
     it('includes WASM version when available', async () => {
       const result = await wpm(['status', '--format', 'json']);
-      const json = extractJson(result.stdout);
-      const engine = json.engine as Record<string, unknown>;
+      const envelope = extractJson(result.stdout);
+      const payload = (envelope.payload ?? envelope) as Record<string, unknown>;
+      const engine = payload.engine as Record<string, unknown>;
 
       // version may be null if WASM doesn't expose it, but the key should exist
       expect('version' in engine).toBe(true);
@@ -87,12 +92,12 @@ describe('status command', () => {
   describe('default behavior', () => {
     it('exits 0 without --format flag', async () => {
       const result = await wpm(['status']);
-      assertExitCode(result, EXIT_CODES.SUCCESS);
+      assertExitCode(result, EXIT_CODES.success);
     });
 
     it('produces output (not empty) in default format', async () => {
       const result = await wpm(['status']);
-      assertExitCode(result, EXIT_CODES.SUCCESS);
+      assertExitCode(result, EXIT_CODES.success);
       // Combined output should have WASM init messages at minimum
       const out = result.stdout + result.stderr;
       expect(out.length).toBeGreaterThan(0);

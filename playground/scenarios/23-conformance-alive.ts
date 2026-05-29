@@ -31,7 +31,8 @@ describe('Conformance Command Alive', () => {
     const result = await wpm(['conformance', RUNNING_EXAMPLE, '--format', 'json']);
     // Command should return gracefully (either success 0, or execution error 3, but not hang)
     expect(result.exitCode).toBeDefined();
-    expect([0, 1, 2, 3, 4, 5]).toContain(result.exitCode);
+    // 6 = conformance_fail (model doesn't fit log — valid outcome)
+    expect([0, 1, 2, 3, 4, 5, 6]).toContain(result.exitCode);
   });
 
   it('wpm conformance returns valid JSON output — Rank 2: domain contract', async () => {

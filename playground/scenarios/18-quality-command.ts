@@ -18,7 +18,7 @@
  */
 
 import { describe, it, expect } from 'vitest';
-import { assertExitCode, wasm4pm, extractJson, combinedOutput, EXIT_CODES, resolveRepo } from '../helpers/cli.js';
+import { assertExitCode, wpm, wasm4pm, extractJson, combinedOutput, EXIT_CODES, resolveRepo } from '../helpers/cli.js';
 
 // Real XES fixture files
 const RUNNING_EXAMPLE = resolveRepo('wasm4pm/tests/fixtures/running-example.xes');
@@ -30,24 +30,25 @@ describe.sequential('quality command', () => {
   describe('error handling', () => {
     it('exits 2 when no input provided', async () => {
       const result = await wpm(['quality']);
-      assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
+      assertExitCode(result, EXIT_CODES.source_error);
     });
 
     it('exits 2 when input file does not exist', async () => {
       const result = await wpm(['quality', '/tmp/nonexistent-xyz.xes']);
-      assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
+      assertExitCode(result, EXIT_CODES.source_error);
       expect(combinedOutput(result)).toContain('not found');
     });
 
     it('exits 1 for invalid metric name', async () => {
       const result = await wpm(['quality', RUNNING_EXAMPLE, '--metrics', 'nonexistent_metric', '--format', 'json']);
-      assertExitCode(result, EXIT_CODES.CONFIG_ERROR);
-      expect(combinedOutput(result)).toContain('Invalid metric');
+      assertExitCode(result, EXIT_CODES.config_error);
+      // Error message format: "Invalid --metrics value(s): nonexistent_metric"
+      expect(combinedOutput(result)).toContain('nonexistent_metric');
     });
 
     it('exits 1 for mix of valid and invalid metrics', async () => {
       const result = await wpm(['quality', RUNNING_EXAMPLE, '--metrics', 'fitness,ghost_metric', '--format', 'json']);
-      assertExitCode(result, EXIT_CODES.CONFIG_ERROR);
+      assertExitCode(result, EXIT_CODES.config_error);
       expect(combinedOutput(result)).toContain('ghost_metric');
     });
   });
@@ -57,23 +58,26 @@ describe.sequential('quality command', () => {
   describe('quality pipeline', () => {
     it('computes quality scores and returns structured success output (JSON)', async () => {
       const result = await wpm(['quality', RUNNING_EXAMPLE, '--format', 'json']);
-      assertExitCode(result, EXIT_CODES.SUCCESS);
-      const json = extractJson(result.stdout) as Record<string, unknown>;
+      assertExitCode(result, EXIT_CODES.success);
+      // CLI wraps output in { command, status:"ok", payload:{ status:"success", scores, ... } }
+      const envelope = extractJson(result.stdout) as Record<string, unknown>;
+      const json = (envelope.payload ?? envelope) as Record<string, unknown>;
       expect(json.status).toBe('success');
       expect(json.scores).toBeDefined();
     });
 
     it('returns readable success output in human format', async () => {
       const result = await wpm(['quality', RUNNING_EXAMPLE]);
-      assertExitCode(result, EXIT_CODES.SUCCESS);
-      expect(result.exitCode).toBe(EXIT_CODES.SUCCESS);
-      // Human output contains quality assessment results
-      expect(combinedOutput(result)).toContain('Quality Scores:');
+      assertExitCode(result, EXIT_CODES.success);
+      expect(result.exitCode).toBe(EXIT_CODES.success);
+      // Human output contains quality assessment header
+      expect(combinedOutput(result)).toContain('Model Quality Assessment');
     });
 
     it('quality scores include fitness metric', async () => {
       const result = await wpm(['quality', RUNNING_EXAMPLE, '--format', 'json']);
-      const json = extractJson(result.stdout) as Record<string, unknown>;
+      const envelope = extractJson(result.stdout) as Record<string, unknown>;
+      const json = (envelope.payload ?? envelope) as Record<string, unknown>;
       const scores = json.scores as Record<string, unknown>;
       expect(scores.fitness).toBeDefined();
       expect(typeof scores.fitness).toBe('number');
@@ -81,7 +85,8 @@ describe.sequential('quality command', () => {
 
     it('quality scores include precision metric', async () => {
       const result = await wpm(['quality', RUNNING_EXAMPLE, '--format', 'json']);
-      const json = extractJson(result.stdout) as Record<string, unknown>;
+      const envelope = extractJson(result.stdout) as Record<string, unknown>;
+      const json = (envelope.payload ?? envelope) as Record<string, unknown>;
       const scores = json.scores as Record<string, unknown>;
       expect(scores.precision).toBeDefined();
       expect(typeof scores.precision).toBe('number');
@@ -89,7 +94,8 @@ describe.sequential('quality command', () => {
 
     it('aggregate quality score is bounded [0, 1]', async () => {
       const result = await wpm(['quality', RUNNING_EXAMPLE, '--format', 'json']);
-      const json = extractJson(result.stdout) as Record<string, unknown>;
+      const envelope = extractJson(result.stdout) as Record<string, unknown>;
+      const json = (envelope.payload ?? envelope) as Record<string, unknown>;
       const aggregate = json.aggregate as Record<string, unknown>;
       const score = aggregate.score as number;
       expect(score).toBeGreaterThanOrEqual(0.0);
@@ -102,8 +108,9 @@ describe.sequential('quality command', () => {
   describe('metric selection', () => {
     it('computes fitness metric when requested', async () => {
       const result = await wpm(['quality', RUNNING_EXAMPLE, '--metrics', 'fitness', '--format', 'json']);
-      assertExitCode(result, EXIT_CODES.SUCCESS);
-      const json = extractJson(result.stdout) as Record<string, unknown>;
+      assertExitCode(result, EXIT_CODES.success);
+      const envelope = extractJson(result.stdout) as Record<string, unknown>;
+      const json = (envelope.payload ?? envelope) as Record<string, unknown>;
       const scores = json.scores as Record<string, unknown>;
       expect(scores.fitness).toBeDefined();
       expect(typeof scores.fitness).toBe('number');
@@ -111,8 +118,9 @@ describe.sequential('quality command', () => {
 
     it('computes precision metric when requested', async () => {
       const result = await wpm(['quality', RUNNING_EXAMPLE, '--metrics', 'precision', '--format', 'json']);
-      assertExitCode(result, EXIT_CODES.SUCCESS);
-      const json = extractJson(result.stdout) as Record<string, unknown>;
+      assertExitCode(result, EXIT_CODES.success);
+      const envelope = extractJson(result.stdout) as Record<string, unknown>;
+      const json = (envelope.payload ?? envelope) as Record<string, unknown>;
       const scores = json.scores as Record<string, unknown>;
       expect(scores.precision).toBeDefined();
       expect(typeof scores.precision).toBe('number');
@@ -120,8 +128,9 @@ describe.sequential('quality command', () => {
 
     it('computes all four metrics by default', async () => {
       const result = await wpm(['quality', RUNNING_EXAMPLE, '--format', 'json']);
-      assertExitCode(result, EXIT_CODES.SUCCESS);
-      const json = extractJson(result.stdout) as Record<string, unknown>;
+      assertExitCode(result, EXIT_CODES.success);
+      const envelope = extractJson(result.stdout) as Record<string, unknown>;
+      const json = (envelope.payload ?? envelope) as Record<string, unknown>;
       const scores = json.scores as Record<string, unknown>;
       expect(scores.fitness).toBeDefined();
       expect(scores.precision).toBeDefined();
@@ -134,23 +143,26 @@ describe.sequential('quality command', () => {
 
   it('supports -i alias for input file', async () => {
     const result = await wpm(['quality', '-i', RUNNING_EXAMPLE, '--format', 'json']);
-    assertExitCode(result, EXIT_CODES.SUCCESS);
-    const json = extractJson(result.stdout) as Record<string, unknown>;
+    assertExitCode(result, EXIT_CODES.success);
+    const envelope = extractJson(result.stdout) as Record<string, unknown>;
+    const json = (envelope.payload ?? envelope) as Record<string, unknown>;
     expect(json.status).toBe('success');
     expect((json.scores as Record<string, unknown>).fitness).toBeDefined();
   });
 
   it('supports --file alias for input file', async () => {
     const result = await wpm(['quality', '--file', RUNNING_EXAMPLE, '--format', 'json']);
-    assertExitCode(result, EXIT_CODES.SUCCESS);
-    const json = extractJson(result.stdout) as Record<string, unknown>;
+    assertExitCode(result, EXIT_CODES.success);
+    const envelope = extractJson(result.stdout) as Record<string, unknown>;
+    const json = (envelope.payload ?? envelope) as Record<string, unknown>;
     expect(json.status).toBe('success');
   });
 
   it('supports --activity-key flag', async () => {
     const result = await wpm(['quality', RUNNING_EXAMPLE, '--activity-key', 'concept:name', '--format', 'json']);
-    assertExitCode(result, EXIT_CODES.SUCCESS);
-    const json = extractJson(result.stdout) as Record<string, unknown>;
+    assertExitCode(result, EXIT_CODES.success);
+    const envelope = extractJson(result.stdout) as Record<string, unknown>;
+    const json = (envelope.payload ?? envelope) as Record<string, unknown>;
     expect(json.status).toBe('success');
   });
 });
