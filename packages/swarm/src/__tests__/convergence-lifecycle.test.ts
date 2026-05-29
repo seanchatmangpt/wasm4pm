@@ -12,8 +12,9 @@
  *   - checkMlConvergence numeric-equivalence properties
  *
  * Rank-2 (domain contracts):
- *   - Failed workers (failed:true) are still counted in checkConvergence (they report FAILED hash)
- *   - checkSwarmConvergence: failed workers are counted as unstable (hash='FAILED' won't stabilise)
+ *   - Failed workers (failed:true) are EXCLUDED from checkConvergence (crashed workers must not
+ *     contribute a synthetic 'FAILED' hash that could dilute or dominate the consensus)
+ *   - checkSwarmConvergence: failed workers are always unstable and never enter the ring buffer
  *   - dissentingWorkers is empty when fully converged (threshold=1.0, all agree)
  *   - dissentingWorkers lists all workers when NOT converged (threshold=1.0)
  *   - workerIds filter in checkConvergence restricts the checked set
@@ -203,67 +204,70 @@ describe('Rank-1: hashOutput key-ordering invariant', () => {
 // Rank-2: Domain contracts for failed workers
 // ---------------------------------------------------------------------------
 
-describe('Rank-2: failed workers contribute a FAILED hash to checkConvergence', () => {
-  it('a single failed worker produces totalChecked=1 and consensusRatio=1.0 (sole vote)', () => {
-    // The failed worker IS counted — it just has hash='FAILED'.
-    // With 1 result, 1/1 = 1.0 unanimously.
+describe('Rank-2: failed workers are excluded from checkConvergence', () => {
+  it('a single failed worker produces totalChecked=0 and converged=false (no healthy results)', () => {
+    // Failed workers are excluded: no healthy results → no-results path, not consensus.
     const results = [makeFailedResult('w1')];
     const report = checkConvergence(results, 'dfg');
-    expect(report.totalChecked).toBe(1);
-    expect(report.consensusRatio).toBe(1.0);
+    expect(report.totalChecked).toBe(0);
+    expect(report.consensusRatio).toBe(0);
+    expect(report.converged).toBe(false);
+    expect(report.convergenceReason).toMatch(/no workers produced results/);
   });
 
-  it('failed worker with different hash from healthy workers reduces consensusRatio', () => {
+  it('failed worker is excluded so healthy workers reach unanimous consensus', () => {
     const results = [
       makeResult('w1', 'good_hash'),
       makeResult('w2', 'good_hash'),
-      makeFailedResult('w3'), // contributes hash='FAILED'
+      makeFailedResult('w3'), // must NOT dilute the healthy 2/2 consensus
     ];
     const report = checkConvergence(results, 'dfg');
-    // 2 vote 'good_hash', 1 votes 'FAILED' → ratio = 2/3
-    expect(report.consensusRatio).toBeCloseTo(2 / 3, 10);
-    expect(report.converged).toBe(false); // unanimous threshold not met
+    // Only w1 and w2 counted → 2/2 = 1.0 unanimous
+    expect(report.totalChecked).toBe(2);
+    expect(report.consensusRatio).toBe(1.0);
+    expect(report.converged).toBe(true);
   });
 
-  it('all workers failed → all vote FAILED hash → consensusRatio = 1.0 (unanimous failure)', () => {
+  it('all workers failed → totalChecked=0, converged=false (no-results path)', () => {
     const results = [makeFailedResult('w1'), makeFailedResult('w2'), makeFailedResult('w3')];
     const report = checkConvergence(results, 'dfg');
-    expect(report.consensusRatio).toBe(1.0);
-    expect(report.dominantHash).toBe('FAILED');
+    expect(report.totalChecked).toBe(0);
+    expect(report.converged).toBe(false);
+    expect(report.dominantHash).toBeNull();
   });
 });
 
 describe('Rank-2: checkSwarmConvergence with failed workers stays unstable', () => {
-  it('failed worker hash oscillates (FAILED vs good) → never stable', () => {
+  it('failed worker in any round is always unstable (never enters ring buffer)', () => {
     const history = new Map<string, string[]>();
     const goodRound: WorkerResult[] = [makeResult('w1', 'stable_hash')];
     const failedRound: WorkerResult[] = [makeFailedResult('w1')];
 
-    // Round 1: good
+    // Round 1: good — enters ring buffer
     checkSwarmConvergence(goodRound, history, 2);
-    // Round 2: failed (different hash) — resets stability
+    // Round 2: failed — must be unstable regardless of prior history
     const r = checkSwarmConvergence(failedRound, history, 2);
     expect(r.converged).toBe(false);
     expect(r.unstableWorkers).toContain('w1/dfg');
   });
 
-  it('healthy workers converge even when one consistently fails with same hash', () => {
-    // A failed worker that consistently hashes to 'FAILED' will stabilise
-    // after convergenceRuns rounds just like any other worker.
+  it('failed worker never converges even when it consistently fails (FAILED hash not buffered)', () => {
+    // A persistently-failing worker must NOT declare convergence via repeated
+    // 'FAILED' sentinel hashes — that would stop the swarm despite zero healthy output.
     const history = new Map<string, string[]>();
     const results: WorkerResult[] = [
       makeResult('w1', 'good_hash'),
-      makeFailedResult('w2'), // always 'FAILED'
+      makeFailedResult('w2'), // always failed
     ];
 
-    // Prime the ring buffer
+    // Prime the ring buffer for w1; w2 is always excluded
     checkSwarmConvergence(results, history, 2);
     const r = checkSwarmConvergence(results, history, 2);
 
-    // w1 and w2 both stabilised (each consistent across 2 rounds)
-    expect(r.converged).toBe(true);
+    // w2 is always unstable because it is always excluded from the ring buffer
+    expect(r.converged).toBe(false);
     expect(r.stableWorkers).toContain('w1/dfg');
-    expect(r.stableWorkers).toContain('w2/dfg');
+    expect(r.unstableWorkers).toContain('w2/dfg');
   });
 });
 

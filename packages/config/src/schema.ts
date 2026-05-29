@@ -614,13 +614,30 @@ export const configSchema = z
  *     [rl.convergence.min_cycles] Number must be greater than 0
  *     [ml.tasks.0] Invalid enum value. Expected 'classify' | … , received 'foo'
  *
+ * Long enum option lists (e.g. algorithm.name with 36+ IDs) are truncated to the
+ * first 5 options followed by "… (N total)" so the error stays readable.
+ *
  * For advanced error formatting with suggestions and constraints, use
  * formatDetailedZodError from the validation module.
  */
 function formatZodErrors(error: z.ZodError, header = 'Configuration validation failed'): string {
+  /** Truncate long "Expected 'a' | 'b' | … , received 'x'" messages. */
+  function trimEnumMessage(msg: string): string {
+    // Match Zod's invalid_enum_value format:
+    //   "Invalid enum value. Expected 'a' | 'b' | 'c', received 'x'"
+    const m = msg.match(/^(Invalid enum value\. Expected )(.*)(, received .*)$/s);
+    if (!m) return msg;
+    const [, prefix, options, suffix] = m;
+    const parts = options.split(' | ');
+    if (parts.length <= 6) return msg;
+    const shown = parts.slice(0, 5).join(' | ');
+    return `${prefix}${shown} | … (${parts.length} total)${suffix}`;
+  }
+
   const lines = error.errors.map((err) => {
-    const path = err.path.length > 0 ? err.path.join('.') : '(root)';
-    return `  [${path}] ${err.message}`;
+    const fieldPath = err.path.length > 0 ? err.path.join('.') : '(root)';
+    const message = trimEnumMessage(err.message);
+    return `  [${fieldPath}] ${message}`;
   });
   const count = error.errors.length;
   return `${header} (${count} issue${count === 1 ? '' : 's'}):\n${lines.join('\n')}`;

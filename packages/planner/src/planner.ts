@@ -414,7 +414,11 @@ export function plan(config: Config): ExecutionPlan {
   // that single algorithm. Analysis steps from the profile are preserved.
   let pipelineSteps = getDefaultPipeline(profile);
 
-  const algorithmOverride = config.algorithm?.name;
+  // Treat 'auto' (and empty string) as "no override" — use the profile's default pipeline.
+  // Callers may pass algorithm.name='auto' as a sentinel meaning "pick the best for the profile".
+  const rawAlgorithmOverride = config.algorithm?.name;
+  const algorithmOverride =
+    !rawAlgorithmOverride || rawAlgorithmOverride === 'auto' ? undefined : rawAlgorithmOverride;
   if (algorithmOverride) {
     const overrideStepType = ALGORITHM_ID_TO_STEP_TYPE[algorithmOverride];
     if (!overrideStepType) {

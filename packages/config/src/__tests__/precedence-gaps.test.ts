@@ -159,15 +159,18 @@ describe('ENV: WASM4PM_PREDICTION_TASKS invalid task', () => {
     ).rejects.toThrow(/validation failed/i);
   });
 
-  it('rejects WASM4PM_PREDICTION_TASKS with hyphen form (must use underscore)', async () => {
-    // CLI slugs use hyphens; config schema uses underscores.
-    // Passing hyphen form via ENV must fail at Zod validation.
-    await expect(
-      resolveConfig({
-        configSearchPaths: [tmpDir],
-        env: { WASM4PM_PREDICTION_TASKS: 'next-activity' },
-      })
-    ).rejects.toThrow(/validation failed/i);
+  it('accepts WASM4PM_PREDICTION_TASKS with hyphen CLI slugs (normalised to underscore)', async () => {
+    // CLI slugs use hyphens; resolver normalises them to underscore IDs before Zod validation
+    // so that both "next-activity" and "next_activity" are accepted, consistent with wpm predict <task>.
+    const cfg = await resolveConfig({
+      configSearchPaths: [tmpDir],
+      env: {
+        WASM4PM_PREDICTION_ENABLED: 'true',
+        WASM4PM_PREDICTION_TASKS: 'next-activity,remaining-time',
+      },
+    });
+    expect(cfg.prediction!.tasks).toContain('next_activity');
+    expect(cfg.prediction!.tasks).toContain('remaining_time');
   });
 
   it('accepts all 6 valid prediction tasks via WASM4PM_PREDICTION_TASKS', async () => {

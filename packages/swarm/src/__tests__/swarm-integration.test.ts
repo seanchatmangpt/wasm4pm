@@ -228,7 +228,11 @@ describe('Swarm integration: convergence detection with 2 mocked workers', () =>
     expect(r3.converged).toBe(true);
   });
 
-  it('failed worker never prevents healthy workers from converging', () => {
+  it('failed worker is always unstable and does not converge even when consistently failing', () => {
+    // A persistently-failing worker must NOT declare convergence via repeated
+    // 'FAILED' sentinel hashes. The swarm must not stop while a worker is
+    // continuously producing errors — callers should surface the failed worker
+    // via the failedWorkers field in the artifact, not treat it as converged.
     const history = new Map<string, string[]>();
 
     const roundWithFailure: WorkerResult[] = [
@@ -243,14 +247,14 @@ describe('Swarm integration: convergence detection with 2 mocked workers', () =>
 
     // Episode 1: prime
     checkSwarmConvergence(roundWithFailure, history, CONVERGENCE_RUNS);
-    // Episode 2: same results again (W2 is consistently FAILED)
+    // Episode 2: W2 is still failing
     const r = checkSwarmConvergence(roundWithFailure, history, CONVERGENCE_RUNS);
 
-    // Both workers are now "stable" (each has 2 identical consecutive hashes,
-    // even though W2's hash happens to be 'FAILED')
-    expect(r.converged).toBe(true);
+    // W1 is healthy and stable; W2 is always unstable because failed workers
+    // are excluded from the ring buffer (they never accumulate stable history)
+    expect(r.converged).toBe(false);
     expect(r.stableWorkers).toContain(`${W1}/${ALGO}`);
-    expect(r.stableWorkers).toContain(`${W2}/${ALGO}`);
+    expect(r.unstableWorkers).toContain(`${W2}/${ALGO}`);
   });
 
   it('agreementRate tracks the fraction of stable workers', () => {

@@ -290,11 +290,13 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
   }
   if (env.WASM4PM_PREDICTION_TASKS) {
     // CRITICAL FIX #2: Deep merge nested prediction object
+    // Normalize CLI hyphen slugs (e.g. "next-activity") to underscore IDs (e.g. "next_activity")
+    // so that both forms are accepted, consistent with how `wpm predict <task>` works.
     const existing = (config.prediction as Record<string, unknown>) || {};
     config.prediction = {
       ...existing,
       tasks: env.WASM4PM_PREDICTION_TASKS.split(',')
-        .map((t) => t.trim())
+        .map((t) => t.trim().replace(/-/g, '_'))
         .filter(Boolean),
     };
   }
@@ -1232,7 +1234,7 @@ name = "simd_streaming_dfg"   # simd_streaming_dfg | dfg | heuristic_miner
 
 [execution]
 profile = "stream"    # enables streaming-full feature set + SIMD acceleration
-timeout = 0           # 0 = unlimited (streaming never stops voluntarily)
+# timeout is omitted — streaming runs until stopped; use Ctrl-C or kill the process
 
 [observability]
 logLevel = "warn"     # reduce log noise in high-throughput scenarios
