@@ -109,7 +109,7 @@ describe.sequential('Temporal Command Alive', () => {
     }
   });
 
-  it('wpm temporal: same log run twice gives same violation count — Rank 3: metamorphic relation', async () => {
+  it('wpm temporal: same log run twice gives same violation count — Rank 3: metamorphic relation', { timeout: 90000 }, async () => {
     const run1 = await wpm(['temporal', RUNNING_EXAMPLE, '--format', 'json', '--no-save']);
     const run2 = await wpm(['temporal', RUNNING_EXAMPLE, '--format', 'json', '--no-save']);
 

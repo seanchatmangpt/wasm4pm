@@ -271,8 +271,9 @@ describe('14-powl-discovery', () => {
       'json',
       '--quiet',
     ]);
-    // File not found → execution_error (3)
-    assertExitCode(result, EXIT_CODES.execution_error);
+    // File not found → source_error (2) — missing input file is a source error,
+    // not an execution error. The file-not-found is detected before any WASM work.
+    assertExitCode(result, EXIT_CODES.source_error);
   });
 
   it('errors when input argument missing', async () => {

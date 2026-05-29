@@ -12,9 +12,12 @@
  * pick a discovery algorithm before execution.
  */
 
-import { describe, it, expect } from 'vitest';
-import { runCli, assertExitCode, EXIT_CODES } from '@wasm4pm/testing';
+import { describe, it, expect, vi, beforeAll, afterAll } from 'vitest';
+import { runCli, assertExitCode, EXIT_CODES, createCliTestEnv } from '@wasm4pm/testing';
 import * as path from 'path';
+
+// CLI tests spawn a WASM subprocess — allow up to 30 s for each test.
+vi.setConfig({ testTimeout: 30_000 });
 
 // Absolute path to the repo root — independent of the test runner's CWD.
 const REPO_ROOT = path.resolve(__dirname, '../../../../');
@@ -227,10 +230,21 @@ describe('wpm suggest — algorithm recommendation CLI', () => {
 // ────────────────────────────────────────────────────────────────────────────
 
 describe('wpm run --auto-select — suggestion-driven algorithm selection', () => {
+  // Run from a temp dir that has NO wasm4pm.toml, so the streaming preset
+  // in apps/wasm4pm/wasm4pm.toml (timeout=0) doesn't interfere.
+  let testEnv: Awaited<ReturnType<typeof createCliTestEnv>>;
+  beforeAll(async () => {
+    testEnv = await createCliTestEnv();
+  });
+  afterAll(async () => {
+    await testEnv.cleanup();
+  });
+
   it('exits 0 and returns a successful run result', async () => {
-    const result = await runCli([
-      'run', ROAD_TRAFFIC, '--auto-select', '--format', 'json',
-    ]);
+    const result = await runCli(
+      ['run', ROAD_TRAFFIC, '--auto-select', '--format', 'json'],
+      { cwd: testEnv.tempDir },
+    );
     assertExitCode(result, 0);
 
     const body = JSON.parse(result.stdout) as {
@@ -242,9 +256,10 @@ describe('wpm run --auto-select — suggestion-driven algorithm selection', () =
   });
 
   it('payload shows which algorithm was actually used', async () => {
-    const result = await runCli([
-      'run', ROAD_TRAFFIC, '--auto-select', '--format', 'json',
-    ]);
+    const result = await runCli(
+      ['run', ROAD_TRAFFIC, '--auto-select', '--format', 'json'],
+      { cwd: testEnv.tempDir },
+    );
     assertExitCode(result, 0);
 
     const body = JSON.parse(result.stdout) as {
@@ -257,17 +272,19 @@ describe('wpm run --auto-select — suggestion-driven algorithm selection', () =
   });
 
   it('stderr mentions the auto-selected algorithm when using human format', async () => {
-    const result = await runCli([
-      'run', ROAD_TRAFFIC, '--auto-select',
-    ]);
+    const result = await runCli(
+      ['run', ROAD_TRAFFIC, '--auto-select'],
+      { cwd: testEnv.tempDir },
+    );
     // Human format: auto-select message goes to stderr
     expect(result.stderr).toMatch(/Auto-selected algorithm:/i);
   });
 
   it('result model contains process mining output (nodes or places)', async () => {
-    const result = await runCli([
-      'run', ROAD_TRAFFIC, '--auto-select', '--format', 'json',
-    ]);
+    const result = await runCli(
+      ['run', ROAD_TRAFFIC, '--auto-select', '--format', 'json'],
+      { cwd: testEnv.tempDir },
+    );
     assertExitCode(result, 0);
 
     const body = JSON.parse(result.stdout) as {

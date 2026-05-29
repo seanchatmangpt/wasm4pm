@@ -226,13 +226,18 @@ describe('success check: status === "ok" is the correct predicate', () => {
     expect(isOk).toBe(true);
   });
 
-  it('status other than "ok" → not success (e.g. partial/error variants)', async () => {
+  it('status other than "ok" → rejected by guard (guard throws OUTPUT_SHAPE_INVALID)', async () => {
+    // The field-contract guard in guard.ts enforces that Rust ONLY emits status='ok'.
+    // Any other value (e.g. 'partial') is a contract violation and throws CognitionError,
+    // not a returned result. This proves the guard is active and status='ok' is required.
     mockCognitionRun.mockReturnValue(
       JSON.stringify({ ...CANONICAL_RUN_RESULT, status: 'partial' }),
     );
-    const result = await runContract('eliza', makeBreedInput());
-    const isOk = (result as { status?: string }).status === 'ok';
-    expect(isOk).toBe(false);
+    const { CognitionError } = await import('../../errors.js');
+    await expect(runContract('eliza', makeBreedInput())).rejects.toBeInstanceOf(CognitionError);
+    await expect(
+      runContract('eliza', makeBreedInput()).catch((e: { code: unknown }) => e.code),
+    ).resolves.toBe('OUTPUT_SHAPE_INVALID');
   });
 });
 
