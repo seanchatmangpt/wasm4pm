@@ -1,1 +1,0 @@
-{"places":[{"id":"p0","initial_marking":1},{"id":"p1","initial_marking":0},{"id":"p2","initial_marking":0}],"transitions":[{"id":"t1","label":"A","is_invisible":false},{"id":"t2","label":"B","is_invisible":false}],"arcs":[{"from":"p0","to":"t1","weight":1},{"from":"t1","to":"p1","weight":1},{"from":"p1","to":"t2","weight":1},{"from":"t2","to":"p2","weight":1}]}
