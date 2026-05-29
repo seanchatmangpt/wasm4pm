@@ -50,13 +50,17 @@ export function extractErrorContext(e: unknown, severity: 'warning' | 'error' | 
   const timestamp = Date.now();
 
   if (e instanceof Error) {
-    const errorWithCause = e as any;
-    const cause = errorWithCause.cause instanceof Error ? extractErrorContext(errorWithCause.cause, 'error') : undefined;
+    // ES2022 Error.cause — present in Node 16.9+; cast once for the optional fields
+    const errorWithCause = e as Error & { cause?: unknown; code?: unknown };
+    const cause =
+      errorWithCause.cause instanceof Error
+        ? extractErrorContext(errorWithCause.cause, 'error')
+        : undefined;
     return {
       message: e.message,
       type: e.constructor.name,
       stack: e.stack,
-      code: (e as any).code,
+      code: typeof errorWithCause.code === 'string' ? errorWithCause.code : undefined,
       cause,
       timestamp,
       severity,

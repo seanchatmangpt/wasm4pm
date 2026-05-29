@@ -13,6 +13,7 @@ import {
 } from './index.js';
 import type { Kernel, Planner, Executor } from './engine.js';
 import type { ExecutionPlan, ExecutionReceipt } from '@wasm4pm/contracts';
+import { WasmLoader } from './wasm-loader.js';
 
 // Mock bootstrapEngine to avoid loading actual WASM in tests
 vi.mock('./bootstrap.js', async () => {
@@ -186,10 +187,9 @@ describe('Engine', () => {
       } catch (err) {
         const status = badEngine.status();
         expect(status.errors.length).toBeGreaterThanOrEqual(1);
-        // The timeout handler creates BOOTSTRAP_TIMEOUT and transitions to degraded,
-        // then the outer catch adds BOOTSTRAP_FAILED and transitions to failed
+        // FailingKernel throws a non-timeout error, so the code should be BOOTSTRAP_FAILED
         const codes = status.errors.map((e) => e.code);
-        expect(codes).toContain('BOOTSTRAP_TIMEOUT');
+        expect(codes).toContain('BOOTSTRAP_FAILED');
       }
     });
   });

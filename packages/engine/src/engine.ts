@@ -289,8 +289,10 @@ export class Engine {
         ),
       ]).catch((err) => {
         // On timeout or error, transition to degraded state
+        const isTimeout = err instanceof Error && err.message.includes('Bootstrap timeout');
+        const code = isTimeout ? 'BOOTSTRAP_TIMEOUT' : 'BOOTSTRAP_FAILED';
         const timeoutError: EngineError = {
-          code: 'BOOTSTRAP_TIMEOUT',
+          code,
           message: err instanceof Error ? err.message : String(err),
           severity: 'error',
           recoverable: true,

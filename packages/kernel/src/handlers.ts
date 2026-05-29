@@ -490,8 +490,9 @@ function emitAlgorithmSpan(
         'status': status.toLowerCase(),
       },
     };
-    if (typeof (globalThis as any)._wasm4pm_span_sink === 'function') {
-      (globalThis as any)._wasm4pm_span_sink(span);
+    const spanSink = (globalThis as Record<string, unknown>)._wasm4pm_span_sink;
+    if (typeof spanSink === 'function') {
+      spanSink(span);
     }
   } catch {
     /* never block on OTEL */
@@ -516,7 +517,7 @@ export async function implementAlgorithmStep(
   const startTime = Date.now();
 
   if (!eventLogHandle || typeof eventLogHandle !== 'string' || eventLogHandle.trim() === '') {
-    throw new KernelError('Invalid event log handle', 'MALFORMED_EVENT_LOG' as any);
+    throw new KernelError('Invalid event log handle', 'MALFORMED_EVENT_LOG');
   }
 
   // Extract algorithm type from step type
@@ -533,7 +534,7 @@ export async function implementAlgorithmStep(
           .list()
           .map((a) => a.id)
           .join(', ')}`,
-      'ALGORITHM_NOT_FOUND' as any
+      'ALGORITHM_NOT_FOUND'
     );
   }
 
@@ -547,7 +548,7 @@ export async function implementAlgorithmStep(
       throw new KernelError(
         `Missing required parameter "${paramDef.name}" for algorithm "${metadata.name}". ` +
           `Expected type: ${paramDef.type}`,
-        'INVALID_PARAMETER' as any
+        'INVALID_PARAMETER'
       );
     }
   }
@@ -735,7 +736,7 @@ export async function implementAlgorithmStep(
           throw new KernelError(
             `POWL discovery requires log_json parameter. ` +
               `Use Kernel.run_powl() instead of Kernel.run() for POWL discovery.`,
-            'INVALID_PARAMETER' as any
+            'INVALID_PARAMETER'
           );
         }
 
@@ -940,7 +941,7 @@ export async function implementAlgorithmStep(
         );
         const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
         const result = await classifyTraces(features, {
-          method: params.method as any,
+          method: params.method as import('@wasm4pm/ml').ClassificationMethod | undefined,
           k: params.k as number,
         });
         modelHandle = JSON.stringify(result);
@@ -966,7 +967,7 @@ export async function implementAlgorithmStep(
         );
         const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
         const result = await clusterTraces(features, {
-          method: params.method as any,
+          method: params.method as import('@wasm4pm/ml').ClusteringMethod | undefined,
           k: (params.k as number) ?? 3,
           eps: (params.eps as number) ?? 1.0,
         });
@@ -1062,7 +1063,7 @@ export async function implementAlgorithmStep(
               .list()
               .map((a) => a.id)
               .join(', ')}`,
-          'ALGORITHM_NOT_FOUND' as any
+          'ALGORITHM_NOT_FOUND'
         );
     }
 
@@ -1070,7 +1071,7 @@ export async function implementAlgorithmStep(
     if (!modelHandle || typeof modelHandle !== 'string') {
       throw new KernelError(
         `Invalid model handle returned by WASM function. Expected string, got: ${typeof modelHandle}`,
-        'ALGORITHM_FAILED' as any
+        'ALGORITHM_FAILED'
       );
     }
 
@@ -1118,14 +1119,14 @@ export async function implementAlgorithmStep(
       throw new KernelError(
         `Invalid event log handle: "${eventLogHandle}". ` +
           `Make sure an event log was loaded before running discovery algorithms.`,
-        'INVALID_MODEL_HANDLE' as any,
+        'INVALID_MODEL_HANDLE',
         context
       );
     }
 
     throw new KernelError(
       `Failed to execute algorithm "${algorithmId}" (${metadata?.name ?? algorithmId}): ${errorMessage}`,
-      errorCode as any,
+      errorCode,
       context
     );
   }

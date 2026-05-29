@@ -176,7 +176,7 @@ export class CoordinationLog {
    */
   public export_ocel(): OcelLog {
     const events: OcelEvent[] = [];
-    const objects: { [key: string]: any } = {};
+    const objects: OcelLog['objects'] = {};
 
     // Create agent objects
     for (const [agent_id, metrics] of this.per_agent_metrics) {

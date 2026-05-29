@@ -610,6 +610,7 @@ export function plan(config: Config): ExecutionPlan {
   }
 
   // Add each ML step exactly once (Map guarantees uniqueness per type)
+  // Skip if a step with the same ID was already added via algorithm override in section 3.
   for (const [mlType, mlParams] of mlStepsToAdd) {
     const mlStep = createAnalysisStep(
       algorithmNameFromStepType(mlType),
@@ -618,8 +619,10 @@ export function plan(config: Config): ExecutionPlan {
       ['validate_source'],
       true
     );
-    steps.push(mlStep);
-    stepIds.add(mlStep.id);
+    if (!stepIds.has(mlStep.id)) {
+      steps.push(mlStep);
+      stepIds.add(mlStep.id);
+    }
   }
 
   // Collect IDs of discovery/analysis steps for later dependencies

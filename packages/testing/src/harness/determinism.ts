@@ -28,6 +28,10 @@ const UNSTABLE_FIELDS = new Set([
   'duration_ms',
   'durationMs',
   'timestamp',
+  // WASM object handle: sequential ID that increments globally across all load calls.
+  // The semantic content (places, transitions, arcs, edges) is deterministic; only
+  // the handle reference changes. Not a correctness concern.
+  'handle',
   // ML-specific stochastic fields
   'ml.confidence',
   'ml.predictions',
