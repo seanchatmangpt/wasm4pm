@@ -5,7 +5,7 @@
  * Adds only playground-specific helpers not available in the testing package.
  */
 
-import { runCli, assertExitCode, type CliResult, EXIT_CODES } from '@wasm4pm/testing';
+import { runCli, assertExitCode, assertJsonOutput, type CliResult, EXIT_CODES } from '@wasm4pm/testing';
 import * as path from 'path';
 import * as url from 'url';
 
@@ -57,5 +57,5 @@ export function resolveRepo(...segments: string[]): string {
 }
 
 // Re-export for convenience
-export { assertExitCode, EXIT_CODES };
+export { assertExitCode, assertJsonOutput, EXIT_CODES };
 export type { CliResult };

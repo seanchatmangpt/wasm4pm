@@ -16,7 +16,8 @@
       "terminated_by": ["handle_info_child_died", "terminate"]
     },
     "Receipt": {
-      "created_by": ["start_link", "init", "handle_info_child_started", "handle_info_child_died", "restart_child", "terminate"]
+      "created_by": ["start_link", "init", "handle_info_child_started", "handle_info_child_died", "restart_child", "terminate"],
+      "schema": "schemas/receipts/audit-receipt.schema.json"
     }
   },
   "model": {

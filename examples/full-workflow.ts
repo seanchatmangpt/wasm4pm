@@ -21,7 +21,9 @@
 import { readFileSync } from 'node:fs';
 import { resolve } from 'node:path';
 
-import { getRegistry } from 'wasm4pm';
+// wasm4pm exports WASM binding functions (load_eventlog_from_xes, discover_dfg, etc.)
+// Use the direct binding API — getRegistry() was removed from this package.
+import * as wasm4pm from 'wasm4pm';
 import {
   buildFeatureMatrix,
   classifyTraces,
@@ -53,7 +55,6 @@ interface WorkflowReport {
 
 async function main(logPath: string): Promise<void> {
   const xes = readFileSync(resolve(logPath), 'utf8');
-  const registry = getRegistry();
 
   const report: WorkflowReport = {
     timestamp: new Date().toISOString(),
@@ -65,15 +66,18 @@ async function main(logPath: string): Promise<void> {
     summary: '',
   };
 
+  // Step 0: Load the event log into WASM memory (returns a string handle).
   console.log(`[1/5] Loading event log...`);
-  const handle = await registry.run('load_eventlog_from_xes', null, { xes });
+  const handle = wasm4pm.load_eventlog_from_xes(xes);
   console.log(`      Loaded: ${logPath}`);
 
-  // Step 1: Discovery
+  // Step 1: Discovery — call WASM directly.
   console.log(`[2/5] Running process discovery (DFG)...`);
-  const dfgResult = await registry.run('discover_dfg', handle, {
-    activity_key: 'concept:name',
-  });
+  const dfgJson = wasm4pm.discover_dfg(handle, 'concept:name');
+  const dfgResult = JSON.parse(typeof dfgJson === 'string' ? dfgJson : JSON.stringify(dfgJson)) as {
+    nodes?: unknown[];
+    edges?: unknown[];
+  };
   report.discovery.nodeCount = dfgResult.nodes?.length ?? 0;
   report.discovery.edgeCount = dfgResult.edges?.length ?? 0;
   console.log(`      Activities: ${report.discovery.nodeCount}, Flows: ${report.discovery.edgeCount}`);

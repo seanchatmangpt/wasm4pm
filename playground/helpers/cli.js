@@ -4,7 +4,7 @@
  * Re-exports from @wasm4pm/testing where possible — no duplication.
  * Adds only playground-specific helpers not available in the testing package.
  */
-import { runCli, assertExitCode, EXIT_CODES } from '@wasm4pm/testing';
+import { runCli, assertExitCode, assertJsonOutput, EXIT_CODES } from '@wasm4pm/testing';
 import * as path from 'path';
 import * as url from 'url';
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
@@ -42,6 +42,8 @@ export function combinedOutput(result) {
 export function resolveRepo(...segments) {
     return path.resolve(__dirname, '..', '..', ...segments);
 }
+/** Alias for wpm — backward compatibility with scenarios that import wasm4pm */
+export const wasm4pm = wpm;
 // Re-export for convenience
-export { assertExitCode, EXIT_CODES };
+export { assertExitCode, assertJsonOutput, EXIT_CODES };
 //# sourceMappingURL=cli.js.map

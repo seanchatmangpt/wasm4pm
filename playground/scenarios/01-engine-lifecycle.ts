@@ -94,8 +94,8 @@ describe('engine lifecycle: canTransition gates', () => {
     expect(canTransition('failed', 'bootstrapping')).toBe(true);
   });
 
-  it('failed → ready is invalid (must re-bootstrap)', () => {
-    expect(canTransition('failed', 'ready')).toBe(false);
+  it('failed → ready is valid (fast recovery path)', () => {
+    expect(canTransition('failed', 'ready')).toBe(true);
   });
 
   it('degraded → ready is valid (recovery)', () => {

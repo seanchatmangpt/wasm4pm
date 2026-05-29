@@ -656,54 +656,51 @@ function printHumanQuality(payload: QualityPayload, projection: ConsoleProjectio
   const modelInfo = payload.model;
 
   projection.log('');
-  projection.success(`Quality Assessment — ${payload.input}`);
+  projection.success(`Model Quality Assessment`);
+  projection.log('  ────────────────────────');
+  projection.log(`  ${payload.input}`);
   projection.log(`  Activity key: ${payload.activityKey}`);
   projection.log(`  Model: ${modelInfo.type} (${modelInfo.nodes} nodes, ${modelInfo.edges} edges)`);
   projection.log('');
 
-  // ASCII bar chart for quality scores
-  const sparkBar = (value: number, width = 20): string => {
+  // ASCII bar chart for quality scores — 10-wide bars per spec
+  const sparkBar = (value: number, width = 10): string => {
     const filled = Math.round(value * width);
     return '█'.repeat(filled) + '░'.repeat(width - filled);
   };
 
-  // icon: ★ excellent  ✓ acceptable  o borderline  ✗ problematic
+  // icon: ★ excellent  ✓ Good  ⚠ Medium  ✗ Poor
   const scoreIcon = (score: number, excellent: number, target: number, min: number): string => {
-    if (score >= excellent) return '★';
-    if (score >= target) return '✓';
-    if (score >= min) return 'o';
-    return '✗';
+    if (score >= excellent) return '✓ Excellent';
+    if (score >= target) return '✓ Good';
+    if (score >= min) return '⚠ Medium';
+    return '✗ Poor';
   };
 
-  projection.log('  Quality Scores (Van der Aalst 4-dimension framework):');
-  projection.log('  Legend: ★ excellent  ✓ acceptable  o borderline  ✗ problematic');
-  projection.log('');
+  projection.log('  Model Quality Assessment');
+  projection.log('  ────────────────────────');
 
   const advisories: string[] = [];
   const algorithmHints: string[] = [];
 
-  for (const [metric, score] of Object.entries(scores)) {
+  // Canonical metric display order per Van der Aalst
+  const metricOrder = ['fitness', 'precision', 'simplicity', 'generalization'];
+  const allMetrics = [...metricOrder.filter((m) => m in scores), ...Object.keys(scores).filter((m) => !metricOrder.includes(m))];
+
+  for (const metric of allMetrics) {
+    const score = scores[metric];
+    if (score === undefined) continue;
     const def = QUALITY_THRESHOLDS[metric];
     if (!def) {
       projection.log(
-        `    ${metric.padEnd(15)} ${score.toFixed(3).padStart(6)}  o  ${sparkBar(score)}`
+        `  ${metric.padEnd(14)}  ${sparkBar(score)}  ${score.toFixed(3)}`
       );
       continue;
     }
     const icon = scoreIcon(score, def.excellent, def.target, def.min);
     const bar = sparkBar(score);
-    let thresholdTag: string;
-    if (score >= def.excellent) {
-      thresholdTag = `excellent (>=${def.excellent})`;
-    } else if (score >= def.target) {
-      thresholdTag = `acceptable [excellent: >=${def.excellent}]`;
-    } else if (score >= def.min) {
-      thresholdTag = `borderline [target: >=${def.target}]`;
-    } else {
-      thresholdTag = `PROBLEMATIC [target: >=${def.target}, min: ${def.min}]`;
-    }
     projection.log(
-      `    ${def.label.padEnd(16)} ${score.toFixed(3).padStart(6)}  ${icon}  ${bar}  ${thresholdTag}`
+      `  ${def.label.padEnd(14)}  ${bar}  ${score.toFixed(3)}  ${icon}`
     );
     if (score < def.min) {
       advisories.push(`${def.label}: ${def.belowMinAdvice}`);
@@ -712,16 +709,45 @@ function printHumanQuality(payload: QualityPayload, projection: ConsoleProjectio
       algorithmHints.push(def.algorithmHint);
     }
   }
+
+  // Note for generalization if not available (placeholder per spec)
+  // TODO(generalization): real generalization requires synthetic trace generation; current
+  // value comes from the WASM generalization() function which uses a structural metric proxy.
+  if (!('generalization' in scores)) {
+    projection.log('  Generalization    (not computed — requires synthetic traces)');
+  }
+
   projection.log('');
 
-  // Aggregate score
+  // Aggregate score with "Overall: LEVEL — narrative" line per spec
   const aggScore = aggregate.score;
-  const aggLevel = aggregate.level;
+  const aggLevel = aggregate.level.toUpperCase();
   const aggBar = sparkBar(aggScore);
-  const aggIcon = aggScore >= 0.8 ? '★' : aggScore >= 0.65 ? '✓' : aggScore >= 0.5 ? 'o' : '✗';
   projection.log(
-    `  Aggregate: ${aggScore.toFixed(3).padStart(6)}  ${aggIcon}  ${aggBar}  (${aggLevel})`
+    `  Aggregate       ${aggBar}  ${aggScore.toFixed(3)}`
   );
+
+  // Build a human-readable narrative: which dimensions are good, which need work
+  const goodDims = allMetrics.filter((m) => {
+    const s = scores[m];
+    const d = QUALITY_THRESHOLDS[m];
+    return s !== undefined && d && s >= d.target;
+  }).map((m) => QUALITY_THRESHOLDS[m]?.label.toLowerCase() ?? m);
+  const weakDims = allMetrics.filter((m) => {
+    const s = scores[m];
+    const d = QUALITY_THRESHOLDS[m];
+    return s !== undefined && d && s < d.target;
+  }).map((m) => QUALITY_THRESHOLDS[m]?.label.toLowerCase() ?? m);
+
+  let overallNarrative: string;
+  if (weakDims.length === 0) {
+    overallNarrative = `all dimensions meet their targets`;
+  } else if (goodDims.length >= weakDims.length) {
+    overallNarrative = `${goodDims.join(' and ')} ${goodDims.length === 1 ? 'is' : 'are'} good, ${weakDims.join(' and ')} could improve`;
+  } else {
+    overallNarrative = `${weakDims.join(', ')} ${weakDims.length === 1 ? 'needs' : 'need'} attention`;
+  }
+  projection.log(`  Overall: ${aggLevel} — ${overallNarrative}`);
   projection.log('');
 
   // What each metric means — always shown

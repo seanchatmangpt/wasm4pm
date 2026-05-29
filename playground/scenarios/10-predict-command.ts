@@ -20,7 +20,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { wpm, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { wpm } from '../helpers/cli.js';
 import { VALID_PREDICT_CLI_TASKS } from '@wasm4pm/contracts';
 import type { CliTestEnv } from '@wasm4pm/testing';
 

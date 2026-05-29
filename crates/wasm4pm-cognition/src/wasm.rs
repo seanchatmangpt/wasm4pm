@@ -43,18 +43,36 @@ fn to_js_str<T: Serialize>(val: &T) -> Result<JsValue, JsValue> {
     Ok(js_val(&s))
 }
 
+/// Run a breed through its full lifecycle: preconditions → run → postconditions.
+///
+/// Enforces the `CognitionBreed` contract at the WASM boundary:
+/// - `preconditions` must pass before execution begins (TPS fail-fast).
+/// - `postconditions` must pass after execution (FM-5 fraud guard: empty
+///   inference_trace is rejected as proof that real work did not occur).
+fn run_breed(b: &dyn CognitionBreed, input: &BreedInput) -> Result<BreedOutput, String> {
+    b.preconditions(input)
+        .map_err(|e| format!("{}: precondition failed: {}", b.id(), e))?;
+    let output = b.run(input).map_err(|e| format!("{}: {}", e.breed, e.message))?;
+    b.postconditions(&output)
+        .map_err(|e| format!("{}: postcondition failed: {}", b.id(), e))?;
+    Ok(output)
+}
+
 /// Dispatch to the correct breed's `run()` method.
+///
+/// Each branch delegates to `run_breed`, which enforces pre- and post-conditions
+/// so the empty-trace fraud signal is caught at the WASM boundary.
 fn dispatch_breed(breed: &str, input: &BreedInput) -> Result<BreedOutput, String> {
     match breed {
-        "eliza" => Eliza.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "cbr" => Cbr.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "dendral" => Dendral.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "strips" => Strips.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "prolog" => Prolog.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "mycin" => Mycin.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "gps" => Gps.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "soar" => Soar.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
-        "hearsay" => Hearsay.run(input).map_err(|e| format!("{}: {}", e.breed, e.message)),
+        "eliza" => run_breed(&Eliza, input),
+        "cbr" => run_breed(&Cbr, input),
+        "dendral" => run_breed(&Dendral, input),
+        "strips" => run_breed(&Strips, input),
+        "prolog" => run_breed(&Prolog, input),
+        "mycin" => run_breed(&Mycin, input),
+        "gps" => run_breed(&Gps, input),
+        "soar" => run_breed(&Soar, input),
+        "hearsay" => run_breed(&Hearsay, input),
         other => Err(format!("unknown breed: {}", other)),
     }
 }

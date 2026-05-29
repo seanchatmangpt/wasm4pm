@@ -51,6 +51,8 @@ import {
   diagnose,
   validateConformanceResultFromCases,
   estimateGeneralization,
+  getConformanceCache,
+  hashLogOrModel,
   type InvariantViolation,
   type LogStats,
 } from '@wasm4pm/observability';
@@ -361,6 +363,19 @@ export const conformance = defineCommand({
                 }
               }
 
+              // Derive cache keys for lazy mode (sha256 of raw file content + model handle)
+              let logCacheHash = '';
+              let modelCacheHash = '';
+              if (precisionMode === 'lazy') {
+                try {
+                  const logBytes = await fs.readFile(inputPath);
+                  logCacheHash = hashLogOrModel(logBytes);
+                  modelCacheHash = hashLogOrModel(petriNetHandle);
+                } catch {
+                  // Hashing failure is non-fatal; degrade to skip-cache path
+                }
+              }
+
               // Run conformance checking based on method
               let precision: number | null = null;
               let precision_available = false;
@@ -453,6 +468,28 @@ export const conformance = defineCommand({
 
               const deviatingCases = isTokenReplay ? totalCases - conformingCases : 0;
               const conformanceRate = totalCases > 0 ? conformingCases / totalCases : fitnessValue;
+
+              // In lazy mode: check cache first — if a previous run stored precision, reuse it.
+              // This lets the second invocation skip the ~100ms ETConformance call.
+              if (precisionMode === 'lazy' && logCacheHash && modelCacheHash) {
+                const conformanceCache = getConformanceCache();
+                const cached = conformanceCache.getCachedFitness(logCacheHash, modelCacheHash);
+                if (cached && cached.precision_available && cached.precision !== null) {
+                  precision = cached.precision;
+                  precision_available = true;
+                  if (verbose) {
+                    console.log(
+                      `[cache] conformance.precision.lazy_hit: precision=${precision.toFixed(3)} (from cache)`
+                    );
+                  }
+                }
+                // Always store fitness result for future lazy lookups (regardless of hit/miss)
+                conformanceCache.cacheFitness(logCacheHash, modelCacheHash, {
+                  fitness: fitnessValue,
+                  precision: precision,
+                  precision_available,
+                });
+              }
 
               // In full mode, attempt precision computation via ETConformance (wasm_compute_precision).
               // fast and lazy modes skip this call intentionally to save ~100ms.
@@ -790,19 +827,21 @@ function printHumanConformance(payload: ConformancePayload, projection: ConsoleP
   projection.log(`  Precision mode: ${payload.computed_at}`);
   projection.log('');
 
-  // Primary fitness score with Van der Aalst threshold context
+  // Primary fitness score — PASS/FAIL format with threshold context
   // GAP-CONF-3: Include 95% confidence interval for statistical significance
-  const fitnessStatus =
-    fitness >= 0.85 ? '✓ excellent' : fitness >= threshold ? '~ acceptable' : '✗ below threshold';
-  const fitnessStatusColor =
-    fitness >= 0.85 ? '\x1b[32m' : fitness >= threshold ? '\x1b[33m' : '\x1b[31m';
   const colorReset = '\x1b[0m';
+  const passColor = '\x1b[32m';
+  const warnColor = '\x1b[33m';
+  const failColor = '\x1b[31m';
+  const dimColor = '\x1b[2m';
+
+  const fitnessPassFail = isFit ? `${passColor}✓ PASS` : `${failColor}✗ FAIL`;
   const ciDisplay =
     payload.fitness_ci_lower !== undefined && payload.fitness_ci_upper !== undefined
       ? ` [95% CI: ${payload.fitness_ci_lower.toFixed(3)}–${payload.fitness_ci_upper.toFixed(3)}]`
       : '';
   projection.log(
-    `  Fitness:  ${fitnessStatusColor}${fitness.toFixed(3)}  ${fitnessStatus}${colorReset}  [threshold: ${threshold.toFixed(2)}, Van der Aalst ≥0.85]${ciDisplay}`
+    `  Fitness:   ${fitness.toFixed(3)}  ${fitnessPassFail}${colorReset} (threshold: ${threshold.toFixed(2)})${ciDisplay}`
   );
 
   // Warn if sample size is below recommended threshold
@@ -810,37 +849,62 @@ function printHumanConformance(payload: ConformancePayload, projection: ConsoleP
     projection.log(`  ⚠ ${payload.sample_size_warning}`);
   }
 
-  // Concrete implication: translate the fitness score into practitioner language
+  // Concrete implication lines — translate the score into practitioner language
   if (summary.total_cases > 0) {
-    const conformPct = (summary.conformance_rate * 100).toFixed(1);
-    const deviatePct = (100 - summary.conformance_rate * 100).toFixed(1);
     if (summary.deviating_cases === 0) {
-      projection.log(`  => All ${summary.total_cases} traces replay without deviation.`);
+      projection.log(`  → All ${summary.total_cases} traces replay without deviation.`);
     } else {
-      projection.log(
-        `  => ${summary.conforming_cases} of ${summary.total_cases} traces conform (${conformPct}%); ` +
-          `${summary.deviating_cases} deviate (${deviatePct}%) — each requires missing or extra tokens.`
-      );
+      const deviatePct = ((1 - summary.conformance_rate) * 100).toFixed(1);
+      projection.log(`  → ${deviatePct}% of traces have deviating paths`);
+
+      // Common issue: dominant deviation type across deviating traces
+      if (deviatingTraces.length > 0) {
+        let missingCount = 0;
+        let extraCount = 0;
+        for (const t of deviatingTraces) {
+          for (const d of t.deviations) {
+            const dt = (d.deviation_type ?? '').toLowerCase();
+            if (dt.includes('missing') || dt.includes('model_move')) missingCount++;
+            else if (dt.includes('extra') || dt.includes('log_move') || dt.includes('skip')) extraCount++;
+          }
+        }
+        if (missingCount > extraCount) {
+          projection.log(`  → Common issue: model requires activities that are skipped in the log (missing tokens)`);
+          projection.log(`  → Suggestion: Try 'wpm run ${payload.input} --algorithm inductive_miner' for a more flexible model`);
+        } else if (extraCount > missingCount) {
+          projection.log(`  → Common issue: log contains activities the model doesn't expect (extra tokens)`);
+          projection.log(`  → Suggestion: Try 'wpm run ${payload.input} --algorithm genetic_algorithm' for a better-fitting model`);
+        } else if (missingCount === 0 && extraCount === 0 && summary.deviating_cases > 0) {
+          projection.log(`  → Common issue: traces end before model reaches final marking (remaining tokens)`);
+          projection.log(`  → Suggestion: Try 'wpm run ${payload.input} --algorithm inductive_miner' for a sound process tree`);
+        }
+      } else if (!isFit) {
+        projection.log(`  → Suggestion: Try 'wpm run ${payload.input} --algorithm genetic_algorithm' for a better-fitting model`);
+      }
     }
   } else if (fitness < 1.0) {
-    // Alignment path — no per-case breakdown; express as percentage
     const nonConformPct = ((1 - fitness) * 100).toFixed(1);
-    projection.log(
-      `  => Alignment cost suggests approximately ${nonConformPct}% of trace moves are non-conforming.`
-    );
+    projection.log(`  → ${nonConformPct}% of traces have deviating paths (alignment estimate)`);
+    if (!isFit) {
+      projection.log(`  → Suggestion: Try 'wpm run ${payload.input} --algorithm inductive_miner' for a more flexible model`);
+    }
   } else {
-    projection.log(`  => Perfect fitness — all trace moves align with the model.`);
+    projection.log(`  → Perfect fitness — all trace moves align with the model.`);
   }
 
+  // Precision line
   let precisionDisplay: string;
   if (precisionAvailable && precisionRaw !== null) {
+    const excessPct = ((1 - precisionRaw) * 100).toFixed(1);
     const precStatus = precisionRaw >= 0.8 ? '✓ good' : precisionRaw >= 0.5 ? '~ medium' : '✗ low';
-    const precColor = precisionRaw >= 0.8 ? '\x1b[32m' : precisionRaw >= 0.5 ? '\x1b[33m' : '\x1b[31m';
+    const precColor = precisionRaw >= 0.8 ? passColor : precisionRaw >= 0.5 ? warnColor : failColor;
     precisionDisplay = `${precColor}${precisionRaw.toFixed(3)}  ${precStatus}${colorReset}`;
+    projection.log(`  Precision: ${precisionDisplay}`);
+    projection.log(`  → model allows ${excessPct}% more behaviour than observed`);
   } else {
-    precisionDisplay = '\x1b[2mN/A (not computed)\x1b[0m';
+    precisionDisplay = `${dimColor}N/A (not computed)${colorReset}`;
+    projection.log(`  Precision: ${precisionDisplay}`);
   }
-  projection.log(`  Precision: ${precisionDisplay}`);
 
   // GAP-CONF-1: Display generalization score (computed from trace variant analysis)
   const generalization = (payload.generalization as number | null | undefined) ?? null;
