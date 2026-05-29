@@ -90,7 +90,8 @@ describe('BUG-1: sparkBar() tie case', () => {
   it('sparkBar tie: JSON payload nodes/edges for dfg,skeleton are valid non-negative numbers', async () => {
     const { exitCode, payload } = await comparePayload('dfg,skeleton');
     expect(exitCode).toBe(EXIT_CODES.success);
-    const algos = payload['algorithms'] as Array<Record<string, unknown>>;
+    // comparisons is the per-algorithm stat array; algorithms is just the name list
+    const algos = payload['comparisons'] as Array<Record<string, unknown>>;
     expect(Array.isArray(algos)).toBe(true);
     expect(algos).toHaveLength(2);
     for (const a of algos) {
@@ -136,7 +137,8 @@ describe('GAP-3a: output_type field present in JSON payload', () => {
   it('dfg algorithm has output_type = "dfg"', async () => {
     const { exitCode, payload } = await comparePayload('dfg,heuristic');
     expect(exitCode).toBe(EXIT_CODES.success);
-    const algos = payload['algorithms'] as Array<Record<string, unknown>>;
+    // comparisons is the per-algorithm stat array; algorithms is just the name list
+    const algos = payload['comparisons'] as Array<Record<string, unknown>>;
     const dfgEntry = algos.find((a) => a['algorithm'] === 'dfg');
     expect(dfgEntry).toBeDefined();
     expect(dfgEntry!['output_type']).toBe('dfg');
@@ -145,7 +147,7 @@ describe('GAP-3a: output_type field present in JSON payload', () => {
   it('heuristic algorithm has a known output_type (dfg, petrinet, tree, or declare)', async () => {
     const { exitCode, payload } = await comparePayload('dfg,heuristic');
     expect(exitCode).toBe(EXIT_CODES.success);
-    const algos = payload['algorithms'] as Array<Record<string, unknown>>;
+    const algos = payload['comparisons'] as Array<Record<string, unknown>>;
     const heuristicEntry = algos.find((a) => a['algorithm'] === 'heuristic');
     expect(heuristicEntry).toBeDefined();
     expect(['dfg', 'petrinet', 'tree', 'declare']).toContain(heuristicEntry!['output_type']);
@@ -154,7 +156,7 @@ describe('GAP-3a: output_type field present in JSON payload', () => {
   it('inductive miner has a known output_type', async () => {
     const { exitCode, payload } = await comparePayload('dfg,inductive');
     expect(exitCode).toBe(EXIT_CODES.success);
-    const algos = payload['algorithms'] as Array<Record<string, unknown>>;
+    const algos = payload['comparisons'] as Array<Record<string, unknown>>;
     const inductiveEntry = algos.find((a) => a['algorithm'] === 'inductive');
     expect(inductiveEntry).toBeDefined();
     expect(['dfg', 'petrinet', 'tree', 'declare']).toContain(inductiveEntry!['output_type']);
@@ -162,8 +164,9 @@ describe('GAP-3a: output_type field present in JSON payload', () => {
 
   it('sentinel (failed) rows have output_type = "unknown"', async () => {
     // All successful rows must have a known type; sentinel rows (nodes: -1) must be 'unknown'.
+    // comparisons is the per-algorithm stat array with nodes, output_type etc.
     const { payload } = await comparePayload('dfg,heuristic');
-    const algos = payload['algorithms'] as Array<Record<string, unknown>>;
+    const algos = payload['comparisons'] as Array<Record<string, unknown>>;
     for (const a of algos) {
       if ((a['nodes'] as number) < 0) {
         // This is a sentinel row
@@ -178,7 +181,7 @@ describe('GAP-3a: output_type field present in JSON payload', () => {
   it('output_type is present on every entry in a 3-algorithm comparison', async () => {
     const { exitCode, payload } = await comparePayload('dfg,heuristic,inductive');
     expect(exitCode).toBe(EXIT_CODES.success);
-    const algos = payload['algorithms'] as Array<Record<string, unknown>>;
+    const algos = payload['comparisons'] as Array<Record<string, unknown>>;
     expect(algos).toHaveLength(3);
     for (const a of algos) {
       expect(a).toHaveProperty('output_type');
@@ -194,7 +197,8 @@ describe('GAP-3b: duration_ms, node_count, edge_count aliases in JSON payload', 
   it('each algorithm entry has duration_ms equal to elapsedMs', async () => {
     const { exitCode, payload } = await comparePayload('dfg,heuristic');
     expect(exitCode).toBe(EXIT_CODES.success);
-    const algos = payload['algorithms'] as Array<Record<string, unknown>>;
+    // comparisons is the per-algorithm stat array (not algorithms which is name list)
+    const algos = payload['comparisons'] as Array<Record<string, unknown>>;
     expect(Array.isArray(algos)).toBe(true);
     for (const a of algos) {
       expect(a).toHaveProperty('duration_ms');
@@ -207,7 +211,7 @@ describe('GAP-3b: duration_ms, node_count, edge_count aliases in JSON payload', 
   it('each algorithm entry has node_count equal to nodes', async () => {
     const { exitCode, payload } = await comparePayload('dfg,heuristic');
     expect(exitCode).toBe(EXIT_CODES.success);
-    const algos = payload['algorithms'] as Array<Record<string, unknown>>;
+    const algos = payload['comparisons'] as Array<Record<string, unknown>>;
     for (const a of algos) {
       expect(a).toHaveProperty('node_count');
       expect(a['node_count']).toBe(a['nodes']);
@@ -217,7 +221,7 @@ describe('GAP-3b: duration_ms, node_count, edge_count aliases in JSON payload', 
   it('each algorithm entry has edge_count equal to edges', async () => {
     const { exitCode, payload } = await comparePayload('dfg,heuristic');
     expect(exitCode).toBe(EXIT_CODES.success);
-    const algos = payload['algorithms'] as Array<Record<string, unknown>>;
+    const algos = payload['comparisons'] as Array<Record<string, unknown>>;
     for (const a of algos) {
       expect(a).toHaveProperty('edge_count');
       expect(a['edge_count']).toBe(a['edges']);
@@ -226,7 +230,7 @@ describe('GAP-3b: duration_ms, node_count, edge_count aliases in JSON payload', 
 
   it('duration_ms is 0 for sentinel (failed) rows', async () => {
     const { payload } = await comparePayload('dfg,heuristic');
-    const algos = payload['algorithms'] as Array<Record<string, unknown>>;
+    const algos = payload['comparisons'] as Array<Record<string, unknown>>;
     for (const a of algos) {
       if ((a['nodes'] as number) < 0) {
         expect(a['duration_ms']).toBe(0);
@@ -244,7 +248,7 @@ describe('GAP-4: recommendation field behaviour (design contract)', () => {
   it('recommendation is non-null when both algorithms succeed', async () => {
     const { exitCode, payload } = await comparePayload('dfg,heuristic');
     expect(exitCode).toBe(EXIT_CODES.success);
-    const algos = payload['algorithms'] as Array<Record<string, unknown>>;
+    const algos = payload['comparisons'] as Array<Record<string, unknown>>;
     const successCount = algos.filter((a) => (a['nodes'] as number) >= 0).length;
     if (successCount >= 2) {
       expect(payload['recommendation']).not.toBeNull();
@@ -346,7 +350,8 @@ describe('JSON payload structural contract', () => {
   it('each algorithm entry has all required original + gap-fix fields', async () => {
     const { exitCode, payload } = await comparePayload('dfg,heuristic');
     expect(exitCode).toBe(EXIT_CODES.success);
-    const algos = payload['algorithms'] as Array<Record<string, unknown>>;
+    // comparisons is the per-algorithm stat array; algorithms is the name list
+    const algos = payload['comparisons'] as Array<Record<string, unknown>>;
     expect(Array.isArray(algos)).toBe(true);
     for (const a of algos) {
       // Original fields

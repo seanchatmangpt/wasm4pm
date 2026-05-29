@@ -511,11 +511,19 @@ const benchmarkCalibrate = defineCommand({
     const loadMs = measure(() => { handle100 = wasm.load_eventlog_from_xes(xes100) as string; });
 
     const predMs100 = measure(() => { wasm.discover_dfg(handle100, 'concept:name'); });
+    // Free the 100-trace handle immediately after measurement — it is not used again.
+    if (handle100 && typeof wasm.delete_object === 'function') {
+      try { (wasm.delete_object as (h: string) => void)(handle100); } catch { /* best-effort */ }
+    }
 
     if (!quiet) process.stderr.write('Measuring prediction baseline (1000-trace log)...\n');
     let handle1k = '';
     measure(() => { handle1k = wasm.load_eventlog_from_xes(xes1k) as string; });
     const predMs1k = measure(() => { wasm.discover_dfg(handle1k, 'concept:name'); });
+    // Free the 1k-trace handle immediately after measurement — it is not used again.
+    if (handle1k && typeof wasm.delete_object === 'function') {
+      try { (wasm.delete_object as (h: string) => void)(handle1k); } catch { /* best-effort */ }
+    }
 
     const thresholds = {
       prediction: {

@@ -86,6 +86,10 @@ async function handleCommand(
       try {
         const content = await fs.readFile(filePath, 'utf8');
         const t0 = Date.now();
+        // Free the previous handle before overwriting — otherwise the old log leaks in WASM memory.
+        if (state.handle && typeof wasm.delete_object === 'function') {
+          try { (wasm.delete_object as (h: string) => void)(state.handle); } catch { /* best-effort */ }
+        }
         state.handle = wasm.load_eventlog_from_xes(content) as string;
         state.logPath = filePath;
         state.lastModel = null;

@@ -50,18 +50,17 @@ export default defineCommand({
     const modelCache = getModelCache();
     const stats = modelCache.modelStats();
 
-    const output = {
-      status: 'ok',
-      operation: 'models.default',
-      payload: {
-        message: 'Use: wpm models list|stats|clear|warm',
+    const result = makeResult(
+      'models',
+      {
+        hint: 'Use: wpm models list|stats|clear|warm',
         total_models: stats.models,
         hit_rate: stats.hit_rate.toFixed(3),
       },
-      duration_ms: 0,
-    };
-
-    process.stdout.write(JSON.stringify(output, null, 2));
+      0,
+      EXIT_CODES.success
+    );
+    emitResult(result, { format: 'json' });
     return EXIT_CODES.success;
   },
   subCommands: {
