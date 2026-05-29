@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest';
 import {
   MockSourceAdapter,
   createMockSource,
+  SENTINEL_FINGERPRINT,
   MockSinkAdapter,
   createMockSink,
   MockEngine,
@@ -42,7 +43,7 @@ describe('MockSourceAdapter', () => {
 
   it('fingerprint returns mock value', async () => {
     const fp = await source.fingerprint();
-    expect(fp).toBe('mock-fingerprint-abc123');
+    expect(fp).toBe(SENTINEL_FINGERPRINT);
   });
 
   it('fingerprint returns custom value', async () => {
