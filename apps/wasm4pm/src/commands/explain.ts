@@ -1,6 +1,6 @@
 import { defineCommand } from 'citty';
 import { resolveConfig as loadConfig } from '@wasm4pm/config';
-import { emitResult, makeResult, makeErrorResult, ConsoleProjection } from '../output.js';
+import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
 import { withSpan, withSpanRaw } from './_otel.js';
@@ -189,11 +189,20 @@ export const explain = defineCommand({
           const algoKeyNorm = resolvedAlgo
             ? resolvedAlgo.toLowerCase().replace(/[+*-]/g, '').replace(/_/g, '')
             : undefined;
+          // Canonical registry ID → ALGO_META short key for algorithms whose meta key differs
+          // from the registry ID (e.g. simd_streaming_dfg → simd_dfg, hill_climbing → hill).
+          const META_CANONICAL_MAP: Record<string, string> = {
+            simdstreamingdfg: 'simd_dfg',
+            hillclimbing: 'hill',
+          };
+          const metaKeyNorm = algoKeyNorm
+            ? META_CANONICAL_MAP[algoKeyNorm] ?? algoKeyNorm
+            : undefined;
           // Build a map of normalised-key → original ALGO_META key for exact lookup.
           const metaNormMap = Object.fromEntries(
             Object.keys(ALGO_META).map((k) => [k.replace(/_/g, ''), k])
           );
-          const metaKey = algoKeyNorm ? metaNormMap[algoKeyNorm] : undefined;
+          const metaKey = metaKeyNorm ? metaNormMap[metaKeyNorm.replace(/_/g, '')] ?? metaNormMap[metaKeyNorm] : undefined;
           const meta = metaKey ? ALGO_META[metaKey] : undefined;
 
           const payload = {
@@ -1110,6 +1119,80 @@ const ALGO_META: Record<string, AlgoMeta> = {
       },
     ],
   },
+  simd_dfg: {
+    speedScore: 1,
+    qualityScore: 30,
+    outputType: 'dfg',
+    complexity: 'O(|E| / w) where w = SIMD width',
+    fitness: 'High (100% on training log by construction)',
+    precision: 'Low (same as standard DFG)',
+    generalization: 'Low (same as standard DFG)',
+    simplicity: 'High',
+    deploymentProfiles: ['stream', 'balanced', 'quality'],
+    whenToUse: 'Real-time dashboards, IoT/edge deployments, logs >1M events, streaming scenarios.',
+    alternatives: 'Use dfg for maximum compatibility; process_skeleton for a more compact model.',
+    strengths: [
+      'Fastest algorithm in the registry — SIMD vectorisation processes 4–8 events per CPU cycle',
+      'Streaming: works on continuous event feeds without loading the full log',
+      'Identical output to standard DFG — same interpretation, same downstream tooling',
+    ],
+    weaknesses: [
+      'Inherits all DFG limitations: no parallelism, loops, or formal soundness',
+      'Available only in fog and browser WASM profiles (not mobile/iot/edge by default)',
+      'SIMD fallback to scalar mode if CPU lacks AVX2/SSE4',
+    ],
+    use_cases: [
+      'Real-time process dashboards requiring sub-millisecond latency',
+      'Streaming event log analysis with wpm watch',
+      'Edge deployments where fast DFG snapshots are needed continuously',
+    ],
+    parameters: [
+      {
+        name: 'activity_key',
+        type: 'string',
+        description: 'Event attribute used as the activity label',
+        required: false,
+        default: 'concept:name',
+      },
+    ],
+  },
+  optimized_dfg: {
+    speedScore: 70,
+    qualityScore: 85,
+    outputType: 'dfg',
+    complexity: 'NP-Hard',
+    fitness: 'High',
+    precision: 'High (optimisation removes noise edges)',
+    generalization: 'Medium',
+    simplicity: 'Medium (fewer edges than standard DFG)',
+    deploymentProfiles: ['quality'],
+    whenToUse: 'When you want DFG-family speed with significantly better precision; pre-conformance-checking cleaning.',
+    alternatives: 'Use dfg for full fidelity; ilp for provably optimal Petri net.',
+    strengths: [
+      'Highest quality DFG variant — 85/100 quality score vs 30/100 for standard DFG',
+      'Removes noise edges via probability-normalised scoring',
+      'Cleaner output than standard DFG — better for presentation and conformance',
+    ],
+    weaknesses: [
+      'NP-hard optimisation pass — significantly slower than standard DFG',
+      'Does not scale to large logs (>100k events)',
+      'May remove legitimate rare paths when optimising for precision',
+    ],
+    use_cases: [
+      'Pre-processing before conformance checking to get a cleaner reference model',
+      'Process presentation when the standard DFG is too noisy',
+      'Benchmarking: compare optimised DFG quality vs ILP Petri net',
+    ],
+    parameters: [
+      {
+        name: 'activity_key',
+        type: 'string',
+        description: 'Event attribute used as the activity label',
+        required: false,
+        default: 'concept:name',
+      },
+    ],
+  },
 };
 
 /**
@@ -1909,6 +1992,100 @@ Maximize: Σ yₜ - λ × Σ xₑ
 
 **Complexity**: NP-hard, exponential in model size`,
     },
+    simd_dfg: {
+      brief: `**SIMD-Accelerated Streaming DFG** — Ultra-fast DFG using CPU SIMD instructions for streaming event ingestion. Lowest possible latency for real-time monitoring.`,
+      detailed: `## SIMD-Accelerated Streaming DFG (simd_streaming_dfg)
+
+**Overview**: The fastest algorithm in the registry. Uses SIMD (Single Instruction, Multiple Data) CPU vector instructions to process multiple events simultaneously, enabling sub-millisecond DFG construction even on large streaming event logs.
+
+**How it works**:
+1. Ingest events in a streaming fashion — no need to load the full log into memory
+2. Apply SIMD-vectorized directly-follows counting on batches of events
+3. Maintain a compact DFG representation with atomic edge weight updates
+4. Produce the same DFG output as the standard \`dfg\` algorithm, but faster
+
+**Output — how to read the result**:
+- Identical to the standard DFG: directed graph of activity nodes and directly-follows edges
+- Edge weights represent occurrence counts
+- Use the same interpretation as \`wpm explain dfg\`
+
+**When to use**:
+- Real-time process dashboards where sub-millisecond latency is critical
+- IoT and edge deployments with constrained CPU and no GPU available
+- Large logs (>1M events) where even the standard DFG becomes slow
+- Streaming scenarios where events arrive continuously (use with \`wpm watch\`)
+- Avoid when: your CPU does not support SIMD extensions (the algorithm falls back to scalar mode)
+
+**Characteristics**:
+- **Speed**: Fastest in the registry (tier 1/80)
+- **Quality**: Same as DFG (30/100) — inherits all DFG limitations
+- **WASM profile**: Available in \`fog\` and \`browser\` profiles only`,
+      academic: `## SIMD-Accelerated Directly-Follows Graph
+
+**Same formal definition as DFG**:
+Let E be an event log. DFG G = (V, E_dfg) where:
+- V = {a | a is an activity in E}
+- E_dfg = {(a, b) | ∃t ∈ T: a directly precedes b in t}
+- weight(a, b) = |{events where a→b occurs}|
+
+**SIMD optimisation**:
+Vectorised edge count updates using AVX2/SSE4 instructions:
+- Processes 8 (AVX2) or 4 (SSE4) event pairs per CPU cycle
+- Reduces memory bandwidth by batching writes to the weight array
+
+**Theoretical Properties**:
+- Time complexity: O(|E| / w) where w = SIMD vector width (8 for AVX2)
+- Space complexity: O(|V|²) — same as DFG
+- Output: identical to standard DFG (correctness preserved)
+
+**References**: van der Aalst (2011), DFG definition; SIMD intrinsics: Intel Intrinsics Guide`,
+    },
+    optimized_dfg: {
+      brief: `**Optimised DFG** — An enhanced DFG variant with quality-optimised edge filtering. Higher precision than the standard DFG while maintaining near-linear speed.`,
+      detailed: `## Optimised DFG (optimized_dfg)
+
+**Overview**: A refined variant of the Directly-Follows Graph that applies quality-focused post-processing to improve precision and reduce noise. Produces a DFG with higher quality scores (85/100) than the standard DFG (30/100) at the cost of slightly more computation.
+
+**How it works**:
+1. Build the standard DFG from the event log
+2. Apply frequency-normalised edge scoring
+3. Remove edges that violate structural consistency checks
+4. Re-weight surviving edges to reflect conditional probabilities
+5. Output an optimised directed graph
+
+**Output — how to read the result**:
+- Same structure as the standard DFG: activity nodes and directed edges
+- Edges represent only the most consistent directly-follows relationships
+- Edge weights are probability-normalised (each outgoing edge set sums to 1.0)
+- Fewer "noise" edges than standard DFG — cleaner for presentation
+
+**When to use**:
+- When you want DFG speed with better precision than the standard DFG
+- Pre-conformance-checking step: cleaner model → more meaningful conformance results
+- When the standard DFG produces too many low-weight noise edges
+- Avoid when: you need full fidelity (all observed paths) — use standard dfg instead
+
+**Quality score**: 85/100 — highest quality DFG variant in the registry
+**Speed**: Moderate (tier 70/80) — NP-hard optimisation pass adds overhead`,
+      academic: `## Optimised DFG: Quality-Aware Edge Selection
+
+**Standard DFG base**: G₀ = (V, E₀, freq)
+
+**Edge quality score**:
+q(a, b) = freq(a→b) / (Σ_c freq(a→c)) — conditional probability of b after a
+
+**Optimisation step** (NP-hard formulation):
+Select E* ⊆ E₀ to maximise:
+  Σ_{(a,b)∈E*} q(a,b)  subject to structural consistency constraints
+
+**Precision gain**:
+P(G*) ≥ P(G₀) by construction — removing low-probability edges reduces allowed behaviour
+
+**Theoretical Properties**:
+- Complexity: NP-hard (edge selection is a variant of the minimum weight subgraph problem)
+- Output: subgraph of the standard DFG with higher precision
+- Quality: 85/100 (vs 30/100 for standard DFG)`,
+    },
   };
 
   const algoKey = algorithm.toLowerCase().replace(/[+*-]/g, '').replace(/_/g, '');
@@ -1928,6 +2105,10 @@ Maximize: Σ yₜ - λ × Σ xₑ
     processskeleton: 'skeleton',
     alphaplus: 'alpha',
     alphaplusplus: 'alpha',
+    // Canonical kernel registry IDs → short alias used as explanation key
+    hillclimbing: 'hill',
+    simdstreamingdfg: 'simd_dfg',
+    optimizeddfg: 'optimized_dfg',
   };
   const normalizedKeys = Object.fromEntries(
     Object.keys(explanations).map((k) => [k.replace(/_/g, ''), k])

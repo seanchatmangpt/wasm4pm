@@ -639,49 +639,67 @@ export const compare = defineCommand({
                 { algorithms: algos.join(','), activityKey, log: inputPath },
                 async () => {
                   for (const algo of algos) {
-                    try {
-                      const { raw, elapsedMs } = runDiscovery(wasm, algo, logHandle, activityKey);
-                      const shape = discriminate(raw, algo);
-                      const { nodes, edges } = toUniformStats(shape);
-                      const profile = ALGO_PROFILES[algo];
-                      stats.push({
-                        algorithm: algo,
-                        nodes,
-                        edges,
-                        node_count: nodes,
-                        edge_count: edges,
-                        output_type: shape.kind,
-                        variants: sharedMetrics.variants,
-                        density: sharedMetrics.density,
-                        complexity: sharedMetrics.complexity,
-                        elapsedMs,
-                        duration_ms: elapsedMs,
-                        qualityTier: profile.qualityTier,
-                        speedTier: profile.speedTier,
-                        quality_tier_is_proxy: true,
-                      });
-                    } catch (err) {
-                      // Record the failure; push a sentinel row so output is always complete
-                      const msg = err instanceof Error ? err.message : String(err);
-                      algorithmErrors.push(`${algo}: ${msg}`);
-                      const profile = ALGO_PROFILES[algo];
-                      stats.push({
-                        algorithm: algo,
-                        nodes: -1,
-                        edges: -1,
-                        node_count: -1,
-                        edge_count: -1,
-                        output_type: 'unknown' as const,
-                        variants: sharedMetrics.variants,
-                        density: sharedMetrics.density,
-                        complexity: sharedMetrics.complexity,
-                        elapsedMs: 0,
-                        duration_ms: 0,
-                        qualityTier: profile.qualityTier,
-                        speedTier: profile.speedTier,
-                        quality_tier_is_proxy: true,
-                      });
-                    }
+                    let algoStat: ModelStats | undefined;
+                    let algoError: string | undefined;
+                    await withSpanRaw(
+                      `wasm4pm.${AnalysisSpans.compareAlgo(algo)}`,
+                      { algorithm: algo, activityKey, log: inputPath, quality_tier: ALGO_PROFILES[algo].qualityTier },
+                      async () => {
+                        try {
+                          const { raw, elapsedMs } = runDiscovery(wasm, algo, logHandle, activityKey);
+                          const shape = discriminate(raw, algo);
+                          const { nodes, edges } = toUniformStats(shape);
+                          const profile = ALGO_PROFILES[algo];
+                          algoStat = {
+                            algorithm: algo,
+                            nodes,
+                            edges,
+                            node_count: nodes,
+                            edge_count: edges,
+                            output_type: shape.kind,
+                            variants: sharedMetrics.variants,
+                            density: sharedMetrics.density,
+                            complexity: sharedMetrics.complexity,
+                            elapsedMs,
+                            duration_ms: elapsedMs,
+                            qualityTier: profile.qualityTier,
+                            speedTier: profile.speedTier,
+                            quality_tier_is_proxy: true,
+                          };
+                        } catch (err) {
+                          // Record the failure; push a sentinel row so output is always complete
+                          const msg = err instanceof Error ? err.message : String(err);
+                          algoError = msg;
+                          algorithmErrors.push(`${algo}: ${msg}`);
+                          const profile = ALGO_PROFILES[algo];
+                          algoStat = {
+                            algorithm: algo,
+                            nodes: -1,
+                            edges: -1,
+                            node_count: -1,
+                            edge_count: -1,
+                            output_type: 'unknown' as const,
+                            variants: sharedMetrics.variants,
+                            density: sharedMetrics.density,
+                            complexity: sharedMetrics.complexity,
+                            elapsedMs: 0,
+                            duration_ms: 0,
+                            qualityTier: profile.qualityTier,
+                            speedTier: profile.speedTier,
+                            quality_tier_is_proxy: true,
+                          };
+                        }
+                      },
+                      () => ({
+                        nodes: algoStat?.nodes ?? -1,
+                        edges: algoStat?.edges ?? -1,
+                        elapsed_ms: Math.round(algoStat?.elapsedMs ?? 0),
+                        output_type: algoStat?.output_type ?? 'unknown',
+                        status: algoError ? 'error' : 'ok',
+                        ...(algoError ? { error: algoError } : {}),
+                      })
+                    );
+                    if (algoStat) stats.push(algoStat);
                   }
                 },
                 () => ({

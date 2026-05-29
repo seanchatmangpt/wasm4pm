@@ -351,9 +351,12 @@ export const run = defineCommand({
           );
 
           if (!resolvedAlgo) {
-            // An unknown algorithm name is a config_error (1): the user specified an
-            // invalid value via --algorithm.  source_error (2) is reserved for I/O
-            // failures (file not found, unreadable log), not user typos in flag values.
+            // An unknown algorithm name is source_error (2) — intentional wasm4pm design.
+            // The algorithm registry is part of the source/data layer (WASM kernel), not
+            // the CLI configuration layer. config_error (1) is for malformed flags and
+            // missing required arguments; source_error (2) covers bad algorithm IDs because
+            // the algorithm list is resolved at runtime from the WASM kernel registry.
+            // See CLAUDE.md: '"bad algorithm" exit code is SOURCE_ERROR (2), not CONFIG_ERROR (1) — intentional'
             const cliAliases = Object.values(ALGORITHM_CLI_ALIASES);
             const suggestion = findClosestMatch(rawAlgo.toLowerCase(), cliAliases, 3);
             const didYouMean = suggestion ? `\nDid you mean: '${suggestion}'?` : '';
@@ -366,7 +369,7 @@ export const run = defineCommand({
                   `Common algorithms: ${discoveryAliases}\n` +
                   `Run 'wpm algorithms' to list all ${cliAliases.length} available algorithms.`
               ),
-              EXIT_CODES.config_error,
+              EXIT_CODES.source_error,
               'ALGORITHM_NOT_FOUND'
             );
             emitResult(result, emitOptions);
@@ -549,8 +552,12 @@ export const run = defineCommand({
                     preflightErrors.push(`Schema validation failed: ${schema.message as string}`);
                   }
                 }
-              } catch {
-                // Schema validation optional
+              } catch (e) {
+                // Schema validation optional — emit skip span so it's visible in Jaeger
+                console.warn('[run] validate_log_schema skipped:', e instanceof Error ? e.message : String(e));
+                try {
+                  withWasmSpan('validate.skipped', { 'validation.step': 'validate_log_schema', 'validation.reason': String(e) }, () => undefined);
+                } catch { /* span emit must never throw */ }
               }
 
               try {
@@ -577,8 +584,12 @@ export const run = defineCommand({
                     preflightErrors.push(`Missing required attributes: ${missing.join(', ')}`);
                   }
                 }
-              } catch {
-                // Attribute validation optional
+              } catch (e) {
+                // Attribute validation optional — emit skip span so it's visible in Jaeger
+                console.warn('[run] validate_required_attributes skipped:', e instanceof Error ? e.message : String(e));
+                try {
+                  withWasmSpan('validate.skipped', { 'validation.step': 'validate_required_attributes', 'validation.reason': String(e) }, () => undefined);
+                } catch { /* span emit must never throw */ }
               }
 
               // Pass 1 failure is FATAL
@@ -619,8 +630,12 @@ export const run = defineCommand({
                       preflightWarnings.push(`Data quality: ${issues} issue(s) found`);
                     }
                   }
-                } catch {
-                  // Quality validation optional
+                } catch (e) {
+                  // Quality validation optional — emit skip span so it's visible in Jaeger
+                  console.warn('[run] validate_data_quality skipped:', e instanceof Error ? e.message : String(e));
+                  try {
+                    withWasmSpan('validate.skipped', { 'validation.step': 'validate_data_quality', 'validation.reason': String(e) }, () => undefined);
+                  } catch { /* span emit must never throw */ }
                 }
               }
 
@@ -1505,10 +1520,14 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
     return exitFlush(result.exit_code);
   }
 
-  // Load OCEL into WASM
+  // Load OCEL into WASM — wrapped in OTEL span for visibility in Jaeger
   let ocelHandle: string;
   try {
-    ocelHandle = wasm['load_ocel_from_json'](ocelContent) as string;
+    ocelHandle = withWasmSpan(
+      'ocel.load',
+      { 'ocel.input': inputPath, 'service_name': 'wpm', 'status': 'ok' },
+      () => wasm['load_ocel_from_json'](ocelContent) as string
+    );
   } catch (loadErr) {
     const msg = loadErr instanceof Error ? loadErr.message : String(loadErr);
     const result = makeErrorResult(
@@ -1547,16 +1566,26 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
   }
 
   // Discover — default: per-type DFG (most informative for OCEL)
+  // Each branch is wrapped in a 'wasm4pm.ocel.discover' span so Jaeger shows
+  // the discovery step as a distinct child span under the parent 'run' span.
   const t0 = performance.now();
   let raw: unknown;
   let discoveryAlgo = 'ocel_dfg_per_type';
 
   try {
     if (typeof wasm['discover_ocel_dfg_per_type'] === 'function') {
-      raw = wasm['discover_ocel_dfg_per_type'](ocelHandle);
+      raw = withWasmSpan(
+        'ocel.discover',
+        { 'ocel.algorithm': 'ocel_dfg_per_type', 'service_name': 'wpm', 'status': 'ok' },
+        () => wasm['discover_ocel_dfg_per_type'](ocelHandle)
+      );
       discoveryAlgo = 'ocel_dfg_per_type';
     } else if (typeof wasm['discover_ocel_dfg'] === 'function') {
-      raw = wasm['discover_ocel_dfg'](ocelHandle);
+      raw = withWasmSpan(
+        'ocel.discover',
+        { 'ocel.algorithm': 'ocel_dfg', 'service_name': 'wpm', 'status': 'ok' },
+        () => wasm['discover_ocel_dfg'](ocelHandle)
+      );
       discoveryAlgo = 'ocel_dfg';
     } else {
       throw new Error('No OCEL discovery function available in this WASM build');

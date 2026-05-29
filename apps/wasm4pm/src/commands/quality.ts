@@ -710,9 +710,10 @@ function printHumanQuality(payload: QualityPayload, projection: ConsoleProjectio
     }
   }
 
-  // Note for generalization if not available (placeholder per spec)
-  // TODO(generalization): real generalization requires synthetic trace generation; current
-  // value comes from the WASM generalization() function which uses a structural metric proxy.
+  // Generalization limitation: full generalization requires synthetic trace generation
+  // (bootstrapped playout samples against the model). The WASM generalization() function
+  // returns a structural proxy (model complexity ratio) rather than a replay-based score.
+  // Until a playout-based implementation is added, display a note when the score is absent.
   if (!('generalization' in scores)) {
     projection.log('  Generalization    (not computed — requires synthetic traces)');
   }

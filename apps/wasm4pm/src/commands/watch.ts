@@ -399,81 +399,86 @@ ${STANDARD_EXIT_CODE_DOCS}`,
                     // INSTRUMENTED: load_eventlog_from_xes — one of the top 10 most-called WASM exports
                     const handle = WasmInstrumentation.load_eventlog_from_xes(wasm, xesContent);
 
-                    // INSTRUMENTED: analyze_event_statistics — bonus instrumentation related to load
-                    const statsRaw = WasmInstrumentation.analyze_event_statistics(wasm, handle, activityKey);
-                    const stats = (
-                      typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw
-                    ) as LogStats;
-                    const { algo, rationale } = selectAutopilotAlgorithm(stats);
+                    try {
+                      // INSTRUMENTED: analyze_event_statistics — bonus instrumentation related to load
+                      const statsRaw = WasmInstrumentation.analyze_event_statistics(wasm, handle, activityKey);
+                      const stats = (
+                        typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw
+                      ) as LogStats;
+                      const { algo, rationale } = selectAutopilotAlgorithm(stats);
 
-                    streaming.emitEvent('autopilot_selected', {
-                      algorithm: algo,
-                      rationale,
-                      stats,
-                    });
+                      streaming.emitEvent('autopilot_selected', {
+                        algorithm: algo,
+                        rationale,
+                        stats,
+                      });
 
-                    const result = await runDiscovery(wasm, algo, handle, activityKey);
-                    let { raw, elapsedMs } = result;
-                    const model = typeof raw === 'string' ? JSON.parse(raw) : raw;
-                    const elapsed = Date.now() - t0;
+                      const result = await runDiscovery(wasm, algo, handle, activityKey);
+                      let { raw, elapsedMs } = result;
+                      const model = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                      const elapsed = Date.now() - t0;
 
-                    // Write autopilot.json for tooling and dashboards
-                    const autopilotRecord = {
-                      cycle: cyclesObserved,
-                      timestamp: new Date().toISOString(),
-                      log: filePath,
-                      stats,
-                      selected: algo,
-                      rationale,
-                      elapsedMs: elapsed,
-                    };
-                    const autopilotPath = path.join(process.cwd(), '.wasm4pm', 'autopilot.json');
-                    await fs.mkdir(path.dirname(autopilotPath), { recursive: true });
-                    await fs.writeFile(autopilotPath, JSON.stringify(autopilotRecord, null, 2));
+                      // Write autopilot.json for tooling and dashboards
+                      const autopilotRecord = {
+                        cycle: cyclesObserved,
+                        timestamp: new Date().toISOString(),
+                        log: filePath,
+                        stats,
+                        selected: algo,
+                        rationale,
+                        elapsedMs: elapsed,
+                      };
+                      const autopilotPath = path.join(process.cwd(), '.wasm4pm', 'autopilot.json');
+                      await fs.mkdir(path.dirname(autopilotPath), { recursive: true });
+                      await fs.writeFile(autopilotPath, JSON.stringify(autopilotRecord, null, 2));
 
-                    // Model-level diff: compare current DFG against previous run.
-                    // Only DFG-output algorithms produce edges/nodes; skip for other output types.
-                    const currentDfg = model as DfgModel;
-                    if (
-                      prevDfgModel !== null &&
-                      typeof currentDfg === 'object' &&
-                      Array.isArray(currentDfg.edges)
-                    ) {
-                      const diff = diffDfgModels(prevDfgModel, currentDfg);
-                      const totalChanges =
-                        diff.addedEdges.length +
-                        diff.removedEdges.length +
-                        diff.changedEdges.length +
-                        diff.addedNodes.length +
-                        diff.removedNodes.length;
-                      if (totalChanges > 0) {
-                        streaming.emitEvent('model_diff', {
-                          added_edges: diff.addedEdges.length,
-                          removed_edges: diff.removedEdges.length,
-                          changed_edges: diff.changedEdges.length,
-                          added_nodes: diff.addedNodes.length,
-                          removed_nodes: diff.removedNodes.length,
-                          summary: `+${diff.addedEdges.length} edges  -${diff.removedEdges.length} edges  ~${diff.changedEdges.length} changed  +${diff.addedNodes.length} nodes  -${diff.removedNodes.length} nodes`,
-                          // Top-5 added edges for human inspection
-                          added_edge_samples: diff.addedEdges.slice(0, 5).map((e) => `${e.from}→${e.to} (×${e.frequency})`),
-                          removed_edge_samples: diff.removedEdges.slice(0, 5).map((e) => `${e.from}→${e.to}`),
-                        });
-                      } else {
-                        streaming.emitEvent('model_unchanged', {
-                          message: 'DFG model is structurally identical to previous run',
-                          edges: currentDfg.edges?.length ?? 0,
-                          nodes: currentDfg.nodes?.length ?? 0,
-                        });
+                      // Model-level diff: compare current DFG against previous run.
+                      // Only DFG-output algorithms produce edges/nodes; skip for other output types.
+                      const currentDfg = model as DfgModel;
+                      if (
+                        prevDfgModel !== null &&
+                        typeof currentDfg === 'object' &&
+                        Array.isArray(currentDfg.edges)
+                      ) {
+                        const diff = diffDfgModels(prevDfgModel, currentDfg);
+                        const totalChanges =
+                          diff.addedEdges.length +
+                          diff.removedEdges.length +
+                          diff.changedEdges.length +
+                          diff.addedNodes.length +
+                          diff.removedNodes.length;
+                        if (totalChanges > 0) {
+                          streaming.emitEvent('model_diff', {
+                            added_edges: diff.addedEdges.length,
+                            removed_edges: diff.removedEdges.length,
+                            changed_edges: diff.changedEdges.length,
+                            added_nodes: diff.addedNodes.length,
+                            removed_nodes: diff.removedNodes.length,
+                            summary: `+${diff.addedEdges.length} edges  -${diff.removedEdges.length} edges  ~${diff.changedEdges.length} changed  +${diff.addedNodes.length} nodes  -${diff.removedNodes.length} nodes`,
+                            // Top-5 added edges for human inspection
+                            added_edge_samples: diff.addedEdges.slice(0, 5).map((e) => `${e.from}→${e.to} (×${e.frequency})`),
+                            removed_edge_samples: diff.removedEdges.slice(0, 5).map((e) => `${e.from}→${e.to}`),
+                          });
+                        } else {
+                          streaming.emitEvent('model_unchanged', {
+                            message: 'DFG model is structurally identical to previous run',
+                            edges: currentDfg.edges?.length ?? 0,
+                            nodes: currentDfg.nodes?.length ?? 0,
+                          });
+                        }
                       }
-                    }
-                    prevDfgModel = currentDfg;
+                      prevDfgModel = currentDfg;
 
-                    streaming.emitEvent('autopilot_completed', {
-                      algorithm: algo,
-                      elapsedMs,
-                      modelKeys:
-                        typeof model === 'object' && model ? Object.keys(model as object) : [],
-                    });
+                      streaming.emitEvent('autopilot_completed', {
+                        algorithm: algo,
+                        elapsedMs,
+                        modelKeys:
+                          typeof model === 'object' && model ? Object.keys(model as object) : [],
+                      });
+                    } finally {
+                      // Always free the WASM handle to prevent memory leaks across watch cycles
+                      try { WasmInstrumentation.delete_object(wasm, handle); } catch { /* best-effort */ }
+                    }
                   } catch (autopilotErr) {
                     streaming.emitEvent('autopilot_error', {
                       message:

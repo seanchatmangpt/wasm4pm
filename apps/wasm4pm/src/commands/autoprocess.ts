@@ -20,7 +20,7 @@ const AUTOPROCESS_STATE_FILE = '.wasm4pm/autoprocess-state.json';
  * deliberate warning + fresh-start rather than silently feeding stale
  * data into the WASM layer.
  */
-const STATE_SCHEMA_VERSION = 2;
+export const STATE_SCHEMA_VERSION = 2;
 
 async function ensureStateDir() {
   try {
@@ -268,10 +268,18 @@ async function loadState(wasm: Record<string, any>): Promise<void> {
   // (pre-v2 schema had different top-level keys); treat as stale.
   const savedVersion = typeof state['version'] === 'number' ? state['version'] : 0;
   if (savedVersion !== STATE_SCHEMA_VERSION) {
+    // Write a .bak file so the user can manually recover their state before it
+    // is discarded.  Best-effort: backup failure must not block the cold-start.
+    const backupPath = AUTOPROCESS_STATE_FILE + '.bak';
+    try {
+      await fs.copyFile(AUTOPROCESS_STATE_FILE, backupPath);
+    } catch {
+      // Backup failure is non-fatal — the warning below still surfaces the problem.
+    }
     console.warn(
-      `[autoprocess] state file schema version ${savedVersion} !== expected ${STATE_SCHEMA_VERSION}: ` +
-        `discarding stale state and starting fresh. ` +
-        `Delete ${AUTOPROCESS_STATE_FILE} to suppress this warning.`
+      `[autoprocess] State file at ${path.resolve(AUTOPROCESS_STATE_FILE)} was created with schema v${savedVersion}, ` +
+        `current is v${STATE_SCHEMA_VERSION}. Starting with fresh state. ` +
+        `Backup saved to ${path.resolve(backupPath)}`
     );
     return;
   }

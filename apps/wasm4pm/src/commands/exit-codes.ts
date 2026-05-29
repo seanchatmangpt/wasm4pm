@@ -1,5 +1,4 @@
 import { defineCommand } from 'citty';
-import { EXIT_CODES } from "../exit-codes.js"; // Used in command execution
 
 export const exitCodes = defineCommand({
   meta: {

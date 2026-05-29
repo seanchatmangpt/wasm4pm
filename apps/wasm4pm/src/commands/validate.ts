@@ -192,15 +192,17 @@ export const validate = defineCommand({
             emitResult(result, { format, verbose, quiet });
             return await exitWithFlush(result.exit_code);
           }
-
+          // logHandle is now valid — wrap all check work in try/finally so the handle
+          // is freed even if any check throws unexpectedly.
+          // Accumulators declared here so they are in scope for payload assembly below.
           const checks: ValidationCheck[] = [];
           const errors: string[] = [];
           const warnings: string[] = [];
+          let traceCount = 0;
+          let eventCount = 0;
 
           // Collect trace_count and event_count via the actual WASM API.
           // get_trace_count / get_event_count are canonical counters present in all profiles.
-          let traceCount = 0;
-          let eventCount = 0;
           try {
             traceCount = Number(wasm.get_trace_count(logHandle)) || 0;
             eventCount = Number(wasm.get_event_count(logHandle)) || 0;
@@ -333,7 +335,8 @@ export const validate = defineCommand({
             message: 'Timestamp ordering check not available in this profile',
           });
 
-          wasm.delete_object(logHandle);
+          // Guaranteed cleanup — free handle now that all checks are complete
+          try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
 
           const hasErrors = errors.length > 0;
           const hasWarnings = warnings.length > 0;
@@ -591,7 +594,7 @@ async function validateOcel(opts: {
       typeof wasm['load_ocel_from_json'] === 'function' &&
       typeof wasm['validate_ocel'] === 'function'
     ) {
-      let ocelHandle: string;
+      let ocelHandle: string | undefined;
       try {
         ocelHandle = wasm['load_ocel_from_json'](ocelContent) as string;
         const rawValidation = wasm['validate_ocel'](ocelHandle);
@@ -639,6 +642,11 @@ async function validateOcel(opts: {
           message: `OCEL parse/validation failed: ${msg}`,
         });
         errors.push(`OCEL WASM parse failed: ${msg}`);
+      } finally {
+        // Guaranteed cleanup — free OCEL handle regardless of validation outcome
+        if (ocelHandle !== undefined) {
+          try { (wasm['delete_object'] as ((h: string) => void) | undefined)?.(ocelHandle); } catch { /* best-effort */ }
+        }
       }
     } else {
       checks.push({

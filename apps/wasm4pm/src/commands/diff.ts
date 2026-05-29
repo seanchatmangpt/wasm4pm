@@ -186,58 +186,60 @@ export const diff = defineCommand({
           const handle2: string = WasmInstrumentation.load_eventlog_from_xes(wasm, xes2);
 
           let diffResult!: DiffResult;
-          await withSpanRaw(
-            `wasm4pm.${AnalysisSpans.diffCompute()}`,
-            { activityKey, log1: log1Path, log2: log2Path },
-            async () => {
-              // INSTRUMENTED: discover_dfg — top 2 most-called WASM export (25 calls)
-              const dfg1Raw = WasmInstrumentation.discover_dfg(wasm, handle1, activityKey);
-              const dfg2Raw = WasmInstrumentation.discover_dfg(wasm, handle2, activityKey);
+          try {
+            await withSpanRaw(
+              `wasm4pm.${AnalysisSpans.diffCompute()}`,
+              { activityKey, log1: log1Path, log2: log2Path },
+              async () => {
+                // INSTRUMENTED: discover_dfg — top 2 most-called WASM export (25 calls)
+                const dfg1Raw = WasmInstrumentation.discover_dfg(wasm, handle1, activityKey);
+                const dfg2Raw = WasmInstrumentation.discover_dfg(wasm, handle2, activityKey);
 
-              // Validate both outputs are DFGs (diff is DFG-only).
-              const shape1 = discriminate(dfg1Raw, 'dfg');
-              const shape2 = discriminate(dfg2Raw, 'dfg');
-              if (shape1.kind !== 'dfg' || shape2.kind !== 'dfg') {
-                const offending = shape1.kind !== 'dfg' ? shape1.kind : shape2.kind;
-                const result = makeErrorResult(
-                  'diff',
-                  new Error(`diff requires DFG output (got ${offending})`),
-                  EXIT_CODES.execution_error,
-                  'DIFF_REQUIRES_DFG'
+                // Validate both outputs are DFGs (diff is DFG-only).
+                const shape1 = discriminate(dfg1Raw, 'dfg');
+                const shape2 = discriminate(dfg2Raw, 'dfg');
+                if (shape1.kind !== 'dfg' || shape2.kind !== 'dfg') {
+                  const offending = shape1.kind !== 'dfg' ? shape1.kind : shape2.kind;
+                  const result = makeErrorResult(
+                    'diff',
+                    new Error(`diff requires DFG output (got ${offending})`),
+                    EXIT_CODES.execution_error,
+                    'DIFF_REQUIRES_DFG'
+                  );
+                  emitResult(result, { format, verbose, quiet });
+                  await exitWithFlush(result.exit_code);
+                  return;
+                }
+
+                const dfg1: Dfg = shape1.raw as Dfg;
+                const dfg2: Dfg = shape2.raw as Dfg;
+
+                // Discover trace variants for both logs
+                const variants1Raw = wasm.analyze_trace_variants(handle1, activityKey);
+                const variants2Raw = wasm.analyze_trace_variants(handle2, activityKey);
+
+                const variants1: TraceVariant[] = normalizeVariants(
+                  typeof variants1Raw === 'string' ? JSON.parse(variants1Raw) : variants1Raw
                 );
-                emitResult(result, { format, verbose, quiet });
-                await exitWithFlush(result.exit_code);
-                return;
-              }
+                const variants2: TraceVariant[] = normalizeVariants(
+                  typeof variants2Raw === 'string' ? JSON.parse(variants2Raw) : variants2Raw
+                );
 
-              const dfg1: Dfg = shape1.raw as Dfg;
-              const dfg2: Dfg = shape2.raw as Dfg;
-
-              // Discover trace variants for both logs
-              const variants1Raw = wasm.analyze_trace_variants(handle1, activityKey);
-              const variants2Raw = wasm.analyze_trace_variants(handle2, activityKey);
-
-              const variants1: TraceVariant[] = normalizeVariants(
-                typeof variants1Raw === 'string' ? JSON.parse(variants1Raw) : variants1Raw
-              );
-              const variants2: TraceVariant[] = normalizeVariants(
-                typeof variants2Raw === 'string' ? JSON.parse(variants2Raw) : variants2Raw
-              );
-
-              diffResult = computeDiff(dfg1, dfg2, variants1, variants2);
-            },
-            () => ({
-              jaccard: diffResult ? Math.round(diffResult.jaccard * 1000) / 1000 : 0,
-              activities_added: diffResult ? diffResult.activities.added.length : 0,
-              activities_removed: diffResult ? diffResult.activities.removed.length : 0,
-              edges_added: diffResult ? diffResult.edges.added.length : 0,
-              edges_removed: diffResult ? diffResult.edges.removed.length : 0,
-            })
-          );
-
-          // INSTRUMENTED: delete_object — top 3 most-called WASM export (20 calls)
-          WasmInstrumentation.delete_object(wasm, handle1);
-          WasmInstrumentation.delete_object(wasm, handle2);
+                diffResult = computeDiff(dfg1, dfg2, variants1, variants2);
+              },
+              () => ({
+                jaccard: diffResult ? Math.round(diffResult.jaccard * 1000) / 1000 : 0,
+                activities_added: diffResult ? diffResult.activities.added.length : 0,
+                activities_removed: diffResult ? diffResult.activities.removed.length : 0,
+                edges_added: diffResult ? diffResult.edges.added.length : 0,
+                edges_removed: diffResult ? diffResult.edges.removed.length : 0,
+              })
+            );
+          } finally {
+            // INSTRUMENTED: delete_object — guaranteed cleanup regardless of throw/early exit
+            try { WasmInstrumentation.delete_object(wasm, handle1); } catch { /* best-effort */ }
+            try { WasmInstrumentation.delete_object(wasm, handle2); } catch { /* best-effort */ }
+          }
 
           const elapsedMs = Date.now() - t0;
           const payload: DiffPayload = {

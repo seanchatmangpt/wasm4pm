@@ -100,7 +100,7 @@ const showCmd = defineCommand({
           'prolog8 show',
           `Prolog8 engine failed to load: ${errMsg}${hint}`,
           EXIT_CODES.source_error,
-          'PROLOG8_LOAD_FAILED'
+          'source_error'
         );
         emitResult(result, { format: fmt });
         return exitWithFlush(EXIT_CODES.source_error);
@@ -200,7 +200,7 @@ const queryCmd = defineCommand({
             'prolog8 query',
             `Cannot read input file '${inputPath}' (${code}): ${fsErr.message}${hint}`,
             EXIT_CODES.source_error,
-            'INPUT_READ_FAILED'
+            'source_error'
           );
           emitResult(result, { format: fmt });
           return exitWithFlush(EXIT_CODES.source_error);
@@ -222,7 +222,7 @@ const queryCmd = defineCommand({
               'prolog8 query',
               `Prolog8 engine failed to load: ${loadMsg}${buildHint}`,
               EXIT_CODES.source_error,
-              'PROLOG8_LOAD_FAILED'
+              'source_error'
             );
             emitResult(result, { format: fmt });
             return exitWithFlush(EXIT_CODES.source_error);
@@ -362,7 +362,7 @@ const replayCmd = defineCommand({
             'prolog8 replay',
             `Cannot read input file '${inputPath}' (${code}): ${fsErr.message}${hint}`,
             EXIT_CODES.source_error,
-            'INPUT_READ_FAILED'
+            'source_error'
           );
           emitResult(result, { format: fmt });
           return exitWithFlush(EXIT_CODES.source_error);
@@ -384,7 +384,7 @@ const replayCmd = defineCommand({
               'prolog8 replay',
               `Prolog8 engine failed to load: ${loadMsg}${buildHint}`,
               EXIT_CODES.source_error,
-              'PROLOG8_LOAD_FAILED'
+              'source_error'
             );
             emitResult(result, { format: fmt });
             return exitWithFlush(EXIT_CODES.source_error);
@@ -454,6 +454,16 @@ export const prolog8 = defineCommand({
   },
   async run(ctx) {
     const fmt = (ctx.args.format as 'json' | 'human') ?? 'human';
+
+    // Guard: if a known subcommand is present in rawArgs, citty will route to it
+    // but ALSO call this parent run(). Return early to avoid printing the usage
+    // banner on top of the subcommand's JSON output (which breaks JSON parsing).
+    if (ctx.rawArgs && ctx.cmd && ctx.cmd.subCommands) {
+      const subCommandNames = Object.keys(ctx.cmd.subCommands);
+      if (ctx.rawArgs.some((arg) => subCommandNames.includes(arg))) {
+        return;
+      }
+    }
 
     // Detect unknown subcommands: citty passes positional extras in ctx.args._
     // When citty finds an unknown subcommand it throws a CLIError (exit 1) before

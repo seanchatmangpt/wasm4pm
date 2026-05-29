@@ -201,17 +201,11 @@ export const driftWatch = defineCommand({
     let previousMtimeMs = 0;
     let previousEwma = 0; // Tracks EWMA from prior tick for threshold-crossing detection
     const distanceHistory: number[] = [];
-    // TODO(watch): Pure-incremental streaming path.
-    // When an XES log grows by appending new traces (e.g., live process logging),
-    // a streaming DFG session (wasm.streaming_dfg_begin / streaming_dfg_add_event)
-    // could ingest only the new events per tick in O(new_events) instead of
-    // O(all_events). This requires the upstream log writer to expose a cursor API
-    // or byte-offset so the monitor can read only new bytes. Until that
-    // infrastructure exists, the full-file reload path is used every time the
-    // mtime changes. The mtime check already ensures no-op ticks on unchanged files.
-    // Tracking handle: kept null between ticks; freed and recreated each changed tick.
-    // These will be used when the incremental streaming path is implemented.
-    // For now, full-file reload is used and the mtime guard prevents no-op ticks.
+    // Limitation: full-file reload on every mtime change (O(all_events) per tick).
+    // A pure-incremental streaming path using wasm.streaming_dfg_begin / streaming_dfg_add_event
+    // would ingest only new events per tick, but requires the log writer to expose a cursor
+    // or byte-offset API so only new bytes are read. Until that infrastructure exists, the
+    // full-file reload path is used; the mtime check prevents no-op ticks on unchanged files.
     const _cachedLogHandle: string | null = null; // eslint-disable-line @typescript-eslint/no-unused-vars
     const _cachedHandleMtime = 0; // eslint-disable-line @typescript-eslint/no-unused-vars
     const MAX_DISTANCE_HISTORY = 10_000;
