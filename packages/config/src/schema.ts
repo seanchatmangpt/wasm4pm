@@ -621,17 +621,36 @@ export const configSchema = z
  * formatDetailedZodError from the validation module.
  */
 function formatZodErrors(error: z.ZodError, header = 'Configuration validation failed'): string {
-  /** Truncate long "Expected 'a' | 'b' | … , received 'x'" messages. */
+  /**
+   * Truncate long "Expected 'a' | 'b' | … , received 'x'" messages.
+   *
+   * Handles two Zod formats:
+   *   invalid_enum_value: "Invalid enum value. Expected 'a' | 'b', received 'x'"
+   *   invalid_type (enum):  "Expected 'a' | 'b', received number"
+   * Both can produce the full 37-option algorithm list; truncate to first 5 + count.
+   */
   function trimEnumMessage(msg: string): string {
-    // Match Zod's invalid_enum_value format:
+    // Format 1 — Zod invalid_enum_value:
     //   "Invalid enum value. Expected 'a' | 'b' | 'c', received 'x'"
-    const m = msg.match(/^(Invalid enum value\. Expected )(.*)(, received .*)$/s);
-    if (!m) return msg;
-    const [, prefix, options, suffix] = m;
-    const parts = options.split(' | ');
-    if (parts.length <= 6) return msg;
-    const shown = parts.slice(0, 5).join(' | ');
-    return `${prefix}${shown} | … (${parts.length} total)${suffix}`;
+    const m1 = msg.match(/^(Invalid enum value\. Expected )(.*)(, received .*)$/s);
+    if (m1) {
+      const [, prefix, options, suffix] = m1;
+      const parts = options.split(' | ');
+      if (parts.length <= 6) return msg;
+      const shown = parts.slice(0, 5).join(' | ');
+      return `${prefix}${shown} | … (${parts.length} total)${suffix}`;
+    }
+    // Format 2 — Zod invalid_type on a ZodEnum field:
+    //   "Expected 'a' | 'b' | 'c', received number"
+    const m2 = msg.match(/^(Expected )((?:'[^']*' \| )*'[^']*')(, received .*)$/s);
+    if (m2) {
+      const [, prefix, options, suffix] = m2;
+      const parts = options.split(' | ');
+      if (parts.length <= 6) return msg;
+      const shown = parts.slice(0, 5).join(' | ');
+      return `${prefix}${shown} | … (${parts.length} total)${suffix}`;
+    }
+    return msg;
   }
 
   const lines = error.errors.map((err) => {

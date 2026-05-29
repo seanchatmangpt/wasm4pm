@@ -598,14 +598,11 @@ export const results = defineCommand({
           //   mismatch   — stored output_hash differs from current payload (tampering detected)
           //   ok         — hashes agree and a matching receipt was found
           //   no_receipt — hashes agree (or no stored hash) but no receipt found
-          let integrity: 'ok' | 'mismatch' | 'no_receipt' | 'missing_ocel';
-          if (matchedReceipt === null) {
-            integrity = 'no_receipt';
-          } else if ((matchedReceipt as any).output_hash !== recomputedOutputHash) {
-            integrity = 'mismatch';
-          } else {
-            integrity = 'ok';
-          }
+          let integrity: 'ok' | 'mismatch' | 'no_receipt' | 'missing_ocel' = storedHashMismatch
+            ? 'mismatch'
+            : matchedReceipt !== null && (matchedReceipt as any).output_hash === recomputedOutputHash
+              ? 'ok'
+              : 'no_receipt';
 
           if (matchedReceipt !== null && ocelMissing && integrity !== 'mismatch') {
             integrity = 'missing_ocel';
