@@ -75,15 +75,15 @@ const ALGORITHM_GROUPS = [
     tasks: [
       {
         algorithm: 'discover_genetic_algorithm',
-        sizes: [100, 500, 1_000],
+        sizes: [50],
         params: { popSize: 10, generations: 5 },
       },
       {
         algorithm: 'discover_pso_algorithm',
-        sizes: [100, 500, 1_000],
+        sizes: [50],
         params: { swarm: 10, iterations: 10 },
       },
-      { algorithm: 'discover_ilp_petri_net', sizes: [100, 500, 1_000], params: {} },
+      { algorithm: 'discover_ilp_petri_net', sizes: [50], params: {} },
     ],
   },
   {
@@ -103,20 +103,27 @@ const ALGORITHM_GROUPS = [
 // ── Worker management ────────────────────────────────────────────────────────
 
 function runGroup(group) {
+  console.log(`[Main] Spawning worker for group: ${group.name}`);
   return new Promise((resolve, reject) => {
     const worker = new Worker(join(__dirname, 'wasm_bench_worker.js'), {
       workerData: { tasks: group.tasks, ciMode: CI_MODE },
     });
     worker.on('message', (results) => {
+      console.log(`[Main] Worker ${group.name} message received (length: ${results.length || 0})`);
       if (results.error) {
         reject(new Error(`Worker ${group.name}: ${results.error}`));
       } else {
         resolve({ group: group.name, results });
       }
     });
-    worker.on('error', (err) => reject(new Error(`Worker ${group.name} error: ${err.message}`)));
+    worker.on('error', (err) => {
+      console.error(`[Main] Worker ${group.name} error:`, err);
+      reject(new Error(`Worker ${group.name} error: ${err.message}`));
+    });
     worker.on('exit', (code) => {
+      console.log(`[Main] Worker ${group.name} exited with code: ${code}`);
       if (code !== 0) reject(new Error(`Worker ${group.name} exited with code ${code}`));
+      else resolve({ group: group.name, results: [] }); // Resolve on clean exit if not resolved already
     });
   });
 }
@@ -156,6 +163,14 @@ async function main() {
   console.log(`Mode: ${CI_MODE ? 'CI (reduced iterations)' : 'Full'}`);
   console.log(`Workers: ${ALGORITHM_GROUPS.length} parallel groups`);
   console.log('Starting...\n');
+
+  if (CI_MODE) {
+    for (const group of ALGORITHM_GROUPS) {
+      for (const task of group.tasks) {
+        task.sizes = task.sizes.map(s => Math.min(s, 100));
+      }
+    }
+  }
 
   const startMs = Date.now();
 

@@ -293,7 +293,7 @@ export const run = defineCommand({
                   `Common algorithms: ${discoveryAliases}\n` +
                   `Run 'wpm algorithms' to list all ${cliAliases.length} available algorithms.`
               ),
-              EXIT_CODES.config_error,
+              EXIT_CODES.source_error,
               'ALGORITHM_NOT_FOUND'
             );
             emitResult(result, emitOptions);

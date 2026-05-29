@@ -84,6 +84,16 @@ pub fn parse_powl_model_string(s: &str, arena: &mut PowlArena) -> Result<u32, Wa
         return parse_operator(&s, "*", Operator::Loop, arena).map_err(Wasm4pmError::Parse);
     }
 
+    // Sequence operator
+    if s.starts_with("-> (") || s.starts_with("->(") {
+        return parse_sequence_operator(&s, arena).map_err(Wasm4pmError::Parse);
+    }
+
+    // Parallel operator
+    if s.starts_with("+ (") || s.starts_with("+(") {
+        return parse_parallel_operator(&s, arena).map_err(Wasm4pmError::Parse);
+    }
+
     // Silent transition
     if s == "tau" {
         let idx = arena.add_silent_transition();
@@ -452,6 +462,106 @@ fn strip_outer_parens(s: &str) -> Option<&str> {
     None
 }
 
+// ─── Sequence operator parsing ─────────────────────────────────────────────────
+
+fn parse_sequence_operator(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
+    // Remove "-> (" or "->("
+    let after_prefix = if s.starts_with("-> (") {
+        &s[4..]
+    } else if s.starts_with("->(") {
+        &s[3..]
+    } else {
+        return Err("parse_sequence: invalid prefix".to_string());
+    };
+
+    // Find the matching closing parenthesis
+    let mut depth = 1usize;
+    let mut closing_idx = None;
+    for (i, ch) in after_prefix.char_indices() {
+        match ch {
+            '(' | '{' => depth += 1,
+            ')' | '}' => {
+                depth -= 1;
+                if depth == 0 {
+                    closing_idx = Some(i);
+                    break;
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let closing_idx = closing_idx.ok_or_else(|| "parse_sequence: missing closing )".to_string())?;
+    let content = &after_prefix[..closing_idx];
+
+    // Tokenize children
+    let tokens = tokenize(content);
+    let mut children = Vec::new();
+    for token in tokens {
+        if !token.is_empty() && token != "," {
+            let op = parse_powl_model_string(&token, arena).map_err(|e| e.to_string())?;
+            children.push(op);
+        }
+    }
+
+    if children.is_empty() {
+        return Err("parse_sequence: no children".to_string());
+    }
+
+    // Create total-order sequence: all i < j edges
+    Ok(arena.add_sequence(children))
+}
+
+// ─── Parallel operator parsing ─────────────────────────────────────────────────
+
+fn parse_parallel_operator(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
+    // Remove "+ (" or "+("
+    let after_prefix = if s.starts_with("+ (") {
+        &s[3..]
+    } else if s.starts_with("+(") {
+        &s[2..]
+    } else {
+        return Err("parse_parallel: invalid prefix".to_string());
+    };
+
+    // Find the matching closing parenthesis
+    let mut depth = 1usize;
+    let mut closing_idx = None;
+    for (i, ch) in after_prefix.char_indices() {
+        match ch {
+            '(' | '{' => depth += 1,
+            ')' | '}' => {
+                depth -= 1;
+                if depth == 0 {
+                    closing_idx = Some(i);
+                    break;
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let closing_idx = closing_idx.ok_or_else(|| "parse_parallel: missing closing )".to_string())?;
+    let content = &after_prefix[..closing_idx];
+
+    // Tokenize children
+    let tokens = tokenize(content);
+    let mut children = Vec::new();
+    for token in tokens {
+        if !token.is_empty() && token != "," {
+            let op = parse_powl_model_string(&token, arena).map_err(|e| e.to_string())?;
+            children.push(op);
+        }
+    }
+
+    if children.is_empty() {
+        return Err("parse_parallel: no children".to_string());
+    }
+
+    // Create unordered parallel: no edges, pure partial order
+    Ok(arena.add_strict_partial_order(children))
+}
+
 // ─── tests ───────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
@@ -525,5 +635,41 @@ mod tests {
     fn parse_quoted_label() {
         let (arena, root) = parse("'Register Request'");
         assert_eq!(arena.to_repr(root), "Register Request");
+    }
+
+    #[test]
+    fn parse_sequence_operator() {
+        let (arena, root) = parse("-> (a b c)");
+        assert!(arena.get(root).is_some());
+    }
+
+    #[test]
+    fn parse_sequence_operator_nested() {
+        let (arena, root) = parse("-> (-> (a b) c)");
+        assert!(arena.get(root).is_some());
+    }
+
+    #[test]
+    fn parse_sequence_operator_with_tau() {
+        let (arena, root) = parse("-> (a tau b)");
+        assert!(arena.get(root).is_some());
+    }
+
+    #[test]
+    fn parse_parallel_operator() {
+        let (arena, root) = parse("+ (a b c)");
+        assert!(arena.get(root).is_some());
+    }
+
+    #[test]
+    fn parse_parallel_operator_three_children() {
+        let (arena, root) = parse("+ (x y z)");
+        assert!(arena.get(root).is_some());
+    }
+
+    #[test]
+    fn parse_parallel_operator_nested() {
+        let (arena, root) = parse("+ (+ (a b) c)");
+        assert!(arena.get(root).is_some());
     }
 }

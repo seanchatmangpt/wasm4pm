@@ -3952,4 +3952,17 @@ export const doctor = defineCommand({
       alias: 'q',
     },
   },
+  async run(ctx) {
+    if (ctx && ctx.rawArgs && ctx.cmd && ctx.cmd.subCommands) {
+      const subCommands = Object.keys(ctx.cmd.subCommands);
+      const hasSubcommand = ctx.rawArgs.some((arg) => subCommands.includes(arg));
+      if (hasSubcommand) {
+        return;
+      }
+    }
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+    await runChecks(ALL_CHECKS, format, verbose, quiet, undefined, undefined, 'doctor');
+  },
 });

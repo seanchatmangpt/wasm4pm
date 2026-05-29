@@ -62,7 +62,8 @@ export class PostgresqlSink {
     if (!this.pool) {
       // Lazy-load pg only if needed (not imported at module level)
       try {
-        const pg = await import('pg');
+        // @ts-expect-error optional peer dep not installed
+        const pg: any = await import('pg');
         const { Pool } = pg;
         this.pool = new Pool({
           host: this.config.host,

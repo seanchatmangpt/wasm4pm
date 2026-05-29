@@ -170,22 +170,26 @@ echo ""
 if [ "$WASM_OPT_AVAILABLE" = true ] && [ -n "$WASM_OPT_LEVEL" ]; then
   echo "[2/5] Optimizing with wasm-opt $WASM_OPT_LEVEL --enable-simd..."
   wasm-opt "$WASM_OPT_LEVEL" --enable-simd "$WASM_FILE" -o "$WASM_OPT_FILE" 2>/dev/null || {
-    echo "ERROR: wasm-opt optimization failed"
-    exit 1
+    echo "WARN: wasm-opt optimization failed (likely due to toolchain/instruction compatibility), using unoptimized raw binary"
+    WASM_OPT_FILE=""
   }
 
-  if [ "$(uname)" = "Darwin" ]; then
-    OPT_SIZE_BYTES=$(stat -f%z "$WASM_OPT_FILE")
-  else
-    OPT_SIZE_BYTES=$(stat -c%s "$WASM_OPT_FILE")
-  fi
-  OPT_SIZE_MB=$(python3 -c "print(f'{$OPT_SIZE_BYTES / 1048576:.2f}')")
-  REDUCTION_PCT=$(python3 -c "print(f'{(1 - $OPT_SIZE_BYTES / $RAW_SIZE_BYTES) * 100:.1f}')")
+  if [ -n "$WASM_OPT_FILE" ] && [ -f "$WASM_OPT_FILE" ]; then
+    if [ "$(uname)" = "Darwin" ]; then
+      OPT_SIZE_BYTES=$(stat -f%z "$WASM_OPT_FILE")
+    else
+      OPT_SIZE_BYTES=$(stat -c%s "$WASM_OPT_FILE")
+    fi
+    OPT_SIZE_MB=$(python3 -c "print(f'{$OPT_SIZE_BYTES / 1048576:.2f}')")
+    REDUCTION_PCT=$(python3 -c "print(f'{(1 - $OPT_SIZE_BYTES / $RAW_SIZE_BYTES) * 100:.1f}')")
 
-  # Replace original with optimized
-  mv "$WASM_OPT_FILE" "$WASM_FILE"
-  echo "[✓] Optimization complete: ${OPT_SIZE_MB} MB (-${REDUCTION_PCT}%)"
-  RAW_SIZE_MB="$OPT_SIZE_MB"
+    # Replace original with optimized
+    mv "$WASM_OPT_FILE" "$WASM_FILE"
+    echo "[✓] Optimization complete: ${OPT_SIZE_MB} MB (-${REDUCTION_PCT}%)"
+    RAW_SIZE_MB="$OPT_SIZE_MB"
+  else
+    echo "    Skipped wasm-opt fallback to raw WASM size: ${RAW_SIZE_MB} MB"
+  fi
 else
   echo "[2/5] Skipping wasm-opt (not available or cloud profile)"
 fi

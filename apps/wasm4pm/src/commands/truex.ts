@@ -37,6 +37,15 @@ export const truex = defineCommand({
       description: 'Suppress non-error output',
       alias: 'q',
     },
+    ingest: {
+      type: 'boolean',
+      description: 'After WASM verify, ingest admitted envelope into Supabase',
+      default: false,
+    },
+    config: {
+      type: 'string',
+      description: 'Path to wasm4pm.toml (for Supabase credentials when --ingest)',
+    },
   },
   async run(ctx) {
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
@@ -75,6 +84,31 @@ export const truex = defineCommand({
         const elapsedMs = Math.round(performance.now() - verifyStart);
 
         if (status === 'ReceiptAdmitted') {
+          let ingestPayload: Record<string, unknown> | undefined;
+          if (Boolean(ctx.args.ingest)) {
+            const { resolveConfig } = await import('@wasm4pm/config');
+            const { resolveSupabaseConfig, ingestTruexEnvelope, parseTruexEnvelope } =
+              await import('@wasm4pm/supabase');
+            let fileConfig: import('@wasm4pm/supabase').SupabaseIntegrationConfig | undefined;
+            try {
+              const resolved = await resolveConfig(
+                ctx.args.config
+                  ? {
+                      cliOverrides: { configPath: ctx.args.config as string },
+                      configSearchPaths: [process.cwd()],
+                    }
+                  : {}
+              );
+              fileConfig = resolved.integrations?.supabase;
+            } catch {
+              /* env-only Supabase config is sufficient for --ingest */
+            }
+            const supabaseConfig = resolveSupabaseConfig({ fileConfig });
+            const envelope = parseTruexEnvelope(JSON.parse(payload) as Record<string, unknown>);
+            const ingestResult = await ingestTruexEnvelope({ config: supabaseConfig, envelope });
+            ingestPayload = { ...ingestResult };
+          }
+
           const result = makeResult(
             'truex',
             {
@@ -82,6 +116,7 @@ export const truex = defineCommand({
               equivalence_class: parsed.equivalence_class,
               elapsed_ms: elapsedMs,
               envelope_path: fullPath,
+              ...(ingestPayload ? { supabase: ingestPayload } : {}),
             },
             Math.round(performance.now() - t0),
             EXIT_CODES.success

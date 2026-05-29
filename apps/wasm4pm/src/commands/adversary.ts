@@ -1541,6 +1541,13 @@ export const adversary = defineCommand({
     'stop-on-escape': { type: 'boolean', description: 'Halt immediately if any probe escapes' },
   },
   async run(ctx) {
+    if (ctx && ctx.rawArgs && ctx.cmd && ctx.cmd.subCommands) {
+      const subCommands = Object.keys(ctx.cmd.subCommands);
+      const hasSubcommand = ctx.rawArgs.some((arg) => subCommands.includes(arg));
+      if (hasSubcommand) {
+        return;
+      }
+    }
     // Backwards-compat flat invocation: `wpm adversary` (no subcommand) runs all probes
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const projectDir = process.env['CLAUDE_PROJECT_DIR'] ?? process.cwd();

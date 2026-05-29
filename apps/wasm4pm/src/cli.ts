@@ -43,6 +43,7 @@ import { wasmServer } from './commands/wasm-server.js';
 import { timeout } from './commands/timeout.js';
 import { receipt } from './commands/receipt.js';
 import { truex } from './commands/truex.js';
+import { supabase } from './commands/supabase.js';
 import { cell } from './commands/cell.js';
 import cache from './commands/cache.js';
 import deduplicate from './commands/deduplicate.js';
@@ -272,6 +273,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     verify,
     proof,
     truex,
+    supabase,
     cell,
     cognition,
     completions,

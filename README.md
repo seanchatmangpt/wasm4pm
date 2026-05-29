@@ -65,7 +65,7 @@ wasm4pm registers **60 algorithms** across discovery, conformance, simulation, M
 
 List live metadata: `wpm algorithms` or `wpm algorithms --format json`.
 
-See [Getting Started](docs/tutorials/getting_started.md) for alias examples and programmatic usage.
+Full catalog: [Algorithms Reference](docs/reference/algorithms.md). See [Getting Started](docs/tutorials/getting_started.md) for alias examples and programmatic usage.
 
 ## Programmatic API
 
@@ -96,6 +96,18 @@ wpm truex verify examples/out/truex_ocel2_forged.json   # structured refusal
 ```
 
 Profile: [Truex OCEL 2.0 Canonical Profile](docs/truex-ocel2-canonical-profile.md). Tutorial: [Truex Receipt Verification](docs/tutorials/truex_receipts.md).
+
+## Supabase
+
+Sync wpm receipts and admitted TrueX envelopes to Postgres with RLS and an Edge Function ingest path:
+
+```bash
+wpm supabase sync-receipts
+wpm truex verify examples/out/truex_ocel2_valid.json --ingest
+wpm supabase doctor
+```
+
+Guide: [Supabase Integration](docs/how-to/supabase_integration.md).
 
 ## Cognition (Old AI)
 

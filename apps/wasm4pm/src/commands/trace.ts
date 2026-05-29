@@ -1729,7 +1729,14 @@ export const trace = defineCommand({
     verbose: { type: 'boolean', alias: 'v' },
     quiet: { type: 'boolean', alias: 'q' },
   },
-  async run(_ctx) {
+  async run(ctx) {
+    if (ctx && ctx.rawArgs && ctx.cmd && ctx.cmd.subCommands) {
+      const subCommands = Object.keys(ctx.cmd.subCommands);
+      const hasSubcommand = ctx.rawArgs.some((arg) => subCommands.includes(arg));
+      if (hasSubcommand) {
+        return;
+      }
+    }
     process.stdout.write(`
 wpm trace — Trace-to-POWL v2 Conformance Pipeline
 

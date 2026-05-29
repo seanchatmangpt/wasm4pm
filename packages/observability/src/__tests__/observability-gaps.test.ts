@@ -28,7 +28,7 @@
  *   Rank 3 — Metamorphic: input perturbation → predictable output relationship
  */
 
-import { describe, it, expect, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs';
 import { tmpdir } from 'os';
