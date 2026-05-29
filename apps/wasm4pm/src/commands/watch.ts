@@ -23,6 +23,68 @@ import { STANDARD_EXIT_CODE_DOCS } from '../help-standards.js';
  * Config snapshot helpers for what-changed display
  */
 
+// ─── Model diff helpers ────────────────────────────────────────────────────────
+//
+// After each autopilot discovery run, we compare the current DFG against the
+// previous run to show edge-level changes. This helps practitioners understand
+// what actually changed in the process model between two cycles.
+
+interface DfgEdge {
+  from: string;
+  to: string;
+  frequency: number;
+}
+
+interface DfgModel {
+  nodes?: Array<{ id: string; frequency?: number }>;
+  edges?: DfgEdge[];
+}
+
+interface ModelDiff {
+  addedEdges: DfgEdge[];
+  removedEdges: DfgEdge[];
+  changedEdges: Array<{ from: string; to: string; freqBefore: number; freqAfter: number }>;
+  addedNodes: string[];
+  removedNodes: string[];
+}
+
+/**
+ * Compute the structural diff between two DFG models.
+ * Returns sets of added/removed/changed edges and nodes.
+ */
+function diffDfgModels(prev: DfgModel, next: DfgModel): ModelDiff {
+  const edgeKey = (e: DfgEdge) => `${e.from}→${e.to}`;
+
+  const prevEdges = new Map<string, DfgEdge>();
+  for (const e of prev.edges ?? []) prevEdges.set(edgeKey(e), e);
+
+  const nextEdges = new Map<string, DfgEdge>();
+  for (const e of next.edges ?? []) nextEdges.set(edgeKey(e), e);
+
+  const addedEdges: DfgEdge[] = [];
+  const removedEdges: DfgEdge[] = [];
+  const changedEdges: ModelDiff['changedEdges'] = [];
+
+  for (const [k, e] of nextEdges) {
+    const p = prevEdges.get(k);
+    if (!p) {
+      addedEdges.push(e);
+    } else if (p.frequency !== e.frequency) {
+      changedEdges.push({ from: e.from, to: e.to, freqBefore: p.frequency, freqAfter: e.frequency });
+    }
+  }
+  for (const [k, e] of prevEdges) {
+    if (!nextEdges.has(k)) removedEdges.push(e);
+  }
+
+  const prevNodeIds = new Set((prev.nodes ?? []).map((n) => n.id));
+  const nextNodeIds = new Set((next.nodes ?? []).map((n) => n.id));
+  const addedNodes = [...nextNodeIds].filter((id) => !prevNodeIds.has(id));
+  const removedNodes = [...prevNodeIds].filter((id) => !nextNodeIds.has(id));
+
+  return { addedEdges, removedEdges, changedEdges, addedNodes, removedNodes };
+}
+
 /**
  * Extract a comparable snapshot from a resolved config object.
  * Only captures the fields a practitioner cares about (algorithm, source, profile, log level).
@@ -196,6 +258,10 @@ ${STANDARD_EXIT_CODE_DOCS}`,
       /* initial config load failure is non-fatal — watch proceeds without a baseline */
     }
 
+    // Track the DFG model from the previous autopilot run so we can emit a
+    // model-level diff event on each cycle (e.g. "3 new edges, 1 removed").
+    let prevDfgModel: DfgModel | null = null;
+
     // Step 2: Set up Watcher using chokidar for better cross-platform support
     const watchPath = path.resolve(configPath);
     const watcher = chokidar.watch(watchPath, {
@@ -231,6 +297,19 @@ ${STANDARD_EXIT_CODE_DOCS}`,
     const rawIntervalStr = ctx.args.interval as string | undefined;
     const parsedInterval = rawIntervalStr !== undefined ? parseInt(rawIntervalStr, 10) : NaN;
     const DEBOUNCE_MS = !Number.isNaN(parsedInterval) && parsedInterval > 0 ? parsedInterval : 200;
+
+    // Handle file deletion gracefully: emit a warning event and continue watching.
+    // The watcher keeps running so that if the file is recreated it will resume.
+    watcher.on('unlink', (filePath: string) => {
+      streaming.emitEvent('file_deleted', {
+        file: filePath,
+        message: `Watched file deleted: ${filePath} — watching for recreation`,
+      });
+      // Reset the previous config snapshot and DFG model so the next change cycle
+      // detects the new file as a fresh baseline rather than diffing against stale state.
+      prevConfigSnapshot = null;
+      prevDfgModel = null;
+    });
 
     watcher.on('change', (filePath: string) => {
       const existing = debouncers.get(filePath);
@@ -351,6 +430,43 @@ ${STANDARD_EXIT_CODE_DOCS}`,
                     const autopilotPath = path.join(process.cwd(), '.wasm4pm', 'autopilot.json');
                     await fs.mkdir(path.dirname(autopilotPath), { recursive: true });
                     await fs.writeFile(autopilotPath, JSON.stringify(autopilotRecord, null, 2));
+
+                    // Model-level diff: compare current DFG against previous run.
+                    // Only DFG-output algorithms produce edges/nodes; skip for other output types.
+                    const currentDfg = model as DfgModel;
+                    if (
+                      prevDfgModel !== null &&
+                      typeof currentDfg === 'object' &&
+                      Array.isArray(currentDfg.edges)
+                    ) {
+                      const diff = diffDfgModels(prevDfgModel, currentDfg);
+                      const totalChanges =
+                        diff.addedEdges.length +
+                        diff.removedEdges.length +
+                        diff.changedEdges.length +
+                        diff.addedNodes.length +
+                        diff.removedNodes.length;
+                      if (totalChanges > 0) {
+                        streaming.emitEvent('model_diff', {
+                          added_edges: diff.addedEdges.length,
+                          removed_edges: diff.removedEdges.length,
+                          changed_edges: diff.changedEdges.length,
+                          added_nodes: diff.addedNodes.length,
+                          removed_nodes: diff.removedNodes.length,
+                          summary: `+${diff.addedEdges.length} edges  -${diff.removedEdges.length} edges  ~${diff.changedEdges.length} changed  +${diff.addedNodes.length} nodes  -${diff.removedNodes.length} nodes`,
+                          // Top-5 added edges for human inspection
+                          added_edge_samples: diff.addedEdges.slice(0, 5).map((e) => `${e.from}→${e.to} (×${e.frequency})`),
+                          removed_edge_samples: diff.removedEdges.slice(0, 5).map((e) => `${e.from}→${e.to}`),
+                        });
+                      } else {
+                        streaming.emitEvent('model_unchanged', {
+                          message: 'DFG model is structurally identical to previous run',
+                          edges: currentDfg.edges?.length ?? 0,
+                          nodes: currentDfg.nodes?.length ?? 0,
+                        });
+                      }
+                    }
+                    prevDfgModel = currentDfg;
 
                     streaming.emitEvent('autopilot_completed', {
                       algorithm: algo,

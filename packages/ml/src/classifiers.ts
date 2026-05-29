@@ -1045,6 +1045,10 @@ export async function classifyTraces(
     crossValidate?: boolean;
     /** Number of CV folds. Default 3. Minimum 2. */
     cvFolds?: number;
+    /** Number of boosting iterations for gradient_boosting. Default 100. */
+    numIterations?: number;
+    /** Learning rate for gradient_boosting. Default 0.1. */
+    learningRate?: number;
   } = {}
 ): Promise<ClassificationResult> {
   const targetKey = options.targetKey ?? 'outcome';
@@ -1054,7 +1058,7 @@ export async function classifyTraces(
   // Known behavior (per @wasm4pm/ml contract): empty input → success with empty predictions,
   // NOT a thrown error. Callers must inspect predictions.length before using the result.
   if (matrix.data.length === 0 || matrix.labels.length === 0) {
-    return { method, predictions: [], modelInfo: { error: 'No features or labels available' } };
+    return { method, predictions: [], modelInfo: { error: 'No features or labels available' }, metadata: { warning: { code: 'empty_input' as const, message: 'No features or labels available — classifyTraces requires at least 1 sample with a target label.', inputLength: matrix.data.length, minRequired: 1 } } };
   }
 
   const { encoded, reverseMap } = encodeLabels(matrix.labels);
@@ -1123,6 +1127,57 @@ export async function classifyTraces(
         traceCount: n,
         classCount: reverseMap.size,
       },
+    };
+  } else if (method === 'gradient_boosting') {
+    const nIter = typeof options.numIterations === 'number' ? Math.max(1, options.numIterations) : 100;
+    const lr = typeof options.learningRate === 'number' ? Math.max(0.01, options.learningRate) : 0.1;
+    const n = matrix.data.length;
+    const d = matrix.featureNames.length;
+    // AdaBoost-style ensemble of depth-1 decision stumps
+    const weights = new Float64Array(n).fill(1 / n);
+    const stumps: Array<{ feature: number; threshold: number; left: number; right: number; alpha: number }> = [];
+    for (let iter = 0; iter < nIter; iter++) {
+      let bestErr = Infinity, bestF = 0, bestT = 0, bestL = 0, bestR = 1;
+      // Find best stump
+      for (let f = 0; f < d; f++) {
+        const vals = matrix.data.map((row) => row[f]).sort((a, b) => a - b);
+        for (let ti = 0; ti < vals.length - 1; ti++) {
+          const threshold = (vals[ti] + vals[ti + 1]) / 2;
+          for (const leftClass of [0, 1]) {
+            let err = 0;
+            for (let i = 0; i < n; i++) {
+              const pred = matrix.data[i][f] <= threshold ? leftClass : 1 - leftClass;
+              if (pred !== encoded[i]) err += weights[i];
+            }
+            if (err < bestErr) { bestErr = err; bestF = f; bestT = threshold; bestL = leftClass; bestR = 1 - leftClass; }
+          }
+        }
+      }
+      const safeErr = Math.max(1e-10, Math.min(1 - 1e-10, bestErr));
+      const alpha = lr * 0.5 * Math.log((1 - safeErr) / safeErr);
+      stumps.push({ feature: bestF, threshold: bestT, left: bestL, right: bestR, alpha });
+      // Update weights
+      let wSum = 0;
+      for (let i = 0; i < n; i++) {
+        const pred = matrix.data[i][bestF] <= bestT ? bestL : bestR;
+        weights[i] *= Math.exp(pred === encoded[i] ? -alpha : alpha);
+        wSum += weights[i];
+      }
+      for (let i = 0; i < n; i++) weights[i] /= wSum;
+    }
+    result = {
+      method: 'gradient_boosting',
+      predictions: matrix.caseIds.map((caseId, i) => {
+        let score = 0;
+        for (const s of stumps) {
+          const pred = matrix.data[i][s.feature] <= s.threshold ? s.left : s.right;
+          score += s.alpha * (pred === 1 ? 1 : -1);
+        }
+        const label = score >= 0 ? 1 : 0;
+        const confidence = Math.min(1, Math.max(0, 0.5 + Math.abs(score) / (stumps.length * 0.1 + 1)));
+        return { caseId, predicted: reverseMap.get(label) ?? 'unknown', confidence };
+      }),
+      modelInfo: { nEstimators: stumps.length, numIterations: nIter, learningRate: lr, featureCount: d, traceCount: n, classCount: reverseMap.size },
     };
   } else {
     // naive_bayes

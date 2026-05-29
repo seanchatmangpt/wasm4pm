@@ -157,8 +157,17 @@ function defaultConsoleRenderer<T>(
     }
   } else {
     projection.error(result.error?.message ?? 'Command failed');
+    if (result.error?.didYouMean) {
+      projection.info(`Did you mean: ${result.error.didYouMean}`);
+    }
+    if (result.error?.alternatives && result.error.alternatives.length > 0) {
+      projection.info(`Available options: ${result.error.alternatives.join(', ')}`);
+    }
     if (result.error?.remediation) {
-      projection.info(`Remediation: ${result.error.remediation}`);
+      projection.info(`Fix: ${result.error.remediation}`);
+    }
+    if (result.error?.docsUrl) {
+      projection.info(`Docs: ${result.error.docsUrl}`);
     }
   }
 }

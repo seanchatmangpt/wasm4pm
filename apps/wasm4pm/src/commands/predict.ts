@@ -1,5 +1,6 @@
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
+import * as path from 'path';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { resolveInputPath } from '../input-validation.js';
 import { EXIT_CODES, translateContractExitCode } from '../exit-codes.js';
@@ -433,9 +434,22 @@ export const predict = defineCommand({
             }
           ); // end withLogSession
         } catch (error) {
+          const rawMsg = error instanceof Error ? error.message : String(error);
+          const ctxTask = ctx.args.task as string | undefined;
+          const ctxInput = (ctx.args.input as string | undefined) ?? (ctx.args.log as string | undefined);
+          const taskContext = ctxTask ? ` for task '${ctxTask}'` : '';
+          const inputContext = ctxInput ? ` on '${path.basename(ctxInput)}'` : '';
+          let hint = '';
+          if (rawMsg.toLowerCase().includes('xml') || rawMsg.toLowerCase().includes('parse') || rawMsg.toLowerCase().includes('xes')) {
+            hint = `\n\n  The event log may be malformed. Run:\n    wpm validate ${ctxInput ?? '<log.xes>'}`;
+          } else if (rawMsg.toLowerCase().includes('wasm') || rawMsg.toLowerCase().includes('init')) {
+            hint = '\n\n  WASM initialisation failed. Run:\n    wpm doctor';
+          } else if (rawMsg.toLowerCase().includes('function')) {
+            hint = `\n\n  This prediction function may not be available. Run:\n    wpm doctor  (check WASM feature flags)`;
+          }
           const result = makeErrorResult(
             'predict',
-            error,
+            new Error(`Prediction failed${taskContext}${inputContext}: ${rawMsg}${hint}`),
             EXIT_CODES.execution_error,
             'PREDICTION_ERROR'
           );
@@ -480,22 +494,26 @@ async function executePredictionTask(
 ): Promise<Record<string, unknown>> {
   switch (task) {
     case 'next-activity': {
-      // If --auto-select is requested, consult recommendAlgorithm for guidance
+      // Always collect log statistics — used for training context in human output
+      let logTraceCount: number | undefined;
+      let logUniqueVariants: number | undefined;
       let recommendation: AlgorithmRecommendation | undefined;
-      if (autoSelect) {
-        try {
-          const statsRaw: string = wasm.analyze_event_statistics(logHandle);
-          const stats = JSON.parse(statsRaw) as Record<string, unknown>;
+      try {
+        const statsRaw: string = wasm.analyze_event_statistics(logHandle);
+        const stats = JSON.parse(statsRaw) as Record<string, unknown>;
+        logTraceCount = (stats['total_cases'] as number) ?? undefined;
+        logUniqueVariants = (stats['unique_variants'] as number) ?? undefined;
+        if (autoSelect) {
           recommendation = recommendAlgorithm('next-activity', [
             {
-              totalCases: (stats['total_cases'] as number) ?? 0,
+              totalCases: logTraceCount ?? 0,
               totalEvents: (stats['total_events'] as number) ?? 0,
-              uniqueVariants: (stats['unique_variants'] as number) ?? 0,
+              uniqueVariants: logUniqueVariants ?? 0,
             },
           ]);
-        } catch {
-          // recommendAlgorithm is advisory; failure does not block prediction
         }
+      } catch {
+        // statistics and recommendation are advisory; failure does not block prediction
       }
 
       const predictorHandle: string = withWasmSpan(
@@ -529,6 +547,8 @@ async function executePredictionTask(
           ngramOrder,
           coverage,
           totalCandidates,
+          trainingTraces: logTraceCount,
+          uniqueVariants: logUniqueVariants,
           note:
             prefix.length === 0
               ? 'No prefix supplied — predictions are global priors'
@@ -608,17 +628,13 @@ async function executePredictionTask(
         return { prediction, weibull, method: methodContext };
       } else {
         wasm.delete_object(modelHandle);
-        process.stderr.write(
-          'wpm predict remaining-time: no --prefix given — model built but no prediction made.\n' +
-          'To get a duration estimate, provide a prefix:\n' +
-          '  wpm predict remaining-time -i <log.xes> --prefix "Register,Approve"\n'
-        );
         return {
           predicted: false,
           weibull,
           method: methodContext,
           message:
-            'Remaining-time model built. Use --prefix "Activity1,Activity2" to predict case duration.',
+            'Remaining-time model built successfully. No --prefix given — supply a case prefix to get a duration estimate.',
+          hint: 'wpm predict remaining-time -i <log.xes> --prefix "Register,Approve"',
         };
       }
     }
@@ -877,27 +893,50 @@ function formatHumanOutput(
     case 'next-activity': {
       // Gap 1: show prefix context so the analyst knows what drove the predictions.
       const ctx = result['context'] as Record<string, unknown> | undefined;
+      const preds = result['predictions'] as Array<{ activity: string; probability: number }>;
+
+      // Training context header
       if (ctx) {
+        const trainingTraces = ctx['trainingTraces'] as number | undefined;
+        const uniqueVariants = ctx['uniqueVariants'] as number | undefined;
         const prefixArr = ctx['prefix'] as string[];
         p.log('');
-        if (prefixArr && prefixArr.length > 0) {
-          p.log(`  Prefix:       ${prefixArr.join(' -> ')}`);
-        } else {
-          p.log('  Prefix:       (none -- global priors)');
+        if (trainingTraces !== undefined) {
+          const variantStr = uniqueVariants !== undefined
+            ? `  (${uniqueVariants} unique variants)`
+            : '';
+          p.log(`  Model trained on: ${trainingTraces} traces${variantStr}`);
         }
-        p.log(`  N-gram order: ${ctx['ngramOrder']}`);
-        p.log(`  Coverage:     ${ctx['coverage']}  (${ctx['totalCandidates']} candidate(s))`);
-        p.log(`  Note:         ${ctx['note']}`);
+        p.log(`  N-gram order:     ${ctx['ngramOrder']}  (higher = more context, requires more data)`);
+        if (prefixArr && prefixArr.length > 0) {
+          p.log(`  Prefix (input):   ${prefixArr.join(' → ')}`);
+        } else {
+          p.log('  Prefix:           (none — global priors across all traces)');
+        }
+        const candidateCount = ctx['totalCandidates'] as number;
+        if (candidateCount === 0 && prefixArr && prefixArr.length > 0) {
+          p.log(`  Coverage:         no match — this prefix was not seen during training`);
+        } else {
+          p.log(`  Coverage:         ${ctx['coverage']}  (${candidateCount} activity candidate(s))`);
+        }
+        p.log(`  Note:             ${ctx['note']}`);
       }
-      const preds = result['predictions'] as Array<{ activity: string; probability: number }>;
+
       if (!preds || preds.length === 0) {
         p.log('');
-        p.info('No predictions available for the given prefix.');
+        p.warn('No predictions available for the given prefix.');
+        p.log('');
+        p.log('  This means the prefix sequence was not observed in the training log.');
+        p.log('  To get predictions:');
+        p.log('    • Try a shorter prefix:   remove the last activity');
+        p.log('    • Try a lower n-gram order: --ngram-order 2');
+        p.log('    • Remove the prefix entirely to get global priors: (omit --prefix)');
+        p.log('');
         return;
       }
       p.log('');
       p.log('  Rank  Activity                   Probability  Confidence');
-      p.log('  ----  -------------------------  -----------  ----------');
+      p.log('  ────  ─────────────────────────  ───────────  ──────────────────────────────');
       preds.forEach((pred, i) => {
         const rank = String(i + 1).padStart(4);
         const act = pred.activity.padEnd(25);
@@ -921,18 +960,22 @@ function formatHumanOutput(
           `Top prediction: "${top.activity}" with ${pct}% probability (${confidenceLabel} confidence)`
         );
         if (top.probability < 0.5) {
-          p.info(
-            '  Low/Medium confidence — the process may have high variant diversity after this prefix.'
+          p.log('');
+          p.log(
+            '  Low confidence — the process has high variant diversity after this prefix.'
           );
-          p.info('  Consider supplying a longer --prefix or increasing --ngram-order.');
+          p.log('  Options to improve confidence:');
+          p.log('    • Use a shorter prefix (less specific → more training data matches)');
+          p.log('    • Increase n-gram order: --ngram-order 3  (requires more training data)');
+          p.log('    • Check how many traces follow this prefix with: wpm predict features -i <log>');
         }
       }
       p.log('');
       p.log('  Next actions:');
-      p.log('    • Narrow to a prefix:  wpm predict next-activity -i <log> --prefix "<A>,<B>,<C>"');
-      p.log('    • Estimate completion: wpm predict remaining-time -i <log> --prefix "<A>,<B>"');
-      p.log('    • Check conformance:   wpm conformance -i <log>');
-      p.log('    • Discover full model: wpm run -i <log> --algorithm inductive_miner');
+      p.log('    • Narrow to a prefix:    wpm predict next-activity -i <log> --prefix "<A>,<B>,<C>"');
+      p.log('    • Estimate completion:   wpm predict remaining-time -i <log> --prefix "<A>,<B>"');
+      p.log('    • Check conformance:     wpm conformance -i <log>');
+      p.log('    • Discover full model:   wpm run -i <log> --algorithm inductive_miner');
       p.log('');
       break;
     }
@@ -970,7 +1013,14 @@ function formatHumanOutput(
           p.log(`    Distribution: ${weibull['interpretation']}`);
           p.log('');
         }
-        p.info((result['message'] as string) ?? 'Use --prefix to predict case duration.');
+        const msg = (result['message'] as string) ?? 'Use --prefix to predict case duration.';
+        const hint = result['hint'] as string | undefined;
+        p.warn(msg);
+        if (hint) {
+          p.log('');
+          p.log(`  To get a prediction, supply a prefix, e.g.:`);
+          p.log(`    ${hint}`);
+        }
       }
       p.log('');
       p.log('  Next actions:');
@@ -1119,34 +1169,63 @@ function formatHumanOutput(
     case 'features': {
       const transitions = result['transitions'] as Record<string, unknown>;
       p.log('');
-      const edges = Array.isArray(transitions?.['edges'])
-        ? (transitions['edges'] as unknown[])
-        : [];
-      if (edges.length > 0) {
-        p.log(`  Transition probabilities: ${edges.length} edge(s)`);
-        for (const t of edges.slice(0, 5)) {
-          p.log(`    ${JSON.stringify(t)}`);
-        }
-        if (edges.length > 5) p.log(`    ... (${edges.length - 5} more)`);
+
+      // Normalise edges to a consistent array form regardless of WASM output shape
+      let edges: Array<Record<string, unknown>> = [];
+      if (Array.isArray(transitions?.['edges'])) {
+        edges = transitions['edges'] as Array<Record<string, unknown>>;
       } else if (Array.isArray(transitions)) {
-        const arr = transitions as unknown as Array<Record<string, unknown>>;
-        p.log(`  Transition probabilities: ${arr.length} edge(s)`);
-        for (const t of arr.slice(0, 5)) {
-          p.log(`    ${JSON.stringify(t)}`);
-        }
-        if (arr.length > 5) p.log(`    ... (${arr.length - 5} more)`);
-      } else {
-        p.log(`  ${JSON.stringify(transitions)}`);
+        edges = transitions as unknown as Array<Record<string, unknown>>;
       }
+
+      if (edges.length > 0) {
+        // Sort by probability descending so the backbone appears first
+        const sorted = [...edges].sort((a, b) => {
+          const pa = typeof a['probability'] === 'number' ? a['probability'] : typeof a['prob'] === 'number' ? a['prob'] : 0;
+          const pb = typeof b['probability'] === 'number' ? b['probability'] : typeof b['prob'] === 'number' ? b['prob'] : 0;
+          return pb - pa;
+        });
+
+        p.log(`  Transition Probabilities (${edges.length} edge${edges.length === 1 ? '' : 's'}, sorted by probability):`);
+        p.log('');
+        p.log('  From                       To                         Probability');
+        p.log('  ─────────────────────────  ─────────────────────────  ───────────');
+        const shown = sorted.slice(0, 10);
+        for (const t of shown) {
+          const from = String(t['from'] ?? t['source'] ?? t['activity_from'] ?? '?').slice(0, 25).padEnd(25);
+          const to   = String(t['to']   ?? t['target'] ?? t['activity_to']   ?? '?').slice(0, 25).padEnd(25);
+          const prob = typeof t['probability'] === 'number'
+            ? (t['probability'] * 100).toFixed(1).padStart(7) + '%'
+            : typeof t['prob'] === 'number'
+              ? (t['prob'] * 100).toFixed(1).padStart(7) + '%'
+              : '      ?%';
+          const freq = typeof t['frequency'] === 'number' || typeof t['count'] === 'number'
+            ? `  (n=${t['frequency'] ?? t['count']})`
+            : '';
+          p.log(`  ${from}  ${to}  ${prob}${freq}`);
+        }
+        if (edges.length > 10) {
+          p.log(`  ... (${edges.length - 10} more edges — use --format json to see all)`);
+        }
+      } else {
+        p.log('  No transition edges found — the log may be too short or activity key mismatched.');
+        p.log(`  Try: wpm predict features -i <log> --activity-key concept:name`);
+      }
+
       if (result['prefixFeatures']) {
         p.log('');
-        p.log(`  Prefix features: ${JSON.stringify(result['prefixFeatures'])}`);
+        const pf = result['prefixFeatures'] as Record<string, unknown>;
+        p.log('  Prefix features:');
+        for (const [k, v] of Object.entries(pf).slice(0, 8)) {
+          p.log(`    ${k}: ${typeof v === 'number' ? (v as number).toFixed(4) : JSON.stringify(v)}`);
+        }
       }
+
       p.log('');
       p.log('  What this means:');
-      p.log('  Transition probabilities capture the likelihood of moving from one activity');
-      p.log('  to the next. High-probability edges are the process backbone; low-probability');
-      p.log('  edges indicate rare variants, rework loops, or exceptions.');
+      p.log('  Transition probabilities capture how likely it is to move from one activity to the');
+      p.log('  next. High-probability edges are the process backbone; low-probability edges are');
+      p.log('  rare variants, rework loops, or exceptions.');
       p.log('');
       p.log('  Next actions:');
       p.log('    • Feed to ML classifier:   wpm ml classify -i <log>');

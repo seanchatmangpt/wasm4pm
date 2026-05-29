@@ -10,6 +10,7 @@
  */
 
 import crypto from 'node:crypto';
+import { existsSync } from 'node:fs';
 import { AgentRegistry } from './registry.js';
 import { AuditStore } from './audit.js';
 import type {
@@ -26,6 +27,65 @@ import type {
   SurfaceEvidence,
   Violation,
 } from './types.js';
+
+// ── Minimal OTEL span types (no external dep on @wasm4pm/cognition) ──────────
+// Per critical-constraints.md §2: 100% of operations must emit OTEL spans.
+// service.name must be 'wasm4pm'; status must be 'ok' or 'error' (never UNSET).
+
+/** Minimal OTEL span shape compatible with the wasm4pm observability contract. */
+interface AgentSpan {
+  trace_id: string;
+  span_id: string;
+  name: string;
+  kind: 'INTERNAL';
+  start_time: number;
+  end_time: number;
+  status: { code: 'OK' | 'ERROR'; message?: string };
+  attributes: Record<string, string | number | boolean>;
+}
+
+/** Span sink: receives completed spans. Must never throw. */
+export type AgentSpanSink = (span: AgentSpan) => void;
+
+/** No-op sink used when no sink is provided. Tests inject recording sinks. */
+const defaultAgentSpanSink: AgentSpanSink = (_span: AgentSpan): void => {
+  /* no-op: tests inject a recording sink */
+};
+
+function hexId(bytes: number): string {
+  return crypto.randomBytes(bytes).toString('hex');
+}
+
+/**
+ * Emit a single OTEL span to the given sink.
+ * Swallows all sink errors — span emission must never block primary control flow.
+ */
+function emitAgentSpan(
+  sink: AgentSpanSink,
+  name: string,
+  startNs: number,
+  status: 'OK' | 'ERROR',
+  attrs: Record<string, string | number | boolean>,
+  errMsg?: string,
+): void {
+  try {
+    sink({
+      trace_id: hexId(16),
+      span_id: hexId(8),
+      name,
+      kind: 'INTERNAL',
+      start_time: startNs,
+      end_time: Date.now() * 1_000_000,
+      status: errMsg !== undefined ? { code: status, message: errMsg } : { code: status },
+      attributes: {
+        'service.name': 'wasm4pm',
+        ...attrs,
+      },
+    });
+  } catch {
+    /* never block on OTEL */
+  }
+}
 
 /** Input for agent execution */
 export interface AgentExecutionContext {
@@ -51,6 +111,7 @@ export interface AgentExecutionContext {
 export class AgentOrchestrator {
   private registry: AgentRegistry;
   private audit: AuditStore;
+  private spanSink: AgentSpanSink;
 
   constructor(
     options: {
@@ -58,10 +119,13 @@ export class AgentOrchestrator {
       auditPath?: string;
       cycleTimeoutMs?: number;
       agentTimeoutMs?: number;
+      /** OTEL span sink — receives completed spans for observability. Tests inject a recording sink. */
+      spanSink?: AgentSpanSink;
     } = {}
   ) {
     this.registry = new AgentRegistry(options.registryPath);
     this.audit = new AuditStore(options.auditPath);
+    this.spanSink = options.spanSink ?? defaultAgentSpanSink;
   }
 
   /** Get the agent registry */
@@ -80,6 +144,9 @@ export class AgentOrchestrator {
   async runMapekCycle(context: AgentExecutionContext): Promise<MAPEKCycleResult> {
     const cycleId = this._generateCycleId();
     const startTime = Date.now();
+    const startNs = Date.now() * 1_000_000;
+    let spanStatus: 'OK' | 'ERROR' = 'OK';
+    let spanErrMsg: string | undefined;
 
     try {
       // MONITOR: Capture metrics from 4 surfaces
@@ -89,7 +156,7 @@ export class AgentOrchestrator {
       const analyze = await this.analyze(context, monitor);
 
       if (analyze.violations.length === 0) {
-        return {
+        const result: MAPEKCycleResult = {
           cycle_id: cycleId,
           success: true,
           monitor,
@@ -104,6 +171,7 @@ export class AgentOrchestrator {
           },
           duration_ms: Date.now() - startTime,
         };
+        return result;
       }
 
       // PLAN: Generate corrective actions
@@ -117,6 +185,11 @@ export class AgentOrchestrator {
       // LEARN: Update knowledge base
       const learn = this.learn(analyze, execute);
 
+      if (execute.failed_count > 0) {
+        spanStatus = 'ERROR';
+        spanErrMsg = `${execute.failed_count} correction(s) failed`;
+      }
+
       return {
         cycle_id: cycleId,
         success: execute.failed_count === 0,
@@ -128,7 +201,10 @@ export class AgentOrchestrator {
         duration_ms: Date.now() - startTime,
       };
     } catch (error) {
-      // Log failure
+      spanStatus = 'ERROR';
+      spanErrMsg = error instanceof Error ? error.message : String(error);
+
+      // Log failure to audit store
       this.audit.log({
         timestamp: new Date().toISOString(),
         agent_name: 'orchestrator',
@@ -152,6 +228,21 @@ export class AgentOrchestrator {
       this.audit.save();
 
       throw error;
+    } finally {
+      emitAgentSpan(
+        this.spanSink,
+        'agents.mapek_cycle',
+        startNs,
+        spanStatus,
+        {
+          'agents.cycle_id': cycleId,
+          'agents.artifact_id': context.artifact_id,
+          'agents.dry_run': context.dry_run ?? false,
+          'agents.gate_name': context.gate_name ?? '',
+          'agents.duration_ms': Date.now() - startTime,
+        },
+        spanErrMsg,
+      );
     }
   }
 
@@ -159,8 +250,18 @@ export class AgentOrchestrator {
    * Execute a specific agent (without full MAPE-K cycle)
    */
   async executeAgent(agentName: string, context: AgentExecutionContext): Promise<AgentResult> {
+    const startNs = Date.now() * 1_000_000;
+    const startTime = Date.now();
+    let spanStatus: 'OK' | 'ERROR' = 'OK';
+    let spanErrMsg: string | undefined;
+
     const agentState = this.registry.getAgent(agentName);
     if (!agentState) {
+      spanStatus = 'ERROR';
+      spanErrMsg = `agent "${agentName}" not found`;
+      emitAgentSpan(this.spanSink, 'agents.execute_agent', startNs, spanStatus,
+        { 'agents.agent_name': agentName, 'agents.artifact_id': context.artifact_id },
+        spanErrMsg);
       return {
         passed: false,
         violations: [
@@ -183,6 +284,14 @@ export class AgentOrchestrator {
     }
 
     if (agentState.status !== 'active') {
+      // Disabled/error agents are not a runtime error — emit an OK span with status context.
+      emitAgentSpan(this.spanSink, 'agents.execute_agent', startNs, 'OK',
+        {
+          'agents.agent_name': agentName,
+          'agents.artifact_id': context.artifact_id,
+          'agents.agent_status': agentState.status,
+          'agents.skipped': true,
+        });
       return {
         passed: false,
         violations: [
@@ -204,12 +313,17 @@ export class AgentOrchestrator {
       };
     }
 
-    const startTime = Date.now();
     let result: AgentResult;
 
     try {
       result = await this._runAgentLogic(agentName, context);
+      if (!result.passed) {
+        spanStatus = 'ERROR';
+        spanErrMsg = `${result.violations.length} violation(s)`;
+      }
     } catch (error) {
+      spanStatus = 'ERROR';
+      spanErrMsg = error instanceof Error ? error.message : String(error);
       result = {
         passed: false,
         violations: [
@@ -238,6 +352,21 @@ export class AgentOrchestrator {
       violations: result.violations.length,
       error: result.violations.length > 0 ? `${result.violations.length} violations` : null,
     });
+
+    emitAgentSpan(
+      this.spanSink,
+      'agents.execute_agent',
+      startNs,
+      spanStatus,
+      {
+        'agents.agent_name': agentName,
+        'agents.artifact_id': context.artifact_id,
+        'agents.passed': result.passed,
+        'agents.violation_count': result.violations.length,
+        'agents.execution_time_ms': result.execution_time_ms,
+      },
+      spanErrMsg,
+    );
 
     return result;
   }
@@ -661,12 +790,10 @@ export class AgentOrchestrator {
     _context: AgentExecutionContext,
     config: { thresholds: { max_deviations: number } }
   ): AgentResult {
-    // In the TypeScript layer, this validates wasm4pm.toml consistency
-    // The Python layer handles settings.json enforcement
+    // In the TypeScript layer, this validates wasm4pm.toml consistency.
+    // The Python layer handles settings.json enforcement.
     const violations: Violation[] = [];
 
-    // Check for wasm4pm.toml existence
-    const { existsSync } = require('fs');
     const wasm4pmToml = 'wasm4pm.toml';
     if (!existsSync(wasm4pmToml)) {
       violations.push({

@@ -346,12 +346,33 @@ export const run = defineCommand({
               return await exitWithFlush(result.exit_code);
             }
           } catch (e: unknown) {
-             if ((e as NodeJS.ErrnoException).code === 'ENOENT') {
+             const fsErr = e as NodeJS.ErrnoException;
+             if (fsErr.code === 'ENOENT') {
                 const result = makeErrorResult(
                   'run',
-                  new Error(`File not found: ${inputPath}`),
+                  new Error(
+                    `File not found: '${inputPath}'\n\n` +
+                    `  Check the path and try again:\n` +
+                    `    ls -l ${path.dirname(inputPath)}\n\n` +
+                    `  Need a sample dataset? Run:\n` +
+                    `    wpm examples`
+                  ),
                   EXIT_CODES.source_error,
                   'FILE_NOT_FOUND'
+                );
+                emitResult(result, emitOptions);
+                return await exitWithFlush(result.exit_code);
+             }
+             if (fsErr.code === 'EACCES') {
+                const result = makeErrorResult(
+                  'run',
+                  new Error(
+                    `Permission denied reading '${inputPath}'\n\n` +
+                    `  Fix permissions with:\n` +
+                    `    chmod 644 ${inputPath}`
+                  ),
+                  EXIT_CODES.source_error,
+                  'FILE_NOT_READABLE'
                 );
                 emitResult(result, emitOptions);
                 return await exitWithFlush(result.exit_code);
@@ -492,7 +513,14 @@ export const run = defineCommand({
                 const result = makeErrorResult(
                   'run',
                   new Error(
-                    `Structural validation failed:\n${preflightErrors.map((e) => `  ✗ ${e}`).join('\n')}`
+                    `Event log '${path.basename(inputPath)}' failed structural validation:\n` +
+                    preflightErrors.map((e) => `  ✗ ${e}`).join('\n') +
+                    `\n\n  To inspect and repair the log:\n` +
+                    `    wpm validate ${path.basename(inputPath)}\n\n` +
+                    `  Common fixes:\n` +
+                    `  • Check activity attribute key (default: concept:name):\n` +
+                    `      wpm run ${path.basename(inputPath)} --activity-key your:attribute\n` +
+                    `  • Validate XES schema: ensure every <event> has concept:name and time:timestamp`
                   ),
                   EXIT_CODES.source_error,
                   'STRUCTURAL_VALIDATION_FAILED'
@@ -1011,14 +1039,26 @@ export const run = defineCommand({
 
                 projection.debug(`Loading event log from: ${p.input}`);
 
+                // Look up algorithm quality/speed metadata from registry for richer output
+                const registry = getRegistry();
+                const algoMeta = registry.list().find((a) => a.id === p.algorithm);
+                const qualityScore = algoMeta?.qualityTier;
+                const speedScore = algoMeta?.speedTier;
+                const algoLabel = qualityScore !== undefined
+                  ? `${p.algorithm}  (quality score: ${qualityScore}/100, speed score: ${speedScore}/100)`
+                  : p.algorithm;
+
                 const etaStr =
                   (p.estimatedMs as number | undefined) && (p.estimatedMs as number) > 0
                     ? ` (~${Math.ceil((p.estimatedMs as number) / 1000)}s estimated)`
                     : '';
                 projection.info(`Discovering with ${p.algorithm}${etaStr}...`);
 
-                projection.success(`Discovery completed in ${p.elapsedMs.toFixed(1)}ms`);
-                projection.info(`Algorithm: ${p.algorithm}`);
+                const timeStr = p.elapsedMs < 1000
+                  ? `${p.elapsedMs.toFixed(1)}ms`
+                  : `${(p.elapsedMs / 1000).toFixed(2)}s`;
+                projection.success(`Discovery completed in ${timeStr}`);
+                projection.info(`Algorithm:    ${algoLabel}`);
                 projection.info(`Activity key: ${p.activityKey}`);
                 if (ctx.args.output) {
                   projection.info(`Output: ${ctx.args.output}`);
@@ -1031,18 +1071,24 @@ export const run = defineCommand({
                 const summary = extractModelSummary(p.model);
                 if (logStatsData || summary) {
                   projection.log('');
+                  projection.log('  Event Log:');
                   if (logStatsData?.total_cases !== undefined) {
-                    projection.info(`  Traces:   ${logStatsData.total_cases}`);
+                    projection.log(`    Traces:   ${logStatsData.total_cases}`);
                   }
                   if (logStatsData?.total_events !== undefined) {
-                    projection.info(`  Events:   ${logStatsData.total_events}`);
+                    projection.log(`    Events:   ${logStatsData.total_events}`);
                   }
                   if (logStatsData?.unique_variants !== undefined) {
-                    projection.info(`  Variants: ${logStatsData.unique_variants}`);
+                    const variantRatio = logStatsData.total_cases
+                      ? ((logStatsData.unique_variants / logStatsData.total_cases) * 100).toFixed(0)
+                      : '?';
+                    projection.log(`    Variants: ${logStatsData.unique_variants}  (${variantRatio}% of traces are unique)`);
                   }
-                  if (summary) {
+                  if (summary && Object.keys(summary).length > 0) {
+                    projection.log('');
+                    projection.log('  Model:');
                     for (const [key, value] of Object.entries(summary)) {
-                      projection.info(`  ${key}: ${value}`);
+                      projection.log(`    ${key.padEnd(12)}: ${value}`);
                     }
                   }
                 }
@@ -1050,11 +1096,18 @@ export const run = defineCommand({
                 // Quality metrics
                 if (p.quality) {
                   const q = p.quality as { fitness: number; precision: number; simplicity: number };
+                  const fitnessStatus = q.fitness >= 0.85 ? '✓ excellent' : q.fitness >= 0.7 ? '~ acceptable' : '✗ low';
+                  const precisionStatus = q.precision >= 0.8 ? '✓ good' : q.precision >= 0.5 ? '~ medium' : '✗ low';
                   projection.log('');
-                  projection.info('Quality Metrics (van der Aalst):');
-                  projection.info(`  Fitness:    ${(q.fitness * 100).toFixed(1)}%`);
-                  projection.info(`  Precision:  ${(q.precision * 100).toFixed(1)}%`);
-                  projection.info(`  Simplicity: ${(q.simplicity * 100).toFixed(1)}%`);
+                  projection.log('  Quality (van der Aalst):');
+                  projection.log(`    Fitness:    ${(q.fitness * 100).toFixed(1)}%  ${fitnessStatus}  (target ≥ 85%)`);
+                  projection.log(`    Precision:  ${(q.precision * 100).toFixed(1)}%  ${precisionStatus}`);
+                  projection.log(`    Simplicity: ${(q.simplicity * 100).toFixed(1)}%`);
+                  if (q.fitness < 0.85) {
+                    projection.log('');
+                    projection.warn(`  Fitness ${(q.fitness * 100).toFixed(0)}% is below the 85% target.`);
+                    projection.log(`  Try a higher-quality algorithm: wpm run -i ${path.basename(p.input)} --algorithm genetic_algorithm`);
+                  }
                 } else if (ctx.args['with-quality'] && p.model) {
                   // If model is not a Petri net, warn about quality metrics
                   const resultDataCheck = p.model as Record<string, unknown>;
@@ -1069,31 +1122,31 @@ export const run = defineCommand({
                   }
                 }
 
-                // 1000x Auto-Insight Generation
+                // Auto-insight: plain-English process characterisation
                 const qInsight = p.quality as { fitness?: number; precision?: number } | undefined;
                 const fit = qInsight?.fitness;
                 const nodeCount = summary ? parseInt(summary['Nodes'] || summary['Places'] || '0') : 0;
                 if (logStatsData && (fit !== undefined || nodeCount > 0)) {
-                  let story = "Insight: ";
+                  let story = 'Insight: ';
                   if (fit !== undefined) {
-                    if (fit >= 0.9) story += `Discovered a highly standardized process (Fitness: ${(fit * 100).toFixed(0)}%). `;
-                    else if (fit >= 0.7) story += `Discovered a semi-structured process (Fitness: ${(fit * 100).toFixed(0)}%). `;
-                    else story += `Discovered an unstructured "spaghetti" process (Fitness: ${(fit * 100).toFixed(0)}%). `;
+                    if (fit >= 0.9) story += `Highly standardised process (fitness ${(fit * 100).toFixed(0)}% — most traces follow the main path). `;
+                    else if (fit >= 0.7) story += `Semi-structured process (fitness ${(fit * 100).toFixed(0)}% — notable exceptions exist). `;
+                    else story += `Unstructured "spaghetti" process (fitness ${(fit * 100).toFixed(0)}% — high variation, many exceptions). `;
                   } else {
                     story += `Discovered a process model with ${logStatsData.unique_variants || 'multiple'} execution variants. `;
                   }
-                  
-                  const variantRatio = logStatsData.unique_variants && logStatsData.total_cases 
-                     ? logStatsData.unique_variants / logStatsData.total_cases 
-                     : 0;
-                  
+
+                  const variantRatio = logStatsData.unique_variants && logStatsData.total_cases
+                    ? logStatsData.unique_variants / logStatsData.total_cases
+                    : 0;
+
                   if (nodeCount > 0) {
-                     if (nodeCount > 30 || variantRatio > 0.5) story += `The graph contains ${nodeCount} structural nodes and high variant diversity, indicating significant complexity.`;
-                     else story += `The graph contains ${nodeCount} structural nodes, indicating a manageable complexity level.`;
+                    if (nodeCount > 30 || variantRatio > 0.5) story += `${nodeCount} structural nodes with high variant diversity — consider filtering infrequent paths.`;
+                    else story += `${nodeCount} structural nodes — manageable complexity.`;
                   }
-                  
+
                   projection.log('');
-                  projection.info(`\x1b[36m${story}\x1b[0m`);
+                  projection.log(`  \x1b[36m${story}\x1b[0m`);
                 }
 
                 // First-run UX hints
@@ -1111,12 +1164,15 @@ export const run = defineCommand({
                   projection.log('');
                   projection.log('Next steps:');
                   projection.log(
-                    `  wpm conformance -i ${path.basename(p.input)}   -- measure fitness and precision`
+                    `  wpm conformance -i ${path.basename(p.input)}                    -- measure fitness & precision`
                   );
                   projection.log(
-                    `  wpm compare dfg,heuristic -i ${path.basename(p.input)}   -- compare algorithms`
+                    `  wpm predict next-activity -i ${path.basename(p.input)}          -- predict what happens next`
                   );
-                  projection.log('  wpm results   -- browse saved results');
+                  projection.log(
+                    `  wpm compare dfg,heuristic -i ${path.basename(p.input)}          -- compare algorithms`
+                  );
+                  projection.log('  wpm results                                              -- browse saved results');
 
                   if (savedPath) {
                     projection.debug(`Result saved: ${path.relative(process.cwd(), savedPath)}`);
@@ -1168,10 +1224,34 @@ export const run = defineCommand({
             }
           ); // end withLogSession
         } catch (error) {
+          const rawMsg = error instanceof Error ? error.message : String(error);
+          // Give actionable hints based on common failure patterns
+          let actionableHint = '\n\nRun "wpm doctor" to check your environment.';
+          if (rawMsg.toLowerCase().includes('xml') || rawMsg.toLowerCase().includes('parse') || rawMsg.toLowerCase().includes('xes')) {
+            actionableHint =
+              `\n\nThis looks like an event log parse error. Check that your file is valid XES:\n` +
+              `  wpm validate ${finalAlgorithm ? '' : ''}your-log.xes\n\n` +
+              `Common causes:\n` +
+              `  • Malformed XML (missing closing tag, invalid characters)\n` +
+              `  • Wrong file format (CSV or JSON passed as .xes)\n` +
+              `  • Encoding issue (file must be UTF-8)\n\n` +
+              `Run "wpm doctor" for a full environment check.`;
+          } else if (rawMsg.toLowerCase().includes('memory') || rawMsg.toLowerCase().includes('heap')) {
+            actionableHint =
+              `\n\nOut of memory. For large logs, increase Node.js heap or use streaming mode:\n` +
+              `  NODE_OPTIONS="--max-old-space-size=8192" wpm run <log.xes>\n` +
+              `  wpm run <log.xes> --algorithm simd_streaming_dfg  -- lower memory usage`;
+          } else if (rawMsg.toLowerCase().includes('wasm') || rawMsg.toLowerCase().includes('init')) {
+            actionableHint = `\n\nWASM initialisation failed. Run "wpm doctor" to diagnose:\n  wpm doctor`;
+          }
+          const ctxInput = (ctx.args.input as string | undefined) ?? (ctx.args.file as string | undefined);
+          const inputBasename = ctxInput ? path.basename(ctxInput) : '';
+          const inputContext = inputBasename ? ` for '${inputBasename}'` : '';
+          const algoContext = finalAlgorithm ? ` using '${finalAlgorithm}'` : '';
           const result = makeErrorResult(
             'run',
             new Error(
-              `Discovery failed: ${error instanceof Error ? error.message : String(error)}\n\nRun "wpm doctor" to check your environment.`
+              `Discovery failed${inputContext}${algoContext}:\n  ${rawMsg}${actionableHint}`
             ),
             EXIT_CODES.execution_error,
             'DISCOVERY_FAILED'

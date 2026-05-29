@@ -121,6 +121,12 @@ export const driftWatch = defineCommand({
       type: 'boolean',
       description: 'Skip writing the session receipt to .wasm4pm/receipts/',
     },
+    'exit-on-drift': {
+      type: 'boolean',
+      description:
+        'Exit non-zero (execution_error / 3) the first time EWMA crosses --threshold. ' +
+        'Useful in CI pipelines to fail a build when process drift is detected.',
+    },
   },
 
   async run(ctx) {
@@ -168,6 +174,7 @@ export const driftWatch = defineCommand({
     const enhancedMode: boolean = ctx.args.enhanced === true;
     const autoRefitMode: boolean = ctx.args['auto-refit'] === true;
     const autoRefitAlgo: string = (ctx.args['refit-algorithm'] as string) || '';
+    const exitOnDrift: boolean = ctx.args['exit-on-drift'] === true;
 
     // ── Step 1: Validate input file ──────────────────────────────────────────
     try {
@@ -194,6 +201,19 @@ export const driftWatch = defineCommand({
     let previousMtimeMs = 0;
     let previousEwma = 0; // Tracks EWMA from prior tick for threshold-crossing detection
     const distanceHistory: number[] = [];
+    // TODO(watch): Pure-incremental streaming path.
+    // When an XES log grows by appending new traces (e.g., live process logging),
+    // a streaming DFG session (wasm.streaming_dfg_begin / streaming_dfg_add_event)
+    // could ingest only the new events per tick in O(new_events) instead of
+    // O(all_events). This requires the upstream log writer to expose a cursor API
+    // or byte-offset so the monitor can read only new bytes. Until that
+    // infrastructure exists, the full-file reload path is used every time the
+    // mtime changes. The mtime check already ensures no-op ticks on unchanged files.
+    // Tracking handle: kept null between ticks; freed and recreated each changed tick.
+    // These will be used when the incremental streaming path is implemented.
+    // For now, full-file reload is used and the mtime guard prevents no-op ticks.
+    const _cachedLogHandle: string | null = null; // eslint-disable-line @typescript-eslint/no-unused-vars
+    const _cachedHandleMtime = 0; // eslint-disable-line @typescript-eslint/no-unused-vars
     const MAX_DISTANCE_HISTORY = 10_000;
 
     // ── Auto-refit state ──────────────────────────────────────────────────────
@@ -540,6 +560,31 @@ export const driftWatch = defineCommand({
 
       previousDriftCount = detected;
       previousEwma = ewma; // Used for threshold_crossed detection on next tick
+
+      // ── Exit-on-drift: fail fast when EWMA first crosses the threshold ────────
+      // --exit-on-drift is designed for CI pipelines. It exits with execution_error
+      // (code 3) the first time the EWMA score crosses --threshold, giving a clear
+      // non-zero signal to the pipeline that process behaviour has drifted.
+      if (exitOnDrift && ewma > driftThreshold && previousEwma <= driftThreshold) {
+        if (!jsonMode) {
+          console.error(
+            `\n${BOLD}${RED}[drift-watch] --exit-on-drift triggered${RESET}: ` +
+              `EWMA ${ewma.toFixed(4)} > threshold ${driftThreshold}. Exiting with code ${EXIT_CODES.execution_error}.`
+          );
+        } else {
+          process.stdout.write(
+            JSON.stringify({
+              timestamp: new Date().toISOString(),
+              exit_on_drift: true,
+              ewma: parseFloat(ewma.toFixed(4)),
+              threshold: driftThreshold,
+              exit_code: EXIT_CODES.execution_error,
+            }) + '\n'
+          );
+        }
+        await exitWithFlush(EXIT_CODES.execution_error);
+        return; // unreachable after exitWithFlush, but satisfies TypeScript
+      }
 
       // ── Enhanced ML anomaly detection (if --enhanced) ─────────────────────
       if (enhancedMode && distanceHistory.length >= 10) {

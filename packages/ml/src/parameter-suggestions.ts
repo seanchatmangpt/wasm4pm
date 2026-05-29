@@ -421,3 +421,119 @@ export function suggestClassificationAlgorithm(
   // Default safe choice
   return 'knn';
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// suggestParameters + pickBestAlgorithm — high-level recommendation API
+// ─────────────────────────────────────────────────────────────────────────────
+
+export interface AlgorithmSuggestion {
+  name: string;
+  confidence: number;
+  reason: string;
+  suggestedParameters: Record<string, unknown>;
+}
+
+export interface ParameterSuggestions {
+  classification: AlgorithmSuggestion[];
+  regression: AlgorithmSuggestion[];
+  clustering: AlgorithmSuggestion[];
+}
+
+/**
+ * Suggest algorithms and parameters for all three ML tasks given a FeatureMatrix.
+ */
+export function suggestParameters(data: { data: number[][]; featureNames?: string[] }): ParameterSuggestions {
+  const n = data.data.length;
+  const d = data.featureNames?.length ?? (data.data[0]?.length ?? 1);
+  const k = suggestClusteringK(n, d);
+  const knn = suggestKnnK(n, undefined);
+  const depth = suggestDecisionTreeDepth(n, d);
+  const degree = suggestPolynomialDegree(d, n);
+
+  // Classification
+  const classification: AlgorithmSuggestion[] = [
+    {
+      name: 'decision_tree',
+      confidence: n < 500 ? 0.9 : 0.75,
+      reason: n < 500 ? 'Small dataset — decision tree avoids overfitting via depth limit.' : 'Medium dataset — decision tree provides interpretable boundaries.',
+      suggestedParameters: { maxDepth: depth },
+    },
+    {
+      name: 'knn',
+      confidence: 0.75,
+      reason: `k-NN is robust on ${n} samples with ${d} features.`,
+      suggestedParameters: { k: knn },
+    },
+    {
+      name: 'logistic_regression',
+      confidence: n > 200 ? 0.8 : 0.6,
+      reason: n > 200 ? 'Large dataset suits logistic regression.' : 'Small dataset; prefer tree or knn.',
+      suggestedParameters: { maxIter: 200 },
+    },
+    {
+      name: 'naive_bayes',
+      confidence: d > 30 ? 0.85 : 0.6,
+      reason: d > 30 ? 'High-dimensional data — naive Bayes scales linearly with features.' : 'Naive Bayes works but not optimal for low-dimensional data.',
+      suggestedParameters: {},
+    },
+    {
+      name: 'gradient_boosting',
+      confidence: n > 1000 ? 0.85 : 0.55,
+      reason: n > 1000 ? 'Large dataset favors ensemble gradient boosting.' : 'Not enough data for reliable gradient boosting.',
+      suggestedParameters: { nEstimators: 100, learningRate: 0.1 },
+    },
+  ].sort((a, b) => b.confidence - a.confidence);
+
+  // Regression
+  const regression: AlgorithmSuggestion[] = [
+    {
+      name: 'linear_regression',
+      confidence: 0.85,
+      reason: 'Linear regression is the baseline for all regression tasks.',
+      suggestedParameters: {},
+    },
+    {
+      name: 'polynomial_regression',
+      confidence: n > 5000 ? 0.8 : 0.5,
+      reason: n > 5000 ? 'Large dataset — polynomial regression can capture non-linearity.' : 'Small dataset — risk of overfitting with polynomial regression.',
+      suggestedParameters: { degree },
+    },
+    {
+      name: 'exponential_regression',
+      confidence: 0.6,
+      reason: 'Exponential regression for growth/decay patterns.',
+      suggestedParameters: {},
+    },
+  ].sort((a, b) => b.confidence - a.confidence);
+
+  // Clustering
+  const clustering: AlgorithmSuggestion[] = [
+    {
+      name: 'kmeans',
+      confidence: 0.85,
+      reason: `k-Means with k=${k} clusters for ${n} samples.`,
+      suggestedParameters: { clusters: k },
+    },
+    {
+      name: 'dbscan',
+      confidence: 0.7,
+      reason: 'DBSCAN discovers clusters of arbitrary shape and handles noise.',
+      suggestedParameters: { eps: 1.0, minPoints: Math.max(2, Math.floor(Math.log(n))) },
+    },
+  ].sort((a, b) => b.confidence - a.confidence);
+
+  return { classification, regression, clustering };
+}
+
+/**
+ * Pick the single best algorithm name for a given task based on dataset characteristics.
+ */
+export function pickBestAlgorithm(
+  task: 'classification' | 'regression' | 'clustering',
+  data: { data: number[][]; featureNames?: string[] },
+): string {
+  const suggestions = suggestParameters(data);
+  if (task === 'classification') return suggestions.classification[0]?.name ?? 'knn';
+  if (task === 'regression') return suggestions.regression[0]?.name ?? 'linear_regression';
+  return suggestions.clustering[0]?.name ?? 'kmeans';
+}

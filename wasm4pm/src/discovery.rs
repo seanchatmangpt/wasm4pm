@@ -35,7 +35,13 @@ pub fn discover_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFoll
         frequency: 0,
     }));
 
-    let mut edge_counts: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+    // Pre-size the edge map to n²/4 as a rough initial capacity — avoids most
+    // rehashes for typical logs where the DFG is sparse relative to n².
+    let n = col.vocab.len();
+    let mut edge_counts: FxHashMap<(u32, u32), usize> = FxHashMap::with_capacity_and_hasher(
+        n.saturating_mul(n) / 4 + 1,
+        Default::default(),
+    );
 
     for t in 0..col.trace_offsets.len().saturating_sub(1) {
         let start = col.trace_offsets[t];
@@ -79,51 +85,53 @@ pub fn discover_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFoll
 /// Discover a Directly-Follows Graph (DFG) from an EventLog
 #[wasm_bindgen]
 pub fn discover_dfg(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
-    let log = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
-        Some(StoredObject::EventLog(log)) => Ok(log.clone()),
+    // Use with_object to borrow the log in place — avoids a full EventLog clone.
+    // discover_dfg_from_log builds its own columnar view internally, so we only
+    // need a shared reference, not an owned copy.
+    get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+        Some(StoredObject::EventLog(log)) => {
+            let log_size = log.traces.len();
+
+            tracing::info!(
+                target: "wasm4pm.discovery.dfg",
+                algorithm = "dfg",
+                log_size = log_size,
+                activity_key = activity_key,
+                "DFG discovery started"
+            );
+
+            let dfg = discover_dfg_from_log(log, activity_key);
+
+            // Derive activity_count from the already-built DFG nodes — avoids
+            // a second full columnar pass that was previously done by get_activities().
+            let node_count = dfg.nodes.len();
+            let edge_count = dfg.edges.len();
+            let complexity = if node_count > 0 { edge_count as f64 / node_count as f64 } else { 0.0 };
+
+            tracing::info!(
+                target: "wasm4pm.discovery.dfg",
+                checkpoint = "feature_extraction",
+                activity_count = node_count,
+                "Activity vocabulary extracted"
+            );
+
+            tracing::info!(
+                target: "wasm4pm.discovery.dfg",
+                checkpoint = "result_generation",
+                node_count = node_count,
+                edge_count = edge_count,
+                complexity = complexity,
+                "DFG discovery completed"
+            );
+
+            to_js_str(&dfg)
+        }
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
         None => Err(wasm_err(
             codes::INVALID_HANDLE,
             format!("EventLog '{}' not found", eventlog_handle),
         )),
-    })?;
-
-    let log_size = log.traces.len();
-
-    tracing::info!(
-        target: "wasm4pm.discovery.dfg",
-        algorithm = "dfg",
-        log_size = log_size,
-        activity_key = activity_key,
-        "DFG discovery started"
-    );
-
-    // Feature extraction checkpoint
-    let activity_count = log.get_activities(activity_key).len();
-    tracing::info!(
-        target: "wasm4pm.discovery.dfg",
-        checkpoint = "feature_extraction",
-        activity_count = activity_count,
-        "Activity vocabulary extracted"
-    );
-
-    let dfg = discover_dfg_from_log(&log, activity_key);
-
-    // Result generation checkpoint
-    let node_count = dfg.nodes.len();
-    let edge_count = dfg.edges.len();
-    let complexity = if node_count > 0 { edge_count as f64 / node_count as f64 } else { 0.0 };
-
-    tracing::info!(
-        target: "wasm4pm.discovery.dfg",
-        checkpoint = "result_generation",
-        node_count = node_count,
-        edge_count = edge_count,
-        complexity = complexity,
-        "DFG discovery completed"
-    );
-
-    to_js_str(&dfg)
+    })
 }
 
 /// Pure-Rust OCEL DFG discovery: returns DirectlyFollowsGraph without wasm-bindgen.
@@ -162,31 +170,33 @@ pub fn discover_ocel_dfg_pure(ocel: &OCEL) -> DirectlyFollowsGraph {
         }
     }
 
-    // Sort events by timestamp (ISO 8601 sort works lexicographically for ISO format)
+    // Sort events by timestamp (ISO 8601 sorts lexicographically without parsing).
+    // Use sort_unstable_by + str comparison to avoid allocating a String per comparison.
     for events in events_by_object.values_mut() {
-        events.sort_by_key(|(idx, _)| ocel.events[*idx].timestamp.clone());
+        events.sort_unstable_by(|(ai, _), (bi, _)| {
+            ocel.events[*ai].timestamp.as_str().cmp(ocel.events[*bi].timestamp.as_str())
+        });
     }
 
-    // Build an edge map for O(1) frequency updates instead of O(n)
-    // Vec::find per pair, and use .windows(2) to eliminate bounds-check branches.
-    let mut edge_map: FxHashMap<(String, String), usize> = FxHashMap::default();
+    // Build an edge map with &str keys — avoids one String allocation per DF pair.
+    // The strings are borrowed from the OCEL event_type fields which outlive this scope.
+    let mut edge_map: FxHashMap<(&str, &str), usize> = FxHashMap::default();
     for events in events_by_object.values() {
         for pair in events.windows(2) {
             let from = pair[0].1;
             let to = pair[1].1;
-            *edge_map
-                .entry((from.to_string(), to.to_string()))
-                .or_insert(0) += 1;
+            *edge_map.entry((from, to)).or_insert(0) += 1;
         }
     }
 
+    // Sort by the borrowed keys — no clone needed since (&str, &str) is Ord.
     let mut sorted_edges: Vec<_> = edge_map.into_iter().collect();
-    sorted_edges.sort_unstable_by_key(|((f, t), _)| (f.clone(), t.clone()));
+    sorted_edges.sort_unstable_by_key(|&((f, t), _)| (f, t));
 
     for ((from, to), frequency) in sorted_edges {
         dfg.edges.push(DirectlyFollowsRelation {
-            from,
-            to,
+            from: from.to_owned(),
+            to: to.to_owned(),
             frequency,
         });
     }
@@ -303,9 +313,12 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
                     }
                 }
 
-                // Sort events by timestamp (ISO 8601 sort works lexicographically for ISO format)
+                // Sort events by timestamp (ISO 8601 sorts lexicographically without parsing).
+                // sort_unstable_by with str comparison avoids a String allocation per comparison.
                 for events in events_by_object.values_mut() {
-                    events.sort_by_key(|(idx, _)| ocel.events[*idx].timestamp.clone());
+                    events.sort_unstable_by(|(ai, _), (bi, _)| {
+                        ocel.events[*ai].timestamp.as_str().cmp(ocel.events[*bi].timestamp.as_str())
+                    });
                 }
 
                 // Fix C: use pre-computed global activity frequencies
@@ -315,20 +328,19 @@ pub fn discover_ocel_dfg_per_type(ocel_handle: &str) -> Result<JsValue, JsValue>
                     }
                 }
 
-                let mut edge_map: FxHashMap<(String, String), usize> = FxHashMap::default();
+                // Use &str keys to avoid one String allocation per DF pair in the hot loop.
+                let mut edge_map: FxHashMap<(&str, &str), usize> = FxHashMap::default();
                 for events in events_by_object.values() {
                     for pair in events.windows(2) {
                         let from = pair[0].1;
                         let to = pair[1].1;
-                        *edge_map
-                            .entry((from.to_string(), to.to_string()))
-                            .or_insert(0) += 1;
+                        *edge_map.entry((from, to)).or_insert(0) += 1;
                     }
                 }
                 for ((from, to), freq) in edge_map {
                     dfg.edges.push(DirectlyFollowsRelation {
-                        from,
-                        to,
+                        from: from.to_owned(),
+                        to: to.to_owned(),
                         frequency: freq,
                     });
                 }
@@ -375,8 +387,10 @@ struct TraceProfile {
     /// last_position[a] = index of last occurrence of activity a in trace
     /// (or u8::MAX if not present).
     last_positions: Vec<u8>,
-    /// immediate_follows[(a,b)] = true if a is immediately followed by b at least once
-    immediate_follows: std::collections::HashSet<(u32, u32)>,
+    /// immediate_follows[(a,b)] = true if a is immediately followed by b at least once.
+    /// FxHashSet is ~2× faster than std HashSet for small integer tuple keys because
+    /// it skips the SipHash DoS-resistance overhead irrelevant for internal data.
+    immediate_follows: FxHashSet<(u32, u32)>,
 }
 
 impl TraceProfile {
@@ -385,7 +399,7 @@ impl TraceProfile {
             activity_mask: 0,
             first_positions: vec![u8::MAX; n],
             last_positions: vec![u8::MAX; n],
-            immediate_follows: std::collections::HashSet::new(),
+            immediate_follows: FxHashSet::default(),
         }
     }
 

@@ -434,7 +434,14 @@ pub mod streaming;
 pub mod streaming_conformance;
 #[cfg(feature = "streaming_full")]
 pub mod streaming_pipeline;
-#[cfg(feature = "streaming_full")]
+// streaming_wasm exposes #[wasm_bindgen] exports for all streaming algorithms.
+// It only depends on types available in streaming_basic (StreamingDfgBuilder,
+// StreamingHeuristicBuilder, StreamingSkeletonBuilder), so it compiles under
+// streaming_basic — not just streaming_full. Without this gate change, the
+// streaming_dfg_begin/add_event/snapshot/… functions are completely absent from
+// edge and iot WASM builds, and the TypeScript optional methods on WasmModule
+// would always be undefined at runtime.
+#[cfg(feature = "streaming_basic")]
 pub mod streaming_wasm;
 
 // Conformance (gated by conformance_basic or conformance_full features)

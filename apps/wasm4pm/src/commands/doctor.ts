@@ -1952,9 +1952,20 @@ function renderBadge(severity: Diagnosis['severity']): string {
   return `[${BADGE[severity]}]`;
 }
 
+// ANSI color helpers for doctor output (not via ConsoleProjection to keep inline context)
+const C = {
+  bold: (s: string) => `\x1b[1m${s}\x1b[0m`,
+  green: (s: string) => `\x1b[32m${s}\x1b[0m`,
+  yellow: (s: string) => `\x1b[33m${s}\x1b[0m`,
+  red: (s: string) => `\x1b[31m${s}\x1b[0m`,
+  cyan: (s: string) => `\x1b[36m${s}\x1b[0m`,
+  dim: (s: string) => `\x1b[2m${s}\x1b[0m`,
+  reset: '\x1b[0m',
+};
+
 function printReportToProjection(p: ConsoleProjection, report: DoctorReport): void {
   p.log('');
-  p.log('wpm doctor — epistemic diagnostician & autonomic governor');
+  p.log(C.bold('wpm doctor — epistemic diagnostician & autonomic governor'));
   p.log('─'.repeat(80));
 
   let lastSection = '';
@@ -1963,13 +1974,24 @@ function printReportToProjection(p: ConsoleProjection, report: DoctorReport): vo
     const section = isTps ? 'TPS Pipeline & Epistemic Truth' : 'Environment & Deployment Truth';
     if (section !== lastSection) {
       if (lastSection) p.log('');
-      p.log(`  ${section}:`);
+      p.log(`  ${C.bold(section)}:`);
       lastSection = section;
     }
 
-    const badge = renderBadge(diag.severity);
-    p.log(`    ${badge}  ${diag.name} [${diag.pathology || 'UNKNOWN'}]`);
-    p.log(`             Diagnosis: ${diag.message}`);
+    // Color-coded badge
+    const badgeText = BADGE[diag.severity];
+    const coloredBadge =
+      diag.severity === 'INFO'
+        ? C.green(`[${badgeText}]`)
+        : diag.severity === 'WARNING'
+          ? C.yellow(`[${badgeText}]`)
+          : C.red(`[${badgeText}]`);
+
+    const checkIcon =
+      diag.severity === 'INFO' ? C.green('✓') : diag.severity === 'WARNING' ? C.yellow('⚠') : C.red('✗');
+
+    p.log(`    ${coloredBadge}  ${checkIcon} ${diag.name}  ${C.dim(`[${diag.pathology || 'UNKNOWN'}]`)}`);
+    p.log(`             ${diag.message}`);
 
     if (diag.severity !== 'INFO') {
       const fixText = diag.fixGuide || diag.fix;
@@ -1999,32 +2021,49 @@ function printReportToProjection(p: ConsoleProjection, report: DoctorReport): vo
         }
       }
 
-      if (inferredRepairMode !== 'MANUAL_INTERVENTION') {
-        p.log(`             Repair Mode: ${inferredRepairMode}`);
-        if (inferredRepairCmd) {
-          p.log(`             Smallest Lawful Repair: ${inferredRepairCmd}`);
-        }
+      if (inferredRepairMode !== 'MANUAL_INTERVENTION' && inferredRepairCmd) {
+        // Make the repair command visually prominent — it's the most actionable line
+        p.log(`             ${C.bold('Fix:')}  ${C.cyan(inferredRepairCmd)}`);
+      } else if (inferredRepairMode !== 'MANUAL_INTERVENTION') {
+        p.log(`             Repair mode: ${inferredRepairMode}`);
       }
 
-      if (fixText) {
-        p.log(`             Manual Treatment: ${fixText}`);
+      if (fixText && fixText !== inferredRepairCmd) {
+        // Only show full fix text if it adds information beyond the repair command
+        const shortFix = fixText.length > 120 ? fixText.slice(0, 117) + '...' : fixText;
+        p.log(`             ${C.dim(`Guidance: ${shortFix}`)}`);
       }
     }
   }
 
   p.log('');
   p.log('─'.repeat(80));
-  p.log(
-    `Result: ${report.info} INFO  ${report.warnings} WARNINGS  ${report.stopTheLine} STOP_THE_LINE`
-  );
+
+  // Summary line with colored counts
+  const infoStr = C.green(`${report.info} passed`);
+  const warnStr = report.warnings > 0 ? C.yellow(`${report.warnings} warnings`) : C.dim(`${report.warnings} warnings`);
+  const stopStr = report.stopTheLine > 0 ? C.red(`${report.stopTheLine} critical`) : C.dim(`${report.stopTheLine} critical`);
+  p.log(`Result: ${infoStr}  ${warnStr}  ${stopStr}`);
   p.log('');
 
   if (report.epistemicHealth) {
-    p.success('System is epistemically healthy and operationally ready.');
+    p.success(C.green('System is epistemically healthy and operationally ready.'));
   } else {
+    const stopCount = report.stopTheLine;
     p.error(
-      'STOP THE LINE: System is epistemically unhealthy or missing critical deployment artifacts.'
+      `STOP THE LINE: ${stopCount} critical issue${stopCount !== 1 ? 's' : ''} must be fixed before wpm can be used reliably.`
     );
+    p.log('');
+    p.log(C.bold('  Critical issues require immediate attention:'));
+    for (const diag of report.diagnoses.filter((d) => d.severity === 'STOP_THE_LINE')) {
+      const cmd = diag.repairCommand || diag.fixGuide || diag.fix;
+      if (cmd) {
+        p.log(`    ${C.red('✗')} ${diag.name}`);
+        p.log(`      ${C.bold('Run:')} ${C.cyan(cmd)}`);
+      } else {
+        p.log(`    ${C.red('✗')} ${diag.name}  — manual intervention required`);
+      }
+    }
   }
   p.log('');
 }

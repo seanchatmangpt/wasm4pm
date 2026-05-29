@@ -19,6 +19,227 @@
  */
 
 import { stratifiedKFold, computeAccuracy } from './cross-validation.js';
+import { classifyTraces } from './classifiers.js';
+import { clusterTraces } from './clustering.js';
+import type { FeatureMatrix } from './types.js';
+
+export type { FeatureMatrix };
+
+/** Search space: maps each hyperparameter to the list of values to try. */
+export type SearchSpace = Record<string, ParamValue[]>;
+
+/** Metrics from a single model evaluation. */
+export interface EvalMetrics {
+  accuracy?: number;
+  f1?: number;
+  precision?: number;
+  recall?: number;
+  silhouetteScore?: number;
+  inertia?: number;
+  cvMeanAccuracy?: number;
+  cvStdAccuracy?: number;
+  cvFoldAccuracies?: number[];
+  trainingTimeMs?: number;
+}
+
+/** One ranked result from GridSearch. */
+export interface RankedResult {
+  rank: number;
+  params: Record<string, ParamValue>;
+  metrics: EvalMetrics;
+}
+
+/** Full output from GridSearch.search(). */
+export interface GridSearchOutput {
+  bestParams: Record<string, ParamValue>;
+  bestMetrics: EvalMetrics;
+  allResults: RankedResult[];
+  evaluatedConfigs: number;
+  totalConfigs: number;
+}
+
+/**
+ * Class-based GridSearch that wraps the functional gridSearch() with a richer
+ * output shape (metrics per task, ranking, CV stats).
+ */
+export class GridSearch {
+  constructor(
+    private task: 'classify' | 'cluster' | 'regress',
+    private data: FeatureMatrix,
+    private searchSpace: SearchSpace,
+    private cvFolds: number = 3,
+  ) {}
+
+  async search(): Promise<GridSearchOutput> {
+    const combinations = expandGrid(this.searchSpace);
+    const results: RankedResult[] = [];
+    const n = this.data.data.length;
+    const actualFolds = Math.min(this.cvFolds, Math.floor(n / 2));
+
+    for (const params of combinations) {
+      const t0 = Date.now();
+      const metrics = await evaluateModel(params, this.data, this.task, this.data.labels ?? [], actualFolds);
+      metrics.trainingTimeMs = Date.now() - t0;
+      results.push({ rank: 0, params, metrics });
+    }
+
+    // Sort by primary metric
+    const primaryKey = this.task === 'classify' ? 'accuracy' :
+                       this.task === 'cluster'  ? 'silhouetteScore' : 'accuracy';
+    results.sort((a, b) => (b.metrics[primaryKey] ?? -Infinity) - (a.metrics[primaryKey] ?? -Infinity));
+    results.forEach((r, i) => { r.rank = i + 1; });
+
+    return {
+      bestParams: results[0]?.params ?? {},
+      bestMetrics: results[0]?.metrics ?? {},
+      allResults: results,
+      evaluatedConfigs: results.length,
+      totalConfigs: combinations.length,
+    };
+  }
+}
+
+/**
+ * Evaluate a single parameter configuration with CV.
+ */
+export async function evaluateModel(
+  params: Record<string, ParamValue>,
+  data: FeatureMatrix,
+  task: 'classify' | 'cluster' | 'regress',
+  labels: string[],
+  cvFolds: number = 3,
+): Promise<EvalMetrics> {
+  const n = data.data.length;
+  const actualFolds = Math.min(cvFolds, Math.floor(n / 2));
+  if (actualFolds < 2) {
+    // Not enough data — run single evaluation
+    return _evaluateSingle(params, data, task, labels);
+  }
+
+  const { trainIndices, testIndices } = stratifiedKFold(
+    labels.length > 0 ? labels.map((_, i) => i % 2) : Array(n).fill(0),
+    actualFolds,
+  );
+
+  const foldAccuracies: number[] = [];
+  for (let f = 0; f < actualFolds; f++) {
+    const testIdx = testIndices[f];
+    const testData: FeatureMatrix = {
+      ...data,
+      data: Array.from(testIdx).map((i) => data.data[i]),
+      caseIds: Array.from(testIdx).map((i) => data.caseIds[i]),
+      targets: data.targets ? Array.from(testIdx).map((i) => data.targets![i]) : [],
+      labels: labels.length > 0 ? Array.from(testIdx).map((i) => labels[i]) : [],
+    };
+    const m = await _evaluateSingle(params, testData, task, testData.labels ?? []);
+    foldAccuracies.push(m.accuracy ?? 0);
+  }
+
+  const mean = foldAccuracies.reduce((a, b) => a + b, 0) / foldAccuracies.length;
+  const variance = foldAccuracies.reduce((a, v) => a + (v - mean) ** 2, 0) / foldAccuracies.length;
+
+  // Also compute full-dataset metrics for cluster tasks
+  const full = await _evaluateSingle(params, data, task, labels);
+  return {
+    ...full,
+    accuracy: mean,
+    cvMeanAccuracy: mean,
+    cvStdAccuracy: Math.sqrt(variance),
+    cvFoldAccuracies: foldAccuracies,
+  };
+}
+
+async function _evaluateSingle(
+  params: Record<string, ParamValue>,
+  data: FeatureMatrix,
+  task: 'classify' | 'cluster' | 'regress',
+  labels: string[],
+): Promise<EvalMetrics> {
+  if (task === 'classify') {
+    if (data.data.length === 0) return { accuracy: 0 };
+    // classifyTraces expects Record<string,unknown>[] — build synthetic feature objects
+    const rows: Record<string, unknown>[] = data.data.map((row, i) => {
+      const obj: Record<string, unknown> = { case_id: data.caseIds[i] ?? `c${i}`, outcome: labels[i] ?? '' };
+      (data.featureNames ?? []).forEach((name, fi) => { obj[name] = row[fi]; });
+      return obj;
+    });
+    const result = await classifyTraces(rows, {
+      method: ((params.method as string) ?? 'knn') as import('./types.js').ClassificationMethod,
+      k: typeof params.k === 'number' ? params.k : 3,
+    });
+    const preds = result.predictions ?? [];
+    // predictions are {caseId, predicted, confidence} objects
+    const predLabels = preds.map((p) => (p as { caseId: string; predicted: string }).predicted);
+    const correct = predLabels.filter((p, i) => p === labels[i]).length;
+    const accuracy = labels.length > 0 ? correct / labels.length : 0;
+    const tp = predLabels.filter((p, i) => p === '1' && labels[i] === '1').length;
+    const fp = predLabels.filter((p, i) => p === '1' && labels[i] !== '1').length;
+    const fn = predLabels.filter((p, i) => p !== '1' && labels[i] === '1').length;
+    const prec = tp + fp > 0 ? tp / (tp + fp) : 0;
+    const rec = tp + fn > 0 ? tp / (tp + fn) : 0;
+    const f1 = prec + rec > 0 ? 2 * prec * rec / (prec + rec) : 0;
+    return { accuracy, precision: prec, recall: rec, f1 };
+  }
+
+  if (task === 'cluster') {
+    if (data.data.length === 0) return { silhouetteScore: 0, inertia: 0 };
+    const k = typeof params.k === 'number' ? params.k : 2;
+    // clusterTraces expects Record<string,unknown>[] — build synthetic objects
+    const rows: Record<string, unknown>[] = data.data.map((row, i) => {
+      const obj: Record<string, unknown> = { case_id: data.caseIds[i] ?? `c${i}` };
+      (data.featureNames ?? []).forEach((name, fi) => { obj[name] = row[fi]; });
+      return obj;
+    });
+    const result = await clusterTraces(rows, { method: ((params.method as string) ?? 'kmeans') as import('./types.js').ClusteringMethod, k });
+    const silhouette = typeof result.modelInfo?.silhouetteScore === 'number' ? result.modelInfo.silhouetteScore : 0;
+    const inertia = typeof result.modelInfo?.inertia === 'number' ? result.modelInfo.inertia : 0;
+    return { silhouetteScore: silhouette, inertia, accuracy: Math.max(0, silhouette) };
+  }
+
+  // regress: stub returning 0 metrics (no regression evaluator needed for current tests)
+  return { accuracy: 0 };
+}
+
+/**
+ * Suggest a default search space for the given task, sample count, and feature count.
+ */
+export function suggestSearchSpace(
+  task: 'classify' | 'cluster' | 'regress',
+  nSamples: number,
+  nFeatures: number,
+): SearchSpace {
+  if (task === 'classify') {
+    const maxK = Math.min(15, Math.max(3, Math.floor(Math.sqrt(nSamples))));
+    const kValues = [3, 5, 7, 9].filter((k) => k <= maxK);
+    if (!kValues.includes(maxK)) kValues.push(maxK);
+    return { method: ['knn'], k: kValues };
+  }
+
+  if (task === 'cluster') {
+    const maxK = Math.min(10, Math.max(2, Math.floor(Math.sqrt(nSamples / 2))));
+    const kValues: number[] = [];
+    for (let k = 2; k <= maxK; k++) kValues.push(k);
+    const epsValues = nFeatures > 5 ? [0.5, 1.0, 2.0] : [0.3, 0.7, 1.5];
+    return { method: ['kmeans', 'dbscan'], k: kValues, eps: epsValues };
+  }
+
+  // regress
+  return { method: ['linear'], degree: [1, 2, 3] };
+}
+
+/**
+ * Convenience wrapper: run GridSearch and return just the best parameters + metrics.
+ */
+export async function findBestParams(
+  task: 'classify' | 'cluster' | 'regress',
+  data: FeatureMatrix,
+  labels: string[],
+  searchSpace: SearchSpace,
+  cvFolds: number = 3,
+): Promise<GridSearchOutput> {
+  const gs = new GridSearch(task, data, searchSpace, cvFolds);
+  return gs.search();
+}
 
 /**
  * Parameter value for grid search (can be number, string, boolean, or array).

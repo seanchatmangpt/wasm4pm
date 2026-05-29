@@ -15,6 +15,7 @@
 
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Deserializer, Serialize};
+use std::borrow::Cow;
 use std::collections::{HashMap, BTreeMap};
 
 /// Parse an ISO 8601 / RFC 3339 timestamp string into milliseconds since Unix epoch.
@@ -326,13 +327,16 @@ impl From<wasm4pm_types::EventLog> for EventLog {
 /// `(String, String)` pairs (~80 bytes/entry). The flat `events` array gives
 /// sequential memory access for the inner DFG loop.
 ///
-/// Lifetime is tied to the source `EventLog` — `vocab` borrows its strings.
+/// Both `events` and `trace_offsets` use `Cow<'a, [T]>` so that
+/// `ColumnarLog::from_owned` can borrow directly from an `OwnedColumnarLog`
+/// (zero allocation) while `EventLog::to_columnar` still works by wrapping
+/// freshly-built `Vec`s in `Cow::Owned`.
 pub struct ColumnarLog<'a> {
     /// Flat array of activity IDs across all traces (trace 0 events, trace 1 events, …).
-    pub events: Vec<u32>,
+    pub events: Cow<'a, [u32]>,
     /// `trace_offsets[t]` = start index of trace `t` in `events`.
     /// Has one extra sentinel entry at the end equal to `events.len()`.
-    pub trace_offsets: Vec<usize>,
+    pub trace_offsets: Cow<'a, [usize]>,
     /// `vocab[id]` = the activity string for integer id `id`.
     pub vocab: Vec<&'a str>,
 }
@@ -340,14 +344,14 @@ pub struct ColumnarLog<'a> {
 impl<'a> ColumnarLog<'a> {
     /// Create a borrowed `ColumnarLog` view from an owned `OwnedColumnarLog`.
     ///
-    /// The returned `ColumnarLog` borrows all fields from `owned`,
-    /// so `owned` must outlive the returned value.
-    /// This is a zero-copy view — the owned data stays alive behind the reference.
+    /// All three fields are borrowed — no heap allocation occurs.
+    /// `events` and `trace_offsets` are `Cow::Borrowed` slices into `owned`;
+    /// `vocab` is a `Vec` of `&str` pointers into `owned.vocab` strings.
     #[must_use]
     pub fn from_owned(owned: &'a crate::cache::OwnedColumnarLog) -> Self {
         ColumnarLog {
-            events: owned.events.clone(),
-            trace_offsets: owned.trace_offsets.clone(),
+            events: Cow::Borrowed(owned.events.as_slice()),
+            trace_offsets: Cow::Borrowed(owned.trace_offsets.as_slice()),
             vocab: owned.vocab.iter().map(|s| s.as_str()).collect(),
         }
     }
@@ -480,8 +484,8 @@ impl EventLog {
         trace_offsets.push(events.len()); // sentinel
 
         ColumnarLog {
-            events,
-            trace_offsets,
+            events: Cow::Owned(events),
+            trace_offsets: Cow::Owned(trace_offsets),
             vocab,
         }
     }

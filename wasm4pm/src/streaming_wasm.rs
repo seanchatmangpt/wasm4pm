@@ -124,12 +124,17 @@ pub fn streaming_dfg_flush_open(handle: &str) -> Result<JsValue, JsValue> {
 }
 
 /// Take a non-destructive DFG snapshot.
+///
+/// Returns a JSON string (not a JS object) — callers must `JSON.parse()` the result.
+/// This uses `serde_json::to_string` + `JsValue::from_str` to avoid the known
+/// `serde_wasm_bindgen::to_value` bug that silently returns `{}` on wasm32 for
+/// `serde_json::Value` payloads.
 #[wasm_bindgen]
 pub fn streaming_dfg_snapshot(handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::StreamingDfgBuilder(b)) => {
             let dfg = b.snapshot();
-            serde_wasm_bindgen::to_value(&dfg).map_err(|e| crate::error::js_val(&e.to_string()))
+            to_js_str(&dfg)
         }
         Some(_) => Err(crate::error::js_val("Handle is not a StreamingDfgBuilder")),
         None => Err(crate::error::js_val("StreamingDfgBuilder handle not found")),
@@ -167,12 +172,14 @@ pub fn streaming_dfg_finalize(handle: &str) -> Result<JsValue, JsValue> {
 }
 
 /// Report memory/progress statistics.
+///
+/// Returns a JSON string — callers must `JSON.parse()` the result.
 #[wasm_bindgen]
 pub fn streaming_dfg_stats(handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::StreamingDfgBuilder(b)) => {
             let stats = b.stats();
-            serde_wasm_bindgen::to_value(&stats).map_err(|e| crate::error::js_val(&e.to_string()))
+            to_js_str(&stats)
         }
         Some(_) => Err(crate::error::js_val("Handle is not a StreamingDfgBuilder")),
         None => Err(crate::error::js_val("StreamingDfgBuilder handle not found")),
@@ -239,12 +246,14 @@ pub fn streaming_skeleton_close_trace(handle: &str, case_id: &str) -> Result<JsV
 }
 
 /// Take a non-destructive Skeleton snapshot.
+///
+/// Returns a JSON string — callers must `JSON.parse()` the result.
 #[wasm_bindgen]
 pub fn streaming_skeleton_snapshot(handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::StreamingSkeletonBuilder(b)) => {
             let dfg = b.snapshot();
-            serde_wasm_bindgen::to_value(&dfg).map_err(|e| crate::error::js_val(&e.to_string()))
+            to_js_str(&dfg)
         }
         Some(_) => Err(crate::error::js_val(
             "Handle is not a StreamingSkeletonBuilder",
@@ -349,12 +358,14 @@ pub fn streaming_heuristic_close_trace(handle: &str, case_id: &str) -> Result<Js
 }
 
 /// Take a non-destructive Heuristic snapshot.
+///
+/// Returns a JSON string — callers must `JSON.parse()` the result.
 #[wasm_bindgen]
 pub fn streaming_heuristic_snapshot(handle: &str) -> Result<JsValue, JsValue> {
     get_or_init_state().with_object(handle, |obj| match obj {
         Some(StoredObject::StreamingHeuristicBuilder(b)) => {
             let dfg = b.snapshot();
-            serde_wasm_bindgen::to_value(&dfg).map_err(|e| crate::error::js_val(&e.to_string()))
+            to_js_str(&dfg)
         }
         Some(_) => Err(crate::error::js_val(
             "Handle is not a StreamingHeuristicBuilder",

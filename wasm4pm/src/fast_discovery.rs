@@ -124,10 +124,13 @@ pub fn discover_hill_climbing_from_log(log: &EventLog, activity_key: &str) -> Di
     let col_owned = log.to_columnar_owned(activity_key);
     let col = ColumnarLog::from_owned(&col_owned);
 
+    // Pre-size: n² / 4 is a practical upper bound for DFG edge count (sparse graphs).
+    let n = col.vocab.len();
+    let cap = n.saturating_mul(n) / 4 + 1;
     let mut current_edges: std::collections::HashSet<(u32, u32)> =
-        std::collections::HashSet::new();
-    let mut edge_freq: FxHashMap<(u32, u32), usize> = FxHashMap::default();
-    let mut node_freq: FxHashMap<u32, usize> = FxHashMap::default();
+        std::collections::HashSet::with_capacity(cap);
+    let mut edge_freq: FxHashMap<(u32, u32), usize> = FxHashMap::with_capacity_and_hasher(cap, Default::default());
+    let mut node_freq: FxHashMap<u32, usize> = FxHashMap::with_capacity_and_hasher(n + 1, Default::default());
 
     for t in 0..col.trace_offsets.len().saturating_sub(1) {
         let start = col.trace_offsets[t];
@@ -146,11 +149,13 @@ pub fn discover_hill_climbing_from_log(log: &EventLog, activity_key: &str) -> Di
     if edge_vocab_len > 1 {
         // Fitness-driven greedy pruning — first-improvement restart.
         // Sorted iteration makes the search order deterministic regardless of
-        // HashSet RandomState. Edges with low observed frequency are pruned first.
-        let mut current_fitness = {
-            let es: std::collections::HashSet<(u32, u32)> = current_edges.iter().copied().collect();
-            evaluate_edges_fitness(&es, &col, edge_vocab_len)
-        };
+        // HashSet RandomState. Edges with low observed frequency are tried first.
+        //
+        // Optimisation: instead of cloning the whole edge set per candidate
+        // (O(edges) per trial), remove the edge in-place, evaluate fitness,
+        // then re-insert on failure. This turns O(edges²) allocations into
+        // O(1) set mutations per trial — no heap allocation in the inner loop.
+        let mut current_fitness = evaluate_edges_fitness(&current_edges, &col, edge_vocab_len);
         let mut improved = true;
         while improved && current_edges.len() > 1 {
             improved = false;
@@ -158,14 +163,16 @@ pub fn discover_hill_climbing_from_log(log: &EventLog, activity_key: &str) -> Di
             // Sort by ascending frequency so cheapest-to-remove edges are tried first.
             candidates.sort_unstable_by_key(|e| (edge_freq.get(e).copied().unwrap_or(0), *e));
             for &edge in &candidates {
-                let mut trial = current_edges.clone();
-                trial.remove(&edge);
-                let trial_fitness = evaluate_edges_fitness(&trial, &col, edge_vocab_len);
+                // Mutate in place — no clone needed.
+                current_edges.remove(&edge);
+                let trial_fitness = evaluate_edges_fitness(&current_edges, &col, edge_vocab_len);
                 if trial_fitness >= current_fitness - f64::EPSILON {
-                    current_edges = trial;
                     current_fitness = trial_fitness;
                     improved = true;
-                    break; // first-improvement restart
+                    break; // first-improvement restart; edge stays removed
+                } else {
+                    // Fitness dropped — restore the edge and continue.
+                    current_edges.insert(edge);
                 }
             }
         }
