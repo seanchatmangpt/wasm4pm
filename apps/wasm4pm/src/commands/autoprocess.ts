@@ -6,6 +6,7 @@ import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
 import { withSpan, withSpanRaw } from './_otel.js';
+import { getGlobalSpanSink } from '../otel/sink.js';
 import { saveCommandReceipt, blake3Hex, newReceipt } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
 
@@ -352,7 +353,15 @@ async function saveState(wasm: Record<string, any>): Promise<void> {
 export const autoprocess = defineCommand({
   meta: {
     name: 'autoprocess',
-    description: 'Run AutoProcess: Perception → Decision → Protection → Optimization. Example: wpm autoprocess log.xes --algorithm genetic',
+    description:
+      'Run the MAPE-K autonomic control loop on an event log: Perception → Decision → Protection → Optimization.\n\n' +
+      'EXAMPLES:\n' +
+      '  wpm autoprocess log.xes                          # Single autonomic cycle (default)\n' +
+      '  wpm autoprocess log.xes -n 5                     # Run 5 cycles to observe RL convergence\n' +
+      '  wpm autoprocess log.xes -n 0                     # Unlimited cycles (Ctrl+C to stop)\n' +
+      '  wpm autoprocess log.xes --format json            # Machine-readable JSON output\n' +
+      '  wpm autoprocess log.xes -n 3 --verbose           # Show per-cycle SPC and RL decisions\n\n' +
+      'Exit codes: 0=success, 1=config error, 2=source/file error, 3=execution error, 4=partial failure, 5=system error',
   },
   args: {
     input: {
@@ -402,11 +411,28 @@ export const autoprocess = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
 
+    // Resolve input path early so it can be used as a span attribute even when
+    // validation fails.  If the arg is missing citty will have already exited,
+    // so this cast is safe.
+    const inputPath = ctx.args.input as string;
+    let lateAttrs: Record<string, string | number | boolean> = {};
+
+    // withSpan wraps the ENTIRE function body — including all pre-flight
+    // validation — so every exit path (config_error, source_error, success)
+    // produces an OTEL span in Jaeger.  Moving validation inside satisfies the
+    // FM-5 requirement: no command path exits without span evidence.
+    return withSpan(
+      'autoprocess',
+      {
+        input: inputPath ?? '',
+        activity_key: String(ctx.args['activity-key'] ?? 'concept:name'),
+        format: String(format),
+        cycles: String(ctx.args.cycles ?? '1'),
+      },
+      async () => {
     // ── --format validation ────────────────────────────────────────────────────
-    // Guard before withSpan so invalid format exits config_error (1), not
-    // execution_error (3) from the WASM layer.  Rank-2 domain contract: the
-    // format flag must be 'json' or 'human'; anything else is a configuration
-    // error, not an execution error.
+    // Rank-2 domain contract: the format flag must be 'json' or 'human';
+    // anything else is a configuration error, not an execution error.
     if (!['json', 'human'].includes(format as string)) {
       const result = makeErrorResult(
         'autoprocess',
@@ -422,7 +448,6 @@ export const autoprocess = defineCommand({
     // parseInt('abc', 10) returns NaN; parseInt('1.7', 10) returns 1 (truncates).
     // NaN causes cyclesRun < NaN === false → zero cycles, silent exit 0.
     // Negative values run zero cycles for the same reason.
-    // Guard here before entering any async WASM path.
     const cyclesRaw = String(ctx.args.cycles ?? '1');
 
     // Reject float strings explicitly — parseInt('1.7') silently truncates to 1,
@@ -476,12 +501,10 @@ export const autoprocess = defineCommand({
     const unlimited = maxCycles === 0;
 
     try {
-      const inputPath = ctx.args.input as string;
       const stateFilePath = path.resolve(AUTOPROCESS_STATE_FILE);
-      let lateAttrs: Record<string, string | number | boolean> = {};
 
       await withSpan(
-        'autoprocess',
+        'autoprocess.inner',
         { input: inputPath, activity_key: String(ctx.args['activity-key'] ?? 'concept:name') },
         async () =>
           withLogSession(
@@ -495,7 +518,28 @@ export const autoprocess = defineCommand({
               await loadState(wasm);
 
               // Run AutoProcess cycle(s) — bounded by --cycles (0 = unlimited)
-              const cycleConfig = (ctx.args.config as string) || '{}';
+              // Security: validate --config is parseable JSON before passing to WASM.
+              // WASM receives cycleConfig as a raw string; malformed input causes
+              // opaque Rust panics, not useful error messages.  Guard here so the
+              // caller gets a clean CONFIG_ERROR (1) with actionable feedback.
+              const rawCycleConfig = (ctx.args.config as string) || '{}';
+              try {
+                JSON.parse(rawCycleConfig);
+              } catch {
+                const badConfigResult = makeErrorResult(
+                  'autoprocess',
+                  new Error(
+                    `--config must be valid JSON.\n\n` +
+                      `  Received: ${rawCycleConfig.length > 80 ? rawCycleConfig.slice(0, 80) + '…' : rawCycleConfig}\n\n` +
+                      `  Example: wpm autoprocess log.xes --config '{"algorithm":"dfg"}'`
+                  ),
+                  EXIT_CODES.config_error,
+                  'CONFIG_INVALID_JSON'
+                );
+                emitResult(badConfigResult, { format, verbose, quiet });
+                return await exitWithFlush(EXIT_CODES.config_error);
+              }
+              const cycleConfig = rawCycleConfig;
               let cyclesRun = 0;
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               let cycleResult: Record<string, any> = {};
@@ -671,26 +715,43 @@ export const autoprocess = defineCommand({
                   const inputBytes = await fsp
                     .readFile(inputPath)
                     .catch(() => Buffer.from(inputPath));
+                  // The WASM output is { cycle_result: { success, perception, ... }, timing: {} }
+                  // Access nested fields via cycle_result to match actual schema.
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const receiptCr = (cycleResult.cycle_result ?? cycleResult) as Record<string, any>;
                   saveCommandReceipt({
                     ...newReceipt('autoprocess'),
                     command: 'autoprocess',
                     input_hash: blake3Hex(inputBytes),
                     output_hash: blake3Hex(JSON.stringify(cycleResult)),
-                    status: cycleResult.success ? 'success' : 'partial',
+                    status: receiptCr.success ? 'success' : 'partial',
                     summary: {
                       cycles_run: cyclesRun,
                       final_health_level:
-                        (cycleResult.perception?.health_state as string | undefined) ?? 'unknown',
-                      total_reward: (cycleResult.optimization?.reward as number | undefined) ?? 0,
+                        (receiptCr.perception?.health_state as string | undefined) ?? 'unknown',
+                      total_reward: (receiptCr.optimization?.reward as number | undefined) ?? 0,
                       spc_alerts_fired:
-                        (cycleResult.protection?.special_causes as unknown[] | undefined)?.length ??
+                        (receiptCr.protection?.special_causes as unknown[] | undefined)?.length ??
                         0,
                       initial_state_hash,
                       final_state_hash,
                     },
                   });
-                } catch {
-                  /* receipt write must never break the command */
+                } catch (receiptErr) {
+                  // receipt write must never break the command, but MUST leave evidence
+                  try {
+                    const sink = getGlobalSpanSink();
+                    sink({
+                      trace_id: '',
+                      span_id: '',
+                      name: 'receipt.write.failed',
+                      kind: 'INTERNAL',
+                      start_time: Date.now() * 1_000_000,
+                      end_time: Date.now() * 1_000_000,
+                      status: { code: 'ERROR', message: String(receiptErr) },
+                      attributes: { 'service.name': 'wpm', 'receipt.recovered': true, 'receipt.command': 'autoprocess' },
+                    } as import('@wasm4pm/cognition').OtelSpan);
+                  } catch { /* span emit must never throw */ }
                 }
               }
 
@@ -919,11 +980,14 @@ export const autoprocess = defineCommand({
             }
           ), // end withLogSession
         () => lateAttrs
-      ); // end withSpan
+      ); // end withSpan (inner)
     } catch (error) {
       const result = makeErrorResult('autoprocess', error, EXIT_CODES.execution_error);
       emitResult(result, { format, verbose, quiet });
       return await exitWithFlush(result.exit_code);
     }
+      }, // end outer withSpan body
+      () => lateAttrs
+    ); // end outer withSpan
   },
 });

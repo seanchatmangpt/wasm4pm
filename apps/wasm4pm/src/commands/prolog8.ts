@@ -88,11 +88,19 @@ const showCmd = defineCommand({
         const wasm = loadProlog8();
         caps = parseResult(wasm.prolog8_show());
       } catch (err) {
+        const errMsg = err instanceof Error ? err.message : String(err);
+        const isNotBuilt = errMsg.includes('not found') || errMsg.includes('Cannot find module');
+        const hint = isNotBuilt
+          ? `\n\n  The Prolog8 WASM package has not been built yet.\n` +
+            `  Build it with:\n` +
+            `    cd crates/prolog8 && wasm-pack build --target nodejs --out-dir pkg\n\n` +
+            `  Then re-run: wpm prolog8 show`
+          : `\n\n  Run "wpm doctor" to check your environment.`;
         const result = makeErrorResult(
           'prolog8 show',
-          String(err),
+          `Prolog8 engine failed to load: ${errMsg}${hint}`,
           EXIT_CODES.source_error,
-          'source_error'
+          'PROLOG8_LOAD_FAILED'
         );
         emitResult(result, { format: fmt });
         return exitWithFlush(EXIT_CODES.source_error);
@@ -180,11 +188,19 @@ const queryCmd = defineCommand({
         try {
           inputJson = fs.readFileSync(inputPath, 'utf-8');
         } catch (err) {
+          const fsErr = err as NodeJS.ErrnoException;
+          const code = fsErr.code ?? 'UNKNOWN';
+          const hint =
+            code === 'ENOENT'
+              ? `\n\n  File not found: ${inputPath}\n  Check the path with: ls -la ${path.dirname(inputPath)}`
+              : code === 'EACCES'
+                ? `\n\n  Permission denied. Fix with: chmod 644 ${inputPath}`
+                : '';
           const result = makeErrorResult(
             'prolog8 query',
-            `cannot read ${inputPath}: ${err}`,
+            `Cannot read input file '${inputPath}' (${code}): ${fsErr.message}${hint}`,
             EXIT_CODES.source_error,
-            'source_error'
+            'INPUT_READ_FAILED'
           );
           emitResult(result, { format: fmt });
           return exitWithFlush(EXIT_CODES.source_error);
@@ -196,11 +212,17 @@ const queryCmd = defineCommand({
           try {
             wasm = loadProlog8();
           } catch (loadErr) {
+            const loadMsg = loadErr instanceof Error ? loadErr.message : String(loadErr);
+            const isNotBuilt = loadMsg.includes('not found') || loadMsg.includes('Cannot find module');
+            const buildHint = isNotBuilt
+              ? `\n\n  Build the Prolog8 engine first:\n` +
+                `    cd crates/prolog8 && wasm-pack build --target nodejs --out-dir pkg`
+              : '';
             const result = makeErrorResult(
               'prolog8 query',
-              String(loadErr),
+              `Prolog8 engine failed to load: ${loadMsg}${buildHint}`,
               EXIT_CODES.source_error,
-              'source_error'
+              'PROLOG8_LOAD_FAILED'
             );
             emitResult(result, { format: fmt });
             return exitWithFlush(EXIT_CODES.source_error);
@@ -208,11 +230,17 @@ const queryCmd = defineCommand({
           queryResult = parseResult(wasm.prolog8_query(inputJson));
         } catch (err) {
           // WASM loaded but engine threw during execution (e.g. malformed input)
+          const errMsg = err instanceof Error ? err.message : String(err);
+          const hint = errMsg.toLowerCase().includes('json')
+            ? `\n\n  The input file does not match the expected Prolog8 query schema.\n` +
+              `  See WASM_API.md (Prolog8 section) for the required JSON shape.\n` +
+              `  Validate your input: wpm validate ${inputPath}`
+            : `\n\n  Run "wpm doctor" to check your environment.`;
           const result = makeErrorResult(
             'prolog8 query',
-            String(err),
+            `Prolog8 query execution failed: ${errMsg}${hint}`,
             EXIT_CODES.execution_error,
-            'execution_error'
+            'QUERY_EXECUTION_FAILED'
           );
           emitResult(result, { format: fmt });
           return exitWithFlush(EXIT_CODES.execution_error);
@@ -322,11 +350,19 @@ const replayCmd = defineCommand({
         try {
           inputJson = fs.readFileSync(inputPath, 'utf-8');
         } catch (err) {
+          const fsErr = err as NodeJS.ErrnoException;
+          const code = fsErr.code ?? 'UNKNOWN';
+          const hint =
+            code === 'ENOENT'
+              ? `\n\n  File not found: ${inputPath}\n  Check the path with: ls -la ${path.dirname(inputPath)}`
+              : code === 'EACCES'
+                ? `\n\n  Permission denied. Fix with: chmod 644 ${inputPath}`
+                : '';
           const result = makeErrorResult(
             'prolog8 replay',
-            `cannot read ${inputPath}: ${err}`,
+            `Cannot read input file '${inputPath}' (${code}): ${fsErr.message}${hint}`,
             EXIT_CODES.source_error,
-            'source_error'
+            'INPUT_READ_FAILED'
           );
           emitResult(result, { format: fmt });
           return exitWithFlush(EXIT_CODES.source_error);
@@ -338,11 +374,17 @@ const replayCmd = defineCommand({
           try {
             wasm = loadProlog8();
           } catch (loadErr) {
+            const loadMsg = loadErr instanceof Error ? loadErr.message : String(loadErr);
+            const isNotBuilt = loadMsg.includes('not found') || loadMsg.includes('Cannot find module');
+            const buildHint = isNotBuilt
+              ? `\n\n  Build the Prolog8 engine first:\n` +
+                `    cd crates/prolog8 && wasm-pack build --target nodejs --out-dir pkg`
+              : '';
             const result = makeErrorResult(
               'prolog8 replay',
-              String(loadErr),
+              `Prolog8 engine failed to load: ${loadMsg}${buildHint}`,
               EXIT_CODES.source_error,
-              'source_error'
+              'PROLOG8_LOAD_FAILED'
             );
             emitResult(result, { format: fmt });
             return exitWithFlush(EXIT_CODES.source_error);
@@ -352,7 +394,7 @@ const replayCmd = defineCommand({
           // WASM loaded but engine threw during replay (e.g. malformed JSON input)
           const result = makeErrorResult(
             'prolog8 replay',
-            String(err),
+            err instanceof Error ? err.message : String(err),
             EXIT_CODES.execution_error,
             'execution_error'
           );

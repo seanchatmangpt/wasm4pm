@@ -8,7 +8,15 @@
  *
  * Detection order is specific → general so that ambiguous shapes (e.g. trees that
  * happen to expose `nodes`/`edges` arrays) are not misclassified as DFGs.
+ *
+ * OTEL: discriminateWithSpan() wraps discriminate() and emits a classification span.
+ * Use discriminateWithSpan() at WASM call sites for observability compliance.
+ * discriminate() remains a pure synchronous function for unit-testability.
  */
+
+import { randomBytes } from 'node:crypto';
+import type { OtelSpan } from '@wasm4pm/cognition';
+import { getGlobalSpanSink } from './otel/sink.js';
 
 export type DiscoveryShape =
   | { kind: 'dfg'; nodes: number; edges: number; raw: object }
@@ -108,15 +116,40 @@ export function discriminate(raw: unknown, algorithmId?: string): DiscoveryShape
   // 5. Handle-based DFG (heuristic miner et al.): model lives in WASM memory;
   //    only metadata is exposed: { nodes: number, edges: number, handle: string }.
   //    The counts are authoritative even though the full graph is opaque.
+  //    Guard: must NOT have numeric places/transitions — those indicate a handle-based
+  //    Petri net (case 6) that happens to also report graph-level counts. Without this
+  //    guard, any payload with {handle, nodes, edges, places, transitions} would be
+  //    misclassified as a DFG because case 5 is evaluated before case 6.
   if (
     typeof obj['nodes'] === 'number' &&
     typeof obj['edges'] === 'number' &&
-    typeof obj['handle'] === 'string'
+    typeof obj['handle'] === 'string' &&
+    typeof obj['places'] !== 'number' &&
+    typeof obj['transitions'] !== 'number'
   ) {
     return {
       kind: 'dfg',
       nodes: obj['nodes'] as number,
       edges: obj['edges'] as number,
+      raw: obj,
+    };
+  }
+
+  // 6. Handle-based Petri net (alpha_plus_plus, hill_climbing et al.): model lives in
+  //    WASM memory; only summary counts are exposed:
+  //    { handle: string, places: number, transitions: number, arcs: number }.
+  //    This is the Petri net equivalent of case 5 (handle-based DFG).
+  if (
+    typeof obj['handle'] === 'string' &&
+    typeof obj['places'] === 'number' &&
+    typeof obj['transitions'] === 'number'
+  ) {
+    const arcs = typeof obj['arcs'] === 'number' ? (obj['arcs'] as number) : 0;
+    return {
+      kind: 'petrinet',
+      places: obj['places'] as number,
+      transitions: obj['transitions'] as number,
+      arcs,
       raw: obj,
     };
   }
@@ -138,5 +171,63 @@ export function toUniformStats(shape: DiscoveryShape): { nodes: number; edges: n
       return { nodes: shape.nodeCount, edges: 0 };
     case 'declare':
       return { nodes: 0, edges: shape.constraints };
+  }
+}
+
+/**
+ * Classify a discovery payload and emit an OTEL classification span.
+ *
+ * Wraps discriminate() with a non-blocking span that records:
+ * - service.name = 'wasm4pm'
+ * - status = 'ok' (classified) or 'error' (DiscoveryShapeError)
+ * - discriminator.algorithm, discriminator.kind, discriminator.keys_on_error
+ *
+ * Use this at WASM call sites for 100% observability compliance per chicago-tdd.md.
+ * The returned DiscoveryShape is identical to discriminate(raw, algorithmId).
+ */
+export function discriminateWithSpan(raw: unknown, algorithmId?: string): DiscoveryShape {
+  const sinkFn = getGlobalSpanSink();
+
+  const startNs = Date.now() * 1_000_000;
+  let status: 'OK' | 'ERROR' = 'OK';
+  let errMsg: string | undefined;
+  let shape: DiscoveryShape | undefined;
+
+  try {
+    shape = discriminate(raw, algorithmId);
+    return shape;
+  } catch (e) {
+    status = 'ERROR';
+    errMsg = e instanceof Error ? e.message : String(e);
+    throw e;
+  } finally {
+    try {
+      const span: OtelSpan = {
+        trace_id: randomBytes(16).toString('hex'),
+        span_id: randomBytes(8).toString('hex'),
+        name: 'wasm4pm.discriminator.classify',
+        kind: 'INTERNAL',
+        start_time: startNs,
+        end_time: Date.now() * 1_000_000,
+        status:
+          errMsg !== undefined ? { code: status, message: errMsg } : { code: status },
+        attributes: {
+          'service.name': 'wasm4pm',
+          'discriminator.algorithm': algorithmId ?? 'unknown',
+          'discriminator.kind': shape?.kind ?? 'error',
+          ...(errMsg !== undefined
+            ? {
+                'discriminator.keys_on_error':
+                  raw !== null && typeof raw === 'object'
+                    ? Object.keys(raw as object).join(',')
+                    : '',
+              }
+            : {}),
+        },
+      };
+      sinkFn(span);
+    } catch {
+      /* never block on OTEL */
+    }
   }
 }

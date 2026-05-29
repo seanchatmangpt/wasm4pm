@@ -235,9 +235,18 @@ export const batch = defineCommand({
         // Validate directory exists
         const dirStats = await fs.stat(directory).catch(() => null);
         if (!dirStats || !dirStats.isDirectory()) {
+          const isFile = dirStats && !dirStats.isDirectory();
+          const hint = isFile
+            ? `\n\n  '${directory}' is a file, not a directory.\n` +
+              `  To process a single file: wpm run ${directory}`
+            : `\n\n  Check the path with: ls -la ${directory.includes('/') ? directory.replace(/\/[^/]+$/, '') : '.'}`;
           const errResult = makeErrorResult(
             'batch',
-            new Error(`Directory not found: ${directory}`),
+            new Error(
+              `Directory not found: '${directory}'${hint}\n\n` +
+                `  Usage: wpm batch <directory> --algorithm dfg\n` +
+                `  Processes all .xes and .ocel.json files inside the directory.`
+            ),
             EXIT_CODES.source_error,
             'BATCH_DIRECTORY_NOT_FOUND'
           );
@@ -250,7 +259,15 @@ export const batch = defineCommand({
         if (logFiles.length === 0) {
           const errResult = makeErrorResult(
             'batch',
-            new Error(`No XES/JSON files found in: ${directory}`),
+            new Error(
+              `No XES or OCEL log files found in: '${directory}'\n\n` +
+                `  wpm batch looks for: *.xes, *.xes.gz, *.json, *.ocel.json\n\n` +
+                `  Check what's in the directory:\n` +
+                `    ls -la ${directory}\n\n` +
+                `  If your files have a different extension, consider renaming them\n` +
+                `  or using wpm run directly on a specific file:\n` +
+                `    wpm run ${directory}/yourlog.xes`
+            ),
             EXIT_CODES.source_error,
             'BATCH_NO_LOGS_FOUND'
           );

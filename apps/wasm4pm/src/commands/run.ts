@@ -11,8 +11,9 @@ import { EXIT_CODES } from '../exit-codes.js';
 import { savePredictionResult } from './results.js';
 import { executeMlTask } from '../ml-runner.js';
 import type { MlTask } from '../ml-runner.js';
-import { discriminate, DiscoveryShapeError } from '../discriminator.js';
+import { discriminateWithSpan, DiscoveryShapeError } from '../discriminator.js';
 import { withSpan, withWasmSpan } from './_otel.js';
+import { getGlobalSpanSink } from '../otel/sink.js';
 import {
   saveCommandReceipt,
   blake3Hex,
@@ -89,7 +90,12 @@ export const run = defineCommand({
     },
     algorithm: {
       type: 'string',
-      description: `Discovery algorithm — use -a as shorthand — one of: ${ALGORITHMS.join(', ')} (default: config algorithm.name, else profile default, else heuristic_miner)`,
+      description:
+        'Discovery algorithm to use (default: heuristic_miner, or the value in wasm4pm.toml).\n' +
+        '  Common: dfg, heuristic_miner, inductive_miner, genetic_algorithm, ilp, alpha_plus_plus\n' +
+        '  OCEL:   ocel_dfg, ocel_petri_net\n' +
+        '  Fast:   simd_streaming_dfg, process_skeleton\n' +
+        '  Run "wpm algorithms" for the full list with speed/quality ratings.',
       alias: 'a',
     },
     output: {
@@ -293,7 +299,10 @@ export const run = defineCommand({
                 fast: 'fast',
                 balanced: 'balanced',
                 quality: 'quality',
-                stream: 'streaming',
+                // 'stream' profile would map to 'streaming' goal, but streaming-only
+                // algorithms (e.g. simd_streaming_dfg) are not usable by the batch `run`
+                // command.  Fall back to balanced so auto-select picks a real batch algorithm.
+                stream: 'balanced',
               };
               const profile = config?.execution?.profile ?? 'balanced';
               const goal = (profileToGoal[profile] ?? 'balanced') as import('@wasm4pm/planner').SuggestionGoal;
@@ -357,7 +366,7 @@ export const run = defineCommand({
                   `Common algorithms: ${discoveryAliases}\n` +
                   `Run 'wpm algorithms' to list all ${cliAliases.length} available algorithms.`
               ),
-              EXIT_CODES.source_error,
+              EXIT_CODES.config_error,
               'ALGORITHM_NOT_FOUND'
             );
             emitResult(result, emitOptions);
@@ -683,8 +692,10 @@ export const run = defineCommand({
               // resolvedAlgoFinal holds the algorithm that actually succeeded (may differ from resolvedAlgo)
 
               // Validate discovery output shape — fail loudly on unknown shapes.
+              // discriminateWithSpan emits an OTEL span (service.name=wasm4pm,
+              // status=ok|error) for 100% observability compliance.
               try {
-                discriminate(raw, resolvedAlgoFinal);
+                discriminateWithSpan(raw, resolvedAlgoFinal);
               } catch (shapeErr) {
                 if (shapeErr instanceof DiscoveryShapeError) {
                   const errResult = makeErrorResult(
@@ -1026,25 +1037,58 @@ export const run = defineCommand({
                     },
                   };
                   saveCommandReceipt(receipt);
-                } catch {
-                  /* receipt write must never break the command */
+                } catch (receiptErr) {
+                  // receipt write must never break the command, but MUST leave evidence
+                  try {
+                    const sink = getGlobalSpanSink();
+                    sink({
+                      trace_id: '',
+                      span_id: '',
+                      name: 'receipt.write.failed',
+                      kind: 'INTERNAL',
+                      start_time: Date.now() * 1_000_000,
+                      end_time: Date.now() * 1_000_000,
+                      status: { code: 'ERROR', message: String(receiptErr) },
+                      attributes: { 'service.name': 'wpm', 'receipt.recovered': true, 'receipt.command': 'run' },
+                    } as import('@wasm4pm/cognition').OtelSpan);
+                  } catch { /* span emit must never throw */ }
                 }
               }
 
               // Step 10: Write output file if specified
               // Discovery succeeded; a write failure is a sink error → partial_failure (4), not system_error (5).
               if (ctx.args.output) {
+                // Security: restrict writes to paths within cwd.
+                // Without this guard a user (or malicious config file) could write
+                // to arbitrary locations: wpm run log.xes -o /etc/cron.d/pwned
+                const resolvedOutput = path.resolve(ctx.args.output as string);
+                const cwdForOutput = path.resolve(process.cwd());
+                const relativeOutput = path.relative(cwdForOutput, resolvedOutput);
+                if (relativeOutput.startsWith('..') || path.isAbsolute(relativeOutput)) {
+                  const errResult = makeErrorResult(
+                    'run',
+                    new Error(
+                      `Output path traversal denied: '${ctx.args.output}' resolves outside the working directory.\n\n` +
+                        `  Use a relative path within the current project, e.g.:\n` +
+                        `    wpm run log.xes -o results/output.json`
+                    ),
+                    EXIT_CODES.config_error,
+                    'OUTPUT_PATH_TRAVERSAL_DENIED'
+                  );
+                  emitResult(errResult, emitOptions);
+                  return await exitWithFlush(errResult.exit_code);
+                }
                 try {
-                  const outputDir = path.dirname(ctx.args.output);
+                  const outputDir = path.dirname(resolvedOutput);
                   await fs.mkdir(outputDir, { recursive: true });
-                  await fs.writeFile(ctx.args.output, JSON.stringify(payload, null, 2));
+                  await fs.writeFile(resolvedOutput, JSON.stringify(payload, null, 2));
                 } catch (error: unknown) {
                   const fsErr = error as NodeJS.ErrnoException;
                   let extraHint = `Check that the destination directory exists and is writable: chmod 755 ${path.dirname(ctx.args.output as string)}`;
                   if (fsErr?.code === 'EACCES' || fsErr?.code === 'EROFS') {
                     extraHint = `Permission denied (${fsErr.code}). If you are running in a container, please check volume mounts and permissions.`;
                   }
-                  
+
                   const message = error instanceof Error ? error.message : String(error);
                   const errResult = makeErrorResult(
                     'run',
@@ -1670,12 +1714,31 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
     projection.log('  wpm results   -- browse saved results');
   });
 
-  // Write output file if requested
+  // Write output file if requested (OCEL path)
   if (ctx.args['output']) {
+    // Security: same cwd-restriction as the XES output path above.
+    const rawOcelOutput = String(ctx.args['output']);
+    const resolvedOcelOutput = path.resolve(rawOcelOutput);
+    const cwdForOcelOutput = path.resolve(process.cwd());
+    const relativeOcelOutput = path.relative(cwdForOcelOutput, resolvedOcelOutput);
+    if (relativeOcelOutput.startsWith('..') || path.isAbsolute(relativeOcelOutput)) {
+      const errResult = makeErrorResult(
+        'run',
+        new Error(
+          `Output path traversal denied: '${rawOcelOutput}' resolves outside the working directory.\n\n` +
+            `  Use a relative path within the current project, e.g.:\n` +
+            `    wpm run log.ocel.json -o results/output.json`
+        ),
+        EXIT_CODES.config_error,
+        'OUTPUT_PATH_TRAVERSAL_DENIED'
+      );
+      emitResult(errResult, emitOptions);
+      return exitFlush(errResult.exit_code);
+    }
     try {
-      const outputDir = path.dirname(String(ctx.args['output']));
+      const outputDir = path.dirname(resolvedOcelOutput);
       await fs.mkdir(outputDir, { recursive: true });
-      await fs.writeFile(String(ctx.args['output']), JSON.stringify(payload, null, 2));
+      await fs.writeFile(resolvedOcelOutput, JSON.stringify(payload, null, 2));
     } catch (writeError: unknown) {
       const fsWriteErr = writeError as NodeJS.ErrnoException;
       let extraHint = ``;

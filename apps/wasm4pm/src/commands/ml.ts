@@ -93,9 +93,9 @@ export const ml = defineCommand({
       description: 'Output format (human or json)',
       default: 'human',
     },
-    verbose: { type: 'boolean', alias: 'v' },
-    quiet: { type: 'boolean', alias: 'q' },
-    'no-save': { type: 'boolean' },
+    verbose: { type: 'boolean', alias: 'v', description: 'Show detailed output (feature counts, per-class metrics, model parameters)' },
+    quiet: { type: 'boolean', alias: 'q', description: 'Suppress all non-error output' },
+    'no-save': { type: 'boolean', description: 'Do not auto-save the result to .wasm4pm/results/' },
     cv: {
       type: 'boolean',
       description: 'Enable k-fold cross-validation for classify task (reports cv_accuracy, cv_std_dev)',

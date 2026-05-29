@@ -116,9 +116,14 @@ export const validate = defineCommand({
           try {
             await fs.access(inputPath);
           } catch {
+            const dir = inputPath.includes('/') ? inputPath.replace(/\/[^/]+$/, '') : '.';
             const result = makeErrorResult(
               'validate',
-              `Input file not found: ${inputPath}`,
+              `File not found: '${inputPath}'\n\n` +
+                `  Check the path and try again:\n` +
+                `    ls -la ${dir}\n\n` +
+                `  Accepted formats: .xes, .csv, .ocel.json\n` +
+                `  Example: wpm validate process.xes`,
               EXIT_CODES.source_error,
               'FILE_NOT_FOUND'
             );

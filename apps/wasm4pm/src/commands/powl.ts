@@ -199,9 +199,17 @@ export const powl = defineCommand({
           // Resolve model input (inline string or file)
           const needsModel = !['discover'].includes(sub);
           if (needsModel && !modelInput) {
+            const modelSubcmds = POWL_SUBCOMMANDS.filter(s => s !== 'discover').join(', ');
             const result = makeErrorResult(
               'powl',
-              'Missing required argument: --model',
+              `Missing required argument --model for 'wpm powl ${sub}'.\n\n` +
+                `  --model accepts an inline POWL JSON string or a path to a .powl.json file.\n\n` +
+                `  Examples:\n` +
+                `    wpm powl ${sub} --model routes/my-route.powl.json\n` +
+                `    wpm powl ${sub} --model '{"type":"sequence","children":[]}'\n\n` +
+                `  Subcommands that require --model: ${modelSubcmds}\n` +
+                `  Subcommand 'discover' auto-generates the model from a log (no --model needed):\n` +
+                `    wpm powl discover -i process.xes`,
               EXIT_CODES.source_error,
               'MISSING_MODEL'
             );

@@ -479,8 +479,18 @@ export const results = defineCommand({
         const limit = parsedLimit ?? 20;
 
         // --verify <ref>: re-hash the stored result payload and compare against the receipt
-        if (ctx.args.verify) {
+        if (ctx.args.verify !== undefined) {
           const ref = ctx.args.verify as string;
+          if (!ref) {
+            const errResult = makeErrorResult(
+              'results',
+              new Error('--verify requires a result reference (e.g. wpm results --verify 1 or --verify <timestamp>)'),
+              EXIT_CODES.config_error,
+              'MISSING_VERIFY_REF'
+            );
+            emitResult(errResult, { format, verbose, quiet });
+            return await exitWithFlush(errResult.exit_code);
+          }
           const receiptsDir = path.resolve(process.cwd(), '.wasm4pm', 'receipts');
 
           const resultFilepath = resolveRef(ref, files, dir);
@@ -594,7 +604,7 @@ export const results = defineCommand({
               ? 'ok'
               : 'no_receipt';
 
-          if (matchedReceipt !== null && ocelMissing) {
+          if (matchedReceipt !== null && ocelMissing && integrity !== 'mismatch') {
             integrity = 'missing_ocel';
           }
 
@@ -618,11 +628,14 @@ export const results = defineCommand({
             timestamp: matchedReceipt?.timestamp ?? null,
           };
 
-          // exit 3 (execution_error) when hash mismatch or missing OCEL is detected — the
+          // exit 4 (partial_failure) when hash mismatch or missing OCEL is detected — the
           // stored receipt proof does not match the current payload, indicating
-          // tampering or corruption.  exit 0 for ok or no_receipt (no breach).
+          // tampering or corruption.  partial_failure (4) is the correct code because
+          // the verify command ran successfully (not an execution error) but found that
+          // the result is no longer intact — a data-integrity failure, not a runtime failure.
+          // exit 0 for ok or no_receipt (no breach detected).
           const verifyExitCode =
-            (integrity === 'mismatch' || integrity === 'missing_ocel') ? EXIT_CODES.execution_error : EXIT_CODES.success;
+            (integrity === 'mismatch' || integrity === 'missing_ocel') ? EXIT_CODES.partial_failure : EXIT_CODES.success;
 
           const verifyResult = makeResult(
             'results',
@@ -704,13 +717,46 @@ export const results = defineCommand({
           return await exitWithFlush(verifyExitCode);
         }
 
-        // --path: cat a specific file by absolute or relative path
+        // --path: cat a specific file by absolute or relative path.
+        // Security: restrict reads to files ending in .json within cwd to prevent
+        // path traversal (e.g. --path /etc/passwd, --path ../../shadow).
         if (ctx.args.path) {
-          const filepath = path.resolve(process.cwd(), ctx.args.path as string);
+          const requestedPath = ctx.args.path as string;
+          const filepath = path.resolve(process.cwd(), requestedPath);
+          // Guard: the resolved path must stay within cwd and be a .json file.
+          const cwd = path.resolve(process.cwd());
+          const relative = path.relative(cwd, filepath);
+          if (relative.startsWith('..') || path.isAbsolute(relative)) {
+            const errResult = makeErrorResult(
+              'results',
+              new Error(
+                `Path traversal denied: '${requestedPath}' resolves outside the working directory.\n` +
+                  `  Use a relative path within the current project, e.g.:\n` +
+                  `    wpm results --path .wasm4pm/results/myresult.json`
+              ),
+              EXIT_CODES.config_error,
+              'PATH_TRAVERSAL_DENIED'
+            );
+            emitResult(errResult, { format, verbose, quiet });
+            return await exitWithFlush(errResult.exit_code);
+          }
+          if (!filepath.endsWith('.json')) {
+            const errResult = makeErrorResult(
+              'results',
+              new Error(
+                `Invalid file type: --path only accepts .json result files.\n` +
+                  `  Got: '${requestedPath}'`
+              ),
+              EXIT_CODES.config_error,
+              'RESULT_PATH_INVALID_TYPE'
+            );
+            emitResult(errResult, { format, verbose, quiet });
+            return await exitWithFlush(errResult.exit_code);
+          }
           if (!existsSync(filepath)) {
             const errResult = makeErrorResult(
               'results',
-              new Error(`Result file not found: ${filepath}`),
+              new Error(`Result file not found: ${path.basename(filepath)}`),
               EXIT_CODES.source_error,
               'RESULT_PATH_NOT_FOUND'
             );
