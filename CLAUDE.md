@@ -340,7 +340,7 @@ wasm4pm uses **12 canonical feature flags** that map to **5 deployment profiles*
 | `iot` | IoT devices, embedded | ~1MB | basic discovery, conformance | ~12-18 |
 | `edge` | CDN workers, edge servers | ~1.5MB | adv. discovery, basic streaming | ~18-25 |
 | `fog` | Fog computing, gateways | ~2MB | all except POWL, full streaming, ML | ~35-40 |
-| `browser` | Web browsers (DEFAULT) | **2.7MB** (measured: 2,752,160 bytes in `wasm4pm/pkg/wasm4pm_bg.wasm`) | all features (38 kernel-registered algorithms; many additional internal WASM exports) | 38 |
+| `browser` | Web browsers (DEFAULT) | **3.4MB** (measured: 3,551,895 bytes in `wasm4pm/pkg/wasm4pm_bg.wasm`) | all features (38 kernel-registered algorithms; many additional internal WASM exports) | 38 |
 
 ### Build Commands by Profile
 
