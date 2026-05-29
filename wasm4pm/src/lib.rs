@@ -1,4 +1,4 @@
-// Temporarily removed blanket allow to audit warnings
+#![allow(dead_code, unused_variables, unused_assignments, unused_mut)]
 //! # wasm4pm — High-Performance Process Mining in WebAssembly
 //!
 //! `wasm4pm` provides production-ready process mining algorithms compiled to WebAssembly,
@@ -77,9 +77,6 @@
 //! - [GitHub Repository](https://github.com/seanchatmangpt/wasm4pm)
 //! - [npm Package](https://www.npmjs.com/package/@wasm4pm/cli)
 //! - [Documentation](https://docs.rs/wasm4pm)
-
-#![allow(clippy::all)]
-#![allow(clippy::all)]
 
 /// Cache residency helpers for warm-starting the WASM module.
 pub mod cache_resident;
