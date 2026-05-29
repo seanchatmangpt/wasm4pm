@@ -1043,7 +1043,7 @@ export const run = defineCommand({
                   const receipt: CommandReceipt = {
                     ...newReceipt('run'),
                     input_hash: blake3Hex(inputBytes),
-                    output_hash: blake3Hex(JSON.stringify(semanticPayload)),
+                    output_hash: blake3Hex(JSON.stringify(payload)),
                     status: 'success',
                     summary: {
                       algorithm: resolvedAlgoFinal,
