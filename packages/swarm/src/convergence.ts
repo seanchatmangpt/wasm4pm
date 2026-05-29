@@ -132,6 +132,11 @@ export function checkSwarmConvergence(
   agreementRate: number;
   convergenceReason: string;
 } {
+  // Guard: convergenceRuns <= 0 would make hist.length >= 0 always true,
+  // causing every worker to appear stable on the first episode regardless of
+  // output variance (Rank-1 invariant: convergence requires at least 1 run).
+  const safeConvergenceRuns = Math.max(1, Math.floor(convergenceRuns));
+
   const workerAlgoPairs = results.map((r) => `${r.workerId}/${r.algorithmId}`);
   const stableWorkers: string[] = [];
   const unstableWorkers: string[] = [];
@@ -140,10 +145,10 @@ export function checkSwarmConvergence(
     const key = `${r.workerId}/${r.algorithmId}`;
     const hist = hashHistory.get(key) ?? [];
     hist.push(r.resultHash);
-    if (hist.length > convergenceRuns) hist.shift();
+    if (hist.length > safeConvergenceRuns) hist.shift();
     hashHistory.set(key, hist);
 
-    const isStable = hist.length >= convergenceRuns && new Set(hist).size === 1;
+    const isStable = hist.length >= safeConvergenceRuns && new Set(hist).size === 1;
     if (isStable) stableWorkers.push(key);
     else unstableWorkers.push(key);
   }
@@ -157,10 +162,10 @@ export function checkSwarmConvergence(
   if (total === 0) {
     convergenceReason = 'no workers ran in this episode';
   } else if (converged) {
-    convergenceReason = `all ${total} worker(s) stable for ${convergenceRuns} consecutive rounds`;
+    convergenceReason = `all ${total} worker(s) stable for ${safeConvergenceRuns} consecutive rounds`;
   } else {
     convergenceReason =
-      `${stableWorkers.length}/${total} stable after ${convergenceRuns} rounds ` +
+      `${stableWorkers.length}/${total} stable after ${safeConvergenceRuns} rounds ` +
       `(need all ${total})`;
   }
 

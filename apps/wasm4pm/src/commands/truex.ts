@@ -87,8 +87,12 @@ export const truex = defineCommand({
           let ingestPayload: Record<string, unknown> | undefined;
           if (Boolean(ctx.args.ingest)) {
             const { resolveConfig } = await import('@wasm4pm/config');
-            const { resolveSupabaseConfig, ingestTruexEnvelope, parseTruexEnvelope } =
-              await import('@wasm4pm/supabase');
+            const {
+              resolveSupabaseConfig,
+              ingestTruexEnvelope,
+              parseTruexEnvelope,
+              SupabaseIntegrationError,
+            } = await import('@wasm4pm/supabase');
             let fileConfig: import('@wasm4pm/supabase').SupabaseIntegrationConfig | undefined;
             try {
               const resolved = await resolveConfig(
@@ -103,10 +107,38 @@ export const truex = defineCommand({
             } catch {
               /* env-only Supabase config is sufficient for --ingest */
             }
-            const supabaseConfig = resolveSupabaseConfig({ fileConfig });
-            const envelope = parseTruexEnvelope(JSON.parse(payload) as Record<string, unknown>);
-            const ingestResult = await ingestTruexEnvelope({ config: supabaseConfig, envelope });
-            ingestPayload = { ...ingestResult };
+            try {
+              const supabaseConfig = resolveSupabaseConfig({ fileConfig });
+              const envelope = parseTruexEnvelope(JSON.parse(payload) as Record<string, unknown>);
+              const ingestResult = await ingestTruexEnvelope({ config: supabaseConfig, envelope });
+              ingestPayload = { ...ingestResult };
+            } catch (ingestErr: unknown) {
+              // Map Supabase-specific errors to the correct exit code and error code
+              // rather than falling through to the outer generic VERIFIER_ERROR catch.
+              const supabaseExit =
+                ingestErr instanceof SupabaseIntegrationError
+                  ? ingestErr.code === 'SUPABASE_CREDENTIALS_MISSING' ||
+                    ingestErr.code === 'SUPABASE_SERVICE_ROLE_MISSING'
+                    ? EXIT_CODES.config_error
+                    : ingestErr.code === 'RECEIPT_REFUSED'
+                      ? EXIT_CODES.execution_error
+                      : EXIT_CODES.system_error
+                  : EXIT_CODES.system_error;
+              const supabaseCode =
+                ingestErr instanceof SupabaseIntegrationError
+                  ? ingestErr.code
+                  : 'SUPABASE_INGEST_ERROR';
+              const supabaseMsg =
+                ingestErr instanceof Error ? ingestErr.message : String(ingestErr);
+              const errResult = makeErrorResult(
+                'truex',
+                `Supabase ingest failed: ${supabaseMsg}`,
+                supabaseExit,
+                supabaseCode
+              );
+              emitResult(errResult, { format, verbose, quiet });
+              return await exitWithFlush(supabaseExit);
+            }
           }
 
           const result = makeResult(

@@ -140,8 +140,8 @@ function getExecutionProfileAlgorithms(
   }
   if (profile === 'balanced') {
     // Balanced profile: standard discovery + ML, no advanced/ocel/powl
-    return ALGORITHM_IDS.filter(
-      (a) => !advancedAlgos.includes(a as any) && !ocelAlgos.includes(a as any) && !powlAlgos.includes(a as any)
+    return ALGORITHM_IDS_STR.filter(
+      (a) => !advancedAlgos.includes(a) && !ocelAlgos.includes(a) && !powlAlgos.includes(a)
     );
   }
   if (profile === 'stream') {

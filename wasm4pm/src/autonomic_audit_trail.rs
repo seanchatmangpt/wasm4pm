@@ -170,7 +170,7 @@ impl AutonomicAuditTrail {
         let prev_hash = if self.events.is_empty() {
             "genesis".to_string()
         } else {
-            self.events.last().unwrap().event_hash.clone()
+            self.events.last().unwrap().event_hash.clone() // infallible: checked is_empty() above
         };
 
         let event = AuditEvent::new(timestamp_ns, event_type, details, phase, cycle_count, prev_hash);

@@ -5,14 +5,21 @@
  * Automatically compresses results before upload.
  */
 
+/** Minimal interface that S3ArtifactStorage needs from the AWS S3 client. */
+export interface S3ClientLike {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any -- command is an opaque AWS SDK class with no available type declaration
+  send(command: any): Promise<unknown>;
+}
+
 export interface S3Config {
   bucket: string;
   region: string;
   prefix?: string;
   /**
-   * Custom S3 client (for testing/reuse)
+   * Custom S3 client for testing/reuse.
+   * Accepts any object that has a `send()` method compatible with the AWS SDK.
    */
-  s3Client?: any;
+  s3Client?: S3ClientLike;
 }
 
 export interface S3UploadOptions {
@@ -27,7 +34,7 @@ export interface S3UploadOptions {
  */
 export class S3ArtifactStorage {
   private config: S3Config;
-  private s3Client: any;
+  private s3Client: S3ClientLike | undefined;
   private initialized: boolean = false;
 
   constructor(config: S3Config) {
@@ -46,10 +53,10 @@ export class S3ArtifactStorage {
     if (!this.s3Client) {
       // Lazy-load AWS SDK (optional dependency)
       try {
-        // @ts-ignore - AWS SDK is optional
-        const module = await import('@aws-sdk/client-s3').catch(() => null);
+        // @ts-expect-error — @aws-sdk/client-s3 is an optional peer dep not in package.json
+        const module = await import('@aws-sdk/client-s3').catch(() => null) as { S3Client: new (cfg: Record<string, unknown>) => S3ClientLike } | null;
         if (module && 'S3Client' in module) {
-          this.s3Client = new (module as any).S3Client({
+          this.s3Client = new module.S3Client({
             region: this.config.region,
           });
         } else {
@@ -75,17 +82,17 @@ export class S3ArtifactStorage {
     const contentType = options.contentType || 'application/json';
 
     try {
-      // Lazily load PutObjectCommand if needed
-      let PutObjectCommand: any;
+      // Lazily load PutObjectCommand — it's only used as input to s3Client.send()
+      // which accepts `any` via S3ClientLike, so we keep the command loosely typed here.
+      type PutCommandCtor = new (input: Record<string, unknown>) => unknown;
+      let PutObjectCommand: PutCommandCtor;
       try {
-        // @ts-ignore - AWS SDK is optional
-        const module = await import('@aws-sdk/client-s3');
+        // @ts-expect-error — @aws-sdk/client-s3 is an optional peer dep not in package.json
+        const module = await import('@aws-sdk/client-s3') as { PutObjectCommand: PutCommandCtor };
         PutObjectCommand = module.PutObjectCommand;
       } catch {
-        // AWS SDK not available; continue with mock or throw during send
-        PutObjectCommand = class PutObjectCommand {
-          constructor(public input: any) {}
-        };
+        // AWS SDK not available; create a plain command wrapper so send() can still throw informatively
+        PutObjectCommand = class { constructor(public input: Record<string, unknown>) {} } as PutCommandCtor;
       }
 
       const command = new PutObjectCommand({
@@ -96,7 +103,7 @@ export class S3ArtifactStorage {
         Metadata: options.metadata,
       });
 
-      await this.s3Client.send(command);
+      await this.s3Client!.send(command);
       return this.getS3Url(key);
     } catch (error) {
       throw new Error(
@@ -110,7 +117,7 @@ export class S3ArtifactStorage {
    */
   async uploadResult(
     runId: string,
-    data: any,
+    data: unknown,
     timestamp: string
   ): Promise<string> {
     const json = JSON.stringify(data);

@@ -452,8 +452,7 @@ pub fn powl_freq_analysis(s: &str) -> Result<String, JsValue> {
                 .iter()
                 .filter_map(|n| n["max_freq"].as_i64())
                 .max()
-                .map(serde_json::Value::from)
-                .unwrap_or(serde_json::Value::Null)
+                .map_or(serde_json::Value::Null, serde_json::Value::from)
         };
 
     let result = serde_json::json!({

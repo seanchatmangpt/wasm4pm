@@ -28,7 +28,7 @@ export async function resolveConfig(options?: LoadConfigOptions): Promise<Config
 
   // Layer 5: Defaults
   const defaults = getDefaults();
-  let provenance = trackProvenance(defaults as unknown as Record<string, unknown>, 'default');
+  let provenance = trackProvenance(defaults, 'default');
 
   // Layer 4: Environment variables
   const envLayer = parseEnvConfig(env);
@@ -509,6 +509,25 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
     // CRITICAL FIX #2: Deep merge nested prediction object
     const existing = (config.prediction as Record<string, unknown>) || {};
     config.prediction = { ...existing, driftWindowSize: w };
+  }
+
+  // --- Supabase integration environment variables ---
+  const supabaseUrl = env.WASM4PM_SUPABASE_URL ?? env.SUPABASE_URL;
+  const supabaseAnon = env.WASM4PM_SUPABASE_ANON_KEY ?? env.SUPABASE_ANON_KEY;
+  const supabaseService =
+    env.WASM4PM_SUPABASE_SERVICE_ROLE_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY;
+  if (supabaseUrl || supabaseAnon || supabaseService) {
+    const existingIntegrations = (config.integrations as Record<string, unknown>) || {};
+    const existingSupabase = (existingIntegrations.supabase as Record<string, unknown>) || {};
+    config.integrations = {
+      ...existingIntegrations,
+      supabase: {
+        ...existingSupabase,
+        ...(supabaseUrl ? { url: supabaseUrl } : {}),
+        ...(supabaseAnon ? { anonKey: supabaseAnon } : {}),
+        ...(supabaseService ? { serviceRoleKey: supabaseService } : {}),
+      },
+    };
   }
 
   return config;

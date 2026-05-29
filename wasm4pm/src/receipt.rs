@@ -318,22 +318,22 @@ impl OCELReceiptLinter {
                     .or_else(|| ep.get("expected_ocel"))
                     .or_else(|| ep.get("ocel"))
             });
-            let expected_has_hash = ep_val.map(|ep| {
+            let expected_has_hash = ep_val.map_or(false, |ep| {
                 ep.get("expected_ocel2_hash").is_some()
                     || ep.get("expected_ocel_hash").is_some()
                     || ep.get("ocel_hash").is_some()
-            }).unwrap_or(false);
+            });
 
             let observed_ocel2_val = op_val.and_then(|op| {
                 op.get("observed_ocel2")
                     .or_else(|| op.get("observed_ocel"))
                     .or_else(|| op.get("ocel"))
             });
-            let observed_has_hash = op_val.map(|op| {
+            let observed_has_hash = op_val.map_or(false, |op| {
                 op.get("observed_ocel2_hash").is_some()
                     || op.get("observed_ocel_hash").is_some()
                     || op.get("ocel_hash").is_some()
-            }).unwrap_or(false);
+            });
 
             // Now evaluate the cases:
             if expected_ocel2_val.is_none() {

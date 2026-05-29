@@ -2,7 +2,7 @@
 import { readFileSync, writeFileSync } from "fs";
 import { resolve } from "path";
 import { hash as blake3Hash } from "blake3";
-import { canonicalStringify } from "./truex-canonical.js";
+import { canonicalStringify } from '@wasm4pm/contracts';
 
 function verifyReceipt(targetPath: string) {
   const fullPath = resolve(process.cwd(), targetPath);

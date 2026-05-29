@@ -6,7 +6,7 @@
  * Kernel.run(), Kernel.stream(), Kernel.freeHandle(), Kernel.stats()
  */
 
-import type { WasmModule, AlgorithmStepOutput } from './handlers.js';
+import type { WasmModule } from './handlers.js';
 import type { AlgorithmMetadata, ExecutionProfile } from './registry.js';
 import { getRegistry, type AlgorithmRegistry } from './registry.js';
 import { KERNEL_VERSION, checkCompatibility, type CompatibilityResult } from './versioning.js';
@@ -1416,8 +1416,9 @@ export class Kernel {
     if (!this._smartEngineHandle && this.wasm.smart_engine_create) {
       try {
         this._smartEngineHandle = this.wasm.smart_engine_create();
-      } catch (e) {
-        console.warn('Failed to create SmartEngine, falling back to default', e);
+      } catch {
+        // SmartEngine not available in this WASM build — fall back to default algorithm selection.
+        // This is expected in mobile/iot/edge profiles that omit smart_engine.
         return 'default';
       }
     }
@@ -1491,8 +1492,11 @@ export function parseWasmOutput<T = unknown>(raw: unknown): T {
  * Handle WASM outputs that are expected to represent a handle.
  * If the output is a plain string handle, it wraps it in an object: `{ handle }`.
  * If it is a Promise, it resolves recursively.
+ *
+ * Returns `{ handle: string }` synchronously, or a Promise that resolves to that
+ * shape when the WASM function itself returns a Promise (uncommon but supported).
  */
-export function parseWasmHandle(raw: unknown): any {
+export function parseWasmHandle(raw: unknown): { handle: string } | Promise<{ handle: string }> {
   if (raw instanceof Promise || (raw && typeof (raw as any).then === 'function')) {
     return (raw as any).then((resolved: unknown) => parseWasmHandle(resolved));
   }

@@ -1,6 +1,5 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
-import { SupabaseIntegrationError } from './config.js';
 
 export interface SyncQueueItem {
   id: string;
@@ -28,18 +27,25 @@ export class SyncQueue {
       return { pending: [] };
     }
     const raw = fs.readFileSync(this.filepath, 'utf-8');
-    const parsed = JSON.parse(raw) as SyncQueueFile;
-    if (!Array.isArray(parsed.pending)) {
+    let parsed: unknown;
+    try {
+      parsed = JSON.parse(raw);
+    } catch {
+      // Corrupt queue file — treat as empty rather than crashing the enqueue
+      // path. The bad file will be overwritten on the next write.
       return { pending: [] };
     }
-    return parsed;
+    if (!parsed || typeof parsed !== 'object' || !Array.isArray((parsed as SyncQueueFile).pending)) {
+      return { pending: [] };
+    }
+    return parsed as SyncQueueFile;
   }
 
   private writeFile(data: SyncQueueFile): void {
     const dir = path.dirname(this.filepath);
-    if (!fs.existsSync(dir)) {
-      fs.mkdirSync(dir, { recursive: true });
-    }
+    // Use recursive:true unconditionally — avoids the TOCTOU race between
+    // existsSync and mkdirSync when two processes both enqueue simultaneously.
+    fs.mkdirSync(dir, { recursive: true });
     fs.writeFileSync(this.filepath, JSON.stringify(data, null, 2));
   }
 
@@ -76,11 +82,7 @@ export class SyncQueue {
   }
 
   flushPending(): SyncQueueItem[] {
-    const items = this.peek();
-    if (items.length === 0) {
-      throw new SupabaseIntegrationError('SYNC_QUEUE_EMPTY', 'Sync queue has no pending items');
-    }
-    return items;
+    return this.peek();
   }
 }
 

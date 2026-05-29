@@ -84,16 +84,13 @@ pub fn load_ocel_from_xml(content: &str) -> Result<String, JsValue> {
             "event" => {
                 let event_id = node
                     .attribute("id")
-                    .map(|s| s.to_string())
-                    .unwrap_or_else(|| format!("event_{}", ocel.events.len()));
+                    .map_or_else(|| format!("event_{}", ocel.events.len()), |s| s.to_string());
                 let event_type = node
                     .attribute("type")
-                    .map(|s| s.to_string())
-                    .unwrap_or_else(|| "Activity".to_string());
+                    .map_or_else(|| "Activity".to_string(), |s| s.to_string());
                 let timestamp = node
                     .attribute("timestamp")
-                    .map(|s| s.to_string())
-                    .unwrap_or_else(|| "1970-01-01T00:00:00Z".to_string());
+                    .map_or_else(|| "1970-01-01T00:00:00Z".to_string(), |s| s.to_string());
 
                 let mut attributes = HashMap::new();
                 let mut object_ids = Vec::new();
@@ -159,12 +156,10 @@ pub fn load_ocel_from_xml(content: &str) -> Result<String, JsValue> {
             "object" => {
                 let object_id = node
                     .attribute("id")
-                    .map(|s| s.to_string())
-                    .unwrap_or_else(|| format!("obj_{}", ocel.objects.len()));
+                    .map_or_else(|| format!("obj_{}", ocel.objects.len()), |s| s.to_string());
                 let object_type = node
                     .attribute("type")
-                    .map(|s| s.to_string())
-                    .unwrap_or_else(|| "Object".to_string());
+                    .map_or_else(|| "Object".to_string(), |s| s.to_string());
 
                 let mut attributes = HashMap::new();
 

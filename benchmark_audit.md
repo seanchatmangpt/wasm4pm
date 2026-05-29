@@ -1,4 +1,4 @@
-# wasm4pm Benchmark Audit — v26.5.21
+# wasm4pm Benchmark Audit — v26.5.28
 
 **Date:** 2026-05-19 | **Branch:** `feat/iter16-miniml-prolog8`
 

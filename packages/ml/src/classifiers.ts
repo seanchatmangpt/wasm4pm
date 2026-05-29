@@ -1051,6 +1051,8 @@ export async function classifyTraces(
   const method = options.method ?? 'knn';
   const matrix = buildFeatureMatrix(featuresJson, undefined, targetKey);
 
+  // Known behavior (per @wasm4pm/ml contract): empty input → success with empty predictions,
+  // NOT a thrown error. Callers must inspect predictions.length before using the result.
   if (matrix.data.length === 0 || matrix.labels.length === 0) {
     return { method, predictions: [], modelInfo: { error: 'No features or labels available' } };
   }

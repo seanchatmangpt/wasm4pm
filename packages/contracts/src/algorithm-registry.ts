@@ -60,7 +60,6 @@ export const WASM_FUNCTION_NAMES: Record<string, string | undefined> = {
   autoinstinct_vision: 'autoinstinct_vision',
   autoinstinct_learning: 'autoinstinct_learning',
   streaming_log: 'discover_dfg', // fallback
-  hierarchical_dfg: 'discover_dfg_hierarchical',
   handover_network: 'discover_handover_network',
   working_together_network: 'discover_working_together_network',
   ocel_dfg: 'discover_ocel_dfg',

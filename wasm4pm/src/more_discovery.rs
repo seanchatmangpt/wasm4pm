@@ -596,8 +596,8 @@ pub fn analyze_activity_dependencies(
                 .map(|activity| {
                     json!({
                         "activity": activity,
-                        "predecessors": predecessors.get(activity).map(|s| s.len()).unwrap_or(0),
-                        "successors": successors.get(activity).map(|s| s.len()).unwrap_or(0),
+                        "predecessors": predecessors.get(activity).map_or(0, |s| s.len()),
+                        "successors": successors.get(activity).map_or(0, |s| s.len()),
                     })
                 })
                 .collect();

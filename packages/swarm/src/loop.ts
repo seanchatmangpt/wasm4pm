@@ -292,20 +292,21 @@ Goal: Discover the process model or analyze statistics as requested.`,
     });
 
     const { text, toolResults } = await (config.workerTimeoutMs != null
-      ? Promise.race([
-          generatePromise,
-          new Promise<never>((_, reject) =>
-            setTimeout(
-              () =>
-                reject(
-                  new Error(
-                    `Worker ${spec.workerId} timed out after ${config.workerTimeoutMs}ms`
-                  )
-                ),
-              config.workerTimeoutMs
-            )
-          ),
-        ])
+      ? new Promise<Awaited<typeof generatePromise>>((resolve, reject) => {
+          // Clear the timer when generateText resolves/rejects first, preventing
+          // the timer handle from leaking across episodes.
+          const timer = setTimeout(
+            () =>
+              reject(
+                new Error(`Worker ${spec.workerId} timed out after ${config.workerTimeoutMs}ms`)
+              ),
+            config.workerTimeoutMs
+          );
+          generatePromise.then(
+            (v) => { clearTimeout(timer); resolve(v); },
+            (e: unknown) => { clearTimeout(timer); reject(e); }
+          );
+        })
       : generatePromise);
 
     // We take the result from the last tool call or the text if no tool was called.

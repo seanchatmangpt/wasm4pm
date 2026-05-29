@@ -76,7 +76,7 @@ npx tsx examples/truex-cli.ts verify examples/out/truex_ocel2_valid.json
 npx tsx examples/truex-cli.ts capture
 ```
 
-**Important:** Authoritative verification is **`wpm truex verify`** (Rust/WASM, BLAKE3). The TypeScript demos in `examples/truex-cli.ts` and `examples/truex-capture-otlp.ts` illustrate edge telemetry capture; they currently use SHA256 for demonstration hashing and may not match WASM digests on the same envelope.
+**Important:** Authoritative verification for production and CI is **`wpm truex verify`** (Rust/WASM). The TypeScript demos in `examples/truex-cli.ts` and `examples/truex-capture-otlp.ts` share the same JCS-OCEL canonicalization and BLAKE3 hashing via `examples/truex-canonical.ts` for cross-tool parity testing.
 
 Cross-tool parity baseline:
 

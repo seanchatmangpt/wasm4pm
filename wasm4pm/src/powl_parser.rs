@@ -301,7 +301,7 @@ fn parse_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
 
     let cg = wasm4pm_types::ChoiceGraph::new(nodes, edges)
         .map_err(|e| format!("invalid CG: {}", e))?;
-    Ok(arena.add_choice_graph(cg))
+    Ok(arena.add_choice_graph(&cg))
 }
 
 fn parse_choice_graph_node_spec(

@@ -3910,7 +3910,7 @@ export const doctorHooks = defineCommand({
       }
     });
 
-    await exitWithFlush(exitCode);
+    return await exitWithFlush(exitCode);
   },
 });
 

@@ -35,6 +35,9 @@ export interface SyncQueueFlushResult {
   acked: string[];
 }
 
+/** Items that have failed this many times are moved to deadletter and removed from the queue. */
+const MAX_FLUSH_ATTEMPTS = 5;
+
 export async function flushSyncQueue(options: {
   config: SupabaseIntegrationConfig;
   queuePath?: string;
@@ -48,6 +51,24 @@ export async function flushSyncQueue(options: {
   const result: SyncQueueFlushResult = { processed: 0, failed: 0, acked: [] };
 
   for (const item of items) {
+    // Items that have already hit the attempt cap are dead — skip processing,
+    // send to deadletter, and remove from the queue so they cannot loop forever.
+    if (item.attempts >= MAX_FLUSH_ATTEMPTS) {
+      result.failed += 1;
+      result.acked.push(item.id); // ack to remove it from the queue
+      const payloadHash = hashJsonString(JSON.stringify(item.payload));
+      await recordDeadletter(client, options.config, {
+        queue_item_id: item.id,
+        kind: item.kind,
+        error_code: 'MAX_ATTEMPTS_EXCEEDED',
+        error_message: `Item exceeded ${MAX_FLUSH_ATTEMPTS} flush attempts and was abandoned`,
+        payload_hash: payloadHash,
+      }).catch(() => {
+        /* deadletter best-effort */
+      });
+      continue;
+    }
+
     try {
       if (item.kind === 'command_receipt') {
         const row = item.payload as unknown as CommandReceiptRow;

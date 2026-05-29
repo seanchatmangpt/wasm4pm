@@ -219,6 +219,12 @@ ${BOLD}UTILITY${RESET}
   ${GREEN}wpm verify${RESET} <receipt.json>           Re-hash and validate a saved receipt for tamper detection
   ${GREEN}wpm repl${RESET}                            Interactive REPL: run commands without re-loading WASM each time
 
+${BOLD}DATA & INTEGRATION${RESET}
+  ${GREEN}wpm supabase sync-receipts${RESET}          Upload local command receipts to Supabase
+  ${GREEN}wpm supabase ingest-truex${RESET} <envelope.json>  Ingest a Truex envelope into Supabase
+  ${GREEN}wpm supabase doctor${RESET}                 Validate Supabase connection and credentials
+  ${GREEN}wpm supabase sync-queue${RESET}             Flush the Supabase sync queue
+
 ${BOLD}SETUP${RESET}
   ${GREEN}wpm init${RESET}                            Scaffold wasm4pm.toml + .env.example in current dir
 

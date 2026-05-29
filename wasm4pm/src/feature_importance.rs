@@ -55,7 +55,7 @@ pub fn compute_feature_importance(
     let baseline_confidence = get_or_init_state().with_object(model_handle, |obj| match obj {
         Some(StoredObject::NGramPredictor(predictor)) => {
             let preds = predictor.predict(&prefix);
-            Ok(preds.first().map(|(_, p)| *p).unwrap_or(0.0))
+            Ok(preds.first().map_or(0.0, |(_, p)| *p))
         }
         Some(_) => Err(wasm_err(
             codes::INVALID_INPUT,
@@ -85,7 +85,7 @@ pub fn compute_feature_importance(
             get_or_init_state().with_object(model_handle, |obj| match obj {
                 Some(StoredObject::NGramPredictor(predictor)) => {
                     let preds = predictor.predict(&ablated);
-                    Ok(preds.first().map(|(_, p)| *p).unwrap_or(0.0))
+                    Ok(preds.first().map_or(0.0, |(_, p)| *p))
                 }
                 Some(_) => Err(wasm_err(codes::INTERNAL_ERROR, "Handle type changed")),
                 None => Err(wasm_err(
@@ -203,8 +203,7 @@ pub fn global_feature_importance(
             Some(StoredObject::NGramPredictor(predictor)) => Ok(predictor
                 .predict(prefix)
                 .first()
-                .map(|(_, p)| *p)
-                .unwrap_or(0.0)),
+                .map_or(0.0, |(_, p)| *p)),
             Some(_) => Err(wasm_err(codes::INTERNAL_ERROR, "Handle type changed")),
             None => Err(wasm_err(
                 codes::INTERNAL_ERROR,
@@ -227,8 +226,7 @@ pub fn global_feature_importance(
                     Some(StoredObject::NGramPredictor(predictor)) => Ok(predictor
                         .predict(&ablated)
                         .first()
-                        .map(|(_, p)| *p)
-                        .unwrap_or(0.0)),
+                        .map_or(0.0, |(_, p)| *p)),
                     Some(_) => Err(wasm_err(codes::INTERNAL_ERROR, "Handle type changed")),
                     None => Err(wasm_err(
                         codes::INTERNAL_ERROR,

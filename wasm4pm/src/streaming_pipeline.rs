@@ -175,7 +175,7 @@ impl StreamingPipeline {
             total_traces: self.total_traces,
             open_traces: self.open_traces,
             active_algorithms: self.config.algorithm_count(),
-            dfg_activities: self.dfg.as_ref().map(|d| d.interner.len()).unwrap_or(0),
+            dfg_activities: self.dfg.as_ref().map_or(0, |d| d.interner.len()),
             memory_estimate: self.estimate_memory(),
         }
     }

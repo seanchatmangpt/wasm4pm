@@ -184,8 +184,7 @@ impl InternalNet {
     fn is_silent(&self, name: &str) -> bool {
         self.transitions
             .get(name)
-            .map(|l| l.is_none())
-            .unwrap_or(false)
+            .map_or(false, |l| l.is_none())
     }
 
     fn places_no_incoming(&self) -> Vec<String> {

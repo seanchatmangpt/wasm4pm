@@ -112,6 +112,9 @@ export type { QualityThresholdProfile } from './quality-thresholds.js';
 export { levenshteinDistance, findClosestMatch } from './algorithm-registry.js';
 export { resolveAlgorithmId } from './templates/algorithm-registry.js';
 
+// Truex OCEL 2.0 canonical serialization (JCS-OCEL)
+export { canonicalStringify } from './truex/canonical.js';
+
 // mcpp/wasm4pm interop bridges
 export {
   andonToWasm4pmError,

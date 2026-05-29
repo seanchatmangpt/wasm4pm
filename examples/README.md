@@ -75,7 +75,7 @@ Sample envelopes in `examples/out/`:
 | `truex_ocel2_forged.json` | Structured refusal |
 | `truex_ocel2_fraudulent.json` | Structured refusal |
 
-**Authoritative verification:** `wpm truex verify` (Rust/WASM, BLAKE3). TypeScript demos use SHA256 for illustration and may not match WASM digests.
+**Authoritative verification:** `wpm truex verify` (Rust/WASM). TypeScript demos share BLAKE3 canonicalization via `examples/truex-canonical.ts` for parity with WASM.
 
 Cross-tool parity baseline:
 

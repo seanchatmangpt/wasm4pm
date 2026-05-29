@@ -195,7 +195,7 @@ pub fn discover_ilp_petri_net_from_log(log: &EventLog, activity_key: &str) -> (P
     let selected = ilp_greedy_cover(valid_candidates, &causal_set);
 
     // Stage 5: Assemble Petri net and compute metrics.
-    build_ilp_petri_net(selected, &col, log, activity_key, &start_acts, &end_acts, &loop1_acts)
+    build_ilp_petri_net(&selected, &col, log, activity_key, &start_acts, &end_acts, &loop1_acts)
 }
 
 /// Greedy set-cover: select the minimum subset of candidate places that together
@@ -245,7 +245,7 @@ fn ilp_greedy_cover(
 
 /// Assemble a Petri net from the selected places and compute fitness + precision.
 fn build_ilp_petri_net(
-    selected: Vec<CandidatePlace>,
+    selected: &[CandidatePlace],
     col: &ColumnarLog<'_>,
     log: &EventLog,
     activity_key: &str,

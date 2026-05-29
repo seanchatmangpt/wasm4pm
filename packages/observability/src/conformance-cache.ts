@@ -219,7 +219,13 @@ export class ConformanceCache {
   }
 
   /**
-   * Purge expired entries.
+   * Purge all expired entries and return the count removed.
+   *
+   * NOTE: This cache has no automatic background sweep. `purgeExpired()` must be
+   * called explicitly by the application (e.g. `wpm cache purge`, periodic CLI
+   * maintenance, or a test teardown) to reclaim memory from stale entries.
+   * Between explicit calls, entries are only evicted lazily on access or when the
+   * `maxEntries` capacity is exceeded in `cacheFitness()`.
    */
   public purgeExpired(): number {
     const now = Date.now();

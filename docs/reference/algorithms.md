@@ -1,7 +1,7 @@
 # Reference: Algorithms
 
 > **Generated from kernel registry.** Re-run `pnpm run docs:algorithms` after registry changes.
-> Version: **v26.5.21** · Count: **60** registered algorithms.
+> Version: **v26.5.28** · Count: **60** registered algorithms.
 
 ## Listing Algorithms
 

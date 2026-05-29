@@ -37,16 +37,27 @@ const REQUIRED_ENVELOPE_FIELDS = [
 ] as const;
 
 export function parseTruexEnvelope(raw: string | Record<string, unknown>): TruexEnvelope {
-  const envelope =
-    typeof raw === 'string'
-      ? (JSON.parse(raw) as Record<string, unknown>)
-      : raw;
+  let envelope: Record<string, unknown>;
+  if (typeof raw === 'string') {
+    try {
+      envelope = JSON.parse(raw) as Record<string, unknown>;
+    } catch (e) {
+      throw new SupabaseIntegrationError(
+        'RECEIPT_REFUSED',
+        `TrueX envelope is not valid JSON: ${e instanceof Error ? e.message : String(e)}`
+      );
+    }
+  } else {
+    envelope = raw;
+  }
 
   for (const field of REQUIRED_ENVELOPE_FIELDS) {
     if (!envelope[field] || typeof envelope[field] !== 'string') {
+      // RECEIPT_REFUSED is the correct code for a client-side malformed envelope —
+      // SUPABASE_INSERT_FAILED is wrong here because nothing has been sent to Supabase yet.
       throw new SupabaseIntegrationError(
-        'SUPABASE_INSERT_FAILED',
-        `TrueX envelope missing required field: ${field}`
+        'RECEIPT_REFUSED',
+        `TrueX envelope missing or invalid required field "${field}" — envelope refused before ingest`
       );
     }
   }

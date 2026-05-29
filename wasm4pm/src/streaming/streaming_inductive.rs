@@ -98,7 +98,7 @@ impl StreamingInductiveBuilder {
         let sequential_order =
             self.detect_sequential_order(&activities, &starts, &ends, &successors);
         if let Some(order) = sequential_order {
-            return self.build_sequential_net(order);
+            return self.build_sequential_net(&order);
         }
 
         // Check for exclusive cut: disjoint groups with no edges between them
@@ -332,7 +332,7 @@ impl StreamingInductiveBuilder {
     }
 
     /// Build Petri net from sequential cut groups.
-    fn build_sequential_net(&self, order: Vec<Vec<u32>>) -> PetriNet {
+    fn build_sequential_net(&self, order: &[Vec<u32>]) -> PetriNet {
         let mut net = PetriNet::new();
 
         let source_id = "p_source";
@@ -438,8 +438,7 @@ impl StreamingInductiveBuilder {
                 "p_excl_{}",
                 group
                     .first()
-                    .map(|id| self.interner.get(*id).unwrap_or("?"))
-                    .unwrap_or("?")
+                    .map_or("?", |id| self.interner.get(*id).unwrap_or("?"))
             );
 
             net.places.push(PetriNetPlace {

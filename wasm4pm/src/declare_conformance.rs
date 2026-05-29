@@ -77,7 +77,7 @@ pub fn check_declare_conformance(
                         }
                         "Init" if constraint.activities.len() == 1 => {
                             let a = constraint.activities[0].as_str();
-                            acts.first().map(|&x| x != a).unwrap_or(true)
+                            acts.first().map_or(true, |&x| x != a)
                         }
                         "Precedence" if constraint.activities.len() == 2 => {
                             let a = constraint.activities[0].as_str();

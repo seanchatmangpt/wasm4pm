@@ -64,8 +64,7 @@ pub fn score_trace_anomaly(dfg_handle: &str, activities_json: &str) -> Result<Js
                     .edges
                     .iter()
                     .find(|e| e.from == activities[i] && e.to == activities[i + 1])
-                    .map(|e| e.frequency)
-                    .unwrap_or(0);
+                    .map_or(0, |e| e.frequency);
                 cost_sum += if edge_freq == 0 {
                     MISSING_EDGE_COST
                 } else {

@@ -343,7 +343,9 @@ export const predict = defineCommand({
                   topK,
                   ngramOrder,
                   driftWindow,
-                  prefixActivities
+                  prefixActivities,
+                  ctx.args.method as string | undefined,
+                  Boolean(ctx.args['auto-select']) || undefined
                 );
               } catch (predictionErr: unknown) {
                 // PREDICTION_FAILED: create structured error with remediation
@@ -478,6 +480,24 @@ async function executePredictionTask(
 ): Promise<Record<string, unknown>> {
   switch (task) {
     case 'next-activity': {
+      // If --auto-select is requested, consult recommendAlgorithm for guidance
+      let recommendation: AlgorithmRecommendation | undefined;
+      if (autoSelect) {
+        try {
+          const statsRaw: string = wasm.analyze_event_statistics(logHandle);
+          const stats = JSON.parse(statsRaw) as Record<string, unknown>;
+          recommendation = recommendAlgorithm('next-activity', [
+            {
+              totalCases: (stats['total_cases'] as number) ?? 0,
+              totalEvents: (stats['total_events'] as number) ?? 0,
+              uniqueVariants: (stats['unique_variants'] as number) ?? 0,
+            },
+          ]);
+        } catch {
+          // recommendAlgorithm is advisory; failure does not block prediction
+        }
+      }
+
       const predictorHandle: string = withWasmSpan(
         'build_ngram_predictor',
         { activity_key: activityKey, ngram_order: ngramOrder },
@@ -513,6 +533,7 @@ async function executePredictionTask(
             prefix.length === 0
               ? 'No prefix supplied — predictions are global priors'
               : `Predictions conditioned on last ${Math.min(ngramOrder - 1, prefix.length)} activity(ies)`,
+          ...(recommendation ? { recommendation } : {}),
         },
       };
     }
@@ -551,15 +572,40 @@ async function executePredictionTask(
         // predict_hazard_rate may fail on degenerate models (all-same duration); non-critical
       }
 
+      // Surface method in context so the analyst knows which prediction method was used
+      const methodContext = method ?? 'weibull';
+
+      // When method=regress, use the TypeScript regression path (regressRemainingTime from
+      // @wasm4pm/ml). extractRemainingTimeFeatures is used to pre-process the log features
+      // before passing them to regressRemainingTime.
+      if (methodContext === 'regress' && prefixActivities && prefixActivities.length > 0) {
+        try {
+          // Build prefix feature records from the log for regression
+          const prefixFeatureRecords: Array<Record<string, unknown>> = prefixActivities.map(
+            (act, i) => ({ activity: act, position: i, remaining_time: 0 })
+          );
+          const featureMatrix = extractRemainingTimeFeatures(prefixFeatureRecords);
+          const regressResult = await regressRemainingTime(featureMatrix.data.map((row, i) => ({
+            activity: prefixActivities[i] ?? '',
+            features: row,
+            remaining_time: 0,
+          })));
+          wasm.delete_object(modelHandle);
+          return { prediction: regressResult, weibull, method: methodContext };
+        } catch {
+          // Fall through to WASM path if regression fails
+        }
+      }
+
       if (prefixActivities && prefixActivities.length > 0) {
         const raw: string = withWasmSpan(
           'predict_case_duration',
-          { prefix_length: prefixActivities.length },
+          { prefix_length: prefixActivities.length, method: methodContext },
           () => wasm.predict_case_duration(modelHandle, JSON.stringify(prefixActivities))
         );
         const prediction = JSON.parse(raw);
         wasm.delete_object(modelHandle);
-        return { prediction, weibull };
+        return { prediction, weibull, method: methodContext };
       } else {
         wasm.delete_object(modelHandle);
         process.stderr.write(
@@ -570,6 +616,7 @@ async function executePredictionTask(
         return {
           predicted: false,
           weibull,
+          method: methodContext,
           message:
             'Remaining-time model built. Use --prefix "Activity1,Activity2" to predict case duration.',
         };

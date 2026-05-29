@@ -382,8 +382,7 @@ impl SimdStreamingDfg {
         self.node_counts
             .iter()
             .rposition(|&c| c > 0)
-            .map(|i| i + 1)
-            .unwrap_or(0)
+            .map_or(0, |i| i + 1)
     }
 
     /// Get the number of traces processed.

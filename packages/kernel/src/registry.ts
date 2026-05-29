@@ -1,10 +1,10 @@
 /**
  * registry.ts
  * Algorithm registry for wasm4pm process mining algorithms
- * Maintains metadata, profiles, and execution configuration for all 15+ discovery algorithms
+ * Maintains metadata, profiles, and execution configuration for all registered algorithms
+ * (discovery, conformance, ML, OCEL, analytics, social network, prediction, simulation).
  */
 
-import type { PlanStepType as _PlanStepType } from '@wasm4pm/planner';
 
 /**
  * Complexity class for O(n) analysis

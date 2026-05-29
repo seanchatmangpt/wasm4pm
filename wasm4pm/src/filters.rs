@@ -38,8 +38,7 @@ pub fn filter_by_start_activity(
                         .first()
                         .and_then(|e| e.attributes.get(activity_key))
                         .and_then(|v| v.as_string())
-                        .map(|a| keep.contains(a))
-                        .unwrap_or(false)
+                        .map_or(false, |a| keep.contains(a))
                 })
                 .cloned()
                 .collect();
@@ -72,8 +71,7 @@ pub fn filter_by_end_activity(
                         .last()
                         .and_then(|e| e.attributes.get(activity_key))
                         .and_then(|v| v.as_string())
-                        .map(|a| keep.contains(a))
-                        .unwrap_or(false)
+                        .map_or(false, |a| keep.contains(a))
                 })
                 .cloned()
                 .collect();
@@ -345,8 +343,7 @@ pub fn filter_traces_excluding_activities(
                         e.attributes
                             .get(activity_key)
                             .and_then(|v| v.as_string())
-                            .map(|a| excluded.contains(a))
-                            .unwrap_or(false)
+                            .map_or(false, |a| excluded.contains(a))
                     })
                 })
                 .cloned()
@@ -497,8 +494,7 @@ pub fn filter_by_trace_attribute(
                         .attributes
                         .get(attribute_key)
                         .and_then(|v| v.as_string())
-                        .map(|val| val == attribute_value)
-                        .unwrap_or(false)
+                        .map_or(false, |val| val == attribute_value)
                 })
                 .cloned()
                 .collect();
@@ -528,8 +524,7 @@ pub fn filter_by_event_attribute_value(
                         e.attributes
                             .get(attribute_key)
                             .and_then(|v| v.as_string())
-                            .map(|val| val == attribute_value)
-                            .unwrap_or(false)
+                            .map_or(false, |val| val == attribute_value)
                     })
                 })
                 .cloned()
@@ -563,8 +558,7 @@ pub fn filter_by_case_ids(
                         .attributes
                         .get(case_id_key)
                         .and_then(|v| v.as_string())
-                        .map(|id| keep_ids.contains(id))
-                        .unwrap_or(false)
+                        .map_or(false, |id| keep_ids.contains(id))
                 })
                 .cloned()
                 .collect();
@@ -605,8 +599,7 @@ pub fn filter_traces_starting_with_sequence(
                             e.attributes
                                 .get(activity_key)
                                 .and_then(|v| v.as_string())
-                                .map(|act| act == sequence[i])
-                                .unwrap_or(false)
+                                .map_or(false, |act| act == sequence[i])
                         })
                 })
                 .cloned()
@@ -644,8 +637,7 @@ pub fn filter_traces_ending_with_sequence(
                         e.attributes
                             .get(activity_key)
                             .and_then(|v| v.as_string())
-                            .map(|act| act == sequence[i])
-                            .unwrap_or(false)
+                            .map_or(false, |act| act == sequence[i])
                     })
                 })
                 .cloned()

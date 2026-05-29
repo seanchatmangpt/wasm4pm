@@ -527,10 +527,11 @@ export async function executeMlTask(
       }
 
       // G1: Data-driven algorithm selection via suggestClassificationMethod.
+      // Enabled when options.method is absent AND options.autoSelect is not explicitly false.
       // Derive log characteristics from the extracted features + stats.
       let suggestedMethod: ClassificationMethod | undefined;
       let method: ClassificationMethod;
-      if (!options.method) {
+      if (!options.method && options.autoSelect !== false) {
         // Build LogCharacteristics from features and WASM stats.
         // Use analyze_event_statistics for event/trace counts (always available)
         // and discover_dfg for activity count (node count = unique activities).
@@ -727,6 +728,8 @@ export async function executeMlTask(
       rawResult = (await regressRemainingTime(features, {
         method: options.method as RegressionMethod | undefined,
       })) as unknown as Record<string, unknown>;
+      // Attach quality report so downstream consumers can inspect it (same as classify).
+      (rawResult as Record<string, unknown>)._featureQualityReport = qualityReport;
       break;
     }
 
@@ -763,6 +766,8 @@ export async function executeMlTask(
       rawResult = (await reduceFeaturesPCA(features, {
         nComponents,
       })) as unknown as Record<string, unknown>;
+      // Attach quality report so downstream consumers can inspect it (same as classify).
+      (rawResult as Record<string, unknown>)._featureQualityReport = qualityReport;
       break;
     }
 
@@ -773,13 +778,20 @@ export async function executeMlTask(
       const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
 
       if (distances.length === 0) {
-        return {
+        const emptyDriftResult = {
           method: options.method || 'jaccard',
           distances: [],
           features: [],
           anomalies: null,
           message: 'No drift points detected in log',
         };
+        // Attach quality summary so this early-return path is consistent with
+        // all other task paths (which go through the bottom-of-switch attachment).
+        (emptyDriftResult as Record<string, unknown>)._qualitySummary = computeQualitySummary(
+          'drift',
+          emptyDriftResult
+        );
+        return emptyDriftResult;
       }
 
       // Step 2: Resolve drift method (jaccard, anomaly, or hybrid)

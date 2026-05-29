@@ -258,7 +258,7 @@ pub fn choice_graph_v2_fall_through(
     }
     let new_graph = wasm4pm_types::ChoiceGraph::new(new_nodes, cut.graph.edges.clone())
         .map_err(|e| format!("post-substitution CG invalid: {}", e))?;
-    Ok(arena.add_choice_graph(new_graph))
+    Ok(arena.add_choice_graph(&new_graph))
 }
 
 // ---------------------------------------------------------------------------

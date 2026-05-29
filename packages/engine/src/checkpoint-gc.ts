@@ -250,8 +250,9 @@ export class CheckpointGarbageCollector {
       }
       process.kill(pid, 0);
       return true;
-    } catch (error: any) {
-      if (error.code === 'ESRCH') {
+    } catch (error) {
+      // process.kill(pid, 0) throws a NodeJS ErrnoException; ESRCH means no such process
+      if ((error as NodeJS.ErrnoException).code === 'ESRCH') {
         return false; // Process not found
       }
       return true; // Assume alive on other errors (permission denied, etc.)
@@ -273,7 +274,13 @@ export class CheckpointGarbageCollector {
     this.gcCycleCount++;
     const stats = await this.getStorageStats();
 
-    const result: any = { gcExecuted: false };
+    const result: {
+      gcExecuted: boolean;
+      gcStats?: GarbageCollectionStats;
+      lockCleanupStats?: LockCleanupStats;
+      storageUsageWarning?: string;
+      storageUsageAlarm?: string;
+    } = { gcExecuted: false };
 
     // Check if storage exceeds quota
     const storageUsageMb = stats.totalBytes / (1024 * 1024);

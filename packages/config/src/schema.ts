@@ -557,6 +557,31 @@ export const membraneConfigSchema = z.object({
   envelopes:       membraneEnvelopesSchema.default({}),
 }).describe('AutoMembrane — pre-execution 5-layer conformance membrane (actor/object/route/automl/custody)');
 
+export const supabaseTableNamesConfigSchema = z
+  .object({
+    commandReceipts: z.string().min(1).default('wpm_command_receipts'),
+    truexEnvelopes: z.string().min(1).default('truex_envelopes'),
+    syncQueueDeadletter: z.string().min(1).default('sync_queue_deadletter'),
+  })
+  .default({});
+
+export const supabaseIntegrationConfigSchema = z
+  .object({
+    url: z.string().url(),
+    anonKey: z.string().min(1),
+    serviceRoleKey: z.string().min(1).optional(),
+    edgeFunctionTruexIngest: z.string().min(1).default('truex-ingest'),
+    tables: supabaseTableNamesConfigSchema,
+  })
+  .describe('Supabase integration for receipt sync and TrueX ingest');
+
+export const integrationsConfigSchema = z
+  .object({
+    supabase: supabaseIntegrationConfigSchema.optional(),
+  })
+  .optional()
+  .describe('External service integrations');
+
 // --- Root Schema ---
 
 export const configSchema = z
@@ -575,6 +600,7 @@ export const configSchema = z
     rl: rlConfigSchema.optional(),
     membrane: membraneConfigSchema.optional(),
     swarm: swarmConfigSchema.optional(),
+    integrations: integrationsConfigSchema,
   })
   .describe('wasm4pm configuration');
 

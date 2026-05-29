@@ -1041,7 +1041,7 @@ const CATEGORY_MAP: Record<string, string[]> = {
   H: ['audit'],
 };
 
-function classifyProbe(index: number, total: number): string {
+function classifyProbe(index: number, _total: number): string {
   // Assign a deterministic category based on probe group
   if (index <= 8) return 'hook'; // P1-P9
   if (index === 9) return 'auth'; // P10
@@ -1120,8 +1120,7 @@ async function runAdversaryProbes(opts: RunOptions): Promise<void> {
             p.error((res.payload as { error: string }).error);
           }
         );
-        await exitWithFlush(EXIT_CODES.source_error);
-        return;
+        return await exitWithFlush(EXIT_CODES.source_error);
       }
 
       // ── validate manifest arg ──────────────────────────────────────────────
@@ -1142,8 +1141,7 @@ async function runAdversaryProbes(opts: RunOptions): Promise<void> {
               p.error((res.payload as { error: string }).error);
             }
           );
-          await exitWithFlush(EXIT_CODES.source_error);
-          return;
+          return await exitWithFlush(EXIT_CODES.source_error);
         }
         let manifest: unknown;
         try {
@@ -1164,8 +1162,7 @@ async function runAdversaryProbes(opts: RunOptions): Promise<void> {
               p.error((res.payload as { error: string }).error);
             }
           );
-          await exitWithFlush(EXIT_CODES.source_error);
-          return;
+          return await exitWithFlush(EXIT_CODES.source_error);
         }
         // Minimal validation: must have categories array
         if (
@@ -1188,8 +1185,7 @@ async function runAdversaryProbes(opts: RunOptions): Promise<void> {
               p.error((res.payload as { error: string }).error);
             }
           );
-          await exitWithFlush(EXIT_CODES.source_error);
-          return;
+          return await exitWithFlush(EXIT_CODES.source_error);
         }
       }
 
@@ -1376,7 +1372,7 @@ async function runAdversaryProbes(opts: RunOptions): Promise<void> {
         }
       );
 
-      await exitWithFlush(exitCode);
+      return await exitWithFlush(exitCode);
     }
   );
 }
@@ -1474,7 +1470,7 @@ const adversaryCheck = defineCommand({
         }
       });
 
-      await exitWithFlush(exitCode);
+      return await exitWithFlush(exitCode);
     });
   },
 });

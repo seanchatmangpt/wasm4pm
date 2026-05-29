@@ -79,7 +79,7 @@ We follow the [Diátaxis framework](https://diataxis.fr/).
 - **Tutorials:** [Getting Started](../tutorials/getting_started.md), [Truex Receipts](../tutorials/truex_receipts.md), [Predictive Monitoring](../tutorials/predictive_monitoring.md), [Cognition Contracts](../tutorials/cognition_contracts.md)
 - **How-To:** [OTEL Configuration](../how-to/configure_observability.md), [Edge Deployment](../how-to/edge_deployment.md), [Concept Drift](../how-to/concept_drift.md)
 - **Reference:** [CLI Commands](../reference/cli_commands.md), [Algorithms](../reference/algorithms.md), [Configuration Schema](../reference/configuration_schema.md), [Truex Profile](../truex-ocel2-canonical-profile.md)
-- **Explanation:** [Old AI vs. LLM Doctrine](old_ai_vs_llms.md), [Combinatorial Maximalism](combinatorial_maximalism_closure_discipline.md), [Receipt Truth Verification](prd_ard_receipt_truth_verification.md)
+- **Explanation:** [Old AI vs. LLM Doctrine](docs/explanation/old_ai_vs_llms.md), [Combinatorial Maximalism](../docs_quarantine/ARCHIVE/explanation/combinatorial_maximalism_closure_discipline.md), [Receipt Truth Verification](docs/explanation/prd_ard_receipt_truth_verification.md)
 
 Programmatic usage: [Getting Started §3](../tutorials/getting_started.md).
 

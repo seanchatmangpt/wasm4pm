@@ -2,7 +2,7 @@
 
 Complete reference for all **60** algorithms in the wasm4pm kernel registry.
 
-**Version:** v26.5.21
+**Version:** v26.5.28
 
 > **Auto-generated.** Run `pnpm run docs:algorithms` from the repo root to refresh after registry changes.
 

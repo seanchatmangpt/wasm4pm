@@ -442,13 +442,11 @@ fn extract_model_size(output: &Value) -> Value {
         let nodes = obj
             .get("nodes")
             .and_then(|v| v.as_array())
-            .map(|v| v.len())
-            .unwrap_or(0);
+            .map_or(0, |v| v.len());
         let edges = obj
             .get("edges")
             .and_then(|v| v.as_array())
-            .map(|v| v.len())
-            .unwrap_or(0);
+            .map_or(0, |v| v.len());
         let places = obj.get("places").and_then(|v| v.as_u64()).unwrap_or(0);
         let transitions = obj.get("transitions").and_then(|v| v.as_u64()).unwrap_or(0);
 

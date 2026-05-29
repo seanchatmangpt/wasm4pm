@@ -5,7 +5,7 @@ import { hash as blake3Hash } from "blake3";
 // @ts-ignore
 import { createProxy, createContext } from "../vendors/proxyable/src/index.js";
 
-import { canonicalStringify } from "./truex-canonical.js";
+import { canonicalStringify } from '@wasm4pm/contracts';
 
 // --- STRICT OCEL 2.0 SCHEMA ---
 interface Ocel2Log {

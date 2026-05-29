@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/observability",
-  "version": "26.5.21",
+  "version": "26.5.28",
   "description": "Optional non-blocking OTEL observability layer for wasm4pm",
   "type": "module",
   "main": "./dist/index.js",

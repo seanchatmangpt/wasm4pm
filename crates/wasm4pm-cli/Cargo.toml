@@ -21,8 +21,8 @@ dialoguer = "0.11"
 colored = "2.1"
 indicatif = "0.17"
 wasm4pm-types = { workspace = true }
-wasm4pm-algos = { version = "26.5.21", path = "../wasm4pm-algos" }
-wasm4pm = { version = "26.5.21", path = "../../wasm4pm", features = ["cloud"] }
+wasm4pm-algos = { version = "26.5.28", path = "../wasm4pm-algos" }
+wasm4pm = { version = "26.5.28", path = "../../wasm4pm", features = ["cloud"] }
 
 [dev-dependencies]
 assert_cmd = "2.0"

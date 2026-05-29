@@ -15,11 +15,11 @@ import {
 import { StateMachine, TransitionValidator, LifecycleEvent } from './lifecycle.js';
 import { StatusTracker, formatStatus } from './status.js';
 import { WasmLoader, WasmLoaderConfig, WasmModule } from './wasm-loader.js';
-import { bootstrapEngine, createBootstrapError } from './bootstrap.js';
+import { bootstrapEngine } from './bootstrap.js';
 import { WatchSession, WatchConfig, HeartbeatEvent } from './watch.js';
 import { Checkpoint } from './checkpointing.js';
-import { SignalHandler, SignalHandlerConfig } from './signals.js';
-import { FileCheckpointStore, ICheckpointStore } from './checkpoint-store.js';
+import { SignalHandler } from './signals.js';
+import { FileCheckpointStore, ICheckpointStore, CheckpointMetadata } from './checkpoint-store.js';
 import {
   ObservabilityWrapper,
   Instrumentation,
@@ -1107,7 +1107,7 @@ export class Engine {
   /**
    * List all saved checkpoints for the current run
    */
-  async getCheckpoints(): Promise<any[]> {
+  async getCheckpoints(): Promise<CheckpointMetadata[]> {
     try {
       if (!this.currentRunId) {
         return [];

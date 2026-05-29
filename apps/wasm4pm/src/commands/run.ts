@@ -345,8 +345,8 @@ export const run = defineCommand({
               emitResult(result, emitOptions);
               return await exitWithFlush(result.exit_code);
             }
-          } catch (e: any) {
-             if (e.code === 'ENOENT') {
+          } catch (e: unknown) {
+             if ((e as NodeJS.ErrnoException).code === 'ENOENT') {
                 const result = makeErrorResult(
                   'run',
                   new Error(`File not found: ${inputPath}`),
@@ -609,6 +609,7 @@ export const run = defineCommand({
 
               // Step 6b: Run ML analysis if configured
               const mlResults: Record<string, unknown> = {};
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const mlConfig = (config as any)?.ml;
               if (mlConfig?.enabled && mlConfig.tasks && mlConfig.tasks.length > 0) {
                 for (const task of mlConfig.tasks) {
@@ -764,8 +765,9 @@ export const run = defineCommand({
                         2
                       )
                     );
-                  } catch (err: any) {
-                    if (err.code === 'EACCES' || err.code === 'EROFS') {
+                  } catch (err: unknown) {
+                    const fsErr = err as NodeJS.ErrnoException;
+                    if (fsErr.code === 'EACCES' || fsErr.code === 'EROFS') {
                       const msg = `Permission denied when writing to ${baselinePath}. ` +
                                   `You are running in a restricted filesystem (e.g. read-only container or Docker). ` +
                                   `Please set WASM4PM_HOME or PMC_CONFIG_PATH to a writable directory.`;
@@ -944,10 +946,11 @@ export const run = defineCommand({
                   const outputDir = path.dirname(ctx.args.output);
                   await fs.mkdir(outputDir, { recursive: true });
                   await fs.writeFile(ctx.args.output, JSON.stringify(payload, null, 2));
-                } catch (error: any) {
+                } catch (error: unknown) {
+                  const fsErr = error as NodeJS.ErrnoException;
                   let extraHint = `Check that the destination directory exists and is writable: chmod 755 ${path.dirname(ctx.args.output as string)}`;
-                  if (error?.code === 'EACCES' || error?.code === 'EROFS') {
-                    extraHint = `Permission denied (${error.code}). If you are running in a container, please check volume mounts and permissions.`;
+                  if (fsErr?.code === 'EACCES' || fsErr?.code === 'EROFS') {
+                    extraHint = `Permission denied (${fsErr.code}). If you are running in a container, please check volume mounts and permissions.`;
                   }
                   
                   const message = error instanceof Error ? error.message : String(error);
@@ -1529,10 +1532,11 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
       const outputDir = path.dirname(String(ctx.args['output']));
       await fs.mkdir(outputDir, { recursive: true });
       await fs.writeFile(String(ctx.args['output']), JSON.stringify(payload, null, 2));
-    } catch (writeError: any) {
+    } catch (writeError: unknown) {
+      const fsWriteErr = writeError as NodeJS.ErrnoException;
       let extraHint = ``;
-      if (writeError?.code === 'EACCES' || writeError?.code === 'EROFS') {
-        extraHint = `\n\nPermission denied (${writeError.code}). If you are running in a container, please check volume mounts and permissions.`;
+      if (fsWriteErr?.code === 'EACCES' || fsWriteErr?.code === 'EROFS') {
+        extraHint = `\n\nPermission denied (${fsWriteErr.code}). If you are running in a container, please check volume mounts and permissions.`;
       }
       const msg = writeError instanceof Error ? writeError.message : String(writeError);
       const errResult = makeErrorResult(

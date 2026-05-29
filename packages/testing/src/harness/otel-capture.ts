@@ -120,6 +120,21 @@ export class OtelCapture {
     };
   }
 
+  /**
+   * Get all captured spans, optionally filtered by exact span name.
+   *
+   * This is the primary access method for test assertions. When `name` is omitted,
+   * returns all captured spans. When `name` is provided, returns only spans whose
+   * name exactly matches (case-sensitive).
+   *
+   * @param name - Optional exact span name to filter by
+   * @returns Array of matching captured spans (empty if none)
+   */
+  getAllSpans(name?: string): CapturedOtelSpan[] {
+    if (name === undefined) return [...this._spans];
+    return this._spans.filter((s) => s.name === name);
+  }
+
   /** Find spans by name pattern */
   findSpans(namePattern: string | RegExp): CapturedOtelSpan[] {
     const pattern = typeof namePattern === 'string' ? new RegExp(namePattern, 'i') : namePattern;

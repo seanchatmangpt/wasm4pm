@@ -77,6 +77,9 @@ export {
   membraneDriftSchema,
   membraneEnvelopesSchema,
   swarmConfigSchema,
+  supabaseIntegrationConfigSchema,
+  supabaseTableNamesConfigSchema,
+  integrationsConfigSchema,
 } from './schema.js';
 export type { AlgorithmId } from './schema.js';
 

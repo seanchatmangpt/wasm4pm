@@ -125,6 +125,7 @@ impl BinaryHeader {
         let mut header = BinaryHeader::new();
 
         header.magic.copy_from_slice(&bytes[0..8]);
+        // infallible: buffer length validated above (>= size_of::<BinaryHeader>())
         header.version = u32::from_le_bytes(bytes[8..12].try_into().unwrap());
         header.flags = u32::from_le_bytes(bytes[12..16].try_into().unwrap());
         header.num_traces = u64::from_le_bytes(bytes[16..24].try_into().unwrap());
@@ -134,10 +135,10 @@ impl BinaryHeader {
         for i in 0..6 {
             let start = 40 + i * 8;
             header.section_offsets[i] =
-                u64::from_le_bytes(bytes[start..start + 8].try_into().unwrap());
+                u64::from_le_bytes(bytes[start..start + 8].try_into().unwrap()); // infallible: same guard
         }
 
-        header.checksum = u64::from_le_bytes(bytes[88..96].try_into().unwrap());
+        header.checksum = u64::from_le_bytes(bytes[88..96].try_into().unwrap()); // infallible: same guard
 
         Ok(header)
     }

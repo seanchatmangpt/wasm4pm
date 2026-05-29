@@ -56,7 +56,7 @@ statrs = { version = "0.17", default-features = false, optional = true }
 bcinr = { workspace = true, optional = true }
 blake3 = "1"
 sha2 = { workspace = true }
-wasm4pm-cognition = { version = "26.5.21", path = "../crates/wasm4pm-cognition", default-features = false, optional = true }
+wasm4pm-cognition = { version = "26.5.28", path = "../crates/wasm4pm-cognition", default-features = false, optional = true }
 miniml = { workspace = true, optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
@@ -77,9 +77,9 @@ wasm-bindgen-test = "0.3"
 tempfile = { workspace = true }
 regex = "1"
 naga = { version = "0.19", features = ["wgsl-in"] }
-wasm4pm-macros = { version = "26.5.21", path = "../crates/wasm4pm-macros" }
+wasm4pm-macros = { version = "26.5.28", path = "../crates/wasm4pm-macros" }
 quick-xml = "0.37"
-miniml = { version = "26.5.21", path = "../crates/miniml-core" }
+miniml = { version = "26.5.28", path = "../crates/miniml-core" }
 
 [[bench]]
 name = "fast_algorithms"

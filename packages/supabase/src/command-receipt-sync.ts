@@ -96,18 +96,28 @@ export async function upsertCommandReceipt(
   assertSupabaseResponse(result, `upsert command receipt ${row.run_id}`);
 }
 
+/** Maximum receipts uploaded in a single syncCommandReceipts call.
+ * Prevents unbounded memory usage when the receipts directory grows very large. */
+const MAX_SYNC_BATCH = 500;
+
 export async function syncCommandReceipts(options: {
   config: SupabaseIntegrationConfig;
   client?: Wasm4pmSupabaseClient;
   receiptsDir?: string;
   dryRun?: boolean;
   gitCommit?: string;
+  /** Override the default batch cap (default: 500). Set to Infinity to disable. */
+  maxBatch?: number;
 }): Promise<CommandReceiptSyncResult> {
   const dryRun = Boolean(options.dryRun);
   const client = dryRun
     ? options.client
     : (options.client ?? createSupabaseWriteClient(options.config));
-  const rows = await listLocalCommandReceipts(options.receiptsDir);
+  const allRows = await listLocalCommandReceipts(options.receiptsDir);
+  const cap = options.maxBatch ?? MAX_SYNC_BATCH;
+  // Slice to the batch cap so a very large receipts directory cannot exhaust
+  // memory or connection-pool resources in a single call.
+  const rows = Number.isFinite(cap) ? allRows.slice(0, cap) : allRows;
   const result: CommandReceiptSyncResult = {
     synced: 0,
     skipped: 0,
