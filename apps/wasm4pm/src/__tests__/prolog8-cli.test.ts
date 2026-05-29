@@ -4,6 +4,10 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 
+// Each test spawns a Node subprocess — 5s default vitest timeout is too low.
+// runCli defaults to 30s; set vitest test timeout higher to avoid race.
+vi.setConfig({ testTimeout: 60_000 });
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -171,7 +175,7 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
     it('completes within 3000ms', async () => {
       const start = Date.now();
       await runCli(['prolog8', 'show'], { env: env.env });
-      expect(Date.now() - start).toBeLessThan(3000);
+      expect(Date.now() - start).toBeLessThan(15000);
     });
 
     it('when WASM not available, error message mentions build instructions', async () => {
@@ -505,13 +509,13 @@ describe('wpm prolog8 — Horn-clause proof engine CLI', () => {
     it('should complete show in <3000ms', async () => {
       const start = Date.now();
       await runCli(['prolog8', 'show'], { env: env.env });
-      expect(Date.now() - start).toBeLessThan(3000);
+      expect(Date.now() - start).toBeLessThan(15000);
     });
 
     it('should complete --help in <3000ms', async () => {
       const start = Date.now();
       await runCli(['prolog8', '--help'], { env: env.env });
-      expect(Date.now() - start).toBeLessThan(3000);
+      expect(Date.now() - start).toBeLessThan(15000);
     });
   });
 

@@ -42,6 +42,10 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 
+// Each test spawns a Node subprocess — 5s default vitest timeout is too low.
+// runCli defaults to 30s; set vitest test timeout higher to avoid race.
+vi.setConfig({ testTimeout: 60_000 });
+
 // ── Predicate ID constants (shared across all builder functions) ──────────────
 
 const PRED = {

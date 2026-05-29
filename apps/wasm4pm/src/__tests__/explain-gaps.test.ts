@@ -304,18 +304,25 @@ describe('Gap 8: JSON payload field completeness', () => {
 // Gap 9 — Fuzzy match regression
 // ---------------------------------------------------------------------------
 describe('Gap 9: fuzzy match regression — simd_streaming_dfg must not match dfg', () => {
-  it('simd_streaming_dfg returns UNKNOWN_ALGORITHM (exit 1)', async () => {
+  it('simd_streaming_dfg resolves to its own SIMD-specific explanation (exit 0)', async () => {
+    // Previously this was UNKNOWN_ALGORITHM. Now simd_streaming_dfg has a proper explanation.
+    // The key invariant is that it does NOT silently return dfg content.
     const r = await runExplain(['simd_streaming_dfg', '--format', 'json']);
-    expect(r.exitCode).toBe(1);
-    const err = r.json!.error as { code: string };
-    expect(err.code).toBe('UNKNOWN_ALGORITHM');
+    expect(r.exitCode).toBe(0);
+    const payload = r.json!.payload as Record<string, unknown>;
+    expect(payload).not.toBeNull();
+    // Must reference SIMD content, not generic dfg content
+    expect((payload.content as string).toLowerCase()).toContain('simd');
   });
 
-  it('simd_streaming_dfg does not silently return dfg content', async () => {
+  it('simd_streaming_dfg does not silently return generic dfg content', async () => {
     const r = await runExplain(['simd_streaming_dfg', '--format', 'json']);
-    // If it matched dfg, payload would be non-null and algorithm would be 'simd_streaming_dfg'.
-    // We verify payload is null (error path) not the dfg content.
-    expect(r.json!.payload).toBeNull();
+    expect(r.exitCode).toBe(0);
+    const payload = r.json!.payload as Record<string, unknown>;
+    // Must not say "simplest algorithm" (that's the standard dfg description)
+    expect((payload.content as string).toLowerCase()).not.toContain('simplest and fastest');
+    // Must say "SIMD" — that's the distinguishing characteristic
+    expect((payload.content as string)).toContain('SIMD');
   });
 
   it('heuristic_miner alias resolves to heuristic', async () => {

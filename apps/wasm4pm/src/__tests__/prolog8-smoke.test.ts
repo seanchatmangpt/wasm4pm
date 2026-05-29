@@ -20,7 +20,8 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { runCli, EXIT_CODES, createCliTestEnv } from '@wasm4pm/testing';
 
-vi.setConfig({ testTimeout: 30_000 });
+// runCli defaults to 30s; set vitest test timeout higher to avoid race.
+vi.setConfig({ testTimeout: 60_000 });
 
 describe('wpm prolog8 — smoke tests', () => {
   let env: Awaited<ReturnType<typeof createCliTestEnv>>;
