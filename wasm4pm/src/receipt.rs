@@ -607,16 +607,16 @@ impl ExpectedObservedCloneDetector {
                                 }
                                 
                                 // Check if there is runner boundary evidence in the observed log
-                                let mut has_runner_boundary_events = false;
+                                let mut _has_runner_boundary_events = false;
                                 for o in observed_events {
                                     let o_act = o.get("activity").or_else(|| o.get("type")).and_then(|v| v.as_str()).unwrap_or("");
                                     if o_act.contains("runner") || o_act.starts_with("ui.") || o_act.starts_with("zoela.runner.") || o_act.starts_with("wpm.") {
-                                        has_runner_boundary_events = true;
+                                        _has_runner_boundary_events = true;
                                         break;
                                     }
                                 }
-                                
-                                let has_boundary_block = algo.get("boundary_evidence").is_some() 
+
+                                let _has_boundary_block = algo.get("boundary_evidence").is_some()
                                     || algo.get("observed_path").and_then(|op| op.get("boundary_evidence")).is_some()
                                     || receipt.get("boundary_evidence").is_some();
                                 

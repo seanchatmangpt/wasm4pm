@@ -47,7 +47,7 @@ wpm doctor check
 wpm status --format json
 ```
 
-The CLI exposes **40+ top-level commands** (discovery, conformance, prediction, cognition, receipts, cell, and utilities). Run `wpm --help` for the full tree.
+The CLI exposes **50+ top-level commands** (discovery, conformance, prediction, cognition, receipts, cell, and utilities). Run `wpm --help` for the full tree.
 
 **Default algorithm:** `config.algorithm.name` from `wasm4pm.toml` / `wasm4pm.json`, else the first algorithm for your execution profile (`balanced` → `alpha_plus_plus`), else `heuristic_miner`. Run `wpm --help` for the full command tree.
 
