@@ -2,3 +2,6 @@ node_modules/
 dist/
 *.log
 .wasm4pm/
+.wasm4pm-evidence/
+# Misrouted evidence files written with file:// URL as path
+file:

@@ -24,6 +24,7 @@ coverage/
 
 # wasm4pm runtime
 .wasm4pm/
+.wasm4pm-evidence/
 results/
 benchmarks/results/
 
@@ -68,6 +69,12 @@ artifacts/actuation/raw_evidence/
 # Stray CLI output paths
 apps/wasm4pm/undefined/
 apps/wasm4pm/wasm4pm/target/
+
+# Circular symlink inside wasm4pm/bench_data (points back to repo root bench_data)
+wasm4pm/bench_data/bench_data
+
+# Untracked scripts generated during benchmarks
+scripts/bench-algorithms.js
 
 # packages/agents: compiled artifacts in src/ (NodeNext shadowing fix — iter13)
 # tsconfig.json outDir is ./dist; these .js/.d.ts/.map files were committed before

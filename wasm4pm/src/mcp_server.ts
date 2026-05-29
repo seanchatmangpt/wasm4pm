@@ -668,7 +668,7 @@ export class Wasm4pmMCPServer {
             algorithm: {
               type: 'string',
               description:
-                'Override automatic algorithm selection. Options: dfg, heuristic, alpha_plus_plus, genetic, ilp, inductive. Default: auto-select based on log size and complexity.',
+                'Override automatic algorithm selection. Options: dfg, optimized_dfg, heuristic_miner. Default: dfg (auto-select is not supported; omit this field to use dfg).',
             },
             cache_key: {
               type: 'string',
@@ -1744,10 +1744,24 @@ export class Wasm4pmMCPServer {
           // and a traces_json argument — it is NOT called with an event log handle.
           // We create a SmartEngine, run the algorithm against the loaded log's traces,
           // then destroy the engine.
+          // NOTE: smart_engine_run only accepts 'dfg', 'optimized_dfg', 'heuristic_miner'.
+          // The schema previously listed 'auto' as a valid value but it is not — default to 'dfg'.
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
           let engineHandle: string | null = null;
           try {
-            const algorithm = (input.algorithm as string) || 'auto';
+            const requestedAlgo = (input.algorithm as string) || 'dfg';
+            // Map legacy / alias names to valid smart_engine algorithm names
+            const algoMap: Record<string, string> = {
+              'auto': 'dfg',
+              'heuristic': 'heuristic_miner',
+              'heuristics': 'heuristic_miner',
+              'optimized': 'optimized_dfg',
+              'alpha_plus_plus': 'dfg',  // not supported; fall back to dfg
+              'genetic': 'dfg',           // not supported; fall back to dfg
+              'ilp': 'dfg',              // not supported; fall back to dfg
+              'inductive': 'dfg',        // not supported; fall back to dfg
+            };
+            const algorithm = algoMap[requestedAlgo] ?? requestedAlgo;
             const rawTraces = wasm.get_traces(logHandle, 'concept:name');
             const tracesJson = typeof rawTraces === 'string' ? rawTraces : JSON.stringify(rawTraces);
             engineHandle = String(wasm.smart_engine_create());
@@ -2282,9 +2296,12 @@ export class Wasm4pmMCPServer {
             }
           }
 
+          // get_capabilities() returns { version, features: { conformance, ml, ... } }
+          // The feature flags live under the nested 'features' key.
           const caps = features as Record<string, unknown>;
-          const conformanceReady = caps?.conformance ?? caps?.token_replay ?? false;
-          const mlReady = caps?.ml ?? caps?.machine_learning ?? false;
+          const featureFlags = (caps?.features ?? caps) as Record<string, unknown>;
+          const conformanceReady = featureFlags?.conformance ?? featureFlags?.token_replay ?? false;
+          const mlReady = featureFlags?.ml ?? featureFlags?.machine_learning ?? false;
 
           result = {
             ready,

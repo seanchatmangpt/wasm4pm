@@ -6,7 +6,8 @@
 use crate::models::{EventLog, PetriNet};
 use crate::state::{get_or_init_state, StoredObject};
 use serde::{Deserialize, Serialize};
-use std::collections::{BinaryHeap, HashMap, HashSet};
+use rustc_hash::FxHashMap;
+use std::collections::{BinaryHeap, HashSet};
 use wasm_bindgen::prelude::{wasm_bindgen, JsValue};
 
 /// Configuration for alignment-based fitness computation.
@@ -111,15 +112,15 @@ pub fn compute_alignment_fitness(
     let mut aligned_traces = 0usize;
     let total_traces = log.traces.len();
 
-    // Build lookup structures for Petri net
-    let place_index: HashMap<_, _> = petri_net
+    // Build lookup structures for Petri net (FxHashMap: faster string-keyed lookup)
+    let place_index: FxHashMap<_, _> = petri_net
         .places
         .iter()
         .enumerate()
         .map(|(i, p)| (&p.id, i))
         .collect();
 
-    let transition_index: HashMap<_, _> = petri_net
+    let transition_index: FxHashMap<_, _> = petri_net
         .transitions
         .iter()
         .enumerate()
@@ -248,7 +249,7 @@ struct TraceAlignment {
 fn compute_trace_alignment(
     activities: &[String],
     petri_net: &PetriNet,
-    place_index: &HashMap<&String, usize>,
+    place_index: &FxHashMap<&String, usize>,
     trans_inputs: &[Vec<usize>],
     trans_outputs: &[Vec<usize>],
     config: &AlignmentFitnessConfig,
@@ -354,7 +355,7 @@ fn estimate_remaining_cost(
 /// Check if marking is a final marking.
 fn is_final_marking(
     petri_net: &PetriNet,
-    place_index: &HashMap<&String, usize>,
+    place_index: &FxHashMap<&String, usize>,
     marking: &[usize],
 ) -> bool {
     petri_net.final_markings.iter().any(|final_marking| {
@@ -372,7 +373,7 @@ fn is_final_marking(
 fn generate_successors(
     activities: &[String],
     petri_net: &PetriNet,
-    _place_index: &HashMap<&String, usize>,
+    _place_index: &FxHashMap<&String, usize>,
     trans_inputs: &[Vec<usize>],
     trans_outputs: &[Vec<usize>],
     config: &AlignmentFitnessConfig,

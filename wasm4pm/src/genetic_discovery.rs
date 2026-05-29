@@ -322,14 +322,20 @@ fn create_random_edge_set_seeded(
 fn crossover_edges_seeded(parent1: &EdgeSet, parent2: &EdgeSet, rng: &mut StdRng) -> EdgeSet {
     let mut child: EdgeSet = HashSet::new();
 
-    // Fix C: iterate the sets directly — no intermediate Vec allocation
-    for &edge in parent1.iter() {
+    // Sort before iterating: HashSet iteration order is non-deterministic due to hash
+    // randomization. Sorting ensures RNG calls are consumed in the same order every run,
+    // keeping the RNG state deterministic across WASM invocations.
+    let mut p1_edges: Vec<(u32, u32)> = parent1.iter().copied().collect();
+    p1_edges.sort_unstable();
+    for edge in p1_edges {
         if rng.gen::<f64>() < 0.5 {
             child.insert(edge);
         }
     }
 
-    for &edge in parent2.iter() {
+    let mut p2_edges: Vec<(u32, u32)> = parent2.iter().copied().collect();
+    p2_edges.sort_unstable();
+    for edge in p2_edges {
         if rng.gen::<f64>() < 0.5 {
             child.insert(edge);
         }
@@ -361,15 +367,21 @@ fn mutate_edges_seeded(
 fn blend_edges_seeded(set1: &EdgeSet, set2: &EdgeSet, ratio: f64, rng: &mut StdRng) -> EdgeSet {
     let mut result: EdgeSet = HashSet::new();
 
+    // Sort before iterating: HashSet iteration order is non-deterministic due to hash
+    // randomization. Sorting ensures RNG calls are consumed in the same order every run.
     // Keep edges from set1 with probability (1 - ratio)
-    for &edge in set1 {
+    let mut s1_edges: Vec<(u32, u32)> = set1.iter().copied().collect();
+    s1_edges.sort_unstable();
+    for edge in s1_edges {
         if rng.gen::<f64>() > ratio {
             result.insert(edge);
         }
     }
 
     // Add edges from set2 with probability ratio
-    for &edge in set2 {
+    let mut s2_edges: Vec<(u32, u32)> = set2.iter().copied().collect();
+    s2_edges.sort_unstable();
+    for edge in s2_edges {
         if rng.gen::<f64>() < ratio {
             result.insert(edge);
         }

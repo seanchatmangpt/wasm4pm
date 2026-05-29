@@ -108,8 +108,13 @@ pub fn parse_powl_model_string(s: &str, arena: &mut PowlArena) -> Result<u32, Wa
 // ─── Partial order parsing ────────────────────────────────────────────────────
 
 fn parse_partial_order(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
-    let nodes_str = extract_braced_content(s, "nodes={")?;
-    let order_str = extract_braced_content(s, "order={")?;
+    // Extract nodes first; then search for order= AFTER the nodes section so
+    // that `order={...}` patterns embedded inside child sub-models (which live
+    // in the nodes section) are not mistakenly matched.
+    let (nodes_str, after_nodes) = extract_braced_content_from(s, "nodes={", 0)?;
+    let order_str = extract_braced_content_from(s, "order={", after_nodes)
+        .map(|(c, _)| c)
+        .unwrap_or("");
 
     let node_tokens: Vec<String> = if nodes_str.trim().is_empty() {
         Vec::new()
@@ -156,8 +161,12 @@ fn parse_partial_order(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
 // ─── Decision graph parsing ──────────────────────────────────────────────────────
 
 fn parse_decision_graph(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
-    let nodes_str = extract_braced_content(s, "nodes={")?;
-    let order_str = extract_braced_content(s, "order={")?;
+    // Extract nodes first; search for order= only after the nodes section so
+    // nested sub-model reprs that contain `order={` are not mistakenly matched.
+    let (nodes_str, after_nodes) = extract_braced_content_from(s, "nodes={", 0)?;
+    let order_str = extract_braced_content_from(s, "order={", after_nodes)
+        .map(|(c, _)| c)
+        .unwrap_or("");
     let starts_str = extract_bracketed_content(s, "starts=[")?;
     let ends_str = extract_bracketed_content(s, "ends=[")?;
     let empty_str = extract_bool_value(s, "empty=")?;
@@ -381,10 +390,29 @@ fn node_label_matches(token: &str, label: &str) -> bool {
 }
 
 fn extract_braced_content<'a>(s: &'a str, key: &str) -> Result<&'a str, String> {
-    let start = s
+    extract_braced_content_from(s, key, 0).map(|(content, _)| content)
+}
+
+/// Extract the content inside `key{...}` starting the search from byte offset `from`.
+/// Returns `(content_slice, byte_offset_after_closing_brace)`.
+///
+/// Searching from an offset allows callers to chain sequential extractions
+/// (e.g. find `nodes={...}` first, then search for `order={` only in the
+/// remaining suffix) so that keys nested inside sub-model reprs are not
+/// mistakenly matched.
+fn extract_braced_content_from<'a>(
+    s: &'a str,
+    key: &str,
+    from: usize,
+) -> Result<(&'a str, usize), String> {
+    let search_start = s
+        .get(from..)
+        .ok_or_else(|| format!("offset {} out of range", from))?;
+    let rel_start = search_start
         .find(key)
-        .ok_or_else(|| format!("'{}' not found in '{}'", key, s))?;
-    let content_start = start + key.len();
+        .ok_or_else(|| format!("'{}' not found in '{}'", key, &s[from..]))?;
+    let abs_start = from + rel_start;
+    let content_start = abs_start + key.len();
     let rest = &s[content_start..];
     let mut depth = 1usize;
     let mut end = 0usize;
@@ -401,7 +429,9 @@ fn extract_braced_content<'a>(s: &'a str, key: &str) -> Result<&'a str, String> 
             _ => {}
         }
     }
-    Ok(&rest[..end])
+    // abs_end points to the byte just after the closing brace in `s`
+    let abs_end = content_start + end + 1; // +1 skips the closing `}`
+    Ok((&rest[..end], abs_end))
 }
 
 // ─── Operator parsing ─────────────────────────────────────────────────────────
