@@ -386,7 +386,17 @@ fn extract_bool_value<'a>(s: &'a str, key: &str) -> Result<&'a str, String> {
 fn node_label_matches(token: &str, label: &str) -> bool {
     let t = token.trim().trim_matches('\'');
     let l = label.trim().trim_matches('\'');
-    t == l
+    if t == l {
+        return true;
+    }
+    // Normalize internal whitespace around commas and parens so that
+    // "X(pay, installment)" matches "X(pay,installment)" etc.
+    let normalize = |s: &str| {
+        s.chars()
+            .filter(|c| !c.is_whitespace())
+            .collect::<String>()
+    };
+    normalize(t) == normalize(l)
 }
 
 fn extract_braced_content<'a>(s: &'a str, key: &str) -> Result<&'a str, String> {

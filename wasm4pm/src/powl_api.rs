@@ -913,19 +913,20 @@ mod tests {
     // ─── Paper-aligned: hotel service process (Table 2) ───
 
     /// Hotel service: take order → concurrent(kitchen, sommelier) → assign waiter →
-    /// concurrent(ready_cart, kitchen+wine) → deliver → debit. Optional tip loop.
+    /// concurrent(ready_cart, prepare_wine) → deliver → tip loop → debit.
     fn hotel_powl() -> &'static str {
         "PO=(nodes={take_order, PO=(nodes={submit_kitchen, fetch_wine}, order={}), \
             assign_waiter, \
-            PO=(nodes={ready_cart, deliver}, order={}), \
-            *(deliver, tip_optional), \
+            PO=(nodes={ready_cart, prepare_wine}, order={}), \
+            deliver, \
+            *(tip_optional, redo_tip), \
             debit_account}, \
             order={take_order-->PO=(nodes={submit_kitchen, fetch_wine}, order={}), \
             PO=(nodes={submit_kitchen, fetch_wine}, order={})-->assign_waiter, \
-            assign_waiter-->PO=(nodes={ready_cart, deliver}, order={}), \
-            PO=(nodes={ready_cart, deliver}, order={})-->deliver, \
-            deliver-->*(deliver, tip_optional), \
-            deliver-->debit_account})"
+            assign_waiter-->PO=(nodes={ready_cart, prepare_wine}, order={}), \
+            PO=(nodes={ready_cart, prepare_wine}, order={})-->deliver, \
+            deliver-->*(tip_optional, redo_tip), \
+            *(tip_optional, redo_tip)-->debit_account})"
     }
 
     #[test]
@@ -950,46 +951,25 @@ mod tests {
         let (arena, root) = parse_test(hotel_powl()).unwrap();
         let pn_result: PowlPetriNetResult = to_petri_net::apply(&arena, root);
 
+        let make_event = |name: &str| crate::powl_event_log::Event {
+            name: name.into(),
+            timestamp: None,
+            lifecycle: None,
+            attributes: std::collections::HashMap::new(),
+        };
         let log = EventLog {
             traces: vec![Trace {
                 case_id: "h1".to_string(),
                 events: vec![
-                    crate::powl_event_log::Event {
-                        name: "take_order".into(),
-                        timestamp: None,
-                        lifecycle: None,
-                        attributes: std::collections::HashMap::new(),
-                    },
-                    crate::powl_event_log::Event {
-                        name: "submit_kitchen".into(),
-                        timestamp: None,
-                        lifecycle: None,
-                        attributes: std::collections::HashMap::new(),
-                    },
-                    crate::powl_event_log::Event {
-                        name: "fetch_wine".into(),
-                        timestamp: None,
-                        lifecycle: None,
-                        attributes: std::collections::HashMap::new(),
-                    },
-                    crate::powl_event_log::Event {
-                        name: "assign_waiter".into(),
-                        timestamp: None,
-                        lifecycle: None,
-                        attributes: std::collections::HashMap::new(),
-                    },
-                    crate::powl_event_log::Event {
-                        name: "deliver".into(),
-                        timestamp: None,
-                        lifecycle: None,
-                        attributes: std::collections::HashMap::new(),
-                    },
-                    crate::powl_event_log::Event {
-                        name: "debit_account".into(),
-                        timestamp: None,
-                        lifecycle: None,
-                        attributes: std::collections::HashMap::new(),
-                    },
+                    make_event("take_order"),
+                    make_event("submit_kitchen"),
+                    make_event("fetch_wine"),
+                    make_event("assign_waiter"),
+                    make_event("ready_cart"),
+                    make_event("prepare_wine"),
+                    make_event("deliver"),
+                    make_event("tip_optional"),
+                    make_event("debit_account"),
                 ],
             }],
         };
