@@ -50,6 +50,7 @@ const POWL_SUBCOMMANDS = [
   'conformance',
   'import',
   'discover',
+  'validate',
   'get-children',
   'node-info',
   'freq-analysis',
@@ -75,7 +76,7 @@ export const powl = defineCommand({
   meta: {
     name: 'powl',
     description:
-      'POWL model analysis — parse, convert, simplify, diff, complexity, footprints, conformance, import, discover, get-children, node-info, freq-analysis. Example: wpm powl parse \"*( A , B )\"',
+      'POWL model analysis — parse, convert, simplify, diff, complexity, footprints, conformance, import, discover, validate, get-children, node-info, freq-analysis. Example: wpm powl parse \"*( A , B )\"',
   },
   args: {
     subcommand: {
@@ -155,6 +156,11 @@ export const powl = defineCommand({
     'ocel-variant': {
       type: 'string',
       description: 'OCEL discovery variant: flattening or oc_powl (default: flattening)',
+    },
+    'with-quality': {
+      type: 'boolean',
+      description:
+        'Compute fitness/precision quality metrics after discover (requires --input XES log)',
     },
   },
   async run(ctx) {
@@ -428,17 +434,100 @@ async function executePowlCommand(
         );
       }
       const raw: string = wasm.diff_models(modelStr, model2);
-      return normalizeResult(raw);
+      const diffResult = normalizeResult(raw);
+
+      // Enrich diff with complexity comparison between the two models.
+      try {
+        const [c1Raw, c2Raw] = await Promise.all([
+          Promise.resolve(wasm.measure_complexity(modelStr) as string),
+          Promise.resolve(wasm.measure_complexity(model2) as string),
+        ]);
+        const c1 = JSON.parse(c1Raw) as {
+          cyclomatic: number;
+          node_count: number;
+          activity_count: number;
+        };
+        const c2 = JSON.parse(c2Raw) as {
+          cyclomatic: number;
+          node_count: number;
+          activity_count: number;
+        };
+        diffResult['complexity_delta'] = {
+          model_a: {
+            node_count: c1.node_count,
+            activity_count: c1.activity_count,
+            cyclomatic: c1.cyclomatic,
+          },
+          model_b: {
+            node_count: c2.node_count,
+            activity_count: c2.activity_count,
+            cyclomatic: c2.cyclomatic,
+          },
+          node_count_delta: c2.node_count - c1.node_count,
+          activity_count_delta: c2.activity_count - c1.activity_count,
+          cyclomatic_delta: c2.cyclomatic - c1.cyclomatic,
+          cyclomatic_pct_change:
+            c1.cyclomatic > 0
+              ? Math.round(((c2.cyclomatic - c1.cyclomatic) / c1.cyclomatic) * 100)
+              : null,
+        };
+      } catch {
+        // Non-fatal: complexity delta is additional enrichment
+      }
+
+      return diffResult;
     }
 
     case 'complexity': {
       const raw: string = wasm.measure_complexity(modelStr);
-      return JSON.parse(raw);
+      const result = JSON.parse(raw) as Record<string, unknown>;
+
+      // Enrich with operator breakdown derived from POWL repr string.
+      // We count operator keywords in the canonical representation produced
+      // by arena.to_repr(): X(...) = XOR, +(...) = PARALLEL, *(...) = LOOP,
+      // ->(...) or sequences = SEQUENCE, PO{...} = PARTIAL_ORDER.
+      try {
+        const reprRaw: string = wasm.powl_to_string(modelStr);
+        const opBreakdown = countOperators(reprRaw);
+        result['operator_breakdown'] = opBreakdown;
+        // Concurrent activity pairs from footprints
+        const fpRaw: string = wasm.powl_footprints(modelStr);
+        const fp = JSON.parse(fpRaw) as { parallel?: Array<[string, string]> };
+        const parPairs = fp.parallel ?? [];
+        // Deduplicate bidirectional pairs
+        const seen = new Set<string>();
+        const concurrentPairs: Array<[string, string]> = [];
+        for (const p of parPairs) {
+          if (!Array.isArray(p) || p.length !== 2) continue;
+          const [a, b] = p as [string, string];
+          const key = a < b ? `${a}|${b}` : `${b}|${a}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            concurrentPairs.push(a < b ? [a, b] : [b, a]);
+          }
+        }
+        result['concurrent_pairs'] = concurrentPairs;
+        result['concurrent_pair_count'] = concurrentPairs.length;
+      } catch {
+        // Non-fatal: operator breakdown is additional enrichment
+      }
+
+      return result;
     }
 
     case 'footprints': {
       const raw: string = wasm.powl_footprints(modelStr);
-      return JSON.parse(raw);
+      const fp = JSON.parse(raw) as Record<string, unknown>;
+
+      // Build ordering matrix from the footprints data
+      try {
+        const matrix = buildOrderingMatrix(fp);
+        fp['ordering_matrix'] = matrix;
+      } catch {
+        // Non-fatal: ordering matrix is additional enrichment
+      }
+
+      return fp;
     }
 
     case 'conformance': {
@@ -549,6 +638,26 @@ async function executePowlCommand(
         }
       }
 
+      // Extract log statistics before discovery (trace_count, activity_count)
+      let logStats: { trace_count: number; activity_count: number } | null = null;
+      try {
+        const parsedLog = JSON.parse(logJson) as {
+          traces?: Array<{ events?: Array<{ attributes?: Record<string, unknown> }> }>;
+        };
+        const traces = parsedLog.traces ?? [];
+        const activitySet = new Set<string>();
+        for (const t of traces) {
+          for (const e of t.events ?? []) {
+            const nameAttr = (e.attributes ?? {})[activityKey];
+            const name = extractTaggedString(nameAttr);
+            if (name) activitySet.add(name);
+          }
+        }
+        logStats = { trace_count: traces.length, activity_count: activitySet.size };
+      } catch {
+        // Non-fatal: log stats are informational only
+      }
+
       // Use config path when any non-default option was explicitly provided.
       // Note: citsy always populates all declared args (they are never absent from
       // Object.keys(args)), so we test actual *values* rather than key presence.
@@ -567,7 +676,73 @@ async function executePowlCommand(
         raw = wasm.discover_powl_from_log(logJson, variant);
       }
 
-      return normalizeResult(raw);
+      const discoveryResult = normalizeResult(raw);
+
+      // Optionally compute quality metrics (--with-quality flag)
+      if (args['with-quality']) {
+        try {
+          // Convert logJson to powl event log format for token replay
+          const powlLogJson = convertModelsLogToPowlLog(logJson, activityKey);
+          const modelStr = String(discoveryResult['repr'] ?? '');
+          if (modelStr) {
+            // Token replay fitness
+            const fitnessRaw: string = wasm.token_replay_fitness(modelStr, powlLogJson);
+            const fitness = JSON.parse(fitnessRaw) as {
+              percentage: number;
+              avg_trace_precision: number;
+              perfectly_fitting_traces: number;
+              total_traces: number;
+            };
+
+            // Footprints-based conformance (precision proxy)
+            let footprintsPrecision: number | null = null;
+            try {
+              const fpRaw: string = wasm.footprints_conformance(modelStr, powlLogJson);
+              const fp = JSON.parse(fpRaw) as { precision?: number; f1?: number };
+              footprintsPrecision = typeof fp.precision === 'number' ? fp.precision : null;
+            } catch {
+              // Non-fatal: footprints conformance is optional
+            }
+
+            // Complexity-based simplicity score: higher complexity → lower simplicity
+            let simplicity: number | null = null;
+            try {
+              const cplxRaw: string = wasm.measure_complexity(modelStr);
+              const cplx = JSON.parse(cplxRaw) as {
+                cyclomatic?: number;
+                node_count?: number;
+                activity_count?: number;
+              };
+              // Simplicity: inversely proportional to cyclomatic complexity
+              // Normalised to [0,1]: 1 = minimal complexity, 0 = very complex
+              const cyc = cplx.cyclomatic ?? 0;
+              simplicity = Math.max(0, 1 - cyc / Math.max(cyc + 10, 20));
+            } catch {
+              // Non-fatal
+            }
+
+            discoveryResult['quality'] = {
+              fitness: fitness.percentage,
+              avg_trace_fitness: fitness.percentage,
+              precision:
+                footprintsPrecision !== null ? footprintsPrecision : fitness.avg_trace_precision,
+              simplicity,
+              perfectly_fitting_traces: fitness.perfectly_fitting_traces,
+              total_traces: fitness.total_traces,
+            };
+          }
+        } catch {
+          // Non-fatal: quality computation errors don't block discover
+          discoveryResult['quality_error'] =
+            'Quality metrics unavailable (model may not support token replay)';
+        }
+      }
+
+      if (logStats) {
+        discoveryResult['log_stats'] = logStats;
+      }
+
+      return discoveryResult;
     }
 
     case 'freq-analysis': {
@@ -575,9 +750,179 @@ async function executePowlCommand(
       return JSON.parse(raw);
     }
 
+    case 'validate': {
+      const checks: Array<{ name: string; pass: boolean; warning?: string }> = [];
+      const warnings: string[] = [];
+
+      // Check 1: well-formed JSON / parseable POWL
+      let parsed: Record<string, unknown> | null = null;
+      try {
+        const raw = wasm.parse_powl(modelStr);
+        parsed = normalizeResult(raw);
+        checks.push({ name: 'Well-formed POWL (parseable)', pass: true });
+      } catch (e) {
+        checks.push({ name: 'Well-formed POWL (parseable)', pass: false });
+        // Cannot continue further checks if parse fails
+        return {
+          valid: false,
+          checks,
+          warnings,
+          error: `Parse error: ${e instanceof Error ? e.message : String(e)}`,
+        };
+      }
+
+      // Check 2: root node present
+      const hasRoot = parsed !== null && parsed['root'] !== undefined;
+      checks.push({ name: 'Root node present', pass: hasRoot });
+
+      // Check 3: node_count > 0
+      const nodeCount = (parsed?.['node_count'] as number) ?? 0;
+      checks.push({ name: 'Non-empty model (node_count > 0)', pass: nodeCount > 0 });
+
+      // Check 4: validate partial orders (no cycles in partial-order nodes)
+      try {
+        wasm.validate_partial_orders(modelStr);
+        checks.push({ name: 'Partial-order nodes acyclic', pass: true });
+      } catch (e) {
+        checks.push({ name: 'Partial-order nodes acyclic', pass: false });
+        warnings.push(`Partial-order violation: ${e instanceof Error ? e.message : String(e)}`);
+      }
+
+      // Check 5: structural soundness via Petri net conversion
+      let sound = false;
+      try {
+        const soundnessRaw: string = wasm.check_powl_soundness(modelStr);
+        const soundness = JSON.parse(soundnessRaw) as {
+          sound: boolean;
+          deadlock_free: boolean;
+          bounded: boolean;
+          liveness: boolean;
+        };
+        sound = soundness.sound;
+        checks.push({ name: 'Structurally sound (deadlock-free, bounded, live)', pass: sound });
+        if (!sound) {
+          if (!soundness.deadlock_free)
+            warnings.push('Model has deadlock paths — some traces cannot complete.');
+          if (!soundness.bounded) warnings.push('Model is unbounded — token accumulation possible.');
+          if (!soundness.liveness)
+            warnings.push('Model has dead transitions — some activities are unreachable.');
+        }
+      } catch {
+        checks.push({ name: 'Structurally sound (deadlock-free, bounded, live)', pass: false });
+        warnings.push('Soundness check failed — model may have structural defects.');
+      }
+
+      // Check 6: activity labels non-empty (scan repr string for empty labels)
+      const repr = (parsed?.['repr'] as string) ?? '';
+      const hasEmptyLabel = /\(\s*,|\,\s*,|\(\s*\)/.test(repr);
+      if (hasEmptyLabel) {
+        checks.push({ name: 'All activities have non-empty labels', pass: false });
+        warnings.push('Empty activity labels detected in model representation.');
+      } else {
+        checks.push({ name: 'All activities have non-empty labels', pass: true });
+      }
+
+      const allPass = checks.every((c) => c.pass);
+      const verdict = allPass && warnings.length === 0 ? 'VALID' : allPass ? 'VALID (with warnings)' : 'INVALID';
+
+      return {
+        valid: allPass,
+        verdict,
+        node_count: nodeCount,
+        checks,
+        warnings,
+      };
+    }
+
     default:
       throw new Error(`Unhandled subcommand: ${subcommand}`);
   }
+}
+
+/**
+ * Count POWL operator types in a canonical repr string.
+ *
+ * POWL notation: X(...)=XOR, +(...)=PARALLEL, *(...)=LOOP,
+ * PO{...}=PARTIAL_ORDER, ->(...)=SEQUENCE (or bare sequences).
+ * The repr uses these prefix characters before '(' or '{'.
+ */
+function countOperators(repr: string): {
+  xor: number;
+  parallel: number;
+  loop: number;
+  sequence: number;
+  partial_order: number;
+  total_operators: number;
+} {
+  // Count occurrences of operator prefixes in the repr
+  const xor = (repr.match(/\bX\s*\(/g) ?? []).length;
+  const parallel = (repr.match(/\+\s*\(/g) ?? []).length;
+  const loop = (repr.match(/\*\s*\(/g) ?? []).length;
+  const sequence = (repr.match(/->\s*\(/g) ?? []).length;
+  const partial_order = (repr.match(/\bPO\s*\{/g) ?? []).length;
+  return {
+    xor,
+    parallel,
+    loop,
+    sequence,
+    partial_order,
+    total_operators: xor + parallel + loop + sequence + partial_order,
+  };
+}
+
+/**
+ * Build a compact ordering matrix from POWL footprints data.
+ *
+ * Each cell contains one of:
+ *   '→' directly follows (in sequence)
+ *   '‖' parallel (can co-occur concurrently)
+ *   '#' never together (neither sequence nor parallel)
+ *   '◆' self
+ */
+function buildOrderingMatrix(fp: Record<string, unknown>): {
+  activities: string[];
+  matrix: string[][];
+  legend: Record<string, string>;
+} {
+  const toSorted = (v: unknown): string[] => {
+    if (Array.isArray(v)) return (v as string[]).slice().sort();
+    if (v !== null && typeof v === 'object') return Object.keys(v as object).sort();
+    return [];
+  };
+  const toPairSet = (v: unknown): Set<string> => {
+    const s = new Set<string>();
+    if (!Array.isArray(v)) return s;
+    for (const p of v as unknown[]) {
+      if (Array.isArray(p) && p.length === 2) {
+        s.add(`${p[0]}|${p[1]}`);
+      }
+    }
+    return s;
+  };
+
+  const acts = toSorted(fp['activities']);
+  const seqSet = toPairSet(fp['sequence']);
+  const parSet = toPairSet(fp['parallel']);
+
+  const matrix: string[][] = acts.map((a) =>
+    acts.map((b) => {
+      if (a === b) return '◆';
+      if (seqSet.has(`${a}|${b}`)) return '→';
+      if (parSet.has(`${a}|${b}`) || parSet.has(`${b}|${a}`)) return '‖';
+      return '#';
+    })
+  );
+
+  return {
+    activities: acts,
+    matrix,
+    legend: {
+      '→': 'directly follows (sequence)',
+      '‖': 'parallel (concurrent)',
+      '#': 'never together',
+      '◆': 'self',
+    },
+  };
 }
 
 function formatHumanOutput(
@@ -700,6 +1045,32 @@ function formatHumanOutput(
           projection.log(`    @ ${sc['location']}: ${sc['from']} => ${sc['to']}`);
         }
       }
+
+      // Complexity delta summary (enriched by TypeScript post-processing)
+      if (result.complexity_delta) {
+        const cd = result.complexity_delta as {
+          model_a: { node_count: number; activity_count: number; cyclomatic: number };
+          model_b: { node_count: number; activity_count: number; cyclomatic: number };
+          node_count_delta: number;
+          activity_count_delta: number;
+          cyclomatic_delta: number;
+          cyclomatic_pct_change: number | null;
+        };
+        projection.log('');
+        projection.log('  Complexity summary:');
+        const fmtDelta = (n: number) => (n > 0 ? `+${n}` : n < 0 ? `${n}` : '=');
+        projection.log(
+          `    Model A: ${cd.model_a.node_count} nodes, ${cd.model_a.activity_count} activities, cyclomatic=${cd.model_a.cyclomatic}`
+        );
+        projection.log(
+          `    Model B: ${cd.model_b.node_count} nodes, ${cd.model_b.activity_count} activities, cyclomatic=${cd.model_b.cyclomatic}`
+        );
+        const pctStr =
+          cd.cyclomatic_pct_change !== null ? ` (${fmtDelta(cd.cyclomatic_pct_change)}%)` : '';
+        projection.log(
+          `    Delta:   nodes ${fmtDelta(cd.node_count_delta)}, activities ${fmtDelta(cd.activity_count_delta)}, cyclomatic ${fmtDelta(cd.cyclomatic_delta)}${pctStr}`
+        );
+      }
       projection.log('');
       break;
     }
@@ -762,6 +1133,41 @@ function formatHumanOutput(
           `  Halstead vocab:  ${h.vocabulary}  (${h.n1} operators + ${h.n2} operands)`
         );
       }
+
+      // Operator breakdown (enriched by TypeScript post-processing)
+      if (result.operator_breakdown) {
+        const ob = result.operator_breakdown as {
+          xor: number;
+          parallel: number;
+          loop: number;
+          sequence: number;
+          partial_order: number;
+          total_operators: number;
+        };
+        if (ob.total_operators > 0) {
+          projection.log('');
+          projection.log('  Operator breakdown:');
+          if (ob.sequence > 0) projection.log(`    SEQUENCE:       ${ob.sequence}`);
+          if (ob.xor > 0) projection.log(`    XOR:            ${ob.xor}  (choice points)`);
+          if (ob.parallel > 0) projection.log(`    PARALLEL:       ${ob.parallel}  (concurrency)`);
+          if (ob.loop > 0) projection.log(`    LOOP:           ${ob.loop}  (rework potential)`);
+          if (ob.partial_order > 0)
+            projection.log(`    PARTIAL_ORDER:  ${ob.partial_order}  (partial ordering)`);
+        }
+      }
+
+      // Concurrent activity pairs
+      if (result.concurrent_pairs) {
+        const pairs = result.concurrent_pairs as Array<[string, string]>;
+        if (pairs.length > 0) {
+          projection.log('');
+          projection.log(`  Concurrent activity pairs (${pairs.length}):`);
+          for (const [a, b] of pairs) {
+            projection.log(`    ${a}  ‖  ${b}`);
+          }
+        }
+      }
+
       projection.log('');
       break;
     }
@@ -826,6 +1232,31 @@ function formatHumanOutput(
           projection.log(`    ${a.padEnd(30)} ||   ${b}`);
         }
         projection.log('');
+      }
+
+      // Ordering matrix (ASCII binary relation matrix) — only show for small models
+      if (result.ordering_matrix) {
+        const om = result.ordering_matrix as {
+          activities: string[];
+          matrix: string[][];
+          legend: Record<string, string>;
+        };
+        if (om.activities.length > 0 && om.activities.length <= 12) {
+          const colW = Math.min(10, Math.max(...om.activities.map((a) => a.length), 4));
+          const shortName = (s: string) =>
+            s.length > colW ? s.slice(0, colW - 1) + '…' : s.padEnd(colW);
+          projection.log('  Ordering matrix (→=sequence, ‖=parallel, #=never, ◆=self):');
+          // Header row
+          const headerCols = om.activities.map((a) => shortName(a)).join('  ');
+          const rowLabelW = colW + 2;
+          projection.log(`    ${' '.repeat(rowLabelW)}  ${headerCols}`);
+          for (let i = 0; i < om.activities.length; i++) {
+            const rowLabel = shortName(om.activities[i]);
+            const cells = om.matrix[i].map((c) => c.padEnd(colW)).join('  ');
+            projection.log(`    ${rowLabel.padEnd(rowLabelW)}  ${cells}`);
+          }
+          projection.log('');
+        }
       }
       break;
     }
@@ -900,6 +1331,30 @@ function formatHumanOutput(
       break;
     }
 
+    case 'validate': {
+      projection.log('');
+      const checks = (result.checks as Array<{ name: string; pass: boolean }>) ?? [];
+      for (const chk of checks) {
+        const glyph = chk.pass ? '✔' : '✘';
+        projection.log(`  ${glyph} ${chk.name}`);
+      }
+      const warnings = (result.warnings as string[]) ?? [];
+      if (warnings.length > 0) {
+        projection.log('');
+        for (const w of warnings) {
+          projection.log(`  ⚠  ${w}`);
+        }
+      }
+      projection.log('');
+      const verdict = String(result.verdict ?? (result.valid ? 'VALID' : 'INVALID'));
+      const warningCount = warnings.length;
+      projection.log(
+        `  Validation: ${verdict}${warningCount > 0 ? ` (${warningCount} warning${warningCount === 1 ? '' : 's'})` : ''}`
+      );
+      projection.log('');
+      break;
+    }
+
     case 'get-children': {
       projection.log('');
       projection.log(`  Children: ${(result.children as number[]).join(', ')}`);
@@ -924,16 +1379,64 @@ function formatHumanOutput(
 
     case 'discover': {
       projection.log('');
-      projection.log(`  Root index:       ${result.root}`);
-      projection.log(`  Node count:       ${result.node_count}`);
-      projection.log(`  Variant:           ${result.variant}`);
-      projection.log(`  Representation:     ${result.repr}`);
+      // Log stats header
+      if (result.log_stats) {
+        const ls = result.log_stats as { trace_count: number; activity_count: number };
+        projection.log(`  Algorithm: POWL Discovery (variant: ${result.variant})`);
+        projection.log(`  Log: ${ls.trace_count} traces, ${ls.activity_count} activities`);
+        projection.log('');
+      }
+      projection.log(`  Discovered model:`);
+      projection.log(`    Root index:   ${result.root}`);
+      projection.log(`    Node count:   ${result.node_count}`);
+      projection.log(`    Representation:`);
+      const reprLines = String(result.repr ?? '').split(',');
+      if (reprLines.length > 1) {
+        for (const line of reprLines) {
+          projection.log(`      ${line.trim()}`);
+        }
+      } else {
+        projection.log(`      ${result.repr}`);
+      }
       if (result.config) {
         const config = result.config as Record<string, unknown>;
+        projection.log('');
         projection.log(`  Config:`);
         projection.log(`    Activity key:     ${config.activity_key}`);
         projection.log(`    Min trace count:  ${config.min_trace_count}`);
-        projection.log(`    Noise threshold: ${config.noise_threshold}`);
+        projection.log(`    Noise threshold:  ${config.noise_threshold}`);
+      }
+      // Quality metrics (shown when --with-quality was passed)
+      if (result.quality) {
+        const q = result.quality as {
+          fitness: number;
+          precision: number;
+          simplicity: number | null;
+          perfectly_fitting_traces: number;
+          total_traces: number;
+        };
+        const barW = 12;
+        const bar = (v: number) =>
+          '█'.repeat(Math.round(v * barW)) + '░'.repeat(barW - Math.round(v * barW));
+        projection.log('');
+        projection.log('  Quality:');
+        projection.log(
+          `    Fitness:    ${(q.fitness * 100).toFixed(1).padStart(5)}%  [${bar(q.fitness)}]`
+        );
+        projection.log(
+          `    Precision:  ${(q.precision * 100).toFixed(1).padStart(5)}%  [${bar(q.precision)}]`
+        );
+        if (q.simplicity !== null) {
+          projection.log(
+            `    Simplicity: ${(q.simplicity * 100).toFixed(1).padStart(5)}%  [${bar(q.simplicity)}]`
+          );
+        }
+        projection.log(
+          `    Perfectly fitting: ${q.perfectly_fitting_traces} / ${q.total_traces} traces`
+        );
+      } else if (result.quality_error) {
+        projection.log('');
+        projection.log(`  Quality: ${result.quality_error}`);
       }
       projection.log('');
       break;

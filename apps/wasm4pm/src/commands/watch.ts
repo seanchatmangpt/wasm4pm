@@ -23,6 +23,68 @@ import { STANDARD_EXIT_CODE_DOCS } from '../help-standards.js';
  * Config snapshot helpers for what-changed display
  */
 
+// ─── Quality trend tracking ────────────────────────────────────────────────────
+//
+// Tracks fitness / precision / generalization across autopilot discovery cycles
+// so the watch command can show a live "Quality Trend" panel showing deltas
+// between the current and previous run.
+
+interface QualitySnapshot {
+  fitness: number | null;
+  precision: number | null;
+  generalization: number | null;
+  variantCount: number | null;
+  edgeCount: number | null;
+  timestamp: string;
+}
+
+function formatQualityDelta(prev: number | null, curr: number | null, label: string): string {
+  const GREEN = '\x1b[32m';
+  const RED = '\x1b[31m';
+  const RESET = '\x1b[0m';
+  const BOLD = '\x1b[1m';
+  if (curr === null) return `  ${label}: n/a`;
+  if (prev === null) return `  ${label}: ${curr.toFixed(4)}`;
+  const delta = curr - prev;
+  const arrow = delta > 0 ? `${GREEN}▲` : delta < 0 ? `${RED}▼` : '═';
+  const sign = delta > 0 ? '+' : '';
+  return `  ${label}: ${curr.toFixed(4)} → ${curr.toFixed(4)} ${arrow}${BOLD}${sign}${delta.toFixed(4)}${RESET}`;
+}
+
+function renderQualityTrend(prev: QualitySnapshot | null, curr: QualitySnapshot, outputHuman: boolean): void {
+  if (!outputHuman) return;
+  const GREEN = '\x1b[32m';
+  const RED = '\x1b[31m';
+  const RESET = '\x1b[0m';
+  const BOLD = '\x1b[1m';
+  const CYAN = '\x1b[36m';
+  console.log(`\n${BOLD}Quality Trend:${RESET}`);
+  if (prev === null) {
+    if (curr.fitness !== null) console.log(`  Fitness:       ${curr.fitness.toFixed(4)} (first run baseline)`);
+    if (curr.precision !== null) console.log(`  Precision:     ${curr.precision.toFixed(4)} (first run baseline)`);
+    return;
+  }
+  if (curr.fitness !== null) {
+    const delta = curr.fitness - (prev.fitness ?? curr.fitness);
+    const arrow = delta > 0.001 ? `${GREEN}▲${RESET}` : delta < -0.001 ? `${RED}▼${RESET}` : '═';
+    const sign = delta > 0 ? '+' : '';
+    console.log(`  Fitness:    ${(prev.fitness ?? 0).toFixed(4)} → ${curr.fitness.toFixed(4)} (${sign}${delta.toFixed(4)}) ${arrow}`);
+  }
+  if (curr.precision !== null) {
+    const delta = curr.precision - (prev.precision ?? curr.precision);
+    const arrow = delta > 0.001 ? `${GREEN}▲${RESET}` : delta < -0.001 ? `${RED}▼${RESET}` : '═';
+    const sign = delta > 0 ? '+' : '';
+    console.log(`  Precision:  ${(prev.precision ?? 0).toFixed(4)} → ${curr.precision.toFixed(4)} (${sign}${delta.toFixed(4)}) ${arrow}`);
+  }
+  if (curr.variantCount !== null && prev.variantCount !== null) {
+    const delta = curr.variantCount - prev.variantCount;
+    if (Math.abs(delta) > 0) {
+      const arrow = delta > 0 ? `${CYAN}+${delta} new variants${RESET}` : `${RED}${delta} variants removed${RESET}`;
+      console.log(`  Process changed: ${arrow} detected since last run`);
+    }
+  }
+}
+
 // ─── Model diff helpers ────────────────────────────────────────────────────────
 //
 // After each autopilot discovery run, we compare the current DFG against the
@@ -262,6 +324,9 @@ ${STANDARD_EXIT_CODE_DOCS}`,
     // model-level diff event on each cycle (e.g. "3 new edges, 1 removed").
     let prevDfgModel: DfgModel | null = null;
 
+    // Quality trend tracking: compare fitness/precision/variants across cycles
+    let prevQualitySnapshot: QualitySnapshot | null = null;
+
     // Step 2: Set up Watcher using chokidar for better cross-platform support
     const watchPath = path.resolve(configPath);
     const watcher = chokidar.watch(watchPath, {
@@ -475,6 +540,48 @@ ${STANDARD_EXIT_CODE_DOCS}`,
                         modelKeys:
                           typeof model === 'object' && model ? Object.keys(model as object) : [],
                       });
+
+                      // Quality trend: compute fitness/precision from the DFG model
+                      // and display a live quality panel comparing to the previous run.
+                      try {
+                        const dfgModel = model as {
+                          fitness?: number;
+                          precision?: number;
+                          generalization?: number;
+                          variants?: Array<unknown>;
+                          edges?: Array<unknown>;
+                          nodes?: Array<unknown>;
+                        };
+                        const currQuality: QualitySnapshot = {
+                          fitness: typeof dfgModel.fitness === 'number' ? dfgModel.fitness : null,
+                          precision: typeof dfgModel.precision === 'number' ? dfgModel.precision : null,
+                          generalization: typeof dfgModel.generalization === 'number' ? dfgModel.generalization : null,
+                          variantCount: Array.isArray(dfgModel.variants) ? dfgModel.variants.length : null,
+                          edgeCount: Array.isArray(dfgModel.edges) ? dfgModel.edges.length : null,
+                          timestamp: new Date().toISOString(),
+                        };
+
+                        const humanMode = (ctx.args.format as string | undefined) !== 'json';
+                        renderQualityTrend(prevQualitySnapshot, currQuality, humanMode);
+
+                        streaming.emitEvent('quality_trend', {
+                          fitness: currQuality.fitness,
+                          precision: currQuality.precision,
+                          generalization: currQuality.generalization,
+                          variant_count: currQuality.variantCount,
+                          edge_count: currQuality.edgeCount,
+                          fitness_delta: prevQualitySnapshot?.fitness != null && currQuality.fitness != null
+                            ? parseFloat((currQuality.fitness - prevQualitySnapshot.fitness).toFixed(4))
+                            : null,
+                          precision_delta: prevQualitySnapshot?.precision != null && currQuality.precision != null
+                            ? parseFloat((currQuality.precision - prevQualitySnapshot.precision).toFixed(4))
+                            : null,
+                        });
+
+                        prevQualitySnapshot = currQuality;
+                      } catch {
+                        /* quality trend is non-fatal */
+                      }
                     } finally {
                       // Always free the WASM handle to prevent memory leaks across watch cycles
                       try { WasmInstrumentation.delete_object(wasm, handle); } catch { /* best-effort */ }
