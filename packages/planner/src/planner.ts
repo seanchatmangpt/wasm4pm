@@ -102,6 +102,38 @@ export interface Config {
 }
 
 /**
+ * Alternative plan option produced alongside the primary plan.
+ * Carries enough metadata for callers to compare tradeoffs without re-planning.
+ */
+export interface AlternativePlan {
+  /** Algorithm ID of the alternative */
+  algorithm: string;
+
+  /** Short human-readable reason this alternative was generated */
+  reason: string;
+
+  /** Speed tier of the alternative (lower = faster) */
+  speed_tier: number;
+
+  /** Quality tier of the alternative (higher = better model) */
+  quality_tier: number;
+
+  /** Estimated wall-clock duration in ms for this alternative */
+  estimated_duration_ms: number;
+}
+
+/**
+ * Predicted quality for the chosen algorithm and profile.
+ */
+export interface QualityPrediction {
+  /** Expected fitness score in [0, 1] (higher = better conformance) */
+  fitness_estimate: number;
+
+  /** Confidence level of the prediction */
+  confidence: 'high' | 'medium' | 'low';
+}
+
+/**
  * Execution plan with deterministic layout and reproducible hash
  * Section 4 of the Three-Layer Architecture Specification requires BudgetEnvelope
  * to be attached to every ExecutionPlan for budget-first dispatch.
@@ -136,6 +168,34 @@ export interface ExecutionPlan {
    * Immutable; governs latency, memory, quality, and execution mode.
    */
   budget: BudgetEnvelope;
+
+  /**
+   * Estimated total wall-clock duration in milliseconds, summed across
+   * all sequential steps. Parallelizable steps are counted once.
+   */
+  estimated_duration_ms: number;
+
+  /**
+   * Estimated peak memory usage in MB (max across all steps).
+   */
+  estimated_memory_mb: number;
+
+  /**
+   * Predicted quality for the primary discovery algorithm and profile.
+   */
+  quality_prediction: QualityPrediction;
+
+  /**
+   * Alternative algorithm options with their tradeoffs.
+   * Callers can switch to an alternative without re-planning from scratch.
+   */
+  alternatives: AlternativePlan[];
+
+  /**
+   * Advisory warnings about this plan, e.g. log size, algorithm mismatch,
+   * missing features. Non-fatal; plan is still valid.
+   */
+  warnings: string[];
 }
 
 /**
@@ -706,6 +766,30 @@ export function plan(config: Config): ExecutionPlan {
   // Derive budget from profile and config
   const { budget } = createBudgetEnvelopeFromConfig(config, sourceKind);
 
+  // ── Enhanced plan metadata ──────────────────────────────────────────────
+
+  // Estimated duration: sum of all step durations (sequential model; parallelizable
+  // steps are counted at their own cost since we don't know the worker count here)
+  const estimated_duration_ms = steps.reduce(
+    (sum, s) => sum + (s.estimatedDurationMs ?? 0),
+    0
+  );
+
+  // Estimated peak memory: max across all steps
+  const estimated_memory_mb = steps.reduce(
+    (max, s) => Math.max(max, s.estimatedMemoryMB ?? 0),
+    0
+  );
+
+  // Quality prediction: derived from profile and primary discovery algorithm
+  const quality_prediction = deriveQualityPrediction(profile, config.algorithm?.name);
+
+  // Alternative plans: other good discovery algorithms for this profile
+  const alternatives = deriveAlternatives(profile, config.algorithm?.name, estimated_duration_ms);
+
+  // Warnings: advisory notes about this plan
+  const warnings = deriveWarnings(profile, config, steps);
+
   // Return the execution plan with BudgetEnvelope attached
   const executionPlan: ExecutionPlan = {
     id: planId,
@@ -717,9 +801,188 @@ export function plan(config: Config): ExecutionPlan {
     sinkKind,
     profile,
     budget,
+    estimated_duration_ms,
+    estimated_memory_mb,
+    quality_prediction,
+    alternatives,
+    warnings,
   };
 
   return executionPlan;
+}
+
+// ── Quality prediction helpers ──────────────────────────────────────────────
+
+/** Per-algorithm fitness score estimates (conservative, data-independent) */
+const ALGORITHM_FITNESS_ESTIMATE: Record<string, number> = {
+  dfg: 0.70,
+  process_skeleton: 0.65,
+  simd_streaming_dfg: 0.70,
+  heuristic_miner: 0.78,
+  alpha_plus_plus: 0.75,
+  inductive_miner: 0.82,
+  hill_climbing: 0.80,
+  declare: 0.72,
+  simulated_annealing: 0.83,
+  a_star: 0.86,
+  aco: 0.87,
+  pso: 0.87,
+  genetic_algorithm: 0.89,
+  optimized_dfg: 0.88,
+  ilp: 0.93,
+};
+
+/** Per-profile default fitness estimate when no explicit algorithm is set */
+const PROFILE_FITNESS_ESTIMATE: Record<string, number> = {
+  fast: 0.70,
+  stream: 0.70,
+  balanced: 0.78,
+  quality: 0.89,
+};
+
+function deriveQualityPrediction(
+  profile: string,
+  algorithmName?: string
+): import('./planner.js').QualityPrediction {
+  // If a specific algorithm is named, use its estimate; otherwise fall back to profile.
+  const fitness_estimate =
+    (algorithmName ? ALGORITHM_FITNESS_ESTIMATE[algorithmName] : undefined) ??
+    PROFILE_FITNESS_ESTIMATE[profile] ??
+    0.75;
+
+  // Confidence: high if we know the exact algorithm, medium for balanced/quality profiles,
+  // low for fast/stream where quality varies most with log characteristics.
+  let confidence: 'high' | 'medium' | 'low';
+  if (algorithmName && algorithmName in ALGORITHM_FITNESS_ESTIMATE) {
+    confidence = 'high';
+  } else if (profile === 'quality' || profile === 'balanced') {
+    confidence = 'medium';
+  } else {
+    confidence = 'low';
+  }
+
+  return { fitness_estimate, confidence };
+}
+
+// ── Alternative plan helpers ────────────────────────────────────────────────
+
+/** Duration-per-100-events rates for alternatives (ms) */
+const ALT_DURATION_PER_100_EVENTS_MS: Record<string, number> = {
+  dfg: 0.5,
+  process_skeleton: 0.3,
+  simd_streaming_dfg: 0.2,
+  heuristic_miner: 10,
+  alpha_plus_plus: 5,
+  inductive_miner: 15,
+  genetic_algorithm: 40,
+  ilp: 80,
+};
+
+/** Speed tiers for alternative suggestions */
+const ALT_SPEED_TIER: Record<string, number> = {
+  dfg: 5,
+  process_skeleton: 3,
+  simd_streaming_dfg: 2,
+  heuristic_miner: 25,
+  alpha_plus_plus: 20,
+  inductive_miner: 30,
+  genetic_algorithm: 75,
+  ilp: 80,
+};
+
+/** Quality tiers for alternative suggestions */
+const ALT_QUALITY_TIER: Record<string, number> = {
+  dfg: 30,
+  process_skeleton: 25,
+  simd_streaming_dfg: 30,
+  heuristic_miner: 50,
+  alpha_plus_plus: 50,
+  inductive_miner: 55,
+  genetic_algorithm: 80,
+  ilp: 90,
+};
+
+function deriveAlternatives(
+  profile: string,
+  primaryAlgorithm: string | undefined,
+  baseDurationMs: number
+): AlternativePlan[] {
+  // Map profile → sensible alternative algorithms
+  const PROFILE_ALTERNATIVES: Record<string, Array<{ alg: string; reason: string }>> = {
+    fast: [
+      { alg: 'simd_streaming_dfg', reason: 'SIMD-accelerated variant of DFG; faster on large logs' },
+      { alg: 'inductive_miner', reason: 'Higher quality than DFG at moderate cost' },
+    ],
+    stream: [
+      { alg: 'dfg', reason: 'Non-streaming DFG for smaller logs' },
+    ],
+    balanced: [
+      { alg: 'inductive_miner', reason: 'Sound process trees for conformance checking' },
+      { alg: 'genetic_algorithm', reason: 'Higher quality if runtime allows' },
+      { alg: 'dfg', reason: 'Faster exploration if runtime is constrained' },
+    ],
+    quality: [
+      { alg: 'genetic_algorithm', reason: 'Faster than ILP with near-equivalent quality' },
+      { alg: 'heuristic_miner', reason: 'Much faster fallback if quality profile times out' },
+    ],
+  };
+
+  const candidates = PROFILE_ALTERNATIVES[profile] ?? [];
+
+  return candidates
+    .filter(({ alg }) => alg !== primaryAlgorithm)
+    .map(({ alg, reason }) => {
+      const speed_tier = ALT_SPEED_TIER[alg] ?? 50;
+      const quality_tier = ALT_QUALITY_TIER[alg] ?? 50;
+      // Estimate duration relative to base using speed tier ratio
+      const primarySpeedTier = primaryAlgorithm ? (ALT_SPEED_TIER[primaryAlgorithm] ?? 25) : 25;
+      const speedRatio = primarySpeedTier > 0 ? speed_tier / primarySpeedTier : 1;
+      const estimated_duration_ms = Math.max(10, Math.round(baseDurationMs * speedRatio));
+      return { algorithm: alg, reason, speed_tier, quality_tier, estimated_duration_ms };
+    });
+}
+
+// ── Warning helpers ─────────────────────────────────────────────────────────
+
+function deriveWarnings(profile: string, config: Config, steps: PlanStep[]): string[] {
+  const warnings: string[] = [];
+
+  // Warn if quality algorithm used with fast profile
+  const algorithmName = config.algorithm?.name ?? '';
+  const heavyAlgorithms = ['ilp', 'genetic_algorithm', 'aco', 'pso', 'simulated_annealing', 'a_star'];
+  if (profile === 'fast' && heavyAlgorithms.some((a) => algorithmName === a)) {
+    warnings.push(
+      `Algorithm "${algorithmName}" is CPU-intensive; the "fast" profile may not provide enough time budget. Consider the "quality" profile.`
+    );
+  }
+
+  // Warn if streaming algorithm in non-stream profile
+  const streamingAlgorithms = ['simd_streaming_dfg', 'streaming_log'];
+  if (profile !== 'stream' && streamingAlgorithms.some((a) => algorithmName === a)) {
+    warnings.push(
+      `Algorithm "${algorithmName}" is a streaming algorithm. Consider using the "stream" profile for optimal configuration.`
+    );
+  }
+
+  // Warn if no discovery step is present (unusual configuration)
+  const hasDiscovery = steps.some((s) =>
+    s.type.startsWith('discover_') || s.type.startsWith('ml_')
+  );
+  if (!hasDiscovery) {
+    warnings.push(
+      'No discovery or ML step found in plan. Verify that the profile and algorithm configuration are correct.'
+    );
+  }
+
+  // Warn if memory budget is very low for quality algorithms
+  const maxMemory = config.execution?.maxMemoryMB ?? 0;
+  if (maxMemory > 0 && maxMemory < 256 && heavyAlgorithms.some((a) => algorithmName === a)) {
+    warnings.push(
+      `Memory budget is set to ${maxMemory} MB, but "${algorithmName}" may require 256–2048 MB for large logs.`
+    );
+  }
+
+  return warnings;
 }
 
 /**

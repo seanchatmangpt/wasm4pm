@@ -21,8 +21,19 @@
  */
 
 // Core planning API
-export { plan, toContractsPlan, PlannerError, type Config, type ExecutionPlan } from './planner.js';
-export { explain, explainBrief } from './explain.js';
+export {
+  plan,
+  toContractsPlan,
+  PlannerError,
+  type Config,
+  type ExecutionPlan,
+  type AlternativePlan,
+  type QualityPrediction,
+} from './planner.js';
+export { explain, explainBrief, explainStructured, type ExplainResult } from './explain.js';
+
+// Multi-algorithm planning
+export { planMultiAlgorithm, type MultiAlgorithmPlan, type AlgorithmPlanEntry } from './multi-algorithm.js';
 
 /**
  * PlannerLike interface — satisfied by both the synchronous plan() function
@@ -78,9 +89,13 @@ export {
 // Algorithm recommendation (suggest goal → ranked algorithm list)
 export {
   getSuggestions,
+  getAnalysisRecommendations,
+  normaliseGoal,
+  VALID_GOALS,
   type LogStats as SuggestionLogStats,
   type SuggestionGoal,
   type AlgorithmRecommendation,
+  type AnalysisRecommendation,
 } from './suggestions.js';
 
 // Policy and budget enforcement (Section 4 — Planner Policy and Budget Enforcement)

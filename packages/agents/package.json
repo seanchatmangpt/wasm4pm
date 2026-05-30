@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/agents",
-  "version": "26.5.28",
+  "version": "26.5.29",
   "description": "Van der Aalst process mining agents \u2014 autonomous adversarial validation",
   "type": "module",
   "main": "./dist/index.js",

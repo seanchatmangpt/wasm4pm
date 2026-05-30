@@ -369,6 +369,154 @@ export function explainBrief(config: Config): string {
   return lines.join('\n');
 }
 
+// ─── explainStructured ───────────────────────────────────────────────────────
+
+/**
+ * Structured result returned by explainStructured().
+ * Carries all explain() content in machine-readable form.
+ */
+export interface ExplainResult {
+  /** One-line human-readable summary of the plan */
+  summary: string;
+
+  /** Details about the chosen algorithm */
+  algorithm_choice: {
+    name: string;
+    reason: string;
+    speed_tier: string;
+    quality_tier: string;
+  };
+
+  /** Details about the chosen execution profile */
+  profile_choice: {
+    name: string;
+    description: string;
+  };
+
+  /** Estimated wall-clock runtime as a human-readable string, e.g. "~1.3 seconds" */
+  estimated_runtime: string;
+
+  /**
+   * Academic context: van der Aalst reference or foundational paper for the algorithm.
+   * Returns empty string if no reference is known.
+   */
+  academic_context: string;
+
+  /** The full ExecutionPlan that backs this explanation */
+  plan: ExecutionPlan;
+
+  /** Non-fatal advisory warnings from the plan (e.g. large log, memory constraints) */
+  warnings: string[];
+}
+
+/** Van der Aalst academic references per algorithm */
+const ACADEMIC_REFERENCES: Record<string, string> = {
+  dfg: 'van der Aalst (2016), Process Mining (Springer), Chapter 5 — Directly-Follows Graph.',
+  process_skeleton: 'van der Aalst (2011), Process Mining: Discovery, Conformance and Enhancement of Business Processes.',
+  simd_streaming_dfg: 'van der Aalst (2018), Responsible Data Science, streaming DFG extension.',
+  heuristic_miner: 'Weijters & van der Aalst (2003), Rediscovering workflow models from event-based data using little thumb. CIT.',
+  alpha_plus_plus: 'van der Aalst, Weijters & Maruster (2004), Workflow Mining: Discovering Process Models from Event Logs. IEEE TKDE.',
+  inductive_miner: 'Leemans, Fahland & van der Aalst (2013), Discovering Block-Structured Process Models from Event Logs. PETRI NETS.',
+  hill_climbing: 'de Medeiros et al. (2007), Genetic Process Mining. ACSD.',
+  declare: 'Pesic & van der Aalst (2006), A Declarative Approach for Flexible Business Processes. BPMDS.',
+  simulated_annealing: 'Maruster, Weijters & van der Aalst (2006), A Rule-Based Approach for Process Discovery. CIT.',
+  a_star: 'van der Aalst, Adriansyah & van Dongen (2012), Replaying history on process models for conformance checking. WIDM.',
+  aco: 'van der Aalst (2010), Process discovery: An introduction. Process Mining, Springer.',
+  pso: 'de Medeiros & van der Aalst (2004), Process Equivalence: Comparing Two Process Models. BPM.',
+  genetic_algorithm: 'de Medeiros et al. (2007), Genetic Process Mining. ACSD. Uses evolutionary search over the space of Petri nets.',
+  optimized_dfg: 'van der Aalst & Song (2004), Mining Social Networks: Uncovering Interaction Patterns in Business Processes. BPM.',
+  ilp: 'van der Aalst & Weijters (2004), Process Mining: A Research Agenda. Computers in Industry. ILP yields optimal soundness guarantees.',
+  alignments: 'Adriansyah, van Dongen & van der Aalst (2011), Conformance Checking Using Cost-Based Fitness Analysis. EDOC.',
+};
+
+/** Profile descriptions for the structured explain result */
+const PROFILE_DESCRIPTIONS: Record<string, string> = {
+  fast: 'O(n) algorithms only; sub-second on logs up to 1M events. Best for interactive exploration.',
+  stream: 'Streaming SIMD-accelerated DFG; constant-memory processing for unbounded event streams.',
+  balanced: 'Heuristic Miner + Alpha++ with noise filtering and ML analysis. Best general-purpose choice.',
+  quality: 'Genetic Algorithm + ILP with full conformance and ML. Highest model quality; may be slow on large logs.',
+};
+
+/** Human-readable runtime label from milliseconds */
+function formatRuntime(ms: number): string {
+  if (ms < 10) return '< 10 ms';
+  if (ms < 1000) return `~${ms} ms`;
+  if (ms < 60_000) return `~${(ms / 1000).toFixed(1)} seconds`;
+  return `~${(ms / 60_000).toFixed(1)} minutes`;
+}
+
+/**
+ * Generate a structured, machine-readable explanation of the execution plan.
+ *
+ * Returns an ExplainResult with all fields populated from the plan and
+ * algorithm metadata. Useful for programmatic inspection, logging, and
+ * driving CLI human-output formatters.
+ *
+ * @param config - Configuration to explain
+ * @returns ExplainResult with all required fields
+ */
+export function explainStructured(config: Config): ExplainResult {
+  const executionPlan = plan(config);
+
+  // Determine the primary discovery algorithm
+  const profile = executionPlan.profile;
+  const algorithmName = config.algorithm?.name ?? _primaryDiscoveryAlgorithm(profile);
+  const hints = ALGORITHM_HINTS[algorithmName];
+
+  const speedTierStr = hints
+    ? `${speedLabel(hints.speedTier)} (tier ${hints.speedTier}/80)`
+    : 'unknown';
+  const qualityTierStr = hints
+    ? `${qualityLabel(hints.qualityTier)} (score ${hints.qualityTier}/100)`
+    : 'unknown';
+
+  const algorithmDisplayName =
+    ALGORITHM_DISPLAY_NAMES[algorithmName as keyof typeof ALGORITHM_DISPLAY_NAMES] ??
+    algorithmName;
+
+  const reason = hints
+    ? `${algorithmDisplayName} — ${speedLabel(hints.speedTier)} speed, ${qualityLabel(hints.qualityTier)} quality, ${hints.complexity} complexity`
+    : `${algorithmDisplayName} (no registry hints available)`;
+
+  const profileDescription = PROFILE_DESCRIPTIONS[profile] ??
+    `Execution profile "${profile}" (no description available).`;
+
+  const summary = `Profile "${profile}" with algorithm "${algorithmName}": ` +
+    `${formatRuntime(executionPlan.estimated_duration_ms)} estimated, ` +
+    `${executionPlan.estimated_memory_mb} MB peak memory.`;
+
+  const academicContext = ACADEMIC_REFERENCES[algorithmName] ?? '';
+
+  return {
+    summary,
+    algorithm_choice: {
+      name: algorithmName,
+      reason,
+      speed_tier: speedTierStr,
+      quality_tier: qualityTierStr,
+    },
+    profile_choice: {
+      name: profile,
+      description: profileDescription,
+    },
+    estimated_runtime: formatRuntime(executionPlan.estimated_duration_ms),
+    academic_context: academicContext,
+    plan: executionPlan,
+    warnings: executionPlan.warnings,
+  };
+}
+
+/** Return the default primary discovery algorithm for a profile */
+function _primaryDiscoveryAlgorithm(profile: string): string {
+  const defaults: Record<string, string> = {
+    fast: 'dfg',
+    stream: 'simd_streaming_dfg',
+    balanced: 'heuristic_miner',
+    quality: 'genetic_algorithm',
+  };
+  return defaults[profile] ?? 'dfg';
+}
+
 /**
  * Export functions
  */

@@ -77,6 +77,71 @@ export interface Executor {
  * Manages state transitions, error handling, and execution coordination
  * Integrated with observability for OTEL tracing per PRD §18
  */
+// ── Health status types ───────────────────────────────────────────────────────
+
+/**
+ * Point-in-time health snapshot of the engine.
+ *
+ * Useful for dashboards, `wpm status`, and autonomic recovery decisions.
+ * All fields are always present (no optionals that change the call site shape).
+ */
+export interface EngineHealthStatus {
+  /** Current engine state */
+  state: EngineState;
+  /** Milliseconds since the Engine instance was constructed */
+  uptime_ms: number;
+  /** Total state transitions recorded by the state machine */
+  transition_count: number;
+  /** Number of errors accumulated by the status tracker */
+  error_count: number;
+  /** Last error message, or null if no errors */
+  last_error: string | null;
+  /** Mean time to recovery in ms (0 if no recovery has happened) */
+  mttr_ms: number;
+  /** Number of algorithms available from the kernel registry (-1 if unknown) */
+  algorithms_loaded: number;
+  /** Whether the WASM binary is currently loaded */
+  wasm_loaded: boolean;
+}
+
+/**
+ * Severity level for a single diagnostic finding.
+ */
+export type DiagnosticLevel = 'ok' | 'warn' | 'error';
+
+/**
+ * A single diagnostic finding returned by {@link Engine.diagnose}.
+ */
+export interface DiagnosticResult {
+  level: DiagnosticLevel;
+  message: string;
+  /** Optional structured detail for programmatic consumers */
+  detail?: Record<string, unknown>;
+}
+
+/**
+ * Aggregated runtime metrics for the engine.
+ *
+ * Counters accumulate for the lifetime of the Engine instance.
+ * Calling `reset()` does NOT reset these; they are not persisted across restarts.
+ */
+export interface EngineMetrics {
+  /** Total number of `engine.run()` calls attempted */
+  runs_total: number;
+  /** Number of `run()` calls that completed without error */
+  runs_successful: number;
+  /** Number of `run()` calls that ended with an error */
+  runs_failed: number;
+  /** Per-algorithm execution counts — keyed by algorithm registry ID */
+  algorithms_used: Record<string, number>;
+  /** Rolling mean run duration in ms (0 if no runs yet) */
+  avg_run_duration_ms: number;
+  /** Total events processed across all runs (from ExecutionReceipt summaries) */
+  total_events_processed: number;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 export class Engine {
   private stateMachine: StateMachine;
   private statusTracker: StatusTracker;
@@ -95,6 +160,15 @@ export class Engine {
   private observabilityErrors: Array<{ timestamp: Date; layer: string; message: string }> = [];
   private signalHandler?: SignalHandler;
   private checkpointStore: ICheckpointStore;
+
+  // ── Internal metrics counters ─────────────────────────────────────────────
+  private readonly _startedAt: Date = new Date();
+  private _runsTotal = 0;
+  private _runsSuccessful = 0;
+  private _runsFailed = 0;
+  private _algorithmsUsed: Record<string, number> = {};
+  private _runDurations: number[] = []; // rolling window (last 200)
+  private _totalEventsProcessed = 0;
 
   /**
    * Creates a new Engine instance
@@ -164,6 +238,208 @@ export class Engine {
   status(): EngineStatus {
     this.statusTracker.setState(this.state());
     return this.statusTracker.getStatus();
+  }
+
+  // ── Health, diagnostics, and metrics ─────────────────────────────────────────
+
+  /**
+   * Returns a concise health snapshot of the engine.
+   *
+   * Unlike `status()` (which is oriented at the run lifecycle), `getHealthStatus()` is
+   * oriented at operators and autonomic recovery — it exposes uptime, error count, MTTR,
+   * and WASM readiness in a single flat struct that is cheap to log or emit as an OTEL event.
+   *
+   * @returns {@link EngineHealthStatus}
+   */
+  getHealthStatus(): EngineHealthStatus {
+    const currentStatus = this.statusTracker.getStatus();
+    const errors = currentStatus.errors ?? [];
+    const lastError = errors.length > 0 ? errors[errors.length - 1] : null;
+
+    let algorithmsLoaded = -1;
+    try {
+      if (this.kernel.algorithms) {
+        algorithmsLoaded = this.kernel.algorithms().length;
+      }
+    } catch {
+      // kernel may not be ready; leave as -1
+    }
+
+    let wasmLoaded = false;
+    try {
+      const wasmStatus = this.wasmLoader.getStatus();
+      wasmLoaded = wasmStatus.loaded === true;
+    } catch {
+      // wasmLoader may not be initialised yet
+    }
+
+    return {
+      state: this.state(),
+      uptime_ms: Date.now() - this._startedAt.getTime(),
+      transition_count: this.stateMachine.getTransitionHistory().length,
+      error_count: errors.length,
+      last_error: lastError ? lastError.message : null,
+      mttr_ms: this.stateMachine.getMTTR(),
+      algorithms_loaded: algorithmsLoaded,
+      wasm_loaded: wasmLoaded,
+    };
+  }
+
+  /**
+   * Runs a suite of self-checks and returns a list of diagnostic findings.
+   *
+   * Each finding has a `level` ('ok' | 'warn' | 'error') and a human-readable `message`.
+   * The list is ordered from most critical (errors) to informational (ok).
+   *
+   * Use this to power `wpm doctor`, health-check endpoints, or autonomic recovery
+   * decision gates.
+   *
+   * @returns Array of {@link DiagnosticResult} — always at least one entry.
+   */
+  diagnose(): DiagnosticResult[] {
+    const results: DiagnosticResult[] = [];
+    const health = this.getHealthStatus();
+
+    // WASM binary check
+    if (health.wasm_loaded) {
+      const algCount = health.algorithms_loaded >= 0 ? health.algorithms_loaded : '?';
+      results.push({
+        level: 'ok',
+        message: `WASM loaded with ${algCount} algorithm${algCount !== 1 ? 's' : ''}`,
+        detail: { algorithms_loaded: health.algorithms_loaded },
+      });
+    } else {
+      results.push({
+        level: 'error',
+        message: 'WASM binary not loaded — call engine.bootstrap() first',
+        detail: { wasm_loaded: false },
+      });
+    }
+
+    // Engine state check
+    const activeStates: EngineState[] = ['ready', 'running', 'watching', 'planning'];
+    if (activeStates.includes(health.state)) {
+      results.push({
+        level: 'ok',
+        message: `Engine state is '${health.state}' (operational)`,
+        detail: { state: health.state },
+      });
+    } else if (health.state === 'degraded') {
+      results.push({
+        level: 'warn',
+        message: `Engine is in degraded state — service may be impaired`,
+        detail: { state: health.state },
+      });
+    } else if (health.state === 'failed') {
+      results.push({
+        level: 'error',
+        message: `Engine is in failed state — recovery required`,
+        detail: { state: health.state },
+      });
+    } else {
+      results.push({
+        level: 'warn',
+        message: `Engine is in '${health.state}' state (not yet operational)`,
+        detail: { state: health.state },
+      });
+    }
+
+    // Error accumulation check
+    if (health.error_count === 0) {
+      results.push({ level: 'ok', message: 'No errors recorded' });
+    } else if (health.error_count <= 3) {
+      results.push({
+        level: 'warn',
+        message: `${health.error_count} error${health.error_count !== 1 ? 's' : ''} recorded — last: ${health.last_error ?? 'unknown'}`,
+        detail: { error_count: health.error_count, last_error: health.last_error },
+      });
+    } else {
+      results.push({
+        level: 'error',
+        message: `${health.error_count} errors recorded — last: ${health.last_error ?? 'unknown'}`,
+        detail: { error_count: health.error_count, last_error: health.last_error },
+      });
+    }
+
+    // Degradation frequency check: count degraded/failed transitions
+    const history = this.stateMachine.getTransitionHistory();
+    const degradationCount = history.filter(
+      (e) => e.toState === 'degraded' || e.toState === 'failed'
+    ).length;
+    const windowSize = Math.min(history.length, 100);
+    if (degradationCount === 0) {
+      results.push({ level: 'ok', message: 'No degradation events in transition history' });
+    } else if (windowSize > 0 && degradationCount / windowSize > 0.1) {
+      results.push({
+        level: 'warn',
+        message: `Engine has been degraded ${degradationCount} time${degradationCount !== 1 ? 's' : ''} in last ${windowSize} transitions`,
+        detail: { degradation_count: degradationCount, window_size: windowSize },
+      });
+    } else {
+      results.push({
+        level: 'warn',
+        message: `Engine has been degraded ${degradationCount} time${degradationCount !== 1 ? 's' : ''} in transition history`,
+        detail: { degradation_count: degradationCount },
+      });
+    }
+
+    // MTTR check
+    if (health.mttr_ms === 0) {
+      results.push({ level: 'ok', message: 'No recovery events recorded (MTTR: n/a)' });
+    } else if (health.mttr_ms < 1000) {
+      results.push({
+        level: 'ok',
+        message: `MTTR is ${health.mttr_ms.toFixed(0)}ms (within <1s SLA)`,
+        detail: { mttr_ms: health.mttr_ms },
+      });
+    } else {
+      results.push({
+        level: 'warn',
+        message: `MTTR is ${health.mttr_ms.toFixed(0)}ms — exceeds 1000ms SLA target`,
+        detail: { mttr_ms: health.mttr_ms, sla_ms: 1000 },
+      });
+    }
+
+    // Last error timestamp if present
+    if (health.last_error) {
+      results.push({
+        level: 'warn',
+        message: `Last error: ${health.last_error}`,
+        detail: { last_error: health.last_error },
+      });
+    }
+
+    // Sort: errors first, then warns, then ok
+    const order: Record<DiagnosticLevel, number> = { error: 0, warn: 1, ok: 2 };
+    results.sort((a, b) => order[a.level] - order[b.level]);
+
+    return results;
+  }
+
+  /**
+   * Returns aggregated runtime metrics for this engine instance.
+   *
+   * Metrics accumulate over the lifetime of the engine (they are NOT reset on recovery).
+   * `runs_total`, `runs_successful`, and `runs_failed` are updated by the engine's
+   * internal run tracking whenever `engine.run()` completes.
+   *
+   * @returns {@link EngineMetrics}
+   */
+  getMetrics(): EngineMetrics {
+    const durations = this._runDurations;
+    const avgDuration =
+      durations.length > 0
+        ? durations.reduce((a, b) => a + b, 0) / durations.length
+        : 0;
+
+    return {
+      runs_total: this._runsTotal,
+      runs_successful: this._runsSuccessful,
+      runs_failed: this._runsFailed,
+      algorithms_used: { ...this._algorithmsUsed },
+      avg_run_duration_ms: Math.round(avgDuration),
+      total_events_processed: this._totalEventsProcessed,
+    };
   }
 
   // ── Private helpers ──────────────────────────────────────────────────────────
@@ -509,6 +785,7 @@ export class Engine {
    */
   async run(plan: ExecutionPlan, timeoutMs: number = 300000): Promise<ExecutionReceipt> {
     const runStart = Date.now();
+    this._runsTotal++;
 
     try {
       // Validate state
@@ -559,8 +836,22 @@ export class Engine {
       this.stateMachine.transition('ready', 'Execution completed successfully');
       this.statusTracker.setState('ready');
 
-      // Emit state change back to ready
+      // ── Update metrics ───────────────────────────────────────────────────
       const runDuration = Date.now() - runStart;
+      this._runsSuccessful++;
+      this._runDurations.push(runDuration);
+      if (this._runDurations.length > 200) this._runDurations.shift(); // rolling window
+      // Track algorithm used (from plan nodes)
+      const algoNode = plan.nodes?.find((n: { kind?: string }) => n.kind === 'algorithm');
+      const algoId: string = (algoNode as { algorithmId?: string } | undefined)?.algorithmId ?? 'unknown';
+      this._algorithmsUsed[algoId] = (this._algorithmsUsed[algoId] ?? 0) + 1;
+      // Accumulate events from receipt summary if available
+      const summary = (receipt as { summary?: { traces_processed?: number } }).summary;
+      if (summary?.traces_processed != null) {
+        this._totalEventsProcessed += summary.traces_processed;
+      }
+
+      // Emit state change back to ready
       const stateChangeReady = Instrumentation.createStateChangeEvent(
         this.traceId,
         'running',

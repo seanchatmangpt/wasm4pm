@@ -38,6 +38,26 @@ export type {
   DeploymentProfile,
 } from './registry.js';
 
+// Smart algorithm recommendation
+/**
+ * recommendAlgorithm — Data-driven algorithm selection from a LogProfile.
+ * @description Analyses trace count, variant ratio, activity count, noise level, and scale to
+ * recommend the best discovery algorithm. Returns confidence, reasoning, and alternatives.
+ * @example const rec = recommendAlgorithm({ trace_count: 500, event_count: 5000, variant_count: 120, activity_count: 15, avg_trace_length: 10, has_timestamps: true });
+ */
+export {
+  recommendAlgorithm,
+  analyzeLogProfile,
+  compareAlgorithms,
+  supportsStreaming,
+  getStreamingVariant,
+} from './recommendation.js';
+export type {
+  LogProfile,
+  AlgorithmRecommendation as KernelAlgorithmRecommendation,
+  AlgorithmComparison,
+} from './recommendation.js';
+
 // Feature gates — deployment profile validation
 /**
  * validateDeploymentProfile — Validate WASM binary against a claimed profile.

@@ -49,6 +49,15 @@ export * from './healthcare-bridge.js';
 
 // Algorithm feedback loop: capture quality metrics per algorithm per log size
 
+// Model complexity: structural complexity assessment and quality aggregation
+export * from './model-complexity.js';
+
+// LIVE rule coverage map: bridge coverage status for mcpp AAT-Live rules
+export * from './live-coverage.js';
+
+// Span sampling: configurable OTEL span sampling strategies
+export * from './span-sampling.js';
+
 // Conformance invariant validation (5-layer audit)
 export * from './conformance-invariants.js';
 export * from './feedback-loop.js';

@@ -17,7 +17,7 @@ export * from './templates/index.js';
 // Error system - PRD §14
 export * from './errors.js';
 export type { ErrorInfo as ErrorDetails, ErrorCode } from './errors.js';
-export { createError, createTypedError, TYPED_ERROR_CODES } from './errors.js';
+export { createError, createTypedError, TYPED_ERROR_CODES, ProcessMiningErrors } from './errors.js';
 export type { TypedError } from './errors.js';
 
 // Section 2.1: EventLogIR - Canonical event log representation
@@ -49,8 +49,17 @@ export type {
   AlgorithmInfo,
   ModelInfo,
   ExecutionProfile,
+  ReceiptDiff,
 } from './receipt.js';
-export { isReceipt, RECEIPT_JSON_SCHEMA } from './receipt.js';
+export {
+  isReceipt,
+  RECEIPT_JSON_SCHEMA,
+  validateReceiptSchema,
+  isReceiptExpired,
+  receiptSummary,
+  compareReceipts,
+  formatReceipt,
+} from './receipt.js';
 
 // Receipt validation
 export { validateReceipt, verifyReceiptHashes, verifyReceipt, detectTampering } from './validation.js';

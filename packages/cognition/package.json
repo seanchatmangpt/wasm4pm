@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/cognition",
-  "version": "26.5.28",
+  "version": "26.5.29",
   "description": "Old-AI cognition kernel for AutoSystems: frames, rules, constraints, search, scoring, verify, receipt, contract",
   "type": "module",
   "main": "./dist/index.js",

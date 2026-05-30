@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/ml",
-  "version": "26.5.28",
+  "version": "26.5.29",
   "description": "Native ML-powered process mining analysis \u2014 classification, clustering, forecasting, anomaly detection, PCA",
   "type": "module",
   "main": "./dist/index.js",

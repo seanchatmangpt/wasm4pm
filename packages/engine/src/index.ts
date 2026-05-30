@@ -13,7 +13,16 @@
  * @example const engine = await createFullEngine(wasm); await engine.bootstrap(); const plan = await engine.plan(config);
  */
 export { Engine, createSimpleEngine, createFullEngine } from './engine.js';
-export type { Kernel, Planner, Executor } from './engine.js';
+export type {
+  Kernel,
+  Planner,
+  Executor,
+  EngineHealthStatus,
+  DiagnosticLevel,
+  DiagnosticResult,
+  EngineMetrics,
+  KernelRunResult,
+} from './engine.js';
 
 // State definitions and metadata
 export type { StateMetadata } from './state.js';

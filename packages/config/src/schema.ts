@@ -17,33 +17,69 @@ export { ALGORITHM_IDS } from '@wasm4pm/contracts';
 export type { AlgorithmId } from '@wasm4pm/contracts';
 
 export const algorithmIdSchema = z
-  .enum(ALGORITHM_IDS)
+  .enum(ALGORITHM_IDS, {
+    errorMap: (_issue, ctx) => {
+      const got = typeof ctx.data === 'string' ? `"${ctx.data}"` : String(ctx.data);
+      // Show first 10 algorithms to keep error concise
+      const preview = (ALGORITHM_IDS as readonly string[]).slice(0, 10).join(', ');
+      return {
+        message:
+          `algorithm.name must be one of the ${(ALGORITHM_IDS as readonly string[]).length} registered algorithms ` +
+          `(e.g. ${preview}...) — got ${got}. ` +
+          `Run "wpm doctor" to list all valid algorithm IDs.`,
+      };
+    },
+  })
   .describe('Algorithm ID: one of the registered wasm4pm kernel algorithms');
 
 // --- Enum Schemas ---
 
 export const sourceKindSchema = z
-  .enum(['file', 'stream', 'http'] as const)
+  .enum(['file', 'stream', 'http'] as const, {
+    errorMap: (_issue, ctx) => ({
+      message: `source.kind must be one of: file, stream, http — got "${ctx.data}"`,
+    }),
+  })
   .describe('Source kind: file, stream, or http');
 
 export const sinkKindSchema = z
-  .enum(['stdout', 'file', 'http'] as const)
+  .enum(['stdout', 'file', 'http'] as const, {
+    errorMap: (_issue, ctx) => ({
+      message: `sink.kind must be one of: stdout, file, http — got "${ctx.data}"`,
+    }),
+  })
   .describe('Sink kind: stdout, file, or http');
 
 export const executionProfileSchema = z
-  .enum(['fast', 'balanced', 'quality', 'stream'] as const)
+  .enum(['fast', 'balanced', 'quality', 'stream'] as const, {
+    errorMap: (_issue, ctx) => ({
+      message: `execution.profile must be one of: fast, balanced, quality, stream — got "${ctx.data}"`,
+    }),
+  })
   .describe('Execution profile: fast, balanced, quality, or stream');
 
 export const outputFormatSchema = z
-  .enum(['human', 'json'] as const)
+  .enum(['human', 'json'] as const, {
+    errorMap: (_issue, ctx) => ({
+      message: `output.format must be one of: human, json — got "${ctx.data}"`,
+    }),
+  })
   .describe('Output format: human or json');
 
 export const logLevelSchema = z
-  .enum(['debug', 'info', 'warn', 'error'] as const)
+  .enum(['debug', 'info', 'warn', 'error'] as const, {
+    errorMap: (_issue, ctx) => ({
+      message: `observability.logLevel must be one of: debug, info, warn, error — got "${ctx.data}"`,
+    }),
+  })
   .describe('Log level: debug, info, warn, or error');
 
 export const otelExporterSchema = z
-  .enum(['otlp', 'console', 'none'] as const)
+  .enum(['otlp', 'console', 'none'] as const, {
+    errorMap: (_issue, ctx) => ({
+      message: `observability.otel.exporter must be one of: otlp, console, none — got "${ctx.data}"`,
+    }),
+  })
   .describe('OpenTelemetry exporter type');
 
 // --- Sub-Schemas ---
@@ -232,8 +268,20 @@ export const outputConfigSchema = z
 export const executionConfigSchema = z
   .object({
     profile: executionProfileSchema.default('balanced'),
-    timeout: z.number().int().positive().optional(),
-    maxMemory: z.number().int().positive().optional(),
+    timeout: z
+      .number()
+      .int()
+      .positive({
+        message: 'execution.timeout must be a positive number (milliseconds, e.g. 30000 for 30 seconds)',
+      })
+      .optional(),
+    maxMemory: z
+      .number()
+      .int()
+      .positive({
+        message: 'execution.maxMemory must be a positive number (bytes, e.g. 1073741824 for 1GB)',
+      })
+      .optional(),
   })
   .describe('Execution configuration');
 

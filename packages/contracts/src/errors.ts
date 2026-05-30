@@ -458,6 +458,73 @@ export function logError(error: ErrorInfo, format: 'human' | 'plain' | 'json' = 
 }
 
 /**
+ * ProcessMiningErrors — semantic factory functions for the most common
+ * process-mining failure modes.
+ *
+ * Each factory produces an `ErrorInfo` with the correct error code, a
+ * context-specific message, and a pre-populated `context` record.  They are
+ * `as const` so callers can import `ProcessMiningErrors` and get tree-shaking
+ * while still having the full shape visible to TypeScript.
+ *
+ * Exit codes follow the convention defined in `EXIT_CODES`:
+ * - 300-series: source / input errors
+ * - 400-series: algorithm errors
+ * - 500-series: WASM runtime errors
+ *
+ * @example
+ * ```ts
+ * throw new Error(formatError(ProcessMiningErrors.invalidXes('unexpected EOF at line 42')));
+ * ```
+ */
+export const ProcessMiningErrors = {
+  /**
+   * Invalid XES event log — source could not be parsed.
+   * Exit code: 301 (SOURCE_INVALID)
+   */
+  invalidXes: (detail: string): ErrorInfo =>
+    createError('SOURCE_INVALID', `Invalid XES: ${detail}`, { detail }),
+
+  /**
+   * Discovery / analysis algorithm failed during execution.
+   * Exit code: 400 (ALGORITHM_FAILED)
+   */
+  algorithmFailed: (algo: string, reason: string): ErrorInfo =>
+    createError('ALGORITHM_FAILED', `Algorithm '${algo}' failed: ${reason}`, { algo, reason }),
+
+  /**
+   * WASM module could not be initialised.
+   * Exit code: 500 (WASM_INIT_FAILED)
+   */
+  wasmLoadFailed: (reason: string): ErrorInfo =>
+    createError('WASM_INIT_FAILED', `WASM load failed: ${reason}`, { reason }),
+
+  /**
+   * Conformance checking did not reach the required fitness threshold.
+   * Exit code: 450 (CONFORMANCE_FAILED)
+   */
+  conformanceFailed: (fitness: number, threshold: number): ErrorInfo =>
+    createError(
+      'CONFORMANCE_FAILED',
+      `Conformance failed: fitness ${fitness.toFixed(3)} < threshold ${threshold.toFixed(3)}`,
+      { fitness, threshold }
+    ),
+
+  /**
+   * Source file or URL not found.
+   * Exit code: 300 (SOURCE_NOT_FOUND)
+   */
+  sourceNotFound: (path: string): ErrorInfo =>
+    createError('SOURCE_NOT_FOUND', `Source not found: ${path}`, { path }),
+
+  /**
+   * Requested algorithm does not exist in the kernel registry.
+   * Exit code: 401 (ALGORITHM_NOT_FOUND)
+   */
+  algorithmNotFound: (algo: string): ErrorInfo =>
+    createError('ALGORITHM_NOT_FOUND', `Algorithm not found: '${algo}'`, { algo }),
+} as const;
+
+/**
  * Validate that all error codes have remediation and exit code mappings
  * Use this in tests to ensure completeness
  *
