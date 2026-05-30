@@ -268,7 +268,7 @@ export class Engine {
     let wasmLoaded = false;
     try {
       const wasmStatus = this.wasmLoader.getStatus();
-      wasmLoaded = wasmStatus.loaded === true;
+      wasmLoaded = wasmStatus.initialized === true;
     } catch {
       // wasmLoader may not be initialised yet
     }
