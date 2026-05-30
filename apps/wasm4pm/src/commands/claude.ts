@@ -730,6 +730,14 @@ export const claude = defineCommand({
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
+    // Guard: don't run the status display when a subcommand is being invoked.
+    // citty calls the parent run alongside the child; this prevents double output.
+    if (ctx && ctx.rawArgs && ctx.cmd && ctx.cmd.subCommands) {
+      const subCommands = Object.keys(ctx.cmd.subCommands);
+      const hasSubcommand = ctx.rawArgs.some((arg: string) => subCommands.includes(arg));
+      if (hasSubcommand) return;
+    }
+
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
