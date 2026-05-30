@@ -216,8 +216,8 @@ export function isPartialFailure<T>(result: Result<T>): boolean {
   if (result.type !== 'error') return false;
   const e = (result as ErrorResult).error;
   // ErrorInfo carries a `recoverable` boolean
-  return typeof (e as Record<string, unknown>).recoverable === 'boolean'
-    ? (e as Record<string, unknown>).recoverable as boolean
+  return typeof (e as unknown as Record<string, unknown>).recoverable === 'boolean'
+    ? (e as unknown as Record<string, unknown>).recoverable as boolean
     : false;
 }
 
