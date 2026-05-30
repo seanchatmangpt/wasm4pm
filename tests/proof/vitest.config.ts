@@ -7,8 +7,8 @@ export default defineConfig({
     environment: 'node',
     globals: true,
     isolate: true,        // WASM singleton safety — REQUIRED, do not change
-    testTimeout: 4000,    // hard 4s per-test cap; proof files must be fast
-    hookTimeout: 1000,
+    testTimeout: 6000,    // 6s per-test cap: WASM binary load (~500ms idle, ~4s under load)
+    hookTimeout: 2000,
     pool: 'threads',
     include: ['**/*.proof.ts'],
   },

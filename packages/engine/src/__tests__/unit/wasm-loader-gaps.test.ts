@@ -286,10 +286,10 @@ describe('Gap 3 — bootstrap(timeoutMs) timeout parameter (Rank 2 domain)', () 
     const elapsed = Date.now() - start;
 
     expect(caught).toBe(true);
-    // Should reject well before 2000ms (not wait for the default 30s)
-    // Threshold is generous to avoid flakiness under system load
-    expect(elapsed).toBeLessThan(2000);
-  }, 3000 /* test timeout: 3s */);
+    // Should reject well before 5000ms (not wait for the default 30s)
+    // Threshold is generous to avoid flakiness under heavy parallel test load
+    expect(elapsed).toBeLessThan(5000);
+  }, 6000 /* test timeout: 6s */);
 
   it('bootstrap(1) leaves engine in a non-ready state', async () => {
     const engine = createSimpleEngine(new HungKernel());
