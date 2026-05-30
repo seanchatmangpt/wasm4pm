@@ -1,0 +1,32 @@
+{
+  "_comment": "NEGATIVE FIXTURE N08 — unsafe net (place holds >1 token). A fork t_a produces into p1 and p2; both branches t_b and t_c deposit into the SAME place p3 without a synchronising join transition. After firing t_a, t_b, t_c the marking holds 2 tokens in p3 => not 1-bounded. The paper's translation targets the safe-and-sound class, so an unsafe net is a manufacturing defect: analyze_petri_net reports is_safe=false (unsafe_marking holds p3=2). Minimal counterexample: replace t_b and t_c with a single synchronising join transition consuming p1 AND p2 and producing one token in p3.",
+  "expected_refusal": "ObjectLifecycleViolation",
+  "rejecting_primitive": "analyze_petri_net (safety: 1-boundedness)",
+  "soundness_assertion": { "is_safe": false },
+  "places": [
+    { "id": "src", "label": "source", "marking": null },
+    { "id": "p1", "label": "branch-1", "marking": null },
+    { "id": "p2", "label": "branch-2", "marking": null },
+    { "id": "p3", "label": "merge", "marking": null },
+    { "id": "sink", "label": "sink", "marking": null }
+  ],
+  "transitions": [
+    { "id": "t_a", "label": "Fork", "is_invisible": false },
+    { "id": "t_b", "label": "Branch B", "is_invisible": false },
+    { "id": "t_c", "label": "Branch C", "is_invisible": false },
+    { "id": "t_done", "label": "Done", "is_invisible": false }
+  ],
+  "arcs": [
+    { "from": "src", "to": "t_a", "weight": null },
+    { "from": "t_a", "to": "p1", "weight": null },
+    { "from": "t_a", "to": "p2", "weight": null },
+    { "from": "p1", "to": "t_b", "weight": null },
+    { "from": "t_b", "to": "p3", "weight": null },
+    { "from": "p2", "to": "t_c", "weight": null },
+    { "from": "t_c", "to": "p3", "weight": null },
+    { "from": "p3", "to": "t_done", "weight": null },
+    { "from": "t_done", "to": "sink", "weight": null }
+  ],
+  "initial_marking": { "src": 1 },
+  "final_markings": [{ "sink": 1 }]
+}

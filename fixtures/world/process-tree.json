@@ -1,0 +1,54 @@
+{
+  "kind": "sequence",
+  "children": [
+    {
+      "kind": "leaf",
+      "label": "Create Order"
+    },
+    {
+      "kind": "leaf",
+      "label": "Confirm Order"
+    },
+    {
+      "kind": "tau"
+    },
+    {
+      "kind": "parallel",
+      "children": [
+        {
+          "kind": "sequence",
+          "children": [
+            {
+              "kind": "leaf",
+              "label": "Pick Item"
+            },
+            {
+              "kind": "leaf",
+              "label": "Pack Package"
+            },
+            {
+              "kind": "leaf",
+              "label": "Ship Package"
+            }
+          ]
+        },
+        {
+          "kind": "sequence",
+          "children": [
+            {
+              "kind": "leaf",
+              "label": "Send Invoice"
+            },
+            {
+              "kind": "leaf",
+              "label": "Receive Payment"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "kind": "tau"
+    }
+  ]
+}

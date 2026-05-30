@@ -1,0 +1,8 @@
+case_id,activity,timestamp,event_id
+order-1,Create Order,2026-05-01T09:00:00+00:00,e1
+order-1,Confirm Order,2026-05-01T10:00:00+00:00,e2
+order-1,Pick Item,2026-05-01T11:00:00+00:00,e3
+order-1,Pack Package,2026-05-01T12:00:00+00:00,e4
+order-1,Ship Package,2026-05-01T13:00:00+00:00,e5
+order-1,Send Invoice,2026-05-02T09:00:00+00:00,e6
+order-1,Receive Payment,2026-05-03T09:00:00+00:00,e7

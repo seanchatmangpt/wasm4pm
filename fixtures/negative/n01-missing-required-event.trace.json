@@ -1,0 +1,13 @@
+{
+  "_comment": "NEGATIVE FIXTURE N01 — missing required event. The Order-to-Cash field net requires 'Confirm Order' after 'Create Order' before any fulfilment/billing. This trace omits 'Confirm Order' entirely, so it is NOT a member of the WF-net language; token replay leaves a missing token at p_open => fitness < 1.0 => AndonPull::RouteConformanceGap. Minimal counterexample: insert 'Confirm Order' at index 1 and the trace becomes lawful.",
+  "expected_refusal": "RouteConformanceGap",
+  "rejecting_primitive": "wf_net_language (token-replay fitness)",
+  "trace": [
+    "Create Order",
+    "Pick Item",
+    "Pack Package",
+    "Ship Package",
+    "Send Invoice",
+    "Receive Payment"
+  ]
+}

@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-types", "crates/wasm4pm-algos", "crates/wasm4pm-cli", "crates/wasm4pm-utils", "crates/miniml-core", "crates/wasm4pm-cognition", "crates/prolog8", "crates/wasm4pm-macros", "crates/ocel-core"]
+members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-types", "crates/wasm4pm-algos", "crates/wasm4pm-cli", "crates/wasm4pm-utils", "crates/miniml-core", "crates/wasm4pm-cognition", "crates/prolog8", "crates/wasm4pm-macros", "crates/ocel-core", "crates/ocpq"]
 
 [workspace.package]
 version = "26.5.29"
@@ -29,6 +29,8 @@ wasm4pm-cognition = { version = "26.5.29", path = "crates/wasm4pm-cognition" }
 wasm4pm-macros = { version = "26.5.29", path = "crates/wasm4pm-macros" }
 prolog8 = { version = "26.5.29", path = "crates/prolog8" }
 miniml = { version = "26.5.29", path = "crates/miniml-core" }
+ocel-core = { version = "26.5.30", path = "crates/ocel-core" }
+ocpq = { version = "26.5.30", path = "crates/ocpq" }
 fake = "2.9"
 proptest = "1.4"
 tempfile = "3.8"

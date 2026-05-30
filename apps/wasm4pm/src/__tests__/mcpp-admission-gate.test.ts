@@ -98,10 +98,18 @@ function wpmAsync(
  * Parse the JSON payload from wpm JSON output.
  * wpm wraps responses in { status, command, payload, ... }.
  * On conformance failure the payload is the ConformancePayload (not error envelope).
+ * NOTE: Observability logs (INFO, WARN) may be emitted to stdout before the JSON object.
+ * We locate the first '{' and parse from there to skip log preamble.
  */
 function parsePayload(result: CliResult): Record<string, unknown> | null {
   try {
-    const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
+    // Find the first JSON object { to skip any INFO/WARN log lines
+    const jsonStart = result.stdout.indexOf('{');
+    if (jsonStart === -1) {
+      return null;
+    }
+    const jsonStr = result.stdout.substring(jsonStart);
+    const parsed = JSON.parse(jsonStr) as Record<string, unknown>;
     // For conformance_fail results, payload lives under "payload" key.
     // For error results, the envelope itself is the error.
     if (parsed.payload !== undefined) {
@@ -115,10 +123,18 @@ function parsePayload(result: CliResult): Record<string, unknown> | null {
 
 /**
  * Parse the top-level JSON envelope (not the nested payload).
+ * NOTE: Observability logs (INFO, WARN) may be emitted to stdout before the JSON object.
+ * We locate the first '{' and parse from there to skip log preamble.
  */
 function parseEnvelope(result: CliResult): Record<string, unknown> | null {
   try {
-    return JSON.parse(result.stdout) as Record<string, unknown>;
+    // Find the first JSON object { to skip any INFO/WARN log lines
+    const jsonStart = result.stdout.indexOf('{');
+    if (jsonStart === -1) {
+      return null;
+    }
+    const jsonStr = result.stdout.substring(jsonStart);
+    return JSON.parse(jsonStr) as Record<string, unknown>;
   } catch {
     return null;
   }

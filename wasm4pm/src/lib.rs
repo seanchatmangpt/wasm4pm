@@ -90,6 +90,13 @@ pub mod io;
 pub mod ml_algorithms;
 /// Core data models: `EventLog`, `OCEL`, `DFG`, `PetriNet`, etc.
 pub mod models;
+/// Formal WF-net soundness + structural predicates (Separable WF-net paper, Defs 3.1–3.13).
+pub mod soundness;
+/// WF-net → POWL 2.0 translation (Separable WF-net paper, Section 4: Partition_MG / Partition_SM).
+pub mod wf_to_powl;
+/// Process-World Foundry: manufacture one Order-to-Cash field, emit every lawful projection.
+#[cfg(feature = "ocel")]
+pub mod foundry;
 /// Global stored-object state (handles, object pool, arena management).
 pub mod state;
 /// Shared type aliases and newtype wrappers.
@@ -356,6 +363,8 @@ pub mod ocel_flatten;
 pub mod ocel_io;
 #[cfg(feature = "ocel")]
 pub mod ocel_tests;
+#[cfg(feature = "ocel")]
+pub mod ocel_v2;
 
 // Advanced discovery algorithms (gated by discovery_advanced feature)
 #[cfg(feature = "discovery_advanced")]

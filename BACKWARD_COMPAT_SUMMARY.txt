@@ -1,0 +1,115 @@
+================================================================================
+TRACK B-1: CONFORMANCE PAYLOAD ENVELOPE WRAPPER — BACKWARD COMPATIBILITY ASSESSMENT
+================================================================================
+
+FINDING: ⚠️  BREAKING CHANGE — Requires phased rollout with migration period
+
+SUMMARY
+━━━━━━
+The parsePayload() envelope wrapper changes JSON output shape from:
+
+  OLD (FLAT):  { "schema": "...", "fitness": 0.85, ... }
+  NEW (WRAP):  { "payload": { "schema": "...", "fitness": 0.85, ... }, "meta": {...} }
+
+IMPACT ANALYSIS
+━━━━━━━━━━━━━━
+Category                          | Consumers  | Impact     | Breaking?
+──────────────────────────────────┼────────────┼────────────┼──────────
+Internal tests (79 assertions)    | 1 repo     | LOW        | ✅ YES (easy fix)
+Lab tests (external validation)   | 1 repo     | HIGH       | ✅ YES (must update)
+Documented API (OpenAPI/WASM API) | Unknown    | HIGH       | ✅ YES (if published)
+Downstream scripts/hooks          | Unknown    | HIGH       | ✅ YES (silent failures)
+CI/CD pipelines                   | Unknown    | HIGH       | ✅ YES (jq fails)
+External Node.js clients          | Unknown    | HIGH       | ✅ YES (property access)
+Human output (--format human)     | All users  | NONE       | ✅ NO (unchanged)
+
+SEVERITY: HIGH — 6 breaking categories, 0 non-breaking
+
+KEY RISKS
+━━━━━━━━
+1. External scripts will break silently:
+   OLD: jq '.fitness' → returns 0.85
+   NEW: jq '.fitness' → returns null (no error!)
+
+2. Lab tests will fail on first run post-release (chicken-egg problem)
+
+3. External clients expect flat structure (npm package consumers)
+
+4. Documented API contracts must be updated
+
+RECOMMENDATION
+━━━━━━━━━━━━━
+✅ USE PHASED ROLLOUT (Option 2):
+
+Phase 1 (v26.5.0):
+  - Introduce envelope wrapper
+  - Keep __DEPRECATED_NOTICE__ field for backward compat
+  - Update CHANGELOG with deprecation timeline
+  - Provide migration guide for external users
+  - Update all internal tests to use .payload accessor
+  - Update OpenAPI schema, WASM_API.md documentation
+
+Phase 2 (v27.0.0 — 6 months later):
+  - Remove backward compatibility layer
+  - Enforce envelope-only output
+  - Mark as major version (breaking change)
+
+AFFECTED FILES (UPDATES REQUIRED)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Source:
+  ✅ apps/wasm4pm/src/commands/conformance.ts (already wrapped)
+
+Tests (79 assertions total):
+  ⚠️  apps/wasm4pm/src/__tests__/conformance-trace-audit.test.ts (30+ tests)
+  ⚠️  apps/wasm4pm/src/__tests__/conformance-cli.test.ts (15+ tests)
+  ⚠️  apps/wasm4pm/src/__tests__/conformance-full-quality.test.ts (20+ tests)
+  ⚠️  apps/wasm4pm/src/__tests__/mcpp-admission-gate.test.ts (10+ tests)
+  ⚠️  apps/wasm4pm/src/__tests__/conformance-enhanced.test.ts (8+ tests)
+  ⚠️  apps/wasm4pm/src/__tests__/prefix-conformance.test.ts (5+ tests)
+  ⚠️  lab/tests/conformance.test.ts (external validation)
+
+Documentation:
+  ⚠️  .github/schemas/openapi.json (add envelope schema)
+  ⚠️  WASM_API.md (document new format, deprecate old)
+  ⚠️  CHANGELOG.md (deprecation notice + timeline)
+  ⚠️  NEW: MIGRATION_GUIDE.md (external user instructions)
+
+SAFE TO MERGE?
+━━━━━━━━━━━━
+✅ YES, if:
+  - Targeting v26.5.0 (next minor or major release, NOT patch)
+  - Release notes include deprecation notice + 6-month timeline
+  - All internal tests updated to use .payload accessor
+  - Migration guide created for external users
+  - OpenAPI/WASM_API.md updated with new format
+
+❌ NO, if:
+  - Releasing as patch version (v26.4.x)
+  - No migration guide for external users
+  - Lab tests not updated
+  - No deprecation notice in release notes
+
+DETAILED REPORT
+━━━━━━━━━━━━━━
+See: BACKWARD_COMPATIBILITY_REPORT.md
+
+This assessment covers:
+  • Detailed impact per consumer category
+  • Version compatibility matrix
+  • Migration guide for shell/Node.js users
+  • Recommended decision tree
+  • Complete action checklist
+  • Risk/mitigation analysis
+
+DECISION REQUIRED
+━━━━━━━━━━━━━━━
+Confirm release strategy with maintainers before merge:
+  □ Use Phase 1+2 approach (recommended)?
+  □ Release as v26.5.0 minor version (not patch)?
+  □ Include deprecation warning in output?
+  □ Publish migration guide with release?
+
+================================================================================
+Assessment prepared: 2026-05-30
+Report file: BACKWARD_COMPATIBILITY_REPORT.md
+================================================================================
