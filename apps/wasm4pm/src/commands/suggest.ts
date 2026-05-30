@@ -1,44 +1,70 @@
 /**
  * wpm suggest <log>
  *
- * Analyses a process event log and recommends the best discovery algorithm
- * for the user's stated goal (fast | balanced | quality | conformance | streaming).
+ * Powerful recommendation engine that analyses a process event log and
+ * suggests the best discovery algorithms AND follow-up analysis commands.
  *
  * Output (human):
- *   Log Analysis: 847 traces, 4,231 events, 63 variants (7.4% unique)
+ *   Process Mining Recommendations
+ *   ================================
+ *   Analyzing log: 1,247 events, 145 traces, 42 activities
  *
- *   Recommended algorithms for goal: quality
+ *   ALGORITHM RECOMMENDATIONS
+ *     1. inductive_miner (score: 0.94)
+ *        Why: 145 variants + timestamps available
+ *        Expected: fitness ~0.87, precision ~0.74, ~1.3s
  *
- *   1. ilp            quality=90  speed=20  ~100ms  Best model quality, exact ILP
- *   2. genetic        quality=80  speed=25  ~50ms   High quality, evolutionary search
- *   3. heuristic_miner quality=50 speed=75  ~8ms    Fast iteration, lower precision
+ *   ANALYSIS RECOMMENDATIONS
+ *     • Run conformance check (many variants → worth verifying)
+ *     • Run temporal analysis (timestamps present)
  *
- *   Run: wpm run log.xes --algorithm ilp
+ *   QUICK START
+ *     wpm run log.xes --algorithm inductive_miner
  *
  * Output (json):
- *   { goal, logStats, recommendations: [{algorithm, quality, speed, estimatedTimeMs, reason}] }
+ *   { goal, logStats, recommendations, analysisRecommendations, topPick, runCommand }
  */
 
 import { defineCommand } from 'citty';
 import * as path from 'node:path';
-import { getSuggestions, type SuggestionGoal } from '@wasm4pm/planner';
+import {
+  getSuggestions,
+  getAnalysisRecommendations,
+  normaliseGoal,
+  type SuggestionGoal,
+  type AlgorithmRecommendation,
+  type AnalysisRecommendation,
+  VALID_GOALS,
+} from '@wasm4pm/planner';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
 import { withSpan } from './_otel.js';
 import { withLogSession } from '../with-log-session.js';
 
-const VALID_GOALS: SuggestionGoal[] = ['fast', 'balanced', 'quality', 'conformance', 'streaming'];
+/** Format estimated time for human display. */
+function fmtTime(ms: number | undefined): string {
+  if (ms === undefined) return '';
+  if (ms < 1000) return `~${ms}ms`;
+  if (ms < 60_000) return `~${(ms / 1000).toFixed(1)}s`;
+  return `~${Math.round(ms / 60_000)}m`;
+}
 
-/** Derive basic log statistics from the raw XES string + WASM handle. */
+/** Derive comprehensive log statistics from raw XES content. */
 function deriveLogStats(xesContent: string, wasm: Record<string, unknown>, logHandle: string) {
-  // Trace count: count <trace> opening tags (fast heuristic, consistent with withLogSession)
   const traceCount = (xesContent.match(/<trace[\s>]/g) ?? []).length;
-
-  // Event count: count <event> opening tags
   const eventCount = (xesContent.match(/<event[\s>]/g) ?? []).length;
 
-  // Variant count: ask WASM if available, else estimate from trace count
+  // Activity count: distinct concept:name values
+  const activitySet = new Set<string>();
+  const actRe = /key="concept:name"[^>]*value="([^"]+)"/g;
+  let m: RegExpExecArray | null;
+  while ((m = actRe.exec(xesContent)) !== null) {
+    activitySet.add(m[1] as string);
+  }
+  const activityCount = activitySet.size;
+
+  // Variant count: ask WASM if available
   let variantCount = 0;
   try {
     if (typeof wasm['get_variant_count'] === 'function') {
@@ -47,43 +73,86 @@ function deriveLogStats(xesContent: string, wasm: Record<string, unknown>, logHa
       if (Number.isFinite(n) && n > 0) variantCount = n;
     }
   } catch {
-    // WASM call is best-effort — fall through
+    /* WASM call is best-effort */
   }
-
-  // Fallback: approximate from unique <string key="concept:name" value="..."/> patterns
   if (variantCount === 0 && eventCount > 0) {
-    // Count distinct activity names as a very rough proxy (underestimates variants)
-    const activitySet = new Set<string>();
-    const actRe = /key="concept:name"[^>]*value="([^"]+)"/g;
-    let m: RegExpExecArray | null;
-    while ((m = actRe.exec(xesContent)) !== null) {
-      activitySet.add(m[1] as string);
-    }
-    // A log with A distinct activities can have up to A! variants; use sqrt as heuristic
-    variantCount = Math.max(1, Math.round(Math.sqrt(activitySet.size * traceCount * 0.1)));
+    variantCount = Math.max(1, Math.round(Math.sqrt(activityCount * traceCount * 0.1)));
   }
 
-  return { traceCount, eventCount, variantCount };
+  // Detect presence of org:resource attribute (enables social mining)
+  const hasResources = xesContent.includes('key="org:resource"');
+
+  // Detect presence of time:timestamp attribute (enables temporal analysis)
+  const hasTimestamps =
+    xesContent.includes('key="time:timestamp"') || xesContent.includes('date key="time:timestamp"');
+
+  return { traceCount, eventCount, variantCount, activityCount, hasResources, hasTimestamps };
 }
 
-/** Format estimated time for human display. */
-function fmtTime(ms: number | undefined): string {
-  if (ms === undefined) return '';
-  if (ms < 1000) return `~${ms}ms`;
-  return `~${(ms / 1000).toFixed(1)}s`;
+/** Render a single algorithm recommendation block for human output. */
+function renderAlgorithmRec(
+  rec: AlgorithmRecommendation,
+  idx: number,
+  logFile: string,
+  explain: boolean,
+): string[] {
+  const lines: string[] = [];
+  const scoreStr = rec.score !== undefined ? (rec.score * 100).toFixed(0) : '?';
+  lines.push(`  ${idx + 1}. ${rec.algorithm} (score: ${scoreStr})`);
+  lines.push(`     Why: ${rec.reason}`);
+
+  const fitnessStr = rec.expectedFitness !== undefined
+    ? `fitness ~${(rec.expectedFitness * 100).toFixed(0)}%`
+    : '';
+  const precStr = rec.expectedPrecision !== undefined
+    ? `precision ~${(rec.expectedPrecision * 100).toFixed(0)}%`
+    : '';
+  const timeStr = rec.estimatedTimeMs !== undefined ? fmtTime(rec.estimatedTimeMs) : '';
+
+  const details = [fitnessStr, precStr, timeStr].filter(Boolean).join(', ');
+  if (details) lines.push(`     Expected: ${details}`);
+
+  if (explain && rec.explainLines && rec.explainLines.length > 0) {
+    lines.push('');
+    lines.push('     Reasoning breakdown:');
+    for (const line of rec.explainLines) {
+      lines.push(`       ${line.trim()}`);
+    }
+  }
+
+  return lines;
+}
+
+/** Render analysis recommendations block for human output. */
+function renderAnalysisRecs(
+  recs: AnalysisRecommendation[],
+  logFile: string,
+): string[] {
+  if (recs.length === 0) return [];
+  const lines: string[] = [];
+  lines.push('');
+  lines.push('ANALYSIS RECOMMENDATIONS');
+  for (const rec of recs) {
+    lines.push(`  • ${rec.reason}`);
+    lines.push(`    ${rec.example}`);
+  }
+  return lines;
 }
 
 export const suggest = defineCommand({
   meta: {
     name: 'suggest',
     description:
-      'Analyse a process log and suggest the best discovery algorithm for your goal.\n\n' +
+      'Powerful recommendation engine: analyse a log and suggest algorithms + follow-up commands.\n\n' +
       'EXAMPLES:\n' +
-      '  wpm suggest log.xes                    # Balanced recommendations (default)\n' +
-      '  wpm suggest log.xes --goal fast        # Fastest algorithms only\n' +
-      '  wpm suggest log.xes --goal quality     # Highest-quality algorithms\n' +
-      '  wpm suggest log.xes --goal conformance # Algorithms best for conformance checking\n' +
-      '  wpm suggest log.xes --format json      # Machine-readable output',
+      '  wpm suggest log.xes                           # Balanced recommendations (default)\n' +
+      '  wpm suggest log.xes --goal fast               # Fastest algorithms only\n' +
+      '  wpm suggest log.xes --goal quality            # Highest-quality algorithms\n' +
+      '  wpm suggest log.xes --goal "find bottlenecks" # Temporal + social analysis\n' +
+      '  wpm suggest log.xes --goal "check compliance" # Conformance + validate\n' +
+      '  wpm suggest log.xes --goal "predict outcomes" # Prediction pipeline\n' +
+      '  wpm suggest log.xes --explain                 # Show detailed reasoning\n' +
+      '  wpm suggest log.xes --format json             # Machine-readable output',
   },
   args: {
     input: {
@@ -98,9 +167,16 @@ export const suggest = defineCommand({
     },
     goal: {
       type: 'string',
-      description: `Analysis goal: ${VALID_GOALS.join(' | ')} (default: balanced)`,
+      description:
+        `Analysis goal (default: balanced). Valid: ${VALID_GOALS.join(', ')}. ` +
+        `Also accepts freeform: "find bottlenecks", "check compliance", "predict outcomes"`,
       default: 'balanced',
       alias: 'g',
+    },
+    explain: {
+      type: 'boolean',
+      description: 'Show detailed reasoning for each recommendation',
+      alias: 'e',
     },
     format: {
       type: 'string',
@@ -126,27 +202,14 @@ export const suggest = defineCommand({
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
+    const explainMode = Boolean(ctx.args.explain);
     const emitOptions = { format, verbose, quiet };
 
     const rawGoal = (ctx.args.goal as string) ?? 'balanced';
     const n = Math.min(10, Math.max(1, parseInt(String(ctx.args.top ?? '3'), 10) || 3));
 
-    // Validate goal
-    if (!VALID_GOALS.includes(rawGoal as SuggestionGoal)) {
-      const result = makeErrorResult(
-        'suggest',
-        new Error(
-          `Unknown goal: '${rawGoal}'.\n` +
-          `  Valid goals: ${VALID_GOALS.join(', ')}\n\n` +
-          `  Example: wpm suggest log.xes --goal quality`
-        ),
-        EXIT_CODES.config_error,
-        'INVALID_GOAL'
-      );
-      emitResult(result, emitOptions);
-      return await exitWithFlush(result.exit_code);
-    }
-    const goal = rawGoal as SuggestionGoal;
+    // Normalize goal — accepts freeform text
+    const goal: SuggestionGoal = normaliseGoal(rawGoal);
 
     // Resolve input path
     const inputPath: string | undefined =
@@ -157,7 +220,7 @@ export const suggest = defineCommand({
         'suggest',
         new Error(
           'No input file provided.\n\n' +
-          '  Usage: wpm suggest <log.xes> [--goal fast|balanced|quality|conformance|streaming]\n\n' +
+          '  Usage: wpm suggest <log.xes> [--goal fast|balanced|quality|...]\n\n' +
           '  Example: wpm suggest process.xes --goal quality'
         ),
         EXIT_CODES.source_error,
@@ -172,30 +235,32 @@ export const suggest = defineCommand({
 
     return withSpan(
       'suggest',
-      { goal, input: inputPath, format, top: n },
+      { goal, raw_goal: rawGoal, input: inputPath, format, top: n, explain: explainMode },
       async () => {
-        // We read the raw XES content inside withLogSession so we can count traces/events
-        // without a second file read. The raw content is captured via closure.
         let capturedXes = '';
 
         await withLogSession(
           { inputPath, activityKey: 'concept:name', commandName: 'suggest', emitOptions },
           async (wasm, logHandle) => {
-            // Capture the XES content that withLogSession already read.
-            // withLogSession doesn't expose the raw string, so we re-read once more
-            // (small overhead, file is already OS-cached).
+            // Re-read for stat derivation (file is OS-cached)
             try {
               const { readFile } = await import('node:fs/promises');
               capturedXes = await readFile(inputPath, 'utf-8');
             } catch {
-              // If re-read fails we work with empty string → fallback stats
+              /* fall through — stats degrade gracefully */
             }
 
             const stats = deriveLogStats(capturedXes, wasm, logHandle);
             lateTraces = stats.traceCount;
+            lateGoal = goal;
 
-            const recommendations = getSuggestions(stats, goal, n);
+            // Get algorithm recommendations with optional explain mode
+            const recommendations = getSuggestions(stats, goal, n, explainMode);
 
+            // Get analysis command recommendations
+            const analysisRecommendations = getAnalysisRecommendations(stats, goal);
+
+            const logBasename = path.basename(inputPath);
             const variantPct =
               stats.traceCount > 0
                 ? ((stats.variantCount / stats.traceCount) * 100).toFixed(1)
@@ -203,69 +268,71 @@ export const suggest = defineCommand({
 
             const payload = {
               goal,
+              raw_goal: rawGoal,
               logStats: {
                 traceCount: stats.traceCount,
                 eventCount: stats.eventCount,
                 variantCount: stats.variantCount,
                 variantPercent: Number(variantPct),
-                logFile: path.basename(inputPath),
+                activityCount: stats.activityCount,
+                hasResources: stats.hasResources,
+                hasTimestamps: stats.hasTimestamps,
+                logFile: logBasename,
               },
               recommendations,
+              analysisRecommendations,
               topPick: recommendations[0]?.algorithm ?? null,
               runCommand: recommendations[0]
-                ? `wpm run ${path.basename(inputPath)} --algorithm ${recommendations[0].algorithm}`
+                ? `wpm run ${logBasename} --algorithm ${recommendations[0].algorithm}`
                 : null,
             };
 
-            const result = makeResult('suggest', payload, recommendations.length, EXIT_CODES.success);
+            const result = makeResult(
+              'suggest',
+              payload,
+              recommendations.length,
+              EXIT_CODES.success
+            );
 
             emitResult(result, emitOptions, (_res, p) => {
               if (!quiet) {
                 p.log('');
+                p.log('Process Mining Recommendations');
+                p.log('================================');
                 p.log(
-                  `Log Analysis: ${stats.traceCount.toLocaleString()} traces, ` +
-                  `${stats.eventCount.toLocaleString()} events, ` +
-                  `${stats.variantCount.toLocaleString()} variants ` +
-                  `(${variantPct}% unique)`
+                  `Analyzing log: ${stats.eventCount.toLocaleString()} events, ` +
+                  `${stats.traceCount.toLocaleString()} traces, ` +
+                  `${stats.activityCount} activities` +
+                  (stats.variantCount > 0 ? `, ${stats.variantCount} variants (${variantPct}% unique)` : '')
                 );
-                p.log('');
-                p.log(`Recommended algorithms for goal: ${goal}`);
-                p.log('');
+                if (stats.hasResources) p.log('  (org:resource attribute present — social mining available)');
+                if (stats.hasTimestamps) p.log('  (time:timestamp attribute present — temporal analysis available)');
               }
 
-              const COL_ID = 22;
-              const COL_Q  = 10;
-              const COL_S  = 10;
-              const COL_T  = 8;
-
-              if (!quiet) {
-                p.log(
-                  `  ${'#'.padEnd(3)} ${'Algorithm'.padEnd(COL_ID)} ` +
-                  `${'Quality'.padStart(COL_Q)} ${'Speed'.padStart(COL_S)} ` +
-                  `${'Est.Time'.padStart(COL_T)}  Reason`
-                );
-                p.log(`  ${'─'.repeat(80)}`);
-              }
+              p.log('');
+              p.log('ALGORITHM RECOMMENDATIONS');
 
               recommendations.forEach((rec, idx) => {
-                const timeStr = rec.estimatedTimeMs !== undefined
-                  ? fmtTime(rec.estimatedTimeMs).padStart(COL_T)
-                  : ' '.repeat(COL_T);
-
-                p.log(
-                  `  ${String(idx + 1).padEnd(3)} ${rec.algorithm.padEnd(COL_ID)} ` +
-                  `${String(rec.quality).padStart(COL_Q)} ${String(rec.speed).padStart(COL_S)} ` +
-                  `${timeStr}  ${rec.reason}`
-                );
-
-                if (verbose && idx < recommendations.length - 1) {
-                  p.log('');
+                const recLines = renderAlgorithmRec(rec, idx, logBasename, explainMode);
+                for (const line of recLines) {
+                  p.log(line);
                 }
+                if (idx < recommendations.length - 1) p.log('');
               });
+
+              // Analysis recommendations
+              const analysisLines = renderAnalysisRecs(analysisRecommendations, logBasename);
+              for (const line of analysisLines) {
+                p.log(line);
+              }
 
               if (!quiet && recommendations[0]) {
                 p.log('');
-                p.log(`Run: wpm run ${path.basename(inputPath)} --algorithm ${recommendations[0].algorithm}`);
+                p.log('QUICK START');
+                p.log(`  wpm run ${logBasename} --algorithm ${recommendations[0].algorithm}`);
+                if (analysisRecommendations.length > 0) {
+                  p.log(`  ${analysisRecommendations[0]!.example}`);
+                }
                 p.log('');
               }
             });

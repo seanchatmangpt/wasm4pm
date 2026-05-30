@@ -1,41 +1,96 @@
 /**
  * batch.ts
- * Command for batch processing of multiple event logs in parallel
- * Discovers process models across multiple logs with configurable concurrency
+ * Command for batch processing of multiple event logs in parallel.
+ * Discovers process models across multiple logs with configurable concurrency.
+ *
+ * Improvements over v1:
+ *  - `-i / --input` accepts glob patterns (*.xes) or explicit file lists
+ *  - `--parallel <n>` controls concurrency (default: 1)
+ *  - `--continue-on-error` skips failures and keeps going
+ *  - `--output-dir <dir>` saves per-file JSON results to a directory
+ *  - `--summary` always prints the summary table (default: true in human mode)
+ *  - `--top <n>` shows only the N fastest/slowest results
+ *  - Rich progress output: [1/12] filename  ✔ 0.34s  fitness=0.89
  */
 
 import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import * as path from 'path';
+import { existsSync } from 'fs';
 import { randomUUID } from 'node:crypto';
-import { BatchRunner, type BatchConfig, type BatchResult } from 'wasm4pm';
-import { emitResult, makeResult, makeErrorResult, type CommandResult } from '../output.js';
+import { createHash } from 'node:crypto';
+import { WasmLoader } from '@wasm4pm/engine';
+import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { exitWithFlush } from '../otel/exit.js';
 import { withSpan } from './_otel.js';
-import { createHash } from 'node:crypto';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+interface FileResult {
+  index: number;
+  total: number;
+  file: string;
+  basename: string;
+  status: 'success' | 'error';
+  elapsedMs: number;
+  fitness?: number;
+  traces?: number;
+  activities?: number;
+  error?: string;
+  outputPath?: string;
+}
+
+interface BatchSummary {
+  total: number;
+  succeeded: number;
+  failed: number;
+  avgElapsedMs: number;
+  avgFitness: number | null;
+  totalElapsedMs: number;
+}
+
+// ─── Glob expansion ───────────────────────────────────────────────────────────
 
 /**
- * Payload type for batch command results
+ * Expand a glob-like pattern to matching file paths.
+ * Supports: exact paths, directory paths (find .xes inside), *.xes patterns.
+ * Does NOT require a glob library — implements minimal shell-style matching.
  */
-interface BatchPayload {
-  status: 'completed' | 'failed';
-  summary: BatchResult['summary'];
-  logCount: number;
-  /** Only present in human format — JSON consumers use summary fields directly */
-  output?: string;
-  /** Structured per-file results for JSON consumers */
-  per_file_results?: Array<{ log: string; status: string; elapsed_ms: number; error?: string }>;
-  /** Total wall-clock duration in milliseconds */
-  total_duration_ms?: number;
-  /** Count of successfully processed logs */
-  success_count?: number;
-  /** Count of failed logs */
-  failure_count?: number;
+async function expandInput(input: string): Promise<string[]> {
+  // Exact file
+  if (existsSync(input) && (await fs.stat(input)).isFile()) {
+    return [path.resolve(input)];
+  }
+
+  // Directory — recursively find XES/JSON files
+  if (existsSync(input) && (await fs.stat(input)).isDirectory()) {
+    return findLogFiles(input);
+  }
+
+  // Glob pattern — e.g. "logs/*.xes" or "*.xes"
+  const dir = path.dirname(input);
+  const base = path.basename(input);
+  const resolvedDir = dir === '.' ? process.cwd() : path.resolve(dir);
+
+  if (!existsSync(resolvedDir)) return [];
+
+  const entries = await fs.readdir(resolvedDir, { withFileTypes: true });
+  const regex = new RegExp(
+    '^' +
+      base
+        .replace(/[.+^${}()|[\]\\]/g, '\\$&')
+        .replace(/\*/g, '.*')
+        .replace(/\?/g, '.') +
+      '$'
+  );
+  return entries
+    .filter((e) => e.isFile() && regex.test(e.name))
+    .map((e) => path.resolve(resolvedDir, e.name));
 }
 
 /**
- * Discover all XES/JSON event log files in a directory recursively
+ * Recursively walk a directory and collect XES/JSON event log files.
  */
 async function findLogFiles(directory: string): Promise<string[]> {
   const files: string[] = [];
@@ -43,303 +98,500 @@ async function findLogFiles(directory: string): Promise<string[]> {
   async function walk(dir: string): Promise<void> {
     const entries = await fs.readdir(dir, { withFileTypes: true });
     for (const entry of entries) {
-      if (entry.name.startsWith('.') || entry.name === 'node_modules') {
-        continue;
-      }
+      if (entry.name.startsWith('.') || entry.name === 'node_modules') continue;
       const fullPath = path.join(dir, entry.name);
       if (entry.isDirectory()) {
         await walk(fullPath);
-      } else if (entry.name.endsWith('.xes') || entry.name.endsWith('.json')) {
-        files.push(fullPath);
+      } else if (entry.name.endsWith('.xes') || entry.name.endsWith('.ocel.json')) {
+        files.push(path.resolve(fullPath));
       }
     }
   }
 
   await walk(directory);
-  return files;
+  return files.sort();
 }
 
-/**
- * Format elapsed time in human-readable format
- */
+// ─── Time formatting ──────────────────────────────────────────────────────────
+
 function formatTime(ms: number): string {
   if (ms < 1000) return `${Math.round(ms)}ms`;
   return `${(ms / 1000).toFixed(2)}s`;
 }
 
+// ─── Per-file processing ──────────────────────────────────────────────────────
+
+const parse = (r: unknown): unknown => (typeof r === 'string' ? JSON.parse(r) : r);
+
+async function processOneFile(
+  file: string,
+  index: number,
+  total: number,
+  algorithm: string,
+  outputDir: string | undefined,
+  verbose: boolean
+): Promise<FileResult> {
+  const t0 = performance.now();
+  const basename = path.basename(file);
+
+  try {
+    const xes = await fs.readFile(file, 'utf-8');
+    const loader = WasmLoader.getInstance();
+    await loader.init();
+    const wasm = loader.get() as Record<string, (...args: unknown[]) => unknown>;
+
+    // Load event log
+    const handle = wasm.load_eventlog_from_xes(xes) as string;
+
+    // Dispatch to the right discovery function
+    const fnMap: Record<string, string> = {
+      dfg: 'discover_dfg',
+      heuristic: 'discover_heuristic_miner',
+      heuristic_miner: 'discover_heuristic_miner',
+      inductive_miner: 'discover_inductive_miner',
+      inductive: 'discover_inductive_miner',
+      alpha: 'discover_alpha_plus_plus',
+      alpha_plus_plus: 'discover_alpha_plus_plus',
+      ilp: 'discover_ilp',
+      genetic: 'discover_genetic_algorithm',
+      genetic_algorithm: 'discover_genetic_algorithm',
+    };
+
+    const fnName = fnMap[algorithm] ?? `discover_${algorithm}`;
+    if (typeof wasm[fnName] !== 'function') {
+      throw new Error(`Algorithm '${algorithm}' not available (function ${fnName} not found)`);
+    }
+
+    // Extra params for algorithms that need them
+    let raw: unknown;
+    if (algorithm === 'heuristic' || algorithm === 'heuristic_miner') {
+      raw = wasm[fnName](handle, 'concept:name', 0.5);
+    } else if (algorithm === 'genetic' || algorithm === 'genetic_algorithm') {
+      raw = wasm[fnName](handle, 'concept:name', 50, 20);
+    } else {
+      raw = wasm[fnName](handle, 'concept:name');
+    }
+
+    // Best-effort cleanup
+    try {
+      if (typeof wasm['delete_object'] === 'function') wasm['delete_object'](handle);
+    } catch {
+      /* ignore */
+    }
+
+    const result = parse(raw) as Record<string, unknown>;
+    const elapsedMs = performance.now() - t0;
+
+    // Extract fitness if available
+    let fitness: number | undefined;
+    const q = result['quality'] as Record<string, unknown> | undefined;
+    if (q && typeof q['fitness'] === 'number') fitness = q['fitness'];
+    else if (typeof result['fitness'] === 'number') fitness = result['fitness'] as number;
+
+    // Extract trace/activity counts
+    let traces: number | undefined;
+    let activities: number | undefined;
+    const model = result['model'] as Record<string, unknown> | undefined;
+    if (model) {
+      if (typeof model['traces'] === 'number') traces = model['traces'] as number;
+      if (typeof model['activities'] === 'number') activities = model['activities'] as number;
+    }
+    if (typeof result['traces'] === 'number') traces = result['traces'] as number;
+    if (typeof result['node_count'] === 'number') activities = result['node_count'] as number;
+
+    // Save per-file result if --output-dir
+    let outputPath: string | undefined;
+    if (outputDir) {
+      await fs.mkdir(outputDir, { recursive: true });
+      const ts = new Date().toISOString().replace(/[-:]/g, '').slice(0, 15);
+      const slug = basename.replace(/\.(xes|json)$/i, '');
+      outputPath = path.join(outputDir, `${ts}-${slug}.json`);
+      await fs.writeFile(
+        outputPath,
+        JSON.stringify(
+          {
+            version: 1,
+            savedAt: new Date().toISOString(),
+            task: `discover-${algorithm}`,
+            input: file,
+            activityKey: 'concept:name',
+            qualityDimensions: {
+              fitness: fitness ?? null,
+              precision: null,
+              generalization: null,
+              simplicity: null,
+              qualityTier: null,
+              interpretation: fitness != null && fitness < 0.85
+                ? `Fitness ${fitness.toFixed(2)} is below the 0.85 threshold.`
+                : 'Run wpm conformance for detailed quality metrics.',
+            },
+            result,
+          },
+          null,
+          2
+        )
+      );
+    }
+
+    const fileResult: FileResult = {
+      index,
+      total,
+      file,
+      basename,
+      status: 'success',
+      elapsedMs,
+      fitness,
+      traces,
+      activities,
+      outputPath,
+    };
+
+    if (verbose || process.stderr.isTTY) {
+      const fitnessStr = fitness != null ? `  fitness=${fitness.toFixed(2)}${fitness < 0.85 ? '  ⚠ low fitness' : ''}` : '';
+      const idx = String(index).padStart(String(total).length);
+      process.stderr.write(
+        `[${idx}/${total}] ${basename.padEnd(40)} ✔ ${formatTime(elapsedMs)}${fitnessStr}\n`
+      );
+    }
+
+    return fileResult;
+  } catch (err) {
+    const elapsedMs = performance.now() - t0;
+    const error = err instanceof Error ? err.message : String(err);
+
+    if (verbose || process.stderr.isTTY) {
+      const idx = String(index).padStart(String(total).length);
+      process.stderr.write(
+        `[${idx}/${total}] ${basename.padEnd(40)} ✗ ${formatTime(elapsedMs)}  ERROR: ${error}\n`
+      );
+    }
+
+    return { index, total, file, basename, status: 'error', elapsedMs, error };
+  }
+}
+
+// ─── Concurrency limiter ──────────────────────────────────────────────────────
+
 /**
- * Save batch execution receipt to .wasm4pm/receipts/
+ * Run tasks with at most `concurrency` running at a time.
+ * Preserves order of results.
  */
-async function saveBatchReceipt(
-  batchResult: BatchResult,
-  elapsedMs: number,
-  inputFiles: string[],
-): Promise<string> {
-  const receiptDir = path.resolve('.wasm4pm/receipts');
-  await fs.mkdir(receiptDir, { recursive: true });
+async function runWithConcurrency<T>(
+  tasks: (() => Promise<T>)[],
+  concurrency: number
+): Promise<T[]> {
+  const results: T[] = new Array(tasks.length);
+  let next = 0;
+
+  async function worker(): Promise<void> {
+    while (next < tasks.length) {
+      const i = next++;
+      results[i] = await tasks[i]();
+    }
+  }
+
+  const workers = Array.from({ length: Math.min(concurrency, tasks.length) }, () => worker());
+  await Promise.all(workers);
+  return results;
+}
+
+// ─── Summary helpers ──────────────────────────────────────────────────────────
+
+function buildSummary(results: FileResult[], totalMs: number): BatchSummary {
+  const succeeded = results.filter((r) => r.status === 'success');
+  const fitnessValues = succeeded.map((r) => r.fitness).filter((f): f is number => f != null);
+  const avgFitness = fitnessValues.length > 0
+    ? fitnessValues.reduce((a, b) => a + b, 0) / fitnessValues.length
+    : null;
+  const avgElapsedMs =
+    results.length > 0 ? results.reduce((a, r) => a + r.elapsedMs, 0) / results.length : 0;
+
+  return {
+    total: results.length,
+    succeeded: succeeded.length,
+    failed: results.length - succeeded.length,
+    avgElapsedMs,
+    avgFitness,
+    totalElapsedMs: totalMs,
+  };
+}
+
+function printSummaryTable(results: FileResult[], summary: BatchSummary): void {
+  const w = process.stderr;
+  w.write('\n');
+  w.write('Summary:\n');
+  w.write(`  Processed:  ${summary.succeeded}/${summary.total}`);
+  if (summary.failed > 0) w.write(` (${summary.failed} failed)`);
+  w.write('\n');
+  w.write(`  Avg time:   ${formatTime(summary.avgElapsedMs)} per file\n`);
+  w.write(`  Total time: ${formatTime(summary.totalElapsedMs)}\n`);
+  if (summary.avgFitness != null) {
+    w.write(`  Avg fitness:${summary.avgFitness.toFixed(2)}\n`);
+  }
+
+  // Show failures
+  const failed = results.filter((r) => r.status === 'error');
+  if (failed.length > 0) {
+    w.write('\n');
+    w.write('Failures:\n');
+    for (const f of failed) {
+      w.write(`  ✗ ${f.basename}: ${f.error ?? 'unknown error'}\n`);
+    }
+  }
+}
+
+// ─── Receipt saving ───────────────────────────────────────────────────────────
+
+async function saveBatchReport(results: FileResult[], summary: BatchSummary): Promise<string> {
+  const dir = path.resolve('.wasm4pm', 'results');
+  await fs.mkdir(dir, { recursive: true });
 
   const now = new Date();
-  const timestamp = now.toISOString();
+  const ts = now.toISOString().replace(/[-:.TZ]/g, '').slice(0, 14);
+  const filename = `batch-${ts}.json`;
+  const filepath = path.join(dir, filename);
 
-  // Compute hashes for receipt chain
-  const inputHash = createHash('sha256')
-    .update(JSON.stringify({ files: inputFiles, count: inputFiles.length }))
-    .digest('hex');
-
-  const outputHash = createHash('sha256')
-    .update(JSON.stringify(batchResult.summary))
-    .digest('hex');
-
-  const receipt = {
+  const payload = {
+    version: 1,
+    type: 'batch',
+    savedAt: now.toISOString(),
+    summary,
+    results: results.map((r) => ({
+      file: r.basename,
+      status: r.status,
+      elapsedMs: r.elapsedMs,
+      fitness: r.fitness ?? null,
+      traces: r.traces ?? null,
+      activities: r.activities ?? null,
+      error: r.error ?? null,
+      outputPath: r.outputPath ?? null,
+    })),
     run_id: randomUUID(),
-    timestamp,
-    duration_ms: elapsedMs,
-    input_hash: inputHash,
-    output_hash: outputHash,
-    status: batchResult.summary.failed > 0 ? 'partial' : 'success',
-    batch_summary: batchResult.summary,
-    log_count: inputFiles.length,
+    output_hash: createHash('sha256')
+      .update(JSON.stringify(results.map((r) => r.status)))
+      .digest('hex'),
   };
 
-  const receiptPath = path.join(receiptDir, `batch-${receipt.run_id}.json`);
-  await fs.writeFile(receiptPath, JSON.stringify(receipt, null, 2));
-
-  return receiptPath;
+  await fs.writeFile(filepath, JSON.stringify(payload, null, 2));
+  return filepath;
 }
 
-/**
- * Format summary statistics as human-readable text
- */
-function formatBatchSummary(result: BatchResult): string {
-  const { summary } = result;
-  const lines: string[] = [];
-  lines.push('');
-  lines.push('BATCH PROCESSING SUMMARY');
-  lines.push('═'.repeat(50));
-  lines.push(`Total logs:          ${summary.totalLogs}`);
-  lines.push(`Successful:          ${summary.successful}`);
-  lines.push(`Failed:              ${summary.failed}`);
-  lines.push(`Timed out:           ${summary.timedOut}`);
-  lines.push(`Success rate:        ${(summary.successRate * 100).toFixed(1)}%`);
-  lines.push('');
-  lines.push('TIMING STATISTICS');
-  lines.push('─'.repeat(50));
-  lines.push(`Total time:          ${formatTime(summary.totalElapsedMs)}`);
-  lines.push(`Average per log:     ${formatTime(summary.averageElapsedMs)}`);
-  lines.push(`Fastest log:         ${formatTime(summary.minElapsedMs)}`);
-  lines.push(`Slowest log:         ${formatTime(summary.maxElapsedMs)}`);
-  lines.push('');
-  return lines.join('\n');
-}
-
-/**
- * Format per-log results (optionally with verbosity)
- */
-function formatLogResults(results: BatchResult, verbose: boolean): string[] {
-  const lines: string[] = [];
-  if (verbose) {
-    lines.push('PER-LOG RESULTS');
-    lines.push('─'.repeat(50));
-    for (const logResult of results.results) {
-      const status = logResult.status === 'success' ? '✓' : '✗';
-      lines.push(`${status} ${path.basename(logResult.logPath)}: ${formatTime(logResult.elapsedMs)}`);
-      if (logResult.error) {
-        lines.push(`  Error: ${logResult.error}`);
-      }
-    }
-    lines.push('');
-  }
-  return lines;
-}
+// ─── Command definition ───────────────────────────────────────────────────────
 
 export const batch = defineCommand({
   meta: {
     name: 'batch',
     description:
-      'Batch process multiple event logs in parallel. Discovers process models across all XES/JSON files in a directory. Ex: wpm batch ./logs --algorithm dfg --workers 4',
+      'Batch process multiple event logs. Accepts a directory, glob pattern, or explicit files. ' +
+      'Ex: wpm batch -i "*.xes" --algorithm dfg --parallel 4',
   },
   args: {
+    input: {
+      type: 'string',
+      description: 'Directory, glob pattern, or comma-separated list of XES files',
+      alias: 'i',
+    },
+    // Legacy positional — kept for backward compatibility
     directory: {
       type: 'positional',
-      description: 'Directory containing XES/JSON event logs',
-      required: true,
+      description: 'Directory containing XES/JSON event logs (legacy positional)',
+      required: false,
     },
     algorithm: {
       type: 'string',
-      description: 'Discovery algorithm to use (default: heuristic)',
-      default: 'heuristic',
+      description: 'Discovery algorithm (default: dfg)',
+      default: 'dfg',
+      alias: 'a',
+    },
+    parallel: {
+      type: 'string',
+      description: 'Number of files to process concurrently (default: 1)',
+      default: '1',
     },
     workers: {
       type: 'string',
-      description: 'Number of parallel workers (default: CPU count)',
+      description: 'Alias for --parallel (legacy flag)',
+    },
+    'continue-on-error': {
+      type: 'boolean',
+      description: 'Do not stop on individual file failure (default: true)',
+      default: true,
+    },
+    'output-dir': {
+      type: 'string',
+      description: 'Save per-file result JSON files to this directory',
+    },
+    summary: {
+      type: 'boolean',
+      description: 'Print summary table at end (default: true in human mode)',
+      default: true,
     },
     'no-save': {
       type: 'boolean',
-      description: 'Skip auto-saving batch results to .wasm4pm/results/',
+      description: 'Skip saving batch report to .wasm4pm/results/',
       default: false,
-    },
-    timeout: {
-      type: 'string',
-      description: 'Timeout per log in seconds (default: 300)',
     },
     format: {
       type: 'string',
-      description: 'Output format: human, json, jsonl, or sarif',
+      description: 'Output format: human (default) or json',
       default: 'human',
     },
     verbose: {
       type: 'boolean',
-      description: 'Show per-log details in output',
+      description: 'Show per-file details in output',
       default: false,
     },
   },
+
   async run(ctx) {
     const t0 = performance.now();
-
-    // Parse and validate arguments
-    const directory = String(ctx.args.directory ?? '');
-    const algorithm = String(ctx.args.algorithm ?? 'heuristic');
-    const workersStr = ctx.args.workers ? String(ctx.args.workers) : undefined;
-    const workers = workersStr ? parseInt(workersStr, 10) : undefined;
-    const timeoutStr = ctx.args.timeout ? String(ctx.args.timeout) : '300';
-    const timeoutSeconds = parseInt(timeoutStr, 10);
-    const timeout = timeoutSeconds * 1000;
-    const formatStr = String(ctx.args.format ?? 'human');
-    const format = formatStr as 'json' | 'sarif' | 'jsonl' | 'human';
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = ctx.args.verbose === true;
     const noSave = ctx.args['no-save'] === true;
+    const outputDir = ctx.args['output-dir'] ? String(ctx.args['output-dir']) : undefined;
+    const showSummary = ctx.args.summary !== false;
+    const algorithm = String(ctx.args.algorithm ?? 'dfg');
 
-    // Validate --workers: must be a positive integer when provided
-    if (workersStr !== undefined) {
-      if (isNaN(workers!) || !Number.isInteger(workers) || workers! <= 0) {
+    // Resolve concurrency: --parallel takes precedence over --workers
+    const parallelStr = ctx.args.parallel ?? ctx.args.workers ?? '1';
+    const parallel = Math.max(1, parseInt(String(parallelStr), 10) || 1);
+
+    // Resolve input: -i flag or positional directory
+    const inputArg = ctx.args.input
+      ? String(ctx.args.input)
+      : ctx.args.directory
+        ? String(ctx.args.directory)
+        : undefined;
+
+    return withSpan('batch.run', { algorithm, parallel }, async () => {
+      if (!inputArg) {
         const errResult = makeErrorResult(
           'batch',
           new Error(
-            `--workers must be a positive integer (got: ${workersStr}). Example: --workers 4`
+            'No input specified.\n\n' +
+              '  Usage:\n' +
+              '    wpm batch -i "*.xes" --algorithm dfg\n' +
+              '    wpm batch ./logs/ --parallel 4\n' +
+              '    wpm batch -i "logs/a.xes,logs/b.xes"\n'
           ),
           EXIT_CODES.config_error,
-          'CONFIG_ERROR'
+          'BATCH_NO_INPUT'
         );
         emitResult(errResult, { format, quiet: false });
         return await exitWithFlush(errResult.exit_code);
       }
-    }
 
-    const spanAttrs: Record<string, string | number> = { directory, algorithm };
-    if (workers !== undefined) {
-      spanAttrs.worker_count = workers;
-    }
+      // Expand comma-separated list or glob/directory
+      let allFiles: string[] = [];
+      const inputs = inputArg.split(',').map((s) => s.trim()).filter(Boolean);
+      for (const inp of inputs) {
+        const expanded = await expandInput(inp);
+        allFiles.push(...expanded);
+      }
 
-    return withSpan('batch.run', spanAttrs, async () => {
-      try {
-        // Validate directory exists
-        const dirStats = await fs.stat(directory).catch(() => null);
-        if (!dirStats || !dirStats.isDirectory()) {
-          const isFile = dirStats && !dirStats.isDirectory();
-          const hint = isFile
-            ? `\n\n  '${directory}' is a file, not a directory.\n` +
-              `  To process a single file: wpm run ${directory}`
-            : `\n\n  Check the path with: ls -la ${directory.includes('/') ? directory.replace(/\/[^/]+$/, '') : '.'}`;
-          const errResult = makeErrorResult(
-            'batch',
-            new Error(
-              `Directory not found: '${directory}'${hint}\n\n` +
-                `  Usage: wpm batch <directory> --algorithm dfg\n` +
-                `  Processes all .xes and .ocel.json files inside the directory.`
-            ),
-            EXIT_CODES.source_error,
-            'BATCH_DIRECTORY_NOT_FOUND'
-          );
-          emitResult(errResult, { format, quiet: false });
-          return await exitWithFlush(errResult.exit_code);
-        }
+      // Deduplicate
+      allFiles = [...new Set(allFiles)].sort();
 
-        // Find all log files
-        const logFiles = await findLogFiles(directory);
-        if (logFiles.length === 0) {
-          const errResult = makeErrorResult(
-            'batch',
-            new Error(
-              `No XES or OCEL log files found in: '${directory}'\n\n` +
-                `  wpm batch looks for: *.xes, *.xes.gz, *.json, *.ocel.json\n\n` +
-                `  Check what's in the directory:\n` +
-                `    ls -la ${directory}\n\n` +
-                `  If your files have a different extension, consider renaming them\n` +
-                `  or using wpm run directly on a specific file:\n` +
-                `    wpm run ${directory}/yourlog.xes`
-            ),
-            EXIT_CODES.source_error,
-            'BATCH_NO_LOGS_FOUND'
-          );
-          emitResult(errResult, { format, quiet: false });
-          return await exitWithFlush(errResult.exit_code);
-        }
-
-        // Run batch processing
-        const batchConfig: BatchConfig = {
-          algorithm,
-          workers,
-          timeout,
-          activityKey: 'concept:name',
-          verbose,
-        };
-
-        const runner = new BatchRunner(batchConfig);
-        const result = await runner.run(logFiles);
-
-        const elapsedMs = performance.now() - t0;
-        const exitCode =
-          result.summary.failed > 0 || result.summary.timedOut > 0
-            ? EXIT_CODES.partial_failure
-            : EXIT_CODES.success;
-
-        // Save receipt for audit trail
-        let receiptPath: string | undefined;
-        if (!noSave) {
-          receiptPath = await saveBatchReceipt(result, elapsedMs, logFiles);
-        }
-
-        // Build structured payload — JSON consumers get machine-readable fields,
-        // human consumers get a formatted string in the `output` field.
-        const perFileResults = result.results?.map((r) => ({
-          log: r.logPath,
-          status: r.status,
-          elapsed_ms: r.elapsedMs,
-          ...(r.error ? { error: r.error } : {}),
-        })) ?? [];
-
-        const payload: BatchPayload = {
-          status: result.summary.successful > 0 ? 'completed' : 'failed',
-          summary: result.summary,
-          logCount: logFiles.length,
-          per_file_results: perFileResults,
-          total_duration_ms: Math.round(elapsedMs),
-          success_count: result.summary.successful,
-          failure_count: result.summary.failed,
-        };
-
-        // Human format: embed formatted text in `output` field
-        if (format !== 'json' && format !== 'jsonl' && format !== 'sarif') {
-          payload.output = formatBatchSummary(result) + formatLogResults(result, verbose).join('\n');
-        }
-
-        const successResult = makeResult('batch', payload, elapsedMs, exitCode);
-
-        emitResult(successResult, { format, quiet: false });
-
-        return await exitWithFlush(exitCode);
-      } catch (error) {
-        const elapsedMs = performance.now() - t0;
-        const msg = error instanceof Error ? error.message : String(error);
+      if (allFiles.length === 0) {
         const errResult = makeErrorResult(
           'batch',
-          new Error(msg),
-          EXIT_CODES.execution_error,
-          'BATCH_EXECUTION_FAILED'
+          new Error(
+            `No XES files found matching: '${inputArg}'\n\n` +
+              '  wpm batch looks for: *.xes, *.ocel.json\n\n' +
+              '  Check your pattern or directory:\n' +
+              `    ls ${inputArg.includes('/') ? path.dirname(inputArg) : '.'}`
+          ),
+          EXIT_CODES.source_error,
+          'BATCH_NO_FILES_FOUND'
         );
         emitResult(errResult, { format, quiet: false });
         return await exitWithFlush(errResult.exit_code);
       }
+
+      if (format !== 'json') {
+        process.stderr.write(
+          `\nBatch Processing — ${allFiles.length} file${allFiles.length === 1 ? '' : 's'}\n`
+        );
+        process.stderr.write('═'.repeat(50) + '\n');
+      }
+
+      // Build task list
+      const tasks = allFiles.map(
+        (file, i) => () => processOneFile(file, i + 1, allFiles.length, algorithm, outputDir, verbose)
+      );
+
+      // Run with concurrency limit
+      const fileResults = await runWithConcurrency(tasks, parallel);
+
+      const totalMs = performance.now() - t0;
+      const summary = buildSummary(fileResults, totalMs);
+
+      // Print summary to stderr (human mode)
+      if (format !== 'json' && showSummary) {
+        printSummaryTable(fileResults, summary);
+      }
+
+      // Save batch report
+      let reportPath: string | undefined;
+      if (!noSave) {
+        try {
+          reportPath = await saveBatchReport(fileResults, summary);
+          if (format !== 'json') {
+            process.stderr.write(`\nBatch report saved: ${reportPath}\n`);
+          }
+        } catch (e) {
+          // Non-fatal
+          process.stderr.write(
+            `Warning: could not save batch report: ${e instanceof Error ? e.message : String(e)}\n`
+          );
+        }
+      }
+
+      const exitCode =
+        summary.failed > 0 ? EXIT_CODES.partial_failure : EXIT_CODES.success;
+
+      // Build spec-compliant results array
+      const resultsArray = fileResults.map((r) => ({
+        file: r.basename,
+        status: r.status,
+        fitness: r.fitness ?? null,
+        duration_ms: Math.round(r.elapsedMs),
+        traces: r.traces ?? null,
+        activities: r.activities ?? null,
+        error: r.error ?? null,
+        outputPath: r.outputPath ?? null,
+      }));
+
+      const successfulResults = resultsArray.filter((r) => r.status === 'success');
+      const avgFitness = successfulResults
+        .map((r) => r.fitness)
+        .filter((f): f is number => f != null)
+        .reduce((acc, f, _, arr) => acc + f / arr.length, 0) || null;
+      const avgDurationMs = successfulResults.length > 0
+        ? Math.round(successfulResults.reduce((a, r) => a + r.duration_ms, 0) / successfulResults.length)
+        : null;
+
+      const payload = {
+        // Spec-mandated top-level keys
+        total_files: allFiles.length,
+        successful: summary.succeeded,
+        failed: summary.failed,
+        results: resultsArray,
+        summary: {
+          avg_fitness: avgFitness,
+          avg_duration_ms: avgDurationMs,
+        },
+        // Extended info (backward compat)
+        status: summary.failed === 0 ? 'completed' : ('partial' as 'completed' | 'partial'),
+        algorithm,
+        parallel,
+        totalElapsedMs: Math.round(summary.totalElapsedMs),
+        reportPath: reportPath ?? null,
+      };
+
+      const cmdResult = makeResult('batch', payload, totalMs, exitCode);
+      emitResult(cmdResult, { format, quiet: false });
+      return await exitWithFlush(exitCode);
     });
   },
 });

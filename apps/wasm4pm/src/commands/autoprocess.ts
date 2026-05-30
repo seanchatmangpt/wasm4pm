@@ -718,7 +718,7 @@ export const autoprocess = defineCommand({
               await saveState(wasm);
               const final_state_hash = await hashStateFile(stateFilePath);
 
-              if (!ctx.args['no-save']) {
+              if (ctx.args.save !== false) {
                 try {
                   const inputBytes = await fsp
                     .readFile(inputPath)
@@ -803,13 +803,44 @@ export const autoprocess = defineCommand({
                 final_state_hash,
               };
 
-              const result = makeResult(
+              // Build recommendations for JSON output based on cycle metrics
+              const jsonRecommendations: string[] = [];
+              {
+                const finalCrForRec = (cycleResult.cycle_result ?? cycleResult) as Record<string, unknown>;
+                const finalProtForRec = (finalCrForRec.protection ?? {}) as Record<string, unknown>;
+                const finalOptForRec = (finalCrForRec.optimization ?? {}) as Record<string, unknown>;
+                const finalPercForRec = (finalCrForRec.perception ?? {}) as Record<string, unknown>;
+                const finalCausesForRec = Array.isArray(finalProtForRec.special_causes)
+                  ? finalProtForRec.special_causes
+                  : [];
+                const finalHealthForRec = typeof finalPercForRec.health_score === 'number'
+                  ? finalPercForRec.health_score : 0;
+                const finalCircuitForRec = Boolean(finalProtForRec.circuit_allowed);
+                const finalRewardForRec = typeof finalOptForRec.reward === 'number'
+                  ? finalOptForRec.reward : 0;
+                if (!finalCircuitForRec) {
+                  jsonRecommendations.push(`Inspect circuit breaker — execution was BLOCKED (${String(finalProtForRec.circuit_state ?? 'unknown')}). Run \`wpm status\`.`);
+                }
+                if (finalCausesForRec.length > 2) {
+                  jsonRecommendations.push(`Run \`wpm doctor --verbose\` — ${finalCausesForRec.length} SPC violation(s) detected.`);
+                }
+                if (finalHealthForRec >= 3) {
+                  jsonRecommendations.push(`Run \`wpm conformance -i ${inputPath}\` — health level ${finalHealthForRec}/4 indicates process degradation.`);
+                }
+                if (finalRewardForRec < 0) {
+                  jsonRecommendations.push(`Review RL agent decisions — negative reward (${finalRewardForRec.toFixed(3)}) indicates suboptimal autonomic response.`);
+                }
+                jsonRecommendations.push(`Run \`wpm conformance -i ${inputPath}\` — verify process model quality after autonomic changes.`);
+              }
+
+              const resultWithRecommendations = makeResult(
                 'autoprocess',
-                { ...cycleResult, cycles_run: cyclesRun },
+                { ...cycleResult, cycles_run: cyclesRun, recommendations: jsonRecommendations },
                 performance.now() - t0,
                 EXIT_CODES.success
               );
-              emitResult(result, { format, verbose, quiet }, (res, projection) => {
+
+              emitResult(resultWithRecommendations, { format, verbose, quiet }, (res, projection) => {
                 const data = res.payload as Record<string, unknown>;
                 const cycle = (data.cycle_result ?? data) as Record<string, unknown>;
                 const timing = (data.timing ?? {}) as Record<string, unknown>;
@@ -817,13 +848,14 @@ export const autoprocess = defineCommand({
                 projection.info('AutoProcess — MAPE-K Cycle Summary');
                 projection.log('');
 
-                // ── Helper to format a labelled phase line ─────────────────────
-                const phaseLabel = (label: string, summary: string) => {
-                  const pad = label.padEnd(10);
-                  projection.log(`  ${pad}${summary}`);
+                // ── Helper to format a labelled phase line with status indicator ──
+                const phaseLabel = (phaseNum: number, label: string, summary: string, ok: boolean = true) => {
+                  const padded = label.padEnd(10);
+                  const indicator = ok ? '\x1b[32m✔\x1b[0m' : '\x1b[33m⚠\x1b[0m';
+                  projection.log(`  Phase ${phaseNum}: ${padded} ${indicator}  ${summary}`);
                 };
 
-                // ── MONITOR ───────────────────────────────────────────────────
+                // ── PHASE 1: PERCEPTION ───────────────────────────────────────
                 const perception = (cycle.perception ?? {}) as Record<string, unknown>;
                 const evCount = perception.event_count ?? '?';
                 const trCount = perception.trace_count ?? '?';
@@ -832,11 +864,12 @@ export const autoprocess = defineCommand({
                 const healthScore =
                   typeof perception.health_score === 'number' ? perception.health_score : '?';
                 phaseLabel(
-                  'Monitor',
+                  1,
+                  'PERCEPTION',
                   `${evCount} events, ${trCount} traces, ${actCount} activities — health: ${healthState} (${healthScore}/4)`
                 );
 
-                // ── ANALYZE ───────────────────────────────────────────────────
+                // ── PHASE 2: DECISION ─────────────────────────────────────────
                 const decision = (cycle.decision ?? {}) as Record<string, unknown>;
                 const protection = (cycle.protection ?? {}) as Record<string, unknown>;
                 const spcResults = (protection.spc_results ?? {}) as Record<string, unknown>;
@@ -852,9 +885,9 @@ export const autoprocess = defineCommand({
                   specialCausesList.length > 0
                     ? `${specialCausesList.length} anomaly(ies) detected, ${spcAlertCount} SPC alert(s) — ${guardOutcome}, ${patternSummary}`
                     : `no anomalies — ${guardOutcome}, ${patternSummary}`;
-                phaseLabel('Analyze', analyzeSummary);
+                phaseLabel(2, 'DECISION', analyzeSummary, Boolean(decision.guard_result));
 
-                // ── PLAN ──────────────────────────────────────────────────────
+                // ── PHASE 3: PROTECTION ───────────────────────────────────────
                 const circuitState = String(protection.circuit_state ?? 'unknown');
                 const circuitAllowed = Boolean(protection.circuit_allowed);
                 const circuitSummary = circuitAllowed
@@ -866,9 +899,9 @@ export const autoprocess = defineCommand({
                 const planSummary = spcMetricList
                   ? `${circuitSummary} | SPC: ${spcMetricList}`
                   : circuitSummary;
-                phaseLabel('Plan', planSummary);
+                phaseLabel(3, 'PROTECTION', planSummary, circuitAllowed);
 
-                // ── EXECUTE ───────────────────────────────────────────────────
+                // ── PHASE 4: OPTIMIZATION ─────────────────────────────────────
                 const optimization = (cycle.optimization ?? {}) as Record<string, unknown>;
                 const rlAgent = String(optimization.rl_agent ?? 'QLearning');
                 const rlAction = String(optimization.rl_action ?? 'none');
@@ -883,8 +916,10 @@ export const autoprocess = defineCommand({
                   ? ` — ${optimization.dispatch_detail}`
                   : '';
                 phaseLabel(
-                  'Execute',
-                  `${rlAgent} (LinUCB) → action: ${rlAction}${dispatchDetail} | reward: ${rewardSign}${reward.toFixed(3)} (cumulative: ${cumReward >= 0 ? '+' : ''}${cumReward.toFixed(3)}, cycle #${cycleNum})`
+                  4,
+                  'OPTIMIZATION',
+                  `${rlAgent} (LinUCB) → action: ${rlAction}${dispatchDetail} | reward: ${rewardSign}${reward.toFixed(3)} (cumulative: ${cumReward >= 0 ? '+' : ''}${cumReward.toFixed(3)}, cycle #${cycleNum})`,
+                  reward >= 0
                 );
 
                 // ── LEARN ─────────────────────────────────────────────────────
@@ -901,7 +936,8 @@ export const autoprocess = defineCommand({
                   specialCausesList.length > 0
                     ? `drift classified as ${driftLabel} (${specialCausesList.length} special cause(s)) — RL Q-table updated via reward ${rewardSign}${reward.toFixed(3)}`
                     : `no drift detected — RL Q-table stable (reward ${rewardSign}${reward.toFixed(3)})`;
-                phaseLabel('Learn', learnSummary);
+                // Print the LEARN phase as a sub-note (not numbered phase) since it's internal feedback
+                projection.log(`             ↳ Learn: ${learnSummary}`);
 
                 // ── System State narrative (multi-cycle health trend) ──────────
                 // Only meaningful when more than one cycle has run; with a single
@@ -984,7 +1020,7 @@ export const autoprocess = defineCommand({
                   );
                 }
               });
-              return await exitWithFlush(result.exit_code);
+              return await exitWithFlush(resultWithRecommendations.exit_code);
             }
           ), // end withLogSession
         () => lateAttrs

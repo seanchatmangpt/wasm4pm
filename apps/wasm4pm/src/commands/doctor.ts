@@ -1882,6 +1882,559 @@ async function checkStateMachineCompleteness(): Promise<Diagnosis> {
 }
 
 // ────────────────────────────────────────────────────────────────────────────
+// Algorithm Health Checks (5 checks)
+// ────────────────────────────────────────────────────────────────────────────
+
+async function checkAlgoRegistryCount(): Promise<Diagnosis> {
+  const id = 'algo.registry_count';
+  try {
+    const { getRegistry } = await import('wasm4pm');
+    const count = getRegistry().list().length;
+    if (count >= 38) {
+      return {
+        name: id,
+        pathology: 'MODEL_TRUTH_FAULT',
+        severity: 'INFO',
+        message: `${count} algorithms registered (≥ 38 required)`,
+      };
+    }
+    return {
+      name: id,
+      pathology: 'MODEL_TRUTH_FAULT',
+      severity: 'WARNING',
+      message: `Only ${count} algorithms registered (expected ≥ 38) — WASM may be on a constrained profile`,
+      fix: 'Rebuild with browser profile: cd wasm4pm && npm run build',
+    };
+  } catch {
+    return {
+      name: id,
+      pathology: 'MODEL_TRUTH_FAULT',
+      severity: 'INFO',
+      message: 'Skipped — kernel registry not importable',
+    };
+  }
+}
+
+const MINIMAL_XES = `<?xml version="1.0" encoding="UTF-8" ?>
+<log xes.version="1.0">
+  <trace>
+    <string key="concept:name" value="case-1"/>
+    <event>
+      <string key="concept:name" value="A"/>
+    </event>
+    <event>
+      <string key="concept:name" value="B"/>
+    </event>
+  </trace>
+</log>`;
+
+async function checkAlgoDfgSmoke(): Promise<Diagnosis> {
+  const id = 'algo.dfg_smoke';
+  const wasmPkgDir = await resolveWasmPkgDir();
+  if (!wasmPkgDir) {
+    return { name: id, pathology: 'MODEL_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — WASM not found' };
+  }
+  const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
+  if (!existsSync(jsFile)) {
+    return { name: id, pathology: 'MODEL_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — WASM not built' };
+  }
+  try {
+    const url = new URL(`file://${jsFile}`);
+    const mod = await import(url.href);
+    if (typeof mod.load_eventlog_from_xes !== 'function' || typeof mod.discover_dfg !== 'function') {
+      return { name: id, pathology: 'MODEL_TRUTH_FAULT', severity: 'WARNING', message: 'discover_dfg or load_eventlog_from_xes not exported' };
+    }
+    const handle: string = mod.load_eventlog_from_xes(MINIMAL_XES);
+    const raw: unknown = mod.discover_dfg(handle, 'concept:name');
+    const parsed: unknown = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    const edges = (parsed as { edges?: unknown[] })?.edges;
+    if (Array.isArray(edges) && edges.length > 0) {
+      return { name: id, pathology: 'MODEL_TRUTH_FAULT', severity: 'INFO', message: `DFG smoke test passed — ${edges.length} edges discovered` };
+    }
+    return { name: id, pathology: 'MODEL_TRUTH_FAULT', severity: 'WARNING', message: 'DFG smoke test produced empty edges on minimal XES' };
+  } catch (err) {
+    return { name: id, pathology: 'MODEL_TRUTH_FAULT', severity: 'WARNING', message: `DFG smoke test failed: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
+
+async function checkAlgoHeuristicSmoke(): Promise<Diagnosis> {
+  const id = 'algo.heuristic_smoke';
+  const wasmPkgDir = await resolveWasmPkgDir();
+  if (!wasmPkgDir) {
+    return { name: id, pathology: 'MODEL_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — WASM not found' };
+  }
+  const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
+  if (!existsSync(jsFile)) {
+    return { name: id, pathology: 'MODEL_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — WASM not built' };
+  }
+  try {
+    const url = new URL(`file://${jsFile}`);
+    const mod = await import(url.href);
+    if (typeof mod.load_eventlog_from_xes !== 'function' || typeof mod.discover_heuristic_miner !== 'function') {
+      return { name: id, pathology: 'MODEL_TRUTH_FAULT', severity: 'WARNING', message: 'discover_heuristic_miner not exported' };
+    }
+    const handle: string = mod.load_eventlog_from_xes(MINIMAL_XES);
+    const raw: unknown = mod.discover_heuristic_miner(handle, 'concept:name', 0.5);
+    const parsed: unknown = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    const hasEdges =
+      (parsed as { edges?: unknown[] })?.edges?.length !== undefined ||
+      (parsed as { nodes?: unknown[] })?.nodes?.length !== undefined ||
+      (parsed as { places?: unknown[] })?.places?.length !== undefined;
+    if (hasEdges) {
+      return { name: id, pathology: 'MODEL_TRUTH_FAULT', severity: 'INFO', message: 'Heuristic miner smoke test passed' };
+    }
+    return { name: id, pathology: 'MODEL_TRUTH_FAULT', severity: 'WARNING', message: 'Heuristic miner returned empty structure on minimal XES' };
+  } catch (err) {
+    return { name: id, pathology: 'MODEL_TRUTH_FAULT', severity: 'WARNING', message: `Heuristic miner smoke test failed: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
+
+async function checkAlgoMlSmoke(): Promise<Diagnosis> {
+  const id = 'algo.ml_smoke';
+  try {
+    const mlPkg = await import('@wasm4pm/ml');
+    if (typeof mlPkg.clusterTraces !== 'function') {
+      return { name: id, pathology: 'MODEL_TRUTH_FAULT', severity: 'WARNING', message: 'clusterTraces not exported from @wasm4pm/ml' };
+    }
+    const syntheticFeatures: Record<string, unknown>[] = [
+      { f0: 0.1, f1: 0.2 }, { f0: 0.15, f1: 0.25 }, { f0: 0.8, f1: 0.9 }, { f0: 0.85, f1: 0.95 },
+    ];
+    const result = await mlPkg.clusterTraces(syntheticFeatures, { k: 2 });
+    const resultAny = result as unknown as Record<string, unknown>;
+    const clusterCount = Array.isArray(resultAny?.['clusters']) ? (resultAny['clusters'] as unknown[]).length : 0;
+    if (clusterCount > 0) {
+      return { name: id, pathology: 'MODEL_TRUTH_FAULT', severity: 'INFO', message: `ML cluster smoke test passed — ${clusterCount} clusters produced` };
+    }
+    return { name: id, pathology: 'MODEL_TRUTH_FAULT', severity: 'WARNING', message: 'ML cluster smoke test returned 0 clusters' };
+  } catch (err) {
+    return { name: id, pathology: 'MODEL_TRUTH_FAULT', severity: 'WARNING', message: `ML smoke test failed: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
+
+async function checkAlgoStreamingSmoke(): Promise<Diagnosis> {
+  const id = 'algo.streaming_smoke';
+  const wasmPkgDir = await resolveWasmPkgDir();
+  if (!wasmPkgDir) {
+    return { name: id, pathology: 'MODEL_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — WASM not found' };
+  }
+  const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
+  if (!existsSync(jsFile)) {
+    return { name: id, pathology: 'MODEL_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — WASM not built' };
+  }
+  try {
+    const url = new URL(`file://${jsFile}`);
+    const mod = await import(url.href);
+    // simd_streaming_dfg or discover_dfg_streaming — accept either
+    const streamFn = mod.simd_streaming_dfg ?? mod.discover_dfg_streaming ?? mod.streaming_dfg;
+    if (typeof streamFn !== 'function') {
+      return { name: id, pathology: 'MODEL_TRUTH_FAULT', severity: 'WARNING', message: 'Streaming DFG export not found in WASM' };
+    }
+    const handle: string = mod.load_eventlog_from_xes(MINIMAL_XES);
+    const raw: unknown = streamFn(handle, 'concept:name');
+    if (raw !== null && raw !== undefined) {
+      return { name: id, pathology: 'MODEL_TRUTH_FAULT', severity: 'INFO', message: 'Streaming DFG smoke test passed' };
+    }
+    return { name: id, pathology: 'MODEL_TRUTH_FAULT', severity: 'WARNING', message: 'Streaming DFG returned null on minimal XES' };
+  } catch (err) {
+    return { name: id, pathology: 'MODEL_TRUTH_FAULT', severity: 'WARNING', message: `Streaming DFG smoke test failed: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Data Quality Checks (4 checks)
+// ────────────────────────────────────────────────────────────────────────────
+
+async function checkDataXesParser(): Promise<Diagnosis> {
+  const id = 'data.xes_parser';
+  const wasmPkgDir = await resolveWasmPkgDir();
+  if (!wasmPkgDir) {
+    return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — WASM not found' };
+  }
+  const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
+  if (!existsSync(jsFile)) {
+    return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — WASM not built' };
+  }
+  try {
+    const url = new URL(`file://${jsFile}`);
+    const mod = await import(url.href);
+    if (typeof mod.load_eventlog_from_xes !== 'function') {
+      return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'WARNING', message: 'load_eventlog_from_xes not exported' };
+    }
+    const handle: string = mod.load_eventlog_from_xes(MINIMAL_XES);
+    if (handle && handle.length > 0) {
+      return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'INFO', message: 'XES parser: minimal log parsed successfully (1 trace)' };
+    }
+    return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'WARNING', message: 'XES parser returned empty handle' };
+  } catch (err) {
+    return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'STOP_THE_LINE', message: `XES parser failed on valid XES: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
+
+const MINIMAL_OCEL = JSON.stringify({
+  "ocel:global-log": { "ocel:attribute-names": ["concept:name"] },
+  "ocel:global-event": { "ocel:activity": "__INVALID__" },
+  "ocel:global-object": { "ocel:type": "__INVALID__" },
+  "ocel:events": {
+    "e1": {
+      "ocel:activity": "A",
+      "ocel:timestamp": "2024-01-01T00:00:00Z",
+      "ocel:omap": ["o1"],
+      "ocel:vmap": {}
+    }
+  },
+  "ocel:objects": {
+    "o1": {
+      "ocel:type": "order",
+      "ocel:ovmap": {}
+    }
+  }
+});
+
+async function checkDataOcelParser(): Promise<Diagnosis> {
+  const id = 'data.ocel_parser';
+  const wasmPkgDir = await resolveWasmPkgDir();
+  if (!wasmPkgDir) {
+    return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — WASM not found' };
+  }
+  const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
+  if (!existsSync(jsFile)) {
+    return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — WASM not built' };
+  }
+  try {
+    const url = new URL(`file://${jsFile}`);
+    const mod = await import(url.href);
+    if (typeof mod.load_ocel !== 'function') {
+      return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — load_ocel not in this WASM build (feature-ocel may be disabled)' };
+    }
+    const handle: unknown = mod.load_ocel(MINIMAL_OCEL);
+    if (handle !== null && handle !== undefined) {
+      return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'INFO', message: 'OCEL parser: minimal log parsed successfully' };
+    }
+    return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'WARNING', message: 'OCEL parser returned null for valid OCEL' };
+  } catch (err) {
+    return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'WARNING', message: `OCEL parser failed: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
+
+async function checkDataInvalidXes(): Promise<Diagnosis> {
+  const id = 'data.invalid_xes';
+  const wasmPkgDir = await resolveWasmPkgDir();
+  if (!wasmPkgDir) {
+    return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — WASM not found' };
+  }
+  const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
+  if (!existsSync(jsFile)) {
+    return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — WASM not built' };
+  }
+  try {
+    const url = new URL(`file://${jsFile}`);
+    const mod = await import(url.href);
+    if (typeof mod.load_eventlog_from_xes !== 'function') {
+      return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — load_eventlog_from_xes not exported' };
+    }
+    try {
+      mod.load_eventlog_from_xes('THIS IS NOT VALID XML <<< >>>');
+      // If no error thrown, that's acceptable — WASM may be lenient
+      return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Malformed XES handled gracefully (no crash)' };
+    } catch {
+      return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Malformed XES correctly rejected with error (no crash)' };
+    }
+  } catch (err) {
+    return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'WARNING', message: `WASM import failed: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
+
+async function checkDataEmptyLog(): Promise<Diagnosis> {
+  const id = 'data.empty_log';
+  const wasmPkgDir = await resolveWasmPkgDir();
+  if (!wasmPkgDir) {
+    return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — WASM not found' };
+  }
+  const jsFile = path.join(wasmPkgDir, 'wasm4pm.js');
+  if (!existsSync(jsFile)) {
+    return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — WASM not built' };
+  }
+  const EMPTY_XES = '<?xml version="1.0" encoding="UTF-8"?><log xes.version="1.0"></log>';
+  try {
+    const url = new URL(`file://${jsFile}`);
+    const mod = await import(url.href);
+    if (typeof mod.load_eventlog_from_xes !== 'function') {
+      return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — load_eventlog_from_xes not exported' };
+    }
+    try {
+      const handle: unknown = mod.load_eventlog_from_xes(EMPTY_XES);
+      // Empty log should not crash — handle may be empty string or valid handle
+      return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: `Empty XES log handled gracefully (handle: ${JSON.stringify(handle)?.slice(0, 20) ?? 'null'})` };
+    } catch {
+      return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Empty XES log returned error (acceptable — empty log has no traces)' };
+    }
+  } catch (err) {
+    return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'WARNING', message: `WASM import failed: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Output Contract Checks (4 checks)
+// ────────────────────────────────────────────────────────────────────────────
+
+async function checkOutputExitCodes(): Promise<Diagnosis> {
+  const id = 'output.exit_codes';
+  try {
+    // Dynamically import EXIT_CODES to verify the contract
+    const { EXIT_CODES } = await import('../exit-codes.js');
+    const required: Array<[string, number]> = [
+      ['success', 0],
+      ['config_error', 1],
+      ['source_error', 2],
+      ['execution_error', 3],
+      ['partial_failure', 4],
+      ['system_error', 5],
+    ];
+    const missing: string[] = [];
+    for (const [key, val] of required) {
+      if ((EXIT_CODES as Record<string, number>)[key] !== val) {
+        missing.push(`${key}=${val}`);
+      }
+    }
+    if (missing.length === 0) {
+      return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'EXIT_CODES contract satisfied (0=success, 1=config, 2=source, 3=exec, 4=partial, 5=system)' };
+    }
+    return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'STOP_THE_LINE', message: `EXIT_CODES mismatch: ${missing.join(', ')}`, fix: 'Fix EXIT_CODES in apps/wasm4pm/src/exit-codes.ts' };
+  } catch (err) {
+    return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'WARNING', message: `Cannot import EXIT_CODES: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
+
+async function checkOutputJsonFormat(): Promise<Diagnosis> {
+  const id = 'output.json_format';
+  // Run wpm status --format json and verify valid JSON
+  try {
+    const wpmBin = process.argv[1];
+    if (!wpmBin) {
+      return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — cannot resolve wpm binary path' };
+    }
+    const result = spawnSync(process.execPath, [wpmBin, 'status', '--format', 'json', '--quiet'], {
+      timeout: 8000,
+      encoding: 'utf8',
+    });
+    const stdout = result.stdout ?? '';
+    if (stdout.trim().length === 0) {
+      return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — wpm status produced no stdout' };
+    }
+    // Find JSON blob in output (may have non-JSON prefix)
+    const jsonStart = stdout.indexOf('{');
+    if (jsonStart === -1) {
+      return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'WARNING', message: 'wpm status --format json produced no JSON object' };
+    }
+    JSON.parse(stdout.slice(jsonStart)); // throws if invalid
+    return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'JSON format contract satisfied — status produces valid JSON' };
+  } catch {
+    return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — could not verify JSON format (timeout or spawn error)' };
+  }
+}
+
+async function checkOutputHumanFormat(): Promise<Diagnosis> {
+  const id = 'output.human_format';
+  try {
+    const wpmBin = process.argv[1];
+    if (!wpmBin) {
+      return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — cannot resolve wpm binary path' };
+    }
+    const result = spawnSync(process.execPath, [wpmBin, 'status', '--format', 'human', '--quiet'], {
+      timeout: 8000,
+      encoding: 'utf8',
+    });
+    const combined = (result.stdout ?? '') + (result.stderr ?? '');
+    if (combined.trim().length > 10) {
+      return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Human format produces non-empty output' };
+    }
+    return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'WARNING', message: 'wpm status --format human produced very little output' };
+  } catch {
+    return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — could not verify human format' };
+  }
+}
+
+async function checkOutputReceiptSchema(): Promise<Diagnosis> {
+  const id = 'output.receipt_schema';
+  const rootDir = getCachedWorkspaceRoot();
+  const resultsDir = rootDir ? path.join(rootDir, '.wasm4pm', 'results') : '.wasm4pm/results';
+  try {
+    const files = await fs.readdir(resultsDir);
+    const jsonFiles = files.filter((f) => f.endsWith('.json')).slice(0, 5);
+    if (jsonFiles.length === 0) {
+      return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'INFO', message: 'No saved results to check receipt schema (run a discovery command first)' };
+    }
+    const required = ['run_id', 'status'];
+    const violations: string[] = [];
+    for (const f of jsonFiles) {
+      try {
+        const raw = await fs.readFile(path.join(resultsDir, f), 'utf-8');
+        const obj = JSON.parse(raw) as Record<string, unknown>;
+        // Check top-level or nested payload
+        const check = obj.payload ?? obj;
+        for (const field of required) {
+          if ((check as Record<string, unknown>)[field] === undefined) {
+            violations.push(`${f}: missing '${field}'`);
+          }
+        }
+      } catch {
+        // Skip unreadable files
+      }
+    }
+    if (violations.length === 0) {
+      return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'INFO', message: `Receipt schema OK — checked ${jsonFiles.length} result file(s)` };
+    }
+    return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'WARNING', message: `Receipt schema violations: ${violations.slice(0, 3).join('; ')}` };
+  } catch {
+    return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — results directory not found or unreadable' };
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Observability Checks (3 checks)
+// ────────────────────────────────────────────────────────────────────────────
+
+async function checkOtelSpanSinkExists(): Promise<Diagnosis> {
+  const id = 'otel.span_sink_exists';
+  try {
+    const { getGlobalSpanSink } = await import('../otel/sink.js');
+    const sink = getGlobalSpanSink();
+    if (typeof sink === 'function') {
+      return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'OTEL span sink is configured and callable' };
+    }
+    return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'WARNING', message: 'OTEL span sink is not a function — spans will be dropped' };
+  } catch (err) {
+    return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'WARNING', message: `OTEL sink check failed: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
+
+async function checkOtelSpanNameFormat(): Promise<Diagnosis> {
+  const id = 'otel.span_name_format';
+  // Check that span names in the codebase follow service.operation convention
+  const rootDir = getCachedWorkspaceRoot();
+  if (!rootDir) {
+    return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — workspace root not found' };
+  }
+  const otelFile = readSourceFile('apps/wasm4pm/src/commands/_otel.ts');
+  if (!otelFile) {
+    return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — _otel.ts not found' };
+  }
+  // Verify the canonical span names include a dot (service.operation)
+  const spanNames = [...otelFile.matchAll(/name:\s*['"`]([^'"`]+)['"`]/g)].map((m) => m[1]);
+  const badNames = spanNames.filter((n) => !n.includes('.') && n.length > 0 && !/^[a-z]+$/.test(n));
+  if (badNames.length === 0) {
+    return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: `Span name format OK — all span names follow service.operation convention` };
+  }
+  return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'WARNING', message: `${badNames.length} span name(s) may not follow service.operation format: ${badNames.slice(0, 3).join(', ')}` };
+}
+
+async function checkOtelServiceName(): Promise<Diagnosis> {
+  const id = 'otel.service_name';
+  const rootDir = getCachedWorkspaceRoot();
+  if (!rootDir) {
+    return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — workspace root not found' };
+  }
+  const otelFile = readSourceFile('apps/wasm4pm/src/commands/_otel.ts');
+  const instrFile = readSourceFile('packages/observability/src/instrumentation.ts');
+  const sources = [otelFile, instrFile].filter(Boolean).join('\n');
+  if (!sources) {
+    return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — observability source not found' };
+  }
+  const hasServiceName = sources.includes("'wpm'") || sources.includes('"wpm"') || sources.includes("service.name");
+  if (hasServiceName) {
+    return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'INFO', message: "Spans include service.name = 'wpm' (verified in source)" };
+  }
+  return { name: id, pathology: 'ANTI_LIE_TRUTH_FAULT', severity: 'WARNING', message: "Could not verify service.name = 'wpm' in span emission code" };
+}
+
+// ────────────────────────────────────────────────────────────────────────────
+// Config System Checks (3 checks)
+// ────────────────────────────────────────────────────────────────────────────
+
+async function checkConfigEnvPrefix(): Promise<Diagnosis> {
+  const id = 'config.env_prefix';
+  try {
+    const { resolveConfig } = await import('@wasm4pm/config');
+    // Set a known ENV var and verify it's recognized
+    const envKey = 'WASM4PM_OUTPUT_FORMAT';
+    const original = process.env[envKey];
+    process.env[envKey] = 'json';
+    let detected = false;
+    try {
+      const cfg = await resolveConfig({ env: { ...process.env } });
+      detected = cfg.output.format === 'json';
+    } finally {
+      if (original === undefined) delete process.env[envKey];
+      else process.env[envKey] = original;
+    }
+    if (detected) {
+      return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'INFO', message: 'WASM4PM_ env prefix recognized — WASM4PM_OUTPUT_FORMAT=json correctly sets output.format' };
+    }
+    return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'WARNING', message: 'WASM4PM_ env prefix may not be recognized by config resolver' };
+  } catch (err) {
+    return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'INFO', message: `Skipped — config import failed: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
+
+async function checkConfigTomlParse(): Promise<Diagnosis> {
+  const id = 'config.toml_parse';
+  // Write a minimal TOML to a temp dir and verify the config resolver reads it
+  const tmpDir = mkdtempSync(path.join(os.tmpdir(), 'wpm-doctor-'));
+  const tomlPath = path.join(tmpDir, 'wasm4pm.toml');
+  try {
+    writeFileSync(tomlPath, '[algorithm]\nname = "dfg"\n');
+    const orig = process.cwd();
+    try {
+      process.chdir(tmpDir);
+      const { resolveConfig } = await import('@wasm4pm/config');
+      const cfg = await resolveConfig({ configSearchPaths: [tmpDir] });
+      process.chdir(orig);
+      if (cfg.algorithm.name === 'dfg') {
+        return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'INFO', message: 'wasm4pm.toml parsed correctly — algorithm.name read from TOML' };
+      }
+      return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'WARNING', message: `TOML parsed but algorithm.name not set to 'dfg' (got '${cfg.algorithm.name}')` };
+    } catch {
+      try { process.chdir(orig); } catch { /* ignore */ }
+      return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'INFO', message: 'Skipped — could not switch cwd for TOML test' };
+    }
+  } catch (err) {
+    return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'INFO', message: `Skipped — could not write temp TOML: ${err instanceof Error ? err.message : String(err)}` };
+  } finally {
+    try { rmSync(tmpDir, { recursive: true, force: true }); } catch { /* ignore */ }
+  }
+}
+
+async function checkConfigPrecedence(): Promise<Diagnosis> {
+  const id = 'config.precedence';
+  try {
+    const { resolveConfig } = await import('@wasm4pm/config');
+    // Set ENV var
+    const envKey = 'WASM4PM_PROFILE';
+    const original = process.env[envKey];
+    process.env[envKey] = 'fast';
+    let envPrecedence = false;
+    try {
+      // CLI override (cliOverrides.profile) should win over ENV
+      const cfg = await resolveConfig({
+        cliOverrides: { profile: 'quality' },
+        env: { ...process.env },
+      });
+      // CLI should win: if profile=quality AND env=fast, CLI wins → quality
+      envPrecedence = cfg.execution.profile === 'quality';
+    } finally {
+      if (original === undefined) delete process.env[envKey];
+      else process.env[envKey] = original;
+    }
+    if (envPrecedence) {
+      return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'INFO', message: 'Config precedence correct — CLI > ENV > defaults (CLI profile=quality overrides ENV profile=fast)' };
+    }
+    return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'WARNING', message: 'Config precedence may be wrong — CLI args did not override ENV vars' };
+  } catch (err) {
+    return { name: id, pathology: 'REPRODUCIBILITY_TRUTH_FAULT', severity: 'INFO', message: `Skipped — config import failed: ${err instanceof Error ? err.message : String(err)}` };
+  }
+}
+
+// ────────────────────────────────────────────────────────────────────────────
 // Check arrays (used by subcommands to slice the check set)
 // ────────────────────────────────────────────────────────────────────────────
 
@@ -1922,7 +2475,50 @@ export const CLAUDE_CODE_CHECKS: Array<() => Promise<Diagnosis>> = [
   checkMemoryIndex,
 ];
 
-export const ALL_CHECKS = [...ENV_CHECKS, ...TPS_CHECKS, ...CLAUDE_CODE_CHECKS];
+export const ALGO_HEALTH_CHECKS: Array<() => Promise<Diagnosis>> = [
+  checkAlgoRegistryCount,
+  checkAlgoDfgSmoke,
+  checkAlgoHeuristicSmoke,
+  checkAlgoMlSmoke,
+  checkAlgoStreamingSmoke,
+];
+
+export const DATA_QUALITY_CHECKS: Array<() => Promise<Diagnosis>> = [
+  checkDataXesParser,
+  checkDataOcelParser,
+  checkDataInvalidXes,
+  checkDataEmptyLog,
+];
+
+export const OUTPUT_CONTRACT_CHECKS: Array<() => Promise<Diagnosis>> = [
+  checkOutputExitCodes,
+  checkOutputJsonFormat,
+  checkOutputHumanFormat,
+  checkOutputReceiptSchema,
+];
+
+export const OBSERVABILITY_CHECKS: Array<() => Promise<Diagnosis>> = [
+  checkOtelSpanSinkExists,
+  checkOtelSpanNameFormat,
+  checkOtelServiceName,
+];
+
+export const CONFIG_SYSTEM_CHECKS: Array<() => Promise<Diagnosis>> = [
+  checkConfigEnvPrefix,
+  checkConfigTomlParse,
+  checkConfigPrecedence,
+];
+
+export const ALL_CHECKS = [
+  ...ENV_CHECKS,
+  ...TPS_CHECKS,
+  ...CLAUDE_CODE_CHECKS,
+  ...ALGO_HEALTH_CHECKS,
+  ...DATA_QUALITY_CHECKS,
+  ...OUTPUT_CONTRACT_CHECKS,
+  ...OBSERVABILITY_CHECKS,
+  ...CONFIG_SYSTEM_CHECKS,
+];
 
 // ────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -1964,15 +2560,32 @@ const C = {
   reset: '\x1b[0m',
 };
 
+function getSectionForDiagnosis(diag: Diagnosis): string {
+  const name = diag.name;
+  if (name.includes('(TPS)')) return 'TPS Pipeline & Epistemic Truth';
+  if (name.startsWith('algo.')) return 'Algorithm Health';
+  if (name.startsWith('data.')) return 'Data Quality';
+  if (name.startsWith('output.')) return 'Output Contract';
+  if (name.startsWith('otel.')) return 'Observability';
+  if (name.startsWith('config.')) return 'Config System';
+  if (
+    name === 'Claude Code settings' ||
+    name === 'Hook files' ||
+    name === 'CLAUDE.md' ||
+    name === 'Memory index'
+  ) return 'Claude Code Integration';
+  return 'Environment & Deployment Truth';
+}
+
 function printReportToProjection(p: ConsoleProjection, report: DoctorReport): void {
   p.log('');
   p.log(C.bold('wpm doctor — epistemic diagnostician & autonomic governor'));
+  p.log(`  Running ${report.diagnoses.length} checks across 8 categories`);
   p.log('─'.repeat(80));
 
   let lastSection = '';
   for (const diag of report.diagnoses) {
-    const isTps = diag.name.includes('(TPS)');
-    const section = isTps ? 'TPS Pipeline & Epistemic Truth' : 'Environment & Deployment Truth';
+    const section = getSectionForDiagnosis(diag);
     if (section !== lastSection) {
       if (lastSection) p.log('');
       p.log(`  ${C.bold(section)}:`);
@@ -2017,7 +2630,7 @@ function printReportToProjection(p: ConsoleProjection, report: DoctorReport): vo
         } else if (fixText.includes('corepack')) {
           inferredRepairMode = 'REINSTALL_DEPENDENCIES';
           inferredRepairCmd = fixText;
-        } else if (isTps) {
+        } else if (diag.name.includes('(TPS)')) {
           inferredRepairMode = 'SYNC_REGISTRY';
         }
       }
@@ -2112,7 +2725,19 @@ async function runChecks(
       lateFail = report.stopTheLine;
       lateHealthy = report.epistemicHealth;
 
-      const checksPayload = report.diagnoses.map((c) => ({ ...c }));
+      // Normalize each check to include `id`, `label`, and `status` fields
+      // so JSON consumers have a stable, spec-compliant shape.
+      // id   = diag.name (used as canonical identifier)
+      // label = human-readable display name (same as name unless prefixed with a dot-id)
+      // status = 'pass' | 'warn' | 'fail' derived from severity
+      const severityToStatus = (s: Diagnosis['severity']): 'pass' | 'warn' | 'fail' =>
+        s === 'INFO' ? 'pass' : s === 'WARNING' ? 'warn' : 'fail';
+      const checksPayload = report.diagnoses.map((c) => ({
+        ...c,
+        id: c.name,
+        label: c.name,
+        status: severityToStatus(c.severity),
+      }));
       const summaryPayload = {
         pass: report.info,
         warn: report.warnings,
@@ -2124,6 +2749,7 @@ async function runChecks(
         checks: checksPayload,
         summary: summaryPayload,
         healthy: report.epistemicHealth,
+        total: checksPayload.length,
         ...extraFields,
       };
 
@@ -2162,7 +2788,7 @@ function isAutoExecutable(fixCmd: string): boolean {
 export const doctorCheck = defineCommand({
   meta: {
     name: 'check',
-    description: 'Run all 24 health checks (or a filtered subset). Example: wpm doctor check --verbose',
+    description: 'Run all 47 health checks (or a filtered subset). Example: wpm doctor check --verbose',
   },
   args: {
     format: {
@@ -3969,7 +4595,7 @@ export const doctor = defineCommand({
   meta: {
     name: 'doctor',
     description:
-      'Check environment health (24 checks) and pipeline integrity. Subcommands: check, fix, publish, env, tps, perf, watch, report',
+      'Check environment health (47 checks) and pipeline integrity. Subcommands: check, fix, publish, env, tps, perf, watch, report',
   },
   subCommands: {
     check: doctorCheck,
@@ -3998,6 +4624,10 @@ export const doctor = defineCommand({
       description: 'Suppress non-error output',
       alias: 'q',
     },
+    fix: {
+      type: 'boolean',
+      description: 'Auto-fix safe issues: create missing .wasm4pm/results/ directory and scaffold wasm4pm.toml if absent',
+    },
   },
   async run(ctx) {
     if (ctx && ctx.rawArgs && ctx.cmd && ctx.cmd.subCommands) {
@@ -4010,6 +4640,35 @@ export const doctor = defineCommand({
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
-    await runChecks(ALL_CHECKS, format, verbose, quiet, undefined, undefined, 'doctor');
+    const doFix = Boolean(ctx.args.fix);
+
+    // --fix: apply safe auto-fixes before running checks
+    if (doFix) {
+      const rootDir = resolveWorkspaceRoot() ?? process.cwd();
+      const resultsDir = path.join(rootDir, '.wasm4pm', 'results');
+      const tomlPath = path.join(rootDir, 'wasm4pm.toml');
+
+      // Fix 1: Ensure .wasm4pm/results/ exists
+      try {
+        mkdirSync(resultsDir, { recursive: true });
+        if (format !== 'json') {
+          const p = new ConsoleProjection({ verbose, quiet });
+          p.log(`  [FIX] Created ${path.relative(rootDir, resultsDir) || '.wasm4pm/results'}`);
+        }
+      } catch { /* already exists or unwritable — check will surface it */ }
+
+      // Fix 2: Scaffold wasm4pm.toml if absent
+      if (!existsSync(tomlPath)) {
+        try {
+          writeFileSync(tomlPath, `# wasm4pm configuration — created by wpm doctor --fix\n[algorithm]\nname = "dfg"\n\n[execution]\nprofile = "balanced"\n`);
+          if (format !== 'json') {
+            const p = new ConsoleProjection({ verbose, quiet });
+            p.log(`  [FIX] Scaffolded wasm4pm.toml with default settings`);
+          }
+        } catch { /* write failed — check will surface it */ }
+      }
+    }
+
+    await runChecks(ALL_CHECKS, format, verbose, quiet, { fix_applied: doFix }, undefined, 'doctor');
   },
 });

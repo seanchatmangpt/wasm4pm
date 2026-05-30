@@ -384,6 +384,172 @@ function fmtFitness(fitness: number | undefined): string {
   return `${(fitness * 100).toFixed(0)}%`.padStart(4);
 }
 
+// ─── Trend chart ─────────────────────────────────────────────────────────────
+
+/**
+ * Build a compact ASCII line chart for a metric series (0-1 values).
+ * Returns an array of lines ready to print.
+ */
+function buildTrendChart(
+  values: number[],
+  timestamps: string[],
+  metricName: string
+): string[] {
+  const CHART_WIDTH = 50;
+  const CHART_HEIGHT = 7;
+
+  if (values.length === 0) return ['  (no data)'];
+
+  const minVal = Math.min(...values);
+  const maxVal = Math.max(...values);
+  const range = maxVal - minVal || 0.01;
+
+  // Sample to CHART_WIDTH columns
+  const sampled: number[] = [];
+  if (values.length <= CHART_WIDTH) {
+    const pad = CHART_WIDTH - values.length;
+    for (let i = 0; i < pad; i++) sampled.push(values[0]);
+    sampled.push(...values);
+  } else {
+    const step = values.length / CHART_WIDTH;
+    for (let i = 0; i < CHART_WIDTH; i++) {
+      sampled.push(values[Math.floor(i * step)] ?? values[0]);
+    }
+  }
+
+  // Convert to row indices (0 = bottom)
+  const rows = sampled.map((v) =>
+    Math.round(((v - minVal) / range) * (CHART_HEIGHT - 1))
+  );
+
+  const lines: string[] = [];
+  const labelWidth = 5;
+
+  for (let r = CHART_HEIGHT - 1; r >= 0; r--) {
+    const displayRow = CHART_HEIGHT - 1 - r;
+    const labelVal = minVal + ((displayRow / (CHART_HEIGHT - 1)) * range);
+    const label = labelVal.toFixed(2).padStart(labelWidth);
+    let line = `${label} ┤`;
+    for (let c = 0; c < CHART_WIDTH; c++) {
+      const colRow = rows[c] ?? 0;
+      const prevRow = c > 0 ? (rows[c - 1] ?? colRow) : colRow;
+      const nextRow = c < CHART_WIDTH - 1 ? (rows[c + 1] ?? colRow) : colRow;
+      if (colRow === r) {
+        // Mark the latest value specially
+        if (c === CHART_WIDTH - 1) line += '●';
+        else line += '─';
+      } else if (colRow > r && prevRow <= r) {
+        line += '╭';
+      } else if (colRow < r && prevRow >= r) {
+        line += '╰';
+      } else if (colRow > r && nextRow <= r) {
+        line += '╮';
+      } else if (colRow < r && nextRow >= r) {
+        line += '╯';
+      } else if (colRow > r) {
+        line += '│';
+      } else {
+        line += ' ';
+      }
+    }
+    if (r === CHART_HEIGHT - 1) line += `  ← latest: ${values[values.length - 1].toFixed(3)}`;
+    if (r === 0) line += `  ← earliest: ${values[0].toFixed(3)}`;
+    lines.push(line);
+  }
+
+  // X-axis
+  lines.push(' '.repeat(labelWidth + 1) + '└' + '─'.repeat(CHART_WIDTH));
+  const n = values.length;
+  const oldest = timestamps[0] ? timestamps[0].slice(0, 10) : '';
+  const newest = timestamps[timestamps.length - 1] ? timestamps[timestamps.length - 1].slice(0, 10) : '';
+  lines.push(' '.repeat(labelWidth + 2) + oldest + ' '.repeat(Math.max(0, CHART_WIDTH - oldest.length - newest.length)) + newest);
+
+  // Summary
+  const best = Math.max(...values);
+  const worst = Math.min(...values);
+  const trend = values.length >= 2
+    ? values[values.length - 1] > values[0] ? 'IMPROVING' : values[values.length - 1] < values[0] ? 'DECLINING' : 'STABLE'
+    : 'STABLE';
+  const delta = values.length >= 2 ? values[values.length - 1] - values[0] : 0;
+  const sign = delta >= 0 ? '+' : '';
+
+  lines.push('');
+  lines.push(`Best: ${best.toFixed(3)}   Worst: ${worst.toFixed(3)}`);
+  lines.push(`Trend: ${trend} (${sign}${delta.toFixed(3)} over ${n} runs)`);
+
+  return lines;
+}
+
+// ─── Stats computation ────────────────────────────────────────────────────────
+
+interface AggStats {
+  total_runs: number;
+  successful: number;
+  failed: number;
+  algorithms: Record<
+    string,
+    { count: number; avg_fitness: number | null; avg_duration_ms: number | null }
+  >;
+  fitness: { mean: number | null; median: number | null; best: number | null; worst: number | null };
+  duration_ms: { mean: number | null; median: number | null; best: number | null; worst: number | null };
+}
+
+function computeStats(
+  savedList: Array<{ saved: SavedResult; summary: ResultSummary } | null>
+): AggStats {
+  const items = savedList.filter((s): s is { saved: SavedResult; summary: ResultSummary } => s !== null);
+  const algMap: Record<string, { fitnesses: number[]; durations: number[] }> = {};
+
+  for (const item of items) {
+    const algo = item.summary.algorithm ?? '(unknown)';
+    if (!algMap[algo]) algMap[algo] = { fitnesses: [], durations: [] };
+    if (item.summary.fitness != null) algMap[algo].fitnesses.push(item.summary.fitness);
+    if (item.summary.elapsedMs != null) algMap[algo].durations.push(item.summary.elapsedMs);
+  }
+
+  const algorithms: AggStats['algorithms'] = {};
+  for (const [algo, data] of Object.entries(algMap)) {
+    const avg_fitness =
+      data.fitnesses.length > 0
+        ? data.fitnesses.reduce((a, b) => a + b, 0) / data.fitnesses.length
+        : null;
+    const avg_duration_ms =
+      data.durations.length > 0
+        ? data.durations.reduce((a, b) => a + b, 0) / data.durations.length
+        : null;
+    algorithms[algo] = { count: items.filter((i) => (i.summary.algorithm ?? '(unknown)') === algo).length, avg_fitness, avg_duration_ms };
+  }
+
+  const allFitnesses = items.map((i) => i.summary.fitness).filter((f): f is number => f != null);
+  const allDurations = items.map((i) => i.summary.elapsedMs).filter((d): d is number => d != null);
+
+  function median(arr: number[]): number | null {
+    if (arr.length === 0) return null;
+    const s = [...arr].sort((a, b) => a - b);
+    const mid = Math.floor(s.length / 2);
+    return s.length % 2 ? s[mid] : (s[mid - 1] + s[mid]) / 2;
+  }
+
+  return {
+    total_runs: items.length,
+    successful: items.filter((i) => i.summary.fitness != null || i.summary.elapsedMs != null).length,
+    failed: items.filter((i) => i.summary.fitness == null && i.summary.elapsedMs == null).length,
+    algorithms,
+    fitness: {
+      mean: allFitnesses.length > 0 ? allFitnesses.reduce((a, b) => a + b, 0) / allFitnesses.length : null,
+      median: median(allFitnesses),
+      best: allFitnesses.length > 0 ? Math.max(...allFitnesses) : null,
+      worst: allFitnesses.length > 0 ? Math.min(...allFitnesses) : null,
+    },
+    duration_ms: {
+      mean: allDurations.length > 0 ? allDurations.reduce((a, b) => a + b, 0) / allDurations.length : null,
+      median: median(allDurations),
+      best: allDurations.length > 0 ? Math.min(...allDurations) : null,
+      worst: allDurations.length > 0 ? Math.max(...allDurations) : null,
+    },
+  };
+}
+
 export const results = defineCommand({
   meta: {
     name: 'results',
@@ -410,6 +576,31 @@ export const results = defineCommand({
       type: 'string',
       description: 'Maximum number of results to list (default: 20)',
       default: '20',
+    },
+    top: {
+      type: 'string',
+      description: 'Show only the top N results by sort key',
+    },
+    sort: {
+      type: 'string',
+      description: 'Sort listed results by: fitness, duration, date (default: date)',
+      default: 'date',
+    },
+    trend: {
+      type: 'string',
+      description: 'Show ASCII trend chart for a metric: fitness, duration',
+    },
+    stats: {
+      type: 'boolean',
+      description: 'Show aggregate statistics across all saved results',
+    },
+    purge: {
+      type: 'boolean',
+      description: 'Delete results matching --older-than criteria (requires --older-than)',
+    },
+    'older-than': {
+      type: 'string',
+      description: 'Filter: results older than N days (e.g. 30d) — used with --purge',
     },
     format: {
       type: 'string',
@@ -458,7 +649,13 @@ export const results = defineCommand({
             ? 'cat'
             : ctx.args.diff !== undefined
               ? 'diff'
-              : 'list';
+              : ctx.args.trend !== undefined
+                ? 'trend'
+                : ctx.args.stats
+                  ? 'stats'
+                  : ctx.args.purge
+                    ? 'purge'
+                    : 'list';
 
     return withSpan('results', { operation, format }, async () => {
       try {
@@ -477,6 +674,197 @@ export const results = defineCommand({
           return await exitWithFlush(errResult.exit_code);
         }
         const limit = parsedLimit ?? 20;
+
+        // ── NEW: --stats: aggregate statistics across all saved results ──────────
+        if (ctx.args.stats) {
+          const allSummaries = await Promise.all(
+            files.map(async (f) => {
+              try {
+                const raw = await fs.readFile(f.filepath, 'utf-8');
+                const saved = JSON.parse(raw) as SavedResult;
+                return { saved, summary: extractSummary(saved) };
+              } catch {
+                return null;
+              }
+            })
+          );
+
+          const statsPayload = computeStats(allSummaries);
+          const statResult = makeResult('results', statsPayload, performance.now() - t0, EXIT_CODES.success);
+          emitResult(statResult, { format, verbose, quiet }, (_res, projection) => {
+            const s = _res.payload as AggStats;
+            projection.log('');
+            projection.log(`Aggregate Statistics (${s.total_runs} runs)`);
+            projection.log('═'.repeat(50));
+            projection.log(`  Total runs:  ${s.total_runs}`);
+            projection.log(`  Successful:  ${s.successful}`);
+            projection.log(`  Failed:      ${s.failed}`);
+            projection.log('');
+            projection.log('  Fitness:');
+            if (s.fitness.mean != null) projection.log(`    Mean:    ${s.fitness.mean.toFixed(3)}`);
+            if (s.fitness.median != null) projection.log(`    Median:  ${s.fitness.median.toFixed(3)}`);
+            if (s.fitness.best != null) projection.log(`    Best:    ${s.fitness.best.toFixed(3)}`);
+            if (s.fitness.worst != null) projection.log(`    Worst:   ${s.fitness.worst.toFixed(3)}`);
+            projection.log('');
+            projection.log('  Duration (ms):');
+            if (s.duration_ms.mean != null) projection.log(`    Mean:    ${Math.round(s.duration_ms.mean)}ms`);
+            if (s.duration_ms.best != null) projection.log(`    Fastest: ${Math.round(s.duration_ms.best)}ms`);
+            if (s.duration_ms.worst != null) projection.log(`    Slowest: ${Math.round(s.duration_ms.worst)}ms`);
+            projection.log('');
+            projection.log('  By algorithm:');
+            for (const [algo, data] of Object.entries(s.algorithms)) {
+              const fitStr = data.avg_fitness != null ? ` avg_fitness=${data.avg_fitness.toFixed(3)}` : '';
+              const durStr = data.avg_duration_ms != null ? ` avg_ms=${Math.round(data.avg_duration_ms)}` : '';
+              projection.log(`    ${algo.padEnd(24)} count=${data.count}${fitStr}${durStr}`);
+            }
+            projection.log('');
+          });
+          return await exitWithFlush(EXIT_CODES.success);
+        }
+
+        // ── NEW: --trend <metric>: ASCII trend chart ──────────────────────────────
+        if (ctx.args.trend !== undefined) {
+          const metricName = String(ctx.args.trend ?? 'fitness').toLowerCase();
+          const allowed = ['fitness', 'duration'];
+          if (!allowed.includes(metricName)) {
+            const errResult = makeErrorResult(
+              'results',
+              new Error(`Unknown --trend metric: '${metricName}'. Use: ${allowed.join(', ')}`),
+              EXIT_CODES.config_error,
+              'TREND_INVALID_METRIC'
+            );
+            emitResult(errResult, { format, verbose, quiet });
+            return await exitWithFlush(errResult.exit_code);
+          }
+
+          const trendLimit = parsedLimit ?? 30;
+          const trendFiles = [...files].reverse().slice(0, trendLimit); // oldest first
+
+          const trendData: Array<{ value: number; timestamp: string }> = [];
+          for (const f of trendFiles) {
+            try {
+              const raw = await fs.readFile(f.filepath, 'utf-8');
+              const saved = JSON.parse(raw) as SavedResult;
+              const summary = extractSummary(saved);
+              const value =
+                metricName === 'fitness'
+                  ? summary.fitness
+                  : metricName === 'duration'
+                    ? summary.elapsedMs != null ? summary.elapsedMs / 1000 : undefined
+                    : undefined;
+              if (value != null) {
+                trendData.push({ value, timestamp: f.mtime.toISOString() });
+              }
+            } catch {
+              /* skip */
+            }
+          }
+
+          const values = trendData.map((d) => d.value);
+          const timestamps = trendData.map((d) => d.timestamp);
+
+          const trendDirection =
+            values.length >= 2
+              ? values[values.length - 1] > values[0]
+                ? 'IMPROVING'
+                : values[values.length - 1] < values[0]
+                  ? 'DECLINING'
+                  : 'STABLE'
+              : 'STABLE';
+          const trendDelta =
+            values.length >= 2 ? values[values.length - 1] - values[0] : 0;
+
+          const trendPayload = {
+            metric: metricName,
+            trend_direction: trendDirection,
+            trend_delta: Math.round(trendDelta * 1000) / 1000,
+            // data_points is an array of {timestamp, value} objects per spec
+            data_points: trendData.map((d) => ({ timestamp: d.timestamp, value: d.value })),
+            // Convenience aggregates
+            count: trendData.length,
+            best: values.length > 0 ? Math.max(...values) : null,
+            worst: values.length > 0 ? Math.min(...values) : null,
+            // Legacy field names kept for backward compat
+            values,
+            timestamps,
+            trend: trendDirection,
+          };
+
+          const trendResult = makeResult('results', trendPayload, performance.now() - t0, EXIT_CODES.success);
+          emitResult(trendResult, { format, verbose, quiet }, (_res, projection) => {
+            const p = _res.payload as typeof trendPayload;
+            projection.log('');
+            projection.log(`${metricName.charAt(0).toUpperCase() + metricName.slice(1)} Trend (last ${p.count} runs)`);
+            projection.log('═'.repeat(56));
+            if (values.length === 0) {
+              projection.warn('  No data points with this metric found.');
+            } else {
+              const chartLines = buildTrendChart(values, timestamps, metricName);
+              for (const line of chartLines) projection.log('  ' + line);
+            }
+            projection.log('');
+          });
+          return await exitWithFlush(EXIT_CODES.success);
+        }
+
+        // ── NEW: --purge --older-than <N>d: delete old results ───────────────────
+        if (ctx.args.purge) {
+          const olderThanStr = ctx.args['older-than'] ? String(ctx.args['older-than']) : undefined;
+          if (!olderThanStr) {
+            const errResult = makeErrorResult(
+              'results',
+              new Error('--purge requires --older-than <N>d (e.g. --older-than 30d)'),
+              EXIT_CODES.config_error,
+              'PURGE_REQUIRES_OLDER_THAN'
+            );
+            emitResult(errResult, { format, verbose, quiet });
+            return await exitWithFlush(errResult.exit_code);
+          }
+
+          const match = olderThanStr.match(/^(\d+)d?$/i);
+          if (!match) {
+            const errResult = makeErrorResult(
+              'results',
+              new Error(`Invalid --older-than value: '${olderThanStr}'. Use format: 30d`),
+              EXIT_CODES.config_error,
+              'PURGE_INVALID_AGE'
+            );
+            emitResult(errResult, { format, verbose, quiet });
+            return await exitWithFlush(errResult.exit_code);
+          }
+
+          const days = parseInt(match[1], 10);
+          const cutoff = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
+          const toDelete = files.filter((f) => f.mtime < cutoff);
+
+          let deleted = 0;
+          const errors: string[] = [];
+          for (const f of toDelete) {
+            try {
+              await fs.unlink(f.filepath);
+              deleted++;
+            } catch (e) {
+              errors.push(`${f.name}: ${e instanceof Error ? e.message : String(e)}`);
+            }
+          }
+
+          const purgePayload = { deleted, errors, cutoff: cutoff.toISOString(), days };
+          const purgeResult = makeResult('results', purgePayload, performance.now() - t0, EXIT_CODES.success);
+          emitResult(purgeResult, { format, verbose, quiet }, (_res, projection) => {
+            const p = _res.payload as typeof purgePayload;
+            projection.log('');
+            if (p.deleted === 0) {
+              projection.info(`No results older than ${p.days} days found.`);
+            } else {
+              projection.success(`Deleted ${p.deleted} result${p.deleted === 1 ? '' : 's'} older than ${p.days} days.`);
+            }
+            if (p.errors.length > 0) {
+              projection.warn(`Errors: ${p.errors.join(', ')}`);
+            }
+            projection.log('');
+          });
+          return await exitWithFlush(EXIT_CODES.success);
+        }
 
         // --verify <ref>: re-hash the stored result payload and compare against the receipt
         if (ctx.args.verify !== undefined) {
@@ -961,25 +1349,58 @@ export const results = defineCommand({
         }
 
         // Default: list results — eagerly read each file to extract key metrics
-        const displayed = files.slice(0, limit);
+        const sortKey = String(ctx.args.sort ?? 'date').toLowerCase();
+        const topN = ctx.args.top ? parseInt(String(ctx.args.top), 10) : undefined;
+        const effectiveLimit = topN ?? limit;
+
+        // For sort-by-fitness/duration, we need to read all files to sort
+        // then slice. For date sort, files are already sorted newest-first.
+        const filesToRead = (sortKey === 'date') ? files.slice(0, effectiveLimit) : files;
 
         // Read summaries in parallel; failures return null (we skip silently)
-        const summaries = await Promise.all(
-          displayed.map(async (f) => {
+        const allSummaries = await Promise.all(
+          filesToRead.map(async (f) => {
             try {
               const raw = await fs.readFile(f.filepath, 'utf-8');
               const saved = JSON.parse(raw) as SavedResult;
-              return { saved, summary: extractSummary(saved) };
+              return { f, saved, summary: extractSummary(saved) };
             } catch {
               return null;
             }
           })
         );
 
+        let sortedEntries = allSummaries.filter(
+          (s): s is { f: (typeof files)[0]; saved: SavedResult; summary: ResultSummary } => s !== null
+        );
+
+        // Apply sort
+        if (sortKey === 'fitness') {
+          sortedEntries.sort((a, b) => {
+            const fa = a.summary.fitness ?? -1;
+            const fb = b.summary.fitness ?? -1;
+            return fb - fa; // highest first
+          });
+        } else if (sortKey === 'duration') {
+          sortedEntries.sort((a, b) => {
+            const da = a.summary.elapsedMs ?? Infinity;
+            const db = b.summary.elapsedMs ?? Infinity;
+            return da - db; // fastest first
+          });
+        }
+        // For 'date': already sorted newest-first (from listResultFiles)
+
+        // Apply top N slice
+        if (topN != null) sortedEntries = sortedEntries.slice(0, topN);
+
+        const displayed = sortedEntries.map((s) => s.f);
+        const summaries = sortedEntries.map((s) => ({ saved: s.saved, summary: s.summary }));
+
         const payload = {
           directory: dir,
           count: files.length,
           showing: displayed.length,
+          sort: sortKey,
           oldest: files.length > 0 ? files[files.length - 1].mtime.toISOString() : null,
           newest: files.length > 0 ? files[0].mtime.toISOString() : null,
           results: displayed.map((f, i) => {
@@ -1023,7 +1444,8 @@ export const results = defineCommand({
             return;
           }
 
-          projection.info(`Saved results (${p.count} total — discovery + prediction)`);
+          const sortLabel = (p as typeof payload).sort !== 'date' ? ` — sorted by ${(p as typeof payload).sort}` : '';
+          projection.info(`Saved results (${p.count} total${sortLabel})`);
           projection.log(`  Directory: ${p.directory}`);
           projection.log('');
           projection.log(`  #    Saved at             Algorithm         ms      Fit   Task`);
@@ -1038,7 +1460,8 @@ export const results = defineCommand({
             const ms = fmtMs(entry.elapsedMs);
             const fit = fmtFitness(entry.fitness);
             const taskSlug = entry.task.replace(/^discover-/, '');
-            projection.log(`  ${idxStr}  ${savedAt}  ${algo}  ${ms}  ${fit}  ${taskSlug}`);
+            const lowFitFlag = entry.fitness != null && entry.fitness < 0.85 ? '  ⚠' : '';
+            projection.log(`  ${idxStr}  ${savedAt}  ${algo}  ${ms}  ${fit}  ${taskSlug}${lowFitFlag}`);
 
             if (verbose) {
               if (entry.input) projection.log(`       Input:        ${entry.input}`);
@@ -1046,19 +1469,26 @@ export const results = defineCommand({
             }
           }
 
-          if (p.count > limit) {
+          if (p.count > effectiveLimit) {
             projection.log('');
-            projection.log(`  ... ${p.count - limit} more. Use --limit to show more.`);
+            projection.log(`  ... ${p.count - effectiveLimit} more. Use --limit to show more.`);
           }
 
           projection.log('');
-          projection.log('  Tip: wpm results --last          Print the most recent result');
-          projection.log('  Tip: wpm results --cat 1         Print result #1 in full');
+          projection.log('  Tip: wpm results --last              Print the most recent result');
+          projection.log('  Tip: wpm results --cat 1             Print result #1 in full');
+          projection.log('  Tip: wpm results --sort fitness      Sort by best fitness');
+          projection.log('  Tip: wpm results --top 5             Show top 5 results');
+          projection.log('  Tip: wpm results --trend fitness     Show fitness trend chart');
+          projection.log('  Tip: wpm results --stats             Aggregate statistics');
           projection.log(
-            '  Tip: wpm results --diff 1,2      Compare process model quality of #1 vs #2'
+            '  Tip: wpm results --diff 1,2         Compare process model quality of #1 vs #2'
           );
           projection.log(
-            '  Tip: wpm results --verify 1      Confirm result #1 has not been tampered with'
+            '  Tip: wpm results --verify 1         Confirm result #1 has not been tampered with'
+          );
+          projection.log(
+            '  Tip: wpm results --purge --older-than 30d   Delete old results'
           );
           projection.log('');
           projection.log('  When to use --diff vs --verify:');
@@ -1189,144 +1619,173 @@ function printDiffResult(
   const s1 = extractSummary(p1);
   const s2 = extractSummary(p2);
 
+  const algo1 = s1.algorithm ?? p1.task ?? path.basename(fp1).replace(/\.json$/, '');
+  const algo2 = s2.algorithm ?? p2.task ?? path.basename(fp2).replace(/\.json$/, '');
+  const ts1 = p1.savedAt ? p1.savedAt.slice(0, 19).replace('T', ' ') : '(unknown)';
+  const ts2 = p2.savedAt ? p2.savedAt.slice(0, 19).replace('T', ' ') : '(unknown)';
+
   projection.log('');
-  projection.log('  Comparing two saved results:');
-  projection.log('');
-  projection.log(`  Left  (#A): ${path.basename(fp1)}`);
-  projection.log(`  Right (#B): ${path.basename(fp2)}`);
+  projection.log(`Comparing Result #A vs Result #B`);
+  projection.log('='.repeat(45));
+  projection.log(`#A: ${algo1} (${ts1})`);
+  projection.log(`#B: ${algo2} (${ts2})`);
   projection.log('');
 
-  // Header row
-  projection.log(
-    `  Field              #A                              #B                              Winner`
-  );
-  projection.log(
-    `  ─────────────────  ──────────────────────────────  ──────────────────────────────  ──────`
-  );
+  // ─── Metric table with Δ column ──────────────────────────────────────────
+  const COL_METRIC = 18;
+  const COL_A = 18;
+  const COL_B = 18;
+  const COL_DELTA = 14;
 
-  function row(
-    label: string,
-    a: string | undefined,
-    b: string | undefined,
-    winner?: '#A' | '#B' | 'tie' | ''
-  ): void {
-    const aStr = (a ?? '—').padEnd(30);
-    const bStr = (b ?? '—').padEnd(30);
-    const changed = a !== b ? ' <' : '';
-    const winStr = winner === '#A' ? '#A' : winner === '#B' ? '#B' : winner === 'tie' ? 'tie' : '';
-    projection.log(`  ${label.padEnd(17)}  ${aStr}  ${bStr}${changed.padEnd(2)}  ${winStr}`);
+  const hdr = `${'Metric'.padEnd(COL_METRIC)}${'#A (' + algo1.slice(0, 12) + ')'.padEnd(COL_A - algo1.slice(0, 12).length - 4)}${'#B (' + algo2.slice(0, 12) + ')'.padEnd(COL_B - algo2.slice(0, 12).length - 4)}${'Δ'.padEnd(COL_DELTA)}`;
+  projection.log(hdr);
+  projection.log('─'.repeat(COL_METRIC + COL_A + COL_B + COL_DELTA));
+
+  function deltaArrow(val: number, higherBetter: boolean): string {
+    if (Math.abs(val) < 0.001) return ' (=)';
+    const better = higherBetter ? val > 0 : val < 0;
+    const sign = val > 0 ? '+' : '';
+    const arrow = better ? ' ▲' : ' ▼';
+    return `${sign}${val.toFixed(3)}${arrow}`;
   }
 
-  row('Task', p1.task, p2.task);
-  row('Algorithm', s1.algorithm, s2.algorithm);
+  function metricRow(
+    label: string,
+    a: string,
+    b: string,
+    deltaStr: string
+  ): void {
+    projection.log(
+      `${label.padEnd(COL_METRIC)}${a.padEnd(COL_A)}${b.padEnd(COL_B)}${deltaStr}`
+    );
+  }
 
-  // Elapsed — lower is better (faster)
-  const elA = s1.elapsedMs;
-  const elB = s2.elapsedMs;
-  const elWinner: '#A' | '#B' | 'tie' | '' =
-    elA !== undefined && elB !== undefined ? (elA < elB ? '#A' : elA > elB ? '#B' : 'tie') : '';
-  row(
-    'Elapsed (lower=faster)',
-    elA !== undefined ? fmtMs(elA).trim() : undefined,
-    elB !== undefined ? fmtMs(elB).trim() : undefined,
-    elWinner
-  );
-
-  // Fitness — higher is better; translate delta into PM interpretation
+  // Fitness
   const fA = s1.fitness;
   const fB = s2.fitness;
-  const fitWinner: '#A' | '#B' | 'tie' | '' =
-    fA !== undefined && fB !== undefined ? (fA > fB ? '#A' : fA < fB ? '#B' : 'tie') : '';
-  row(
-    'Fitness (higher=better)',
-    fA !== undefined ? `${(fA * 100).toFixed(1)}%` : undefined,
-    fB !== undefined ? `${(fB * 100).toFixed(1)}%` : undefined,
-    fitWinner
-  );
+  if (fA !== undefined || fB !== undefined) {
+    const aStr = fA !== undefined ? fA.toFixed(2) : '—';
+    const bStr = fB !== undefined ? fB.toFixed(2) : '—';
+    const dStr = fA !== undefined && fB !== undefined ? deltaArrow(fB - fA, true) : '—';
+    metricRow('Fitness', aStr, bStr, dStr);
+  }
 
-  // Jaccard similarity over DFG edge sets
+  // Precision from qualityDimensions
+  const prA = p1.qualityDimensions?.precision;
+  const prB = p2.qualityDimensions?.precision;
+  if (prA !== null || prB !== null) {
+    const aStr = prA != null ? prA.toFixed(2) : '—';
+    const bStr = prB != null ? prB.toFixed(2) : '—';
+    const dStr = prA != null && prB != null ? deltaArrow(prB - prA, true) : '—';
+    metricRow('Precision', aStr, bStr, dStr);
+  }
+
+  // Duration
+  const elA = s1.elapsedMs;
+  const elB = s2.elapsedMs;
+  if (elA !== undefined || elB !== undefined) {
+    const aStr = elA !== undefined ? fmtMs(elA).trim() : '—';
+    const bStr = elB !== undefined ? fmtMs(elB).trim() : '—';
+    const dStr =
+      elA !== undefined && elB !== undefined
+        ? deltaArrow((elB - elA) / 1000, false) + 's'
+        : '—';
+    metricRow('Duration', aStr, bStr, dStr);
+  }
+
+  // Activities (traces count)
+  const trA = s1.traces;
+  const trB = s2.traces;
+  if (trA !== undefined || trB !== undefined) {
+    const dVal = trA !== undefined && trB !== undefined ? trB - trA : null;
+    metricRow(
+      'Activities',
+      trA !== undefined ? String(trA) : '—',
+      trB !== undefined ? String(trB) : '—',
+      dVal !== null ? (dVal === 0 ? ' (=)' : (dVal > 0 ? `+${dVal}` : `${dVal}`)) : '—'
+    );
+  }
+
+  // Edge overlap (Jaccard)
   const edgesA = extractEdgeSet(p1);
   const edgesB = extractEdgeSet(p2);
   const jaccard = jaccardSimilarity(edgesA, edgesB);
   if (jaccard !== null) {
-    row(
-      'Edge overlap (Jaccard)',
-      `${(jaccard * 100).toFixed(1)}%`,
-      `${(jaccard * 100).toFixed(1)}%`,
-      'tie'
-    );
+    metricRow('Edge overlap', `${(jaccard * 100).toFixed(0)}%`, `${(jaccard * 100).toFixed(0)}%`, ' (shared)');
   }
 
-  row(
-    'Input',
-    p1.input ? path.basename(p1.input) : undefined,
-    p2.input ? path.basename(p2.input) : undefined
-  );
-  row('Activity key', p1.activityKey, p2.activityKey);
-  row('Saved at', p1.savedAt.slice(0, 19), p2.savedAt.slice(0, 19));
-
-  projection.log('');
-  projection.log('  Fields marked with "<" differ between the two results.');
   projection.log('');
 
-  // Jaccard plain-language explanation
+  // ─── Verdict ─────────────────────────────────────────────────────────────
+  let verdictLines: string[] = [];
+  let recommendLines: string[] = [];
+
+  const fDelta = fA !== undefined && fB !== undefined ? fB - fA : null;
+  const elDelta = elA !== undefined && elB !== undefined ? elB - elA : null;
+
+  if (fDelta !== null && elDelta !== null) {
+    const higherQuality = fDelta > 0.001 ? '#B' : fDelta < -0.001 ? '#A' : null;
+    const fasterRun = elDelta < -100 ? '#B' : elDelta > 100 ? '#A' : null;
+
+    if (higherQuality === '#B' && fasterRun === '#A') {
+      // A is faster, B has higher quality
+      const ratio = (Math.max(elA!, elB!) / Math.min(elA!, elB!)).toFixed(1);
+      verdictLines.push(`#B (${algo2}) has higher fitness (+${(Math.abs(fDelta) * 100).toFixed(1)}pp) but takes ${ratio}× longer.`);
+      if (fDelta > 0.05) {
+        recommendLines.push(`Use ${algo2} for final analysis where quality matters, ${algo1} for quick exploration.`);
+      } else {
+        recommendLines.push(`The quality difference (${(Math.abs(fDelta) * 100).toFixed(1)}pp) is small — ${algo1} is likely sufficient given its speed.`);
+      }
+    } else if (higherQuality === '#A' && fasterRun === '#B') {
+      const ratio = (Math.max(elA!, elB!) / Math.min(elA!, elB!)).toFixed(1);
+      verdictLines.push(`#A (${algo1}) has higher fitness (+${(Math.abs(fDelta) * 100).toFixed(1)}pp) and is ${ratio}× faster. Clear winner.`);
+      recommendLines.push(`Use ${algo1} — it dominates on both quality and speed.`);
+    } else if (higherQuality === '#B' && fasterRun === '#B') {
+      const ratio = (Math.max(elA!, elB!) / Math.min(elA!, elB!)).toFixed(1);
+      verdictLines.push(`#B (${algo2}) is both higher quality (+${(Math.abs(fDelta) * 100).toFixed(1)}pp fitness) and ${ratio}× faster. Clear winner.`);
+      recommendLines.push(`Use ${algo2} — it dominates on both quality and speed.`);
+    } else if (higherQuality === '#A' && fasterRun === '#A') {
+      const ratio = (Math.max(elA!, elB!) / Math.min(elA!, elB!)).toFixed(1);
+      verdictLines.push(`#A (${algo1}) is both higher quality (+${(Math.abs(fDelta) * 100).toFixed(1)}pp fitness) and ${ratio}× faster. Clear winner.`);
+      recommendLines.push(`Use ${algo1} — it dominates on both quality and speed.`);
+    } else if (higherQuality === null && fasterRun !== null) {
+      verdictLines.push(`Fitness is similar between the two results.`);
+      recommendLines.push(`Use ${fasterRun === '#A' ? algo1 : algo2} for its speed advantage with equivalent quality.`);
+    } else if (fasterRun === null && higherQuality !== null) {
+      verdictLines.push(`Speed is similar; #${higherQuality === '#A' ? 'A' : 'B'} (${higherQuality === '#A' ? algo1 : algo2}) has marginally higher fitness.`);
+      recommendLines.push(`Either is acceptable; prefer ${higherQuality === '#A' ? algo1 : algo2} for production use.`);
+    } else {
+      verdictLines.push(`Results are similar in both fitness and duration.`);
+      recommendLines.push(`Use either algorithm — consider ${algo2} if repeatability is important.`);
+    }
+  } else if (fDelta !== null) {
+    const better = fDelta > 0.001 ? '#B' : fDelta < -0.001 ? '#A' : null;
+    if (better) verdictLines.push(`${better} (${better === '#A' ? algo1 : algo2}) has higher fitness (+${(Math.abs(fDelta) * 100).toFixed(1)}pp).`);
+    else verdictLines.push(`Fitness is equivalent between the two results.`);
+  } else if (elDelta !== null) {
+    const faster = elDelta < -100 ? '#B' : elDelta > 100 ? '#A' : null;
+    if (faster) verdictLines.push(`${faster} (${faster === '#A' ? algo1 : algo2}) is faster — no fitness data to compare quality.`);
+  }
+
+  if (verdictLines.length > 0) {
+    projection.log(`Verdict: ${verdictLines.join(' ')}`);
+  }
+  if (recommendLines.length > 0) {
+    projection.log(`Recommendation: ${recommendLines.join(' ')}`);
+  }
+  projection.log('');
+
+  // ─── Jaccard plain-language explanation ──────────────────────────────────
   if (jaccard !== null) {
     const jPct = Math.round(jaccard * 100);
     const sharedEdges = [...edgesA].filter((x) => edgesB.has(x)).length;
     const totalEdges = new Set([...edgesA, ...edgesB]).size;
-    projection.log(`  Edge similarity (Jaccard):`);
-    projection.log(`    ${jPct}% of process edges are shared between these two runs`);
-    projection.log(
-      `    (${sharedEdges} shared out of ${totalEdges} unique edges across both models).`
-    );
-    if (jaccard >= 0.95) {
-      projection.log(`    The two models are structurally near-identical. Any quality difference`);
-      projection.log(`    is due to parameter tuning, not algorithm choice.`);
-    } else if (jaccard >= 0.75) {
-      projection.log(`    The two models agree on most process flows but differ on some paths.`);
-      projection.log(`    Inspect the deviating edges with: wpm diff <log1.xes> <log2.xes>`);
-    } else {
-      projection.log(`    The two models have substantially different process structures.`);
-      projection.log(`    This is likely algorithm-driven, not just noise. Fitness alone does not`);
-      projection.log(
-        `    capture this — a high-fitness model may still be imprecise (flower model).`
-      );
-      projection.log(`    Use: wpm compare <algos> -i <log.xes> to compare algorithms directly.`);
+    projection.log(`  Edge similarity (Jaccard): ${jPct}% of process edges shared`);
+    projection.log(`    (${sharedEdges} shared out of ${totalEdges} unique edges across both models).`);
+    if (jaccard < 0.75) {
+      projection.log(`    Models have substantially different structures — use`);
+      projection.log(`    wpm compare <algos> -i <log.xes> to compare algorithms directly.`);
     }
-    projection.log('');
-  }
-
-  // PM-aware interpretation of the fitness delta
-  if (fA !== undefined && fB !== undefined && fA !== fB) {
-    const delta = Math.abs(fA - fB);
-    const higher = fA > fB ? '#A' : '#B';
-    const lowerPct = Math.round(Math.min(fA, fB) * 100);
-    const unreplayedPct = Math.round((1 - Math.min(fA, fB)) * 100);
-    projection.log(`  Fitness interpretation:`);
-    projection.log(`    ${higher} has ${(delta * 100).toFixed(1)}pp higher fitness.`);
-    projection.log(
-      `    The lower-fitness result (${lowerPct}%) means ~${unreplayedPct}% of traces`
-    );
-    projection.log(`    had missing or extra tokens during model replay — those traces deviate`);
-    projection.log(`    from the discovered process model.`);
-    if (Math.min(fA, fB) < 0.85) {
-      projection.log(
-        `    Van der Aalst target is >=0.85. The lower result is below this threshold.`
-      );
-      projection.log(`    Consider using a less restrictive algorithm (e.g. inductive miner) or`);
-      projection.log(`    investigating the deviating traces with: wpm conformance <log.xes>`);
-    }
-    projection.log('');
-  }
-
-  // Speed interpretation
-  if (elA !== undefined && elB !== undefined && elA !== elB) {
-    const faster = elA < elB ? '#A' : '#B';
-    const slower = elA < elB ? '#B' : '#A';
-    const ratio = (Math.max(elA, elB) / Math.min(elA, elB)).toFixed(1);
-    projection.log(`  Speed interpretation:`);
-    projection.log(`    ${faster} is ${ratio}x faster than ${slower}.`);
-    projection.log(`    For large logs (>10K events), this gap compounds significantly.`);
     projection.log('');
   }
 
@@ -1334,7 +1793,6 @@ function printDiffResult(
   projection.log('    --diff <r1,r2>   Compare process model quality between two runs.');
   projection.log('                     Use this to choose between algorithms or configurations.');
   projection.log('    --verify <ref>   Check that a saved result has not been tampered with.');
-  projection.log('                     Use this before treating a result as audit evidence.');
   projection.log('');
   projection.log(`  Use 'wpm results --cat <ref>' to see the full result for either entry.`);
   projection.log('');
