@@ -1,8 +1,9 @@
-# ggen + wasm4pm C4 Architecture
+# C4 Architecture: ggen Living LSP + Open Ontology + wasm4pm
 
-This document contains the complete C4 model for the **ggen Living LSP + Open Ontology + receipts + wasm4pm** architecture.
+This document contains the C4 architecture model for the `ggen` system and its integration with `wasm4pm` as the external process-law oracle.
 
-## 1) C1 — System Context
+## C1 — System Context
+
 ```plantuml
 @startuml C1_GGEN_Living_LSP_Context
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Context.puml
@@ -35,7 +36,8 @@ Rel(git, ggen, "Provides stable source graph O*")
 @enduml
 ```
 
-## 2) C2 — Container Diagram
+## C2 — Container Diagram
+
 ```plantuml
 @startuml C2_GGEN_Living_LSP_Containers
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Container.puml
@@ -83,7 +85,8 @@ Rel(wasm4pm, receipts, "Provides external process-law judgment usable in receipt
 @enduml
 ```
 
-## 3) C3 — Component Diagram for `ggen-lsp`
+## C3 — Component Diagram for `ggen-lsp`
+
 ```plantuml
 @startuml C3_GGEN_LSP_Components
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
@@ -129,7 +132,8 @@ Rel(state, species, "Checks active/dormant status")
 @enduml
 ```
 
-## 4) C3 — Open Ontology / Source-Law Subsystem
+## C3 — Open Ontology / Source-Law Subsystem
+
 ```plantuml
 @startuml C3_Open_Ontology_Subsystem
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
@@ -160,7 +164,8 @@ Rel(outputs, provenance, "Interpreted in public footing")
 @enduml
 ```
 
-## 5) C3 — Receipt / OCEL / Process-Evidence Subsystem
+## C3 — Receipt / OCEL / Process-Evidence Subsystem
+
 ```plantuml
 @startuml C3_Receipt_OCEL_ProcessEvidence
 !include https://raw.githubusercontent.com/plantuml-stdlib/C4-PlantUML/master/C4_Component.puml
@@ -191,7 +196,8 @@ Rel(ci, ocel_stream, "Uses as external evidence surface")
 @enduml
 ```
 
-## 6) C4 — Code-Level Diagram for the Living Diagnostic Lifecycle
+## C4 — Code-Level Diagram for the Living Diagnostic Lifecycle
+
 ```plantuml
 @startuml C4_Live_Diagnostic_Lifecycle
 title C4 — Code-Level: Living Diagnostic Lifecycle
@@ -239,14 +245,39 @@ end note
 @enduml
 ```
 
-## Interpretation Compression
-```text
-ggen.toml says what should be built.
-Open Ontology says what it means.
-ggen-lsp says whether the relation is lawful.
-observe_diagnostics says whether repair really happened.
-OCEL says what the work actually did.
-wasm4pm says whether the trace was lawful.
-ggen sync is the only thing allowed to materialize outputs.
-receipts prove what became alive.
+## Runtime Sequence — Cross-Surface Repair / Living Clear
+
+```plantuml
+@startuml Runtime_Living_Clear_Sequence
+title Runtime Sequence — Cross-Surface Repair / Living Clear
+
+actor Author
+participant "Editor" as E
+participant "ggen-lsp server" as S
+participant "ServerState" as ST
+participant "Detector" as D
+participant "RouteRegistry" as R
+participant "Intel Log" as L
+participant "wasm4pm / wpm" as W
+
+Author -> E : edits template (invalid consumer)
+E -> S : didOpen / didChange
+S -> ST : analyze_and_observe(template_uri, content)
+ST -> D : detect project relation failure
+D -> R : resolve route-at-raise
+R --> D : source-law.bind-projection
+D --> ST : GGEN-TPL-001 on template URI
+ST -> L : DiagnosticRaised + RouteSelected + RepairSuggested
+
+Author -> E : repairs query instead of template
+E -> S : didChange(query_uri)
+S -> ST : analyze_and_observe(query_uri, repaired content)
+ST -> D : recompute project relation
+D --> ST : template relation now lawful
+ST -> ST : residual-preserving clear\n(old_keys - new_keys)
+ST -> L : RepairApplied + GatePassed + ReceiptEmitted
+
+L -> W : import / mine / conform trace
+W --> L : lawful process judgment
+@enduml
 ```
