@@ -660,11 +660,10 @@ function computeQualityReport(
   if (pctMissingResource > 0) {
     cat1Checks.push({
       name: 'Resource (org:resource)',
-      status: pctMissingResource > 50 ? 'fail' : 'warn',
+      status: 'warn',
       message: `${totalEvents - eventsWithResource} events missing org:resource (${pctMissingResource.toFixed(0)}%)`,
       details: { events_with_resource: eventsWithResource, pct_missing: pctMissingResource },
     });
-    totalWarnings++;
   } else {
     cat1Checks.push({
       name: 'Resource (org:resource)',

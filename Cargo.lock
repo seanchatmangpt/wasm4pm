@@ -2602,6 +2602,7 @@ dependencies = [
  "colored",
  "dialoguer",
  "indicatif",
+ "ocel-core",
  "predicates",
  "serde",
  "serde_json",

@@ -279,6 +279,9 @@ pub fn analyze_dimension_usage(
         per_dimension_reports,
         clustering,
         total_cycles: cycle_count,
+        #[cfg(target_arch = "wasm32")]
+        analysis_timestamp: 0,
+        #[cfg(not(target_arch = "wasm32"))]
         analysis_timestamp: std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .map(|d| d.as_secs())

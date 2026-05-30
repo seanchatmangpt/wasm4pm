@@ -138,7 +138,7 @@ mkdir -p "$OUTPUT_DIR"
 # wasm-pack build with profile-specific features
 cd "$PROJECT_ROOT/wasm4pm"
 RUSTFLAGS="${RUSTFLAGS:-} -C target-feature=+simd128" \
-  wasm-pack build --target web --out-dir "$OUTPUT_DIR" --out-name wasm4pm --release -- --features "$FEATURES" --quiet
+  wasm-pack build --target web --out-dir "$OUTPUT_DIR" --out-name wasm4pm --release --mode no-install -- --features "$FEATURES" --quiet
 
 # wasm-pack for --target web produces wasm4pm_bg.wasm, rename it to wasm4pm.wasm
 # to maintain compatibility with the rest of the script and simplify the bundle.

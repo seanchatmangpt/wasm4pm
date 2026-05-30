@@ -12,6 +12,17 @@ use wasm_bindgen::prelude::*;
 use crate::error::{codes, wasm_err};
 use crate::models::PetriNet;
 
+fn system_time_now() -> SystemTime {
+    #[cfg(target_arch = "wasm32")]
+    {
+        SystemTime::UNIX_EPOCH
+    }
+    #[cfg(not(target_arch = "wasm32"))]
+    {
+        SystemTime::now()
+    }
+}
+
 /// Supported process model representations.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 pub enum ModelType {
@@ -119,7 +130,7 @@ impl ProcessModelRegistry {
     }
 
     pub fn get(&mut self, id: &str) -> Option<ProcessModelEnvelope> {
-        let now = SystemTime::now();
+        let now = system_time_now();
         if let Some(entry) = self.models.get(id) {
             if let Some(exp) = entry.expires_at {
                 if now > exp {
@@ -139,8 +150,12 @@ impl ProcessModelRegistry {
         }
     }
 
+    pub fn get_without_expiry(&self, id: &str) -> Option<ProcessModelEnvelope> {
+        self.models.get(id).map(|entry| entry.envelope.clone())
+    }
+
     pub fn insert(&mut self, envelope: ProcessModelEnvelope, ttl: Option<Duration>) -> Result<(), &'static str> {
-        let now = SystemTime::now();
+        let now = system_time_now();
         let expires_at = ttl.map(|d| now + d);
 
         // Remove expired entries
@@ -683,5 +698,24 @@ mod tests {
         let pnml = include_str!("../../fixtures/models/living_diagnostic_clear_v1.pnml");
         let petri_net = crate::pnml_io::from_pnml(pnml).unwrap();
         assert!(validate_workflow_net(&petri_net).is_ok());
+
+        let place_index: std::collections::HashMap<&String, usize> = petri_net.places.iter().enumerate().map(|(i, p)| (&p.id, i)).collect();
+        let mut place_index_fx = rustc_hash::FxHashMap::default();
+        for (k, v) in place_index {
+            place_index_fx.insert(k, v);
+        }
+        let mut marking = vec![0; petri_net.places.len()];
+        let p_source_idx = place_index_fx.get(&"p_source".to_string()).copied().unwrap();
+        marking[p_source_idx] = 1;
+
+        let reachable = crate::models::is_final_reachable(&petri_net, &marking, &place_index_fx);
+        assert!(reachable, "Final marking should be reachable from p_source!");
+
+        let mut marking2 = vec![0; petri_net.places.len()];
+        let p2_idx = place_index_fx.get(&"p2".to_string()).copied().unwrap();
+        marking2[p2_idx] = 1;
+
+        let reachable2 = crate::models::is_final_reachable(&petri_net, &marking2, &place_index_fx);
+        assert!(reachable2, "Final marking should be reachable from p2!");
     }
 }

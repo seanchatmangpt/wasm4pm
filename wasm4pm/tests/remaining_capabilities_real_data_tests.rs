@@ -265,7 +265,7 @@ fn streaming_conformance_roadtraffic_replays_all_traces() {
 
     // Build reference DFG, then create streaming conformance checker from it
     let dfg = discover_dfg_from_log(&log, "concept:name");
-    let mut checker = StreamingConformanceChecker::from_dfg(&dfg);
+    let mut checker = StreamingConformanceChecker::from_dfg(dfg);
 
     for (trace_idx, trace) in log.traces.iter().enumerate() {
         let case_id = format!("case_{}", trace_idx);
@@ -291,7 +291,7 @@ fn streaming_conformance_roadtraffic_self_replay_fitness_is_high() {
 
     // DFG discovered from the same log → self-replay should have high fitness
     let dfg = discover_dfg_from_log(&log, "concept:name");
-    let mut checker = StreamingConformanceChecker::from_dfg(&dfg);
+    let mut checker = StreamingConformanceChecker::from_dfg(dfg);
 
     for (trace_idx, trace) in log.traces.iter().enumerate() {
         let case_id = format!("case_{}", trace_idx);
@@ -317,7 +317,7 @@ fn streaming_conformance_running_example_detects_deviations_for_invalid_trace() 
     let log = require_log!(RUNNING_EXAMPLE, "running-example");
 
     let dfg = discover_dfg_from_log(&log, "concept:name");
-    let mut checker = StreamingConformanceChecker::from_dfg(&dfg);
+    let mut checker = StreamingConformanceChecker::from_dfg(dfg);
 
     // An invalid trace: reverse order (decide before register) — should have deviations
     checker.add_event("bad_case", "decide");

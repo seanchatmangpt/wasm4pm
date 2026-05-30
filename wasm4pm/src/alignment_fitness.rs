@@ -44,22 +44,22 @@ pub struct AlignmentFitnessReport {
 
 /// Alignment state for A* search.
 #[derive(Clone, Debug)]
-struct AlignmentState {
+pub struct AlignmentState {
     /// Current position in trace (index)
-    trace_pos: usize,
+    pub trace_pos: usize,
     /// Current marking (place -> token count)
-    marking: Vec<usize>,
+    pub marking: Vec<usize>,
     /// Cost so far
-    g_cost: f64,
+    pub g_cost: f64,
     /// Estimated remaining cost (heuristic)
-    h_cost: f64,
+    pub h_cost: f64,
     /// Alignment path
-    path: Vec<AlignmentMove>,
+    pub path: Vec<AlignmentMove>,
 }
 
 /// Alignment move type.
 #[derive(Clone, Debug)]
-enum AlignmentMove {
+pub enum AlignmentMove {
     /// Synchronous move (log and model match)
     Sync { _activity: String },
     /// Log move (only in log)
@@ -370,7 +370,7 @@ fn is_final_marking(
 }
 
 /// Generate successor states for A* search.
-fn generate_successors(
+pub fn generate_successors(
     activities: &[String],
     petri_net: &PetriNet,
     _place_index: &FxHashMap<&String, usize>,

@@ -99,6 +99,11 @@ pub mod receipt;
 /// Process-Model Registry module.
 pub mod model_registry;
 
+#[cfg(feature = "ocel")]
+pub mod ocpq_parser;
+#[cfg(feature = "ocel")]
+pub mod ocpq_runtime;
+
 use std::cell::RefCell;
 
 #[wasm_bindgen(start)]
@@ -3283,4 +3288,19 @@ pub fn truex_verify_receipt(envelope_json: &str) -> Result<String, JsValue> {
     });
 
     Ok(serde_json::to_string(&out).unwrap())
+}
+
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn evaluate_ocpq(ocel_json: &str, query_str: &str) -> Result<String, JsValue> {
+    let ocel: crate::models::OCEL = serde_json::from_str(ocel_json)
+        .map_err(|e| crate::error::js_val(&format!("Invalid OCEL JSON: {e}")))?;
+
+    let query = ocpq_parser::parse(query_str)
+        .map_err(|e| crate::error::js_val(&format!("OCPQ Parse Error: {e}")))?;
+
+    let verdict = ocpq_runtime::evaluate(&ocel, &query);
+
+    serde_json::to_string(&verdict)
+        .map_err(|e| crate::error::js_val(&format!("Serialization failed: {e}")))
 }

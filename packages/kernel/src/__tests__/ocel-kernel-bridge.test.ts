@@ -124,6 +124,37 @@ function buildOcelCapableStub(): KernelWasmModule & { ocelCallCounts: Record<str
       inc('load_ocel_from_json');
       return `ocel_handle_for_${content.length}`;
     },
+    query_provenance_traversal(ocel_handle: string, query_json: string): string {
+      inc('query_provenance_traversal');
+      return JSON.stringify({
+        paths: [[
+          { type: 'object', id: 'receipt_1', object_type: 'Receipt' },
+          { type: 'object', id: 'file_1', object_type: 'File' }
+        ]]
+      });
+    },
+    validate_ocel(ocel_handle: string): string {
+      inc('validate_ocel');
+      if (ocel_handle.includes('invalid_o2o')) {
+        return JSON.stringify({
+          valid: false,
+          error_count: 1,
+          errors: ["Object 'receipt_1' embedded relation references non-existent object 'file_nonexistent'"]
+        });
+      }
+      if (ocel_handle.includes('invalid_mono')) {
+        return JSON.stringify({
+          valid: false,
+          error_count: 1,
+          errors: ["Monotonicity violation for object 'file_1'"]
+        });
+      }
+      return JSON.stringify({
+        valid: true,
+        error_count: 0,
+        errors: []
+      });
+    },
     discover_oc_petri_net(ocel_handle: string, algorithm: string): string {
       inc('discover_oc_petri_net');
       return `oc_petri_net_${ocel_handle}_${algorithm}`;

@@ -21,7 +21,9 @@ import { fileURLToPath } from 'node:url';
  */
 describe('wasm.proof — WASM module loads once, exports expected surface', () => {
   it('imports the wasm4pm module and exposes core exports', async () => {
-    const wasm = await import('wasm4pm');
+    const loader = (await import('@wasm4pm/engine')).WasmLoader.getInstance();
+    await loader.init();
+    const wasm = loader.get() as any;
     expect(wasm).toBeTypeOf('object');
     // Required-export gate per wasm-loader.ts:452
     expect(typeof wasm.load_eventlog_from_xes).toBe('function');

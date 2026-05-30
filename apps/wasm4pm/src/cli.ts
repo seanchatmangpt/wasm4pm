@@ -32,6 +32,7 @@ import { completions } from './commands/completions.js';
 import { claude } from './commands/claude.js';
 import { adversary } from './commands/adversary.js';
 import { trace } from './commands/trace.js';
+import { prefixConformance } from './commands/prefix-conformance.js';
 import { prolog8 } from './commands/prolog8.js';
 import { algorithms } from './commands/algorithms.js';
 import { examples } from './commands/examples.js';
@@ -50,6 +51,7 @@ import deduplicate from './commands/deduplicate.js';
 import models from './commands/models.js';
 import { suggest } from './commands/suggest.js';
 import { pipeline } from './commands/pipeline.js';
+import { oracle } from './commands/oracle.js';
 import pkg from '../package.json' with { type: 'json' };
 
 export const main = defineCommand({
@@ -300,6 +302,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     claude,
     adversary,
     trace,
+    'prefix-conformance': prefixConformance,
     prolog8,
     algorithms,
     suggest,
@@ -315,6 +318,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     deduplicate,
     models,
     pipeline,
+    oracle,
   },
 });
 
@@ -356,4 +360,6 @@ export {
   cell,
   truex,
   pipeline,
+  prefixConformance,
+  oracle,
 };

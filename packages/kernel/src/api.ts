@@ -1684,12 +1684,17 @@ export interface StreamingEventStats {
   event_count: number;
   open_traces: number;
   activities?: number;
+  fitness?: number;
+  state?: string;
 }
 
 export interface StreamingTraceStats {
   ok: boolean;
   trace_count: number;
   open_traces?: number;
+  fitness?: number;
+  state?: string;
+  is_conforming?: boolean;
 }
 
 export interface StreamingFinalResult {

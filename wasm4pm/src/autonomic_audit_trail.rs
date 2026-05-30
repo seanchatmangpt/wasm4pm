@@ -162,6 +162,9 @@ impl AutonomicAuditTrail {
         phase: AuditPhase,
         cycle_count: u64,
     ) -> bool {
+        #[cfg(target_arch = "wasm32")]
+        let timestamp_ns = 0u128;
+        #[cfg(not(target_arch = "wasm32"))]
         let timestamp_ns = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()

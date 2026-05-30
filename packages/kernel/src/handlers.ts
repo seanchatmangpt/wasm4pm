@@ -48,6 +48,12 @@ export interface WasmModule {
   /** Load an OCEL 2.0 JSON string (WASM2 variant name) */
   load_ocel2_from_json?(content: string): string;
 
+  /** Load an OCEL 2.0 NDJSON string */
+  load_ocel2_from_ndjson?(content: string): string;
+
+  query_provenance_traversal?(ocel_handle: string, query_json: string): string;
+  validate_ocel?(ocel_handle: string): string;
+
   /** Get all traces from an EventLog as activity sequences */
   get_traces?(eventlog_handle: string, activity_key: string): string[];
 

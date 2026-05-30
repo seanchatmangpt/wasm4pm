@@ -1,0 +1,47 @@
+{
+  "eventTypes": [
+    "FileModification",
+    "DiagnosticCheck"
+  ],
+  "objectTypes": [
+    "Agent",
+    "File"
+  ],
+  "events": [
+    {
+      "id": "e_mod_1",
+      "type": "FileModification",
+      "time": "2026-05-30T08:10:00Z",
+      "attributes": {},
+      "relationships": [
+        { "objectId": "agent_1", "qualifier": "editor" },
+        { "objectId": "file_1", "qualifier": "modified" }
+      ]
+    },
+    {
+      "id": "e_check_1",
+      "type": "DiagnosticCheck",
+      "time": "2026-05-30T08:00:00Z",
+      "attributes": {},
+      "relationships": [
+        { "objectId": "agent_1", "qualifier": "checker" },
+        { "objectId": "file_1", "qualifier": "checked" }
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "agent_1",
+      "type": "Agent",
+      "attributes": {},
+      "relationships": []
+    },
+    {
+      "id": "file_1",
+      "type": "File",
+      "attributes": {},
+      "relationships": []
+    }
+  ],
+  "objectRelations": []
+}

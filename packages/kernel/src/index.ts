@@ -265,6 +265,9 @@ export type {
 // Process-Model Registry - M1
 export * from './model-registry.js';
 
+// Process-Law Query Language - M4
+export * from './ocpq.js';
+
 // Export all WASM functions from @wasm4pm/core to provide unified entry point
 export * from '@wasm4pm/core';
 

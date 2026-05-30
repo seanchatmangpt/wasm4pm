@@ -1,0 +1,6 @@
+REQUIRE DiagnosticRaised BEFORE RouteSelected ON SAME OBJECT
+REQUIRE RouteSelected AFTER DiagnosticRaised ON SAME OBJECT
+REQUIRE RouteSelected IMMEDIATELY AFTER DiagnosticRaised ON SAME OBJECT
+REQUIRE GatePassed AFTER RepairAttempted ON SAME OBJECT
+REQUIRE ReceiptEmitted AFTER GatePassed ON SAME OBJECT
+REQUIRE ALIVE AFTER ReceiptEmitted ON SAME OBJECT

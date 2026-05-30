@@ -15,9 +15,9 @@
     }
   },
   "scripts": {
-    "build": "wasm-pack build --target bundler",
-    "build:nodejs": "wasm-pack build --target nodejs --release --features cloud",
-    "build:web": "wasm-pack build --target web",
+    "build": "wasm-pack build --target bundler --mode no-install",
+    "build:nodejs": "wasm-pack build --target nodejs --mode no-install --release --features cloud",
+    "build:web": "wasm-pack build --target web --mode no-install",
     "build:all": "npm run build && npm run build:web && npm run build:nodejs",
     "build:profiles": "npm run build:mobile && npm run build:iot && npm run build:edge && npm run build:fog && npm run build:browser",
     "build:mobile": "cargo build --release --target wasm32-unknown-unknown --features mobile && wasm-pack build --target bundler --release",

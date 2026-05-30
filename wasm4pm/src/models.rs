@@ -16,7 +16,8 @@
 use rustc_hash::FxHashMap;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::borrow::Cow;
-use std::collections::{HashMap, BTreeMap};
+use std::collections::{HashMap, BTreeMap, BinaryHeap, HashSet, VecDeque};
+use crate::alignment_fitness::{AlignmentState, generate_successors, AlignmentFitnessConfig};
 
 /// Parse an ISO 8601 / RFC 3339 timestamp string into milliseconds since Unix epoch.
 ///
@@ -957,6 +958,16 @@ pub struct ConformanceResult {
     pub total_cases: usize,
 }
 
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+pub enum TraceState {
+    #[serde(rename = "ALIVE")]
+    Alive,
+    #[serde(rename = "FAKE-LIVE")]
+    FakeLive,
+    #[serde(rename = "BLOCKED")]
+    Blocked,
+}
+
 /// Deviation detected in a streaming context.
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StreamingConformanceDeviation {
@@ -973,35 +984,166 @@ pub struct StreamingConformanceDeviation {
 pub struct StreamingConformanceTraceResult {
     /// Identifier of the case.
     pub case_id: String,
-    /// Whether the trace conforms to the reference DFG.
+    /// Whether the trace conforms to the reference model.
     pub is_conforming: bool,
-    /// List of directly-follows deviations found.
+    /// The trace state classification: ALIVE, FAKE-LIVE, or BLOCKED.
+    pub state: TraceState,
+    /// List of deviations found.
     pub deviations: Vec<StreamingConformanceDeviation>,
     /// Fitness score for the trace [0.0, 1.0].
     pub fitness: f64,
 }
 
-/// Streaming DFG-based conformance checker.
+#[derive(Clone, Debug)]
+pub struct AStarFrontier {
+    pub open_set: BinaryHeap<AlignmentState>,
+    pub closed_set: HashSet<(usize, Vec<usize>)>,
+}
+
+#[derive(Debug, Clone)]
+pub struct OpenTraceState {
+    pub activities: Vec<String>,
+    pub marking: Vec<usize>,
+    pub produced_tokens: usize,
+    pub consumed_tokens: usize,
+    pub missing_tokens: usize,
+    pub state: TraceState,
+    pub astar_frontier: Option<AStarFrontier>,
+}
+
+/// Helper to check if a marking matches any accepting final marking.
+pub fn is_final_marking(
+    net: &PetriNet,
+    place_index: &FxHashMap<&String, usize>,
+    marking: &[usize],
+) -> bool {
+    if net.final_markings.is_empty() {
+        let mut sink_indices = Vec::new();
+        for p in &net.places {
+            if !net.arcs.iter().any(|arc| arc.from == p.id) {
+                if let Some(&idx) = place_index.get(&p.id) {
+                    sink_indices.push(idx);
+                }
+            }
+        }
+        if !sink_indices.is_empty() {
+            let mut sink_has_token = false;
+            for (i, &tokens) in marking.iter().enumerate() {
+                if sink_indices.contains(&i) {
+                    if tokens == 1 {
+                        sink_has_token = true;
+                    } else if tokens > 1 {
+                        return false;
+                    }
+                } else if tokens > 0 {
+                    return false;
+                }
+            }
+            return sink_has_token;
+        }
+        return marking.iter().sum::<usize>() == 0;
+    }
+    net.final_markings.iter().any(|final_marking| {
+        net.places.iter().enumerate().all(|(i, p)| {
+            let expected = final_marking.get(&p.id).copied().unwrap_or(0);
+            marking.get(i).copied().unwrap_or(0) == expected
+        })
+    })
+}
+
+/// Helper to determine if a final marking is reachable from the current marking.
+/// Explores the marking reachability graph up to a safe search depth limit.
+pub fn is_final_reachable(
+    net: &PetriNet,
+    start_marking: &[usize],
+    place_index: &FxHashMap<&String, usize>,
+) -> bool {
+    if is_final_marking(net, place_index, start_marking) {
+        return true;
+    }
+
+    let mut queue = VecDeque::new();
+    let mut visited = HashSet::new();
+
+    let start_vec = start_marking.to_vec();
+    queue.push_back(start_vec.clone());
+    visited.insert(start_vec);
+
+    // Compile input/output place indices per transition
+    let mut trans_inputs = vec![Vec::new(); net.transitions.len()];
+    let mut trans_outputs = vec![Vec::new(); net.transitions.len()];
+    for arc in &net.arcs {
+        if let (Some(&p_idx), Some(t_idx)) = (place_index.get(&arc.from), net.transitions.iter().position(|t| t.id == arc.to)) {
+            trans_inputs[t_idx].push(p_idx);
+        }
+        if let (Some(t_idx), Some(&p_idx)) = (net.transitions.iter().position(|t| t.id == arc.from), place_index.get(&arc.to)) {
+            trans_outputs[t_idx].push(p_idx);
+        }
+    }
+
+    let max_states = 1000; // Hard boundary to prevent infinite loops in cyclic nets
+    let mut states_explored = 0;
+
+    while let Some(current) = queue.pop_front() {
+        states_explored += 1;
+        if states_explored > max_states {
+            break;
+        }
+
+        if is_final_marking(net, place_index, &current) {
+            return true;
+        }
+
+        // Generate successor markings by firing any enabled transition
+        for (t_idx, _) in net.transitions.iter().enumerate() {
+            let enabled = trans_inputs[t_idx]
+                .iter()
+                .all(|&p_idx| current[p_idx] > 0);
+
+            if enabled {
+                let mut next_marking = current.clone();
+                for &p_idx in &trans_inputs[t_idx] {
+                    next_marking[p_idx] = next_marking[p_idx].saturating_sub(1);
+                }
+                for &p_idx in &trans_outputs[t_idx] {
+                    next_marking[p_idx] += 1;
+                }
+
+                if !visited.contains(&next_marking) {
+                    visited.insert(next_marking.clone());
+                    queue.push_back(next_marking);
+                }
+            }
+        }
+    }
+
+    false
+}
+
+/// Streaming incremental conformance checker. Supports either Directly-Follows Graph checking
+
+/// or Token Replay on a Petri Net.
 #[derive(Debug, Clone)]
 pub struct StreamingConformanceChecker {
-    /// Valid directly-follows pairs from the reference DFG.
-    pub dfg_edges: std::collections::HashSet<(String, String)>,
-    /// Start activities from the reference DFG.
-    pub start_activities: std::collections::HashSet<String>,
-    /// End activities from the reference DFG.
-    pub end_activities: std::collections::HashSet<String>,
-    /// Open traces: case_id → activity sequence.
-    pub open_traces: HashMap<String, Vec<String>>,
-    /// Accumulated results for closed traces.
+    // DFG Mode fields
+    pub dfg_edges: Option<std::collections::HashSet<(String, String)>>,
+    pub start_activities: Option<std::collections::HashSet<String>>,
+    pub end_activities: Option<std::collections::HashSet<String>>,
+
+    // Petri Net Mode fields
+    pub net: Option<crate::models::PetriNet>,
+    pub incidence: Option<wasm4pm_types::models::FlatIncidenceMatrix>,
+
+    // Shared state
+    pub open_traces: HashMap<String, OpenTraceState>,
     pub results: Vec<StreamingConformanceTraceResult>,
-    /// Total events processed by this checker.
     pub event_count: usize,
 }
 
 impl StreamingConformanceChecker {
-    /// Create a new checker from a reference `DirectlyFollowsGraph`.
+    /// Create a new checker from a Directly-Follows Graph.
     #[must_use]
-    pub fn from_dfg(dfg: &DirectlyFollowsGraph) -> Self {
+    pub fn from_dfg(dfg: DirectlyFollowsGraph) -> Self {
         let dfg_edges: std::collections::HashSet<(String, String)> = dfg
             .edges
             .iter()
@@ -1011,42 +1153,313 @@ impl StreamingConformanceChecker {
             dfg.start_activities.keys().cloned().collect();
         let end_activities: std::collections::HashSet<String> =
             dfg.end_activities.keys().cloned().collect();
+
         StreamingConformanceChecker {
-            dfg_edges,
-            start_activities,
-            end_activities,
+            dfg_edges: Some(dfg_edges),
+            start_activities: Some(start_activities),
+            end_activities: Some(end_activities),
+            net: None,
+            incidence: None,
             open_traces: HashMap::new(),
             results: Vec::new(),
             event_count: 0,
         }
     }
 
-    /// Append one event to an in-progress trace.
-    pub fn add_event(&mut self, case_id: &str, activity: &str) {
-        self.event_count += 1;
-        self.open_traces
-            .entry(case_id.to_string())
-            .or_default()
-            .push(activity.to_string());
+    /// Create a new checker from a reference `PetriNet`.
+    #[must_use]
+    pub fn from_petri_net(net: crate::models::PetriNet) -> Self {
+        let p_count = net.places.len();
+        let t_count = net.transitions.len();
+        let mut data = vec![0; p_count * t_count];
+
+        let place_idx: HashMap<&str, usize> = net.places.iter().enumerate().map(|(i, p)| (p.id.as_str(), i)).collect();
+        let trans_idx: HashMap<&str, usize> = net.transitions.iter().enumerate().map(|(i, t)| (t.id.as_str(), i)).collect();
+
+        for arc in &net.arcs {
+            let weight = arc.weight.unwrap_or(1) as i32;
+            if let (Some(&p), Some(&t)) = (place_idx.get(arc.from.as_str()), trans_idx.get(arc.to.as_str())) {
+                data[p * t_count + t] -= weight;
+            } else if let (Some(&t), Some(&p)) = (trans_idx.get(arc.from.as_str()), place_idx.get(arc.to.as_str())) {
+                data[p * t_count + t] += weight;
+            }
+        }
+
+        let incidence = wasm4pm_types::models::FlatIncidenceMatrix {
+            data,
+            places_count: p_count,
+            transitions_count: t_count,
+        };
+
+        StreamingConformanceChecker {
+            dfg_edges: None,
+            start_activities: None,
+            end_activities: None,
+            net: Some(net),
+            incidence: Some(incidence),
+            open_traces: HashMap::new(),
+            results: Vec::new(),
+            event_count: 0,
+        }
     }
 
-    /// Close a trace: check conformance and return the final result.
-    ///
-    /// Returns `None` if the case ID was not found in open traces.
+    /// Append one event to an in-progress trace and update incremental fitness.
+    pub fn add_event(&mut self, case_id: &str, activity: &str) {
+        self.event_count += 1;
+
+        if self.net.is_some() {
+            let p_count = self.incidence.as_ref().unwrap().places_count;
+            let net = self.net.as_ref().unwrap();
+            let incidence = self.incidence.as_ref().unwrap();
+
+            let state = self.open_traces.entry(case_id.to_string()).or_insert_with(|| {
+                let mut marking = vec![0; p_count];
+                let mut produced_tokens = 0;
+                for (i, p) in net.places.iter().enumerate() {
+                    if let Some(&tokens) = net.initial_marking.get(&p.id) {
+                        marking[i] = tokens;
+                        produced_tokens += tokens;
+                    }
+                }
+                if produced_tokens == 0 && !net.places.is_empty() {
+                    marking[0] = 1;
+                    produced_tokens = 1;
+                }
+                OpenTraceState {
+                    activities: Vec::new(),
+                    marking,
+                    produced_tokens,
+                    consumed_tokens: 0,
+                    missing_tokens: 0,
+                    state: TraceState::Alive,
+                    astar_frontier: None,
+                }
+            });
+
+            state.activities.push(activity.to_string());
+
+            let mut t_idx_opt = None;
+            for (t_idx, t) in net.transitions.iter().enumerate() {
+                if !t.is_invisible.unwrap_or(false) && t.label == activity {
+                    let mut enabled = true;
+                    for p_idx in 0..p_count {
+                        let weight = incidence.get(p_idx, t_idx);
+                        if weight < 0 {
+                            let needed = (-weight) as usize;
+                            if state.marking[p_idx] < needed {
+                                enabled = false;
+                                break;
+                            }
+                        }
+                    }
+                    if enabled {
+                        t_idx_opt = Some(t_idx);
+                        break;
+                    }
+                    if t_idx_opt.is_none() {
+                        t_idx_opt = Some(t_idx);
+                    }
+                }
+            }
+
+
+            if let Some(t_idx) = t_idx_opt {
+                // Consume tokens
+                for p_idx in 0..p_count {
+                    let weight = incidence.get(p_idx, t_idx);
+                    if weight < 0 {
+                        let needed = (-weight) as usize;
+                        if state.marking[p_idx] >= needed {
+                            state.marking[p_idx] -= needed;
+                        } else {
+                            state.missing_tokens += needed - state.marking[p_idx];
+                            state.marking[p_idx] = 0;
+                        }
+                        state.consumed_tokens += needed;
+                    }
+                }
+                // Produce tokens
+                for p_idx in 0..p_count {
+                    let weight = incidence.get(p_idx, t_idx);
+                    if weight > 0 {
+                        state.marking[p_idx] += weight as usize;
+                        state.produced_tokens += weight as usize;
+                    }
+                }
+            } else {
+                state.missing_tokens += 1;
+                state.consumed_tokens += 1;
+            }
+
+            // State Classification (ALIVE / FAKE-LIVE / BLOCKED)
+            if state.missing_tokens > 0 {
+                state.state = TraceState::Blocked;
+            } else {
+                let place_index: FxHashMap<&String, usize> = net.places.iter().enumerate().map(|(i, p)| (&p.id, i)).collect();
+                if is_final_reachable(net, &state.marking, &place_index) {
+                    state.state = TraceState::Alive;
+                } else {
+                    state.state = TraceState::FakeLive;
+                }
+            }
+
+            // Incremental A* Alignment Search Caching
+            let config = AlignmentFitnessConfig::default();
+            let k = state.activities.len();
+
+            let place_index: FxHashMap<&String, usize> = net.places.iter().enumerate().map(|(i, p)| (&p.id, i)).collect();
+            let transition_index: FxHashMap<&String, usize> = net.transitions.iter().enumerate().map(|(i, t)| (&t.id, i)).collect();
+            let mut trans_inputs: Vec<Vec<usize>> = vec![Vec::new(); net.transitions.len()];
+            let mut trans_outputs: Vec<Vec<usize>> = vec![Vec::new(); net.transitions.len()];
+            for arc in &net.arcs {
+                if let (Some(&place_idx), Some(&trans_idx)) = (place_index.get(&arc.from), transition_index.get(&arc.to)) {
+                    trans_inputs[trans_idx].push(place_idx);
+                }
+                if let (Some(&trans_idx), Some(&place_idx)) = (transition_index.get(&arc.from), place_index.get(&arc.to)) {
+                    trans_outputs[trans_idx].push(place_idx);
+                }
+            }
+
+            let is_new = state.astar_frontier.is_none();
+            let frontier = state.astar_frontier.get_or_insert_with(|| {
+                let mut initial_marking = vec![0usize; net.places.len()];
+                for (place, &count) in &net.initial_marking {
+                    if let Some(&idx) = place_index.get(place) {
+                        initial_marking[idx] = count;
+                    }
+                }
+                let mut heap = BinaryHeap::new();
+                heap.push(AlignmentState {
+                    trace_pos: 0,
+                    marking: initial_marking,
+                    g_cost: 0.0,
+                    h_cost: (k as f64) * config.log_move_cost.min(config.model_move_cost),
+                    path: Vec::new(),
+                });
+                AStarFrontier {
+                    open_set: heap,
+                    closed_set: HashSet::new(),
+                }
+            });
+
+            if !is_new {
+                let mut heap_vec = frontier.open_set.drain().collect::<Vec<_>>();
+                let cost_diff = config.log_move_cost.min(config.model_move_cost);
+                for s in &mut heap_vec {
+                    s.h_cost += cost_diff;
+                }
+                frontier.open_set = BinaryHeap::from(heap_vec);
+            }
+
+            // Resume search to align prefix of length k
+            let mut iterations = 0;
+            while let Some(current) = frontier.open_set.pop() {
+                iterations += 1;
+                if iterations > config.max_iterations {
+                    frontier.open_set.push(current);
+                    break;
+                }
+
+                if current.trace_pos >= k {
+                    frontier.open_set.push(current);
+                    break;
+                }
+
+                let state_key = (current.trace_pos, current.marking.clone());
+                if frontier.closed_set.contains(&state_key) {
+                    continue;
+                }
+                frontier.closed_set.insert(state_key);
+
+                generate_successors(
+                    &state.activities,
+                    net,
+                    &place_index,
+                    &trans_inputs,
+                    &trans_outputs,
+                    &config,
+                    &current,
+                    &mut frontier.open_set,
+                );
+            }
+        } else {
+            // DFG Mode
+            let state = self.open_traces.entry(case_id.to_string()).or_insert_with(|| {
+                OpenTraceState {
+                    activities: Vec::new(),
+                    marking: Vec::new(),
+                    produced_tokens: 0,
+                    consumed_tokens: 0,
+                    missing_tokens: 0,
+                    state: TraceState::Alive,
+                    astar_frontier: None,
+                }
+            });
+            state.activities.push(activity.to_string());
+        }
+    }
+
+    /// Close a trace: check final conformance and return the result.
     pub fn close_trace(&mut self, case_id: &str) -> Option<StreamingConformanceTraceResult> {
-        let activities = self.open_traces.remove(case_id)?;
-        let result = self.check_trace(case_id, &activities);
+        let state = self.open_traces.remove(case_id)?;
+
+        let result = if self.net.is_some() {
+            let net = self.net.as_ref().unwrap();
+            let remaining_tokens: usize = state.marking.iter().sum();
+            
+            let denom_c = state.consumed_tokens as f64;
+            let denom_p = state.produced_tokens as f64;
+            
+            let term1 = if denom_c > 0.0 {
+                1.0 - (state.missing_tokens as f64 / denom_c)
+            } else {
+                1.0
+            };
+            let term2 = if denom_p > 0.0 {
+                1.0 - (remaining_tokens as f64 / denom_p)
+            } else {
+                1.0
+            };
+            let fitness = (0.5 * term1 + 0.5 * term2).clamp(0.0, 1.0);
+
+            let final_state = if state.state == TraceState::Blocked {
+                TraceState::Blocked
+            } else if fitness < 1.0 {
+                TraceState::FakeLive
+            } else {
+                let place_index: FxHashMap<&String, usize> = net.places.iter().enumerate().map(|(i, p)| (&p.id, i)).collect();
+                let reached_final = is_final_marking(net, &place_index, &state.marking);
+                if reached_final {
+                    TraceState::Alive
+                } else {
+                    TraceState::FakeLive
+                }
+            };
+
+            StreamingConformanceTraceResult {
+                case_id: case_id.to_string(),
+                is_conforming: final_state == TraceState::Alive,
+                state: final_state,
+                deviations: vec![],
+                fitness,
+            }
+        } else {
+            // DFG Mode
+            self.check_trace_dfg(case_id, &state.activities)
+        };
+
         self.results.push(result.clone());
         Some(result)
     }
 
-    fn check_trace(&self, case_id: &str, activities: &[String]) -> StreamingConformanceTraceResult {
+    fn check_trace_dfg(&self, case_id: &str, activities: &[String]) -> StreamingConformanceTraceResult {
         let mut deviations = Vec::new();
 
         if activities.is_empty() {
             return StreamingConformanceTraceResult {
                 case_id: case_id.to_string(),
                 is_conforming: true,
+                state: TraceState::Alive,
                 deviations,
                 fitness: 1.0,
             };
@@ -1059,16 +1472,18 @@ impl StreamingConformanceChecker {
             0
         };
 
-        for i in 0..total_steps {
-            let pair = (activities[i].clone(), activities[i + 1].clone());
-            if self.dfg_edges.contains(&pair) {
-                valid_steps += 1;
-            } else {
-                deviations.push(StreamingConformanceDeviation {
-                    position: i,
-                    from_activity: activities[i].clone(),
-                    to_activity: activities[i + 1].clone(),
-                });
+        if let Some(ref dfg_edges) = self.dfg_edges {
+            for i in 0..total_steps {
+                let pair = (activities[i].clone(), activities[i + 1].clone());
+                if dfg_edges.contains(&pair) {
+                    valid_steps += 1;
+                } else {
+                    deviations.push(StreamingConformanceDeviation {
+                        position: i,
+                        from_activity: activities[i].clone(),
+                        to_activity: activities[i + 1].clone(),
+                    });
+                }
             }
         }
 
@@ -1081,6 +1496,7 @@ impl StreamingConformanceChecker {
         StreamingConformanceTraceResult {
             case_id: case_id.to_string(),
             is_conforming: deviations.is_empty(),
+            state: if deviations.is_empty() { TraceState::Alive } else { TraceState::Blocked },
             deviations,
             fitness,
         }
