@@ -31,6 +31,29 @@ pub fn discover_inductive_miner_from_log(log: &EventLog, activity_key: &str) -> 
     }
 }
 
+/// Discover a process tree using the Inductive Miner algorithm.
+///
+/// Guarantees a **sound** process model (no deadlocks, always-terminates). The output
+/// is a recursive process tree rather than a DFG or Petri net.
+///
+/// # Parameters
+/// * `eventlog_handle` — Handle from `load_eventlog_from_xes` / `load_eventlog_from_json`.
+/// * `activity_key` — XES attribute to use as activity label (e.g. `"concept:name"`).
+///
+/// # Returns
+/// `Result<JsValue, JsValue>` — On success:
+/// ```json
+/// {
+///   "algorithm": "inductive_miner",
+///   "root": { "node_type": "sequence" | "xor" | "parallel" | "loop" | "leaf", "label": "...", "children": [...] },
+///   "nodes": 7
+/// }
+/// ```
+///
+/// # Note
+/// Activities are sorted deterministically before splitting. The tree structure is always
+/// deterministic for the same input log. Use this instead of `discover_dfg` when you need
+/// soundness guarantees.
 #[wasm_bindgen]
 pub fn discover_inductive_miner(
     eventlog_handle: &str,

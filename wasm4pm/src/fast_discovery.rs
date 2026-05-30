@@ -6,7 +6,17 @@ use serde_json::json;
 use std::collections::HashSet;
 use wasm_bindgen::prelude::*;
 
-/// A* Search-based process discovery - informed heuristic search
+/// Discover a process model using A* informed search.
+///
+/// Iteratively expands DFG edge candidates using a fitness-minus-penalty heuristic.
+/// Returns `{handle, algorithm, nodes, edges, iterations_used: usize}`.
+///
+/// **IMPORTANT:** The `iterations_used` field in the result is a search step count,
+/// **not a fitness score**. Do not interpret it as model quality.
+///
+/// # Parameters
+/// * `max_iterations` — Maximum A* expansion steps. Use 500–2000 for real logs.
+///   Higher values allow more thorough search but take longer.
 #[wasm_bindgen]
 pub fn discover_astar(
     eventlog_handle: &str,

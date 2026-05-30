@@ -73,8 +73,24 @@ pub fn discover_heuristic_miner_from_log(
     dfg
 }
 
-/// Heuristic Miner - discovers process models from real-world logs
-/// More lenient than Alpha++ for handling noise and incomplete data
+/// Discover a process model using the Heuristic Miner algorithm.
+///
+/// More robust than Alpha++ for noisy, real-world logs. Filters low-frequency
+/// directly-follows relations based on a dependency threshold.
+///
+/// # Parameters
+/// * `eventlog_handle` — Handle from `load_eventlog_from_xes` / `load_eventlog_from_json`.
+/// * `activity_key` — XES attribute for activity names (e.g. `"concept:name"`).
+/// * `dependency_threshold` — Minimum dependency score `[0.0, 1.0]` for an edge to be included.
+///   Use `0.2`–`0.4` for real-world logs; `0.8` filters out most edges.
+///   **Do not use `0.8` on small logs** — it will produce empty or near-empty models.
+///
+/// # Returns
+/// `Result<JsValue, JsValue>` — On success, a DFG JSON with `{nodes, edges}`.
+///
+/// # Note
+/// The function uses a dependency measure rather than raw frequency. An edge `A→B` is
+/// kept if `(freq(A,B) - freq(B,A)) / (freq(A,B) + freq(B,A) + 1) >= dependency_threshold`.
 #[wasm_bindgen]
 pub fn discover_heuristic_miner(
     eventlog_handle: &str,

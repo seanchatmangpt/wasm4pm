@@ -64,7 +64,14 @@ pub fn discover_footprints_from_log(log: &EventLog, activity_key: &str) -> Footp
     }
 }
 
-/// Discover the footprint matrix from an event log
+/// Discover the Alpha-style footprint matrix from an event log.
+///
+/// Returns `{activities: string[], matrix: FootprintRelation[][]}`.
+/// **`matrix[i][j]` is indexed by position**, not by activity name.
+/// Use `activities.indexOf(name)` to map activity names to matrix indices.
+///
+/// `FootprintRelation` values: `"Causal"` (i→j), `"CausalInv"` (j→i),
+/// `"Parallel"` (both directions), `"NeverFollows"` (no succession).
 #[wasm_bindgen]
 pub fn discover_footprints(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
     let log = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
@@ -427,16 +434,30 @@ pub(crate) fn alpha_plus_plus_inner(
     Ok(pn)
 }
 
-/// Alpha++ process discovery.
+/// Discover a Petri net using the Alpha++ algorithm.
 ///
-/// Implements proper Alpha++ (de Medeiros et al.) extending Alpha Miner with:
+/// Implements Alpha++ (de Medeiros et al.) extending Alpha Miner with:
 ///   - L1L set: activities `a` where `(a,a)` is in directly-follows (length-1 loops)
 ///   - L2L set: activity pairs `(a,b)` where both `(a,b)` and `(b,a)` are in DF (length-2 loops)
-///   - Short-loop-aware footprint matrix: uses length-1 and length-2 loop detection
-///     to reclassify relations that plain Alpha would mark as Parallel into Causal
+///   - Short-loop-aware footprint matrix: reclassifies Parallel relations from length-1/2 loops as Causal
 ///   - Place candidates `(A,B)` where A×B ⊆ causal relation (maximal pairs only)
 ///
-/// Returns a handle to a stored `PetriNet`.
+/// # Parameters
+/// * `eventlog_handle` — Handle from `load_eventlog_from_xes` / `load_eventlog_from_json`.
+/// * `activity_key` — XES attribute for activity names (e.g. `"concept:name"`).
+/// * `min_support` — Minimum frequency threshold `[0.0, 1.0]` for directly-follows edges.
+///   `0.0` = no filtering (include all edges). Use `0.0` for small logs to avoid empty models.
+///
+/// # Returns
+/// `Result<JsValue, JsValue>` — On success:
+/// ```json
+/// { "handle": "...", "places": 5, "transitions": 4, "arcs": 12 }
+/// ```
+/// Use the returned `handle` with `export_petri_net_to_json` or conformance functions.
+///
+/// # Note
+/// Alpha++ handles length-1 and length-2 loops correctly. For heavily noisy logs,
+/// prefer `discover_heuristic_miner` which is more tolerant of noise.
 #[wasm_bindgen]
 pub fn discover_alpha_plus_plus(
     eventlog_handle: &str,

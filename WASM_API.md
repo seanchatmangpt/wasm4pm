@@ -23,6 +23,76 @@
 
 ---
 
+## Known API Quirks
+
+These behaviors were discovered through integration testing and differ from naive expectations:
+
+### Return Types
+
+- **`discover_astar(handle, activity_key, max_iterations)`** — The third parameter is required (`usize`). Internally returns `(DFG, iterations_used: usize)`. The JS-facing result JSON includes `iterations_used: <number>` (an iteration count, **not** a fitness score). Do not interpret this value as model quality.
+
+- **`discover_aco_algorithm(handle, activity_key, ant_count, iterations)`** — The underlying `discover_aco_algorithm_from_log` returns `Option<(DFG, f64)>`. Returns `Err("no_edges")` to JS when the option is `None` (empty log, single activity, or zero edge vocabulary). Always guard against rejection errors.
+
+- **`discover_pso_algorithm(handle, activity_key, swarm_size, iterations)`** — Same pattern as ACO. Returns `Err("no_edges")` when `swarm_size < 1`, `iterations == 0`, or the log has no directly-follows edges.
+
+### Struct Shapes (Rust → JS)
+
+- **`TemporalProfile`** is a Rust struct with `pairs: HashMap<(String, String), (f64, f64, usize)>`. In JS the pairs map is serialized as a JSON object where keys are `"Activity A→Activity B"` style strings. The value tuple is `[mean_ms, stdev_ms, count]`. Retrieve via `discover_temporal_profile()` (returns a handle) then `check_temporal_conformance()`.
+
+- **`FootprintMatrix.matrix`** is `Vec<Vec<FootprintRelation>>` indexed by position, **not** by activity name. The companion `activities: Vec<String>` array maps row/column indices to activity names. To look up the relation between activity A and B: `matrix[activities.indexOf(A)][activities.indexOf(B)]`.
+
+### Serialization
+
+WASM functions return either a JS string (needing `JSON.parse`) or a JS object directly. Always parse defensively:
+
+```js
+const parse = r => typeof r === 'string' ? JSON.parse(r) : r;
+```
+
+`serde_wasm_bindgen::to_value(&json!({}))` silently returns `{}` on wasm32. All internal code uses `to_js_str()` (defined in `utilities.rs`) which serializes via `serde_json::to_string` + `JsValue::from_str`. Do not use `serde_wasm_bindgen` with `serde_json::Value`.
+
+---
+
+## JavaScript Usage Patterns
+
+```javascript
+// Pattern 1: Always parse WASM output defensively
+const parse = r => typeof r === 'string' ? JSON.parse(r) : r;
+
+// Pattern 2: A* — max_iterations is required; second field in result is iteration count
+const astarResult = parse(wasm.discover_astar(handle, 'concept:name', 1000));
+console.log(astarResult.iterations_used); // number of search steps, NOT fitness
+
+// Pattern 3: Handle Option<> returns (aco, pso) — filter Err('no_edges')
+try {
+  const acoResult = parse(wasm.discover_aco_algorithm(handle, 'concept:name', 10, 50));
+  console.log(acoResult.final_fitness); // f64 fitness value
+} catch (e) {
+  // e.message === 'no_edges' — degenerate input (empty log, single activity)
+  console.warn('ACO returned None — try with more events or fewer ants');
+}
+
+// Pattern 4: Footprint matrix — index by position, not by name
+const fp = parse(wasm.discover_footprints(handle, 'concept:name'));
+const idxA = fp.activities.indexOf('Register');
+const idxB = fp.activities.indexOf('Approve');
+const relation = fp.matrix[idxA][idxB]; // e.g. "Causal", "Parallel", "NeverFollows"
+
+// Pattern 5: Temporal profile — use the handle-based API
+const profHandle = wasm.discover_temporal_profile(handle, 'concept:name', 'time:timestamp');
+const conformance = parse(wasm.check_temporal_conformance(
+  handle, profHandle, 'concept:name', 'time:timestamp', 2.0
+));
+// conformance.fitness: f64, conformance.deviations: number
+
+// Pattern 6: Streaming algorithms need periodic flush
+const streamHandle = wasm.start_streaming_dfg('concept:name');
+events.forEach(e => wasm.stream_event(streamHandle, JSON.stringify(e)));
+const dfg = parse(wasm.flush_streaming_dfg(streamHandle));
+```
+
+---
+
 ## Initialization
 
 | Function | Returns | Description |
@@ -82,7 +152,7 @@
 
 | Function | Returns | Algorithm |
 |----------|---------|-----------|
-| `discover_astar(handle, activity_key)` | `Result<JsValue, JsValue>` | A* Petri net discovery |
+| `discover_astar(handle, activity_key, max_iterations)` | `Result<JsValue, JsValue>` | A* process discovery — returns `{handle, algorithm, nodes, edges, iterations_used: usize}`. **`iterations_used` is a search step count, not a fitness score.** |
 | `discover_hill_climbing(handle, activity_key)` | `Result<JsValue, JsValue>` | Hill climbing Petri net |
 | `analyze_trace_variants(handle, activity_key)` | `Result<JsValue, JsValue>` | Trace variant analysis |
 | `mine_sequential_patterns(handle, activity_key, min_support)` | `Result<JsValue, JsValue>` | Sequential pattern mining |
@@ -106,9 +176,9 @@
 
 | Function | Returns | Algorithm |
 |----------|---------|-----------|
-| `discover_genetic_algorithm(handle, activity_key, generations, population)` | `Result<JsValue, JsValue>` | Genetic algorithm Petri net |
-| `discover_pso_algorithm(handle, activity_key, iterations, particles)` | `Result<JsValue, JsValue>` | PSO Petri net |
-| `discover_aco_algorithm(handle, activity_key, iterations, ants)` | `Result<JsValue, JsValue>` | ACO Petri net |
+| `discover_genetic_algorithm(handle, activity_key, population_size, generations)` | `Result<JsValue, JsValue>` | Genetic algorithm — returns `{handle, nodes, edges, final_fitness}`. Returns `Err("no_edges")` on empty log. |
+| `discover_pso_algorithm(handle, activity_key, swarm_size, iterations)` | `Result<JsValue, JsValue>` | PSO — returns `{handle, nodes, edges, final_fitness}`. Underlying fn returns `Option<(DFG, f64)>`; returns `Err("no_edges")` when `swarm_size < 1`, `iterations == 0`, or no edges in log. |
+| `discover_aco_algorithm(handle, activity_key, ant_count, iterations)` | `Result<JsValue, JsValue>` | ACO — returns `{handle, nodes, edges, final_fitness}`. Underlying fn returns `Option<(DFG, f64)>`; returns `Err("no_edges")` when `ant_count < 1`, `iterations == 0`, or no edges in log. |
 
 ### ILP (ilp_discovery.rs)
 
@@ -164,6 +234,23 @@ High-throughput event processing with optional SIMD acceleration (`feature-strea
 | `compute_trace_similarity_matrix(handle, activity_key)` | `Result<JsValue, JsValue>` | Trace similarity |
 | `analyze_temporal_bottlenecks(handle, activity_key)` | `Result<JsValue, JsValue>` | Temporal bottlenecks |
 | `extract_activity_ordering(handle, activity_key)` | `Result<JsValue, JsValue>` | Activity ordering |
+
+### Footprint Analysis (algorithms.rs)
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `discover_footprints(handle, activity_key)` | `Result<JsValue, JsValue>` | Alpha-style footprint matrix. Returns `{activities: string[], matrix: FootprintRelation[][]}`. **`matrix[i][j]` is indexed by position**, not by activity name — use `activities.indexOf(name)` to map names to indices. |
+
+**`FootprintRelation` values:** `"Causal"` (i→j), `"CausalInv"` (j→i), `"Parallel"` (i↔j, both directions), `"NeverFollows"` (no direct succession).
+
+### Temporal Profile (temporal_profile.rs)
+
+| Function | Returns | Description |
+|----------|---------|-------------|
+| `discover_temporal_profile(log_handle, activity_key, timestamp_key)` | `Result<JsValue, JsValue>` | Build temporal profile; returns a handle string (not JSON). Store handle for use with `check_temporal_conformance`. |
+| `check_temporal_conformance(log_handle, profile_handle, activity_key, timestamp_key, zeta)` | `Result<JsValue, JsValue>` | Check log against temporal profile. `zeta` = standard-deviation multiplier for deviation threshold (e.g. `2.0`). Returns `{total_traces, total_steps, deviations, fitness, details[]}`. |
+
+**`TemporalProfile` internals:** Rust struct `pairs: HashMap<(String, String), (f64, f64, usize)>` where tuple is `(mean_ms, stdev_ms, count)`. The profile is stored opaquely in WASM state; the handle is the only JS-accessible reference. Deviations are flagged when `|duration_ms - mean_ms| > zeta * stdev_ms`.
 
 ## ML Algorithms (feature: ml — 6 exports)
 

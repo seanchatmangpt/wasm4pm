@@ -82,7 +82,28 @@ pub fn discover_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFoll
     dfg
 }
 
-/// Discover a Directly-Follows Graph (DFG) from an EventLog
+/// Discover a Directly-Follows Graph (DFG) from an event log.
+///
+/// # Parameters
+/// * `eventlog_handle` — Handle string returned by `load_eventlog_from_xes` or `load_eventlog_from_json`.
+/// * `activity_key` — XES attribute name to use as activity label (e.g. `"concept:name"`).
+///
+/// # Returns
+/// `Result<JsValue, JsValue>` — On success, a JS value (parse with `JSON.parse` if it is a
+/// string) containing:
+/// ```json
+/// {
+///   "nodes": [{"id": "...", "label": "...", "frequency": 42}],
+///   "edges": [{"from": "A", "to": "B", "frequency": 17}],
+///   "start_activities": {"A": 10},
+///   "end_activities":   {"C": 5}
+/// }
+/// ```
+///
+/// # Note
+/// DFG construction is always successful for any valid event log (empty or otherwise).
+/// The function never returns `None` and never panics.
+/// For a sound process tree, use `discover_inductive_miner` instead.
 #[wasm_bindgen]
 pub fn discover_dfg(eventlog_handle: &str, activity_key: &str) -> Result<JsValue, JsValue> {
     // Use with_object to borrow the log in place — avoids a full EventLog clone.
