@@ -68,11 +68,37 @@ function wpmAsync(
   });
 }
 
-/** Parse stdout as JSON, returning null on failure. */
+/** Parse stdout as JSON, returning null on failure.
+ *  When stdout contains multiple JSON objects (e.g., a parent command info line
+ *  followed by a subcommand result), parse the FIRST complete JSON object.
+ *  This handles cases where the parent membrane run() emits an info payload
+ *  before or after the subcommand output. */
 function parseJson(result: CliResult): Record<string, unknown> | null {
+  const stdout = result.stdout.trim();
+  if (!stdout) return null;
   try {
-    return JSON.parse(result.stdout) as Record<string, unknown>;
+    // Fast path: single JSON object
+    return JSON.parse(stdout) as Record<string, unknown>;
   } catch {
+    // Slow path: scan for first complete JSON object using brace counting
+    let depth = 0;
+    let start = -1;
+    for (let i = 0; i < stdout.length; i++) {
+      if (stdout[i] === '{') {
+        if (start === -1) start = i;
+        depth++;
+      } else if (stdout[i] === '}') {
+        depth--;
+        if (depth === 0 && start !== -1) {
+          try {
+            return JSON.parse(stdout.slice(start, i + 1)) as Record<string, unknown>;
+          } catch {
+            // Reset and keep scanning
+            start = -1;
+          }
+        }
+      }
+    }
     return null;
   }
 }

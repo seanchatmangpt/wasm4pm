@@ -694,8 +694,8 @@ describe('E2E 7 — Receipt is saved unless --no-save is passed', () => {
     } catch {
       // Directory doesn't exist — correct: no receipt saved
     }
-    const autoprocessReceipts = receiptFiles.filter((f) => f.includes('autoprocess'));
-    expect(autoprocessReceipts.length).toBe(0);
+    // When --no-save is passed, no receipt files (UUID-named or latest.json) should exist
+    expect(receiptFiles.length).toBe(0);
   }, 45_000);
 
   it('without --no-save, a receipt file appears in .wasm4pm/receipts/ after success', async () => {
@@ -713,8 +713,10 @@ describe('E2E 7 — Receipt is saved unless --no-save is passed', () => {
     } catch {
       // No receipts dir yet
     }
-    const autoprocessReceipts = receiptFiles.filter((f) => f.includes('autoprocess'));
-    expect(autoprocessReceipts.length).toBeGreaterThan(0);
+    // Receipts are named by run_id (UUID), not by command name.
+    // latest.json is always written alongside the UUID receipt file.
+    // Check that at least one file exists in the receipts directory.
+    expect(receiptFiles.length).toBeGreaterThan(0);
   }, 45_000);
 });
 
@@ -817,7 +819,8 @@ describe('E2E 9 — Receipt summary reads from cycle_result (not cycleResult dir
     if (wasmMissing(r)) { console.warn('WASM unavailable — skipping'); return; }
     expect(r.exitCode).toBe(0);
 
-    // Find the receipt file
+    // Find the receipt file — receipts are named by UUID (run_id), not by command.
+    // latest.json is always a copy of the most recent receipt.
     const receiptsDir = path.join(env.tempDir, '.wasm4pm', 'receipts');
     let receiptFiles: string[] = [];
     try {
@@ -825,7 +828,10 @@ describe('E2E 9 — Receipt summary reads from cycle_result (not cycleResult dir
     } catch {
       return; // No receipts — skip
     }
-    const ap = receiptFiles.find((f) => f.includes('autoprocess'));
+    // Use latest.json as the canonical receipt (always present when any receipt is saved)
+    const ap = receiptFiles.includes('latest.json')
+      ? 'latest.json'
+      : receiptFiles.find((f) => f.endsWith('.json') && f !== 'latest.json');
     if (!ap) return;
 
     const receiptContent = await fs.readFile(path.join(receiptsDir, ap), 'utf-8');

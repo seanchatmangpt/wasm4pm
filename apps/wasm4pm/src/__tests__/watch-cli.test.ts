@@ -219,7 +219,8 @@ describe('wpm watch: startup in empty dir (no config file)', () => {
   it('stdout contains "initialized" event when starting (JSON format)', async () => {
     const { dir, cleanup } = await makeTempDir();
     try {
-      const result = await runWatch(['--format', 'json'], dir, 1200);
+      // collectMs=2500 allows CLI startup (~1s) plus watcher event emission before SIGTERM
+      const result = await runWatch(['--format', 'json'], dir, 2500);
       // The watch command emits a streaming 'initialized' JSON event.
       expect(result.stdout).toMatch(/initialized/i);
     } finally {
@@ -230,7 +231,7 @@ describe('wpm watch: startup in empty dir (no config file)', () => {
   it('stdout contains "watching" event when starting (JSON format)', async () => {
     const { dir, cleanup } = await makeTempDir();
     try {
-      const result = await runWatch(['--format', 'json'], dir, 1200);
+      const result = await runWatch(['--format', 'json'], dir, 2500);
       expect(result.stdout).toMatch(/watching/i);
     } finally {
       await cleanup();
@@ -240,7 +241,7 @@ describe('wpm watch: startup in empty dir (no config file)', () => {
   it('each line of JSON stream output is valid JSON', async () => {
     const { dir, cleanup } = await makeTempDir();
     try {
-      const result = await runWatch(['--format', 'json'], dir, 1200);
+      const result = await runWatch(['--format', 'json'], dir, 2500);
       const lines = result.stdout.split('\n').filter((l) => l.trim().startsWith('{'));
       expect(lines.length).toBeGreaterThan(0);
       for (const line of lines) {
@@ -334,8 +335,9 @@ describe('wpm watch: --interval validation', () => {
   it('--interval 0 exits 1 (config_error) immediately', async () => {
     const { dir, cleanup } = await makeTempDir();
     try {
-      // Invalid interval (0 is not positive) — must exit config_error (1) before starting watch
-      const result = await runWatch(['--interval', '0'], dir, 600);
+      // Invalid interval (0 is not positive) — must exit config_error (1) before starting watch.
+      // collectMs=2500 gives enough time for CLI startup (~1s) before the SIGTERM fires.
+      const result = await runWatch(['--interval', '0'], dir, 2500);
       // Process must have exited on its own (not killed by SIGTERM timeout) with exit code 1
       expect(result.exitCode).toBe(1);
       expect(result.signal).toBeNull();
@@ -347,7 +349,7 @@ describe('wpm watch: --interval validation', () => {
   it('--interval abc exits 1 (config_error) immediately', async () => {
     const { dir, cleanup } = await makeTempDir();
     try {
-      const result = await runWatch(['--interval', 'abc'], dir, 600);
+      const result = await runWatch(['--interval', 'abc'], dir, 2500);
       expect(result.exitCode).toBe(1);
       expect(result.signal).toBeNull();
     } finally {
@@ -358,7 +360,7 @@ describe('wpm watch: --interval validation', () => {
   it('--interval -100 exits 1 (config_error) immediately', async () => {
     const { dir, cleanup } = await makeTempDir();
     try {
-      const result = await runWatch(['--interval', '-100'], dir, 600);
+      const result = await runWatch(['--interval', '-100'], dir, 2500);
       expect(result.exitCode).toBe(1);
       expect(result.signal).toBeNull();
     } finally {
@@ -409,7 +411,8 @@ describe('wpm watch: with wasm4pm.toml in directory', () => {
         `[algorithm]\nname = "dfg"\n`,
         'utf-8'
       );
-      const result = await runWatch(['--format', 'json'], dir, 1200);
+      // collectMs=2500 allows CLI startup (~1s) plus watcher event emission before SIGTERM
+      const result = await runWatch(['--format', 'json'], dir, 2500);
       expect(result.stdout).toMatch(/initialized/i);
     } finally {
       await cleanup();
