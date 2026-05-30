@@ -42,7 +42,7 @@ export interface AlgorithmRecommendation {
  *   console.log(`Selected: ${rec.algorithm} (confidence: ${rec.confidence.toFixed(2)})`);
  */
 export function suggestAlgorithm(
-  task: 'classify' | 'cluster' | 'forecast' | 'regress' | 'pca',
+  task: 'classify' | 'cluster' | 'forecast' | 'regress' | 'pca' | 'anomaly' | 'drift',
   characteristics: LogCharacteristics,
   userChoice?: string
 ): AlgorithmRecommendation {
@@ -57,6 +57,22 @@ export function suggestAlgorithm(
       return suggestRegressionAlgorithm(characteristics, userChoice);
     case 'pca':
       return suggestPcaAlgorithm(characteristics, userChoice);
+    case 'anomaly':
+      // Anomaly detection uses EWMA by default
+      return {
+        algorithm: 'ewma',
+        confidence: 0.9,
+        rationale: 'Anomaly detection: EWMA smoothing is standard approach',
+        alternatives: [],
+      };
+    case 'drift':
+      // Drift detection uses Jaccard by default
+      return {
+        algorithm: 'jaccard',
+        confidence: 0.9,
+        rationale: 'Drift detection: Jaccard similarity is standard approach',
+        alternatives: [],
+      };
     default:
       return {
         algorithm: 'unknown',
@@ -103,7 +119,7 @@ function suggestClassificationAlgorithm(
   }
 
   // High-dimensional: decision_tree handles feature interactions
-  if (activityCount > 30 && traceCount < 100) {
+  if (activityCount > 30 && traceCount <= 100) {
     return {
       algorithm: 'decision_tree',
       confidence: 0.85,

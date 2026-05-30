@@ -31,8 +31,8 @@ import {
 import type { ClassificationMethod, ClusteringMethod, RegressionMethod } from '@wasm4pm/ml';
 import { Instrumentation } from '@wasm4pm/observability';
 import type { OtelEvent, RequiredOtelAttributes } from '@wasm4pm/observability';
-import { suggestClassificationMethod } from './algorithm-selector.js';
-import type { LogCharacteristics } from './algorithm-selector.js';
+import { suggestAlgorithm, suggestClassificationMethod } from './algorithm-selector.js';
+import type { LogCharacteristics, AlgorithmRecommendation } from './algorithm-selector.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WASM result shapes
@@ -354,27 +354,36 @@ const TASK_RECOMMENDATIONS: Record<MlTask, string[]> = {
 };
 
 /**
- * Helper: Implement 5-layer precedence for ML method selection.
+ * Helper: Implement 5-layer precedence for ML method selection with auto-selection.
  *
  * Precedence (highest to lowest):
  * 1. CLI: options.method
- * 2. Config file: config.ml.<task>.model or config.ml.<task>.method
- * 3. Environment: WASM4PM_ML_<TASK>_MODEL env var
- * 4. Defaults: taskDefaults[task]
+ * 2. Auto-selection: options.autoSelect (data-driven selection based on log characteristics)
+ * 3. Config file: config.ml.<task>.model or config.ml.<task>.method
+ * 4. Environment: WASM4PM_ML_<TASK>_MODEL env var
+ * 5. Defaults: taskDefaults[task]
  */
 function resolveMethodWithPrecedence(
   task: MlTask,
   options: MlTaskOptions,
   config: any | undefined,
   env: NodeJS.ProcessEnv | undefined,
-  taskDefaults: Record<MlTask, string>
+  taskDefaults: Record<MlTask, string>,
+  logCharacteristics?: LogCharacteristics
 ): string {
   // Layer 1: CLI arguments (highest priority)
   if (options.method) {
     return options.method;
   }
 
-  // Layer 2: Config file
+  // Layer 2: Auto-selection based on data characteristics
+  // Auto-select is enabled unless explicitly turned off
+  if (options.autoSelect !== false && logCharacteristics) {
+    const recommendation = suggestAlgorithm(task, logCharacteristics);
+    return recommendation.algorithm;
+  }
+
+  // Layer 3: Config file
   if (config?.ml) {
     if (task === 'classify' && config.ml.classify?.model) {
       return config.ml.classify.model;
@@ -393,13 +402,13 @@ function resolveMethodWithPrecedence(
     }
   }
 
-  // Layer 3: Environment variables
+  // Layer 4: Environment variables
   const envKey = `WASM4PM_ML_${task.toUpperCase()}_MODEL`;
   if (env?.[envKey]) {
     return env[envKey];
   }
 
-  // Layer 4: Defaults
+  // Layer 5: Defaults
   return taskDefaults[task];
 }
 
@@ -438,11 +447,45 @@ export async function executeMlTask(
     drift: 'jaccard',
   };
 
+  // ── Auto-selection: detect log characteristics for algorithm selection ──
+  // Compute characteristics whenever autoSelect is enabled OR when no explicit method is given
+  // (to preserve backward compatibility with original auto-suggest behavior)
+  let logCharacteristics: LogCharacteristics | undefined;
+  if (options.autoSelect || !options.method) {
+    try {
+      const statsRaw = wasm.analyze_event_statistics(logHandle);
+      const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
+      const traceCount = (stats?.total_cases as number) ?? 0;
+      const eventCount = (stats?.total_events as number) ?? 0;
+      const avgTraceLength = (stats?.avg_events_per_case as number) ?? (traceCount > 0 ? eventCount / traceCount : 0);
+      
+      let activityCount = 15;
+      try {
+        const dfgRaw = wasm.discover_dfg(logHandle, activityKey);
+        const dfg = typeof dfgRaw === 'string' ? JSON.parse(dfgRaw) : dfgRaw;
+        const nodes = dfg?.nodes;
+        if (Array.isArray(nodes)) activityCount = nodes.length;
+        else if (nodes && typeof nodes === 'object') activityCount = Object.keys(nodes).length;
+      } catch (e) {}
+
+      logCharacteristics = {
+        traceCount,
+        eventCount,
+        activityCount,
+        avgTraceLength,
+        maxTraceLength: avgTraceLength * 2, // approximation
+      };
+    } catch (e) {
+      // If log characteristics detection fails, continue without auto-selection
+      logCharacteristics = undefined;
+    }
+  }
+
   // If instrumentation is configured, wrap the entire task dispatch in a span.
   if (options.instrumentation) {
     const { traceId, requiredAttrs, emit, parentSpanId } = options.instrumentation;
-    // Resolve method using precedence chain
-    const method = resolveMethodWithPrecedence(task, options, config, env, taskDefaults);
+    // Resolve method using precedence chain (including auto-selection if enabled)
+    const method = resolveMethodWithPrecedence(task, options, config, env, taskDefaults, logCharacteristics);
     const inputAttributes: Record<string, unknown> = {};
     const k = options.k !== undefined ? Number(options.k) : undefined;
     if (k !== undefined && !Number.isNaN(k)) inputAttributes.parameterK = k;
@@ -452,6 +495,7 @@ export async function executeMlTask(
     if (nc !== undefined && !Number.isNaN(nc)) inputAttributes.parameterNComponents = nc;
     const fp = options.forecastPeriods !== undefined ? Number(options.forecastPeriods) : undefined;
     if (fp !== undefined && !Number.isNaN(fp)) inputAttributes.parameterForecastPeriods = fp;
+    if (options.autoSelect) inputAttributes.autoSelected = true;
 
     // Recurse without instrumentation to avoid infinite loop.
     const inner: MlTaskOptions = { ...options, instrumentation: undefined };
@@ -472,12 +516,10 @@ export async function executeMlTask(
   // skip the trace-count guard for them — their limit is implicit in detect_drift.
   if (task !== 'forecast' && task !== 'anomaly') {
     try {
-      const statsRaw = wasm.analyze_statistics(logHandle);
+      const statsRaw = wasm.analyze_event_statistics(logHandle);
       const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
       const traceCount: number =
-        (stats?.trace_count as number) ??
-        (stats?.traceCount as number) ??
-        (stats?.num_traces as number) ??
+        (stats?.total_cases as number) ??
         0;
       const minimum = TASK_MINIMUM_TRACES[task];
       if (traceCount > 0 && traceCount < minimum) {
@@ -493,6 +535,11 @@ export async function executeMlTask(
       // If analyze_statistics is unavailable we proceed without the guard
     }
   }
+
+  // ── Method resolution using precedence chain ──────────────────────────────
+  // If logCharacteristics wasn't computed yet (non-autoSelect path), resolve method directly.
+  // Otherwise, let the precedence chain handle it (including autoSelect if enabled).
+  const selectedMethod = resolveMethodWithPrecedence(task, options, config, env, taskDefaults, logCharacteristics);
 
   // ── Task dispatch ──────────────────────────────────────────────────────────
   let rawResult: Record<string, unknown>;
@@ -526,54 +573,11 @@ export async function executeMlTask(
         qualityReport.recommendations.forEach((rec) => console.warn(`  → ${rec}`));
       }
 
-      // G1: Data-driven algorithm selection via suggestClassificationMethod.
-      // Enabled when options.method is absent AND options.autoSelect is not explicitly false.
-      // Derive log characteristics from the extracted features + stats.
-      let suggestedMethod: ClassificationMethod | undefined;
-      let method: ClassificationMethod;
-      if (!options.method && options.autoSelect !== false) {
-        // Build LogCharacteristics from features and WASM stats.
-        // Use analyze_event_statistics for event/trace counts (always available)
-        // and discover_dfg for activity count (node count = unique activities).
-        let eventStats: Record<string, unknown> = {};
-        let activityCount = 15; // conservative fallback
-        try {
-          const sRaw = wasm.analyze_event_statistics(logHandle, activityKey);
-          eventStats = typeof sRaw === 'string' ? JSON.parse(sRaw) : (sRaw as Record<string, unknown>);
-        } catch { /* ignore */ }
-        try {
-          const dfgRaw = wasm.discover_dfg(logHandle, activityKey);
-          const dfg = typeof dfgRaw === 'string' ? JSON.parse(dfgRaw) : (dfgRaw as Record<string, unknown>);
-          const nodes = dfg?.nodes;
-          if (Array.isArray(nodes)) activityCount = nodes.length;
-          else if (nodes && typeof nodes === 'object') activityCount = Object.keys(nodes).length;
-        } catch { /* ignore */ }
-
-        const traceCount = features.length;
-        const avgTraceLengthFromFeatures =
-          traceCount > 0
-            ? features.reduce((s: number, f: Record<string, unknown>) => s + (Number(f.trace_length ?? 0)), 0) / traceCount
-            : 5;
-        const avgTraceLength =
-          ((eventStats?.avg_events_per_case as number) ?? 0) > 0
-            ? (eventStats.avg_events_per_case as number)
-            : avgTraceLengthFromFeatures || 5;
-        const eventCount =
-          (eventStats?.total_events as number) ?? traceCount * avgTraceLength;
-
-        const logChars: LogCharacteristics = {
-          traceCount,
-          eventCount,
-          activityCount,
-          avgTraceLength,
-          maxTraceLength: avgTraceLength * 2, // conservative estimate
-        };
-
-        suggestedMethod = suggestClassificationMethod(logChars);
-        method = suggestedMethod;
-      } else {
-        method = options.method as ClassificationMethod;
-      }
+      // Use the method resolved by the global precedence chain (which includes auto-selection)
+      const method = selectedMethod as ClassificationMethod;
+      // Track if this was auto-selected for output reporting
+      // Auto-suggestion happens when no explicit method is given (preserves original behavior)
+      const suggestedMethod = !options.method ? (method as ClassificationMethod) : undefined;
 
       const k = parseInt(String(options.k ?? '5'), 10);
       if (Number.isNaN(k) || k <= 0)
@@ -667,7 +671,7 @@ export async function executeMlTask(
       if (Number.isNaN(eps) || eps <= 0)
         throw new Error('Clustering parameter eps must be a positive number');
       rawResult = (await clusterTraces(features, {
-        method: (options.method as ClusteringMethod) || 'kmeans',
+        method: selectedMethod as ClusteringMethod,
         k,
         eps,
       })) as unknown as Record<string, unknown>;
@@ -798,7 +802,7 @@ export async function executeMlTask(
       }
 
       rawResult = (await regressRemainingTime(features, {
-        method: options.method as RegressionMethod | undefined,
+        method: selectedMethod as RegressionMethod,
       })) as unknown as Record<string, unknown>;
       // Attach quality report so downstream consumers can inspect it (same as classify).
       (rawResult as Record<string, unknown>)._featureQualityReport = qualityReport;
