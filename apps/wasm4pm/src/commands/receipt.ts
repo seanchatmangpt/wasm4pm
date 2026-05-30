@@ -9,13 +9,15 @@ import { canonicalizeOcel2 } from './receipt/canonicalize-ocel2.js';
 import { producerSafeReport } from './receipt/producer-safe-report.js';
 import { operatorPrivateReport } from './receipt/operator-private-report.js';
 import { truthforge } from './receipt/truthforge.js';
+import { show } from './receipt/show.js';
 
 export const receipt = defineCommand({
   meta: {
     name: 'receipt',
-    description: 'Adversarial receipt truth verification and ingress gates',
+    description: 'Adversarial receipt truth verification, chain visualization, and ingress gates',
   },
   subCommands: {
+    show,
     doctor,
     'verify-ocel2': verifyOcel2,
     'detect-fixture-mutation': detectFixtureMutation,

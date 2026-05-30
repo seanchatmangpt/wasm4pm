@@ -49,6 +49,7 @@ import cache from './commands/cache.js';
 import deduplicate from './commands/deduplicate.js';
 import models from './commands/models.js';
 import { suggest } from './commands/suggest.js';
+import { pipeline } from './commands/pipeline.js';
 import pkg from '../package.json' with { type: 'json' };
 
 export const main = defineCommand({
@@ -214,6 +215,15 @@ ${BOLD}PROLOG8${RESET}  ${DIM}(byte-capped proof engine, BLAKE3 receipt chains)$
   ${GREEN}wpm prolog8 query${RESET} -i <input.json>    Evaluate a query (Allow / Deny / Invalid + proof)
   ${GREEN}wpm prolog8 replay${RESET} -i <input.json>   Verify a receipt (detect tampering)
 
+${BOLD}PIPELINE${RESET}  ${DIM}(chain steps into reusable workflows)${RESET}
+  ${GREEN}wpm pipeline run${RESET} full -i <log>              Run the full 6-step analysis pipeline
+  ${GREEN}wpm pipeline run${RESET} quick -i <log>             Run fast 2-step: validate + DFG discovery
+  ${GREEN}wpm pipeline run${RESET} compliance -i <log>        Run conformance-focused pipeline
+  ${GREEN}wpm pipeline run${RESET} <pipeline.json> -i <log>   Execute a custom pipeline definition
+  ${GREEN}wpm pipeline create${RESET} --name <n> --steps a,b,c  Create a new pipeline definition file
+  ${GREEN}wpm pipeline list${RESET}                            List all built-in and user pipelines
+  ${GREEN}wpm pipeline validate${RESET} <pipeline.json>         Validate a pipeline definition file
+
 ${BOLD}UTILITY${RESET}
   ${GREEN}wpm batch${RESET} <dir/>                    Process all XES/OCEL files in a directory, write results to --output-dir
   ${GREEN}wpm swarm${RESET} <log.xes>                 Multi-worker swarm: parallel algorithm runs, convergence voting
@@ -304,6 +314,7 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     cache,
     deduplicate,
     models,
+    pipeline,
   },
 });
 
@@ -344,4 +355,5 @@ export {
   receipt,
   cell,
   truex,
+  pipeline,
 };

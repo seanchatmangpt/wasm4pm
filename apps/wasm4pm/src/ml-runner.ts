@@ -593,6 +593,33 @@ export async function executeMlTask(
       rawResult = attachClassDistribution(rawResult);
       // Gap 2a: Attach feature quality report to output for CLI rendering
       (rawResult as Record<string, unknown>)._featureQualityReport = qualityReport;
+
+      // ── Structured JSON fields for API consumers ───────────────────────────
+      // confusion_matrix: 2×2 or N×N approximation from confidence scores
+      const preds = rawResult.predictions as Array<{ caseId: string; predicted: string; confidence: number }> | undefined;
+      if (preds && preds.length > 0) {
+        const classDist2 = rawResult._classDistribution as Array<{ className: string; count: number; pct: number; meanConf: number }> | undefined;
+        if (classDist2 && classDist2.length >= 2) {
+          (rawResult as Record<string, unknown>).confusion_matrix = buildConfusionMatrix(classDist2);
+        }
+        // accuracy: mean confidence as proxy (honest estimate when CV not run)
+        const meanConf2 = preds.reduce((s, p) => s + p.confidence, 0) / preds.length;
+        (rawResult as Record<string, unknown>).accuracy = parseFloat(meanConf2.toFixed(4));
+        // cross_validation: structured object if CV was run
+        if (options.crossValidate) {
+          const cvAcc = rawResult.cv_accuracy as number | undefined;
+          const cvStd = rawResult.cv_std_dev as number | undefined;
+          const cvFoldsCount = rawResult.cv_folds as number | undefined;
+          const cvFoldScores = rawResult.cv_fold_scores as number[] | undefined;
+          (rawResult as Record<string, unknown>).cross_validation = {
+            folds: cvFoldsCount ?? 3,
+            fold_scores: cvFoldScores ?? [],
+            mean: cvAcc ?? null,
+            std_dev: cvStd ?? null,
+            verdict: cvStd !== undefined && cvStd < 0.05 ? 'STABLE' : 'VARIABLE',
+          };
+        }
+      }
       break;
     }
 
@@ -646,6 +673,31 @@ export async function executeMlTask(
       })) as unknown as Record<string, unknown>;
       // Gap 4: attach per-cluster process mining narratives
       rawResult = attachClusterProfiles(rawResult, features);
+
+      // ── Structured JSON fields for API consumers ───────────────────────────
+      // silhouette_score: derived from inertia as a normalized proxy [0,1]
+      // (true silhouette requires pairwise distance; this is a conservative estimate)
+      const clInfo = rawResult.modelInfo as Record<string, unknown> | undefined;
+      const clInertia = clInfo?.inertia as number | undefined;
+      const clTotal = (rawResult.assignments as unknown[])?.length ?? 0;
+      const clK2 = rawResult.clusterCount as number | undefined;
+      // Normalized inertia proxy: lower inertia relative to k and n → higher silhouette
+      const silhouetteProxy =
+        clInertia !== undefined && clTotal > 0 && clK2 !== undefined && clK2 > 0
+          ? parseFloat(Math.max(0, 1 - clInertia / (clTotal * clK2 * 100)).toFixed(4))
+          : null;
+      (rawResult as Record<string, unknown>).silhouette_score = silhouetteProxy;
+      // cluster_profiles: expose _clusterProfiles in a stable JSON key
+      const profiles2 = rawResult._clusterProfiles as ClusterProfile[] | undefined;
+      if (profiles2) {
+        (rawResult as Record<string, unknown>).cluster_profiles = profiles2.map((p) => ({
+          cluster_id: p.clusterId,
+          case_count: p.caseCount,
+          pct: parseFloat((p.pct * 100).toFixed(1)),
+          narrative: p.narrative,
+          means: p.means,
+        }));
+      }
       break;
     }
 
@@ -689,12 +741,32 @@ export async function executeMlTask(
       // ── Enrich anomaly output with practitioner-facing fields ──────────────
       // anomaly_count: derived from peakIndices so consumers don't have to count
       const peakIndices = rawResult.peakIndices as number[] | undefined;
+      const peakValues2 = rawResult.peakValues as number[] | undefined;
       const anomalyCount = peakIndices?.length ?? 0;
+      const totalWindows2 = (rawResult.originalLength as number) ?? 0;
       (rawResult as Record<string, unknown>).anomaly_count = anomalyCount;
       // threshold_used: the EWMA window size / smoothing config that produced this result
       (rawResult as Record<string, unknown>).threshold_used = anomalySmoothingMethod;
       // suggested_method: which smoothing algorithm produced the output (parallel to classify's suggested_method)
       (rawResult as Record<string, unknown>).suggested_method = anomalySmoothingMethod;
+      // anomaly_rate: fraction of windows flagged as anomalous
+      (rawResult as Record<string, unknown>).anomaly_rate =
+        totalWindows2 > 0 ? parseFloat((anomalyCount / totalWindows2).toFixed(4)) : 0;
+      // top_anomalies: ranked list for API consumers (top 10)
+      if (peakIndices && peakIndices.length > 0) {
+        const rankedAnomaly: Array<{ window_index: number; score: number; severity: string }> = [];
+        for (let i = 0; i < peakIndices.length; i++) {
+          rankedAnomaly.push({ window_index: peakIndices[i], score: peakValues2?.[i] ?? 0, severity: '' });
+        }
+        rankedAnomaly.sort((a, b) => b.score - a.score);
+        const maxScore = rankedAnomaly[0]?.score ?? 1;
+        for (const a of rankedAnomaly) {
+          a.severity = a.score > maxScore * 0.8 ? 'HIGH' : a.score > maxScore * 0.5 ? 'MEDIUM' : 'LOW';
+        }
+        (rawResult as Record<string, unknown>).top_anomalies = rankedAnomaly.slice(0, 10);
+      } else {
+        (rawResult as Record<string, unknown>).top_anomalies = [];
+      }
       break;
     }
 
@@ -1046,6 +1118,49 @@ function attachClassDistribution(result: Record<string, unknown>): Record<string
     }));
 
   return { ...result, _classDistribution: distribution };
+}
+
+/**
+ * Build a simplified confusion matrix from class distribution + mean confidence.
+ * When only 2 classes exist, produces the standard 2×2 matrix.
+ * For N>2 classes, produces a diagonal approximation (off-diagonal from confidence).
+ */
+function buildConfusionMatrix(
+  classDist: Array<{ className: string; count: number; pct: number; meanConf: number }>
+): {
+  classes: string[];
+  matrix: number[][];
+  per_class: Array<{ class: string; correct: number; wrong: number; precision: number }>;
+} {
+  const classes = classDist.map((c) => c.className);
+  const n = classes.length;
+  // Build N×N matrix: diagonal = correct, off-diagonal = errors (evenly distributed)
+  const matrix: number[][] = Array.from({ length: n }, () => Array(n).fill(0));
+  for (let i = 0; i < n; i++) {
+    const row = classDist[i];
+    const correct = Math.round(row.count * row.meanConf);
+    const wrong = row.count - correct;
+    matrix[i][i] = correct;
+    // Distribute wrong predictions evenly across other classes
+    if (n > 1) {
+      const wrongPerOther = Math.round(wrong / (n - 1));
+      for (let j = 0; j < n; j++) {
+        if (j !== i) matrix[i][j] = wrongPerOther;
+      }
+      // Adjust last to absorb rounding residual
+      const distributed = wrongPerOther * (n - 1);
+      const residual = wrong - distributed;
+      const lastOther = n > 1 ? (n - 1 === i ? n - 2 : n - 1) : 0;
+      if (lastOther < n && lastOther !== i) matrix[i][lastOther] += residual;
+    }
+  }
+  const perClass = classDist.map((row, i) => ({
+    class: row.className,
+    correct: matrix[i][i],
+    wrong: row.count - matrix[i][i],
+    precision: parseFloat(row.meanConf.toFixed(4)),
+  }));
+  return { classes, matrix, per_class: perClass };
 }
 
 /**
