@@ -1,0 +1,20 @@
+{
+  "name": "@wasm4pm/test-proof",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^1.1.0",
+    "vite-plugin-wasm": "^3.6.0",
+    "@wasm4pm/testing": "workspace:*",
+    "@wasm4pm/contracts": "workspace:*",
+    "wasm4pm": "workspace:*",
+    "@wasm4pm/config": "workspace:*",
+    "@wasm4pm/engine": "workspace:*",
+    "@wasm4pm/ml": "workspace:*",
+    "@wasm4pm/observability": "workspace:*"
+  }
+}

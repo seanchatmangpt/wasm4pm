@@ -120,6 +120,12 @@ jobs:
             fi
           done
 
+      # Proof gate — fast (≤5s) required check, monorepo-root script, BEFORE the integration lane
+      - name: proof-gate
+        working-directory: ${{ github.workspace }}
+        run: npm run test:proof
+        timeout-minutes: 5
+
       # Unit tests
       - name: Run unit tests
         working-directory: ./wasm4pm

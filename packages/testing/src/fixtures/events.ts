@@ -190,3 +190,13 @@ export const SAMPLE_XES = `<?xml version="1.0" encoding="UTF-8"?>
     </event>
   </trace>
 </log>`;
+
+/** Canonical minimal XES — single trace A→B. Shared across tests (TEST-FOUNDATION-RESET-1). */
+export const MINIMAL_XES_STRING = `<?xml version="1.0" encoding="UTF-8"?>
+<log xes.version="1.0" xes.features="nested-attributes">
+  <trace>
+    <string key="concept:name" value="case-001"/>
+    <event><string key="concept:name" value="A"/><date key="time:timestamp" value="2024-01-01T00:00:00Z"/></event>
+    <event><string key="concept:name" value="B"/><date key="time:timestamp" value="2024-01-01T01:00:00Z"/></event>
+  </trace>
+</log>`;

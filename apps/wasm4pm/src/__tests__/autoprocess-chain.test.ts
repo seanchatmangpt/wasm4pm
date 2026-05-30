@@ -2,16 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { mkdtempSync, rmSync, writeFileSync, readFileSync, existsSync } from 'node:fs';
 import * as os from 'node:os';
 import * as path from 'node:path';
-import { runCli } from '@wasm4pm/testing';
-
-const MINIMAL_XES = `<?xml version="1.0" encoding="UTF-8"?>
-<log xes.version="1.0" xmlns:xes="http://www.xes-standard.org/">
-  <trace>
-    <string key="concept:name" value="Case-1"/>
-    <event><string key="concept:name" value="A"/><date key="time:timestamp" value="2024-01-01T09:00:00.000+00:00"/></event>
-    <event><string key="concept:name" value="B"/><date key="time:timestamp" value="2024-01-01T10:00:00.000+00:00"/></event>
-  </trace>
-</log>`;
+import { runCli, MINIMAL_XES_STRING as MINIMAL_XES } from '@wasm4pm/testing';
 
 describe('autoprocess state-hash chain (Rank-1 oracle)', () => {
   let tmp: string;

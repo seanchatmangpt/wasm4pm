@@ -9,7 +9,9 @@
     "apps/*",
     "packages/*",
     "playground",
-    "lab"
+    "lab",
+    "tests/proof",
+    "tests/archive"
   ],
   "engines": {
     "node": ">=20.0.0",
@@ -18,7 +20,11 @@
   "packageManager": "npm@10.5.2",
   "scripts": {
     "build": "npm run build --workspaces --if-present",
-    "test": "npm run test --workspaces --if-present",
+    "test": "npm run test --workspace=@wasm4pm/test-proof",
+    "test:proof": "npm run test --workspace=@wasm4pm/test-proof",
+    "test:contract": "npm run test --workspace=@wasm4pm/contracts --workspace=@wasm4pm/config --workspace=@wasm4pm/engine --workspace=wasm4pm --workspace=@wasm4pm/observability --workspace=@wasm4pm/ml --workspace=@wasm4pm/planner --workspace=@wasm4pm/testing --if-present",
+    "test:integration": "npm run test --workspaces --if-present",
+    "test:archive": "npm run test:lane --workspace=@wasm4pm/test-archive",
     "test:coverage": "npm run test:coverage --workspaces --if-present && cd wasm4pm && npm run test:coverage",
     "lint": "npm run lint --workspaces --if-present",
     "clean": "npm run clean --workspaces --if-present && rm -rf node_modules",
