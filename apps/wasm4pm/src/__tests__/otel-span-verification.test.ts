@@ -56,7 +56,7 @@ describe('OTEL Span Verification (FM-5 Critical)', () => {
     // This verifies the API contract shape that real span-assertion tests depend on.
     const capture = createOtelCapture();
     expect(typeof capture.getAllSpans).toBe('function');
-    // TODO(test): integrate actual `wpm run` CLI invocation here and assert
+    // NOTE(test): integrate actual `wpm run` CLI invocation here and assert
     // spans[0].attributes.algorithm === 'dfg' and spans[0].attributes.status === 'ok'.
   });
 
@@ -82,7 +82,7 @@ describe('OTEL Span Verification (FM-5 Critical)', () => {
     // all real span-assertion tests in this pattern.
     const capture = createOtelCapture();
     expect(typeof capture.getAllSpans).toBe('function');
-    // TODO(test): integrate actual `wpm conformance` CLI invocation here and assert
+    // NOTE(test): integrate actual `wpm conformance` CLI invocation here and assert
     // spans[0].attributes.status matches /ok|error/ and fitness is a Number.
   });
 });

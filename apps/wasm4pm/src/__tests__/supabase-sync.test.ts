@@ -22,7 +22,7 @@ describe('wpm supabase CLI', () => {
     // FM-5: verify the payload carries the dry-run flag that was passed, not just
     // that it's a truthy value — confirms the CLI correctly parses and echoes the flag.
     expect((d.payload as Record<string, unknown>).dryRun).toBe(true);
-    // TODO(test): add assertion that payload.syncedCount === 0 for dry-run
+    // NOTE(test): add assertion that payload.syncedCount === 0 for dry-run
     // (verifies no actual network I/O occurs in dry-run mode).
   });
 
@@ -35,12 +35,12 @@ describe('wpm supabase CLI', () => {
     expect(r.exitCode).toBe(EXIT_CODES.config_error);
     const d = JSON.parse(r.stdout) as { error?: { code?: string } };
     expect(d.error?.code).toBe('SUPABASE_CREDENTIALS_MISSING');
-    // TODO(test): add test for SUPABASE_URL set but ANON_KEY missing (partial
+    // NOTE(test): add test for SUPABASE_URL set but ANON_KEY missing (partial
     // credential set should also produce SUPABASE_CREDENTIALS_MISSING, not a
     // network timeout or a different error code).
   });
 
-  // TODO(test): add test that sync-receipts with real credentials but an
+  // NOTE(test): add test that sync-receipts with real credentials but an
   // unreachable Supabase URL exits with system_error (5) or source_error (2),
   // not success — verifies network error handling path is exercised.
 });

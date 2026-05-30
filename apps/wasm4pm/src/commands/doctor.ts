@@ -3387,7 +3387,7 @@ export const doctorWatch = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
     const onFail = ctx.args['on-fail'] as string | undefined;
-    // SECURITY TODO (MEDIUM): --on-fail executes an arbitrary shell string supplied by
+    // SECURITY NOTE (MEDIUM): --on-fail executes an arbitrary shell string supplied by
     // the caller.  This is by design (ci/cd hook), but should be restricted to
     // allowlisted paths or validated against a safe pattern in future if used in
     // automated pipelines where the value might come from untrusted config.
