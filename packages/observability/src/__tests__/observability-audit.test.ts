@@ -54,7 +54,6 @@ import {
 import {
   rankAlgorithms,
   formatAlgorithmComparison,
-  getAlgorithmComparison,
 } from '../algorithm-ranking.js';
 
 // ─── 6. discovery-cache ────────────────────────────────────────────────────────
