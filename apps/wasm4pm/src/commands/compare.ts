@@ -243,6 +243,16 @@ interface ModelStats {
    * For authoritative Van der Aalst scores run `wpm quality <log.xes>`.
    */
   quality_tier_is_proxy: true;
+  /**
+   * Live token-replay fitness score (0-1), only populated when --quality flag is used.
+   * null means fitness was not computed (flag not set or WASM function unavailable).
+   */
+  liveFitness?: number | null;
+  /**
+   * Live precision score (0-1), only populated when --quality flag is used.
+   * null means precision was not computed.
+   */
+  livePrecision?: number | null;
 }
 
 /**
@@ -483,6 +493,12 @@ export const compare = defineCommand({
       type: 'boolean',
       description: 'Print cache hit/miss statistics after comparison',
     },
+    quality: {
+      type: 'boolean',
+      description:
+        'After running each algorithm, attempt to compute token-replay fitness and show a quality-ranked table. ' +
+        'For authoritative Van der Aalst scores run: wpm quality <log.xes>.',
+    },
     'no-save': {
       type: 'boolean',
       description: 'Do not auto-save the receipt to .wasm4pm/receipts/',
@@ -492,6 +508,7 @@ export const compare = defineCommand({
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
+    const showQuality = Boolean(ctx.args.quality);
     const emitOptions = { format, verbose, quiet };
 
     // Pre-WASM validation: reject unknown format values before loading WASM.
@@ -517,6 +534,7 @@ export const compare = defineCommand({
         algorithms: String(ctx.args.algorithms ?? ''),
         input: String(ctx.args.input ?? ''),
         format,
+        quality: showQuality,
       },
       async () => {
         try {
@@ -666,6 +684,34 @@ export const compare = defineCommand({
                             speedTier: profile.speedTier,
                             quality_tier_is_proxy: true,
                           };
+
+                          // --quality: attempt live token-replay fitness computation
+                          if (showQuality) {
+                            try {
+                              const fitnessRaw = typeof wasm['compute_token_replay_fitness'] === 'function'
+                                ? wasm['compute_token_replay_fitness'](logHandle, activityKey)
+                                : null;
+                              if (fitnessRaw !== null) {
+                                const parsed = typeof fitnessRaw === 'string' ? JSON.parse(fitnessRaw) : fitnessRaw;
+                                const fitnessVal = typeof parsed === 'number'
+                                  ? parsed
+                                  : typeof parsed?.fitness === 'number'
+                                    ? parsed.fitness
+                                    : typeof parsed?.fitness_value === 'number'
+                                      ? parsed.fitness_value
+                                      : null;
+                                algoStat.liveFitness = fitnessVal;
+                                algoStat.livePrecision = typeof parsed?.precision === 'number'
+                                  ? parsed.precision : null;
+                              } else {
+                                algoStat.liveFitness = null;
+                                algoStat.livePrecision = null;
+                              }
+                            } catch {
+                              algoStat.liveFitness = null;
+                              algoStat.livePrecision = null;
+                            }
+                          }
                         } catch (err) {
                           // Record the failure; push a sentinel row so output is always complete
                           const msg = err instanceof Error ? err.message : String(err);
@@ -859,6 +905,51 @@ export const compare = defineCommand({
                 projection.log(
                   '  Legend: ▓▓▓▓▓▓▓▓ = max  ░░░░░░░░ = min   bars are relative within this comparison'
                 );
+
+                // --quality: quality-ranked comparison table
+                if (showQuality) {
+                  const withFitness = validStats.filter((st) => st.liveFitness != null);
+                  if (withFitness.length > 0) {
+                    const ranked = [...withFitness].sort((a, b) => {
+                      const fa = a.liveFitness ?? 0;
+                      const fb = b.liveFitness ?? 0;
+                      if (Math.abs(fb - fa) > 0.001) return fb - fa;
+                      return b.qualityTier - a.qualityTier;
+                    });
+                    const minSpeed = Math.min(...ranked.map((r) => r.speedTier));
+                    const maxSpeed = Math.max(...ranked.map((r) => r.speedTier));
+                    const minQuality = Math.min(...ranked.map((r) => r.qualityTier));
+                    const maxQuality = Math.max(...ranked.map((r) => r.qualityTier));
+                    projection.log('');
+                    projection.log('  ─── Quality Ranking (--quality) ─────────────────────────────');
+                    projection.log('');
+                    projection.log(
+                      `  ${'Rank'.padEnd(5)} ${'Algorithm'.padEnd(22)} ${'Speed'.padEnd(10)} ${'Quality*'.padEnd(10)} ${'Fitness'.padEnd(10)} ${'Precision'.padEnd(10)}`
+                    );
+                    projection.log(
+                      `  ${'─'.repeat(5)} ${'─'.repeat(22)} ${'─'.repeat(10)} ${'─'.repeat(10)} ${'─'.repeat(10)} ${'─'.repeat(10)}`
+                    );
+                    ranked.forEach((st, idx) => {
+                      const rank = `${idx + 1}.`;
+                      const alg = col(st.algorithm, 22);
+                      const speedBar = sparkBar(st.speedTier, minSpeed, maxSpeed, 8).padEnd(10);
+                      const qualBar = sparkBar(st.qualityTier, minQuality, maxQuality, 8).padEnd(10);
+                      const fitStr = st.liveFitness != null ? st.liveFitness.toFixed(3) : '—';
+                      const precStr = st.livePrecision != null ? st.livePrecision.toFixed(3) : '—';
+                      projection.log(
+                        `  ${rank.padEnd(5)} ${alg} ${speedBar} ${qualBar} ${fitStr.padEnd(10)} ${precStr.padEnd(10)}`
+                      );
+                    });
+                    projection.log('');
+                    projection.log('  Speed bars: lower = faster. Fitness: token-replay score (0–1). Quality*: design-time proxy.');
+                    projection.log('');
+                  } else {
+                    projection.log('');
+                    projection.log('  --quality: live fitness not available in this WASM build. Run: wpm quality <log.xes>');
+                    projection.log('');
+                  }
+                }
+
                 projection.log('');
                 projection.log('  Metric guide (process mining interpretation):');
                 projection.log(

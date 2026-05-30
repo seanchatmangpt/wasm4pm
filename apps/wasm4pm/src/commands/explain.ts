@@ -101,6 +101,60 @@ export const explain = defineCommand({
             return await exitWithFlush(result.exit_code);
           }
 
+          // Intercept subcommands: "compare <alg1> <alg2>" and "concepts"
+          // These override all other logic and are detected by the positional target.
+          if (typeof ctx.args.target === 'string') {
+            const subcmd = ctx.args.target.toLowerCase().trim();
+
+            // wpm explain concepts — process mining fundamentals glossary
+            if (subcmd === 'concepts') {
+              const conceptsContent = getConceptsGlossary();
+              const payload = {
+                algorithm: null,
+                subject: 'concepts',
+                level: 'detailed' as const,
+                content: conceptsContent,
+                concepts: PROCESS_MINING_CONCEPTS,
+              };
+              const result = makeResult('explain', payload, performance.now() - t0, EXIT_CODES.success);
+              emitResult(result, { format, verbose, quiet }, (res, projection) => {
+                const p = res.payload as typeof payload;
+                projection.log(p.content);
+              });
+              return await exitWithFlush(result.exit_code);
+            }
+
+            // wpm explain compare <alg1> <alg2>
+            // The two algorithm names arrive via process.argv because citty only captures one positional.
+            if (subcmd === 'compare') {
+              // Pull alg1 and alg2 from raw process.argv after 'compare'
+              const explainIdx = process.argv.indexOf('explain');
+              const compareIdx = process.argv.indexOf('compare', explainIdx);
+              const afterCompare = compareIdx >= 0 ? process.argv.slice(compareIdx + 1).filter(a => !a.startsWith('-')) : [];
+              const alg1 = afterCompare[0];
+              const alg2 = afterCompare[1];
+
+              if (!alg1 || !alg2) {
+                const result = makeErrorResult(
+                  'explain',
+                  'Usage: wpm explain compare <algorithm1> <algorithm2>',
+                  EXIT_CODES.config_error,
+                  'MISSING_COMPARE_ARGS'
+                );
+                emitResult(result, { format, verbose, quiet });
+                return await exitWithFlush(result.exit_code);
+              }
+
+              const comparison = buildAlgorithmComparison(alg1, alg2);
+              const result = makeResult('explain', comparison, performance.now() - t0, EXIT_CODES.success);
+              emitResult(result, { format, verbose, quiet }, (res, projection) => {
+                const p = res.payload as typeof comparison;
+                projection.log(formatComparisonOutput(p));
+              });
+              return await exitWithFlush(result.exit_code);
+            }
+          }
+
           // Accept positional <algorithm> as alias for --algorithm
           if (
             !ctx.args.algorithm &&
@@ -235,6 +289,9 @@ export const explain = defineCommand({
             deployment_profiles: meta?.deploymentProfiles ?? null,
             when_to_use: meta?.whenToUse ?? null,
             alternatives: meta?.alternatives ?? null,
+            // Tier labels derived from registry scores — "fast"/"balanced"/"quality"
+            speed_tier: meta ? deriveSpeedTier(meta.speedScore) : null,
+            quality_tier: meta ? deriveQualityTier(meta.qualityScore) : null,
           };
 
           const result = makeResult('explain', payload, performance.now() - t0, EXIT_CODES.success);
@@ -2186,4 +2243,205 @@ Van der Aalst quality dimensions:
 Available algorithms with explanations:
   dfg, alpha, heuristic, inductive, astar, aco, hill, annealing, pso,
   skeleton, declare, ilp, genetic`.trim();
+}
+
+// ---------------------------------------------------------------------------
+// Speed / quality tier derivation
+// ---------------------------------------------------------------------------
+
+/** Derive a human speed tier label from a numeric score (lower = faster). */
+function deriveSpeedTier(speedScore: number): 'fast' | 'balanced' | 'slow' {
+  if (speedScore <= 20) return 'fast';
+  if (speedScore <= 50) return 'balanced';
+  return 'slow';
+}
+
+/** Derive a human quality tier label from a numeric score (higher = better). */
+function deriveQualityTier(qualityScore: number): 'exploratory' | 'balanced' | 'quality' {
+  if (qualityScore <= 40) return 'exploratory';
+  if (qualityScore <= 65) return 'balanced';
+  return 'quality';
+}
+
+// ---------------------------------------------------------------------------
+// Algorithm comparison subcommand
+// ---------------------------------------------------------------------------
+
+interface AlgorithmComparison {
+  algorithm_a: string;
+  algorithm_b: string;
+  subject: 'compare';
+  comparison: {
+    speed: { winner: string; ratio: string; score_a: number; score_b: number };
+    quality: { winner: string; margin: string; score_a: number; score_b: number };
+    soundness: { [key: string]: boolean };
+    output_types: { [key: string]: string };
+    recommendation: string;
+  };
+}
+
+/** Return true if the algorithm produces a provably sound model. */
+function isAlgorithmSound(algoKey: string): boolean {
+  const SOUND_ALGORITHMS = new Set(['inductive', 'inductiveminer', 'ilp', 'astar', 'a_star']);
+  return SOUND_ALGORITHMS.has(algoKey.toLowerCase().replace(/[_\-+*]/g, ''));
+}
+
+/** Normalise user input to an ALGO_META key, returning undefined if unknown. */
+function normaliseToMetaKey(input: string): string | undefined {
+  const key = input.toLowerCase().replace(/[+*\- ]/g, '').replace(/_/g, '');
+  const COMPARE_ALIAS_MAP: Record<string, string> = {
+    simdstreamingdfg: 'simd_dfg',
+    hillclimbing: 'hill',
+    heuristicminer: 'heuristic',
+    inductiveminer: 'inductive',
+    geneticalgorithm: 'genetic',
+    simulatedannealing: 'annealing',
+    antcolony: 'aco',
+    processskeleton: 'skeleton',
+    alphaplus: 'alpha',
+    alphaplusplus: 'alpha',
+  };
+  const mapped = COMPARE_ALIAS_MAP[key] ?? key;
+  // Find in ALGO_META by normalised key
+  const normMap = Object.fromEntries(Object.keys(ALGO_META).map((k) => [k.replace(/_/g, ''), k]));
+  return normMap[mapped.replace(/_/g, '')] ?? undefined;
+}
+
+function buildAlgorithmComparison(alg1: string, alg2: string): AlgorithmComparison {
+  const key1 = normaliseToMetaKey(alg1);
+  const key2 = normaliseToMetaKey(alg2);
+
+  const meta1 = key1 ? ALGO_META[key1] : undefined;
+  const meta2 = key2 ? ALGO_META[key2] : undefined;
+
+  const speed1 = meta1?.speedScore ?? 50;
+  const speed2 = meta2?.speedScore ?? 50;
+  const quality1 = meta1?.qualityScore ?? 50;
+  const quality2 = meta2?.qualityScore ?? 50;
+
+  // Speed: lower score = faster
+  const speedWinner = speed1 <= speed2 ? alg1 : alg2;
+  const speedDiff = Math.abs(speed1 - speed2);
+  const speedRatio =
+    speedDiff === 0
+      ? 'equal speed'
+      : speed1 < speed2
+        ? `~${Math.round((speed2 / Math.max(speed1, 1)) * 10) / 10}x faster`
+        : `~${Math.round((speed1 / Math.max(speed2, 1)) * 10) / 10}x faster`;
+
+  // Quality: higher score = better
+  const qualityWinner = quality1 >= quality2 ? alg1 : alg2;
+  const qualityDiff = Math.abs(quality1 - quality2);
+  const qualityMargin =
+    qualityDiff === 0
+      ? 'equal quality'
+      : `+${qualityDiff} quality score (${quality1 >= quality2 ? alg1 : alg2} wins)`;
+
+  const sound1 = isAlgorithmSound(alg1);
+  const sound2 = isAlgorithmSound(alg2);
+
+  // Build recommendation
+  let recommendation: string;
+  if (speedWinner === qualityWinner) {
+    recommendation = `${speedWinner} is both faster and higher quality — prefer it unless you need a specific output type.`;
+  } else {
+    recommendation = `Use ${speedWinner} for exploration/quick iteration; use ${qualityWinner} for final analysis or publication.`;
+  }
+
+  return {
+    algorithm_a: alg1,
+    algorithm_b: alg2,
+    subject: 'compare',
+    comparison: {
+      speed: { winner: speedWinner, ratio: speedRatio, score_a: speed1, score_b: speed2 },
+      quality: { winner: qualityWinner, margin: qualityMargin, score_a: quality1, score_b: quality2 },
+      soundness: { [alg1]: sound1, [alg2]: sound2 },
+      output_types: {
+        [alg1]: meta1?.outputType ?? 'unknown',
+        [alg2]: meta2?.outputType ?? 'unknown',
+      },
+      recommendation,
+    },
+  };
+}
+
+function formatComparisonOutput(p: AlgorithmComparison): string {
+  const { algorithm_a: a, algorithm_b: b, comparison: c } = p;
+  const lines: string[] = [
+    '',
+    `Algorithm Comparison: ${a} vs ${b}`,
+    '='.repeat(50),
+    '',
+    `SPEED`,
+    `  ${a}: ${c.speed.score_a}/100 (lower=faster)`,
+    `  ${b}: ${c.speed.score_b}/100 (lower=faster)`,
+    `  Winner: ${c.speed.winner} — ${c.speed.ratio}`,
+    '',
+    `QUALITY`,
+    `  ${a}: ${c.quality.score_a}/100`,
+    `  ${b}: ${c.quality.score_b}/100`,
+    `  Winner: ${c.quality.winner} — ${c.quality.margin}`,
+    '',
+    `SOUNDNESS (provably correct model)`,
+    `  ${a}: ${c.soundness[a] ? 'Yes ✓' : 'No ✗'}`,
+    `  ${b}: ${c.soundness[b] ? 'Yes ✓' : 'No ✗'}`,
+    '',
+    `OUTPUT TYPE`,
+    `  ${a}: ${c.output_types[a]}`,
+    `  ${b}: ${c.output_types[b]}`,
+    '',
+    `RECOMMENDATION`,
+    `  ${c.recommendation}`,
+    '',
+  ];
+  return lines.join('\n');
+}
+
+// ---------------------------------------------------------------------------
+// Concepts subcommand — process mining fundamentals glossary
+// ---------------------------------------------------------------------------
+
+const PROCESS_MINING_CONCEPTS: Record<string, string> = {
+  event_log:
+    'A collection of traces, each representing one execution of a business process. The primary input to all process mining algorithms.',
+  trace:
+    'An ordered sequence of events belonging to a single case (process instance), such as all steps taken to handle one customer order.',
+  activity:
+    'A named step or action within a process (e.g., "Approve Purchase", "Send Invoice"). The building block of traces and models.',
+  fitness:
+    'A quality dimension (0–1) measuring how well a model can replay observed traces. A value >0.85 is considered good practice (van der Aalst, 2016).',
+  precision:
+    'A quality dimension (0–1) measuring how much unseen behaviour the model allows. Low precision means the model is too permissive.',
+  generalization:
+    'A quality dimension (0–1) measuring whether the model applies beyond the training log. Avoids overfitting to the sample.',
+  simplicity:
+    'A quality dimension favouring models with fewer nodes and arcs (Occam\'s razor). A simpler model is easier to validate with domain experts.',
+  variant:
+    'A unique trace pattern. A log with many variants indicates high process variability or noncompliance. Use "wpm run" to count variants.',
+  directly_follows:
+    'A relation A→B meaning activity A is immediately followed by B with no intermediate activity in between. The foundation of DFG discovery.',
+  conformance:
+    'The degree to which actual process executions (the log) match a normative model. Measured via token replay or alignments (wpm conformance).',
+};
+
+function getConceptsGlossary(): string {
+  const lines: string[] = [
+    '',
+    'Process Mining Concepts — Fundamental Terminology',
+    '='.repeat(52),
+    '  Reference: van der Aalst (2016) Process Mining: Data Science in Action',
+    '',
+  ];
+
+  for (const [term, definition] of Object.entries(PROCESS_MINING_CONCEPTS)) {
+    lines.push(`${term.toUpperCase().replace(/_/g, ' ')}`);
+    lines.push(`  ${definition}`);
+    lines.push('');
+  }
+
+  lines.push('  Run "wpm explain <algorithm>" for algorithm-specific guidance.');
+  lines.push('  Run "wpm conformance --help" for conformance checking options.');
+  lines.push('');
+
+  return lines.join('\n');
 }

@@ -22,6 +22,7 @@ import {
 } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
 import { isFirstRun, formatFirstRunHints } from '../first-run-ux.js';
+import { rankAlgorithms, captureFeedback } from '@wasm4pm/observability';
 import { STANDARD_EXIT_CODE_DOCS } from '../help-standards.js';
 
 export interface RunOptions {
@@ -142,6 +143,12 @@ export const run = defineCommand({
       type: 'boolean',
       description:
         'Use smart execution engine with caching (shortcut for --algorithm smart-engine)',
+    },
+    smart: {
+      type: 'boolean',
+      description:
+        'Smart mode: run dfg, heuristic_miner, and alpha_plus_plus in parallel, rank by quality, ' +
+        'and return the best result. Slower than single-algorithm mode but auto-selects the best model.',
     },
     'no-cache': {
       type: 'boolean',
@@ -647,6 +654,92 @@ export const run = defineCommand({
                 estimatedMs = executionPlan?.budget?.estimated_duration_ms ?? 0;
               } catch {
                 // ETA estimation is optional
+              }
+
+              // Step 5d: --smart mode — run 3 fast algorithms, rank by quality, return best
+              if (ctx.args.smart) {
+                const smartCandidates = ['dfg', 'heuristic_miner', 'alpha_plus_plus'];
+                type SmartResult = { algo: string; raw: unknown; elapsedMs: number; fitness: number };
+                const smartResults: SmartResult[] = [];
+
+                for (const candidate of smartCandidates) {
+                  try {
+                    const t0 = performance.now();
+                    const kernel = new Kernel(wasm as any);
+                    await kernel.init();
+                    const candidateRaw = await kernel.runRaw(candidate, logHandle, activityKey, {});
+                    const candidateMs = performance.now() - t0;
+
+                    // Extract a simple fitness proxy: DFG edge count ratio (higher = more coverage)
+                    let fitProxy = 0.5;
+                    try {
+                      const parsed = typeof candidateRaw === 'string' ? JSON.parse(candidateRaw as string) : candidateRaw;
+                      const edges = Array.isArray((parsed as any)?.edges) ? (parsed as any).edges.length : 0;
+                      const nodes = Array.isArray((parsed as any)?.nodes) ? (parsed as any).nodes.length : 1;
+                      // Normalize: more edges relative to nodes → denser model → proxy for fitness
+                      fitProxy = Math.min(1, edges / Math.max(nodes * 2, 1));
+                    } catch { /* use default */ }
+
+                    smartResults.push({ algo: candidate, raw: candidateRaw, elapsedMs: candidateMs, fitness: fitProxy });
+
+                    // Record feedback for future rankAlgorithms calls (non-blocking)
+                    captureFeedback(candidate, 0, { fitness: fitProxy, precision: null, generalization: null, simplicity: null }, candidateMs).catch(() => { /* non-blocking */ });
+                  } catch (err) {
+                    process.stderr.write(`[smart] ${candidate} failed: ${err instanceof Error ? err.message : String(err)}\n`);
+                  }
+                }
+
+                if (smartResults.length === 0) {
+                  const errResult = makeErrorResult(
+                    'run',
+                    new Error('--smart mode: all candidate algorithms failed'),
+                    EXIT_CODES.execution_error,
+                    'SMART_MODE_ALL_FAILED'
+                  );
+                  emitResult(errResult, emitOptions);
+                  return await exitWithFlush(errResult.exit_code);
+                }
+
+                // Pick best by fitness proxy (highest score wins)
+                smartResults.sort((a, b) => b.fitness - a.fitness);
+                const best = smartResults[0];
+
+                // Try to use prior feedback ranking if available (upgrades the proxy)
+                try {
+                  const ranked = await rankAlgorithms(smartCandidates, 'composite');
+                  if (ranked.length > 0) {
+                    const topByHistory = ranked[0].algorithm;
+                    const historyBest = smartResults.find(r => r.algo === topByHistory);
+                    if (historyBest && historyBest.fitness >= best.fitness * 0.85) {
+                      // Defer to historical ranking if it's close in quality
+                      Object.assign(best, historyBest);
+                    }
+                  }
+                } catch { /* ranking is advisory only */ }
+
+                if (format === 'human') {
+                  process.stderr.write(
+                    `[smart] Ran ${smartResults.length} algorithms — best: ${best.algo} ` +
+                    `(score=${best.fitness.toFixed(3)}, ${best.elapsedMs.toFixed(0)}ms)\n`
+                  );
+                }
+
+                // Hand off the best result into the normal post-processing path
+                const smartResult = makeResult(
+                  'run',
+                  {
+                    status: 'success',
+                    message: `Smart mode selected ${best.algo} as best algorithm`,
+                    algorithm: best.algo,
+                    smart_mode: true,
+                    candidates: smartResults.map(r => ({ algorithm: r.algo, fitness_proxy: r.fitness, elapsed_ms: r.elapsedMs })),
+                    result: best.raw,
+                  },
+                  best.elapsedMs,
+                  EXIT_CODES.success
+                );
+                emitResult(smartResult, emitOptions);
+                return await exitWithFlush(EXIT_CODES.success);
               }
 
               // Step 6: Execute discovery with intelligent retry
@@ -1231,7 +1324,56 @@ export const run = defineCommand({
                     projection.warn(`  Fitness ${(q.fitness * 100).toFixed(0)}% is below the 85% target.`);
                     projection.log(`  Try a higher-quality algorithm: wpm run -i ${path.basename(p.input)} --algorithm genetic_algorithm`);
                   }
-                } else if (ctx.args['with-quality'] && p.model) {
+                }
+
+                // Quality hints — always shown in human mode after discovery (Task 5).
+                // Provides actionable guidance regardless of --with-quality flag.
+                {
+                  const q = p.quality as { fitness?: number; precision?: number; simplicity?: number } | undefined;
+                  const modelData = p.model as Record<string, unknown> | undefined;
+                  const uniqueActivities: number = (() => {
+                    if (!modelData) return 0;
+                    if (Array.isArray(modelData['nodes'])) return (modelData['nodes'] as unknown[]).length;
+                    if (Array.isArray(modelData['activities'])) return (modelData['activities'] as unknown[]).length;
+                    return 0;
+                  })();
+                  const variantCount = (p.logStats as { unique_variants?: number } | undefined)?.unique_variants ?? 0;
+
+                  const qualityHints: string[] = [];
+                  if (q?.fitness !== undefined) {
+                    if (q.fitness < 0.7) {
+                      qualityHints.push(`Fitness: ${(q.fitness * 100).toFixed(1)}% (try --algorithm inductive_miner for higher fitness)`);
+                    } else if (q.fitness < 0.85) {
+                      qualityHints.push(`Fitness: ${(q.fitness * 100).toFixed(1)}% (borderline — consider --algorithm genetic_algorithm)`);
+                    } else {
+                      qualityHints.push(`Fitness: ${(q.fitness * 100).toFixed(1)}% (good)`);
+                    }
+                  }
+                  if (uniqueActivities > 0) {
+                    if (uniqueActivities > 30) {
+                      qualityHints.push(`${uniqueActivities} unique activities detected (complex process — consider filtering rare paths)`);
+                    } else {
+                      qualityHints.push(`${uniqueActivities} unique activities detected`);
+                    }
+                  }
+                  if (variantCount > 0) {
+                    if (variantCount > 50) {
+                      qualityHints.push(`${variantCount} variants (high diversity — consider --algorithm dfg for overview)`);
+                    } else {
+                      qualityHints.push(`${variantCount} variants`);
+                    }
+                  }
+
+                  if (qualityHints.length > 0) {
+                    projection.log('');
+                    projection.log('  Quality hints:');
+                    for (const hint of qualityHints) {
+                      projection.log(`    • ${hint}`);
+                    }
+                  }
+                }
+
+                if (!p.quality && ctx.args['with-quality'] && p.model) {
                   // If model is not a Petri net, warn about quality metrics
                   const resultDataCheck = p.model as Record<string, unknown>;
                   const hasPetriNetFields =

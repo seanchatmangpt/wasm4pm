@@ -210,13 +210,43 @@ async function validateConfigFiles(dirpath: string): Promise<boolean> {
 // Presets that have both TOML templates and a full BaseConfig object (JSON serialisable).
 const PUBLIC_PRESETS_WITH_JSON: ReadonlyArray<string> = ['fast', 'balanced', 'quality'];
 
-// All supported init preset names.
+// Domain-specific preset aliases that map to a technical preset.
+// These give practitioners a vocabulary closer to their industry without
+// requiring knowledge of algorithm names up front.
+const DOMAIN_PRESET_MAP: Record<string, string> = {
+  hospital: 'balanced',       // inductive_miner + conformance focus for clinical pathways
+  financial: 'quality',       // ilp + full ML for audit-grade accuracy
+  manufacturing: 'fast',      // DFG for real-time shop-floor monitoring
+  streaming: 'streaming',     // explicitly kept as alias identity for clarity
+};
+
+// Human-readable descriptions for domain presets (overrides technical preset description).
+const DOMAIN_PRESET_DESCRIPTIONS: Record<string, string> = {
+  hospital:
+    'Balanced profile tuned for clinical pathways — inductive_miner for sound process trees, ML for case classification, conformance for guideline adherence.',
+  financial:
+    'Quality profile for audit-grade analysis — ILP Petri-net discovery, full ML suite, and RL orchestration. Highest accuracy for regulatory compliance.',
+  manufacturing:
+    'Fast profile for real-time shop-floor monitoring — DFG for sub-second discovery on high-volume event streams, minimal overhead.',
+};
+
+// Algorithm hints for domain presets.
+const DOMAIN_ALGO_HINTS: Record<string, string> = {
+  hospital: 'inductive_miner (sound process tree) or heuristic_miner (noise-tolerant)',
+  financial: 'ilp (provably optimal) or genetic_algorithm (flexible quality)',
+  manufacturing: 'dfg (fastest) or simd_streaming_dfg (SIMD-accelerated real-time)',
+};
+
+// All supported init preset names (technical + domain aliases).
 const VALID_PRESETS: ReadonlyArray<string> = [
   'fast',
   'balanced',
   'quality',
   'conformance',
   'streaming',
+  'hospital',
+  'financial',
+  'manufacturing',
 ];
 
 type AllPresets = 'fast' | 'balanced' | 'quality' | 'conformance' | 'streaming';
@@ -256,7 +286,7 @@ export const init = defineCommand({
     preset: {
       type: 'string',
       description:
-        'Initialize with a preset: fast (DFG, no ML/prediction), balanced (heuristic+ML+prediction), quality (ILP+full ML+RL), conformance (alignment-based fitness check), streaming (SIMD DFG + drift detection)',
+        'Initialize with a preset: fast (DFG, no ML/prediction), balanced (heuristic+ML+prediction), quality (ILP+full ML+RL), conformance (alignment-based fitness check), streaming (SIMD DFG + drift detection). Domain presets: hospital (balanced, clinical pathways), financial (quality, audit-grade), manufacturing (fast, shop-floor monitoring)',
       alias: 'p',
     },
     'profile-guide': {
@@ -305,7 +335,12 @@ export const init = defineCommand({
       (ctx.args['config-format'] as string) ||
       'toml'
     ).toLowerCase();
-    const preset = ctx.args.preset as string | undefined;
+    // Resolve domain preset aliases to their underlying technical preset.
+    // Keep the original name for user-facing output (description, hint),
+    // but use the technical name for config file generation.
+    const rawPreset = ctx.args.preset as string | undefined;
+    const domainPreset = rawPreset && DOMAIN_PRESET_MAP[rawPreset] ? rawPreset : undefined;
+    const preset = domainPreset ? DOMAIN_PRESET_MAP[domainPreset] as string : rawPreset;
     const force = Boolean(ctx.args.force);
 
     return withSpan(
@@ -447,7 +482,9 @@ export const init = defineCommand({
           );
 
           // Algorithm guidance tailored to the chosen preset.
+          // Domain presets override with domain-specific hints.
           const algorithmHint = (() => {
+            if (domainPreset && DOMAIN_ALGO_HINTS[domainPreset]) return DOMAIN_ALGO_HINTS[domainPreset];
             if (preset === 'conformance')
               return 'etconformance_precision (fast) or alignments (exact)';
             if (preset === 'streaming') return 'simd_streaming_dfg (fastest) or dfg (default)';
@@ -459,7 +496,10 @@ export const init = defineCommand({
           })();
 
           // Practical description of what the chosen preset actually does.
+          // Domain presets override with domain-specific descriptions.
           const presetDescription = (() => {
+            if (domainPreset && DOMAIN_PRESET_DESCRIPTIONS[domainPreset])
+              return DOMAIN_PRESET_DESCRIPTIONS[domainPreset];
             if (preset === 'fast')
               return 'Directly-Follows Graph only — sub-second discovery, no ML or prediction. Start here.';
             if (preset === 'balanced')
@@ -475,7 +515,7 @@ export const init = defineCommand({
 
           const payload = {
             format: effectiveFormat,
-            preset: preset ?? null,
+            preset: domainPreset ?? preset ?? null,
             preset_description: presetDescription,
             files_created: filesCreated,
             wasm4pm_dir_created: wasm4pmDirCreated,

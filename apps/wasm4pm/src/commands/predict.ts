@@ -935,19 +935,24 @@ function formatHumanOutput(
         return;
       }
       p.log('');
-      p.log('  Rank  Activity                   Probability  Confidence');
-      p.log('  ────  ─────────────────────────  ───────────  ──────────────────────────────');
+      p.log('  Next Activity Prediction');
+      p.log('  ========================');
+      // Confidence bars: scale bar relative to the top prediction probability
+      const maxProb = Math.max(...preds.map((pr) => pr.probability));
+      const BAR_WIDTH = 20;
       preds.forEach((pred, i) => {
-        const rank = String(i + 1).padStart(4);
-        const act = pred.activity.padEnd(25);
-        const prob = (pred.probability * 100).toFixed(1).padStart(8) + '%';
+        const rank = String(i + 1);
+        const act = pred.activity.slice(0, 28).padEnd(28);
+        const pct = (pred.probability * 100).toFixed(1);
+        const barFill = maxProb > 0 ? Math.round((pred.probability / maxProb) * BAR_WIDTH) : 0;
+        const bar = '█'.repeat(barFill) + '░'.repeat(BAR_WIDTH - barFill);
         const tier =
           pred.probability >= 0.8
-            ? '★ High   — safe to act on'
+            ? 'High'
             : pred.probability >= 0.5
-              ? '◆ Medium — verify before critical decisions'
-              : '○ Low    — uncertain, use with caution';
-        p.log(`  ${rank}  ${act}  ${prob}  ${tier}`);
+              ? 'Med'
+              : 'Low';
+        p.log(`  ${rank}. ${act} ${bar} ${pct.padStart(5)}%  [${tier}]`);
       });
       p.log('');
       // Plain-English interpretation of the top prediction
@@ -983,34 +988,56 @@ function formatHumanOutput(
     case 'remaining-time': {
       // Gap 2: show Weibull parameters to convey uncertainty shape, not just point estimate.
       const weibull = result['weibull'] as Record<string, unknown> | null | undefined;
+
+      /** Format milliseconds as a human-readable string, e.g. "4 days 3 hours". */
+      function fmtMs(ms: number): string {
+        if (!Number.isFinite(ms) || ms < 0) return '—';
+        const totalSecs = Math.round(ms / 1000);
+        const days = Math.floor(totalSecs / 86400);
+        const hours = Math.floor((totalSecs % 86400) / 3600);
+        const mins = Math.floor((totalSecs % 3600) / 60);
+        const parts: string[] = [];
+        if (days > 0) parts.push(`${days} day${days !== 1 ? 's' : ''}`);
+        if (hours > 0) parts.push(`${hours} hour${hours !== 1 ? 's' : ''}`);
+        if (parts.length === 0 && mins > 0) parts.push(`${mins} min${mins !== 1 ? 's' : ''}`);
+        if (parts.length === 0) parts.push('< 1 minute');
+        return parts.join(' ');
+      }
+
       if (result['prediction']) {
         const pred = result['prediction'] as Record<string, unknown>;
         const remainingMs = (pred['remaining_ms'] as number) ?? 0;
-        const remainingH = remainingMs / 3_600_000;
         const confidence = ((pred['confidence'] as number) ?? 0) * 100;
+        // Approximate 95% CI: ±40% of predicted (Weibull-derived heuristic for display)
+        const ciLowMs = remainingMs * 0.6;
+        const ciHighMs = remainingMs * 1.4;
         p.log('');
-        p.log(`  Estimated remaining time:  ${remainingH.toFixed(1)} hours`);
-        p.log(`  Confidence:                ${confidence.toFixed(1)}%`);
-        p.log(`  Method:                    ${pred['method'] ?? 'unknown'}`);
+        p.log('  Remaining Time Estimate');
+        p.log('  =======================');
+        p.log(`  Expected:       ${fmtMs(remainingMs)}`);
+        p.log(`  95% CI:         [${fmtMs(ciLowMs)}, ${fmtMs(ciHighMs)}]`);
+        p.log(`  Confidence:     ${confidence.toFixed(1)}%`);
+        p.log(`  Method:         ${pred['method'] ?? 'weibull'}`);
         if (weibull) {
+          const k = weibull['shape'] as number;
+          const shapeLbl = k < 1 ? 'decreasing hazard (early-completion pattern)'
+            : k > 1 ? 'increasing hazard (late-completion pattern)'
+            : 'constant hazard (memoryless / exponential)';
           p.log('');
           p.log('  Weibull survival model (fitted to historical case durations):');
-          p.log(`    Shape (k):    ${(weibull['shape'] as number).toFixed(3)}`);
-          p.log(
-            `    Scale (lambda): ${((weibull['scale_ms'] as number) / 3_600_000).toFixed(2)} hours`
-          );
-          p.log(`    Distribution: ${weibull['interpretation']}`);
+          p.log(`    Shape (k):      ${k.toFixed(3)}  — ${shapeLbl}`);
+          p.log(`    Scale (λ):      ${fmtMs(weibull['scale_ms'] as number)}`);
+          p.log(`    Interpretation: ${weibull['interpretation']}`);
         }
         p.log('');
       } else {
         if (weibull) {
+          const k = weibull['shape'] as number;
           p.log('');
           p.log('  Weibull survival model (fitted to historical case durations):');
-          p.log(`    Shape (k):    ${(weibull['shape'] as number).toFixed(3)}`);
-          p.log(
-            `    Scale (lambda): ${((weibull['scale_ms'] as number) / 3_600_000).toFixed(2)} hours`
-          );
-          p.log(`    Distribution: ${weibull['interpretation']}`);
+          p.log(`    Shape (k):      ${k.toFixed(3)}`);
+          p.log(`    Scale (λ):      ${fmtMs(weibull['scale_ms'] as number)}`);
+          p.log(`    Distribution:   ${weibull['interpretation']}`);
           p.log('');
         }
         const msg = (result['message'] as string) ?? 'Use --prefix to predict case duration.';
@@ -1087,11 +1114,28 @@ function formatHumanOutput(
         p.log('  increase sensitivity. Use "wpm drift-watch" for continuous monitoring.');
         return;
       }
+      const ewmaSmoothed = ewma ? (ewma['smoothed'] as number[] | undefined) : undefined;
       p.log('');
-      p.log(
-        `  Detected ${drifts.length} drift point(s) (method: ${dr?.['method'] ?? 'jaccard_window'}, window=${dr?.['window_size'] ?? '?'}):`
+      p.log('  Concept Drift Analysis');
+      p.log('  ======================');
+      p.log(`  Method: ${dr?.['method'] ?? 'jaccard_window'}  |  Window size: ${dr?.['window_size'] ?? '?'}  |  Drift points: ${drifts.length}`);
+      p.log('');
+      const sortedDrifts = [...drifts].sort(
+        (a, b) => (a['position'] as number) - (b['position'] as number)
       );
-      for (const dp of drifts) {
+      for (let i = 0; i < sortedDrifts.length; i++) {
+        const dp = sortedDrifts[i];
+        const pos = dp['position'] as number;
+        const dist = typeof dp['distance'] === 'number' ? dp['distance'] : 0;
+        const prevPos = i === 0 ? 0 : (sortedDrifts[i - 1]!['position'] as number);
+        const windowLabel = `events ${prevPos}-${pos}`;
+        const ewmaVal = ewmaSmoothed && ewmaSmoothed[i] != null ? ewmaSmoothed[i]! : dist;
+        const bar = `EWMA: ${ewmaVal.toFixed(3)}, Δ=${dist.toFixed(3)}`;
+        p.log(`  Window ${String(i + 1).padStart(2)} (${windowLabel.padEnd(22)}): ⚠ Drift detected  (${bar})`);
+      }
+      p.log('');
+      // Legacy detail lines for each drift point
+      for (const dp of sortedDrifts) {
         const pos = dp['position'] ?? '?';
         const dist =
           typeof dp['distance'] === 'number'

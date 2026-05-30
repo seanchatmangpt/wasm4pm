@@ -64,6 +64,32 @@ interface DiffResult {
   summary: string;
 }
 
+/** Multi-perspective deep analysis — only present when --deep flag is set. */
+interface DeepAnalysis {
+  control_flow: {
+    similarity: number;
+    added_paths: number;
+    removed_paths: number;
+    added_activities: string[];
+    removed_activities: string[];
+  };
+  performance: {
+    baseline_avg_duration_hours: number;
+    current_avg_duration_hours: number;
+    duration_delta_pct: number;
+    throughput_change_pct: number;
+  };
+  variants: {
+    baseline_count: number;
+    current_count: number;
+    new_variants: number;
+    removed_variants: number;
+    top_new_variant: string;
+    top_removed_variant: string;
+  };
+  overall_verdict: 'IMPROVED' | 'DEGRADED' | 'CHANGED' | 'IDENTICAL';
+}
+
 interface DiffPayload {
   log1: string;
   log2: string;
@@ -71,6 +97,8 @@ interface DiffPayload {
   diff: DiffResult;
   /** True when log1 and log2 resolve to the same file (jaccard is always 1.0 in this case). */
   same_file?: boolean;
+  /** Deep multi-perspective analysis, present only when --deep flag is used. */
+  deep?: DeepAnalysis;
 }
 
 export const diff = defineCommand({
@@ -78,7 +106,7 @@ export const diff = defineCommand({
     name: 'diff',
     description:
       'Compare two XES event logs via Jaccard similarity on DFG edges. ' +
-      'Ex: wpm diff before.xes after.xes  |  wpm diff log1.xes log2.xes --format json',
+      'Ex: wpm diff before.xes after.xes  |  wpm diff log1.xes log2.xes --format json  |  wpm diff log1.xes log2.xes --deep',
   },
   args: {
     log1: {
@@ -94,6 +122,16 @@ export const diff = defineCommand({
     'activity-key': {
       type: 'string',
       description: 'Activity attribute key (default: concept:name)',
+    },
+    deep: {
+      type: 'boolean',
+      description:
+        'Run multi-perspective deep analysis (control-flow, performance, variants, verdict)',
+    },
+    'same-file-check': {
+      type: 'boolean',
+      description:
+        'Detect when both paths resolve to the same file and return similarity: 1.0 immediately',
     },
     format: {
       type: 'string',
@@ -119,6 +157,8 @@ export const diff = defineCommand({
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
+    const deep = Boolean(ctx.args.deep);
+    const sameFileCheck = Boolean(ctx.args['same-file-check']);
 
     const t0 = Date.now();
 
@@ -128,6 +168,7 @@ export const diff = defineCommand({
         log1: String(ctx.args.log1 ?? ''),
         log2: String(ctx.args.log2 ?? ''),
         format,
+        deep,
       },
       async () => {
         try {
@@ -170,6 +211,27 @@ export const diff = defineCommand({
           ]);
           const isSameFile = log1Path === log2Path || realPath1 === realPath2;
 
+          // --same-file-check: when paths are identical, short-circuit with similarity=1.0
+          if (sameFileCheck && isSameFile) {
+            const shortCircuitDiff = buildIdenticalDiff();
+            const payload: DiffPayload = {
+              log1: log1Path,
+              log2: log2Path,
+              activityKey,
+              diff: shortCircuitDiff,
+              same_file: true,
+            };
+            if (deep) {
+              payload.deep = buildIdenticalDeep();
+            }
+            const elapsedMs = Date.now() - t0;
+            const result = makeResult('diff', payload, elapsedMs, EXIT_CODES.success);
+            emitResult(result, { format, verbose, quiet }, (res, projection) => {
+              printHumanDiff(res.payload, log1Path, log2Path, projection, deep);
+            });
+            return await exitWithFlush(EXIT_CODES.success);
+          }
+
           // Load WASM module
           const loader = WasmLoader.getInstance();
           await loader.init();
@@ -186,10 +248,12 @@ export const diff = defineCommand({
           const handle2: string = WasmInstrumentation.load_eventlog_from_xes(wasm, xes2);
 
           let diffResult!: DiffResult;
+          let deepAnalysis: DeepAnalysis | undefined;
+
           try {
             await withSpanRaw(
               `wasm4pm.${AnalysisSpans.diffCompute()}`,
-              { activityKey, log1: log1Path, log2: log2Path },
+              { activityKey, log1: log1Path, log2: log2Path, deep },
               async () => {
                 // INSTRUMENTED: discover_dfg — top 2 most-called WASM export (25 calls)
                 const dfg1Raw = WasmInstrumentation.discover_dfg(wasm, handle1, activityKey);
@@ -226,6 +290,19 @@ export const diff = defineCommand({
                 );
 
                 diffResult = computeDiff(dfg1, dfg2, variants1, variants2);
+
+                // --deep: multi-perspective analysis
+                if (deep) {
+                  deepAnalysis = computeDeepAnalysis(
+                    dfg1,
+                    dfg2,
+                    variants1,
+                    variants2,
+                    xes1,
+                    xes2,
+                    diffResult
+                  );
+                }
               },
               () => ({
                 jaccard: diffResult ? Math.round(diffResult.jaccard * 1000) / 1000 : 0,
@@ -233,6 +310,7 @@ export const diff = defineCommand({
                 activities_removed: diffResult ? diffResult.activities.removed.length : 0,
                 edges_added: diffResult ? diffResult.edges.added.length : 0,
                 edges_removed: diffResult ? diffResult.edges.removed.length : 0,
+                deep_enabled: deep,
               })
             );
           } finally {
@@ -248,11 +326,12 @@ export const diff = defineCommand({
             activityKey,
             diff: diffResult,
             ...(isSameFile ? { same_file: true } : {}),
+            ...(deepAnalysis ? { deep: deepAnalysis } : {}),
           };
 
           const result = makeResult('diff', payload, elapsedMs, EXIT_CODES.success);
           emitResult(result, { format, verbose, quiet }, (res, projection) => {
-            printHumanDiff(res.payload, log1Path, log2Path, projection);
+            printHumanDiff(res.payload, log1Path, log2Path, projection, deep);
           });
 
           // Persist BLAKE3 receipt for proof-of-execution
@@ -269,6 +348,7 @@ export const diff = defineCommand({
                   log1: log1Path,
                   log2: log2Path,
                   activityKey,
+                  deep,
                   elapsedMs: Math.round(elapsedMs * 100) / 100,
                 },
               };
@@ -293,6 +373,186 @@ export const diff = defineCommand({
     );
   },
 });
+
+// ─── Deep analysis helpers ─────────────────────────────────────────────────────
+
+/**
+ * Extract all ISO-8601 timestamps from an XES string.
+ * Returns sorted millisecond values per trace.
+ */
+function extractTraceDurations(xes: string): number[] {
+  const durations: number[] = [];
+  // Match each <trace>...</trace> block
+  const traceRegex = /<trace[\s\S]*?<\/trace>/g;
+  let traceMatch: RegExpExecArray | null;
+
+  while ((traceMatch = traceRegex.exec(xes)) !== null) {
+    const traceXml = traceMatch[0];
+    // Extract all timestamps within this trace
+    const tsRegex = /value="(\d{4}-\d{2}-\d{2}T[\d:.]+Z?)"/g;
+    const timestamps: number[] = [];
+    let tsMatch: RegExpExecArray | null;
+
+    while ((tsMatch = tsRegex.exec(traceXml)) !== null) {
+      const ms = Date.parse(tsMatch[1]);
+      if (!isNaN(ms)) timestamps.push(ms);
+    }
+
+    if (timestamps.length >= 2) {
+      const sorted = timestamps.sort((a, b) => a - b);
+      durations.push(sorted[sorted.length - 1] - sorted[0]);
+    }
+  }
+
+  return durations;
+}
+
+function avgHours(durations: number[]): number {
+  if (durations.length === 0) return 0;
+  const avgMs = durations.reduce((s, d) => s + d, 0) / durations.length;
+  return Math.round((avgMs / 3_600_000) * 10) / 10;
+}
+
+/**
+ * Pick the top variant (by count) that is unique to a given set of variant keys.
+ */
+function topUniqueVariant(
+  variants: TraceVariant[],
+  uniqueKeys: Set<string>
+): string {
+  const unique = variants
+    .filter((v) => uniqueKeys.has(variantKey(v)))
+    .sort((a, b) => (b.count ?? b.frequency ?? 0) - (a.count ?? a.frequency ?? 0));
+  return unique.length > 0 ? variantKey(unique[0]) : '';
+}
+
+/**
+ * Compute the multi-perspective deep analysis.
+ */
+function computeDeepAnalysis(
+  dfg1: Dfg,
+  dfg2: Dfg,
+  variants1: TraceVariant[],
+  variants2: TraceVariant[],
+  xes1: string,
+  xes2: string,
+  base: DiffResult
+): DeepAnalysis {
+  // ── Control flow ──────────────────────────────────────────────────────────────
+  const controlFlow = {
+    similarity: Math.round(base.jaccard * 1000) / 1000,
+    added_paths: base.edges.added.length,
+    removed_paths: base.edges.removed.length,
+    added_activities: [...base.activities.added],
+    removed_activities: [...base.activities.removed],
+  };
+
+  // ── Performance ───────────────────────────────────────────────────────────────
+  const durations1 = extractTraceDurations(xes1);
+  const durations2 = extractTraceDurations(xes2);
+
+  const baselineAvgH = avgHours(durations1);
+  const currentAvgH = avgHours(durations2);
+
+  const durationDeltaPct =
+    baselineAvgH > 0
+      ? Math.round(((currentAvgH - baselineAvgH) / baselineAvgH) * 1000) / 10
+      : 0;
+
+  // Throughput approximation: inverse of avg duration (more variants → more throughput)
+  const baselineThroughput = baselineAvgH > 0 ? 1 / baselineAvgH : 0;
+  const currentThroughput = currentAvgH > 0 ? 1 / currentAvgH : 0;
+  const throughputChangePct =
+    baselineThroughput > 0
+      ? Math.round(((currentThroughput - baselineThroughput) / baselineThroughput) * 1000) / 10
+      : 0;
+
+  const performance = {
+    baseline_avg_duration_hours: baselineAvgH,
+    current_avg_duration_hours: currentAvgH,
+    duration_delta_pct: durationDeltaPct,
+    throughput_change_pct: throughputChangePct,
+  };
+
+  // ── Variants ─────────────────────────────────────────────────────────────────
+  const vKeys1 = new Set(variants1.map(variantKey));
+  const vKeys2 = new Set(variants2.map(variantKey));
+
+  const onlyIn2 = new Set([...vKeys2].filter((k) => !vKeys1.has(k)));
+  const onlyIn1 = new Set([...vKeys1].filter((k) => !vKeys2.has(k)));
+
+  const variantsSummary = {
+    baseline_count: vKeys1.size,
+    current_count: vKeys2.size,
+    new_variants: onlyIn2.size,
+    removed_variants: onlyIn1.size,
+    top_new_variant: topUniqueVariant(variants2, onlyIn2),
+    top_removed_variant: topUniqueVariant(variants1, onlyIn1),
+  };
+
+  // ── Overall verdict ───────────────────────────────────────────────────────────
+  let verdict: DeepAnalysis['overall_verdict'];
+
+  if (base.jaccard === 1.0 && durationDeltaPct === 0) {
+    verdict = 'IDENTICAL';
+  } else if (base.jaccard > 0.6 && durationDeltaPct < 0) {
+    // Similar structure + faster → IMPROVED
+    verdict = 'IMPROVED';
+  } else if (base.jaccard < 0.4 || durationDeltaPct > 20) {
+    // Very different structure or much slower → DEGRADED
+    verdict = 'DEGRADED';
+  } else {
+    verdict = 'CHANGED';
+  }
+
+  return {
+    control_flow: controlFlow,
+    performance,
+    variants: variantsSummary,
+    overall_verdict: verdict,
+  };
+}
+
+/** Trivial identical diff result for same-file short-circuit. */
+function buildIdenticalDiff(): DiffResult {
+  return {
+    activities: { added: [], removed: [], shared: [] },
+    edges: { added: [], removed: [], changed: [] },
+    variants: { uniqueLog1: 0, uniqueLog2: 0, shared: 0, totalLog1: 0, totalLog2: 0 },
+    jaccard: 1.0,
+    summary: 'Structurally nearly identical (Jaccard 1.000) — same file',
+  };
+}
+
+/** Trivial identical deep analysis for same-file short-circuit. */
+function buildIdenticalDeep(): DeepAnalysis {
+  return {
+    control_flow: {
+      similarity: 1.0,
+      added_paths: 0,
+      removed_paths: 0,
+      added_activities: [],
+      removed_activities: [],
+    },
+    performance: {
+      baseline_avg_duration_hours: 0,
+      current_avg_duration_hours: 0,
+      duration_delta_pct: 0,
+      throughput_change_pct: 0,
+    },
+    variants: {
+      baseline_count: 0,
+      current_count: 0,
+      new_variants: 0,
+      removed_variants: 0,
+      top_new_variant: '',
+      top_removed_variant: '',
+    },
+    overall_verdict: 'IDENTICAL',
+  };
+}
+
+// ─── Core diff computation ─────────────────────────────────────────────────────
 
 /**
  * Normalise whatever shape analyze_trace_variants returns into a flat array
@@ -425,7 +685,8 @@ function printHumanDiff(
   payload: DiffPayload,
   log1Path: string,
   log2Path: string,
-  projection: ConsoleProjection
+  projection: ConsoleProjection,
+  deep: boolean
 ): void {
   const result = payload.diff;
   const log1Name = log1Path.split('/').pop() ?? log1Path;
@@ -436,58 +697,82 @@ function printHumanDiff(
   const red = (s: string) => `\x1b[31m${s}\x1b[0m`;
   const cyan = (s: string) => `\x1b[36m${s}\x1b[0m`;
   const bold = (s: string) => `\x1b[1m${s}\x1b[0m`;
+  const yellow = (s: string) => `\x1b[33m${s}\x1b[0m`;
 
   const line = (s: string) => projection.log(s);
 
-  // Sparkbar helper (8 chars, ▓ filled ░ empty)
-  const sparkBar = (val: number, min: number, max: number, width = 8): string => {
-    if (max <= min) return '▓'.repeat(width);
-    const ratio = Math.max(0, Math.min(1, (val - min) / (max - min)));
-    const filled = Math.round(ratio * width);
-    return '▓'.repeat(filled) + '░'.repeat(width - filled);
-  };
+  // ─── Quick summary (always shown) ────────────────────────────────────────────
+  const acts1 = result.activities.shared.length + result.activities.removed.length;
+  const acts2 = result.activities.shared.length + result.activities.added.length;
 
   line('');
   line(bold(`Process Diff: ${log1Name} → ${log2Name}`));
-  line('━'.repeat(60));
 
-  // --- Jaccard similarity banner (structural distance at a glance) ---
-  const jaccardColor = result.jaccard >= 0.7 ? green : result.jaccard >= 0.4 ? cyan : red;
-  const jaccardBar = sparkBar(result.jaccard, 0, 1);
-  line('');
+  // Compact one-liner summary
+  const simPct = (result.jaccard * 100).toFixed(1);
+  const simColor =
+    result.jaccard >= 0.7 ? green : result.jaccard >= 0.4 ? yellow : red;
+
+  // Deep verdict badge
+  const verdictBadge =
+    payload.deep
+      ? ' | Verdict: ' +
+        (payload.deep.overall_verdict === 'IMPROVED'
+          ? green('IMPROVED')
+          : payload.deep.overall_verdict === 'DEGRADED'
+            ? red('DEGRADED')
+            : payload.deep.overall_verdict === 'IDENTICAL'
+              ? cyan('IDENTICAL')
+              : yellow('CHANGED'))
+      : '';
+
+  const durationSummary =
+    payload.deep
+      ? ` | Duration: ${payload.deep.performance.baseline_avg_duration_hours}h→${payload.deep.performance.current_avg_duration_hours}h (${payload.deep.performance.duration_delta_pct >= 0 ? '+' : ''}${payload.deep.performance.duration_delta_pct}%)`
+      : '';
+
   line(
-    `  ${bold('Structural similarity:')} ${jaccardColor(result.jaccard.toFixed(3))}  ${jaccardBar}  ${result.summary}`
+    `Similarity: ${simColor(simPct + '%')} | Activities: ${acts1}→${acts2} | Variants: ${result.variants.totalLog1}→${result.variants.totalLog2}${durationSummary}${verdictBadge}`
   );
 
-  // --- Activities section (control-flow perspective) ---
+  if (!deep) {
+    line(cyan('Run with --deep for full analysis.'));
+    line('');
+    return;
+  }
+
+  // ─── Deep output ─────────────────────────────────────────────────────────────
+  line('━'.repeat(60));
+
+  // Jaccard banner
+  const jaccardColor = result.jaccard >= 0.7 ? green : result.jaccard >= 0.4 ? cyan : red;
   line('');
-  line(bold('Activities  [control-flow perspective]:'));
+  line(
+    `  ${bold('Structural similarity:')} ${jaccardColor(result.jaccard.toFixed(3))}  ${result.summary}`
+  );
+
+  // ── Control flow ──────────────────────────────────────────────────────────────
+  line('');
+  line(bold('Control Flow:'));
   const { added: actAdded, removed: actRemoved, shared: actShared } = result.activities;
 
   if (actAdded.length > 0) {
     const list = actAdded.join(', ');
     line(`  ${green('+')} New:     ${list.length > 60 ? list.slice(0, 57) + '...' : list}`);
-    line(
-      `           (appeared in log2, ${actAdded.length} activit${actAdded.length === 1 ? 'y' : 'ies'})`
-    );
   }
   if (actRemoved.length > 0) {
     const list = actRemoved.join(', ');
     line(`  ${red('-')} Removed: ${list.length > 60 ? list.slice(0, 57) + '...' : list}`);
-    line(
-      `           (gone in log2, ${actRemoved.length} activit${actRemoved.length === 1 ? 'y' : 'ies'})`
-    );
   }
   if (actAdded.length === 0 && actRemoved.length === 0) {
     line(`  ${cyan('=')} No activity changes`);
   }
-  line(
-    `  ${cyan('=')} Shared:  ${actShared.length} activit${actShared.length === 1 ? 'y' : 'ies'}`
-  );
+  line(`  ${cyan('=')} Shared:  ${actShared.length} activit${actShared.length === 1 ? 'y' : 'ies'}`);
+  line(`  Paths added: ${result.edges.added.length} | Paths removed: ${result.edges.removed.length}`);
 
-  // --- Edges section (control-flow + frequency perspective) ---
+  // ── Edges ─────────────────────────────────────────────────────────────────────
   line('');
-  line(bold('Edges (directly-follows)  [control-flow perspective]:'));
+  line(bold('Edges (directly-follows):'));
   const { added: edgeAdded, removed: edgeRemoved, changed: edgeChanged } = result.edges;
 
   if (edgeAdded.length === 0 && edgeRemoved.length === 0 && edgeChanged.length === 0) {
@@ -517,24 +802,43 @@ function printHumanDiff(
     }
   }
 
-  // --- Variants section (variant/case perspective) ---
-  line('');
-  line(bold('Traces  [variant perspective]:'));
-  const v = result.variants;
-  const variantDelta = v.totalLog2 - v.totalLog1;
-  const variantDeltaStr = variantDelta >= 0 ? green(`+${variantDelta}`) : red(String(variantDelta));
+  // ── Performance ───────────────────────────────────────────────────────────────
+  if (payload.deep) {
+    const perf = payload.deep.performance;
+    line('');
+    line(bold('Performance:'));
+    const durColor = perf.duration_delta_pct < 0 ? green : perf.duration_delta_pct > 10 ? red : yellow;
+    line(
+      `  Avg duration: ${perf.baseline_avg_duration_hours}h → ${perf.current_avg_duration_hours}h  (${durColor((perf.duration_delta_pct >= 0 ? '+' : '') + perf.duration_delta_pct + '%')})`
+    );
+    const tpColor = perf.throughput_change_pct > 0 ? green : perf.throughput_change_pct < -10 ? red : yellow;
+    line(
+      `  Throughput change: ${tpColor((perf.throughput_change_pct >= 0 ? '+' : '') + perf.throughput_change_pct + '%')}`
+    );
 
-  line(`  Unique variants  log1: ${v.totalLog1}  log2: ${v.totalLog2}  (${variantDeltaStr})`);
-  line(`  Shared variants: ${v.shared}`);
-  line(`  Only in log1:    ${v.uniqueLog1}  (process paths abandoned in log2)`);
-  line(`  Only in log2:    ${v.uniqueLog2}  (new process paths that emerged in log2)`);
-  line('');
-  // Time perspective note: DFG comparison does not surface performance differences.
-  // Use `wpm temporal` to compare waiting times, processing times, and case durations.
-  line(
-    cyan(
-      `  [time perspective] Not shown here — use "wpm temporal" to compare performance profiles (waiting times, case durations).`
-    )
-  );
+    // ── Variants ─────────────────────────────────────────────────────────────────
+    const vars = payload.deep.variants;
+    line('');
+    line(bold('Variants:'));
+    const variantDelta = vars.current_count - vars.baseline_count;
+    line(
+      `  Unique variants  baseline: ${vars.baseline_count}  current: ${vars.current_count}  (${variantDelta >= 0 ? green('+' + variantDelta) : red(String(variantDelta))})`
+    );
+    line(`  New variants: ${vars.new_variants}  |  Removed: ${vars.removed_variants}`);
+    if (vars.top_new_variant) {
+      line(`  Top new:     ${green(vars.top_new_variant)}`);
+    }
+    if (vars.top_removed_variant) {
+      line(`  Top removed: ${red(vars.top_removed_variant)}`);
+    }
+
+    // ── Verdict ───────────────────────────────────────────────────────────────────
+    line('');
+    const v = payload.deep.overall_verdict;
+    const vColor =
+      v === 'IMPROVED' ? green : v === 'DEGRADED' ? red : v === 'IDENTICAL' ? cyan : yellow;
+    line(bold('Verdict: ') + vColor(v));
+  }
+
   line('');
 }
