@@ -842,7 +842,7 @@ export class Engine {
       this._runDurations.push(runDuration);
       if (this._runDurations.length > 200) this._runDurations.shift(); // rolling window
       // Track algorithm used (from plan nodes)
-      const algoNode = plan.nodes?.find((n: { kind?: string }) => n.kind === 'algorithm');
+      const algoNode = (plan as unknown as { nodes?: { kind?: string; algorithmId?: string }[] }).nodes?.find((n: { kind?: string }) => n.kind === 'algorithm');
       const algoId: string = (algoNode as { algorithmId?: string } | undefined)?.algorithmId ?? 'unknown';
       this._algorithmsUsed[algoId] = (this._algorithmsUsed[algoId] ?? 0) + 1;
       // Accumulate events from receipt summary if available
