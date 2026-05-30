@@ -262,6 +262,9 @@ export type {
   BatchResult,
 } from './batch-runner.js';
 
+// Process-Model Registry - M1
+export * from './model-registry.js';
+
 // Export all WASM functions from @wasm4pm/core to provide unified entry point
 export * from '@wasm4pm/core';
 

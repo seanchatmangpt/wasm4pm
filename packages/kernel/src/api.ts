@@ -180,6 +180,9 @@ export interface KernelWasmModule extends Omit<WasmModule,
   | 'discover_working_together_network'
   | 'discover_dfg_simd'
 > {
+  query_provenance_traversal?(ocel_handle: string, query_json: string): string;
+  validate_ocel?(ocel_handle: string): string;
+
   /** Delete an object handle from WASM memory */
   delete_object?(handle: string): void;
 
@@ -247,6 +250,14 @@ export interface KernelWasmModule extends Omit<WasmModule,
   discover_working_together_network?(log_handle: string, resource_key: string): string;
   discover_dfg_simd?(eventlog_handle: string, activity_key: string): string;
   encode_ocel_as_text?(ocel_handle: string): string;
+
+  // ── Incremental Token-Replay Prefix Conformance API ──────────────────────────
+  store_petri_net_from_json?(pn_json: string): string;
+  streaming_conformance_begin?(pn_handle: string): string;
+  streaming_conformance_add_event?(handle: string, case_id: string, activity: string): string;
+  streaming_conformance_close_trace?(handle: string, case_id: string): string;
+  streaming_conformance_stats?(handle: string): string;
+  streaming_conformance_finalize?(handle: string): string;
 
   // ── Streaming session API (feature-streaming-basic, compiled into edge/fog/browser profiles) ──
   // Previously gated on feature-streaming-full (bug); now gated on feature-streaming-basic
@@ -456,6 +467,35 @@ export class Kernel {
   /** Look up a single algorithm's metadata */
   algorithm(id: string): AlgorithmMetadata | undefined {
     return this.registry.get(id);
+  }
+
+  /**
+   * Run a provenance traversal query over an Object-Centric Event Log (OCEL 2.0).
+   *
+   * @param ocelHandle - Handle to the loaded OCEL in WASM memory
+   * @param query - The provenance query structure
+   */
+  async queryProvenance(
+    ocelHandle: string,
+    query: {
+      start_object_id?: string;
+      start_object_type: string;
+      steps: Array<
+        | { step_type: 'ObjectToEvent'; event_type: string; qualifier: string }
+        | { step_type: 'EventToObject'; object_type: string; qualifier: string }
+        | { step_type: 'ObjectToObject'; object_type: string; qualifier: string; direction?: 'forward' | 'reverse' | 'both' }
+      >;
+    }
+  ): Promise<{ paths: Array<Array<{ type: 'object' | 'event'; id: string; object_type?: string; event_type?: string }>> }> {
+    this.assertInitialized();
+    if (!this.wasm.query_provenance_traversal) {
+      throw new KernelError(
+        'query_provenance_traversal is not available in this WASM build',
+        'ALGORITHM_NOT_FOUND' as any
+      );
+    }
+    const resultStr = this.wasm.query_provenance_traversal(ocelHandle, JSON.stringify(query));
+    return JSON.parse(resultStr);
   }
 
   /**
@@ -1246,6 +1286,18 @@ export class Kernel {
 
       // ─── OCEL (Object-Centric Event Log) algorithms ──────────────────────
 
+      case 'provenance_traversal': {
+        if (!this.wasm.query_provenance_traversal) {
+          throw new KernelError('query_provenance_traversal is not available (requires feature-ocel)', 'ALGORITHM_NOT_FOUND' as any);
+        }
+        const queryJson = (params.query_json as string) ?? JSON.stringify(params.query ?? {});
+        const res = this.wasm.query_provenance_traversal(eventLogHandle, queryJson);
+        return {
+          handle: `provenance_${Date.now()}`,
+          metadata: { result: JSON.parse(res) }
+        } as any;
+      }
+
       case 'ocel_dfg': {
         if (!this.wasm.discover_ocel_dfg) {
           throw new KernelError('discover_ocel_dfg is not available (requires feature-ocel)', 'ALGORITHM_NOT_FOUND' as any);
@@ -1625,7 +1677,7 @@ export function parseWasmHandle(raw: unknown): { handle: string } | Promise<{ ha
 //   const { dfgHandle } = await session.finalize();
 //   kernel.freeHandle(dfgHandle);
 
-export type StreamingAlgorithmName = 'dfg' | 'skeleton' | 'heuristic';
+export type StreamingAlgorithmName = 'dfg' | 'skeleton' | 'heuristic' | 'conformance';
 
 export interface StreamingEventStats {
   ok: boolean;
@@ -1665,7 +1717,7 @@ export class StreamingSession {
   }
 
   /** Initialize the WASM-side session and obtain a handle. Must be called before all other methods. */
-  async begin(options: { minFrequency?: number; dependencyThreshold?: number } = {}): Promise<void> {
+  async begin(options: { minFrequency?: number; dependencyThreshold?: number; pnHandle?: string } = {}): Promise<void> {
     if (this._handle !== null) throw new KernelError('StreamingSession already started', 'ALREADY_INITIALIZED' as any);
 
     let rawHandle: unknown;
@@ -1691,6 +1743,16 @@ export class StreamingSession {
         rawHandle = this._wasm.streaming_heuristic_begin(options.dependencyThreshold ?? 0.5);
         break;
       }
+      case 'conformance': {
+        if (!this._wasm.streaming_conformance_begin) {
+          throw new KernelError('streaming_conformance_begin not available', 'ALGORITHM_NOT_FOUND' as any);
+        }
+        if (!options.pnHandle) {
+          throw new KernelError('conformance requires options.pnHandle', 'INVALID_ARGUMENT' as any);
+        }
+        rawHandle = this._wasm.streaming_conformance_begin(options.pnHandle);
+        break;
+      }
     }
 
     // WASM returns the handle as a JS string (possibly wrapped in a JsValue string)
@@ -1712,6 +1774,7 @@ export class StreamingSession {
       case 'dfg':     raw = this._wasm.streaming_dfg_add_event!(h, caseId, activity); break;
       case 'skeleton': raw = this._wasm.streaming_skeleton_add_event!(h, caseId, activity); break;
       case 'heuristic': raw = this._wasm.streaming_heuristic_add_event!(h, caseId, activity); break;
+      case 'conformance': raw = this._wasm.streaming_conformance_add_event!(h, caseId, activity); break;
     }
     return parseWasmOutput<StreamingEventStats>(raw);
   }
@@ -1744,6 +1807,7 @@ export class StreamingSession {
       case 'dfg':     raw = this._wasm.streaming_dfg_close_trace!(h, caseId); break;
       case 'skeleton': raw = this._wasm.streaming_skeleton_close_trace!(h, caseId); break;
       case 'heuristic': raw = this._wasm.streaming_heuristic_close_trace!(h, caseId); break;
+      case 'conformance': raw = this._wasm.streaming_conformance_close_trace!(h, caseId); break;
     }
     return parseWasmOutput<StreamingTraceStats>(raw);
   }
@@ -1771,8 +1835,9 @@ export class StreamingSession {
       case 'dfg':     raw = this._wasm.streaming_dfg_snapshot!(h); break;
       case 'skeleton': raw = this._wasm.streaming_skeleton_snapshot!(h); break;
       case 'heuristic': raw = this._wasm.streaming_heuristic_snapshot!(h); break;
+      case 'conformance': return null; // Snapshot not implemented for conformance
     }
-    return parseWasmOutput(raw);
+    return raw ? parseWasmOutput(raw) : null;
   }
 
   /**
@@ -1791,6 +1856,7 @@ export class StreamingSession {
       case 'dfg':     raw = this._wasm.streaming_dfg_finalize!(h); break;
       case 'skeleton': raw = this._wasm.streaming_skeleton_finalize!(h); break;
       case 'heuristic': raw = this._wasm.streaming_heuristic_finalize!(h); break;
+      case 'conformance': raw = this._wasm.streaming_conformance_finalize!(h); break;
     }
     const result = parseWasmOutput<{ dfg_handle?: string; nodes?: number; edges?: number }>(raw);
     return {
@@ -1800,11 +1866,11 @@ export class StreamingSession {
     };
   }
 
-  /** Memory and progress statistics for the active session. DFG only. */
   stats(): unknown {
     const h = this.assertReady();
-    if (this._algorithm !== 'dfg' || !this._wasm.streaming_dfg_stats) return null;
-    return parseWasmOutput(this._wasm.streaming_dfg_stats(h));
+    if (this._algorithm === 'dfg' && this._wasm.streaming_dfg_stats) return parseWasmOutput(this._wasm.streaming_dfg_stats(h));
+    if (this._algorithm === 'conformance' && this._wasm.streaming_conformance_stats) return parseWasmOutput(this._wasm.streaming_conformance_stats(h));
+    return null;
   }
 
   /** Release the streaming handle without finalizing (discard in-progress state). */

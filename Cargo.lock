@@ -1406,6 +1406,15 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "830b246a0e5f20af87141b25c173cd1b609bd7779a4617d6ec582abaf90870f3"
 
 [[package]]
+name = "ocel-core"
+version = "26.5.30"
+dependencies = [
+ "chrono",
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2643,6 +2652,7 @@ dependencies = [
  "chrono",
  "flate2",
  "hashbrown 0.17.0",
+ "ocel-core",
  "quick-xml",
  "rustc-hash 2.1.2",
  "serde",

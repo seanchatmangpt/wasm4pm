@@ -247,3 +247,6 @@ export {
   type PredicateDescriptor,
   type Prolog8Catalog,
 } from './prolog8-compiler.js';
+
+// Process-Model Registry - M1
+export * from './model-registry.js';

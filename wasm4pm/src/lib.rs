@@ -96,6 +96,8 @@ pub mod state;
 pub mod types;
 /// Adversarial receipt doctor validation and truth verification.
 pub mod receipt;
+/// Process-Model Registry module.
+pub mod model_registry;
 
 use std::cell::RefCell;
 
