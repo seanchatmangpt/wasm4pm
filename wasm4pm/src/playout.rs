@@ -317,8 +317,7 @@ fn format_timestamp_ms(ms: i64) -> String {
     // Simple ISO 8601 format: 1970-01-12T10:46:40.000Z
     // Use chrono for proper formatting
     chrono::DateTime::from_timestamp(secs, millis * 1_000_000)
-        .map(|dt| dt.to_rfc3339())
-        .unwrap_or_else(|| "1970-01-01T00:00:00.000Z".to_string())
+        .map_or_else(|| "1970-01-01T00:00:00.000Z".to_string(), |dt| dt.to_rfc3339())
 }
 
 // ─── WASM exports ──────────────────────────────────────────────────────────────

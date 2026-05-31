@@ -278,7 +278,7 @@ impl AutoProcessAgent {
         circuit_timeout_steps: u64,
     ) -> Self {
         let mut agent = Self {
-            q_table: vec![0.0_f32; QTABLE_SIZE].into_boxed_slice().try_into().unwrap(),
+            q_table: vec![0.0_f32; QTABLE_SIZE].into_boxed_slice().try_into().unwrap(), // infallible: vec has exactly QTABLE_SIZE elements
             circuit_state: CircuitState::Closed,
             circuit_failure_count: 0,
             circuit_threshold,

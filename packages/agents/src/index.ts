@@ -46,9 +46,10 @@ export { VAN_DERAALST_AGENTS } from './types.js';
 export { AgentRegistry } from './registry.js';
 export { AuditStore } from './audit.js';
 export type { AuditQuery, AuditSummary } from './audit.js';
-export { AuditQuery as AuditQueryFilter } from './audit.js';
+// AuditQueryFilter is a type alias for AuditQuery (interface — not a runtime value).
+export type { AuditQuery as AuditQueryFilter } from './audit.js';
 export { AgentOrchestrator } from './orchestration.js';
-export type { AgentExecutionContext } from './orchestration.js';
+export type { AgentExecutionContext, AgentSpanSink } from './orchestration.js';
 
 // Rule8 / Prolog8 bridge
 export { auditEntriesToCatalog, AUDIT_PRED_ID, AUDIT_PRED_LABEL } from './rule8-bridge.js';

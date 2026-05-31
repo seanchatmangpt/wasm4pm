@@ -1640,6 +1640,146 @@ const membraneExport = defineCommand({
 });
 
 // ---------------------------------------------------------------------------
+// Feature flag metadata — canonical source of truth for WASM deployment profiles
+// ---------------------------------------------------------------------------
+
+type FeatureFlag = {
+  name: string;
+  description: string;
+  profiles: Array<'mobile' | 'iot' | 'edge' | 'fog' | 'browser'>;
+  wasmOnly: boolean; // false = non-WASM only (gpu, rayon)
+};
+
+const ALL_FEATURES: FeatureFlag[] = [
+  { name: 'feature-conformance-basic', description: 'token replay fitness', profiles: ['mobile', 'iot', 'edge', 'fog', 'browser'], wasmOnly: true },
+  { name: 'feature-conformance-full', description: 'alignments + full conformance', profiles: ['fog', 'browser'], wasmOnly: true },
+  { name: 'feature-discovery-advanced', description: 'genetic, ILP, ACO, PSO', profiles: ['edge', 'fog', 'browser'], wasmOnly: true },
+  { name: 'feature-ml', description: '6 ML algorithms', profiles: ['fog', 'browser'], wasmOnly: true },
+  { name: 'feature-ocel', description: 'object-centric event logs', profiles: ['fog', 'browser'], wasmOnly: true },
+  { name: 'feature-powl', description: 'partial-order workflows', profiles: ['browser'], wasmOnly: true },
+  { name: 'feature-streaming-basic', description: 'DFG streaming', profiles: ['edge', 'fog', 'browser'], wasmOnly: true },
+  { name: 'feature-streaming-full', description: 'SIMD-accelerated streaming', profiles: ['fog', 'browser'], wasmOnly: true },
+  { name: 'feature-hand-rolled-stats', description: 'size optimization', profiles: ['mobile', 'iot', 'edge'], wasmOnly: true },
+  { name: 'feature-statrs', description: 'full-precision statistics', profiles: ['fog', 'browser'], wasmOnly: true },
+  { name: 'feature-gpu', description: 'GPU acceleration (non-WASM only)', profiles: [], wasmOnly: false },
+  { name: 'feature-rayon', description: 'parallel processing (non-WASM only)', profiles: [], wasmOnly: false },
+];
+
+const PROFILE_ALGORITHM_COUNTS: Record<string, number> = {
+  mobile: 12,
+  iot: 15,
+  edge: 22,
+  fog: 36,
+  browser: 38,
+};
+
+const PROFILE_SIZES: Record<string, string> = {
+  mobile: '~500KB',
+  iot: '~1MB',
+  edge: '~1.5MB',
+  fog: '~2MB',
+  browser: '3.4MB',
+};
+
+// ---------------------------------------------------------------------------
+// Subcommand: features  (show feature membrane status by deployment profile)
+// ---------------------------------------------------------------------------
+
+const membraneFeatures = defineCommand({
+  meta: {
+    name: 'features',
+    description:
+      'Show WASM feature membrane status — which features are enabled/disabled for a deployment profile\n\nExamples:\n  wpm membrane features\n  wpm membrane features --profile mobile\n  wpm membrane features --profile fog --format json',
+  },
+  args: {
+    profile: {
+      type: 'string',
+      description: 'Deployment profile: mobile, iot, edge, fog, browser (default: browser)',
+    },
+    format: { type: 'string', description: 'Output format: human (default) or json' },
+    verbose: { type: 'boolean', alias: 'v' },
+    quiet: { type: 'boolean', alias: 'q' },
+  },
+  async run(ctx) {
+    const rawProfile = (ctx.args.profile as string) || 'browser';
+    const validProfiles = ['mobile', 'iot', 'edge', 'fog', 'browser'];
+    if (!validProfiles.includes(rawProfile)) {
+      const result = makeErrorResult(
+        'membrane features',
+        `Invalid profile: ${rawProfile}. Valid profiles: ${validProfiles.join(', ')}`,
+        EXIT_CODES.config_error,
+        'INVALID_PROFILE'
+      );
+      emitResult(result, { format: 'human' });
+      return await exitWithFlush(result.exit_code);
+    }
+
+    const profile = rawProfile as 'mobile' | 'iot' | 'edge' | 'fog' | 'browser';
+    const format = (ctx.args.format as EmitOptions['format']) || 'human';
+    const verbose = Boolean(ctx.args.verbose);
+    const quiet = Boolean(ctx.args.quiet);
+    const t0 = Date.now();
+
+    const enabledFeatures = ALL_FEATURES.filter((f) => f.profiles.includes(profile));
+    const disabledFeatures = ALL_FEATURES.filter((f) => !f.profiles.includes(profile));
+    const activeAlgorithms = PROFILE_ALGORITHM_COUNTS[profile] ?? 0;
+    const profileSize = PROFILE_SIZES[profile] ?? 'unknown';
+
+    const payload = {
+      profile,
+      profile_size: profileSize,
+      active_algorithms: activeAlgorithms,
+      enabled_features: enabledFeatures.map((f) => ({
+        name: f.name,
+        description: f.description,
+        profiles: f.profiles,
+      })),
+      disabled_features: disabledFeatures.map((f) => ({
+        name: f.name,
+        description: f.description,
+        reason: f.wasmOnly ? `size-constrained: not in ${profile} profile` : 'non-WASM only',
+      })),
+    };
+
+    const result = makeResult('membrane features', payload, Date.now() - t0, EXIT_CODES.success);
+
+    emitResult(result, { format, verbose, quiet }, (_res, p) => {
+      p.log('');
+      p.log('  Feature Membrane Status');
+      p.log('  ' + '='.repeat(24));
+      p.log(`  Profile: ${profile} (${profileSize})`);
+      p.log('');
+      p.log(`  ENABLED features (${enabledFeatures.length}):`);
+      for (const f of enabledFeatures) {
+        const padding = '  '.padEnd(Math.max(0, 34 - f.name.length));
+        p.log(`    ✔ ${f.name}${padding}${f.description}`);
+      }
+      p.log('');
+      if (disabledFeatures.length > 0) {
+        p.log(`  DISABLED features (${disabledFeatures.length}):`);
+        for (const f of disabledFeatures) {
+          const reason = f.wasmOnly
+            ? `size-constrained: not in ${profile} profile`
+            : 'non-WASM only';
+          const padding = '  '.padEnd(Math.max(0, 34 - f.name.length));
+          p.log(`    ✗ ${f.name}${padding}${f.description}`);
+          if (verbose) p.log(`      Reason: ${reason}`);
+        }
+        p.log('');
+      }
+      p.log(`  Active algorithms: ${activeAlgorithms} | Profile: ${profile} | Size: ${profileSize}`);
+      if (profile !== 'browser') {
+        p.log('');
+        p.log(`  Tip: wpm membrane features --profile browser  (show full-featured browser profile)`);
+      }
+      p.log('');
+    });
+
+    return await exitWithFlush(result.exit_code);
+  },
+});
+
+// ---------------------------------------------------------------------------
 // Top-level `membrane` command
 // ---------------------------------------------------------------------------
 
@@ -1661,7 +1801,7 @@ export const membrane = defineCommand({
       process.stdout.write(
         JSON.stringify({
           status: 'info',
-          message: 'AutoMembrane verb8: show, init, build, check, doctor, replay, verify, export',
+          message: 'AutoMembrane verb8: show, init, build, check, doctor, features, replay, verify, export',
         }) + '\n'
       );
     } else {
@@ -1669,6 +1809,7 @@ export const membrane = defineCommand({
   wpm membrane — AutoMembrane Vision 2030  (verb8 grammar)
 
   Subcommands:
+    wpm membrane features [--profile P]   Show WASM feature flags enabled/disabled per profile
     wpm membrane show   [handle]          Show state, health, and installed envelopes
     wpm membrane init                     Scaffold [membrane] config in wasm4pm.toml
     wpm membrane build  <log.xes>         Build all envelope layers from an event log
@@ -1688,6 +1829,7 @@ export const membrane = defineCommand({
   },
   subCommands: {
     // verb8 canonical
+    features: membraneFeatures,
     show: membraneShow,
     init: membraneInit,
     build: membraneBuild,

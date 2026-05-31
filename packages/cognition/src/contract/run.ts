@@ -65,8 +65,9 @@ export async function runContract(
         { cause: e },
       );
     }
-    // Capture run_id before returning so the finally span can carry it.
-    const result = parsed as ContractResult;
+    // Field-contract guard — refuses any fabricated or misshapen output from WASM
+    // (e.g. missing run_id, wrong replay_pointer prefix, extra legacy fields).
+    const result = assertContractResult(parsed);
     capturedRunId = result.run_id;
     return result;
   } catch (err) {

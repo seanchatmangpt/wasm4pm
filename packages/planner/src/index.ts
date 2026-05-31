@@ -21,8 +21,37 @@
  */
 
 // Core planning API
-export { plan, toContractsPlan, PlannerError, type Config, type ExecutionPlan } from './planner.js';
-export { explain, explainBrief } from './explain.js';
+export {
+  plan,
+  toContractsPlan,
+  PlannerError,
+  type Config,
+  type ExecutionPlan,
+  type AlternativePlan,
+  type QualityPrediction,
+} from './planner.js';
+export { explain, explainBrief, explainStructured, type ExplainResult } from './explain.js';
+
+// Multi-algorithm planning
+export { planMultiAlgorithm, type MultiAlgorithmPlan, type AlgorithmPlanEntry } from './multi-algorithm.js';
+
+/**
+ * PlannerLike interface — satisfied by both the synchronous plan() function
+ * and any async implementation.
+ *
+ * Per CLAUDE.md: "@wasm4pm/planner's plan() is synchronous (no async), but
+ * PlannerLike accepts either."
+ *
+ * Usage:
+ *   import type { PlannerLike } from '@wasm4pm/planner';
+ *   function createEngine(planner: PlannerLike) { ... }
+ *
+ * The default export of this package (the synchronous `plan` function) satisfies
+ * this interface. Async wrappers (e.g. in the engine) also satisfy it.
+ */
+export interface PlannerLike {
+  plan(config: import('./planner.js').Config): import('./planner.js').ExecutionPlan | Promise<import('./planner.js').ExecutionPlan>;
+}
 
 // DAG utilities
 export {
@@ -56,6 +85,18 @@ export {
   validateSourceSinkCompatibility,
   type ValidationError,
 } from './validation.js';
+
+// Algorithm recommendation (suggest goal → ranked algorithm list)
+export {
+  getSuggestions,
+  getAnalysisRecommendations,
+  normaliseGoal,
+  VALID_GOALS,
+  type LogStats as SuggestionLogStats,
+  type SuggestionGoal,
+  type AlgorithmRecommendation,
+  type AnalysisRecommendation,
+} from './suggestions.js';
 
 // Policy and budget enforcement (Section 4 — Planner Policy and Budget Enforcement)
 export {

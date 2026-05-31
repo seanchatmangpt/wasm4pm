@@ -88,7 +88,9 @@ describe('CLI Error Messages — Clarity & Actionability', () => {
       // Either succeeds or gives clear guidance on invalid prefix
       if (result.exitCode !== EXIT_CODES.success) {
         const output = result.stdout + result.stderr;
-        expect(output.length).toBeGreaterThan(0); // Should have error details
+        // FM-5: `output.length > 0` would pass for a single space or newline.
+        // Assert that the output actually contains error-relevant content.
+        expect(output).toMatch(/error|invalid|prefix|activity|not found/i);
       }
     });
   });

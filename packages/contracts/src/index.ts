@@ -17,7 +17,7 @@ export * from './templates/index.js';
 // Error system - PRD §14
 export * from './errors.js';
 export type { ErrorInfo as ErrorDetails, ErrorCode } from './errors.js';
-export { createError, createTypedError, TYPED_ERROR_CODES } from './errors.js';
+export { createError, createTypedError, TYPED_ERROR_CODES, ProcessMiningErrors } from './errors.js';
 export type { TypedError } from './errors.js';
 
 // Section 2.1: EventLogIR - Canonical event log representation
@@ -49,8 +49,21 @@ export type {
   AlgorithmInfo,
   ModelInfo,
   ExecutionProfile,
+  ReceiptDiff,
 } from './receipt.js';
-export { isReceipt, RECEIPT_JSON_SCHEMA } from './receipt.js';
+export {
+  isReceipt,
+  RECEIPT_JSON_SCHEMA,
+  validateReceiptSchema,
+  isReceiptExpired,
+  receiptSummary,
+  compareReceipts,
+  formatReceipt,
+} from './receipt.js';
+
+// Receipt validation
+export { validateReceipt, verifyReceiptHashes, verifyReceipt, detectTampering } from './validation.js';
+export type { ValidationResult } from './validation.js';
 
 // Hash functions for deterministic content hashing
 export { hashData, hashConfig, hashJsonString, normalizeForHashing, verifyHash } from './hash.js';
@@ -110,6 +123,10 @@ export type { QualityThresholdProfile } from './quality-thresholds.js';
 
 // Algorithm registry utilities
 export { levenshteinDistance, findClosestMatch } from './algorithm-registry.js';
+export { resolveAlgorithmId } from './templates/algorithm-registry.js';
+
+// Truex OCEL 2.0 canonical serialization (JCS-OCEL)
+export { canonicalStringify } from './truex/canonical.js';
 
 // mcpp/wasm4pm interop bridges
 export {
@@ -230,3 +247,6 @@ export {
   type PredicateDescriptor,
   type Prolog8Catalog,
 } from './prolog8-compiler.js';
+
+// Process-Model Registry - M1
+export * from './model-registry.js';

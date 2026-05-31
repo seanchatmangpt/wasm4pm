@@ -108,6 +108,7 @@ impl CognitionBreed for Prolog {
         // 2. Intern fact values as terms.
         let mut rows_by_pred = std::collections::BTreeMap::<PredicateId, Vec<FactRow8>>::new();
         for fact in &input.facts {
+            // infallible: every fact.key was inserted into pred_for_key in the loop above (lines 92-106).
             let pid = pred_for_key.get(&fact.key).copied().unwrap();
             let term_id = catalog.intern_term(&fact.value);
             let row = FactRow8::new(pid, 1, &[term_id], SourceId(0));

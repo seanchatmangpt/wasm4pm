@@ -116,11 +116,12 @@ describe('AnalysisSpans — span factory contracts', () => {
     expect(AnalysisSpans.diffCompute()).toBe(AnalysisSpans.diffCompute());
   });
 
-  it('AnalysisSpans has exactly the 4 declared methods', () => {
+  it('AnalysisSpans has exactly the 5 declared methods', () => {
     const keys = Object.keys(AnalysisSpans);
-    expect(keys).toHaveLength(4);
+    expect(keys).toHaveLength(5);
     expect(keys).toContain('compareStart');
     expect(keys).toContain('compareEnd');
+    expect(keys).toContain('compareAlgo');
     expect(keys).toContain('qualityCheck');
     expect(keys).toContain('diffCompute');
   });

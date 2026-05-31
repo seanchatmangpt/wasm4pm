@@ -1,6 +1,7 @@
 import { defineCommand } from 'citty';
 import { createHash } from 'crypto';
 import { existsSync, readFileSync, readdirSync } from 'fs';
+import * as fsAsync from 'fs/promises';
 import { join } from 'path';
 import { spawnSync } from 'child_process';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
@@ -339,20 +340,404 @@ const hooks = defineCommand({
   },
 });
 
+// ── Process mining AI assistant subcommands ───────────────────────────────────
+
+interface AlgorithmProfile {
+  name: string;
+  speed: number;
+  quality: number;
+  output: string;
+  bestFor: string[];
+  keywords: string[];
+}
+
+const ALGORITHM_PROFILES: AlgorithmProfile[] = [
+  { name: 'dfg', speed: 5, quality: 30, output: 'Directly-Follows Graph', bestFor: ['quick overview', 'large logs', 'first look'], keywords: ['fast', 'quick', 'overview', 'large', 'simple', 'dfg'] },
+  { name: 'heuristic_miner', speed: 25, quality: 50, output: 'DFG with dependency threshold', bestFor: ['noisy logs', 'balanced speed/quality', 'medium logs'], keywords: ['balanced', 'noise', 'medium', 'heuristic'] },
+  { name: 'inductive_miner', speed: 30, quality: 55, output: 'Sound process tree', bestFor: ['sound models', 'healthcare', 'no deadlocks required'], keywords: ['sound', 'hospital', 'healthcare', 'safe', 'structured', 'reliable'] },
+  { name: 'alpha_plus_plus', speed: 20, quality: 45, output: 'Petri net', bestFor: ['educational use', 'simple sequential processes'], keywords: ['alpha', 'petri', 'academic', 'simple', 'sequential'] },
+  { name: 'ilp', speed: 80, quality: 90, output: 'Optimal Petri net (ILP)', bestFor: ['best precision', 'small logs', 'research'], keywords: ['best', 'optimal', 'precise', 'research', 'ilp'] },
+  { name: 'genetic_algorithm', speed: 75, quality: 80, output: 'Petri net (evolved)', bestFor: ['complex processes', 'best quality', 'time not critical'], keywords: ['genetic', 'evolve', 'complex', 'quality', 'best result'] },
+  { name: 'simd_streaming_dfg', speed: 2, quality: 28, output: 'Streaming DFG', bestFor: ['real-time', 'streaming', 'IoT', 'very large logs'], keywords: ['stream', 'real-time', 'realtime', 'iot', 'huge', 'online'] },
+];
+
+const METRIC_EXPLANATIONS: Record<string, { threshold: number; good: string; low: string }> = {
+  fitness:        { threshold: 0.85, good: 'Model reliably replays the observed process', low: '~X% of cases follow paths not captured in the model' },
+  precision:      { threshold: 0.85, good: 'Model stays tightly within observed behavior', low: 'Model allows ~X% more behavior than observed — consider ilp for +0.10' },
+  generalization: { threshold: 0.75, good: 'Model generalizes well to unseen cases', low: 'Model may be overfit to this specific log' },
+  simplicity:     { threshold: 0.75, good: 'Process is clean and easy to understand', low: 'Spaghetti model — high complexity may hide structural issues' },
+};
+
+function scoreRelevance(profile: AlgorithmProfile, queryLower: string): number {
+  let score = 0;
+  for (const kw of profile.keywords) {
+    if (queryLower.includes(kw)) score += 3;
+  }
+  for (const use of profile.bestFor) {
+    if (use.split(' ').some((w) => queryLower.includes(w))) score += 1;
+  }
+  const countMatch = queryLower.match(/(\d[\d,]+)\s*events?/);
+  if (countMatch) {
+    const count = parseInt(countMatch[1].replace(/,/g, ''), 10);
+    if (count > 100_000 && profile.speed <= 5) score += 4;
+    else if (count < 5_000 && profile.quality >= 80) score += 2;
+  }
+  return score;
+}
+
+function parseMetricFromText(text: string): Array<{ metric: string; value: number }> {
+  const results: Array<{ metric: string; value: number }> = [];
+  const metricRe = /\b(fitness|precision|generalization|simplicity|silhouette)\s*[=:]?\s*(0?\.\d+|\d+(?:\.\d+)?%?)/gi;
+  let m: RegExpExecArray | null;
+  while ((m = metricRe.exec(text)) !== null) {
+    const metricName = m[1].toLowerCase();
+    let value = parseFloat(m[2].replace('%', ''));
+    if (m[2].includes('%')) value /= 100;
+    if (value >= 0 && value <= 1) results.push({ metric: metricName, value });
+  }
+  return results;
+}
+
+function interpretMetrics(metrics: Array<{ metric: string; value: number }>): string[] {
+  const lines: string[] = [];
+  if (metrics.length === 0) return lines;
+
+  const fitness = metrics.find((m) => m.metric === 'fitness');
+  const precision = metrics.find((m) => m.metric === 'precision');
+
+  if (fitness && precision) {
+    if (fitness.value < 0.85 && precision.value < 0.85) {
+      lines.push(`Both fitness (${fitness.value}) and precision (${precision.value}) are below 0.85.`);
+      lines.push('  This suggests the model does not accurately represent observed behavior.');
+      lines.push('  Recommendation: try --algorithm ilp for higher precision (+~0.10)');
+    } else if (fitness.value >= 0.85 && precision.value < 0.70) {
+      lines.push(`High fitness (${fitness.value}) with low precision (${precision.value}).`);
+      lines.push('  The model explains the log but is too permissive — allows many unobserved paths.');
+      lines.push('  Recommendation: wpm run log.xes --algorithm ilp (tighter precision)');
+    }
+  }
+
+  for (const { metric, value } of metrics) {
+    const spec = METRIC_EXPLANATIONS[metric];
+    if (!spec) continue;
+    const pct = Math.round((1 - value) * 100);
+    if (value >= spec.threshold) {
+      lines.push(`${metric}: ${value} — ${spec.good}`);
+    } else {
+      const explanation = spec.low.replace('X', String(pct));
+      lines.push(`${metric}: ${value} — ${explanation}`);
+    }
+  }
+  return lines;
+}
+
+function generateAlgorithmAnswer(query: string): string[] {
+  const qLower = query.toLowerCase();
+  const ranked = ALGORITHM_PROFILES
+    .map((p) => ({ profile: p, score: scoreRelevance(p, qLower) }))
+    .sort((a, b) => b.score - a.score);
+
+  const top3 = ranked.slice(0, 3);
+  const lines: string[] = [];
+
+  const hasHospital = /hospital|patient|healthcare|clinical|medical/.test(qLower);
+  const hasStreaming = /stream|realtime|real-time|iot|online/.test(qLower);
+  const hasBigLog = /(\d[\d,]{4,})\s*events/.test(qLower);
+
+  if (hasHospital) lines.push('For healthcare/hospital event logs, I recommend:');
+  else if (hasStreaming) lines.push('For streaming/real-time analysis, I recommend:');
+  else if (hasBigLog) lines.push('For large event logs, I recommend starting with fast algorithms:');
+  else lines.push('Based on your query, here are my recommendations:');
+  lines.push('');
+
+  top3.forEach(({ profile }, i) => {
+    const speed = profile.speed <= 10 ? 'very fast' : profile.speed <= 30 ? 'fast' : profile.speed <= 60 ? 'moderate' : 'slow but thorough';
+    lines.push(`${i + 1}. **${profile.name}** (${speed}, quality: ${profile.quality}/100)`);
+    lines.push(`   Output: ${profile.output}`);
+    lines.push(`   Best for: ${profile.bestFor.join(', ')}`);
+    lines.push(`   Use: wpm run log.xes --algorithm ${profile.name}`);
+    lines.push('');
+  });
+
+  if (hasHospital) {
+    lines.push('Healthcare logs often have parallel activities (triage + registration).');
+    lines.push('inductive_miner handles these better than DFG.');
+    lines.push('');
+    lines.push('Try: wpm suggest -i hospital.xes --goal "understand patient flow"');
+  } else if (hasStreaming) {
+    lines.push('For real-time analysis, simd_streaming_dfg processes events as they arrive.');
+    lines.push('Try: wpm drift-watch -i stream.xes');
+  }
+  return lines;
+}
+
+// ── ask ───────────────────────────────────────────────────────────────────────
+
+const ask = defineCommand({
+  meta: {
+    name: 'ask',
+    description: 'Ask the Claude process mining assistant a question. Example: wpm claude ask "What algorithm for a hospital log with 5000 events?"',
+  },
+  args: {
+    question: { type: 'string', description: 'Your question (wrap in quotes)' },
+    format: { type: 'string', description: 'Output format (human or json)', default: 'human' },
+  },
+  async run(ctx) {
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const rawArgs = ctx.args as Record<string, unknown>;
+    const question = (ctx.args.question as string | undefined) ?? (rawArgs['_'] as string[] | undefined)?.[0];
+
+    return withSpanRaw('wasm4pm.command.claude.ask', { 'claude.subcommand': 'ask' }, async () => {
+      if (!question || question.trim() === '') {
+        const result = makeErrorResult('claude ask', 'A question is required. Example: wpm claude ask "What algorithm should I use for a hospital log with 5000 events?"', EXIT_CODES.config_error, 'MISSING_QUESTION');
+        emitResult(result, { format, verbose: false, quiet: false });
+        return exitWithFlush(result.exit_code);
+      }
+
+      const qTrimmed = question.trim();
+      const metrics = parseMetricFromText(qTrimmed);
+      let answerLines: string[];
+
+      if (metrics.length > 0) {
+        answerLines = ['Metric interpretation:', '', ...interpretMetrics(metrics)];
+        answerLines.push('');
+        answerLines.push(`For a full interactive explanation: wpm interpret fitness ${metrics[0].value}`);
+      } else {
+        answerLines = generateAlgorithmAnswer(qTrimmed);
+      }
+
+      const payload = {
+        schema: 'wasm4pm.claude.ask.v1',
+        query: qTrimmed,
+        answer: answerLines.join('\n'),
+        lines: answerLines,
+      };
+
+      const result = makeResult('claude ask', payload, performance.now() - t0, EXIT_CODES.success);
+      emitResult(result, { format, verbose: false, quiet: false }, (res, p) => {
+        const d = res.payload as typeof payload;
+        p.log('');
+        p.success('Claude Process Mining Assistant');
+        p.log('=================================');
+        p.log(`Query: "${d.query}"`);
+        p.log('');
+        for (const line of d.lines) p.log(line);
+      });
+
+      return exitWithFlush(EXIT_CODES.success);
+    }, () => ({}));
+  },
+});
+
+// ── interpret (claude subcommand) ──────────────────────────────────────────────
+
+const interpretCmd = defineCommand({
+  meta: {
+    name: 'interpret',
+    description: 'Interpret process mining metrics in plain language. Example: wpm claude interpret "fitness 0.73 precision 0.68"',
+  },
+  args: {
+    text: { type: 'string', description: 'Metric string to interpret (e.g. "fitness 0.73 precision 0.68")' },
+    format: { type: 'string', description: 'Output format (human or json)', default: 'human' },
+  },
+  async run(ctx) {
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const rawArgs = ctx.args as Record<string, unknown>;
+    const text = (ctx.args.text as string | undefined) ?? (rawArgs['_'] as string[] | undefined)?.join(' ');
+
+    return withSpanRaw('wasm4pm.command.claude.interpret', { 'claude.subcommand': 'interpret' }, async () => {
+      if (!text || text.trim() === '') {
+        const result = makeErrorResult('claude interpret', 'A metric string is required. Example: wpm claude interpret "fitness 0.73 precision 0.68"', EXIT_CODES.config_error, 'MISSING_TEXT');
+        emitResult(result, { format, verbose: false, quiet: false });
+        return exitWithFlush(result.exit_code);
+      }
+
+      const metrics = parseMetricFromText(text);
+      if (metrics.length === 0) {
+        const result = makeErrorResult('claude interpret', `No metrics found in: "${text}". Expected: "fitness 0.73" or "fitness=0.73"`, EXIT_CODES.config_error, 'NO_METRICS');
+        emitResult(result, { format, verbose: false, quiet: false });
+        return exitWithFlush(result.exit_code);
+      }
+
+      const interpretationLines = interpretMetrics(metrics);
+      const avgScore = metrics.reduce((s, m) => s + m.value, 0) / metrics.length;
+      const overall =
+        avgScore >= 0.85 ? 'Excellent overall quality — model reliably represents the process.' :
+        avgScore >= 0.70 ? 'Good quality — model is useful for analysis and improvement.' :
+        avgScore >= 0.55 ? 'Moderate quality — consider improving with a better algorithm.' :
+        'Low quality — significant structural issues. Review log quality and algorithm choice.';
+
+      const nextSteps = [
+        'wpm validate -i log.xes --full     — Check data quality',
+        'wpm quality -i log.xes             — Full 4-dimension quality report',
+        'wpm suggest -i log.xes             — Get algorithm recommendations',
+      ];
+
+      const payload = {
+        schema: 'wasm4pm.claude.interpret.v1',
+        input: text,
+        metrics,
+        interpretation: interpretationLines.join('\n'),
+        overall,
+        next_steps: nextSteps,
+      };
+
+      const result = makeResult('claude interpret', payload, performance.now() - t0, EXIT_CODES.success);
+      emitResult(result, { format, verbose: false, quiet: false }, (res, p) => {
+        const d = res.payload as typeof payload;
+        p.log('');
+        p.success('Claude Interpretation');
+        p.log('=====================');
+        p.log(`Input: "${d.input}"`);
+        p.log('');
+        for (const line of d.interpretation.split('\n')) p.log(line);
+        p.log('');
+        p.log(d.overall);
+        p.log('');
+        p.log('Recommended next steps:');
+        for (const step of d.next_steps) p.log(`  ${step}`);
+      });
+
+      return exitWithFlush(EXIT_CODES.success);
+    }, () => ({}));
+  },
+});
+
+// ── suggest (claude subcommand) ───────────────────────────────────────────────
+
+const claudeSuggest = defineCommand({
+  meta: {
+    name: 'suggest',
+    description: 'Generate intelligent suggestions by analyzing an event log. Example: wpm claude suggest -i log.xes',
+  },
+  args: {
+    input: { type: 'string', description: 'Path to XES event log', alias: 'i' },
+    goal: { type: 'string', description: 'Analysis goal (e.g. "understand patient flow")', alias: 'g', default: 'discover the process' },
+    format: { type: 'string', description: 'Output format (human or json)', default: 'human' },
+  },
+  async run(ctx) {
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const inputPath = ctx.args.input as string | undefined;
+    const goal = (ctx.args.goal as string | undefined) ?? 'discover the process';
+
+    return withSpanRaw('wasm4pm.command.claude.suggest', { 'claude.subcommand': 'suggest' }, async () => {
+      if (!inputPath) {
+        const result = makeErrorResult('claude suggest', '--input/-i is required. Example: wpm claude suggest -i log.xes', EXIT_CODES.config_error, 'MISSING_INPUT');
+        emitResult(result, { format, verbose: false, quiet: false });
+        return exitWithFlush(result.exit_code);
+      }
+
+      let xesContent: string;
+      try {
+        const { readFile } = await import('fs/promises');
+        xesContent = await readFile(inputPath, 'utf8');
+      } catch {
+        const result = makeErrorResult('claude suggest', `Cannot read file: ${inputPath}`, EXIT_CODES.source_error, 'FILE_NOT_FOUND');
+        emitResult(result, { format, verbose: false, quiet: false });
+        return exitWithFlush(result.exit_code);
+      }
+
+      const traceCount = (xesContent.match(/<trace[\s>]/g) ?? []).length;
+      const eventCount = (xesContent.match(/<event[\s>]/g) ?? []).length;
+      const activitySet = new Set<string>();
+      const actRe = /key="concept:name"[^>]*value="([^"]+)"/g;
+      let m: RegExpExecArray | null;
+      while ((m = actRe.exec(xesContent)) !== null) {
+        if (m[1]) activitySet.add(m[1]);
+      }
+      const activityCount = activitySet.size;
+      const hasTimestamps = xesContent.includes('time:timestamp');
+      const hasResources = xesContent.includes('org:resource');
+
+      const queryParts: string[] = [];
+      if (eventCount > 100_000) queryParts.push('very large log');
+      else if (eventCount > 10_000) queryParts.push('medium log');
+      else queryParts.push('small log');
+      if (activityCount > 50) queryParts.push('complex process');
+      if (/patient|hospital/.test(goal.toLowerCase())) queryParts.push('hospital healthcare');
+      if (/stream|real-time/.test(goal.toLowerCase())) queryParts.push('streaming realtime');
+      queryParts.push(`${eventCount} events`);
+
+      const syntheticQuery = queryParts.join(' ');
+      const algoLines = generateAlgorithmAnswer(syntheticQuery);
+
+      const analysisRecs: string[] = [];
+      if (hasTimestamps) {
+        analysisRecs.push(`• wpm temporal -i ${inputPath}   — Analyze timing patterns and bottlenecks`);
+        analysisRecs.push(`• wpm drift-watch -i ${inputPath}  — Monitor for process drift over time`);
+      }
+      if (hasResources) {
+        analysisRecs.push(`• wpm social -i ${inputPath}   — Mine social network (resource handovers)`);
+      }
+      analysisRecs.push(`• wpm validate -i ${inputPath}   — Validate log quality`);
+      analysisRecs.push(`• wpm conformance -i ${inputPath}  — Check model-to-log fitness after discovery`);
+
+      const bestAlgo = ALGORITHM_PROFILES.find((p) => scoreRelevance(p, syntheticQuery) > 0)?.name ?? 'heuristic_miner';
+      const payload = {
+        schema: 'wasm4pm.claude.suggest.v1',
+        input: inputPath,
+        goal,
+        log_stats: { events: eventCount, traces: traceCount, activities: activityCount, has_timestamps: hasTimestamps, has_resources: hasResources },
+        algorithm_suggestions: algoLines.join('\n'),
+        analysis_recommendations: analysisRecs,
+        quick_start: `wpm run ${inputPath} --algorithm ${bestAlgo}`,
+      };
+
+      const result = makeResult('claude suggest', payload, performance.now() - t0, EXIT_CODES.success);
+      emitResult(result, { format, verbose: false, quiet: false }, (res, p) => {
+        const d = res.payload as typeof payload;
+        p.log('');
+        p.success('Claude Process Mining Suggestions');
+        p.log('===================================');
+        p.log(`Analyzing: ${d.input}`);
+        p.log(`Goal:      ${d.goal}`);
+        p.log('');
+        p.log(`Log Stats: ${d.log_stats.events.toLocaleString()} events, ${d.log_stats.traces} traces, ${d.log_stats.activities} activities`);
+        if (d.log_stats.has_timestamps) p.log('           Timestamps: yes — temporal analysis available');
+        if (d.log_stats.has_resources) p.log('           Resources: yes — social network mining available');
+        p.log('');
+        p.log('ALGORITHM RECOMMENDATIONS');
+        for (const line of d.algorithm_suggestions.split('\n')) p.log(line);
+        if (d.analysis_recommendations.length > 0) {
+          p.log('ANALYSIS RECOMMENDATIONS');
+          for (const rec of d.analysis_recommendations) p.log(rec);
+          p.log('');
+        }
+        p.log('QUICK START');
+        p.log(`  ${d.quick_start}`);
+        p.log('');
+      });
+
+      return exitWithFlush(EXIT_CODES.success);
+    }, () => ({}));
+  },
+});
+
 // ── root claude command ───────────────────────────────────────────────────────
 
 export const claude = defineCommand({
   meta: {
     name: 'claude',
-    description: 'Claude Code integration layer: session evidence, hook verification, proof status',
+    description: 'Claude AI process mining assistant + Code integration layer. Example: wpm claude ask "what algorithm for hospital logs?"',
   },
-  subCommands: { session, hooks },
+  subCommands: { ask, interpret: interpretCmd, suggest: claudeSuggest, session, hooks },
   args: {
     format: { type: 'string', default: 'human' },
     verbose: { type: 'boolean', alias: 'v' },
     quiet: { type: 'boolean', alias: 'q' },
   },
   async run(ctx) {
+    // Guard: don't run the status display when a subcommand is being invoked.
+    // citty calls the parent run alongside the child; this prevents double output.
+    if (ctx && ctx.rawArgs && ctx.cmd && ctx.cmd.subCommands) {
+      const subCommands = Object.keys(ctx.cmd.subCommands);
+      const hasSubcommand = ctx.rawArgs.some((arg: string) => subCommands.includes(arg));
+      if (hasSubcommand) return;
+    }
+
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
@@ -409,7 +794,12 @@ export const claude = defineCommand({
           p.log(`  Session dates:      ${d.session_dates.length} (${d.session_dates.slice(-3).join(', ')})`);
           p.log(`  Last proof audit:   ${d.last_audit_verdict}`);
           p.log('');
-          p.log('Subcommands:');
+          p.log('AI Assistant:');
+          p.log('  wpm claude ask "..."     Ask a process mining question');
+          p.log('  wpm claude interpret "fitness 0.73"  Interpret metrics in plain language');
+          p.log('  wpm claude suggest -i log.xes        Intelligent log analysis + recommendations');
+          p.log('');
+          p.log('Code Integration:');
           p.log('  wpm claude session       Show today\'s tool evidence + work orders');
           p.log('  wpm claude hooks         JTBD verification of all hook jobs');
           p.log('');

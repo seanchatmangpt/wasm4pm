@@ -5,9 +5,13 @@ import { describe, it, expect } from 'vitest';
  * This verifies Armstrong C3 fix: fail-fast on empty OCEL logs.
  */
 describe('OCEL validation — empty events (C3 fix)', () => {
-  // Simplified version of OCEL validation for testing
-  function validateOcelEvents(ocelData: any) {
-    if (!ocelData.ocel_events || ocelData.ocel_events.length === 0) {
+  // Simplified version of OCEL validation for testing.
+  // NOTE: The `any` parameter is intentional here — this helper is called with
+  // deliberately invalid/missing shapes (null, undefined fields) to verify the
+  // guard handles hostile input. A typed parameter would prevent those test
+  // cases from compiling.
+  function validateOcelEvents(ocelData: Record<string, unknown>) {
+    if (!ocelData.ocel_events || (ocelData.ocel_events as unknown[]).length === 0) {
       return {
         passed: false,
         violations: ['NO_EVIDENCE: OCEL log has zero events']
@@ -27,7 +31,9 @@ describe('OCEL validation — empty events (C3 fix)', () => {
     });
 
     expect(result.passed).toBe(false);
-    expect(result.violations.length).toBeGreaterThan(0);
+    // FM-5: exact count = 1 (the single NO_EVIDENCE message) proves the guard
+    // emits exactly one violation, not an arbitrary non-zero number.
+    expect(result.violations).toHaveLength(1);
   });
 
   it('returns passed status when ocel_events has content', () => {

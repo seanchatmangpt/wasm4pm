@@ -415,6 +415,18 @@ export class WasmLoader {
       }
 
       if (
+        message.includes('ERR_UNKNOWN_FILE_EXTENSION') &&
+        message.includes('.wasm')
+      ) {
+        throw new WasmLoadError(
+          'LOAD_FAILED',
+          `WASM module at "${resolvedModulePath}" was built for bundlers, not Node.js. ` +
+            `Run "npm run build:nodejs" inside wasm4pm/ to regenerate pkg/ for CLI use.`,
+          resolvedModulePath
+        );
+      }
+
+      if (
         message.includes('SyntaxError') ||
         message.includes('Unexpected token') ||
         message.includes('invalid wasm') ||

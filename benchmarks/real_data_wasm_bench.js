@@ -35,7 +35,7 @@ const parse = r => (typeof r === 'string' ? JSON.parse(r) : r);
 const XES_CANDIDATES = [
   { label: 'sepsis',      path: path.resolve(__dirname, '../bench_data/sepsis.xes') },
   { label: 'bpi2020',     path: path.resolve(__dirname, '../bench_data/bpi2020_travel.xes') },
-  { label: 'roadtraffic', path: path.resolve(__dirname, '../../../chatmangpt/pm4py/tests/input_data/roadtraffic100traces.xes') },
+  { label: 'roadtraffic', path: path.resolve(__dirname, '../bench_data/roadtraffic100traces.xes') },
 ];
 
 function loadDatasets() {

@@ -6,7 +6,7 @@
  * Kernel.run(), Kernel.stream(), Kernel.freeHandle(), Kernel.stats()
  */
 
-import type { WasmModule, AlgorithmStepOutput } from './handlers.js';
+import type { WasmModule } from './handlers.js';
 import type { AlgorithmMetadata, ExecutionProfile } from './registry.js';
 import { getRegistry, type AlgorithmRegistry } from './registry.js';
 import { KERNEL_VERSION, checkCompatibility, type CompatibilityResult } from './versioning.js';
@@ -180,6 +180,9 @@ export interface KernelWasmModule extends Omit<WasmModule,
   | 'discover_working_together_network'
   | 'discover_dfg_simd'
 > {
+  query_provenance_traversal?(ocel_handle: string, query_json: string): string;
+  validate_ocel?(ocel_handle: string): string;
+
   /** Delete an object handle from WASM memory */
   delete_object?(handle: string): void;
 
@@ -247,6 +250,75 @@ export interface KernelWasmModule extends Omit<WasmModule,
   discover_working_together_network?(log_handle: string, resource_key: string): string;
   discover_dfg_simd?(eventlog_handle: string, activity_key: string): string;
   encode_ocel_as_text?(ocel_handle: string): string;
+
+  // ── Incremental Token-Replay Prefix Conformance API ──────────────────────────
+  store_petri_net_from_json?(pn_json: string): string;
+  streaming_conformance_begin?(pn_handle: string): string;
+  streaming_conformance_add_event?(handle: string, case_id: string, activity: string): string;
+  streaming_conformance_close_trace?(handle: string, case_id: string): string;
+  streaming_conformance_stats?(handle: string): string;
+  streaming_conformance_finalize?(handle: string): string;
+
+  // ── Streaming session API (feature-streaming-basic, compiled into edge/fog/browser profiles) ──
+  // Previously gated on feature-streaming-full (bug); now gated on feature-streaming-basic
+  // so the streaming DFG/skeleton/heuristic exports are reachable from edge and iot builds too.
+  //
+  // Usage pattern:
+  //   const handle = JSON.parse(wasm.streaming_dfg_begin());
+  //   wasm.streaming_dfg_add_event(handle, 'case1', 'activity_A');
+  //   wasm.streaming_dfg_close_trace(handle, 'case1');
+  //   const dfg = JSON.parse(wasm.streaming_dfg_snapshot(handle));
+  //   wasm.streaming_dfg_finalize(handle);  // frees the builder, returns DFG handle
+  //
+  // NOTE: snapshot/stats/finalize return JSON strings — callers must JSON.parse().
+  streaming_dfg_begin?(): string;
+  streaming_dfg_add_event?(handle: string, case_id: string, activity: string): string;
+  streaming_dfg_add_batch?(handle: string, events_json: string): string;
+  streaming_dfg_close_trace?(handle: string, case_id: string): string;
+  streaming_dfg_flush_open?(handle: string): string;
+  /** Returns a JSON string encoding the current DFG (nodes, edges, start/end activities). Must JSON.parse(). */
+  streaming_dfg_snapshot?(handle: string): string;
+  /** Closes all open traces, stores result as a DirectlyFollowsGraph handle, frees the builder.
+   *  Returns JSON string: { dfg_handle, nodes, edges }. Must JSON.parse(). */
+  streaming_dfg_finalize?(handle: string): string;
+  /** Returns a JSON string with streaming stats (event_count, trace_count, open_traces, etc). Must JSON.parse(). */
+  streaming_dfg_stats?(handle: string): string;
+  // Skeleton streaming (process skeleton = noise-filtered DFG skeleton)
+  streaming_skeleton_begin?(min_frequency: number): string;
+  streaming_skeleton_add_event?(handle: string, case_id: string, activity: string): string;
+  streaming_skeleton_close_trace?(handle: string, case_id: string): string;
+  /** Returns a JSON string encoding the current skeleton DFG. Must JSON.parse(). */
+  streaming_skeleton_snapshot?(handle: string): string;
+  /** Finalizes the skeleton stream, returns JSON: { dfg_handle, nodes, edges }. Must JSON.parse(). */
+  streaming_skeleton_finalize?(handle: string): string;
+  // Heuristic streaming (dependency-threshold Heuristic Miner)
+  streaming_heuristic_begin?(threshold: number): string;
+  streaming_heuristic_add_event?(handle: string, case_id: string, activity: string): string;
+  streaming_heuristic_close_trace?(handle: string, case_id: string): string;
+  /** Returns a JSON string encoding the current heuristic DFG. Must JSON.parse(). */
+  streaming_heuristic_snapshot?(handle: string): string;
+  /** Finalizes the heuristic stream, returns JSON: { dfg_handle, nodes, edges }. Must JSON.parse(). */
+  streaming_heuristic_finalize?(handle: string): string;
+  // Streaming info/capabilities
+  streaming_info?(): string;
+
+  // ── StreamingLog probabilistic handle API ──────────────────────────────────
+  // Handle-based stateful API for bounded-memory streaming DFG estimation.
+  // Backed by CountMinSketch (edge freq), HyperLogLog (cardinality), BloomFilter (dedup).
+  //
+  // Usage:
+  //   const handle = wasm.create_streaming_log();
+  //   wasm.streaming_log_add_trace(handle, ['A', 'B', 'C']);
+  //   const dfg  = JSON.parse(wasm.streaming_log_estimate_dfg(handle));
+  //   wasm.free_streaming_log(handle);
+  create_streaming_log?(): number;
+  streaming_log_add_trace?(handle: number, activities: string[]): void;
+  streaming_log_estimate_dfg?(handle: number): string;
+  streaming_log_estimate_cardinality?(handle: number): number;
+  streaming_log_event_count?(handle: number): number;
+  streaming_log_activity_count?(handle: number): number;
+  streaming_log_memory_bytes?(handle: number): number;
+  free_streaming_log?(handle: number): void;
 }
 
 /**
@@ -395,6 +467,35 @@ export class Kernel {
   /** Look up a single algorithm's metadata */
   algorithm(id: string): AlgorithmMetadata | undefined {
     return this.registry.get(id);
+  }
+
+  /**
+   * Run a provenance traversal query over an Object-Centric Event Log (OCEL 2.0).
+   *
+   * @param ocelHandle - Handle to the loaded OCEL in WASM memory
+   * @param query - The provenance query structure
+   */
+  async queryProvenance(
+    ocelHandle: string,
+    query: {
+      start_object_id?: string;
+      start_object_type: string;
+      steps: Array<
+        | { step_type: 'ObjectToEvent'; event_type: string; qualifier: string }
+        | { step_type: 'EventToObject'; object_type: string; qualifier: string }
+        | { step_type: 'ObjectToObject'; object_type: string; qualifier: string; direction?: 'forward' | 'reverse' | 'both' }
+      >;
+    }
+  ): Promise<{ paths: Array<Array<{ type: 'object' | 'event'; id: string; object_type?: string; event_type?: string }>> }> {
+    this.assertInitialized();
+    if (!this.wasm.query_provenance_traversal) {
+      throw new KernelError(
+        'query_provenance_traversal is not available in this WASM build',
+        'ALGORITHM_NOT_FOUND' as any
+      );
+    }
+    const resultStr = this.wasm.query_provenance_traversal(ocelHandle, JSON.stringify(query));
+    return JSON.parse(resultStr);
   }
 
   /**
@@ -741,17 +842,11 @@ export class Kernel {
       case 'dfg': {
         const dfgJson = this.wasm.discover_dfg(eventLogHandle, activityKey);
         if ((dfgJson as any) instanceof Promise || (dfgJson && typeof (dfgJson as any).then === 'function')) {
-          return (dfgJson as any).then((resolvedDfgJson: string) => {
-            const handle = this.wasm.store_dfg_from_json
-              ? this.wasm.store_dfg_from_json(resolvedDfgJson)
-              : resolvedDfgJson;
-            return parseWasmHandle(handle);
-          });
+          return (dfgJson as any).then((resolvedDfgJson: string) =>
+            storeDfgDiscoveryResult(this.wasm, resolvedDfgJson)
+          );
         }
-        const handle = this.wasm.store_dfg_from_json
-          ? this.wasm.store_dfg_from_json(dfgJson)
-          : dfgJson;
-        return parseWasmHandle(handle);
+        return storeDfgDiscoveryResult(this.wasm, dfgJson);
       }
 
       case 'hierarchical_dfg': {
@@ -761,33 +856,60 @@ export class Kernel {
           (params.num_chunks as number) ?? 4
         );
         if ((dfgJson as any) instanceof Promise || (dfgJson && typeof (dfgJson as any).then === 'function')) {
-          return (dfgJson as any).then((resolvedDfgJson: string) => {
-            const handle = this.wasm.store_dfg_from_json
-              ? this.wasm.store_dfg_from_json(resolvedDfgJson)
-              : resolvedDfgJson;
-            return parseWasmHandle(handle);
-          });
+          return (dfgJson as any).then((resolvedDfgJson: string) =>
+            storeDfgDiscoveryResult(this.wasm, resolvedDfgJson)
+          );
         }
-        const handle = this.wasm.store_dfg_from_json
-          ? this.wasm.store_dfg_from_json(dfgJson)
-          : dfgJson;
-        return parseWasmHandle(handle);
+        return storeDfgDiscoveryResult(this.wasm, dfgJson);
       }
 
       case 'streaming_log': {
+        // streaming_log is a stateful handle-based API.
+        // Correct path: create handle → add traces one-by-one → estimate DFG → free.
+        // Previously this fell back to the batch discover_dfg which bypasses the
+        // probabilistic streaming data structures entirely.
+        if (
+          this.wasm.create_streaming_log &&
+          this.wasm.streaming_log_add_trace &&
+          this.wasm.streaming_log_estimate_dfg &&
+          this.wasm.free_streaming_log
+        ) {
+          const tracesRaw: unknown = this.wasm.get_traces
+            ? this.wasm.get_traces(eventLogHandle, activityKey)
+            : null;
+          const traces: string[][] =
+            tracesRaw != null
+              ? typeof tracesRaw === 'string'
+                ? (JSON.parse(tracesRaw) as string[][])
+                : (tracesRaw as string[][])
+              : [];
+
+          const streamHandle: number = this.wasm.create_streaming_log();
+          try {
+            for (const trace of traces) {
+              this.wasm.streaming_log_add_trace(streamHandle, trace);
+            }
+            const dfgJson = this.wasm.streaming_log_estimate_dfg(streamHandle);
+            return storeDfgDiscoveryResult(
+              this.wasm,
+              typeof dfgJson === 'string' ? dfgJson : JSON.stringify(dfgJson)
+            );
+          } finally {
+            try {
+              this.wasm.free_streaming_log(streamHandle);
+            } catch {
+              // best-effort cleanup
+            }
+          }
+        }
+        // Fallback: WASM build does not expose the streaming_log API.
         const dfgJson = this.wasm.discover_dfg(eventLogHandle, activityKey);
         if ((dfgJson as any) instanceof Promise || (dfgJson && typeof (dfgJson as any).then === 'function')) {
-          return (dfgJson as any).then((resolvedDfgJson: string) => {
-            const handle = this.wasm.store_dfg_from_json
-              ? this.wasm.store_dfg_from_json(resolvedDfgJson)
-              : resolvedDfgJson;
-            return parseWasmHandle(handle);
-          });
+          return (dfgJson as any).then((resolvedDfgJson: string) =>
+            storeDfgDiscoveryResult(this.wasm, resolvedDfgJson)
+          );
         }
-        const handle = this.wasm.store_dfg_from_json
-          ? this.wasm.store_dfg_from_json(dfgJson)
-          : dfgJson;
-        return parseWasmHandle(handle);
+        return storeDfgDiscoveryResult(this.wasm, dfgJson);
       }
 
       case 'smart_engine': {
@@ -844,10 +966,11 @@ export class Kernel {
           (params.noise_threshold as number) ?? 0.2
         );
         const virtualHandle = `virtual_inductive_miner_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`;
+        const tree = parseWasmOutput<Record<string, unknown>>(json);
         return {
+          ...(tree && typeof tree === 'object' ? tree : {}),
           handle: virtualHandle,
-          metadata: { result: parseWasmOutput(json) }
-        } as any;
+        };
       }
 
       case 'genetic_algorithm': {
@@ -1079,7 +1202,12 @@ export class Kernel {
       // ─── Wave 1 Migration: Model conversion ────────────────────────────
 
       case 'pnml_import': {
-        const raw = this.wasm.from_pnml((params.pnml_xml as string)!);
+        const wasmAny = this.wasm as unknown as Record<string, (...args: unknown[]) => unknown>;
+        const fn = wasmAny.from_pnml_wasm ?? wasmAny.from_pnml;
+        if (!fn) {
+          throw new KernelError('from_pnml_wasm is not available', 'ALGORITHM_NOT_FOUND' as any);
+        }
+        const raw = fn.call(this.wasm, (params.pnml_xml as string)!);
         return parseWasmHandle(raw);
       }
 
@@ -1101,17 +1229,30 @@ export class Kernel {
       // ─── Wave 1 Migration: Simulation ──────────────────────────────────
 
       case 'playout': {
-        const raw = this.wasm.play_out(
-          (params.model_handle as string)!,
-          (params.num_traces as number) ?? 100,
-          (params.max_trace_length as number) ?? 100
+        const dfgJson = this.wasm.discover_dfg(eventLogHandle, activityKey);
+        const playParams = {
+          num_traces: (params.num_traces as number) ?? 5,
+          min_trace_length: (params.min_trace_length as number) ?? 1,
+          max_trace_length: (params.max_trace_length as number) ?? 100,
+          include_timestamps: (params.include_timestamps as boolean) ?? true,
+          start_timestamp: (params.start_timestamp as number) ?? 0,
+        };
+        const wasmAny = this.wasm as unknown as Record<string, (...args: unknown[]) => unknown>;
+        const playFn = wasmAny.play_out_dfg ?? wasmAny.play_out;
+        if (!playFn) {
+          throw new KernelError('play_out_dfg is not available', 'ALGORITHM_NOT_FOUND' as any);
+        }
+        const raw = playFn.call(
+          this.wasm,
+          typeof dfgJson === 'string' ? dfgJson : JSON.stringify(dfgJson),
+          playParams
         );
         return parseWasmHandle(raw);
       }
 
       case 'monte_carlo_simulation': {
         const mcConfig = {
-          num_cases: (params.num_simulations as number) ?? 1000,
+          num_cases: (params.num_simulations as number) ?? 100,
           inter_arrival_mean_ms: 1000.0,
           activity_service_time_ms: {},
           resource_capacity: {},
@@ -1119,7 +1260,7 @@ export class Kernel {
           random_seed: 42,
         };
         const raw = this.wasm.monte_carlo_simulation(
-          (params.model_handle as string)!,
+          eventLogHandle,
           '',
           '',
           JSON.stringify(mcConfig)
@@ -1144,6 +1285,18 @@ export class Kernel {
       }
 
       // ─── OCEL (Object-Centric Event Log) algorithms ──────────────────────
+
+      case 'provenance_traversal': {
+        if (!this.wasm.query_provenance_traversal) {
+          throw new KernelError('query_provenance_traversal is not available (requires feature-ocel)', 'ALGORITHM_NOT_FOUND' as any);
+        }
+        const queryJson = (params.query_json as string) ?? JSON.stringify(params.query ?? {});
+        const res = this.wasm.query_provenance_traversal(eventLogHandle, queryJson);
+        return {
+          handle: `provenance_${Date.now()}`,
+          metadata: { result: JSON.parse(res) }
+        } as any;
+      }
 
       case 'ocel_dfg': {
         if (!this.wasm.discover_ocel_dfg) {
@@ -1250,8 +1403,19 @@ export class Kernel {
       }
 
       case 'agentic_pipeline': {
-        const json = await this.wasm.run_agentic_pipeline!((params.task_json as string) ?? '{}');
-        return { handle: `agentic_pipeline_${Date.now()}`, metadata: { result: parseWasmOutput(json) } } as any;
+        const wasmAny = this.wasm as unknown as Record<string, (...args: unknown[]) => unknown>;
+        const fn = wasmAny.run_agentic_pipeline;
+        if (!fn) {
+          throw new KernelError(
+            'run_agentic_pipeline is not available (requires feature-cloud WASM build)',
+            'ALGORITHM_NOT_FOUND' as any
+          );
+        }
+        const json = await fn.call(this.wasm, (params.task_json as string) ?? '{}');
+        return {
+          handle: `agentic_pipeline_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`,
+          metadata: { result: parseWasmOutput(json) },
+        } as any;
       }
 
       // ─── ML algorithms (Restored WASM paths) ─────────────────────────────
@@ -1330,13 +1494,67 @@ export class Kernel {
 
       // ─── Prediction (Stubs preserved for high-level package requirement) ─
 
-      case 'predict_next_activity':
-      case 'predict_remaining_time':
-      case 'predict_outcome':
-        throw new Error(
-          `Prediction algorithm '${algorithmId}' requires the @wasm4pm/predict package. ` +
-          `Use the CLI command: wpm predict ...`
+      case 'predict_next_activity': {
+        const wasmAny = this.wasm as unknown as Record<string, (...args: unknown[]) => unknown>;
+        const build = wasmAny.build_ngram_predictor;
+        const predict = wasmAny.predict_next_activity;
+        if (!build || !predict) {
+          throw new KernelError(
+            `Prediction algorithm '${algorithmId}' requires WASM prediction exports.`,
+            'ALGORITHM_NOT_FOUND' as any
+          );
+        }
+        const predictorHandle = build.call(this.wasm, eventLogHandle, activityKey, 2);
+        const prefix = (params.prefix_json as string) ?? '[]';
+        const raw = predict.call(this.wasm, predictorHandle, prefix);
+        return {
+          handle: `predict_next_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`,
+          metadata: { result: parseWasmOutput(raw) },
+        } as any;
+      }
+
+      case 'predict_remaining_time': {
+        const wasmAny = this.wasm as unknown as Record<string, (...args: unknown[]) => unknown>;
+        const build = wasmAny.build_remaining_time_model;
+        const predict = wasmAny.predict_case_duration;
+        if (!build || !predict) {
+          throw new KernelError(
+            `Prediction algorithm '${algorithmId}' requires WASM prediction exports.`,
+            'ALGORITHM_NOT_FOUND' as any
+          );
+        }
+        const modelHandle = build.call(
+          this.wasm,
+          eventLogHandle,
+          activityKey,
+          (params.timestamp_key as string) ?? 'time:timestamp'
         );
+        const prefix = (params.prefix_json as string) ?? '[]';
+        const raw = predict.call(this.wasm, modelHandle, prefix);
+        return {
+          handle: `predict_remaining_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`,
+          metadata: { result: parseWasmOutput(raw) },
+        } as any;
+      }
+
+      case 'predict_outcome': {
+        const wasmAny = this.wasm as unknown as Record<string, (...args: unknown[]) => unknown>;
+        const build = wasmAny.build_ngram_predictor;
+        const predict = wasmAny.predict_next_k;
+        if (!build || !predict) {
+          throw new KernelError(
+            `Prediction algorithm '${algorithmId}' requires WASM prediction exports.`,
+            'ALGORITHM_NOT_FOUND' as any
+          );
+        }
+        const predictorHandle = build.call(this.wasm, eventLogHandle, activityKey, 2);
+        const prefix = (params.prefix_json as string) ?? '[]';
+        const raw = predict.call(this.wasm, predictorHandle, prefix, 1);
+        return {
+          handle: `predict_outcome_${hashOutput({ algorithmName: algorithmId, eventLogHandle, params }).slice(0, 16)}`,
+          metadata: { result: parseWasmOutput(raw) },
+        } as any;
+      }
 
       default:
         throw new KernelError(`Unsupported algorithm: ${algorithmId}`, 'ALGORITHM_NOT_FOUND' as any);
@@ -1350,8 +1568,9 @@ export class Kernel {
     if (!this._smartEngineHandle && this.wasm.smart_engine_create) {
       try {
         this._smartEngineHandle = this.wasm.smart_engine_create();
-      } catch (e) {
-        console.warn('Failed to create SmartEngine, falling back to default', e);
+      } catch {
+        // SmartEngine not available in this WASM build — fall back to default algorithm selection.
+        // This is expected in mobile/iot/edge profiles that omit smart_engine.
         return 'default';
       }
     }
@@ -1360,15 +1579,47 @@ export class Kernel {
 }
 
 /**
+ * Store a discovered DFG in WASM memory while preserving discriminator-visible shape.
+ * `store_dfg_from_json` returns a handle string; the CLI discriminator needs either
+ * full `{nodes[], edges[]}` arrays or `{nodes: number, edges: number, handle}`.
+ */
+function storeDfgDiscoveryResult(wasm: KernelWasmModule, dfgJson: unknown): Record<string, unknown> {
+  const parsed = parseWasmOutput<Record<string, unknown>>(dfgJson);
+  const jsonString =
+    typeof dfgJson === 'string' ? dfgJson : JSON.stringify(parsed ?? dfgJson);
+  const stored = wasm.store_dfg_from_json ? wasm.store_dfg_from_json(jsonString) : dfgJson;
+  const handleValue = parseWasmHandle(stored);
+  const handle =
+    handleValue && typeof handleValue === 'object' && 'handle' in handleValue
+      ? String((handleValue as { handle: string }).handle)
+      : String(stored);
+
+  if (parsed && typeof parsed === 'object') {
+    if (Array.isArray(parsed.nodes) && Array.isArray(parsed.edges)) {
+      return { ...parsed, handle };
+    }
+    const nodes =
+      typeof parsed.nodes === 'number'
+        ? parsed.nodes
+        : Array.isArray(parsed.nodes)
+          ? parsed.nodes.length
+          : Array.isArray(parsed.activities)
+            ? parsed.activities.length
+            : 0;
+    const edges =
+      typeof parsed.edges === 'number'
+        ? parsed.edges
+        : Array.isArray(parsed.edges)
+          ? parsed.edges.length
+          : 0;
+    return { handle, nodes, edges };
+  }
+
+  return { handle, nodes: 0, edges: 0 };
+}
+
+/**
  * Parse a WASM function return value that may be a JSON string or already an object.
- *
- * Many wasm4pm WASM exports return `string` on wasm32 targets (serialized JSON)
- * but may return a plain object when called via test stubs or future refactors.
- * This helper normalizes both cases, eliminating the repeated
- * `typeof r === 'string' ? JSON.parse(r) : r` pattern across the codebase.
- *
- * @example
- * const dfg = parseWasmOutput<{ nodes: string[] }>(wasm.discover_dfg(handle, key));
  */
 export function parseWasmOutput<T = unknown>(raw: unknown): T {
   if (typeof raw === 'string') {
@@ -1393,8 +1644,11 @@ export function parseWasmOutput<T = unknown>(raw: unknown): T {
  * Handle WASM outputs that are expected to represent a handle.
  * If the output is a plain string handle, it wraps it in an object: `{ handle }`.
  * If it is a Promise, it resolves recursively.
+ *
+ * Returns `{ handle: string }` synchronously, or a Promise that resolves to that
+ * shape when the WASM function itself returns a Promise (uncommon but supported).
  */
-export function parseWasmHandle(raw: unknown): any {
+export function parseWasmHandle(raw: unknown): { handle: string } | Promise<{ handle: string }> {
   if (raw instanceof Promise || (raw && typeof (raw as any).then === 'function')) {
     return (raw as any).then((resolved: unknown) => parseWasmHandle(resolved));
   }
@@ -1407,3 +1661,279 @@ export function parseWasmHandle(raw: unknown): any {
   }
   return { handle: String(parsed) };
 }
+
+// ─── Streaming Session API ────────────────────────────────────────────────────
+//
+// The WASM layer (streaming_wasm.rs) stores a mutable StreamingDfgBuilder in
+// the object store and exposes stateful functions against a handle.
+// StreamingSession wraps these functions in a typed, lifecycle-managed object.
+//
+// Usage:
+//   const session = kernel.openStreamingSession('dfg');
+//   await session.addEvent('case1', 'Register');
+//   await session.addEvent('case1', 'Approve');
+//   await session.closeTrace('case1');
+//   const dfg = await session.snapshot();
+//   const { dfgHandle } = await session.finalize();
+//   kernel.freeHandle(dfgHandle);
+
+export type StreamingAlgorithmName = 'dfg' | 'skeleton' | 'heuristic' | 'conformance';
+
+export interface StreamingEventStats {
+  ok: boolean;
+  event_count: number;
+  open_traces: number;
+  activities?: number;
+  fitness?: number;
+  state?: string;
+}
+
+export interface StreamingTraceStats {
+  ok: boolean;
+  trace_count: number;
+  open_traces?: number;
+  fitness?: number;
+  state?: string;
+  is_conforming?: boolean;
+}
+
+export interface StreamingFinalResult {
+  /** Handle to the resulting DFG stored in WASM object store */
+  dfgHandle: string;
+  nodes: number;
+  edges: number;
+}
+
+/**
+ * Stateful streaming session backed by WASM object store.
+ *
+ * Create via `kernel.openStreamingSession('dfg')`.
+ * All operations are O(batch_size) — the full log is never reloaded.
+ */
+export class StreamingSession {
+  private readonly _algorithm: StreamingAlgorithmName;
+  private readonly _wasm: KernelWasmModule;
+  private _handle: string | null = null;
+  private _finalized = false;
+
+  constructor(wasm: KernelWasmModule, algorithm: StreamingAlgorithmName) {
+    this._wasm = wasm;
+    this._algorithm = algorithm;
+  }
+
+  /** Initialize the WASM-side session and obtain a handle. Must be called before all other methods. */
+  async begin(options: { minFrequency?: number; dependencyThreshold?: number; pnHandle?: string } = {}): Promise<void> {
+    if (this._handle !== null) throw new KernelError('StreamingSession already started', 'ALREADY_INITIALIZED' as any);
+
+    let rawHandle: unknown;
+    switch (this._algorithm) {
+      case 'dfg': {
+        if (!this._wasm.streaming_dfg_begin) {
+          throw new KernelError('streaming_dfg_begin not available (streaming_full feature required)', 'ALGORITHM_NOT_FOUND' as any);
+        }
+        rawHandle = this._wasm.streaming_dfg_begin();
+        break;
+      }
+      case 'skeleton': {
+        if (!this._wasm.streaming_skeleton_begin) {
+          throw new KernelError('streaming_skeleton_begin not available', 'ALGORITHM_NOT_FOUND' as any);
+        }
+        rawHandle = this._wasm.streaming_skeleton_begin(options.minFrequency ?? 1);
+        break;
+      }
+      case 'heuristic': {
+        if (!this._wasm.streaming_heuristic_begin) {
+          throw new KernelError('streaming_heuristic_begin not available', 'ALGORITHM_NOT_FOUND' as any);
+        }
+        rawHandle = this._wasm.streaming_heuristic_begin(options.dependencyThreshold ?? 0.5);
+        break;
+      }
+      case 'conformance': {
+        if (!this._wasm.streaming_conformance_begin) {
+          throw new KernelError('streaming_conformance_begin not available', 'ALGORITHM_NOT_FOUND' as any);
+        }
+        if (!options.pnHandle) {
+          throw new KernelError('conformance requires options.pnHandle', 'INVALID_ARGUMENT' as any);
+        }
+        rawHandle = this._wasm.streaming_conformance_begin(options.pnHandle);
+        break;
+      }
+    }
+
+    // WASM returns the handle as a JS string (possibly wrapped in a JsValue string)
+    const parsed = parseWasmOutput<string>(rawHandle);
+    this._handle = typeof parsed === 'string' ? parsed : String(parsed);
+  }
+
+  private assertReady(): string {
+    if (this._handle === null) throw new KernelError('Call begin() first', 'NOT_INITIALIZED' as any);
+    if (this._finalized) throw new KernelError('Session already finalized', 'ALREADY_FINALIZED' as any);
+    return this._handle;
+  }
+
+  /** Append one event to an in-progress trace. O(1). */
+  addEvent(caseId: string, activity: string): StreamingEventStats {
+    const h = this.assertReady();
+    let raw: unknown;
+    switch (this._algorithm) {
+      case 'dfg':     raw = this._wasm.streaming_dfg_add_event!(h, caseId, activity); break;
+      case 'skeleton': raw = this._wasm.streaming_skeleton_add_event!(h, caseId, activity); break;
+      case 'heuristic': raw = this._wasm.streaming_heuristic_add_event!(h, caseId, activity); break;
+      case 'conformance': raw = this._wasm.streaming_conformance_add_event!(h, caseId, activity); break;
+    }
+    return parseWasmOutput<StreamingEventStats>(raw);
+  }
+
+  /**
+   * Add a batch of events in one WASM call.
+   * `events` is an array of `{ case_id, activity }` objects.
+   * O(batch_size) — more efficient than repeated addEvent() for large batches.
+   * Only available for DFG streaming; falls back to per-event calls for others.
+   */
+  addBatch(events: Array<{ case_id: string; activity: string }>): StreamingEventStats {
+    const h = this.assertReady();
+    if (this._algorithm === 'dfg' && this._wasm.streaming_dfg_add_batch) {
+      const raw = this._wasm.streaming_dfg_add_batch(h, JSON.stringify(events));
+      return parseWasmOutput<StreamingEventStats>(raw);
+    }
+    // Fallback: individual adds
+    let last: StreamingEventStats = { ok: true, event_count: 0, open_traces: 0 };
+    for (const e of events) {
+      last = this.addEvent(e.case_id, e.activity);
+    }
+    return last;
+  }
+
+  /** Close a trace and fold its events into the model. O(trace_length). */
+  closeTrace(caseId: string): StreamingTraceStats {
+    const h = this.assertReady();
+    let raw: unknown;
+    switch (this._algorithm) {
+      case 'dfg':     raw = this._wasm.streaming_dfg_close_trace!(h, caseId); break;
+      case 'skeleton': raw = this._wasm.streaming_skeleton_close_trace!(h, caseId); break;
+      case 'heuristic': raw = this._wasm.streaming_heuristic_close_trace!(h, caseId); break;
+      case 'conformance': raw = this._wasm.streaming_conformance_close_trace!(h, caseId); break;
+    }
+    return parseWasmOutput<StreamingTraceStats>(raw);
+  }
+
+  /**
+   * Flush all currently-open traces (close them and fold into model).
+   * Useful before snapshot() when open traces should be included.
+   * Only available for DFG; no-op for others.
+   */
+  flushOpen(): void {
+    const h = this.assertReady();
+    if (this._algorithm === 'dfg' && this._wasm.streaming_dfg_flush_open) {
+      this._wasm.streaming_dfg_flush_open(h);
+    }
+  }
+
+  /**
+   * Non-destructive read of the current model (only closed traces included).
+   * Returns the raw DFG/skeleton/heuristic model object.
+   */
+  snapshot(): unknown {
+    const h = this.assertReady();
+    let raw: unknown;
+    switch (this._algorithm) {
+      case 'dfg':     raw = this._wasm.streaming_dfg_snapshot!(h); break;
+      case 'skeleton': raw = this._wasm.streaming_skeleton_snapshot!(h); break;
+      case 'heuristic': raw = this._wasm.streaming_heuristic_snapshot!(h); break;
+      case 'conformance': return null; // Snapshot not implemented for conformance
+    }
+    return raw ? parseWasmOutput(raw) : null;
+  }
+
+  /**
+   * Finalize the stream: flush open traces, store the resulting DFG in the
+   * WASM object store, free the streaming handle, and return the new handle.
+   *
+   * After finalize() the session cannot be used again.
+   */
+  finalize(): StreamingFinalResult {
+    const h = this.assertReady();
+    this._finalized = true;
+    this._handle = null;
+
+    let raw: unknown;
+    switch (this._algorithm) {
+      case 'dfg':     raw = this._wasm.streaming_dfg_finalize!(h); break;
+      case 'skeleton': raw = this._wasm.streaming_skeleton_finalize!(h); break;
+      case 'heuristic': raw = this._wasm.streaming_heuristic_finalize!(h); break;
+      case 'conformance': raw = this._wasm.streaming_conformance_finalize!(h); break;
+    }
+    const result = parseWasmOutput<{ dfg_handle?: string; nodes?: number; edges?: number }>(raw);
+    return {
+      dfgHandle: result.dfg_handle ?? String(raw),
+      nodes: result.nodes ?? 0,
+      edges: result.edges ?? 0,
+    };
+  }
+
+  stats(): unknown {
+    const h = this.assertReady();
+    if (this._algorithm === 'dfg' && this._wasm.streaming_dfg_stats) return parseWasmOutput(this._wasm.streaming_dfg_stats(h));
+    if (this._algorithm === 'conformance' && this._wasm.streaming_conformance_stats) return parseWasmOutput(this._wasm.streaming_conformance_stats(h));
+    return null;
+  }
+
+  /** Release the streaming handle without finalizing (discard in-progress state). */
+  discard(): void {
+    if (this._handle !== null && !this._finalized) {
+      try {
+        if (this._wasm.delete_object) this._wasm.delete_object(this._handle);
+      } catch { /* best-effort */ }
+      this._handle = null;
+      this._finalized = true;
+    }
+  }
+
+  /** True if begin() has been called and finalize()/discard() have not yet run. */
+  get active(): boolean { return this._handle !== null && !this._finalized; }
+
+  /** The raw WASM handle (for advanced use). */
+  get handle(): string | null { return this._handle; }
+}
+
+// ─── Kernel.openStreamingSession() ───────────────────────────────────────────
+// Expose streaming sessions as a first-class API on the Kernel class by patching
+// the prototype (avoids re-declaring the whole class).
+
+declare module './api.js' {
+  interface Kernel {
+    /**
+     * Open a stateful streaming session for incremental event ingestion.
+     *
+     * @param algorithm - 'dfg' | 'skeleton' | 'heuristic'
+     * @param options   - algorithm-specific tuning params
+     * @returns         - A started StreamingSession ready for addEvent() calls
+     *
+     * @example
+     * ```ts
+     * const session = await kernel.openStreamingSession('dfg');
+     * session.addEvent('case1', 'Register');
+     * session.addEvent('case1', 'Approve');
+     * session.closeTrace('case1');
+     * const { dfgHandle } = session.finalize();
+     * kernel.freeHandle(dfgHandle);
+     * ```
+     */
+    openStreamingSession(
+      algorithm: StreamingAlgorithmName,
+      options?: { minFrequency?: number; dependencyThreshold?: number }
+    ): Promise<StreamingSession>;
+  }
+}
+
+(Kernel.prototype as any).openStreamingSession = async function(
+  algorithm: StreamingAlgorithmName,
+  options: { minFrequency?: number; dependencyThreshold?: number } = {}
+): Promise<StreamingSession> {
+  if (!this._initialized) {
+    throw new KernelError('Kernel not initialized. Call kernel.init() first.', 'KERNEL_NOT_INITIALIZED');
+  }
+  const session = new StreamingSession(this.wasm as KernelWasmModule, algorithm);
+  await session.begin(options);
+  return session;
+};

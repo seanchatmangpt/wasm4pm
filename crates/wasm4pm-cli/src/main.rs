@@ -68,6 +68,9 @@ enum Commands {
     Receipt(commands::receipt::ReceiptArgs),
     /// Lean Six Sigma process waste and efficiency audit.
     Lean(commands::lean::LeanArgs),
+    /// Andon oracle for online prefix conformance and impossible prefix detection.
+    #[command(subcommand)]
+    Oracle(commands::oracle::OracleCommands),
 }
 
 fn main() {
@@ -114,6 +117,9 @@ fn try_main() -> anyhow::Result<()> {
         }
         Commands::Lean(args) => {
             commands::lean::run(args)?;
+        }
+        Commands::Oracle(args) => {
+            commands::oracle::handle_oracle_command(args)?;
         }
     }
 

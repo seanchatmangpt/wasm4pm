@@ -18,7 +18,7 @@ name = "simd_streaming_dfg"   # simd_streaming_dfg | dfg | heuristic_miner
 
 [execution]
 profile = "stream"    # enables streaming-full feature set + SIMD acceleration
-timeout = 0           # 0 = unlimited (streaming never stops voluntarily)
+# timeout is omitted — streaming runs until stopped; use Ctrl-C or kill the process
 
 [observability]
 logLevel = "warn"     # reduce log noise in high-throughput scenarios

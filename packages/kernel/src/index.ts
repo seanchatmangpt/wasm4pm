@@ -23,7 +23,7 @@ export type { KernelResult, PartialResult, KernelStats, KernelWasmModule } from 
 
 // Registry exports
 /**
- * getRegistry — Get the singleton algorithm registry with 38 Van der Aalst registered algorithms.
+ * getRegistry — Get the singleton algorithm registry with 60 registered algorithms.
  * @description Singleton accessor; use to enumerate algorithms, check metadata, query by profile.
  * @example const registry = getRegistry(); const dfg = registry.get('dfg');
  */
@@ -37,6 +37,26 @@ export type {
   SpeedTier,
   DeploymentProfile,
 } from './registry.js';
+
+// Smart algorithm recommendation
+/**
+ * recommendAlgorithm — Data-driven algorithm selection from a LogProfile.
+ * @description Analyses trace count, variant ratio, activity count, noise level, and scale to
+ * recommend the best discovery algorithm. Returns confidence, reasoning, and alternatives.
+ * @example const rec = recommendAlgorithm({ trace_count: 500, event_count: 5000, variant_count: 120, activity_count: 15, avg_trace_length: 10, has_timestamps: true });
+ */
+export {
+  recommendAlgorithm,
+  analyzeLogProfile,
+  compareAlgorithms,
+  supportsStreaming,
+  getStreamingVariant,
+} from './recommendation.js';
+export type {
+  LogProfile,
+  AlgorithmRecommendation as KernelAlgorithmRecommendation,
+  AlgorithmComparison,
+} from './recommendation.js';
 
 // Feature gates — deployment profile validation
 /**
@@ -241,6 +261,12 @@ export type {
   BatchSummary,
   BatchResult,
 } from './batch-runner.js';
+
+// Process-Model Registry - M1
+export * from './model-registry.js';
+
+// Process-Law Query Language - M4
+export * from './ocpq.js';
 
 // Export all WASM functions from @wasm4pm/core to provide unified entry point
 export * from '@wasm4pm/core';

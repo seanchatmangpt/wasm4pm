@@ -310,7 +310,7 @@ export function suggestClusteringWithScaling(
       : `DBSCAN with ${scalingMethod} scaling (density-based, suitable for large logs)`;
 
   return {
-    algorithm: algorithm as any,
+    algorithm,
     scalingMethod,
     confidence,
     rationale,
@@ -335,7 +335,7 @@ export function suggestRegressionWithScaling(
   const confidence = computeConfidence(traceCount, featureCount, featureQualityScore);
 
   return {
-    algorithm: 'linear_regression' as any,
+    algorithm: 'linear_regression',
     scalingMethod,
     confidence,
     rationale: `Linear regression with ${scalingMethod} scaling (numerical stability for gradient descent)`,

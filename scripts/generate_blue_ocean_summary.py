@@ -6,8 +6,8 @@ Generates an executive Blue Ocean summary Markdown from benchmark-report.json.
 
 Usage:
     python3 scripts/generate_blue_ocean_summary.py \
-        --report wasm4pm/target/wasm4pm-v26.5.15/benchmark-report.json \
-        --output wasm4pm/target/wasm4pm-v26.5.15/executive-blue-ocean-summary.md
+        --report wasm4pm/target/wasm4pm-v26.5.28/benchmark-report.json \
+        --output wasm4pm/target/wasm4pm-v26.5.28/executive-blue-ocean-summary.md
 """
 
 import argparse

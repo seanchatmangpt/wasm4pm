@@ -37,6 +37,8 @@ export function normalizeVerboseLevel(options: EmitOptions): 0 | 1 | 2 | 3 {
 export interface CommandResult<T = unknown> {
   readonly command: string; // e.g. 'run', 'benchmark verify'
   readonly status: 'ok' | 'error';
+  /** Human-readable summary: describes the outcome for both ok and error cases. */
+  readonly message: string;
   readonly exit_code: number; // EXIT_CODES value
   readonly payload: T;
   readonly error?: {
@@ -86,15 +88,13 @@ export function emitResult<T>(
 
   switch (options.format) {
     case 'json':
-      if (!options.quiet) {
-        process.stdout.write(JSON.stringify(result, null, 2) + '\n');
-      }
+      // Machine-readable JSON is always emitted when requested — even with --quiet.
+      // Hooks (e.g. stop-proof-gate.sh) rely on `wpm … --format json --quiet`.
+      process.stdout.write(JSON.stringify(result, null, 2) + '\n');
       break;
 
     case 'jsonl':
-      if (!options.quiet) {
-        process.stdout.write(JSON.stringify(result) + '\n');
-      }
+      process.stdout.write(JSON.stringify(result) + '\n');
       break;
 
     case 'sarif':
@@ -159,8 +159,17 @@ function defaultConsoleRenderer<T>(
     }
   } else {
     projection.error(result.error?.message ?? 'Command failed');
+    if (result.error?.didYouMean) {
+      projection.info(`Did you mean: ${result.error.didYouMean}`);
+    }
+    if (result.error?.alternatives && result.error.alternatives.length > 0) {
+      projection.info(`Available options: ${result.error.alternatives.join(', ')}`);
+    }
     if (result.error?.remediation) {
-      projection.info(`Remediation: ${result.error.remediation}`);
+      projection.info(`Fix: ${result.error.remediation}`);
+    }
+    if (result.error?.docsUrl) {
+      projection.info(`Docs: ${result.error.docsUrl}`);
     }
   }
 }
@@ -170,11 +179,13 @@ export function makeResult<T>(
   command: string,
   payload: T,
   durationMs: number,
-  exitCode = 0
+  exitCode = 0,
+  message?: string
 ): CommandResult<T> {
   return {
     command,
     status: 'ok',
+    message: message ?? `${command} completed successfully`,
     exit_code: exitCode,
     payload,
     meta: {
@@ -249,6 +260,7 @@ export function makeErrorResult(
   return {
     command,
     status: 'error',
+    message,
     exit_code: exitCode,
     payload: null,
     error: {

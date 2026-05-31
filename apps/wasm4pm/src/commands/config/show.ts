@@ -116,13 +116,18 @@ export const configShow = defineCommand({
     name: 'show',
     description:
       'Display resolved configuration with sources (CLI args > TOML > JSON > ENV vars > defaults).\n' +
-      'Examples: wpm config show  |  wpm config show --detailed  |  WASM4PM_ALGORITHM=dfg wpm config show',
+      'Examples: wpm config show  |  wpm config show --source  |  WASM4PM_ALGORITHM=dfg wpm config show',
   },
   args: {
+    source: {
+      type: 'boolean',
+      default: false,
+      description: 'Show where each value came from (provenance: file, env, default, cli)',
+    },
     detailed: {
       type: 'boolean',
       default: false,
-      description: 'Show all 24+ ENV variables and Zod constraints',
+      description: 'Show all 24+ ENV variables and Zod constraints (implies --source)',
     },
     format: {
       type: 'string',
@@ -138,13 +143,14 @@ export const configShow = defineCommand({
   async run(ctx) {
     const t0 = performance.now();
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const showSource = Boolean(ctx.args.source) || Boolean(ctx.args.detailed);
     const detailed = Boolean(ctx.args.detailed);
     const quiet = Boolean(ctx.args.quiet);
 
     let warningCount = 0;
     return withSpanRaw(
       'config.show',
-      { 'config.format': format, 'config.detailed': detailed },
+      { 'config.format': format, 'config.detailed': detailed, 'config.show_source': showSource },
       async () => {
         try {
           const config = await resolveConfig({});
@@ -171,7 +177,7 @@ export const configShow = defineCommand({
           const result = makeResult('config show', payload, performance.now() - t0);
 
           emitResult(result, { format, quiet }, (res, projection) => {
-            renderConfigShow(res.payload, projection, detailed);
+            renderConfigShow(res.payload, projection, detailed || showSource);
           });
 
           return await exitWithFlush(EXIT_CODES.success);

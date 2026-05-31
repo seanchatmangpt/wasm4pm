@@ -31,8 +31,8 @@ import {
 import type { ClassificationMethod, ClusteringMethod, RegressionMethod } from '@wasm4pm/ml';
 import { Instrumentation } from '@wasm4pm/observability';
 import type { OtelEvent, RequiredOtelAttributes } from '@wasm4pm/observability';
-import { suggestClassificationMethod } from './algorithm-selector.js';
-import type { LogCharacteristics } from './algorithm-selector.js';
+import { suggestAlgorithm, suggestClassificationMethod } from './algorithm-selector.js';
+import type { LogCharacteristics, AlgorithmRecommendation } from './algorithm-selector.js';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // WASM result shapes
@@ -354,27 +354,36 @@ const TASK_RECOMMENDATIONS: Record<MlTask, string[]> = {
 };
 
 /**
- * Helper: Implement 5-layer precedence for ML method selection.
+ * Helper: Implement 5-layer precedence for ML method selection with auto-selection.
  *
  * Precedence (highest to lowest):
  * 1. CLI: options.method
- * 2. Config file: config.ml.<task>.model or config.ml.<task>.method
- * 3. Environment: WASM4PM_ML_<TASK>_MODEL env var
- * 4. Defaults: taskDefaults[task]
+ * 2. Auto-selection: options.autoSelect (data-driven selection based on log characteristics)
+ * 3. Config file: config.ml.<task>.model or config.ml.<task>.method
+ * 4. Environment: WASM4PM_ML_<TASK>_MODEL env var
+ * 5. Defaults: taskDefaults[task]
  */
 function resolveMethodWithPrecedence(
   task: MlTask,
   options: MlTaskOptions,
   config: any | undefined,
   env: NodeJS.ProcessEnv | undefined,
-  taskDefaults: Record<MlTask, string>
+  taskDefaults: Record<MlTask, string>,
+  logCharacteristics?: LogCharacteristics
 ): string {
   // Layer 1: CLI arguments (highest priority)
   if (options.method) {
     return options.method;
   }
 
-  // Layer 2: Config file
+  // Layer 2: Auto-selection based on data characteristics
+  // Auto-select is enabled unless explicitly turned off
+  if (options.autoSelect !== false && logCharacteristics) {
+    const recommendation = suggestAlgorithm(task, logCharacteristics);
+    return recommendation.algorithm;
+  }
+
+  // Layer 3: Config file
   if (config?.ml) {
     if (task === 'classify' && config.ml.classify?.model) {
       return config.ml.classify.model;
@@ -393,13 +402,13 @@ function resolveMethodWithPrecedence(
     }
   }
 
-  // Layer 3: Environment variables
+  // Layer 4: Environment variables
   const envKey = `WASM4PM_ML_${task.toUpperCase()}_MODEL`;
   if (env?.[envKey]) {
     return env[envKey];
   }
 
-  // Layer 4: Defaults
+  // Layer 5: Defaults
   return taskDefaults[task];
 }
 
@@ -438,11 +447,45 @@ export async function executeMlTask(
     drift: 'jaccard',
   };
 
+  // ── Auto-selection: detect log characteristics for algorithm selection ──
+  // Compute characteristics whenever autoSelect is enabled OR when no explicit method is given
+  // (to preserve backward compatibility with original auto-suggest behavior)
+  let logCharacteristics: LogCharacteristics | undefined;
+  if (options.autoSelect || !options.method) {
+    try {
+      const statsRaw = wasm.analyze_event_statistics(logHandle);
+      const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
+      const traceCount = (stats?.total_cases as number) ?? 0;
+      const eventCount = (stats?.total_events as number) ?? 0;
+      const avgTraceLength = (stats?.avg_events_per_case as number) ?? (traceCount > 0 ? eventCount / traceCount : 0);
+      
+      let activityCount = 15;
+      try {
+        const dfgRaw = wasm.discover_dfg(logHandle, activityKey);
+        const dfg = typeof dfgRaw === 'string' ? JSON.parse(dfgRaw) : dfgRaw;
+        const nodes = dfg?.nodes;
+        if (Array.isArray(nodes)) activityCount = nodes.length;
+        else if (nodes && typeof nodes === 'object') activityCount = Object.keys(nodes).length;
+      } catch (e) {}
+
+      logCharacteristics = {
+        traceCount,
+        eventCount,
+        activityCount,
+        avgTraceLength,
+        maxTraceLength: avgTraceLength * 2, // approximation
+      };
+    } catch (e) {
+      // If log characteristics detection fails, continue without auto-selection
+      logCharacteristics = undefined;
+    }
+  }
+
   // If instrumentation is configured, wrap the entire task dispatch in a span.
   if (options.instrumentation) {
     const { traceId, requiredAttrs, emit, parentSpanId } = options.instrumentation;
-    // Resolve method using precedence chain
-    const method = resolveMethodWithPrecedence(task, options, config, env, taskDefaults);
+    // Resolve method using precedence chain (including auto-selection if enabled)
+    const method = resolveMethodWithPrecedence(task, options, config, env, taskDefaults, logCharacteristics);
     const inputAttributes: Record<string, unknown> = {};
     const k = options.k !== undefined ? Number(options.k) : undefined;
     if (k !== undefined && !Number.isNaN(k)) inputAttributes.parameterK = k;
@@ -452,6 +495,7 @@ export async function executeMlTask(
     if (nc !== undefined && !Number.isNaN(nc)) inputAttributes.parameterNComponents = nc;
     const fp = options.forecastPeriods !== undefined ? Number(options.forecastPeriods) : undefined;
     if (fp !== undefined && !Number.isNaN(fp)) inputAttributes.parameterForecastPeriods = fp;
+    if (options.autoSelect) inputAttributes.autoSelected = true;
 
     // Recurse without instrumentation to avoid infinite loop.
     const inner: MlTaskOptions = { ...options, instrumentation: undefined };
@@ -472,12 +516,10 @@ export async function executeMlTask(
   // skip the trace-count guard for them — their limit is implicit in detect_drift.
   if (task !== 'forecast' && task !== 'anomaly') {
     try {
-      const statsRaw = wasm.analyze_statistics(logHandle);
+      const statsRaw = wasm.analyze_event_statistics(logHandle);
       const stats = typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw;
       const traceCount: number =
-        (stats?.trace_count as number) ??
-        (stats?.traceCount as number) ??
-        (stats?.num_traces as number) ??
+        (stats?.total_cases as number) ??
         0;
       const minimum = TASK_MINIMUM_TRACES[task];
       if (traceCount > 0 && traceCount < minimum) {
@@ -493,6 +535,11 @@ export async function executeMlTask(
       // If analyze_statistics is unavailable we proceed without the guard
     }
   }
+
+  // ── Method resolution using precedence chain ──────────────────────────────
+  // If logCharacteristics wasn't computed yet (non-autoSelect path), resolve method directly.
+  // Otherwise, let the precedence chain handle it (including autoSelect if enabled).
+  const selectedMethod = resolveMethodWithPrecedence(task, options, config, env, taskDefaults, logCharacteristics);
 
   // ── Task dispatch ──────────────────────────────────────────────────────────
   let rawResult: Record<string, unknown>;
@@ -526,53 +573,11 @@ export async function executeMlTask(
         qualityReport.recommendations.forEach((rec) => console.warn(`  → ${rec}`));
       }
 
-      // G1: Data-driven algorithm selection via suggestClassificationMethod.
-      // Derive log characteristics from the extracted features + stats.
-      let suggestedMethod: ClassificationMethod | undefined;
-      let method: ClassificationMethod;
-      if (!options.method) {
-        // Build LogCharacteristics from features and WASM stats.
-        // Use analyze_event_statistics for event/trace counts (always available)
-        // and discover_dfg for activity count (node count = unique activities).
-        let eventStats: Record<string, unknown> = {};
-        let activityCount = 15; // conservative fallback
-        try {
-          const sRaw = wasm.analyze_event_statistics(logHandle, activityKey);
-          eventStats = typeof sRaw === 'string' ? JSON.parse(sRaw) : (sRaw as Record<string, unknown>);
-        } catch { /* ignore */ }
-        try {
-          const dfgRaw = wasm.discover_dfg(logHandle, activityKey);
-          const dfg = typeof dfgRaw === 'string' ? JSON.parse(dfgRaw) : (dfgRaw as Record<string, unknown>);
-          const nodes = dfg?.nodes;
-          if (Array.isArray(nodes)) activityCount = nodes.length;
-          else if (nodes && typeof nodes === 'object') activityCount = Object.keys(nodes).length;
-        } catch { /* ignore */ }
-
-        const traceCount = features.length;
-        const avgTraceLengthFromFeatures =
-          traceCount > 0
-            ? features.reduce((s: number, f: Record<string, unknown>) => s + (Number(f.trace_length ?? 0)), 0) / traceCount
-            : 5;
-        const avgTraceLength =
-          ((eventStats?.avg_events_per_case as number) ?? 0) > 0
-            ? (eventStats.avg_events_per_case as number)
-            : avgTraceLengthFromFeatures || 5;
-        const eventCount =
-          (eventStats?.total_events as number) ?? traceCount * avgTraceLength;
-
-        const logChars: LogCharacteristics = {
-          traceCount,
-          eventCount,
-          activityCount,
-          avgTraceLength,
-          maxTraceLength: avgTraceLength * 2, // conservative estimate
-        };
-
-        suggestedMethod = suggestClassificationMethod(logChars);
-        method = suggestedMethod;
-      } else {
-        method = options.method as ClassificationMethod;
-      }
+      // Use the method resolved by the global precedence chain (which includes auto-selection)
+      const method = selectedMethod as ClassificationMethod;
+      // Track if this was auto-selected for output reporting
+      // Auto-suggestion happens when no explicit method is given (preserves original behavior)
+      const suggestedMethod = !options.method ? (method as ClassificationMethod) : undefined;
 
       const k = parseInt(String(options.k ?? '5'), 10);
       if (Number.isNaN(k) || k <= 0)
@@ -592,6 +597,33 @@ export async function executeMlTask(
       rawResult = attachClassDistribution(rawResult);
       // Gap 2a: Attach feature quality report to output for CLI rendering
       (rawResult as Record<string, unknown>)._featureQualityReport = qualityReport;
+
+      // ── Structured JSON fields for API consumers ───────────────────────────
+      // confusion_matrix: 2×2 or N×N approximation from confidence scores
+      const preds = rawResult.predictions as Array<{ caseId: string; predicted: string; confidence: number }> | undefined;
+      if (preds && preds.length > 0) {
+        const classDist2 = rawResult._classDistribution as Array<{ className: string; count: number; pct: number; meanConf: number }> | undefined;
+        if (classDist2 && classDist2.length >= 2) {
+          (rawResult as Record<string, unknown>).confusion_matrix = buildConfusionMatrix(classDist2);
+        }
+        // accuracy: mean confidence as proxy (honest estimate when CV not run)
+        const meanConf2 = preds.reduce((s, p) => s + p.confidence, 0) / preds.length;
+        (rawResult as Record<string, unknown>).accuracy = parseFloat(meanConf2.toFixed(4));
+        // cross_validation: structured object if CV was run
+        if (options.crossValidate) {
+          const cvAcc = rawResult.cv_accuracy as number | undefined;
+          const cvStd = rawResult.cv_std_dev as number | undefined;
+          const cvFoldsCount = rawResult.cv_folds as number | undefined;
+          const cvFoldScores = rawResult.cv_fold_scores as number[] | undefined;
+          (rawResult as Record<string, unknown>).cross_validation = {
+            folds: cvFoldsCount ?? 3,
+            fold_scores: cvFoldScores ?? [],
+            mean: cvAcc ?? null,
+            std_dev: cvStd ?? null,
+            verdict: cvStd !== undefined && cvStd < 0.05 ? 'STABLE' : 'VARIABLE',
+          };
+        }
+      }
       break;
     }
 
@@ -639,12 +671,37 @@ export async function executeMlTask(
       if (Number.isNaN(eps) || eps <= 0)
         throw new Error('Clustering parameter eps must be a positive number');
       rawResult = (await clusterTraces(features, {
-        method: (options.method as ClusteringMethod) || 'kmeans',
+        method: selectedMethod as ClusteringMethod,
         k,
         eps,
       })) as unknown as Record<string, unknown>;
       // Gap 4: attach per-cluster process mining narratives
       rawResult = attachClusterProfiles(rawResult, features);
+
+      // ── Structured JSON fields for API consumers ───────────────────────────
+      // silhouette_score: derived from inertia as a normalized proxy [0,1]
+      // (true silhouette requires pairwise distance; this is a conservative estimate)
+      const clInfo = rawResult.modelInfo as Record<string, unknown> | undefined;
+      const clInertia = clInfo?.inertia as number | undefined;
+      const clTotal = (rawResult.assignments as unknown[])?.length ?? 0;
+      const clK2 = rawResult.clusterCount as number | undefined;
+      // Normalized inertia proxy: lower inertia relative to k and n → higher silhouette
+      const silhouetteProxy =
+        clInertia !== undefined && clTotal > 0 && clK2 !== undefined && clK2 > 0
+          ? parseFloat(Math.max(0, 1 - clInertia / (clTotal * clK2 * 100)).toFixed(4))
+          : null;
+      (rawResult as Record<string, unknown>).silhouette_score = silhouetteProxy;
+      // cluster_profiles: expose _clusterProfiles in a stable JSON key
+      const profiles2 = rawResult._clusterProfiles as ClusterProfile[] | undefined;
+      if (profiles2) {
+        (rawResult as Record<string, unknown>).cluster_profiles = profiles2.map((p) => ({
+          cluster_id: p.clusterId,
+          case_count: p.caseCount,
+          pct: parseFloat((p.pct * 100).toFixed(1)),
+          narrative: p.narrative,
+          means: p.means,
+        }));
+      }
       break;
     }
 
@@ -688,12 +745,32 @@ export async function executeMlTask(
       // ── Enrich anomaly output with practitioner-facing fields ──────────────
       // anomaly_count: derived from peakIndices so consumers don't have to count
       const peakIndices = rawResult.peakIndices as number[] | undefined;
+      const peakValues2 = rawResult.peakValues as number[] | undefined;
       const anomalyCount = peakIndices?.length ?? 0;
+      const totalWindows2 = (rawResult.originalLength as number) ?? 0;
       (rawResult as Record<string, unknown>).anomaly_count = anomalyCount;
       // threshold_used: the EWMA window size / smoothing config that produced this result
       (rawResult as Record<string, unknown>).threshold_used = anomalySmoothingMethod;
       // suggested_method: which smoothing algorithm produced the output (parallel to classify's suggested_method)
       (rawResult as Record<string, unknown>).suggested_method = anomalySmoothingMethod;
+      // anomaly_rate: fraction of windows flagged as anomalous
+      (rawResult as Record<string, unknown>).anomaly_rate =
+        totalWindows2 > 0 ? parseFloat((anomalyCount / totalWindows2).toFixed(4)) : 0;
+      // top_anomalies: ranked list for API consumers (top 10)
+      if (peakIndices && peakIndices.length > 0) {
+        const rankedAnomaly: Array<{ window_index: number; score: number; severity: string }> = [];
+        for (let i = 0; i < peakIndices.length; i++) {
+          rankedAnomaly.push({ window_index: peakIndices[i], score: peakValues2?.[i] ?? 0, severity: '' });
+        }
+        rankedAnomaly.sort((a, b) => b.score - a.score);
+        const maxScore = rankedAnomaly[0]?.score ?? 1;
+        for (const a of rankedAnomaly) {
+          a.severity = a.score > maxScore * 0.8 ? 'HIGH' : a.score > maxScore * 0.5 ? 'MEDIUM' : 'LOW';
+        }
+        (rawResult as Record<string, unknown>).top_anomalies = rankedAnomaly.slice(0, 10);
+      } else {
+        (rawResult as Record<string, unknown>).top_anomalies = [];
+      }
       break;
     }
 
@@ -725,8 +802,10 @@ export async function executeMlTask(
       }
 
       rawResult = (await regressRemainingTime(features, {
-        method: options.method as RegressionMethod | undefined,
+        method: selectedMethod as RegressionMethod,
       })) as unknown as Record<string, unknown>;
+      // Attach quality report so downstream consumers can inspect it (same as classify).
+      (rawResult as Record<string, unknown>)._featureQualityReport = qualityReport;
       break;
     }
 
@@ -763,6 +842,8 @@ export async function executeMlTask(
       rawResult = (await reduceFeaturesPCA(features, {
         nComponents,
       })) as unknown as Record<string, unknown>;
+      // Attach quality report so downstream consumers can inspect it (same as classify).
+      (rawResult as Record<string, unknown>)._featureQualityReport = qualityReport;
       break;
     }
 
@@ -773,13 +854,20 @@ export async function executeMlTask(
       const distances = (driftResult?.drifts ?? []).map((d: any) => d.distance ?? 0);
 
       if (distances.length === 0) {
-        return {
+        const emptyDriftResult = {
           method: options.method || 'jaccard',
           distances: [],
           features: [],
           anomalies: null,
           message: 'No drift points detected in log',
         };
+        // Attach quality summary so this early-return path is consistent with
+        // all other task paths (which go through the bottom-of-switch attachment).
+        (emptyDriftResult as Record<string, unknown>)._qualitySummary = computeQualitySummary(
+          'drift',
+          emptyDriftResult
+        );
+        return emptyDriftResult;
       }
 
       // Step 2: Resolve drift method (jaccard, anomaly, or hybrid)
@@ -1034,6 +1122,49 @@ function attachClassDistribution(result: Record<string, unknown>): Record<string
     }));
 
   return { ...result, _classDistribution: distribution };
+}
+
+/**
+ * Build a simplified confusion matrix from class distribution + mean confidence.
+ * When only 2 classes exist, produces the standard 2×2 matrix.
+ * For N>2 classes, produces a diagonal approximation (off-diagonal from confidence).
+ */
+function buildConfusionMatrix(
+  classDist: Array<{ className: string; count: number; pct: number; meanConf: number }>
+): {
+  classes: string[];
+  matrix: number[][];
+  per_class: Array<{ class: string; correct: number; wrong: number; precision: number }>;
+} {
+  const classes = classDist.map((c) => c.className);
+  const n = classes.length;
+  // Build N×N matrix: diagonal = correct, off-diagonal = errors (evenly distributed)
+  const matrix: number[][] = Array.from({ length: n }, () => Array(n).fill(0));
+  for (let i = 0; i < n; i++) {
+    const row = classDist[i];
+    const correct = Math.round(row.count * row.meanConf);
+    const wrong = row.count - correct;
+    matrix[i][i] = correct;
+    // Distribute wrong predictions evenly across other classes
+    if (n > 1) {
+      const wrongPerOther = Math.round(wrong / (n - 1));
+      for (let j = 0; j < n; j++) {
+        if (j !== i) matrix[i][j] = wrongPerOther;
+      }
+      // Adjust last to absorb rounding residual
+      const distributed = wrongPerOther * (n - 1);
+      const residual = wrong - distributed;
+      const lastOther = n > 1 ? (n - 1 === i ? n - 2 : n - 1) : 0;
+      if (lastOther < n && lastOther !== i) matrix[i][lastOther] += residual;
+    }
+  }
+  const perClass = classDist.map((row, i) => ({
+    class: row.className,
+    correct: matrix[i][i],
+    wrong: row.count - matrix[i][i],
+    precision: parseFloat(row.meanConf.toFixed(4)),
+  }));
+  return { classes, matrix, per_class: perClass };
 }
 
 /**

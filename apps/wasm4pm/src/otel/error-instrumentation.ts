@@ -16,6 +16,16 @@ import { randomBytes } from 'node:crypto';
 import type { OtelSpan } from '@wasm4pm/cognition';
 import { getGlobalSpanSink } from './sink.js';
 
+/**
+ * When a parent command span is active, callers should pass its trace_id here
+ * so the error/diagnostic span is correlated in Jaeger rather than appearing
+ * as a disconnected root span.  Omitting this field is safe — a fresh trace_id
+ * is generated instead.
+ */
+export interface SpanParentContext {
+  traceId: string;
+}
+
 type ErrorType =
   | 'CONFIG_NOT_FOUND'
   | 'TOML_PARSE_ERROR'
@@ -36,16 +46,18 @@ type ErrorType =
  * @param errorType - Type of validation error (CONFIG_NOT_FOUND, MISSING_REQUIRED_ARG, etc.)
  * @param message - Human-readable error message
  * @param details - Optional error context (file path, argument name, etc.)
+ * @param parent - Optional parent span context for trace correlation
  */
 export function emitValidationErrorSpan(
   errorType: ErrorType,
   message: string,
-  details?: Record<string, unknown>
+  details?: Record<string, unknown>,
+  parent?: SpanParentContext
 ): void {
   try {
     const sink = getGlobalSpanSink();
     const span: OtelSpan = {
-      trace_id: randomBytes(16).toString('hex'),
+      trace_id: parent?.traceId ?? randomBytes(16).toString('hex'),
       span_id: randomBytes(8).toString('hex'),
       name: 'wasm4pm.validation',
       kind: 'INTERNAL',
@@ -72,16 +84,18 @@ export function emitValidationErrorSpan(
  * @param success - Whether WASM is available
  * @param message - Status message
  * @param details - Optional context (path, error message, etc.)
+ * @param parent - Optional parent span context for trace correlation
  */
 export function emitWasmCheckSpan(
   success: boolean,
   message: string,
-  details?: Record<string, unknown>
+  details?: Record<string, unknown>,
+  parent?: SpanParentContext
 ): void {
   try {
     const sink = getGlobalSpanSink();
     const span: OtelSpan = {
-      trace_id: randomBytes(16).toString('hex'),
+      trace_id: parent?.traceId ?? randomBytes(16).toString('hex'),
       span_id: randomBytes(8).toString('hex'),
       name: 'wasm4pm.wasm_check',
       kind: 'INTERNAL',
@@ -108,17 +122,19 @@ export function emitWasmCheckSpan(
  * @param elapsedMs - Time taken
  * @param message - Status message
  * @param details - Optional context (timeout_ms, state, etc.)
+ * @param parent - Optional parent span context for trace correlation
  */
 export function emitEngineInitSpan(
   success: boolean,
   elapsedMs: number,
   message: string,
-  details?: Record<string, unknown>
+  details?: Record<string, unknown>,
+  parent?: SpanParentContext
 ): void {
   try {
     const sink = getGlobalSpanSink();
     const span: OtelSpan = {
-      trace_id: randomBytes(16).toString('hex'),
+      trace_id: parent?.traceId ?? randomBytes(16).toString('hex'),
       span_id: randomBytes(8).toString('hex'),
       name: 'wasm4pm.engine_init',
       kind: 'INTERNAL',
@@ -147,18 +163,20 @@ export function emitEngineInitSpan(
  * @param message - Error message
  * @param filePath - Path to file that had the error
  * @param details - Optional context (line number, byte position, etc.)
+ * @param parent - Optional parent span context for trace correlation
  */
 export function emitFileIoErrorSpan(
   operation: 'read' | 'write' | 'parse' | 'delete',
   errorType: 'FILE_NOT_FOUND' | 'PARSE_ERROR' | 'PERMISSION_DENIED' | 'IO_ERROR',
   message: string,
   filePath: string,
-  details?: Record<string, unknown>
+  details?: Record<string, unknown>,
+  parent?: SpanParentContext
 ): void {
   try {
     const sink = getGlobalSpanSink();
     const span: OtelSpan = {
-      trace_id: randomBytes(16).toString('hex'),
+      trace_id: parent?.traceId ?? randomBytes(16).toString('hex'),
       span_id: randomBytes(8).toString('hex'),
       name: 'wasm4pm.file_io',
       kind: 'INTERNAL',
@@ -190,18 +208,20 @@ export function emitFileIoErrorSpan(
  * @param attributes - Base attributes (log_handle, activity_key, etc.)
  * @param algorithm - Algorithm name (dfg, genetic_algorithm, etc.)
  * @param qualityMetrics - Optional metrics (fitness_estimate, precision, etc.)
+ * @param parent - Optional parent span context for trace correlation
  */
 export function emitAlgorithmSpan(
   operationName: string,
   elapsedMs: number,
   attributes: Record<string, unknown>,
   algorithm: string,
-  qualityMetrics?: Record<string, unknown>
+  qualityMetrics?: Record<string, unknown>,
+  parent?: SpanParentContext
 ): void {
   try {
     const sink = getGlobalSpanSink();
     const span: OtelSpan = {
-      trace_id: randomBytes(16).toString('hex'),
+      trace_id: parent?.traceId ?? randomBytes(16).toString('hex'),
       span_id: randomBytes(8).toString('hex'),
       name: `wasm.${operationName}`,
       kind: 'INTERNAL',
@@ -235,6 +255,7 @@ export function emitAlgorithmSpan(
  * @param handle - Resource handle being cleaned up
  * @param errorMessage - Error message if failed
  * @param recovered - Whether error was recovered
+ * @param parent - Optional parent span context for trace correlation
  */
 export function emitCleanupSpan(
   operationName: string,
@@ -242,12 +263,13 @@ export function emitCleanupSpan(
   elapsedMs: number,
   handle: string,
   errorMessage?: string,
-  recovered: boolean = false
+  recovered: boolean = false,
+  parent?: SpanParentContext
 ): void {
   try {
     const sink = getGlobalSpanSink();
     const span: OtelSpan = {
-      trace_id: randomBytes(16).toString('hex'),
+      trace_id: parent?.traceId ?? randomBytes(16).toString('hex'),
       span_id: randomBytes(8).toString('hex'),
       name: `wasm.${operationName}`,
       kind: 'INTERNAL',
@@ -277,18 +299,20 @@ export function emitCleanupSpan(
  * @param message - Error message
  * @param filePath - Path to config file
  * @param details - Optional context (line number, invalid_field, suggestions, etc.)
+ * @param parent - Optional parent span context for trace correlation
  */
 export function emitConfigErrorSpan(
   configType: 'toml' | 'json' | 'schema',
   errorType: 'PARSE_ERROR' | 'VALIDATION_ERROR' | 'INVALID_ALGORITHM',
   message: string,
   filePath: string,
-  details?: Record<string, unknown>
+  details?: Record<string, unknown>,
+  parent?: SpanParentContext
 ): void {
   try {
     const sink = getGlobalSpanSink();
     const span: OtelSpan = {
-      trace_id: randomBytes(16).toString('hex'),
+      trace_id: parent?.traceId ?? randomBytes(16).toString('hex'),
       span_id: randomBytes(8).toString('hex'),
       name: 'wasm4pm.config_validation',
       kind: 'INTERNAL',

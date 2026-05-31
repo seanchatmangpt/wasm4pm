@@ -4,12 +4,19 @@
  *
  * Bridges raw WASM errors from wasm4pm into the contracts TypedError system.
  * Provides classification, context enrichment, and recovery guidance.
- import type { ErrorCode, TypedError } from '@wasm4pm/contracts';
- import { createTypedError, TYPED_ERROR_CODES } from '@wasm4pm/contracts';
- import { diagnoseError } from './introspection/diagnostics.js';
+ */
+import type { ErrorCode, TypedError } from '@wasm4pm/contracts';
+import { createTypedError } from '@wasm4pm/contracts';
+import { diagnoseError } from './introspection/diagnostics.js';
 
  /** Kernel-specific error codes extending the contracts error system */
- export type KernelErrorCode = ErrorCode | 'KERNEL_VERSION_MISMATCH' | 'KERNEL_NOT_INITIALIZED';
+ export type KernelErrorCode =
+   | ErrorCode
+   | 'KERNEL_VERSION_MISMATCH'
+   | 'KERNEL_NOT_INITIALIZED'
+   | 'MALFORMED_EVENT_LOG'
+   | 'INVALID_MODEL_HANDLE'
+   | 'INVALID_PARAMETER';
 
  /**
   * KernelError — extends Error with structured context for kernel operations

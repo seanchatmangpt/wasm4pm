@@ -1,0 +1,235 @@
+╔════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╗
+║                    WASM BUILD OPTIMIZATION PRIORITY MATRIX                                                            ║
+║                    (Sorted by Impact/Effort Ratio)                                                                    ║
+╚════════════════════════════════════════════════════════════════════════════════════════════════════════════════════╝
+
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ 🔴 PHASE 1: IMMEDIATE (Implement This Week)                                                                         │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+  1️⃣  CACHED WASM BINARIES                                                                        [CRITICAL - DO FIRST]
+  ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+      Problem:     WASM binary rebuilt 85s every test run, even when source unchanged
+
+      Solution:    Cache binary on disk, keyed by source hash
+                   └─ ~/.cache/wasm4pm/{HASH}.wasm (local dev)
+                   └─ GitHub Actions cache (CI)
+
+      Savings:     45-60s per iteration (99% on cache hits)
+                   └─ Cold build:    85s (build + cache)
+                   └─ Warm builds:   0.5s (copy binary only)
+                   └─ Dev cycle impact: 10 iterations = 840s → ~90s (10.7× faster)
+
+      Effort:      LOW (30 min)
+                   └─ Write build-with-cache.sh script
+                   └─ Update package.json build target
+                   └─ Add GitHub Actions cache step
+
+      Risk:        VERY LOW
+                   └─ Only copies if source hash matches
+                   └─ Fallback: delete cache, rebuild (automatic)
+                   └─ No code changes to WASM or tests
+
+      📊 Impact/Effort: 2400s/h ⭐⭐⭐⭐⭐ (EXCEPTIONAL)
+
+      ✅ RECOMMENDATION: START HERE. Unblocks all other optimizations.
+
+
+  2️⃣  SHARED WASM INSTANCE (softReset)                                                           [HIGH - DO SECOND]
+  ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+      Problem:     ~50 test suites call WasmLoader.reset(), deallocating WASM instance
+                   └─ Each reset: ~45ms (deallocate + reimport + reallocate memory)
+                   └─ Total: 50 × 45ms = 2.25s overhead per test run
+
+      Solution:    Replace full reset() with softReset()
+                   └─ Clears object cache only (2ms overhead)
+                   └─ Keeps WASM instance in memory
+
+      Savings:     2.15s per test run
+                   └─ 50 resets × (45ms - 2ms) = 2.15s
+
+      Effort:      LOW (45 min)
+                   └─ Update WasmLoader class (15 min)
+                   └─ Replace reset() → softReset() in ~50 test files (20 min)
+                   └─ Test and verify (15 min)
+
+      Risk:        VERY LOW
+                   └─ softReset() only clears cache, doesn't touch WASM instance
+                   └─ Backward compatible (old reset() redirects)
+                   └─ Tests can still manually deallocate if needed
+
+      📊 Impact/Effort: 180s/h ⭐⭐⭐⭐ (STRONG)
+
+      ✅ RECOMMENDATION: Do immediately after caching. Quick win.
+
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ 🟠 PHASE 2: EARLY (Implement Weeks 2-3)                                                                              │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+  3️⃣  LAZY WASM LOADING                                                                           [HIGH - DO THIRD]
+  ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+      Problem:     55% of test suite doesn't use WASM (contracts, config, observability)
+                   └─ But WASM loaded globally for ALL tests anyway
+                   └─ Impact: 5-10s initialization per test run
+
+      Solution:    Load WASM only when tests explicitly call getWasm()
+                   └─ Create lazy-loading wrapper
+                   └─ Conditional setup per package
+
+      Savings:     5-10s per test run
+                   └─ 2200 WASM-free tests × ~2ms = 4-5s
+                   └─ CI parallelization bonus: ~10% faster (freed memory)
+
+      Effort:      MEDIUM (2-3 hours)
+                   └─ Audit test suite to classify WASM usage (45 min)
+                   └─ Create lazy-loading wrapper (30 min)
+                   └─ Update per-package setup files (100 min)
+                   └─ Test and fix regressions (45 min)
+
+      Risk:        LOW
+                   └─ Backward compatible (explicit getWasm() calls)
+                   └─ Can be rolled back by removing conditionals
+                   └─ Requires audit to find tests with silent WASM dependency
+
+      📊 Impact/Effort: 140s/h ⭐⭐⭐ (MODERATE)
+
+      ✅ RECOMMENDATION: Audit first; implement if test dependency is clean.
+
+
+  4️⃣  INCREMENTAL COMPILATION (Thin LTO)                                                         [MEDIUM - DO FOURTH]
+  ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+      Problem:     LTO + single-threaded codegen = 60s per rebuild
+                   └─ Even small source changes trigger full recompile with LTO
+                   └─ Dev iteration: 60s wait per change
+
+      Solution:    Use thin LTO + parallel codegen for dev
+                   └─ Full LTO only for published releases
+                   └─ Thin LTO: 80% of LTO benefit, 50% of compile time
+
+      Savings:     15-20s per dev iteration
+                   └─ Cold build: 60s → 35s (thin LTO)
+                   └─ Incremental: 15-20s → 8-10s
+
+      Effort:      LOW-MEDIUM (1 hour)
+                   └─ Update Cargo.toml profiles (15 min)
+                   └─ Update build scripts (15 min)
+                   └─ Test locally (30 min)
+
+      Risk:        MEDIUM
+                   └─ Thin LTO produces ~1% larger binaries
+                   └─ May miss optimization opportunities (rarely matters)
+                   └─ Requires testing to ensure correctness
+
+      📊 Impact/Effort: 900s/h ⭐⭐⭐⭐ (STRONG)
+
+      ✅ RECOMMENDATION: Implement after Phase 1. Dev-iteration win.
+
+┌─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ 🟡 PHASE 3: CI/CD OPTIMIZATION (Implement Weeks 4+)                                                                  │
+└─────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+  5️⃣  PARALLEL PROFILE BUILDS                                                                    [MEDIUM - DO LAST]
+  ═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+      Problem:     build:profiles runs sequential: mobile → iot → edge → fog → browser
+                   └─ 5 × 85s = 425s (7+ minutes)
+                   └─ Each cargo build is independent; could parallelize
+
+      Solution:    Single cargo build with all features, then wasm-pack per profile
+                   └─ Cargo figures out shared dependencies
+                   └─ wasm-pack runs parallel (copies pre-built binary)
+
+      Savings:     100-150s in CI (24-35% reduction)
+                   └─ Sequential: 5 × 85s = 425s
+                   └─ Parallel: 1 × 85s + 5 × 15s = 160s
+                   └─ Realistic (with contention): 250-300s (41% reduction)
+
+      Effort:      MEDIUM (1-2 hours)
+                   └─ Understand cargo feature interactions (30 min)
+                   └─ Update package.json build scripts (30 min)
+                   └─ Test locally and in CI (45 min)
+
+      Risk:        MEDIUM
+                   └─ Cargo lock contention could cause build failures
+                   └─ Feature interactions might reveal bugs
+                   └─ CI-only benefit (rare for dev)
+
+      📊 Impact/Effort: 67.5s/h ⭐⭐ (WEAK)
+
+      ⚠️  RECOMMENDATION: Lowest priority. Highest risk for marginal gain.
+          Focus on dev-facing optimizations (Phases 1-2) first.
+          Revisit for CI only if parallelization is critical.
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+                                    COMBINED IMPACT ANALYSIS
+
+┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ Phase 1 (Cached WASM + softReset):                                                              [CUMULATIVE]        │
+├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│  Dev iteration:           85s cold → 0.5s warm (99% reduction on cache hit)                                           │
+│  Plus softReset:          2.15s additional savings                                                                     │
+│  Total Phase 1:           85s → ~2.5s per test run (97% faster with warm cache)                                      │
+│                                                                                                                         │
+│  Effort:                  ~45 min of configuration                                                                     │
+│  ROI:                     33× return on time investment                                                               │
+└───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+┌───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│ All Phases (1-4 combined, realistic scenario):                                                  [CUMULATIVE]        │
+├───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│  Dev iteration (10 tests):                                                                                            │
+│    Before:                85s (WASM) + 5s (vitest) + 0.5s (overhead) = 90.5s                                          │
+│    After Phase 1-2:       0.5s (cache) + 5s (vitest) + 0.1s (softReset) = 5.6s                                       │
+│    After Phase 1-4:       0.5s (cache) + 5s (vitest) + 0.1s (soft) + 3s (thin LTO incremental) = 8.6s               │
+│                           ↓                                                                                            │
+│                           94% faster (90.5s → 8.6s)                                                                    │
+│                                                                                                                         │
+│  CI test matrix (10 parallel jobs):                                                                                   │
+│    Before:                10 × 90s = 900s (sequential)                                                                │
+│    After Phase 1-2:       10 × 5s = 50s (cache hit + soft reset)                                                      │
+│    After Phase 1-5:       ~40s (cache) + 50s (tests) + 20s (profile builds parallel) = 110s                           │
+│                           ↓                                                                                            │
+│                           88% faster (900s → 110s)                                                                     │
+│                                                                                                                         │
+│  Total Effort:            ~7 hours (distributed over 4 weeks)                                                         │
+│  ROI:                     Per dev: 82 wasted hours saved/month (10 test iterations/day × 50 days/month)               │
+└───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+                                      DECISION MATRIX
+
+   Want fastest ROI?           → START WITH #1 (Cached WASM) — 45-60s savings, 30 min effort
+   Want fastest test runs?     → DO #1 + #2 + #4 — cumulative 65-80s savings, ~2 hours effort
+   Want most parallelization?  → DO #1 + #2 + #3 — cumulative 52-70s savings, ~4 hours effort
+   Want all-in optimization?   → DO #1 + #2 + #3 + #4 + #5 — cumulative 65-255s, ~7 hours effort
+
+   RECOMMENDED PATH:
+   ┌─→ Week 1: #1 (Cached WASM) + #2 (softReset) — 45 min, 47-62s savings 🎯
+   ├─→ Week 2: #4 (Thin LTO) — 1 hour, +15-20s savings
+   ├─→ Week 3: #3 (Lazy Loading) — 2-3 hours, +5-10s savings
+   └─→ Week 4+: #5 (Parallel CI) — if parallelization is critical
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════
+
+Key Metrics (Baseline):
+  • Current WASM build time:        85 seconds
+  • Current test run time:          3-5 seconds
+  • Current total per iteration:    90-95 seconds
+  • WasmLoader resets per run:      50 (2.25s overhead)
+  • WASM-free tests:                ~55% of suite
+  • Cargo compilation concurrency:  1 (due to LTO)
+
+After Phase 1-2 (Recommended start):
+  ✅ Cache hit time:                0.5 seconds
+  ✅ softReset overhead:            2% (vs 45ms × 50 = 2.25s)
+  ✅ Dev iteration time:            ~2.5-5 seconds (97% faster)
+  ✅ Implementation time:           ~45 minutes
+  ✅ Risk:                          Minimal (config only)
+
+═══════════════════════════════════════════════════════════════════════════════════════════════════════════════════════════

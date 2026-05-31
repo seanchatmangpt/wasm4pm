@@ -86,19 +86,40 @@ export function validateAlgorithmProfile(
   algorithm: string,
   profile: ExecutionProfile | DeploymentProfile
 ): { compatible: boolean; warning?: string } {
-  // Map execution profiles to their corresponding deployment profile
-  const deploymentProfile: DeploymentProfile =
-    profile === 'fast' || profile === 'balanced' || profile === 'quality' || profile === 'stream'
-      ? executionToDeploymentProfile(profile)
-      : profile;
-  const profileAlgos = getAlgorithmsForProfile(deploymentProfile);
-
   if (!ALGORITHM_IDS_STR.includes(algorithm)) {
     return {
       compatible: false,
       warning: `Algorithm "${algorithm}" is not registered. Available: ${ALGORITHM_IDS.slice(0, 5).join(', ')}...`,
     };
   }
+
+  // For execution profiles (fast, balanced, quality, stream): check execution-profile constraints
+  const isExecutionProfile =
+    profile === 'fast' || profile === 'balanced' || profile === 'quality' || profile === 'stream';
+
+  if (isExecutionProfile) {
+    const execProfile = profile as ExecutionProfile;
+    const profileAlgos = getExecutionProfileAlgorithms(execProfile);
+
+    if (!profileAlgos.includes(algorithm)) {
+      // Determine the cheapest execution profile that supports this algorithm
+      const availableInQuality = getExecutionProfileAlgorithms('quality').includes(algorithm);
+      const availableInBalanced = getExecutionProfileAlgorithms('balanced').includes(algorithm);
+      const suggestedProfile = availableInBalanced ? 'balanced' : availableInQuality ? 'quality' : null;
+      return {
+        compatible: false,
+        warning: suggestedProfile
+          ? `Algorithm "${algorithm}" is not available in profile "${execProfile}". Upgrade to "${suggestedProfile}" profile to use it.`
+          : `Algorithm "${algorithm}" is not available in profile "${execProfile}".`,
+      };
+    }
+
+    return { compatible: true };
+  }
+
+  // For deployment profiles: check deployment profile constraints
+  const deploymentProfile = profile as DeploymentProfile;
+  const profileAlgos = getAlgorithmsForProfile(deploymentProfile);
 
   if (!profileAlgos.includes(algorithm)) {
     const availableInBrowser = getAlgorithmsForProfile('browser').includes(algorithm);
@@ -140,8 +161,8 @@ function getExecutionProfileAlgorithms(
   }
   if (profile === 'balanced') {
     // Balanced profile: standard discovery + ML, no advanced/ocel/powl
-    return ALGORITHM_IDS.filter(
-      (a) => !advancedAlgos.includes(a as any) && !ocelAlgos.includes(a as any) && !powlAlgos.includes(a as any)
+    return ALGORITHM_IDS_STR.filter(
+      (a) => !advancedAlgos.includes(a) && !ocelAlgos.includes(a) && !powlAlgos.includes(a)
     );
   }
   if (profile === 'stream') {

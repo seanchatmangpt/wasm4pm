@@ -1,0 +1,19 @@
+{
+  "law_version": "26.5.x",
+  "law_id": "ggen-living-loop-6link",
+  "case_key": ["file", "diagnostic_code", "episode"],
+  "activities": [
+    "DiagnosticRaised", "RouteSelected", "RepairSuggested",
+    "RepairApplied", "GatePassed", "ReceiptEmitted",
+    "GateFailed", "RefusalEmitted"
+  ],
+  "precedence": [
+    { "before": "DiagnosticRaised", "after": "RouteSelected"   },
+    { "before": "RouteSelected",    "after": "RepairSuggested" },
+    { "before": "RouteSelected",    "after": "RepairApplied"   },
+    { "before": "RepairApplied",    "after": "GatePassed"      },
+    { "before": "GatePassed",       "after": "ReceiptEmitted"  }
+  ],
+  "accepting": ["ReceiptEmitted", "GateFailed", "RefusalEmitted"],
+  "initial": ["DiagnosticRaised"]
+}

@@ -318,22 +318,22 @@ impl OCELReceiptLinter {
                     .or_else(|| ep.get("expected_ocel"))
                     .or_else(|| ep.get("ocel"))
             });
-            let expected_has_hash = ep_val.map(|ep| {
+            let expected_has_hash = ep_val.map_or(false, |ep| {
                 ep.get("expected_ocel2_hash").is_some()
                     || ep.get("expected_ocel_hash").is_some()
                     || ep.get("ocel_hash").is_some()
-            }).unwrap_or(false);
+            });
 
             let observed_ocel2_val = op_val.and_then(|op| {
                 op.get("observed_ocel2")
                     .or_else(|| op.get("observed_ocel"))
                     .or_else(|| op.get("ocel"))
             });
-            let observed_has_hash = op_val.map(|op| {
+            let observed_has_hash = op_val.map_or(false, |op| {
                 op.get("observed_ocel2_hash").is_some()
                     || op.get("observed_ocel_hash").is_some()
                     || op.get("ocel_hash").is_some()
-            }).unwrap_or(false);
+            });
 
             // Now evaluate the cases:
             if expected_ocel2_val.is_none() {
@@ -607,16 +607,16 @@ impl ExpectedObservedCloneDetector {
                                 }
                                 
                                 // Check if there is runner boundary evidence in the observed log
-                                let mut has_runner_boundary_events = false;
+                                let mut _has_runner_boundary_events = false;
                                 for o in observed_events {
                                     let o_act = o.get("activity").or_else(|| o.get("type")).and_then(|v| v.as_str()).unwrap_or("");
                                     if o_act.contains("runner") || o_act.starts_with("ui.") || o_act.starts_with("zoela.runner.") || o_act.starts_with("wpm.") {
-                                        has_runner_boundary_events = true;
+                                        _has_runner_boundary_events = true;
                                         break;
                                     }
                                 }
-                                
-                                let has_boundary_block = algo.get("boundary_evidence").is_some() 
+
+                                let _has_boundary_block = algo.get("boundary_evidence").is_some()
                                     || algo.get("observed_path").and_then(|op| op.get("boundary_evidence")).is_some()
                                     || receipt.get("boundary_evidence").is_some();
                                 

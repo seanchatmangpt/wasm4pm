@@ -1,4 +1,5 @@
 use crate::state::{get_or_init_state, StoredObject};
+use rustc_hash::FxHashMap;
 use serde_json::json;
 
 /// Compute log-level distribution statistics over raw anomaly scores.
@@ -64,8 +65,7 @@ pub fn score_trace_anomaly(dfg_handle: &str, activities_json: &str) -> Result<Js
                     .edges
                     .iter()
                     .find(|e| e.from == activities[i] && e.to == activities[i + 1])
-                    .map(|e| e.frequency)
-                    .unwrap_or(0);
+                    .map_or(0, |e| e.frequency);
                 cost_sum += if edge_freq == 0 {
                     MISSING_EDGE_COST
                 } else {
@@ -131,13 +131,12 @@ pub fn score_log_anomalies(
             None => Err(crate::error::js_val("DFG handle not found")),
         })?;
 
-    let freq_map: std::collections::HashMap<(&str, &str), usize> = edge_data
+    let freq_map: FxHashMap<(&str, &str), usize> = edge_data
         .iter()
         .map(|(f, t, c)| ((f.as_str(), t.as_str()), *c))
         .collect();
     // Build per-source totals for correct transition probability
-    let mut source_totals: std::collections::HashMap<&str, usize> =
-        std::collections::HashMap::new();
+    let mut source_totals: FxHashMap<&str, usize> = FxHashMap::default();
     for (f, _, c) in &edge_data {
         *source_totals.entry(f.as_str()).or_insert(0) += c;
     }

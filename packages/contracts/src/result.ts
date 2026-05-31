@@ -157,6 +157,108 @@ export function unwrapOr<T>(result: Result<T>, fallback: T): T {
   return fallback;
 }
 
+/**
+ * Unwrap a result, returning the value on Ok or throwing on any failure.
+ *
+ * @param result Result to unwrap
+ * @returns The success value
+ * @throws Error if result is Err or ErrorResult
+ *
+ * @example
+ * ```ts
+ * const value = unwrap(ok(42)); // returns 42
+ * unwrap(err('boom'));           // throws
+ * ```
+ */
+export function unwrap<T>(result: Result<T>): T {
+  if (isOk(result)) return result.value;
+  if (isErr(result)) throw new Error(result.error);
+  throw new Error((result as ErrorResult).error.message ?? 'Unknown error');
+}
+
+/**
+ * Extract the exit code from an ErrorResult, or return undefined for Ok/Err.
+ *
+ * Useful for mapping a structured result to a process exit code.
+ *
+ * @param result Result to inspect
+ * @returns The exit_code if ErrorResult, undefined otherwise
+ *
+ * @example
+ * ```ts
+ * const code = getExitCode(error(createError('SOURCE_NOT_FOUND', 'x'))); // 300-399
+ * getExitCode(ok(42)); // undefined
+ * ```
+ */
+export function getExitCode<T>(result: Result<T>): number | undefined {
+  if (isError(result)) return (result as ErrorResult).error.exit_code;
+  return undefined;
+}
+
+/**
+ * Check if result represents a partial failure.
+ *
+ * A "partial failure" is any result where the type is `'err'` or `'error'` AND
+ * the embedded error is marked as recoverable (i.e. some work succeeded but the
+ * operation did not fully complete).  For simple string `Err` results this always
+ * returns false because there is no recoverability flag available.
+ *
+ * @param result Result to inspect
+ * @returns true if the result is a recoverable structured error
+ *
+ * @example
+ * ```ts
+ * const r: Result<Config> = error(createError('ALGORITHM_FAILED', 'partial'));
+ * isPartialFailure(r); // true — ALGORITHM_FAILED is recoverable
+ * ```
+ */
+export function isPartialFailure<T>(result: Result<T>): boolean {
+  if (result.type !== 'error') return false;
+  const e = (result as ErrorResult).error;
+  // ErrorInfo carries a `recoverable` boolean
+  return typeof (e as unknown as Record<string, unknown>).recoverable === 'boolean'
+    ? (e as unknown as Record<string, unknown>).recoverable as boolean
+    : false;
+}
+
+/**
+ * Alias for `isError` — checks whether a result carries a structured ErrorResult.
+ *
+ * Provided for discoverability; callers who think in terms of "does this have an
+ * error object?" will find `hasError` more natural than `isError`.
+ *
+ * @param result Result to check
+ * @returns true if result is a structured ErrorResult
+ */
+export function hasError<T>(result: Result<T>): result is ErrorResult {
+  return result.type === 'error';
+}
+
+/**
+ * Transform the success value of a result, leaving error variants unchanged.
+ *
+ * This is the standard "functor map" for the Result type — it applies `fn` only
+ * when the result is `Ok`, and passes `Err` / `ErrorResult` through untouched.
+ *
+ * @param result Source result to map
+ * @param fn Transformation function applied to the success value
+ * @returns A new Result wrapping the transformed value, or the original error
+ *
+ * @example
+ * ```ts
+ * const r: Result<number> = ok(21);
+ * const doubled = mapResult(r, x => x * 2); // ok(42)
+ *
+ * const failed: Result<number> = err('oops');
+ * const mapped = mapResult(failed, x => x * 2); // err('oops') — unchanged
+ * ```
+ */
+export function mapResult<T, U>(result: Result<T>, fn: (value: T) => U): Result<U> {
+  if (isOk(result)) return ok(fn(result.value));
+  // Narrow cast is safe: Err | ErrorResult have no .value
+  return result as unknown as Result<U>;
+}
+
 // ============================================================================
 // Section 2.3 & 2.4: Canonical Intermediate Representation Envelope Types
 // Three-Layer Architecture Contract Specification v1.0

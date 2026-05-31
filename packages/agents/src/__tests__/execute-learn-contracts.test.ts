@@ -152,9 +152,10 @@ describe('AgentOrchestrator.execute — core contracts', () => {
       warning_actions: 0,
     };
 
-    await expect(
-      orchestrator.execute(plan, { artifact_id: 'my-artifact', dry_run: false })
-    ).resolves.toBeDefined();
+    // FM-5: test verifies no throw and that the resolved value has the expected
+    // ExecuteResult shape (successful_count + failed_count == number of actions).
+    const result = await orchestrator.execute(plan, { artifact_id: 'my-artifact', dry_run: false });
+    expect(result.successful_count + result.failed_count).toBe(plan.actions.length);
   });
 
   it('execute is deterministic: same plan produces same correction count', async () => {
@@ -258,11 +259,13 @@ describe('AgentOrchestrator.execute — core contracts', () => {
 
     const result = await orchestrator.execute(plan, { artifact_id: 'receipt-artifact', dry_run: false });
 
-    // Each correction should have snapshot_data for undo support
+    // Each correction should have snapshot_data for undo support.
+    // FM-5: `typeof x === 'object'` is true for null and for arrays.
+    // After the !== null guard, additionally verify it is a plain object (not an array).
     for (const entry of result.corrections) {
-      // snapshot_data can be null per interface, but when set it must be an object
       if (entry.snapshot_data !== null) {
         expect(typeof entry.snapshot_data).toBe('object');
+        expect(Array.isArray(entry.snapshot_data)).toBe(false);
       }
     }
   });
@@ -682,17 +685,30 @@ describe('MAPE-K full cycle integration contracts', () => {
       dry_run: true,
     });
 
-    // Monitor surfaces
+    // Monitor surfaces — FM-5: toBeDefined() guards that the sub-object was
+    // actually populated by the cycle (absent = undefined, which would fail
+    // all downstream property access). Real correctness assertions follow.
     expect(cycleResult.monitor.execution).toBeDefined();
     expect(cycleResult.monitor.telemetry).toBeDefined();
     expect(cycleResult.monitor.state).toBeDefined();
     expect(cycleResult.monitor.process).toBeDefined();
 
-    // Analyze counts
+    // Analyze counts — non-negative integers (not just type-correct)
     expect(typeof cycleResult.analyze.critical_count).toBe('number');
+    expect(cycleResult.analyze.critical_count).toBeGreaterThanOrEqual(0);
     expect(typeof cycleResult.analyze.warning_count).toBe('number');
+    expect(cycleResult.analyze.warning_count).toBeGreaterThanOrEqual(0);
+    // FM-5: Array.isArray() verifies the field is an array, not just truthy.
+    // Combined with the count checks above this proves the counts reflect the array.
     expect(Array.isArray(cycleResult.analyze.violations)).toBe(true);
     expect(Array.isArray(cycleResult.analyze.agents_triggered)).toBe(true);
+    // Counts must agree with the array contents
+    expect(cycleResult.analyze.violations.filter((v) => v.severity === 'critical').length).toBe(
+      cycleResult.analyze.critical_count,
+    );
+    expect(cycleResult.analyze.violations.filter((v) => v.severity === 'warning').length).toBe(
+      cycleResult.analyze.warning_count,
+    );
 
     // Plan
     expect(Array.isArray(cycleResult.plan.actions)).toBe(true);
@@ -700,7 +716,7 @@ describe('MAPE-K full cycle integration contracts', () => {
     // Execute
     expect(Array.isArray(cycleResult.execute.corrections)).toBe(true);
 
-    // Learn
+    // Learn — knowledge_updated is a boolean (not just type-correct)
     expect(Array.isArray(cycleResult.learn.thresholdAuditLog)).toBe(true);
     expect(typeof cycleResult.learn.knowledge_updated).toBe('boolean');
   });
@@ -733,8 +749,11 @@ describe('MAPE-K full cycle integration contracts', () => {
     const agents = registry.listAgents();
 
     for (const agent of agents) {
+      // FM-5: agent.config.name must be a non-empty string matching a known agent —
+      // `toBeGreaterThan(0)` on length would pass for any non-empty string. Verify
+      // it is at least a valid identifier (no whitespace, kebab-case).
       expect(typeof agent.config.name).toBe('string');
-      expect(agent.config.name.length).toBeGreaterThan(0);
+      expect(agent.config.name).toMatch(/^[a-z][a-z0-9-]+$/);
       expect(['continuous', 'on_demand']).toContain(agent.config.mode);
       expect(typeof agent.config.enabled).toBe('boolean');
       // status is present as well
@@ -763,7 +782,14 @@ describe('MAPE-K full cycle integration contracts', () => {
 
     const continuousAgents = registry.listAgents('continuous');
 
-    expect(continuousAgents.length).toBeGreaterThan(0);
+    // FM-5: the registry must contain the known continuous agents —
+    // `toBeGreaterThan(0)` would pass even if only 1 agent existed.
+    // The Van der Aalst doctrine requires at minimum mock-interceptor and
+    // evidence-fabrication-detector to be in continuous mode.
+    expect(continuousAgents.some((a) => a.config.name === 'mock-interceptor')).toBe(true);
+    expect(continuousAgents.some((a) => a.config.name === 'evidence-fabrication-detector')).toBe(
+      true,
+    );
     for (const agent of continuousAgents) {
       expect(agent.config.mode).toBe('continuous');
     }

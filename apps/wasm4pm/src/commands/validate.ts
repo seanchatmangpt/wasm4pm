@@ -81,6 +81,28 @@ export const validate = defineCommand({
       type: 'boolean',
       description: 'Do not auto-save the validation receipt to .wasm4pm/receipts/',
     },
+    full: {
+      type: 'boolean',
+      description: 'Run all 5 quality categories (default: categories 1-3 only)',
+      alias: 'f',
+    },
+    score: {
+      type: 'boolean',
+      description: 'Output only the quality score (0-100) and exit',
+    },
+    'fix-timestamps': {
+      type: 'boolean',
+      description: 'Auto-fix duplicate timestamps within a trace by adding 1ms increments (XES only)',
+    },
+    repair: {
+      type: 'boolean',
+      description: 'Auto-repair common data quality issues (duplicate timestamps, null resources). Requires --output.',
+    },
+    output: {
+      type: 'string',
+      description: 'Output path for repaired log (used with --repair)',
+      alias: 'o',
+    },
   },
   async run(ctx) {
     return withSpan(
@@ -92,10 +114,19 @@ export const validate = defineCommand({
       },
       async () => {
         const t0 = performance.now();
-        const outFmt = ((ctx.args['output-format'] as string | undefined) ?? 'human');
+        // --output-format is the canonical flag; accept --format json/human as an alias
+        // (--format is normally used for input log format, but callers may pass --format json)
+        const rawFmt = ctx.args['format'] as string | undefined;
+        const outputFormatFromAlias = rawFmt === 'json' || rawFmt === 'human' ? rawFmt : undefined;
+        const outFmt = ((ctx.args['output-format'] as string | undefined) ?? outputFormatFromAlias ?? 'human');
         const format = (outFmt === 'json' ? 'json' : 'human') as 'json' | 'human';
         const verbose = Boolean(ctx.args.verbose);
         const quiet = Boolean(ctx.args.quiet);
+        const runFullQuality = Boolean(ctx.args['full']);
+        const scoreOnly = Boolean(ctx.args['score']);
+        const fixTimestamps = Boolean(ctx.args['fix-timestamps']);
+        const doRepair = Boolean(ctx.args['repair']);
+        const outputPath = ctx.args['output'] as string | undefined;
 
         try {
           // Resolve input path (positional OR --file/-i)
@@ -116,9 +147,14 @@ export const validate = defineCommand({
           try {
             await fs.access(inputPath);
           } catch {
+            const dir = inputPath.includes('/') ? inputPath.replace(/\/[^/]+$/, '') : '.';
             const result = makeErrorResult(
               'validate',
-              `Input file not found: ${inputPath}`,
+              `File not found: '${inputPath}'\n\n` +
+                `  Check the path and try again:\n` +
+                `    ls -la ${dir}\n\n` +
+                `  Accepted formats: .xes, .csv, .ocel.json\n` +
+                `  Example: wpm validate process.xes`,
               EXIT_CODES.source_error,
               'FILE_NOT_FOUND'
             );
@@ -126,7 +162,8 @@ export const validate = defineCommand({
             return await exitWithFlush(result.exit_code);
           }
 
-          const logFormat = ((ctx.args.format as string) || 'xes');
+          // If --format was interpreted as output format alias (json/human), fall back to xes for log format
+          const logFormat = (outputFormatFromAlias ? 'xes' : ((ctx.args.format as string) || 'xes'));
           const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
           const caseIdKey = (ctx.args['case-id-key'] as string) || 'case:concept:name';
           const timestampKey = (ctx.args['timestamp-key'] as string) || 'time:timestamp';
@@ -187,15 +224,17 @@ export const validate = defineCommand({
             emitResult(result, { format, verbose, quiet });
             return await exitWithFlush(result.exit_code);
           }
-
+          // logHandle is now valid — wrap all check work in try/finally so the handle
+          // is freed even if any check throws unexpectedly.
+          // Accumulators declared here so they are in scope for payload assembly below.
           const checks: ValidationCheck[] = [];
           const errors: string[] = [];
           const warnings: string[] = [];
+          let traceCount = 0;
+          let eventCount = 0;
 
           // Collect trace_count and event_count via the actual WASM API.
           // get_trace_count / get_event_count are canonical counters present in all profiles.
-          let traceCount = 0;
-          let eventCount = 0;
           try {
             traceCount = Number(wasm.get_trace_count(logHandle)) || 0;
             eventCount = Number(wasm.get_event_count(logHandle)) || 0;
@@ -328,7 +367,66 @@ export const validate = defineCommand({
             message: 'Timestamp ordering check not available in this profile',
           });
 
-          wasm.delete_object(logHandle);
+          // Guaranteed cleanup — free handle now that all checks are complete
+          try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+
+          // ── Rich data quality analysis (TypeScript-side XES parsing) ──────
+          let qualityReport: QualityReport | null = null;
+          let repairedContent: string | null = null;
+          let repairedList: string[] = [];
+          let repairFailed: string[] = [];
+
+          if (logFormat === 'xes') {
+            const parsed = parseXesForQuality(content);
+            qualityReport = computeQualityReport(content, parsed, checks, runFullQuality);
+
+            // --score mode: just print the number and exit
+            if (scoreOnly) {
+              process.stdout.write(`${qualityReport.qualityScore}\n`);
+              return await exitWithFlush(
+                qualityReport.errors > 0 ? EXIT_CODES.source_error : EXIT_CODES.success
+              );
+            }
+
+            // --fix-timestamps / --repair mode
+            if (fixTimestamps || doRepair) {
+              const repairResult = repairXes(content, parsed, {
+                fixTimestamps: fixTimestamps || doRepair,
+                fixMissingResource: doRepair,
+              });
+              repairedContent = repairResult.content;
+              repairedList = repairResult.repaired;
+              repairFailed = repairResult.failed;
+
+              if (outputPath && repairedContent !== null) {
+                await fs.writeFile(outputPath, repairedContent, 'utf-8');
+                // Re-compute score for repaired log
+                const parsedRepaired = parseXesForQuality(repairedContent);
+                const repairedReport = computeQualityReport(repairedContent, parsedRepaired, [], runFullQuality);
+                const oldScore = qualityReport.qualityScore;
+                const newScore = repairedReport.qualityScore;
+                if (!quiet) {
+                  process.stdout.write(`\nRepairing log...\n===============\n`);
+                  for (const r of repairedList) process.stdout.write(`\x1b[32m✔\x1b[0m ${r}\n`);
+                  for (const f of repairFailed) process.stdout.write(`\x1b[33m⚠\x1b[0m ${f}\n`);
+                  process.stdout.write(`\nRepaired: ${repairedList.length}/${repairedList.length + repairFailed.length} issues\n`);
+                  process.stdout.write(`Output: ${outputPath}\n`);
+                  process.stdout.write(`Quality score: ${oldScore} → ${newScore} (${newScore >= oldScore ? '+' : ''}${newScore - oldScore} points)\n\n`);
+                }
+              } else if (doRepair && !outputPath) {
+                process.stderr.write('Error: --repair requires --output/-o <path>\n');
+                return await exitWithFlush(EXIT_CODES.config_error);
+              }
+            }
+
+            // Merge quality report errors/warnings into check arrays
+            for (const cat of qualityReport.categories) {
+              for (const c of cat.checks) {
+                if (c.status === 'fail') errors.push(c.message);
+                else if (c.status === 'warn') warnings.push(c.message);
+              }
+            }
+          }
 
           const hasErrors = errors.length > 0;
           const hasWarnings = warnings.length > 0;
@@ -352,6 +450,14 @@ export const validate = defineCommand({
              * command and PM lifecycle pipelines. */
             violations: errors,
             warnings,
+            quality_score: qualityReport?.qualityScore ?? null,
+            quality_categories: qualityReport?.categories.map((c) => ({
+              name: c.name,
+              score: c.score,
+              checks_pass: c.checks.filter((ch) => ch.status === 'pass').length,
+              checks_warn: c.checks.filter((ch) => ch.status === 'warn').length,
+              checks_fail: c.checks.filter((ch) => ch.status === 'fail').length,
+            })) ?? null,
           };
 
           // Persist BLAKE3 receipt for proof-of-validation (unless --no-save)
@@ -383,7 +489,11 @@ export const validate = defineCommand({
           const _baseResult = makeResult('validate', payload, performance.now() - t0, exitCode);
           const result = hasErrors ? { ..._baseResult, status: 'error' as const } : _baseResult;
           emitResult(result, { format, verbose, quiet }, (res, projection) => {
-            printHumanValidation(projection, res.payload as typeof payload);
+            if (qualityReport && logFormat === 'xes') {
+              printQualityReport(projection, inputPath, qualityReport, runFullQuality);
+            } else {
+              printHumanValidation(projection, res.payload as typeof payload);
+            }
           });
           return await exitWithFlush(result.exit_code);
         } catch (error) {
@@ -395,6 +505,599 @@ export const validate = defineCommand({
     );
   },
 });
+
+// ─── Data Quality Analysis ────────────────────────────────────────────────────
+
+/**
+ * Lightweight XES parser that reads traces/events directly for data quality checks.
+ * Returns a structured representation for TypeScript-side quality analysis.
+ */
+function parseXesForQuality(content: string): {
+  traces: Array<{
+    caseId: string;
+    events: Array<{ name: string; timestamp: string | null; resource: string | null; rawTs: number | null }>;
+  }>;
+} {
+  const traces: Array<{
+    caseId: string;
+    events: Array<{ name: string; timestamp: string | null; resource: string | null; rawTs: number | null }>;
+  }> = [];
+
+  // Parse traces using regex — avoids pulling in a full XML parser
+  const traceRegex = /<trace>([\s\S]*?)<\/trace>/g;
+  let traceMatch: RegExpExecArray | null;
+
+  while ((traceMatch = traceRegex.exec(content)) !== null) {
+    const traceBody = traceMatch[1];
+
+    // Extract case ID from trace attributes
+    const caseIdMatch = /key="concept:name"\s+value="([^"]*)"/.exec(traceBody.slice(0, 500));
+    const caseId = caseIdMatch ? caseIdMatch[1] : `case-${traces.length + 1}`;
+
+    // Extract events
+    const events: Array<{ name: string; timestamp: string | null; resource: string | null; rawTs: number | null }> = [];
+    const eventRegex = /<event>([\s\S]*?)<\/event>/g;
+    let eventMatch: RegExpExecArray | null;
+
+    while ((eventMatch = eventRegex.exec(traceBody)) !== null) {
+      const eventBody = eventMatch[1];
+      const nameMatch = /key="concept:name"\s+value="([^"]*)"/.exec(eventBody);
+      const tsMatch = /key="time:timestamp"\s+value="([^"]*)"/.exec(eventBody);
+      const resourceMatch = /key="org:resource"\s+value="([^"]*)"/.exec(eventBody);
+
+      const tsStr = tsMatch ? tsMatch[1] : null;
+      let rawTs: number | null = null;
+      if (tsStr) {
+        const d = new Date(tsStr.replace(/(\d{2}):(\d{3})\+/, '$1.$2+'));
+        rawTs = isNaN(d.getTime()) ? null : d.getTime();
+      }
+
+      events.push({
+        name: nameMatch ? nameMatch[1] : 'UNKNOWN',
+        timestamp: tsStr,
+        resource: resourceMatch ? resourceMatch[1] : null,
+        rawTs,
+      });
+    }
+
+    traces.push({ caseId, events });
+  }
+
+  return { traces };
+}
+
+interface QualityCategory {
+  name: string;
+  score: number; // 0-100
+  checks: ValidationCheck[];
+}
+
+interface QualityReport {
+  categories: QualityCategory[];
+  totalEvents: number;
+  totalTraces: number;
+  qualityScore: number;
+  errors: number;
+  warnings: number;
+}
+
+/**
+ * Compute a 5-category data quality report from parsed XES.
+ * Category 1: Schema Validation (always run)
+ * Category 2: Temporal Integrity (always run)
+ * Category 3: Process Integrity (always run)
+ * Category 4: Statistical Quality (--full only)
+ * Category 5: Completeness (--full only)
+ */
+function computeQualityReport(
+  content: string,
+  parsed: ReturnType<typeof parseXesForQuality>,
+  wasmChecks: ValidationCheck[],
+  full: boolean,
+): QualityReport {
+  const categories: QualityCategory[] = [];
+  let totalErrors = 0;
+  let totalWarnings = 0;
+
+  const totalTraces = parsed.traces.length;
+  const totalEvents = parsed.traces.reduce((s, t) => s + t.events.length, 0);
+
+  // ── Category 1: Schema Validation ────────────────────────────────────────
+  const cat1Checks: ValidationCheck[] = [];
+
+  // Valid XES format
+  const isXes = content.includes('xes.version') || content.includes('xmlns="http://www.xes-standard.org');
+  cat1Checks.push({
+    name: 'XES format',
+    status: isXes ? 'pass' : 'warn',
+    message: isXes ? 'Valid XES format detected' : 'XES headers not found — format may be non-standard',
+  });
+
+  // All traces have concept:name
+  const tracesWithId = parsed.traces.filter((t) => t.caseId && t.caseId !== '').length;
+  cat1Checks.push({
+    name: 'Trace IDs present',
+    status: tracesWithId === totalTraces ? 'pass' : 'warn',
+    message: tracesWithId === totalTraces
+      ? 'All traces have concept:name'
+      : `${totalTraces - tracesWithId} trace(s) missing concept:name`,
+    details: { traces_with_id: tracesWithId, total_traces: totalTraces },
+  });
+
+  // All events have concept:name
+  const eventsWithName = parsed.traces.reduce(
+    (s, t) => s + t.events.filter((e) => e.name && e.name !== 'UNKNOWN').length, 0
+  );
+  const pctMissingName = totalEvents > 0 ? ((totalEvents - eventsWithName) / totalEvents * 100) : 0;
+  cat1Checks.push({
+    name: 'Event names (concept:name)',
+    status: eventsWithName === totalEvents ? 'pass' : pctMissingName < 5 ? 'warn' : 'fail',
+    message: eventsWithName === totalEvents
+      ? 'All events have concept:name'
+      : `${totalEvents - eventsWithName} events missing concept:name (${pctMissingName.toFixed(0)}%)`,
+    details: { events_with_name: eventsWithName, total_events: totalEvents },
+  });
+
+  // All events have timestamps
+  const eventsWithTs = parsed.traces.reduce(
+    (s, t) => s + t.events.filter((e) => e.timestamp !== null).length, 0
+  );
+  const pctMissingTs = totalEvents > 0 ? ((totalEvents - eventsWithTs) / totalEvents * 100) : 0;
+  cat1Checks.push({
+    name: 'Timestamps (time:timestamp)',
+    status: eventsWithTs === totalEvents ? 'pass' : pctMissingTs < 5 ? 'warn' : 'fail',
+    message: eventsWithTs === totalEvents
+      ? 'All events have time:timestamp'
+      : `${totalEvents - eventsWithTs} events missing time:timestamp (${pctMissingTs.toFixed(0)}%)`,
+    details: { events_with_ts: eventsWithTs, total_events: totalEvents },
+  });
+
+  // org:resource coverage
+  const eventsWithResource = parsed.traces.reduce(
+    (s, t) => s + t.events.filter((e) => e.resource !== null).length, 0
+  );
+  const pctMissingResource = totalEvents > 0 ? ((totalEvents - eventsWithResource) / totalEvents * 100) : 0;
+  if (pctMissingResource > 0) {
+    cat1Checks.push({
+      name: 'Resource (org:resource)',
+      status: 'warn',
+      message: `${totalEvents - eventsWithResource} events missing org:resource (${pctMissingResource.toFixed(0)}%)`,
+      details: { events_with_resource: eventsWithResource, pct_missing: pctMissingResource },
+    });
+  } else {
+    cat1Checks.push({
+      name: 'Resource (org:resource)',
+      status: 'pass',
+      message: 'All events have org:resource',
+    });
+  }
+
+  // Merge WASM checks (schema, required_attributes)
+  for (const c of wasmChecks.filter((c) => ['schema', 'required_attributes'].includes(c.name))) {
+    if (c.status === 'fail') totalErrors++;
+    else if (c.status === 'warn') totalWarnings++;
+  }
+
+  const cat1Errors = cat1Checks.filter((c) => c.status === 'fail').length;
+  const cat1Warns = cat1Checks.filter((c) => c.status === 'warn').length;
+  totalErrors += cat1Errors;
+  totalWarnings += cat1Warns;
+  const cat1Score = Math.max(0, 100 - cat1Errors * 20 - cat1Warns * 5);
+
+  categories.push({ name: 'Schema Validation', score: cat1Score, checks: cat1Checks });
+
+  // ── Category 2: Temporal Integrity ───────────────────────────────────────
+  const cat2Checks: ValidationCheck[] = [];
+
+  // Valid ISO-8601 timestamps
+  const eventsWithValidTs = parsed.traces.reduce(
+    (s, t) => s + t.events.filter((e) => e.rawTs !== null).length, 0
+  );
+  const eventsWithTsAtAll = parsed.traces.reduce(
+    (s, t) => s + t.events.filter((e) => e.timestamp !== null).length, 0
+  );
+  const invalidTsCount = eventsWithTsAtAll - eventsWithValidTs;
+  cat2Checks.push({
+    name: 'Valid ISO-8601 timestamps',
+    status: invalidTsCount === 0 ? 'pass' : invalidTsCount < 5 ? 'warn' : 'fail',
+    message: invalidTsCount === 0
+      ? 'All timestamps are valid ISO-8601'
+      : `${invalidTsCount} events have unparseable timestamps`,
+    details: { invalid_count: invalidTsCount },
+  });
+
+  // Chronological ordering within traces
+  let outOfOrderTraces = 0;
+  for (const trace of parsed.traces) {
+    const timestamps = trace.events.map((e) => e.rawTs).filter((t) => t !== null) as number[];
+    for (let i = 1; i < timestamps.length; i++) {
+      if (timestamps[i] < timestamps[i - 1]) {
+        outOfOrderTraces++;
+        break;
+      }
+    }
+  }
+  cat2Checks.push({
+    name: 'Chronological ordering',
+    status: outOfOrderTraces === 0 ? 'pass' : 'warn',
+    message: outOfOrderTraces === 0
+      ? 'Events within traces are ordered chronologically'
+      : `${outOfOrderTraces} trace(s) have out-of-order events`,
+    details: { out_of_order_traces: outOfOrderTraces },
+  });
+
+  // Duplicate timestamps within same trace
+  let tracesWithDupTs = 0;
+  const dupTsDetails: string[] = [];
+  for (const trace of parsed.traces) {
+    const seen = new Set<number>();
+    let hasDup = false;
+    for (const ev of trace.events) {
+      if (ev.rawTs !== null) {
+        if (seen.has(ev.rawTs)) {
+          hasDup = true;
+        }
+        seen.add(ev.rawTs);
+      }
+    }
+    if (hasDup) {
+      tracesWithDupTs++;
+      dupTsDetails.push(trace.caseId);
+    }
+  }
+  cat2Checks.push({
+    name: 'Duplicate timestamps',
+    status: tracesWithDupTs === 0 ? 'pass' : 'warn',
+    message: tracesWithDupTs === 0
+      ? 'No traces have duplicate timestamps'
+      : `${tracesWithDupTs} trace(s) have events with identical timestamps (potential data issue)`,
+    details: { affected_cases: dupTsDetails.slice(0, 5) },
+  });
+
+  // Impossible timestamps (future dates or year < 2000)
+  const now = Date.now();
+  let impossibleTs = 0;
+  for (const trace of parsed.traces) {
+    for (const ev of trace.events) {
+      if (ev.rawTs !== null && (ev.rawTs > now + 86400000 || ev.rawTs < 946684800000)) {
+        impossibleTs++;
+      }
+    }
+  }
+  cat2Checks.push({
+    name: 'Impossible timestamps',
+    status: impossibleTs === 0 ? 'pass' : 'fail',
+    message: impossibleTs === 0
+      ? 'No impossible timestamps detected'
+      : `${impossibleTs} event(s) have impossible timestamps (far future or pre-2000)`,
+    details: { impossible_count: impossibleTs },
+  });
+
+  const cat2Errors = cat2Checks.filter((c) => c.status === 'fail').length;
+  const cat2Warns = cat2Checks.filter((c) => c.status === 'warn').length;
+  totalErrors += cat2Errors;
+  totalWarnings += cat2Warns;
+  const cat2Score = Math.max(0, 100 - cat2Errors * 20 - cat2Warns * 5);
+  categories.push({ name: 'Temporal Integrity', score: cat2Score, checks: cat2Checks });
+
+  // ── Category 3: Process Integrity ─────────────────────────────────────────
+  const cat3Checks: ValidationCheck[] = [];
+
+  // Duplicate trace IDs
+  const caseIdCounts = new Map<string, number>();
+  for (const t of parsed.traces) {
+    caseIdCounts.set(t.caseId, (caseIdCounts.get(t.caseId) ?? 0) + 1);
+  }
+  const dupCaseIds = [...caseIdCounts.entries()].filter(([, c]) => c > 1);
+  cat3Checks.push({
+    name: 'Duplicate trace IDs',
+    status: dupCaseIds.length === 0 ? 'pass' : 'fail',
+    message: dupCaseIds.length === 0
+      ? 'No duplicate trace IDs'
+      : `${dupCaseIds.length} duplicate case ID(s): ${dupCaseIds.slice(0, 3).map(([id]) => id).join(', ')}`,
+    details: { duplicates: dupCaseIds.slice(0, 5).map(([id, c]) => ({ id, count: c })) },
+  });
+
+  // Single-event traces (suspicious)
+  const singleEventTraces = parsed.traces.filter((t) => t.events.length === 1).length;
+  cat3Checks.push({
+    name: 'Minimal traces (1 event)',
+    status: singleEventTraces === 0 ? 'pass' : singleEventTraces / totalTraces > 0.2 ? 'warn' : 'pass',
+    message: singleEventTraces === 0
+      ? 'No single-event traces'
+      : `${singleEventTraces} trace(s) have only 1 event (check completeness)`,
+    details: { single_event_trace_count: singleEventTraces },
+  });
+
+  // Empty traces
+  const emptyTraces = parsed.traces.filter((t) => t.events.length === 0).length;
+  cat3Checks.push({
+    name: 'Empty traces',
+    status: emptyTraces === 0 ? 'pass' : 'fail',
+    message: emptyTraces === 0
+      ? 'No empty traces'
+      : `${emptyTraces} trace(s) have zero events`,
+    details: { empty_trace_count: emptyTraces },
+  });
+
+  // UNKNOWN activities
+  const unknownCount = parsed.traces.reduce(
+    (s, t) => s + t.events.filter((e) => e.name === 'UNKNOWN' || e.name === '').length, 0
+  );
+  cat3Checks.push({
+    name: 'UNKNOWN activities',
+    status: unknownCount === 0 ? 'pass' : unknownCount > 50 ? 'warn' : 'pass',
+    message: unknownCount === 0
+      ? 'No UNKNOWN/empty activity names'
+      : `Activity "UNKNOWN" or empty name appears ${unknownCount} times (potential data quality issue)`,
+    details: { unknown_activity_count: unknownCount },
+  });
+
+  const cat3Errors = cat3Checks.filter((c) => c.status === 'fail').length;
+  const cat3Warns = cat3Checks.filter((c) => c.status === 'warn').length;
+  totalErrors += cat3Errors;
+  totalWarnings += cat3Warns;
+  const cat3Score = Math.max(0, 100 - cat3Errors * 20 - cat3Warns * 5);
+  categories.push({ name: 'Process Integrity', score: cat3Score, checks: cat3Checks });
+
+  // ── Category 4: Statistical Quality (--full only) ─────────────────────────
+  if (full) {
+    const cat4Checks: ValidationCheck[] = [];
+
+    // Activity diversity
+    const allActivities = new Set<string>();
+    const activityCounts = new Map<string, number>();
+    for (const t of parsed.traces) {
+      for (const e of t.events) {
+        allActivities.add(e.name);
+        activityCounts.set(e.name, (activityCounts.get(e.name) ?? 0) + 1);
+      }
+    }
+    const uniqueActivities = allActivities.size;
+    cat4Checks.push({
+      name: 'Activity diversity',
+      status: uniqueActivities >= 3 ? 'pass' : 'warn',
+      message: `Activity diversity: ${uniqueActivities} unique activities`,
+      details: { unique_activities: uniqueActivities },
+    });
+
+    // Rare activities (appear < 5 times)
+    const rareActivities = [...activityCounts.entries()]
+      .filter(([, c]) => c < 5)
+      .map(([name]) => name);
+    cat4Checks.push({
+      name: 'Rare activities (< 5 occurrences)',
+      status: rareActivities.length === 0 ? 'pass' : 'warn',
+      message: rareActivities.length === 0
+        ? 'No rare activities'
+        : `${rareActivities.length} activities appear < 5 times (possibly noise): [${rareActivities.slice(0, 3).map((n) => `"${n}"`).join(', ')}]`,
+      details: { rare_activities: rareActivities.slice(0, 10) },
+    });
+
+    // Trace length distribution
+    const lengths = parsed.traces.map((t) => t.events.length);
+    const meanLen = lengths.reduce((s, l) => s + l, 0) / Math.max(lengths.length, 1);
+    const sorted = [...lengths].sort((a, b) => a - b);
+    const p99 = sorted[Math.floor(sorted.length * 0.99)] ?? 0;
+    const isOutlierExtreme = p99 > meanLen * 10;
+    cat4Checks.push({
+      name: 'Trace length distribution',
+      status: isOutlierExtreme ? 'warn' : 'pass',
+      message: isOutlierExtreme
+        ? `Extreme outlier traces: p99=${p99} events vs mean=${meanLen.toFixed(1)} (${(p99 / meanLen).toFixed(0)}x)`
+        : `Trace length distribution is reasonable (mean=${meanLen.toFixed(1)}, no extreme outliers)`,
+      details: {
+        mean_events_per_trace: meanLen,
+        min: sorted[0] ?? 0,
+        max: sorted[sorted.length - 1] ?? 0,
+        p99,
+      },
+    });
+
+    // Event rate anomaly: check for burst events (many events same second)
+    const timestampBuckets = new Map<string, number>();
+    for (const t of parsed.traces) {
+      for (const e of t.events) {
+        if (e.rawTs !== null) {
+          const bucket = Math.floor(e.rawTs / 1000).toString(); // 1-second buckets
+          timestampBuckets.set(bucket, (timestampBuckets.get(bucket) ?? 0) + 1);
+        }
+      }
+    }
+    const maxBurst = Math.max(...timestampBuckets.values(), 0);
+    const burstThreshold = Math.max(50, totalEvents / totalTraces * 10);
+    const hasBurstAnomaly = maxBurst > burstThreshold;
+    cat4Checks.push({
+      name: 'Event rate anomaly',
+      status: hasBurstAnomaly ? 'warn' : 'pass',
+      message: hasBurstAnomaly
+        ? `Event rate anomaly: ${maxBurst} events in 1 second (likely batch insert)`
+        : 'No event rate anomalies detected',
+      details: { max_events_per_second: maxBurst, threshold: burstThreshold },
+    });
+
+    const cat4Errors = cat4Checks.filter((c) => c.status === 'fail').length;
+    const cat4Warns = cat4Checks.filter((c) => c.status === 'warn').length;
+    totalErrors += cat4Errors;
+    totalWarnings += cat4Warns;
+    const cat4Score = Math.max(0, 100 - cat4Errors * 20 - cat4Warns * 5);
+    categories.push({ name: 'Statistical Quality', score: cat4Score, checks: cat4Checks });
+
+    // ── Category 5: Completeness (--full only) ──────────────────────────────
+    const cat5Checks: ValidationCheck[] = [];
+
+    // Truncated traces (last event has no completion lifecycle)
+    const lifecycleActivities = new Set([
+      'complete', 'completed', 'finish', 'finished', 'end', 'closed', 'done',
+      'ship', 'shipped', 'approved', 'rejected', 'resolved',
+    ]);
+    let incompleteTraces = 0;
+    for (const t of parsed.traces) {
+      if (t.events.length > 0) {
+        const lastActivity = t.events[t.events.length - 1].name.toLowerCase();
+        const hasCompletion = [...lifecycleActivities].some((lc) => lastActivity.includes(lc));
+        // Only flag if log has enough traces to establish a pattern
+        if (!hasCompletion && t.events.length < 2) incompleteTraces++;
+      }
+    }
+    cat5Checks.push({
+      name: 'Trace completeness',
+      status: incompleteTraces === 0 ? 'pass' : 'warn',
+      message: incompleteTraces === 0
+        ? 'No truncated traces detected'
+        : `${incompleteTraces} trace(s) may be truncated (single-event, no completion lifecycle)`,
+      details: { potentially_incomplete: incompleteTraces },
+    });
+
+    // Start activity consistency
+    const startActivities = new Map<string, number>();
+    for (const t of parsed.traces) {
+      if (t.events.length > 0) {
+        const start = t.events[0].name;
+        startActivities.set(start, (startActivities.get(start) ?? 0) + 1);
+      }
+    }
+    const sortedStarts = [...startActivities.entries()].sort((a, b) => b[1] - a[1]);
+    const topStart = sortedStarts[0];
+    const startConsistency = topStart ? (topStart[1] / totalTraces * 100) : 0;
+    cat5Checks.push({
+      name: 'Start activity consistency',
+      status: startConsistency >= 80 ? 'pass' : startConsistency >= 50 ? 'warn' : 'warn',
+      message: topStart
+        ? `Start activities are ${startConsistency >= 80 ? 'consistent' : 'varied'} (${topStart[0]}: ${startConsistency.toFixed(0)}% of traces)`
+        : 'No start activities found',
+      details: {
+        top_start_activity: topStart?.[0],
+        top_start_pct: startConsistency,
+        unique_start_activities: startActivities.size,
+      },
+    });
+
+    const cat5Errors = cat5Checks.filter((c) => c.status === 'fail').length;
+    const cat5Warns = cat5Checks.filter((c) => c.status === 'warn').length;
+    totalErrors += cat5Errors;
+    totalWarnings += cat5Warns;
+    const cat5Score = Math.max(0, 100 - cat5Errors * 20 - cat5Warns * 5);
+    categories.push({ name: 'Completeness', score: cat5Score, checks: cat5Checks });
+  }
+
+  // Compute overall quality score as weighted average
+  const qualityScore = Math.round(
+    categories.reduce((s, c) => s + c.score, 0) / Math.max(categories.length, 1)
+  );
+
+  return { categories, totalEvents, totalTraces, qualityScore, errors: totalErrors, warnings: totalWarnings };
+}
+
+/**
+ * Apply auto-repairs to XES content.
+ * Returns { content: string, repaired: string[], failed: string[] }
+ */
+function repairXes(
+  content: string,
+  parsed: ReturnType<typeof parseXesForQuality>,
+  opts: { fixTimestamps: boolean; fixMissingResource: boolean },
+): { content: string; repaired: string[]; failed: string[] } {
+  const repaired: string[] = [];
+  const failed: string[] = [];
+  let out = content;
+
+  if (opts.fixTimestamps) {
+    // Fix duplicate timestamps per trace by adding 1ms increments
+    // Strategy: track seen timestamps within each trace context and offset duplicates
+    let fixedTraceCount = 0;
+    for (const trace of parsed.traces) {
+      const seen = new Map<number, number>(); // ts -> count
+      let needsFix = false;
+      for (const ev of trace.events) {
+        if (ev.rawTs !== null) {
+          const c = seen.get(ev.rawTs) ?? 0;
+          if (c > 0) needsFix = true;
+          seen.set(ev.rawTs, c + 1);
+        }
+      }
+      if (needsFix) {
+        fixedTraceCount++;
+        // Reset and re-process to apply offsets
+        const seen2 = new Map<number, number>();
+        for (const ev of trace.events) {
+          if (ev.rawTs !== null && ev.timestamp !== null) {
+            const c = seen2.get(ev.rawTs) ?? 0;
+            if (c > 0) {
+              const newTs = ev.rawTs + c;
+              const newIso = new Date(newTs).toISOString();
+              // Replace this specific timestamp value in the content
+              out = out.replace(
+                `key="time:timestamp" value="${ev.timestamp}"`,
+                `key="time:timestamp" value="${newIso}"`,
+              );
+            }
+            seen2.set(ev.rawTs, c + 1);
+          }
+        }
+      }
+    }
+    if (fixedTraceCount > 0) {
+      repaired.push(`Fixed: ${fixedTraceCount} trace(s) with duplicate timestamps (added 1ms increments)`);
+    }
+  }
+
+  if (opts.fixMissingResource) {
+    // Replace events missing org:resource — inject attribute after concept:name
+    const eventsWithoutResource = parsed.traces.reduce(
+      (s, t) => s + t.events.filter((e) => e.resource === null && e.name !== 'UNKNOWN').length, 0
+    );
+    if (eventsWithoutResource > 0) {
+      // This is a structural repair — we can't safely inject into raw XML without a parser
+      // Report as "cannot fix automatically"
+      failed.push(`Cannot auto-fix: ${eventsWithoutResource} events missing org:resource (requires domain knowledge for resource assignment)`);
+    }
+  }
+
+  return { content: out, repaired, failed };
+}
+
+/**
+ * Print a rich 5-category quality report for human consumption.
+ */
+function printQualityReport(
+  projection: import('../output.js').ConsoleProjection,
+  inputPath: string,
+  report: QualityReport,
+  full: boolean,
+): void {
+  const { categories, totalEvents, totalTraces, qualityScore, errors, warnings } = report;
+  projection.log('');
+  projection.log(`Event Log Validation Report`);
+  projection.log('============================');
+  projection.log(`File: ${inputPath} (${totalEvents} events, ${totalTraces} traces)`);
+  projection.log('');
+
+  for (const cat of categories) {
+    projection.log(`${cat.name}`);
+    for (const check of cat.checks) {
+      const icon = check.status === 'pass' ? '✔' : check.status === 'fail' ? '✗' : '⚠';
+      const color = check.status === 'pass' ? '\x1b[32m' : check.status === 'fail' ? '\x1b[31m' : '\x1b[33m';
+      const reset = '\x1b[0m';
+      projection.log(`  ${color}${icon}${reset} ${check.message}`);
+    }
+    projection.log('');
+  }
+
+  if (!full && categories.length < 5) {
+    projection.log('  (Run with --full to include Statistical Quality and Completeness categories)');
+    projection.log('');
+  }
+
+  const statusLabel = errors > 0 ? 'NEEDS ATTENTION' : warnings > 0 ? 'ACCEPTABLE' : 'EXCELLENT';
+  const scoreColor = qualityScore >= 90 ? '\x1b[32m' : qualityScore >= 70 ? '\x1b[33m' : '\x1b[31m';
+  const reset = '\x1b[0m';
+  projection.log(`Quality Score: ${scoreColor}${qualityScore}/100${reset} (${statusLabel} — ${warnings} warning(s), ${errors} error(s))`);
+  if (errors > 0 || warnings > 0) {
+    projection.log(`Recommendation: ${errors > 0 ? 'Fix errors before process mining.' : 'Review warnings.'} Use --repair -o fixed.xes to auto-fix common issues.`);
+  }
+  projection.log('');
+}
 
 // ─── OCEL validation ──────────────────────────────────────────────────────────
 
@@ -586,7 +1289,7 @@ async function validateOcel(opts: {
       typeof wasm['load_ocel_from_json'] === 'function' &&
       typeof wasm['validate_ocel'] === 'function'
     ) {
-      let ocelHandle: string;
+      let ocelHandle: string | undefined;
       try {
         ocelHandle = wasm['load_ocel_from_json'](ocelContent) as string;
         const rawValidation = wasm['validate_ocel'](ocelHandle);
@@ -634,6 +1337,11 @@ async function validateOcel(opts: {
           message: `OCEL parse/validation failed: ${msg}`,
         });
         errors.push(`OCEL WASM parse failed: ${msg}`);
+      } finally {
+        // Guaranteed cleanup — free OCEL handle regardless of validation outcome
+        if (ocelHandle !== undefined) {
+          try { (wasm['delete_object'] as ((h: string) => void) | undefined)?.(ocelHandle); } catch { /* best-effort */ }
+        }
       }
     } else {
       checks.push({

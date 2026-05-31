@@ -162,6 +162,9 @@ impl AutonomicAuditTrail {
         phase: AuditPhase,
         cycle_count: u64,
     ) -> bool {
+        #[cfg(target_arch = "wasm32")]
+        let timestamp_ns = 0u128;
+        #[cfg(not(target_arch = "wasm32"))]
         let timestamp_ns = std::time::SystemTime::now()
             .duration_since(std::time::UNIX_EPOCH)
             .unwrap_or_default()
@@ -170,7 +173,7 @@ impl AutonomicAuditTrail {
         let prev_hash = if self.events.is_empty() {
             "genesis".to_string()
         } else {
-            self.events.last().unwrap().event_hash.clone()
+            self.events.last().unwrap().event_hash.clone() // infallible: checked is_empty() above
         };
 
         let event = AuditEvent::new(timestamp_ns, event_type, details, phase, cycle_count, prev_hash);

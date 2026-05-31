@@ -163,6 +163,7 @@ export const WatchingSpans = {
 export const AnalysisSpans = {
   compareStart: (algCount: number) => spanName('analysis', `compare.start.${algCount}_algos`),
   compareEnd: () => spanName('analysis', 'compare.end'),
+  compareAlgo: (algo: string) => spanName('analysis', `compare.algo.${algo}`),
   qualityCheck: (algo: string) => spanName('analysis', `quality.check.${algo}`),
   diffCompute: () => spanName('analysis', 'diff.compute'),
 } as const;

@@ -1,6 +1,6 @@
 {
   "name": "@wasm4pm/cli",
-  "version": "26.5.21",
+  "version": "26.5.29",
   "description": "wasm4pm — High-performance WASM-powered process mining CLI",
   "type": "module",
   "bin": {
@@ -37,8 +37,8 @@
     "@wasm4pm/ml": "*",
     "@wasm4pm/observability": "*",
     "@wasm4pm/planner": "*",
+    "@wasm4pm/supabase": "*",
     "@wasm4pm/swarm": "*",
-    "wasm4pm": "*",
     "ajv": "^8.12.0",
     "chokidar": "^4.0.1",
     "citty": "^0.1.6",

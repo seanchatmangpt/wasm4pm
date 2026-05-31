@@ -16,11 +16,9 @@ expect.extend({
 // ─── WASM init (top-level await — vitest setupFiles support this) ─────────────
 const _wasmInitPromise: Promise<void> = (async () => {
   try {
-    const mod = await import('wasm4pm');
-    if (typeof (mod as unknown as { init?: unknown }).init === 'function') {
-      await (mod as unknown as { init: () => Promise<void> }).init();
-    }
-    // bundler target: implicit init, no-op
+    const { WasmLoader } = await import('@wasm4pm/engine');
+    const loader = WasmLoader.getInstance();
+    await loader.init();
   } catch (err) {
     // Surface why tests can't init WASM. Don't silently pass.
     console.warn('[setup] WASM init skipped:', err instanceof Error ? err.message : String(err));

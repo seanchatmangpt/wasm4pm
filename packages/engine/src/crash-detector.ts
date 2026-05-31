@@ -5,6 +5,8 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import type { ICheckpointStore } from './checkpoint-store.js';
+import type { Checkpoint } from './checkpointing.js';
 
 export interface ProcessLock {
   runId: string;
@@ -105,8 +107,8 @@ export class CrashDetector {
       }
       process.kill(pid, 0);
       return true;
-    } catch (error: any) {
-      if (error.code === 'ESRCH') {
+    } catch (error: unknown) {
+      if (typeof error === 'object' && error !== null && 'code' in error && error.code === 'ESRCH') {
         return false;
       }
       return true;
@@ -184,13 +186,13 @@ export class AutonomicRecovery {
 
   constructor(
     runId: string,
-    private checkpointStore: any,
+    private checkpointStore: ICheckpointStore,
     lockDir?: string
   ) {
     this.crashDetector = new CrashDetector(runId, lockDir);
   }
 
-  async attemptRecovery(): Promise<any | null> {
+  async attemptRecovery(): Promise<Checkpoint | null> {
     const crashResult = this.crashDetector.detectCrash();
 
     if (!crashResult.crashed) {

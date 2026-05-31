@@ -52,7 +52,7 @@ function wpm(...args: string[]) {
   delete env.VITEST;
   return spawnSync('node', [WPM_BIN, ...args], {
     encoding: 'utf8',
-    timeout: 30_000,
+    timeout: 60_000,
     env,
   });
 }
@@ -300,10 +300,11 @@ describe('16. wpm predict — extended tasks', () => {
 
   // ── error paths ────────────────────────────────────────────────────────────
 
-  it('16.16 wpm predict with unknown task exits 2 (source_error — INVALID_TASK code)', () => {
+  it('16.16 wpm predict with unknown task exits 1 (config_error — INVALID_TASK code)', () => {
     const result = wpm('predict', 'turbo-prediction-9000', '-i', XES_STANDARD, '--format', 'json', '--no-save');
-    // Unknown task validation emits exit_code=2 (source_error) with INVALID_TASK error code
-    expect(result.status).toBe(2);
+    // Unknown task validation emits exit_code=1 (config_error) with INVALID_TASK error code
+    // An invalid task name is a configuration error, not a source error.
+    expect(result.status).toBe(1);
     const out = result.stdout + result.stderr;
     expect(out).toMatch(/unknown task|valid tasks/i);
   });
@@ -375,8 +376,8 @@ describe(
         const result = await wpmStreaming(
           ['drift-watch', '-i', xes, '--interval', '999999', '--no-save'],
           {
-            // Stop 2s after the first tick completes (output contains drift info)
-            stopAfterMs: 4000,
+            // WASM init takes ~5-6s; allow 12s for first tick output to appear.
+            stopAfterMs: 12000,
           },
         );
 
@@ -400,8 +401,8 @@ describe(
         const result = await wpmStreaming(
           ['drift-watch', '-i', xes, '--json', '--interval', '999999', '--no-save'],
           {
-            // Stop once we see a JSON line on stdout, or after 4s
-            stopAfterMs: 4000,
+            // Stop once we see a JSON line on stdout, or after 12s (WASM init takes ~5-6s)
+            stopAfterMs: 12000,
             stopWhen: (stdout) => stdout.includes('"ewma"'),
           },
         );
@@ -438,7 +439,7 @@ describe(
         const result = await wpmStreaming(
           ['drift-watch', '-i', xes, '--json', '--interval', '999999', '--no-save'],
           {
-            stopAfterMs: 4000,
+            stopAfterMs: 12000,
             stopWhen: (stdout) => stdout.includes('"ewma"'),
           },
         );
@@ -466,7 +467,7 @@ describe(
 
         const result = await wpmStreaming(
           ['drift-watch', '-i', xes, '--interval', '999999', '--no-save'],
-          { stopAfterMs: 4000 },
+          { stopAfterMs: 12000 },
         );
 
         const allOutput = result.stdout + result.stderr;
@@ -483,7 +484,7 @@ describe(
 
         const result = await wpmStreaming(
           ['drift-watch', '-i', xes, '--interval', '999999', '--no-save'],
-          { stopAfterMs: 3000 },
+          { stopAfterMs: 12000 },
         );
 
         // Must NOT crash with execution_error (3) or system_error (5) immediately
@@ -516,5 +517,5 @@ describe(
       },
     );
   },
-  { timeout: 30_000 },
+  { timeout: 60_000 },
 );

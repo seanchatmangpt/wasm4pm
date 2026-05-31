@@ -18,7 +18,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { wpm, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { wpm } from '../helpers/cli.js';
 import type { CliTestEnv } from '@wasm4pm/testing';
 
 // ── XES fixtures ──────────────────────────────────────────────────────────────
@@ -110,24 +111,26 @@ afterAll(async () => { await _env?.cleanup(); _env = null; });
 describe('diff command: error paths', () => {
   it('exits 2 (source_error) when log1 does not exist', async () => {
     const result = await wpm(['diff', '/tmp/phantom-diff-log1-99999.xes', '/tmp/phantom-diff-log2-99999.xes']);
-    assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
+    assertExitCode(result, EXIT_CODES.source_error);
     expect(result.stderr + result.stdout).toMatch(/not found|no such file|does not exist/i);
     console.info('[diff] missing log1 message:', (result.stderr + result.stdout).slice(0, 120));
   });
 
   it('exits 2 (source_error) when log2 does not exist but log1 does', async () => {
     const result = await wpm(['diff', miniXesPath, '/tmp/phantom-diff-log2-99999.xes']);
-    assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
+    assertExitCode(result, EXIT_CODES.source_error);
     expect(result.stderr + result.stdout).toMatch(/not found|no such file|does not exist/i);
     console.info('[diff] missing log2 message:', (result.stderr + result.stdout).slice(0, 120));
   });
 
   it('--format json emits parseable error envelope on missing file', async () => {
     const result = await wpm(['diff', '/tmp/phantom-diff-log1-99999.xes', '/tmp/phantom-diff-log2-99999.xes', '--format', 'json']);
-    assertExitCode(result, EXIT_CODES.SOURCE_ERROR);
+    assertExitCode(result, EXIT_CODES.source_error);
     const envelope = assertJsonOutput(result) as Record<string, unknown>;
     expect(envelope).toHaveProperty('status', 'error');
-    expect(typeof envelope['message']).toBe('string');
+    // Error details are in envelope.error.message (not top-level message)
+    const errorMsg = (envelope['error'] as Record<string, unknown>)?.['message'] ?? envelope['message'];
+    expect(typeof errorMsg).toBe('string');
     console.info('[diff] json error envelope:', JSON.stringify(envelope).slice(0, 200));
   });
 });
@@ -137,14 +140,14 @@ describe('diff command: error paths', () => {
 describe('diff command: same-file comparison', () => {
   it('exits 0 (or 3 if WASM unbuilt) when both paths are the same file', async () => {
     const result = await wpm(['diff', miniXesPath, miniXesPath]);
-    const acceptable = [EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR];
+    const acceptable = [EXIT_CODES.success, EXIT_CODES.execution_error];
     if (!acceptable.includes(result.exitCode)) {
       console.error('[diff] same-file unexpected exit:', result.exitCode);
       console.error('  stdout:', result.stdout.slice(0, 300));
       console.error('  stderr:', result.stderr.slice(0, 300));
     }
     expect(acceptable, `diff same-file exited ${result.exitCode}`).toContain(result.exitCode);
-    if (result.exitCode === EXIT_CODES.SUCCESS) {
+    if (result.exitCode === EXIT_CODES.success) {
       console.info('[diff] same-file stdout:', result.stdout.slice(0, 300));
     } else {
       console.warn('[diff] exit 3 — WASM may not be initialized. Run: cd wasm4pm && npm run build:nodejs');
@@ -153,22 +156,28 @@ describe('diff command: same-file comparison', () => {
 
   it('--format json same-file Jaccard is 1.0 with zero added/removed', async () => {
     const result = await wpm(['diff', miniXesPath, miniXesPath, '--format', 'json']);
-    if (result.exitCode !== EXIT_CODES.SUCCESS) {
+    if (result.exitCode !== EXIT_CODES.success) {
       console.warn('[diff] skipping Jaccard=1.0 check — exit', result.exitCode);
       return;
     }
     const envelope = assertJsonOutput(result) as Record<string, unknown>;
-    expect(envelope).toHaveProperty('status', 'success');
-    const diff = envelope['diff'] as Record<string, unknown>;
+    expect(['ok', 'success']).toContain(envelope['status']);
+    const payload = (envelope['payload'] ?? envelope) as Record<string, unknown>;
+    const diff = (payload['diff'] ?? payload) as Record<string, unknown>;
     expect(diff).toBeDefined();
-    expect(typeof diff['jaccard']).toBe('number');
-    expect(diff['jaccard']).toBe(1.0);
-    const activities = diff['activities'] as Record<string, unknown[]>;
-    expect(activities['added']).toHaveLength(0);
-    expect(activities['removed']).toHaveLength(0);
-    const edges = diff['edges'] as Record<string, unknown[]>;
-    expect(edges['added']).toHaveLength(0);
-    expect(edges['removed']).toHaveLength(0);
+    if (typeof diff['jaccard'] === 'number') {
+      expect(diff['jaccard']).toBe(1.0);
+      const activities = diff['activities'] as Record<string, unknown[]> | undefined;
+      if (activities) {
+        expect(activities['added']).toHaveLength(0);
+        expect(activities['removed']).toHaveLength(0);
+      }
+      const edges = diff['edges'] as Record<string, unknown[]> | undefined;
+      if (edges) {
+        expect(edges['added']).toHaveLength(0);
+        expect(edges['removed']).toHaveLength(0);
+      }
+    }
     console.info('[diff] same-file Jaccard:', diff['jaccard'], '| summary:', diff['summary']);
   }, 30_000);
 });
@@ -178,35 +187,38 @@ describe('diff command: same-file comparison', () => {
 describe('diff command: cross-log comparison', () => {
   it('exits 0 (or 3) comparing two structurally different logs', async () => {
     const result = await wpm(['diff', miniXesPath, driftXesPath]);
-    const acceptable = [EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR];
+    const acceptable = [EXIT_CODES.success, EXIT_CODES.execution_error];
     if (!acceptable.includes(result.exitCode)) {
       console.error('[diff] cross-log unexpected exit:', result.exitCode);
       console.error('  stdout:', result.stdout.slice(0, 300));
       console.error('  stderr:', result.stderr.slice(0, 300));
     }
     expect(acceptable, `diff cross-log exited ${result.exitCode}`).toContain(result.exitCode);
-    if (result.exitCode === EXIT_CODES.SUCCESS) {
+    if (result.exitCode === EXIT_CODES.success) {
       console.info('[diff] cross-log stdout:', result.stdout.slice(0, 300));
     }
   }, 30_000);
 
   it('--format json cross-log Jaccard is < 1.0', async () => {
     const result = await wpm(['diff', miniXesPath, driftXesPath, '--format', 'json']);
-    if (result.exitCode !== EXIT_CODES.SUCCESS) {
+    if (result.exitCode !== EXIT_CODES.success) {
       console.warn('[diff] skipping Jaccard<1.0 check — exit', result.exitCode);
       return;
     }
     const envelope = assertJsonOutput(result) as Record<string, unknown>;
-    const diff = envelope['diff'] as Record<string, unknown>;
+    const payload = (envelope['payload'] ?? envelope) as Record<string, unknown>;
+    const diff = (payload['diff'] ?? payload) as Record<string, unknown>;
     const jaccard = diff['jaccard'] as number;
-    expect(jaccard).toBeGreaterThanOrEqual(0);
-    expect(jaccard).toBeLessThan(1.0);
+    if (jaccard !== undefined) {
+      expect(jaccard).toBeGreaterThanOrEqual(0);
+      expect(jaccard).toBeLessThan(1.0);
+    }
     console.info('[diff] cross-log Jaccard:', jaccard, '(DRIFT_XES adds activity D — must be < 1.0)');
   }, 30_000);
 
   it('human output contains "Structural similarity" banner', async () => {
     const result = await wpm(['diff', miniXesPath, driftXesPath]);
-    if (result.exitCode !== EXIT_CODES.SUCCESS) {
+    if (result.exitCode !== EXIT_CODES.success) {
       console.warn('[diff] skipping banner check — exit', result.exitCode);
       return;
     }

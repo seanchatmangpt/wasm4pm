@@ -378,8 +378,7 @@ impl FusedMultiPass {
                             .edges
                             .iter()
                             .find(|r| r.from == e.to && r.to == e.from)
-                            .map(|r| r.frequency as f64)
-                            .unwrap_or(0.0);
+                            .map_or(0.0, |r| r.frequency as f64);
                         let dep = (ab - ba) / (ab + ba + 1.0);
                         serde_json::json!({
                             "from": e.from,
@@ -573,8 +572,7 @@ impl FusedMultiPassStreaming {
                             .edges
                             .iter()
                             .find(|r| r.from == e.to && r.to == e.from)
-                            .map(|r| r.frequency as f64)
-                            .unwrap_or(0.0);
+                            .map_or(0.0, |r| r.frequency as f64);
                         let dep = (ab - ba) / (ab + ba + 1.0);
                         serde_json::json!({
                             "from": e.from,

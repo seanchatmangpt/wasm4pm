@@ -1,0 +1,60 @@
+[config]
+default_to_workspace = false
+
+[env]
+WASM4PM_FEATURES = "browser"
+WASM4PM_PACKAGE = "wasm4pm"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Check
+# ─────────────────────────────────────────────────────────────────────────────
+
+[tasks.check]
+description = "Fast type check of wasm4pm with browser feature set"
+command = "cargo"
+args = ["check", "-p", "${WASM4PM_PACKAGE}", "--features", "${WASM4PM_FEATURES}"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Test targets
+# ─────────────────────────────────────────────────────────────────────────────
+
+[tasks.test]
+description = "Run all wasm4pm lib tests (browser feature)"
+command = "cargo"
+args = ["test", "--lib", "-p", "${WASM4PM_PACKAGE}", "--features", "${WASM4PM_FEATURES}"]
+
+[tasks.test-doc]
+description = "Run all cargo doctests (browser feature) — validates /// code examples"
+command = "cargo"
+args = ["test", "--doc", "-p", "${WASM4PM_PACKAGE}", "--features", "${WASM4PM_FEATURES}"]
+
+[tasks.test-all]
+description = "Run lib tests + doctests (browser feature)"
+dependencies = ["test", "test-doc"]
+
+[tasks.test-integration]
+description = "Run integration tests in wasm4pm/tests/ (browser feature)"
+command = "cargo"
+args = ["test", "--tests", "-p", "${WASM4PM_PACKAGE}", "--features", "${WASM4PM_FEATURES}"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Docs
+# ─────────────────────────────────────────────────────────────────────────────
+
+[tasks.docs]
+description = "Generate rustdoc for wasm4pm (no deps, browser feature)"
+command = "cargo"
+args = ["doc", "--no-deps", "-p", "${WASM4PM_PACKAGE}", "--features", "${WASM4PM_FEATURES}"]
+
+[tasks.docs-open]
+description = "Generate and open rustdoc in browser"
+command = "cargo"
+args = ["doc", "--no-deps", "-p", "${WASM4PM_PACKAGE}", "--features", "${WASM4PM_FEATURES}", "--open"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# CI flow
+# ─────────────────────────────────────────────────────────────────────────────
+
+[tasks.ci]
+description = "Full CI gate: check + lib tests + doctests + docs (browser feature)"
+dependencies = ["check", "test", "test-doc", "docs"]

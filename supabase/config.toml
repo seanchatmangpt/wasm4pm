@@ -1,0 +1,30 @@
+# Supabase local development for wasm4pm receipt sync
+# See: https://supabase.com/docs/guides/cli/config
+
+project_id = "wasm4pm-local"
+
+[api]
+enabled = true
+port = 54421
+schemas = ["public"]
+extra_search_path = ["public", "extensions"]
+max_rows = 1000
+
+[db]
+port = 54422
+shadow_port = 54420
+major_version = 15
+
+[studio]
+enabled = true
+port = 54423
+
+[functions.truex-ingest]
+verify_jwt = false
+
+# Disable analytics/vector on Colima — avoids docker.sock bind mount failure (supabase/cli#5073)
+[analytics]
+enabled = false
+
+[inbucket]
+enabled = false

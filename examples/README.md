@@ -31,7 +31,7 @@ Results auto-saved to `.wasm4pm/results/examples/` — `--no-save` skips persist
 
 Five self-contained Node.js scripts — no configuration, no external data.
 Each runs in under 5 ms and produces output a domain expert can read.
-**Prerequisite:** `cd wasm4pm && npm run build:nodejs` (once).
+**Prerequisite:** `cd wasm4pm && npm run build:nodejs` (once per clone).
 
 | File | Industry | Job to be Done | Algorithm |
 |---|---|---|---|
@@ -58,11 +58,40 @@ const handle = wasm.load_eventlog_from_xes(xes);
 
 ---
 
+## Truex — OCEL 2.0 Receipts
+
+Verify and capture object-centric execution envelopes.
+
+| Example | What it shows | Quick run |
+|---------|--------------|-----------|
+| `truex-cli.ts` | Standalone verify + capture CLI (educational) | `npx tsx examples/truex-cli.ts verify examples/out/truex_ocel2_valid.json` |
+| `truex-capture-otlp.ts` | Edge telemetry capture + OTLP egress demo | `npx tsx examples/truex-cli.ts capture` |
+
+Sample envelopes in `examples/out/`:
+
+| File | Expected with `wpm truex verify` |
+|------|--------------------------------|
+| `truex_ocel2_valid.json` | `ReceiptAdmitted` |
+| `truex_ocel2_forged.json` | Structured refusal |
+| `truex_ocel2_fraudulent.json` | Structured refusal |
+
+**Authoritative verification:** `wpm truex verify` (Rust/WASM). TypeScript demos share BLAKE3 canonicalization via `examples/truex-canonical.ts` for parity with WASM.
+
+Cross-tool parity baseline:
+
+```bash
+npx tsx scripts/examples/truex-cross-tool-parity.ts
+```
+
+**Docs:** [Truex Receipt Verification](../docs/tutorials/truex_receipts.md) · [Canonical Profile](../docs/truex-ocel2-canonical-profile.md)
+
+---
+
 ## TypeScript Examples (ML, RL, prediction, end-to-end workflows)
 
 Runnable examples for ML, RL, prediction, and process mining workflows.
 
-## ML Analysis
+### ML Analysis
 
 | Example | What it shows | Quick run |
 |---------|--------------|-----------|
@@ -73,32 +102,30 @@ Runnable examples for ML, RL, prediction, and process mining workflows.
 | `ml-regress.ts` | Remaining-time prediction | `tsx examples/ml-regress.ts log.xes linear` |
 | `ml-pca.ts` | Dimensionality reduction (PCA) | `tsx examples/ml-pca.ts log.xes 3` |
 
-**Docs:** [`docs/guides/ml-quickstart.md`](../docs/guides/ml-quickstart.md) | [`docs/ml-complete.md`](../docs/ml-complete.md)
+**Docs:** [Getting Started](../docs/tutorials/getting_started.md) · [Algorithms Reference](../docs/reference/algorithms.md)
 
-## RL & Autonomic
+### RL & Autonomic
 
 | Example | What it shows | Quick run |
 |---------|--------------|-----------|
 | `rl-monitoring.ts` | 5 RL agents, convergence analysis | `tsx examples/rl-monitoring.ts 100` |
 
-**Docs:** [`docs/guides/rl-quickstart.md`](../docs/guides/rl-quickstart.md) | [`docs/rl-complete.md`](../docs/rl-complete.md)
-
-## Prediction & Drift
+### Prediction & Drift
 
 | Example | What it shows | Quick run |
 |---------|--------------|-----------|
 | `prediction-next-activity.ts` | n-gram next-activity forecasting | `tsx examples/prediction-next-activity.ts log.xes` |
 | `drift-detection.ts` | EWMA concept drift detection | `tsx examples/drift-detection.ts log.xes 100 0.3` |
 
-**Docs:** [`docs/guides/prediction-quickstart.md`](../docs/guides/prediction-quickstart.md) | [`docs/drift-detection.md`](../docs/drift-detection.md)
+**Docs:** [Predictive Monitoring](../docs/tutorials/predictive_monitoring.md)
 
-## End-to-End Workflows
+### End-to-End Workflows
 
 | Example | What it shows | Quick run |
 |---------|--------------|-----------|
 | `full-workflow.ts` | Discovery → quality → prediction → ML | `tsx examples/full-workflow.ts log.xes` |
 
-**Docs:** [`docs/guides/cli-guide.md`](../docs/guides/cli-guide.md)
+**Docs:** [CLI Commands](../docs/reference/cli_commands.md)
 
 ## Setup
 
@@ -107,7 +134,7 @@ Runnable examples for ML, RL, prediction, and process mining workflows.
 ```bash
 pnpm install                             # Install all packages
 pnpm build                               # Build @wasm4pm/* packages
-cd wasm4pm && npm run build:nodejs       # Build WASM for Node.js
+cd wasm4pm && npm run build:nodejs       # Build WASM for Node.js (once per clone)
 ```
 
 ### Get a sample log
@@ -171,12 +198,14 @@ tsx examples/ml-classify.ts sample.xes --no-save
 | `WASM load failed` | Run `cd wasm4pm && npm run build:nodejs` |
 | `File not found: log.xes` | Provide absolute path or check working directory |
 | `Memory error on large logs` | Use faster profile: `WASM4PM_PROFILE=fast` |
+| Unknown algorithm | Run `wpm algorithms` (60 registered) |
 
-See [`../docs/troubleshooting.md`](../docs/troubleshooting.md) for detailed debugging.
+For environment diagnostics: `wpm doctor check`. See [OTEL Configuration](../docs/how-to/configure_observability.md).
 
 ## Next steps
 
-- **Quick start:** [`docs/guides/ml-quickstart.md`](../docs/guides/ml-quickstart.md)
-- **All commands:** [`docs/guides/cli-guide.md`](../docs/guides/cli-guide.md)
-- **Configuration:** [`docs/guides/configuration-guide.md`](../docs/guides/configuration-guide.md)
-- **Tutorials:** [`docs/tutorials/`](../docs/tutorials/)
+- **Quick start:** [Getting Started](../docs/tutorials/getting_started.md)
+- **All algorithms:** [Algorithms Reference](../docs/reference/algorithms.md) or `wpm algorithms`
+- **All commands:** [CLI Commands](../docs/reference/cli_commands.md)
+- **Configuration:** [Configuration Schema](../docs/reference/configuration_schema.md)
+- **Tutorials:** [docs/tutorials/](../docs/tutorials/)

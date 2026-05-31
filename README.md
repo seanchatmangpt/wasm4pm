@@ -1,155 +1,156 @@
 # wasm4pm
 
-A process mining platform with a real Rust cognition kernel. 60 high-performance algorithms compiled to WebAssembly. 9 old-AI breeds (ELIZA, MYCIN, STRIPS, Prolog, CBR, DENDRAL, GPS, SOAR, Hearsay-II) running natively in Rust, exposed through a thin TypeScript facade, surfaced through a single CLI binary (`wpm`).
+High-performance process mining in Rust/WebAssembly — 60 discovery and analysis algorithms, native OCEL 2.0 support, and nine Old-AI cognition breeds — all through one CLI (`wpm`).
 
-The doctrine: **Old AI is the factory. LLMs are the brochure.**
+**Old AI is the factory. LLMs are the brochure.**
 
-## Why wasm4pm? (Competitive Edge)
+## Install
 
-| Feature | wasm4pm | Celonis (SaaS) | PM4Py (Python) |
-|---------|---------|----------------|----------------|
-| **Execution Speed** | **Instant (Rust/WASM)** | Network-bound | Slow (Python GIL) |
-| **Data Privacy** | **100% Local (Zero Egress)** | Cloud/SaaS Egress | Local |
-| **Event Log Standard** | **Native OCEL 2.0 & XES** | Proprietary / XES | XES |
-| **Integrity Auditing** | **Adversarial Receipt Doctor** | Black-box | None |
-| **Deployment** | **Browser, Edge, CLI, Node** | Cloud only | Server / Docker |
-
-## Verified Integrity
-
-wasm4pm is built with **Combinatorial Maximalism**. Every release is sealed with a **Release Certificate** that binds to the current commit and recomputes all evidence hashes.
-
-- **Adversarial Receipt Doctor (`wpm receipt doctor`):** 13 stringent Truth Refusal gates prevent simulated execution fraud by cryptographically binding OCEL 2.0 event paths to runtime runner evidence.
-- **BLAKE3 Receipts:** Every CLI and cognition run produces a verifiable cryptographic receipt (`wpm results --verify`).
-- **Zero Suppression:** The Rust kernel passes `cargo clippy --workspace -- -D warnings` with zero `allow` attributes or suppressions.
-- **Naturally Clean:** 100% of public items are documented to satisfy the `missing_docs` gate.
-
-[Get Started](docs/tutorials/getting_started.md) | [CLI Reference](docs/reference/cli_commands.md) | [WASM API](docs_quarantine/ARCHIVE/WASM_API.md) | [Architecture](docs/explanation/architecture_overview.md)
-
----
-
-## Quick Start (Time to Value)
-
-### 1. Installation
-
-Install the CLI globally:
 ```bash
-npm install -g wasm4pm-cli
+npm install -g @wasm4pm/cli
 ```
 
-Or add the library to your Node/TypeScript project:
+Library for Node/TypeScript:
+
 ```bash
 npm install wasm4pm
 ```
 
-### 2. Discover a model in 3 lines of code
-
-```typescript
-import { Kernel } from 'wasm4pm';
-import fs from 'fs';
-
-// 1. Initialize the WASM kernel
-const kernel = await Kernel.getInstance();
-
-// 2. Discover an Object-Centric Directly-Follows Graph
-const result = await kernel.discover('ocel_dfg', 'data/object-log.json.ocel');
-
-// 3. View your model
-console.log(result.model);
-```
-
-### 3. Or use the CLI instantly
+From the monorepo without a global install:
 
 ```bash
-# Discover a model from a sample event log
+# CLI requires the Node.js WASM target (once per clone)
+cd wasm4pm && npm run build:nodejs && cd ..
+npm exec --workspace @wasm4pm/cli -- wpm run data/small-example.xes
+```
+
+## Quick Start
+
+Sample log: [`data/small-example.xes`](data/small-example.xes).
+
+```bash
+# Discover a process model (uses wasm4pm.toml in cwd when present)
 wpm run data/small-example.xes
 
-# Inspect the most recent result (with receipt hash validation)
-wpm results --last --verify
+# Named algorithm — alias or registry ID
+wpm run data/small-example.xes -a dfg
+wpm run data/small-example.xes -a inductive
+
+# Browse all 60 algorithms with speed/quality metadata
+wpm algorithms
+
+# Compare side-by-side (14 discovery aliases; full registry via wpm run -a)
+wpm compare dfg,heuristic,inductive -i data/small-example.xes
+
+# Environment and registry health
+wpm doctor check
+wpm status --format json
 ```
 
-### 3. Algorithm Comparison
+The CLI exposes **50+ top-level commands** (discovery, conformance, prediction, cognition, receipts, cell, and utilities). Run `wpm --help` for the full tree.
+
+**Default algorithm:** `config.algorithm.name` from `wasm4pm.toml` / `wasm4pm.json`, else the first algorithm for your execution profile (`balanced` → `alpha_plus_plus`), else `heuristic_miner`. Run `wpm --help` for the full command tree.
+
+## Algorithms
+
+wasm4pm registers **60 algorithms** across discovery, conformance, simulation, ML, OCEL, prediction, and analytics. Domains include:
+
+| Domain | Examples |
+|--------|----------|
+| Core discovery | `dfg`, `heuristic_miner`, `inductive_miner`, `genetic_algorithm`, `ilp` |
+| Conformance & quality | `alignments`, `generalization`, `etconformance_precision` |
+| OCEL / object-centric | `ocel_dfg`, `ocel_petri_net`, `ocel_oc_declare` |
+| Prediction | `predict_next_activity`, `detect_drift` (via `wpm predict`) |
+| ML analysis | `ml_classify`, `ml_cluster`, `ml_forecast` (via `wpm ml` or `wpm run`) |
+
+List live metadata: `wpm algorithms` or `wpm algorithms --format json`.
+
+Full catalog: [Algorithms Reference](docs/reference/algorithms.md). See [Getting Started](docs/tutorials/getting_started.md) for alias examples and programmatic usage.
+
+## Programmatic API
+
+```typescript
+import { readFileSync } from 'fs';
+import { Kernel } from 'wasm4pm';
+import * as wasm from 'wasm4pm';
+
+const logHandle = wasm.load_eventlog_from_xes(
+  readFileSync('data/small-example.xes', 'utf8')
+);
+const kernel = new Kernel(wasm);
+await kernel.init();
+
+const { output } = await kernel.discover('dfg', logHandle, {
+  activity_key: 'concept:name',
+});
+console.log(output);
+```
+
+## Truex — OCEL 2.0 Execution Trust
+
+Truex verifies object-centric execution equivalence with BLAKE3 digests and a structured refusal taxonomy.
 
 ```bash
-# Compare multiple algorithms side-by-side
-wpm compare dfg,heuristic,inductive -i data/small-example.xes
+wpm truex verify examples/out/truex_ocel2_valid.json
+wpm truex verify examples/out/truex_ocel2_forged.json   # structured refusal
 ```
 
-See [docs/tutorials/getting_started.md](docs/tutorials/getting_started.md) for more examples and next steps.
+Profile: [Truex OCEL 2.0 Canonical Profile](docs/truex-ocel2-canonical-profile.md). Tutorial: [Truex Receipt Verification](docs/tutorials/truex_receipts.md).
 
----
+## Supabase
+
+Sync wpm receipts and admitted TrueX envelopes to Postgres with RLS and an Edge Function ingest path:
+
+```bash
+wpm supabase sync-receipts
+wpm truex verify examples/out/truex_ocel2_valid.json --ingest
+wpm supabase doctor
+```
+
+Guide: [Supabase Integration](docs/how-to/supabase_integration.md).
+
+## Cognition (Old AI)
+
+Nine breeds run natively in Rust and are exposed through `wpm cognition`:
+
+```bash
+wpm cognition run --contract mycin --input examples/cognition/mycin/intent.json
+```
+
+| Breed | Origin | Technique |
+|-------|--------|-----------|
+| ELIZA | 1966 | Pattern matching with slot binding |
+| MYCIN | 1976 | Forward chaining + certainty factors |
+| STRIPS | 1971 | Goal regression planning |
+| Prolog | 1965 | Robinson unification + SLD resolution |
+| CBR | 1992 | Jaccard similarity case retrieval |
+| DENDRAL | 1969 | Constraint-driven enumeration |
+| GPS | 1963 | Means-ends gap reduction |
+| SOAR | 1987 | Preference-based operator selection |
+| Hearsay-II | 1980 | Blackboard consensus fusion |
 
 ## Deployment Profiles
 
-Optimized binaries for every environment:
-
-| Profile | Size | Use Case |
+| Profile | Size | Use case |
 |---------|------|----------|
-| `mobile` | ~500KB | Mobile devices / low bandwidth |
-| `iot` | ~1.0MB | Embedded / resource-constrained |
-| `edge` | ~1.5MB | CDN workers / Edge compute |
-| `fog` | ~2.0MB | IoT gateways / Fog nodes |
+| `mobile` | ~500KB | Mobile / low bandwidth |
+| `iot` | ~1.0MB | Embedded |
+| `edge` | ~1.5MB | CDN / edge workers |
+| `fog` | ~2.0MB | IoT gateways |
 | `browser` | ~2.7MB | Web + Node.js (default) |
 
-**To compile a custom profile:**
-```bash
-# Build the extreme-size mobile profile using wasm-opt -Oz
-npm run build:mobile --workspace=wasm4pm
-
-# Or build manually with specific cargo features:
-cargo build --target wasm32-unknown-unknown --profile release --no-default-features --features "mobile"
-wasm-opt -Oz -o wasm4pm_bg.wasm target/wasm32-unknown-unknown/release/wasm4pm.wasm
-```
-
----
-
-## Core Capabilities
-
-**wasm4pm** is a process mining platform covering discovery, conformance, and enhancement (bottleneck analysis, drift detection, predictive monitoring).
-
-### 9 Cognition Breeds (Old AI)
-
-| Breed | Origin | Algorithm |
-|-------|--------|-----------|
-| **ELIZA** | 1966 | Pattern matching with slot binding |
-| **MYCIN** | 1976 | Forward chaining + certainty factors |
-| **STRIPS** | 1971 | Goal regression planning |
-| **Prolog** | 1965 | Robinson unification + SLD resolution |
-| **CBR** | 1992 | Jaccard similarity case retrieval |
-| **DENDRAL** | 1969 | Constraint-driven enumeration |
-| **GPS** | 1963 | Means-ends gap reduction |
-| **SOAR** | 1987 | Preference-based operator selection |
-| **Hearsay-II** | 1980 | Blackboard consensus fusion |
-
-### Process Mining Commands (20 total)
-
-| Category | Commands |
-|----------|----------|
-| **Core** | `run`, `compare`, `diff`, `watch`, `init` |
-| **Prediction** | `predict`, `drift-watch` |
-| **ML Analysis** | `ml`, `powl`, `quality`, `conformance`, `validate` |
-| **Simulation** | `simulate`, `temporal`, `social` |
-| **Governance** | `autoprocess`, `status`, `doctor`, `explain`, `results` |
-
----
+Build a profile: `npm run build:mobile --workspace=wasm4pm`. See [Edge Deployment](docs/how-to/edge_deployment.md).
 
 ## Documentation
 
 We follow the [Diátaxis framework](https://diataxis.fr/).
 
-- **🎓 Tutorials:** [Getting Started](docs/tutorials/getting_started.md), [Predictive Monitoring](docs/tutorials/predictive_monitoring.md), [Cognition Contracts](docs/tutorials/cognition_contracts.md)
-- **🛠️ How-To Guides:** [OTEL Configuration](docs/how-to/configure_observability.md), [Edge Deployment](docs/how-to/edge_deployment.md), [Concept Drift](docs/how-to/concept_drift.md)
-- **📚 Reference:** [CLI Commands](docs/reference/cli_commands.md), [Configuration Schema](docs/reference/configuration_schema.md), [WASM API Catalog](docs_quarantine/ARCHIVE/WASM_API.md)
-- **🧠 Explanation:** [Architecture Overview](docs/explanation/architecture_overview.md), [Old AI vs. LLM Doctrine](docs/explanation/old_ai_vs_llms.md), [Combinatorial Maximalism](docs_quarantine/ARCHIVE/explanation/combinatorial_maximalism_closure_discipline.md)
+- **Tutorials:** [Getting Started](docs/tutorials/getting_started.md) · [Truex Receipts](docs/tutorials/truex_receipts.md) · [Predictive Monitoring](docs/tutorials/predictive_monitoring.md) · [Cognition Contracts](docs/tutorials/cognition_contracts.md)
+- **How-To:** [OTEL Configuration](docs/how-to/configure_observability.md) · [Edge Deployment](docs/how-to/edge_deployment.md) · [Concept Drift](docs/how-to/concept_drift.md)
+- **Reference:** [CLI Commands](docs/reference/cli_commands.md) · [Algorithms](docs/reference/algorithms.md) · [Configuration Schema](docs/reference/configuration_schema.md) · [Truex Profile](docs/truex-ocel2-canonical-profile.md)
+- **Explanation:** [Architecture Overview](docs/explanation/architecture_overview.md) · [Old AI vs. LLMs](docs/explanation/old_ai_vs_llms.md)
 
-### Additional Resources
-- [Testing Doctrine](docs_quarantine/ARCHIVE/TESTING.md)
-- [Adversarial Test Plan](docs_quarantine/ARCHIVE/ADVERSARIAL_TEST_PLAN.md)
-- [Claude Code Integration](docs_quarantine/ARCHIVE/CLAUDE.md)
-- [Contributing Guidelines](CONTRIBUTING.md)
-
-## Contact
-
-For questions or support, reach out at [info@chatmangpt.com](mailto:info@chatmangpt.com).
+Release and evidence discipline: [AGENTS.md](AGENTS.md) · [Contributing](CONTRIBUTING.md)
 
 ## License
 

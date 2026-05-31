@@ -152,6 +152,218 @@ export function isReceipt(value: unknown): value is Receipt {
 }
 
 /**
+ * Diff between two receipts — describes fields that diverge.
+ *
+ * All fields except `same` are optional; they are only present when the
+ * corresponding property differs between `a` and `b`.
+ */
+export interface ReceiptDiff {
+  /** true if the receipts are semantically identical (no differing fields) */
+  same: boolean;
+  /** run_id differs (always true when comparing two distinct runs) */
+  run_id?: { a: string; b: string };
+  /** execution status differs */
+  status?: { a: Receipt['status']; b: Receipt['status'] };
+  /** algorithm name or version differs */
+  algorithm?: { a: string; b: string };
+  /** duration_ms differs by more than 1ms */
+  duration_ms?: { a: number; b: number };
+  /** Any hash field (input, config, plan, output) that differs */
+  hashes?: { field: string; a: string; b: string }[];
+  /** Summary fields that differ */
+  summary?: { field: string; a: number; b: number }[];
+  /** Model field (nodes or edges) that differs */
+  model?: { field: string; a: number; b: number }[];
+}
+
+/**
+ * Validate that an unknown value satisfies the full Receipt schema contract.
+ *
+ * More strict than `isReceipt`: also verifies that hash fields are exactly 64
+ * hex characters (BLAKE3 output), that timestamps parse as ISO-8601, and that
+ * numeric fields are within expected ranges.
+ *
+ * @param receipt Value to validate
+ * @returns true if `receipt` is a well-formed Receipt
+ *
+ * @example
+ * ```ts
+ * const raw = JSON.parse(fs.readFileSync('result.json', 'utf8'));
+ * if (validateReceiptSchema(raw)) {
+ *   // raw is Receipt
+ * }
+ * ```
+ */
+export function validateReceiptSchema(receipt: unknown): receipt is Receipt {
+  if (!isReceipt(receipt)) return false;
+
+  const r = receipt as Receipt;
+  const hexPattern = /^[0-9a-f]{64}$/;
+
+  // Hash fields must be 64 hex chars (BLAKE3)
+  for (const field of ['config_hash', 'input_hash', 'plan_hash', 'output_hash'] as const) {
+    if (!hexPattern.test(r[field])) return false;
+  }
+
+  // Timestamps must be parseable ISO-8601
+  if (isNaN(Date.parse(r.start_time))) return false;
+  if (isNaN(Date.parse(r.end_time))) return false;
+
+  // duration_ms must be non-negative
+  if (r.duration_ms < 0) return false;
+
+  // summary counts must be non-negative integers
+  const s = r.summary;
+  if (
+    !Number.isInteger(s.traces_processed) || s.traces_processed < 0 ||
+    !Number.isInteger(s.objects_processed) || s.objects_processed < 0 ||
+    !Number.isInteger(s.variants_discovered) || s.variants_discovered < 0
+  ) return false;
+
+  // model counts must be non-negative integers
+  if (
+    !Number.isInteger(r.model.nodes) || r.model.nodes < 0 ||
+    !Number.isInteger(r.model.edges) || r.model.edges < 0
+  ) return false;
+
+  return true;
+}
+
+/**
+ * Check whether a receipt is older than a given maximum age.
+ *
+ * Uses `end_time` (the completion timestamp) as the reference point.
+ * Returns true if the receipt has "expired" — i.e. its end_time is more
+ * than `maxAgeMs` milliseconds ago relative to the current wall clock.
+ *
+ * @param receipt Receipt to inspect
+ * @param maxAgeMs Maximum acceptable age in milliseconds
+ * @returns true if the receipt end_time is more than maxAgeMs ms ago
+ *
+ * @example
+ * ```ts
+ * const ONE_HOUR = 60 * 60 * 1000;
+ * if (isReceiptExpired(receipt, ONE_HOUR)) {
+ *   // Stale — re-run discovery
+ * }
+ * ```
+ */
+export function isReceiptExpired(receipt: Receipt, maxAgeMs: number): boolean {
+  const endMs = Date.parse(receipt.end_time);
+  if (isNaN(endMs)) return true; // Treat unparseable timestamp as expired
+  return Date.now() - endMs > maxAgeMs;
+}
+
+/**
+ * Produce a concise, human-readable one-line summary of a receipt.
+ *
+ * Alias of `formatReceipt` — provided under the name `receiptSummary` so callers
+ * looking for a "summary" function find it without knowing the internal naming.
+ * Returns a non-empty string suitable for logs, CLI output, or diagnostics.
+ *
+ * @param receipt Receipt to summarize
+ * @returns A non-empty one-line summary string
+ *
+ * @example
+ * ```ts
+ * console.log(receiptSummary(receipt));
+ * // "dfg [342 traces, 8 variants, 5 nodes, 12 edges] — 47ms — ok [run: a3f8b2c1]"
+ * ```
+ */
+export function receiptSummary(receipt: Receipt): string {
+  return formatReceipt(receipt);
+}
+
+/**
+ * Compare two receipts and return a structured diff of their differences.
+ *
+ * Useful for detecting result drift between runs, verifying re-runs are
+ * deterministic, or reporting what changed after an algorithm upgrade.
+ *
+ * Hash comparisons are exact (bit-for-bit). Numeric comparisons use a 1ms
+ * tolerance for `duration_ms` to absorb measurement noise.
+ *
+ * @param a First receipt
+ * @param b Second receipt
+ * @returns A {@link ReceiptDiff} object; `same: true` means no differences found
+ *
+ * @example
+ * ```ts
+ * const diff = compareReceipts(receiptA, receiptB);
+ * if (!diff.same) {
+ *   console.warn('Receipts differ:', diff);
+ * }
+ * ```
+ */
+export function compareReceipts(a: Receipt, b: Receipt): ReceiptDiff {
+  const diff: ReceiptDiff = { same: true };
+
+  if (a.run_id !== b.run_id) {
+    diff.same = false;
+    diff.run_id = { a: a.run_id, b: b.run_id };
+  }
+
+  if (a.status !== b.status) {
+    diff.same = false;
+    diff.status = { a: a.status, b: b.status };
+  }
+
+  const algoA = `${a.algorithm.name}@${a.algorithm.version}`;
+  const algoB = `${b.algorithm.name}@${b.algorithm.version}`;
+  if (algoA !== algoB) {
+    diff.same = false;
+    diff.algorithm = { a: algoA, b: algoB };
+  }
+
+  // duration_ms — 1ms tolerance
+  if (Math.abs(a.duration_ms - b.duration_ms) > 1) {
+    diff.same = false;
+    diff.duration_ms = { a: a.duration_ms, b: b.duration_ms };
+  }
+
+  // Hash fields
+  const hashFields = ['config_hash', 'input_hash', 'plan_hash', 'output_hash'] as const;
+  const hashDiffs: ReceiptDiff['hashes'] = [];
+  for (const field of hashFields) {
+    if (a[field] !== b[field]) {
+      hashDiffs.push({ field, a: a[field], b: b[field] });
+    }
+  }
+  if (hashDiffs.length > 0) {
+    diff.same = false;
+    diff.hashes = hashDiffs;
+  }
+
+  // Summary fields
+  const summaryFields = ['traces_processed', 'objects_processed', 'variants_discovered'] as const;
+  const summaryDiffs: NonNullable<ReceiptDiff['summary']> = [];
+  for (const field of summaryFields) {
+    if (a.summary[field] !== b.summary[field]) {
+      summaryDiffs.push({ field, a: a.summary[field], b: b.summary[field] });
+    }
+  }
+  if (summaryDiffs.length > 0) {
+    diff.same = false;
+    diff.summary = summaryDiffs;
+  }
+
+  // Model fields
+  const modelFields = ['nodes', 'edges'] as const;
+  const modelDiffs: NonNullable<ReceiptDiff['model']> = [];
+  for (const field of modelFields) {
+    if (a.model[field] !== b.model[field]) {
+      modelDiffs.push({ field, a: a.model[field], b: b.model[field] });
+    }
+  }
+  if (modelDiffs.length > 0) {
+    diff.same = false;
+    diff.model = modelDiffs;
+  }
+
+  return diff;
+}
+
+/**
  * JSON Schema for Receipt (for external validation)
  */
 export const RECEIPT_JSON_SCHEMA = {

@@ -125,13 +125,13 @@ describe('Gap 2: swarm.algorithm_ids validates against registered algorithm IDs'
   it('rejects swarm.algorithm_ids containing an unregistered algorithm', () => {
     expect(() =>
       validate({ ...minimal, swarm: { algorithm_ids: ['nonexistent_algo'] } })
-    ).toThrow(/Invalid enum value/);
+    ).toThrow(/algorithm\.name.*registered algorithms|Invalid enum value/i);
   });
 
   it('rejects swarm.algorithm_ids with a mix of valid and invalid IDs', () => {
     expect(() =>
       validate({ ...minimal, swarm: { algorithm_ids: ['dfg', 'not_real'] } })
-    ).toThrow(/Invalid enum value/);
+    ).toThrow(/algorithm\.name.*registered algorithms|Invalid enum value/i);
   });
 
   it('accepts swarm.algorithm_ids with valid registered IDs', () => {

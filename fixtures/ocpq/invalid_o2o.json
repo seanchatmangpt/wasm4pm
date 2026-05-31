@@ -1,0 +1,55 @@
+{
+  "eventTypes": [
+    "FileModification",
+    "DiagnosticCheck",
+    "DiagnosticCleared",
+    "ReceiptGeneration"
+  ],
+  "objectTypes": [
+    "Agent",
+    "File",
+    "DiagnosticSpecies",
+    "Receipt"
+  ],
+  "events": [
+    {
+      "id": "e_mod_1",
+      "type": "FileModification",
+      "time": "2026-05-30T08:00:00Z",
+      "attributes": {},
+      "relationships": [
+        { "objectId": "agent_1", "qualifier": "editor" },
+        { "objectId": "file_1", "qualifier": "modified" }
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "agent_1",
+      "type": "Agent",
+      "attributes": {},
+      "relationships": []
+    },
+    {
+      "id": "file_1",
+      "type": "File",
+      "attributes": {},
+      "relationships": []
+    },
+    {
+      "id": "diag_species_1",
+      "type": "DiagnosticSpecies",
+      "attributes": {},
+      "relationships": []
+    },
+    {
+      "id": "receipt_1",
+      "type": "Receipt",
+      "attributes": {},
+      "relationships": [
+        { "objectId": "file_nonexistent", "qualifier": "basis" }
+      ]
+    }
+  ],
+  "objectRelations": []
+}

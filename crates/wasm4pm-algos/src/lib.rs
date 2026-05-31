@@ -12,6 +12,7 @@ pub mod columnar;
 pub mod conformance;
 pub mod dfg;
 pub mod heuristic;
+pub mod prefix_conformance;
 pub mod streaming;
 pub mod truex;
 

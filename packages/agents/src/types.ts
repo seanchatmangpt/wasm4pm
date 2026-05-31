@@ -185,9 +185,9 @@ export interface SurfaceEvidence {
 export interface AnalyzeResult {
   /** All violations detected */
   violations: Violation[];
-  /** Number of violations by severity */
+  /** Number of critical-severity violations */
   critical_count: number;
-  /** warning_count: number */
+  /** Number of warning-severity violations */
   warning_count: number;
   /** Agents that detected violations */
   agents_triggered: string[];
@@ -197,9 +197,9 @@ export interface AnalyzeResult {
 export interface PlanResult {
   /** Ordered list of corrective actions */
   actions: CorrectiveAction[];
-  /** Number of actions by priority */
+  /** Number of critical-severity corrective actions */
   critical_actions: number;
-  /** warning_actions: number */
+  /** Number of warning-severity corrective actions */
   warning_actions: number;
 }
 

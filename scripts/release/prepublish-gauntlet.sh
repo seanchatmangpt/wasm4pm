@@ -49,16 +49,20 @@ npm run release:verify-algorithm-behavior
 echo "--- 8. Forbidden Terms ---"
 npm run release:forbidden
 
-# 8. Pack Smoke Test
-echo "--- 8. Pack Smoke Test ---"
+# 9. Pack Smoke Test
+echo "--- 9. Pack Smoke Test ---"
 npm run prepublish:pack-smoke
 
-# 9. Release Certificate
-echo "--- 9. Generating Release Certificate ---"
+# 10. Release Certificate
+echo "--- 10. Generating Release Certificate ---"
 npm run release:certificate
 
-# 10. Authenticity Verification
-echo "--- 10. Verifying Receipt Authenticity ---"
+# 11. WASM Bundle Hash + Certificate Authenticity
+echo "--- 11. Verifying WASM Hash & Certificate Authenticity ---"
+tsx scripts/release/verify-certificate-authenticity.ts
+
+# 12. Receipt Authenticity
+echo "--- 12. Verifying Receipt Authenticity ---"
 tsx scripts/release/verify-receipt-authenticity.ts
 
 echo "=== GAUNTLET PASSED FOR v$VERSION ==="

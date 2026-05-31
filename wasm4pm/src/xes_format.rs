@@ -96,6 +96,16 @@ fn insert_attr(
 /// XES is the standard eXtensible Event Stream format for process logs
 #[wasm_bindgen]
 pub fn load_eventlog_from_xes(content: &str) -> Result<String, JsValue> {
+    // SECURITY: Reject inputs larger than 512 MB to prevent WASM heap exhaustion.
+    // See io.rs MAX_INPUT_BYTES for rationale.
+    const MAX_XES_BYTES: usize = 512 * 1024 * 1024;
+    if content.len() > MAX_XES_BYTES {
+        return Err(crate::error::js_val(&format!(
+            "XES input too large: {} bytes (max {} bytes / 512 MB)",
+            content.len(),
+            MAX_XES_BYTES
+        )));
+    }
     #[cfg(feature = "import")]
     {
         use wasm4pm_types::import::xes::{import_xes, XESImportOptions};

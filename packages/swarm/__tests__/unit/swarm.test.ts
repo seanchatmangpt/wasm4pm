@@ -648,9 +648,10 @@ describe('WorkerResult — failure isolation fields', () => {
     expect(healthy.error).toBeUndefined();
   });
 
-  it('checkSwarmConvergence should treat FAILED hash as stable when repeated — callers must check failedWorkers separately', () => {
-    // A worker that fails always emits hash='FAILED'. Two rounds of 'FAILED' → stable ring buffer.
-    // The swarm reports this in failedWorkers so the caller can filter them.
+  it('checkSwarmConvergence treats failed worker as always unstable — swarm does not converge while a worker is failing', () => {
+    // A persistently-failing worker must NOT be treated as "stably converged" via
+    // repeated 'FAILED' sentinel hashes. Swarm convergence requires healthy output.
+    // Callers surface failures via result.failed / failedWorkers on the artifact.
     const failedResults = [
       { workerId: 'w-fail', algorithmId: 'dfg', resultHash: 'FAILED', result: null, runAt: '', durationMs: 0, failed: true as const },
       { workerId: 'w-ok',   algorithmId: 'dfg', resultHash: 'real-hash', result: {}, runAt: '', durationMs: 10 },
@@ -660,10 +661,11 @@ describe('WorkerResult — failure isolation fields', () => {
     checkSwarmConvergence(failedResults, history, 2);
     const r2 = checkSwarmConvergence(failedResults, history, 2);
 
-    // Both workers have stable ring buffers after 2 rounds with identical hashes.
-    // The runSwarm() layer detects failures via result.failed and populates failedWorkers.
-    expect(r2.converged).toBe(true);
-    expect(r2.stableWorkers).toHaveLength(2);
+    // w-ok is stable after 2 rounds; w-fail is always unstable (excluded from ring buffer).
+    // The swarm does NOT converge while a worker is failing.
+    expect(r2.converged).toBe(false);
+    expect(r2.stableWorkers).toContain('w-ok/dfg');
+    expect(r2.unstableWorkers).toContain('w-fail/dfg');
   });
 });
 

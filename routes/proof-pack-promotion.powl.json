@@ -13,7 +13,7 @@
       "terminated_by": ["wpm_proof_promote"]
     },
     "Receipt": {
-      "created_by": ["emit_receipt", "proof_collect"],
+      "created_by": ["emit_receipt"],
       "schema": "schemas/receipts/proof-receipt.schema.json"
     }
   },

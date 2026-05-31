@@ -5,14 +5,12 @@
  * Adds only playground-specific helpers not available in the testing package.
  */
 
-import { runCli, assertExitCode, type CliResult, EXIT_CODES } from '@wasm4pm/testing';
+import { runCli, assertExitCode, assertJsonOutput, type CliResult, EXIT_CODES } from '@wasm4pm/testing';
 import * as path from 'path';
 import * as url from 'url';
 
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 export const WASM4PM = path.resolve(__dirname, '../../apps/wasm4pm/dist/bin/wpm.js');
-/** @deprecated Use WASM4PM instead. */
-export const WASM4PM = WASM4PM;
 
 /** Spawn the wasm4pm (wpm) CLI as a child process, capturing stdout/stderr/exitCode. */
 export function wpm(
@@ -57,5 +55,5 @@ export function resolveRepo(...segments: string[]): string {
 }
 
 // Re-export for convenience
-export { assertExitCode, EXIT_CODES };
+export { assertExitCode, assertJsonOutput, EXIT_CODES };
 export type { CliResult };

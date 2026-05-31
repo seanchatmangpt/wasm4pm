@@ -182,10 +182,11 @@ ${Array.from({ length: 100 })
       );
       expect(result.exitCode).toBe(EXIT_CODES.success);
 
-      const parsed = JSON.parse(result.stdout);
+      const parsed = JSON.parse(result.stdout) as Record<string, unknown>;
 
-      // Should be valid JSON
-      expect(typeof parsed).toBe('object');
+      // FM-5: typeof parsed === 'object' after JSON.parse is always true for any
+      // non-primitive JSON value. Assert on the actual envelope contract instead.
+      expect(parsed.status).toMatch(/^(ok|error)$/);
     });
   });
 

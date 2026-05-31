@@ -61,7 +61,7 @@ impl<V: Clone> LruCache<V> {
         if let Some((value, _order)) = self.map.get_mut(key) {
             self.hits += 1;
             let v = value.clone();
-            self.map.get_mut(key).unwrap().1 = self.access_counter;
+            self.map.get_mut(key).unwrap().1 = self.access_counter; // infallible: key was just found above
             return Some(v);
         }
         self.misses += 1;

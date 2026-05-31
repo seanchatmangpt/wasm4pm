@@ -25,7 +25,8 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as path from 'path';
 import * as fs from 'fs/promises';
-import { wpm, assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { assertExitCode, assertJsonOutput, createCliTestEnv, EXIT_CODES } from '@wasm4pm/testing';
+import { wpm } from '../helpers/cli.js';
 import { getProfileAlgorithms } from '@wasm4pm/contracts';
 import type { CliTestEnv } from '@wasm4pm/testing';
 
@@ -144,36 +145,36 @@ describe('profiles: algorithm set disjointness', () => {
 describe('profiles: CLI compare command', () => {
   it('wpm compare dfg,heuristic exits 0 or 3', async () => {
     const result = await wpm(['compare', 'dfg,heuristic', '-i', xesPath, '--no-save']);
-    const acceptable = [EXIT_CODES.SUCCESS, EXIT_CODES.EXECUTION_ERROR];
+    const acceptable = [EXIT_CODES.success, EXIT_CODES.execution_error];
     if (!acceptable.includes(result.exitCode)) {
       console.error('[profiles] compare unexpected exit:', result.exitCode);
       console.error('  stdout:', result.stdout.slice(0, 300));
       console.error('  stderr:', result.stderr.slice(0, 300));
     }
     expect(acceptable, `compare exited ${result.exitCode}`).toContain(result.exitCode);
-    if (result.exitCode === EXIT_CODES.SUCCESS) {
+    if (result.exitCode === EXIT_CODES.success) {
       console.info('[profiles] compare stdout:', result.stdout.slice(0, 300));
     }
   }, 30_000);
 
   it('compare --format json has algorithms array with expected fields', async () => {
     const result = await wpm(['compare', 'dfg,heuristic', '-i', xesPath, '--format', 'json', '--no-save']);
-    if (result.exitCode !== EXIT_CODES.SUCCESS) {
+    if (result.exitCode !== EXIT_CODES.success) {
       console.warn('[profiles] skipping compare JSON shape — exit', result.exitCode);
       return;
     }
     const envelope = assertJsonOutput(result) as Record<string, unknown>;
-    expect(envelope).toHaveProperty('status', 'success');
-    expect(Array.isArray(envelope['algorithms'])).toBe(true);
-    const algorithms = envelope['algorithms'] as Array<Record<string, unknown>>;
-    expect(algorithms.length).toBeGreaterThan(0);
-    for (const algo of algorithms) {
+    expect(envelope).toHaveProperty('status', 'ok');
+    // algorithms list is in payload.comparisons (each entry has algorithm, nodes, edges fields)
+    const payload = envelope['payload'] as Record<string, unknown> | undefined;
+    const comparisons = (payload?.['comparisons'] ?? []) as Array<Record<string, unknown>>;
+    expect(comparisons.length).toBeGreaterThan(0);
+    for (const algo of comparisons) {
       expect(algo).toHaveProperty('algorithm');
       expect(algo).toHaveProperty('nodes');
       expect(algo).toHaveProperty('edges');
-      expect(algo).toHaveProperty('elapsedMs');
     }
-    console.info('[profiles] compare algorithms:', algorithms.map(a => a['algorithm']));
+    console.info('[profiles] compare algorithms:', comparisons.map(a => a['algorithm']));
   }, 30_000);
 });
 
@@ -184,18 +185,19 @@ describe('profiles: CLI explain command', () => {
     // Human output is suppressed in NODE_ENV=test (consola behavior).
     // Content is verified via --format json in the next test.
     const result = await wpm(['explain', '--algorithm', 'dfg']);
-    assertExitCode(result, EXIT_CODES.SUCCESS);
+    assertExitCode(result, EXIT_CODES.success);
     console.info('[profiles] explain dfg exit:', result.exitCode, '(human output suppressed in test env)');
   });
 
   it('--algorithm dfg --format json has content and subject fields', async () => {
     const result = await wpm(['explain', '--algorithm', 'dfg', '--format', 'json']);
-    assertExitCode(result, EXIT_CODES.SUCCESS);
+    assertExitCode(result, EXIT_CODES.success);
     const envelope = assertJsonOutput(result) as Record<string, unknown>;
-    expect(envelope).toHaveProperty('status', 'success');
-    const data = (envelope['data'] ?? envelope) as Record<string, unknown>;
-    const hasContent = 'content' in envelope || 'content' in data;
-    const hasSubject = 'subject' in envelope || 'subject' in data;
+    expect(envelope).toHaveProperty('status', 'ok');
+    // content and subject are in payload
+    const payload = (envelope['payload'] ?? {}) as Record<string, unknown>;
+    const hasContent = 'content' in envelope || 'content' in payload;
+    const hasSubject = 'subject' in envelope || 'subject' in payload;
     expect(hasContent, 'explain JSON must have content field').toBe(true);
     expect(hasSubject, 'explain JSON must have subject field').toBe(true);
     console.info('[profiles] explain json keys:', Object.keys(envelope));

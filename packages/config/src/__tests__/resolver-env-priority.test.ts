@@ -428,14 +428,16 @@ describe('Rank 2 — ENV var size limits', () => {
   });
 
   it('accepts a WASM4PM_OTEL_ENDPOINT value of exactly 1024 characters (at the limit)', async () => {
-    // Exactly at the limit: should not throw
+    // Exactly at the limit: should not throw, and the endpoint must be round-tripped
     const atLimit = 'http://x' + 'x'.repeat(1024 - 8); // 1024 chars total
-    await expect(
-      resolveConfig({
-        configSearchPaths: [tmp],
-        env: { WASM4PM_OTEL_ENDPOINT: atLimit },
-      })
-    ).resolves.toBeDefined();
+    expect(atLimit).toHaveLength(1024); // guard: fixture must be exactly 1024
+    const cfg = await resolveConfig({
+      configSearchPaths: [tmp],
+      env: { WASM4PM_OTEL_ENDPOINT: atLimit },
+    });
+    // FM-5: resolved config must carry the endpoint through, proving the 1024-char
+    // boundary is accepted (not silently dropped or truncated).
+    expect(cfg.observability.otel?.endpoint).toBe(atLimit);
   });
 
   it('accepts a WASM4PM_OTEL_ENDPOINT value of 256 characters (well under limit)', async () => {

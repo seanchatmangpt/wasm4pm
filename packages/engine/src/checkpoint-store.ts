@@ -222,7 +222,8 @@ export class FileCheckpointStore implements ICheckpointStore {
 
 export class SqliteCheckpointStore implements ICheckpointStore {
   private dbPath: string;
-  private db: any;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  private db: any; // placeholder for a future SQLite client; class is a stub that always throws
   private initialized = false;
 
   constructor(dbPath = '.wasm4pm/checkpoints.db') {

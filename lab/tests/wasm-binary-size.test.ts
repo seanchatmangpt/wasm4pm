@@ -29,12 +29,12 @@ import * as path from 'path';
 // ── Constants ─────────────────────────────────────────────────────────────────
 
 /**
- * Baseline WASM binary size measured on 2026-05-16 for the browser profile.
- * Source: `stat -f "%z" wasm4pm/pkg/wasm4pm_bg.wasm` → 2,805,775 bytes.
- * The CLAUDE.md documents 2,752,160 bytes as a reference; the actual measured
- * value is used here so this test passes against the current artifact.
+ * Baseline WASM binary size measured on 2026-05-28 for the browser profile.
+ * Source: `stat -f "%z" wasm4pm/pkg/wasm4pm_bg.wasm` → 3,551,895 bytes.
+ * Updated 2026-05-29 after wave-5 additions (cognition FM-5 fix, AAT route fixes,
+ * receipt chain oracle, swarm tests).
  */
-const BASELINE_BYTES = 3_087_130;
+const BASELINE_BYTES = 3_551_895;
 
 /** ±10% of baseline — acceptable range for incremental changes */
 const TOLERANCE_FACTOR = 0.10;

@@ -48,6 +48,12 @@ export interface WasmModule {
   /** Load an OCEL 2.0 JSON string (WASM2 variant name) */
   load_ocel2_from_json?(content: string): string;
 
+  /** Load an OCEL 2.0 NDJSON string */
+  load_ocel2_from_ndjson?(content: string): string;
+
+  query_provenance_traversal?(ocel_handle: string, query_json: string): string;
+  validate_ocel?(ocel_handle: string): string;
+
   /** Get all traces from an EventLog as activity sequences */
   get_traces?(eventlog_handle: string, activity_key: string): string[];
 
@@ -416,15 +422,15 @@ function stepTypeToAlgorithmId(stepType: PlanStepType): string {
     [PlanStepType.DISCOVER_CORRELATION_MINER]: 'correlation_miner',
     [PlanStepType.DISCOVER_COMPLEXITY_METRICS]: 'complexity_metrics',
     [PlanStepType.DISCOVER_PETRI_NET_REDUCTION]: 'petri_net_reduction',
-    [PlanStepType.DISCOVER_ALIGNMENT_FITNESS]: 'alignment_fitness',
+    [PlanStepType.DISCOVER_ALIGNMENT_FITNESS]: 'alignments',
     // Wave 1 Import/Export
-    [PlanStepType.IMPORT_PNML]: 'import_pnml',
-    [PlanStepType.IMPORT_BPMN]: 'import_bpmn',
-    [PlanStepType.CONVERT_POWL_TO_PROCESS_TREE]: 'convert_powl_to_process_tree',
-    [PlanStepType.EXPORT_YAWL]: 'export_yawl',
+    [PlanStepType.IMPORT_PNML]: 'pnml_import',
+    [PlanStepType.IMPORT_BPMN]: 'bpmn_import',
+    [PlanStepType.CONVERT_POWL_TO_PROCESS_TREE]: 'powl_to_process_tree',
+    [PlanStepType.EXPORT_YAWL]: 'yawl_export',
     // Wave 1 Simulation
-    [PlanStepType.SIMULATE_PLAYOUT]: 'simulate_playout',
-    [PlanStepType.SIMULATE_MONTE_CARLO]: 'simulate_monte_carlo',
+    [PlanStepType.SIMULATE_PLAYOUT]: 'playout',
+    [PlanStepType.SIMULATE_MONTE_CARLO]: 'monte_carlo_simulation',
     // POWL Discovery
     [PlanStepType.DISCOVER_POWL]: 'powl',
     [PlanStepType.DISCOVER_POWL_TREE]: 'powl_tree',
@@ -490,8 +496,9 @@ function emitAlgorithmSpan(
         'status': status.toLowerCase(),
       },
     };
-    if (typeof (globalThis as any)._wasm4pm_span_sink === 'function') {
-      (globalThis as any)._wasm4pm_span_sink(span);
+    const spanSink = (globalThis as Record<string, unknown>)._wasm4pm_span_sink;
+    if (typeof spanSink === 'function') {
+      spanSink(span);
     }
   } catch {
     /* never block on OTEL */
@@ -516,7 +523,7 @@ export async function implementAlgorithmStep(
   const startTime = Date.now();
 
   if (!eventLogHandle || typeof eventLogHandle !== 'string' || eventLogHandle.trim() === '') {
-    throw new KernelError('Invalid event log handle', 'MALFORMED_EVENT_LOG' as any);
+    throw new KernelError('Invalid event log handle', 'MALFORMED_EVENT_LOG');
   }
 
   // Extract algorithm type from step type
@@ -533,7 +540,7 @@ export async function implementAlgorithmStep(
           .list()
           .map((a) => a.id)
           .join(', ')}`,
-      'ALGORITHM_NOT_FOUND' as any
+      'ALGORITHM_NOT_FOUND'
     );
   }
 
@@ -547,7 +554,7 @@ export async function implementAlgorithmStep(
       throw new KernelError(
         `Missing required parameter "${paramDef.name}" for algorithm "${metadata.name}". ` +
           `Expected type: ${paramDef.type}`,
-        'INVALID_PARAMETER' as any
+        'INVALID_PARAMETER'
       );
     }
   }
@@ -564,9 +571,13 @@ export async function implementAlgorithmStep(
       }
 
       case 'process_skeleton': {
-        // Process skeleton is actually DFG with minimal parameters
-        const result = await wasmModule.discover_dfg(eventLogHandle, activityKey);
-        modelHandle = result.handle;
+        const minFrequency = (params.min_frequency as number) ?? 2;
+        const raw = await wasmModule.extract_process_skeleton(
+          eventLogHandle,
+          activityKey,
+          minFrequency
+        );
+        modelHandle = typeof raw === 'string' ? raw : (raw as { handle: string }).handle;
         break;
       }
 
@@ -691,9 +702,21 @@ export async function implementAlgorithmStep(
       }
 
       case 'optimized_dfg': {
-        // optimized_dfg is now an alias for standard discover_dfg
-        const result = await wasmModule.discover_dfg(eventLogHandle, activityKey);
-        modelHandle = result.handle;
+        const wasmAny = wasmModule as unknown as Record<string, (...args: unknown[]) => unknown>;
+        const fn = wasmAny.discover_optimized_dfg ?? wasmAny.discover_dfg;
+        const result = await fn(eventLogHandle, activityKey);
+        modelHandle = typeof result === 'string' ? result : (result as { handle: string }).handle;
+        break;
+      }
+
+      case 'simd_streaming_dfg': {
+        const wasmAny = wasmModule as unknown as Record<string, (...args: unknown[]) => unknown>;
+        const fn = wasmAny.discover_dfg_simd_handle ?? wasmAny.discover_dfg_simd;
+        if (!fn) {
+          throw new Error('discover_dfg_simd is not available');
+        }
+        const result = await fn(eventLogHandle, activityKey);
+        modelHandle = typeof result === 'string' ? result : (result as { handle: string }).handle;
         break;
       }
 
@@ -719,7 +742,7 @@ export async function implementAlgorithmStep(
           throw new KernelError(
             `POWL discovery requires log_json parameter. ` +
               `Use Kernel.run_powl() instead of Kernel.run() for POWL discovery.`,
-            'INVALID_PARAMETER' as any
+            'INVALID_PARAMETER'
           );
         }
 
@@ -924,7 +947,7 @@ export async function implementAlgorithmStep(
         );
         const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
         const result = await classifyTraces(features, {
-          method: params.method as any,
+          method: params.method as import('@wasm4pm/ml').ClassificationMethod | undefined,
           k: params.k as number,
         });
         modelHandle = JSON.stringify(result);
@@ -950,7 +973,7 @@ export async function implementAlgorithmStep(
         );
         const features = typeof rawFeatures === 'string' ? JSON.parse(rawFeatures) : rawFeatures;
         const result = await clusterTraces(features, {
-          method: params.method as any,
+          method: params.method as import('@wasm4pm/ml').ClusteringMethod | undefined,
           k: (params.k as number) ?? 3,
           eps: (params.eps as number) ?? 1.0,
         });
@@ -1046,7 +1069,7 @@ export async function implementAlgorithmStep(
               .list()
               .map((a) => a.id)
               .join(', ')}`,
-          'ALGORITHM_NOT_FOUND' as any
+          'ALGORITHM_NOT_FOUND'
         );
     }
 
@@ -1054,7 +1077,7 @@ export async function implementAlgorithmStep(
     if (!modelHandle || typeof modelHandle !== 'string') {
       throw new KernelError(
         `Invalid model handle returned by WASM function. Expected string, got: ${typeof modelHandle}`,
-        'ALGORITHM_FAILED' as any
+        'ALGORITHM_FAILED'
       );
     }
 
@@ -1102,14 +1125,14 @@ export async function implementAlgorithmStep(
       throw new KernelError(
         `Invalid event log handle: "${eventLogHandle}". ` +
           `Make sure an event log was loaded before running discovery algorithms.`,
-        'INVALID_MODEL_HANDLE' as any,
+        'INVALID_MODEL_HANDLE',
         context
       );
     }
 
     throw new KernelError(
       `Failed to execute algorithm "${algorithmId}" (${metadata?.name ?? algorithmId}): ${errorMessage}`,
-      errorCode as any,
+      errorCode,
       context
     );
   }

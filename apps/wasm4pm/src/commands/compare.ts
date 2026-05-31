@@ -1,5 +1,5 @@
 import { defineCommand } from 'citty';
-import { ALGORITHM_CLI_ALIASES } from '@wasm4pm/contracts';
+import { ALGORITHM_CLI_ALIASES, resolveAlgorithmId } from '@wasm4pm/contracts';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
@@ -16,7 +16,8 @@ import {
 import { exitWithFlush } from '../otel/exit.js';
 
 /**
- * Algorithms supported by `wpm compare`.
+ * Discovery algorithms supported by `wpm compare` (side-by-side benchmark subset).
+ * Use `wpm run -a <id>` for the full kernel registry (~60 algorithms including OCEL, ML, drift).
  * Each entry describes how to invoke the discovery function via the WASM module.
  */
 const ALGORITHMS = [
@@ -37,6 +38,18 @@ const ALGORITHMS = [
 ] as const;
 
 type Algorithm = (typeof ALGORITHMS)[number];
+
+const COMPARE_REGISTRY_IDS = Object.keys(ALGORITHM_CLI_ALIASES).filter((registryId) =>
+  ALGORITHMS.includes(ALGORITHM_CLI_ALIASES[registryId] as Algorithm)
+);
+
+/** Resolve user input to a compare-supported CLI alias key. */
+function resolveCompareAlgorithm(input: string): Algorithm | undefined {
+  const registryId = resolveAlgorithmId(input, COMPARE_REGISTRY_IDS);
+  if (!registryId) return undefined;
+  const alias = ALGORITHM_CLI_ALIASES[registryId] as Algorithm;
+  return ALGORITHMS.includes(alias) ? alias : undefined;
+}
 
 /**
  * Static registry of Van der Aalst quality dimensions per algorithm.
@@ -230,6 +243,16 @@ interface ModelStats {
    * For authoritative Van der Aalst scores run `wpm quality <log.xes>`.
    */
   quality_tier_is_proxy: true;
+  /**
+   * Live token-replay fitness score (0-1), only populated when --quality flag is used.
+   * null means fitness was not computed (flag not set or WASM function unavailable).
+   */
+  liveFitness?: number | null;
+  /**
+   * Live precision score (0-1), only populated when --quality flag is used.
+   * null means precision was not computed.
+   */
+  livePrecision?: number | null;
 }
 
 /**
@@ -430,7 +453,8 @@ export const compare = defineCommand({
   meta: {
     name: 'compare',
     description:
-      'Run multiple discovery algorithms on the same log side-by-side. Compare execution time, model size (nodes/edges), and quality metrics. ' +
+      'Run multiple discovery algorithms on the same log side-by-side (14 discovery aliases; use wpm run -a for the full registry). ' +
+      'Compare execution time, model size (nodes/edges), and quality metrics. ' +
       'Example: wpm compare dfg,heuristic,genetic -i process.xes',
   },
   args: {
@@ -469,6 +493,12 @@ export const compare = defineCommand({
       type: 'boolean',
       description: 'Print cache hit/miss statistics after comparison',
     },
+    quality: {
+      type: 'boolean',
+      description:
+        'After running each algorithm, attempt to compute token-replay fitness and show a quality-ranked table. ' +
+        'For authoritative Van der Aalst scores run: wpm quality <log.xes>.',
+    },
     'no-save': {
       type: 'boolean',
       description: 'Do not auto-save the receipt to .wasm4pm/receipts/',
@@ -478,6 +508,7 @@ export const compare = defineCommand({
     const format = (ctx.args.format as 'json' | 'human') ?? 'human';
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
+    const showQuality = Boolean(ctx.args.quality);
     const emitOptions = { format, verbose, quiet };
 
     // Pre-WASM validation: reject unknown format values before loading WASM.
@@ -503,6 +534,7 @@ export const compare = defineCommand({
         algorithms: String(ctx.args.algorithms ?? ''),
         input: String(ctx.args.input ?? ''),
         format,
+        quality: showQuality,
       },
       async () => {
         try {
@@ -530,15 +562,11 @@ export const compare = defineCommand({
             return await exitWithFlush(result.exit_code);
           }
 
-          // Resolve kernel IDs to CLI aliases, then validate
-          const resolved = rawAlgos.map((a) => ALGORITHM_CLI_ALIASES[a] ?? a);
-          const invalid = resolved.filter((a) => !ALGORITHMS.includes(a as Algorithm));
+          // Resolve registry IDs or CLI aliases to compare-supported keys
+          const resolved = rawAlgos.map((a) => resolveCompareAlgorithm(a));
+          const invalid = resolved.filter((a): a is undefined => a === undefined);
           if (invalid.length > 0) {
-            // rawAlgos entries that did not resolve — show what the user typed
-            const invalidRaw = rawAlgos.filter((a) => {
-              const cli = ALGORITHM_CLI_ALIASES[a] ?? a;
-              return !ALGORITHMS.includes(cli as Algorithm);
-            });
+            const invalidRaw = rawAlgos.filter((a, i) => resolved[i] === undefined);
             const result = makeErrorResult(
               'compare',
               new Error(
@@ -547,17 +575,19 @@ export const compare = defineCommand({
                   `  Usage:  wpm compare dfg,heuristic,genetic -i log.xes\n` +
                   `  Run 'wpm algorithms' to list all available algorithms with descriptions.`
               ),
-              EXIT_CODES.source_error,
+              EXIT_CODES.config_error,
               'UNKNOWN_ALGORITHMS'
             );
             emitResult(result, emitOptions);
             return await exitWithFlush(result.exit_code);
           }
 
+          const resolvedAlgos = resolved as Algorithm[];
+
           // Deduplicate algorithms — dfg,dfg is a config error: a comparison needs distinct algorithms
           const seen = new Set<string>();
           const duplicates: string[] = [];
-          for (const a of resolved) {
+          for (const a of resolvedAlgos) {
             if (seen.has(a)) {
               duplicates.push(a);
             } else {
@@ -580,24 +610,24 @@ export const compare = defineCommand({
             return await exitWithFlush(result.exit_code);
           }
 
-          if (resolved.length < 2) {
+          if (resolvedAlgos.length < 2) {
             const result = makeErrorResult(
               'compare',
               new Error(
-                `At least two algorithms are required for comparison (got ${resolved.length}).\n\n` +
+                `At least two algorithms are required for comparison (got ${resolvedAlgos.length}).\n\n` +
                   `Usage:  wpm compare dfg,heuristic -i log.xes\n` +
                   `        wpm compare dfg heuristic inductive -i log.xes\n\n` +
                   `Quick picks: dfg, heuristic, inductive, ilp, genetic\n` +
                   `Run 'wpm algorithms' to list all available algorithms.`
               ),
-              EXIT_CODES.source_error,
+              EXIT_CODES.config_error,
               'TOO_FEW_ALGORITHMS'
             );
             emitResult(result, emitOptions);
             return await exitWithFlush(result.exit_code);
           }
 
-          const algos = resolved as Algorithm[];
+          const algos = resolvedAlgos;
 
           const inputPath = ctx.args.input as string;
           const activityKey = (ctx.args['activity-key'] as string) || 'concept:name';
@@ -627,49 +657,95 @@ export const compare = defineCommand({
                 { algorithms: algos.join(','), activityKey, log: inputPath },
                 async () => {
                   for (const algo of algos) {
-                    try {
-                      const { raw, elapsedMs } = runDiscovery(wasm, algo, logHandle, activityKey);
-                      const shape = discriminate(raw, algo);
-                      const { nodes, edges } = toUniformStats(shape);
-                      const profile = ALGO_PROFILES[algo];
-                      stats.push({
-                        algorithm: algo,
-                        nodes,
-                        edges,
-                        node_count: nodes,
-                        edge_count: edges,
-                        output_type: shape.kind,
-                        variants: sharedMetrics.variants,
-                        density: sharedMetrics.density,
-                        complexity: sharedMetrics.complexity,
-                        elapsedMs,
-                        duration_ms: elapsedMs,
-                        qualityTier: profile.qualityTier,
-                        speedTier: profile.speedTier,
-                        quality_tier_is_proxy: true,
-                      });
-                    } catch (err) {
-                      // Record the failure; push a sentinel row so output is always complete
-                      const msg = err instanceof Error ? err.message : String(err);
-                      algorithmErrors.push(`${algo}: ${msg}`);
-                      const profile = ALGO_PROFILES[algo];
-                      stats.push({
-                        algorithm: algo,
-                        nodes: -1,
-                        edges: -1,
-                        node_count: -1,
-                        edge_count: -1,
-                        output_type: 'unknown' as const,
-                        variants: sharedMetrics.variants,
-                        density: sharedMetrics.density,
-                        complexity: sharedMetrics.complexity,
-                        elapsedMs: 0,
-                        duration_ms: 0,
-                        qualityTier: profile.qualityTier,
-                        speedTier: profile.speedTier,
-                        quality_tier_is_proxy: true,
-                      });
-                    }
+                    let algoStat: ModelStats | undefined;
+                    let algoError: string | undefined;
+                    await withSpanRaw(
+                      `wasm4pm.${AnalysisSpans.compareAlgo(algo)}`,
+                      { algorithm: algo, activityKey, log: inputPath, quality_tier: ALGO_PROFILES[algo].qualityTier },
+                      async () => {
+                        try {
+                          const { raw, elapsedMs } = runDiscovery(wasm, algo, logHandle, activityKey);
+                          const shape = discriminate(raw, algo);
+                          const { nodes, edges } = toUniformStats(shape);
+                          const profile = ALGO_PROFILES[algo];
+                          algoStat = {
+                            algorithm: algo,
+                            nodes,
+                            edges,
+                            node_count: nodes,
+                            edge_count: edges,
+                            output_type: shape.kind,
+                            variants: sharedMetrics.variants,
+                            density: sharedMetrics.density,
+                            complexity: sharedMetrics.complexity,
+                            elapsedMs,
+                            duration_ms: elapsedMs,
+                            qualityTier: profile.qualityTier,
+                            speedTier: profile.speedTier,
+                            quality_tier_is_proxy: true,
+                          };
+
+                          // --quality: attempt live token-replay fitness computation
+                          if (showQuality) {
+                            try {
+                              const fitnessRaw = typeof wasm['compute_token_replay_fitness'] === 'function'
+                                ? wasm['compute_token_replay_fitness'](logHandle, activityKey)
+                                : null;
+                              if (fitnessRaw !== null) {
+                                const parsed = typeof fitnessRaw === 'string' ? JSON.parse(fitnessRaw) : fitnessRaw;
+                                const fitnessVal = typeof parsed === 'number'
+                                  ? parsed
+                                  : typeof parsed?.fitness === 'number'
+                                    ? parsed.fitness
+                                    : typeof parsed?.fitness_value === 'number'
+                                      ? parsed.fitness_value
+                                      : null;
+                                algoStat.liveFitness = fitnessVal;
+                                algoStat.livePrecision = typeof parsed?.precision === 'number'
+                                  ? parsed.precision : null;
+                              } else {
+                                algoStat.liveFitness = null;
+                                algoStat.livePrecision = null;
+                              }
+                            } catch {
+                              algoStat.liveFitness = null;
+                              algoStat.livePrecision = null;
+                            }
+                          }
+                        } catch (err) {
+                          // Record the failure; push a sentinel row so output is always complete
+                          const msg = err instanceof Error ? err.message : String(err);
+                          algoError = msg;
+                          algorithmErrors.push(`${algo}: ${msg}`);
+                          const profile = ALGO_PROFILES[algo];
+                          algoStat = {
+                            algorithm: algo,
+                            nodes: -1,
+                            edges: -1,
+                            node_count: -1,
+                            edge_count: -1,
+                            output_type: 'unknown' as const,
+                            variants: sharedMetrics.variants,
+                            density: sharedMetrics.density,
+                            complexity: sharedMetrics.complexity,
+                            elapsedMs: 0,
+                            duration_ms: 0,
+                            qualityTier: profile.qualityTier,
+                            speedTier: profile.speedTier,
+                            quality_tier_is_proxy: true,
+                          };
+                        }
+                      },
+                      () => ({
+                        nodes: algoStat?.nodes ?? -1,
+                        edges: algoStat?.edges ?? -1,
+                        elapsed_ms: Math.round(algoStat?.elapsedMs ?? 0),
+                        output_type: algoStat?.output_type ?? 'unknown',
+                        status: algoError ? 'error' : 'ok',
+                        ...(algoError ? { error: algoError } : {}),
+                      })
+                    );
+                    if (algoStat) stats.push(algoStat);
                   }
                 },
                 () => ({
@@ -829,6 +905,51 @@ export const compare = defineCommand({
                 projection.log(
                   '  Legend: ▓▓▓▓▓▓▓▓ = max  ░░░░░░░░ = min   bars are relative within this comparison'
                 );
+
+                // --quality: quality-ranked comparison table
+                if (showQuality) {
+                  const withFitness = validStats.filter((st) => st.liveFitness != null);
+                  if (withFitness.length > 0) {
+                    const ranked = [...withFitness].sort((a, b) => {
+                      const fa = a.liveFitness ?? 0;
+                      const fb = b.liveFitness ?? 0;
+                      if (Math.abs(fb - fa) > 0.001) return fb - fa;
+                      return b.qualityTier - a.qualityTier;
+                    });
+                    const minSpeed = Math.min(...ranked.map((r) => r.speedTier));
+                    const maxSpeed = Math.max(...ranked.map((r) => r.speedTier));
+                    const minQuality = Math.min(...ranked.map((r) => r.qualityTier));
+                    const maxQuality = Math.max(...ranked.map((r) => r.qualityTier));
+                    projection.log('');
+                    projection.log('  ─── Quality Ranking (--quality) ─────────────────────────────');
+                    projection.log('');
+                    projection.log(
+                      `  ${'Rank'.padEnd(5)} ${'Algorithm'.padEnd(22)} ${'Speed'.padEnd(10)} ${'Quality*'.padEnd(10)} ${'Fitness'.padEnd(10)} ${'Precision'.padEnd(10)}`
+                    );
+                    projection.log(
+                      `  ${'─'.repeat(5)} ${'─'.repeat(22)} ${'─'.repeat(10)} ${'─'.repeat(10)} ${'─'.repeat(10)} ${'─'.repeat(10)}`
+                    );
+                    ranked.forEach((st, idx) => {
+                      const rank = `${idx + 1}.`;
+                      const alg = col(st.algorithm, 22);
+                      const speedBar = sparkBar(st.speedTier, minSpeed, maxSpeed, 8).padEnd(10);
+                      const qualBar = sparkBar(st.qualityTier, minQuality, maxQuality, 8).padEnd(10);
+                      const fitStr = st.liveFitness != null ? st.liveFitness.toFixed(3) : '—';
+                      const precStr = st.livePrecision != null ? st.livePrecision.toFixed(3) : '—';
+                      projection.log(
+                        `  ${rank.padEnd(5)} ${alg} ${speedBar} ${qualBar} ${fitStr.padEnd(10)} ${precStr.padEnd(10)}`
+                      );
+                    });
+                    projection.log('');
+                    projection.log('  Speed bars: lower = faster. Fitness: token-replay score (0–1). Quality*: design-time proxy.');
+                    projection.log('');
+                  } else {
+                    projection.log('');
+                    projection.log('  --quality: live fitness not available in this WASM build. Run: wpm quality <log.xes>');
+                    projection.log('');
+                  }
+                }
+
                 projection.log('');
                 projection.log('  Metric guide (process mining interpretation):');
                 projection.log(

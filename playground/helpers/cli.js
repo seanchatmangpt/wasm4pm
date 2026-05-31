@@ -4,17 +4,25 @@
  * Re-exports from @wasm4pm/testing where possible — no duplication.
  * Adds only playground-specific helpers not available in the testing package.
  */
-import { runCli, assertExitCode, EXIT_CODES } from '@wasm4pm/testing';
+import { runCli, assertExitCode, assertJsonOutput, EXIT_CODES } from '@wasm4pm/testing';
 import * as path from 'path';
 import * as url from 'url';
 const __dirname = path.dirname(url.fileURLToPath(import.meta.url));
 export const WASM4PM = path.resolve(__dirname, '../../apps/wasm4pm/dist/bin/wpm.js');
-/** Spawn the wasm4pm (wpm) CLI as a child process, capturing stdout/stderr/exitCode. */
+/** Spawn the wasm4pm (wpm) CLI as a child process, capturing stdout/stderr/exitCode.
+ *
+ * @param userArgs - CLI arguments
+ * @param options - Options: timeout (ms), env (env vars), cwd (working directory)
+ *   Note: if options is a string, it is treated as the cwd (backward compatibility)
+ */
 export function wpm(userArgs, options) {
+    // Support passing cwd as second arg directly (legacy pattern)
+    const opts = (typeof options === 'string') ? { cwd: options } : options;
     return runCli([WASM4PM, ...userArgs], {
         cliPath: 'node',
-        timeout: options?.timeout ?? 30000,
-        env: options?.env,
+        timeout: opts?.timeout ?? 30000,
+        env: opts?.env,
+        cwd: opts?.cwd,
     });
 }
 /**
@@ -42,6 +50,8 @@ export function combinedOutput(result) {
 export function resolveRepo(...segments) {
     return path.resolve(__dirname, '..', '..', ...segments);
 }
+/** Alias for wpm — backward compatibility with scenarios that import wasm4pm */
+export const wasm4pm = wpm;
 // Re-export for convenience
-export { assertExitCode, EXIT_CODES };
+export { assertExitCode, assertJsonOutput, EXIT_CODES };
 //# sourceMappingURL=cli.js.map

@@ -17,13 +17,20 @@ export interface PostgresqlConfig {
   poolSize?: number;
 }
 
+/** Minimal interface for the pg Pool that PostgresqlSink needs. */
+export interface PgPoolLike {
+  connect(): Promise<{ release(): void }>;
+  query(sql: string, values?: unknown[]): Promise<{ rows: unknown[] }>;
+  end(): Promise<void>;
+}
+
 export interface PostgresqlSinkOptions {
   config: PostgresqlConfig;
   /**
    * Optional connection pool instance (for testing/reuse).
-   * If not provided, a new pool will be created.
+   * If not provided, a new pool will be created from the optional `pg` peer dep.
    */
-  pool?: any;
+  pool?: PgPoolLike;
 }
 
 export interface PostgresqlMetrics {
@@ -33,7 +40,24 @@ export interface PostgresqlMetrics {
   fitness?: number;
   precision?: number;
   timestamp: string;
-  [key: string]: any;
+  // Allow additional columns for forward-compatibility with schema evolution.
+  [key: string]: string | number | boolean | null | undefined;
+}
+
+/**
+ * Validate that a PostgreSQL identifier (table name or column name) contains only
+ * safe characters: letters, digits, and underscores, starting with a letter or
+ * underscore.  Prevents SQL injection via user-supplied table/column names.
+ *
+ * Throws if the identifier is invalid.
+ */
+function assertSafeIdentifier(identifier: string, kind: 'table' | 'column'): void {
+  if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(identifier)) {
+    throw new Error(
+      `Invalid PostgreSQL ${kind} name: "${identifier}". ` +
+        `Only letters, digits, and underscores are allowed, starting with a letter or underscore.`
+    );
+  }
 }
 
 /**
@@ -41,14 +65,17 @@ export interface PostgresqlMetrics {
  */
 export class PostgresqlSink {
   private config: PostgresqlConfig;
-  private pool: any;
+  private pool: PgPoolLike | undefined;
   private tableName: string;
   private initialized: boolean = false;
 
   constructor(options: PostgresqlSinkOptions) {
     this.config = options.config;
     this.pool = options.pool;
-    this.tableName = options.config.table || 'wasm4pm_runs';
+    const rawTable = options.config.table || 'wasm4pm_runs';
+    // SECURITY: validate table name before it reaches any SQL string (SQL injection guard).
+    assertSafeIdentifier(rawTable, 'table');
+    this.tableName = rawTable;
   }
 
   /**
@@ -62,7 +89,8 @@ export class PostgresqlSink {
     if (!this.pool) {
       // Lazy-load pg only if needed (not imported at module level)
       try {
-        const pg = await import('pg');
+        // @ts-expect-error optional peer dep — pg is not listed as a regular dependency
+        const pg = await import('pg') as { Pool: new (opts: Record<string, unknown>) => PgPoolLike };
         const { Pool } = pg;
         this.pool = new Pool({
           host: this.config.host,
@@ -81,7 +109,7 @@ export class PostgresqlSink {
 
     // Test the connection
     try {
-      const client = await this.pool.connect();
+      const client = await this.pool!.connect();
       await client.release();
     } catch (error) {
       throw new Error(
@@ -115,7 +143,7 @@ export class PostgresqlSink {
     `;
 
     try {
-      await this.pool.query(createTableSql);
+      await this.pool!.query(createTableSql);
     } catch (error) {
       // PostgreSQL uses different syntax than the SQL above
       // Check if error is about table already existing
@@ -134,6 +162,12 @@ export class PostgresqlSink {
     await this.initialize();
 
     const columns = Object.keys(metrics).sort();
+    // SECURITY: validate every column name against the safe-identifier regex before
+    // interpolating into SQL.  The PostgresqlMetrics type has an open index signature
+    // ([key: string]) so callers could supply arbitrary column names.
+    for (const col of columns) {
+      assertSafeIdentifier(col, 'column');
+    }
     const placeholders = columns
       .map((_, i) => `$${i + 1}`)
       .join(', ');
@@ -151,7 +185,7 @@ export class PostgresqlSink {
     `;
 
     try {
-      await this.pool.query(insertSql, values);
+      await this.pool!.query(insertSql, values);
     } catch (error) {
       throw new Error(
         `Failed to write metrics to PostgreSQL: ${error instanceof Error ? error.message : String(error)}`
@@ -196,11 +230,22 @@ export class PostgresqlSink {
   /**
    * Query results from the database
    */
-  async query(sql: string, values?: any[]): Promise<any[]> {
+  async query(sql: string, values?: unknown[]): Promise<unknown[]> {
     await this.initialize();
-    const result = await this.pool.query(sql, values);
+    // After initialize(), pool is always defined
+    const result = await this.pool!.query(sql, values);
     return result.rows;
   }
+}
+
+/**
+ * Extended summary shape used at runtime — has optional quality fields not in the
+ * base ExecutionSummary contract (which only guarantees traces/objects/variants).
+ */
+interface RuntimeSummary extends ExecutionSummary {
+  traceCount?: number;
+  fitness?: number;
+  precision?: number;
 }
 
 /**
@@ -210,12 +255,13 @@ export function extractMetrics(
   result: Partial<Receipt> & { summary?: ExecutionSummary; algorithm?: { name: string } },
   runId: string
 ): PostgresqlMetrics {
+  const summary = result.summary as RuntimeSummary | undefined;
   return {
     run_id: runId,
     algorithm: result.algorithm?.name || 'unknown',
-    log_size: (result.summary as any)?.traceCount || 0,
-    fitness: (result.summary as any)?.fitness,
-    precision: (result.summary as any)?.precision,
+    log_size: summary?.traceCount ?? summary?.traces_processed ?? 0,
+    fitness: summary?.fitness,
+    precision: summary?.precision,
     timestamp: new Date().toISOString(),
   };
 }

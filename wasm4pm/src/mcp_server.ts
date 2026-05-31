@@ -168,7 +168,7 @@ export class Wasm4pmMCPServer {
       {
         name: 'check_conformance',
         description:
-          'Check if event log conforms to a process model. Returns fitness, precision, and deviations.',
+          'Check if event log conforms to a Petri Net process model using token-based replay. Returns fitness, precision, and per-trace deviations. NOTE: model_json must be an opaque Petri Net handle returned by discover_alpha_plus_plus, discover_genetic_algorithm, discover_ilp_optimization, or similar discovery tools — it is not raw JSON.',
         inputSchema: {
           type: 'object' as const,
           properties: {
@@ -178,7 +178,7 @@ export class Wasm4pmMCPServer {
             },
             model_json: {
               type: 'string',
-              description: 'Process model as JSON (Petri Net handle or serialized model)',
+              description: 'Opaque Petri Net handle returned by a discovery tool in the same session (e.g., from discover_alpha_plus_plus). Not raw JSON.',
             },
           },
           required: ['xes_content', 'model_json'],
@@ -253,7 +253,7 @@ export class Wasm4pmMCPServer {
               type: 'array',
               items: { type: 'string' },
               description:
-                'Algorithms to compare. Options: dfg, alpha_plus_plus, genetic, ilp, pso, a_star, declare, heuristic, inductive, hill_climbing, ant_colony, simulated_annealing, process_skeleton',
+                'Algorithms to compare. Options: dfg, alpha_plus_plus, genetic, ilp, pso, a_star, declare, heuristic, inductive, hill_climbing, ant_colony, simulated_annealing, process_skeleton. Note: heuristic uses dependency_threshold=0.3 (safe default; 0.8 filters almost everything on real logs).',
             },
           },
           required: ['xes_content'],
@@ -367,6 +367,10 @@ export class Wasm4pmMCPServer {
               type: 'number',
               description: 'N-gram context size (how many preceding activities to use). Default: 2',
             },
+            activity_key: {
+              type: 'string',
+              description: 'XES activity attribute key (default: concept:name)',
+            },
           },
           required: ['xes_content', 'prefix'],
         },
@@ -386,6 +390,10 @@ export class Wasm4pmMCPServer {
               type: 'array',
               items: { type: 'string' },
               description: 'Activity names executed so far in the running case',
+            },
+            activity_key: {
+              type: 'string',
+              description: 'XES activity attribute key (default: concept:name)',
             },
           },
           required: ['xes_content', 'prefix'],
@@ -611,7 +619,7 @@ export class Wasm4pmMCPServer {
       {
         name: 'discover_dfg_hierarchical',
         description:
-          'Discover a hierarchical Directly-Follows Graph by chunking the log into depth levels. Reveals sub-process structure within large event logs.',
+          'Discover a hierarchical Directly-Follows Graph by splitting the log into chunks and computing a DFG per chunk. Reveals how the process behavior changes across different trace windows. The underlying WASM function takes num_chunks, not a depth level.',
         inputSchema: {
           type: 'object' as const,
           properties: {
@@ -619,9 +627,9 @@ export class Wasm4pmMCPServer {
               type: 'string',
               description: 'XES event log content as string',
             },
-            max_depth: {
+            num_chunks: {
               type: 'number',
-              description: 'Maximum hierarchy depth. Default: 3',
+              description: 'Number of trace-window chunks to split the log into. Default: 3. Minimum: 1.',
             },
           },
           required: ['xes_content'],
@@ -660,7 +668,7 @@ export class Wasm4pmMCPServer {
             algorithm: {
               type: 'string',
               description:
-                'Override automatic algorithm selection. Options: dfg, heuristic, alpha_plus_plus, genetic, ilp, inductive. Default: auto-select based on log size and complexity.',
+                'Override automatic algorithm selection. Options: dfg, optimized_dfg, heuristic_miner. Default: dfg (auto-select is not supported; omit this field to use dfg).',
             },
             cache_key: {
               type: 'string',
@@ -870,6 +878,64 @@ export class Wasm4pmMCPServer {
           required: ['xes_content'],
         },
       },
+      // Social Network Analysis — advanced resource perspective tools
+      {
+        name: 'compute_network_metrics',
+        description:
+          'Compute graph-level social network metrics from the handover-of-work network: degree centrality, betweenness centrality, and in/out degree per resource. Answers "Who are the most central or influential resources in this process?" Returns per-node metrics plus aggregate density and average path length. Complements discover_handover_network.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            resource_key: {
+              type: 'string',
+              description: 'XES attribute key identifying the resource (default: org:resource)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'compute_clustering_coefficient',
+        description:
+          'Compute the local and global clustering coefficient of the working-together network. Answers "How tightly-knit are the resource groups in this process?" A high clustering coefficient indicates cliques (resources always work together); low indicates a dispersed collaboration structure.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            resource_key: {
+              type: 'string',
+              description: 'XES attribute key identifying the resource (default: org:resource)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
+      {
+        name: 'detect_communities',
+        description:
+          'Detect resource communities (sub-groups) in the working-together network using connected-component analysis. Answers "Which resources form natural work groups?" Returns groups of resources that frequently work together, enabling organizational insights and role discovery.',
+        inputSchema: {
+          type: 'object' as const,
+          properties: {
+            xes_content: {
+              type: 'string',
+              description: 'XES event log content as string',
+            },
+            resource_key: {
+              type: 'string',
+              description: 'XES attribute key identifying the resource (default: org:resource)',
+            },
+          },
+          required: ['xes_content'],
+        },
+      },
       // LLM-readable text encodings — high-value conversational tools
       {
         name: 'encode_variants_as_text',
@@ -1059,59 +1125,91 @@ export class Wasm4pmMCPServer {
         // Discovery algorithms — use WASM functions directly
         case 'discover_dfg': {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
-          const minFreq = (input.min_frequency as number) ?? 0;
-          if (minFreq > 0) {
-            result = wasm.discover_dfg_filtered(logHandle, 'concept:name', minFreq);
-          } else {
-            result = wasm.discover_dfg(logHandle, 'concept:name');
+          try {
+            const minFreq = (input.min_frequency as number) ?? 0;
+            if (minFreq > 0) {
+              result = wasm.discover_dfg_filtered(logHandle, 'concept:name', minFreq);
+            } else {
+              result = wasm.discover_dfg(logHandle, 'concept:name');
+            }
+          } finally {
+            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
           }
           break;
         }
 
         case 'discover_alpha_plus_plus': {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
-          result = wasm.discover_alpha_plus_plus(logHandle, 'concept:name', 0.1);
+          try {
+            result = wasm.discover_alpha_plus_plus(logHandle, 'concept:name', 0.1);
+          } finally {
+            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+          }
           break;
         }
 
         case 'discover_ilp_optimization': {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
-          result = wasm.discover_ilp_petri_net(logHandle, 'concept:name');
+          try {
+            result = wasm.discover_ilp_petri_net(logHandle, 'concept:name');
+          } finally {
+            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+          }
           break;
         }
 
         case 'discover_genetic_algorithm': {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
-          const popSize = (input.population_size as number) ?? 50;
-          const generations = (input.generations as number) ?? 100;
-          result = wasm.discover_genetic_algorithm(logHandle, 'concept:name', popSize, generations);
+          try {
+            const popSize = (input.population_size as number) ?? 50;
+            const generations = (input.generations as number) ?? 100;
+            result = wasm.discover_genetic_algorithm(logHandle, 'concept:name', popSize, generations);
+          } finally {
+            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+          }
           break;
         }
 
         case 'discover_variants': {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
-          result = wasm.analyze_trace_variants(logHandle, 'concept:name');
+          try {
+            result = wasm.analyze_trace_variants(logHandle, 'concept:name');
+          } finally {
+            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+          }
           break;
         }
 
         // Analysis
         case 'check_conformance': {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
-          const netHandle = input.model_json as string;
-          result = wasm.check_token_based_replay(logHandle, netHandle, 'concept:name');
+          try {
+            const netHandle = input.model_json as string;
+            result = wasm.check_token_based_replay(logHandle, netHandle, 'concept:name');
+          } finally {
+            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+          }
           break;
         }
 
         case 'analyze_statistics': {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
-          result = wasm.analyze_event_statistics(logHandle);
+          try {
+            result = wasm.analyze_event_statistics(logHandle);
+          } finally {
+            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+          }
           break;
         }
 
         case 'detect_bottlenecks': {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
-          const threshold = BigInt((input.threshold as number) ?? 3600);
-          result = wasm.detect_bottlenecks(logHandle, 'concept:name', 'time:timestamp', threshold);
+          try {
+            const threshold = BigInt((input.threshold as number) ?? 3600);
+            result = wasm.detect_bottlenecks(logHandle, 'concept:name', 'time:timestamp', threshold);
+          } finally {
+            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+          }
           break;
         }
 
@@ -1149,12 +1247,16 @@ export class Wasm4pmMCPServer {
         // Utilities
         case 'compare_algorithms': {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
-          const algorithms = (input.algorithms as string[]) || [
-            'dfg',
-            'alpha_plus_plus',
-            'genetic',
-          ];
-          result = this.compareAlgorithms(logHandle, algorithms);
+          try {
+            const algorithms = (input.algorithms as string[]) || [
+              'dfg',
+              'alpha_plus_plus',
+              'genetic',
+            ];
+            result = this.compareAlgorithms(logHandle, algorithms);
+          } finally {
+            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+          }
           break;
         }
 
@@ -1598,8 +1700,9 @@ export class Wasm4pmMCPServer {
         case 'discover_dfg_hierarchical': {
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
           try {
-            const maxDepth = (input.max_depth as number) ?? 3;
-            result = wasm.discover_dfg_hierarchical(logHandle, 'concept:name', maxDepth);
+            // num_chunks replaces the old max_depth parameter in the schema
+            const numChunks = ((input.num_chunks as number) ?? (input.max_depth as number) ?? 3);
+            result = wasm.discover_dfg_hierarchical(logHandle, 'concept:name', numChunks);
           } finally {
             try {
               wasm.delete_object(logHandle);
@@ -1611,29 +1714,62 @@ export class Wasm4pmMCPServer {
         }
 
         case 'streaming_log_estimate': {
+          // Build a StreamingLog from the XES content by first loading the log,
+          // extracting traces, then feeding them into the probabilistic streaming structure.
+          // streaming_log_estimate_dfg() takes a StreamingLog handle (from create_streaming_log),
+          // NOT an event log handle — they use separate handle spaces.
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          const streamHandle = wasm.create_streaming_log();
           try {
-            result = wasm.streaming_log_estimate_dfg(parseInt(logHandle, 10));
-          } finally {
-            try {
-              wasm.delete_object(logHandle);
-            } catch {
-              /* best-effort */
+            const sampleRate = (input.sample_rate as number) ?? 1.0;
+            const rawTraces = wasm.get_traces(logHandle, 'concept:name');
+            const traces: string[][] = typeof rawTraces === 'string'
+              ? JSON.parse(rawTraces)
+              : Array.isArray(rawTraces) ? rawTraces : [];
+            for (const trace of traces) {
+              if (sampleRate >= 1.0 || Math.random() < sampleRate) {
+                wasm.streaming_log_add_trace(streamHandle, trace);
+              }
             }
+            result = wasm.streaming_log_estimate_dfg(streamHandle);
+          } finally {
+            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+            try { wasm.free_streaming_log(streamHandle); } catch { /* best-effort */ }
           }
           break;
         }
 
         case 'smart_engine_run': {
+          // smart_engine_run() takes a SmartEngine handle (created via smart_engine_create)
+          // and a traces_json argument — it is NOT called with an event log handle.
+          // We create a SmartEngine, run the algorithm against the loaded log's traces,
+          // then destroy the engine.
+          // NOTE: smart_engine_run only accepts 'dfg', 'optimized_dfg', 'heuristic_miner'.
+          // The schema previously listed 'auto' as a valid value but it is not — default to 'dfg'.
           const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          let engineHandle: string | null = null;
           try {
-            const algorithm = (input.algorithm as string) || 'auto';
-            result = wasm.smart_engine_run(logHandle, algorithm, input.traces_json as string);
+            const requestedAlgo = (input.algorithm as string) || 'dfg';
+            // Map legacy / alias names to valid smart_engine algorithm names
+            const algoMap: Record<string, string> = {
+              'auto': 'dfg',
+              'heuristic': 'heuristic_miner',
+              'heuristics': 'heuristic_miner',
+              'optimized': 'optimized_dfg',
+              'alpha_plus_plus': 'dfg',  // not supported; fall back to dfg
+              'genetic': 'dfg',           // not supported; fall back to dfg
+              'ilp': 'dfg',              // not supported; fall back to dfg
+              'inductive': 'dfg',        // not supported; fall back to dfg
+            };
+            const algorithm = algoMap[requestedAlgo] ?? requestedAlgo;
+            const rawTraces = wasm.get_traces(logHandle, 'concept:name');
+            const tracesJson = typeof rawTraces === 'string' ? rawTraces : JSON.stringify(rawTraces);
+            engineHandle = String(wasm.smart_engine_create());
+            result = wasm.smart_engine_run(engineHandle, algorithm, tracesJson);
           } finally {
-            try {
-              wasm.delete_object(logHandle);
-            } catch {
-              /* best-effort */
+            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+            if (engineHandle !== null) {
+              try { wasm.smart_engine_destroy(engineHandle); } catch { /* best-effort */ }
             }
           }
           break;
@@ -1959,6 +2095,43 @@ export class Wasm4pmMCPServer {
           break;
         }
 
+        // Social Network Analysis — advanced metrics (handlers were previously missing)
+        case 'compute_network_metrics': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const resourceKey = (input.resource_key as string) ?? 'org:resource';
+            const raw = wasm.compute_network_metrics(logHandle, resourceKey);
+            result = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          } finally {
+            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+          }
+          break;
+        }
+
+        case 'compute_clustering_coefficient': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const resourceKey = (input.resource_key as string) ?? 'org:resource';
+            const raw = wasm.compute_clustering_coefficient(logHandle, resourceKey);
+            result = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          } finally {
+            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+          }
+          break;
+        }
+
+        case 'detect_communities': {
+          const logHandle = wasm.load_eventlog_from_xes(input.xes_content as string);
+          try {
+            const resourceKey = (input.resource_key as string) ?? 'org:resource';
+            const raw = wasm.detect_communities(logHandle, resourceKey);
+            result = typeof raw === 'string' ? JSON.parse(raw) : raw;
+          } finally {
+            try { wasm.delete_object(logHandle); } catch { /* best-effort */ }
+          }
+          break;
+        }
+
         // Registry
         case 'get_capability_registry': {
           result = wasm.get_capability_registry();
@@ -2123,9 +2296,12 @@ export class Wasm4pmMCPServer {
             }
           }
 
+          // get_capabilities() returns { version, features: { conformance, ml, ... } }
+          // The feature flags live under the nested 'features' key.
           const caps = features as Record<string, unknown>;
-          const conformanceReady = caps?.conformance ?? caps?.token_replay ?? false;
-          const mlReady = caps?.ml ?? caps?.machine_learning ?? false;
+          const featureFlags = (caps?.features ?? caps) as Record<string, unknown>;
+          const conformanceReady = featureFlags?.conformance ?? featureFlags?.token_replay ?? false;
+          const mlReady = featureFlags?.ml ?? featureFlags?.machine_learning ?? false;
 
           result = {
             ready,
@@ -2248,7 +2424,8 @@ export class Wasm4pmMCPServer {
             break;
           }
           case 'heuristic': {
-            const r = wasm.discover_heuristic_miner(logHandle, 'concept:name', 0.5);
+            // dependency_threshold: 0.3 is safe for real logs; 0.8 filters almost everything
+            const r = wasm.discover_heuristic_miner(logHandle, 'concept:name', 0.3);
             modelHandle = typeof r === 'object' && r?.handle ? r.handle : String(r);
             break;
           }

@@ -17,33 +17,69 @@ export { ALGORITHM_IDS } from '@wasm4pm/contracts';
 export type { AlgorithmId } from '@wasm4pm/contracts';
 
 export const algorithmIdSchema = z
-  .enum(ALGORITHM_IDS)
+  .enum(ALGORITHM_IDS, {
+    errorMap: (_issue, ctx) => {
+      const got = typeof ctx.data === 'string' ? `"${ctx.data}"` : String(ctx.data);
+      // Show first 10 algorithms to keep error concise
+      const preview = (ALGORITHM_IDS as readonly string[]).slice(0, 10).join(', ');
+      return {
+        message:
+          `algorithm.name must be one of the ${(ALGORITHM_IDS as readonly string[]).length} registered algorithms ` +
+          `(e.g. ${preview}...) — got ${got}. ` +
+          `Run "wpm doctor" to list all valid algorithm IDs.`,
+      };
+    },
+  })
   .describe('Algorithm ID: one of the registered wasm4pm kernel algorithms');
 
 // --- Enum Schemas ---
 
 export const sourceKindSchema = z
-  .enum(['file', 'stream', 'http'] as const)
+  .enum(['file', 'stream', 'http'] as const, {
+    errorMap: (_issue, ctx) => ({
+      message: `source.kind must be one of: file, stream, http — got "${ctx.data}"`,
+    }),
+  })
   .describe('Source kind: file, stream, or http');
 
 export const sinkKindSchema = z
-  .enum(['stdout', 'file', 'http'] as const)
+  .enum(['stdout', 'file', 'http'] as const, {
+    errorMap: (_issue, ctx) => ({
+      message: `sink.kind must be one of: stdout, file, http — got "${ctx.data}"`,
+    }),
+  })
   .describe('Sink kind: stdout, file, or http');
 
 export const executionProfileSchema = z
-  .enum(['fast', 'balanced', 'quality', 'stream'] as const)
+  .enum(['fast', 'balanced', 'quality', 'stream'] as const, {
+    errorMap: (_issue, ctx) => ({
+      message: `execution.profile must be one of: fast, balanced, quality, stream — got "${ctx.data}"`,
+    }),
+  })
   .describe('Execution profile: fast, balanced, quality, or stream');
 
 export const outputFormatSchema = z
-  .enum(['human', 'json'] as const)
+  .enum(['human', 'json'] as const, {
+    errorMap: (_issue, ctx) => ({
+      message: `output.format must be one of: human, json — got "${ctx.data}"`,
+    }),
+  })
   .describe('Output format: human or json');
 
 export const logLevelSchema = z
-  .enum(['debug', 'info', 'warn', 'error'] as const)
+  .enum(['debug', 'info', 'warn', 'error'] as const, {
+    errorMap: (_issue, ctx) => ({
+      message: `observability.logLevel must be one of: debug, info, warn, error — got "${ctx.data}"`,
+    }),
+  })
   .describe('Log level: debug, info, warn, or error');
 
 export const otelExporterSchema = z
-  .enum(['otlp', 'console', 'none'] as const)
+  .enum(['otlp', 'console', 'none'] as const, {
+    errorMap: (_issue, ctx) => ({
+      message: `observability.otel.exporter must be one of: otlp, console, none — got "${ctx.data}"`,
+    }),
+  })
   .describe('OpenTelemetry exporter type');
 
 // --- Sub-Schemas ---
@@ -232,8 +268,20 @@ export const outputConfigSchema = z
 export const executionConfigSchema = z
   .object({
     profile: executionProfileSchema.default('balanced'),
-    timeout: z.number().int().positive().optional(),
-    maxMemory: z.number().int().positive().optional(),
+    timeout: z
+      .number()
+      .int()
+      .positive({
+        message: 'execution.timeout must be a positive number (milliseconds, e.g. 30000 for 30 seconds)',
+      })
+      .optional(),
+    maxMemory: z
+      .number()
+      .int()
+      .positive({
+        message: 'execution.maxMemory must be a positive number (bytes, e.g. 1073741824 for 1GB)',
+      })
+      .optional(),
   })
   .describe('Execution configuration');
 
@@ -557,6 +605,31 @@ export const membraneConfigSchema = z.object({
   envelopes:       membraneEnvelopesSchema.default({}),
 }).describe('AutoMembrane — pre-execution 5-layer conformance membrane (actor/object/route/automl/custody)');
 
+export const supabaseTableNamesConfigSchema = z
+  .object({
+    commandReceipts: z.string().min(1).default('wpm_command_receipts'),
+    truexEnvelopes: z.string().min(1).default('truex_envelopes'),
+    syncQueueDeadletter: z.string().min(1).default('sync_queue_deadletter'),
+  })
+  .default({});
+
+export const supabaseIntegrationConfigSchema = z
+  .object({
+    url: z.string().url(),
+    anonKey: z.string().min(1),
+    serviceRoleKey: z.string().min(1).optional(),
+    edgeFunctionTruexIngest: z.string().min(1).default('truex-ingest'),
+    tables: supabaseTableNamesConfigSchema,
+  })
+  .describe('Supabase integration for receipt sync and TrueX ingest');
+
+export const integrationsConfigSchema = z
+  .object({
+    supabase: supabaseIntegrationConfigSchema.optional(),
+  })
+  .optional()
+  .describe('External service integrations');
+
 // --- Root Schema ---
 
 export const configSchema = z
@@ -575,6 +648,7 @@ export const configSchema = z
     rl: rlConfigSchema.optional(),
     membrane: membraneConfigSchema.optional(),
     swarm: swarmConfigSchema.optional(),
+    integrations: integrationsConfigSchema,
   })
   .describe('wasm4pm configuration');
 
@@ -588,13 +662,49 @@ export const configSchema = z
  *     [rl.convergence.min_cycles] Number must be greater than 0
  *     [ml.tasks.0] Invalid enum value. Expected 'classify' | … , received 'foo'
  *
+ * Long enum option lists (e.g. algorithm.name with 36+ IDs) are truncated to the
+ * first 5 options followed by "… (N total)" so the error stays readable.
+ *
  * For advanced error formatting with suggestions and constraints, use
  * formatDetailedZodError from the validation module.
  */
 function formatZodErrors(error: z.ZodError, header = 'Configuration validation failed'): string {
+  /**
+   * Truncate long "Expected 'a' | 'b' | … , received 'x'" messages.
+   *
+   * Handles two Zod formats:
+   *   invalid_enum_value: "Invalid enum value. Expected 'a' | 'b', received 'x'"
+   *   invalid_type (enum):  "Expected 'a' | 'b', received number"
+   * Both can produce the full 37-option algorithm list; truncate to first 5 + count.
+   */
+  function trimEnumMessage(msg: string): string {
+    // Format 1 — Zod invalid_enum_value:
+    //   "Invalid enum value. Expected 'a' | 'b' | 'c', received 'x'"
+    const m1 = msg.match(/^(Invalid enum value\. Expected )(.*)(, received .*)$/s);
+    if (m1) {
+      const [, prefix, options, suffix] = m1;
+      const parts = options.split(' | ');
+      if (parts.length <= 6) return msg;
+      const shown = parts.slice(0, 5).join(' | ');
+      return `${prefix}${shown} | … (${parts.length} total)${suffix}`;
+    }
+    // Format 2 — Zod invalid_type on a ZodEnum field:
+    //   "Expected 'a' | 'b' | 'c', received number"
+    const m2 = msg.match(/^(Expected )((?:'[^']*' \| )*'[^']*')(, received .*)$/s);
+    if (m2) {
+      const [, prefix, options, suffix] = m2;
+      const parts = options.split(' | ');
+      if (parts.length <= 6) return msg;
+      const shown = parts.slice(0, 5).join(' | ');
+      return `${prefix}${shown} | … (${parts.length} total)${suffix}`;
+    }
+    return msg;
+  }
+
   const lines = error.errors.map((err) => {
-    const path = err.path.length > 0 ? err.path.join('.') : '(root)';
-    return `  [${path}] ${err.message}`;
+    const fieldPath = err.path.length > 0 ? err.path.join('.') : '(root)';
+    const message = trimEnumMessage(err.message);
+    return `  [${fieldPath}] ${message}`;
   });
   const count = error.errors.length;
   return `${header} (${count} issue${count === 1 ? '' : 's'}):\n${lines.join('\n')}`;

@@ -31,6 +31,29 @@ pub fn discover_inductive_miner_from_log(log: &EventLog, activity_key: &str) -> 
     }
 }
 
+/// Discover a process tree using the Inductive Miner algorithm.
+///
+/// Guarantees a **sound** process model (no deadlocks, always-terminates). The output
+/// is a recursive process tree rather than a DFG or Petri net.
+///
+/// # Parameters
+/// * `eventlog_handle` — Handle from `load_eventlog_from_xes` / `load_eventlog_from_json`.
+/// * `activity_key` — XES attribute to use as activity label (e.g. `"concept:name"`).
+///
+/// # Returns
+/// `Result<JsValue, JsValue>` — On success:
+/// ```json
+/// {
+///   "algorithm": "inductive_miner",
+///   "root": { "node_type": "sequence" | "xor" | "parallel" | "loop" | "leaf", "label": "...", "children": [...] },
+///   "nodes": 7
+/// }
+/// ```
+///
+/// # Note
+/// Activities are sorted deterministically before splitting. The tree structure is always
+/// deterministic for the same input log. Use this instead of `discover_dfg` when you need
+/// soundness guarantees.
 #[wasm_bindgen]
 pub fn discover_inductive_miner(
     eventlog_handle: &str,
@@ -149,9 +172,14 @@ fn build_df_subset(
     activities: &[String],
     activity_key: &str,
 ) -> FxHashMap<(String, String), usize> {
-    let mut df = FxHashMap::default();
-    let activity_set: HashSet<_> = activities.iter().cloned().collect();
-    let _ = &activity_set; // Used in loop check below
+    // Map activity name → index so the hot inner loop uses integer pairs
+    // instead of cloned String keys. We only materialise (String,String) keys
+    // once at the end, not once per directly-follows occurrence.
+    let idx_map: FxHashMap<&str, usize> =
+        activities.iter().enumerate().map(|(i, s)| (s.as_str(), i)).collect();
+
+    // Integer-keyed counting: ~12 bytes/entry vs. ~80 bytes for (String,String).
+    let mut int_df: FxHashMap<(usize, usize), usize> = FxHashMap::default();
 
     for trace in &log.traces {
         for i in 0..trace.events.len().saturating_sub(1) {
@@ -160,32 +188,46 @@ fn build_df_subset(
 
             if let (Some(AttributeValue::String(c)), Some(AttributeValue::String(n))) = (curr, next)
             {
-                if activity_set.contains(c) && activity_set.contains(n) {
-                    *df.entry((c.clone(), n.clone())).or_insert(0) += 1;
+                if let (Some(&ci), Some(&ni)) = (idx_map.get(c.as_str()), idx_map.get(n.as_str())) {
+                    *int_df.entry((ci, ni)).or_insert(0) += 1;
                 }
             }
         }
     }
 
-    df
+    // Convert integer-indexed edges back to String keys once (not per event).
+    int_df
+        .into_iter()
+        .map(|((ci, ni), cnt)| ((activities[ci].clone(), activities[ni].clone()), cnt))
+        .collect()
 }
 
 fn find_xor_cut(
     activities: &[String],
     df: &FxHashMap<(String, String), usize>,
 ) -> Option<(Vec<String>, Vec<String>)> {
-    // Find partition with zero edges between sets (any split counts if no edges cross)
-    for i in 1..activities.len() {
-        let left: Vec<_> = activities[..i].to_vec();
-        let right: Vec<_> = activities[i..].to_vec();
+    // Build index map once: activity name → position in sorted slice.
+    // This converts the O(n) Vec::contains calls inside the loop to O(1) lookups.
+    let idx: FxHashMap<&str, usize> = activities
+        .iter()
+        .enumerate()
+        .map(|(i, s)| (s.as_str(), i))
+        .collect();
 
+    for split in 1..activities.len() {
+        // A node is "left" iff its index < split.
         let has_cross_edge = df.keys().any(|(from, to)| {
-            (left.contains(from) && right.contains(to))
-                || (right.contains(from) && left.contains(to))
+            match (idx.get(from.as_str()), idx.get(to.as_str())) {
+                (Some(&fi), Some(&ti)) => (fi < split) != (ti < split),
+                _ => false,
+            }
         });
 
-        if !has_cross_edge && !left.is_empty() && !right.is_empty() {
-            return Some((left, right));
+        if !has_cross_edge {
+            return Some((
+                activities[..split].to_vec(),
+                activities[split..].to_vec(),
+            ));
         }
     }
 
@@ -196,39 +238,39 @@ fn find_sequence_cut(
     activities: &[String],
     df: &FxHashMap<(String, String), usize>,
 ) -> Option<(Vec<String>, Vec<String>)> {
-    // A→B: all edges from A go to B, all edges to B come from A
-    for i in 1..activities.len() {
-        let left: Vec<_> = activities[..i].to_vec();
-        let right: Vec<_> = activities[i..].to_vec();
+    // Build index map once for O(1) membership tests.
+    let idx: FxHashMap<&str, usize> = activities
+        .iter()
+        .enumerate()
+        .map(|(i, s)| (s.as_str(), i))
+        .collect();
 
+    for split in 1..activities.len() {
         let mut valid = true;
 
-        // Check: no edges within left, no edges within right, all edges are left→right or right-only
         for (from, to) in df.keys() {
-            let from_in_left = left.contains(from);
-            let from_in_right = right.contains(from);
-            let to_in_left = left.contains(to);
-            let to_in_right = right.contains(to);
-
-            match (from_in_left, from_in_right, to_in_left, to_in_right) {
-                (true, false, true, false) => {
-                    valid = false;
-                    break;
-                } // left→left (bad)
-                (false, true, false, true) => {
-                    valid = false;
-                    break;
-                } // right→right (bad)
-                (false, true, true, false) => {
-                    valid = false;
-                    break;
-                } // right→left (bad)
+            let fi = idx.get(from.as_str()).copied();
+            let ti = idx.get(to.as_str()).copied();
+            // left  = index < split, right = index >= split
+            match (fi, ti) {
+                (Some(f), Some(t)) => {
+                    let f_left = f < split;
+                    let t_left = t < split;
+                    // Disallowed: left→left, right→right, right→left
+                    if f_left == t_left || (!f_left && t_left) {
+                        valid = false;
+                        break;
+                    }
+                }
                 _ => {}
             }
         }
 
-        if valid && !left.is_empty() && !right.is_empty() {
-            return Some((left, right));
+        if valid {
+            return Some((
+                activities[..split].to_vec(),
+                activities[split..].to_vec(),
+            ));
         }
     }
 
@@ -243,6 +285,25 @@ fn find_parallel_cut(
     if n < 2 {
         return None;
     }
+
+    // Build an integer-indexed edge set to avoid String clones in the O(n²) loop
+    // below. The df map uses (String,String) keys; a single pass converts those
+    // keys to (usize,usize) index pairs so that inner-loop membership tests are
+    // O(1) integer comparisons with zero heap allocation.
+    let idx_map: FxHashMap<&str, usize> = activities
+        .iter()
+        .enumerate()
+        .map(|(i, s)| (s.as_str(), i))
+        .collect();
+    // Use a flat bitset-style approach: for n ≤ usize activities, store adjacency
+    // as a HashSet of (usize,usize) pairs.  This is built once and queried O(1).
+    use rustc_hash::FxHashSet;
+    let df_idx: FxHashSet<(usize, usize)> = df
+        .keys()
+        .filter_map(|(from, to)| {
+            Some((*idx_map.get(from.as_str())?, *idx_map.get(to.as_str())?))
+        })
+        .collect();
 
     // Union-Find: group activities connected by bidirectional df-edges.
     let mut parent: Vec<usize> = (0..n).collect();
@@ -265,8 +326,9 @@ fn find_parallel_cut(
 
     for i in 0..n {
         for j in (i + 1)..n {
-            let ab = df.contains_key(&(activities[i].clone(), activities[j].clone()));
-            let ba = df.contains_key(&(activities[j].clone(), activities[i].clone()));
+            // Integer-indexed lookup: zero String allocations per pair.
+            let ab = df_idx.contains(&(i, j));
+            let ba = df_idx.contains(&(j, i));
             if ab && ba {
                 uf_union(&mut parent, i, j);
             }
@@ -293,17 +355,29 @@ fn find_loop_cut(
     activities: &[String],
     df: &FxHashMap<(String, String), usize>,
 ) -> Option<(Vec<String>, Vec<String>)> {
-    // Body→Redo partition where Redo has edges back to Body
-    for i in 1..activities.len() {
-        let body: Vec<_> = activities[..i].to_vec();
-        let redo: Vec<_> = activities[i..].to_vec();
+    // Build index map once for O(1) membership tests instead of O(n) Vec::contains.
+    let idx: FxHashMap<&str, usize> = activities
+        .iter()
+        .enumerate()
+        .map(|(i, s)| (s.as_str(), i))
+        .collect();
 
-        let has_redo_to_body = df
-            .keys()
-            .any(|(from, to)| redo.contains(from) && body.contains(to));
+    // Body→Redo partition where Redo has edges back to Body.
+    // body  = activities[..split] (index < split)
+    // redo  = activities[split..] (index >= split)
+    for split in 1..activities.len() {
+        let has_redo_to_body = df.keys().any(|(from, to)| {
+            match (idx.get(from.as_str()), idx.get(to.as_str())) {
+                (Some(&fi), Some(&ti)) => fi >= split && ti < split,
+                _ => false,
+            }
+        });
 
-        if has_redo_to_body && !body.is_empty() && !redo.is_empty() {
-            return Some((body, redo));
+        if has_redo_to_body {
+            return Some((
+                activities[..split].to_vec(),
+                activities[split..].to_vec(),
+            ));
         }
     }
 
@@ -412,9 +486,12 @@ pub fn discover_simulated_annealing_from_log(
     let col_owned = log.to_columnar_owned(activity_key);
     let col = ColumnarLog::from_owned(&col_owned);
 
-    let mut edge_vocab: Vec<(u32, u32)> = Vec::new();
-    let mut edge_freq: FxHashMap<(u32, u32), f64> = FxHashMap::default();
-    let mut node_freq: FxHashMap<u32, usize> = FxHashMap::default();
+    // Pre-size with n²/4 capacity (sparse DFG heuristic) to avoid repeated rehashes.
+    let n_vocab = col.vocab.len();
+    let edge_cap = n_vocab.saturating_mul(n_vocab) / 4 + 1;
+    let mut edge_vocab: Vec<(u32, u32)> = Vec::with_capacity(edge_cap);
+    let mut edge_freq: FxHashMap<(u32, u32), f64> = FxHashMap::with_capacity_and_hasher(edge_cap, Default::default());
+    let mut node_freq: FxHashMap<u32, usize> = FxHashMap::with_capacity_and_hasher(n_vocab + 1, Default::default());
     for t in 0..col.trace_offsets.len().saturating_sub(1) {
         let start = col.trace_offsets[t];
         let end = col.trace_offsets[t + 1];
@@ -452,18 +529,28 @@ pub fn discover_simulated_annealing_from_log(
     let mut temp = temperature;
 
     while temp > 0.01 {
-        let mut neighbor = current_edges.clone();
-        if rng.gen::<f64>() < 0.5 && !current_edges.is_empty() {
+        // Mutate current_edges in-place instead of cloning a full neighbour copy.
+        // Track what was changed so we can undo it on rejection — O(1) allocation
+        // instead of O(edges) per temperature step.
+        enum Move { Removed((u32, u32)), Added((u32, u32)) }
+        let mv: Option<Move> = if rng.gen::<f64>() < 0.5 && !current_edges.is_empty() {
             // Sort for deterministic selection independent of HashSet RandomState.
-            let mut edges_sorted: Vec<(u32, u32)> = neighbor.iter().copied().collect();
+            let mut edges_sorted: Vec<(u32, u32)> = current_edges.iter().copied().collect();
             edges_sorted.sort_unstable();
             let pick = (rng.gen::<f64>() * edges_sorted.len() as f64) as usize;
-            neighbor.remove(&edges_sorted[pick]);
+            let edge = edges_sorted[pick];
+            current_edges.remove(&edge);
+            Some(Move::Removed(edge))
         } else if !edge_vocab.is_empty() {
             let idx = (rng.gen::<f64>() * edge_vocab.len() as f64) as usize;
-            neighbor.insert(edge_vocab[idx]);
-        }
-        let neighbor_fitness = evaluate_edges_fitness(&neighbor, &col, vocab_len);
+            let edge = edge_vocab[idx];
+            current_edges.insert(edge);
+            Some(Move::Added(edge))
+        } else {
+            None
+        };
+
+        let neighbor_fitness = evaluate_edges_fitness(&current_edges, &col, vocab_len);
         let delta = neighbor_fitness - current_fitness;
         // Fix (PR #54 SPC NaN class): if either fitness was NaN, `delta` is NaN and
         // `delta >= 0.0` is false; `(NaN/temp).exp()` is also NaN and `rng.gen() < NaN`
@@ -475,11 +562,17 @@ pub fn discover_simulated_annealing_from_log(
             delta >= 0.0 || rng.gen::<f64>() < (delta / temp).exp()
         };
         if accept {
-            current_edges = neighbor;
             current_fitness = neighbor_fitness;
             if current_fitness > best_fitness {
                 best_fitness = current_fitness;
                 best_edges = current_edges.clone();
+            }
+        } else {
+            // Undo the move: restore the single changed edge.
+            match mv {
+                Some(Move::Removed(e)) => { current_edges.insert(e); }
+                Some(Move::Added(e))   => { current_edges.remove(&e); }
+                None => {}
             }
         }
         temp *= cooling_rate;
@@ -596,8 +689,8 @@ pub fn analyze_activity_dependencies(
                 .map(|activity| {
                     json!({
                         "activity": activity,
-                        "predecessors": predecessors.get(activity).map(|s| s.len()).unwrap_or(0),
-                        "successors": successors.get(activity).map(|s| s.len()).unwrap_or(0),
+                        "predecessors": predecessors.get(activity).map_or(0, |s| s.len()),
+                        "successors": successors.get(activity).map_or(0, |s| s.len()),
                     })
                 })
                 .collect();

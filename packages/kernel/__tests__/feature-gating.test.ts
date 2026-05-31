@@ -16,6 +16,7 @@
  * bundler default, not a size-constrained target.
  */
 
+import { describe, test, expect, beforeAll } from 'vitest';
 import { getRegistry, DeploymentProfile, ExecutionProfile } from '../src/registry';
 
 describe('Feature Gating - Algorithm Registry Integration', () => {

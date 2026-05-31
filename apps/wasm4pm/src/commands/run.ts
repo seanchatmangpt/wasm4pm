@@ -2,8 +2,8 @@ import { defineCommand } from 'citty';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { resolveConfig as loadConfig } from '@wasm4pm/config';
-import { plan as makePlan } from '@wasm4pm/planner';
-import { ALGORITHM_CLI_ALIASES, findClosestMatch, getProfileAlgorithms } from '@wasm4pm/contracts';
+import { plan as makePlan, getSuggestions } from '@wasm4pm/planner';
+import { ALGORITHM_CLI_ALIASES, findClosestMatch, getProfileAlgorithms, resolveAlgorithmId } from '@wasm4pm/contracts';
 import { getRegistry } from 'wasm4pm';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { withLogSession } from '../with-log-session.js';
@@ -11,8 +11,9 @@ import { EXIT_CODES } from '../exit-codes.js';
 import { savePredictionResult } from './results.js';
 import { executeMlTask } from '../ml-runner.js';
 import type { MlTask } from '../ml-runner.js';
-import { discriminate, DiscoveryShapeError } from '../discriminator.js';
+import { discriminateWithSpan, DiscoveryShapeError } from '../discriminator.js';
 import { withSpan, withWasmSpan } from './_otel.js';
+import { getGlobalSpanSink } from '../otel/sink.js';
 import {
   saveCommandReceipt,
   blake3Hex,
@@ -21,6 +22,7 @@ import {
 } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
 import { isFirstRun, formatFirstRunHints } from '../first-run-ux.js';
+import { rankAlgorithms, captureFeedback } from '@wasm4pm/observability';
 import { STANDARD_EXIT_CODE_DOCS } from '../help-standards.js';
 
 export interface RunOptions {
@@ -89,7 +91,12 @@ export const run = defineCommand({
     },
     algorithm: {
       type: 'string',
-      description: `Discovery algorithm — use -a as shorthand — one of: ${ALGORITHMS.join(', ')} (default: heuristic)`,
+      description:
+        'Discovery algorithm to use (default: heuristic_miner, or the value in wasm4pm.toml).\n' +
+        '  Common: dfg, heuristic_miner, inductive_miner, genetic_algorithm, ilp, alpha_plus_plus\n' +
+        '  OCEL:   ocel_dfg, ocel_petri_net\n' +
+        '  Fast:   simd_streaming_dfg, process_skeleton\n' +
+        '  Run "wpm algorithms" for the full list with speed/quality ratings.',
       alias: 'a',
     },
     output: {
@@ -137,6 +144,12 @@ export const run = defineCommand({
       description:
         'Use smart execution engine with caching (shortcut for --algorithm smart-engine)',
     },
+    smart: {
+      type: 'boolean',
+      description:
+        'Smart mode: run dfg, heuristic_miner, and alpha_plus_plus in parallel, rank by quality, ' +
+        'and return the best result. Slower than single-algorithm mode but auto-selects the best model.',
+    },
     'no-cache': {
       type: 'boolean',
       description: 'Disable all caching (parse, columnar, interner)',
@@ -183,6 +196,12 @@ export const run = defineCommand({
     stream: {
       type: 'boolean',
       description: 'Show elapsed time during discovery (for long-running algorithms)',
+    },
+    'auto-select': {
+      type: 'boolean',
+      description:
+        'Automatically pick the best algorithm for the configured execution profile ' +
+        '(fast | balanced | quality | stream). Ignores --algorithm flag when set.',
     },
   },
   async run(ctx) {
@@ -242,6 +261,7 @@ export const run = defineCommand({
           const rawAlgo: string =
             shortcutAlgo ??
             (ctx.args.algorithm as string | undefined) ??
+            config?.algorithm?.name ??
             (() => {
               const profile = config?.execution?.profile ?? 'balanced';
               // fast profile: always dfg (O(n), no overhead)
@@ -249,7 +269,7 @@ export const run = defineCommand({
               // all other profiles: first algorithm from the canonical profile registry
               // quality → simulated_annealing (index 0), balanced → alpha_plus_plus, stream → simd_streaming_dfg
               const profileAlgos = getProfileAlgorithms(profile);
-              return profileAlgos[0] ?? 'heuristic';
+              return profileAlgos[0] ?? 'heuristic_miner';
             })();
 
           // Guard: empty or whitespace-only --algorithm is a config error (not source error).
@@ -273,20 +293,77 @@ export const run = defineCommand({
             }
           }
 
-          // Accept kernel registry IDs (heuristic_miner) or CLI aliases (heuristic)
-          let resolvedAlgo: Algorithm | undefined =
-            (ALGORITHM_CLI_ALIASES[rawAlgo] as Algorithm | undefined) ??
-            (() => {
-              const algoLower = rawAlgo.toLowerCase().replace(/[+_]/g, '-');
-              return ALGORITHMS.find(
-                (a) => a === algoLower || a === algoLower.replace(/-plus-plus/, '-')
+          // --auto-select: quick-analyse the log to pick the best algorithm for the
+          // configured execution profile.  Runs before the file I/O validation step so
+          // that we can print the selection message before any heavy work starts.
+          // We derive stats from the raw file when we later load it; here we do a cheap
+          // stat() to get a size proxy for trace estimation, then let getSuggestions()
+          // map the profile to a goal.
+          let autoSelectedAlgo: string | undefined;
+          if (ctx.args['auto-select']) {
+            try {
+              const profileToGoal: Record<string, string> = {
+                fast: 'fast',
+                balanced: 'balanced',
+                quality: 'quality',
+                // 'stream' profile would map to 'streaming' goal, but streaming-only
+                // algorithms (e.g. simd_streaming_dfg) are not usable by the batch `run`
+                // command.  Fall back to balanced so auto-select picks a real batch algorithm.
+                stream: 'balanced',
+              };
+              const profile = config?.execution?.profile ?? 'balanced';
+              const goal = (profileToGoal[profile] ?? 'balanced') as import('@wasm4pm/planner').SuggestionGoal;
+
+              // Rough stats without loading the file: use file size to estimate event count.
+              // 1 event ≈ 250 bytes in XES is a reasonable heuristic.
+              const inputPathEarly: string | undefined =
+                (ctx.args.input as string | undefined) || (ctx.args.file as string | undefined);
+              let estTraces = 500;
+              let estEvents = 2500;
+              if (inputPathEarly) {
+                try {
+                  const statResult = await fs.stat(inputPathEarly);
+                  estEvents = Math.max(1, Math.round(statResult.size / 250));
+                  estTraces = Math.max(1, Math.round(estEvents / 5));
+                } catch {
+                  // stat failed — use defaults
+                }
+              }
+
+              const suggestions = getSuggestions(
+                { traceCount: estTraces, eventCount: estEvents, variantCount: Math.round(estTraces * 0.1) },
+                goal,
+                1,
               );
-            })();
+
+              if (suggestions[0]) {
+                autoSelectedAlgo = suggestions[0].algorithm;
+                if (!quiet && format === 'human') {
+                  process.stderr.write(
+                    `Auto-selected algorithm: ${autoSelectedAlgo} ` +
+                    `(quality=${suggestions[0].quality}, speed=${suggestions[0].speed}) ` +
+                    `for profile=${profile}\n`
+                  );
+                }
+              }
+            } catch {
+              // Auto-select is best-effort; fall through to normal resolution
+            }
+          }
+
+          // Accept kernel registry IDs (heuristic_miner) or CLI aliases (heuristic)
+          const resolvedAlgo: Algorithm | undefined = resolveAlgorithmId(
+            autoSelectedAlgo ?? rawAlgo,
+            ALGORITHMS
+          );
 
           if (!resolvedAlgo) {
-            // An unknown algorithm name is a config_error (1): the user specified an
-            // invalid value via --algorithm.  source_error (2) is reserved for I/O
-            // failures (file not found, unreadable log), not user typos in flag values.
+            // An unknown algorithm name is source_error (2) — intentional wasm4pm design.
+            // The algorithm registry is part of the source/data layer (WASM kernel), not
+            // the CLI configuration layer. config_error (1) is for malformed flags and
+            // missing required arguments; source_error (2) covers bad algorithm IDs because
+            // the algorithm list is resolved at runtime from the WASM kernel registry.
+            // See CLAUDE.md: '"bad algorithm" exit code is SOURCE_ERROR (2), not CONFIG_ERROR (1) — intentional'
             const cliAliases = Object.values(ALGORITHM_CLI_ALIASES);
             const suggestion = findClosestMatch(rawAlgo.toLowerCase(), cliAliases, 3);
             const didYouMean = suggestion ? `\nDid you mean: '${suggestion}'?` : '';
@@ -299,7 +376,7 @@ export const run = defineCommand({
                   `Common algorithms: ${discoveryAliases}\n` +
                   `Run 'wpm algorithms' to list all ${cliAliases.length} available algorithms.`
               ),
-              EXIT_CODES.config_error,
+              EXIT_CODES.source_error,
               'ALGORITHM_NOT_FOUND'
             );
             emitResult(result, emitOptions);
@@ -351,13 +428,34 @@ export const run = defineCommand({
               emitResult(result, emitOptions);
               return await exitWithFlush(result.exit_code);
             }
-          } catch (e: any) {
-             if (e.code === 'ENOENT') {
+          } catch (e: unknown) {
+             const fsErr = e as NodeJS.ErrnoException;
+             if (fsErr.code === 'ENOENT') {
                 const result = makeErrorResult(
                   'run',
-                  new Error(`File not found: ${inputPath}`),
+                  new Error(
+                    `File not found: '${inputPath}'\n\n` +
+                    `  Check the path and try again:\n` +
+                    `    ls -l ${path.dirname(inputPath)}\n\n` +
+                    `  Need a sample dataset? Run:\n` +
+                    `    wpm examples`
+                  ),
                   EXIT_CODES.source_error,
                   'FILE_NOT_FOUND'
+                );
+                emitResult(result, emitOptions);
+                return await exitWithFlush(result.exit_code);
+             }
+             if (fsErr.code === 'EACCES') {
+                const result = makeErrorResult(
+                  'run',
+                  new Error(
+                    `Permission denied reading '${inputPath}'\n\n` +
+                    `  Fix permissions with:\n` +
+                    `    chmod 644 ${inputPath}`
+                  ),
+                  EXIT_CODES.source_error,
+                  'FILE_NOT_READABLE'
                 );
                 emitResult(result, emitOptions);
                 return await exitWithFlush(result.exit_code);
@@ -461,8 +559,12 @@ export const run = defineCommand({
                     preflightErrors.push(`Schema validation failed: ${schema.message as string}`);
                   }
                 }
-              } catch {
-                // Schema validation optional
+              } catch (e) {
+                // Schema validation optional — emit skip span so it's visible in Jaeger
+                console.warn('[run] validate_log_schema skipped:', e instanceof Error ? e.message : String(e));
+                try {
+                  withWasmSpan('validate.skipped', { 'validation.step': 'validate_log_schema', 'validation.reason': String(e) }, () => undefined);
+                } catch { /* span emit must never throw */ }
               }
 
               try {
@@ -489,8 +591,12 @@ export const run = defineCommand({
                     preflightErrors.push(`Missing required attributes: ${missing.join(', ')}`);
                   }
                 }
-              } catch {
-                // Attribute validation optional
+              } catch (e) {
+                // Attribute validation optional — emit skip span so it's visible in Jaeger
+                console.warn('[run] validate_required_attributes skipped:', e instanceof Error ? e.message : String(e));
+                try {
+                  withWasmSpan('validate.skipped', { 'validation.step': 'validate_required_attributes', 'validation.reason': String(e) }, () => undefined);
+                } catch { /* span emit must never throw */ }
               }
 
               // Pass 1 failure is FATAL
@@ -498,7 +604,14 @@ export const run = defineCommand({
                 const result = makeErrorResult(
                   'run',
                   new Error(
-                    `Structural validation failed:\n${preflightErrors.map((e) => `  ✗ ${e}`).join('\n')}`
+                    `Event log '${path.basename(inputPath)}' failed structural validation:\n` +
+                    preflightErrors.map((e) => `  ✗ ${e}`).join('\n') +
+                    `\n\n  To inspect and repair the log:\n` +
+                    `    wpm validate ${path.basename(inputPath)}\n\n` +
+                    `  Common fixes:\n` +
+                    `  • Check activity attribute key (default: concept:name):\n` +
+                    `      wpm run ${path.basename(inputPath)} --activity-key your:attribute\n` +
+                    `  • Validate XES schema: ensure every <event> has concept:name and time:timestamp`
                   ),
                   EXIT_CODES.source_error,
                   'STRUCTURAL_VALIDATION_FAILED'
@@ -524,8 +637,12 @@ export const run = defineCommand({
                       preflightWarnings.push(`Data quality: ${issues} issue(s) found`);
                     }
                   }
-                } catch {
-                  // Quality validation optional
+                } catch (e) {
+                  // Quality validation optional — emit skip span so it's visible in Jaeger
+                  console.warn('[run] validate_data_quality skipped:', e instanceof Error ? e.message : String(e));
+                  try {
+                    withWasmSpan('validate.skipped', { 'validation.step': 'validate_data_quality', 'validation.reason': String(e) }, () => undefined);
+                  } catch { /* span emit must never throw */ }
                 }
               }
 
@@ -537,6 +654,92 @@ export const run = defineCommand({
                 estimatedMs = executionPlan?.budget?.estimated_duration_ms ?? 0;
               } catch {
                 // ETA estimation is optional
+              }
+
+              // Step 5d: --smart mode — run 3 fast algorithms, rank by quality, return best
+              if (ctx.args.smart) {
+                const smartCandidates = ['dfg', 'heuristic_miner', 'alpha_plus_plus'];
+                type SmartResult = { algo: string; raw: unknown; elapsedMs: number; fitness: number };
+                const smartResults: SmartResult[] = [];
+
+                for (const candidate of smartCandidates) {
+                  try {
+                    const t0 = performance.now();
+                    const kernel = new Kernel(wasm as any);
+                    await kernel.init();
+                    const candidateRaw = await kernel.runRaw(candidate, logHandle, activityKey, {});
+                    const candidateMs = performance.now() - t0;
+
+                    // Extract a simple fitness proxy: DFG edge count ratio (higher = more coverage)
+                    let fitProxy = 0.5;
+                    try {
+                      const parsed = typeof candidateRaw === 'string' ? JSON.parse(candidateRaw as string) : candidateRaw;
+                      const edges = Array.isArray((parsed as any)?.edges) ? (parsed as any).edges.length : 0;
+                      const nodes = Array.isArray((parsed as any)?.nodes) ? (parsed as any).nodes.length : 1;
+                      // Normalize: more edges relative to nodes → denser model → proxy for fitness
+                      fitProxy = Math.min(1, edges / Math.max(nodes * 2, 1));
+                    } catch { /* use default */ }
+
+                    smartResults.push({ algo: candidate, raw: candidateRaw, elapsedMs: candidateMs, fitness: fitProxy });
+
+                    // Record feedback for future rankAlgorithms calls (non-blocking)
+                    captureFeedback(candidate, 0, { fitness: fitProxy, precision: null, generalization: null, simplicity: null }, candidateMs).catch(() => { /* non-blocking */ });
+                  } catch (err) {
+                    process.stderr.write(`[smart] ${candidate} failed: ${err instanceof Error ? err.message : String(err)}\n`);
+                  }
+                }
+
+                if (smartResults.length === 0) {
+                  const errResult = makeErrorResult(
+                    'run',
+                    new Error('--smart mode: all candidate algorithms failed'),
+                    EXIT_CODES.execution_error,
+                    'SMART_MODE_ALL_FAILED'
+                  );
+                  emitResult(errResult, emitOptions);
+                  return await exitWithFlush(errResult.exit_code);
+                }
+
+                // Pick best by fitness proxy (highest score wins)
+                smartResults.sort((a, b) => b.fitness - a.fitness);
+                const best = smartResults[0];
+
+                // Try to use prior feedback ranking if available (upgrades the proxy)
+                try {
+                  const ranked = await rankAlgorithms(smartCandidates, 'composite');
+                  if (ranked.length > 0) {
+                    const topByHistory = ranked[0].algorithm;
+                    const historyBest = smartResults.find(r => r.algo === topByHistory);
+                    if (historyBest && historyBest.fitness >= best.fitness * 0.85) {
+                      // Defer to historical ranking if it's close in quality
+                      Object.assign(best, historyBest);
+                    }
+                  }
+                } catch { /* ranking is advisory only */ }
+
+                if (format === 'human') {
+                  process.stderr.write(
+                    `[smart] Ran ${smartResults.length} algorithms — best: ${best.algo} ` +
+                    `(score=${best.fitness.toFixed(3)}, ${best.elapsedMs.toFixed(0)}ms)\n`
+                  );
+                }
+
+                // Hand off the best result into the normal post-processing path
+                const smartResult = makeResult(
+                  'run',
+                  {
+                    status: 'success',
+                    message: `Smart mode selected ${best.algo} as best algorithm`,
+                    algorithm: best.algo,
+                    smart_mode: true,
+                    candidates: smartResults.map(r => ({ algorithm: r.algo, fitness_proxy: r.fitness, elapsed_ms: r.elapsedMs })),
+                    result: best.raw,
+                  },
+                  best.elapsedMs,
+                  EXIT_CODES.success
+                );
+                emitResult(smartResult, emitOptions);
+                return await exitWithFlush(EXIT_CODES.success);
               }
 
               // Step 6: Execute discovery with intelligent retry
@@ -597,8 +800,10 @@ export const run = defineCommand({
               // resolvedAlgoFinal holds the algorithm that actually succeeded (may differ from resolvedAlgo)
 
               // Validate discovery output shape — fail loudly on unknown shapes.
+              // discriminateWithSpan emits an OTEL span (service.name=wasm4pm,
+              // status=ok|error) for 100% observability compliance.
               try {
-                discriminate(raw, resolvedAlgoFinal);
+                discriminateWithSpan(raw, resolvedAlgoFinal);
               } catch (shapeErr) {
                 if (shapeErr instanceof DiscoveryShapeError) {
                   const errResult = makeErrorResult(
@@ -615,6 +820,7 @@ export const run = defineCommand({
 
               // Step 6b: Run ML analysis if configured
               const mlResults: Record<string, unknown> = {};
+              // eslint-disable-next-line @typescript-eslint/no-explicit-any
               const mlConfig = (config as any)?.ml;
               if (mlConfig?.enabled && mlConfig.tasks && mlConfig.tasks.length > 0) {
                 for (const task of mlConfig.tasks) {
@@ -770,8 +976,9 @@ export const run = defineCommand({
                         2
                       )
                     );
-                  } catch (err: any) {
-                    if (err.code === 'EACCES' || err.code === 'EROFS') {
+                  } catch (err: unknown) {
+                    const fsErr = err as NodeJS.ErrnoException;
+                    if (fsErr.code === 'EACCES' || fsErr.code === 'EROFS') {
                       const msg = `Permission denied when writing to ${baselinePath}. ` +
                                   `You are running in a restricted filesystem (e.g. read-only container or Docker). ` +
                                   `Please set WASM4PM_HOME or PMC_CONFIG_PATH to a writable directory.`;
@@ -929,7 +1136,7 @@ export const run = defineCommand({
                   const receipt: CommandReceipt = {
                     ...newReceipt('run'),
                     input_hash: blake3Hex(inputBytes),
-                    output_hash: blake3Hex(JSON.stringify(semanticPayload)),
+                    output_hash: blake3Hex(JSON.stringify(payload)),
                     status: 'success',
                     summary: {
                       algorithm: resolvedAlgoFinal,
@@ -938,24 +1145,58 @@ export const run = defineCommand({
                     },
                   };
                   saveCommandReceipt(receipt);
-                } catch {
-                  /* receipt write must never break the command */
+                } catch (receiptErr) {
+                  // receipt write must never break the command, but MUST leave evidence
+                  try {
+                    const sink = getGlobalSpanSink();
+                    sink({
+                      trace_id: '',
+                      span_id: '',
+                      name: 'receipt.write.failed',
+                      kind: 'INTERNAL',
+                      start_time: Date.now() * 1_000_000,
+                      end_time: Date.now() * 1_000_000,
+                      status: { code: 'ERROR', message: String(receiptErr) },
+                      attributes: { 'service.name': 'wpm', 'receipt.recovered': true, 'receipt.command': 'run' },
+                    } as import('@wasm4pm/cognition').OtelSpan);
+                  } catch { /* span emit must never throw */ }
                 }
               }
 
               // Step 10: Write output file if specified
               // Discovery succeeded; a write failure is a sink error → partial_failure (4), not system_error (5).
               if (ctx.args.output) {
+                // Security: restrict writes to paths within cwd.
+                // Without this guard a user (or malicious config file) could write
+                // to arbitrary locations: wpm run log.xes -o /etc/cron.d/pwned
+                const resolvedOutput = path.resolve(ctx.args.output as string);
+                const cwdForOutput = path.resolve(process.cwd());
+                const relativeOutput = path.relative(cwdForOutput, resolvedOutput);
+                if (relativeOutput.startsWith('..') || path.isAbsolute(relativeOutput)) {
+                  const errResult = makeErrorResult(
+                    'run',
+                    new Error(
+                      `Output path traversal denied: '${ctx.args.output}' resolves outside the working directory.\n\n` +
+                        `  Use a relative path within the current project, e.g.:\n` +
+                        `    wpm run log.xes -o results/output.json`
+                    ),
+                    EXIT_CODES.config_error,
+                    'OUTPUT_PATH_TRAVERSAL_DENIED'
+                  );
+                  emitResult(errResult, emitOptions);
+                  return await exitWithFlush(errResult.exit_code);
+                }
                 try {
-                  const outputDir = path.dirname(ctx.args.output);
+                  const outputDir = path.dirname(resolvedOutput);
                   await fs.mkdir(outputDir, { recursive: true });
-                  await fs.writeFile(ctx.args.output, JSON.stringify(payload, null, 2));
-                } catch (error: any) {
+                  await fs.writeFile(resolvedOutput, JSON.stringify(payload, null, 2));
+                } catch (error: unknown) {
+                  const fsErr = error as NodeJS.ErrnoException;
                   let extraHint = `Check that the destination directory exists and is writable: chmod 755 ${path.dirname(ctx.args.output as string)}`;
-                  if (error?.code === 'EACCES' || error?.code === 'EROFS') {
-                    extraHint = `Permission denied (${error.code}). If you are running in a container, please check volume mounts and permissions.`;
+                  if (fsErr?.code === 'EACCES' || fsErr?.code === 'EROFS') {
+                    extraHint = `Permission denied (${fsErr.code}). If you are running in a container, please check volume mounts and permissions.`;
                   }
-                  
+
                   const message = error instanceof Error ? error.message : String(error);
                   const errResult = makeErrorResult(
                     'run',
@@ -1014,14 +1255,26 @@ export const run = defineCommand({
 
                 projection.debug(`Loading event log from: ${p.input}`);
 
+                // Look up algorithm quality/speed metadata from registry for richer output
+                const registry = getRegistry();
+                const algoMeta = registry.list().find((a) => a.id === p.algorithm);
+                const qualityScore = algoMeta?.qualityTier;
+                const speedScore = algoMeta?.speedTier;
+                const algoLabel = qualityScore !== undefined
+                  ? `${p.algorithm}  (quality score: ${qualityScore}/100, speed score: ${speedScore}/100)`
+                  : p.algorithm;
+
                 const etaStr =
                   (p.estimatedMs as number | undefined) && (p.estimatedMs as number) > 0
                     ? ` (~${Math.ceil((p.estimatedMs as number) / 1000)}s estimated)`
                     : '';
                 projection.info(`Discovering with ${p.algorithm}${etaStr}...`);
 
-                projection.success(`Discovery completed in ${p.elapsedMs.toFixed(1)}ms`);
-                projection.info(`Algorithm: ${p.algorithm}`);
+                const timeStr = p.elapsedMs < 1000
+                  ? `${p.elapsedMs.toFixed(1)}ms`
+                  : `${(p.elapsedMs / 1000).toFixed(2)}s`;
+                projection.success(`Discovery completed in ${timeStr}`);
+                projection.info(`Algorithm:    ${algoLabel}`);
                 projection.info(`Activity key: ${p.activityKey}`);
                 if (ctx.args.output) {
                   projection.info(`Output: ${ctx.args.output}`);
@@ -1034,18 +1287,24 @@ export const run = defineCommand({
                 const summary = extractModelSummary(p.model);
                 if (logStatsData || summary) {
                   projection.log('');
+                  projection.log('  Event Log:');
                   if (logStatsData?.total_cases !== undefined) {
-                    projection.info(`  Traces:   ${logStatsData.total_cases}`);
+                    projection.log(`    Traces:   ${logStatsData.total_cases}`);
                   }
                   if (logStatsData?.total_events !== undefined) {
-                    projection.info(`  Events:   ${logStatsData.total_events}`);
+                    projection.log(`    Events:   ${logStatsData.total_events}`);
                   }
                   if (logStatsData?.unique_variants !== undefined) {
-                    projection.info(`  Variants: ${logStatsData.unique_variants}`);
+                    const variantRatio = logStatsData.total_cases
+                      ? ((logStatsData.unique_variants / logStatsData.total_cases) * 100).toFixed(0)
+                      : '?';
+                    projection.log(`    Variants: ${logStatsData.unique_variants}  (${variantRatio}% of traces are unique)`);
                   }
-                  if (summary) {
+                  if (summary && Object.keys(summary).length > 0) {
+                    projection.log('');
+                    projection.log('  Model:');
                     for (const [key, value] of Object.entries(summary)) {
-                      projection.info(`  ${key}: ${value}`);
+                      projection.log(`    ${key.padEnd(12)}: ${value}`);
                     }
                   }
                 }
@@ -1053,12 +1312,68 @@ export const run = defineCommand({
                 // Quality metrics
                 if (p.quality) {
                   const q = p.quality as { fitness: number; precision: number; simplicity: number };
+                  const fitnessStatus = q.fitness >= 0.85 ? '✓ excellent' : q.fitness >= 0.7 ? '~ acceptable' : '✗ low';
+                  const precisionStatus = q.precision >= 0.8 ? '✓ good' : q.precision >= 0.5 ? '~ medium' : '✗ low';
                   projection.log('');
-                  projection.info('Quality Metrics (van der Aalst):');
-                  projection.info(`  Fitness:    ${(q.fitness * 100).toFixed(1)}%`);
-                  projection.info(`  Precision:  ${(q.precision * 100).toFixed(1)}%`);
-                  projection.info(`  Simplicity: ${(q.simplicity * 100).toFixed(1)}%`);
-                } else if (ctx.args['with-quality'] && p.model) {
+                  projection.log('  Quality (van der Aalst):');
+                  projection.log(`    Fitness:    ${(q.fitness * 100).toFixed(1)}%  ${fitnessStatus}  (target ≥ 85%)`);
+                  projection.log(`    Precision:  ${(q.precision * 100).toFixed(1)}%  ${precisionStatus}`);
+                  projection.log(`    Simplicity: ${(q.simplicity * 100).toFixed(1)}%`);
+                  if (q.fitness < 0.85) {
+                    projection.log('');
+                    projection.warn(`  Fitness ${(q.fitness * 100).toFixed(0)}% is below the 85% target.`);
+                    projection.log(`  Try a higher-quality algorithm: wpm run -i ${path.basename(p.input)} --algorithm genetic_algorithm`);
+                  }
+                }
+
+                // Quality hints — always shown in human mode after discovery (Task 5).
+                // Provides actionable guidance regardless of --with-quality flag.
+                {
+                  const q = p.quality as { fitness?: number; precision?: number; simplicity?: number } | undefined;
+                  const modelData = p.model as Record<string, unknown> | undefined;
+                  const uniqueActivities: number = (() => {
+                    if (!modelData) return 0;
+                    if (Array.isArray(modelData['nodes'])) return (modelData['nodes'] as unknown[]).length;
+                    if (Array.isArray(modelData['activities'])) return (modelData['activities'] as unknown[]).length;
+                    return 0;
+                  })();
+                  const variantCount = (p.logStats as { unique_variants?: number } | undefined)?.unique_variants ?? 0;
+
+                  const qualityHints: string[] = [];
+                  if (q?.fitness !== undefined) {
+                    if (q.fitness < 0.7) {
+                      qualityHints.push(`Fitness: ${(q.fitness * 100).toFixed(1)}% (try --algorithm inductive_miner for higher fitness)`);
+                    } else if (q.fitness < 0.85) {
+                      qualityHints.push(`Fitness: ${(q.fitness * 100).toFixed(1)}% (borderline — consider --algorithm genetic_algorithm)`);
+                    } else {
+                      qualityHints.push(`Fitness: ${(q.fitness * 100).toFixed(1)}% (good)`);
+                    }
+                  }
+                  if (uniqueActivities > 0) {
+                    if (uniqueActivities > 30) {
+                      qualityHints.push(`${uniqueActivities} unique activities detected (complex process — consider filtering rare paths)`);
+                    } else {
+                      qualityHints.push(`${uniqueActivities} unique activities detected`);
+                    }
+                  }
+                  if (variantCount > 0) {
+                    if (variantCount > 50) {
+                      qualityHints.push(`${variantCount} variants (high diversity — consider --algorithm dfg for overview)`);
+                    } else {
+                      qualityHints.push(`${variantCount} variants`);
+                    }
+                  }
+
+                  if (qualityHints.length > 0) {
+                    projection.log('');
+                    projection.log('  Quality hints:');
+                    for (const hint of qualityHints) {
+                      projection.log(`    • ${hint}`);
+                    }
+                  }
+                }
+
+                if (!p.quality && ctx.args['with-quality'] && p.model) {
                   // If model is not a Petri net, warn about quality metrics
                   const resultDataCheck = p.model as Record<string, unknown>;
                   const hasPetriNetFields =
@@ -1072,31 +1387,31 @@ export const run = defineCommand({
                   }
                 }
 
-                // 1000x Auto-Insight Generation
+                // Auto-insight: plain-English process characterisation
                 const qInsight = p.quality as { fitness?: number; precision?: number } | undefined;
                 const fit = qInsight?.fitness;
                 const nodeCount = summary ? parseInt(summary['Nodes'] || summary['Places'] || '0') : 0;
                 if (logStatsData && (fit !== undefined || nodeCount > 0)) {
-                  let story = "Insight: ";
+                  let story = 'Insight: ';
                   if (fit !== undefined) {
-                    if (fit >= 0.9) story += `Discovered a highly standardized process (Fitness: ${(fit * 100).toFixed(0)}%). `;
-                    else if (fit >= 0.7) story += `Discovered a semi-structured process (Fitness: ${(fit * 100).toFixed(0)}%). `;
-                    else story += `Discovered an unstructured "spaghetti" process (Fitness: ${(fit * 100).toFixed(0)}%). `;
+                    if (fit >= 0.9) story += `Highly standardised process (fitness ${(fit * 100).toFixed(0)}% — most traces follow the main path). `;
+                    else if (fit >= 0.7) story += `Semi-structured process (fitness ${(fit * 100).toFixed(0)}% — notable exceptions exist). `;
+                    else story += `Unstructured "spaghetti" process (fitness ${(fit * 100).toFixed(0)}% — high variation, many exceptions). `;
                   } else {
                     story += `Discovered a process model with ${logStatsData.unique_variants || 'multiple'} execution variants. `;
                   }
-                  
-                  const variantRatio = logStatsData.unique_variants && logStatsData.total_cases 
-                     ? logStatsData.unique_variants / logStatsData.total_cases 
-                     : 0;
-                  
+
+                  const variantRatio = logStatsData.unique_variants && logStatsData.total_cases
+                    ? logStatsData.unique_variants / logStatsData.total_cases
+                    : 0;
+
                   if (nodeCount > 0) {
-                     if (nodeCount > 30 || variantRatio > 0.5) story += `The graph contains ${nodeCount} structural nodes and high variant diversity, indicating significant complexity.`;
-                     else story += `The graph contains ${nodeCount} structural nodes, indicating a manageable complexity level.`;
+                    if (nodeCount > 30 || variantRatio > 0.5) story += `${nodeCount} structural nodes with high variant diversity — consider filtering infrequent paths.`;
+                    else story += `${nodeCount} structural nodes — manageable complexity.`;
                   }
-                  
+
                   projection.log('');
-                  projection.info(`\x1b[36m${story}\x1b[0m`);
+                  projection.log(`  \x1b[36m${story}\x1b[0m`);
                 }
 
                 // First-run UX hints
@@ -1114,12 +1429,15 @@ export const run = defineCommand({
                   projection.log('');
                   projection.log('Next steps:');
                   projection.log(
-                    `  wpm conformance -i ${path.basename(p.input)}   -- measure fitness and precision`
+                    `  wpm conformance -i ${path.basename(p.input)}                    -- measure fitness & precision`
                   );
                   projection.log(
-                    `  wpm compare dfg,heuristic -i ${path.basename(p.input)}   -- compare algorithms`
+                    `  wpm predict next-activity -i ${path.basename(p.input)}          -- predict what happens next`
                   );
-                  projection.log('  wpm results   -- browse saved results');
+                  projection.log(
+                    `  wpm compare dfg,heuristic -i ${path.basename(p.input)}          -- compare algorithms`
+                  );
+                  projection.log('  wpm results                                              -- browse saved results');
 
                   if (savedPath) {
                     projection.debug(`Result saved: ${path.relative(process.cwd(), savedPath)}`);
@@ -1171,10 +1489,34 @@ export const run = defineCommand({
             }
           ); // end withLogSession
         } catch (error) {
+          const rawMsg = error instanceof Error ? error.message : String(error);
+          // Give actionable hints based on common failure patterns
+          let actionableHint = '\n\nRun "wpm doctor" to check your environment.';
+          if (rawMsg.toLowerCase().includes('xml') || rawMsg.toLowerCase().includes('parse') || rawMsg.toLowerCase().includes('xes')) {
+            actionableHint =
+              `\n\nThis looks like an event log parse error. Check that your file is valid XES:\n` +
+              `  wpm validate ${finalAlgorithm ? '' : ''}your-log.xes\n\n` +
+              `Common causes:\n` +
+              `  • Malformed XML (missing closing tag, invalid characters)\n` +
+              `  • Wrong file format (CSV or JSON passed as .xes)\n` +
+              `  • Encoding issue (file must be UTF-8)\n\n` +
+              `Run "wpm doctor" for a full environment check.`;
+          } else if (rawMsg.toLowerCase().includes('memory') || rawMsg.toLowerCase().includes('heap')) {
+            actionableHint =
+              `\n\nOut of memory. For large logs, increase Node.js heap or use streaming mode:\n` +
+              `  NODE_OPTIONS="--max-old-space-size=8192" wpm run <log.xes>\n` +
+              `  wpm run <log.xes> --algorithm simd_streaming_dfg  -- lower memory usage`;
+          } else if (rawMsg.toLowerCase().includes('wasm') || rawMsg.toLowerCase().includes('init')) {
+            actionableHint = `\n\nWASM initialisation failed. Run "wpm doctor" to diagnose:\n  wpm doctor`;
+          }
+          const ctxInput = (ctx.args.input as string | undefined) ?? (ctx.args.file as string | undefined);
+          const inputBasename = ctxInput ? path.basename(ctxInput) : '';
+          const inputContext = inputBasename ? ` for '${inputBasename}'` : '';
+          const algoContext = finalAlgorithm ? ` using '${finalAlgorithm}'` : '';
           const result = makeErrorResult(
             'run',
             new Error(
-              `Discovery failed: ${error instanceof Error ? error.message : String(error)}\n\nRun "wpm doctor" to check your environment.`
+              `Discovery failed${inputContext}${algoContext}:\n  ${rawMsg}${actionableHint}`
             ),
             EXIT_CODES.execution_error,
             'DISCOVERY_FAILED'
@@ -1320,10 +1662,14 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
     return exitFlush(result.exit_code);
   }
 
-  // Load OCEL into WASM
+  // Load OCEL into WASM — wrapped in OTEL span for visibility in Jaeger
   let ocelHandle: string;
   try {
-    ocelHandle = wasm['load_ocel_from_json'](ocelContent) as string;
+    ocelHandle = withWasmSpan(
+      'ocel.load',
+      { 'ocel.input': inputPath, 'service_name': 'wpm', 'status': 'ok' },
+      () => wasm['load_ocel_from_json'](ocelContent) as string
+    );
   } catch (loadErr) {
     const msg = loadErr instanceof Error ? loadErr.message : String(loadErr);
     const result = makeErrorResult(
@@ -1362,16 +1708,26 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
   }
 
   // Discover — default: per-type DFG (most informative for OCEL)
+  // Each branch is wrapped in a 'wasm4pm.ocel.discover' span so Jaeger shows
+  // the discovery step as a distinct child span under the parent 'run' span.
   const t0 = performance.now();
   let raw: unknown;
   let discoveryAlgo = 'ocel_dfg_per_type';
 
   try {
     if (typeof wasm['discover_ocel_dfg_per_type'] === 'function') {
-      raw = wasm['discover_ocel_dfg_per_type'](ocelHandle);
+      raw = withWasmSpan(
+        'ocel.discover',
+        { 'ocel.algorithm': 'ocel_dfg_per_type', 'service_name': 'wpm', 'status': 'ok' },
+        () => wasm['discover_ocel_dfg_per_type'](ocelHandle)
+      );
       discoveryAlgo = 'ocel_dfg_per_type';
     } else if (typeof wasm['discover_ocel_dfg'] === 'function') {
-      raw = wasm['discover_ocel_dfg'](ocelHandle);
+      raw = withWasmSpan(
+        'ocel.discover',
+        { 'ocel.algorithm': 'ocel_dfg', 'service_name': 'wpm', 'status': 'ok' },
+        () => wasm['discover_ocel_dfg'](ocelHandle)
+      );
       discoveryAlgo = 'ocel_dfg';
     } else {
       throw new Error('No OCEL discovery function available in this WASM build');
@@ -1529,16 +1885,36 @@ async function runOcelDiscovery(opts: OcelDiscoveryOptions): Promise<void> {
     projection.log('  wpm results   -- browse saved results');
   });
 
-  // Write output file if requested
+  // Write output file if requested (OCEL path)
   if (ctx.args['output']) {
+    // Security: same cwd-restriction as the XES output path above.
+    const rawOcelOutput = String(ctx.args['output']);
+    const resolvedOcelOutput = path.resolve(rawOcelOutput);
+    const cwdForOcelOutput = path.resolve(process.cwd());
+    const relativeOcelOutput = path.relative(cwdForOcelOutput, resolvedOcelOutput);
+    if (relativeOcelOutput.startsWith('..') || path.isAbsolute(relativeOcelOutput)) {
+      const errResult = makeErrorResult(
+        'run',
+        new Error(
+          `Output path traversal denied: '${rawOcelOutput}' resolves outside the working directory.\n\n` +
+            `  Use a relative path within the current project, e.g.:\n` +
+            `    wpm run log.ocel.json -o results/output.json`
+        ),
+        EXIT_CODES.config_error,
+        'OUTPUT_PATH_TRAVERSAL_DENIED'
+      );
+      emitResult(errResult, emitOptions);
+      return exitFlush(errResult.exit_code);
+    }
     try {
-      const outputDir = path.dirname(String(ctx.args['output']));
+      const outputDir = path.dirname(resolvedOcelOutput);
       await fs.mkdir(outputDir, { recursive: true });
-      await fs.writeFile(String(ctx.args['output']), JSON.stringify(payload, null, 2));
-    } catch (writeError: any) {
+      await fs.writeFile(resolvedOcelOutput, JSON.stringify(payload, null, 2));
+    } catch (writeError: unknown) {
+      const fsWriteErr = writeError as NodeJS.ErrnoException;
       let extraHint = ``;
-      if (writeError?.code === 'EACCES' || writeError?.code === 'EROFS') {
-        extraHint = `\n\nPermission denied (${writeError.code}). If you are running in a container, please check volume mounts and permissions.`;
+      if (fsWriteErr?.code === 'EACCES' || fsWriteErr?.code === 'EROFS') {
+        extraHint = `\n\nPermission denied (${fsWriteErr.code}). If you are running in a container, please check volume mounts and permissions.`;
       }
       const msg = writeError instanceof Error ? writeError.message : String(writeError);
       const errResult = makeErrorResult(

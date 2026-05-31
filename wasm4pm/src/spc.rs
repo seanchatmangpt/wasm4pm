@@ -144,6 +144,14 @@ pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
     // out-of-control signal so the autonomic loop notices and degrades safely.
     if let Some(latest) = data.last() {
         if !latest.value.is_finite() || latest.value > latest.ucl || latest.value < latest.lcl {
+            // z_score: (value - cl) / sigma, where sigma = (ucl - cl) / 3.0.
+            // For non-finite values, z_score is reported as NaN (auditable signal).
+            let sigma = (latest.ucl - latest.cl) / 3.0;
+            let z_score = if sigma > 0.0 {
+                (latest.value - latest.cl) / sigma
+            } else {
+                f64::NAN
+            };
             debug!(
                 rule = 1,
                 value = latest.value,
@@ -154,6 +162,23 @@ pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
                 service_name = "wpm",
                 rule_fired = "rule_1",
                 "SPC Rule 1 fired: point beyond control limits"
+            );
+            // GAP-2 IMPLEMENTATION: classified span with canonical rule_violated string,
+            // rule_number, and z_score for independent Rank-1 oracle validation.
+            // Auditors can verify |z_score| > 3.0 independently from raw values.
+            info!(
+                target: "autonomic.spc",
+                rule_violated = "rule_1_outlier",
+                rule_number = 1u32,
+                spc_z_score = z_score,
+                spc_metric_value = latest.value,
+                spc_control_limit_mean = latest.cl,
+                spc_control_limit_ucl = latest.ucl,
+                spc_control_limit_lcl = latest.lcl,
+                spc_consecutive_count = 1u32,
+                status = "error",
+                service_name = "wpm",
+                "spc.rule_violation_classified"
             );
             alerts.push(SpecialCause::OutOfControl {
                 value: latest.value,
@@ -194,6 +219,23 @@ pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
                 rule_fired = "rule_2",
                 "SPC Rule 2 fired: 9 consecutive points on same side of center line"
             );
+            // GAP-2 IMPLEMENTATION: classified span with canonical rule_violated,
+            // rule_number, and consecutive_count for Rank-1 oracle (count >= 9).
+            let direction_str = match dir {
+                ShiftDirection::Above => "above",
+                ShiftDirection::Below => "below",
+            };
+            info!(
+                target: "autonomic.spc",
+                rule_violated = "rule_2_shift",
+                rule_number = 2u32,
+                spc_shift_direction = direction_str,
+                spc_consecutive_count = 9u32,
+                spc_z_score = 0.0f64,  // Rule 2 is count-based; z_score not applicable
+                status = "error",
+                service_name = "wpm",
+                "spc.rule_violation_classified"
+            );
             alerts.push(SpecialCause::Shift { direction: dir, count: 9 });
         }
     }
@@ -222,6 +264,24 @@ pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
                 service_name = "wpm",
                 rule_fired = "rule_3",
                 "SPC Rule 3 fired: 6 consecutive monotone points"
+            );
+            // GAP-2 IMPLEMENTATION: classified span with canonical rule_violated,
+            // rule_number, and monotonic_sequence_length for Rank-1 oracle (length >= 6).
+            let trend_str = match dir {
+                TrendDirection::Increasing => "increasing",
+                TrendDirection::Decreasing => "decreasing",
+            };
+            info!(
+                target: "autonomic.spc",
+                rule_violated = "rule_3_trend",
+                rule_number = 3u32,
+                spc_trend_direction = trend_str,
+                spc_consecutive_count = 6u32,
+                spc_monotonic_sequence_length = 6u32,
+                spc_z_score = 0.0f64,  // Rule 3 is sequence-based; z_score not applicable
+                status = "error",
+                service_name = "wpm",
+                "spc.rule_violation_classified"
             );
             alerts.push(SpecialCause::Trend { direction: dir, count: 6 });
         }
@@ -261,6 +321,18 @@ pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
                 rule_fired = "rule_4",
                 "SPC Rule 4 fired: 2+ of 3 points beyond 2σ above center line"
             );
+            // GAP-2 IMPLEMENTATION: classified span with canonical rule_violated and consecutive_count.
+            info!(
+                target: "autonomic.spc",
+                rule_violated = "rule_4_two_of_three",
+                rule_number = 4u32,
+                spc_shift_direction = "above",
+                spc_consecutive_count = beyond_2sigma_above as u32,
+                spc_z_score = 0.0f64,  // Rule 4 uses 2σ threshold, not 3σ; z_score is min 2.0
+                status = "error",
+                service_name = "wpm",
+                "spc.rule_violation_classified"
+            );
             alerts.push(SpecialCause::TwoOfThree { direction: ShiftDirection::Above });
         } else if beyond_2sigma_below >= 2 {
             info!(
@@ -272,6 +344,18 @@ pub fn check_western_electric_rules(data: &[ChartData]) -> Vec<SpecialCause> {
                 service_name = "wpm",
                 rule_fired = "rule_4",
                 "SPC Rule 4 fired: 2+ of 3 points beyond 2σ below center line"
+            );
+            // GAP-2 IMPLEMENTATION: classified span with canonical rule_violated and consecutive_count.
+            info!(
+                target: "autonomic.spc",
+                rule_violated = "rule_4_two_of_three",
+                rule_number = 4u32,
+                spc_shift_direction = "below",
+                spc_consecutive_count = beyond_2sigma_below as u32,
+                spc_z_score = 0.0f64,  // Rule 4 uses 2σ threshold, not 3σ; z_score is min 2.0
+                status = "error",
+                service_name = "wpm",
+                "spc.rule_violation_classified"
             );
             alerts.push(SpecialCause::TwoOfThree { direction: ShiftDirection::Below });
         }

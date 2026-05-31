@@ -320,8 +320,7 @@ fn replay_log(
                         let bit = lookup
                             .place_idx
                             .get(place)
-                            .map(|&idx| (marking >> idx) & 1)
-                            .unwrap_or(0) as usize;
+                            .map_or(0, |&idx| (marking >> idx) & 1) as usize;
                         if bit != *expected {
                             matches = false;
                             break;
@@ -410,8 +409,7 @@ fn replay_log(
                     let available = lookup
                         .place_idx
                         .get(place_id)
-                        .map(|&idx| current_marking[idx])
-                        .unwrap_or(0);
+                        .map_or(0, |&idx| current_marking[idx]);
 
                     #[cfg(feature = "bcinr")]
                     {
@@ -472,8 +470,7 @@ fn replay_log(
                 let actual = lookup
                     .place_idx
                     .get(place)
-                    .map(|&idx| current_marking[idx])
-                    .unwrap_or(0);
+                    .map_or(0, |&idx| current_marking[idx]);
                 if actual != *expected_tokens {
                     matches = false;
                     break;

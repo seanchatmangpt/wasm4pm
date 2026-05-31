@@ -23,6 +23,130 @@ import { STANDARD_EXIT_CODE_DOCS } from '../help-standards.js';
  * Config snapshot helpers for what-changed display
  */
 
+// ─── Quality trend tracking ────────────────────────────────────────────────────
+//
+// Tracks fitness / precision / generalization across autopilot discovery cycles
+// so the watch command can show a live "Quality Trend" panel showing deltas
+// between the current and previous run.
+
+interface QualitySnapshot {
+  fitness: number | null;
+  precision: number | null;
+  generalization: number | null;
+  variantCount: number | null;
+  edgeCount: number | null;
+  timestamp: string;
+}
+
+function formatQualityDelta(prev: number | null, curr: number | null, label: string): string {
+  const GREEN = '\x1b[32m';
+  const RED = '\x1b[31m';
+  const RESET = '\x1b[0m';
+  const BOLD = '\x1b[1m';
+  if (curr === null) return `  ${label}: n/a`;
+  if (prev === null) return `  ${label}: ${curr.toFixed(4)}`;
+  const delta = curr - prev;
+  const arrow = delta > 0 ? `${GREEN}▲` : delta < 0 ? `${RED}▼` : '═';
+  const sign = delta > 0 ? '+' : '';
+  return `  ${label}: ${curr.toFixed(4)} → ${curr.toFixed(4)} ${arrow}${BOLD}${sign}${delta.toFixed(4)}${RESET}`;
+}
+
+function renderQualityTrend(prev: QualitySnapshot | null, curr: QualitySnapshot, outputHuman: boolean): void {
+  if (!outputHuman) return;
+  const GREEN = '\x1b[32m';
+  const RED = '\x1b[31m';
+  const RESET = '\x1b[0m';
+  const BOLD = '\x1b[1m';
+  const CYAN = '\x1b[36m';
+  console.log(`\n${BOLD}Quality Trend:${RESET}`);
+  if (prev === null) {
+    if (curr.fitness !== null) console.log(`  Fitness:       ${curr.fitness.toFixed(4)} (first run baseline)`);
+    if (curr.precision !== null) console.log(`  Precision:     ${curr.precision.toFixed(4)} (first run baseline)`);
+    return;
+  }
+  if (curr.fitness !== null) {
+    const delta = curr.fitness - (prev.fitness ?? curr.fitness);
+    const arrow = delta > 0.001 ? `${GREEN}▲${RESET}` : delta < -0.001 ? `${RED}▼${RESET}` : '═';
+    const sign = delta > 0 ? '+' : '';
+    console.log(`  Fitness:    ${(prev.fitness ?? 0).toFixed(4)} → ${curr.fitness.toFixed(4)} (${sign}${delta.toFixed(4)}) ${arrow}`);
+  }
+  if (curr.precision !== null) {
+    const delta = curr.precision - (prev.precision ?? curr.precision);
+    const arrow = delta > 0.001 ? `${GREEN}▲${RESET}` : delta < -0.001 ? `${RED}▼${RESET}` : '═';
+    const sign = delta > 0 ? '+' : '';
+    console.log(`  Precision:  ${(prev.precision ?? 0).toFixed(4)} → ${curr.precision.toFixed(4)} (${sign}${delta.toFixed(4)}) ${arrow}`);
+  }
+  if (curr.variantCount !== null && prev.variantCount !== null) {
+    const delta = curr.variantCount - prev.variantCount;
+    if (Math.abs(delta) > 0) {
+      const arrow = delta > 0 ? `${CYAN}+${delta} new variants${RESET}` : `${RED}${delta} variants removed${RESET}`;
+      console.log(`  Process changed: ${arrow} detected since last run`);
+    }
+  }
+}
+
+// ─── Model diff helpers ────────────────────────────────────────────────────────
+//
+// After each autopilot discovery run, we compare the current DFG against the
+// previous run to show edge-level changes. This helps practitioners understand
+// what actually changed in the process model between two cycles.
+
+interface DfgEdge {
+  from: string;
+  to: string;
+  frequency: number;
+}
+
+interface DfgModel {
+  nodes?: Array<{ id: string; frequency?: number }>;
+  edges?: DfgEdge[];
+}
+
+interface ModelDiff {
+  addedEdges: DfgEdge[];
+  removedEdges: DfgEdge[];
+  changedEdges: Array<{ from: string; to: string; freqBefore: number; freqAfter: number }>;
+  addedNodes: string[];
+  removedNodes: string[];
+}
+
+/**
+ * Compute the structural diff between two DFG models.
+ * Returns sets of added/removed/changed edges and nodes.
+ */
+function diffDfgModels(prev: DfgModel, next: DfgModel): ModelDiff {
+  const edgeKey = (e: DfgEdge) => `${e.from}→${e.to}`;
+
+  const prevEdges = new Map<string, DfgEdge>();
+  for (const e of prev.edges ?? []) prevEdges.set(edgeKey(e), e);
+
+  const nextEdges = new Map<string, DfgEdge>();
+  for (const e of next.edges ?? []) nextEdges.set(edgeKey(e), e);
+
+  const addedEdges: DfgEdge[] = [];
+  const removedEdges: DfgEdge[] = [];
+  const changedEdges: ModelDiff['changedEdges'] = [];
+
+  for (const [k, e] of nextEdges) {
+    const p = prevEdges.get(k);
+    if (!p) {
+      addedEdges.push(e);
+    } else if (p.frequency !== e.frequency) {
+      changedEdges.push({ from: e.from, to: e.to, freqBefore: p.frequency, freqAfter: e.frequency });
+    }
+  }
+  for (const [k, e] of prevEdges) {
+    if (!nextEdges.has(k)) removedEdges.push(e);
+  }
+
+  const prevNodeIds = new Set((prev.nodes ?? []).map((n) => n.id));
+  const nextNodeIds = new Set((next.nodes ?? []).map((n) => n.id));
+  const addedNodes = [...nextNodeIds].filter((id) => !prevNodeIds.has(id));
+  const removedNodes = [...prevNodeIds].filter((id) => !nextNodeIds.has(id));
+
+  return { addedEdges, removedEdges, changedEdges, addedNodes, removedNodes };
+}
+
 /**
  * Extract a comparable snapshot from a resolved config object.
  * Only captures the fields a practitioner cares about (algorithm, source, profile, log level).
@@ -196,6 +320,13 @@ ${STANDARD_EXIT_CODE_DOCS}`,
       /* initial config load failure is non-fatal — watch proceeds without a baseline */
     }
 
+    // Track the DFG model from the previous autopilot run so we can emit a
+    // model-level diff event on each cycle (e.g. "3 new edges, 1 removed").
+    let prevDfgModel: DfgModel | null = null;
+
+    // Quality trend tracking: compare fitness/precision/variants across cycles
+    let prevQualitySnapshot: QualitySnapshot | null = null;
+
     // Step 2: Set up Watcher using chokidar for better cross-platform support
     const watchPath = path.resolve(configPath);
     const watcher = chokidar.watch(watchPath, {
@@ -231,6 +362,19 @@ ${STANDARD_EXIT_CODE_DOCS}`,
     const rawIntervalStr = ctx.args.interval as string | undefined;
     const parsedInterval = rawIntervalStr !== undefined ? parseInt(rawIntervalStr, 10) : NaN;
     const DEBOUNCE_MS = !Number.isNaN(parsedInterval) && parsedInterval > 0 ? parsedInterval : 200;
+
+    // Handle file deletion gracefully: emit a warning event and continue watching.
+    // The watcher keeps running so that if the file is recreated it will resume.
+    watcher.on('unlink', (filePath: string) => {
+      streaming.emitEvent('file_deleted', {
+        file: filePath,
+        message: `Watched file deleted: ${filePath} — watching for recreation`,
+      });
+      // Reset the previous config snapshot and DFG model so the next change cycle
+      // detects the new file as a fresh baseline rather than diffing against stale state.
+      prevConfigSnapshot = null;
+      prevDfgModel = null;
+    });
 
     watcher.on('change', (filePath: string) => {
       const existing = debouncers.get(filePath);
@@ -320,44 +464,128 @@ ${STANDARD_EXIT_CODE_DOCS}`,
                     // INSTRUMENTED: load_eventlog_from_xes — one of the top 10 most-called WASM exports
                     const handle = WasmInstrumentation.load_eventlog_from_xes(wasm, xesContent);
 
-                    // INSTRUMENTED: analyze_event_statistics — bonus instrumentation related to load
-                    const statsRaw = WasmInstrumentation.analyze_event_statistics(wasm, handle, activityKey);
-                    const stats = (
-                      typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw
-                    ) as LogStats;
-                    const { algo, rationale } = selectAutopilotAlgorithm(stats);
+                    try {
+                      // INSTRUMENTED: analyze_event_statistics — bonus instrumentation related to load
+                      const statsRaw = WasmInstrumentation.analyze_event_statistics(wasm, handle, activityKey);
+                      const stats = (
+                        typeof statsRaw === 'string' ? JSON.parse(statsRaw) : statsRaw
+                      ) as LogStats;
+                      const { algo, rationale } = selectAutopilotAlgorithm(stats);
 
-                    streaming.emitEvent('autopilot_selected', {
-                      algorithm: algo,
-                      rationale,
-                      stats,
-                    });
+                      streaming.emitEvent('autopilot_selected', {
+                        algorithm: algo,
+                        rationale,
+                        stats,
+                      });
 
-                    const result = await runDiscovery(wasm, algo, handle, activityKey);
-                    let { raw, elapsedMs } = result;
-                    const model = typeof raw === 'string' ? JSON.parse(raw) : raw;
-                    const elapsed = Date.now() - t0;
+                      const result = await runDiscovery(wasm, algo, handle, activityKey);
+                      let { raw, elapsedMs } = result;
+                      const model = typeof raw === 'string' ? JSON.parse(raw) : raw;
+                      const elapsed = Date.now() - t0;
 
-                    // Write autopilot.json for tooling and dashboards
-                    const autopilotRecord = {
-                      cycle: cyclesObserved,
-                      timestamp: new Date().toISOString(),
-                      log: filePath,
-                      stats,
-                      selected: algo,
-                      rationale,
-                      elapsedMs: elapsed,
-                    };
-                    const autopilotPath = path.join(process.cwd(), '.wasm4pm', 'autopilot.json');
-                    await fs.mkdir(path.dirname(autopilotPath), { recursive: true });
-                    await fs.writeFile(autopilotPath, JSON.stringify(autopilotRecord, null, 2));
+                      // Write autopilot.json for tooling and dashboards
+                      const autopilotRecord = {
+                        cycle: cyclesObserved,
+                        timestamp: new Date().toISOString(),
+                        log: filePath,
+                        stats,
+                        selected: algo,
+                        rationale,
+                        elapsedMs: elapsed,
+                      };
+                      const autopilotPath = path.join(process.cwd(), '.wasm4pm', 'autopilot.json');
+                      await fs.mkdir(path.dirname(autopilotPath), { recursive: true });
+                      await fs.writeFile(autopilotPath, JSON.stringify(autopilotRecord, null, 2));
 
-                    streaming.emitEvent('autopilot_completed', {
-                      algorithm: algo,
-                      elapsedMs,
-                      modelKeys:
-                        typeof model === 'object' && model ? Object.keys(model as object) : [],
-                    });
+                      // Model-level diff: compare current DFG against previous run.
+                      // Only DFG-output algorithms produce edges/nodes; skip for other output types.
+                      const currentDfg = model as DfgModel;
+                      if (
+                        prevDfgModel !== null &&
+                        typeof currentDfg === 'object' &&
+                        Array.isArray(currentDfg.edges)
+                      ) {
+                        const diff = diffDfgModels(prevDfgModel, currentDfg);
+                        const totalChanges =
+                          diff.addedEdges.length +
+                          diff.removedEdges.length +
+                          diff.changedEdges.length +
+                          diff.addedNodes.length +
+                          diff.removedNodes.length;
+                        if (totalChanges > 0) {
+                          streaming.emitEvent('model_diff', {
+                            added_edges: diff.addedEdges.length,
+                            removed_edges: diff.removedEdges.length,
+                            changed_edges: diff.changedEdges.length,
+                            added_nodes: diff.addedNodes.length,
+                            removed_nodes: diff.removedNodes.length,
+                            summary: `+${diff.addedEdges.length} edges  -${diff.removedEdges.length} edges  ~${diff.changedEdges.length} changed  +${diff.addedNodes.length} nodes  -${diff.removedNodes.length} nodes`,
+                            // Top-5 added edges for human inspection
+                            added_edge_samples: diff.addedEdges.slice(0, 5).map((e) => `${e.from}→${e.to} (×${e.frequency})`),
+                            removed_edge_samples: diff.removedEdges.slice(0, 5).map((e) => `${e.from}→${e.to}`),
+                          });
+                        } else {
+                          streaming.emitEvent('model_unchanged', {
+                            message: 'DFG model is structurally identical to previous run',
+                            edges: currentDfg.edges?.length ?? 0,
+                            nodes: currentDfg.nodes?.length ?? 0,
+                          });
+                        }
+                      }
+                      prevDfgModel = currentDfg;
+
+                      streaming.emitEvent('autopilot_completed', {
+                        algorithm: algo,
+                        elapsedMs,
+                        modelKeys:
+                          typeof model === 'object' && model ? Object.keys(model as object) : [],
+                      });
+
+                      // Quality trend: compute fitness/precision from the DFG model
+                      // and display a live quality panel comparing to the previous run.
+                      try {
+                        const dfgModel = model as {
+                          fitness?: number;
+                          precision?: number;
+                          generalization?: number;
+                          variants?: Array<unknown>;
+                          edges?: Array<unknown>;
+                          nodes?: Array<unknown>;
+                        };
+                        const currQuality: QualitySnapshot = {
+                          fitness: typeof dfgModel.fitness === 'number' ? dfgModel.fitness : null,
+                          precision: typeof dfgModel.precision === 'number' ? dfgModel.precision : null,
+                          generalization: typeof dfgModel.generalization === 'number' ? dfgModel.generalization : null,
+                          variantCount: Array.isArray(dfgModel.variants) ? dfgModel.variants.length : null,
+                          edgeCount: Array.isArray(dfgModel.edges) ? dfgModel.edges.length : null,
+                          timestamp: new Date().toISOString(),
+                        };
+
+                        const humanMode = (ctx.args.format as string | undefined) !== 'json';
+                        renderQualityTrend(prevQualitySnapshot, currQuality, humanMode);
+
+                        streaming.emitEvent('quality_trend', {
+                          fitness: currQuality.fitness,
+                          precision: currQuality.precision,
+                          generalization: currQuality.generalization,
+                          variant_count: currQuality.variantCount,
+                          edge_count: currQuality.edgeCount,
+                          fitness_delta: prevQualitySnapshot?.fitness != null && currQuality.fitness != null
+                            ? parseFloat((currQuality.fitness - prevQualitySnapshot.fitness).toFixed(4))
+                            : null,
+                          precision_delta: prevQualitySnapshot?.precision != null && currQuality.precision != null
+                            ? parseFloat((currQuality.precision - prevQualitySnapshot.precision).toFixed(4))
+                            : null,
+                        });
+
+                        prevQualitySnapshot = currQuality;
+                      } catch {
+                        /* quality trend is non-fatal */
+                      }
+                    } finally {
+                      // Always free the WASM handle to prevent memory leaks across watch cycles
+                      try { WasmInstrumentation.delete_object(wasm, handle); } catch { /* best-effort */ }
+                    }
                   } catch (autopilotErr) {
                     streaming.emitEvent('autopilot_error', {
                       message:

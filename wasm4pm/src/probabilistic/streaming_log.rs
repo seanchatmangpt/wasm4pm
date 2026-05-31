@@ -142,18 +142,29 @@ impl StreamingLog {
         if is_trace_start {
             self.start_counts[id as usize] += 1;
             self.trace_has_started = true;
+            // Clear any carry-over from the previous trace so the first event
+            // of this trace does not produce a spurious cross-trace edge.
+            self.prev_activity_id = None;
         }
         if is_trace_end {
             self.end_counts[id as usize] += 1;
-            self.prev_activity_id = None;
             self.trace_has_started = false;
         }
 
-        // Add DFG edge from previous event
+        // Add DFG edge from previous event (within the same trace only)
         if let Some(prev_id) = self.prev_activity_id {
             self.dfg_sketch.add_pair(prev_id, id);
         }
-        self.prev_activity_id = Some(id);
+
+        // After recording the edge, update prev.  For the final event of a
+        // trace we immediately clear it so the *next* trace cannot accidentally
+        // link back to this one (belt-and-suspenders; the is_trace_start guard
+        // above already handles the cross-trace boundary).
+        if is_trace_end {
+            self.prev_activity_id = None;
+        } else {
+            self.prev_activity_id = Some(id);
+        }
 
         self.total_events += 1;
     }
@@ -460,5 +471,42 @@ mod tests {
         slog.add_trace(&["A", "B", "C"]);
         slog.add_trace(&["A", "B", "D"]);
         assert_eq!(slog.activity_count(), 4); // A, B, C, D
+    }
+
+    /// Regression test: no spurious cross-trace edge between the last activity
+    /// of trace N and the first activity of trace N+1.
+    ///
+    /// Before the fix, `prev_activity_id` was left set to the last event of
+    /// each trace, causing a ghost "Close → Register" edge when traces were
+    /// added sequentially.
+    #[test]
+    fn test_no_cross_trace_edges() {
+        let mut slog = StreamingLog::new();
+        slog.add_trace(&["Register", "Approve", "Pay", "Close"]);
+        slog.add_trace(&["Register", "Reject", "Close"]);
+        slog.add_trace(&["Register", "Approve", "Pay", "Refund", "Close"]);
+        slog.add_trace(&["Register", "Approve", "Pay", "Close"]);
+        slog.add_trace(&["Register", "Review", "Approve", "Pay", "Close"]);
+
+        let dfg = slog.estimate_dfg();
+
+        // There must be no edge from Close back to Register — that would be a
+        // cross-trace ghost edge.
+        let ghost = dfg
+            .edges
+            .iter()
+            .find(|e| e.from == "Close" && e.to == "Register");
+        assert!(
+            ghost.is_none(),
+            "Spurious cross-trace edge Close→Register found: {:?}",
+            ghost
+        );
+
+        // Sanity: expected edges must be present
+        let has_register_approve = dfg
+            .edges
+            .iter()
+            .any(|e| e.from == "Register" && e.to == "Approve");
+        assert!(has_register_approve, "Expected Register→Approve edge missing");
     }
 }

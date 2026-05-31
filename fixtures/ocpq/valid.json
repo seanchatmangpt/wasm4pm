@@ -1,0 +1,88 @@
+{
+  "eventTypes": [
+    "FileModification",
+    "DiagnosticCheck",
+    "DiagnosticCleared",
+    "ReceiptGeneration"
+  ],
+  "objectTypes": [
+    "Agent",
+    "File",
+    "DiagnosticSpecies",
+    "Receipt"
+  ],
+  "events": [
+    {
+      "id": "e_mod_1",
+      "type": "FileModification",
+      "time": "2026-05-30T08:00:00Z",
+      "attributes": {},
+      "relationships": [
+        { "objectId": "agent_1", "qualifier": "editor" },
+        { "objectId": "file_1", "qualifier": "modified" }
+      ]
+    },
+    {
+      "id": "e_check_1",
+      "type": "DiagnosticCheck",
+      "time": "2026-05-30T08:05:00Z",
+      "attributes": {},
+      "relationships": [
+        { "objectId": "agent_1", "qualifier": "checker" },
+        { "objectId": "file_1", "qualifier": "checked" },
+        { "objectId": "diag_species_1", "qualifier": "ruleset" }
+      ]
+    },
+    {
+      "id": "e_clear_1",
+      "type": "DiagnosticCleared",
+      "time": "2026-05-30T08:10:00Z",
+      "attributes": {},
+      "relationships": [
+        { "objectId": "agent_1", "qualifier": "resolver" },
+        { "objectId": "file_1", "qualifier": "source" },
+        { "objectId": "diag_species_1", "qualifier": "resolved" }
+      ]
+    },
+    {
+      "id": "e_receipt_1",
+      "type": "ReceiptGeneration",
+      "time": "2026-05-30T08:15:00Z",
+      "attributes": {},
+      "relationships": [
+        { "objectId": "agent_1", "qualifier": "creator" },
+        { "objectId": "receipt_1", "qualifier": "output" },
+        { "objectId": "file_1", "qualifier": "basis" }
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "agent_1",
+      "type": "Agent",
+      "attributes": {},
+      "relationships": []
+    },
+    {
+      "id": "file_1",
+      "type": "File",
+      "attributes": {},
+      "relationships": []
+    },
+    {
+      "id": "diag_species_1",
+      "type": "DiagnosticSpecies",
+      "attributes": {},
+      "relationships": []
+    },
+    {
+      "id": "receipt_1",
+      "type": "Receipt",
+      "attributes": {},
+      "relationships": [
+        { "objectId": "file_1", "qualifier": "basis" }
+      ]
+    }
+  ],
+  "objectRelations": []
+}

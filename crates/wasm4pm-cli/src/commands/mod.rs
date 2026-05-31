@@ -9,3 +9,4 @@ pub mod telco;
 pub mod wizard;
 pub mod receipt;
 pub mod lean;
+pub mod oracle;

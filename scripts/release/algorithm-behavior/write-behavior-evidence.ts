@@ -3,8 +3,10 @@ import path from 'node:path';
 import { execSync } from 'node:child_process';
 import { createHash } from 'node:crypto';
 import { generateCaseRegistry } from './cases.js';
-import { runPositiveCase, runNegativeCase, runInvariantCase } from './runner.js';
+import { runPositiveCase, runNegativeCase, runInvariantCase, shutdownBoundary } from './runner.js';
 import type { AlgorithmBehaviorEvidence } from './types.js';
+import { getRegistry } from '../../../packages/kernel/src/registry.js';
+import { WASM_FUNCTION_NAMES } from '../../../packages/contracts/src/algorithm-registry.js';
 
 function packageVersion() {
   const pkg = JSON.parse(fs.readFileSync(path.resolve(process.cwd(), 'package.json'), 'utf8'));
@@ -27,6 +29,11 @@ async function main() {
 
   const gitCommit = execSync('git rev-parse HEAD', { encoding: 'utf8' }).trim();
   const cases = generateCaseRegistry();
+  const registryIds = new Set(getRegistry().list().map((a) => a.id));
+  const wasmBg = fs.readFileSync(path.resolve(rootDir, 'wasm4pm/pkg/wasm4pm_bg.js'), 'utf8');
+  const wasmExports = new Set([...wasmBg.matchAll(/export function (\w+)/g)].map((m) => m[1]));
+  const apiSrc = fs.readFileSync(path.resolve(rootDir, 'packages/kernel/src/api.ts'), 'utf8');
+  const apiCases = new Set([...apiSrc.matchAll(/case '([^']+)':/g)].map((m) => m[1]));
 
   let totalPositive = 0;
   let totalNegative = 0;
@@ -40,10 +47,12 @@ async function main() {
   for (const algo of cases) {
     console.log(`[EVALUATING] ${algo.algorithm_id}...`);
     
-    // Check reachability
-    algo.ts_dispatch_present = true;
-    algo.cli_present = true;
-    algo.wasm_export_present = true;
+    // Probe real reachability flags
+    const wasmFn = WASM_FUNCTION_NAMES[algo.algorithm_id];
+    algo.registry_present = registryIds.has(algo.algorithm_id);
+    algo.ts_dispatch_present = apiCases.has(algo.algorithm_id);
+    algo.cli_present = registryIds.has(algo.algorithm_id);
+    algo.wasm_export_present = wasmFn ? wasmExports.has(wasmFn) : false;
 
     // Positive
     for (let i = 0; i < algo.positive_cases.length; i++) {
@@ -113,6 +122,7 @@ async function main() {
   fs.writeFileSync(path.join(outDir, `ALGORITHM_BEHAVIOR_MATRIX.v${version}.md`), md);
 
   console.log(`[SUCCESS] Wrote Evidence JSON, Matrix, and ${cases.length} receipts to artifacts/release/`);
+  await shutdownBoundary();
 }
 
 main().catch(err => {

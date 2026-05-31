@@ -95,6 +95,12 @@ export function assessFeatureQuality(features: number[][]): QualityReport {
     };
   }
 
+  // Edge case: single feature column — correlation check is vacuous, no pairs to compare.
+  if (numCols === 1) {
+    warnings.push('Only 1 feature column — correlation analysis requires at least 2 columns');
+    recommendations.push('Add more feature columns for meaningful correlation analysis');
+  }
+
   // Transpose to analyze columns
   const columns: number[][] = Array(numCols)
     .fill(null)

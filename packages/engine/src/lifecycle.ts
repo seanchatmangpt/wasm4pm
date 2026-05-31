@@ -6,7 +6,6 @@
 
 import { EngineState, EngineError } from '@wasm4pm/contracts';
 import {
-  VALID_TRANSITIONS,
   canTransition,
   getValidTransitions,
   TransitionValidator,

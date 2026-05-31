@@ -1,0 +1,199 @@
+TEST REDUNDANCY AUDIT SUMMARY
+================================================================================
+Date: 2026-05-29
+Audit Type: Test suite consolidation opportunity analysis
+Scope: 851 test files across TypeScript, Rust, CLI, playground, and lab
+
+================================================================================
+CURRENT STATE
+================================================================================
+Total Test Files:             657 active (851 including node_modules)
+Total Test LOC:              ~147,000 lines
+Fixture Files:                480+ (many duplicated)
+
+Breakdown:
+  - TypeScript packages:      327 files (~63,814 lines)
+  - CLI tests:                217 files (~42,000 lines)
+  - Rust integration:         96 files (41,893 lines)
+  - Playground:               3 files
+  - Lab:                      14 files
+
+Time to Run (pnpm test):
+  - Sequential:               ~45 seconds
+  - Parallel (4+ cores):      ~12-15 seconds
+
+================================================================================
+KEY FINDINGS
+================================================================================
+
+REDUNDANCY CATEGORY #1: Same Algorithm Tested in 136 Files
+  - discover_dfg: 136 files (some testing same code path)
+  - Impact: Can consolidate to 5-10 files
+  - Savings: ~120-130 files, 3-4 seconds/run
+
+REDUNDANCY CATEGORY #2: Conformance Tested in 82 Files
+  - Fitness/precision computation verified multiple ways
+  - 11 CLI tests for conformance command alone
+  - Impact: Can consolidate to 15-20 files
+  - Savings: ~60-70 files, 2-3 seconds/run
+
+REDUNDANCY CATEGORY #3: CLI `run` Command Tested 45+ Times
+  - 14 files explicitly test wpm run
+  - 31+ additional files incidentally test it
+  - Same exit codes, output formats, config tested repeatedly
+  - Impact: Can consolidate to 2-3 parameterized files
+  - Savings: ~42-43 files, 6-7 seconds/run
+
+REDUNDANCY CATEGORY #4: Prediction Tests in 63 Files
+  - ML prediction tested across multiple packages
+  - 5 separate CLI predict tests with overlap
+  - Impact: Can consolidate to 15-20 files
+  - Savings: ~43-48 files, 2-3 seconds/run
+
+REDUNDANCY CATEGORY #5: Rust Integration Tests (96 Files)
+  - Audit files, adversarial tests, determinism tests have overlap
+  - Impact: Can consolidate to 40-50 files
+  - Savings: ~46-56 files, 2-3 seconds/run
+
+REDUNDANCY CATEGORY #6: Fixture Duplication (480 Files)
+  - BPI_2020_Travel_Permits_Actual.xes: 20MB, 4 copies = 80MB
+  - BPI_2020_PermitLog.xes: 32MB, 2 copies = 64MB
+  - Other large files: Multiple copies across directories
+  - Total Duplicated: ~300MB
+  - Solution: Central fixture library + symlinks
+  - Savings: ~300MB disk, ~5-10 seconds clone time
+
+REDUNDANCY CATEGORY #7: Dead/Trivial Test Files (135 Files)
+  - 135 test files under 300 lines (estimated 15-30% have low value)
+  - Remove/consolidate: 65-85 files
+  - Savings: Minimal test time, improved maintainability
+
+REDUNDANCY CATEGORY #8: Identical Test Names (6+ Files)
+  - "should succeed" appears in 6 test files
+  - "returns false for null" appears in 8 test files
+  - Poor naming makes debugging harder
+  - Fix: Rename to be descriptive
+
+================================================================================
+CONSOLIDATION TARGETS (PRIORITY ORDER)
+================================================================================
+
+1. CLI `run` Tests: 45 → 2-3 files
+   Effort: 4-6 hours | Savings: ~43 files, 6-7 sec/run | Risk: LOW
+
+2. CLI `conformance` Tests: 11 → 2-3 files
+   Effort: 2-3 hours | Savings: ~8 files, 1-2 sec/run | Risk: LOW
+
+3. Fixture Duplication: 480 → 50 (central)
+   Effort: 2-4 hours | Savings: ~430 files, ~300MB disk | Risk: LOW
+
+4. Algorithm Tests (DFG, etc.): 136 → 5-10 files
+   Effort: 6-8 hours | Savings: ~120-130 files, 3-4 sec/run | Risk: MEDIUM
+
+5. Prediction Tests: 63 → 15-20 files
+   Effort: 3-4 hours | Savings: ~43-48 files, 2-3 sec/run | Risk: MEDIUM
+
+6. Rust Integration Tests: 96 → 40-50 files
+   Effort: 8-12 hours | Savings: ~46-56 files, 2-3 sec/run | Risk: MEDIUM
+
+7. Dead Test Files: 135 → 50-70 files
+   Effort: 3-4 hours | Savings: ~65-85 files | Risk: LOW
+
+8. Conformance Tests (Kernel/Contracts): 82 → 15-20 files
+   Effort: 6-8 hours | Savings: ~60-70 files, 2-3 sec/run | Risk: MEDIUM
+
+9. CLI Predict Tests: 5 → 1-2 files
+   Effort: 1-2 hours | Savings: ~3-4 files | Risk: LOW
+
+10. Test Renaming (Identical Names):
+    Effort: 1 hour | Savings: Improved debugging | Risk: NONE
+
+================================================================================
+ESTIMATED IMPACT
+================================================================================
+
+BEFORE:
+  - Test files: 657
+  - Test lines: ~147,000
+  - Test run time (parallel): 12-15 seconds
+  - Fixture disk: ~500MB
+  - Clone time: ~20-25 seconds
+
+AFTER (with all consolidations):
+  - Test files: 350-400 (-257-307 files, -39-47%)
+  - Test lines: ~75,000 (-72,000 lines, -49%)
+  - Test run time (parallel): 6-8 seconds (-50%)
+  - Fixture disk: ~200MB (-300MB, -60%)
+  - Clone time: ~10-15 seconds (-5-10 seconds)
+
+ANNUAL SAVINGS (100 test runs/month):
+  - Test run time: 10-15 minutes saved
+  - CI/CD build time: 40-60 minutes saved
+  - Code review time: 10-15% reduction (fewer test files)
+  - Maintenance: 20-30% reduction (fewer tests to update)
+
+================================================================================
+IMPLEMENTATION ROADMAP
+================================================================================
+
+PHASE 1 (Week 1): Quick Wins (~16 hours)
+  ✓ CLI `run` tests consolidation (4-6h)
+  ✓ CLI `conformance` tests consolidation (2-3h)
+  ✓ CLI `predict` tests consolidation (1-2h)
+  ✓ Fixture symlink setup (2-4h)
+  ✓ Test name cleanup (1h)
+  Result: -64 files, 8-10 sec/run savings
+
+PHASE 2 (Week 2): Medium Effort (~16 hours)
+  ✓ Algorithm tests consolidation (6-8h)
+  ✓ Prediction tests consolidation (3-4h)
+  ✓ Dead test audit + removal (3-4h)
+  Result: -200+ files, 5-7 sec/run savings
+
+PHASE 3 (Week 3): High Effort (~20 hours)
+  ✓ Rust integration tests reorganization (8-12h)
+  ✓ Conformance tests consolidation (6-8h)
+  Result: -100+ files, 3-4 sec/run savings
+
+TOTAL EFFORT: ~52 hours (1.3 weeks)
+TOTAL SAVINGS: 257-307 files, 14-18 seconds/run
+
+================================================================================
+RISK ASSESSMENT
+================================================================================
+
+MEDIUM RISKS:
+  - Test coverage regression: Mitigate with full test suite on main branch
+  - Algorithm test consolidation: Pair programming, code review required
+  - Rust integration refactoring: Extensive testing before commit
+  
+LOW RISKS:
+  - CLI command consolidation: Same command tested repeatedly
+  - Fixture symlinks: Well-understood approach (use junctions on Windows)
+  - Dead test removal: Audit first, remove only low-value tests
+  - Test renaming: Simple regex replacement
+
+RESIDUAL RISK: Low (with proper phasing and testing)
+
+================================================================================
+RECOMMENDATIONS
+================================================================================
+
+1. Start with Phase 1 (Quick Wins) to validate consolidation approach
+2. Review consolidation examples in TEST_CONSOLIDATION_EXAMPLES.md
+3. Use vitest `test.each()` for parameterized tests
+4. Preserve all original assertions (just reorganized)
+5. Test on main branch to ensure no regressions
+6. Commit by category, not all at once
+7. Update CI/CD after Phase 1 to verify time savings
+
+================================================================================
+DETAILED DOCUMENTATION
+================================================================================
+
+See:
+  - TEST_REDUNDANCY_AUDIT.md (57 KB, detailed analysis)
+  - TEST_CONSOLIDATION_EXAMPLES.md (25 KB, before/after examples)
+  - AUDIT_SUMMARY.txt (this file)
+
+================================================================================

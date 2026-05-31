@@ -1,47 +1,8 @@
 #!/usr/bin/env npx tsx
 import { readFileSync, writeFileSync } from "fs";
 import { resolve } from "path";
-import { createHash } from "crypto";
-
-// --- CANONICAL HASHING ---
-// Strictly follows Truex Canonicalization & Receipt Profile v1
-function canonicalStringify(obj: any): string {
-  if (obj === null || typeof obj !== "object") return JSON.stringify(obj);
-  
-  if (Array.isArray(obj)) {
-    // Determine if this array needs deterministic sorting
-    if (obj.length > 0 && typeof obj[0] === "object") {
-      const clone = [...obj];
-      
-      // events & objects (sort by ocel:id)
-      if (clone[0]["ocel:id"]) {
-        clone.sort((a, b) => (a["ocel:id"] > b["ocel:id"] ? 1 : -1));
-      } 
-      // event-object (sort by event-id + object-id + qualifier)
-      else if (clone[0]["ocel:event-id"] && clone[0]["ocel:object-id"]) {
-        clone.sort((a, b) => {
-          const keyA = `${a["ocel:event-id"]}|${a["ocel:object-id"]}|${a["ocel:qualifier"]}`;
-          const keyB = `${b["ocel:event-id"]}|${b["ocel:object-id"]}|${b["ocel:qualifier"]}`;
-          return keyA > keyB ? 1 : -1;
-        });
-      }
-      // objectChanges (sort by object-id + time + field)
-      else if (clone[0]["ocel:object-id"] && clone[0]["ocel:field"]) {
-        clone.sort((a, b) => {
-          const keyA = `${a["ocel:object-id"]}|${a["ocel:timestamp"] || a["ocel:time"]}|${a["ocel:field"]}`;
-          const keyB = `${b["ocel:object-id"]}|${b["ocel:timestamp"] || b["ocel:time"]}|${b["ocel:field"]}`;
-          return keyA > keyB ? 1 : -1;
-        });
-      }
-      return `[${clone.map(canonicalStringify).join(",")}]`;
-    }
-    
-    return `[${obj.map(canonicalStringify).join(",")}]`;
-  }
-  
-  const keys = Object.keys(obj).sort();
-  return `{${keys.map(k => `"${k}":${canonicalStringify(obj[k])}`).join(",")}}`;
-}
+import { hash as blake3Hash } from "blake3";
+import { canonicalStringify } from '@wasm4pm/contracts';
 
 function verifyReceipt(targetPath: string) {
   const fullPath = resolve(process.cwd(), targetPath);
@@ -59,7 +20,7 @@ function verifyReceipt(targetPath: string) {
 
   // Step 1: Recompute OCEL 2.0 Canonical Batch Hash
   const canonicalOcel2 = canonicalStringify(ocel2);
-  const computedBatchHash = createHash("sha256").update(canonicalOcel2).digest("hex");
+  const computedBatchHash = blake3Hash(canonicalOcel2).toString("hex");
 
   let batchValid = computedBatchHash === ocel2_batch_hash;
   console.log(`\n  [Batch Check]`);
@@ -69,7 +30,7 @@ function verifyReceipt(targetPath: string) {
 
   // Step 2: Recompute Receipt Admission Signature
   const receiptSeed = `${session_id}:${computedBatchHash}:${expected_path_hash}`;
-  const computedReceiptHash = createHash("sha256").update(receiptSeed).digest("hex");
+  const computedReceiptHash = blake3Hash(receiptSeed).toString("hex");
 
   let receiptValid = computedReceiptHash === receipt_hash;
   console.log(`\n  [Receipt Signature Check]`);

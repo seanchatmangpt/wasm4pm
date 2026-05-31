@@ -6,6 +6,7 @@
   "type": "module",
   "scripts": {
     "dev": "vitest",
+    "test": "vitest run",
     "run": "vitest run",
     "run:verbose": "vitest run --reporter=verbose",
     "scenario": "vitest run --reporter=verbose -t",

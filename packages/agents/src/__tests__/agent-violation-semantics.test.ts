@@ -31,6 +31,8 @@ describe('Violation severity ↔ blocked_manufacturing invariant', () => {
     });
 
     const criticalViolations = result.violations.filter((v) => v.severity === 'critical');
+    // FM-5: mock-interceptor must find at least one critical violation for mock_load
+    // traces — a bug that degrades severity to 'warning' would change this count.
     expect(criticalViolations.length).toBeGreaterThan(0);
     for (const v of criticalViolations) {
       expect(v.blocked_manufacturing).toBe(true);

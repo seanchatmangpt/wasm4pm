@@ -32,6 +32,7 @@ import { completions } from './commands/completions.js';
 import { claude } from './commands/claude.js';
 import { adversary } from './commands/adversary.js';
 import { trace } from './commands/trace.js';
+import { prefixConformance } from './commands/prefix-conformance.js';
 import { prolog8 } from './commands/prolog8.js';
 import { algorithms } from './commands/algorithms.js';
 import { examples } from './commands/examples.js';
@@ -43,9 +44,14 @@ import { wasmServer } from './commands/wasm-server.js';
 import { timeout } from './commands/timeout.js';
 import { receipt } from './commands/receipt.js';
 import { truex } from './commands/truex.js';
+import { supabase } from './commands/supabase.js';
+import { cell } from './commands/cell.js';
 import cache from './commands/cache.js';
 import deduplicate from './commands/deduplicate.js';
 import models from './commands/models.js';
+import { suggest } from './commands/suggest.js';
+import { pipeline } from './commands/pipeline.js';
+import { oracle } from './commands/oracle.js';
 import pkg from '../package.json' with { type: 'json' };
 
 export const main = defineCommand({
@@ -100,8 +106,11 @@ ${BOLD}QUICK START${RESET}
   ${CYAN}wpm doctor${RESET}                                          Diagnose environment, WASM, and config issues
 
 ${BOLD}DISCOVERY${RESET}
-  ${GREEN}wpm run${RESET} <log.xes>                   Discover a process model (default: heuristic miner)
+  ${GREEN}wpm run${RESET} <log.xes>                   Discover a process model (default: config algorithm, else profile default)
   ${GREEN}wpm run${RESET} <log.xes> --algorithm dfg   Use a specific algorithm
+  ${GREEN}wpm run${RESET} <log.xes> --auto-select      Auto-pick best algorithm for the configured profile
+  ${GREEN}wpm suggest${RESET} <log.xes>               Analyse log and recommend top algorithms for your goal
+  ${GREEN}wpm suggest${RESET} <log.xes> --goal quality Show highest-quality algorithm recommendations
   ${GREEN}wpm compare${RESET} dfg,heuristic -i <log>  Compare algorithms side-by-side with sparklines
   ${GREEN}wpm diff${RESET} <log1.xes> <log2.xes>      Compare two logs — activities, edges, Jaccard distance
 
@@ -208,6 +217,15 @@ ${BOLD}PROLOG8${RESET}  ${DIM}(byte-capped proof engine, BLAKE3 receipt chains)$
   ${GREEN}wpm prolog8 query${RESET} -i <input.json>    Evaluate a query (Allow / Deny / Invalid + proof)
   ${GREEN}wpm prolog8 replay${RESET} -i <input.json>   Verify a receipt (detect tampering)
 
+${BOLD}PIPELINE${RESET}  ${DIM}(chain steps into reusable workflows)${RESET}
+  ${GREEN}wpm pipeline run${RESET} full -i <log>              Run the full 6-step analysis pipeline
+  ${GREEN}wpm pipeline run${RESET} quick -i <log>             Run fast 2-step: validate + DFG discovery
+  ${GREEN}wpm pipeline run${RESET} compliance -i <log>        Run conformance-focused pipeline
+  ${GREEN}wpm pipeline run${RESET} <pipeline.json> -i <log>   Execute a custom pipeline definition
+  ${GREEN}wpm pipeline create${RESET} --name <n> --steps a,b,c  Create a new pipeline definition file
+  ${GREEN}wpm pipeline list${RESET}                            List all built-in and user pipelines
+  ${GREEN}wpm pipeline validate${RESET} <pipeline.json>         Validate a pipeline definition file
+
 ${BOLD}UTILITY${RESET}
   ${GREEN}wpm batch${RESET} <dir/>                    Process all XES/OCEL files in a directory, write results to --output-dir
   ${GREEN}wpm swarm${RESET} <log.xes>                 Multi-worker swarm: parallel algorithm runs, convergence voting
@@ -216,6 +234,12 @@ ${BOLD}UTILITY${RESET}
   ${GREEN}wpm explain${RESET} <algorithm>             Plain-English explanation + academic reference for any algorithm
   ${GREEN}wpm verify${RESET} <receipt.json>           Re-hash and validate a saved receipt for tamper detection
   ${GREEN}wpm repl${RESET}                            Interactive REPL: run commands without re-loading WASM each time
+
+${BOLD}DATA & INTEGRATION${RESET}
+  ${GREEN}wpm supabase sync-receipts${RESET}          Upload local command receipts to Supabase
+  ${GREEN}wpm supabase ingest-truex${RESET} <envelope.json>  Ingest a Truex envelope into Supabase
+  ${GREEN}wpm supabase doctor${RESET}                 Validate Supabase connection and credentials
+  ${GREEN}wpm supabase sync-queue${RESET}             Flush the Supabase sync queue
 
 ${BOLD}SETUP${RESET}
   ${GREEN}wpm init${RESET}                            Scaffold wasm4pm.toml + .env.example in current dir
@@ -271,13 +295,17 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     verify,
     proof,
     truex,
+    supabase,
+    cell,
     cognition,
     completions,
     claude,
     adversary,
     trace,
+    'prefix-conformance': prefixConformance,
     prolog8,
     algorithms,
+    suggest,
     examples,
     interpret,
     'exit-codes': exitCodes,
@@ -289,6 +317,8 @@ Activity key defaults to "concept:name" (XES standard). Pass --activity-key to o
     cache,
     deduplicate,
     models,
+    pipeline,
+    oracle,
   },
 });
 
@@ -327,4 +357,9 @@ export {
   interpret,
   exitCodes,
   receipt,
+  cell,
+  truex,
+  pipeline,
+  prefixConformance,
+  oracle,
 };

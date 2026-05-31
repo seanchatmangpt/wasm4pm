@@ -28,7 +28,12 @@ pub fn discover_heuristic_miner_from_log(
         frequency: 0,
     }));
 
-    let mut follows: FxHashMap<(u32, u32), usize> = FxHashMap::default();
+    // Pre-size the follows map: n² / 4 is a practical upper bound for sparse DFGs.
+    let n = col.vocab.len();
+    let mut follows: FxHashMap<(u32, u32), usize> = FxHashMap::with_capacity_and_hasher(
+        n.saturating_mul(n) / 4 + 1,
+        Default::default(),
+    );
 
     for t in 0..col.trace_offsets.len().saturating_sub(1) {
         let start = col.trace_offsets[t];
@@ -68,8 +73,24 @@ pub fn discover_heuristic_miner_from_log(
     dfg
 }
 
-/// Heuristic Miner - discovers process models from real-world logs
-/// More lenient than Alpha++ for handling noise and incomplete data
+/// Discover a process model using the Heuristic Miner algorithm.
+///
+/// More robust than Alpha++ for noisy, real-world logs. Filters low-frequency
+/// directly-follows relations based on a dependency threshold.
+///
+/// # Parameters
+/// * `eventlog_handle` — Handle from `load_eventlog_from_xes` / `load_eventlog_from_json`.
+/// * `activity_key` — XES attribute for activity names (e.g. `"concept:name"`).
+/// * `dependency_threshold` — Minimum dependency score `[0.0, 1.0]` for an edge to be included.
+///   Use `0.2`–`0.4` for real-world logs; `0.8` filters out most edges.
+///   **Do not use `0.8` on small logs** — it will produce empty or near-empty models.
+///
+/// # Returns
+/// `Result<JsValue, JsValue>` — On success, a DFG JSON with `{nodes, edges}`.
+///
+/// # Note
+/// The function uses a dependency measure rather than raw frequency. An edge `A→B` is
+/// kept if `(freq(A,B) - freq(B,A)) / (freq(A,B) + freq(B,A) + 1) >= dependency_threshold`.
 #[wasm_bindgen]
 pub fn discover_heuristic_miner(
     eventlog_handle: &str,
@@ -84,28 +105,33 @@ pub fn discover_heuristic_miner(
         "Heuristic Miner discovery started"
     );
 
-    let log = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
+    // Borrow the log in-place via with_object — avoids cloning the entire EventLog.
+    // discover_heuristic_miner_from_log accepts &EventLog, so no ownership needed.
+    // The log_size and activity_count for tracing are derived from the DFG result,
+    // eliminating the extra get_activities() pass that previously ran before the clone.
+    let (dfg, log_size) = get_or_init_state().with_object(eventlog_handle, |obj| match obj {
         Some(StoredObject::EventLog(log)) => {
+            let log_size = log.traces.len();
             tracing::info!(
                 target: "wasm4pm.discovery.heuristic_miner",
                 checkpoint = "feature_extraction",
-                log_size = log.traces.len(),
-                activity_count = log.get_activities(activity_key).len(),
-                "Log loaded and analyzed"
+                log_size = log_size,
+                "Log loaded"
             );
-            Ok(log.clone())
+            let dfg = discover_heuristic_miner_from_log(log, activity_key, dependency_threshold);
+            Ok((dfg, log_size))
         },
         Some(_) => Err(crate::error::js_val("Object is not an EventLog")),
         None => Err(crate::error::js_val("EventLog not found")),
     })?;
 
-    let dfg = discover_heuristic_miner_from_log(&log, activity_key, dependency_threshold);
     let n_nodes = dfg.nodes.len();
     let n_edges = dfg.edges.len();
 
     tracing::info!(
         target: "wasm4pm.discovery.heuristic_miner",
         checkpoint = "result_generation",
+        log_size = log_size,
         node_count = n_nodes,
         edge_count = n_edges,
         complexity = if n_nodes > 0 { n_edges as f64 / n_nodes as f64 } else { 0.0 },

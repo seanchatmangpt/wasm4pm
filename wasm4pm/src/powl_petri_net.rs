@@ -137,14 +137,12 @@ impl PetriNet {
                         .transitions
                         .iter()
                         .find(|t| &t.name == in_t)
-                        .map(|t| t.label.is_none())
-                        .unwrap_or(false);
+                        .map_or(false, |t| t.label.is_none());
                     let out_silent = self
                         .transitions
                         .iter()
                         .find(|t| &t.name == out_t)
-                        .map(|t| t.label.is_none())
-                        .unwrap_or(false);
+                        .map_or(false, |t| t.label.is_none());
 
                     if in_silent && out_silent && in_t != out_t {
                         let old_out_t = out_t.clone();

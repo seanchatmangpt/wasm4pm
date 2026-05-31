@@ -116,7 +116,7 @@ pub fn apply(
                 start_idx: cg.graph.start_idx,
                 end_idx: cg.graph.end_idx,
             };
-            dest_arena.add_choice_graph(new_graph)
+            dest_arena.add_choice_graph(&new_graph)
         }
     }
 }

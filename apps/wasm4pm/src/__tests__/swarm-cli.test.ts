@@ -198,16 +198,20 @@ describe('wpm swarm — multi-worker convergence CLI', () => {
     });
 
     it('--convergence-runs flag should be accepted', async () => {
-      const result = await runCli([
-        'swarm',
-        testXesPath,
-        '--convergence-runs',
-        '1',
-        '--max-episodes',
-        '1',
-        '--format',
-        'json',
-      ]);
+      const result = await runCli(
+        [
+          'swarm',
+          testXesPath,
+          '--convergence-runs',
+          '1',
+          '--max-episodes',
+          '1',
+          '--format',
+          'json',
+          '--no-save',
+        ],
+        { cwd: env.tempDir }
+      );
       expect(() => JSON.parse(result.stdout)).not.toThrow();
     });
 

@@ -84,6 +84,16 @@ pub fn parse_powl_model_string(s: &str, arena: &mut PowlArena) -> Result<u32, Wa
         return parse_operator(&s, "*", Operator::Loop, arena).map_err(Wasm4pmError::Parse);
     }
 
+    // Sequence operator
+    if s.starts_with("-> (") || s.starts_with("->(") {
+        return parse_sequence_operator(&s, arena).map_err(Wasm4pmError::Parse);
+    }
+
+    // Parallel operator
+    if s.starts_with("+ (") || s.starts_with("+(") {
+        return parse_parallel_operator(&s, arena).map_err(Wasm4pmError::Parse);
+    }
+
     // Silent transition
     if s == "tau" {
         let idx = arena.add_silent_transition();
@@ -98,8 +108,13 @@ pub fn parse_powl_model_string(s: &str, arena: &mut PowlArena) -> Result<u32, Wa
 // ─── Partial order parsing ────────────────────────────────────────────────────
 
 fn parse_partial_order(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
-    let nodes_str = extract_braced_content(s, "nodes={")?;
-    let order_str = extract_braced_content(s, "order={")?;
+    // Extract nodes first; then search for order= AFTER the nodes section so
+    // that `order={...}` patterns embedded inside child sub-models (which live
+    // in the nodes section) are not mistakenly matched.
+    let (nodes_str, after_nodes) = extract_braced_content_from(s, "nodes={", 0)?;
+    let order_str = extract_braced_content_from(s, "order={", after_nodes)
+        .map(|(c, _)| c)
+        .unwrap_or("");
 
     let node_tokens: Vec<String> = if nodes_str.trim().is_empty() {
         Vec::new()
@@ -146,8 +161,12 @@ fn parse_partial_order(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
 // ─── Decision graph parsing ──────────────────────────────────────────────────────
 
 fn parse_decision_graph(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
-    let nodes_str = extract_braced_content(s, "nodes={")?;
-    let order_str = extract_braced_content(s, "order={")?;
+    // Extract nodes first; search for order= only after the nodes section so
+    // nested sub-model reprs that contain `order={` are not mistakenly matched.
+    let (nodes_str, after_nodes) = extract_braced_content_from(s, "nodes={", 0)?;
+    let order_str = extract_braced_content_from(s, "order={", after_nodes)
+        .map(|(c, _)| c)
+        .unwrap_or("");
     let starts_str = extract_bracketed_content(s, "starts=[")?;
     let ends_str = extract_bracketed_content(s, "ends=[")?;
     let empty_str = extract_bool_value(s, "empty=")?;
@@ -291,7 +310,7 @@ fn parse_choice_graph(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
 
     let cg = wasm4pm_types::ChoiceGraph::new(nodes, edges)
         .map_err(|e| format!("invalid CG: {}", e))?;
-    Ok(arena.add_choice_graph(cg))
+    Ok(arena.add_choice_graph(&cg))
 }
 
 fn parse_choice_graph_node_spec(
@@ -367,14 +386,43 @@ fn extract_bool_value<'a>(s: &'a str, key: &str) -> Result<&'a str, String> {
 fn node_label_matches(token: &str, label: &str) -> bool {
     let t = token.trim().trim_matches('\'');
     let l = label.trim().trim_matches('\'');
-    t == l
+    if t == l {
+        return true;
+    }
+    // Normalize internal whitespace around commas and parens so that
+    // "X(pay, installment)" matches "X(pay,installment)" etc.
+    let normalize = |s: &str| {
+        s.chars()
+            .filter(|c| !c.is_whitespace())
+            .collect::<String>()
+    };
+    normalize(t) == normalize(l)
 }
 
 fn extract_braced_content<'a>(s: &'a str, key: &str) -> Result<&'a str, String> {
-    let start = s
+    extract_braced_content_from(s, key, 0).map(|(content, _)| content)
+}
+
+/// Extract the content inside `key{...}` starting the search from byte offset `from`.
+/// Returns `(content_slice, byte_offset_after_closing_brace)`.
+///
+/// Searching from an offset allows callers to chain sequential extractions
+/// (e.g. find `nodes={...}` first, then search for `order={` only in the
+/// remaining suffix) so that keys nested inside sub-model reprs are not
+/// mistakenly matched.
+fn extract_braced_content_from<'a>(
+    s: &'a str,
+    key: &str,
+    from: usize,
+) -> Result<(&'a str, usize), String> {
+    let search_start = s
+        .get(from..)
+        .ok_or_else(|| format!("offset {} out of range", from))?;
+    let rel_start = search_start
         .find(key)
-        .ok_or_else(|| format!("'{}' not found in '{}'", key, s))?;
-    let content_start = start + key.len();
+        .ok_or_else(|| format!("'{}' not found in '{}'", key, &s[from..]))?;
+    let abs_start = from + rel_start;
+    let content_start = abs_start + key.len();
     let rest = &s[content_start..];
     let mut depth = 1usize;
     let mut end = 0usize;
@@ -391,7 +439,9 @@ fn extract_braced_content<'a>(s: &'a str, key: &str) -> Result<&'a str, String> 
             _ => {}
         }
     }
-    Ok(&rest[..end])
+    // abs_end points to the byte just after the closing brace in `s`
+    let abs_end = content_start + end + 1; // +1 skips the closing `}`
+    Ok((&rest[..end], abs_end))
 }
 
 // ─── Operator parsing ─────────────────────────────────────────────────────────
@@ -450,6 +500,106 @@ fn strip_outer_parens(s: &str) -> Option<&str> {
         }
     }
     None
+}
+
+// ─── Sequence operator parsing ─────────────────────────────────────────────────
+
+fn parse_sequence_operator(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
+    // Remove "-> (" or "->("
+    let after_prefix = if s.starts_with("-> (") {
+        &s[4..]
+    } else if s.starts_with("->(") {
+        &s[3..]
+    } else {
+        return Err("parse_sequence: invalid prefix".to_string());
+    };
+
+    // Find the matching closing parenthesis
+    let mut depth = 1usize;
+    let mut closing_idx = None;
+    for (i, ch) in after_prefix.char_indices() {
+        match ch {
+            '(' | '{' => depth += 1,
+            ')' | '}' => {
+                depth -= 1;
+                if depth == 0 {
+                    closing_idx = Some(i);
+                    break;
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let closing_idx = closing_idx.ok_or_else(|| "parse_sequence: missing closing )".to_string())?;
+    let content = &after_prefix[..closing_idx];
+
+    // Tokenize children
+    let tokens = tokenize(content);
+    let mut children = Vec::new();
+    for token in tokens {
+        if !token.is_empty() && token != "," {
+            let op = parse_powl_model_string(&token, arena).map_err(|e| e.to_string())?;
+            children.push(op);
+        }
+    }
+
+    if children.is_empty() {
+        return Err("parse_sequence: no children".to_string());
+    }
+
+    // Create total-order sequence: all i < j edges
+    Ok(arena.add_sequence(children))
+}
+
+// ─── Parallel operator parsing ─────────────────────────────────────────────────
+
+fn parse_parallel_operator(s: &str, arena: &mut PowlArena) -> Result<u32, String> {
+    // Remove "+ (" or "+("
+    let after_prefix = if s.starts_with("+ (") {
+        &s[3..]
+    } else if s.starts_with("+(") {
+        &s[2..]
+    } else {
+        return Err("parse_parallel: invalid prefix".to_string());
+    };
+
+    // Find the matching closing parenthesis
+    let mut depth = 1usize;
+    let mut closing_idx = None;
+    for (i, ch) in after_prefix.char_indices() {
+        match ch {
+            '(' | '{' => depth += 1,
+            ')' | '}' => {
+                depth -= 1;
+                if depth == 0 {
+                    closing_idx = Some(i);
+                    break;
+                }
+            }
+            _ => {}
+        }
+    }
+
+    let closing_idx = closing_idx.ok_or_else(|| "parse_parallel: missing closing )".to_string())?;
+    let content = &after_prefix[..closing_idx];
+
+    // Tokenize children
+    let tokens = tokenize(content);
+    let mut children = Vec::new();
+    for token in tokens {
+        if !token.is_empty() && token != "," {
+            let op = parse_powl_model_string(&token, arena).map_err(|e| e.to_string())?;
+            children.push(op);
+        }
+    }
+
+    if children.is_empty() {
+        return Err("parse_parallel: no children".to_string());
+    }
+
+    // Create unordered parallel: no edges, pure partial order
+    Ok(arena.add_strict_partial_order(children))
 }
 
 // ─── tests ───────────────────────────────────────────────────────────────────
@@ -525,5 +675,41 @@ mod tests {
     fn parse_quoted_label() {
         let (arena, root) = parse("'Register Request'");
         assert_eq!(arena.to_repr(root), "Register Request");
+    }
+
+    #[test]
+    fn parse_sequence_operator() {
+        let (arena, root) = parse("-> (a b c)");
+        assert!(arena.get(root).is_some());
+    }
+
+    #[test]
+    fn parse_sequence_operator_nested() {
+        let (arena, root) = parse("-> (-> (a b) c)");
+        assert!(arena.get(root).is_some());
+    }
+
+    #[test]
+    fn parse_sequence_operator_with_tau() {
+        let (arena, root) = parse("-> (a tau b)");
+        assert!(arena.get(root).is_some());
+    }
+
+    #[test]
+    fn parse_parallel_operator() {
+        let (arena, root) = parse("+ (a b c)");
+        assert!(arena.get(root).is_some());
+    }
+
+    #[test]
+    fn parse_parallel_operator_three_children() {
+        let (arena, root) = parse("+ (x y z)");
+        assert!(arena.get(root).is_some());
+    }
+
+    #[test]
+    fn parse_parallel_operator_nested() {
+        let (arena, root) = parse("+ (+ (a b) c)");
+        assert!(arena.get(root).is_some());
     }
 }

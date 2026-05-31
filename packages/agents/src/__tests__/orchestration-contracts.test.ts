@@ -82,7 +82,10 @@ describe('AgentOrchestrator — Rank-1/Rank-2 contracts', () => {
         artifact_id: ARTIFACT_ID,
       });
       expect(result.passed).toBe(false);
-      expect(result.violations.length).toBeGreaterThan(0);
+      // FM-5: exactly one violation expected — an agent-not-found scenario should
+      // produce one 'agent_logic_not_implemented', not multiple. `> 0` would mask
+      // a regression that generates duplicate violations.
+      expect(result.violations).toHaveLength(1);
       expect(result.violations[0].violation_type).toBe('agent_logic_not_implemented');
       expect(result.violations[0].severity).toBe('warning');
       // Manufacturing-blocking left to gate logic; warning severity is the

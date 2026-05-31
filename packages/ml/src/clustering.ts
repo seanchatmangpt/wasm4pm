@@ -323,6 +323,8 @@ export async function clusterTraces(
   const method = options.method ?? 'kmeans';
   const matrix = buildFeatureMatrix(featuresJson);
 
+  // Known behavior (per @wasm4pm/ml contract): empty input → success with empty assignments,
+  // NOT a thrown error. Callers must inspect assignments.length before using the result.
   if (matrix.data.length === 0) {
     return {
       method,

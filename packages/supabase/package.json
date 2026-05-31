@@ -1,0 +1,42 @@
+{
+  "name": "@wasm4pm/supabase",
+  "version": "26.5.29",
+  "description": "Supabase integration for wasm4pm receipts, TrueX envelopes, and offline sync",
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "lint": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.49.1",
+    "@wasm4pm/contracts": "*",
+    "zod": "^3.22.4"
+  },
+  "devDependencies": {
+    "@types/node": "^20.10.0",
+    "typescript": "^5.3.3",
+    "vitest": "^1.1.0"
+  },
+  "keywords": [
+    "supabase",
+    "receipts",
+    "truex",
+    "process-mining"
+  ],
+  "license": "MIT"
+}

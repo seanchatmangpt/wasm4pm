@@ -29,6 +29,10 @@ import * as fs from 'node:fs';
 import * as path from 'node:path';
 import * as os from 'node:os';
 
+// Each test spawns a Node subprocess — 5s default vitest timeout is too low.
+// runCli defaults to 30s; set vitest test timeout higher to avoid race.
+vi.setConfig({ testTimeout: 60_000 });
+
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
 type CliTestEnv = Awaited<ReturnType<typeof createCliTestEnv>>;
@@ -996,9 +1000,9 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
       expect([EXIT_CODES.success, EXIT_CODES.source_error]).toContain(result.exitCode);
     });
 
-    it('all three subcommands complete within 3000ms', async () => {
-      // Three parallel CLI child-processes on a loaded machine; 3s is a generous
-      // but bounded budget — avoids flakiness while still catching hung processes.
+    it('all three subcommands complete within 20000ms', async () => {
+      // Three parallel CLI child-processes; 20s budget accounts for Node.js
+      // subprocess startup latency on CI machines while still catching hangs.
       const queryPath = writeTmp(tmpDir, 'timing.json', makeSimpleReceiptQuery());
       const replayPath = writeTmp(tmpDir, 'timing-r.json', makeGapReceiptReplay());
       const start = Date.now();
@@ -1007,7 +1011,7 @@ describe('Prolog8 — Enterprise Audit Chain Integration', () => {
         runCli(['prolog8', 'query', '-i', queryPath], { env: env.env }),
         runCli(['prolog8', 'replay', '-i', replayPath], { env: env.env }),
       ]);
-      expect(Date.now() - start).toBeLessThan(3000);
+      expect(Date.now() - start).toBeLessThan(20000);
     });
   });
 });

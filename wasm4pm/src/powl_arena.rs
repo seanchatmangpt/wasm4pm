@@ -559,7 +559,7 @@ impl PowlArena {
     /// Returns the arena index of the new ChoiceGraph node.
     pub fn add_choice_graph(
         &mut self,
-        graph: wasm4pm_types::ChoiceGraph,
+        graph: &wasm4pm_types::ChoiceGraph,
     ) -> u32 {
         // Normalize Activity(_) → SubModel(arena_idx_of_transition).
         let mut normalized_nodes = Vec::with_capacity(graph.nodes.len());

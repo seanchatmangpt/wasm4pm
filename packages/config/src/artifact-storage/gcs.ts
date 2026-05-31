@@ -5,14 +5,26 @@
  * Automatically compresses results before upload.
  */
 
+/** Minimal interface that GcsArtifactStorage needs from the GCS Storage instance. */
+export interface GcsStorageLike {
+  bucket(name: string): {
+    file(name: string): {
+      createWriteStream(options: {
+        metadata: { contentType: string; metadata?: Record<string, string> };
+      }): NodeJS.WritableStream;
+    };
+  };
+}
+
 export interface GcsConfig {
   bucket: string;
   projectId?: string;
   prefix?: string;
   /**
-   * Custom GCS storage instance (for testing/reuse)
+   * Custom GCS storage instance for testing/reuse.
+   * Accepts any object that satisfies GcsStorageLike.
    */
-  storage?: any;
+  storage?: GcsStorageLike;
 }
 
 export interface GcsUploadOptions {
@@ -27,7 +39,7 @@ export interface GcsUploadOptions {
  */
 export class GcsArtifactStorage {
   private config: GcsConfig;
-  private storage: any;
+  private storage: GcsStorageLike | undefined;
   private initialized: boolean = false;
 
   constructor(config: GcsConfig) {
@@ -46,10 +58,10 @@ export class GcsArtifactStorage {
     if (!this.storage) {
       // Lazy-load Google Cloud Storage SDK (optional dependency)
       try {
-        // @ts-ignore - GCS SDK is optional
-        const module = await import('@google-cloud/storage').catch(() => null);
+        // @ts-expect-error — @google-cloud/storage is an optional peer dep not in package.json
+        const module = await import('@google-cloud/storage').catch(() => null) as { Storage: new (cfg: Record<string, unknown>) => GcsStorageLike } | null;
         if (module && 'Storage' in module) {
-          this.storage = new (module as any).Storage({
+          this.storage = new module.Storage({
             projectId: this.config.projectId,
           });
         } else {
@@ -74,7 +86,7 @@ export class GcsArtifactStorage {
     const name = this.buildName(options.name);
 
     try {
-      const bucket = this.storage.bucket(this.config.bucket);
+      const bucket = this.storage!.bucket(this.config.bucket);
       const file = bucket.file(name);
 
       // Create write stream with metadata
@@ -90,7 +102,7 @@ export class GcsArtifactStorage {
           resolve(this.getGcsUrl(name));
         });
 
-        writeStream.on('error', (error: any) => {
+        writeStream.on('error', (error: Error) => {
           reject(
             new Error(
               `Failed to upload to GCS: ${error instanceof Error ? error.message : String(error)}`
@@ -117,7 +129,7 @@ export class GcsArtifactStorage {
    */
   async uploadResult(
     runId: string,
-    data: any,
+    data: unknown,
     timestamp: string
   ): Promise<string> {
     const json = JSON.stringify(data);

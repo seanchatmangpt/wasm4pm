@@ -5,6 +5,7 @@ edition.workspace = true
 license.workspace = true
 authors.workspace = true
 repository.workspace = true
+description = "Internal utilities for the wasm4pm process mining platform"
 
 [dependencies]
 serde = { workspace = true }

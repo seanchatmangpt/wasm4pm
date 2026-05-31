@@ -8,7 +8,7 @@ High-performance process mining algorithms compiled to WebAssembly for browsers 
 
 ## Features
 
-- **14 discovery algorithms** — DFG, Alpha++, ILP, Genetic, PSO, A\*, DECLARE, Heuristic Miner, Inductive Miner, Hill Climbing, ACO, Simulated Annealing, Process Skeleton, Optimized DFG
+- **15 discovery algorithms** — DFG, Alpha++, ILP, Genetic, PSO, A\*, DECLARE, Heuristic Miner, Inductive Miner, Hill Climbing, ACO, Simulated Annealing, Process Skeleton, Optimized DFG, SIMD Streaming DFG
 - **Streaming/IoT API** — ingest events incrementally; memory stays O(open traces), not O(total events)
 - **Conformance checking** — token-based replay with fitness/precision/simplicity metrics
 - **20+ analytics functions** — variants, bottlenecks, concept drift, clustering, dependencies
@@ -19,7 +19,7 @@ High-performance process mining algorithms compiled to WebAssembly for browsers 
 
 Real Criterion benchmarks (Rust native binary), 4 dataset sizes (100–50K cases):
 
-### Discovery Algorithms (14/14)
+### Discovery Algorithms (15/15)
 
 | Algorithm               | 100 cases | 1K cases | 10K cases | 50K cases | Category           |
 | ----------------------- | --------- | -------- | --------- | --------- | ------------------ |
@@ -158,14 +158,14 @@ See [`docs/`](https://github.com/seanchatmangpt/wasm4pm/tree/main/docs) for full
 **Production Ready** ✅
 
 - All features implemented and tested (133 tests, 90 unit + 43 browser integration)
-- All 14 discovery + 20+ analytics algorithms benchmarked (2026-04-04)
-- All 14 discovery + 20+ analytics algorithms benchmarked with real Criterion results
+- All 15 discovery + 20+ analytics algorithms benchmarked (2026-04-04)
+- All 15 discovery + 20+ analytics algorithms benchmarked with real Criterion results
 - Fully documented with real benchmark results
 - Ready for npm publish
 
 ## Version
 
-26.4.4
+26.5.29
 
 ## License
 

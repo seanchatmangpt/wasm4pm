@@ -6,6 +6,7 @@ import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { withLogSession } from '../with-log-session.js';
 import { withSpan, withSpanRaw } from './_otel.js';
+import { getGlobalSpanSink } from '../otel/sink.js';
 import { saveCommandReceipt, blake3Hex, newReceipt } from '../receipts/_shared.js';
 import { exitWithFlush } from '../otel/exit.js';
 
@@ -19,7 +20,7 @@ const AUTOPROCESS_STATE_FILE = '.wasm4pm/autoprocess-state.json';
  * deliberate warning + fresh-start rather than silently feeding stale
  * data into the WASM layer.
  */
-const STATE_SCHEMA_VERSION = 2;
+export const STATE_SCHEMA_VERSION = 2;
 
 async function ensureStateDir() {
   try {
@@ -267,10 +268,18 @@ async function loadState(wasm: Record<string, any>): Promise<void> {
   // (pre-v2 schema had different top-level keys); treat as stale.
   const savedVersion = typeof state['version'] === 'number' ? state['version'] : 0;
   if (savedVersion !== STATE_SCHEMA_VERSION) {
+    // Write a .bak file so the user can manually recover their state before it
+    // is discarded.  Best-effort: backup failure must not block the cold-start.
+    const backupPath = AUTOPROCESS_STATE_FILE + '.bak';
+    try {
+      await fs.copyFile(AUTOPROCESS_STATE_FILE, backupPath);
+    } catch {
+      // Backup failure is non-fatal — the warning below still surfaces the problem.
+    }
     console.warn(
-      `[autoprocess] state file schema version ${savedVersion} !== expected ${STATE_SCHEMA_VERSION}: ` +
-        `discarding stale state and starting fresh. ` +
-        `Delete ${AUTOPROCESS_STATE_FILE} to suppress this warning.`
+      `[autoprocess] State file at ${path.resolve(AUTOPROCESS_STATE_FILE)} was created with schema v${savedVersion}, ` +
+        `current is v${STATE_SCHEMA_VERSION}. Starting with fresh state. ` +
+        `Backup saved to ${path.resolve(backupPath)}`
     );
     return;
   }
@@ -352,7 +361,15 @@ async function saveState(wasm: Record<string, any>): Promise<void> {
 export const autoprocess = defineCommand({
   meta: {
     name: 'autoprocess',
-    description: 'Run AutoProcess: Perception → Decision → Protection → Optimization. Example: wpm autoprocess log.xes --algorithm genetic',
+    description:
+      'Run the MAPE-K autonomic control loop on an event log: Perception → Decision → Protection → Optimization.\n\n' +
+      'EXAMPLES:\n' +
+      '  wpm autoprocess log.xes                          # Single autonomic cycle (default)\n' +
+      '  wpm autoprocess log.xes -n 5                     # Run 5 cycles to observe RL convergence\n' +
+      '  wpm autoprocess log.xes -n 0                     # Unlimited cycles (Ctrl+C to stop)\n' +
+      '  wpm autoprocess log.xes --format json            # Machine-readable JSON output\n' +
+      '  wpm autoprocess log.xes -n 3 --verbose           # Show per-cycle SPC and RL decisions\n\n' +
+      'Exit codes: 0=success, 1=config error, 2=source/file error, 3=execution error, 4=partial failure, 5=system error',
   },
   args: {
     input: {
@@ -402,11 +419,28 @@ export const autoprocess = defineCommand({
     const verbose = Boolean(ctx.args.verbose);
     const quiet = Boolean(ctx.args.quiet);
 
+    // Resolve input path early so it can be used as a span attribute even when
+    // validation fails.  If the arg is missing citty will have already exited,
+    // so this cast is safe.
+    const inputPath = ctx.args.input as string;
+    let lateAttrs: Record<string, string | number | boolean> = {};
+
+    // withSpan wraps the ENTIRE function body — including all pre-flight
+    // validation — so every exit path (config_error, source_error, success)
+    // produces an OTEL span in Jaeger.  Moving validation inside satisfies the
+    // FM-5 requirement: no command path exits without span evidence.
+    return withSpan(
+      'autoprocess',
+      {
+        input: inputPath ?? '',
+        activity_key: String(ctx.args['activity-key'] ?? 'concept:name'),
+        format: String(format),
+        cycles: String(ctx.args.cycles ?? '1'),
+      },
+      async () => {
     // ── --format validation ────────────────────────────────────────────────────
-    // Guard before withSpan so invalid format exits config_error (1), not
-    // execution_error (3) from the WASM layer.  Rank-2 domain contract: the
-    // format flag must be 'json' or 'human'; anything else is a configuration
-    // error, not an execution error.
+    // Rank-2 domain contract: the format flag must be 'json' or 'human';
+    // anything else is a configuration error, not an execution error.
     if (!['json', 'human'].includes(format as string)) {
       const result = makeErrorResult(
         'autoprocess',
@@ -422,7 +456,6 @@ export const autoprocess = defineCommand({
     // parseInt('abc', 10) returns NaN; parseInt('1.7', 10) returns 1 (truncates).
     // NaN causes cyclesRun < NaN === false → zero cycles, silent exit 0.
     // Negative values run zero cycles for the same reason.
-    // Guard here before entering any async WASM path.
     const cyclesRaw = String(ctx.args.cycles ?? '1');
 
     // Reject float strings explicitly — parseInt('1.7') silently truncates to 1,
@@ -476,12 +509,10 @@ export const autoprocess = defineCommand({
     const unlimited = maxCycles === 0;
 
     try {
-      const inputPath = ctx.args.input as string;
       const stateFilePath = path.resolve(AUTOPROCESS_STATE_FILE);
-      let lateAttrs: Record<string, string | number | boolean> = {};
 
       await withSpan(
-        'autoprocess',
+        'autoprocess.inner',
         { input: inputPath, activity_key: String(ctx.args['activity-key'] ?? 'concept:name') },
         async () =>
           withLogSession(
@@ -495,7 +526,28 @@ export const autoprocess = defineCommand({
               await loadState(wasm);
 
               // Run AutoProcess cycle(s) — bounded by --cycles (0 = unlimited)
-              const cycleConfig = (ctx.args.config as string) || '{}';
+              // Security: validate --config is parseable JSON before passing to WASM.
+              // WASM receives cycleConfig as a raw string; malformed input causes
+              // opaque Rust panics, not useful error messages.  Guard here so the
+              // caller gets a clean CONFIG_ERROR (1) with actionable feedback.
+              const rawCycleConfig = (ctx.args.config as string) || '{}';
+              try {
+                JSON.parse(rawCycleConfig);
+              } catch {
+                const badConfigResult = makeErrorResult(
+                  'autoprocess',
+                  new Error(
+                    `--config must be valid JSON.\n\n` +
+                      `  Received: ${rawCycleConfig.length > 80 ? rawCycleConfig.slice(0, 80) + '…' : rawCycleConfig}\n\n` +
+                      `  Example: wpm autoprocess log.xes --config '{"algorithm":"dfg"}'`
+                  ),
+                  EXIT_CODES.config_error,
+                  'CONFIG_INVALID_JSON'
+                );
+                emitResult(badConfigResult, { format, verbose, quiet });
+                return await exitWithFlush(EXIT_CODES.config_error);
+              }
+              const cycleConfig = rawCycleConfig;
               let cyclesRun = 0;
               // eslint-disable-next-line @typescript-eslint/no-explicit-any
               let cycleResult: Record<string, any> = {};
@@ -666,31 +718,48 @@ export const autoprocess = defineCommand({
               await saveState(wasm);
               const final_state_hash = await hashStateFile(stateFilePath);
 
-              if (!ctx.args['no-save']) {
+              if (ctx.args.save !== false) {
                 try {
                   const inputBytes = await fsp
                     .readFile(inputPath)
                     .catch(() => Buffer.from(inputPath));
+                  // The WASM output is { cycle_result: { success, perception, ... }, timing: {} }
+                  // Access nested fields via cycle_result to match actual schema.
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  const receiptCr = (cycleResult.cycle_result ?? cycleResult) as Record<string, any>;
                   saveCommandReceipt({
                     ...newReceipt('autoprocess'),
                     command: 'autoprocess',
                     input_hash: blake3Hex(inputBytes),
                     output_hash: blake3Hex(JSON.stringify(cycleResult)),
-                    status: cycleResult.success ? 'success' : 'partial',
+                    status: receiptCr.success ? 'success' : 'partial',
                     summary: {
                       cycles_run: cyclesRun,
                       final_health_level:
-                        (cycleResult.perception?.health_state as string | undefined) ?? 'unknown',
-                      total_reward: (cycleResult.optimization?.reward as number | undefined) ?? 0,
+                        (receiptCr.perception?.health_state as string | undefined) ?? 'unknown',
+                      total_reward: (receiptCr.optimization?.reward as number | undefined) ?? 0,
                       spc_alerts_fired:
-                        (cycleResult.protection?.special_causes as unknown[] | undefined)?.length ??
+                        (receiptCr.protection?.special_causes as unknown[] | undefined)?.length ??
                         0,
                       initial_state_hash,
                       final_state_hash,
                     },
                   });
-                } catch {
-                  /* receipt write must never break the command */
+                } catch (receiptErr) {
+                  // receipt write must never break the command, but MUST leave evidence
+                  try {
+                    const sink = getGlobalSpanSink();
+                    sink({
+                      trace_id: '',
+                      span_id: '',
+                      name: 'receipt.write.failed',
+                      kind: 'INTERNAL',
+                      start_time: Date.now() * 1_000_000,
+                      end_time: Date.now() * 1_000_000,
+                      status: { code: 'ERROR', message: String(receiptErr) },
+                      attributes: { 'service.name': 'wpm', 'receipt.recovered': true, 'receipt.command': 'autoprocess' },
+                    } as import('@wasm4pm/cognition').OtelSpan);
+                  } catch { /* span emit must never throw */ }
                 }
               }
 
@@ -734,13 +803,44 @@ export const autoprocess = defineCommand({
                 final_state_hash,
               };
 
-              const result = makeResult(
+              // Build recommendations for JSON output based on cycle metrics
+              const jsonRecommendations: string[] = [];
+              {
+                const finalCrForRec = (cycleResult.cycle_result ?? cycleResult) as Record<string, unknown>;
+                const finalProtForRec = (finalCrForRec.protection ?? {}) as Record<string, unknown>;
+                const finalOptForRec = (finalCrForRec.optimization ?? {}) as Record<string, unknown>;
+                const finalPercForRec = (finalCrForRec.perception ?? {}) as Record<string, unknown>;
+                const finalCausesForRec = Array.isArray(finalProtForRec.special_causes)
+                  ? finalProtForRec.special_causes
+                  : [];
+                const finalHealthForRec = typeof finalPercForRec.health_score === 'number'
+                  ? finalPercForRec.health_score : 0;
+                const finalCircuitForRec = Boolean(finalProtForRec.circuit_allowed);
+                const finalRewardForRec = typeof finalOptForRec.reward === 'number'
+                  ? finalOptForRec.reward : 0;
+                if (!finalCircuitForRec) {
+                  jsonRecommendations.push(`Inspect circuit breaker — execution was BLOCKED (${String(finalProtForRec.circuit_state ?? 'unknown')}). Run \`wpm status\`.`);
+                }
+                if (finalCausesForRec.length > 2) {
+                  jsonRecommendations.push(`Run \`wpm doctor --verbose\` — ${finalCausesForRec.length} SPC violation(s) detected.`);
+                }
+                if (finalHealthForRec >= 3) {
+                  jsonRecommendations.push(`Run \`wpm conformance -i ${inputPath}\` — health level ${finalHealthForRec}/4 indicates process degradation.`);
+                }
+                if (finalRewardForRec < 0) {
+                  jsonRecommendations.push(`Review RL agent decisions — negative reward (${finalRewardForRec.toFixed(3)}) indicates suboptimal autonomic response.`);
+                }
+                jsonRecommendations.push(`Run \`wpm conformance -i ${inputPath}\` — verify process model quality after autonomic changes.`);
+              }
+
+              const resultWithRecommendations = makeResult(
                 'autoprocess',
-                { ...cycleResult, cycles_run: cyclesRun },
+                { ...cycleResult, cycles_run: cyclesRun, recommendations: jsonRecommendations },
                 performance.now() - t0,
                 EXIT_CODES.success
               );
-              emitResult(result, { format, verbose, quiet }, (res, projection) => {
+
+              emitResult(resultWithRecommendations, { format, verbose, quiet }, (res, projection) => {
                 const data = res.payload as Record<string, unknown>;
                 const cycle = (data.cycle_result ?? data) as Record<string, unknown>;
                 const timing = (data.timing ?? {}) as Record<string, unknown>;
@@ -748,13 +848,14 @@ export const autoprocess = defineCommand({
                 projection.info('AutoProcess — MAPE-K Cycle Summary');
                 projection.log('');
 
-                // ── Helper to format a labelled phase line ─────────────────────
-                const phaseLabel = (label: string, summary: string) => {
-                  const pad = label.padEnd(10);
-                  projection.log(`  ${pad}${summary}`);
+                // ── Helper to format a labelled phase line with status indicator ──
+                const phaseLabel = (phaseNum: number, label: string, summary: string, ok: boolean = true) => {
+                  const padded = label.padEnd(10);
+                  const indicator = ok ? '\x1b[32m✔\x1b[0m' : '\x1b[33m⚠\x1b[0m';
+                  projection.log(`  Phase ${phaseNum}: ${padded} ${indicator}  ${summary}`);
                 };
 
-                // ── MONITOR ───────────────────────────────────────────────────
+                // ── PHASE 1: PERCEPTION ───────────────────────────────────────
                 const perception = (cycle.perception ?? {}) as Record<string, unknown>;
                 const evCount = perception.event_count ?? '?';
                 const trCount = perception.trace_count ?? '?';
@@ -763,11 +864,12 @@ export const autoprocess = defineCommand({
                 const healthScore =
                   typeof perception.health_score === 'number' ? perception.health_score : '?';
                 phaseLabel(
-                  'Monitor',
+                  1,
+                  'PERCEPTION',
                   `${evCount} events, ${trCount} traces, ${actCount} activities — health: ${healthState} (${healthScore}/4)`
                 );
 
-                // ── ANALYZE ───────────────────────────────────────────────────
+                // ── PHASE 2: DECISION ─────────────────────────────────────────
                 const decision = (cycle.decision ?? {}) as Record<string, unknown>;
                 const protection = (cycle.protection ?? {}) as Record<string, unknown>;
                 const spcResults = (protection.spc_results ?? {}) as Record<string, unknown>;
@@ -783,9 +885,9 @@ export const autoprocess = defineCommand({
                   specialCausesList.length > 0
                     ? `${specialCausesList.length} anomaly(ies) detected, ${spcAlertCount} SPC alert(s) — ${guardOutcome}, ${patternSummary}`
                     : `no anomalies — ${guardOutcome}, ${patternSummary}`;
-                phaseLabel('Analyze', analyzeSummary);
+                phaseLabel(2, 'DECISION', analyzeSummary, Boolean(decision.guard_result));
 
-                // ── PLAN ──────────────────────────────────────────────────────
+                // ── PHASE 3: PROTECTION ───────────────────────────────────────
                 const circuitState = String(protection.circuit_state ?? 'unknown');
                 const circuitAllowed = Boolean(protection.circuit_allowed);
                 const circuitSummary = circuitAllowed
@@ -797,9 +899,9 @@ export const autoprocess = defineCommand({
                 const planSummary = spcMetricList
                   ? `${circuitSummary} | SPC: ${spcMetricList}`
                   : circuitSummary;
-                phaseLabel('Plan', planSummary);
+                phaseLabel(3, 'PROTECTION', planSummary, circuitAllowed);
 
-                // ── EXECUTE ───────────────────────────────────────────────────
+                // ── PHASE 4: OPTIMIZATION ─────────────────────────────────────
                 const optimization = (cycle.optimization ?? {}) as Record<string, unknown>;
                 const rlAgent = String(optimization.rl_agent ?? 'QLearning');
                 const rlAction = String(optimization.rl_action ?? 'none');
@@ -814,8 +916,10 @@ export const autoprocess = defineCommand({
                   ? ` — ${optimization.dispatch_detail}`
                   : '';
                 phaseLabel(
-                  'Execute',
-                  `${rlAgent} (LinUCB) → action: ${rlAction}${dispatchDetail} | reward: ${rewardSign}${reward.toFixed(3)} (cumulative: ${cumReward >= 0 ? '+' : ''}${cumReward.toFixed(3)}, cycle #${cycleNum})`
+                  4,
+                  'OPTIMIZATION',
+                  `${rlAgent} (LinUCB) → action: ${rlAction}${dispatchDetail} | reward: ${rewardSign}${reward.toFixed(3)} (cumulative: ${cumReward >= 0 ? '+' : ''}${cumReward.toFixed(3)}, cycle #${cycleNum})`,
+                  reward >= 0
                 );
 
                 // ── LEARN ─────────────────────────────────────────────────────
@@ -832,7 +936,8 @@ export const autoprocess = defineCommand({
                   specialCausesList.length > 0
                     ? `drift classified as ${driftLabel} (${specialCausesList.length} special cause(s)) — RL Q-table updated via reward ${rewardSign}${reward.toFixed(3)}`
                     : `no drift detected — RL Q-table stable (reward ${rewardSign}${reward.toFixed(3)})`;
-                phaseLabel('Learn', learnSummary);
+                // Print the LEARN phase as a sub-note (not numbered phase) since it's internal feedback
+                projection.log(`             ↳ Learn: ${learnSummary}`);
 
                 // ── System State narrative (multi-cycle health trend) ──────────
                 // Only meaningful when more than one cycle has run; with a single
@@ -915,15 +1020,18 @@ export const autoprocess = defineCommand({
                   );
                 }
               });
-              return await exitWithFlush(result.exit_code);
+              return await exitWithFlush(resultWithRecommendations.exit_code);
             }
           ), // end withLogSession
         () => lateAttrs
-      ); // end withSpan
+      ); // end withSpan (inner)
     } catch (error) {
       const result = makeErrorResult('autoprocess', error, EXIT_CODES.execution_error);
       emitResult(result, { format, verbose, quiet });
       return await exitWithFlush(result.exit_code);
     }
+      }, // end outer withSpan body
+      () => lateAttrs
+    ); // end outer withSpan
   },
 });

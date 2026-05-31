@@ -1716,28 +1716,519 @@ const conform = defineCommand({
   },
 });
 
+// ── Process Trace Inspection Subcommands ─────────────────────────────────────
+// These subcommands treat "trace" in the Van der Aalst sense: a sequence of
+// events that form a process case. They inspect, list, search, compare, and
+// summarize traces from XES event logs — distinct from stack-trace ingestion.
+
+/** Lightweight XES parser used by the process-trace inspection subcommands. */
+function parseXesTraces(content: string): Array<{
+  caseId: string;
+  events: Array<{ name: string; timestamp: string | null; resource: string | null; rawTs: number | null }>;
+}> {
+  const traces: Array<{
+    caseId: string;
+    events: Array<{ name: string; timestamp: string | null; resource: string | null; rawTs: number | null }>;
+  }> = [];
+
+  const traceRegex = /<trace>([\s\S]*?)<\/trace>/g;
+  let traceMatch: RegExpExecArray | null;
+  while ((traceMatch = traceRegex.exec(content)) !== null) {
+    const traceBody = traceMatch[1];
+    const caseIdMatch = /key="concept:name"\s+value="([^"]*)"/.exec(traceBody.slice(0, 500));
+    const caseId = caseIdMatch ? caseIdMatch[1] : `case-${traces.length + 1}`;
+
+    const events: Array<{ name: string; timestamp: string | null; resource: string | null; rawTs: number | null }> = [];
+    const eventRegex = /<event>([\s\S]*?)<\/event>/g;
+    let eventMatch: RegExpExecArray | null;
+    while ((eventMatch = eventRegex.exec(traceBody)) !== null) {
+      const eventBody = eventMatch[1];
+      const nameMatch = /key="concept:name"\s+value="([^"]*)"/.exec(eventBody);
+      const tsMatch = /key="time:timestamp"\s+value="([^"]*)"/.exec(eventBody);
+      const resourceMatch = /key="org:resource"\s+value="([^"]*)"/.exec(eventBody);
+      const tsStr = tsMatch ? tsMatch[1] : null;
+      let rawTs: number | null = null;
+      if (tsStr) {
+        const d = new Date(tsStr.replace(/(\d{2}):(\d{3})\+/, '$1.$2+'));
+        rawTs = isNaN(d.getTime()) ? null : d.getTime();
+      }
+      events.push({ name: nameMatch ? nameMatch[1] : 'UNKNOWN', timestamp: tsStr, resource: resourceMatch ? resourceMatch[1] : null, rawTs });
+    }
+    traces.push({ caseId, events });
+  }
+  return traces;
+}
+
+/** Format a duration in milliseconds to human-readable. */
+function fmtDuration(ms: number): string {
+  if (ms < 1000) return `${ms}ms`;
+  if (ms < 60000) return `${(ms / 1000).toFixed(0)}s`;
+  if (ms < 3600000) return `${(ms / 60000).toFixed(0)}m`;
+  if (ms < 86400000) return `${(ms / 3600000).toFixed(1)}h`;
+  return `${(ms / 86400000).toFixed(1)}d`;
+}
+
+/** Format timestamp as "YYYY-MM-DD HH:MM:SS". */
+function fmtTs(ts: number): string {
+  const d = new Date(ts);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+/** Compute variant key for a trace (activity sequence joined). */
+function variantKey(events: Array<{ name: string }>): string {
+  return events.map((e) => e.name).join('→');
+}
+
+// ── trace inspect ─────────────────────────────────────────────────────────────
+
+const processInspect = defineCommand({
+  meta: { name: 'inspect', description: 'Inspect a specific process trace (case) in detail. Example: wpm trace inspect -i log.xes --case case-001' },
+  args: {
+    input: { type: 'positional', required: false, description: 'Path to XES event log' },
+    file: { type: 'string', alias: 'i', description: 'Path to XES event log' },
+    case: { type: 'string', alias: 'c', description: 'Case ID to inspect (required)' },
+    format: { type: 'string', default: 'human', description: 'Output format: human|json' },
+  },
+  async run(ctx) {
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const inputPath = (ctx.args.input as string | undefined) || (ctx.args.file as string | undefined);
+    const caseId = ctx.args.case as string | undefined;
+
+    return withSpan('trace.inspect', { input: inputPath ?? '', case_id: caseId ?? '' }, async () => {
+      if (!inputPath || !existsSync(inputPath)) {
+        const r = makeErrorResult('trace inspect', `Input file not found: ${inputPath ?? '(none)'}`, EXIT_CODES.source_error, 'FILE_NOT_FOUND');
+        emitResult(r, { format, verbose: false, quiet: false });
+        return exitWithFlush(EXIT_CODES.source_error);
+      }
+      if (!caseId) {
+        const r = makeErrorResult('trace inspect', 'Case ID required: --case <id>', EXIT_CODES.config_error, 'MISSING_CASE_ID');
+        emitResult(r, { format, verbose: false, quiet: false });
+        return exitWithFlush(EXIT_CODES.config_error);
+      }
+
+      const content = readFileSync(inputPath, 'utf8');
+      const traces = parseXesTraces(content);
+      const trace = traces.find((t) => t.caseId === caseId);
+
+      if (!trace) {
+        const available = traces.slice(0, 5).map((t) => t.caseId).join(', ');
+        const r = makeErrorResult('trace inspect', `Case not found: "${caseId}". Available: ${available}${traces.length > 5 ? ' ...' : ''}`, EXIT_CODES.source_error, 'CASE_NOT_FOUND');
+        emitResult(r, { format, verbose: false, quiet: false });
+        return exitWithFlush(EXIT_CODES.source_error);
+      }
+
+      // Compute variant index across all traces
+      const variantMap = new Map<string, number>();
+      let vIdx = 0;
+      const allVariants: { key: string; count: number; idx: number }[] = [];
+      for (const tr of traces) {
+        const k = variantKey(tr.events);
+        if (!variantMap.has(k)) {
+          variantMap.set(k, ++vIdx);
+          allVariants.push({ key: k, count: 0, idx: vIdx });
+        }
+        const entry = allVariants.find((v) => v.key === k);
+        if (entry) entry.count++;
+      }
+      const thisVariantKey = variantKey(trace.events);
+      const thisVariantIdx = variantMap.get(thisVariantKey) ?? 0;
+      const thisVariant = allVariants.find((v) => v.key === thisVariantKey);
+      const variantCount = thisVariant?.count ?? 0;
+      const variantPct = traces.length > 0 ? ((variantCount / traces.length) * 100).toFixed(1) : '0.0';
+
+      // Compute timeline
+      const firstTs = trace.events.find((e) => e.rawTs !== null)?.rawTs ?? null;
+      const lastTs = [...trace.events].reverse().find((e) => e.rawTs !== null)?.rawTs ?? null;
+      const durationMs = firstTs !== null && lastTs !== null ? lastTs - firstTs : null;
+
+      // Build event timeline with relative times and gap flags
+      const LONG_GAP_THRESHOLD_MS = 2 * 3600000; // 2 hours
+      const timeline = trace.events.map((ev, idx) => {
+        const prevTs = idx > 0 ? trace.events[idx - 1].rawTs : null;
+        const gapMs = ev.rawTs !== null && prevTs !== null ? ev.rawTs - prevTs : null;
+        const isLongGap = gapMs !== null && gapMs > LONG_GAP_THRESHOLD_MS;
+        return {
+          index: idx + 1,
+          name: ev.name,
+          timestamp: ev.rawTs !== null ? fmtTs(ev.rawTs) : ev.timestamp ?? 'unknown',
+          resource: ev.resource ?? null,
+          gapFromPrev: gapMs !== null ? fmtDuration(gapMs) : null,
+          isLongGap,
+        };
+      });
+
+      const payload = {
+        case_id: trace.caseId,
+        event_count: trace.events.length,
+        duration: durationMs !== null ? fmtDuration(durationMs) : null,
+        duration_ms: durationMs,
+        variant_index: thisVariantIdx,
+        variant_count: variantCount,
+        variant_pct: Number(variantPct),
+        timeline,
+        activities: [...new Set(trace.events.map((e) => e.name))],
+        resources: [...new Set(trace.events.map((e) => e.resource).filter(Boolean))],
+      };
+
+      const result = makeResult('trace.inspect', payload, performance.now() - t0, EXIT_CODES.success);
+      emitResult(result, { format, verbose: false, quiet: false }, (_res, p) => {
+        p.log('');
+        p.log(`Trace Inspector: ${trace.caseId}`);
+        p.log('==========================');
+        p.log(`Trace ID: ${trace.caseId}`);
+        p.log(`Activities: ${trace.events.length} | Duration: ${durationMs !== null ? fmtDuration(durationMs) : 'n/a'} | Variant #${thisVariantIdx}`);
+        p.log('');
+        p.log('Timeline:');
+        for (const ev of timeline) {
+          const resource = ev.resource ? `(${ev.resource})`.padEnd(18) : ''.padEnd(18);
+          const gap = ev.gapFromPrev ? `── ${ev.gapFromPrev} after prev${ev.isLongGap ? ' ⚠' : ''}` : '── start';
+          p.log(`  ${ev.timestamp}  ${ev.name.padEnd(20)} ${resource} ${gap}`);
+        }
+        p.log('');
+        p.log(`Variant: #${thisVariantIdx} (seen ${variantCount} times, ${variantPct}% of log)`);
+        p.log('');
+      });
+      return exitWithFlush(EXIT_CODES.success);
+    });
+  },
+});
+
+// ── trace list ────────────────────────────────────────────────────────────────
+
+const processList = defineCommand({
+  meta: { name: 'list', description: 'List traces sorted by metric. Example: wpm trace list -i log.xes --sort duration --top 10' },
+  args: {
+    input: { type: 'positional', required: false, description: 'Path to XES event log' },
+    file: { type: 'string', alias: 'i', description: 'Path to XES event log' },
+    top: { type: 'string', description: 'Show top N traces (default: 20)', default: '20' },
+    sort: { type: 'string', description: 'Sort by: duration|events|variant|case-id (default: events)', default: 'events' },
+    format: { type: 'string', default: 'human', description: 'Output format: human|json' },
+  },
+  async run(ctx) {
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const inputPath = (ctx.args.input as string | undefined) || (ctx.args.file as string | undefined);
+    const topN = Math.max(1, parseInt(String(ctx.args.top ?? '20'), 10) || 20);
+    const sortBy = String(ctx.args.sort ?? 'events');
+
+    return withSpan('trace.list', { input: inputPath ?? '', sort: sortBy, top: topN }, async () => {
+      if (!inputPath || !existsSync(inputPath)) {
+        const r = makeErrorResult('trace list', `Input file not found: ${inputPath ?? '(none)'}`, EXIT_CODES.source_error, 'FILE_NOT_FOUND');
+        emitResult(r, { format, verbose: false, quiet: false });
+        return exitWithFlush(EXIT_CODES.source_error);
+      }
+
+      const content = readFileSync(inputPath, 'utf8');
+      const traces = parseXesTraces(content);
+
+      // Build variant index
+      const variantMap = new Map<string, number>();
+      let vIdx = 0;
+      for (const tr of traces) {
+        const k = variantKey(tr.events);
+        if (!variantMap.has(k)) variantMap.set(k, ++vIdx);
+      }
+
+      const enriched = traces.map((tr) => {
+        const firstTs = tr.events.find((e) => e.rawTs !== null)?.rawTs ?? null;
+        const lastTs = [...tr.events].reverse().find((e) => e.rawTs !== null)?.rawTs ?? null;
+        const durationMs = firstTs !== null && lastTs !== null ? lastTs - firstTs : 0;
+        return { caseId: tr.caseId, eventCount: tr.events.length, durationMs, variantIdx: variantMap.get(variantKey(tr.events)) ?? 0 };
+      });
+
+      const sorted = [...enriched].sort((a, b) => {
+        if (sortBy === 'duration') return b.durationMs - a.durationMs;
+        if (sortBy === 'variant') return a.variantIdx - b.variantIdx;
+        if (sortBy === 'case-id') return a.caseId.localeCompare(b.caseId);
+        return b.eventCount - a.eventCount; // default: events
+      });
+
+      const top = sorted.slice(0, topN);
+
+      const result = makeResult('trace.list', { total: traces.length, showing: top.length, sort: sortBy, traces: top }, performance.now() - t0, EXIT_CODES.success);
+      emitResult(result, { format, verbose: false, quiet: false }, (_res, p) => {
+        p.log('');
+        p.log(`Trace List (${traces.length} total, sorted by ${sortBy})`);
+        p.log('═'.repeat(70));
+        p.log(`${'Case ID'.padEnd(30)} ${'Events'.padEnd(8)} ${'Duration'.padEnd(12)} Variant`);
+        p.log('─'.repeat(70));
+        for (const tr of top) {
+          p.log(`${tr.caseId.padEnd(30)} ${String(tr.eventCount).padEnd(8)} ${fmtDuration(tr.durationMs).padEnd(12)} #${tr.variantIdx}`);
+        }
+        p.log('');
+        if (traces.length > topN) p.log(`  ... and ${traces.length - topN} more (use --top ${traces.length} to see all)`);
+        p.log('');
+      });
+      return exitWithFlush(EXIT_CODES.success);
+    });
+  },
+});
+
+// ── trace search ──────────────────────────────────────────────────────────────
+
+const processSearch = defineCommand({
+  meta: { name: 'search', description: 'Find traces containing an activity. Example: wpm trace search -i log.xes --contains "Approve"' },
+  args: {
+    input: { type: 'positional', required: false, description: 'Path to XES event log' },
+    file: { type: 'string', alias: 'i', description: 'Path to XES event log' },
+    contains: { type: 'string', description: 'Activity name to search for (substring match)' },
+    'starts-with': { type: 'string', description: 'Activity name that starts the trace' },
+    'ends-with': { type: 'string', description: 'Activity name that ends the trace' },
+    format: { type: 'string', default: 'human', description: 'Output format: human|json' },
+  },
+  async run(ctx) {
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const inputPath = (ctx.args.input as string | undefined) || (ctx.args.file as string | undefined);
+    const containsQ = ctx.args.contains as string | undefined;
+    const startsWithQ = ctx.args['starts-with'] as string | undefined;
+    const endsWithQ = ctx.args['ends-with'] as string | undefined;
+
+    return withSpan('trace.search', { input: inputPath ?? '' }, async () => {
+      if (!inputPath || !existsSync(inputPath)) {
+        const r = makeErrorResult('trace search', `Input file not found: ${inputPath ?? '(none)'}`, EXIT_CODES.source_error, 'FILE_NOT_FOUND');
+        emitResult(r, { format, verbose: false, quiet: false });
+        return exitWithFlush(EXIT_CODES.source_error);
+      }
+      if (!containsQ && !startsWithQ && !endsWithQ) {
+        const r = makeErrorResult('trace search', 'Provide at least one filter: --contains, --starts-with, or --ends-with', EXIT_CODES.config_error, 'MISSING_FILTER');
+        emitResult(r, { format, verbose: false, quiet: false });
+        return exitWithFlush(EXIT_CODES.config_error);
+      }
+
+      const content = readFileSync(inputPath, 'utf8');
+      const traces = parseXesTraces(content);
+
+      const matched = traces.filter((tr) => {
+        if (containsQ && !tr.events.some((e) => e.name.toLowerCase().includes(containsQ.toLowerCase()))) return false;
+        if (startsWithQ && (tr.events.length === 0 || !tr.events[0].name.toLowerCase().includes(startsWithQ.toLowerCase()))) return false;
+        if (endsWithQ && (tr.events.length === 0 || !tr.events[tr.events.length - 1].name.toLowerCase().includes(endsWithQ.toLowerCase()))) return false;
+        return true;
+      });
+
+      const matchedSummary = matched.map((tr) => ({ case_id: tr.caseId, event_count: tr.events.length, activities: tr.events.map((e) => e.name) }));
+
+      const result = makeResult('trace.search', { total_searched: traces.length, matched: matched.length, traces: matchedSummary }, performance.now() - t0, EXIT_CODES.success);
+      emitResult(result, { format, verbose: false, quiet: false }, (_res, p) => {
+        p.log('');
+        p.log(`Trace Search — ${matched.length}/${traces.length} traces matched`);
+        p.log('─'.repeat(50));
+        if (containsQ) p.log(`  Contains: "${containsQ}"`);
+        if (startsWithQ) p.log(`  Starts with: "${startsWithQ}"`);
+        if (endsWithQ) p.log(`  Ends with: "${endsWithQ}"`);
+        p.log('');
+        for (const tr of matched.slice(0, 50)) {
+          p.log(`  ${tr.caseId.padEnd(30)} (${tr.events.length} events)`);
+        }
+        if (matched.length > 50) p.log(`  ... and ${matched.length - 50} more`);
+        p.log('');
+      });
+      return exitWithFlush(EXIT_CODES.success);
+    });
+  },
+});
+
+// ── trace compare ─────────────────────────────────────────────────────────────
+
+const processCompare = defineCommand({
+  meta: { name: 'compare', description: 'Compare two process traces side-by-side. Example: wpm trace compare -i log.xes --case1 A --case2 B' },
+  args: {
+    input: { type: 'positional', required: false, description: 'Path to XES event log' },
+    file: { type: 'string', alias: 'i', description: 'Path to XES event log' },
+    case1: { type: 'string', description: 'First case ID' },
+    case2: { type: 'string', description: 'Second case ID' },
+    format: { type: 'string', default: 'human', description: 'Output format: human|json' },
+  },
+  async run(ctx) {
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const inputPath = (ctx.args.input as string | undefined) || (ctx.args.file as string | undefined);
+    const case1Id = ctx.args.case1 as string | undefined;
+    const case2Id = ctx.args.case2 as string | undefined;
+
+    return withSpan('trace.compare', { input: inputPath ?? '' }, async () => {
+      if (!inputPath || !existsSync(inputPath)) {
+        const r = makeErrorResult('trace compare', `Input file not found: ${inputPath ?? '(none)'}`, EXIT_CODES.source_error, 'FILE_NOT_FOUND');
+        emitResult(r, { format, verbose: false, quiet: false });
+        return exitWithFlush(EXIT_CODES.source_error);
+      }
+      if (!case1Id || !case2Id) {
+        const r = makeErrorResult('trace compare', 'Both --case1 and --case2 are required', EXIT_CODES.config_error, 'MISSING_CASES');
+        emitResult(r, { format, verbose: false, quiet: false });
+        return exitWithFlush(EXIT_CODES.config_error);
+      }
+
+      const content = readFileSync(inputPath, 'utf8');
+      const traces = parseXesTraces(content);
+      const tr1 = traces.find((t) => t.caseId === case1Id);
+      const tr2 = traces.find((t) => t.caseId === case2Id);
+
+      if (!tr1 || !tr2) {
+        const missing = [!tr1 && case1Id, !tr2 && case2Id].filter(Boolean).join(', ');
+        const r = makeErrorResult('trace compare', `Case(s) not found: ${missing}`, EXIT_CODES.source_error, 'CASE_NOT_FOUND');
+        emitResult(r, { format, verbose: false, quiet: false });
+        return exitWithFlush(EXIT_CODES.source_error);
+      }
+
+      const acts1 = new Set(tr1.events.map((e) => e.name));
+      const acts2 = new Set(tr2.events.map((e) => e.name));
+      const onlyIn1 = [...acts1].filter((a) => !acts2.has(a));
+      const onlyIn2 = [...acts2].filter((a) => !acts1.has(a));
+      const shared = [...acts1].filter((a) => acts2.has(a));
+      const sameVariant = variantKey(tr1.events) === variantKey(tr2.events);
+
+      const dur1 = (() => { const f = tr1.events.find((e) => e.rawTs !== null)?.rawTs ?? null; const l = [...tr1.events].reverse().find((e) => e.rawTs !== null)?.rawTs ?? null; return f !== null && l !== null ? l - f : null; })();
+      const dur2 = (() => { const f = tr2.events.find((e) => e.rawTs !== null)?.rawTs ?? null; const l = [...tr2.events].reverse().find((e) => e.rawTs !== null)?.rawTs ?? null; return f !== null && l !== null ? l - f : null; })();
+
+      const payload = {
+        case1: { id: case1Id, event_count: tr1.events.length, duration_ms: dur1, activities: [...acts1] },
+        case2: { id: case2Id, event_count: tr2.events.length, duration_ms: dur2, activities: [...acts2] },
+        same_variant: sameVariant,
+        shared_activities: shared,
+        only_in_case1: onlyIn1,
+        only_in_case2: onlyIn2,
+        jaccard_similarity: shared.length / (acts1.size + acts2.size - shared.length),
+      };
+
+      const result = makeResult('trace.compare', payload, performance.now() - t0, EXIT_CODES.success);
+      emitResult(result, { format, verbose: false, quiet: false }, (_res, p) => {
+        p.log('');
+        p.log(`Trace Comparison: ${case1Id} vs ${case2Id}`);
+        p.log('═'.repeat(55));
+        p.log(`${''.padEnd(20)} ${'Case 1'.padEnd(18)} ${'Case 2'.padEnd(18)}`);
+        p.log(`${'Case ID'.padEnd(20)} ${case1Id.padEnd(18)} ${case2Id.padEnd(18)}`);
+        p.log(`${'Events'.padEnd(20)} ${String(tr1.events.length).padEnd(18)} ${String(tr2.events.length).padEnd(18)}`);
+        p.log(`${'Duration'.padEnd(20)} ${(dur1 !== null ? fmtDuration(dur1) : 'n/a').padEnd(18)} ${(dur2 !== null ? fmtDuration(dur2) : 'n/a').padEnd(18)}`);
+        p.log(`${'Same variant?'.padEnd(20)} ${sameVariant ? 'Yes' : 'No'}`);
+        p.log(`${'Jaccard similarity'.padEnd(20)} ${(payload.jaccard_similarity * 100).toFixed(1)}%`);
+        p.log('');
+        p.log(`Shared activities (${shared.length}): ${shared.join(', ') || 'none'}`);
+        if (onlyIn1.length > 0) p.log(`Only in ${case1Id}: ${onlyIn1.join(', ')}`);
+        if (onlyIn2.length > 0) p.log(`Only in ${case2Id}: ${onlyIn2.join(', ')}`);
+        p.log('');
+      });
+      return exitWithFlush(EXIT_CODES.success);
+    });
+  },
+});
+
+// ── trace variants ────────────────────────────────────────────────────────────
+
+const processVariants = defineCommand({
+  meta: { name: 'variants', description: 'Show top N process variants. Example: wpm trace variants -i log.xes --top 10' },
+  args: {
+    input: { type: 'positional', required: false, description: 'Path to XES event log' },
+    file: { type: 'string', alias: 'i', description: 'Path to XES event log' },
+    top: { type: 'string', description: 'Show top N variants (default: 10)', default: '10' },
+    format: { type: 'string', default: 'human', description: 'Output format: human|json' },
+  },
+  async run(ctx) {
+    const t0 = performance.now();
+    const format = (ctx.args.format as 'json' | 'human') ?? 'human';
+    const inputPath = (ctx.args.input as string | undefined) || (ctx.args.file as string | undefined);
+    const topN = Math.max(1, parseInt(String(ctx.args.top ?? '10'), 10) || 10);
+
+    return withSpan('trace.variants', { input: inputPath ?? '', top: topN }, async () => {
+      if (!inputPath || !existsSync(inputPath)) {
+        const r = makeErrorResult('trace variants', `Input file not found: ${inputPath ?? '(none)'}`, EXIT_CODES.source_error, 'FILE_NOT_FOUND');
+        emitResult(r, { format, verbose: false, quiet: false });
+        return exitWithFlush(EXIT_CODES.source_error);
+      }
+
+      const content = readFileSync(inputPath, 'utf8');
+      const traces = parseXesTraces(content);
+
+      // Build variant frequency map
+      const variantFreq = new Map<string, { count: number; exampleCase: string; activities: string[] }>();
+      for (const tr of traces) {
+        const k = variantKey(tr.events);
+        if (!variantFreq.has(k)) {
+          variantFreq.set(k, { count: 0, exampleCase: tr.caseId, activities: tr.events.map((e) => e.name) });
+        }
+        variantFreq.get(k)!.count++;
+      }
+
+      const sorted = [...variantFreq.entries()]
+        .sort((a, b) => b[1].count - a[1].count)
+        .map(([key, info], idx) => ({
+          rank: idx + 1,
+          count: info.count,
+          frequency_pct: traces.length > 0 ? ((info.count / traces.length) * 100).toFixed(1) : '0.0',
+          example_case: info.exampleCase,
+          activities: info.activities,
+          activity_sequence: key,
+        }));
+
+      const top = sorted.slice(0, topN);
+
+      const result = makeResult('trace.variants', { total_traces: traces.length, unique_variants: sorted.length, variants: top }, performance.now() - t0, EXIT_CODES.success);
+      emitResult(result, { format, verbose: false, quiet: false }, (_res, p) => {
+        p.log('');
+        p.log(`Process Variants (${sorted.length} unique, ${traces.length} total traces)`);
+        p.log('═'.repeat(72));
+        p.log(`${'Rank'.padEnd(6)} ${'Count'.padEnd(8)} ${'Freq%'.padEnd(8)} ${'Example Case'.padEnd(20)} Activities`);
+        p.log('─'.repeat(72));
+        for (const v of top) {
+          const actStr = v.activities.join('→');
+          const actDisplay = actStr.length > 40 ? actStr.slice(0, 37) + '...' : actStr;
+          p.log(`#${String(v.rank).padEnd(5)} ${String(v.count).padEnd(8)} ${v.frequency_pct.padEnd(8)} ${v.example_case.padEnd(20)} ${actDisplay}`);
+        }
+        p.log('');
+        if (sorted.length > topN) p.log(`  ... and ${sorted.length - topN} more variants (use --top ${sorted.length} to see all)`);
+        const cumFreq = top.reduce((s, v) => s + Number(v.frequency_pct), 0);
+        p.log(`  Top ${top.length} variants cover ${cumFreq.toFixed(1)}% of all traces`);
+        p.log('');
+      });
+      return exitWithFlush(EXIT_CODES.success);
+    });
+  },
+});
+
 // ── root trace command ────────────────────────────────────────────────────────
 
 export const trace = defineCommand({
   meta: {
     name: 'trace',
-    description: 'Stack trace → TraceGraph → OCEL → POWL v2 conformance pipeline',
+    description: 'Stack trace → TraceGraph → OCEL → POWL v2 conformance pipeline. Also: process trace inspection (inspect, list, search, compare, variants).',
   },
-  subCommands: { ingest, ocel, powl: powlRoute, conform },
+  subCommands: { ingest, ocel, powl: powlRoute, conform, inspect: processInspect, list: processList, search: processSearch, compare: processCompare, variants: processVariants },
   args: {
     format: { type: 'string', default: 'human' },
     verbose: { type: 'boolean', alias: 'v' },
     quiet: { type: 'boolean', alias: 'q' },
   },
-  async run(_ctx) {
+  async run(ctx) {
+    if (ctx && ctx.rawArgs && ctx.cmd && ctx.cmd.subCommands) {
+      const subCommands = Object.keys(ctx.cmd.subCommands);
+      const hasSubcommand = ctx.rawArgs.some((arg) => subCommands.includes(arg));
+      if (hasSubcommand) {
+        return;
+      }
+    }
     process.stdout.write(`
-wpm trace — Trace-to-POWL v2 Conformance Pipeline
+wpm trace — Stack Trace Ingestion & Process Trace Inspection
 
-Ingest stack traces from Rust or TypeScript, project to object-centric
-evidence (OCEL), derive observed POWL routes, and check conformance
-against declared POWL v2 models.
+Two distinct capabilities:
 
-Subcommands:
+── Process Trace Inspection (Van der Aalst XES traces) ────────────────
+  wpm trace inspect -i log.xes --case <id>
+      Inspect a specific process case in detail with timeline
+
+  wpm trace list -i log.xes --sort duration --top 10
+      List traces sorted by metric (duration|events|variant|case-id)
+
+  wpm trace search -i log.xes --contains "Approve"
+      Find traces containing an activity (substring match)
+
+  wpm trace compare -i log.xes --case1 A --case2 B
+      Compare two traces side-by-side (shared/unique activities, duration)
+
+  wpm trace variants -i log.xes --top 10
+      Show top N variants by frequency with coverage percentage
+
+── Stack Trace → OCEL → POWL v2 Conformance Pipeline ─────────────────
   wpm trace ingest --from rust|typescript [-i trace.txt] [-o graph.json]
       Parse a stack trace into TraceGraph JSON-LD
 
@@ -1755,20 +2246,6 @@ Pipeline (pipe-friendly):
     | wpm trace ocel \\
     | wpm trace powl \\
     | wpm trace conform -m routes/my-route.powl.json
-
-POWL v2 model format (routes/*.powl.json):
-  {
-    "route_id": "my-route",
-    "type": "powl2",
-    "required_stages": ["activity.a", "activity.b"],
-    "model": {
-      "type": "choice_graph",
-      "choice_graph": {
-        "nodes": ["▷", "activity.a", "activity.b", "□"],
-        "edges": [["▷", "activity.a"], ["activity.a", "activity.b"], ["activity.b", "□"]]
-      }
-    }
-  }
 
 Accepted requires fitness=1.0 and all required_stages present.
 NotMeasured dimensions cause AndonPull(TestRouteIncomplete) per MCPP doctrine.

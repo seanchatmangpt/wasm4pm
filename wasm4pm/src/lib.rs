@@ -1,4 +1,4 @@
-#![allow(clippy::all, dead_code, unused_variables, unused_assignments, unused_mut)]
+#![allow(dead_code, unused_variables, unused_assignments, unused_mut)]
 //! # wasm4pm — High-Performance Process Mining in WebAssembly
 //!
 //! `wasm4pm` provides production-ready process mining algorithms compiled to WebAssembly,
@@ -78,9 +78,6 @@
 //! - [npm Package](https://www.npmjs.com/package/@wasm4pm/cli)
 //! - [Documentation](https://docs.rs/wasm4pm)
 
-#![allow(clippy::all)]
-#![allow(clippy::all)]
-
 /// Cache residency helpers for warm-starting the WASM module.
 pub mod cache_resident;
 /// Compatibility layer for bcinr.
@@ -99,6 +96,13 @@ pub mod state;
 pub mod types;
 /// Adversarial receipt doctor validation and truth verification.
 pub mod receipt;
+/// Process-Model Registry module.
+pub mod model_registry;
+
+#[cfg(feature = "ocel")]
+pub mod ocpq_parser;
+#[cfg(feature = "ocel")]
+pub mod ocpq_runtime;
 
 use std::cell::RefCell;
 
@@ -434,7 +438,14 @@ pub mod streaming;
 pub mod streaming_conformance;
 #[cfg(feature = "streaming_full")]
 pub mod streaming_pipeline;
-#[cfg(feature = "streaming_full")]
+// streaming_wasm exposes #[wasm_bindgen] exports for all streaming algorithms.
+// It only depends on types available in streaming_basic (StreamingDfgBuilder,
+// StreamingHeuristicBuilder, StreamingSkeletonBuilder), so it compiles under
+// streaming_basic — not just streaming_full. Without this gate change, the
+// streaming_dfg_begin/add_event/snapshot/… functions are completely absent from
+// edge and iot WASM builds, and the TypeScript optional methods on WasmModule
+// would always be undefined at runtime.
+#[cfg(feature = "streaming_basic")]
 pub mod streaming_wasm;
 
 // Conformance (gated by conformance_basic or conformance_full features)
@@ -3277,4 +3288,19 @@ pub fn truex_verify_receipt(envelope_json: &str) -> Result<String, JsValue> {
     });
 
     Ok(serde_json::to_string(&out).unwrap())
+}
+
+#[cfg(feature = "ocel")]
+#[wasm_bindgen]
+pub fn evaluate_ocpq(ocel_json: &str, query_str: &str) -> Result<String, JsValue> {
+    let ocel: crate::models::OCEL = serde_json::from_str(ocel_json)
+        .map_err(|e| crate::error::js_val(&format!("Invalid OCEL JSON: {e}")))?;
+
+    let query = ocpq_parser::parse(query_str)
+        .map_err(|e| crate::error::js_val(&format!("OCPQ Parse Error: {e}")))?;
+
+    let verdict = ocpq_runtime::evaluate(&ocel, &query);
+
+    serde_json::to_string(&verdict)
+        .map_err(|e| crate::error::js_val(&format!("Serialization failed: {e}")))
 }

@@ -9,6 +9,7 @@ documentation = "https://docs.rs/wasm4pm-types"
 readme = "README.md"
 
 [dependencies]
+ocel-core = { path = "../ocel-core" }
 serde = { workspace = true }
 serde_json = { workspace = true }
 chrono = { workspace = true }

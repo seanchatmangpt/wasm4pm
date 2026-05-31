@@ -7,14 +7,34 @@
 
 import type { Receipt, ExecutionSummary } from '@wasm4pm/contracts';
 
+/**
+ * Extended summary shape used at runtime — has optional quality fields not in the
+ * base ExecutionSummary contract.
+ */
+interface RuntimeSummary extends ExecutionSummary {
+  status?: string;
+  fitness?: number;
+  precision?: number;
+}
+
+/** Minimal HTTP client interface used by GrafanaSink (injectable for testing). */
+export interface GrafanaHttpClient {
+  post(
+    url: string,
+    data: unknown,
+    options: { headers: Record<string, string> }
+  ): Promise<{ status: number; statusText: string; data?: unknown }>;
+}
+
 export interface GrafanaConfig {
   url: string;
   apiToken: string;
   dashboardId?: number;
   /**
-   * Custom HTTP client for testing (allows mocking)
+   * Custom HTTP client for testing (allows mocking).
+   * Defaults to a fetch-based client when omitted.
    */
-  httpClient?: any;
+  httpClient?: GrafanaHttpClient;
 }
 
 export interface GrafanaAnnotation {
@@ -22,7 +42,8 @@ export interface GrafanaAnnotation {
   time: number;
   text: string;
   tags: string[];
-  [key: string]: any;
+  // Allow pass-through of extra Grafana annotation fields (e.g. timeEnd, panelId).
+  [key: string]: string | number | string[] | undefined;
 }
 
 /**
@@ -30,7 +51,7 @@ export interface GrafanaAnnotation {
  */
 export class GrafanaSink {
   private config: GrafanaConfig;
-  private httpClient: any;
+  private httpClient: GrafanaHttpClient | undefined;
 
   constructor(config: GrafanaConfig) {
     this.config = config;
@@ -87,7 +108,7 @@ export class GrafanaSink {
       tags: [
         'wasm4pm',
         result.algorithm?.name || 'unknown',
-        (result.summary as any)?.status || 'unknown',
+        (result.summary as RuntimeSummary | undefined)?.status || 'unknown',
       ],
     };
 
@@ -118,12 +139,12 @@ export class GrafanaSink {
   }
 
   /**
-   * Get or create an HTTP client (lazy-loaded)
+   * Get or create an HTTP client (lazy-loaded fetch-based implementation)
    */
-  private async getHttpClient(): Promise<any> {
-    // Return a simple fetch-based client
+  private async getHttpClient(): Promise<GrafanaHttpClient> {
+    // Return a simple fetch-based client that satisfies GrafanaHttpClient
     return {
-      post: async (url: string, data: any, options: any) => {
+      post: async (url: string, data: unknown, options: { headers: Record<string, string> }) => {
         const response = await fetch(url, {
           method: 'POST',
           headers: options.headers || {},
@@ -132,7 +153,7 @@ export class GrafanaSink {
         return {
           status: response.status,
           statusText: response.statusText,
-          data: await response.json().catch(() => null),
+          data: await response.json().catch(() => null) as unknown,
         };
       },
     };
@@ -146,7 +167,7 @@ export function createAnnotationFromResult(
   result: Partial<Receipt> & { summary?: ExecutionSummary; algorithm?: { name: string } },
   runId: string
 ): GrafanaAnnotation {
-  const summary = result.summary as any;
+  const summary = result.summary as RuntimeSummary | undefined;
   const tags = [
     'wasm4pm',
     result.algorithm?.name || 'unknown',

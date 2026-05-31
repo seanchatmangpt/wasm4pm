@@ -83,7 +83,7 @@ fn paper_figure1_retail_order_acceptance() {
     let cg = ChoiceGraph::new(nodes, edges).expect("paper fig1 should validate");
 
     let mut arena = PowlArena::new();
-    let root = arena.add_choice_graph(cg);
+    let root = arena.add_choice_graph(&cg);
 
     // The projection (Definition 3) wraps each Start outgoing edge in its own
     // silent τ_start. Token-based replay is eager on silents and resolves the
@@ -150,7 +150,7 @@ fn paper_figure1_invalid_trace_yields_lower_fitness() {
     let cg = ChoiceGraph::new(nodes, edges).unwrap();
 
     let mut arena = PowlArena::new();
-    let root = arena.add_choice_graph(cg);
+    let root = arena.add_choice_graph(&cg);
 
     // CheckOrder + Schedule + Cancel mixes mutually-exclusive branches.
     let t = trace_of("bad", &["CheckOrder", "Schedule", "Cancel"]);
@@ -229,7 +229,7 @@ fn xor_lowered_to_two_node_choice_graph_language_match() {
         vec![(0, 1), (0, 2), (1, 3), (2, 3)],
     )
     .unwrap();
-    let cg_root = arena_cg.add_choice_graph(cg);
+    let cg_root = arena_cg.add_choice_graph(&cg);
 
     // XOR model: Operator::Xor over [a, b].
     let mut arena_xor = PowlArena::new();

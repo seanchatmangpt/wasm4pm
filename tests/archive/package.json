@@ -1,0 +1,12 @@
+{
+  "name": "@wasm4pm/test-archive",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "test:lane": "vitest run --passWithNoTests"
+  },
+  "devDependencies": {
+    "vitest": "^1.1.0"
+  }
+}

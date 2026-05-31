@@ -1,7 +1,7 @@
 {
   "name": "@wasm4pm/swarm",
-  "version": "26.5.21",
-  "description": "Autonomic swarm coordinator for wasm4pm — multi-worker process mining with convergence detection",
+  "version": "26.5.29",
+  "description": "Autonomic swarm coordinator for wasm4pm \u2014 multi-worker process mining with convergence detection",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -29,8 +29,7 @@
     "@wasm4pm/observability": "*",
     "ai": "^6.0.168",
     "smol-toml": "^1.3.4",
-    "uuid": "^11.1.0",
-    "wasm4pm": "*",
+    "uuid": "^11.1.1",
     "zod": "^3.25.0"
   },
   "devDependencies": {

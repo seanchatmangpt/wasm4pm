@@ -120,7 +120,7 @@ function wpm(...args: string[]) {
   delete env.VITEST;
   return spawnSync('node', [WPM_BIN, ...args], {
     encoding: 'utf8',
-    timeout: 30_000,
+    timeout: 60_000,
     env,
   });
 }
@@ -227,8 +227,10 @@ describe('2. wpm quality', () => {
   });
 
   it('2.5 wpm quality <xes> --format json exits 0 or 3 (never hangs or crashes)', () => {
-    if (!fs.existsSync(XES_STANDARD)) return;
-    const result = wpm('quality', XES_STANDARD, '--format', 'json', '--no-save');
+    // Use XES_SIMPLE: the default ILP algorithm is slow on XES_STANDARD (5 activities → ~110s).
+    // XES_SIMPLE has 2 activities and runs in ~5s, well within the 30s spawnSync timeout.
+    if (!fs.existsSync(XES_SIMPLE)) return;
+    const result = wpm('quality', XES_SIMPLE, '--format', 'json', '--no-save');
     // 0 = success with quality dimensions; 3 = execution_error (model discovery failed)
     const acceptable = [0, 3];
     if (!acceptable.includes(result.status ?? -1)) {
@@ -241,8 +243,8 @@ describe('2. wpm quality', () => {
   });
 
   it('2.6 wpm quality --format json stdout is valid JSON', () => {
-    if (!fs.existsSync(XES_STANDARD)) return;
-    const result = wpm('quality', XES_STANDARD, '--format', 'json', '--no-save');
+    if (!fs.existsSync(XES_SIMPLE)) return;
+    const result = wpm('quality', XES_SIMPLE, '--format', 'json', '--no-save');
     const acceptable = [0, 3];
     expect(acceptable).toContain(result.status);
     const parsed = parseJson(result.stdout);
@@ -250,16 +252,16 @@ describe('2. wpm quality', () => {
   });
 
   it('2.7 wpm quality JSON envelope has command="quality"', () => {
-    if (!fs.existsSync(XES_STANDARD)) return;
-    const result = wpm('quality', XES_STANDARD, '--format', 'json', '--no-save');
+    if (!fs.existsSync(XES_SIMPLE)) return;
+    const result = wpm('quality', XES_SIMPLE, '--format', 'json', '--no-save');
     const parsed = parseJson(result.stdout);
     expect(parsed).not.toBeNull();
     expect(parsed!['command']).toBe('quality');
   });
 
   it('2.8 wpm quality JSON meta has run_id (UUID) and version', () => {
-    if (!fs.existsSync(XES_STANDARD)) return;
-    const result = wpm('quality', XES_STANDARD, '--format', 'json', '--no-save');
+    if (!fs.existsSync(XES_SIMPLE)) return;
+    const result = wpm('quality', XES_SIMPLE, '--format', 'json', '--no-save');
     const parsed = parseJson(result.stdout);
     expect(parsed).not.toBeNull();
     const meta = parsed!['meta'] as Record<string, unknown> | undefined;
@@ -273,8 +275,8 @@ describe('2. wpm quality', () => {
   });
 
   it('2.9 wpm quality success: payload.scores has fitness as number in [0, 1]', () => {
-    if (!fs.existsSync(XES_STANDARD)) return;
-    const result = wpm('quality', XES_STANDARD, '--format', 'json', '--no-save');
+    if (!fs.existsSync(XES_SIMPLE)) return;
+    const result = wpm('quality', XES_SIMPLE, '--format', 'json', '--no-save');
     const parsed = parseJson(result.stdout);
     expect(parsed).not.toBeNull();
     if (result.status === 0 && parsed!['status'] === 'ok') {

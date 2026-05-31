@@ -133,8 +133,7 @@ pub fn score_trace_likelihood(
                 let prob = preds
                     .iter()
                     .find(|(a, _)| a == &acts[i + 1])
-                    .map(|(_, p)| *p)
-                    .unwrap_or(1e-10);
+                    .map_or(1e-10, |(_, p)| *p);
                 log_prob += prob.ln();
             }
             Ok(JsValue::from_f64(log_prob))

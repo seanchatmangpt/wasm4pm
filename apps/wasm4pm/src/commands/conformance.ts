@@ -51,6 +51,8 @@ import {
   diagnose,
   validateConformanceResultFromCases,
   estimateGeneralization,
+  getConformanceCache,
+  hashLogOrModel,
   type InvariantViolation,
   type LogStats,
 } from '@wasm4pm/observability';
@@ -312,24 +314,21 @@ export const conformance = defineCommand({
               const modelPath = ctx.args.model as string | undefined;
 
               if (modelPath) {
-                // Load provided model from file, store it, and get a handle
-                try {
-                  await fs.access(modelPath);
-                  const modelContent = await fs.readFile(modelPath, 'utf-8');
-                  JSON.parse(modelContent);
-                  // Note: For now, we assume the model file is a Petri Net JSON
-                  // In the future, we could store it via WASM API
-                  petriNetHandle = `model_${Date.now()}`;
-                } catch {
-                  const result = makeErrorResult(
-                    'conformance',
-                    new Error(`Model file not found or invalid: ${modelPath}`),
-                    EXIT_CODES.source_error,
-                    'SOURCE_ERROR'
-                  );
-                  emitResult(result, { format, verbose, quiet });
-                  return await exitWithFlush(result.exit_code);
-                }
+                // External model files are not yet registered in the WASM model store.
+                // Refuse rather than fabricate a handle (would produce false conformance).
+                const result = makeErrorResult(
+                  'conformance',
+                  new Error(
+                    `Loading models from --model is not supported yet. ` +
+                      `Omit --model to auto-discover a Petri net from the log, ` +
+                      `or use PNML import via the kernel API when available.`
+                  ),
+                  EXIT_CODES.config_error,
+                  'INVALID_MODEL_HANDLE',
+                  'Run without --model: wpm conformance -i <log.xes>'
+                );
+                emitResult(result, { format, verbose, quiet });
+                return await exitWithFlush(result.exit_code);
               } else {
                 // Auto-discover a Petri Net using Alpha++
                 const discoveryResult = withWasmSpan(
@@ -346,12 +345,34 @@ export const conformance = defineCommand({
                 if (!petriNetHandle) {
                   const result = makeErrorResult(
                     'conformance',
-                    new Error('Failed to discover Petri Net model'),
+                    new Error(
+                      `Auto-discovery failed: Alpha++ could not produce a Petri Net from the event log.\n\n` +
+                      `  This usually means:\n` +
+                      `  • The log has too few traces (Alpha++ needs at least 2)\n` +
+                      `  • The activity key '${activityKey}' doesn't match any events\n\n` +
+                      `  Try:\n` +
+                      `    wpm run -i ${inputPath} --algorithm dfg       -- check if log loads correctly\n` +
+                      `    wpm validate -i ${inputPath}                   -- check log structure\n` +
+                      `    wpm conformance -i ${inputPath} --activity-key concept:name  -- try the standard key`
+                    ),
                     EXIT_CODES.execution_error,
                     'EXECUTION_ERROR'
                   );
                   emitResult(result, { format, verbose, quiet });
                   return await exitWithFlush(result.exit_code);
+                }
+              }
+
+              // Derive cache keys for lazy mode (sha256 of raw file content + model handle)
+              let logCacheHash = '';
+              let modelCacheHash = '';
+              if (precisionMode === 'lazy') {
+                try {
+                  const logBytes = await fs.readFile(inputPath);
+                  logCacheHash = hashLogOrModel(logBytes);
+                  modelCacheHash = hashLogOrModel(petriNetHandle);
+                } catch {
+                  // Hashing failure is non-fatal; degrade to skip-cache path
                 }
               }
 
@@ -447,6 +468,28 @@ export const conformance = defineCommand({
 
               const deviatingCases = isTokenReplay ? totalCases - conformingCases : 0;
               const conformanceRate = totalCases > 0 ? conformingCases / totalCases : fitnessValue;
+
+              // In lazy mode: check cache first — if a previous run stored precision, reuse it.
+              // This lets the second invocation skip the ~100ms ETConformance call.
+              if (precisionMode === 'lazy' && logCacheHash && modelCacheHash) {
+                const conformanceCache = getConformanceCache();
+                const cached = conformanceCache.getCachedFitness(logCacheHash, modelCacheHash);
+                if (cached && cached.precision_available && cached.precision !== null) {
+                  precision = cached.precision;
+                  precision_available = true;
+                  if (verbose) {
+                    console.log(
+                      `[cache] conformance.precision.lazy_hit: precision=${precision.toFixed(3)} (from cache)`
+                    );
+                  }
+                }
+                // Always store fitness result for future lazy lookups (regardless of hit/miss)
+                conformanceCache.cacheFitness(logCacheHash, modelCacheHash, {
+                  fitness: fitnessValue,
+                  precision: precision,
+                  precision_available,
+                });
+              }
 
               // In full mode, attempt precision computation via ETConformance (wasm_compute_precision).
               // fast and lazy modes skip this call intentionally to save ~100ms.
@@ -739,9 +782,22 @@ export const conformance = defineCommand({
             }
           ); // end withLogSession
         } catch (error) {
+          const rawMsg = error instanceof Error ? error.message : String(error);
+          let hint = '';
+          if (rawMsg.toLowerCase().includes('xml') || rawMsg.toLowerCase().includes('parse') || rawMsg.toLowerCase().includes('xes')) {
+            hint = '\n\n  The event log may be malformed. Run:\n    wpm validate <log.xes>';
+          } else if (rawMsg.toLowerCase().includes('handle') || rawMsg.toLowerCase().includes('wasm')) {
+            hint = '\n\n  WASM execution failed. Run:\n    wpm doctor';
+          } else if (rawMsg.toLowerCase().includes('petri') || rawMsg.toLowerCase().includes('model') || rawMsg.toLowerCase().includes('discovery')) {
+            hint =
+              '\n\n  Model discovery failed. Try a different algorithm:\n' +
+              '    wpm conformance -i <log.xes>  (uses alpha++ by default)\n' +
+              '  Or check the log quality first:\n' +
+              '    wpm validate -i <log.xes>';
+          }
           const result = makeErrorResult(
             'conformance',
-            error,
+            new Error(`Conformance check failed: ${rawMsg}${hint}`),
             EXIT_CODES.execution_error,
             'EXECUTION_ERROR'
           );
@@ -771,16 +827,21 @@ function printHumanConformance(payload: ConformancePayload, projection: ConsoleP
   projection.log(`  Precision mode: ${payload.computed_at}`);
   projection.log('');
 
-  // Primary fitness score with Van der Aalst threshold context
+  // Primary fitness score — PASS/FAIL format with threshold context
   // GAP-CONF-3: Include 95% confidence interval for statistical significance
-  const fitnessStatus =
-    fitness >= 0.85 ? 'excellent' : fitness >= threshold ? 'acceptable' : 'below threshold';
+  const colorReset = '\x1b[0m';
+  const passColor = '\x1b[32m';
+  const warnColor = '\x1b[33m';
+  const failColor = '\x1b[31m';
+  const dimColor = '\x1b[2m';
+
+  const fitnessPassFail = isFit ? `${passColor}✓ PASS` : `${failColor}✗ FAIL`;
   const ciDisplay =
     payload.fitness_ci_lower !== undefined && payload.fitness_ci_upper !== undefined
       ? ` [95% CI: ${payload.fitness_ci_lower.toFixed(3)}–${payload.fitness_ci_upper.toFixed(3)}]`
       : '';
   projection.log(
-    `  Fitness: ${fitness.toFixed(3)} ${isFit ? '✓' : '✗'}  [threshold: ${threshold.toFixed(2)}, Van der Aalst target: >=0.85 — ${fitnessStatus}]${ciDisplay}`
+    `  Fitness:   ${fitness.toFixed(3)}  ${fitnessPassFail}${colorReset} (threshold: ${threshold.toFixed(2)})${ciDisplay}`
   );
 
   // Warn if sample size is below recommended threshold
@@ -788,31 +849,62 @@ function printHumanConformance(payload: ConformancePayload, projection: ConsoleP
     projection.log(`  ⚠ ${payload.sample_size_warning}`);
   }
 
-  // Concrete implication: translate the fitness score into practitioner language
+  // Concrete implication lines — translate the score into practitioner language
   if (summary.total_cases > 0) {
-    const conformPct = (summary.conformance_rate * 100).toFixed(1);
-    const deviatePct = (100 - summary.conformance_rate * 100).toFixed(1);
     if (summary.deviating_cases === 0) {
-      projection.log(`  => All ${summary.total_cases} traces replay without deviation.`);
+      projection.log(`  → All ${summary.total_cases} traces replay without deviation.`);
     } else {
-      projection.log(
-        `  => ${summary.conforming_cases} of ${summary.total_cases} traces conform (${conformPct}%); ` +
-          `${summary.deviating_cases} deviate (${deviatePct}%) — each requires missing or extra tokens.`
-      );
+      const deviatePct = ((1 - summary.conformance_rate) * 100).toFixed(1);
+      projection.log(`  → ${deviatePct}% of traces have deviating paths`);
+
+      // Common issue: dominant deviation type across deviating traces
+      if (deviatingTraces.length > 0) {
+        let missingCount = 0;
+        let extraCount = 0;
+        for (const t of deviatingTraces) {
+          for (const d of t.deviations) {
+            const dt = (d.deviation_type ?? '').toLowerCase();
+            if (dt.includes('missing') || dt.includes('model_move')) missingCount++;
+            else if (dt.includes('extra') || dt.includes('log_move') || dt.includes('skip')) extraCount++;
+          }
+        }
+        if (missingCount > extraCount) {
+          projection.log(`  → Common issue: model requires activities that are skipped in the log (missing tokens)`);
+          projection.log(`  → Suggestion: Try 'wpm run ${payload.input} --algorithm inductive_miner' for a more flexible model`);
+        } else if (extraCount > missingCount) {
+          projection.log(`  → Common issue: log contains activities the model doesn't expect (extra tokens)`);
+          projection.log(`  → Suggestion: Try 'wpm run ${payload.input} --algorithm genetic_algorithm' for a better-fitting model`);
+        } else if (missingCount === 0 && extraCount === 0 && summary.deviating_cases > 0) {
+          projection.log(`  → Common issue: traces end before model reaches final marking (remaining tokens)`);
+          projection.log(`  → Suggestion: Try 'wpm run ${payload.input} --algorithm inductive_miner' for a sound process tree`);
+        }
+      } else if (!isFit) {
+        projection.log(`  → Suggestion: Try 'wpm run ${payload.input} --algorithm genetic_algorithm' for a better-fitting model`);
+      }
     }
   } else if (fitness < 1.0) {
-    // Alignment path — no per-case breakdown; express as percentage
     const nonConformPct = ((1 - fitness) * 100).toFixed(1);
-    projection.log(
-      `  => Alignment cost suggests approximately ${nonConformPct}% of trace moves are non-conforming.`
-    );
+    projection.log(`  → ${nonConformPct}% of traces have deviating paths (alignment estimate)`);
+    if (!isFit) {
+      projection.log(`  → Suggestion: Try 'wpm run ${payload.input} --algorithm inductive_miner' for a more flexible model`);
+    }
   } else {
-    projection.log(`  => Perfect fitness — all trace moves align with the model.`);
+    projection.log(`  → Perfect fitness — all trace moves align with the model.`);
   }
 
-  const precisionDisplay =
-    precisionAvailable && precisionRaw !== null ? precisionRaw.toFixed(3) : 'N/A (not computed)';
-  projection.log(`  Precision: ${precisionDisplay}`);
+  // Precision line
+  let precisionDisplay: string;
+  if (precisionAvailable && precisionRaw !== null) {
+    const excessPct = ((1 - precisionRaw) * 100).toFixed(1);
+    const precStatus = precisionRaw >= 0.8 ? '✓ good' : precisionRaw >= 0.5 ? '~ medium' : '✗ low';
+    const precColor = precisionRaw >= 0.8 ? passColor : precisionRaw >= 0.5 ? warnColor : failColor;
+    precisionDisplay = `${precColor}${precisionRaw.toFixed(3)}  ${precStatus}${colorReset}`;
+    projection.log(`  Precision: ${precisionDisplay}`);
+    projection.log(`  → model allows ${excessPct}% more behaviour than observed`);
+  } else {
+    precisionDisplay = `${dimColor}N/A (not computed)${colorReset}`;
+    projection.log(`  Precision: ${precisionDisplay}`);
+  }
 
   // GAP-CONF-1: Display generalization score (computed from trace variant analysis)
   const generalization = (payload.generalization as number | null | undefined) ?? null;
@@ -936,15 +1028,86 @@ function printHumanConformance(payload: ConformancePayload, projection: ConsoleP
 
   if (isFit) {
     projection.success('Log conforms to model (fitness >= threshold)');
-  } else {
-    projection.warn('Log does NOT conform to model (fitness < threshold)');
     projection.log('');
     projection.log('  Next steps:');
-    projection.log('    wpm run -i <log.xes>              # discover a better-fitting model');
+    projection.log(`    wpm predict next-activity -i ${payload.input}   -- predict what happens next in running cases`);
+    projection.log(`    wpm run -i ${payload.input} --with-quality       -- re-discover with quality metrics`);
+  } else {
+    projection.warn(`Log does NOT conform to model (fitness ${(fitness * 100).toFixed(0)}% < threshold ${(threshold * 100).toFixed(0)}%)`);
+
+    // Diagnose the most common deviation type from trace evidence
+    if (deviatingTraces.length > 0) {
+      projection.log('');
+      // Collect the most frequently skipped activities
+      const missingActs: Map<string, number> = new Map();
+      const extraActs: Map<string, number> = new Map();
+      for (const trace of deviatingTraces) {
+        for (const dev of trace.deviations) {
+          const dtype = dev.deviation_type?.toLowerCase() ?? '';
+          if (dtype.includes('missing') || dtype.includes('model_move')) {
+            missingActs.set(dev.activity, (missingActs.get(dev.activity) ?? 0) + 1);
+          } else if (dtype.includes('extra') || dtype.includes('log_move') || dtype.includes('skip')) {
+            extraActs.set(dev.activity, (extraActs.get(dev.activity) ?? 0) + 1);
+          }
+        }
+      }
+      const topMissing = [...missingActs.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
+      const topExtra = [...extraActs.entries()].sort((a, b) => b[1] - a[1]).slice(0, 3);
+
+      if (topMissing.length > 0) {
+        projection.log(`  Most-skipped activities (model expected, log skipped):`);
+        for (const [act, count] of topMissing) {
+          projection.log(`    "${act}"  — skipped in ${count} trace(s)`);
+        }
+      }
+      if (topExtra.length > 0) {
+        projection.log(`  Most-unexpected activities (log has, model doesn't expect):`);
+        for (const [act, count] of topExtra) {
+          projection.log(`    "${act}"  — extra in ${count} trace(s)`);
+        }
+      }
+
+      // Root-cause interpretation
+      projection.log('');
+      if (topMissing.length > topExtra.length) {
+        projection.log(
+          `  Diagnosis: The model is too restrictive — it requires activities that are often skipped.`
+        );
+        projection.log(
+          `  Fix: Discover a more flexible model using inductive_miner or genetic_algorithm.`
+        );
+      } else if (topExtra.length > topMissing.length) {
+        projection.log(
+          `  Diagnosis: The log contains activities the model doesn't account for — possible exceptional paths.`
+        );
+        projection.log(
+          `  Fix: Investigate whether these are valid variants or data quality issues.`
+        );
+      } else if (topMissing.length === 0 && topExtra.length === 0) {
+        projection.log(
+          `  Diagnosis: Deviations are at trace end (final marking not reached) — the model has fewer exit paths than the log.`
+        );
+      }
+    } else if (fitness < 0.5) {
+      projection.log('');
+      projection.log(
+        `  Diagnosis: Very low fitness (${(fitness * 100).toFixed(0)}%) suggests a fundamental model-log mismatch.`
+      );
+      projection.log(`  The auto-discovered model (Alpha++) may not fit this log well.`);
+    }
+
+    projection.log('');
+    projection.log('  Next steps:');
+    projection.log(`    wpm run -i ${payload.input} --algorithm genetic_algorithm --with-quality`);
+    projection.log(`      # discover a better-fitting model (quality score: 80/100)`);
+    projection.log(`    wpm run -i ${payload.input} --algorithm inductive_miner --with-quality`);
+    projection.log(`      # inductive miner guarantees sound process trees (quality score: 55/100)`);
     projection.log(
-      `    wpm conformance -i <log.xes> --threshold ${Math.max(0, threshold - 0.1).toFixed(2)}  # relax the threshold`
+      `    wpm conformance -i ${payload.input} --threshold ${Math.max(0, threshold - 0.1).toFixed(2)}`
     );
-    projection.log('    wpm validate -i <log.xes>         # check log quality first');
+    projection.log(`      # relax the threshold to accept marginal conformance`);
+    projection.log(`    wpm validate -i ${payload.input}`);
+    projection.log(`      # check log quality — bad data causes low fitness`);
   }
   projection.log('');
 }

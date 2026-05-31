@@ -45,8 +45,13 @@ export function checkConvergence(
   // causing the swarm to never terminate (Rank-1: mathematical invariant).
   const safeThreshold = Number.isFinite(threshold) ? Math.max(0, Math.min(1, threshold)) : 1.0;
 
+  // Exclude failed workers from consensus: a crashed worker's 'FAILED' sentinel
+  // hash must not count toward or against the dominant result hash.
   const relevant = results.filter(
-    (r) => r.algorithmId === algorithm && (!workerIds || workerIds.includes(r.workerId))
+    (r) =>
+      r.algorithmId === algorithm &&
+      r.failed !== true &&
+      (!workerIds || workerIds.includes(r.workerId))
   );
 
   if (relevant.length === 0) {
@@ -132,18 +137,36 @@ export function checkSwarmConvergence(
   agreementRate: number;
   convergenceReason: string;
 } {
+  // Guard: convergenceRuns <= 0 would make hist.length >= 0 always true,
+  // causing every worker to appear stable on the first episode regardless of
+  // output variance (Rank-1 invariant: convergence requires at least 1 run).
+  const safeConvergenceRuns = Math.max(1, Math.floor(convergenceRuns));
+
   const workerAlgoPairs = results.map((r) => `${r.workerId}/${r.algorithmId}`);
   const stableWorkers: string[] = [];
   const unstableWorkers: string[] = [];
 
   for (const r of results) {
     const key = `${r.workerId}/${r.algorithmId}`;
+
+    // Guard: a failed worker (resultHash='FAILED') must never count as stable.
+    // Without this check, a persistently-crashing worker would accumulate a
+    // ring buffer of identical 'FAILED' hashes and satisfy the isStable
+    // predicate, falsely declaring swarm convergence (Rank-1: convergence
+    // requires successful output agreement, not stable failure).
+    if (r.failed === true) {
+      unstableWorkers.push(key);
+      // Do NOT push 'FAILED' into the ring buffer; a future recovery should
+      // start fresh rather than needing to displace stale failure entries.
+      continue;
+    }
+
     const hist = hashHistory.get(key) ?? [];
     hist.push(r.resultHash);
-    if (hist.length > convergenceRuns) hist.shift();
+    if (hist.length > safeConvergenceRuns) hist.shift();
     hashHistory.set(key, hist);
 
-    const isStable = hist.length >= convergenceRuns && new Set(hist).size === 1;
+    const isStable = hist.length >= safeConvergenceRuns && new Set(hist).size === 1;
     if (isStable) stableWorkers.push(key);
     else unstableWorkers.push(key);
   }
@@ -157,10 +180,10 @@ export function checkSwarmConvergence(
   if (total === 0) {
     convergenceReason = 'no workers ran in this episode';
   } else if (converged) {
-    convergenceReason = `all ${total} worker(s) stable for ${convergenceRuns} consecutive rounds`;
+    convergenceReason = `all ${total} worker(s) stable for ${safeConvergenceRuns} consecutive rounds`;
   } else {
     convergenceReason =
-      `${stableWorkers.length}/${total} stable after ${convergenceRuns} rounds ` +
+      `${stableWorkers.length}/${total} stable after ${safeConvergenceRuns} rounds ` +
       `(need all ${total})`;
   }
 
@@ -187,7 +210,8 @@ export function checkMlConvergence(
   const safeThreshold = Number.isFinite(threshold) ? Math.max(0, Math.min(1, threshold)) : 1.0;
   const safeEpsilon = Number.isFinite(epsilon) && epsilon >= 0 ? epsilon : 0.01;
 
-  const relevant = results.filter((r) => r.algorithmId === algorithm);
+  // Exclude failed workers: 'FAILED' sentinel hash must not enter ML epsilon-groups.
+  const relevant = results.filter((r) => r.algorithmId === algorithm && r.failed !== true);
 
   if (relevant.length === 0) {
     return {

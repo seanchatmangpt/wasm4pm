@@ -133,7 +133,7 @@ impl PartialDfg {
 /// Build a `DirectlyFollowsGraph` from accumulated integer-keyed counts.
 fn build_dfg_from_counts(
     col: &ColumnarLog,
-    node_counts: FxHashMap<u32, usize>,
+    node_counts: &FxHashMap<u32, usize>,
     edge_counts: FxHashMap<(u32, u32), usize>,
     start_counts: FxHashMap<u32, usize>,
     end_counts: FxHashMap<u32, usize>,
@@ -186,7 +186,7 @@ fn compute_dfg_sequential(col: &ColumnarLog) -> DirectlyFollowsGraph {
     let partial = PartialDfg::from_trace_range(col, 0..col.trace_offsets.len().saturating_sub(1));
     build_dfg_from_counts(
         col,
-        partial.node_counts,
+        &partial.node_counts,
         partial.edge_counts,
         partial.start_counts,
         partial.end_counts,
@@ -263,7 +263,7 @@ pub fn compute_dfg_parallel(col: &ColumnarLog) -> DirectlyFollowsGraph {
         );
     }
 
-    build_dfg_from_counts(col, node_counts, edge_counts, start_counts, end_counts)
+    build_dfg_from_counts(col, &node_counts, edge_counts, start_counts, end_counts)
 }
 
 /// Process a batch of events with 4x loop unrolling for constant cycle count.

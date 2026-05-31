@@ -7,7 +7,6 @@
 use crate::models::DirectlyFollowsGraph;
 use crate::streaming::{ActivityInterner, Interner, StreamStats, StreamingAlgorithm};
 use rustc_hash::FxHashMap;
-use std::collections::HashMap;
 
 /// Streaming DFG builder for IoT / chunked event ingestion.
 ///
@@ -59,7 +58,7 @@ pub struct StreamingDfgBuilder {
     pub event_count: usize,
     /// open (in-progress) traces: case_id → encoded activity sequence
     /// freed when the trace is closed via `close_trace`
-    pub open_traces: HashMap<String, Vec<u32>>,
+    pub open_traces: FxHashMap<String, Vec<u32>>,
 }
 
 // Implement ActivityInterner trait
@@ -118,7 +117,7 @@ impl StreamingAlgorithm for StreamingDfgBuilder {
             end_counts: FxHashMap::default(),
             trace_count: 0,
             event_count: 0,
-            open_traces: HashMap::new(),
+            open_traces: FxHashMap::default(),
         }
     }
 
@@ -181,11 +180,14 @@ impl StreamingAlgorithm for StreamingDfgBuilder {
             })
             .collect();
 
-        // Edges
-        dfg.edges = self
-            .edge_counts
-            .iter()
-            .map(|(&(f, t), &freq)| crate::models::DirectlyFollowsRelation {
+        // Edges — sort by (from_id, to_id) before collecting so that snapshot()
+        // output is deterministic regardless of FxHashMap iteration order.
+        let mut sorted_edges: Vec<((u32, u32), usize)> =
+            self.edge_counts.iter().map(|(&k, &v)| (k, v)).collect();
+        sorted_edges.sort_unstable_by_key(|&((f, t), _)| (f, t));
+        dfg.edges = sorted_edges
+            .into_iter()
+            .map(|((f, t), freq)| crate::models::DirectlyFollowsRelation {
                 from: self.interner.get(f).unwrap_or("").to_string(),
                 to: self.interner.get(t).unwrap_or("").to_string(),
                 frequency: freq,

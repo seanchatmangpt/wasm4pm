@@ -99,6 +99,8 @@ export interface ClassificationResult {
    * not specify --method. Absent when the user explicitly chose a method.
    */
   suggested_method?: ClassificationMethod;
+  /** Empty-input refusal metadata — present only when input was too small or empty. */
+  metadata?: { warning: EmptyInputWarning };
 }
 
 export interface RegressionResult {

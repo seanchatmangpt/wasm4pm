@@ -131,7 +131,10 @@ describe('OTP supervisor POWL route — schema', () => {
   it('parses to a POWL v2 object', () => {
     const raw = readFileSync(routePath, 'utf8');
     model = JSON.parse(raw) as Record<string, unknown>;
-    expect(model).toBeDefined();
+    // FM-5: JSON.parse never returns undefined; toBeDefined() would always pass.
+    // Assert the actual schema contract: must be a non-null plain object with a type field.
+    expect(model !== null && typeof model === 'object' && !Array.isArray(model)).toBe(true);
+    expect(typeof model['type']).toBe('string');
   });
 
   it('has type: powl2', () => {
@@ -201,7 +204,9 @@ describe('OTP supervisor POWL route — conformance (normal_exit)', () => {
   it('loads model without error', () => {
     const raw = readFileSync(routePath, 'utf8');
     powlModel = JSON.parse(raw) as Parameters<typeof checkPowl2Conformance>[1];
-    expect(powlModel).toBeDefined();
+    // FM-5: JSON.parse never returns undefined; toBeDefined() would always pass.
+    // Assert the actual contract: model must have type='powl2' (required by checkPowl2Conformance).
+    expect((powlModel as Record<string, unknown>)['type']).toBe('powl2');
   });
 
   it('normal exit trace achieves fitness=1', () => {
@@ -265,8 +270,17 @@ describe('SASL supervisor report detection — parseSaslSupervisorReports', () =
     const reports = parseSaslSupervisorReports(SASL_REPORT);
     const events = supervisorReportsToOcel(reports);
     for (const ev of events) {
-      expect(ev['ocel:omap']).toBeDefined();
-      expect((ev['ocel:omap'] as string[]).length).toBeGreaterThan(0);
+      // FM-5: ocel:omap must be a non-empty array of strings (object IDs).
+      // `toBeDefined()` alone would pass for `[]`; length > 0 would pass for any
+      // non-empty array. Assert it contains a process identifier.
+      const omap = ev['ocel:omap'] as string[];
+      expect(Array.isArray(omap)).toBe(true);
+      expect(omap.length).toBeGreaterThan(0);
+      // Each entry must be a non-empty string (PID or supervisor name)
+      for (const id of omap) {
+        expect(typeof id).toBe('string');
+        expect(id.length).toBeGreaterThan(0);
+      }
     }
   });
 });
@@ -288,7 +302,9 @@ offender: [{pid,<0.123.0>},{name,worker1}]`;
     // preceding it, the block still contains "supervisor:" and will parse.
     const { parseSaslSupervisorReports } = await import('@wasm4pm/contracts');
     const reports = (parseSaslSupervisorReports as (t: string) => unknown[])(text);
-    expect(reports.length).toBeGreaterThan(0);
+    // FM-5: exactly one supervisor block in the input — the count must be 1, not
+    // just > 0. A parser that found 2 duplicates would pass `> 0` but fail here.
+    expect(reports.length).toBe(1);
   });
 
   it('plain Erlang stack trace does not parse as SASL', async () => {

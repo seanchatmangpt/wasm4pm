@@ -28,7 +28,7 @@ export async function resolveConfig(options?: LoadConfigOptions): Promise<Config
 
   // Layer 5: Defaults
   const defaults = getDefaults();
-  let provenance = trackProvenance(defaults as unknown as Record<string, unknown>, 'default');
+  let provenance = trackProvenance(defaults, 'default');
 
   // Layer 4: Environment variables
   const envLayer = parseEnvConfig(env);
@@ -106,12 +106,15 @@ export async function resolveConfig(options?: LoadConfigOptions): Promise<Config
   }
 
   // CRITICAL FIX #1: Validate algorithm-profile compatibility
+  // For deployment profiles (mobile/iot/edge/fog/browser), throw because WASM binary
+  // genuinely may not include the algorithm.
+  // For execution profiles (fast/balanced/quality/stream), warn only — the browser WASM
+  // binary includes all algorithms; execution profile is a scheduling hint, not a hard gate.
   if (validated.algorithm?.name && validated.execution?.profile) {
-    const compatResult = validateAlgorithmProfile(
-      validated.algorithm.name,
-      validated.execution.profile as 'fast' | 'balanced' | 'quality' | 'stream'
-    );
-    if (!compatResult.compatible) {
+    const execProfile = validated.execution.profile as 'fast' | 'balanced' | 'quality' | 'stream';
+    const isDeploymentProfile = !['fast', 'balanced', 'quality', 'stream'].includes(execProfile);
+    const compatResult = validateAlgorithmProfile(validated.algorithm.name, execProfile);
+    if (!compatResult.compatible && isDeploymentProfile) {
       throw new Error(compatResult.warning || 'Algorithm not compatible with profile');
     }
   }
@@ -287,11 +290,13 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
   }
   if (env.WASM4PM_PREDICTION_TASKS) {
     // CRITICAL FIX #2: Deep merge nested prediction object
+    // Normalize CLI hyphen slugs (e.g. "next-activity") to underscore IDs (e.g. "next_activity")
+    // so that both forms are accepted, consistent with how `wpm predict <task>` works.
     const existing = (config.prediction as Record<string, unknown>) || {};
     config.prediction = {
       ...existing,
       tasks: env.WASM4PM_PREDICTION_TASKS.split(',')
-        .map((t) => t.trim())
+        .map((t) => t.trim().replace(/-/g, '_'))
         .filter(Boolean),
     };
   }
@@ -509,6 +514,25 @@ function parseEnvConfig(env: NodeJS.ProcessEnv): Record<string, unknown> {
     // CRITICAL FIX #2: Deep merge nested prediction object
     const existing = (config.prediction as Record<string, unknown>) || {};
     config.prediction = { ...existing, driftWindowSize: w };
+  }
+
+  // --- Supabase integration environment variables ---
+  const supabaseUrl = env.WASM4PM_SUPABASE_URL ?? env.SUPABASE_URL;
+  const supabaseAnon = env.WASM4PM_SUPABASE_ANON_KEY ?? env.SUPABASE_ANON_KEY;
+  const supabaseService =
+    env.WASM4PM_SUPABASE_SERVICE_ROLE_KEY ?? env.SUPABASE_SERVICE_ROLE_KEY;
+  if (supabaseUrl || supabaseAnon || supabaseService) {
+    const existingIntegrations = (config.integrations as Record<string, unknown>) || {};
+    const existingSupabase = (existingIntegrations.supabase as Record<string, unknown>) || {};
+    config.integrations = {
+      ...existingIntegrations,
+      supabase: {
+        ...existingSupabase,
+        ...(supabaseUrl ? { url: supabaseUrl } : {}),
+        ...(supabaseAnon ? { anonKey: supabaseAnon } : {}),
+        ...(supabaseService ? { serviceRoleKey: supabaseService } : {}),
+      },
+    };
   }
 
   return config;
@@ -1210,7 +1234,7 @@ name = "simd_streaming_dfg"   # simd_streaming_dfg | dfg | heuristic_miner
 
 [execution]
 profile = "stream"    # enables streaming-full feature set + SIMD acceleration
-timeout = 0           # 0 = unlimited (streaming never stops voluntarily)
+# timeout is omitted — streaming runs until stopped; use Ctrl-C or kill the process
 
 [observability]
 logLevel = "warn"     # reduce log noise in high-throughput scenarios

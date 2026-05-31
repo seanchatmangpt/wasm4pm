@@ -265,21 +265,47 @@ fn test_astar_is_deterministic() {
 // CATEGORY C: Known Non-Determinism (Rank-1 Oracle Violations)
 // ============================================================================
 
-/// Template for testing algorithms that use HashMap iteration.
+/// Verifies that streaming_dfg snapshot() produces deterministic edge ordering.
 ///
-/// This test is expected to FAIL until the underlying algorithm is fixed.
-/// Once fixed, change #[ignore] to remove #[should_panic].
+/// Fixed in streaming_dfg.rs: edges are now sorted by (from_id, to_id) before
+/// collect() in snapshot(), eliminating FxHashMap iteration non-determinism.
 #[test]
-#[ignore] // Remove after fixing streaming_dfg HashMap sorting
-fn test_streaming_dfg_hashmap_iteration_nondeterministic() {
-    // Streaming DFG uses HashMap<String, Vec<u32>> for open_traces.
-    // HashMap iteration order is random, so edges may appear in different order.
-    //
-    // Expected: FAIL with error "unique hashes differ"
-    // Fix: Sort case_ids before iterating over open_traces in snapshot()
-    //
-    // Once fixed, move this test to CATEGORY A and remove #[ignore].
-    todo!("streaming_dfg uses HashMap iteration; output order non-deterministic");
+fn test_streaming_dfg_is_deterministic() {
+    use wasm4pm::streaming::{StreamingDfgBuilder, StreamingAlgorithm};
+    use std::collections::HashMap;
+
+    let events = vec![
+        ("case1", "A"), ("case1", "B"), ("case1", "C"),
+        ("case2", "A"), ("case2", "C"), ("case2", "B"),
+        ("case3", "B"), ("case3", "A"), ("case3", "C"),
+    ];
+
+    let mut build_dfg = || {
+        let mut stream = StreamingDfgBuilder::new();
+        let mut open: HashMap<String, Vec<String>> = HashMap::new();
+        for (case, activity) in &events {
+            open.entry(case.to_string()).or_default().push(activity.to_string());
+        }
+        for (case, activities) in &open {
+            for act in activities {
+                stream.add_event(case, act);
+            }
+            stream.close_trace(case);
+        }
+        let dfg = stream.snapshot();
+        // Sort edges for stable comparison
+        let mut edge_strs: Vec<String> = dfg.edges.iter()
+            .map(|e| format!("{}->{}:{}", e.from, e.to, e.frequency))
+            .collect();
+        edge_strs.sort();
+        edge_strs.join("|")
+    };
+
+    let h1 = build_dfg();
+    let h2 = build_dfg();
+    let h3 = build_dfg();
+    assert_eq!(h1, h2, "streaming_dfg snapshot not deterministic (run 1 vs 2)");
+    assert_eq!(h1, h3, "streaming_dfg snapshot not deterministic (run 1 vs 3)");
 }
 
 /// Template for testing algorithms that use unseeded fastrand.

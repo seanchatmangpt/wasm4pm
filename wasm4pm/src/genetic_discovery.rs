@@ -10,8 +10,29 @@ use wasm_bindgen::prelude::*;
 
 type EdgeSet = HashSet<(u32, u32)>;
 
-/// Genetic Algorithm for process model discovery
-/// Evolves a population of edge sets to find models that fit the log well
+/// Discover a process model using a Genetic Algorithm.
+///
+/// Evolves a population of edge sets (DFG edge subsets) over multiple generations,
+/// selecting for high fitness (coverage of log traces). Uses a fixed random seed (42)
+/// for deterministic output.
+///
+/// # Parameters
+/// * `eventlog_handle` — Handle from `load_eventlog_from_xes` / `load_eventlog_from_json`.
+/// * `activity_key` — XES attribute for activity names (e.g. `"concept:name"`).
+/// * `population_size` — Number of candidate models per generation (e.g. `50`–`200`).
+/// * `generations` — Number of evolution cycles (e.g. `50`–`200`; more = higher quality but slower).
+///
+/// # Returns
+/// `Result<JsValue, JsValue>` — On success:
+/// ```json
+/// { "handle": "...", "algorithm": "genetic_algorithm", "nodes": 8, "edges": 12, "final_fitness": 0.87 }
+/// ```
+/// Returns `Err("no_edges")` if the log has no directly-follows edges (e.g. all single-activity traces).
+///
+/// # Note
+/// Deterministic: seed 42 is hardcoded. Same log + same parameters → same output.
+/// For high-quality models, use `population_size=100, generations=100`.
+/// For faster results at lower quality, reduce both to `50`.
 #[wasm_bindgen]
 pub fn discover_genetic_algorithm(
     eventlog_handle: &str,
@@ -146,8 +167,15 @@ pub fn discover_genetic_algorithm_from_log(
     Some((edge_set_to_dfg(&best_edges, &vocab, &edge_freq, &node_freq), best_fitness))
 }
 
-/// Particle Swarm Optimization for process discovery
-/// Uses swarm intelligence to explore the model space
+/// Discover a process model using Particle Swarm Optimization (PSO).
+///
+/// Uses swarm intelligence to explore DFG edge subsets. Underlying function returns
+/// `Option<(DFG, f64)>` — returns `Err("no_edges")` to JS when:
+/// - `swarm_size < 1`
+/// - `iterations == 0`
+/// - log has no directly-follows edges (e.g. all single-activity traces)
+///
+/// On success returns `{handle, algorithm, nodes, edges, final_fitness}`.
 #[wasm_bindgen]
 pub fn discover_pso_algorithm(
     eventlog_handle: &str,
@@ -322,14 +350,20 @@ fn create_random_edge_set_seeded(
 fn crossover_edges_seeded(parent1: &EdgeSet, parent2: &EdgeSet, rng: &mut StdRng) -> EdgeSet {
     let mut child: EdgeSet = HashSet::new();
 
-    // Fix C: iterate the sets directly — no intermediate Vec allocation
-    for &edge in parent1.iter() {
+    // Sort before iterating: HashSet iteration order is non-deterministic due to hash
+    // randomization. Sorting ensures RNG calls are consumed in the same order every run,
+    // keeping the RNG state deterministic across WASM invocations.
+    let mut p1_edges: Vec<(u32, u32)> = parent1.iter().copied().collect();
+    p1_edges.sort_unstable();
+    for edge in p1_edges {
         if rng.gen::<f64>() < 0.5 {
             child.insert(edge);
         }
     }
 
-    for &edge in parent2.iter() {
+    let mut p2_edges: Vec<(u32, u32)> = parent2.iter().copied().collect();
+    p2_edges.sort_unstable();
+    for edge in p2_edges {
         if rng.gen::<f64>() < 0.5 {
             child.insert(edge);
         }
@@ -361,15 +395,21 @@ fn mutate_edges_seeded(
 fn blend_edges_seeded(set1: &EdgeSet, set2: &EdgeSet, ratio: f64, rng: &mut StdRng) -> EdgeSet {
     let mut result: EdgeSet = HashSet::new();
 
+    // Sort before iterating: HashSet iteration order is non-deterministic due to hash
+    // randomization. Sorting ensures RNG calls are consumed in the same order every run.
     // Keep edges from set1 with probability (1 - ratio)
-    for &edge in set1 {
+    let mut s1_edges: Vec<(u32, u32)> = set1.iter().copied().collect();
+    s1_edges.sort_unstable();
+    for edge in s1_edges {
         if rng.gen::<f64>() > ratio {
             result.insert(edge);
         }
     }
 
     // Add edges from set2 with probability ratio
-    for &edge in set2 {
+    let mut s2_edges: Vec<(u32, u32)> = set2.iter().copied().collect();
+    s2_edges.sort_unstable();
+    for edge in s2_edges {
         if rng.gen::<f64>() < ratio {
             result.insert(edge);
         }
@@ -541,8 +581,16 @@ pub fn discover_aco_algorithm_from_log(
     best_solution.map(|(edges, fitness)| (edge_set_to_dfg(&edges, &vocab, &edge_freq, &node_freq), fitness))
 }
 
-/// Ant Colony Optimization for process model discovery
-/// Uses pheromone trails and heuristic information to construct process models
+/// Discover a process model using Ant Colony Optimization (ACO).
+///
+/// Uses pheromone trails and frequency heuristics to construct DFG edge sets.
+/// Underlying function returns `Option<(DFG, f64)>` — returns `Err("no_edges")` to JS when:
+/// - `ant_count < 1`
+/// - `iterations == 0`
+/// - log has no directly-follows edges (e.g. all single-activity traces)
+///
+/// On success returns `{handle, algorithm, nodes, edges, final_fitness}`.
+/// Pheromone is bounded (MMAS-style) to prevent NaN from unbounded deposit accumulation.
 #[wasm_bindgen]
 pub fn discover_aco_algorithm(
     eventlog_handle: &str,

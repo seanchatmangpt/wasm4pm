@@ -48,7 +48,7 @@ function wpm(...args: string[]) {
   delete env.VITEST;
   return spawnSync('node', [WPM_BIN, ...args], {
     encoding: 'utf8',
-    timeout: 30_000,
+    timeout: 60_000,
     env,
   });
 }
@@ -282,18 +282,20 @@ describe('4. wpm compare', () => {
     console.info('[wpm] compare entry fields OK');
   });
 
-  it('4.5 compare with unknown algorithm exits 2 with "Unknown algorithm" message', () => {
+  it('4.5 compare with unknown algorithm exits 1 (config_error) with "Unknown algorithm" message', () => {
     if (!fs.existsSync(XES_STANDARD)) return;
     const result = wpm('compare', 'dfg,ghost_algo_9000', '-i', XES_STANDARD);
-    expect(result.status).toBe(2);
+    // compare validates algorithm names as CLI args → config_error (1), not source_error (2)
+    expect(result.status).toBe(1);
     const output = result.stdout + result.stderr;
     expect(output).toMatch(/unknown algorithm|not found|invalid/i);
   });
 
-  it('4.6 compare with single algorithm exits 2 with "at least two" message', () => {
+  it('4.6 compare with single algorithm exits 1 (config_error) with "at least two" message', () => {
     if (!fs.existsSync(XES_STANDARD)) return;
     const result = wpm('compare', 'dfg', '-i', XES_STANDARD);
-    expect(result.status).toBe(2);
+    // compare validates algorithm count as CLI args → config_error (1), not source_error (2)
+    expect(result.status).toBe(1);
     const output = result.stdout + result.stderr;
     expect(output).toMatch(/at least two|at least 2|two algorithm/i);
   });

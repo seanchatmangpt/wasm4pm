@@ -216,8 +216,7 @@ pub fn compute_trace_likelihood(model_handle: &str, trace_json: &str) -> Result<
                 let prob = preds
                     .iter()
                     .find(|(a, _)| a == &acts[i + 1])
-                    .map(|(_, p)| *p)
-                    .unwrap_or(1e-10);
+                    .map_or(1e-10, |(_, p)| *p);
                 log_prob += prob.ln();
             }
 

@@ -35,7 +35,7 @@ impl DFGEdge {
 }
 
 /// A Directly-Follows Graph model
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct DFG {
     pub nodes: Vec<DFGNode>,
     pub edges: Vec<DFGEdge>,
@@ -62,11 +62,7 @@ impl DFG {
     }
 }
 
-impl Default for DFG {
-    fn default() -> Self {
-        Self::new()
-    }
-}
+
 
 
 use crate::dense_kernel::{fnv1a_64, DenseIndex, NodeKind, PackedKeyTable};
@@ -573,7 +569,7 @@ impl DeclareConstraint {
 }
 
 /// A Declare process model
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq, Default)]
 pub struct DeclareModel {
     pub constraints: Vec<DeclareConstraint>,
     pub activities: Vec<String>,
@@ -588,11 +584,6 @@ impl DeclareModel {
     }
 }
 
-impl Default for DeclareModel {
-    fn default() -> Self {
-        Self::new()
-    }
-}
 
 #[cfg(test)]
 mod tests_petri {

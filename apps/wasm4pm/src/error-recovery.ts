@@ -284,6 +284,24 @@ export function getRecoveryHint(
 
   // Execution error patterns
   if (errorType === 'execution') {
+    // Stale/invalid handle (use-after-free or double-free)
+    // WASM returns {"code":"INVALID_HANDLE","message":"EventLog 'obj_N' not found"}
+    if (errorMessage.includes('INVALID_HANDLE') || errorMessage.includes("not found") && errorMessage.includes('obj_')) {
+      const handleMatch = errorMessage.match(/'([^']+)'/);
+      const handleId = handleMatch ? handleMatch[1] : 'unknown';
+      return {
+        code: 'EXEC_STALE_HANDLE',
+        suggestion: `WASM object handle '${handleId}' is no longer valid (already freed or never allocated). This is an internal error — the log was likely freed before the algorithm ran. Run 'wpm doctor' or retry the command.`,
+        command: 'wpm doctor',
+        envVar: undefined,
+        alternatives: [
+          'wpm run --input log.xes',
+          'wpm status --verbose',
+        ],
+        docsUrl: 'https://wasm4pm.dev/docs/troubleshooting#handle',
+      };
+    }
+
     // WASM not loaded
     if (errorMessage.includes('WASM') && errorMessage.includes('not loaded')) {
       return {
