@@ -1,0 +1,869 @@
+# docs/academic_coverage.toml
+# ACADEMIC-COVERAGE-001 — Machine-readable academic coverage ledger
+#
+# This is the PRIMARY source of truth. docs/ACADEMIC_COVERAGE.md is derived from this.
+#
+# Gate: ALIVE only when:
+#   1. Every registered algorithm is classified
+#   2. Every primitive doc has paper grounding or honest non-paper classification
+#   3. Every direct citation maps to a formal object
+#   4. Every formal object maps to implementation files
+#   5. Every implementation has positive and negative proof surfaces
+#   6. Every reachable claim maps to WASM/CLI/registry/docs
+#   7. Every future item is marked future, not silently implied alive
+#
+# Papers key format: author_shortname_keyword_year
+# (Full bibliographic entries belong in docs/ACADEMIC_COVERAGE.md)
+
+[meta]
+gate = "ACADEMIC-COVERAGE-001"
+status = "partial"          # Change to "alive" when all 7 gate criteria are met
+version = "v26.5.30"
+primitive_count = 10        # One record per primitives/0N-*.md doc
+algorithm_count = 60        # Must match packages/kernel/src/registry.ts (verified 2026-05-30)
+last_reviewed = "2026-05-30"
+
+# ─────────────────────────────────────────────────────────────────────────────
+# PRIMITIVE DOC RECORDS (one per docs/primitives/0N-*.md)
+# ─────────────────────────────────────────────────────────────────────────────
+
+[[coverage]]
+id = "primitive_00_inventory"
+category = "engineering"
+status = "covered"
+formal_object = "wasm4pm primitive inventory and kernel registry catalogue"
+coverage_kind = "engineering"
+papers = []
+implementation = ["packages/kernel/src/registry.ts"]
+reachable_surface = ["docs", "registry"]
+
+[[coverage]]
+id = "primitive_01_ocel_v2"
+category = "ocel"
+status = "covered"
+formal_object = "Object-Centric Event Log v2.0 (OCEL 2.0): objects, events, E2O relations, O2O relations"
+coverage_kind = "direct"
+papers = [
+  "ghahfarokhi_et_al_ocel_2021",
+  "van_der_aalst_object_centric_process_mining_2019",
+]
+implementation = [
+  "wasm4pm/src/ocel_io.rs",
+  "wasm4pm/src/ocel_flatten.rs",
+]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "primitive_02_powl"
+category = "powl"
+status = "covered"
+formal_object = "Partial-Order Workflow Language 2.0 with choice graphs (POWL 2.0)"
+coverage_kind = "direct"
+papers = [
+  "kourani_park_van_der_aalst_choice_graphs_2025",
+  "kourani_park_van_der_aalst_separable_wfnets_2026",
+]
+implementation = [
+  "wasm4pm/src/wf_to_powl.rs",
+  "wasm4pm/src/powl_to_process_tree.rs",
+]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "primitive_03_wfnet"
+category = "wf-net"
+status = "covered"
+formal_object = "Workflow net soundness (WF-net, free-choice, state machine, marked graph predicates)"
+coverage_kind = "direct"
+papers = [
+  "kourani_park_van_der_aalst_separable_wfnets_2026",
+  "van_der_aalst_process_mining_2016",
+]
+implementation = ["wasm4pm/src/soundness.rs"]
+positive_tests = ["wasm4pm/tests/adversarial_powl_tests.rs"]
+negative_tests = ["fixtures/conformance/ggen_invalid_exclusion.json"]
+reachable_surface = ["WASM", "CLI"]
+
+[[coverage]]
+id = "primitive_04_conformance"
+category = "conformance"
+status = "covered"
+formal_object = "Token-replay fitness and alignment-based conformance (two-tier: diagnostic ≥0.8, admission =1.0)"
+coverage_kind = "direct"
+papers = [
+  "van_der_aalst_process_mining_2016",
+  "adriansyah_aligning_observed_2014",
+]
+implementation = [
+  "wasm4pm/src/conformance.rs",
+  "wasm4pm/src/alignments.rs",
+]
+positive_tests = ["wasm4pm/tests/conformance_model_truth_gaps.rs"]
+negative_tests = [
+  "fixtures/conformance/ggen_invalid_exclusion.json",
+  "fixtures/conformance/ggen_invalid_precedence.json",
+]
+reachable_surface = ["WASM", "CLI"]
+
+[[coverage]]
+id = "primitive_05_process_world_foundry"
+category = "engineering"
+status = "covered"
+formal_object = "Synthetic but lawful process world generation via stochastic Petri net playout"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/playout.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "primitive_06_negative_corpus"
+category = "engineering"
+status = "covered"
+formal_object = "Negative fixture corpus for refusal proof (invalid OCEL, invalid XES, impossible traces)"
+coverage_kind = "engineering"
+papers = []
+implementation = []
+negative_tests = [
+  "fixtures/conformance/ggen_invalid_exclusion.json",
+  "fixtures/conformance/ggen_invalid_immediate.json",
+  "fixtures/conformance/ggen_invalid_precedence.json",
+  "fixtures/ocpq/invalid_monotonicity.json",
+  "fixtures/ocpq/invalid_o2o.json",
+]
+reachable_surface = ["docs"]
+
+[[coverage]]
+id = "primitive_07_route_driven_tdd"
+category = "engineering"
+status = "covered"
+formal_object = "POWL 2.0 route-driven test substrate (14 named routes, choice_graph / sequence / partial_order)"
+coverage_kind = "engineering"
+papers = []
+implementation = []
+reachable_surface = ["docs"]
+
+[[coverage]]
+id = "primitive_08_benchmark_gates"
+category = "engineering"
+status = "covered"
+formal_object = "Deterministic benchmark gates G1-G5 with BLAKE3 receipts and CalVer version locks"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/benchmark_runner.rs", "wasm4pm/src/benchmark_registry.rs"]
+reachable_surface = ["CLI", "Rust-only"]
+
+# Primitive 09 (OCPQ) — referenced in task spec; no 09-*.md exists yet in docs/primitives/
+[[coverage]]
+id = "primitive_09_ocpq"
+category = "ocel"
+status = "partial"
+formal_object = "Object-Centric Process Querying: E2O, O2O, TBE predicates, CHILD SET constraints (Defs 1-9)"
+coverage_kind = "direct"
+papers = ["kuesters_van_der_aalst_ocpq_2025"]
+implementation = []
+known_limits = ["No docs/primitives/09-OCPQ-PRIMITIVES.md exists yet; crates/ocpq/ not found in this worktree"]
+negative_tests = [
+  "fixtures/ocpq/invalid_monotonicity.json",
+  "fixtures/ocpq/invalid_o2o.json",
+]
+reachable_surface = ["Rust-only"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ALGORITHM RECORDS — DISCOVERY (classic)
+# ─────────────────────────────────────────────────────────────────────────────
+
+[[coverage]]
+id = "dfg"
+category = "discovery"
+status = "covered"
+formal_object = "Directly-Follows Graph: nodes = activities, edges = directly-follows relations with frequency"
+coverage_kind = "direct"
+papers = ["van_der_aalst_process_mining_2016"]
+implementation = ["wasm4pm/src/discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+known_limits = ["DFG is not a Petri net — does not guarantee soundness"]
+
+[[coverage]]
+id = "process_skeleton"
+category = "discovery"
+status = "covered"
+formal_object = "Minimal DFG skeleton retaining only start/end activities and backbone transitions"
+coverage_kind = "derived"
+papers = ["van_der_aalst_process_mining_2016"]
+implementation = ["wasm4pm/src/discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+assumptions = ["Derived by filtering dfg; no canonical paper defines 'process skeleton' as named primitive"]
+
+[[coverage]]
+id = "alpha_plus_plus"
+category = "discovery"
+status = "covered"
+formal_object = "Alpha+++ algorithm: Petri net discovery handling length-1/length-2 loops and parallel short-loop pairs"
+coverage_kind = "direct"
+papers = [
+  "van_der_aalst_et_al_alpha_miner_2004",
+  "de_medeiros_et_al_alpha_pp_2004",
+]
+implementation = ["wasm4pm/src/more_discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+known_limits = ["Sensitive to noise; no noise filtering built in"]
+
+[[coverage]]
+id = "heuristic_miner"
+category = "discovery"
+status = "covered"
+formal_object = "Heuristic Miner: dependency graph discovery via frequency and dependency ratios"
+coverage_kind = "direct"
+papers = ["weijters_van_der_aalst_heuristics_miner_2003"]
+implementation = ["wasm4pm/src/more_discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "inductive_miner"
+category = "discovery"
+status = "covered"
+formal_object = "Inductive Miner: recursive cut-based process tree discovery (XOR, Sequence, Parallel, Loop cuts)"
+coverage_kind = "direct"
+papers = ["leemans_discovering_block_structured_2013"]
+implementation = ["wasm4pm/src/more_discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "genetic_algorithm"
+category = "discovery"
+status = "covered"
+formal_object = "Genetic process discovery: evolutionary search over DFG candidate space"
+coverage_kind = "derived"
+papers = ["medeiros_et_al_genetic_process_mining_2004"]
+implementation = ["wasm4pm/src/genetic_discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+known_limits = [
+  "Returns DFG (not Petri net) — Phase 4 audit correction",
+  "Uses hardcoded seed=42; not configurable by caller",
+]
+
+[[coverage]]
+id = "pso"
+category = "discovery"
+status = "covered"
+formal_object = "Particle Swarm Optimisation adapted for DFG discovery"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/genetic_discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+known_limits = [
+  "Returns DFG (not Petri net) — Phase 4 audit correction",
+  "No canonical PM paper for PSO applied to process discovery; implementation adapts general PSO",
+]
+
+[[coverage]]
+id = "aco"
+category = "discovery"
+status = "covered"
+formal_object = "Ant Colony Optimisation adapted for DFG discovery"
+coverage_kind = "derived"
+papers = ["medeiros_et_al_genetic_process_mining_2004"]
+implementation = ["wasm4pm/src/genetic_discovery.rs", "wasm4pm/src/more_discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+known_limits = [
+  "Returns DFG (not Petri net) — Phase 4 audit correction",
+  "Two separate ACO implementations exist (discover_ant_colony and discover_aco_algorithm)",
+]
+
+[[coverage]]
+id = "simulated_annealing"
+category = "discovery"
+status = "covered"
+formal_object = "Simulated Annealing for DFG discovery (probabilistic neighbourhood search)"
+coverage_kind = "derived"
+papers = ["van_der_aalst_process_mining_2016"]
+implementation = ["wasm4pm/src/advanced_algorithms.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+known_limits = ["Returns DFG (not Petri net) — Phase 4 audit correction"]
+
+[[coverage]]
+id = "a_star"
+category = "discovery"
+status = "covered"
+formal_object = "A* heuristic search applied to DFG discovery"
+coverage_kind = "derived"
+papers = ["adriansyah_aligning_observed_2014"]
+implementation = ["wasm4pm/src/advanced_algorithms.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+assumptions = ["A* in this context is applied to discovery, not alignment — adaptation of alignment paper's search strategy"]
+known_limits = ["Returns DFG (not Petri net) — Phase 4 audit correction"]
+
+[[coverage]]
+id = "hill_climbing"
+category = "discovery"
+status = "covered"
+formal_object = "Greedy local search (hill climbing) over DFG candidate space"
+coverage_kind = "derived"
+papers = ["van_der_aalst_process_mining_2016"]
+implementation = ["wasm4pm/src/advanced_algorithms.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+known_limits = ["Returns DFG (not Petri net) — Phase 4 audit correction"]
+
+[[coverage]]
+id = "declare"
+category = "discovery"
+status = "covered"
+formal_object = "Declare: constraint-based (LTL) declarative process model discovery"
+coverage_kind = "direct"
+papers = ["pesic_et_al_declare_2007"]
+implementation = ["wasm4pm/src/discovery.rs", "wasm4pm/src/declare_conformance.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "optimized_dfg"
+category = "discovery"
+status = "covered"
+formal_object = "ILP-optimised DFG: minimal DFG with best token-replay fitness via ILP pruning"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/ilp_discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+assumptions = ["Engineering optimisation of DFG; no separate paper defines 'optimized DFG' as formal primitive"]
+
+[[coverage]]
+id = "ilp"
+category = "discovery"
+status = "covered"
+formal_object = "Region-based ILP miner: discovers Petri net places via causal region enumeration and token-replay validation"
+coverage_kind = "direct"
+papers = ["van_der_aalst_et_al_ilp_miner_2012"]
+implementation = ["wasm4pm/src/ilp_discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+known_limits = ["NP-Hard for large logs — bounded by solver timeout"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ALGORITHM RECORDS — DISCOVERY (streaming / engineering)
+# ─────────────────────────────────────────────────────────────────────────────
+
+[[coverage]]
+id = "simd_streaming_dfg"
+category = "discovery"
+status = "covered"
+formal_object = "SIMD-vectorised streaming DFG discovery (~500× throughput vs standard DFG)"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/simd_streaming_dfg.rs", "wasm4pm/src/simd_inner_loops.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+known_limits = [
+  "HashMap iteration in streaming state is non-deterministic without explicit sort (see DETERMINISM_AUDIT.md)",
+  "No PM paper grounds SIMD-DFG as formal primitive",
+]
+
+[[coverage]]
+id = "hierarchical_dfg"
+category = "discovery"
+status = "covered"
+formal_object = "Hierarchical chunking DFG for massive logs (divide-and-conquer, bounded memory)"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/hierarchical.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "streaming_log"
+category = "discovery"
+status = "covered"
+formal_object = "Probabilistic streaming event log processor (stateful handle API)"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/streaming_wasm.rs", "wasm4pm/src/streaming/mod.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+known_limits = ["No #[wasm_bindgen] exports in src/streaming/ — streaming_log functions are unreachable from JS without wrapper"]
+
+[[coverage]]
+id = "smart_engine"
+category = "discovery"
+status = "covered"
+formal_object = "Adaptive algorithm selection engine with result caching and early termination"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/smart_engine.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ALGORITHM RECORDS — CONFORMANCE
+# ─────────────────────────────────────────────────────────────────────────────
+
+[[coverage]]
+id = "alignments"
+category = "conformance"
+status = "covered"
+formal_object = "Optimal trace alignment: A*-based alignment computation minimising move costs"
+coverage_kind = "direct"
+papers = ["adriansyah_aligning_observed_2014"]
+implementation = ["wasm4pm/src/alignments.rs", "wasm4pm/src/alignment_fitness.rs"]
+positive_tests = ["wasm4pm/tests/conformance_model_truth_gaps.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+known_limits = ["NP-Hard for large logs — bounded by configured max_iterations"]
+
+[[coverage]]
+id = "generalization"
+category = "conformance"
+status = "covered"
+formal_object = "Generalisation metric: fraction of model behaviour observed in log (avoids overfitting)"
+coverage_kind = "direct"
+papers = ["van_der_aalst_process_mining_2016"]
+implementation = ["wasm4pm/src/generalization.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "etconformance_precision"
+category = "conformance"
+status = "covered"
+formal_object = "ETConformance precision: escaping-edge analysis for process model precision measurement"
+coverage_kind = "direct"
+papers = ["munoz_gama_carmona_etconformance_2010"]
+implementation = ["wasm4pm/src/etconformance_precision.rs", "wasm4pm/src/align_etconformance.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ALGORITHM RECORDS — ANALYSIS / UTILITIES
+# ─────────────────────────────────────────────────────────────────────────────
+
+[[coverage]]
+id = "transition_system"
+category = "discovery"
+status = "covered"
+formal_object = "Transition system discovery: sliding-window state machine from event log"
+coverage_kind = "direct"
+papers = ["van_der_aalst_process_mining_2016"]
+implementation = ["wasm4pm/src/transition_system.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "log_to_trie"
+category = "discovery"
+status = "covered"
+formal_object = "Prefix tree (trie) discovery from log variants"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/log_to_trie.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+known_limits = ["HashMap-based: trie node order may be non-deterministic without sort (see DETERMINISM_AUDIT.md)"]
+
+[[coverage]]
+id = "causal_graph"
+category = "discovery"
+status = "covered"
+formal_object = "Causal dependency graph: alpha or heuristic causal structure over activities"
+coverage_kind = "derived"
+papers = [
+  "van_der_aalst_et_al_alpha_miner_2004",
+  "weijters_van_der_aalst_heuristics_miner_2003",
+]
+implementation = ["wasm4pm/src/causal_graph.rs", "wasm4pm/src/causal.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "performance_spectrum"
+category = "discovery"
+status = "covered"
+formal_object = "Performance spectrum: duration statistics between activity pairs (sojourn, waiting, service time)"
+coverage_kind = "direct"
+papers = ["van_der_aalst_process_mining_2016"]
+implementation = ["wasm4pm/src/performance_spectrum.rs", "wasm4pm/src/performance_dfg.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "batches"
+category = "discovery"
+status = "covered"
+formal_object = "Batch detection: identifies groups of cases processed simultaneously (shared timestamps)"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/batches.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+assumptions = ["Batch heuristic based on timestamp proximity; no canonical PM paper defines this as a named formal primitive"]
+
+[[coverage]]
+id = "correlation_miner"
+category = "discovery"
+status = "covered"
+formal_object = "Correlation Miner: DFG discovery without case identifiers using timestamp correlation"
+coverage_kind = "derived"
+papers = ["van_der_aalst_process_mining_2016"]
+implementation = ["wasm4pm/src/correlation_miner.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "complexity_metrics"
+category = "discovery"
+status = "covered"
+formal_object = "Structural complexity metrics for POWL models (size, CFC, structuredness)"
+coverage_kind = "derived"
+papers = ["van_der_aalst_process_mining_2016"]
+implementation = ["wasm4pm/src/complexity_metrics.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "pnml_import"
+category = "engineering"
+status = "covered"
+formal_object = "PNML import: ISO/IEC 20481:2019 Petri Net Markup Language XML ingest"
+coverage_kind = "consumer-contract"
+papers = []
+implementation = ["wasm4pm/src/pnml_io.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+assumptions = ["PNML is an interchange standard, not a PM paper primitive"]
+
+[[coverage]]
+id = "bpmn_import"
+category = "engineering"
+status = "covered"
+formal_object = "BPMN 2.0 import: OMG BPMN 2.0 XML ingest and conversion to POWL"
+coverage_kind = "consumer-contract"
+papers = []
+implementation = ["wasm4pm/src/bpmn_import.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+assumptions = ["BPMN 2.0 is an OMG standard, not a PM paper primitive"]
+
+[[coverage]]
+id = "powl_to_process_tree"
+category = "discovery"
+status = "covered"
+formal_object = "POWL-to-process-tree conversion (Algorithm 3, Theorem 1 from separable WF-net paper)"
+coverage_kind = "direct"
+papers = ["kourani_park_van_der_aalst_separable_wfnets_2026"]
+implementation = ["wasm4pm/src/powl_to_process_tree.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "yawl_export"
+category = "engineering"
+status = "covered"
+formal_object = "YAWL v6 XML export from POWL model"
+coverage_kind = "consumer-contract"
+papers = []
+implementation = ["wasm4pm/src/yawl_export.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+assumptions = ["YAWL is an interchange format; van der Aalst is a YAWL author but export is an engineering primitive"]
+
+[[coverage]]
+id = "playout"
+category = "discovery"
+status = "covered"
+formal_object = "Stochastic Petri net / process tree playout for synthetic event log generation"
+coverage_kind = "derived"
+papers = ["van_der_aalst_process_mining_2016"]
+implementation = ["wasm4pm/src/playout.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+known_limits = ["Uses global unseeded fastrand — non-deterministic without seeding fix (see DETERMINISM_AUDIT.md)"]
+
+[[coverage]]
+id = "monte_carlo_simulation"
+category = "discovery"
+status = "covered"
+formal_object = "Monte Carlo simulation: stochastic process replay for probabilistic case analysis"
+coverage_kind = "derived"
+papers = ["van_der_aalst_process_mining_2016"]
+implementation = ["wasm4pm/src/montecarlo.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ALGORITHM RECORDS — SOCIAL NETWORK
+# ─────────────────────────────────────────────────────────────────────────────
+
+[[coverage]]
+id = "handover_network"
+category = "social"
+status = "covered"
+formal_object = "Handover-of-work social network: weighted graph of sequential resource handoffs"
+coverage_kind = "direct"
+papers = ["van_der_aalst_et_al_social_network_mining_2005"]
+implementation = ["wasm4pm/src/social_network.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "working_together_network"
+category = "social"
+status = "covered"
+formal_object = "Working-together social network: co-occurrence graph of resources sharing a case"
+coverage_kind = "direct"
+papers = ["van_der_aalst_et_al_social_network_mining_2005"]
+implementation = ["wasm4pm/src/social_network.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ALGORITHM RECORDS — ML ANALYSIS
+# ─────────────────────────────────────────────────────────────────────────────
+
+[[coverage]]
+id = "ml_classify"
+category = "ml"
+status = "covered"
+formal_object = "Trace classification: k-NN, logistic regression, decision tree, naive Bayes on trace features"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/ml/classification.rs", "wasm4pm/src/ml/mod.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+assumptions = ["Standard ML classifiers adapted for process mining features; no canonical PM paper defines these as named PM primitives"]
+
+[[coverage]]
+id = "ml_cluster"
+category = "ml"
+status = "covered"
+formal_object = "Trace clustering: k-means and DBSCAN on trace feature vectors"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/ml/clustering.rs", "wasm4pm/src/ml/mod.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "ml_forecast"
+category = "ml"
+status = "covered"
+formal_object = "Process throughput forecasting: linear trend, autocorrelation seasonality, exponential overlay"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/ml/forecasting.rs", "wasm4pm/src/ml/mod.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "ml_anomaly"
+category = "ml"
+status = "covered"
+formal_object = "Anomaly detection: information-theoretic scoring on drift distances with seasonal decomposition"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/anomaly.rs", "wasm4pm/src/ml/mod.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+known_limits = ["Scoring uses log2 edge-frequency; missing-edge cost=10 (design-decided constant)"]
+
+[[coverage]]
+id = "ml_regress"
+category = "ml"
+status = "covered"
+formal_object = "Remaining time regression: linear, polynomial, exponential regression on trace features"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/ml/regression.rs", "wasm4pm/src/ml/mod.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "ml_pca"
+category = "ml"
+status = "covered"
+formal_object = "PCA feature reduction: Jacobi eigendecomposition on trace feature matrix"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/ml/pca.rs", "wasm4pm/src/ml/mod.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ALGORITHM RECORDS — OCEL
+# ─────────────────────────────────────────────────────────────────────────────
+
+[[coverage]]
+id = "ocel_dfg"
+category = "ocel"
+status = "covered"
+formal_object = "Aggregate OC-DFG: single directly-follows graph across all OCEL object types"
+coverage_kind = "direct"
+papers = ["van_der_aalst_object_centric_process_mining_2019"]
+implementation = ["wasm4pm/src/ocel_io.rs", "wasm4pm/src/ocel_flatten.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "ocel_dfg_per_type"
+category = "ocel"
+status = "covered"
+formal_object = "Per-object-type OC-DFG: map from object_type to DFG (canonical OCEL projection)"
+coverage_kind = "direct"
+papers = ["van_der_aalst_object_centric_process_mining_2019"]
+implementation = ["wasm4pm/src/ocel_io.rs", "wasm4pm/src/ocel_flatten.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "ocel_petri_net"
+category = "ocel"
+status = "covered"
+formal_object = "Object-Centric Petri Net (OC-Petri net) discovery from OCEL"
+coverage_kind = "direct"
+papers = ["van_der_aalst_object_centric_process_mining_2019"]
+implementation = ["wasm4pm/src/ocel_io.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "ocel_encode"
+category = "ocel"
+status = "covered"
+formal_object = "OCEL text encoding: compact human-readable representation for LLM context and diffs"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/text_encoding.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "ocel_ocla"
+category = "ocel"
+status = "covered"
+formal_object = "Object-Centric Language Abstraction (OCLA): per-type language and interaction capture"
+coverage_kind = "direct"
+papers = ["van_der_aalst_object_centric_process_mining_2019"]
+implementation = ["wasm4pm/src/ocel_io.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+assumptions = ["OCLA is a family concept from the OCEL literature; no single defining paper for this exact algorithm variant"]
+
+[[coverage]]
+id = "ocel_oc_declare"
+category = "ocel"
+status = "covered"
+formal_object = "OC-Declare: temporal constraint discovery across OCEL object types"
+coverage_kind = "derived"
+papers = [
+  "pesic_et_al_declare_2007",
+  "van_der_aalst_object_centric_process_mining_2019",
+]
+implementation = ["wasm4pm/src/declare_conformance.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ALGORITHM RECORDS — PREDICTION
+# ─────────────────────────────────────────────────────────────────────────────
+
+[[coverage]]
+id = "predict_next_activity"
+category = "discovery"
+status = "covered"
+formal_object = "Next-activity prediction: n-gram (Markov chain) model over activity sequences"
+coverage_kind = "derived"
+papers = ["van_der_aalst_process_mining_2016"]
+implementation = ["wasm4pm/src/prediction_next_activity.rs", "wasm4pm/src/prediction.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "predict_remaining_time"
+category = "discovery"
+status = "covered"
+formal_object = "Remaining time prediction: statistical bucket model with Weibull distribution"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/prediction_remaining_time.rs", "wasm4pm/src/prediction.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+assumptions = ["Weibull-based remaining time is an engineering adaptation; van der Aalst 2016 discusses remaining time prediction as a concept but does not define this specific model"]
+
+[[coverage]]
+id = "predict_outcome"
+category = "discovery"
+status = "covered"
+formal_object = "Outcome prediction: anomaly scoring against DFG model + boundary coverage analysis"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/prediction_outcome.rs", "wasm4pm/src/prediction.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ALGORITHM RECORDS — ADVANCED ANALYTICS (Wave 2)
+# ─────────────────────────────────────────────────────────────────────────────
+
+[[coverage]]
+id = "detect_drift"
+category = "discovery"
+status = "covered"
+formal_object = "Concept drift detection: activity distribution comparison across sliding windows"
+coverage_kind = "derived"
+papers = ["van_der_aalst_process_mining_2016"]
+implementation = ["wasm4pm/src/prediction_drift.rs", "wasm4pm/src/drift_manager.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "compute_ewma"
+category = "engineering"
+status = "covered"
+formal_object = "EWMA: Exponentially Weighted Moving Average for numeric time series smoothing"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/prediction_drift.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+assumptions = ["EWMA is a general statistical primitive; not specific to process mining"]
+
+[[coverage]]
+id = "analyze_variant_complexity"
+category = "discovery"
+status = "covered"
+formal_object = "Variant complexity analysis: variant entropy and diversity metrics over event log"
+coverage_kind = "derived"
+papers = ["van_der_aalst_process_mining_2016"]
+implementation = ["wasm4pm/src/analysis.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "compute_activity_transition_matrix"
+category = "discovery"
+status = "covered"
+formal_object = "Activity transition matrix: empirical Markov chain transition probabilities"
+coverage_kind = "derived"
+papers = ["van_der_aalst_process_mining_2016"]
+implementation = ["wasm4pm/src/analysis.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "analyze_process_speedup"
+category = "discovery"
+status = "covered"
+formal_object = "Process speedup analysis: temporal acceleration/deceleration via timestamp delta windows"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/analysis.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+assumptions = ["Engineering performance diagnostic; no canonical PM paper defines process speedup analysis as a named primitive"]
+
+[[coverage]]
+id = "compute_trace_similarity_matrix"
+category = "discovery"
+status = "covered"
+formal_object = "Trace similarity matrix: pairwise Levenshtein distance on activity sequences"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/analysis.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+assumptions = ["Levenshtein on activity sequences is a common technique; no single PM paper defines this as a named primitive"]
+
+# ─────────────────────────────────────────────────────────────────────────────
+# ALGORITHM RECORDS — AGENTIC / AUTOML (Wave 3)
+# ─────────────────────────────────────────────────────────────────────────────
+
+[[coverage]]
+id = "automl_classify"
+category = "ml"
+status = "covered"
+formal_object = "AutoML classification: auto-optimised RF/XGB model for trace outcome prediction"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/ml/automl.rs", "wasm4pm/src/automl_envelope.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+assumptions = ["AutoML wraps standard ML; no PM paper grounds this as a named primitive"]
+
+[[coverage]]
+id = "automl_forecast"
+category = "ml"
+status = "covered"
+formal_object = "AutoML throughput forecasting: auto-optimised time-series model for process throughput"
+coverage_kind = "engineering"
+papers = []
+implementation = ["wasm4pm/src/ml/automl.rs", "wasm4pm/src/automl_envelope.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+
+[[coverage]]
+id = "agentic_pipeline"
+category = "engineering"
+status = "covered"
+formal_object = "Agentic process pipeline: perception → decision → protection → Bellman-optimised policy (RL orchestrator)"
+coverage_kind = "engineering"
+papers = []
+implementation = [
+  "wasm4pm/src/rl_orchestrator.rs",
+  "wasm4pm/src/agentic/mod.rs",
+  "wasm4pm/src/autoprocess.rs",
+]
+reachable_surface = ["WASM", "CLI", "registry"]
+assumptions = [
+  "Bellman equation is cited for RL update rule; this is a mathematical theorem, not a PM paper",
+  "Agentic pipeline is an engineering primitive with no PM paper grounding",
+]
+known_limits = ["Requires feature-cloud build; not available in all deployment profiles"]

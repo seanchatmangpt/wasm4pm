@@ -1,0 +1,859 @@
+# ALGORITHM_LINEAGE.toml
+# Machine-readable master ledger for all 60 registered algorithms in wasm4pm
+# Gate: ACADEMIC-LINEAGE-001
+# Generated: 2026-05-30
+# Source of truth: packages/kernel/src/registry.ts (60 algorithms)
+#
+# Confidence values: high | medium | low | engineering_only | not_found
+# Classification values: direct | derived | engineering_only | consumer_contract | future
+# first_claim_verdict from FIRST_CLAIM_AUDIT.md adversary review (A12)
+
+[[algorithm]]
+id = "dfg"
+family = "directly_follows"
+formal_object = "Directed weighted graph G=(A,F,W); A=activities, F⊆A×A directly-follows relation, W:F→ℕ frequencies"
+first_peer_reviewed = "cook_wolf_1995_icse"
+first_known = "cook_wolf_1995_icse"
+canonical = ["cook_wolf_1998_acm_tosem", "van_der_aalst_2016_process_mining"]
+implementation_files = ["wasm4pm/src/discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "direct"
+first_claim_verdict = "WEAKENED"
+first_claim_note = "1998 TOSEM is journal extension; actual first peer-reviewed is Cook & Wolf ICSE 1995"
+notes = ["DFG as formally named concept in van der Aalst 2016 book; frequency-based form in Cook & Wolf 1995"]
+
+[[algorithm]]
+id = "process_skeleton"
+family = "directly_follows"
+formal_object = "Log skeleton: constraint set over activity pairs {always_before, always_after, equivalence, never_together, activity_count}"
+first_peer_reviewed = "verbeek_2021_sttt"
+first_known = "verbeek_2018_arxiv_1806_08247"
+canonical = ["verbeek_2021_sttt"]
+implementation_files = ["wasm4pm/src/more_discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "direct"
+first_claim_verdict = "UPHELD"
+notes = ["Won PDC 2017 contest; arXiv 2018 is first_known; STTT 2021 is first_peer_reviewed"]
+
+[[algorithm]]
+id = "alpha_plus_plus"
+family = "alpha_family"
+formal_object = "Sound WF-net via extended footprint matrix handling short loops, self-loops, implicit places, and duplicate tasks"
+first_peer_reviewed = "wen_et_al_2007_wise"
+first_known = "wen_et_al_2007_wise"
+canonical = ["wen_et_al_2007_wise"]
+implementation_files = ["wasm4pm/src/algorithms.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "direct"
+first_claim_verdict = "UPHELD"
+notes = ["Alpha TKDE 2004; Alpha+ de Medeiros 2004 BETA WP 113; Alpha++ Wen et al. 2007 WISE. Do not conflate variants."]
+
+[[algorithm]]
+id = "heuristic_miner"
+family = "heuristics"
+formal_object = "Causal dependency graph (heuristics net) via statistical dependency measures over directly-follows matrix; noise-tolerant"
+first_peer_reviewed = "weijters_van_der_aalst_2003_icae"
+first_known = "weijters_van_der_aalst_2003_icae"
+canonical = ["weijters_van_der_aalst_2003_icae", "weijters_ribeiro_2011_ieee_cidm"]
+implementation_files = ["wasm4pm/src/advanced_algorithms.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "high"
+classification = "direct"
+first_claim_verdict = "WEAKENED"
+first_claim_note = "BETA WP 166 (2006) is a technical report, NOT peer-reviewed. first_peer_reviewed = Weijters & van der Aalst 2003 ICAE journal"
+notes = ["dependency_threshold 0.2-0.4 for real logs; 2003 ICAE journal is both first_known and first_peer_reviewed"]
+
+[[algorithm]]
+id = "inductive_miner"
+family = "inductive_mining"
+formal_object = "Process tree T with operators {→,×,∧,↺} guaranteed sound via recursive log partitioning using XOR/Sequence/Parallel/Loop cuts"
+first_peer_reviewed = "leemans_fahland_van_der_aalst_2013_icatpn"
+first_known = "leemans_fahland_van_der_aalst_2013_icatpn"
+canonical = ["leemans_fahland_van_der_aalst_2013_icatpn", "leemans_fahland_van_der_aalst_2014_incomplete"]
+implementation_files = ["wasm4pm/src/more_discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "high"
+classification = "direct"
+first_claim_verdict = "UPHELD"
+notes = ["IM 2013 Petri Nets; IMi for incomplete logs 2014 Petri Nets. Confirm variant implemented: IM vs IMf vs IMc."]
+
+[[algorithm]]
+id = "ilp"
+family = "region_theory"
+formal_object = "Petri net via ILP language-based region theory finding minimal regions separating observed from unobserved traces"
+first_peer_reviewed = "van_der_werf_et_al_2008_icatpn"
+first_known = "van_der_werf_et_al_2008_icatpn"
+canonical = ["van_der_werf_et_al_2009_fundamenta_informaticae"]
+implementation_files = ["wasm4pm/src/ilp_discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "direct"
+first_claim_verdict = "WEAKENED"
+first_claim_note = "ICATPN 2008 is first peer-reviewed conference paper; Fundamenta 2009 is canonical journal extension"
+notes = ["van der Werf, van Dongen, Hurkens, Serebrenik — Fundamenta Informaticae 94(3-4) 2009"]
+
+[[algorithm]]
+id = "hill_climbing"
+family = "local_search"
+formal_object = "DFG via greedy local-search perturbation of current best process model"
+first_peer_reviewed = ""
+first_known = ""
+canonical = []
+implementation_files = ["wasm4pm/src/fast_discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "low"
+classification = "engineering_only"
+first_claim_verdict = "UPHELD"
+notes = ["No standalone PM-specific hill climbing paper found. Component in Buijs et al. 2012 OTM ETM. engineering_only is correct."]
+
+[[algorithm]]
+id = "simulated_annealing"
+family = "metaheuristic"
+formal_object = "DFG via stochastic local search accepting deteriorating moves with decreasing probability (cooling schedule)"
+first_peer_reviewed = "liu_lu_shi_2008_icycs"
+first_known = "kirkpatrick_gelatt_vecchi_1983_science"
+canonical = ["liu_lu_shi_2008_icycs"]
+implementation_files = ["wasm4pm/src/more_discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "low"
+classification = "derived"
+first_claim_verdict = "UNCERTAIN"
+first_claim_note = "Liu et al. 2008 ICYCS is a minor venue; PM-specific SA claim is plausible but not fully verified"
+notes = ["Generic SA origin: Kirkpatrick, Gelatt, Vecchi 1983 Science. PM application is derived."]
+
+[[algorithm]]
+id = "genetic_algorithm"
+family = "metaheuristic"
+formal_object = "DFG evolved via genetic operators over population of candidate models optimizing fitness/precision/generalization/simplicity"
+first_peer_reviewed = "van_der_aalst_medeiros_weijters_2005_icatpn"
+first_known = "van_der_aalst_medeiros_weijters_2004_beta_wp124"
+canonical = ["de_medeiros_et_al_2007_dami"]
+implementation_files = ["wasm4pm/src/genetic_discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "derived"
+first_claim_verdict = "UPHELD"
+notes = ["BETA WP 124 (2004) as first_known; ICATPN 2005 as first_peer_reviewed. WARNING: two ACO implementations in codebase."]
+
+[[algorithm]]
+id = "pso"
+family = "metaheuristic"
+formal_object = "DFG via particle swarm optimization; each particle encodes candidate process model as DFG adjacency"
+first_peer_reviewed = "maita_et_al_2022_ijcis"
+first_known = "kennedy_eberhart_1995_icnn"
+canonical = ["maita_et_al_2022_ijcis"]
+implementation_files = ["wasm4pm/src/genetic_discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "engineering_only"
+classification = "engineering_only"
+first_claim_verdict = "UPHELD"
+notes = ["Generic PSO: Kennedy & Eberhart ICNN 1995. No PM-specific PSO paper predating Maita et al. 2022."]
+
+[[algorithm]]
+id = "a_star"
+family = "heuristic_search"
+formal_object = "DFG via A* heuristic search over process model space"
+first_peer_reviewed = ""
+first_known = ""
+canonical = []
+implementation_files = ["wasm4pm/src/fast_discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "engineering_only"
+classification = "engineering_only"
+first_claim_verdict = "UPHELD"
+notes = ["A* as conformance search: Adriansyah et al. 2011 EDOC. No dedicated PM A*-as-discovery paper found."]
+
+[[algorithm]]
+id = "aco"
+family = "metaheuristic"
+formal_object = "DFG via ant colony optimization; artificial ants traverse pheromone-weighted process graph"
+first_peer_reviewed = "canfora_et_al_2013_ieee_services"
+first_known = "dorigo_gambardella_1997"
+canonical = ["canfora_et_al_2013_ieee_services"]
+implementation_files = ["wasm4pm/src/genetic_discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "derived"
+first_claim_verdict = "UPHELD"
+notes = ["WARNING: two ACO implementations in wasm4pm with different parameter names. Canfora et al. 2013 IEEE SERVICES is first PM-specific ACO paper."]
+
+[[algorithm]]
+id = "declare"
+family = "declarative"
+formal_object = "Set of LTL-formula constraint templates representing declarative process model for flexible processes"
+first_peer_reviewed = "pesic_schonenberg_van_der_aalst_2007_edoc"
+first_known = "pesic_van_der_aalst_2006_bpm_workshop"
+canonical = ["pesic_van_der_aalst_2006_bpm_workshop", "pesic_2008_phd"]
+implementation_files = ["wasm4pm/src/discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "high"
+classification = "direct"
+first_claim_verdict = "UNCERTAIN"
+first_claim_note = "2006 BPM workshop LNCS 4103 may be peer-reviewed; if so first_peer_reviewed = 2006 not 2007"
+notes = []
+
+[[algorithm]]
+id = "optimized_dfg"
+family = "directly_follows"
+formal_object = "DFG with frequency/significance-threshold edge filtering; minimal-edge sound spanning subgraph"
+first_peer_reviewed = "chapela_campa_et_al_2022_information_sciences"
+first_known = "gunther_van_der_aalst_2007_bpm"
+canonical = ["chapela_campa_et_al_2022_information_sciences"]
+implementation_files = ["wasm4pm/src/ilp_discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "engineering_only"
+classification = "engineering_only"
+first_claim_verdict = "UPHELD"
+notes = ["DOI inconsistency between lineage docs: 10.1016/j.ins.2022.07.178 vs .07.170 — must be resolved. Not a named PM algorithm."]
+
+[[algorithm]]
+id = "simd_streaming_dfg"
+family = "directly_follows"
+formal_object = "DFG via SIMD-vectorized streaming per-event processing"
+first_peer_reviewed = ""
+first_known = ""
+canonical = []
+implementation_files = ["wasm4pm/src/simd_streaming_dfg.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "engineering_only"
+classification = "engineering_only"
+first_claim_verdict = "UPHELD"
+notes = ["KNOWN BUG: HashMap iteration order is non-deterministic across runs. CRITICAL P1 gap for ACADEMIC-COVERAGE-001 determinism oracle."]
+
+[[algorithm]]
+id = "hierarchical_dfg"
+family = "directly_follows"
+formal_object = "Multi-level DFG with subprocess-collapsed abstract nodes enabling drill-down views"
+first_peer_reviewed = "gunther_van_der_aalst_2007_bpm"
+first_known = "gunther_van_der_aalst_2007_bpm"
+canonical = ["gunther_van_der_aalst_2007_bpm"]
+implementation_files = ["wasm4pm/src/hierarchical.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "engineering_only"
+classification = "engineering_only"
+first_claim_verdict = "UPHELD"
+notes = ["Fuzzy Mining 2007 is conceptual ancestor; 'hierarchical DFG' is not a named PM algorithm."]
+
+[[algorithm]]
+id = "streaming_log"
+family = "streaming"
+formal_object = "Online bounded-memory DFG via sliding window / lossy counting from event stream"
+first_peer_reviewed = "burattin_sperduti_van_der_aalst_2014_ieee_cec"
+first_known = "burattin_et_al_2012_arxiv_1212_6383"
+canonical = ["burattin_sperduti_van_der_aalst_2014_ieee_cec", "van_zelst_et_al_2018_kais"]
+implementation_files = ["wasm4pm/src/probabilistic/wasm_bindings.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "engineering_only"
+classification = "engineering_only"
+first_claim_verdict = "UPHELD"
+notes = ["GAP: implementation_file path inferred from inventory; not confirmed. streaming_log may have no #[wasm_bindgen] exports — verify reachability."]
+
+[[algorithm]]
+id = "smart_engine"
+family = "utility"
+formal_object = "Adaptive runtime algorithm selector choosing discovery algorithm based on log profile"
+first_peer_reviewed = ""
+first_known = ""
+canonical = []
+implementation_files = ["wasm4pm/src/smart_engine.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "engineering_only"
+classification = "engineering_only"
+first_claim_verdict = "UPHELD"
+notes = ["No PM-specific paper. Conceptually: Rice 1976 Algorithm Selection Problem."]
+
+[[algorithm]]
+id = "ml_classify"
+family = "ml_process_mining"
+formal_object = "Classification of traces by outcome using k-NN, logistic regression, decision tree, or naive Bayes on extracted case-feature vectors"
+first_peer_reviewed = "song_gunther_van_der_aalst_2008_bpm_workshops"
+first_known = "song_gunther_van_der_aalst_2008_bpm_workshops"
+canonical = ["song_gunther_van_der_aalst_2008_bpm_workshops"]
+implementation_files = ["wasm4pm/src/ml/classification.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "derived"
+first_claim_verdict = "UPHELD"
+notes = ["Re-added after incorrect Phase 4 audit removal. WASM export confirmed: discover_ml_classify."]
+
+[[algorithm]]
+id = "ml_cluster"
+family = "ml_process_mining"
+formal_object = "Partition of traces into homogeneous subsets using k-means or DBSCAN on activity/transition profile feature vectors"
+first_peer_reviewed = "song_gunther_van_der_aalst_2008_bpm_workshops"
+first_known = "macqueen_1967_berkeley_symp"
+canonical = ["song_gunther_van_der_aalst_2008_bpm_workshops"]
+implementation_files = ["wasm4pm/src/ml/clustering.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "engineering_only"
+classification = "engineering_only"
+first_claim_verdict = "UPHELD"
+notes = ["Generic k-means (MacQueen 1967); PM adaptation in Song et al. 2008. Implementation is generic k-means without direct PM paper mapping."]
+
+[[algorithm]]
+id = "ml_forecast"
+family = "ml_process_mining"
+formal_object = "Throughput time-series forecast using linear trend, autocorrelation seasonality, and optional exponential overlay on event log time buckets"
+first_peer_reviewed = "van_der_aalst_schonenberg_song_2011_information_systems"
+first_known = "van_der_aalst_schonenberg_song_2011_information_systems"
+canonical = ["van_der_aalst_schonenberg_song_2011_information_systems"]
+implementation_files = ["wasm4pm/src/ml/forecasting.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "derived"
+first_claim_verdict = "UPHELD"
+notes = ["Re-added after incorrect Phase 4 audit removal. WASM export confirmed: discover_ml_forecast."]
+
+[[algorithm]]
+id = "ml_anomaly"
+family = "ml_process_mining"
+formal_object = "Anomaly score per trace from DFG edge-frequency information-theoretic scoring (log2 edge-frequency; missing-edge cost=10)"
+first_peer_reviewed = "bezerra_wainer_van_der_aalst_2009_bpmds"
+first_known = "bezerra_wainer_van_der_aalst_2009_bpmds"
+canonical = ["ko_comuzzi_2021_information_sciences"]
+implementation_files = ["wasm4pm/src/anomaly.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "engineering_only"
+classification = "engineering_only"
+first_claim_verdict = "UPHELD"
+notes = ["Custom scoring formula; no canonical PM anomaly paper maps to this exact implementation."]
+
+[[algorithm]]
+id = "ml_regress"
+family = "ml_process_mining"
+formal_object = "Prediction of remaining case cycle time using linear, polynomial, or exponential regression on trace prefix features"
+first_peer_reviewed = "van_der_aalst_schonenberg_song_2011_information_systems"
+first_known = "van_der_aalst_schonenberg_song_2011_information_systems"
+canonical = ["rogge_solti_weske_2013_icsoc"]
+implementation_files = ["wasm4pm/src/ml/regression.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "derived"
+first_claim_verdict = "UPHELD"
+notes = ["Re-added after incorrect Phase 4 audit removal. WASM export confirmed: discover_ml_regress."]
+
+[[algorithm]]
+id = "ml_pca"
+family = "ml_process_mining"
+formal_object = "Dimensionality reduction of trace feature matrix using Principal Component Analysis (Jacobi eigendecomposition)"
+first_peer_reviewed = ""
+first_known = "pearson_1901_philosophical_magazine"
+canonical = []
+implementation_files = ["wasm4pm/src/ml/pca.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "engineering_only"
+classification = "engineering_only"
+first_claim_verdict = "UPHELD"
+notes = ["Re-added after incorrect Phase 4 audit removal. Generic PCA: Pearson 1901, Hotelling 1933."]
+
+[[algorithm]]
+id = "transition_system"
+family = "automata_based"
+formal_object = "Transition system TS=(S,Σ,→,s₀) from event log via sliding-window state abstraction; Petri net synthesized via theory of regions"
+first_peer_reviewed = "van_der_aalst_et_al_2010_sosym"
+first_known = "van_der_aalst_et_al_2006_bpm_center_report"
+canonical = ["van_der_aalst_et_al_2010_sosym"]
+implementation_files = ["wasm4pm/src/transition_system.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "direct"
+first_claim_verdict = "UPHELD"
+notes = ["BPM Center Report BPM-06-30 (2006) as first_known; SoSyM 9(1) 2010 as first_peer_reviewed."]
+
+[[algorithm]]
+id = "log_to_trie"
+family = "data_structure"
+formal_object = "Prefix tree (trie) where each root-to-leaf path encodes one trace; shared prefixes merged for efficient subsequence queries"
+first_peer_reviewed = "van_zelst_van_dongen_van_der_aalst_2018_kais"
+first_known = "van_zelst_van_dongen_van_der_aalst_2018_kais"
+canonical = ["van_zelst_van_dongen_van_der_aalst_2018_kais"]
+implementation_files = ["wasm4pm/src/log_to_trie.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "engineering_only"
+classification = "engineering_only"
+first_claim_verdict = "UPHELD"
+notes = ["KNOWN BUG: HashMap iteration over cases may produce non-deterministic output. CRITICAL P1 gap for determinism oracle."]
+
+[[algorithm]]
+id = "causal_graph"
+family = "heuristics"
+formal_object = "Causal net (C-net): directed graph where each activity has sets of possible input/output bindings capturing split/join behaviour"
+first_peer_reviewed = "van_der_aalst_adriansyah_van_dongen_2011_concur"
+first_known = "van_der_aalst_adriansyah_van_dongen_2011_concur"
+canonical = ["van_der_aalst_adriansyah_van_dongen_2011_concur"]
+implementation_files = ["wasm4pm/src/causal_graph.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "low"
+classification = "derived"
+first_claim_verdict = "UPHELD"
+notes = ["CONCUR 2011 confirmed first formal C-net. wasm4pm naming 'causal graph' differs from canonical 'causal net'."]
+
+[[algorithm]]
+id = "performance_spectrum"
+family = "performance_analysis"
+formal_object = "2-D case-flow timeline model plotting all case flows between consecutive process step pairs; reveals batching, waiting, parallelism patterns"
+first_peer_reviewed = "denisov_fahland_van_der_aalst_2018_bpm"
+first_known = "denisov_fahland_van_der_aalst_2018_bpm"
+canonical = ["denisov_fahland_van_der_aalst_2018_bpm"]
+implementation_files = ["wasm4pm/src/performance_spectrum.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "high"
+classification = "direct"
+first_claim_verdict = "UPHELD"
+notes = ["BPM 2018 DOI: 10.1007/978-3-319-98648-7_9."]
+
+[[algorithm]]
+id = "batches"
+family = "performance_analysis"
+formal_object = "Batch pattern detection (parallel/sequential) identifying simultaneous processing of multiple cases by same resource at task and subprocess levels"
+first_peer_reviewed = "martin_pufahl_mannhardt_2021_information_systems"
+first_known = "wen_et_al_2013_concurrency_computation"
+canonical = ["martin_pufahl_mannhardt_2021_information_systems"]
+implementation_files = ["wasm4pm/src/batches.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "derived"
+first_claim_verdict = "WEAKENED"
+first_claim_note = "Wen et al. 2013 (C&CPE Wiley journal) IS peer-reviewed; first_peer_reviewed_single_task=Wen 2013; first_peer_reviewed_subprocess=Martin 2021"
+notes = []
+
+[[algorithm]]
+id = "correlation_miner"
+family = "caseless_discovery"
+formal_object = "Process model (DFG) discovered without case identifiers via ILP over Precede/Succeed and Duration matrices from raw event streams"
+first_peer_reviewed = "pourmirza_et_al_2015_coopis"
+first_known = "pourmirza_et_al_2015_coopis"
+canonical = ["pourmirza_dijkman_grefen_2017_ijcis"]
+implementation_files = ["wasm4pm/src/correlation_miner.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "derived"
+first_claim_verdict = "WEAKENED"
+first_claim_note = "CoopIS 2015 LNCS 9382 is peer-reviewed and IS the first_peer_reviewed; IJCIS 2017 is canonical journal extension"
+notes = []
+
+[[algorithm]]
+id = "generalization"
+family = "conformance_quality"
+formal_object = "Generalization quality dimension: probability a process model generalizes beyond the training log"
+first_peer_reviewed = "buijs_van_dongen_van_der_aalst_2012_otm"
+first_known = "buijs_van_dongen_van_der_aalst_2012_otm"
+canonical = ["buijs_van_dongen_van_der_aalst_2012_otm", "van_der_aalst_2016_process_mining"]
+implementation_files = ["wasm4pm/src/generalization.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "direct"
+first_claim_verdict = "UPHELD"
+notes = ["OTM 2012 DOI: 10.1007/978-3-642-33606-5_19. First formal definition as separately computable dimension."]
+
+[[algorithm]]
+id = "etconformance_precision"
+family = "conformance_quality"
+formal_object = "Precision metric via escaping-edge analysis: ratio of model-allowed transitions not observed in log at states reached during replay"
+first_peer_reviewed = "munoz_gama_carmona_2010_bpm"
+first_known = "munoz_gama_carmona_2010_bpm"
+canonical = ["munoz_gama_carmona_2010_bpm"]
+implementation_files = ["wasm4pm/src/etconformance_precision.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "high"
+classification = "direct"
+first_claim_verdict = "UPHELD"
+notes = ["BPM 2010 LNCS 6336."]
+
+[[algorithm]]
+id = "alignments"
+family = "conformance_checking"
+formal_object = "Optimal alignment mapping each observed trace to nearest accepting run of a Petri net; cost function over log/model/synchronous moves; A* over product automaton"
+first_peer_reviewed = "adriansyah_sidorova_van_dongen_2011_acsd"
+first_known = "adriansyah_sidorova_van_dongen_2011_acsd"
+canonical = ["adriansyah_2014_phd"]
+implementation_files = ["wasm4pm/src/alignments.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "high"
+classification = "direct"
+first_claim_verdict = "WEAKENED"
+first_claim_note = "CRITICAL: ACSD 2011 (June) predates EDOC 2011 (Aug-Sept). Correct first_peer_reviewed = Adriansyah, Sidorova, van Dongen 2011 ACSD"
+notes = ["PhD thesis Adriansyah TU/e 2014 is canonical full formalization."]
+
+[[algorithm]]
+id = "complexity_metrics"
+family = "quality_metrics"
+formal_object = "Structural complexity metrics for POWL/WF-net: Extended Cardoso Metric (ECaM), Extended Cyclomatic Metric (ECyM), Structuredness Metric (SM)"
+first_peer_reviewed = "lassen_van_der_aalst_2009_information_software_technology"
+first_known = "lassen_van_der_aalst_2009_information_software_technology"
+canonical = ["lassen_van_der_aalst_2009_information_software_technology"]
+implementation_files = ["wasm4pm/src/powl_api.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "derived"
+first_claim_verdict = "UPHELD"
+notes = []
+
+[[algorithm]]
+id = "pnml_import"
+family = "import_export"
+formal_object = "Deserialization of PNML XML (ISO/IEC 15909-2:2011) to in-memory P/T Petri net representation"
+first_peer_reviewed = "iso_iec_15909_2_2011"
+first_known = "iso_iec_15909_2_2011"
+canonical = ["iso_iec_15909_2_2011"]
+implementation_files = ["wasm4pm/src/pnml_io.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "high"
+classification = "consumer_contract"
+first_claim_verdict = "UPHELD"
+notes = ["Standard, not an algorithm. ISO/IEC 15909-2:2011 is CORRECT (not 20481 — that number is wrong in some source docs)."]
+
+[[algorithm]]
+id = "bpmn_import"
+family = "import_export"
+formal_object = "Deserialization of BPMN 2.0 XML (OMG/ISO 19510:2013) to POWL; conversion follows Dijkman et al. BPMN-to-Petri-net mapping rules"
+first_peer_reviewed = "omg_bpmn_2011"
+first_known = "omg_bpmn_2011"
+canonical = ["omg_bpmn_2011"]
+implementation_files = ["wasm4pm/src/bpmn_import.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "high"
+classification = "consumer_contract"
+first_claim_verdict = "UPHELD"
+notes = ["Standard, not an algorithm. WASM export name is read_bpmn() not bpmn_import() — naming divergence acknowledged."]
+
+[[algorithm]]
+id = "powl_to_process_tree"
+family = "conversion"
+formal_object = "Conversion of POWL model to block-structured process tree (partial; non-block-structured fragments approximated)"
+first_peer_reviewed = "kourani_van_zelst_2023_bpm"
+first_known = "kourani_van_zelst_2023_bpm"
+canonical = ["kourani_van_zelst_2023_bpm"]
+implementation_files = ["wasm4pm/src/powl_api.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "engineering_only"
+classification = "engineering_only"
+first_claim_verdict = "UPHELD"
+notes = []
+
+[[algorithm]]
+id = "yawl_export"
+family = "import_export"
+formal_object = "Serialization of POWL model to YAWL v6 XML format"
+first_peer_reviewed = "van_der_aalst_ter_hofstede_2005_information_systems"
+first_known = "van_der_aalst_ter_hofstede_2005_information_systems"
+canonical = ["van_der_aalst_ter_hofstede_2005_information_systems"]
+implementation_files = ["wasm4pm/src/powl/conversion/to_yawl.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "high"
+classification = "consumer_contract"
+first_claim_verdict = "UPHELD"
+notes = ["YAWL language spec IS 30(4) 2005. Format export, not discovery algorithm."]
+
+[[algorithm]]
+id = "playout"
+family = "simulation"
+formal_object = "Deterministic or stochastic token-game traversal of process model generating synthetic conforming traces"
+first_peer_reviewed = "van_der_aalst_2011_springer_monograph"
+first_known = "van_der_aalst_2011_springer_monograph"
+canonical = ["van_der_aalst_2011_springer_monograph"]
+implementation_files = ["wasm4pm/src/playout.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "derived"
+first_claim_verdict = "UPHELD"
+notes = ["KNOWN BUG: uses unseeded fastrand — non-deterministic output. CRITICAL P1 gap for determinism oracle."]
+
+[[algorithm]]
+id = "monte_carlo_simulation"
+family = "simulation"
+formal_object = "Stochastic simulation generating distributions of process outcomes by repeatedly sampling trace executions from log-parameterized Petri net"
+first_peer_reviewed = "wynn_et_al_2008_bpm"
+first_known = "wynn_et_al_2008_bpm"
+canonical = ["rozinat_wynn_van_der_aalst_et_al_2009_dke"]
+implementation_files = ["wasm4pm/src/montecarlo.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "derived"
+first_claim_verdict = "WEAKENED"
+first_claim_note = "Wynn et al. BPM 2008 LNCS 4928 precedes Rozinat et al. DKE 2009; first_peer_reviewed = Wynn et al. 2008"
+notes = ["implementation_file uncertainty: montecarlo.rs vs simulation.rs — primary file may vary."]
+
+[[algorithm]]
+id = "handover_network"
+family = "social_network"
+formal_object = "Weighted directed resource handover graph: edge (r_i,r_j) when r_i executes immediately before r_j in same case; w=handover frequency"
+first_peer_reviewed = "van_der_aalst_song_2004_bpm"
+first_known = "van_der_aalst_song_2004_bpm"
+canonical = ["van_der_aalst_reijers_song_2005_cscw"]
+implementation_files = ["wasm4pm/src/social_network.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "high"
+classification = "direct"
+first_claim_verdict = "UPHELD"
+notes = ["BPM 2004 LNCS 3080; CSCW 2005 DOI: 10.1007/s10606-005-9005-9."]
+
+[[algorithm]]
+id = "working_together_network"
+family = "social_network"
+formal_object = "Weighted symmetric resource co-participation graph: edge (r_i,r_j) when both appear in same case; w=co-participation frequency"
+first_peer_reviewed = "van_der_aalst_song_2004_bpm"
+first_known = "van_der_aalst_song_2004_bpm"
+canonical = ["van_der_aalst_reijers_song_2005_cscw"]
+implementation_files = ["wasm4pm/src/social_network.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "high"
+classification = "direct"
+first_claim_verdict = "UPHELD"
+notes = ["Same paper family as handover_network. Introduced together in BPM 2004."]
+
+[[algorithm]]
+id = "ocel_dfg"
+family = "object_centric"
+formal_object = "Aggregate OC-DFG: typed multigraph where edges reflect directly-follows relations across all OCEL object types combined"
+first_peer_reviewed = "berti_van_der_aalst_2022_sttt"
+first_known = "ghahfarokhi_et_al_2021_simpda"
+canonical = ["berti_van_der_aalst_2022_sttt"]
+implementation_files = ["wasm4pm/src/discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "direct"
+first_claim_verdict = "UPHELD"
+notes = []
+
+[[algorithm]]
+id = "ocel_dfg_per_type"
+family = "object_centric"
+formal_object = "Per-object-type OC-DFG map: separate DFG per object type providing independent process views"
+first_peer_reviewed = "berti_van_der_aalst_2022_sttt"
+first_known = "ghahfarokhi_et_al_2021_simpda"
+canonical = ["berti_van_der_aalst_2022_sttt"]
+implementation_files = ["wasm4pm/src/discovery.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "direct"
+first_claim_verdict = "UPHELD"
+notes = ["Variant of OC-DFG; same paper family as ocel_dfg."]
+
+[[algorithm]]
+id = "ocel_petri_net"
+family = "object_centric"
+formal_object = "Object-Centric Petri Net N=(P,T,F,M₀,type,variable): typed places, variable arcs capturing concurrency/synchronization between object types"
+first_peer_reviewed = "van_der_aalst_berti_2020_fundamenta_informaticae"
+first_known = "van_der_aalst_berti_2020_fundamenta_informaticae"
+canonical = ["van_der_aalst_berti_2020_fundamenta_informaticae"]
+implementation_files = ["wasm4pm/src/oc_petri_net.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "high"
+classification = "direct"
+first_claim_verdict = "UPHELD"
+notes = ["Fundamenta Informaticae 175(1-4) 2020. Journal publication preceded arXiv preprint — confirmed."]
+
+[[algorithm]]
+id = "ocel_encode"
+family = "object_centric"
+formal_object = "Compact human-readable text encoding of OCEL for LLM context, process inspection, and diff display"
+first_peer_reviewed = ""
+first_known = ""
+canonical = []
+implementation_files = ["wasm4pm/src/text_encoding.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "engineering_only"
+classification = "engineering_only"
+first_claim_verdict = "UPHELD"
+notes = ["Text serialization utility; no PM paper for this specific encoding."]
+
+[[algorithm]]
+id = "ocel_ocla"
+family = "object_centric"
+formal_object = "Object-Centric Language Abstraction (OCLA): language of events per object type and their interaction patterns"
+first_peer_reviewed = ""
+first_known = ""
+canonical = ["berti_van_der_aalst_2022_sttt"]
+implementation_files = ["wasm4pm/src/advanced/mod.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "low"
+classification = "derived"
+first_claim_verdict = "UPHELD"
+notes = ["GAP: specific OCLA paper not identified. Derived from OC-PM family. Requires manual research to fill."]
+
+[[algorithm]]
+id = "ocel_oc_declare"
+family = "object_centric"
+formal_object = "OC-DECLARE model: declarative constraint templates specifying ordering, co-occurrence, and absence constraints across multiple object types"
+first_peer_reviewed = "kusters_van_der_aalst_2025_bpm"
+first_known = "kusters_van_der_aalst_2025_bpm"
+canonical = ["kusters_van_der_aalst_2025_bpm"]
+implementation_files = ["wasm4pm/src/advanced/mod.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "direct"
+first_claim_verdict = "UPHELD"
+notes = ["BPM 2025 LNCS 16044. Future-facing: 2025 paper."]
+
+[[algorithm]]
+id = "predict_next_activity"
+family = "predictive_mining"
+formal_object = "N-gram (Markov chain) model predicting most likely next activity with probabilities from prefix traces"
+first_peer_reviewed = "van_der_aalst_schonenberg_song_2011_information_systems"
+first_known = "van_dongen_et_al_2008"
+canonical = ["van_der_aalst_schonenberg_song_2011_information_systems", "tax_et_al_2017_caise"]
+implementation_files = ["wasm4pm/src/prediction.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "derived"
+first_claim_verdict = "WEAKENED"
+first_claim_note = "LSTM first_peer_reviewed = Evermann et al. BPM 2016 workshops LNBIP, not Tax et al. CAiSE 2017"
+notes = []
+
+[[algorithm]]
+id = "predict_remaining_time"
+family = "predictive_mining"
+formal_object = "Remaining time prediction using statistical bucket models and Weibull distribution fitted to prefix trace durations"
+first_peer_reviewed = "van_der_aalst_schonenberg_song_2011_information_systems"
+first_known = "van_dongen_et_al_2008"
+canonical = ["van_der_aalst_schonenberg_song_2011_information_systems", "rogge_solti_weske_2013_icsoc"]
+implementation_files = ["wasm4pm/src/prediction_remaining_time.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "derived"
+first_claim_verdict = "UPHELD"
+notes = []
+
+[[algorithm]]
+id = "predict_outcome"
+family = "predictive_mining"
+formal_object = "Case outcome score combining anomaly score (DFG edge-frequency), boundary coverage, and prefix features"
+first_peer_reviewed = "leontjeva_et_al_2015_bpm"
+first_known = "leontjeva_et_al_2015_bpm"
+canonical = ["teinemaa_et_al_2019_acm_tkdd"]
+implementation_files = ["wasm4pm/src/prediction_outcome.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "derived"
+first_claim_verdict = "UPHELD"
+notes = []
+
+[[algorithm]]
+id = "detect_drift"
+family = "drift_detection"
+formal_object = "Concept drift detection in process event streams via Jaccard-similarity comparison of DFG edge sets across sliding time windows"
+first_peer_reviewed = "bose_et_al_2011_caise"
+first_known = "bose_et_al_2011_caise"
+canonical = ["bose_et_al_2014_ieee_tnnls"]
+implementation_files = ["wasm4pm/src/prediction_drift.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "medium"
+classification = "derived"
+first_claim_verdict = "UPHELD"
+notes = []
+
+[[algorithm]]
+id = "compute_ewma"
+family = "statistical_monitoring"
+formal_object = "Exponentially Weighted Moving Average smoothing of process monitoring metrics with Western Electric-style control limits"
+first_peer_reviewed = "roberts_1959_technometrics"
+first_known = "roberts_1959_technometrics"
+canonical = ["bose_et_al_2014_ieee_tnnls"]
+implementation_files = ["wasm4pm/src/prediction_drift.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "engineering_only"
+classification = "engineering_only"
+first_claim_verdict = "UPHELD"
+notes = ["General statistical method; no PM-specific EWMA paper for this implementation."]
+
+[[algorithm]]
+id = "analyze_variant_complexity"
+family = "analytics"
+formal_object = "Variant entropy and diversity metrics over event log — Shannon entropy of trace variant distribution"
+first_peer_reviewed = ""
+first_known = ""
+canonical = []
+implementation_files = ["wasm4pm/src/final_analytics.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "engineering_only"
+classification = "engineering_only"
+first_claim_verdict = "UPHELD"
+notes = []
+
+[[algorithm]]
+id = "compute_activity_transition_matrix"
+family = "analytics"
+formal_object = "Normalized activity transition frequency matrix (Markov chain) — normalized directly-follows relation"
+first_peer_reviewed = ""
+first_known = ""
+canonical = []
+implementation_files = ["wasm4pm/src/final_analytics.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "engineering_only"
+classification = "engineering_only"
+first_claim_verdict = "UPHELD"
+notes = []
+
+[[algorithm]]
+id = "analyze_process_speedup"
+family = "analytics"
+formal_object = "Per-window acceleration/deceleration analysis using inter-event timestamp deltas over sliding windows"
+first_peer_reviewed = ""
+first_known = ""
+canonical = []
+implementation_files = ["wasm4pm/src/final_analytics.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "engineering_only"
+classification = "engineering_only"
+first_claim_verdict = "UPHELD"
+notes = []
+
+[[algorithm]]
+id = "compute_trace_similarity_matrix"
+family = "analytics"
+formal_object = "Pairwise trace similarity matrix using Levenshtein edit distance on activity label sequences"
+first_peer_reviewed = ""
+first_known = ""
+canonical = []
+implementation_files = ["wasm4pm/src/final_analytics.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "engineering_only"
+classification = "engineering_only"
+first_claim_verdict = "UPHELD"
+notes = ["Levenshtein 1966; PM context-aware clustering: Bose & van der Aalst 2009 SDM."]
+
+[[algorithm]]
+id = "automl_classify"
+family = "automl"
+formal_object = "Auto-optimized classification model (RF/XGB) for trace outcome prediction"
+first_peer_reviewed = ""
+first_known = ""
+canonical = []
+implementation_files = ["wasm4pm/src/ml/automl.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "engineering_only"
+classification = "engineering_only"
+first_claim_verdict = "UPHELD"
+notes = ["AutoML concept: Hutter, Kotthoff & Vanschoren 2019. PM AutoML not yet in major PM venue."]
+
+[[algorithm]]
+id = "automl_forecast"
+family = "automl"
+formal_object = "Auto-optimized time-series forecasting model for process throughput"
+first_peer_reviewed = ""
+first_known = ""
+canonical = []
+implementation_files = ["wasm4pm/src/ml/automl.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "engineering_only"
+classification = "engineering_only"
+first_claim_verdict = "UPHELD"
+notes = []
+
+[[algorithm]]
+id = "agentic_pipeline"
+family = "agentic"
+formal_object = "End-to-end autonomic lifecycle: perception → decision → protection → Bellman-optimized policy execution"
+first_peer_reviewed = ""
+first_known = ""
+canonical = []
+implementation_files = ["wasm4pm/src/lib.rs"]
+reachable_surface = ["WASM", "CLI", "registry"]
+confidence = "engineering_only"
+classification = "engineering_only"
+first_claim_verdict = "UPHELD"
+notes = ["RL/Bellman: Bellman 1957. PM autonomic loop: wasm4pm original design. No single PM peer-reviewed paper for this construct."]

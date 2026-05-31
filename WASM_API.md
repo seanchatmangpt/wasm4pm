@@ -203,6 +203,72 @@ Both return `{ nodes: [{id, label}], edges: [{from, to, weight/co_occurrences}] 
 |----------|---------|-------------|
 | `check_token_based_replay(handle, activity_key)` | `Result<JsValue, JsValue>` | Token-based replay fitness |
 | `simd_token_replay(handle, activity_key)` | `String` (JSON) | SIMD-accelerated token replay |
+| `check_wf_net_soundness(pn_json)` | `Result<String, JsValue>` | WF-net soundness check (van der Aalst, arXiv:2602.15739v3 Defs 3.1–3.5) |
+
+### `check_wf_net_soundness` — WF-net Soundness (arXiv:2602.15739v3)
+
+**Source:** `wasm4pm/src/soundness.rs`
+
+Verifies the three classical soundness properties of a Workflow net (WF-net):
+
+| Property | Description |
+|----------|-------------|
+| **Option to complete** | The final marking is reachable from the initial marking (proper completion) |
+| **No dead transitions** | Every visible transition can eventually fire from every reachable marking (weak liveness) |
+| **Boundedness** | No place accumulates more than 100 tokens during bounded reachability exploration (depth 50) |
+
+**Input — `pn_json`** (same format as `powl_to_petri_net` output):
+
+```json
+{
+  "net": {
+    "places":      [{ "name": "p_start" }, { "name": "p_end" }],
+    "transitions": [{ "name": "t_A", "label": "A" }],
+    "arcs": [
+      { "source": "p_start", "target": "t_A" },
+      { "source": "t_A",     "target": "p_end" }
+    ]
+  },
+  "initial_marking": { "p_start": 1 },
+  "final_marking":   { "p_end": 1 }
+}
+```
+
+**Output JSON:**
+
+```json
+{
+  "sound":        true,
+  "deadlock_free": true,
+  "bounded":      true,
+  "liveness":     true
+}
+```
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `sound` | `bool` | `true` iff all three soundness criteria hold |
+| `deadlock_free` | `bool` | Alias for `liveness` (transition-firing freedom) |
+| `bounded` | `bool` | No place exceeded the token cap during BFS exploration |
+| `liveness` | `bool` | Every visible transition fires in at least one reachable path |
+
+**JavaScript usage:**
+
+```javascript
+// Obtain Petri net from a POWL model
+const pnJson = wasm.powl_to_petri_net("->( A, B )");
+
+// Check WF-net soundness
+const result = JSON.parse(wasm.check_wf_net_soundness(pnJson));
+console.log(result.sound);        // true
+console.log(result.deadlock_free); // true
+console.log(result.bounded);       // true
+console.log(result.liveness);      // true
+```
+
+**Note:** Uses bounded BFS (depth 50, token cap 100). Highly concurrent or recursive nets may report `bounded: false` as a conservative approximation. Use `check_powl_soundness` for POWL-native models; use this function when working directly with WF-net JSON.
+
+**Academic reference:** W.M.P. van der Aalst, "Workflow Nets: Basic Notions, Applications, and Complexity," arXiv:2602.15739v3, February 2026. Definitions 3.1–3.5.
 
 ## Streaming (streaming_*.rs — 20+ exports)
 
@@ -904,8 +970,85 @@ Example process tree string: `->( A, +( B, C ), D )` — A runs first, then B an
 | `check_powl_conformance(powl_handle, log_handle, activity_key)` | `Result<JsValue, JsValue>` | Conformance checking against POWL model |
 | `export_powl_to_json(powl_handle)` | `Result<String, JsValue>` | Export POWL to JSON format |
 | `powl_footprints(powl_handle)` | `Result<JsValue, JsValue>` | Extract causal footprints (sequence and parallel pairs) |
+| `petri_net_to_powl(pn_json)` | `Result<JsValue, JsValue>` | Convert Petri-net JSON to POWL arena (no WF-net pre-validation) |
+| `wf_net_to_powl(pn_json)` | `Result<String, JsValue>` | Convert WF-net JSON to POWL with structural pre-validation (arXiv:2602.15739v3 §4) |
 
 **Footprints output** includes `{ start_activities, end_activities, parallel: [[A,B],...], sequence: [[A,B],...] }`.
+
+### `wf_net_to_powl` — WF-net to POWL Conversion (arXiv:2602.15739v3)
+
+**Source:** `wasm4pm/src/wf_to_powl.rs`
+
+Converts a WF-net (Petri-net JSON) to a POWL model using the recursive decomposition algorithm (partial-order cut → XOR/choice-graph cut → base case). Before conversion, validates that the net has exactly one source place and one sink place.
+
+**Input — `pn_json`** (same format as `powl_to_petri_net` output):
+
+```json
+{
+  "net": {
+    "places":      [{ "name": "p_start" }, { "name": "p_2" }, { "name": "p_end" }],
+    "transitions": [
+      { "name": "t_A", "label": "A" },
+      { "name": "t_B", "label": "B" }
+    ],
+    "arcs": [
+      { "source": "p_start", "target": "t_A" },
+      { "source": "t_A",     "target": "p_2"  },
+      { "source": "p_2",     "target": "t_B"  },
+      { "source": "t_B",     "target": "p_end" }
+    ]
+  },
+  "initial_marking": { "p_start": 1 },
+  "final_marking":   { "p_end": 1 }
+}
+```
+
+**Output JSON:**
+
+```json
+{
+  "wf_valid":   true,
+  "source":     "p_start",
+  "sink":       "p_end",
+  "root":       0,
+  "node_count": 3,
+  "repr":       "->( A, B )"
+}
+```
+
+| Field | Type | Meaning |
+|-------|------|---------|
+| `wf_valid` | `bool` | `true` iff single-source / single-sink invariants hold |
+| `source` | `String` | Name of the unique source place |
+| `sink` | `String` | Name of the unique sink place |
+| `root` | `u32` | Arena index of the POWL root node |
+| `node_count` | `usize` | Total nodes allocated in the POWL arena |
+| `repr` | `String` | Human-readable POWL expression (e.g. `->( A, X( B, C ) )`) |
+
+**JavaScript usage:**
+
+```javascript
+// Round-trip: POWL → Petri net → POWL
+const powlStr = "->( A, X( B, C ) )";
+const pnJson  = wasm.powl_to_petri_net(powlStr);   // JSON string
+
+const result  = JSON.parse(wasm.wf_net_to_powl(pnJson));
+console.log(result.wf_valid);   // true
+console.log(result.source);     // "p_source" (name depends on internal naming)
+console.log(result.repr);       // "->( A, X( B, C ) )"  or simplified equivalent
+
+// Error case: net with multiple sources
+try {
+  wasm.wf_net_to_powl(JSON.stringify({ net: { places: [], transitions: [], arcs: [] },
+    initial_marking: {}, final_marking: {} }));
+} catch (e) {
+  // e contains: "WF-net validation failed: WF-net must have exactly one source place, found 0: []"
+}
+```
+
+**Difference from `petri_net_to_powl`:** The lower-level `petri_net_to_powl` (in `powl_api.rs`) skips WF-net pre-validation and returns a `JsValue` (not a string). Use `wf_net_to_powl` when the input is expected to be a well-formed WF-net and you need the `wf_valid`, `source`, and `sink` fields in the response.
+
+**Academic reference:** W.M.P. van der Aalst, "Workflow Nets: Basic Notions, Applications, and Complexity," arXiv:2602.15739v3, February 2026. Section 4 (Decomposition algorithm for converting WF-nets to structured process models).
 
 **Availability:** Gated on `feature-powl`. Only included in `browser` profile (2.7MB). Use `get_capabilities()` to verify at runtime.
 

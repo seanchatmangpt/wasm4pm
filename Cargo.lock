@@ -1514,6 +1514,14 @@ dependencies = [
 ]
 
 [[package]]
+name = "pm-core"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
+]
+
+[[package]]
 name = "portable-atomic"
 version = "1.13.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
