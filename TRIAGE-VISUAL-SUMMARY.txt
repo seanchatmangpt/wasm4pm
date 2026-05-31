@@ -1,0 +1,154 @@
+╔════════════════════════════════════════════════════════════════════════════════╗
+║                      TRACK B-1: TRIAGE FRAMEWORK SUMMARY                       ║
+║                         Test Failure Classification                            ║
+╚════════════════════════════════════════════════════════════════════════════════╝
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ SITUATION                                                                      │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  • Total test files:             515
+│  • Current passing tests:         ~508 (after Track A fix)
+│  • Current failing tests:         ~692
+│  • Test suite size:              ~1200 total
+│  • Failure rate:                 58% (before Track B-1 fixes)
+│  • Target after tracks C-E:      90% passing (650-700 tests)
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ 12 FAILURE CATEGORIES                                                          │
+├──────────────────────────────────────────────────────────────────────────────┤
+│
+│ HIGH-IMPACT (300-400 failures, 44-58% of total)
+│
+│  [A] WASM Export Missing              ███████░░░  50-100 tests    MEDIUM effort
+│      ├─ Tests calling non-existent WASM functions
+│      └─ Detection: grep "autonomic_execute_cycle|discover_dfg"
+│
+│  [B] Payload Envelope Mismatch        ███████░░░  50-100 tests    LOW effort
+│      ├─ CLI output missing { payload: ... } wrapper
+│      └─ Detection: grep "\.payload\."
+│
+│  [C] CLI Command Not Registered       █████░░░░░  30-50 tests     MEDIUM effort
+│      ├─ Commands implemented but not wired to CLI
+│      └─ Detection: comm -23 tested_commands registered_commands
+│
+│  [D] Test Setup Failure               ██████░░░░  40-80 tests     MEDIUM effort
+│      ├─ beforeEach/beforeAll timeout or crash
+│      └─ Detection: grep "beforeEach.*async"
+│
+│  [E] Cross-Package Dependencies       █████████░  50-150 tests    MEDIUM effort
+│      ├─ Unresolved imports, missing packages (CASCADING)
+│      └─ Detection: pnpm list --depth 3 | grep ERR!
+│
+│ MEDIUM-IMPACT (100-150 failures, 14-22% of total)
+│
+│  [F] Schema Validation                ████░░░░░░  30-50 tests     LOW effort
+│      ├─ Zod validation, receipt contracts fail
+│      └─ Detection: grep "validateReceipt|ZodError"
+│
+│  [G] Algorithm Registry/Features      ███░░░░░░░  20-40 tests     LOW effort
+│      ├─ Tests expecting algorithms disabled by flags
+│      └─ Detection: grep "registry\.get.*undefined"
+│
+│  [H] OTEL Span Missing                ████░░░░░░  30-50 tests     MEDIUM effort
+│      ├─ Expected OTEL spans not emitted
+│      └─ Detection: grep "OtelCapture.*span.*not found"
+│
+│ LOW-IMPACT (50-80 failures, 7-12% of total)
+│
+│  [I] Fixture File Missing             ██░░░░░░░░  15-30 tests     LOW effort
+│  [J] Mock Configuration               ██░░░░░░░░  10-20 tests     LOW effort
+│  [K] Timeout/Async                    ██░░░░░░░░  10-20 tests     LOW effort
+│  [L] Output Formatting                ██░░░░░░░░  10-20 tests     LOW effort
+│
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ SAMPLING STRATEGY: 20 REPRESENTATIVE TESTS                                    │
+├──────────────────────────────────────────────────────────────────────────────┤
+│
+│  Category  │ Sample Test File                    │ Package
+│  ───────────────────────────────────────────────────────────────────────
+│  A         │ autoprocess-e2e.test.ts             │ apps/wasm4pm/src
+│  B         │ algorithms-cli.test.ts              │ apps/wasm4pm/src
+│  C         │ prolog8-cli.test.ts                 │ apps/wasm4pm/src
+│  D         │ execute-learn-contracts.test.ts     │ packages/agents/src
+│  E         │ backend-registry.test.ts            │ packages/kernel
+│  E         │ feature-quality.test.ts             │ packages/ml/src
+│  F         │ config-validation.test.ts           │ packages/config/src
+│  H         │ otel-span-verification.test.ts      │ packages/observability/src
+│  D         │ engine.test.ts                      │ packages/engine/src
+│  A         │ cognition-wasm.integration.test.ts  │ packages/cognition/src
+│  F         │ receipt.test.ts                     │ packages/contracts/src
+│  E         │ marketplace-passport.test.ts        │ packages/swarm/src
+│  G         │ algorithm-selector.test.ts          │ apps/wasm4pm/src
+│  C         │ doctor.test.ts                      │ apps/wasm4pm
+│  I         │ integration.test.ts                 │ packages/testing
+│  K         │ batch-cli.test.ts                   │ apps/wasm4pm/src
+│  E         │ classifiers.test.ts                 │ packages/ml/src
+│  L         │ output.test.ts                      │ apps/wasm4pm
+│  J         │ sync.test.ts                        │ packages/supabase/src
+│  H         │ otel-span-coverage.test.ts          │ packages/agents/src
+│
+│  → Run sampling: bash TRIAGE-SAMPLING-SCRIPT.sh
+│
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ EXECUTION PRIORITY (Fix in This Order)                                        │
+├──────────────────────────────────────────────────────────────────────────────┤
+│
+│  Phase  │ Category    │ Time    │ Impact    │ Reason
+│  ────────────────────────────────────────────────────────────────────────
+│  Track C│ TRIAGE      │ 2-3h    │ —         │ Validate hypotheses via sampling
+│  Track D│ E (Deps)    │ 2-4h    │ CRITICAL  │ Unblocks 50-150 failures
+│  Track D│ A (WASM)    │ 2-4h    │ CRITICAL  │ Fixes 50-100 tests
+│  Track D│ B (Env)     │ 1-2h    │ HIGH      │ Mostly done in Track A
+│  Track D│ D (Setup)   │ 2-3h    │ HIGH      │ Fixes 40-80 tests
+│  Track D│ C (CLI)     │ 1-2h    │ HIGH      │ Fixes 30-50 tests
+│  Track E│ F-L (Minor) │ 2-5h    │ MEDIUM    │ Parallel cleanup
+│
+│  TOTAL EFFORT: 12-23 hours for 90% pass rate (650-700 tests)
+│
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ DOCUMENTS CREATED                                                              │
+├──────────────────────────────────────────────────────────────────────────────┤
+│
+│  1. README-TRIAGE-FRAMEWORK.md          ← START HERE (quick guide)
+│  2. TRACK-B1-SUMMARY.md                 (executive summary)
+│  3. TRIAGE-FRAMEWORK-TRACK-B1.md        (detailed analysis)
+│  4. TRIAGE-GREP-PATTERNS.md             (quick reference patterns)
+│  5. TRIAGE-SAMPLING-SCRIPT.sh           (automated sampling tool)
+│
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ QUICK START                                                                    │
+├──────────────────────────────────────────────────────────────────────────────┤
+│
+│  1. Read:   cat TRACK-B1-SUMMARY.md                      (5 min)
+│  2. Run:    bash TRIAGE-SAMPLING-SCRIPT.sh              (2-3 hours)
+│  3. Analyze: cat triage-samples/sample-*-result.txt     (10 min)
+│  4. Confirm: Verify top 3-4 categories match hypotheses  (5 min)
+│  5. Begin:   Fix top-priority categories by order       (12-23 hours)
+│
+└──────────────────────────────────────────────────────────────────────────────┘
+
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ KEY NUMBERS                                                                    │
+├──────────────────────────────────────────────────────────────────────────────┤
+│  Total failing tests:        ~692
+│  Categories identified:      12
+│  Sample tests:              20 (one per category)
+│  Estimated effort:          12-23 hours
+│  Expected success rate:     90% (650-700 tests passing)
+│  Top 3 categories:          E (deps), A (WASM), B (envelope)
+│  Cascading risk:            Category E (50-150 failures from 15-30 files)
+│  Quick wins (LOW effort):   Categories F, G, I, J, K, L (100-150 failures)
+└──────────────────────────────────────────────────────────────────────────────┘
+
+STATUS: ✅ Track B-1 COMPLETE - Triage framework ready for execution
+NEXT:   Track C - Execute sampling to validate hypotheses (2-3 hours)
+TARGET: 650-700 passing tests by end of Tracks C-E

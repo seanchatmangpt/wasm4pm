@@ -58,6 +58,7 @@ blake3 = "1"
 sha2 = { workspace = true }
 wasm4pm-cognition = { version = "26.5.28", path = "../crates/wasm4pm-cognition", default-features = false, optional = true }
 miniml = { workspace = true, optional = true }
+ocel-core = { workspace = true, optional = true }
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 uuid = { version = "1.16.0", features = ["v4", "js"] }
@@ -431,7 +432,7 @@ gpu = []
 # can be declared without cargo errors; parallel_executor.rs guards rayon use internally)
 rayon = []
 powl = []
-ocel = []
+ocel = ["dep:ocel-core"]
 
 # Utility features
 hand_rolled_stats = []
@@ -460,3 +461,7 @@ required-features = ["cloud"]
 [[test]]
 name = "e2e_agentic_pipeline"
 required-features = ["cloud"]
+
+[[test]]
+name = "ocel_v2"
+required-features = ["ocel"]

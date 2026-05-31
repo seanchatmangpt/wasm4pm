@@ -1,0 +1,24 @@
+{
+  "_comment": "NEGATIVE FIXTURE N13 — duplicate object id. OCEDO requires object ids to be unique (O is a SET). order-1 is declared twice => DUPLICATE_OBJECT_ID. Minimal counterexample: rename the second object to order-2.",
+  "expected_refusal": "ObjectLifecycleViolation",
+  "rejecting_primitive": "ocel_core::validate (DUPLICATE_OBJECT_ID)",
+  "eventTypes": [
+    { "name": "Create Order", "attributes": [] }
+  ],
+  "objectTypes": [
+    { "name": "Order", "attributes": [] }
+  ],
+  "events": [
+    {
+      "id": "e1",
+      "type": "Create Order",
+      "time": "2026-05-01T09:00:00Z",
+      "attributes": [],
+      "relationships": [{ "objectId": "order-1", "qualifier": "order" }]
+    }
+  ],
+  "objects": [
+    { "id": "order-1", "type": "Order", "attributes": [], "relationships": [] },
+    { "id": "order-1", "type": "Order", "attributes": [], "relationships": [] }
+  ]
+}

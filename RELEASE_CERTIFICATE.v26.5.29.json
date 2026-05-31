@@ -2,7 +2,7 @@
   "package": {
     "name": "wasm4pm",
     "version": "26.5.29",
-    "git_commit": "86236b02f62254f49fca4746f569d4d865cd0a7f"
+    "git_commit": "d31c6cf2b76741b610908155dcab405374a881f8"
   },
   "reachability": {
     "algorithm_count": 60,
@@ -28,5 +28,5 @@
     "pack_smoke_tarball_path": "packages/kernel/wasm4pm-26.5.29.tgz",
     "wasm_bundle_hash": "349f210999ee8a7e7eefd204a9509de91a831cb221ea15c18c20e32017f4761e"
   },
-  "timestamp": "2026-05-30T10:59:53.265Z"
+  "timestamp": "2026-05-30T18:33:09.392Z"
 }

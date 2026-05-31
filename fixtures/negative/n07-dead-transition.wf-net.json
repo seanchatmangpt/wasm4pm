@@ -1,0 +1,27 @@
+{
+  "_comment": "NEGATIVE FIXTURE N07 — dead transition. A minimal WF-net src -> t_a -> p_mid -> t_b -> sink, plus a transition t_dead whose ONLY input place p_orphan is never produced by any transition (no arc ends at p_orphan). t_dead can never be enabled at any reachable marking, so soundness condition 1 (no dead transitions) fails: analyze_petri_net reports is_sound=false and dead_transitions=[\"t_dead\" label]. Minimal counterexample: delete t_dead and p_orphan and the net is sound.",
+  "expected_refusal": "ObjectLifecycleViolation",
+  "rejecting_primitive": "analyze_petri_net (soundness: dead transitions)",
+  "soundness_assertion": { "is_sound": false, "dead_transition_label": "Dead Step" },
+  "places": [
+    { "id": "src", "label": "source", "marking": null },
+    { "id": "p_mid", "label": "mid", "marking": null },
+    { "id": "p_orphan", "label": "orphan", "marking": null },
+    { "id": "sink", "label": "sink", "marking": null }
+  ],
+  "transitions": [
+    { "id": "t_a", "label": "Step A", "is_invisible": false },
+    { "id": "t_b", "label": "Step B", "is_invisible": false },
+    { "id": "t_dead", "label": "Dead Step", "is_invisible": false }
+  ],
+  "arcs": [
+    { "from": "src", "to": "t_a", "weight": null },
+    { "from": "t_a", "to": "p_mid", "weight": null },
+    { "from": "p_mid", "to": "t_b", "weight": null },
+    { "from": "t_b", "to": "sink", "weight": null },
+    { "from": "p_orphan", "to": "t_dead", "weight": null },
+    { "from": "t_dead", "to": "sink", "weight": null }
+  ],
+  "initial_marking": { "src": 1 },
+  "final_markings": [{ "sink": 1 }]
+}

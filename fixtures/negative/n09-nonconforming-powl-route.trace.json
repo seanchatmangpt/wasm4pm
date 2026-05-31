@@ -1,0 +1,16 @@
+{
+  "_comment": "NEGATIVE FIXTURE N09 — non-conforming POWL route (illegal motion). This trace injects 'Cancel Order' — an activity that exists in the world vocabulary but is NOT a node in the manufactured Order-to-Cash POWL (the happy-path field model has no cancellation branch). A move the route does not declare is illegal motion: the trace is not in powl_language(field_powl) => AndonPull::IllegalRouteMotion. Minimal counterexample: delete the 'Cancel Order' step.",
+  "expected_refusal": "IllegalRouteMotion",
+  "rejecting_primitive": "powl_language (field POWL membership)",
+  "model_source": "wasm4pm::foundry::field_powl",
+  "trace": [
+    "Create Order",
+    "Confirm Order",
+    "Cancel Order",
+    "Pick Item",
+    "Pack Package",
+    "Ship Package",
+    "Send Invoice",
+    "Receive Payment"
+  ]
+}

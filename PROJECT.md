@@ -32,6 +32,16 @@ The system consists of three main layers:
 | M3 | OCEL 2.0 & Causality | Add OCEL 2.0 schema and provenance traversal query over Agent, File, Diagnostic, and Receipt objects. | None | DONE | 471169bf-50c5-453a-b873-3d896fec015b |
 | M4 | OCPQ Parser & Runtime | Implement Process-Law Query Language (OCPQ) parser, AST, and runtime evaluator in Rust and TS. | M3 | DONE | 4c90a29f-7eed-4256-91ba-771197c2723c |
 | M5 | CLI Integration & Corpus | Integrate registry, streaming, and OCPQ commands in `wpm` CLI, add fixture corpus, and pass E2E tests. | M2, M4 | DONE | 4c90a29f-7eed-4256-91ba-771197c2723c |
+| M6 | Primitive Inventory | Map existing primitives, modules, tests, paper grounding, and downstream use in 00-WASM4PM-PRIMITIVE-INVENTORY.md. | None | PLANNED | |
+| M7 | OCEL v2 Primitives | Validate OCEL v2 canonical evidence surface and document in 01-OCEL-V2-PRIMITIVES.md. | None | PLANNED | |
+| M8 | POWL 2.0 Primitives | Validate POWL 2.0 models, choice graphs, and conversion in 02-POWL-2-PRIMITIVES.md. | None | PLANNED | |
+| M9 | WF-Net / Petri-Net Primitives | Validate Petri net place/transition structures and token-replay in 03-WFNET-PETRI-PRIMITIVES.md. | None | PLANNED | |
+| M10 | Conformance Primitives | Validate fitness, alignment, and prefix conformance in 04-CONFORMANCE-PRIMITIVES.md. | None | PLANNED | |
+| M11 | Process-World Foundry | Validate OCEL/POWL simulators and generators in 05-PROCESS-WORLD-FOUNDRY.md. | None | PLANNED | |
+| M12 | Negative Fixtures & Sabotage | Verify negative/sabotage trace corpus and document in 06-NEGATIVE-CORPUS.md. | None | PLANNED | |
+| M13 | Route-Driven TDD | Verify powl_test macro-driven testing substrate and document in 07-ROUTE-DRIVEN-TDD.md. | None | PLANNED | |
+| M14 | Benchmark Gates | Verify G1-G5 benchmark gates and document in 08-BENCHMARK-GATES.md. | None | PLANNED | |
+| M15 | Plan Synthesizer & Receipt | Synthesize dependency DAG in 00-BUILD-PLAN.md and emit WASM4PM_PRIMITIVE_KERNEL_RECEIPT.md. | M6-M14 | PLANNED | |
 
 ## Interface Contracts
 

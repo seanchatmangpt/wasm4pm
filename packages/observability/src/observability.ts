@@ -88,11 +88,11 @@ export class ObservabilityLayer {
     const level = event.level.toUpperCase().padEnd(5);
     const formattedMessage = `[${level}] ${timestamp.toISOString()} ${event.message}`;
 
-    // Route to the matching console level so callers can spy on the right method.
-    // debug and info go to stdout-equivalent; warn and error go to stderr.
+    // Route diagnostic messages to stderr so --format json outputs only JSON to stdout.
+    // This ensures JSON consumers (like hooks and tests) receive clean, parseable output.
     switch (event.level) {
       case 'debug':
-        console.debug(formattedMessage);
+        console.error(formattedMessage);
         break;
       case 'warn':
         console.warn(formattedMessage);
@@ -102,7 +102,7 @@ export class ObservabilityLayer {
         break;
       case 'info':
       default:
-        console.info(formattedMessage);
+        console.error(formattedMessage);
         break;
     }
   }

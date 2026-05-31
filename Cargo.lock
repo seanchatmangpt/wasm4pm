@@ -1415,6 +1415,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ocpq"
+version = "26.5.30"
+dependencies = [
+ "chrono",
+ "ocel-core",
+ "serde",
+ "serde_json",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2556,6 +2567,7 @@ dependencies = [
  "lazy_static",
  "miniml",
  "naga",
+ "ocel-core",
  "once_cell",
  "proptest",
  "quick-xml",
