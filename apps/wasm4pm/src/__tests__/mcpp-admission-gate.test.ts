@@ -28,7 +28,6 @@
 
 import { describe, it, expect } from 'vitest';
 import { execFile } from 'child_process';
-import * as fs from 'fs/promises';
 import * as fsSync from 'fs';
 import * as path from 'path';
 import * as os from 'os';
@@ -294,7 +293,7 @@ describe('Group A — Threshold 1.0 enforcement', () => {
     const validExits = [EXIT_CODES.success, EXIT_CODES.conformance_fail, EXIT_CODES.execution_error, EXIT_CODES.system_error];
     expect(validExits).toContain(result.exitCode);
 
-    if ([EXIT_CODES.success, EXIT_CODES.conformance_fail].includes(result.exitCode)) {
+    if (([EXIT_CODES.success, EXIT_CODES.conformance_fail] as number[]).includes(result.exitCode)) {
       const payload = parsePayload(result);
       expect(payload).not.toBeNull();
       // Threshold must be stored as 1.0 (float), not "1.0" (string), not 0.8 (default)
@@ -950,8 +949,8 @@ describe('Group F — MCPP doctrine contract invariants (no WASM required)', () 
 
     // If both produced JSON, fitness must be identical (deterministic WASM)
     if (
-      [EXIT_CODES.success, EXIT_CODES.conformance_fail].includes(result1.exitCode) &&
-      [EXIT_CODES.success, EXIT_CODES.conformance_fail].includes(result2.exitCode)
+      ([EXIT_CODES.success, EXIT_CODES.conformance_fail] as number[]).includes(result1.exitCode) &&
+      ([EXIT_CODES.success, EXIT_CODES.conformance_fail] as number[]).includes(result2.exitCode)
     ) {
       const p1 = parsePayload(result1);
       const p2 = parsePayload(result2);
