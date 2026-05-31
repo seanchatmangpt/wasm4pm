@@ -1,7 +1,7 @@
 [workspace]
 resolver = "2"
 
-members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-types", "crates/wasm4pm-algos", "crates/wasm4pm-cli", "crates/wasm4pm-utils", "crates/miniml-core", "crates/wasm4pm-cognition", "crates/prolog8", "crates/wasm4pm-macros", "crates/ocel-core"]
+members = ["wasm4pm", "tps-metrics", "crates/wasm4pm-types", "crates/wasm4pm-algos", "crates/wasm4pm-cli", "crates/wasm4pm-utils", "crates/miniml-core", "crates/wasm4pm-cognition", "crates/prolog8", "crates/wasm4pm-macros", "crates/ocel-core", "crates/pm-core"]
 
 [workspace.package]
 version = "26.5.29"
