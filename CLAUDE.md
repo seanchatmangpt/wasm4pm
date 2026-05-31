@@ -19,7 +19,7 @@ The primary entry point for users is **`wpm` (wasm4pm)** (`apps/wasm4pm/`). The 
 
 **Testing docs:** 
 - `TESTING.md` — test layers, oracle hierarchy, gotchas, and Prolog8 AAT section
-- `ADVERSARIAL_TEST_PLAN.md` — RL categories A–H with oracle ranks, plus Prolog8 families P8-CF-1 to P8-CF-8 (36 tests, all passing)
+- `docs_quarantine/ARCHIVE/ADVERSARIAL_TEST_PLAN.md` — RL categories A–H with oracle ranks, plus Prolog8 families P8-CF-1 to P8-CF-8 (36 tests, all passing) *(archived — superseded by inline test docs in `TESTING.md`)*
 
 ---
 
