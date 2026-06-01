@@ -1,7 +1,7 @@
 {
   "package": "wasm4pm",
   "version": "26.5.29",
-  "generated_at": "2026-05-30T10:59:39.165Z",
+  "generated_at": "2026-06-01T05:09:36.476Z",
   "algorithm_count": 60,
   "algorithms": [
     {
@@ -541,9 +541,9 @@
       "dispatch_path": "packages/kernel/src/api.ts runRaw",
       "wasm_required": false,
       "wasm_export": "run_agentic_pipeline",
-      "wasm_export_present": false,
+      "wasm_export_present": true,
       "structured_absence_reason": "requires feature-cloud WASM build"
     }
   ],
-  "reachability_hash": "ce603c2937a9c3b0a4f1225dfa69bcdeb394233ee8706034610f27f6cffab818"
+  "reachability_hash": "8d15908c37433c4db3e56087342c03013a83e4c9a8aa12e8d81adfb0bee8027c"
 }
