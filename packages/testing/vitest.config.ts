@@ -1,7 +1,9 @@
 import { defineConfig } from 'vitest/config';
 import path from 'path';
+import wasm from 'vite-plugin-wasm';
 
 export default defineConfig({
+  plugins: [wasm()],
   test: {
     environment: 'node',
     globals: true,
