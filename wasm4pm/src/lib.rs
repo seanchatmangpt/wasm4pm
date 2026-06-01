@@ -105,6 +105,13 @@ pub mod types;
 pub mod receipt;
 /// Process-Model Registry module.
 pub mod model_registry;
+/// Lifecycle State Machine module — WASM4PM autonomic control flow.
+pub mod lifecycle;
+pub mod lsa;
+/// Process Replay Authority Module — token-based replay, simulation, and execution profiling.
+pub mod replay;
+/// Conformance Authority Module — A* alignment, fitness/precision metrics, admission gates (v30.1.2)
+pub mod conformance_authority;
 
 #[cfg(feature = "ocel")]
 pub mod ocpq_parser;

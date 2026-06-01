@@ -1,4 +1,11 @@
 {
+  "Payment": {
+    "created_by": [
+      "Receive Payment"
+    ],
+    "min_count": 0,
+    "max_count": 1
+  },
   "Order": {
     "created_by": [
       "Create Order"
@@ -8,13 +15,6 @@
       "Cancel Order"
     ],
     "min_count": 1,
-    "max_count": 1
-  },
-  "Payment": {
-    "created_by": [
-      "Receive Payment"
-    ],
-    "min_count": 0,
     "max_count": 1
   }
 }
