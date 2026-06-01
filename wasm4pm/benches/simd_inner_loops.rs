@@ -10,6 +10,9 @@ use rand::rngs::StdRng;
 use rand::{Rng, SeedableRng};
 use wasm4pm::simd_inner_loops::*;
 
+#[path = "helpers.rs"]
+mod helpers;
+
 // ============================================================================
 // Scalar baseline implementations (for comparison)
 // ============================================================================
@@ -93,10 +96,10 @@ fn generate_petri_transitions(
             let preset_len = rng.gen_range(1..3);
             let postset_len = rng.gen_range(1..3);
             let preset = (0..preset_len)
-                .map(|_| (rng.gen::<u32>() % num_places as u32))
+                .map(|_| rng.gen::<u32>() % num_places as u32)
                 .collect();
             let postset = (0..postset_len)
-                .map(|_| (rng.gen::<u32>() % num_places as u32))
+                .map(|_| rng.gen::<u32>() % num_places as u32)
                 .collect();
             (preset, postset)
         })

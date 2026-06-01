@@ -342,10 +342,10 @@ impl BindingBox {
 
     /// Recursive Cartesian-product enumerator over `domains[idx..]`, collecting
     /// bindings that pass [`Self::satisfied_by`].
-    fn product<'a>(
+    fn product(
         &self,
         idx: usize,
-        domains: &[Vec<&'a str>],
+        domains: &[Vec<&str>],
         current: &mut Binding,
         log: &OCEL,
         out: &mut Vec<Binding>,
@@ -497,7 +497,7 @@ impl QueryTree {
             .filter(|x| b.refines(x))
             .count();
         let above = count >= cs.n_min;
-        let below = cs.n_max.map_or(true, |m| count <= m);
+        let below = cs.n_max.is_none_or(|m| count <= m);
         above && below
     }
 

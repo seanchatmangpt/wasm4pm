@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 //! Failure mode detection tests (Gap 3 — Rank-4 statistical oracle).
 //!
 //! These tests verify that failure modes (divergence, dead states, exploration collapse)

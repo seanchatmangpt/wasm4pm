@@ -168,7 +168,7 @@ fn oaval_is_time_varying_latest_le_t() {
 
     // Before any change: empty (first stamp is 09:00).
     let before = log.oaval("o1", ts("2024-01-02T08:00:00Z")).unwrap();
-    assert!(before.get("total").is_none());
+    assert!(!before.contains_key("total"));
 
     // At 09:30: total = 100.
     let at0930 = log.oaval("o1", ts("2024-01-02T09:30:00Z")).unwrap();

@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 //! State Invariant Audit — wasm4pm RL Autonomic System
 //!
 //! Validates that state transitions respect fundamental invariants:

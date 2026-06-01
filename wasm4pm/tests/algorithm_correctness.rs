@@ -490,7 +490,8 @@ fn alpha_plus_plus_output_is_petri_net() {
         (10, &["A", "B", "C"]),
         (5, &["A", "C", "B"]),
     ]);
-    let pn = discover_alpha_plus_plus_from_log(&log, "concept:name", 0.0)
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
+    let pn = discover_alpha_plus_plus_from_log(&admitted, "concept:name", 0.0)
         .expect("alpha_plus_plus must succeed");
     assert!(!pn.places.is_empty(), "Alpha++ must produce places");
     assert!(!pn.transitions.is_empty(), "Alpha++ must produce transitions");
@@ -510,7 +511,8 @@ fn alpha_plus_plus_output_is_petri_net() {
 #[test]
 fn dfg_edges_have_positive_frequency() {
     let log = controlled_log();
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
+    let dfg = discover_dfg_from_log(&admitted, "concept:name");
     assert!(
         !dfg.edges.is_empty(),
         "DFG must have at least one edge for a non-trivial log"
@@ -530,15 +532,16 @@ fn dfg_edges_have_positive_frequency() {
 #[test]
 fn dfg_filtered_threshold_monotone() {
     let log = controlled_log();
-    let unfiltered = discover_dfg_filtered_from_log(&log, "concept:name", 0);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+    let unfiltered = discover_dfg_filtered_from_log(&admitted, "concept:name", 0);
+    let dfg = discover_dfg_from_log(&admitted, "concept:name");
     assert_eq!(
         unfiltered.edges.len(),
         dfg.edges.len(),
         "filtered(min=0) edge count must equal unfiltered"
     );
 
-    let filtered = discover_dfg_filtered_from_log(&log, "concept:name", 999_999);
+    let filtered = discover_dfg_filtered_from_log(&admitted, "concept:name", 999_999);
     assert!(
         filtered.edges.is_empty(),
         "filtered(min=999999) must produce no edges"
@@ -550,8 +553,9 @@ fn dfg_filtered_threshold_monotone() {
 #[test]
 fn heuristic_miner_fewer_edges_than_dfg() {
     let log = controlled_log();
-    let dfg = discover_dfg_from_log(&log, "concept:name");
-    let hm = discover_heuristic_miner_from_log(&log, "concept:name", 0.5);
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
+    let dfg = discover_dfg_from_log(&admitted, "concept:name");
+    let hm = discover_heuristic_miner_from_log(&admitted.value, "concept:name", 0.5);
     assert!(
         hm.edges.len() <= dfg.edges.len(),
         "heuristic miner (threshold=0.5) must have ≤ DFG edges; got hm={} dfg={}",
@@ -570,7 +574,8 @@ fn heuristic_miner_fewer_edges_than_dfg() {
 fn footprints_causal_antisymmetric() {
     use wasm4pm::algorithms::FootprintRelation;
     let log = build_log(&[(5, &["A", "B", "C"]), (5, &["A", "C", "B"])]);
-    let fp = discover_footprints_from_log(&log, "concept:name");
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
+    let fp = discover_footprints_from_log(&admitted, "concept:name");
     let n = fp.activities.len();
     for i in 0..n {
         for j in 0..n {
@@ -766,7 +771,8 @@ fn hc_prunes_below_dfg() {
         (20, &["Start", "Process", "End"]),
         (20, &["Start", "Process", "Review", "End"]),
     ]);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+    let dfg = discover_dfg_from_log(&admitted, "concept:name");
     let hc = discover_hill_climbing_from_log(&log, "concept:name");
 
     // Monotonicity: HC can only remove edges.
@@ -892,7 +898,8 @@ fn inductive_parallel_cut_fires() {
         (5, &["A", "B", "C"]),
         (5, &["A", "C", "B"]),
     ]);
-    let json_str = discover_inductive_miner_from_log(&log, "concept:name");
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
+    let json_str = discover_inductive_miner_from_log(&admitted, "concept:name");
     let v: serde_json::Value =
         serde_json::from_str(&json_str).expect("inductive miner must return valid JSON");
 

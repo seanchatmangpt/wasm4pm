@@ -1,3 +1,4 @@
+#![allow(clippy::len_zero)]
 //! Boundary Safety Tests for Discovery Algorithms
 //!
 //! Comprehensive testing of edge cases and boundary conditions for key discovery algorithms.
@@ -79,7 +80,7 @@ fn log_vocabulary(log: &EventLog) -> std::collections::HashSet<String> {
 #[test]
 fn test_dfg_empty_log() {
     let log = build_log_with_activities(&[]);
-    let _dfg = discover_dfg_from_log(&log, "concept:name");
+    let _dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     // Empty input should produce an empty or minimal DFG (no panic is success)
 }
 
@@ -87,7 +88,7 @@ fn test_dfg_empty_log() {
 #[test]
 fn test_dfg_single_event() {
     let log = build_log_with_activities(&[vec!["Activity"]]);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     // Should have at least 1 node for the single activity
     assert!(!dfg.nodes.is_empty(), "DFG must contain the single activity node");
     assert_eq!(
@@ -108,7 +109,7 @@ fn test_dfg_all_identical_traces() {
         vec!["A", "B", "C"],
         vec!["A", "B", "C"],
     ]);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     // All identical traces should still produce valid structure
     assert_eq!(dfg.nodes.len(), 3, "DFG must have 3 nodes: A, B, C");
     assert_eq!(dfg.edges.len(), 2, "DFG must have 2 edges: A→B, B→C");
@@ -127,7 +128,7 @@ fn test_dfg_unicode_activity_names() {
         vec!["ابدأ", "موافقة", "إنهاء"],       // Arabic: Start, Approve, Finish
         vec!["🚀", "✅", "🏁"],                 // Emoji: Rocket, Check, Flag
     ]);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     // All Unicode activities should be preserved
     let vocab = log_vocabulary(&log);
     assert_eq!(vocab.len(), 10, "Should have 10 unique Unicode activities (3 Chinese + 3 Arabic + 3 Emoji, no overlap)");
@@ -141,7 +142,7 @@ fn test_dfg_special_characters() {
         vec!["Start\"Quote", "Approve\\Backslash", "End\nNewline"],
         vec!["Start\"Quote", "Reject\tTab", "End\nNewline"],
     ]);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     // Special characters should be handled without panic
     assert!(dfg.nodes.len() > 0, "DFG must handle special character activities");
     let vocab = log_vocabulary(&log);
@@ -160,7 +161,7 @@ fn test_dfg_single_activity_repeated() {
         vec!["A", "A"],
         vec!["A"],
     ]);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     assert_eq!(dfg.nodes.len(), 1, "Single activity must yield 1 node");
     // Self-loop from A→A
     assert_eq!(
@@ -176,7 +177,7 @@ fn test_dfg_many_unordered_activities() {
     let log = build_log_with_activities(&[
         vec!["A", "B", "C", "D", "E", "F", "G", "H"],
     ]);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     assert_eq!(dfg.nodes.len(), 8, "Must have all 8 nodes");
     assert_eq!(dfg.edges.len(), 7, "Linear sequence yields 7 edges");
 }
@@ -189,7 +190,7 @@ fn test_dfg_branching_structure() {
         vec!["Start", "PathB", "End"],
         vec!["Start", "PathC", "End"],
     ]);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     assert_eq!(dfg.nodes.len(), 5, "Must have Start, PathA, PathB, PathC, End");
     // 3 edges from Start, 3 edges to End
     assert!(dfg.edges.len() >= 6, "Branching structure must have multiple edges");
@@ -201,7 +202,7 @@ fn test_dfg_loop_structure() {
     let log = build_log_with_activities(&[
         vec!["Start", "Process", "Validate", "Process", "Process", "Done"],
     ]);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     assert!(dfg.nodes.len() >= 4, "Must have Start, Process, Validate, Done");
     // Should have at least a self-loop or back-edge on Process
     assert!(dfg.edges.len() >= 5, "Loop structure must have multiple edges");
@@ -422,7 +423,7 @@ fn test_ilp_special_characters() {
 fn test_all_algorithms_minimal_log() {
     let log = build_log_with_activities(&[vec!["A", "B"]]);
 
-    let dfg_result = discover_dfg_from_log(&log, "concept:name");
+    let dfg_result = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     assert_eq!(dfg_result.nodes.len(), 2, "DFG must have 2 nodes");
 
     let hm_result = discover_heuristic_miner_from_log(&log, "concept:name", 0.2);
@@ -445,7 +446,7 @@ fn test_all_algorithms_complex_log() {
         vec!["Register", "Approve", "Send", "Approve", "Send", "Done"],
     ]);
 
-    let dfg_result = discover_dfg_from_log(&log, "concept:name");
+    let dfg_result = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     assert!(dfg_result.nodes.len() >= 4, "DFG must have at least core nodes");
 
     let hm_result = discover_heuristic_miner_from_log(&log, "concept:name", 0.2);
@@ -470,7 +471,7 @@ fn test_mixed_scripts_single_log() {
         vec!["Initiate", "检查", "موافقة", "✅"],
         vec!["Initiate", "검증", "거부", "❌"],
     ]);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let vocab = log_vocabulary(&log);
     assert_eq!(vocab.len(), 7, "All 7 distinct activities must be recognized");
     assert!(dfg.nodes.len() > 0, "DFG must include all activities");
@@ -488,7 +489,7 @@ fn test_very_long_activity_names() {
         vec![long_name_1, long_name_2],
         vec![long_name_1, long_name_2],
     ]);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     assert_eq!(
         dfg.nodes.len(),
         2,
@@ -507,7 +508,7 @@ fn test_control_characters() {
         vec!["Act\x00Null", "Act\x01Start", "Act\x1FUnit"],
         vec!["Act\x00Null", "Act\x1FUnit"],
     ]);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     // Algorithm should handle or reject control chars gracefully
     assert!(dfg.nodes.len() >= 2, "DFG must process control char activities");
 }
@@ -516,7 +517,7 @@ fn test_control_characters() {
 #[test]
 fn test_whitespace_activities() {
     let log = build_log_with_activities(&[vec!["   ", "\t", "\n"]]);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     // Should not panic; may have empty activity representation
     assert!(dfg.nodes.len() >= 1, "DFG must handle whitespace activities");
 }
@@ -528,7 +529,7 @@ fn test_quoted_and_escaped_activities() {
         vec!["\"quoted\"", "\'single\'", "back\\slash"],
         vec!["\"quoted\"", "back\\slash"],
     ]);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     assert!(dfg.nodes.len() > 0, "DFG must handle quoted activities");
 }
 
@@ -547,7 +548,7 @@ fn test_high_variance_log() {
         vec!["C", "A", "B"],
         vec!["C", "B", "A"],
     ]);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     assert_eq!(dfg.nodes.len(), 3, "Must have 3 nodes");
     // High variance should produce many edges
     assert!(dfg.edges.len() > 3, "High variance must produce many edges");
@@ -568,7 +569,7 @@ fn test_low_variance_log() {
         vec!["X", "Y"],
         vec!["X", "Y"],
     ]);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     assert_eq!(dfg.edges.len(), 1, "Only X→Y edge");
     // All edges should have frequency 10
     for edge in &dfg.edges {
@@ -589,7 +590,7 @@ fn test_very_long_single_trace() {
     let activities_refs: Vec<&str> = activities.iter().map(|s| s.as_str()).collect();
 
     let log = build_log_with_activities(&[activities_refs]);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     assert_eq!(dfg.nodes.len(), 100, "Must have 100 unique activities");
     assert_eq!(dfg.edges.len(), 99, "Long sequence yields 99 edges");
 }
@@ -602,7 +603,7 @@ fn test_many_short_traces() {
         traces.push(vec!["A", "B"]);
     }
     let log = build_log_with_activities(&traces);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     assert_eq!(dfg.nodes.len(), 2, "Must have 2 nodes");
     assert_eq!(
         dfg.edges[0].frequency, 1000,
@@ -618,7 +619,7 @@ fn test_many_short_traces() {
 #[test]
 fn test_dfg_numeric_activities() {
     let log = build_log_with_activities(&[vec!["1", "2", "3", "4", "5"]]);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     assert_eq!(dfg.nodes.len(), 5, "DFG must handle numeric activity names");
 }
 
@@ -676,7 +677,7 @@ fn test_vocabulary_consistency_across_algorithms() {
         vec!["Start", "Validate", "Reject", "End"],
     ]);
 
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let hm = discover_heuristic_miner_from_log(&log, "concept:name", 0.2);
     let ga = discover_genetic_algorithm_from_log(&log, "concept:name", 5, 10);
     let (ilp, _, _) = discover_ilp_petri_net_from_log(&log, "concept:name");
@@ -956,4 +957,9 @@ fn test_simulated_annealing_valid_parameters() {
         (0.0..=1.0).contains(&fitness),
         "Fitness must be in valid range"
     );
+}
+
+
+fn admitted_log(log: wasm4pm::models::EventLog) -> wasm4pm_compat::evidence::Evidence<wasm4pm::models::EventLog, wasm4pm_compat::state::Admitted, ()> {
+    wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence()
 }

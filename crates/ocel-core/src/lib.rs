@@ -131,8 +131,8 @@ impl ObjectTypeCardinality {
     /// True if `count` satisfies the `[min_count, max_count]` window.
     #[must_use]
     pub fn admits(&self, count: usize) -> bool {
-        let above_min = self.min_count.map_or(true, |m| count >= m);
-        let below_max = self.max_count.map_or(true, |m| count <= m);
+        let above_min = self.min_count.is_none_or(|m| count >= m);
+        let below_max = self.max_count.is_none_or(|m| count <= m);
         above_min && below_max
     }
 }

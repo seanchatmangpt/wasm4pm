@@ -1,6 +1,6 @@
-/// RL Action Tracking Tests
-///
-/// Tests for RL Gap 2 implementation: healing actions tracking with success rates.
+//! RL Action Tracking Tests
+//!
+//! Tests for RL Gap 2 implementation: healing actions tracking with success rates.
 
 use wasm4pm::{rl_orchestrator::RlOrchestrator, RlState};
 
@@ -27,7 +27,7 @@ fn test_action_history_tracks_success() {
             ..state
         };
 
-        let (action_label, reward) = orch.run_cycle(
+        let (action_label, _reward) = orch.run_cycle(
             &[0.5, 1.0, 2.0, 0.0, 1.0, 2.0, 0.0, 1.0],
             &state,
             &next_state,
@@ -146,7 +146,7 @@ fn test_action_distribution_histogram() {
 
     // Verify histogram properties:
     // 1. All actions have valid names (Continue, Scale, Retry, Fallback, Restart)
-    for (action, _) in &stats {
+    for action in stats.keys() {
         assert!(
             matches!(action.as_str(), "Continue" | "Scale" | "Retry" | "Fallback" | "Restart"),
             "action '{}' is not a valid RlAction variant",

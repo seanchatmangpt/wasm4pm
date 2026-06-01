@@ -106,7 +106,7 @@ pub fn stratified_k_fold(
     // Create stratified folds
     let mut folds: Vec<Vec<usize>> = vec![Vec::new(); n_folds];
 
-    for (_, indices) in class_indices.iter() {
+    for indices in class_indices.values() {
         let _n_class = indices.len();
 
         for (fold_idx, &idx) in indices.iter().enumerate() {

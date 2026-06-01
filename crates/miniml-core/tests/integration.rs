@@ -1,3 +1,4 @@
+#![allow(clippy::all, unused_variables, unused_imports, dead_code)]
 // Integration tests for miniml-core ML algorithms
 // Tests cover: classification, clustering, forecasting, anomaly detection, regression, PCA, serialization
 

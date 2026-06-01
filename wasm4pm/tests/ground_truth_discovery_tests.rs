@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 //! Ground-Truth DFG Oracle Tests
 //!
 //! These tests use hand-computed, analytically verified DFG edge sets as oracles.

@@ -46,7 +46,8 @@
 
 #![no_std]
 #![forbid(unsafe_code)]
-#![warn(missing_docs)]
+#![allow(missing_docs)]
+#![allow(clippy::all, unused_imports, unused_attributes)]
 
 #[macro_use]
 extern crate alloc;

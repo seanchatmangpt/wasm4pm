@@ -205,7 +205,7 @@ fn filter_case_size_roadtraffic_one_to_three_events_matches_pm4py() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
 
     let filtered = log.traces.iter()
-        .filter(|t| t.events.len() >= 1 && t.events.len() <= 3)
+        .filter(|t| !t.events.is_empty() && t.events.len() <= 3)
         .count();
 
     assert_eq!(filtered, 43,
@@ -363,7 +363,7 @@ fn filter_case_size_bpi2020_large_scale_non_degenerate() {
 
     // Keep traces with 1–10 events
     let filtered = log.traces.iter()
-        .filter(|t| t.events.len() >= 1 && t.events.len() <= 10)
+        .filter(|t| !t.events.is_empty() && t.events.len() <= 10)
         .count();
 
     assert!(filtered > 0 && filtered < log.traces.len(),

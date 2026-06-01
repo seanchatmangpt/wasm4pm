@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 //! Autonomic Instincts — Real-Data Algorithm Acceptance Tests (AAT).
 //!
 //! Validates that all autonomic components produce non-degenerate, correct

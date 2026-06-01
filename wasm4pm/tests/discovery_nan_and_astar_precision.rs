@@ -1,3 +1,4 @@
+#![allow(clippy::doc_overindented_list_items)]
 //! Rank-1 / Rank-2 oracle tests for the iter-11 discovery-layer audit.
 //!
 //! Three bugs were fixed by the accompanying patch:

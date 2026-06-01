@@ -612,7 +612,7 @@ mod spc_tests {
 
     #[test]
     fn test_inverse_normal_cdf_roundtrip() {
-        for p in [0.1, 0.5, 0.9] {
+        for p in [0.1f64, 0.5, 0.9] {
             let z = inverse_normal_cdf(p);
             let p_back = normal_cdf(z);
             assert!(

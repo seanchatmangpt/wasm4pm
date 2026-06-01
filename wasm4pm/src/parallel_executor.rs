@@ -369,7 +369,8 @@ fn run_single_algorithm(log: &EventLog, activity_key: &str, name: &str) -> Strin
             serde_json::to_string(&dfg).unwrap_or_else(|_| "{}".to_string())
         }
         "alpha_plus_plus" => {
-            match crate::algorithms::alpha_plus_plus_inner(log, activity_key, 0.0) {
+            let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+            match crate::algorithms::alpha_plus_plus_inner(&admitted, activity_key, 0.0) {
                 Ok(petri_net) => serde_json::to_string(&petri_net).unwrap_or_else(|_| "{}".to_string()),
                 Err(_) => serde_json::json!({
                     "algorithm": "alpha_plus_plus",

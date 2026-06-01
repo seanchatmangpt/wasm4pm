@@ -221,7 +221,7 @@ fn ref_we_rule3(d: &[ChartData]) -> bool {
 // ────────────────────────────────────────────────────────────────────────────
 
 fn q_valid(q: f32) -> bool {
-    q.is_finite() && !q.is_nan() && q >= 0.0 && q <= 1.0
+    q.is_finite() && !q.is_nan() && (0.0..=1.0).contains(&q)
 }
 
 // ────────────────────────────────────────────────────────────────────────────
@@ -250,12 +250,12 @@ fn write_report(reports: &[VectorReport]) -> io::Result<()> {
 
     let mut json = String::new();
     json.push_str("{\n");
-    json.push_str(&format!("  \"schema_version\": \"1.0\",\n"));
+    json.push_str("  \"schema_version\": \"1.0\",\n");
     json.push_str(&format!("  \"timestamp_unix\": {ts},\n"));
     json.push_str(&format!("  \"total_vectors\": {total},\n"));
     json.push_str(&format!("  \"passed\": {passed},\n"));
     json.push_str(&format!("  \"failed\": {failed},\n"));
-    json.push_str(&format!("  \"runs_per_vector\": 100,\n"));
+    json.push_str("  \"runs_per_vector\": 100,\n");
     json.push_str(&format!("  \"total_runs\": {},\n", total * 100));
     json.push_str(&format!("  \"all_variance_zero\": {all_var_zero},\n"));
     json.push_str(&format!("  \"rl_q_values_all_valid\": {rl_ok},\n"));

@@ -200,7 +200,7 @@ fn dfg_running_example_exact_edge_set_matches_pm4py() {
         None => { eprintln!("SKIP: running-example.xes not found"); return; }
     };
 
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let actual = dfg_to_edge_freq_map(&dfg);
 
     assert_eq!(
@@ -229,7 +229,7 @@ fn dfg_running_example_start_end_activities_match_pm4py() {
         None => { eprintln!("SKIP: running-example.xes not found"); return; }
     };
 
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
 
     // Start: {register request: 6}
     assert_eq!(dfg.start_activities.len(), 1, "Expected 1 start activity");
@@ -280,7 +280,7 @@ fn dfg_roadtraffic_exact_edge_set_matches_pm4py() {
         None => { eprintln!("SKIP: roadtraffic100traces.xes not found"); return; }
     };
 
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let actual = dfg_to_edge_freq_map(&dfg);
 
     assert_eq!(
@@ -309,7 +309,7 @@ fn dfg_roadtraffic_start_end_activities_match_pm4py() {
         None => { eprintln!("SKIP: roadtraffic100traces.xes not found"); return; }
     };
 
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
 
     for &(act, freq) in ROADTRAFFIC_START_ORACLE {
         assert_eq!(
@@ -332,4 +332,9 @@ fn dfg_roadtraffic_start_end_activities_match_pm4py() {
             freq
         );
     }
+}
+
+
+fn admitted_log(log: wasm4pm::models::EventLog) -> wasm4pm_compat::evidence::Evidence<wasm4pm::models::EventLog, wasm4pm_compat::state::Admitted, ()> {
+    wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence()
 }

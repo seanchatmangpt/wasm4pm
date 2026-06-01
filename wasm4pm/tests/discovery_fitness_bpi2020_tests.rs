@@ -262,7 +262,7 @@ fn test_discovery_hill_climbing_fitness_bpi2020() {
 fn test_discovery_alpha_plus_plus_fitness_bpi2020() {
     let log = get_bpi2020_log();
     // alpha_plus_plus requires fitness threshold parameter
-    let result = wasm4pm::algorithms::discover_alpha_plus_plus_from_log(&log, "concept:name", 0.5);
+    let result = wasm4pm::algorithms::discover_alpha_plus_plus_from_log(&admitted_log(log.clone()), "concept:name", 0.5);
     match result {
         Ok(model) => {
             let fitness = evaluate_fitness_from_petri(&log, &model, "concept:name");
@@ -437,7 +437,7 @@ fn test_fitness_summary_report() {
 
     // Run the tests
     eprintln!("Testing alpha_plus_plus:");
-    let result = wasm4pm::algorithms::discover_alpha_plus_plus_from_log(&log, "concept:name", 0.5);
+    let result = wasm4pm::algorithms::discover_alpha_plus_plus_from_log(&admitted_log(log.clone()), "concept:name", 0.5);
     match result {
         Ok(model) => {
             let fitness = evaluate_fitness_from_petri(&log, &model, "concept:name");
@@ -452,4 +452,9 @@ fn test_fitness_summary_report() {
     eprintln!("  Fitness: {:.4}, Precision: {:.4}, Generalization: {:.4} {}",
         fitness, prec, gen, if fitness >= 0.70 { "✓" } else { "✗" });
     eprintln!();
+}
+
+
+fn admitted_log(log: wasm4pm::models::EventLog) -> wasm4pm_compat::evidence::Evidence<wasm4pm::models::EventLog, wasm4pm_compat::state::Admitted, ()> {
+    wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence()
 }

@@ -148,7 +148,8 @@ fn dfg_running_example_has_edges_and_start_activities() {
     let log = require_log!(RUNNING_EXAMPLE, "running-example");
     assert!(log.traces.len() >= 6);
 
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+    let dfg = discover_dfg_from_log(&admitted, "concept:name");
     assert!(!dfg.edges.is_empty(), "DFG must have edges; got 0");
     assert!(dfg.edges.len() >= 5, "Running-example DFG ≥5 edges, got {}", dfg.edges.len());
     assert!(!dfg.start_activities.is_empty(), "DFG must have start activities");
@@ -160,7 +161,8 @@ fn dfg_roadtraffic_edge_frequencies_are_positive() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
     assert!(log.traces.len() >= 10);
 
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+    let dfg = discover_dfg_from_log(&admitted, "concept:name");
     assert!(dfg.edges.len() >= 8, "roadtraffic DFG ≥8 edges, got {}", dfg.edges.len());
     for rel in &dfg.edges {
         assert!(rel.frequency > 0, "Edge {}→{} has zero frequency", rel.from, rel.to);
@@ -172,7 +174,8 @@ fn dfg_receipt_reflects_complex_variant_structure() {
     let log = require_log!(RECEIPT, "receipt");
     assert!(log.traces.len() >= 100, "receipt should have many traces, got {}", log.traces.len());
 
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+    let dfg = discover_dfg_from_log(&admitted, "concept:name");
     assert!(dfg.edges.len() >= 15,
         "receipt DFG must be complex (many variants), got {} edges", dfg.edges.len());
 }
@@ -182,7 +185,8 @@ fn dfg_bpi2020_large_scale_non_degenerate() {
     let log = require_log!(BPI2020, "bpi2020-travel");
     assert!(log.traces.len() > 1000, "BPI 2020 should have >1000 traces, got {}", log.traces.len());
 
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+    let dfg = discover_dfg_from_log(&admitted, "concept:name");
     assert!(dfg.edges.len() >= 20,
         "BPI 2020 DFG ≥20 edges on {} traces, got {}", log.traces.len(), dfg.edges.len());
 }
@@ -212,7 +216,8 @@ fn heuristic_miner_bpi2020_non_degenerate() {
 #[test]
 fn inductive_miner_running_example_returns_valid_json() {
     let log = require_log!(RUNNING_EXAMPLE, "running-example");
-    let tree_json = discover_inductive_miner_from_log(&log, "concept:name");
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+    let tree_json = discover_inductive_miner_from_log(&admitted, "concept:name");
     // Must be non-empty JSON (not an empty object or array)
     assert!(tree_json.len() > 10,
         "Inductive miner must return non-trivial JSON, got {:?}", &tree_json[..tree_json.len().min(50)]);

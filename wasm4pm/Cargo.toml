@@ -32,6 +32,7 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 wasm4pm-types = { workspace = true }
 wasm4pm-algos = { workspace = true }
+wasm4pm-compat = { path = "../../wasm4pm-compat", features = ["wasm4pm"] }
 wasm-bindgen = "0.2.92"
 js-sys = "0.3"
 wasm-bindgen-futures = "0.4.42"
@@ -433,6 +434,8 @@ gpu = []
 rayon = []
 powl = []
 ocel = ["dep:ocel-core"]
+serde = []
+
 
 # Utility features
 hand_rolled_stats = []

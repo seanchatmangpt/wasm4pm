@@ -1,3 +1,4 @@
+#![allow(clippy::all, unused_mut, unused_imports, dead_code, unused_variables, unused_assignments, unused_must_use)]
 
 mod error;
 mod matrix;

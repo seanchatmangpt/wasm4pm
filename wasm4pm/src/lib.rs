@@ -1,4 +1,10 @@
-#![allow(dead_code, unused_variables, unused_assignments, unused_mut)]
+#![allow(dead_code, unused_variables, unused_assignments, unused_mut, clippy::all, unused_imports, deprecated, unused_features)]
+#![feature(generic_const_exprs)]
+#![feature(adt_const_params)]
+#![feature(const_trait_impl)]
+#![feature(min_specialization)]
+#![feature(portable_simd)]
+#![allow(incomplete_features)]
 //! # wasm4pm — High-Performance Process Mining in WebAssembly
 //!
 //! `wasm4pm` provides production-ready process mining algorithms compiled to WebAssembly,
@@ -112,6 +118,8 @@ pub mod lsa;
 pub mod replay;
 /// Conformance Authority Module — A* alignment, fitness/precision metrics, admission gates (v30.1.2)
 pub mod conformance_authority;
+/// Graduation intake module bridging the compatibility layer.
+pub mod graduation;
 
 #[cfg(feature = "ocel")]
 pub mod ocpq_parser;

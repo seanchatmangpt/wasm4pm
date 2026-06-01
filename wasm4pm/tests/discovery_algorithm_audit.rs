@@ -278,7 +278,7 @@ fn pso_iterations_monotonicity() {
 #[test]
 fn dfg_empty_log_returns_empty_dfg() {
     let log = empty_log();
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     assert_eq!(
         dfg.nodes.len(),
         0,
@@ -308,7 +308,7 @@ fn heuristic_miner_empty_log_returns_empty_dfg() {
 #[test]
 fn inductive_miner_empty_log_returns_flower() {
     let log = empty_log();
-    let result = discover_inductive_miner_from_log(&log, "concept:name");
+    let result = discover_inductive_miner_from_log(&admitted_log(log.clone()), "concept:name");
     // Should not panic; should return some string (flower or error)
     assert!(!result.is_empty(), "Inductive Miner should return non-empty result");
 }
@@ -320,7 +320,7 @@ fn inductive_miner_empty_log_returns_flower() {
 #[test]
 fn dfg_single_event_returns_single_node() {
     let log = single_trace_single_event();
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     assert_eq!(
         dfg.nodes.len(),
         1,
@@ -351,7 +351,7 @@ fn ga_single_event_no_panic() {
 #[test]
 fn dfg_rare_chars_no_panic() {
     let log = rare_char_log();
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     assert!(
         dfg.nodes.len() > 0,
         "DFG should handle UTF-8 activity names"
@@ -375,7 +375,7 @@ fn heuristic_miner_rare_chars_no_panic() {
 #[test]
 fn inductive_miner_rare_chars_no_panic() {
     let log = rare_char_log();
-    let result = discover_inductive_miner_from_log(&log, "concept:name");
+    let result = discover_inductive_miner_from_log(&admitted_log(log.clone()), "concept:name");
     assert!(!result.is_empty(), "Inductive Miner should handle UTF-8 activity names");
 }
 
@@ -386,7 +386,7 @@ fn inductive_miner_rare_chars_no_panic() {
 #[test]
 fn dfg_output_schema_valid() {
     let log = standard_log();
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
 
     // Consistency check: all edges reference nodes
     let node_ids: std::collections::HashSet<_> = dfg.nodes.iter().map(|n| &n.id).collect();
@@ -446,4 +446,9 @@ fn ga_seed_is_hardcoded() {
         dfg2.edges.len(),
         "Hardcoded seed ensures determinism"
     );
+}
+
+
+fn admitted_log(log: wasm4pm::models::EventLog) -> wasm4pm_compat::evidence::Evidence<wasm4pm::models::EventLog, wasm4pm_compat::state::Admitted, ()> {
+    wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence()
 }

@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 //! Edge case audit for RL orchestrator: action bounds, reward NaN/Inf, LinUCB safety
 
 use wasm4pm::rl_orchestrator::{RlOrchestrator, AgentType, compute_reward, compute_reward_with_momentum, RewardParameters};

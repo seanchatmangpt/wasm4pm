@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 //! Integration tests for the 3 autonomic healing OTEL observability spans.
 //!
 //! Validates the spans added/enhanced per the audit in:

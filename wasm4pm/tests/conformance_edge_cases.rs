@@ -372,9 +372,6 @@ fn ec_fitness_never_nan_or_inf() {
             &traces
                 .iter()
                 .map(|t| t.as_slice())
-                .collect::<Vec<_>>()
-                .iter()
-                .map(|&t| t)
                 .collect::<Vec<_>>(),
         );
 

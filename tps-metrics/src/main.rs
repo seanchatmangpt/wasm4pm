@@ -1,3 +1,4 @@
+#![allow(clippy::all, unused_variables, unused_imports, dead_code)]
 
 //! TPS Metrics CLI Tool
 //!

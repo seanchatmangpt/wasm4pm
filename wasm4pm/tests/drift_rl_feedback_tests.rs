@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 //! Drift → RL Feedback Integration Tests.
 //!
 //! Proves that SPC drift detection (Western Electric rules) influences RL

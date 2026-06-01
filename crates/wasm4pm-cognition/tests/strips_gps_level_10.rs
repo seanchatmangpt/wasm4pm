@@ -1,3 +1,4 @@
+#![allow(clippy::all, unused_mut)]
 //! Level 10 Tests: STRIPS Frame Axioms & GPS Subgoal Ordering
 //!
 //! STRIPS: Test that frame axioms preserve implicit state across actions

@@ -105,7 +105,8 @@ fn alpha_plus_plus_roadtraffic_produces_petri_net() {
           "bench_data/sepsis.xes"],
         "roadtraffic or sepsis for alpha++"
     );
-    let result = discover_alpha_plus_plus_from_log(&log, "concept:name", 0.0);
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
+    let result = discover_alpha_plus_plus_from_log(&admitted, "concept:name", 0.0);
     assert!(result.is_ok(), "alpha++ must not error: {:?}", result.err());
     let net = result.unwrap();
     assert!(!net.places.is_empty(), "alpha++ must produce places");
@@ -119,7 +120,8 @@ fn alpha_plus_plus_running_example_produces_sound_petri_net() {
           "~/chatmangpt/wasm4pm/tests/fixtures/running-example.xes"],
         "running-example for alpha++"
     );
-    let result = discover_alpha_plus_plus_from_log(&log, "concept:name", 0.0);
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
+    let result = discover_alpha_plus_plus_from_log(&admitted, "concept:name", 0.0);
     assert!(result.is_ok(), "alpha++ must succeed on running-example");
     let net = result.unwrap();
     // Running example has 6 activities → at least 2 places (source + sink)

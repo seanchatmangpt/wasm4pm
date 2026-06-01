@@ -368,8 +368,8 @@ fn bench_drift_scenarios(c: &mut Criterion) {
             .expect("Failed to store log");
         let total_events = get_or_init_state()
             .with_object(&handle, |obj| match obj {
-                Some(StoredObject::EventLog(l)) => l.event_count(),
-                _ => 0,
+                Some(StoredObject::EventLog(l)) => Ok(l.event_count()),
+                _ => Ok(0),
             })
             .unwrap_or(0);
 
@@ -410,7 +410,7 @@ fn bench_threshold_sensitivity(c: &mut Criterion) {
     for overlap_percent in [0usize, 25, 50, 75, 100] {
         let a = (0..20).map(|i| format!("act_{}", i)).collect::<HashSet<_>>();
         let b = (0..(20 * overlap_percent / 100))
-            .chain((20..(20 + (20 * (100 - overlap_percent) / 100))))
+            .chain(20..(20 + (20 * (100 - overlap_percent) / 100)))
             .map(|i| format!("act_{}", i))
             .collect::<HashSet<_>>();
 

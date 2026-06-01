@@ -874,7 +874,7 @@ fn evaluate_resource(log: &EventLog) -> ResourceAccuracy {
 
     for trace in &test_log.traces {
         let predicted_queue = trace.events.len() as f64 * 10.0; // Arbitrary scaling
-        let actual_queue = (mean_train_duration * 10.0);
+        let actual_queue = mean_train_duration * 10.0;
         accuracy
             .queue_predictions
             .push((predicted_queue, actual_queue));

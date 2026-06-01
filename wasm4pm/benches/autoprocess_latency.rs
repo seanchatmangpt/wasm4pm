@@ -14,6 +14,9 @@ use std::time::Duration;
 use wasm4pm::autoprocess::AutoProcessAgent;
 use wasm4pm::RlState;
 
+#[path = "helpers.rs"]
+mod helpers;
+
 // =========================================================================
 // Benchmark: Perception (Encode 8D state to state_id)
 // =========================================================================

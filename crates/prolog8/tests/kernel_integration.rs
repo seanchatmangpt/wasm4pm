@@ -359,7 +359,7 @@ fn kernel_returns_all_answers_beyond_wasm_max() {
         materialized: false,
     });
     let n_rows = 130usize;
-    let terms: Vec<TermId> = (0..n_rows).map(|i| cat.intern_term(&format!("item_{}", i))).collect();
+    let terms: Vec<TermId> = (0..n_rows).map(|i| cat.intern_term(format!("item_{}", i))).collect();
 
     let rows: Vec<FactRow8> = terms
         .iter()
@@ -408,8 +408,9 @@ fn byte_cap_guard_length_check() {
     assert!(over.len() > MAX_INPUT_LEN, "over-cap string triggers length guard");
 
     // Verify the boundary: exactly MAX_INPUT_LEN bytes is allowed (<=).
-    assert!(MAX_INPUT_LEN <= MAX_INPUT_LEN);
-    assert!(MAX_INPUT_LEN + 1 > MAX_INPUT_LEN);
+    let max_len_boundary = MAX_INPUT_LEN;
+    assert!(max_len_boundary <= MAX_INPUT_LEN);
+    assert!(max_len_boundary + 1 > MAX_INPUT_LEN);
 }
 
 // ── test: replay with altered fact block → Mismatch (not panic) ──────────────

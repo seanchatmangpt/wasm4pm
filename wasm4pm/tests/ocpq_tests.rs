@@ -181,3 +181,97 @@ fn test_runtime_evaluation() {
     assert_eq!(v5.status, "Deny");
     assert_eq!(v5.violations.len(), 1);
 }
+
+#[test]
+#[cfg(feature = "ocel")]
+fn test_ocpq_evaluator_compat() {
+    use wasm4pm::ocpq_runtime::OcpqEvaluator;
+    use wasm4pm_compat::ocpq::{OcpqQuery, ObjectScope, Predicate, PredicateKind, OcpqQueryConst, ObjectScopeConst, OcpqScopeKind};
+
+    // Build OCEL
+    let mut ocel = OCEL::new();
+    ocel.objects.push(OCELObject {
+        id: "d1".to_string(),
+        object_type: "diagnostic".to_string(),
+        attributes: HashMap::new(),
+        changes: Vec::new(),
+        embedded_relations: Vec::new(),
+    });
+    ocel.events.push(OCELEvent {
+        id: "e1".to_string(),
+        event_type: "DiagnosticStarted".to_string(),
+        timestamp: "2026-05-30T00:00:00Z".to_string(),
+        attributes: HashMap::new(),
+        object_ids: vec!["d1".to_string()],
+        object_refs: Vec::new(),
+    });
+    ocel.events.push(OCELEvent {
+        id: "e2".to_string(),
+        event_type: "DiagnosticRaised".to_string(),
+        timestamp: "2026-05-30T00:01:00Z".to_string(),
+        attributes: HashMap::new(),
+        object_ids: vec!["d1".to_string()],
+        object_refs: Vec::new(),
+    });
+
+    // 1. E2ORelation predicate
+    let query_e2o = OcpqQuery {
+        scope: ObjectScope::new(["diagnostic"]),
+        predicates: vec![
+            Predicate::new(PredicateKind::E2ORelation {
+                event_var: "DiagnosticStarted".to_string(),
+                object_var: "diagnostic".to_string(),
+                qualifier: None,
+            })
+        ],
+        sub_queries: Vec::new(),
+    };
+    let v_e2o = OcpqEvaluator::evaluate_compat(&ocel, &query_e2o);
+    assert_eq!(v_e2o.status, "Allow");
+
+    // 2. TimeBetweenEvents predicate
+    let query_tbe = OcpqQuery {
+        scope: ObjectScope::new(["diagnostic"]),
+        predicates: vec![
+            Predicate::new(PredicateKind::TimeBetweenEvents {
+                event_var1: "DiagnosticStarted".to_string(),
+                event_var2: "DiagnosticRaised".to_string(),
+                t_min: 0,
+                t_max: 120000, // 2 minutes (it's 1 minute in log, so it should allow)
+            })
+        ],
+        sub_queries: Vec::new(),
+    };
+    let v_tbe = OcpqEvaluator::evaluate_compat(&ocel, &query_tbe);
+    assert_eq!(v_tbe.status, "Allow");
+
+    // 3. TimeBetweenEvents predicate (should deny)
+    let query_tbe_deny = OcpqQuery {
+        scope: ObjectScope::new(["diagnostic"]),
+        predicates: vec![
+            Predicate::new(PredicateKind::TimeBetweenEvents {
+                event_var1: "DiagnosticStarted".to_string(),
+                event_var2: "DiagnosticRaised".to_string(),
+                t_min: 0,
+                t_max: 30000, // 30s
+            })
+        ],
+        sub_queries: Vec::new(),
+    };
+    let v_tbe_deny = OcpqEvaluator::evaluate_compat(&ocel, &query_tbe_deny);
+    assert_eq!(v_tbe_deny.status, "Deny");
+
+    // 4. evaluate_compat_const
+    let query_const = OcpqQueryConst::<{ OcpqScopeKind::Closed }>::new(
+        ObjectScopeConst::new(["diagnostic"]),
+    ).with_predicate(
+        Predicate::new(PredicateKind::E2ORelation {
+            event_var: "DiagnosticStarted".to_string(),
+            object_var: "diagnostic".to_string(),
+            qualifier: None,
+        })
+    );
+    let v_const = OcpqEvaluator::evaluate_compat_const(&ocel, &query_const);
+    assert_eq!(v_const.status, "Allow");
+}
+
