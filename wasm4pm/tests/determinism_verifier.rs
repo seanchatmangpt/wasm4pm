@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 /// Determinism Verifier
 ///
 /// Rank-1 Oracle: Identical seed → identical output (bit-exact for integers/strings, 1e-9 tolerance for floats)

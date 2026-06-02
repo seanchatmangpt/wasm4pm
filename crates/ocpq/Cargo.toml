@@ -1,0 +1,28 @@
+[package]
+name = "ocpq"
+version = "26.5.30"
+edition.workspace = true
+license.workspace = true
+authors.workspace = true
+repository.workspace = true
+description = "OCPQ runtime for wasm4pm: object-centric process querying & constraints (binding boxes, query trees, BASIC predicates E2O/O2O/TBE, CHILD SET, constr) per Kuesters & van der Aalst 2025"
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+serde = { workspace = true }
+serde_json = { workspace = true }
+chrono = { workspace = true }
+ocel-core = { workspace = true }
+
+# wasm bindings — gated behind a feature so the crate can be tested
+# natively with `cargo test` while still building as cdylib for browsers.
+wasm-bindgen = { version = "0.2.92", optional = true }
+
+[features]
+default = []
+wasm = ["dep:wasm-bindgen"]
+
+[dev-dependencies]
+serde_json = { workspace = true }

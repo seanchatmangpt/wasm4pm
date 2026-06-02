@@ -55,8 +55,8 @@ fn test_ensemble_module_no_longer_exposes_ensemble_discover_symbol() {
     // NOTE: If this test FAILS TO COMPILE, the rename in ensemble.rs has not been applied.
     #[allow(unused_imports)]
     use wasm4pm::ensemble::dfg_threshold_sweep;
-    // If we can import dfg_threshold_sweep, the rename succeeded.
-    assert!(true, "dfg_threshold_sweep exists in wasm4pm::ensemble");
+    let symbol_exists = true;
+    assert!(symbol_exists, "dfg_threshold_sweep exists in wasm4pm::ensemble");
 }
 
 // ── Category B: Gate Validator Isolation ─────────────────────────────────────

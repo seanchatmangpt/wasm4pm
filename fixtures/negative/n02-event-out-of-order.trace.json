@@ -1,0 +1,14 @@
+{
+  "_comment": "NEGATIVE FIXTURE N02 — event out of order. 'Ship Package' fires before 'Confirm Order' (and before Pick/Pack). The field net's causal order forbids shipping before the order is confirmed and the item picked & packed; this ordering is not a linear extension of the POWL partial order, so the trace is off-language => RouteConformanceGap. Minimal counterexample: move 'Ship Package' to its lawful position after 'Pack Package'.",
+  "expected_refusal": "RouteConformanceGap",
+  "rejecting_primitive": "wf_net_language (token-replay fitness)",
+  "trace": [
+    "Create Order",
+    "Ship Package",
+    "Confirm Order",
+    "Pick Item",
+    "Pack Package",
+    "Send Invoice",
+    "Receive Payment"
+  ]
+}

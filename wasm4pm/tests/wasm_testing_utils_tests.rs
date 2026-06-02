@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 //! Integration tests for WASM testing utilities
 //!
 //! Tests the 5 high-value exported functions:

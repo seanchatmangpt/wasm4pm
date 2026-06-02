@@ -25,7 +25,7 @@ pub enum Wasm4pmError {
     Parse(String),
     /// Structural validation failed (partial order, Petri net soundness, etc.).
     #[error("validation error: {0}")]
-    Validation(String),
+    Validation(CompatRefusal),
     /// Binary `.pm4bin` format error (magic mismatch, truncated data, etc.).
     #[error("binary format error: {0}")]
     BinaryFormat(String),
@@ -187,3 +187,40 @@ macro_rules! internal_error {
         $crate::error::wasm_err($crate::error::codes::INTERNAL_ERROR, $msg)
     };
 }
+
+/// A wrapper around all refusals from `wasm4pm-compat` to represent named law refusals.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum CompatRefusal {
+    /// A POWL validation refusal.
+    Powl(wasm4pm_compat::powl::PowlRefusal),
+    /// An EventLog validation refusal.
+    EventLog(wasm4pm_compat::eventlog::EventLogRefusal),
+    /// A DFG validation refusal.
+    Dfg(wasm4pm_compat::dfg::DfgRefusal),
+    /// A ProcessTree validation refusal.
+    ProcessTree(wasm4pm_compat::process_tree::ProcessTreeRefusal),
+    /// A Petri net validation refusal.
+    Petri(wasm4pm_compat::petri::PetriRefusal),
+    /// An OCEL validation refusal.
+    Ocel(wasm4pm_compat::ocel::OcelRefusal),
+    /// An OCPQ validation refusal.
+    Ocpq(wasm4pm_compat::ocpq::OcpqRefusal),
+    /// A Conformance validation refusal.
+    Conformance(wasm4pm_compat::conformance::ConformanceRefusal),
+}
+
+impl std::fmt::Display for CompatRefusal {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Powl(r) => write!(f, "{}", r),
+            Self::EventLog(r) => write!(f, "{}", r),
+            Self::Dfg(r) => write!(f, "{}", r),
+            Self::ProcessTree(r) => write!(f, "{}", r),
+            Self::Petri(r) => write!(f, "{}", r),
+            Self::Ocel(r) => write!(f, "{}", r),
+            Self::Ocpq(r) => write!(f, "{}", r),
+            Self::Conformance(r) => write!(f, "{}", r),
+        }
+    }
+}
+

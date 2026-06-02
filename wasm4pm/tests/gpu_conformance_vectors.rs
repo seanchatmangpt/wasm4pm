@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 //! GPU Conformance Test Vectors — LinUCB CPU vs GPU Parity
 //!
 //! 25 immutable ground-truth vectors in 3 categories:

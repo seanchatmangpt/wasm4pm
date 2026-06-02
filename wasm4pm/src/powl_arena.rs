@@ -632,17 +632,15 @@ impl PowlArena {
         match self.nodes.get(root as usize) {
             Some(PowlNode::StrictPartialOrder(spo)) => {
                 if !spo.order.is_irreflexive() {
-                    return Err(Wasm4pmError::Validation(format!(
-                        "node {}: partial order is not irreflexive",
-                        root
+                    return Err(Wasm4pmError::Validation(crate::error::CompatRefusal::Powl(
+                        wasm4pm_compat::powl::PowlRefusal::CyclicPartialOrder
                     )));
                 }
                 // Check transitivity on the closure, not raw edges
                 let closure = crate::powl::transitive::transitive_closure(&spo.order);
                 if !closure.is_transitive() {
-                    return Err(Wasm4pmError::Validation(format!(
-                        "node {}: partial order is not transitive",
-                        root
+                    return Err(Wasm4pmError::Validation(crate::error::CompatRefusal::Powl(
+                        wasm4pm_compat::powl::PowlRefusal::CyclicPartialOrder
                     )));
                 }
                 for &child in &spo.children {
@@ -783,7 +781,10 @@ impl PowlArena {
     /// Deep-copy the subtree rooted at `idx` into a new arena.
     pub fn copy_subtree(&self, idx: u32) -> Result<(PowlArena, u32), Wasm4pmError> {
         let mut new_arena = PowlArena::new();
-        let new_root = self.copy_node_into(&mut new_arena, idx).map_err(Wasm4pmError::Validation)?;
+        let new_root = self.copy_node_into(&mut new_arena, idx)
+            .map_err(|_| Wasm4pmError::Validation(crate::error::CompatRefusal::Powl(
+                wasm4pm_compat::powl::PowlRefusal::InvalidLoop
+            )))?;
         Ok((new_arena, new_root))
     }
 

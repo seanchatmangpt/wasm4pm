@@ -1,0 +1,53 @@
+{
+  "_comment": "NEGATIVE FIXTURE N11 — object lifecycle not terminated. The route declares Order.terminated_by = [\"Receive Payment\", \"Cancel Order\"]: a lawful Order case must CLOSE with one of those events. Here order-1's last (latest-timestamp) event is 'Send Invoice', so the Order lifecycle is left open. Oracle: flatten to Order, take the last activity of the case, assert it is not in terminated_by => AndonPull::LifecycleNotTerminated. Minimal counterexample: append a 'Receive Payment' event qualifying order-1 after the invoice.",
+  "expected_refusal": "LifecycleNotTerminated",
+  "rejecting_primitive": "object_types.terminated_by lifecycle check (over flatten)",
+  "cardinality": {
+    "Order": {
+      "created_by": ["Create Order"],
+      "terminated_by": ["Receive Payment", "Cancel Order"],
+      "min_count": 1,
+      "max_count": 1
+    }
+  },
+  "flatten_to": "Order",
+  "eventTypes": [
+    { "name": "Create Order", "attributes": [] },
+    { "name": "Confirm Order", "attributes": [] },
+    { "name": "Send Invoice", "attributes": [] }
+  ],
+  "objectTypes": [
+    { "name": "Order", "attributes": [] },
+    { "name": "Invoice", "attributes": [] }
+  ],
+  "events": [
+    {
+      "id": "e1",
+      "type": "Create Order",
+      "time": "2026-05-01T09:00:00Z",
+      "attributes": [],
+      "relationships": [{ "objectId": "order-1", "qualifier": "order" }]
+    },
+    {
+      "id": "e2",
+      "type": "Confirm Order",
+      "time": "2026-05-01T10:00:00Z",
+      "attributes": [],
+      "relationships": [{ "objectId": "order-1", "qualifier": "order" }]
+    },
+    {
+      "id": "e3",
+      "type": "Send Invoice",
+      "time": "2026-05-02T09:00:00Z",
+      "attributes": [],
+      "relationships": [
+        { "objectId": "order-1", "qualifier": "order" },
+        { "objectId": "inv-1", "qualifier": "invoice" }
+      ]
+    }
+  ],
+  "objects": [
+    { "id": "order-1", "type": "Order", "attributes": [], "relationships": [] },
+    { "id": "inv-1", "type": "Invoice", "attributes": [], "relationships": [] }
+  ]
+}

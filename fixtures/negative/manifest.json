@@ -1,0 +1,165 @@
+{
+  "_doc": "Negative / sabotage corpus (Agent A8). Each entry is an INVALID trace or INVALID model that MUST be REFUSED by the named primitive for the named reason. 'expected_refusal' maps to a canonical AndonPull / AndonReason variant. 'rejecting_primitive' names the Rust primitive whose result proves the refusal. 'minimal_counterexample' is the single smallest edit that would make the fixture lawful (proving the fixture isolates exactly one defect). Refusal is asserted by wasm4pm/tests/negative_corpus.rs.",
+  "andon_variants_used": [
+    "RouteConformanceGap",
+    "IllegalRouteMotion",
+    "LifecycleNotTerminated",
+    "ObjectLifecycleViolation"
+  ],
+  "fixtures": [
+    {
+      "id": "N01",
+      "category": "missing required event",
+      "file": "n01-missing-required-event.trace.json",
+      "kind": "invalid_trace",
+      "model": "wasm4pm::foundry::field_net (Order-to-Cash WF-net)",
+      "log": "single trace, 'Confirm Order' omitted",
+      "expected_refusal": "RouteConformanceGap",
+      "rejecting_primitive": "wf_net_language (token-replay fitness < 1.0)",
+      "minimal_counterexample": "insert 'Confirm Order' at index 1"
+    },
+    {
+      "id": "N02",
+      "category": "event out of order",
+      "file": "n02-event-out-of-order.trace.json",
+      "kind": "invalid_trace",
+      "model": "wasm4pm::foundry::field_net",
+      "log": "single trace, 'Ship Package' before 'Confirm Order'",
+      "expected_refusal": "RouteConformanceGap",
+      "rejecting_primitive": "wf_net_language (not a linear extension of the partial order)",
+      "minimal_counterexample": "move 'Ship Package' after 'Pack Package'"
+    },
+    {
+      "id": "N03",
+      "category": "duplicate terminal event",
+      "file": "n03-duplicate-terminal-event.trace.json",
+      "kind": "invalid_trace",
+      "model": "wasm4pm::foundry::field_net",
+      "log": "single trace, 'Receive Payment' fired twice",
+      "expected_refusal": "RouteConformanceGap",
+      "rejecting_primitive": "wf_net_language (second terminal cannot replay; remaining token)",
+      "minimal_counterexample": "delete the second 'Receive Payment'"
+    },
+    {
+      "id": "N04",
+      "category": "receipt-before-gate",
+      "file": "n04-receipt-before-gate.trace.json",
+      "kind": "invalid_trace",
+      "model": "inline POWL partial_order: collect_evidence < verify_evidence < emit_receipt",
+      "log": "single trace, emit_receipt before verify_evidence",
+      "expected_refusal": "RouteConformanceGap",
+      "rejecting_primitive": "powl_language (precedence edge verify_evidence -> emit_receipt violated)",
+      "minimal_counterexample": "swap emit_receipt and verify_evidence into declared order"
+    },
+    {
+      "id": "N05",
+      "category": "object relation missing/impossible",
+      "file": "n05-o2o-dangling.ocel.json",
+      "kind": "invalid_model",
+      "model": "OCEL-v2 log (OCEDO/OCPQ Def.2 referential integrity)",
+      "log": "order-1 O2O 'contains' -> item-99 (no such object)",
+      "expected_refusal": "ObjectLifecycleViolation",
+      "rejecting_primitive": "ocel_core::validate (DANGLING_O2O)",
+      "minimal_counterexample": "delete the dangling O2O relationship (or declare item-99)"
+    },
+    {
+      "id": "N06",
+      "category": "OCEL flattening loss",
+      "file": "n06-flattening-loss.ocel.json",
+      "kind": "invalid_projection",
+      "model": "valid OCEL flattened to single object type 'Item'",
+      "log": "Create Order references no Item (divergence drop); Pick Items references 2 Items (convergence duplicate)",
+      "expected_refusal": "ObjectLifecycleViolation",
+      "rejecting_primitive": "ocel_core::flatten (lossy: dropped + duplicated events; not 1:1 with E2O incidences)",
+      "minimal_counterexample": "none within flattening — loss is inherent to projecting a many-to-many E2O graph onto one object type; the primitive must surface the loss, not hide it"
+    },
+    {
+      "id": "N07",
+      "category": "dead transition",
+      "file": "n07-dead-transition.wf-net.json",
+      "kind": "invalid_model",
+      "model": "WF-net with transition 'Dead Step' whose only input place is never produced",
+      "log": "n/a (structural)",
+      "expected_refusal": "ObjectLifecycleViolation",
+      "rejecting_primitive": "analyze_petri_net (is_sound=false; dead_transitions=[Dead Step])",
+      "minimal_counterexample": "delete t_dead and p_orphan"
+    },
+    {
+      "id": "N08",
+      "category": "unsafe net",
+      "file": "n08-unsafe-net.wf-net.json",
+      "kind": "invalid_model",
+      "model": "WF-net where two branches deposit into the same place without a join (place reaches 2 tokens)",
+      "log": "n/a (structural)",
+      "expected_refusal": "ObjectLifecycleViolation",
+      "rejecting_primitive": "analyze_petri_net (is_safe=false; unsafe_marking holds 2 tokens)",
+      "minimal_counterexample": "replace t_b and t_c with one synchronising join consuming p1 AND p2"
+    },
+    {
+      "id": "N09",
+      "category": "non-conforming POWL route",
+      "file": "n09-nonconforming-powl-route.trace.json",
+      "kind": "invalid_trace",
+      "model": "wasm4pm::foundry::field_powl (Order-to-Cash POWL)",
+      "log": "single trace injecting 'Cancel Order' (not a node in the field POWL)",
+      "expected_refusal": "IllegalRouteMotion",
+      "rejecting_primitive": "powl_language (trace not in the model language; undeclared move)",
+      "minimal_counterexample": "delete the 'Cancel Order' step"
+    },
+    {
+      "id": "N10",
+      "category": "OCEL O2O cardinality violation",
+      "file": "n10-cardinality-max.ocel.json",
+      "kind": "invalid_model",
+      "model": "OCEL-v2 + cardinality window Order.max_count=1",
+      "log": "two Order instances (order-1, order-2)",
+      "expected_refusal": "ObjectLifecycleViolation",
+      "rejecting_primitive": "ocel_core::validate (CARDINALITY_MAX)",
+      "minimal_counterexample": "delete order-2 (count returns to 1)"
+    },
+    {
+      "id": "N11",
+      "category": "lifecycle-not-terminated",
+      "file": "n11-lifecycle-not-terminated.ocel.json",
+      "kind": "invalid_model",
+      "model": "OCEL-v2 + Order.terminated_by=[Receive Payment, Cancel Order]",
+      "log": "order-1's last event is 'Send Invoice' (not a terminating event)",
+      "expected_refusal": "LifecycleNotTerminated",
+      "rejecting_primitive": "object_types.terminated_by lifecycle check over ocel_core::flatten",
+      "minimal_counterexample": "append a 'Receive Payment' event qualifying order-1"
+    },
+    {
+      "id": "N12",
+      "category": "missing required event (E2O / activity-only fake)",
+      "file": "n12-e2o-empty.ocel.json",
+      "kind": "invalid_model",
+      "model": "OCEL-v2 (OCPQ Def.2: every event qualifies >=1 object)",
+      "log": "event e2 'Confirm Order' carries zero object references",
+      "expected_refusal": "ObjectLifecycleViolation",
+      "rejecting_primitive": "ocel_core::validate (E2O_EMPTY; the route gate maps zero-object motion to ActivityOnlyFakeRoute)",
+      "minimal_counterexample": "add one E2O relationship to e2"
+    },
+    {
+      "id": "N13",
+      "category": "object id uniqueness",
+      "file": "n13-duplicate-object-id.ocel.json",
+      "kind": "invalid_model",
+      "model": "OCEL-v2 (O is a set; ids unique)",
+      "log": "order-1 declared twice in objects[]",
+      "expected_refusal": "ObjectLifecycleViolation",
+      "rejecting_primitive": "ocel_core::validate (DUPLICATE_OBJECT_ID)",
+      "minimal_counterexample": "rename the second object to order-2"
+    },
+    {
+      "id": "N14",
+      "category": "undeclared event type",
+      "file": "n14-undeclared-event-type.ocel.json",
+      "kind": "invalid_model",
+      "model": "OCEL-v2 (types declared up-front)",
+      "log": "event e2 has undeclared type 'Teleport Order'",
+      "expected_refusal": "ObjectLifecycleViolation",
+      "rejecting_primitive": "ocel_core::validate (UNDECLARED_EVENT_TYPE)",
+      "minimal_counterexample": "declare 'Teleport Order' in eventTypes"
+    }
+  ]
+}

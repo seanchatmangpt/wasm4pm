@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 /// OTEL Instrumentation Validation for Discovery Algorithms
 ///
 /// This test suite validates that all 10 core discovery algorithms emit

@@ -97,7 +97,7 @@ fn cf1_arity_at_cap_passes() {
         materialized: false,
     });
 
-    let terms: Vec<TermId> = (0..8).map(|i| cat.intern_term(&format!("t{}", i))).collect();
+    let terms: Vec<TermId> = (0..8).map(|i| cat.intern_term(format!("t{}", i))).collect();
     let mut atom = Atom8::new(PredicateId(1), 8, &terms);
     atom.binding_mask = 0xFF;
 
@@ -217,7 +217,7 @@ fn cf1_binding_mask_at_cap_passes() {
         materialized: false,
     });
 
-    let terms: Vec<TermId> = (0..8).map(|i| cat.intern_term(&format!("t{}", i))).collect();
+    let terms: Vec<TermId> = (0..8).map(|i| cat.intern_term(format!("t{}", i))).collect();
     let mut atom = Atom8::new(PredicateId(1), 8, &terms);
     atom.binding_mask = 0xFF;
 
@@ -654,7 +654,7 @@ fn cf4_predicate_with_no_fact_block_yields_deny() {
 /// **Theorem:** All 10 domain-separated BLAKE3 keys are pairwise distinct (45 pairs).
 #[test]
 fn cf5_all_domain_keys_are_pairwise_distinct() {
-    let domains = vec![
+    let domains = [
         *DOMAIN_PROLOG8_FACT,
         *DOMAIN_PROLOG8_INPUT,
         *DOMAIN_PROLOG8_OUTPUT,

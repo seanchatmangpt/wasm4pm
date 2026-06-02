@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 /// FM-5 Self-Referential Testing Detector
 ///
 /// Identifies test code patterns that violate FM-5 (self-referential testing):

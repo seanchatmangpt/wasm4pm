@@ -17,7 +17,76 @@ use rustc_hash::FxHashMap;
 use serde::{Deserialize, Deserializer, Serialize};
 use std::borrow::Cow;
 use std::collections::{HashMap, BTreeMap, BinaryHeap, HashSet, VecDeque};
-use crate::alignment_fitness::{AlignmentState, generate_successors, AlignmentFitnessConfig};
+
+/// Alignment move types for A* alignment computation.
+#[derive(Clone, Debug, Serialize, Deserialize, Eq, PartialEq)]
+pub enum AlignmentMove {
+    /// Synchronous move (log and model match)
+    Sync { _activity: String },
+    /// Log move (only in log)
+    LogMove { _activity: String },
+    /// Model move (only in model)
+    ModelMove { _activity: String },
+}
+
+/// A* search frontier state for alignment computation.
+#[derive(Clone, Debug)]
+pub struct AlignmentState {
+    /// Current position in trace (index)
+    pub trace_pos: usize,
+    /// Current marking (place -> token count)
+    pub marking: Vec<usize>,
+    /// Cost so far
+    pub g_cost: f64,
+    /// Estimated remaining cost (heuristic)
+    pub h_cost: f64,
+    /// Alignment path
+    pub path: Vec<AlignmentMove>,
+}
+
+impl PartialEq for AlignmentState {
+    fn eq(&self, other: &Self) -> bool {
+        self.trace_pos == other.trace_pos && self.marking == other.marking
+    }
+}
+
+impl Eq for AlignmentState {}
+
+impl PartialOrd for AlignmentState {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for AlignmentState {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        // BinaryHeap is max-heap, but we want min-heap for A*
+        // Use floating point total ordering
+        let f_self = self.g_cost + self.h_cost;
+        let f_other = other.g_cost + other.h_cost;
+        f_other.partial_cmp(&f_self).unwrap_or(std::cmp::Ordering::Equal)
+    }
+}
+
+/// Configuration for alignment-based fitness computation.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+pub struct AlignmentFitnessConfig {
+    pub max_iterations: usize,
+    pub sync_cost: f64,
+    pub log_move_cost: f64,
+    pub model_move_cost: f64,
+}
+
+impl Default for AlignmentFitnessConfig {
+    fn default() -> Self {
+        Self {
+            max_iterations: 100000,
+            sync_cost: 0.0,
+            log_move_cost: 1.0,
+            model_move_cost: 1.0,
+        }
+    }
+}
 
 /// Parse an ISO 8601 / RFC 3339 timestamp string into milliseconds since Unix epoch.
 ///
@@ -258,6 +327,18 @@ pub struct EventLog {
     /// List of traces (cases) in the log.
     pub traces: Vec<Trace>,
 }
+
+/// An admitted event log wrapped in a process evidence carrier.
+pub type AdmittedEventLog<W = ()> = wasm4pm_compat::evidence::Evidence<EventLog, wasm4pm_compat::state::Admitted, W>;
+
+/// An admitted process tree wrapped in a process evidence carrier.
+pub type TypedProcessTree<W = wasm4pm_compat::witness::InductiveMiner> =
+    wasm4pm_compat::evidence::Evidence<wasm4pm_compat::process_tree::ProcessTree, wasm4pm_compat::state::Admitted, W>;
+
+/// An admitted POWL model wrapped in a process evidence carrier.
+pub type TypedPowl<W = wasm4pm_compat::witness::PowlPaper> =
+    wasm4pm_compat::evidence::Evidence<wasm4pm_compat::powl::Powl, wasm4pm_compat::state::Admitted, W>;
+
 
 fn convert_attribute_value(val: wasm4pm_types::AttributeValue) -> Option<AttributeValue> {
     match val {
@@ -1371,7 +1452,8 @@ impl StreamingConformanceChecker {
                 }
                 frontier.closed_set.insert(state_key);
 
-                generate_successors(
+                #[cfg(feature = "alignment_fitness")]
+                crate::alignment_fitness::generate_successors(
                     &state.activities,
                     net,
                     &place_index,
@@ -1381,6 +1463,11 @@ impl StreamingConformanceChecker {
                     &current,
                     &mut frontier.open_set,
                 );
+                #[cfg(not(feature = "alignment_fitness"))]
+                {
+                    // Placeholder if alignment_fitness feature is not enabled
+                    panic!("alignment_fitness feature is required for Petri net conformance checking");
+                }
             }
         } else {
             // DFG Mode

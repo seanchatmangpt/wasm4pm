@@ -132,7 +132,7 @@ macro_rules! require_log {
 fn footprints_running_example_register_request_causal_to_examine() {
     // pm4py oracle: register request → examine casually (causal, not reverse)
     let log = require_log!(RUNNING_EXAMPLE, "running-example");
-    let fp = discover_footprints_from_log(&log, "concept:name");
+    let fp = discover_footprints_from_log(&admitted_log(log.clone()), "concept:name");
 
     // Find indices for known activities
     let idx_register = fp.activities.iter().position(|a| a == "register request");
@@ -156,7 +156,7 @@ fn footprints_running_example_register_request_causal_to_examine() {
 #[test]
 fn footprints_running_example_matrix_is_square() {
     let log = require_log!(RUNNING_EXAMPLE, "running-example");
-    let fp = discover_footprints_from_log(&log, "concept:name");
+    let fp = discover_footprints_from_log(&admitted_log(log.clone()), "concept:name");
 
     let n = fp.activities.len();
     assert!(n > 0, "Footprint matrix must have at least one activity");
@@ -170,7 +170,7 @@ fn footprints_running_example_matrix_is_square() {
 fn footprints_roadtraffic_create_fine_causal_to_send_fine() {
     // pm4py DFG oracle: Create Fine → Send Fine (77/100) — one-way causal
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
-    let fp = discover_footprints_from_log(&log, "concept:name");
+    let fp = discover_footprints_from_log(&admitted_log(log.clone()), "concept:name");
 
     let idx_create = fp.activities.iter().position(|a| a == "Create Fine");
     let idx_send = fp.activities.iter().position(|a| a == "Send Fine");
@@ -189,7 +189,7 @@ fn footprints_roadtraffic_create_fine_causal_to_send_fine() {
 #[test]
 fn footprints_roadtraffic_has_never_follows_pairs() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
-    let fp = discover_footprints_from_log(&log, "concept:name");
+    let fp = discover_footprints_from_log(&admitted_log(log.clone()), "concept:name");
 
     let never_follows_count = fp.matrix.iter()
         .flat_map(|row| row.iter())
@@ -225,7 +225,7 @@ fn streaming_dfg_builder_roadtraffic_matches_batch_edge_count() {
     let streaming_dfg = streaming.finalize();
 
     // Compare with batch DFG
-    let batch_dfg = discover_dfg_from_log(&log, "concept:name");
+    let batch_dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
 
     assert_eq!(streaming_dfg.edges.len(), batch_dfg.edges.len(),
         "Streaming DFG edge count ({}) must match batch DFG ({})",
@@ -264,7 +264,7 @@ fn streaming_conformance_roadtraffic_replays_all_traces() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
 
     // Build reference DFG, then create streaming conformance checker from it
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let mut checker = StreamingConformanceChecker::from_dfg(dfg);
 
     for (trace_idx, trace) in log.traces.iter().enumerate() {
@@ -290,7 +290,7 @@ fn streaming_conformance_roadtraffic_self_replay_fitness_is_high() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
 
     // DFG discovered from the same log → self-replay should have high fitness
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let mut checker = StreamingConformanceChecker::from_dfg(dfg);
 
     for (trace_idx, trace) in log.traces.iter().enumerate() {
@@ -316,7 +316,7 @@ fn streaming_conformance_roadtraffic_self_replay_fitness_is_high() {
 fn streaming_conformance_running_example_detects_deviations_for_invalid_trace() {
     let log = require_log!(RUNNING_EXAMPLE, "running-example");
 
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let mut checker = StreamingConformanceChecker::from_dfg(dfg);
 
     // An invalid trace: reverse order (decide before register) — should have deviations
@@ -341,7 +341,7 @@ fn streaming_conformance_running_example_detects_deviations_for_invalid_trace() 
 #[cfg(feature = "petri_net_playout")]
 fn playout_roadtraffic_dfg_generates_correct_trace_count() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
 
     let activities: Vec<String> = dfg.nodes.iter().map(|n| n.id.clone()).collect();
     let edges: Vec<(String, String)> = dfg.edges.iter()
@@ -379,7 +379,7 @@ fn playout_roadtraffic_dfg_generates_correct_trace_count() {
 #[cfg(feature = "petri_net_playout")]
 fn playout_roadtraffic_generated_activities_are_in_dfg() {
     let log = require_log!(ROADTRAFFIC, "roadtraffic");
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
 
     let known_activities: std::collections::HashSet<String> =
         dfg.nodes.iter().map(|n| n.id.clone()).collect();
@@ -468,4 +468,9 @@ fn petri_net_reduction_roadtraffic_runs_without_panic() {
         "Reduction must be monotone on places");
     assert!(result.reduced_transitions <= result.original_transitions,
         "Reduction must be monotone on transitions");
+}
+
+
+fn admitted_log(log: wasm4pm::models::EventLog) -> wasm4pm_compat::evidence::Evidence<wasm4pm::models::EventLog, wasm4pm_compat::state::Admitted, ()> {
+    wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence()
 }

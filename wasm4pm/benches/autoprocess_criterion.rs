@@ -1,6 +1,9 @@
 use criterion::{black_box, criterion_group, criterion_main, BenchmarkId, Criterion, Throughput};
 use std::time::Duration;
 
+#[path = "helpers.rs"]
+mod helpers;
+
 // Placeholder for actual AutoProcessKernel measurement
 // In production, this would call the real kernel
 #[inline(never)]

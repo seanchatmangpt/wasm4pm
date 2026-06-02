@@ -26,8 +26,8 @@ pub struct FootprintMatrix {
 }
 
 /// Pure-Rust footprint discovery without wasm-bindgen. Used by integration tests.
-pub fn discover_footprints_from_log(log: &EventLog, activity_key: &str) -> FootprintMatrix {
-    let col = log.to_columnar(activity_key);
+pub fn discover_footprints_from_log<W>(log: &AdmittedEventLog<W>, activity_key: &str) -> FootprintMatrix {
+    let col = log.value.to_columnar(activity_key);
     let n = col.vocab.len();
     let mut df = vec![vec![false; n]; n];
 
@@ -82,7 +82,8 @@ pub fn discover_footprints(eventlog_handle: &str, activity_key: &str) -> Result<
             format!("EventLog '{}' not found", eventlog_handle),
         )),
     })?;
-    to_js_str(&discover_footprints_from_log(&log, activity_key))
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
+    to_js_str(&discover_footprints_from_log(&admitted, activity_key))
 }
 
 /// Internal Alpha++ implementation operating on a plain `EventLog`.
@@ -98,14 +99,14 @@ pub fn discover_footprints(eventlog_handle: &str, activity_key: &str) -> Result<
 /// 6. Retain only maximal (A,B) pairs.
 /// 7. Construct Petri net: source → start-transitions → places → end-transitions → sink.
 ///    L1L activities get a self-loop place.
-pub(crate) fn alpha_plus_plus_inner(
-    log: &EventLog,
+pub(crate) fn alpha_plus_plus_inner<W>(
+    log: &AdmittedEventLog<W>,
     activity_key: &str,
     min_support: f64,
 ) -> Result<PetriNet, JsValue> {
     // ── Step 1: DF relations ──────────────────────────────────────────────────
-    let all_relations = log.get_directly_follows(activity_key);
-    let threshold = (log.traces.len() as f64 * min_support).max(1.0) as usize;
+    let all_relations = log.value.get_directly_follows(activity_key);
+    let threshold = (log.value.traces.len() as f64 * min_support).max(1.0) as usize;
 
     // DF set filtered by support threshold
     let df_set: HashSet<(String, String)> = all_relations
@@ -132,7 +133,7 @@ pub(crate) fn alpha_plus_plus_inner(
     // ── Step 4: Alpha++-aware causal relation ─────────────────────────────────
     // a →++ b  iff  (a,b) ∈ DF  ∧  (b,a) ∉ DF  (same as Alpha causal)
     //           OR  (a,b) ∈ L2L  (reclassify parallel as causal for short loops)
-    let activities = log.get_activities(activity_key);
+    let activities = log.value.get_activities(activity_key);
 
     // Build DF without self-loops for footprint construction
     let df_no_self: HashSet<(&str, &str)> = df_set
@@ -286,7 +287,7 @@ pub(crate) fn alpha_plus_plus_inner(
     // ── Step 7: Collect start and end activities ──────────────────────────────
     let mut start_acts: HashSet<String> = HashSet::new();
     let mut end_acts: HashSet<String> = HashSet::new();
-    for trace in &log.traces {
+    for trace in &log.value.traces {
         if let Some(AttributeValue::String(first)) = trace
             .events
             .first()
@@ -482,7 +483,8 @@ pub fn discover_alpha_plus_plus(
                 activity_count = log.get_activities(activity_key).len(),
                 "Log loaded and analyzed"
             );
-            alpha_plus_plus_inner(log, activity_key, min_support)
+            let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+            alpha_plus_plus_inner(&admitted, activity_key, min_support)
         },
         Some(_) => Err(wasm_err(codes::INVALID_INPUT, "Object is not an EventLog")),
         None => Err(wasm_err(
@@ -518,8 +520,8 @@ pub fn discover_alpha_plus_plus(
 
 /// Public thin wrapper around `alpha_plus_plus_inner` for integration tests and
 /// external callers that cannot access `pub(crate)` items.
-pub fn discover_alpha_plus_plus_from_log(
-    log: &EventLog,
+pub fn discover_alpha_plus_plus_from_log<W>(
+    log: &AdmittedEventLog<W>,
     activity_key: &str,
     min_support: f64,
 ) -> Result<PetriNet, String> {
@@ -528,14 +530,14 @@ pub fn discover_alpha_plus_plus_from_log(
 }
 
 /// Pure-Rust DFG filtered discovery without wasm-bindgen. Used by integration tests.
-pub fn discover_dfg_filtered_from_log(
-    log: &EventLog,
+pub fn discover_dfg_filtered_from_log<W>(
+    log: &AdmittedEventLog<W>,
     activity_key: &str,
     min_frequency: usize,
 ) -> DirectlyFollowsGraph {
     let mut dfg = DirectlyFollowsGraph::new();
 
-    let all_activities = log.get_activities(activity_key);
+    let all_activities = log.value.get_activities(activity_key);
     for activity in &all_activities {
         dfg.nodes.push(DFGNode {
             id: activity.clone(),
@@ -550,7 +552,7 @@ pub fn discover_dfg_filtered_from_log(
         .map(|(i, a)| (a.as_str(), i))
         .collect();
 
-    for trace in &log.traces {
+    for trace in &log.value.traces {
         for event in &trace.events {
             if let Some(AttributeValue::String(activity)) = event.attributes.get(activity_key) {
                 if let Some(&idx) = node_index.get(activity.as_str()) {
@@ -560,14 +562,14 @@ pub fn discover_dfg_filtered_from_log(
         }
     }
 
-    let all_relations = log.get_directly_follows(activity_key);
+    let all_relations = log.value.get_directly_follows(activity_key);
     for (from, to, freq) in all_relations {
         if freq >= min_frequency {
             dfg.edges.push(DirectlyFollowsRelation { from, to, frequency: freq });
         }
     }
 
-    for trace in &log.traces {
+    for trace in &log.value.traces {
         if let Some(act) = trace
             .events
             .first()
@@ -605,7 +607,8 @@ pub fn discover_dfg_filtered(
         )),
     })?;
 
-    let dfg = discover_dfg_filtered_from_log(&log, activity_key, min_frequency);
+    let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
+    let dfg = discover_dfg_filtered_from_log(&admitted, activity_key, min_frequency);
     let n_nodes = dfg.nodes.len();
     let n_edges = dfg.edges.len();
     let handle = get_or_init_state()
@@ -681,7 +684,8 @@ mod tests {
     fn test_alpha_plus_plus_linear_process() {
         // Simple linear log: A -> B -> C (no loops)
         let log = make_log_wasm(&[&["A", "B", "C"], &["A", "B", "C"]], "concept:name");
-        let pn = alpha_plus_plus_inner(&log, "concept:name", 0.0).expect("alpha++ should succeed");
+        let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
+        let pn = alpha_plus_plus_inner(&admitted, "concept:name", 0.0).expect("alpha++ should succeed");
 
         // Should have transitions for A, B, C
         assert!(
@@ -712,7 +716,8 @@ mod tests {
     fn test_alpha_plus_plus_length1_loop_detected() {
         // Log with length-1 loop: A -> A -> B
         let log = make_log_wasm(&[&["A", "A", "B"], &["A", "A", "B"]], "concept:name");
-        let pn = alpha_plus_plus_inner(&log, "concept:name", 0.0).expect("alpha++ should succeed");
+        let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
+        let pn = alpha_plus_plus_inner(&admitted, "concept:name", 0.0).expect("alpha++ should succeed");
 
         // L1L should have detected A as a self-loop activity
         // There should be a self-loop place for A
@@ -732,7 +737,8 @@ mod tests {
             &[&["A", "B", "A", "B", "C"], &["A", "B", "A", "B", "C"]],
             "concept:name",
         );
-        let pn = alpha_plus_plus_inner(&log, "concept:name", 0.0).expect("alpha++ should succeed");
+        let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence();
+        let pn = alpha_plus_plus_inner(&admitted, "concept:name", 0.0).expect("alpha++ should succeed");
 
         // Should have a back-arc place for the L2L pair (A,B) or (B,A)
         let has_back_place = pn

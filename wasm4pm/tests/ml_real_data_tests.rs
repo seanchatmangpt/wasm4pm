@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 //! ML Real-Data Tests
 //!
 //! Exercises ML sub-families (P4 from coverage audit) against real XES data.

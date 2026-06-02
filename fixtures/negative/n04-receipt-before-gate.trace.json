@@ -1,0 +1,23 @@
+{
+  "_comment": "NEGATIVE FIXTURE N04 — receipt emitted before the proof gate. The agent-proof-lifecycle route declares the strict order collect_evidence -> verify_evidence -> emit_receipt (the receipt may only be sealed AFTER verification). This trace emits the receipt before verifying, violating the precedence edge (verify_evidence, emit_receipt). The trace is not a linear extension of the route POWL partial order => off-language => RouteConformanceGap (a receipt-before-gate is the canonical proof-lifecycle defect). Minimal counterexample: swap emit_receipt and verify_evidence back into order.",
+  "expected_refusal": "RouteConformanceGap",
+  "rejecting_primitive": "powl_language (route partial-order membership)",
+  "model": {
+    "kind": "partial_order",
+    "children": [
+      { "kind": "transition", "label": "collect_evidence" },
+      { "kind": "transition", "label": "verify_evidence" },
+      { "kind": "transition", "label": "emit_receipt" }
+    ],
+    "order": [
+      [0, 1],
+      [0, 2],
+      [1, 2]
+    ]
+  },
+  "trace": [
+    "collect_evidence",
+    "emit_receipt",
+    "verify_evidence"
+  ]
+}

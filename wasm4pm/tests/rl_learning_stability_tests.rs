@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 //! RL Learning Stability Comprehensive Tests
 //!
 //! Audit suite for RL learning stability across 5 key dimensions:

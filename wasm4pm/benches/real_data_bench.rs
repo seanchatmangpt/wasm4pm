@@ -177,8 +177,9 @@ fn bench_dfg(c: &mut Criterion) {
     group.warm_up_time(Duration::from_millis(500));
     group.sample_size(20);
     for ds in &datasets {
+        let admitted_log = wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
         group.throughput(Throughput::Elements(ds.event_count));
-        group.bench_with_input(BenchmarkId::new("dataset", ds.label), &ds.log, |b, log| {
+        group.bench_with_input(BenchmarkId::new("dataset", ds.label), &admitted_log, |b, log| {
             b.iter(|| discover_dfg_from_log(log, ACTIVITY_KEY));
         });
     }
@@ -192,8 +193,9 @@ fn bench_alpha_plus_plus(c: &mut Criterion) {
     group.warm_up_time(Duration::from_millis(500));
     group.sample_size(20);
     for ds in &datasets {
+        let admitted_log = wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
         group.throughput(Throughput::Elements(ds.event_count));
-        group.bench_with_input(BenchmarkId::new("dataset", ds.label), &ds.log, |b, log| {
+        group.bench_with_input(BenchmarkId::new("dataset", ds.label), &admitted_log, |b, log| {
             b.iter(|| discover_alpha_plus_plus_from_log(log, ACTIVITY_KEY, 0.0));
         });
     }
@@ -222,8 +224,9 @@ fn bench_inductive_miner(c: &mut Criterion) {
     group.warm_up_time(Duration::from_millis(500));
     group.sample_size(20);
     for ds in &datasets {
+        let admitted_log = wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
         group.throughput(Throughput::Elements(ds.event_count));
-        group.bench_with_input(BenchmarkId::new("dataset", ds.label), &ds.log, |b, log| {
+        group.bench_with_input(BenchmarkId::new("dataset", ds.label), &admitted_log, |b, log| {
             b.iter(|| discover_inductive_miner_from_log(log, ACTIVITY_KEY));
         });
     }

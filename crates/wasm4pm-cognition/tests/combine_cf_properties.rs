@@ -1,3 +1,4 @@
+#![allow(clippy::all, unused_mut)]
 //! Rank-1 mathematical property tests for `combine_cf` (Shortliffe-Buchanan
 //! certainty-factor combination, MYCIN 1976).
 //!

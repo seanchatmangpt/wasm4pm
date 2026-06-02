@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 //! Integration tests for the connected autonomic loop.
 //!
 //! Tests that the RL orchestrator persists state across autonomic cycles,

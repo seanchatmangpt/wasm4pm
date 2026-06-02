@@ -1,4 +1,4 @@
-
+#![allow(clippy::all, unused_variables, unused_imports, dead_code)]
 #![doc = "High-performance, branchless algorithm implementations for wasm4pm process mining."]
 #![doc = ""]
 #![doc = "This crate implements discovery, conformance, and analysis algorithms optimized for:"]

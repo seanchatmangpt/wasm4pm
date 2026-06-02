@@ -27,7 +27,7 @@ describe('ObservabilityLayer', () => {
 
   it('should emit CLI events', () => {
     const observability = new ObservabilityLayer();
-    const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const consoleInfoSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     observability.emitCli({
       level: 'info',
@@ -102,7 +102,7 @@ describe('ObservabilityLayer', () => {
       },
     });
 
-    const consoleInfoSpy = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const consoleInfoSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
 
     observability.emit({
       cli: { level: 'info', message: 'Test message' },

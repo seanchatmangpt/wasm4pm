@@ -15,7 +15,7 @@
     }
   },
   "scripts": {
-    "build": "wasm-pack build --target bundler --mode no-install",
+    "build": "wasm-pack build --target bundler --mode no-install --all-features",
     "build:nodejs": "wasm-pack build --target nodejs --mode no-install --release --features cloud",
     "build:web": "wasm-pack build --target web --mode no-install",
     "build:all": "npm run build && npm run build:web && npm run build:nodejs",

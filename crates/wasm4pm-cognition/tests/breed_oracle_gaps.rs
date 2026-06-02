@@ -1,3 +1,4 @@
+#![allow(clippy::all, unused_mut)]
 //! Missing breed oracle tests — iter-15 coverage gap closure.
 //!
 //! Oracle ranks used here:

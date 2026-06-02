@@ -1,0 +1,26 @@
+{
+  "box": {
+    "v0": {
+      "kind": "Object",
+      "object_type": "Order"
+    },
+    "e1": {
+      "kind": "Event",
+      "event_type": "Confirm Order"
+    }
+  },
+  "predicates": [
+    {
+      "kind": "E2O",
+      "event": "e1",
+      "object": "v0",
+      "qualifier": "*"
+    }
+  ],
+  "constr": {
+    "kind": "CBS",
+    "activity": "Confirm Order",
+    "min": 1,
+    "max": 1
+  }
+}

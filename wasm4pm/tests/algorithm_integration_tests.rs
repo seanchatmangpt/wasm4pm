@@ -102,6 +102,10 @@ fn build_log(variants: &[(usize, &[&str])]) -> EventLog {
 /// Standard log used by most tests:
 ///   10× [Register → Approve → Close]
 ///    5× [Register → Reject  → Close]
+fn admitted_log(log: EventLog) -> wasm4pm_compat::evidence::Evidence<EventLog, wasm4pm_compat::state::Admitted, ()> {
+    wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence()
+}
+
 fn standard_log() -> EventLog {
     build_log(&[
         (10, &["Register", "Approve", "Close"]),
@@ -148,7 +152,7 @@ fn loop_log() -> EventLog {
 #[test]
 fn dfg_edges_non_empty_on_standard_log() {
     let log = standard_log();
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     assert!(!dfg.edges.is_empty(), "DFG must have at least one edge");
 }
 
@@ -156,7 +160,7 @@ fn dfg_edges_non_empty_on_standard_log() {
 fn dfg_all_edge_frequencies_positive() {
     // Rank 1: frequency is a count, must be ≥ 1
     let log = standard_log();
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     for edge in &dfg.edges {
         assert!(
             edge.frequency >= 1,
@@ -170,7 +174,7 @@ fn dfg_all_edge_frequencies_positive() {
 fn dfg_nodes_contain_all_activities() {
     // Rank 2: every activity in the log must appear as a node
     let log = standard_log();
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let node_ids: std::collections::HashSet<&str> =
         dfg.nodes.iter().map(|n| n.id.as_str()).collect();
     for expected in ["Register", "Approve", "Reject", "Close"] {
@@ -185,7 +189,7 @@ fn dfg_nodes_contain_all_activities() {
 fn dfg_minimal_log_one_trace_produces_output() {
     // Edge case: single-trace single-event log — nodes must still be produced
     let log = minimal_log();
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     // A single-event trace has no directly-follows relation, but a node exists
     assert!(
         !dfg.nodes.is_empty() || dfg.edges.is_empty(),
@@ -197,7 +201,7 @@ fn dfg_minimal_log_one_trace_produces_output() {
 fn optimized_dfg_is_subset_of_dfg() {
     // Rank 1: optimized DFG filters edges → can only have ≤ edges than raw DFG
     let log = varied_log();
-    let raw_dfg = discover_dfg_from_log(&log, "concept:name");
+    let raw_dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let opt_dfg = discover_optimized_dfg_from_log(&log, "concept:name", 0.5, 0.5);
     assert!(
         opt_dfg.edges.len() <= raw_dfg.edges.len(),
@@ -220,7 +224,7 @@ fn optimized_dfg_preserves_high_frequency_edges() {
 fn simd_streaming_dfg_matches_standard_dfg_structure() {
     // Rank 1: SIMD DFG and standard DFG must report the same set of activities
     let log = standard_log();
-    let standard = discover_dfg_from_log(&log, "concept:name");
+    let standard = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
 
     // Build the SIMD DFG using the struct API (native-safe)
     let mut simd = SimdStreamingDfg::new();
@@ -260,7 +264,7 @@ fn simd_streaming_dfg_matches_standard_dfg_structure() {
 fn simd_streaming_dfg_edge_count_matches_standard() {
     // Rank 1: same input → same edge set regardless of implementation
     let log = standard_log();
-    let standard = discover_dfg_from_log(&log, "concept:name");
+    let standard = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
 
     let mut simd = SimdStreamingDfg::new();
     let activity_key = "concept:name";
@@ -319,7 +323,7 @@ fn hierarchical_dfg_all_edge_counts_positive() {
 #[test]
 fn alpha_plus_plus_produces_petri_net() {
     let log = standard_log();
-    let pn = discover_alpha_plus_plus_from_log(&log, "concept:name", 0.0)
+    let pn = discover_alpha_plus_plus_from_log(&admitted_log(log.clone()), "concept:name", 0.0)
         .expect("Alpha++ must succeed on non-empty log");
     assert!(
         !pn.places.is_empty() && !pn.transitions.is_empty(),
@@ -331,7 +335,7 @@ fn alpha_plus_plus_produces_petri_net() {
 fn alpha_plus_plus_transitions_match_activities() {
     // Rank 2: every visible activity must correspond to at least one transition
     let log = standard_log();
-    let pn = discover_alpha_plus_plus_from_log(&log, "concept:name", 0.0)
+    let pn = discover_alpha_plus_plus_from_log(&admitted_log(log.clone()), "concept:name", 0.0)
         .expect("Alpha++ must succeed");
     // Alpha++ transitions have a String `label` (not Option) and `is_invisible: Option<bool>`
     let trans_labels: std::collections::HashSet<&str> =
@@ -356,7 +360,7 @@ fn heuristic_miner_produces_dfg() {
 fn heuristic_miner_fewer_edges_than_raw_dfg() {
     // Rank 1: heuristic miner filters low-confidence relations → edges ≤ raw DFG
     let log = standard_log();
-    let raw = discover_dfg_from_log(&log, "concept:name");
+    let raw = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let hm = discover_heuristic_miner_from_log(&log, "concept:name", 0.8);
     assert!(
         hm.edges.len() <= raw.edges.len(),
@@ -382,7 +386,7 @@ fn heuristic_miner_strict_threshold_prunes_to_main_path() {
 fn inductive_miner_produces_process_tree_json() {
     // Rank 2: inductive miner returns a non-empty JSON process tree string
     let log = standard_log();
-    let tree_json = discover_inductive_miner_from_log(&log, "concept:name");
+    let tree_json = discover_inductive_miner_from_log(&admitted_log(log.clone()), "concept:name");
     assert!(!tree_json.is_empty(), "Inductive miner must produce a non-empty process tree");
     // Must be valid JSON
     let parsed: serde_json::Result<serde_json::Value> = serde_json::from_str(&tree_json);
@@ -393,7 +397,7 @@ fn inductive_miner_produces_process_tree_json() {
 fn inductive_miner_detects_parallel_structure() {
     // Rank 2: parallel log (X‖Y) must produce a tree with operator indicating AND
     let log = parallel_log();
-    let tree_json = discover_inductive_miner_from_log(&log, "concept:name");
+    let tree_json = discover_inductive_miner_from_log(&admitted_log(log.clone()), "concept:name");
     assert!(
         !tree_json.is_empty(),
         "Inductive miner must handle parallel-activity log"
@@ -409,7 +413,7 @@ fn inductive_miner_detects_parallel_structure() {
 fn hill_climbing_edge_count_does_not_exceed_dfg() {
     // Rank 1: hill climbing prunes edges — count can only stay or decrease
     let log = standard_log();
-    let raw = discover_dfg_from_log(&log, "concept:name");
+    let raw = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let hc = discover_hill_climbing_from_log(&log, "concept:name");
     assert!(
         hc.edges.len() <= raw.edges.len(),
@@ -554,7 +558,7 @@ fn ilp_petri_net_has_source_and_sink() {
     // Rank 2: every sound Petri net must have at least one source place (with marking)
     let log = standard_log();
     let (pn, _, _) = discover_ilp_petri_net_from_log(&log, "concept:name");
-    let has_source = pn.places.iter().any(|p| p.marking.map_or(false, |m| m > 0));
+    let has_source = pn.places.iter().any(|p| p.marking.is_some_and(|m| m > 0));
     assert!(has_source, "ILP Petri net must have a source place with initial marking");
     assert!(!pn.transitions.is_empty(), "ILP Petri net must have transitions");
 }
@@ -629,7 +633,7 @@ fn footprints_causal_antisymmetric() {
     // Rank 1: matrix is Vec<Vec<FootprintRelation>> indexed by activity position.
     // If fp.matrix[i][j] == DirectlyFollows then fp.matrix[j][i] must NOT also be DirectlyFollows.
     let log = standard_log();
-    let fp = discover_footprints_from_log(&log, "concept:name");
+    let fp = discover_footprints_from_log(&admitted_log(log.clone()), "concept:name");
     let n = fp.activities.len();
     for i in 0..n {
         for j in 0..n {
@@ -653,7 +657,7 @@ fn footprints_causal_antisymmetric() {
 fn footprints_matrix_dimensions_match_activities() {
     // Rank 1: matrix must be n×n where n = number of activities
     let log = standard_log();
-    let fp = discover_footprints_from_log(&log, "concept:name");
+    let fp = discover_footprints_from_log(&admitted_log(log.clone()), "concept:name");
     let n = fp.activities.len();
     assert_eq!(fp.matrix.len(), n, "Footprint matrix row count must equal activity count");
     for row in &fp.matrix {
@@ -1064,9 +1068,9 @@ fn monte_carlo_deterministic_with_same_seed() {
 fn all_discovery_algorithms_handle_loop_log_without_panic() {
     // Rank 1 (safety): no algorithm may panic on a log with duplicate activities
     let log = loop_log();
-    let _ = discover_dfg_from_log(&log, "concept:name");
+    let _ = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let _ = discover_heuristic_miner_from_log(&log, "concept:name", 0.3);
-    let _ = discover_inductive_miner_from_log(&log, "concept:name");
+    let _ = discover_inductive_miner_from_log(&admitted_log(log.clone()), "concept:name");
     let _ = discover_hill_climbing_from_log(&log, "concept:name");
     let _ = discover_optimized_dfg_from_log(&log, "concept:name", 0.5, 0.5);
     let (_, _) = discover_simulated_annealing_from_log(&log, "concept:name", 0.5, 0.9);
@@ -1080,9 +1084,9 @@ fn all_discovery_algorithms_handle_loop_log_without_panic() {
 fn all_discovery_algorithms_handle_single_trace_log() {
     // Rank 1 (safety): boundary log — one trace, three events
     let log = build_log(&[(1, &["A", "B", "C"])]);
-    let _ = discover_dfg_from_log(&log, "concept:name");
+    let _ = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let _ = discover_heuristic_miner_from_log(&log, "concept:name", 0.5);
-    let _ = discover_inductive_miner_from_log(&log, "concept:name");
+    let _ = discover_inductive_miner_from_log(&admitted_log(log.clone()), "concept:name");
     let _ = discover_hill_climbing_from_log(&log, "concept:name");
     let _ = discover_simulated_annealing_from_log(&log, "concept:name", 1.0, 0.9);
     let _ = discover_astar_from_log(&log, "concept:name", 10);
@@ -1096,7 +1100,7 @@ fn dfg_edge_frequencies_sum_is_consistent_with_trace_count() {
     //   both edges A→B and B→C must have frequency N.
     let n = 8;
     let log = build_log(&[(n, &["A", "B", "C"])]);
-    let dfg = discover_dfg_from_log(&log, "concept:name");
+    let dfg = discover_dfg_from_log(&admitted_log(log.clone()), "concept:name");
     let ab = dfg.edges.iter().find(|e| e.from == "A" && e.to == "B");
     let bc = dfg.edges.iter().find(|e| e.from == "B" && e.to == "C");
     assert!(ab.is_some(), "Edge A→B must exist");
@@ -1165,7 +1169,7 @@ fn social_networks_produce_no_self_edges_for_sequential_single_resource() {
 fn inductive_miner_handles_varied_log_without_panic() {
     // Rank 1 (safety): varied log with 4 variants must produce valid JSON
     let log = varied_log();
-    let tree_json = discover_inductive_miner_from_log(&log, "concept:name");
+    let tree_json = discover_inductive_miner_from_log(&admitted_log(log.clone()), "concept:name");
     assert!(!tree_json.is_empty(), "Inductive miner must produce output on varied log");
     let parsed: serde_json::Result<serde_json::Value> = serde_json::from_str(&tree_json);
     assert!(parsed.is_ok(), "Inductive miner output must be valid JSON");

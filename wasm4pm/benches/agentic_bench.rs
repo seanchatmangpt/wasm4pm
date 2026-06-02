@@ -16,6 +16,9 @@ use std::collections::BTreeSet;
 use std::time::Duration;
 use wasm4pm::agentic::prelude::*;
 
+#[path = "helpers.rs"]
+mod helpers;
+
 fn make_task_context(
     phase: WorkflowPhase,
     risk_level: RiskLevel,

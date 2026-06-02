@@ -1,0 +1,177 @@
+================================================================================
+PARSELOAD() DIAGNOSTIC — SUMMARY FOR TRACK B-1
+================================================================================
+
+FINDING: The JSON envelope structure is CORRECT per specs. The issue is that
+stdout is empty or malformed when tests call parsePayload(result).
+
+================================================================================
+PARSELOAD FUNCTION (tests/mcpp-route-conformance.test.ts:100-107)
+================================================================================
+
+function parsePayload(result: CliResult): Record<string, unknown> | null {
+  try {
+    const parsed = JSON.parse(result.stdout);
+    return (parsed.payload as Record<string, unknown>) ?? parsed;
+  } catch {
+    return null;  // ← ONLY WAY TO GET NULL
+  }
+}
+
+KEY: Returns null ONLY if JSON.parse() throws (catches SyntaxError).
+
+================================================================================
+EXPECTED JSON ENVELOPE (CommandResult<T>)
+================================================================================
+
+FILE: apps/wasm4pm/src/output.ts:37-58
+
+{
+  "command": "trace conform",
+  "status": "ok",
+  "message": "...",
+  "exit_code": 0,
+  "payload": {                          ← parsePayload() extracts this
+    "route_id": "...",
+    "fitness": 1.0,
+    "precision": 1.0,
+    "required_stage_coverage": 1.0,
+    "receipt_coverage": 1.0,
+    "object_lifecycle_validity": 1.0,
+    "observed_count": 3,
+    "verdict": "Accepted",
+    "andon_reason": null,
+    "details": [...],
+    "out": "none"
+  },
+  "meta": {
+    "run_id": "...",
+    "timestamp": "...",
+    "duration_ms": 42,
+    "version": "26.5.29"
+  }
+}
+
+================================================================================
+HOW CONFORMANCE COMMAND BUILDS RESULT
+================================================================================
+
+FILE: apps/wasm4pm/src/commands/trace.ts:1644-1653
+
+const result = makeResult(
+  'trace conform',
+  {
+    ...conformance,        // Spreads ConformanceResult fields into payload
+    observed_count: ocelLog.ocel_events.length,
+    out: outPath ?? 'none',
+  },
+  performance.now() - t0,
+  exitCode
+);
+
+emitResult(result, { format, verbose, quiet }, consoleRenderer);
+return exitWithFlush(exitCode);
+
+FLOW:
+  1. makeResult() wraps conformance data in CommandResult.payload
+  2. emitResult() checks options.format === 'json'
+  3. If JSON: calls process.stdout.write(JSON.stringify(result, null, 2) + '\n')
+  4. exitWithFlush() calls exit(exitCode)
+
+================================================================================
+EMITRESULT() JSON OUTPUT PATH
+================================================================================
+
+FILE: apps/wasm4pm/src/output.ts:89-94
+
+case 'json':
+  // Machine-readable JSON is always emitted when requested — even with --quiet.
+  // Hooks (e.g. stop-proof-gate.sh) rely on `wpm … --format json --quiet`.
+  process.stdout.write(JSON.stringify(result, null, 2) + '\n');
+  break;
+
+RESULT: Writes entire CommandResult object to stdout as pretty-printed JSON.
+
+================================================================================
+ROOT CAUSE OF PARSELOAD() === NULL
+================================================================================
+
+JSON.parse(result.stdout) THROWS when:
+
+1. result.stdout === '' (empty)
+   → JSON.parse('') → SyntaxError: Unexpected end of JSON input
+   → catch block → return null
+
+2. result.stdout contains non-JSON (error text, stack trace, etc.)
+   → JSON.parse('Error: ...') → SyntaxError: Unexpected token...
+   → catch block → return null
+
+3. result.stdout === null or undefined
+   → JSON.parse(null) → TypeError
+   → catch block → return null
+
+SYMPTOM IN TESTS:
+  const payload = parsePayload(result);
+  expect(payload).not.toBeNull();  // FAILS: payload === null
+
+IMPLIES: result.stdout is empty or not valid JSON
+
+================================================================================
+SUSPECTED BUG LOCATION
+================================================================================
+
+The conformance command is NOT outputting JSON to stdout.
+
+Possible causes:
+
+1. emitResult() is not called before exitWithFlush()
+   → Check: are there code paths that exit early without calling emitResult()?
+
+2. --format json flag is not recognized
+   → Check: is ctx.args.format correctly parsed? (line 1514)
+
+3. exitWithFlush() suppresses stdout
+   → Check: does exitWithFlush() call process.exit() immediately?
+   → If so, emitResult() output may not flush before exit
+
+4. Command crashes before emitResult() is called
+   → Check: is checkPowl2Conformance() throwing an exception?
+   → Check: is makeResult() failing?
+
+================================================================================
+PROOF POINT: ENVELOPE STRUCTURE IS CORRECT
+================================================================================
+
+The parsePayload() fallback demonstrates the envelope is correct:
+
+  return (parsed.payload as Record<string, unknown>) ?? parsed;
+         ↑ extract payload       ↑ fallback if payload is missing/null
+
+If stdout is valid JSON:
+  ✓ If {payload: {...}} → returns extracted payload
+  ✓ If {payload: null} → falls back to entire object
+  ✓ If {} (no payload) → falls back to entire object
+
+ONLY fails if JSON.parse() throws (empty or malformed stdout).
+
+================================================================================
+FILES TO CHECK
+================================================================================
+
+1. apps/wasm4pm/src/commands/trace.ts:1512-1717
+   - Verify ALL code paths call emitResult() before exitWithFlush()
+   - Verify format flag is correctly extracted (line 1514)
+
+2. apps/wasm4pm/src/otel/exit.ts
+   - Check if exitWithFlush() flushes stdout before exiting
+   - Ensure process.exit() doesn't suppress pending writes
+
+3. apps/wasm4pm/src/output.ts:89-94
+   - Verify JSON case calls process.stdout.write()
+   - Check for any early returns that skip this path
+
+4. Line 1605-1613 (withSpanRaw wrapper)
+   - Check if this wrapper suppresses output
+   - Verify it doesn't call exit() prematurely
+
+================================================================================

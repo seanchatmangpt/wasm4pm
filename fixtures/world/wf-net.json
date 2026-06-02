@@ -1,0 +1,216 @@
+{
+  "places": [
+    {
+      "id": "src",
+      "label": "src",
+      "marking": null
+    },
+    {
+      "id": "p_open",
+      "label": "p_open",
+      "marking": null
+    },
+    {
+      "id": "p_split",
+      "label": "p_split",
+      "marking": null
+    },
+    {
+      "id": "p_pick",
+      "label": "p_pick",
+      "marking": null
+    },
+    {
+      "id": "p_packready",
+      "label": "p_packready",
+      "marking": null
+    },
+    {
+      "id": "p_shipready",
+      "label": "p_shipready",
+      "marking": null
+    },
+    {
+      "id": "p_shipdone",
+      "label": "p_shipdone",
+      "marking": null
+    },
+    {
+      "id": "p_inv",
+      "label": "p_inv",
+      "marking": null
+    },
+    {
+      "id": "p_payready",
+      "label": "p_payready",
+      "marking": null
+    },
+    {
+      "id": "p_paydone",
+      "label": "p_paydone",
+      "marking": null
+    },
+    {
+      "id": "sink",
+      "label": "sink",
+      "marking": null
+    }
+  ],
+  "transitions": [
+    {
+      "id": "t_create",
+      "label": "Create Order",
+      "is_invisible": false
+    },
+    {
+      "id": "t_confirm",
+      "label": "Confirm Order",
+      "is_invisible": false
+    },
+    {
+      "id": "t_split",
+      "label": "τ_split",
+      "is_invisible": true
+    },
+    {
+      "id": "t_pick",
+      "label": "Pick Item",
+      "is_invisible": false
+    },
+    {
+      "id": "t_pack",
+      "label": "Pack Package",
+      "is_invisible": false
+    },
+    {
+      "id": "t_ship",
+      "label": "Ship Package",
+      "is_invisible": false
+    },
+    {
+      "id": "t_invoice",
+      "label": "Send Invoice",
+      "is_invisible": false
+    },
+    {
+      "id": "t_pay",
+      "label": "Receive Payment",
+      "is_invisible": false
+    },
+    {
+      "id": "t_join",
+      "label": "τ_join",
+      "is_invisible": true
+    }
+  ],
+  "arcs": [
+    {
+      "from": "src",
+      "to": "t_create",
+      "weight": 1
+    },
+    {
+      "from": "t_create",
+      "to": "p_open",
+      "weight": 1
+    },
+    {
+      "from": "p_open",
+      "to": "t_confirm",
+      "weight": 1
+    },
+    {
+      "from": "t_confirm",
+      "to": "p_split",
+      "weight": 1
+    },
+    {
+      "from": "p_split",
+      "to": "t_split",
+      "weight": 1
+    },
+    {
+      "from": "t_split",
+      "to": "p_pick",
+      "weight": 1
+    },
+    {
+      "from": "t_split",
+      "to": "p_inv",
+      "weight": 1
+    },
+    {
+      "from": "p_pick",
+      "to": "t_pick",
+      "weight": 1
+    },
+    {
+      "from": "t_pick",
+      "to": "p_packready",
+      "weight": 1
+    },
+    {
+      "from": "p_packready",
+      "to": "t_pack",
+      "weight": 1
+    },
+    {
+      "from": "t_pack",
+      "to": "p_shipready",
+      "weight": 1
+    },
+    {
+      "from": "p_shipready",
+      "to": "t_ship",
+      "weight": 1
+    },
+    {
+      "from": "t_ship",
+      "to": "p_shipdone",
+      "weight": 1
+    },
+    {
+      "from": "p_inv",
+      "to": "t_invoice",
+      "weight": 1
+    },
+    {
+      "from": "t_invoice",
+      "to": "p_payready",
+      "weight": 1
+    },
+    {
+      "from": "p_payready",
+      "to": "t_pay",
+      "weight": 1
+    },
+    {
+      "from": "t_pay",
+      "to": "p_paydone",
+      "weight": 1
+    },
+    {
+      "from": "p_shipdone",
+      "to": "t_join",
+      "weight": 1
+    },
+    {
+      "from": "p_paydone",
+      "to": "t_join",
+      "weight": 1
+    },
+    {
+      "from": "t_join",
+      "to": "sink",
+      "weight": 1
+    }
+  ],
+  "initial_marking": {
+    "src": 1
+  },
+  "final_markings": [
+    {
+      "sink": 1
+    }
+  ]
+}

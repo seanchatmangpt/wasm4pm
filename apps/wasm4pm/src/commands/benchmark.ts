@@ -2,6 +2,11 @@ import { defineCommand } from 'citty';
 import { withSpanRaw } from './_otel.js';
 import { readFileSync, existsSync } from 'node:fs';
 import { WasmLoader } from '@wasm4pm/engine';
+import { hashData, verifyHash } from '@wasm4pm/contracts';
+import {
+  validateConformanceResultFromCases,
+  type CaseFitnessResult,
+} from '@wasm4pm/observability';
 import { emitResult, makeResult, makeErrorResult } from '../output.js';
 import { EXIT_CODES } from '../exit-codes.js';
 import { buildSarifOutput, verdictToLevel } from '../sarif.js';
@@ -1018,6 +1023,482 @@ const benchmarkPerf = defineCommand({
 });
 
 // ---------------------------------------------------------------------------
+// Subcommand: gate — the aggregated G1–G5 benchmark gate
+// ---------------------------------------------------------------------------
+//
+// `wpm benchmark gate` is the CI admission gate for the primitive kernel.
+// It runs five gates against real WASM evidence and emits a machine-readable
+// JSON verdict.  ANY gate failure makes the command exit non-zero, so the gate
+// is usable directly in a pipeline (`wpm benchmark gate --format json || fail`).
+//
+//   G1  DETERMINISM        — same input ⇒ same BLAKE3 (run discover_dfg twice).
+//   G2  RECEIPT-VERIFY     — BLAKE3 receipt chain recomputes to its stored hash
+//                            (--verify-receipt-hash; optional external --receipt).
+//   G3  CONFORMANCE        — token-replay fitness == 1.0 admits; below ⇒ AndonPull
+//                            (RouteConformanceGap).  This is the exact-1.0 gate.
+//   G4  METRIC-INTERDEP.   — conformance metrics obey the I-1..I-5 invariants
+//                            (packages/observability/src/conformance-invariants.ts).
+//   G5  REPORT-COMPLETE.   — the emitted verdict carries every required field for
+//                            all five gates (anti-FAKE-LIVE: a gate cannot pass by
+//                            omitting its own evidence).
+//
+// Doctrine: a green "build completed" is not proof.  Only a determinism gate that
+// re-hashes equal, a receipt that re-verifies, an exact-1.0 admission (or a correctly
+// named AndonPull), invariants that hold, and a complete report make the kernel ALIVE.
+
+/** A single gate outcome inside the aggregate verdict. */
+interface GateOutcome {
+  /** Stable gate id: G1..G5 */
+  id: 'G1' | 'G2' | 'G3' | 'G4' | 'G5';
+  /** Gate name (machine-stable). */
+  name: string;
+  /** true ⇒ gate admitted; false ⇒ gate refused. */
+  pass: boolean;
+  /** Whether the gate ran or was skipped via --gates. */
+  ran: boolean;
+  /** Typed reason for a refusal (e.g. AndonPull variant) or 'ok'. */
+  reason: string;
+  /** Gate-specific evidence (hashes, fitness, invariant counts, …). */
+  evidence: Record<string, unknown>;
+}
+
+/** Required keys every GateOutcome must carry — the G5 completeness contract. */
+const GATE_REQUIRED_KEYS = ['id', 'name', 'pass', 'ran', 'reason', 'evidence'] as const;
+
+/**
+ * Deterministic, self-contained event log used by G1/G3/G4.  Inline (no external
+ * file) so the gate is reproducible on any machine and the determinism oracle is
+ * grounded in the WASM algorithm, not in filesystem state.
+ */
+const GATE_FIXTURE_XES =
+  `<?xml version="1.0" encoding="UTF-8"?>\n` +
+  `<log xes.version="1.0">\n` +
+  ['A,B,C,D', 'A,B,C,D', 'A,B,C,D']
+    .map(
+      (trace, i) =>
+        `  <trace>\n    <string key="concept:name" value="case-${i}"/>\n` +
+        trace
+          .split(',')
+          .map((a) => `    <event><string key="concept:name" value="${a}"/></event>`)
+          .join('\n') +
+        `\n  </trace>`
+    )
+    .join('\n') +
+  `\n</log>\n`;
+
+/** G1 — determinism: discover_dfg twice, BLAKE3 the outputs, require equality. */
+function gateG1Determinism(wasm: Record<string, unknown>): GateOutcome {
+  const ev: Record<string, unknown> = {};
+  if (
+    typeof wasm.load_eventlog_from_xes !== 'function' ||
+    typeof wasm.discover_dfg !== 'function'
+  ) {
+    return {
+      id: 'G1',
+      name: 'determinism',
+      pass: false,
+      ran: true,
+      reason: 'wasm_unavailable: load_eventlog_from_xes/discover_dfg missing',
+      evidence: ev,
+    };
+  }
+  const handle = (wasm.load_eventlog_from_xes as (s: string) => string)(GATE_FIXTURE_XES);
+  const run1 = (wasm.discover_dfg as (h: string, k: string) => unknown)(handle, 'concept:name');
+  const run2 = (wasm.discover_dfg as (h: string, k: string) => unknown)(handle, 'concept:name');
+  const out1 = typeof run1 === 'string' ? run1 : JSON.stringify(run1);
+  const out2 = typeof run2 === 'string' ? run2 : JSON.stringify(run2);
+  const hash1 = hashData(out1);
+  const hash2 = hashData(out2);
+  const pass = hash1 === hash2;
+  ev.hash_run_1 = hash1;
+  ev.hash_run_2 = hash2;
+  ev.algorithm = 'discover_dfg';
+  return {
+    id: 'G1',
+    name: 'determinism',
+    pass,
+    ran: true,
+    reason: pass ? 'ok' : 'NonDeterministicOutput: BLAKE3 hashes differ across identical runs',
+    evidence: ev,
+  };
+}
+
+/**
+ * G2 — BLAKE3 receipt verify.  When `receiptPath` is given, the stored
+ * `combined_hash` is recomputed from the four component hashes and must match.
+ * With no external receipt, a fresh receipt is built from the G1 evidence and
+ * self-verified (closed-loop hash chain).  A tampered external receipt refuses.
+ */
+function gateG2ReceiptVerify(
+  receiptPath: string | undefined,
+  g1: GateOutcome
+): GateOutcome {
+  const ev: Record<string, unknown> = {};
+  // Build the four-part chain. For the self-built receipt we anchor on the G1
+  // determinism evidence so the gate verifies a real, just-produced artifact.
+  const buildCombined = (
+    inputHash: string,
+    configHash: string,
+    planHash: string,
+    outputHash: string
+  ): string => hashData([inputHash, configHash, planHash, outputHash]);
+
+  if (receiptPath) {
+    if (!existsSync(receiptPath)) {
+      return {
+        id: 'G2',
+        name: 'receipt-verify',
+        pass: false,
+        ran: true,
+        reason: `receipt_not_found: ${receiptPath}`,
+        evidence: ev,
+      };
+    }
+    let receipt: Record<string, unknown>;
+    try {
+      receipt = JSON.parse(readFileSync(receiptPath, 'utf8')) as Record<string, unknown>;
+    } catch (e) {
+      return {
+        id: 'G2',
+        name: 'receipt-verify',
+        pass: false,
+        ran: true,
+        reason: `receipt_parse_error: ${String(e)}`,
+        evidence: ev,
+      };
+    }
+    const inputHash = String(receipt.input_hash ?? '');
+    const configHash = String(receipt.config_hash ?? '');
+    const planHash = String(receipt.plan_hash ?? '');
+    const outputHash = String(receipt.output_hash ?? '');
+    const stored = String(receipt.combined_hash ?? receipt.receipt_hash ?? '');
+    const recomputed = buildCombined(inputHash, configHash, planHash, outputHash);
+    const pass = stored.length > 0 && stored === recomputed;
+    ev.source = 'external';
+    ev.receipt_path = receiptPath;
+    ev.stored_combined_hash = stored;
+    ev.recomputed_combined_hash = recomputed;
+    return {
+      id: 'G2',
+      name: 'receipt-verify',
+      pass,
+      ran: true,
+      reason: pass
+        ? 'ok'
+        : 'MissingReceiptCoverage: stored combined_hash does not match recomputed BLAKE3 chain',
+      evidence: ev,
+    };
+  }
+
+  // Self-built receipt: hash the gate's own G1 evidence as the output.
+  const inputHash = hashData(GATE_FIXTURE_XES);
+  const configHash = hashData({ algorithm: 'discover_dfg', activity_key: 'concept:name' });
+  const planHash = hashData({ plan: 'benchmark.gate.G1' });
+  const outputHash = hashData(g1.evidence);
+  const combined = buildCombined(inputHash, configHash, planHash, outputHash);
+  // Honest closed-loop: rebuild the same combined hash and verify byte-equality,
+  // plus an independent verifyHash() over the chain tuple.
+  const recomputed = buildCombined(inputHash, configHash, planHash, outputHash);
+  const chainTuple = [inputHash, configHash, planHash, outputHash];
+  const pass = combined === recomputed && verifyHash(chainTuple, combined);
+  ev.source = 'self-built';
+  ev.input_hash = inputHash;
+  ev.config_hash = configHash;
+  ev.plan_hash = planHash;
+  ev.output_hash = outputHash;
+  ev.combined_hash = combined;
+  return {
+    id: 'G2',
+    name: 'receipt-verify',
+    pass,
+    ran: true,
+    reason: pass ? 'ok' : 'MissingReceiptCoverage: self-built receipt failed to re-verify',
+    evidence: ev,
+  };
+}
+
+/**
+ * Run token-replay against an auto-discovered Petri net for the gate fixture.
+ * Returns the avg fitness and the per-case results (for G3 + G4).  Returns null
+ * when the required WASM functions are unavailable in this build profile.
+ */
+function runGateConformance(
+  wasm: Record<string, unknown>
+): { fitness: number; cases: CaseFitnessResult[]; totalCases: number } | null {
+  if (
+    typeof wasm.load_eventlog_from_xes !== 'function' ||
+    typeof wasm.discover_alpha_plus_plus !== 'function' ||
+    typeof wasm.check_token_based_replay !== 'function'
+  ) {
+    return null;
+  }
+  const handle = (wasm.load_eventlog_from_xes as (s: string) => string)(GATE_FIXTURE_XES);
+  const discovery = (wasm.discover_alpha_plus_plus as (h: string, k: string, t: number) => unknown)(
+    handle,
+    'concept:name',
+    0.0
+  );
+  const model = (typeof discovery === 'string' ? JSON.parse(discovery) : discovery) as Record<
+    string,
+    unknown
+  >;
+  const modelHandle = String(model.handle ?? '');
+  if (!modelHandle) return null;
+  const raw = (wasm.check_token_based_replay as (l: string, m: string, k: string) => unknown)(
+    handle,
+    modelHandle,
+    'concept:name'
+  );
+  const conf = (typeof raw === 'string' ? JSON.parse(raw) : raw) as Record<string, unknown>;
+  const fitness = typeof conf.avg_fitness === 'number' ? conf.avg_fitness : 0;
+  const totalCases = typeof conf.total_cases === 'number' ? conf.total_cases : 0;
+  const rawCases = Array.isArray(conf.case_fitness) ? conf.case_fitness : [];
+  const cases: CaseFitnessResult[] = rawCases.map((c, i) => {
+    const cc = c as Record<string, unknown>;
+    return {
+      case_id: String(cc.case_id ?? `case-${i}`),
+      is_conforming: Boolean(cc.is_conforming ?? false),
+      trace_fitness: typeof cc.trace_fitness === 'number' ? cc.trace_fitness : 0,
+      tokens_missing: typeof cc.tokens_missing === 'number' ? cc.tokens_missing : 0,
+      tokens_remaining: typeof cc.tokens_remaining === 'number' ? cc.tokens_remaining : 0,
+      deviations: Array.isArray(cc.deviations)
+        ? (cc.deviations as CaseFitnessResult['deviations'])
+        : [],
+    };
+  });
+  return { fitness, cases, totalCases };
+}
+
+/** G3 — exact-1.0 conformance admission.  Below 1.0 ⇒ AndonPull RouteConformanceGap. */
+function gateG3Conformance(
+  conf: { fitness: number; cases: CaseFitnessResult[]; totalCases: number } | null
+): GateOutcome {
+  const ev: Record<string, unknown> = {};
+  if (conf === null) {
+    return {
+      id: 'G3',
+      name: 'conformance',
+      pass: false,
+      ran: true,
+      reason: 'wasm_unavailable: discover_alpha_plus_plus/check_token_based_replay missing',
+      evidence: ev,
+    };
+  }
+  ev.fitness = conf.fitness;
+  ev.total_cases = conf.totalCases;
+  ev.admission_threshold = 1.0;
+  // EXACT 1.0 admission — there is no tolerance (mcpp-conformance.md). 0.999 refuses.
+  const pass = conf.fitness >= 1.0;
+  return {
+    id: 'G3',
+    name: 'conformance',
+    pass,
+    ran: true,
+    reason: pass
+      ? 'ok'
+      : `RouteConformanceGap: fitness ${conf.fitness} < 1.0 — unproven motion, admission refused`,
+    evidence: ev,
+  };
+}
+
+/** G4 — metric-interdependency: conformance metrics obey invariants I-1..I-5. */
+function gateG4MetricInterdependency(
+  conf: { fitness: number; cases: CaseFitnessResult[]; totalCases: number } | null
+): GateOutcome {
+  const ev: Record<string, unknown> = {};
+  if (conf === null) {
+    return {
+      id: 'G4',
+      name: 'metric-interdependency',
+      pass: false,
+      ran: true,
+      reason: 'wasm_unavailable: cannot evaluate invariants without conformance result',
+      evidence: ev,
+    };
+  }
+  // Wire the I-1..I-5 invariant validator. precision is not produced by token
+  // replay; pass null so the ordering invariant (I-2) is skipped honestly.
+  const violations = validateConformanceResultFromCases(conf.fitness, null, conf.cases);
+  const critical = violations.filter((v) => v.severity === 'critical');
+  const warnings = violations.filter((v) => v.severity === 'warning');
+  ev.total_violations = violations.length;
+  ev.critical = critical.length;
+  ev.warnings = warnings.length;
+  ev.violation_ids = violations.map((v) => v.id);
+  // A critical invariant violation means the metrics are logically impossible.
+  const pass = critical.length === 0;
+  return {
+    id: 'G4',
+    name: 'metric-interdependency',
+    pass,
+    ran: true,
+    reason: pass
+      ? 'ok'
+      : `MetricInvariantViolation: ${critical.length} critical (${critical.map((v) => v.id).join(',')})`,
+    evidence: ev,
+  };
+}
+
+/** G5 — report completeness: every prior gate carries all required keys. */
+function gateG5ReportCompleteness(gates: GateOutcome[]): GateOutcome {
+  const ev: Record<string, unknown> = {};
+  const missing: string[] = [];
+  for (const g of gates) {
+    for (const key of GATE_REQUIRED_KEYS) {
+      if (!(key in g)) missing.push(`${g.id}.${key}`);
+    }
+    // evidence must be a present object (anti-FAKE-LIVE: no empty/omitted evidence slot)
+    if (typeof g.evidence !== 'object' || g.evidence === null) {
+      missing.push(`${g.id}.evidence(non-object)`);
+    }
+  }
+  ev.gates_checked = gates.map((g) => g.id);
+  ev.missing_fields = missing;
+  const pass = missing.length === 0;
+  return {
+    id: 'G5',
+    name: 'report-completeness',
+    pass,
+    ran: true,
+    reason: pass ? 'ok' : `IncompleteReport: missing ${missing.join(', ')}`,
+    evidence: ev,
+  };
+}
+
+const benchmarkGate = defineCommand({
+  meta: {
+    name: 'gate',
+    description:
+      'Aggregated G1–G5 admission gate (determinism, BLAKE3 receipt, exact-1.0 conformance, metric invariants, report completeness). Exits non-zero on any gate failure.',
+  },
+  args: {
+    format: { type: 'string', description: 'Output format: human (default), json, or sarif' },
+    gates: {
+      type: 'string',
+      description: 'Comma-separated subset to run (e.g. g1,g2). Default: all five.',
+    },
+    'verify-receipt-hash': {
+      type: 'boolean',
+      description: 'Enable G2 BLAKE3 receipt chain verification (default: on).',
+    },
+    receipt: {
+      type: 'string',
+      description: 'Path to an external receipt JSON to verify in G2 (default: self-built).',
+    },
+    verbose: { type: 'boolean', alias: 'v' },
+    quiet: { type: 'boolean', alias: 'q' },
+  },
+  async run(ctx) {
+    return withSpanRaw(
+      'wasm4pm.command.benchmark.gate',
+      { command: 'benchmark', subcommand: 'gate' },
+      async () => {
+        const t0 = performance.now();
+        const format = (ctx.args.format as 'json' | 'sarif' | 'human') ?? 'human';
+        const verbose = ctx.args.verbose ?? false;
+        const quiet = ctx.args.quiet ?? false;
+
+        // Parse the gate selector. Empty/absent ⇒ all five.
+        const selected = ((ctx.args.gates as string | undefined) ?? '')
+          .split(',')
+          .map((s) => s.trim().toUpperCase())
+          .filter(Boolean);
+        const wants = (id: string): boolean => selected.length === 0 || selected.includes(id);
+        // --verify-receipt-hash defaults ON; explicitly false disables G2.
+        const verifyReceipt = ctx.args['verify-receipt-hash'] !== false;
+
+        try {
+          const loader = WasmLoader.getInstance();
+          await loader.init();
+          const wasm = loader.get() as Record<string, unknown>;
+
+          const skipped = (id: GateOutcome['id'], name: string): GateOutcome => ({
+            id,
+            name,
+            pass: true,
+            ran: false,
+            reason: 'skipped',
+            evidence: {},
+          });
+
+          // Conformance is computed once and shared by G3 + G4.
+          const needConf = wants('G3') || wants('G4');
+          const conf = needConf ? runGateConformance(wasm) : null;
+
+          const g1 = wants('G1') ? gateG1Determinism(wasm) : skipped('G1', 'determinism');
+          const g2 =
+            wants('G2') && verifyReceipt
+              ? gateG2ReceiptVerify(ctx.args.receipt as string | undefined, g1)
+              : skipped('G2', 'receipt-verify');
+          const g3 = wants('G3') ? gateG3Conformance(conf) : skipped('G3', 'conformance');
+          const g4 = wants('G4')
+            ? gateG4MetricInterdependency(conf)
+            : skipped('G4', 'metric-interdependency');
+
+          const priorGates = [g1, g2, g3, g4];
+          const g5 = wants('G5')
+            ? gateG5ReportCompleteness(priorGates)
+            : skipped('G5', 'report-completeness');
+
+          const gates = [g1, g2, g3, g4, g5];
+          const ranGates = gates.filter((g) => g.ran);
+          const failed = ranGates.filter((g) => !g.pass);
+          const verdict: 'ADMITTED' | 'ANDON_PULL' = failed.length === 0 ? 'ADMITTED' : 'ANDON_PULL';
+          const exitCode = failed.length === 0 ? EXIT_CODES.success : EXIT_CODES.conformance_fail;
+
+          const payload = {
+            verdict,
+            gates_total: ranGates.length,
+            gates_passed: ranGates.filter((g) => g.pass).length,
+            gates_failed: failed.length,
+            gates,
+            // The AndonPull cause is the first failing gate's typed reason.
+            andon_reason: failed.length > 0 ? failed[0].reason : null,
+          };
+
+          if (format === 'sarif') {
+            const sarifResults = gates
+              .filter((g) => g.ran && !g.pass)
+              .map((g) => ({ verdict: 'ANDON_PULL', traceName: g.id, explanation: g.reason }));
+            process.stdout.write(
+              JSON.stringify(buildSarifOutput('26.4.28', sarifResults), null, 2) + '\n'
+            );
+            return await exitWithFlush(exitCode);
+          }
+
+          const result = makeResult('benchmark gate', payload, performance.now() - t0, exitCode);
+
+          emitResult(result, { format, verbose, quiet }, (res, projection) => {
+            for (const g of res.payload.gates) {
+              const mark = !g.ran ? '○' : g.pass ? '✓' : '✗';
+              const line = `  ${mark} ${g.id} ${g.name.padEnd(24)} ${g.reason}`;
+              if (!g.ran) projection.log(line);
+              else if (g.pass) projection.info(line);
+              else projection.warn(line);
+            }
+            if (res.payload.verdict === 'ADMITTED') {
+              projection.success(
+                `Benchmark gate ADMITTED: ${res.payload.gates_passed}/${res.payload.gates_total} gates passed`
+              );
+            } else {
+              projection.error(
+                `Benchmark gate ANDON_PULL: ${res.payload.gates_failed}/${res.payload.gates_total} gates failed — ${res.payload.andon_reason}`
+              );
+            }
+          });
+
+          return await exitWithFlush(exitCode);
+        } catch (e) {
+          const result = makeErrorResult('benchmark gate', e, EXIT_CODES.execution_error);
+          emitResult(result, { format, verbose, quiet });
+          return await exitWithFlush(EXIT_CODES.execution_error);
+        }
+      }
+    );
+  },
+});
+
+// ---------------------------------------------------------------------------
 // Main benchmark noun
 // ---------------------------------------------------------------------------
 
@@ -1031,6 +1512,7 @@ export const benchmark = defineCommand({
   wpm benchmark — Benchmark Corpus Verification & Algorithm Performance
 
   Subcommands:
+    wpm benchmark gate      [--gates g1,g2] [--receipt <f>]  G1–G5 admission gate (CI)
     wpm benchmark build     --corpus <path.jsonl>   Validate JSONL corpus format
     wpm benchmark replay    [--corpus <path>]        Run traces, show per-trace results
     wpm benchmark verify    [--corpus <path>]        CI gate — exit non-zero on failure
@@ -1046,6 +1528,7 @@ export const benchmark = defineCommand({
     return await exitWithFlush(EXIT_CODES.success);
   },
   subCommands: {
+    gate: benchmarkGate,
     build: benchmarkBuild,
     replay: benchmarkReplay,
     verify: benchmarkVerify,

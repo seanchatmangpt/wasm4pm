@@ -15,6 +15,9 @@ use criterion::{black_box, criterion_group, criterion_main, Criterion, Benchmark
 use wasm4pm::rl_orchestrator::{RlOrchestrator, AgentType, compute_reward};
 use wasm4pm::{RlState, RlAction};
 
+#[path = "helpers.rs"]
+mod helpers;
+
 // ============================================================================
 // Test Utilities
 // ============================================================================
@@ -432,6 +435,7 @@ fn rl_reward_scaling_sensitivity(c: &mut Criterion) {
                         true,
                         true,
                         false,
+                        state.rework_ratio_q,
                     );
 
                     let scaled_reward = base_reward * scale;

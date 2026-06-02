@@ -149,8 +149,8 @@ fn assert_deterministic(algo: &str, hash1: &str, hash2: &str) {
 #[test]
 fn test_dfg_is_deterministic() {
     let log = make_simple_test_log();
-    let h1 = hash_dfg(&discovery::discover_dfg_from_log(&log, "concept:name"));
-    let h2 = hash_dfg(&discovery::discover_dfg_from_log(&log, "concept:name"));
+    let h1 = hash_dfg(&discovery::discover_dfg_from_log(&admitted_log(log.clone()), "concept:name"));
+    let h2 = hash_dfg(&discovery::discover_dfg_from_log(&admitted_log(log.clone()), "concept:name"));
     assert_deterministic("dfg", &h1, &h2);
 }
 
@@ -344,8 +344,8 @@ fn test_all_determinism_batch() {
     let tests: Vec<(&str, Box<dyn Fn() -> bool>)> = vec![
         ("dfg", Box::new(|| {
             let log = make_simple_test_log();
-            let h1 = hash_dfg(&discovery::discover_dfg_from_log(&log, "concept:name"));
-            let h2 = hash_dfg(&discovery::discover_dfg_from_log(&log, "concept:name"));
+            let h1 = hash_dfg(&discovery::discover_dfg_from_log(&admitted_log(log.clone()), "concept:name"));
+            let h2 = hash_dfg(&discovery::discover_dfg_from_log(&admitted_log(log.clone()), "concept:name"));
             h1 == h2
         })),
         ("genetic_algorithm", Box::new(|| {
@@ -382,4 +382,9 @@ fn test_all_determinism_batch() {
     if failed > 0 {
         panic!("{} algorithm(s) failed determinism check", failed);
     }
+}
+
+
+fn admitted_log(log: wasm4pm::models::EventLog) -> wasm4pm_compat::evidence::Evidence<wasm4pm::models::EventLog, wasm4pm_compat::state::Admitted, ()> {
+    wasm4pm_compat::admission::Admission::<_, ()>::new(log).into_evidence()
 }

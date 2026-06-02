@@ -1,0 +1,339 @@
+{
+  "eventTypes": [
+    {
+      "name": "Create Order",
+      "attributes": [
+        {
+          "name": "resource",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Confirm Order",
+      "attributes": [
+        {
+          "name": "resource",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Pick Item",
+      "attributes": [
+        {
+          "name": "resource",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Pack Package",
+      "attributes": [
+        {
+          "name": "resource",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Ship Package",
+      "attributes": [
+        {
+          "name": "resource",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Send Invoice",
+      "attributes": [
+        {
+          "name": "resource",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Receive Payment",
+      "attributes": [
+        {
+          "name": "resource",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Send Reminder",
+      "attributes": [
+        {
+          "name": "resource",
+          "type": "string"
+        }
+      ]
+    },
+    {
+      "name": "Cancel Order",
+      "attributes": [
+        {
+          "name": "resource",
+          "type": "string"
+        }
+      ]
+    }
+  ],
+  "objectTypes": [
+    {
+      "name": "Customer",
+      "attributes": []
+    },
+    {
+      "name": "Order",
+      "attributes": []
+    },
+    {
+      "name": "Item",
+      "attributes": []
+    },
+    {
+      "name": "Package",
+      "attributes": []
+    },
+    {
+      "name": "Invoice",
+      "attributes": []
+    },
+    {
+      "name": "Payment",
+      "attributes": []
+    },
+    {
+      "name": "Employee",
+      "attributes": []
+    }
+  ],
+  "events": [
+    {
+      "id": "e1",
+      "type": "Create Order",
+      "time": "2026-05-01T09:00:00Z",
+      "attributes": [
+        {
+          "name": "resource",
+          "value": "emp-1"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "order-1",
+          "qualifier": "order"
+        },
+        {
+          "objectId": "cust-1",
+          "qualifier": "customer"
+        }
+      ]
+    },
+    {
+      "id": "e2",
+      "type": "Confirm Order",
+      "time": "2026-05-01T10:00:00Z",
+      "attributes": [
+        {
+          "name": "resource",
+          "value": "emp-1"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "order-1",
+          "qualifier": "order"
+        }
+      ]
+    },
+    {
+      "id": "e3",
+      "type": "Pick Item",
+      "time": "2026-05-01T11:00:00Z",
+      "attributes": [
+        {
+          "name": "resource",
+          "value": "emp-1"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "order-1",
+          "qualifier": "order"
+        },
+        {
+          "objectId": "item-1",
+          "qualifier": "item"
+        }
+      ]
+    },
+    {
+      "id": "e4",
+      "type": "Pack Package",
+      "time": "2026-05-01T12:00:00Z",
+      "attributes": [
+        {
+          "name": "resource",
+          "value": "emp-1"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "order-1",
+          "qualifier": "order"
+        },
+        {
+          "objectId": "pkg-1",
+          "qualifier": "package"
+        },
+        {
+          "objectId": "item-1",
+          "qualifier": "item"
+        }
+      ]
+    },
+    {
+      "id": "e5",
+      "type": "Ship Package",
+      "time": "2026-05-01T13:00:00Z",
+      "attributes": [
+        {
+          "name": "resource",
+          "value": "emp-1"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "order-1",
+          "qualifier": "order"
+        },
+        {
+          "objectId": "pkg-1",
+          "qualifier": "package"
+        }
+      ]
+    },
+    {
+      "id": "e6",
+      "type": "Send Invoice",
+      "time": "2026-05-02T09:00:00Z",
+      "attributes": [
+        {
+          "name": "resource",
+          "value": "emp-1"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "order-1",
+          "qualifier": "order"
+        },
+        {
+          "objectId": "inv-1",
+          "qualifier": "invoice"
+        }
+      ]
+    },
+    {
+      "id": "e7",
+      "type": "Receive Payment",
+      "time": "2026-05-03T09:00:00Z",
+      "attributes": [
+        {
+          "name": "resource",
+          "value": "emp-1"
+        }
+      ],
+      "relationships": [
+        {
+          "objectId": "order-1",
+          "qualifier": "order"
+        },
+        {
+          "objectId": "inv-1",
+          "qualifier": "invoice"
+        },
+        {
+          "objectId": "pay-1",
+          "qualifier": "payment"
+        }
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "cust-1",
+      "type": "Customer",
+      "attributes": [],
+      "relationships": []
+    },
+    {
+      "id": "emp-1",
+      "type": "Employee",
+      "attributes": [],
+      "relationships": []
+    },
+    {
+      "id": "order-1",
+      "type": "Order",
+      "attributes": [],
+      "relationships": [
+        {
+          "objectId": "cust-1",
+          "qualifier": "placed_by"
+        },
+        {
+          "objectId": "item-1",
+          "qualifier": "contains"
+        },
+        {
+          "objectId": "pkg-1",
+          "qualifier": "shipped_in"
+        },
+        {
+          "objectId": "inv-1",
+          "qualifier": "billed_by"
+        }
+      ]
+    },
+    {
+      "id": "item-1",
+      "type": "Item",
+      "attributes": [],
+      "relationships": []
+    },
+    {
+      "id": "pkg-1",
+      "type": "Package",
+      "attributes": [],
+      "relationships": [
+        {
+          "objectId": "item-1",
+          "qualifier": "packs"
+        }
+      ]
+    },
+    {
+      "id": "inv-1",
+      "type": "Invoice",
+      "attributes": [],
+      "relationships": [
+        {
+          "objectId": "pay-1",
+          "qualifier": "settled_by"
+        }
+      ]
+    },
+    {
+      "id": "pay-1",
+      "type": "Payment",
+      "attributes": [],
+      "relationships": []
+    }
+  ]
+}

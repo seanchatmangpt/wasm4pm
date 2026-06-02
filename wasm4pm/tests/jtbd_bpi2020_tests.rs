@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 //! JTBD BPI 2020 Real-Scale Tests
 //!
 //! Tests that verify the RL/Auto pipeline handles real-world BPI 2020 datasets at scale.

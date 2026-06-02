@@ -13,11 +13,296 @@ use wasm_bindgen::prelude::*;
 /// Returns ProcessTree via XOR/Sequence/Parallel/Loop cuts
 /// Pure-Rust Inductive Miner: returns JSON string with the discovered process tree.
 /// Testable without wasm-bindgen runtime.
-pub fn discover_inductive_miner_from_log(log: &EventLog, activity_key: &str) -> String {
-    let activities = log.get_activities(activity_key);
+/// Helper to convert recursive `ProcessTreeNode` to flat compat `ProcessTree`.
+pub fn convert_to_compat_tree(node: &ProcessTreeNode) -> wasm4pm_compat::process_tree::ProcessTree {
+    let mut tree = wasm4pm_compat::process_tree::ProcessTree::new();
+    let root_id = convert_node_recursive(node, &mut tree);
+    tree.root = Some(root_id);
+    tree
+}
+
+fn convert_node_recursive(
+    node: &ProcessTreeNode,
+    tree: &mut wasm4pm_compat::process_tree::ProcessTree,
+) -> wasm4pm_compat::process_tree::ProcessTreeNodeId {
+    let compat_node = match node.node_type.as_str() {
+        "leaf" => {
+            let label = node.label.clone().unwrap_or_default();
+            wasm4pm_compat::process_tree::ProcessTreeNode::Activity(label)
+        }
+        _ => {
+            let op = match node.node_type.as_str() {
+                "sequence" => wasm4pm_compat::process_tree::ProcessTreeOperator::Sequence,
+                "xor" => wasm4pm_compat::process_tree::ProcessTreeOperator::Xor,
+                "parallel" => wasm4pm_compat::process_tree::ProcessTreeOperator::Parallel,
+                "loop" => wasm4pm_compat::process_tree::ProcessTreeOperator::Loop,
+                "or" => wasm4pm_compat::process_tree::ProcessTreeOperator::Or,
+                _ => wasm4pm_compat::process_tree::ProcessTreeOperator::Silent,
+            };
+            let parent_id = wasm4pm_compat::process_tree::ProcessTreeNodeId(tree.nodes.len());
+            tree.nodes.push(wasm4pm_compat::process_tree::ProcessTreeNode::Activity(String::new()));
+            
+            let mut child_ids = Vec::new();
+            for child in &node.children {
+                child_ids.push(convert_node_recursive(child, tree));
+            }
+            
+            tree.nodes[parent_id.0] = wasm4pm_compat::process_tree::ProcessTreeNode::Operator {
+                operator: op,
+                children: child_ids,
+            };
+            
+            return parent_id;
+        }
+    };
+    
+    let id = wasm4pm_compat::process_tree::ProcessTreeNodeId(tree.nodes.len());
+    tree.nodes.push(compat_node);
+    id
+}
+
+/// Helper to convert recursive `PowlArena` to compat `Powl` model.
+pub fn convert_to_compat_powl(arena: &crate::powl_arena::PowlArena, root: u32) -> wasm4pm_compat::powl::Powl {
+    let mut powl = wasm4pm_compat::powl::Powl::new();
+    let root_id = convert_powl_node_recursive(root, arena, &mut powl);
+    powl.root = Some(root_id);
+    powl
+}
+
+fn convert_powl_node_recursive(
+    idx: u32,
+    arena: &crate::powl_arena::PowlArena,
+    powl: &mut wasm4pm_compat::powl::Powl,
+) -> wasm4pm_compat::powl::PowlNodeId {
+    use crate::powl_arena::{PowlNode as ArenaNode, Operator as ArenaOperator};
+
+    let node = &arena.nodes[idx as usize];
+    let kind = match node {
+        ArenaNode::Transition(t) => {
+            if let Some(lbl) = &t.label {
+                wasm4pm_compat::powl::PowlNodeKind::Atom(lbl.clone())
+            } else {
+                wasm4pm_compat::powl::PowlNodeKind::Silent
+            }
+        }
+        ArenaNode::FrequentTransition(t) => {
+            wasm4pm_compat::powl::PowlNodeKind::Atom(t.activity.clone())
+        }
+        ArenaNode::OperatorPowl(op) => {
+            match op.operator {
+                ArenaOperator::Xor => {
+                    let mut child_ids = Vec::new();
+                    for &child in &op.children {
+                        child_ids.push(convert_powl_node_recursive(child, arena, powl));
+                    }
+                    wasm4pm_compat::powl::PowlNodeKind::Choice(child_ids)
+                }
+                ArenaOperator::Loop => {
+                    let body = if !op.children.is_empty() {
+                        convert_powl_node_recursive(op.children[0], arena, powl)
+                    } else {
+                        let id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
+                        powl.nodes.push(wasm4pm_compat::powl::PowlNode::new(
+                            id,
+                            wasm4pm_compat::powl::PowlNodeKind::Silent,
+                        ));
+                        id
+                    };
+                    let redo = if op.children.len() >= 2 {
+                        Some(convert_powl_node_recursive(op.children[1], arena, powl))
+                    } else {
+                        None
+                    };
+                    wasm4pm_compat::powl::PowlNodeKind::Loop { body, redo }
+                }
+                ArenaOperator::PartialOrder => {
+                    let mut child_ids = Vec::new();
+                    for &child in &op.children {
+                        child_ids.push(convert_powl_node_recursive(child, arena, powl));
+                    }
+                    wasm4pm_compat::powl::PowlNodeKind::PartialOrder(child_ids)
+                }
+            }
+        }
+        ArenaNode::StrictPartialOrder(spo) => {
+            let mut child_ids = Vec::new();
+            for &child in &spo.children {
+                child_ids.push(convert_powl_node_recursive(child, arena, powl));
+            }
+            let n = spo.children.len();
+            for i in 0..n {
+                for j in 0..n {
+                    if spo.order.is_edge(i, j) {
+                        powl.edges.push(wasm4pm_compat::powl::OrderEdge::new(
+                            child_ids[i],
+                            child_ids[j],
+                        ));
+                    }
+                }
+            }
+            wasm4pm_compat::powl::PowlNodeKind::PartialOrder(child_ids)
+        }
+        ArenaNode::DecisionGraph(dg) => {
+            let mut child_ids = Vec::new();
+            for &child in &dg.children {
+                child_ids.push(convert_powl_node_recursive(child, arena, powl));
+            }
+            let mut cg_node_ids = Vec::new();
+            let start_id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
+            powl.nodes.push(wasm4pm_compat::powl::PowlNode::new(
+                start_id,
+                wasm4pm_compat::powl::PowlNodeKind::Silent,
+            ));
+            cg_node_ids.push(start_id);
+            for cid in child_ids {
+                cg_node_ids.push(cid);
+            }
+            let end_id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
+            powl.nodes.push(wasm4pm_compat::powl::PowlNode::new(
+                end_id,
+                wasm4pm_compat::powl::PowlNodeKind::Silent,
+            ));
+            cg_node_ids.push(end_id);
+
+            let mut cg_edges = Vec::new();
+            let n = dg.children.len();
+            for i in 0..n {
+                for j in 0..n {
+                    if dg.order.is_edge(i, j) {
+                        cg_edges.push(wasm4pm_compat::powl::ChoiceGraphEdge::new(
+                            cg_node_ids[i + 1],
+                            cg_node_ids[j + 1],
+                        ));
+                    }
+                }
+            }
+            for &start_local in &dg.start_nodes {
+                cg_edges.push(wasm4pm_compat::powl::ChoiceGraphEdge::new(
+                    start_id,
+                    cg_node_ids[start_local + 1],
+                ));
+            }
+            for &end_local in &dg.end_nodes {
+                cg_edges.push(wasm4pm_compat::powl::ChoiceGraphEdge::new(
+                    cg_node_ids[end_local + 1],
+                    end_id,
+                ));
+            }
+            if dg.empty_path {
+                cg_edges.push(wasm4pm_compat::powl::ChoiceGraphEdge::new(start_id, end_id));
+            }
+            wasm4pm_compat::powl::PowlNodeKind::ChoiceGraph {
+                nodes: cg_node_ids,
+                edges: cg_edges,
+            }
+        }
+        ArenaNode::ChoiceGraph(cg) => {
+            let mut cg_node_ids = Vec::new();
+            for n in &cg.graph.nodes {
+                match n {
+                    wasm4pm_types::ChoiceGraphNode::Start => {
+                        let id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
+                        powl.nodes.push(wasm4pm_compat::powl::PowlNode::new(
+                            id,
+                            wasm4pm_compat::powl::PowlNodeKind::Silent,
+                        ));
+                        cg_node_ids.push(id);
+                    }
+                    wasm4pm_types::ChoiceGraphNode::End => {
+                        let id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
+                        powl.nodes.push(wasm4pm_compat::powl::PowlNode::new(
+                            id,
+                            wasm4pm_compat::powl::PowlNodeKind::Silent,
+                        ));
+                        cg_node_ids.push(id);
+                    }
+                    wasm4pm_types::ChoiceGraphNode::Activity(lbl) => {
+                        let id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
+                        powl.nodes.push(wasm4pm_compat::powl::PowlNode::new(
+                            id,
+                            wasm4pm_compat::powl::PowlNodeKind::Atom(lbl.clone()),
+                        ));
+                        cg_node_ids.push(id);
+                    }
+                    wasm4pm_types::ChoiceGraphNode::SubModel(sub_idx) => {
+                        let child_id = convert_powl_node_recursive(*sub_idx, arena, powl);
+                        cg_node_ids.push(child_id);
+                    }
+                }
+            }
+            let mut cg_edges = Vec::new();
+            for &(from_idx, to_idx) in &cg.graph.edges {
+                cg_edges.push(wasm4pm_compat::powl::ChoiceGraphEdge::new(
+                    cg_node_ids[from_idx],
+                    cg_node_ids[to_idx],
+                ));
+            }
+            wasm4pm_compat::powl::PowlNodeKind::ChoiceGraph {
+                nodes: cg_node_ids,
+                edges: cg_edges,
+            }
+        }
+    };
+
+    let parent_id = wasm4pm_compat::powl::PowlNodeId(powl.nodes.len());
+    powl.nodes.push(wasm4pm_compat::powl::PowlNode::new(parent_id, kind));
+    parent_id
+}
+
+/// POWL discovery implementation returning TypedPowl.
+pub struct PowerMiner;
+
+impl PowerMiner {
+    /// Discover a POWL model from an admitted event log.
+    pub fn discover<W>(
+        log: &AdmittedEventLog<W>,
+        activity_key: &str,
+    ) -> Result<TypedPowl, String> {
+        let config = crate::powl::discovery::DiscoveryConfig {
+            activity_key: activity_key.to_string(),
+            variant: crate::powl::discovery::DiscoveryVariant::DecisionGraphCyclic,
+            min_trace_count: 1,
+            noise_threshold: 0.0,
+            from_dfg: false,
+            fall_through_fired: false,
+        };
+        let (arena, root) = crate::powl::discovery::discover_powl(&log.value, &config)?;
+        let compat_powl = convert_to_compat_powl(&arena, root);
+        compat_powl.validate().map_err(|e| e.to_string())?;
+        Ok(wasm4pm_compat::admission::Admission::<_, wasm4pm_compat::witness::PowlPaper>::new(compat_powl)
+            .into_evidence())
+    }
+}
+
+/// Inductive Miner discovery implementation returning TypedProcessTree.
+pub struct InductiveMiner;
+
+
+impl InductiveMiner {
+    /// Discover a process tree from an admitted event log.
+    pub fn discover<W>(
+        log: &AdmittedEventLog<W>,
+        activity_key: &str,
+    ) -> Result<TypedProcessTree, String> {
+        let activities = log.value.get_activities(activity_key);
+        let mut sorted_acts: Vec<_> = activities.to_vec();
+        sorted_acts.sort(); // Deterministic ordering
+        let recursive_tree = inductive_miner_recursive(&log.value, &sorted_acts, activity_key, 0)
+            .map_err(|e| e.as_string().unwrap_or_else(|| "Inductive miner discovery failed".to_string()))?;
+        
+        let compat_tree = convert_to_compat_tree(&recursive_tree);
+        Ok(wasm4pm_compat::admission::Admission::<_, wasm4pm_compat::witness::InductiveMiner>::new(compat_tree)
+            .into_evidence())
+    }
+}
+
+/// Pure-Rust Inductive Miner: returns JSON string with the discovered process tree.
+/// Testable without wasm-bindgen runtime.
+pub fn discover_inductive_miner_from_log<W>(log: &AdmittedEventLog<W>, activity_key: &str) -> String {
+    let activities = log.value.get_activities(activity_key);
     let mut sorted_acts: Vec<_> = activities.to_vec();
     sorted_acts.sort();
-    match inductive_miner_recursive(log, &sorted_acts, activity_key, 0) {
+    match inductive_miner_recursive(&log.value, &sorted_acts, activity_key, 0) {
         Ok(tree) => {
             let nodes = tree.count_nodes();
             serde_json::to_string(&json!({
@@ -82,7 +367,8 @@ pub fn discover_inductive_miner(
             let mut sorted_acts: Vec<_> = activities.to_vec();
             sorted_acts.sort(); // Deterministic ordering
 
-            inductive_miner_recursive(log, &sorted_acts, activity_key, 0)
+            let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+            inductive_miner_recursive(&admitted.value, &sorted_acts, activity_key, 0)
         }
         Some(_) => Err(crate::error::js_val("Not an EventLog")),
         None => Err(crate::error::js_val("EventLog not found")),

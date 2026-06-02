@@ -26,11 +26,12 @@ fn test_save_load_roundtrip_with_real_q_table() {
     }
 
     // Create checkpoint with realistic metrics
-    let mut metrics = ConvergenceMetrics::default();
-    metrics.td_error_mean = 0.042;
-    metrics.q_max = 8.5;
-    metrics.learning_rate_current = 0.0763;
-    metrics.convergence_status = "converged".to_string();
+    let metrics = ConvergenceMetrics {
+        td_error_mean: 0.042,
+        q_max: 8.5,
+        learning_rate_current: 0.0763,
+        convergence_status: "converged".to_string(),
+    };
 
     let checkpoint = PolicyCheckpoint::new(
         "QLearning".to_string(),

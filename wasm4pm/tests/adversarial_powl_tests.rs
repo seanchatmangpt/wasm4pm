@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 //! Comprehensive Adversarial Test Harness for POWL Correctness
 //!
 //! Tests 8 categories using faker and design-by-contract thinking.

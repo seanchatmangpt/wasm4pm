@@ -222,7 +222,8 @@ fn wave3_performance_table() {
     // Wave-3: models.rs Cow<[T]> (no clone on to_columnar_owned),
     //         discovery.rs OCEL &str→&str edge map
     for ds in &datasets {
-        let ms = time_median_ms(|| { let _ = discover_dfg_from_log(&ds.log, ACTIVITY_KEY); });
+        let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
+        let ms = time_median_ms(|| { let _ = discover_dfg_from_log(&admitted, ACTIVITY_KEY); });
         print_row("dfg", ds, ms);
     }
     print_separator();
@@ -240,7 +241,8 @@ fn wave3_performance_table() {
     for ds in &datasets {
         // Skip bpi2020 for inductive miner — 87K events makes it slow
         if ds.label.starts_with("bpi2020") { continue; }
-        let ms = time_median_ms(|| { let _ = discover_inductive_miner_from_log(&ds.log, ACTIVITY_KEY); });
+        let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
+        let ms = time_median_ms(|| { let _ = discover_inductive_miner_from_log(&admitted, ACTIVITY_KEY); });
         print_row("inductive_miner", ds, ms);
     }
     print_separator();
@@ -285,7 +287,8 @@ fn wave3_performance_table() {
     // made an algorithm grossly incorrect (e.g. 0 ms = early return / panic recovery).
     println!("\nSanity assertions:");
     for ds in &datasets {
-        let ms = time_median_ms(|| { let _ = discover_dfg_from_log(&ds.log, ACTIVITY_KEY); });
+        let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(ds.log.clone()).into_evidence();
+        let ms = time_median_ms(|| { let _ = discover_dfg_from_log(&admitted, ACTIVITY_KEY); });
         println!("  dfg/{}: {:.1} ms > 0", ds.label, ms);
         assert!(ms > 0.0, "DFG completed in 0ms — likely a no-op or panic");
     }

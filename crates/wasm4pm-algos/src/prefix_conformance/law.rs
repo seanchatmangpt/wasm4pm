@@ -63,11 +63,9 @@ impl OrderingLaw {
                 
                 let mut valid = true;
                 for p in &self.precedence {
-                    if p.after == *act {
-                        if !current_seen.contains(&p.before) {
-                            valid = false;
-                            break;
-                        }
+                    if p.after == *act && !current_seen.contains(&p.before) {
+                        valid = false;
+                        break;
                     }
                 }
                 

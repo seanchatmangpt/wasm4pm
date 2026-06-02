@@ -1,0 +1,15 @@
+{
+  "_comment": "NEGATIVE FIXTURE N03 — duplicate terminal event. 'Receive Payment' is the lifecycle-terminating (sink) event and fires exactly once in a sound, safe net. This trace fires it twice; the second occurrence cannot replay (no token on p_payready after the join), leaving a remaining token => the trace is off-language => RouteConformanceGap. Minimal counterexample: delete the second 'Receive Payment'.",
+  "expected_refusal": "RouteConformanceGap",
+  "rejecting_primitive": "wf_net_language (token-replay fitness)",
+  "trace": [
+    "Create Order",
+    "Confirm Order",
+    "Pick Item",
+    "Pack Package",
+    "Ship Package",
+    "Send Invoice",
+    "Receive Payment",
+    "Receive Payment"
+  ]
+}

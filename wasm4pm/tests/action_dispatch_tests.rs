@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 //! Action Dispatch Integration Tests
 //!
 //! Tests the action dispatch layer that converts RL action labels to

@@ -57,6 +57,7 @@ fn linucb_variance_non_negative_under_unnormalized_features() {
 /// with the outer-product formula. After many updates A_inv[i][j] must equal
 /// A_inv[j][i] within f32 rounding (≤ ~1e-5 for our magnitudes).
 #[test]
+#[allow(clippy::needless_range_loop)]
 fn linucb_a_inv_symmetric_after_repeated_updates() {
     let mut agent = LinUCBAgent::new();
     let features = [0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8];

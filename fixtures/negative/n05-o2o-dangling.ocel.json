@@ -1,0 +1,33 @@
+{
+  "_comment": "NEGATIVE FIXTURE N05 — object relation impossible (dangling O2O). Order order-1 declares a qualified O2O reference 'contains' to item-99, which does not exist in objects[]. OCEDO/OCPQ Def.2 requires referential integrity of the object→object wiring. Minimal counterexample: remove the single offending O2O ref and the log validates.",
+  "expected_refusal": "ObjectLifecycleViolation",
+  "rejecting_primitive": "ocel_core::validate (DANGLING_O2O)",
+  "eventTypes": [
+    { "name": "Create Order", "attributes": [] }
+  ],
+  "objectTypes": [
+    { "name": "Order", "attributes": [] },
+    { "name": "Item", "attributes": [] }
+  ],
+  "events": [
+    {
+      "id": "e1",
+      "type": "Create Order",
+      "time": "2026-05-01T09:00:00Z",
+      "attributes": [],
+      "relationships": [
+        { "objectId": "order-1", "qualifier": "order" }
+      ]
+    }
+  ],
+  "objects": [
+    {
+      "id": "order-1",
+      "type": "Order",
+      "attributes": [],
+      "relationships": [
+        { "objectId": "item-99", "qualifier": "contains" }
+      ]
+    }
+  ]
+}

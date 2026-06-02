@@ -24,9 +24,9 @@ use wasm_bindgen::prelude::*;
 
 /// Pure-Rust DFG discovery without wasm-bindgen. Used by integration tests.
 #[must_use]
-pub fn discover_dfg_from_log(log: &EventLog, activity_key: &str) -> DirectlyFollowsGraph {
+pub fn discover_dfg_from_log<W>(log: &AdmittedEventLog<W>, activity_key: &str) -> DirectlyFollowsGraph {
     let mut dfg = DirectlyFollowsGraph::new();
-    let col_owned = log.to_columnar_owned(activity_key);
+    let col_owned = log.value.to_columnar_owned(activity_key);
     let col = ColumnarLog::from_owned(&col_owned);
 
     dfg.nodes.extend(col.vocab.iter().map(|&act| DFGNode {
@@ -121,7 +121,8 @@ pub fn discover_dfg(eventlog_handle: &str, activity_key: &str) -> Result<JsValue
                 "DFG discovery started"
             );
 
-            let dfg = discover_dfg_from_log(log, activity_key);
+            let admitted = wasm4pm_compat::admission::Admission::<_, ()>::new(log.clone()).into_evidence();
+            let dfg = discover_dfg_from_log(&admitted, activity_key);
 
             // Derive activity_count from the already-built DFG nodes — avoids
             // a second full columnar pass that was previously done by get_activities().

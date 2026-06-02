@@ -1415,6 +1415,17 @@ dependencies = [
 ]
 
 [[package]]
+name = "ocpq"
+version = "26.5.30"
+dependencies = [
+ "chrono",
+ "ocel-core",
+ "serde",
+ "serde_json",
+ "wasm-bindgen",
+]
+
+[[package]]
 name = "once_cell"
 version = "1.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1500,6 +1511,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "51bae2ac328883f7acdfea3d66a7c35751187f870bc81f94563733a154d7a670"
 dependencies = [
  "plotters-backend",
+]
+
+[[package]]
+name = "pm-core"
+version = "0.1.0"
+dependencies = [
+ "serde",
+ "serde_json",
 ]
 
 [[package]]
@@ -2548,6 +2567,7 @@ dependencies = [
  "lazy_static",
  "miniml",
  "naga",
+ "ocel-core",
  "once_cell",
  "proptest",
  "quick-xml",
@@ -2573,6 +2593,7 @@ dependencies = [
  "wasm-bindgen-test",
  "wasm4pm-algos",
  "wasm4pm-cognition",
+ "wasm4pm-compat",
  "wasm4pm-macros",
  "wasm4pm-types",
 ]
@@ -2635,6 +2656,10 @@ dependencies = [
  "trybuild",
  "wasm-bindgen",
 ]
+
+[[package]]
+name = "wasm4pm-compat"
+version = "0.1.0"
 
 [[package]]
 name = "wasm4pm-macros"

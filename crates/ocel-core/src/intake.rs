@@ -22,19 +22,19 @@ impl ExtractionPlan {
     pub fn is_event_allowed(&self, event_type: &str) -> bool {
         self.target_event_types
             .as_ref()
-            .map_or(true, |types| types.contains(event_type))
+            .is_none_or(|types| types.contains(event_type))
     }
 
     pub fn is_object_allowed(&self, object_type: &str) -> bool {
         self.target_object_types
             .as_ref()
-            .map_or(true, |types| types.contains(object_type))
+            .is_none_or(|types| types.contains(object_type))
     }
 
     pub fn is_qualifier_allowed(&self, qualifier: &str) -> bool {
         self.qualifier_filters
             .as_ref()
-            .map_or(true, |filters| filters.contains(qualifier))
+            .is_none_or(|filters| filters.contains(qualifier))
     }
 }
 

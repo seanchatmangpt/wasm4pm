@@ -1,0 +1,49 @@
+{
+  "box": {
+    "v0": {
+      "kind": "Object",
+      "object_type": "Order"
+    },
+    "e1": {
+      "kind": "Event",
+      "event_type": "Confirm Order"
+    }
+  },
+  "predicates": [
+    {
+      "kind": "E2O",
+      "event": "e1",
+      "object": "v0",
+      "qualifier": "*"
+    }
+  ],
+  "constr": {
+    "kind": "CBS",
+    "activity": "Receive Payment",
+    "min": 1,
+    "max": 1
+  },
+  "child": {
+    "box": {
+      "e2": {
+        "kind": "Event",
+        "event_type": "Receive Payment"
+      }
+    },
+    "predicates": [
+      {
+        "kind": "E2O",
+        "event": "e2",
+        "object": "v0",
+        "qualifier": "*"
+      },
+      {
+        "kind": "TBE",
+        "from": "e1",
+        "to": "e2",
+        "tmin_s": 0,
+        "tmax_s": 2419200
+      }
+    ]
+  }
+}

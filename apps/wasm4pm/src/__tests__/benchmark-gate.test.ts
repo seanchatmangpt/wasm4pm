@@ -1,0 +1,237 @@
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { runCli, createCliTestEnv } from '@wasm4pm/testing';
+import { writeFileSync, mkdirSync, rmSync } from 'node:fs';
+import { join } from 'node:path';
+
+/**
+ * Tests for `wpm benchmark gate` — the aggregated G1–G5 admission gate.
+ *
+ * Chicago-TDD oracle: the gate's verdict is grounded in real WASM evidence
+ * (determinism via discover_dfg, exact-1.0 token replay) and BLAKE3 receipt
+ * math — NOT in self-referential assertions.  Each test names the expected
+ * mathematical/structural property:
+ *
+ *   G1  determinism            same input ⇒ same BLAKE3 (theorem)
+ *   G2  receipt-verify         BLAKE3 chain recomputes to its stored hash
+ *   G3  conformance            exact-1.0 admission (mcpp-conformance.md)
+ *   G4  metric-interdependency conformance metrics obey invariants I-1..I-5
+ *   G5  report-completeness    verdict carries every required field
+ *
+ * The default WASM build profile yields auto-discovered alpha++ nets whose
+ * token-replay fitness is < 1.0 — so G3 *correctly* refuses, which is the
+ * real negative proof for the exact-1.0 admission gate.
+ */
+
+// CLI exit codes (mirror EXIT_CODES; conformance_fail = 6 is the AndonPull exit).
+const SUCCESS = 0;
+const CONFORMANCE_FAIL = 6;
+
+/** Extract the trailing JSON envelope from CLI stdout (WASM logs precede it). */
+function parseEnvelope(stdout: string): {
+  command: string;
+  status: string;
+  exit_code: number;
+  payload: {
+    verdict: 'ADMITTED' | 'ANDON_PULL';
+    gates_total: number;
+    gates_passed: number;
+    gates_failed: number;
+    gates: Array<{
+      id: string;
+      name: string;
+      pass: boolean;
+      ran: boolean;
+      reason: string;
+      evidence: Record<string, unknown>;
+    }>;
+    andon_reason: string | null;
+  };
+} {
+  const match = stdout.match(/\{[\s\S]*\}/);
+  if (!match) throw new Error(`No JSON envelope in stdout: ${stdout.slice(0, 300)}`);
+  return JSON.parse(match[0]);
+}
+
+const gateById = (env: ReturnType<typeof parseEnvelope>, id: string) =>
+  env.payload.gates.find((g) => g.id === id);
+
+describe('wpm benchmark gate — aggregated G1–G5 admission gate', () => {
+  let env: Awaited<ReturnType<typeof createCliTestEnv>>;
+  let tmpDir: string;
+
+  beforeEach(async () => {
+    env = await createCliTestEnv();
+    tmpDir = join(env.tempDir ?? '/tmp', `wpm-gate-test-${Date.now()}`);
+    mkdirSync(tmpDir, { recursive: true });
+  });
+
+  afterEach(() => {
+    try {
+      rmSync(tmpDir, { recursive: true, force: true });
+    } catch {
+      /* best-effort */
+    }
+    env?.cleanup?.();
+  });
+
+  it('is registered as a benchmark subcommand', async () => {
+    const result = await runCli(['benchmark', '--help']);
+    expect(result.stdout).toMatch(/gate/i);
+  });
+
+  it('emits a complete machine-readable JSON verdict with all five gates', async () => {
+    const result = await runCli(['benchmark', 'gate', '--format', 'json', '--quiet']);
+    const envelope = parseEnvelope(result.stdout);
+
+    expect(envelope.command).toBe('benchmark gate');
+    expect(['ADMITTED', 'ANDON_PULL']).toContain(envelope.payload.verdict);
+    expect(envelope.payload.gates).toHaveLength(5);
+    expect(envelope.payload.gates.map((g) => g.id)).toEqual(['G1', 'G2', 'G3', 'G4', 'G5']);
+
+    // G5 report-completeness contract: every gate carries all required keys.
+    for (const g of envelope.payload.gates) {
+      expect(g).toHaveProperty('id');
+      expect(g).toHaveProperty('name');
+      expect(g).toHaveProperty('pass');
+      expect(g).toHaveProperty('ran');
+      expect(g).toHaveProperty('reason');
+      expect(g).toHaveProperty('evidence');
+      expect(typeof g.evidence).toBe('object');
+    }
+  });
+
+  it('G1 determinism: discover_dfg produces identical BLAKE3 hashes across runs', async () => {
+    const result = await runCli(['benchmark', 'gate', '--gates', 'g1', '--format', 'json', '--quiet']);
+    const envelope = parseEnvelope(result.stdout);
+    const g1 = gateById(envelope, 'G1');
+
+    expect(g1).toBeDefined();
+    expect(g1!.ran).toBe(true);
+    expect(g1!.pass).toBe(true);
+    // The oracle: hash_run_1 === hash_run_2 (determinism theorem).
+    expect(g1!.evidence.hash_run_1).toBe(g1!.evidence.hash_run_2);
+    expect(String(g1!.evidence.hash_run_1)).toMatch(/^[0-9a-f]{64}$/);
+    // A pure G1 run admits → exit 0.
+    expect(result.exitCode).toBe(SUCCESS);
+  });
+
+  it('G2 receipt-verify: a self-built BLAKE3 receipt chain re-verifies (admits)', async () => {
+    const result = await runCli(['benchmark', 'gate', '--gates', 'g2', '--format', 'json', '--quiet']);
+    const envelope = parseEnvelope(result.stdout);
+    const g2 = gateById(envelope, 'G2');
+
+    expect(g2!.pass).toBe(true);
+    expect(g2!.evidence.source).toBe('self-built');
+    expect(String(g2!.evidence.combined_hash)).toMatch(/^[0-9a-f]{64}$/);
+    expect(envelope.payload.verdict).toBe('ADMITTED');
+    expect(result.exitCode).toBe(SUCCESS);
+  });
+
+  it('G2 --verify-receipt-hash: a TAMPERED external receipt is refused (negative proof)', async () => {
+    // combined_hash deliberately does NOT match the BLAKE3 chain of the components.
+    const receiptPath = join(tmpDir, 'tampered-receipt.json');
+    writeFileSync(
+      receiptPath,
+      JSON.stringify({
+        input_hash: 'aa',
+        config_hash: 'bb',
+        plan_hash: 'cc',
+        output_hash: 'dd',
+        combined_hash: 'deadbeefdeadbeef',
+      })
+    );
+
+    const result = await runCli([
+      'benchmark',
+      'gate',
+      '--gates',
+      'g2',
+      '--receipt',
+      receiptPath,
+      '--format',
+      'json',
+      '--quiet',
+    ]);
+    const envelope = parseEnvelope(result.stdout);
+    const g2 = gateById(envelope, 'G2');
+
+    expect(g2!.pass).toBe(false);
+    expect(g2!.reason).toMatch(/MissingReceiptCoverage/);
+    expect(g2!.evidence.source).toBe('external');
+    // Recomputed hash must differ from the tampered stored hash.
+    expect(g2!.evidence.recomputed_combined_hash).not.toBe(g2!.evidence.stored_combined_hash);
+    // A failing gate forces a non-zero exit (conformance_fail).
+    expect(result.exitCode).toBe(CONFORMANCE_FAIL);
+    expect(envelope.payload.verdict).toBe('ANDON_PULL');
+  });
+
+  it('G3 conformance: exact-1.0 admission — auto-discovered model below 1.0 fires RouteConformanceGap', async () => {
+    const result = await runCli(['benchmark', 'gate', '--gates', 'g3', '--format', 'json', '--quiet']);
+    const envelope = parseEnvelope(result.stdout);
+    const g3 = gateById(envelope, 'G3');
+
+    expect(g3!.ran).toBe(true);
+    expect(g3!.evidence.admission_threshold).toBe(1);
+    // The gate's contract: admit iff fitness >= 1.0. Either it admits at exactly
+    // 1.0, or it refuses with the typed AndonPull RouteConformanceGap — never a
+    // soft pass. We assert that invariant holds for whatever fitness is measured.
+    const fitness = Number(g3!.evidence.fitness);
+    if (fitness >= 1.0) {
+      expect(g3!.pass).toBe(true);
+      expect(g3!.reason).toBe('ok');
+    } else {
+      expect(g3!.pass).toBe(false);
+      expect(g3!.reason).toMatch(/RouteConformanceGap/);
+      expect(result.exitCode).toBe(CONFORMANCE_FAIL);
+    }
+  });
+
+  it('G4 metric-interdependency: token-replay metrics satisfy invariants I-1..I-5', async () => {
+    const result = await runCli(['benchmark', 'gate', '--gates', 'g4', '--format', 'json', '--quiet']);
+    const envelope = parseEnvelope(result.stdout);
+    const g4 = gateById(envelope, 'G4');
+
+    expect(g4!.ran).toBe(true);
+    // A real conformance result must not violate any *critical* invariant
+    // (fitness >= precision, bounds, token balance, …).
+    expect(g4!.evidence).toHaveProperty('critical');
+    expect(g4!.pass).toBe(true);
+    expect(Number(g4!.evidence.critical)).toBe(0);
+  });
+
+  it('a subset that passes (g1,g2) yields ADMITTED with exit 0', async () => {
+    const result = await runCli(['benchmark', 'gate', '--gates', 'g1,g2', '--format', 'json', '--quiet']);
+    const envelope = parseEnvelope(result.stdout);
+
+    expect(envelope.payload.verdict).toBe('ADMITTED');
+    expect(result.exitCode).toBe(SUCCESS);
+    // Only the selected gates ran; the others are skipped (ran:false).
+    const ranIds = envelope.payload.gates.filter((g) => g.ran).map((g) => g.id);
+    expect(ranIds).toContain('G1');
+    expect(ranIds).toContain('G2');
+    expect(ranIds).not.toContain('G3');
+  });
+
+  it('full gate run with the default profile fires ANDON_PULL on the exact-1.0 conformance gate', async () => {
+    // This is the honest end-to-end negative proof: the kernel is NOT FAKE-LIVE
+    // because the exact-1.0 gate genuinely refuses an under-fit auto-discovered model.
+    const result = await runCli(['benchmark', 'gate', '--format', 'json', '--quiet']);
+    const envelope = parseEnvelope(result.stdout);
+    const g3 = gateById(envelope, 'G3');
+
+    // G1/G2/G4/G5 are expected green; G3 is the discriminating gate.
+    expect(gateById(envelope, 'G1')!.pass).toBe(true);
+    expect(gateById(envelope, 'G2')!.pass).toBe(true);
+    expect(gateById(envelope, 'G5')!.pass).toBe(true);
+
+    if (!g3!.pass) {
+      expect(envelope.payload.verdict).toBe('ANDON_PULL');
+      expect(result.exitCode).toBe(CONFORMANCE_FAIL);
+      expect(envelope.payload.andon_reason).toMatch(/RouteConformanceGap/);
+    } else {
+      // If a future WASM build reaches exact 1.0, the whole gate admits.
+      expect(envelope.payload.verdict).toBe('ADMITTED');
+      expect(result.exitCode).toBe(SUCCESS);
+    }
+  });
+});

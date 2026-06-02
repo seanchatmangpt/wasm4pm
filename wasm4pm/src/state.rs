@@ -76,6 +76,8 @@ pub struct AppState {
     objects: Arc<Mutex<HashMap<String, StoredObject>>>,
     /// Counter for generating unique handles.
     counter: Arc<Mutex<u64>>,
+    /// Lifecycle authority context.
+    lsa: Arc<Mutex<crate::lsa::LifecycleAuthority>>,
 }
 
 impl AppState {
@@ -85,6 +87,7 @@ impl AppState {
         AppState {
             objects: Arc::new(Mutex::new(HashMap::new())),
             counter: Arc::new(Mutex::new(0)),
+            lsa: Arc::new(Mutex::new(crate::lsa::LifecycleAuthority::default())),
         }
     }
 

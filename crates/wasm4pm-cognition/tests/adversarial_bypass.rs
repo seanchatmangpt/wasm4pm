@@ -1,3 +1,4 @@
+#![allow(clippy::all, unused_mut)]
 //! Adversarial bypass tests: every detector must catch a malicious
 //! evidence-source crafted to slip past a naive flag-based check.
 //!

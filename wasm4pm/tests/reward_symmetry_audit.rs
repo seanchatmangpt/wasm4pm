@@ -58,6 +58,7 @@ fn degraded_state() -> RlState {
 }
 
 /// Features for degraded system.
+#[allow(dead_code)]
 fn degraded_features() -> [f32; 8] {
     [0.4, 0.4, 0.4, 0.3, 0.1, 0.5, 0.0, 0.15]
 }
@@ -75,7 +76,7 @@ fn test_baseline_stable_convergence_per_agent() {
     let seeds = [42u64, 123, 456, 789, 999];
     let agent_names = ["QLearning", "SARSA", "DoubleQLearning", "ExpectedSARSA", "REINFORCE"];
 
-    for (agent_idx, agent_name) in agent_names.iter().enumerate() {
+    for (_agent_idx, agent_name) in agent_names.iter().enumerate() {
         let mut results_per_seed: Vec<(u64, f32)> = Vec::new();
 
         for seed in seeds {
@@ -185,7 +186,7 @@ fn test_convergence_rate_comparison() {
 fn test_action_distribution_diversity() {
     let agent_names = ["QLearning", "SARSA", "DoubleQLearning", "ExpectedSARSA", "REINFORCE"];
 
-    for (agent_idx, agent_name) in agent_names.iter().enumerate() {
+    for (_agent_idx, agent_name) in agent_names.iter().enumerate() {
         let mut orch = RlOrchestrator::new_with_seed(42);
         let state = stable_state();
         let features = stable_features();
@@ -335,7 +336,7 @@ fn test_reward_bounds_enforcement() {
         circuit_state: 2,      // Open (unhealthy)
         cycle_phase: 3,
     };
-    let worst_features = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
+    let _worst_features = [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0];
 
     let mut min_reward = f32::MAX;
     let mut max_reward = f32::MIN;

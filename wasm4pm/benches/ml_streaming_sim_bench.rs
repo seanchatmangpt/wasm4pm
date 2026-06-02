@@ -288,8 +288,8 @@ fn build_dfg_internal(log: &EventLog, activity_key: &str) -> wasm4pm::models::Di
             frequency: freq,
         })
         .collect();
-    dfg.start_activities = start_counts;
-    dfg.end_activities = end_counts;
+    dfg.start_activities = start_counts.into_iter().collect();
+    dfg.end_activities = end_counts.into_iter().collect();
     dfg
 }
 

@@ -1,3 +1,4 @@
+#![allow(clippy::all, dead_code)]
 //! Comprehensive Parity Tests: wasm4pm vs pm4py
 //!
 //! This module tests that wasm4pm's implementations produce
