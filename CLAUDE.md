@@ -295,6 +295,14 @@ npm run measure-sizes         # measure WASM binary sizes
 ```
 
 ### Rust
+
+> **Toolchain constraint (GAP_WASM4PM_CAVEAT_003):** The Rust toolchain is pinned in
+> `rust-toolchain.toml` to a specific nightly date (`nightly-2026-04-15`).
+> Do NOT change to unpinned `channel = "nightly"` — that is non-reproducible on CI
+> and may fail with E0554 when `generic_const_exprs` (a nightly-only feature used by
+> wasm4pm-compat) is stabilized or broken in a newer nightly. When adopting a newer
+> nightly, update the date, run `cargo check`, and commit as a separate toolchain bump.
+
 ```bash
 cargo check                   # fast type check
 cargo build --release         # build WASM library

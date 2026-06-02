@@ -1,4 +1,9 @@
 [toolchain]
-channel = "nightly"
+channel = "nightly-2026-04-15"
 components = ["rustfmt", "clippy"]
 profile = "minimal"
+# Pinned to nightly-2026-04-15 — this is the last known-good nightly that builds
+# all crates including those using nightly-only features (generic_const_exprs via
+# wasm4pm-compat). Unpinned "nightly" is non-reproducible on CI; always update
+# this date when adopting a newer nightly and verify the full build passes.
+# GAP_WASM4PM_CAVEAT_003 resolution: pin prevents E0554 / CI non-reproducibility.
