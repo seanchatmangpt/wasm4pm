@@ -2,7 +2,7 @@
 
 **Document Type:** Post-Fix Verification Receipt
 **Timestamp:** 2026-06-02T22:15:00Z
-**Git Commit:** (set after commit — see gap resolution below)
+**Git Commit:** ba1d9118
 **Status:** ACTIVE — 42 tests passing, simd_streaming_dfg default path fixed
 
 ---
@@ -17,7 +17,7 @@
 | **Test File** | `apps/wasm4pm/src/__tests__/mcpp-admission-gate.test.ts` |
 | **Test Count** | 42 tests passing (Groups A–F) |
 | **Root File** | `apps/wasm4pm/src/discriminator.ts` (shape mismatch fix) |
-| **Git SHA** | (updated post-commit per GAP_WASM4PM_CAVEAT_001 resolution) |
+| **Git SHA** | ba1d9118 |
 | **Reviewer** | Claude Code Agent |
 | **Exit Code** | 0 (SUCCESS) |
 
@@ -106,7 +106,7 @@ Conformance 1.0 requirement (MCPP doctrine) is still enforced:
 
 ## SIGN-OFF
 
-**Gap Closure Status:** PARTIAL (GAP_CAVEAT_001 SHA pending commit; GAP_CAVEAT_002/003/004 CLOSED)
+**Gap Closure Status:** CLOSED (GAP_CAVEAT_001 SHA = ba1d9118; GAP_CAVEAT_002/003/004 CLOSED)
 **MCPP Admission Gate Tests:** 42 passing
 **Default Execution Path:** FIXED (simd_streaming_dfg works on canonical fixtures)
 **Toolchain:** PINNED (nightly-2026-04-15)
