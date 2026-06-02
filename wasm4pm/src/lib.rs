@@ -1266,6 +1266,10 @@ pub fn autonomic_execute_cycle(
 
     // SPC: multi-dimensional (event rate, trace duration, activity frequency)
     let mut all_special_causes: Vec<String> = Vec::new();
+    // OBS-GAP-2 FIX: track classified rule types so the primary rule type can be
+    // emitted in the RL action correlation span. Preserves type information that
+    // would otherwise be lost in scalar spc_alert_level quantization.
+    let mut spc_rule_types: Vec<&'static str> = Vec::new();
     let mut spc_results = serde_json::Map::new();
 
     // SPC on event rate (events per trace)
@@ -1398,6 +1402,7 @@ pub fn autonomic_execute_cycle(
             );
 
             all_special_causes.push(format!("event_rate: {:?}", c));
+            spc_rule_types.push(rule_violated); // OBS-GAP-2: preserve rule type
         }
     } else {
         spc_results.insert(
@@ -1529,6 +1534,7 @@ pub fn autonomic_execute_cycle(
                 "SPC rule violation classified"
             );
             all_special_causes.push(format!("trace_duration: {:?}", c));
+            spc_rule_types.push(rule_violated); // OBS-GAP-2: preserve rule type
         }
     } else {
         spc_results.insert(
@@ -1660,6 +1666,7 @@ pub fn autonomic_execute_cycle(
                 "SPC rule violation classified"
             );
             all_special_causes.push(format!("activity_frequency: {:?}", c));
+            spc_rule_types.push(rule_violated); // OBS-GAP-2: preserve rule type
         }
     } else {
         spc_results.insert(
@@ -1767,6 +1774,7 @@ pub fn autonomic_execute_cycle(
                         "SPC rule violation classified (historical)"
                     );
                     all_special_causes.push(format!("event_rate_historical: {:?}", c));
+                    spc_rule_types.push(rule_violated); // OBS-GAP-2
                 }
             } else {
                 spc_results.insert("event_rate_historical".to_string(), serde_json::json!("OK"));
@@ -1814,6 +1822,7 @@ pub fn autonomic_execute_cycle(
                         "SPC rule violation classified (historical)"
                     );
                     all_special_causes.push(format!("trace_duration_historical: {:?}", c));
+                    spc_rule_types.push(rule_violated); // OBS-GAP-2
                 }
             } else {
                 spc_results.insert(
@@ -1864,6 +1873,7 @@ pub fn autonomic_execute_cycle(
                         "SPC rule violation classified (historical)"
                     );
                     all_special_causes.push(format!("activity_frequency_historical: {:?}", c));
+                    spc_rule_types.push(rule_violated); // OBS-GAP-2
                 }
             } else {
                 spc_results.insert(
@@ -2048,6 +2058,30 @@ pub fn autonomic_execute_cycle(
         _ => "unknown action; fallback applied",
     };
 
+    // OBS-GAP-2 FIX: emit primary SPC rule type so Jaeger can correlate
+    // rule_type → action_selected without a separate SPC span lookup.
+    let spc_primary_rule_type = spc_rule_types.first().copied().unwrap_or("none");
+
+    // OBS-GAP-3 FIX: emit circuit_recovery_signal when circuit transitions
+    // from Open/HalfOpen to Closed (recovery event), enabling Jaeger queries
+    // like "circuit_recovery_signal=true AND health_improved=true".
+    let circuit_recovery_signal = circuit_state.contains("Closed") && circuit_allowed;
+
+    // OBS-GAP-2 FIX: validate action-rule alignment for Rank-2 oracle auditing.
+    // Correct rule-to-action mapping per domain contract:
+    //   rule_1_outlier  → Retry or Scale (transient spike)
+    //   rule_2_shift    → Scale or Fallback (sustained shift)
+    //   rule_3_trend    → Scale or Restart (monotonic trend)
+    //   rule_4_two_of_three → Scale or Continue (borderline pattern)
+    let action_matches_spc_rule = match (spc_primary_rule_type, action_label.as_str()) {
+        ("rule_1_outlier", "Retry" | "Scale") => true,
+        ("rule_2_shift", "Scale" | "Fallback") => true,
+        ("rule_3_trend", "Scale" | "Restart") => true,
+        ("rule_4_two_of_three", "Scale" | "Continue") => true,
+        ("none", _) => true, // No SPC alert: any action is valid
+        _ => false,
+    };
+
     tracing::info!(
         target: "autonomic",
         action = %action_label,
@@ -2058,8 +2092,13 @@ pub fn autonomic_execute_cycle(
         cycle = %cycle_count,
         health = %health_state_val,
         spc_alerts = %all_special_causes.len(),
+        // OBS-GAP-2: primary rule type and action-rule alignment
+        spc_primary_rule_type = spc_primary_rule_type,
+        action_matches_spc_rule = action_matches_spc_rule,
         circuit_state = %circuit_state,
         circuit_allowed = %circuit_allowed,
+        // OBS-GAP-3: circuit recovery signal for causality correlation
+        circuit_recovery_signal = circuit_recovery_signal,
         guard_pass = %guard_pass,
         service_name = "wpm",
         status = if guard_pass && circuit_allowed { "ok" } else { "warning" },

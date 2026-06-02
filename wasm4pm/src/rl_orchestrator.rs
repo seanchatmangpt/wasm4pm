@@ -1150,7 +1150,15 @@ impl RlOrchestrator {
         // Create span with convergence diagnostics (only meaningful attributes on emission boundary)
         let convergence_status_value = if emit_convergence { "learning" } else { "periodic" };
 
-        let _cycle_span = tracing::info_span!(
+        // OBS-GAP-1 FIX: declare td_error and convergence fields as Empty so they
+        // can be recorded dynamically after linucb_update() computes the value.
+        // This puts Bellman convergence evidence directly on the rl.run_cycle span
+        // so Jaeger can plot TD error trend without correlating a separate child span.
+        // OBS-GAP-1 FIX: declare td_error and convergence fields as Empty so they
+        // can be recorded dynamically after linucb_update() computes the value.
+        // This puts Bellman convergence evidence directly on the rl.run_cycle span
+        // so Jaeger can plot TD error trend without correlating a separate child span.
+        let cycle_span = tracing::info_span!(
             "rl.run_cycle",
             health_before = state.health_level,
             health_after = next_state.health_level,
@@ -1161,10 +1169,14 @@ impl RlOrchestrator {
             linucb_weight_norm = active_norm_before,
             learning_rate_current = alpha_t,
             convergence_status = convergence_status_value,
+            // OBS-GAP-1: per-cycle TD error and Q-value fields — filled via span.record() below
+            td_error = tracing::field::Empty,
+            q_value_max = tracing::field::Empty,
+            convergence_signal = tracing::field::Empty,
             service_name = "wpm",
             status = "ok",
-        )
-        .entered();
+        );
+        let _cycle_span_guard = cycle_span.enter();
 
         // Track state space coverage (record visited bin)
         let current_bin = Self::state_to_bin(state);
@@ -1318,6 +1330,25 @@ impl RlOrchestrator {
 
         // Update LinUCB and capture TD error for convergence diagnostics
         let td_error_linucb = self.linucb_update(features, reward);
+
+        // OBS-GAP-1 FIX: record per-cycle TD error directly on the rl.run_cycle span.
+        // Bellman convergence (Rank-1 oracle) can now be proved from a single span
+        // without correlating the separate rl.convergence_diagnostics child span.
+        {
+            let conv_signal = if td_error_linucb.abs() > 0.1 { "learning" } else { "converged" };
+            let q_max = {
+                let q_continue = self.agents[self.active_agent as usize]
+                    .get_q_value_for_otel(state, &RlAction::Continue);
+                let q_scale = self.agents[self.active_agent as usize]
+                    .get_q_value_for_otel(state, &RlAction::Scale);
+                let q_restart = self.agents[self.active_agent as usize]
+                    .get_q_value_for_otel(state, &RlAction::Restart);
+                q_continue.abs().max(q_scale.abs()).max(q_restart.abs())
+            };
+            tracing::Span::current().record("td_error", td_error_linucb);
+            tracing::Span::current().record("q_value_max", q_max);
+            tracing::Span::current().record("convergence_signal", conv_signal);
+        }
 
         // Decay exploration
         self.decay_exploration();
