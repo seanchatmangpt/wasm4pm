@@ -1,0 +1,70 @@
+# wasm4pm ggen.toml — Substrate from wasm4pm-compat
+# Constitutional Equation: wasm4pm substrate = mu(wasm4pm-compat.ttl)
+#
+# wasm4pm-compat is the specification (RDF ontology + Rust type law).
+# ggen reads it and writes the generated substrate into wasm4pm.
+#
+# Pack declaration (semantic metadata): wasm4pm-compat/ggen/package.toml
+# Pack REFERENCE resolution in rules not yet wired in ggen-core.
+# File paths used directly until resolver is implemented.
+
+[project]
+name        = "wasm4pm"
+version     = "26.6.3"
+description = "Process mining platform substrate — generated from wasm4pm-compat ontology"
+authors     = ["Sean Chatman"]
+license     = "MIT"
+
+# ---------------------------------------------------------------------------
+# Ontology: source from wasm4pm-compat (the specification authority)
+# ---------------------------------------------------------------------------
+[ontology]
+source = "../wasm4pm-compat/ggen/ontology/wasm4pm-compat.ttl"
+additional = [
+  "../wasm4pm-compat/ggen/ontology/papers.ttl",
+  "../wasm4pm-compat/ggen/ontology/domain-evidence-structure.ttl",
+  "../wasm4pm-compat/ggen/ontology/domain-process-forms.ttl",
+  "../wasm4pm-compat/ggen/ontology/domain-graduation-boundaries.ttl",
+]
+standard_only = false
+
+[generation]
+output_dir = "."
+
+[inference]
+enabled = true
+rules = [
+  { name = "alive-gate", construct = "CONSTRUCT { ?s a ?class } WHERE { ?s a ?class }" }
+]
+
+# ---------------------------------------------------------------------------
+# Pack declaration (semantic — runtime pack-ref resolution pending)
+# ---------------------------------------------------------------------------
+[[packs]]
+name     = "wasm4pm-compat"
+registry = "local"
+path     = "../wasm4pm-compat/ggen"
+
+# ---------------------------------------------------------------------------
+# Rule: witness-markers
+# Extracts all WitnessMarker instances from compat ontology.
+# Outputs one witness module per marker into wasm4pm/src/generated/.
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "witness-markers"
+query       = { file = "ggen/queries/extract-witnesses-full.rq" }
+template    = { file = "../wasm4pm-compat/ggen/templates/witness-marker.tera" }
+output_file = "wasm4pm/src/generated/witnesses.rs"
+mode        = "Overwrite"
+
+# ---------------------------------------------------------------------------
+# Rule: wasm-boundary
+# Renders ABI-safe WASM boundary module (admission gates, loss accounting,
+# graduation signals) from compat authority ontology.
+# ---------------------------------------------------------------------------
+[[generation.rules]]
+name        = "wasm-boundary"
+query       = { file = "../wasm4pm-compat/ggen/queries/extract-source-modules.rq" }
+template    = { file = "../wasm4pm-compat/ggen/templates/wasm-boundary.rs.tera" }
+output_file = "wasm4pm/src/generated/wasm_boundary.rs"
+mode        = "Overwrite"

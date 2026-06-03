@@ -2685,6 +2685,7 @@ dependencies = [
  "serde_json",
  "smallvec",
  "uuid",
+ "wasm4pm-compat",
 ]
 
 [[package]]

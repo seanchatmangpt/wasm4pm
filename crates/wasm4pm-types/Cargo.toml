@@ -9,6 +9,7 @@ documentation = "https://docs.rs/wasm4pm-types"
 readme = "README.md"
 
 [dependencies]
+wasm4pm-compat = { path = "../../../wasm4pm-compat", features = ["wasm4pm"], optional = true }
 ocel-core = { path = "../ocel-core" }
 serde = { workspace = true }
 serde_json = { workspace = true }
@@ -22,7 +23,8 @@ quick-xml = { version = "0.37", optional = true }
 flate2 = { version = "1.0", optional = true }
 
 [features]
-import = ["quick-xml", "flate2"]
+import      = ["quick-xml", "flate2"]
+compat      = ["dep:wasm4pm-compat"]
 
 [dev-dependencies]
 serde_json = { workspace = true }
