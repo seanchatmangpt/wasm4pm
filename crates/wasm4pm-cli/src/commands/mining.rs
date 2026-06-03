@@ -1,11 +1,13 @@
 use anyhow::{Context, Result};
 use clap::{Args, Subcommand};
 use colored::Colorize;
-use wasm4pm_cli::io::{Io, Table};
-use wasm4pm_algos::{conformance, heuristic};
-use wasm4pm_types::{EventLog, DFG};
 use std::fs;
+use std::io::BufReader;
 use std::path::PathBuf;
+use wasm4pm_algos::{conformance, heuristic};
+use wasm4pm_cli::io::{Io, Table};
+use wasm4pm_types::import::xes::{import_xes, XESImportOptions};
+use wasm4pm_types::{EventLog, DFG};
 
 #[derive(Args, Debug)]
 pub struct MiningArgs {
@@ -71,8 +73,7 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
                 log, model
             ));
             let log = load_log(log)?;
-            // Mock model load for now
-            let dfg = DFG::new();
+            let dfg = load_dfg_model(model)?;
 
             let result = conformance::check_conformance_token_replay(&log, &dfg, activity_key)
                 .context("Token replay conformance check failed")?;
@@ -96,15 +97,45 @@ pub fn run(args: &MiningArgs, verbose: bool) -> Result<()> {
 }
 
 fn load_log(path: &PathBuf) -> Result<EventLog> {
-    let content =
-        fs::read_to_string(path).with_context(|| format!("Failed to read log file: {:?}", path))?;
+    let ext = path.extension().and_then(|s| s.to_str()).unwrap_or("");
+    match ext {
+        "json" => {
+            let content = fs::read_to_string(path)
+                .with_context(|| format!("Failed to read log file: {:?}", path))?;
+            serde_json::from_str(&content).context("Failed to parse JSON event log")
+        }
+        "xes" => {
+            let file = fs::File::open(path)
+                .with_context(|| format!("Failed to open XES file: {:?}", path))?;
+            let reader = BufReader::new(file);
+            import_xes(reader, XESImportOptions::default())
+                .map_err(|e| anyhow::anyhow!("Failed to parse XES: {:?}", e))
+        }
+        other => anyhow::bail!(
+            "Unsupported log format '{}'. Supported: .xes, .json",
+            other
+        ),
+    }
+}
 
-    if path.extension().and_then(|s| s.to_str()) == Some("json") {
-        serde_json::from_str(&content).context("Failed to parse JSON event log")
-    } else {
-        // Simple mock parser for XES or others
-        // In a real scenario, this would call the actual XES parser
-        Ok(EventLog::new(vec![], vec![]))
+/// Load a process model (DFG) from a file.
+/// Supports:
+/// - `.json` — JSON-serialized DFG (wasm4pm native format)
+/// - `.dfg.json` — same as .json
+fn load_dfg_model(path: &PathBuf) -> Result<DFG> {
+    let content = fs::read_to_string(path)
+        .with_context(|| format!("Failed to read model file: {:?}", path))?;
+    let ext = path.extension().and_then(|s| s.to_str()).unwrap_or("");
+    match ext {
+        "json" => serde_json::from_str(&content)
+            .with_context(|| format!("Failed to deserialize DFG from {:?}", path)),
+        "pnml" => anyhow::bail!(
+            "PNML model loading not yet supported in this CLI. Use a JSON DFG model."
+        ),
+        other => anyhow::bail!(
+            "Unsupported model format '{}'. Supported: .json (DFG)",
+            other
+        ),
     }
 }
 
