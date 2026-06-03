@@ -15,7 +15,10 @@ use wasm4pm::testing::{ConformanceVerdict, PowlTestHarness};
 #[test]
 fn proof_pack_writer_creates_required_directory() {
     let writer = ProofPackWriter::for_test("test-pack-dirs-01");
-    assert!(writer.dir().exists(), "ProofPackWriter must create the pack directory");
+    assert!(
+        writer.dir().exists(),
+        "ProofPackWriter must create the pack directory"
+    );
 }
 
 #[test]
@@ -40,7 +43,10 @@ fn write_ocel_records_actual_events() {
     let writer = ProofPackWriter::for_test("test-ocel-content-03");
     writer.write_ocel(&ocel).unwrap();
     let content = std::fs::read_to_string(writer.dir().join("OCEL/events.json")).unwrap();
-    assert!(content.contains("\"A\"") || content.contains("A"), "OCEL must record activity A");
+    assert!(
+        content.contains("\"A\"") || content.contains("A"),
+        "OCEL must record activity A"
+    );
 }
 
 #[test]
@@ -50,7 +56,10 @@ fn finalize_with_andon_writes_verdict_json() {
         .finalize(&ConformanceVerdict::Andon(AndonPull::TestRouteIncomplete))
         .expect("finalize must succeed");
     let verdict_path = writer.dir().join("FINAL/verdict.json");
-    assert!(verdict_path.exists(), "FINAL/verdict.json must exist after finalize");
+    assert!(
+        verdict_path.exists(),
+        "FINAL/verdict.json must exist after finalize"
+    );
     let content = std::fs::read_to_string(verdict_path).unwrap();
     assert!(
         content.contains("TestRouteIncomplete"),
@@ -64,9 +73,11 @@ fn finalize_with_passed_writes_accepted_verdict() {
     writer
         .finalize(&ConformanceVerdict::Passed)
         .expect("finalize must succeed for Passed verdict");
-    let content =
-        std::fs::read_to_string(writer.dir().join("FINAL/verdict.json")).unwrap();
-    assert!(content.contains("Accepted"), "Passed verdict must write 'Accepted' to verdict.json");
+    let content = std::fs::read_to_string(writer.dir().join("FINAL/verdict.json")).unwrap();
+    assert!(
+        content.contains("Accepted"),
+        "Passed verdict must write 'Accepted' to verdict.json"
+    );
 }
 
 #[test]
@@ -75,9 +86,14 @@ fn artifact_proof_hashes_are_written_after_finalize() {
     h.record_activity("test.started");
     let writer = ProofPackWriter::for_test("test-hash-verify-06");
     writer.write_ocel(&h.export_ocel()).unwrap();
-    writer.finalize(&ConformanceVerdict::Andon(AndonPull::TestRouteIncomplete)).unwrap();
+    writer
+        .finalize(&ConformanceVerdict::Andon(AndonPull::TestRouteIncomplete))
+        .unwrap();
     assert!(
-        writer.dir().join("ARTIFACT_PROOF/file-hashes.json").exists(),
+        writer
+            .dir()
+            .join("ARTIFACT_PROOF/file-hashes.json")
+            .exists(),
         "ARTIFACT_PROOF/file-hashes.json must exist after finalize"
     );
 }
@@ -85,7 +101,9 @@ fn artifact_proof_hashes_are_written_after_finalize() {
 #[test]
 fn artifact_proof_includes_final_verdict_hash() {
     let writer = ProofPackWriter::for_test("test-verdict-in-hashes-07");
-    writer.finalize(&ConformanceVerdict::Andon(AndonPull::TestRouteIncomplete)).unwrap();
+    writer
+        .finalize(&ConformanceVerdict::Andon(AndonPull::TestRouteIncomplete))
+        .unwrap();
     let hashes_raw =
         std::fs::read_to_string(writer.dir().join("ARTIFACT_PROOF/file-hashes.json")).unwrap();
     let hashes: serde_json::Value = serde_json::from_str(&hashes_raw).unwrap();
@@ -100,7 +118,9 @@ fn tampered_verdict_hash_does_not_match_recorded_hash() {
     // Anti-fake: tampering FINAL/verdict.json after finalize() invalidates the
     // recorded BLAKE3 hash. The `wpm proof verify` command detects this mismatch.
     let writer = ProofPackWriter::for_test("test-anti-fake-verdict-08");
-    writer.finalize(&ConformanceVerdict::Andon(AndonPull::TestRouteIncomplete)).unwrap();
+    writer
+        .finalize(&ConformanceVerdict::Andon(AndonPull::TestRouteIncomplete))
+        .unwrap();
 
     let hashes_raw =
         std::fs::read_to_string(writer.dir().join("ARTIFACT_PROOF/file-hashes.json")).unwrap();
@@ -108,7 +128,11 @@ fn tampered_verdict_hash_does_not_match_recorded_hash() {
     let recorded_hash = hashes["FINAL/verdict.json"].as_str().unwrap().to_string();
 
     // Tamper with the verdict.
-    std::fs::write(writer.dir().join("FINAL/verdict.json"), r#"{"verdict":"Accepted"}"#).unwrap();
+    std::fs::write(
+        writer.dir().join("FINAL/verdict.json"),
+        r#"{"verdict":"Accepted"}"#,
+    )
+    .unwrap();
 
     let tampered_bytes = std::fs::read(writer.dir().join("FINAL/verdict.json")).unwrap();
     let actual_hash = blake3::hash(&tampered_bytes).to_hex().to_string();
@@ -122,7 +146,9 @@ fn tampered_verdict_hash_does_not_match_recorded_hash() {
 #[test]
 fn manifest_is_written_by_finalize() {
     let writer = ProofPackWriter::for_test("test-manifest-09");
-    writer.finalize(&ConformanceVerdict::Andon(AndonPull::TestRouteIncomplete)).unwrap();
+    writer
+        .finalize(&ConformanceVerdict::Andon(AndonPull::TestRouteIncomplete))
+        .unwrap();
     assert!(
         writer.dir().join("MANIFEST.json").exists(),
         "MANIFEST.json must exist after finalize"
@@ -142,8 +168,7 @@ fn write_proof_dimensions_records_not_measured() {
     let writer = ProofPackWriter::for_test("test-proof-dims-10");
     writer.write_proof_dimensions(&report).unwrap();
     let content =
-        std::fs::read_to_string(writer.dir().join("VERIFIED_PROOF/proof-dimensions.json"))
-            .unwrap();
+        std::fs::read_to_string(writer.dir().join("VERIFIED_PROOF/proof-dimensions.json")).unwrap();
     assert!(
         content.contains("not_measured"),
         "proof-dimensions.json must record 'not_measured' for unimplemented dims"
@@ -169,7 +194,8 @@ fn for_test_writes_to_test_proof_packs_not_real_proof_packs() {
         "for_test() must write to target/test-proof-packs/, not target/proof-packs/; got: {dir:?}"
     );
     assert!(
-        !dir.to_string_lossy().contains("/proof-packs/separation-check-11"),
+        !dir.to_string_lossy()
+            .contains("/proof-packs/separation-check-11"),
         "for_test() must not use the real proof-packs directory"
     );
 }

@@ -234,11 +234,31 @@ pub fn classify_conformance(
             }
         };
     }
-    check!(report.fitness, expected.fitness, AndonPull::RouteConformanceGap);
-    check!(report.precision, expected.precision, AndonPull::IllegalRouteMotion);
-    check!(report.receipt_coverage, expected.receipt_coverage, AndonPull::MissingReceiptCoverage);
-    check!(report.required_stage_coverage, expected.required_stage_coverage, AndonPull::MissingRouteActivity);
-    check!(report.object_lifecycle_validity, expected.object_lifecycle_validity, AndonPull::ObjectLifecycleViolation);
+    check!(
+        report.fitness,
+        expected.fitness,
+        AndonPull::RouteConformanceGap
+    );
+    check!(
+        report.precision,
+        expected.precision,
+        AndonPull::IllegalRouteMotion
+    );
+    check!(
+        report.receipt_coverage,
+        expected.receipt_coverage,
+        AndonPull::MissingReceiptCoverage
+    );
+    check!(
+        report.required_stage_coverage,
+        expected.required_stage_coverage,
+        AndonPull::MissingRouteActivity
+    );
+    check!(
+        report.object_lifecycle_validity,
+        expected.object_lifecycle_validity,
+        AndonPull::ObjectLifecycleViolation
+    );
     ConformanceVerdict::passed()
 }
 
@@ -266,7 +286,10 @@ mod tests {
 
     #[test]
     fn fitness_gap_gives_route_conformance_gap() {
-        let report = ReplayReport { fitness: ProofDimension::Measured(0.999), ..exact_report() };
+        let report = ReplayReport {
+            fitness: ProofDimension::Measured(0.999),
+            ..exact_report()
+        };
         assert_eq!(
             classify_conformance(&report, ExpectedConformance::exact()),
             ConformanceVerdict::Andon(AndonPull::RouteConformanceGap),
@@ -275,7 +298,10 @@ mod tests {
 
     #[test]
     fn precision_gap_gives_illegal_route_motion() {
-        let report = ReplayReport { precision: ProofDimension::Measured(0.999), ..exact_report() };
+        let report = ReplayReport {
+            precision: ProofDimension::Measured(0.999),
+            ..exact_report()
+        };
         assert_eq!(
             classify_conformance(&report, ExpectedConformance::exact()),
             ConformanceVerdict::Andon(AndonPull::IllegalRouteMotion),
@@ -284,7 +310,10 @@ mod tests {
 
     #[test]
     fn receipt_coverage_gap_gives_missing_receipt_coverage() {
-        let report = ReplayReport { receipt_coverage: ProofDimension::Measured(0.999), ..exact_report() };
+        let report = ReplayReport {
+            receipt_coverage: ProofDimension::Measured(0.999),
+            ..exact_report()
+        };
         assert_eq!(
             classify_conformance(&report, ExpectedConformance::exact()),
             ConformanceVerdict::Andon(AndonPull::MissingReceiptCoverage),
@@ -293,7 +322,10 @@ mod tests {
 
     #[test]
     fn stage_coverage_gap_gives_missing_route_activity() {
-        let report = ReplayReport { required_stage_coverage: ProofDimension::Measured(0.999), ..exact_report() };
+        let report = ReplayReport {
+            required_stage_coverage: ProofDimension::Measured(0.999),
+            ..exact_report()
+        };
         assert_eq!(
             classify_conformance(&report, ExpectedConformance::exact()),
             ConformanceVerdict::Andon(AndonPull::MissingRouteActivity),
@@ -302,7 +334,10 @@ mod tests {
 
     #[test]
     fn lifecycle_gap_gives_object_lifecycle_violation() {
-        let report = ReplayReport { object_lifecycle_validity: ProofDimension::Measured(0.999), ..exact_report() };
+        let report = ReplayReport {
+            object_lifecycle_validity: ProofDimension::Measured(0.999),
+            ..exact_report()
+        };
         assert_eq!(
             classify_conformance(&report, ExpectedConformance::exact()),
             ConformanceVerdict::Andon(AndonPull::ObjectLifecycleViolation),
@@ -311,7 +346,10 @@ mod tests {
 
     #[test]
     fn not_measured_fitness_returns_test_route_incomplete() {
-        let report = ReplayReport { fitness: ProofDimension::NotMeasured, ..exact_report() };
+        let report = ReplayReport {
+            fitness: ProofDimension::NotMeasured,
+            ..exact_report()
+        };
         assert_eq!(
             classify_conformance(&report, ExpectedConformance::exact()),
             ConformanceVerdict::Andon(AndonPull::TestRouteIncomplete),
@@ -320,7 +358,10 @@ mod tests {
 
     #[test]
     fn not_measured_receipt_coverage_returns_test_route_incomplete() {
-        let report = ReplayReport { receipt_coverage: ProofDimension::NotMeasured, ..exact_report() };
+        let report = ReplayReport {
+            receipt_coverage: ProofDimension::NotMeasured,
+            ..exact_report()
+        };
         assert_eq!(
             classify_conformance(&report, ExpectedConformance::exact()),
             ConformanceVerdict::Andon(AndonPull::TestRouteIncomplete),
@@ -329,7 +370,10 @@ mod tests {
 
     #[test]
     fn not_measured_object_lifecycle_returns_test_route_incomplete() {
-        let report = ReplayReport { object_lifecycle_validity: ProofDimension::NotMeasured, ..exact_report() };
+        let report = ReplayReport {
+            object_lifecycle_validity: ProofDimension::NotMeasured,
+            ..exact_report()
+        };
         assert_eq!(
             classify_conformance(&report, ExpectedConformance::exact()),
             ConformanceVerdict::Andon(AndonPull::TestRouteIncomplete),
@@ -373,7 +417,10 @@ mod tests {
 
     #[test]
     fn zero_fitness_is_andon() {
-        let report = ReplayReport { fitness: ProofDimension::Measured(0.0), ..exact_report() };
+        let report = ReplayReport {
+            fitness: ProofDimension::Measured(0.0),
+            ..exact_report()
+        };
         assert_eq!(
             classify_conformance(&report, ExpectedConformance::exact()),
             ConformanceVerdict::Andon(AndonPull::RouteConformanceGap),

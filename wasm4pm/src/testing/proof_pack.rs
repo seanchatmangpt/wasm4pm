@@ -63,7 +63,10 @@ impl ProofPackWriter {
     pub fn write_ocel(&self, ocel: &serde_json::Value) -> std::io::Result<()> {
         let d = self.dir.join("OCEL");
         std::fs::create_dir_all(&d)?;
-        std::fs::write(d.join("events.json"), serde_json::to_string_pretty(ocel).unwrap())
+        std::fs::write(
+            d.join("events.json"),
+            serde_json::to_string_pretty(ocel).unwrap(),
+        )
     }
 
     /// Write token-replay proof dimensions to `ROUTE_PROOF/report.json`.
@@ -77,7 +80,10 @@ impl ProofPackWriter {
             "required_stage_coverage": dim_to_json(report.required_stage_coverage),
             "object_lifecycle_validity": dim_to_json(report.object_lifecycle_validity),
         });
-        std::fs::write(d.join("report.json"), serde_json::to_string_pretty(&json).unwrap())
+        std::fs::write(
+            d.join("report.json"),
+            serde_json::to_string_pretty(&json).unwrap(),
+        )
     }
 
     /// Write proof dimension status (measured vs not_measured) to
@@ -94,7 +100,10 @@ impl ProofPackWriter {
                 "object_lifecycle_validity": dim_status(report.object_lifecycle_validity),
             }
         });
-        std::fs::write(d.join("proof-dimensions.json"), serde_json::to_string_pretty(&json).unwrap())
+        std::fs::write(
+            d.join("proof-dimensions.json"),
+            serde_json::to_string_pretty(&json).unwrap(),
+        )
     }
 
     /// Write `FINAL/verdict.json`, `ARTIFACT_PROOF/file-hashes.json`, and `MANIFEST.json`.
@@ -128,7 +137,10 @@ impl ProofPackWriter {
 
         // MANIFEST: list all files with their sizes.
         let manifest = self.build_manifest()?;
-        std::fs::write(self.dir.join("MANIFEST.json"), serde_json::to_string_pretty(&manifest).unwrap())
+        std::fs::write(
+            self.dir.join("MANIFEST.json"),
+            serde_json::to_string_pretty(&manifest).unwrap(),
+        )
     }
 
     /// BLAKE3-hash every `.json` file in the pack directory, excluding
@@ -160,7 +172,10 @@ impl ProofPackWriter {
                 let rel_str = rel.to_string_lossy().replace('\\', "/");
                 let contents = std::fs::read(&path)?;
                 let hash = blake3::hash(&contents);
-                out.insert(rel_str, serde_json::Value::String(hash.to_hex().to_string()));
+                out.insert(
+                    rel_str,
+                    serde_json::Value::String(hash.to_hex().to_string()),
+                );
             }
         }
         Ok(())
