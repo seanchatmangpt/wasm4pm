@@ -11,9 +11,36 @@ use wasm4pm_cli::io::{Io, Table};
 pub fn run(input: PathBuf, activity_key: String) -> Result<()> {
     let io = Io::new(false);
 
+    // 0. Format detection — bail early with actionable message for OCEL files
+    let ext = input
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or("")
+        .to_lowercase();
+    let is_ocel = (ext == "json" && input.to_string_lossy().contains(".ocel"))
+        || ext == "jsonocel"
+        || ext == "ocel";
+
+    if is_ocel {
+        // OCEL format detected — graduate to wasm4pm engine for full support.
+        // The wasm4pm WASM layer supports OCEL 2.0 via feature-ocel, but the
+        // Rust CLI audit path uses SIMD token replay which requires a flattened
+        // XES-like trace structure. Emit a clear actionable message.
+        anyhow::bail!(
+            "OCEL 2.0 format detected ({:?}).\n\
+             The wpm audit command currently supports XES event logs (IEEE 1849).\n\
+             To audit an OCEL log, flatten it first:\n\n\
+             \twpm run --algorithm dfg --format json {:?}\n\n\
+             or use the TypeScript CLI: wpm conformance {:?}",
+            input,
+            input,
+            input
+        );
+    }
+
     // 1. Load XES
     let xes_content = fs::read_to_string(&input)
-        .with_context(|| format!("Failed to read event log: {:?}", input))?;
+        .with_context(|| format!("Failed to read XES event log ({:?}). Supported formats: .xes", input))?;
 
     // 2. Load into wasm4pm state
     let log_handle = load_eventlog_from_xes(&xes_content)
